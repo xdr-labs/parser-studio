@@ -83,4 +83,28 @@ malformed_single_event.each do |slug, raw|
   assert(!rejected.key?('srcip'), "#{slug}: malformed event cannot yield partial fields")
 end
 
-puts "Extended synthetic formats: 16 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+# RFC5424 permits multiple adjacent SD-ELEMENTs and escaped ']' inside
+# quoted parameter values. Preserve parsed SD for a future explicit mapping.
+sd_multi = '<165>1 2026-10-12T01:02:03Z edge01 firewall 123 ID42 [origin@32473 name="first"][trace@32473 id="2"] src_ip=198.51.100.5 action=deny'
+_, multi = execute_parser(folder, "sample_syslog", sd_multi)
+assert(multi['srcip'] == '198.51.100.5', "RFC5424 multiple SD elements")
+assert(multi['stellar_log_index'] == 'threat', "RFC5424 multiple SD routing")
+sd_parser_path = File.join(folder, 'customized_sample_syslog')
+sd_parser_class = Class.new
+sd_parser_class.class_eval(SyntheticFixtureGuard.read_source(sd_parser_path), sd_parser_path, 1)
+sd_instance = sd_parser_class.new
+assert(sd_instance.parserstudio_extract(sd_multi)['syslog_structured_data'] ==
+  '[origin@32473 name="first"][trace@32473 id="2"]', "RFC5424 adjacent blocks retained")
+sd_escaped = '<165>1 2026-10-12T01:02:03Z edge01 firewall 123 ID42 [origin@32473 note="a\\]b"] src_ip=198.51.100.6 action=allow'
+_, sd_ok = execute_parser(folder, "sample_syslog", sd_escaped)
+assert(sd_ok['srcip'] == '198.51.100.6', "RFC5424 escaped SD bracket")
+assert(sd_instance.parserstudio_extract(sd_escaped)['syslog_structured_data'] ==
+  '[origin@32473 note="a\]b"]', "RFC5424 quoted SD bracket escape retained")
+sd_bad = '<165>1 2026-10-12T01:02:03Z edge01 firewall 123 ID42 [origin@32473 note="unterminated] src_ip=198.51.100.6 action=deny'
+_, invalid_sd = execute_parser(folder, "sample_syslog", sd_bad)
+assert(invalid_sd['parser_err_stage'] == 'extraction', "RFC5424 unterminated quoted SD rejected")
+sd_junk = '<165>1 2026-10-12T01:02:03Z edge01 firewall 123 ID42 [origin@32473]junk src_ip=198.51.100.6 action=deny'
+_, invalid_junk = execute_parser(folder, "sample_syslog", sd_junk)
+assert(invalid_junk['parser_err_stage'] == 'extraction', "RFC5424 trailing junk rejected")
+
+puts "Extended synthetic formats: 20 scenarios PASS (CSV/RFC5424/CEF/LEEF)"

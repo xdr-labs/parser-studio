@@ -132,14 +132,63 @@ def parserstudio_csv(text, settings)
   Hash[fields.zip(row)]
 end
 
-# Only bounded RFC5424 messages with '-' or a single structured-data block.
-# Extra structured data, RFC3164 and multiline records require separate adapters.
+# A bounded RFC5424 header with one or more adjacent SD-ELEMENT blocks.
+# Retain raw structured data for explicit optional mapping; do not execute it.
+# Full RFC5424 SD parameter semantic validation is not claimed here.
+def parserstudio_rfc5424_sd(rest)
+  if rest.start_with?('-')
+    raise ArgumentError, 'Malformed RFC5424 NILVALUE' unless rest == '-' || rest.start_with?('- ')
+    return ['-', rest == '-' ? nil : rest[2..-1]]
+  end
+  raise ArgumentError, 'RFC5424 SD block required' unless rest.start_with?('[')
+
+  offset = 0
+  while rest.getbyte(offset) == 91 # [
+    element_start = offset
+    offset += 1
+    quoted = false
+    escaped = false
+    closed = false
+    while offset < rest.bytesize
+      character = rest.getbyte(offset)
+      if escaped
+        # RFC5424 quoted parameter escapes for ], " and backslash.
+        raise ArgumentError, 'Invalid RFC5424 SD escape' unless [34, 92, 93].include?(character)
+        escaped = false
+      elsif quoted && character == 92
+        escaped = true
+      elsif character == 34 # "
+        quoted = !quoted
+      elsif character == 93 && !quoted # ]
+        offset += 1
+        closed = true
+        break
+      elsif character == 91 && !quoted # nested [
+        raise ArgumentError, 'Unexpected nested RFC5424 SD element'
+      elsif character == 92 && !quoted
+        raise ArgumentError, 'Unexpected RFC5424 SD escape outside parameter'
+      end
+      offset += 1
+    end
+    raise ArgumentError, 'Incomplete RFC5424 SD element' unless
+      closed && !quoted && !escaped && (offset - element_start) > 2
+    raise ArgumentError, 'RFC5424 SD exceeds bounded subset' if offset > 1024
+  end
+  structured = rest.byteslice(0, offset)
+  trailing = rest.byteslice(offset..-1)
+  return [structured, nil] if trailing.nil? || trailing.empty?
+  raise ArgumentError, 'Unsupported RFC5424 trailer' unless trailing.start_with?(' ')
+  [structured, trailing.byteslice(1..-1)]
+end
+
+# RFC3164, multiline, and arbitrary/oversized SD remain unsupported.
 def parserstudio_syslog_rfc5424(text, settings)
-  pattern = /\A<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (-|\[[^\]\n]{1,1024}\])(?: ([^\n]*))?\z/
+  pattern = /\A<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)\z/
   match = pattern.match(text)
   raise ArgumentError, 'Unsupported RFC5424 syslog header' unless match
   priority = Integer(match[1], 10)
   raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= 191
+  structured_data, message = parserstudio_rfc5424_sd(match[8])
   record = {
     'syslog_pri' => priority,
     'syslog_version' => Integer(match[2], 10),
@@ -148,9 +197,8 @@ def parserstudio_syslog_rfc5424(text, settings)
     'syslog_appname' => match[5],
     'syslog_procid' => match[6],
     'syslog_msgid' => match[7],
-    'syslog_structured_data' => match[8]
+    'syslog_structured_data' => structured_data
   }
-  message = match[9]
   if message && !message.empty?
     format = settings['syslogBodyFormat'] || 'raw'
     case format

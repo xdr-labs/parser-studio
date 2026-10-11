@@ -26,7 +26,7 @@ Responses include `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, 
 GET /api/v1/parser-pairs/capabilities returns a stateless capability contract with no file bodies:
 
 - contract = host-customized-pair.v0.1; projectSchemaRevision = 0.1; receiverProtocols (udp/tcp) and extractionFormats (json/kv/csv/syslog_rfc5424/cef/leef) reflect the validated schema.
-- authoring.formatCoverage = reviewed-bounded-subset. HTTP receiver, multi-distinct-port receiver, multiline events and arbitrary Ruby authoring are false. Opaque legacy files can be inspected but never treated as an editable clone.
+- authoring.formatCoverage = reviewed-bounded-subset. Adjacent RFC5424 structured-data blocks have bounded 1024-byte structural support only (authoring.rfc5424AdjacentStructuredDataSubset and rfc5424StructuredDataMaxBytes); full SD semantics are NOT claimed. HTTP receiver, multi-distinct-port receiver, multiline events and arbitrary Ruby authoring are false. Opaque legacy files can be inspected but never treated as an editable clone.
 - import.exactInternalPairsEditable is true ONLY for byte-identical output of our reviewed generator. import.unknownLegacyRubyEditable is false.
 - verification.nativeSyntheticProfile = ruby3.2.3-fluentd1.17.1 identifies the pinned offline synthetic test runner only. liveListenerVerified, proprietaryLoaderVerified, targetImportVerified and engineVerified are all false. Never infer production or vendor import compatibility from this endpoint.
 - limits.maxProjectBodyBytes = 262144; limits.maxInspectBodyBytes = 2097152. No customer logs, source files or secrets are present.
@@ -43,7 +43,7 @@ Main fields: `schemaRevision`, `projectId`, `revision`, `slug`, `vendor`, `produ
 | `json` | `maxDepth`: 1–8, default 8 | JSON object root; nested objects; invalid/deep JSON rejected |
 | `kv` | none | Strict single-line key=value with optional quotes/backslash escapes; literal CR/LF and trailing garbage reject |
 | `csv` | `csvColumns` **required**, `csvDelimiter` optional `,`, `;` or TAB | Strict column count and quoting, one physical CSV line only; literal CR/LF rejects |
-| `syslog_rfc5424` | `syslogBodyFormat`: `raw`, `json` or `kv` | RFC5424 header with single structured-data segment, not RFC3164 or multiline |
+| `syslog_rfc5424` | `syslogBodyFormat`: `raw`, `json` or `kv` | RFC5424 header with adjacent structured-data elements (up to 1024 bytes total; escaped quoted brackets); no full SD parameter semantic validation, RFC3164 or multiline |
 | `cef` | none | Standalone single-line CEF:version, escaped header delimiter, strict KV extension subset; no multiline or Syslog-prefixed CEF |
 | `leef` | none | Standalone single-line LEEF 1.0 TAB and 2.0 one-character delimiter subset; empty extension tokens and CR/LF reject |
 

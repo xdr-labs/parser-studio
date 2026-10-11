@@ -105,6 +105,8 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(info.authoring.httpReceiver,false);
    assert.equal(info.authoring.multipleDistinctReceiverPorts,false);
    assert.equal(info.authoring.formatCoverage,"reviewed-bounded-subset");
+   assert.equal(info.authoring.rfc5424AdjacentStructuredDataSubset,true);
+   assert.equal(info.authoring.rfc5424StructuredDataMaxBytes,1024);
    assert.equal(info.authoring.multiline,false);
    assert.equal(info.authoring.arbitraryRuby,false);
    assert.equal(info.import.exactInternalPairsEditable,true);

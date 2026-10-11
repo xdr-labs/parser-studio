@@ -31,6 +31,16 @@ Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone
 
 Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
 
+## Bounded RFC5424 Structured Data subset
+
+The native Ruby parser now retains one or more adjacent RFC5424 SD-ELEMENT
+blocks with escaped right-brackets inside quoted parameter values, up to
+1024 bytes of structured-data text. Tests cover normal multi-block and
+escaped-bracket records and reject unterminated quotes and invalid trailers.
+Full parameter semantics, RFC3164, oversized SD and multiline event breaking
+remain unsupported. This is a tested parser subset, not a proprietary loader
+compatibility claim.
+
 ## Format boundary regression
 
 Four extra negative native callback scenarios enforce fail-closed behavior for
