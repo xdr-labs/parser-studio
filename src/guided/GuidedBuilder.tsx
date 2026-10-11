@@ -16,6 +16,7 @@ import { fetchBackendCapabilities, assertBackendProjectSupported } from './backe
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
+import { suggestUnmappedFields } from './fieldMappingSuggestions';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import {
@@ -122,6 +123,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       ? highlightPreview(suite.events, proposal)
       : null
   ), [acceptedResult, proposal, suite]);
+  const unmappedSuggestions = useMemo(() => suggestUnmappedFields(
+    (suite?.events ?? []).map(event => event.fields), draft,
+  ), [suite?.events, draft]);
   const artifactContract = compilerDraftContract(draft);
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
@@ -244,6 +248,28 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const removeEnrichment = (id: string) => setGuided({
     ...options, enrichment: (options.enrichment ?? []).filter((rule) => rule.id !== id),
   });
+
+  const applyUnmappedSuggestions = () => {
+    if (!unmappedSuggestions.length) return;
+    const additions = unmappedSuggestions.map(({ source, target, type, group }) => ({
+      rule: { id: crypto.randomUUID(), source, target, type } satisfies MappingRule,
+      group,
+    }));
+    setDraft((old) => {
+      const next = old.guided ?? defaultGuidedOptions();
+      return {
+        ...old,
+        mappings: [...old.mappings, ...additions.map((entry) => entry.rule)],
+        guided: {
+          ...next,
+          groups: { ...next.groups, ...Object.fromEntries(
+            additions.map((entry) => [entry.rule.id, entry.group]),
+          ) },
+        },
+      };
+    });
+    notify('검사된 샘플에서 안전한 필드 ' + additions.length + '개를 텍스트 타입으로 추천 적용했습니다. 매핑 타입과 목적지를 직접 확인하세요.');
+  };
 
   const setReceiver = (key: keyof GuidedOptions['receiver'], value: unknown) =>
     setGuided({ ...options, receiver: { ...options.receiver, [key]: value } });
@@ -518,7 +544,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               </div>)}</div>
             <datalist id="guided-field-suggestions">{Object.keys(activeEvent?.fields ?? {}).map((name) => <option value={name} key={name} />)}</datalist>
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> 새 필드 매핑</button>
-              {Object.keys(activeEvent?.fields ?? {}).filter((field) => !draft.mappings.some((mapping) => mapping.source === field)).length > 0 && <button className="guided-link" type="button" onClick={() => { const first = Object.keys(activeEvent?.fields ?? {}).find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> 남은 필드 추천 추가</button>}</div>
+              {Object.keys(activeEvent?.fields ?? {}).filter((field) => !draft.mappings.some((mapping) => mapping.source === field)).length > 0 && <button className="guided-link" type="button" onClick={() => { const first = Object.keys(activeEvent?.fields ?? {}).find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> 남은 필드 추천 추가</button>}
+              <button className="guided-cta-secondary" type="button" disabled={!unmappedSuggestions.length} onClick={applyUnmappedSuggestions}>
+                <WandSparkles size={15} /> 안전한 남은 필드 모두 추가 ({unmappedSuggestions.length})
+              </button></div>
             <div className="guided-note"><ShieldCheck size={15} /> 원본 필드는 미매핑 상태에서도 미리보기에 보존됩니다. 중복 매핑·타입 변환 오류는 전체 샘플 검사에서 확인합니다.</div>
             <div className="guided-section-title"><span>02</span> 선택형 필드 보강 <span className="guided-inline-badge">{options.enrichment?.length ?? 0}단계</span></div>
             <p className="guided-description">정규화된 필드에서 상수 추가, 복사, 소문자 또는 대문자 변환을 순서대로 적용합니다. 원본 로그는 사용하지 않습니다.</p>
