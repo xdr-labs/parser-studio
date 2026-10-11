@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 test('workbench shows all three panes and honest local statuses', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Workbench' }).click();
   await expect(page.getByRole('region', { name: 'Sample logs' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Parser pipeline rules' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Preview results' })).toBeVisible();
@@ -21,6 +22,7 @@ test('workbench shows all three panes and honest local statuses', async ({ page 
 
 test('local suite exposes all events and the exact failing fields', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Workbench' }).click();
   await page.getByRole('button', { name: 'Run suite' }).click();
   await expect(page.getByText('Browser suite executed')).toBeVisible();
   await expect(page.locator('.report-table tbody tr')).toHaveCount(3);
@@ -34,6 +36,7 @@ test('local suite exposes all events and the exact failing fields', async ({ pag
 
 test('select raw value → preview candidate → apply mapping → save local-only', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Workbench' }).click();
   await page.getByRole('tab', { name: 'RAW' }).click();
   await expect(page.locator('.raw-view')).toContainText('198.51.100.10');
   await page.locator('.raw-view').evaluate((element) => {
@@ -68,6 +71,7 @@ test('select raw value → preview candidate → apply mapping → save local-on
 
 test('export is only a portable draft: proprietary/native adapters locked', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Workbench' }).click();
   await page.getByRole('button', { name: 'Export & History' }).click();
   await expect(page.getByText('Fluentd configuration')).toBeVisible();
   await expect(page.getByText('Stellar Cyber parser')).toBeVisible();
@@ -84,6 +88,7 @@ test('export is only a portable draft: proprietary/native adapters locked', asyn
 test('narrow viewport stacks panes without hiding diagnostics', async ({ page }) => {
   await page.setViewportSize({ width: 750, height: 850 });
   await page.goto('/');
+  await page.getByRole('button', { name: 'Workbench' }).click();
   const left = await page.locator('.sample-pane').boundingBox();
   const middle = await page.locator('.rules-pane').boundingBox();
   const right = await page.locator('.results-pane').boundingBox();

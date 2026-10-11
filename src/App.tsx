@@ -5,15 +5,16 @@ import {
   ChevronDown, ChevronRight, CircleHelp, Clock3, Code2, Download, FileCode2, FileDown,
   FileText, FileUp, FlaskConical, FolderOpen, GitBranch, LayoutGrid, Layers3,
   LoaderCircle, LockKeyhole, Plus, Play, RotateCcw, Save, Search, Settings2, ShieldCheck,
-  ShieldX, SlidersHorizontal, Trash2, X,
+  ShieldX, SlidersHorizontal, Trash2, WandSparkles, X,
 } from 'lucide-react';
 import type { FieldType, Format, MappingRule, ParserDraft, SuiteResult } from './model';
 import { createDraft, DEMO_SAMPLES, FORMATS } from './model';
 import { formatLabel, MAX_DATASET_BYTES } from './parser';
 import { createFieldProposal } from './pattern';
+import GuidedBuilder from './guided/GuidedBuilder';
 import { exportPortableDraft, readRevisions, saveRevision, type SavedRevision } from './storage';
 
-type Page = 'workbench' | 'test-lab' | 'library' | 'export' | 'schema';
+type Page = 'guided' | 'workbench' | 'test-lab' | 'library' | 'export' | 'schema';
 type Stage = 'raw' | 'extracted' | 'normalized' | 'diff';
 type EditorTab = 'extraction' | 'mapping';
 type PreviewState = { key: string; suite?: SuiteResult; error?: string };
@@ -21,6 +22,7 @@ type RunState = { key: string; suite: SuiteResult; timestamp: string };
 type NavEntry = { id: Page; label: string; icon: typeof Activity };
 
 const NAV: NavEntry[] = [
+  { id: 'guided', label: 'Guided Builder', icon: WandSparkles },
   { id: 'workbench', label: 'Workbench', icon: LayoutGrid },
   { id: 'test-lab', label: 'Test Lab', icon: FlaskConical },
   { id: 'library', label: 'Parser Library', icon: FolderOpen },
@@ -112,7 +114,7 @@ function saveDownload(name: string, content: string) {
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>('workbench');
+  const [page, setPage] = useState<Page>('guided');
   const [draft, setDraft] = useState<ParserDraft>(() => createDraft());
   const [sample, setSample] = useState(DEMO_SAMPLES);
   const [datasetName, setDatasetName] = useState('Synthetic demo events');
@@ -178,7 +180,7 @@ export default function App() {
     setSelectedId('event-1');
     setRevision(null);
     setRunState(null);
-    setPage('workbench');
+    setPage('guided');
   };
 
   const openRevision = (saved: SavedRevision) => {
@@ -189,16 +191,16 @@ export default function App() {
     setDatasetName('No dataset · samples are not saved');
     setSelectedId('event-1');
     setRunState(null);
-    setPage('workbench');
+    setPage('guided');
   };
 
-  const runSuite = async () => {
+  const runSuite = async (target: Page = 'test-lab') => {
     setRunning(true);
     const key = live.key;
     try {
       const result = await runInWorker(sample, draft);
       setRunState({ key, suite: result, timestamp: new Date().toLocaleString('ko-KR') });
-      setPage('test-lab');
+      setPage(target);
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Suite failed to run');
     } finally { setRunning(false); }
@@ -283,11 +285,11 @@ export default function App() {
             <span className="context-flag"><span className="status-dot" /> Browser preview only</span>
             <button className="button subtle" type="button" onClick={newDraft}><Plus size={16} /> New</button>
             <button className="button secondary" type="button" onClick={handleSave}><Save size={16} /> Save revision</button>
-            <button className="button primary" type="button" onClick={runSuite} disabled={running || !suite?.events.length || Boolean(live.error)}>{running ? <LoaderCircle size={16} className="spin" /> : <Play size={16} fill="currentColor" />} Run suite</button>
+            <button className="button primary" type="button" onClick={() => { void runSuite(); }} disabled={running || !suite?.events.length || Boolean(live.error)}>{running ? <LoaderCircle size={16} className="spin" /> : <Play size={16} fill="currentColor" />} Run suite</button>
           </div>
         </header>
 
-        <div className="content-heading">
+        {page !== 'guided' && <div className="content-heading">
           <div className="heading-stack">
             <div className="breadcrumbs">WORKSPACE <ChevronRight size={13} /> <strong>{NAV.find((item) => item.id === page)?.label}</strong></div>
             {page === 'workbench' ? (
@@ -299,7 +301,16 @@ export default function App() {
             <p className="subtitle">{page === 'workbench' ? 'Design extraction rules, map fields and inspect transparent local previews.' : 'All results are local-browser evidence; native Fluentd and Stellar validation are separate gates.'}</p>
           </div>
           <div className="stage-marker"><span className="stage-index">01</span><div>WORKBENCH PREVIEW <small>R2 / in development</small></div></div>
-        </div>
+        </div>}
+
+        {page === 'guided' && <GuidedBuilder
+          draft={draft} setDraft={setDraft} sample={sample} setSample={setSample}
+          datasetName={datasetName} setDatasetName={setDatasetName}
+          suite={suite} pending={live.pending} runState={validRun}
+          runPreview={(candidate) => runInWorker(sample, candidate)}
+          onRunSuite={() => { void runSuite('guided'); }}
+          onExpert={() => setPage('workbench')} onSave={handleSave}
+        />}
 
         {feedback && <div className="toast" role="status"><CircleHelp size={16} />{feedback}<button aria-label="Dismiss notification" onClick={() => setFeedback('')}><X size={14} /></button></div>}
 
@@ -435,7 +446,7 @@ export default function App() {
         )}
 
         {page === 'test-lab' && <div className="surface-page">
-          <div className="surface-top"><div><span className="pane-index">VALIDATION / 01</span><h2>Fixture runs & diagnostics</h2><p>Run this browser-local dataset explicitly. Results are not native Fluentd acceptance evidence.</p></div><button type="button" className="button primary" disabled={running || !suite?.events.length} onClick={runSuite}><Play size={15} /> {running ? 'Running...' : 'Run local suite'}</button></div>
+          <div className="surface-top"><div><span className="pane-index">VALIDATION / 01</span><h2>Fixture runs & diagnostics</h2><p>Run this browser-local dataset explicitly. Results are not native Fluentd acceptance evidence.</p></div><button type="button" className="button primary" disabled={running || !suite?.events.length} onClick={() => { void runSuite(); }}><Play size={15} /> {running ? 'Running...' : 'Run local suite'}</button></div>
           {!validRun ? <SectionEmpty icon={<FlaskConical size={25} />} title="No current suite run" detail="Use Run local suite to record a browser-only result for the exact current rules and dataset." /> : <>
             <div className="report-banner"><CheckCircle2 size={19} /><div><strong>Browser suite executed</strong><span>{validRun.timestamp} · Isolated Web Worker · Native equivalence NOT VERIFIED</span></div><StatusPill status="pending">NOT FLUENTD VERIFIED</StatusPill></div>
             <div className="metric-grid"><Metric label="Events" value={validRun.suite.counts.total} /><Metric label="Matched" value={validRun.suite.counts.matched} /><Metric label="Normalized" value={validRun.suite.counts.normalized} tone="good" /><Metric label="Failed" value={validRun.suite.counts.failures} tone="bad" /><Metric label="Warnings" value={validRun.suite.counts.warnings} tone="warn" /></div>

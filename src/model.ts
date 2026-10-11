@@ -1,3 +1,5 @@
+import { defaultGuidedOptions, type GuidedOptions } from './guided/contract';
+
 export const FORMATS = ['auto', 'json', 'kv', 'csv', 'syslog', 'regex'] as const;
 export type Format = (typeof FORMATS)[number];
 export type ConcreteFormat = Exclude<Format, 'auto'>;
@@ -17,6 +19,7 @@ export interface ParserDraft {
   pattern: string;
   csvColumns: string;
   mappings: MappingRule[];
+  guided?: GuidedOptions;
 }
 
 export interface Detection {
@@ -85,6 +88,7 @@ export function createDraft(): ParserDraft {
     format: 'auto',
     pattern: '(?<action>\\w+)\\s+src=(?<src_ip>\\S+)',
     csvColumns: 'time,action,src_ip,dst_port',
+    guided: defaultGuidedOptions(),
     mappings: [
       { id: 'source-ip', source: 'src_ip', target: 'custom.source_ip', type: 'ip' },
       { id: 'target-port', source: 'dst_port', target: 'custom.destination_port', type: 'port' },
