@@ -1,0 +1,280 @@
+import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
+
+export const MAX_DATASET_BYTES = 64 * 1024;
+export const MAX_EVENTS = 500;
+export const MAX_LINE_CHARS = 4096;
+const KEY = /^[-\w.]+$/;
+const VALID_TARGET = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
+
+export function detectFormat(raw: string): Detection {
+  const value = raw.trim();
+  if (/^[{[]/.test(value)) return { format: 'json', confidence: 0.96, reason: 'Starts with JSON object or array syntax' };
+  if (/^<\d{1,3}>(?:\d\s|[A-Z][a-z]{2}\s|\d{4}-)/.test(value)) {
+    return { format: 'syslog', confidence: 0.87, reason: 'Syslog priority and header detected' };
+  }
+  if (/(?:^|\s)[A-Za-z_][\w.-]*=("[^"]*"|'[^']*'|[^\s]+)/.test(value)) {
+    return { format: 'kv', confidence: 0.91, reason: 'Key=value tokens detected' };
+  }
+  if ((value.match(/,/g) || []).length >= 2) {
+    return { format: 'csv', confidence: 0.64, reason: 'Multiple comma-separated values' };
+  }
+  return { format: 'unknown', confidence: 0, reason: 'No supported format signature' };
+}
+
+export interface Extraction {
+  fields: Record<string, unknown>;
+  errors: string[];
+}
+
+function extractJSON(raw: string): Extraction {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+      return { fields: {}, errors: ['JSON event must be an object'] };
+    }
+    return { fields: parsed as Record<string, unknown>, errors: [] };
+  } catch {
+    return { fields: {}, errors: ['Invalid JSON object'] };
+  }
+}
+
+function extractKV(raw: string): Extraction {
+  const fields: Record<string, unknown> = {};
+  const errors: string[] = [];
+  const pattern = /(?:^|\s)([A-Za-z_][\w.-]*)=(?:"((?:\\.|[^"\\])*)"|'([^']*)'|([^\s]+))/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(raw)) !== null) {
+    const key = match[1];
+    if (Object.prototype.hasOwnProperty.call(fields, key)) {
+      errors.push('Duplicate key: ' + key);
+      continue;
+    }
+    fields[key] = match[2] !== undefined ? match[2].replace(/\\"/g, '"') : match[3] ?? match[4];
+  }
+  if (!Object.keys(fields).length) errors.push('No key=value fields matched');
+  return { fields, errors };
+}
+
+function tokenizeCSV(raw: string): string[] | null {
+  const out: string[] = [];
+  let token = '';
+  let quoted = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (c === '"') {
+      if (quoted && raw[i + 1] === '"') { token += '"'; i++; }
+      else quoted = !quoted;
+    } else if (c === ',' && !quoted) {
+      out.push(token.trim());
+      token = '';
+    } else {
+      token += c;
+    }
+  }
+  if (quoted) return null;
+  out.push(token.trim());
+  return out;
+}
+
+function extractCSV(raw: string, columns: string): Extraction {
+  const names = columns.split(',').map((x) => x.trim()).filter(Boolean);
+  if (!names.length || names.some((x) => !KEY.test(x)) || new Set(names).size !== names.length) {
+    return { fields: {}, errors: ['Provide unique valid CSV column names'] };
+  }
+  const values = tokenizeCSV(raw);
+  if (!values) return { fields: {}, errors: ['Unclosed CSV quotation'] };
+  if (values.length !== names.length) {
+    return { fields: {}, errors: ['CSV column count mismatch: expected ' + names.length + ', received ' + values.length] };
+  }
+  return { fields: Object.fromEntries(names.map((name, i) => [name, values[i]])), errors: [] };
+}
+
+function extractSyslog(raw: string): Extraction {
+  // Narrow, explicitly approximate RFC 5424 header; no claim of full Fluentd equivalence.
+  const match = raw.match(/^<(\d{1,3})>(\d)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(?:-|\[[^\]]*\])\s+(.*)$/);
+  if (!match) return { fields: {}, errors: ['Unsupported Syslog header; preview accepts a subset of RFC 5424'] };
+  const priority = Number(match[1]);
+  if (priority > 191) return { fields: {}, errors: ['Syslog priority must be 0..191'] };
+  return {
+    fields: {
+      syslog_priority: priority, syslog_version: Number(match[2]), timestamp: match[3],
+      host: match[4], app: match[5], procid: match[6], msgid: match[7], message: match[8],
+    },
+    errors: [],
+  };
+}
+
+function validatePattern(pattern: string): string | null {
+  if (!pattern.trim()) return 'Enter a named-group regular expression';
+  if (pattern.length > 256) return 'Regex exceeds 256 characters';
+  // Reject nested repetitions and backreferences in the browser preview.
+  // This is a conservative heuristic, not a substitute for isolated execution.
+  if (/\\[1-9]|\(\?<[=!]|\((?:[^()]|\\.)*[+*](?:[^()]|\\.)*\)[+*{]/.test(pattern)) {
+    return 'Regex uses an unsupported or potentially expensive construct';
+  }
+  if (!pattern.includes('(?<')) return 'Add at least one (?<field>...) named capture';
+  return null;
+}
+
+function extractRegex(raw: string, pattern: string): Extraction {
+  const issue = validatePattern(pattern);
+  if (issue) return { fields: {}, errors: [issue] };
+  try {
+    const expression = new RegExp(pattern);
+    const matched = expression.exec(raw);
+    if (!matched?.groups) return { fields: {}, errors: ['Expression did not match this event'] };
+    const fields = Object.fromEntries(Object.entries(matched.groups).filter(([, v]) => v !== undefined));
+    if (!Object.keys(fields).length) return { fields: {}, errors: ['Named captures returned no fields'] };
+    return { fields, errors: [] };
+  } catch {
+    return { fields: {}, errors: ['Invalid regular expression'] };
+  }
+}
+
+export function extractFields(raw: string, format: ConcreteFormat, draft: ParserDraft): Extraction {
+  switch (format) {
+    case 'json': return extractJSON(raw);
+    case 'kv': return extractKV(raw);
+    case 'csv': return extractCSV(raw, draft.csvColumns);
+    case 'syslog': return extractSyslog(raw);
+    case 'regex': return extractRegex(raw, draft.pattern);
+  }
+}
+
+function asIP(value: string): boolean {
+  if (value.includes(':')) return /^[0-9a-fA-F:]+$/.test(value) && value.split(':').length >= 3 && value.length <= 39;
+  const parts = value.split('.');
+  return parts.length === 4 && parts.every((part) => /^(?:0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255);
+}
+
+export function convertValue(raw: unknown, type: FieldType): { value?: unknown; error?: string } {
+  if (raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim())) return { error: 'Missing value' };
+  const value = typeof raw === 'string' ? raw.trim() : String(raw);
+  switch (type) {
+    case 'string':
+      return { value: typeof raw === 'object' ? JSON.stringify(raw) : String(raw) };
+    case 'integer':
+      return /^-?\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? { value: Number(value) } : { error: 'Expected safe integer' };
+    case 'number':
+      return value !== '' && Number.isFinite(Number(value)) ? { value: Number(value) } : { error: 'Expected finite number' };
+    case 'boolean':
+      if (/^(?:true|1)$/i.test(value)) return { value: true };
+      if (/^(?:false|0)$/i.test(value)) return { value: false };
+      return { error: 'Expected boolean (true/false/1/0)' };
+    case 'port':
+      return /^\d+$/.test(value) && Number(value) <= 65535 ? { value: Number(value) } : { error: 'Expected port 0..65535' };
+    case 'ip':
+      return asIP(value) ? { value } : { error: 'Expected valid IP address' };
+    case 'timestamp':
+      return /(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value))
+        ? { value: new Date(value).toISOString() } : { error: 'Expected ISO timestamp with explicit timezone' };
+  }
+}
+
+export function splitEvents(input: string): { raw: string; line: number }[] {
+  const lines = input.replace(/\r\n?/g, '\n').split('\n');
+  return lines.map((raw, i) => ({ raw, line: i + 1 })).filter(({ raw }) => raw.trim().length > 0).slice(0, MAX_EVENTS);
+}
+
+function processEvent(raw: string, line: number, index: number, draft: ParserDraft): EventResult {
+  const detected = detectFormat(raw);
+  const effectiveFormat = draft.format === 'auto' ? detected.format : draft.format;
+  const diagnostics: Diagnostic[] = [];
+  const trace: TraceStep[] = [];
+  const error = (stage: Diagnostic['stage'], code: string, message: string, field?: string) =>
+    diagnostics.push({ stage, severity: 'error', code, message, field });
+  trace.push({ stage: 'Event boundary', detail: 'Physical line ' + line, ok: true });
+  trace.push({ stage: 'Detection', detail: detected.format + ' · ' + detected.reason, ok: detected.format !== 'unknown' });
+  let fields: Record<string, unknown> = {};
+  let matched = false;
+  if (raw.length > MAX_LINE_CHARS) {
+    error('break', 'LINE_TOO_LONG', 'Event exceeds ' + MAX_LINE_CHARS + ' characters');
+  } else if (effectiveFormat === 'unknown') {
+    error('detect', 'UNSUPPORTED_FORMAT', 'No supported format. Choose a format or create a regex rule.');
+  } else {
+    const extraction = extractFields(raw, effectiveFormat, draft);
+    extraction.errors.forEach((message) => error('extract', 'EXTRACTION_FAILED', message));
+    fields = extraction.fields;
+    matched = Object.keys(fields).length > 0;
+  }
+  trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
+  const normalized: Record<string, unknown> = {};
+  const mapped = new Set<string>();
+  for (const mapping of draft.mappings) {
+    const source = mapping.source.trim();
+    const target = mapping.target.trim();
+    if (!source || !VALID_TARGET.test(target)) {
+      error('normalize', 'INVALID_MAPPING', 'Invalid source or output field', mapping.id);
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(normalized, target)) {
+      error('normalize', 'TARGET_COLLISION', 'Output field is mapped more than once: ' + target, target);
+      continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(fields, source)) {
+      diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'SOURCE_NOT_FOUND', message: 'Source field is absent: ' + source, field: source });
+      continue;
+    }
+    mapped.add(source);
+    const converted = convertValue(fields[source], mapping.type);
+    if (converted.error) error('normalize', 'TYPE_ERROR', source + ': ' + converted.error, source);
+    else normalized[target] = converted.value;
+  }
+  const unmapped = Object.keys(fields).filter((field) => !mapped.has(field));
+  if (unmapped.length) diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'UNMAPPED_FIELDS', message: unmapped.length + ' source fields remain available without mappings' });
+  const hasErrors = diagnostics.some((issue) => issue.severity === 'error');
+  const normalizedOk = matched && Object.keys(normalized).length > 0 && !hasErrors;
+  if (matched && !draft.mappings.length) {
+    diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'NO_MAPPINGS', message: 'No output mapping has been defined' });
+  }
+  trace.push({ stage: 'Normalization', detail: Object.keys(normalized).length + ' mapped fields', ok: normalizedOk });
+  trace.push({ stage: 'Compatibility', detail: 'Browser approximation only; no Fluentd or Stellar import test', ok: false });
+  return {
+    id: 'event-' + (index + 1), line, raw, detected, effectiveFormat, fields, normalized, unmapped,
+    matched, extracted: matched, normalizedOk,
+    status: hasErrors || !matched ? 'fail' : diagnostics.length ? 'warning' : 'pass',
+    diagnostics, trace,
+  };
+}
+
+export function preview(input: string, draft: ParserDraft): SuiteResult {
+  const length = new TextEncoder().encode(input).length;
+  if (length > MAX_DATASET_BYTES) {
+    const event = processEvent('', 1, 0, draft);
+    event.raw = '';
+    event.fields = {};
+    event.normalized = {};
+    event.matched = false;
+    event.extracted = false;
+    event.normalizedOk = false;
+    event.diagnostics = [{ stage: 'break', severity: 'error', code: 'DATASET_TOO_LARGE', message: 'Dataset exceeds 64 KiB' }];
+    event.trace = [{ stage: 'Event boundary', detail: 'Dataset rejected before execution', ok: false }];
+    return {
+      events: [event],
+      counts: { total: 1, matched: 0, extracted: 0, normalized: 0, failures: 1, warnings: 0 },
+      engine: 'browser-preview', nativeFluentdVerified: false, stellarExportVerified: false,
+    };
+  }
+  const lines = splitEvents(input);
+  const events = lines.map(({ raw, line }, i) => processEvent(raw, line, i, draft));
+  if (input.replace(/\r\n?/g, '\n').split('\n').filter((x) => x.trim()).length > MAX_EVENTS) {
+    const last = events[events.length - 1];
+    if (last) last.diagnostics.push({ stage: 'break', severity: 'warning', code: 'EVENT_LIMIT', message: 'Preview limited to first ' + MAX_EVENTS + ' events' });
+  }
+  const counts = {
+    total: events.length, matched: events.filter((x) => x.matched).length,
+    extracted: events.filter((x) => x.extracted).length,
+    normalized: events.filter((x) => x.normalizedOk).length,
+    failures: events.filter((x) => x.status === 'fail').length,
+    warnings: events.filter((x) => x.status === 'warning').length,
+  };
+  return { events, counts, engine: 'browser-preview', nativeFluentdVerified: false, stellarExportVerified: false };
+}
+
+export function formatLabel(format: Format | 'unknown'): string {
+  const labels: Record<Format | 'unknown', string> = {
+    auto: 'Auto detect', json: 'JSON', kv: 'Key / Value', csv: 'CSV',
+    syslog: 'Syslog', regex: 'Regex', unknown: 'Unrecognized',
+  };
+  return labels[format];
+}

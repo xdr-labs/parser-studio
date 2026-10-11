@@ -19,3 +19,8 @@ coverage/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Local caches and browser-test output
+tsconfig.tsbuildinfo
+test-results/
+playwright-report/

@@ -23,11 +23,11 @@
 
 ### R2 — Working web workbench / core parsing (P0)
 
-- [ ] Create app skeleton, Workbench panes, sample upload/paste and raw event viewer.
+- [x] Create original app skeleton, 3-pane Workbench, UTF-8 sample upload/paste and raw event viewer (**local code and unit/build proof; real browser E2E outstanding**).
 - [ ] Event splitting, format candidates, route variants and field highlighting.
-- [ ] Rule builder with regex/JSON/KV/Syslog/CSV support and transformations.
+- [ ] Rule builder with regex/JSON/KV/Syslog/CSV support and transformations. Narrow browser-only regex/JSON/KV/CSV/RFC5424 subset implemented; full native semantics and route variants pending.
 - [ ] Typed normalization mapper to evidence-backed Interflow fields.
-- [ ] Live RAW/EXTRACTED/NORMALIZED stage preview with test runner integration.
+- [ ] Live RAW/EXTRACTED/NORMALIZED stage preview with test runner integration. Browser worker, DIFF, per-event trace, save history and select-value→field-proposal flow implemented; native runner pending.
 - **Done:** real sample E2E from paste to normalized preview; affected unit/integration/browser tests green.
 
 ### R3 — Native validation, regression and export (P0)
@@ -58,6 +58,20 @@
 ## Execution order
 
 R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable milestone; do not jump to AI helpers/templates ahead of parser correctness. Preserve owner-provided samples and uncommitted work. Follow Engineering System for small deterministic RED→GREEN changes and exact-HEAD evidence.
+
+## Competitive UX adoption / priority lock (2026-10-12)
+
+**Evidence:** [16-product UX/feature/license review + gap matrix](07_COMPETITOR_RESEARCH_AND_GAP.md) and [original UI decisions](08_UI_DESIGN_DECISIONS.md). The preferred synthesis is Cribl-like persistent staged preview, New Relic-like value-selection field authoring, QRadar-like highlighted field diagnosis, Google SecOps-like typed normalization, Datadog/Panther multi-sample test evidence; no vendor-proprietary code or assets reused.
+
+- [x] Survey documented workflows and screenshots, record license constraints, prioritize differentiating functions.
+- [x] Original visual shell, event list, stage preview, typed local mapping, source selection→field proposal, preview-only suite, privacy-preserving browser revision scaffolding.
+- [ ] **P0-A:** actual browser smoke/accessibility verification and responsive usability; Chromium on dev-atlas currently lacks OS shared libraries, test design committed for CI execution.
+- [ ] **P0-B:** multi-family routing and multiline breaking; selected-source highlights and per-rule trace; strengthen regex safety.
+- [ ] **P0-C:** native pinned Fluentd sandbox, golden fixtures, regression/baseline comparison.
+- [ ] **P0-D:** real owner `.conf` and matching parser characterization, evidence-based target schema/adapter with import/export loss report. Owner-specific artifacts may not be assumed from public documentation.
+- [ ] **P1:** bilingual interface, advanced source mode, schema explorer populated from validated Interflow catalog, richer test/failure UX.
+
+**Gates preserved:** R1 sample proof stays pending; R2 UI implementation may proceed while R1 is gated but is not a substitution for missing parser contracts. This is not a release or a claim of actual Fluentd/Stellar compatibility. Remaining work executes in the R1 → R2 → R3 → R4 → R5 order where runnable.
 
 ## Cross-cutting acceptance
 
