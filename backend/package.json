@@ -1,0 +1,23 @@
+{
+  "name": "@xdr-labs/parser-pair-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "check": "tsc --noEmit",
+    "build": "tsc && mkdir -p dist/templates && cp templates/ruby-fragment.rb.tpl dist/templates/ruby-fragment.rb.tpl",
+    "start": "node dist/src/server.js"
+  },
+  "dependencies": {
+    "ajv": "8.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.10",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3"
+  }
+}

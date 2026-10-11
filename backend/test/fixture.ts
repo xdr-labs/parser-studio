@@ -1,0 +1,24 @@
+import type { ParserProject } from "../src/types.js";
+export function sampleProject(): ParserProject {
+  return {
+    schemaRevision: "0.1", projectId: "synthetic-fixture", revision: 1,
+    slug: "sample_firewall", vendor: "Synthetic", product: "Firewall", sourceCategory: "network",
+    receiver: { protocols: ["udp","tcp"], port: 7123, bindAddress: "0.0.0.0", messageLengthLimit: 16384, tcpFraming: "line" },
+    extraction: { format: "json" },
+    normalization: {
+      msgOriginSource: "sample_firewall", msgClass: "sample_firewall", msgOriginCategory: "network", ignoreValues: ["","N/A","-"],
+      topFields: {
+        "source.ip": { normalized_name: "srcip", data_type: "ip" },
+        "destination.ip": { normalized_name: "dstip", data_type: "ip" },
+        "destination.port": { normalized_name: "dstport", data_type: "port" },
+        action: { normalized_name: "action", data_type: "string" },
+      },
+      nsFields: { "event.id": { normalized_name: "log.event_id", data_type: "integer" } },
+      vendorFields: {},
+    },
+    classification: { defaultIndex: "syslog", rules: [
+      { field: "action", operator: "equals", value: "deny", index: "threat" },
+      { field: "srcip", operator: "exists", index: "session" },
+    ] },
+  };
+}

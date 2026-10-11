@@ -1,0 +1,38 @@
+name: Backend pair compiler
+on:
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend-pair.yml"]
+  push:
+    branches: ["main"]
+    paths: ["backend/**", ".github/workflows/backend-pair.yml"]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+      - name: Install pinned backend dependencies
+        run: npm ci --prefix backend
+      - name: Typecheck
+        run: npm run check --prefix backend
+      - name: Node validation, compiler and HTTP integration tests
+        run: npm test --prefix backend
+      - name: Build distributable backend
+        run: npm run build --prefix backend
+      - name: Ruby syntax and callback smoke on synthetic artifacts
+        working-directory: backend
+        run: |
+          node dist/scripts/create-synthetic.js
+          ruby -c .tmp/native-fixtures/customized_sample_firewall
+          ruby -c .tmp/native-fixtures/customized_sample_kv
+          ruby test_native/fragment_smoke.rb .tmp/native-fixtures
+          test ! -e .tmp/native-fixtures/customized_sample_firewall.rb
