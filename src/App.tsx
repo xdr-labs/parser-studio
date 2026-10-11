@@ -328,7 +328,7 @@ export default function App() {
                   <button className="button tiny ghost" type="button" onClick={() => { setSample(''); setDatasetName('No dataset'); }}><Trash2 size={13} /> Clear</button>
                 </div>
               </div>
-              <label className="field-caption" htmlFor="sample-textarea">PASTE RAW EVENTS <span className="muted-text">· one physical line per event</span></label>
+              <label className="field-caption" htmlFor="sample-textarea">PASTE RAW EVENTS <span className="muted-text">{draft.guided?.eventBoundary === 'blank-line' ? '· blank lines separate logical events' : '· one physical line per event'}</span></label>
               <textarea className="sample-input" id="sample-textarea" spellCheck={false} value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('Pasted · session only'); }} onSelect={(e) => { const element = e.currentTarget; captureRawSelection(element.value.slice(element.selectionStart, element.selectionEnd)); }} placeholder="Paste raw log messages here. Select one value to propose a field. Each non-empty line is one event…" />
               <div className="list-topbar"><span>EVENT EXPLORER <strong>{suite?.events.length ?? '—'}</strong></span><div className="filter-pills">
                 {(['all', 'fail', 'warning'] as const).map((filter) => <button type="button" key={filter} onClick={() => setEventFilter(filter)} className={eventFilter === filter ? 'active' : ''}>{filter === 'all' ? 'All' : filter === 'fail' ? 'Failed' : 'Warnings'}</button>)}

@@ -264,6 +264,20 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-section-title"><span>02</span> 샘플 로그 추가</div>
             <div className="guided-upload"><FileUp size={21} /><span>로그 텍스트를 직접 입력하거나 파일을 불러오세요.</span><label htmlFor="guided-upload-file" className="guided-upload-button">파일 선택</label><input type="file" id="guided-upload-file" onChange={readSampleFile} accept=".txt,.log,.json,.csv,text/plain" hidden /><small>UTF-8 · 최대 64 KiB · 외부 서버로 전송 안 함</small></div>
             <label className="guided-field"><span>원본 로그 <small>{datasetName}</small></span><textarea aria-label="Guided raw sample logs" spellCheck={false} className="guided-raw-input" value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('입력한 샘플 · 임시'); }} placeholder="장비의 원본 로그를 여러 줄 붙여 넣으세요" /></label>
+            <div className="guided-section-title"><span>03</span> 이벤트 경계 설정</div>
+            <div className="guided-boundary-options" role="group" aria-label="Event boundary selector">
+              <button type="button" aria-pressed={(options.eventBoundary ?? 'single-line') === 'single-line'} className={(options.eventBoundary ?? 'single-line') === 'single-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'single-line' })}>
+                <FileText size={18} /><span><strong>한 줄 = 한 이벤트</strong><small>일반적인 Syslog / JSON Lines / KV 로그</small></span>
+              </button>
+              <button type="button" aria-pressed={options.eventBoundary === 'blank-line'} className={options.eventBoundary === 'blank-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'blank-line' })}>
+                <Layers3 size={18} /><span><strong>빈 줄로 이벤트 구분</strong><small>여러 줄 JSON 등 줄바꿈이 포함된 레코드</small></span>
+              </button>
+            </div>
+            <div className="guided-boundary-count" role="status">
+              <span>내용이 있는 물리 줄 <strong>{sample.replace(/\r\n?/g, '\n').split('\n').filter((line) => line.trim()).length}</strong></span>
+              <span>논리 이벤트 <strong>{pending ? '계산 중…' : (suite?.counts.total ?? 0)}</strong></span>
+            </div>
+            {options.eventBoundary === 'blank-line' && <div className="guided-hint"><AlertTriangle size={16} /> 빈 줄 구분은 브라우저 샘플 미리보기 전용입니다. 생성 엔진의 다중 줄 이벤트 지원이 검증되기 전에는 파서 파일 생성을 허용하지 않습니다.</div>}
             <div className="guided-inline-actions"><button className="guided-link" type="button" onClick={() => { setSample(DEMO_SAMPLES); setDatasetName('Synthetic demo events'); }}><RotateCcw size={14} /> 데모 로그 복원</button><button type="button" className="guided-link" onClick={() => { setSample(''); setDatasetName('비어 있음'); }}><Trash2 size={14} /> 샘플 비우기</button></div>
             <div className="guided-note"><ShieldCheck size={16} /> {hasLogs ? `현재 ${suite?.counts.total}개 이벤트를 찾았습니다. 다음 단계에서 형식을 확인하세요.` : '아직 입력된 이벤트가 없습니다. 실제 또는 합성 샘플을 추가하세요.'}</div>
           </>}

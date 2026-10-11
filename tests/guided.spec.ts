@@ -183,3 +183,45 @@ test('malformed sample remains explicitly unclassified instead of being silently
   await expect(routes.locator('.guided-routing-row').first()).toContainText('추출 실패');
   await expect(routes.locator('.guided-routing-row').first()).not.toContainText('Syslog');
 });
+
+
+test('nondeveloper can group pretty JSON samples by blank lines without leaking native export readiness', async ({ page }) => {
+  await page.goto('/');
+  const sample = [
+    '{',
+    '  "action":"allow",',
+    '  "src_ip":"198.51.100.25",',
+    '  "dst_port":443',
+    '}',
+    '',
+    '{"action":"deny","src_ip":"203.0.113.4","dst_port":22}',
+  ].join('\n');
+  await page.getByLabel('Guided raw sample logs').fill(sample);
+  await page.getByRole('button', { name: /빈 줄로 이벤트 구분/ }).click();
+  await expect(page.locator('.guided-boundary-count')).toContainText('논리 이벤트 2');
+  await expect(page.locator('.guided-boundary-count')).toContainText('내용이 있는 물리 줄 6');
+  await expect(page.getByText('빈 줄 구분은 브라우저 샘플 미리보기 전용입니다.')).toBeVisible();
+  await page.getByRole('button', { name: '다음 단계' }).click();
+  await page.getByRole('button', { name: 'JSON', exact: true }).click();
+  await expect(page.locator('.guided-event-option')).toHaveCount(2);
+  await expect(page.getByLabel('Guided selectable raw event')).toContainText('"src_ip":"198.51.100.25"');
+  await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
+  await expect(page.locator('.guided-contract-errors')).toContainText('Blank-line grouping is preview-only');
+  await expect(page.getByRole('button', { name: '파서 2개 파일 생성 (연결 대기)' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '백엔드용 프로젝트 JSON 다운로드' })).toBeDisabled();
+});
+
+test('changing back to single-line mode restores original per-line preview and survives local revision save', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Guided raw sample logs').fill('{"action":"allow"}\ncontinuation text\n\n{"action":"deny"}');
+  await page.getByRole('button', { name: /빈 줄로 이벤트 구분/ }).click();
+  await expect(page.locator('.guided-boundary-count')).toContainText('논리 이벤트 2');
+  await page.getByRole('button', { name: /한 줄 = 한 이벤트/ }).click();
+  await expect(page.locator('.guided-boundary-count')).toContainText('논리 이벤트 3');
+  await page.getByRole('button', { name: /빈 줄로 이벤트 구분/ }).click();
+  await page.getByRole('button', { name: '초안 저장' }).click();
+  await page.getByRole('button', { name: 'Parser Library' }).click();
+  await page.locator('.revision-card').click();
+  await expect(page.getByRole('button', { name: /빈 줄로 이벤트 구분/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByLabel('Guided raw sample logs')).toHaveValue('');
+});

@@ -3,9 +3,12 @@ import type { FieldType, ParserDraft } from '../model';
 export type EventClass = 'Session' | 'Threat' | 'Syslog' | 'Winlogevent';
 export type FieldGroup = 'top_fields' | 'ns_fields' | 'vendor_fields';
 export type Transport = 'udp' | 'tcp';
+export type EventBoundary = 'single-line' | 'blank-line';
 
 export interface GuidedOptions {
   slug: string;
+  /** Browser-local event boundary preview, not an assertion of backend loader support. */
+  eventBoundary?: EventBoundary;
   groups: Record<string, FieldGroup>;
   receiver: {
     protocols: Transport[];
@@ -57,6 +60,7 @@ export const FIELD_GROUPS: FieldGroup[] = ['top_fields', 'ns_fields', 'vendor_fi
 export function defaultGuidedOptions(): GuidedOptions {
   return {
     slug: 'demo_firewall',
+    eventBoundary: 'single-line',
     groups: { 'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'vendor_fields' },
     receiver: { protocols: ['udp', 'tcp'], port: 7501, bindPolicy: 'loopback', messageLimit: 8192, framing: 'newline' },
     classification: {
@@ -82,6 +86,10 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if (!options.receiver.protocols.length || new Set(options.receiver.protocols).size !== options.receiver.protocols.length) errors.push('Choose one or more unique UDP/TCP receiver protocols');
   if (!Number.isInteger(options.receiver.port) || options.receiver.port < 1024 || options.receiver.port > 65535) errors.push('Receiving port must be an integer in 1024–65535');
   if (!Number.isInteger(options.receiver.messageLimit) || options.receiver.messageLimit < 1024 || options.receiver.messageLimit > 65536) errors.push('Message limit must be an integer in 1024–65536 bytes');
+
+  if (options.eventBoundary && options.eventBoundary !== 'single-line') {
+    errors.push('Blank-line grouping is preview-only until the paired backend compiler declares a supported multiline event breaker');
+  }
 
   if (!(['json', 'kv'] as string[]).includes(draft.format)) {
     errors.push('This proposed compiler subset requires an explicit JSON or Key / Value format; Auto and other formats are not yet enabled for pairing');

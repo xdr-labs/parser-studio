@@ -1,4 +1,5 @@
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
+import type { EventBoundary } from './guided/contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -171,19 +172,41 @@ export function convertValue(raw: unknown, type: FieldType): { value?: unknown; 
   }
 }
 
-export function splitEvents(input: string): { raw: string; line: number }[] {
+export function splitEvents(input: string, boundary: EventBoundary = 'single-line', limit = MAX_EVENTS): { raw: string; line: number }[] {
   const lines = input.replace(/\r\n?/g, '\n').split('\n');
-  return lines.map((raw, i) => ({ raw, line: i + 1 })).filter(({ raw }) => raw.trim().length > 0).slice(0, MAX_EVENTS);
+  const maximum = Math.max(0, Math.min(Math.floor(limit), MAX_EVENTS + 1));
+  if (boundary === 'single-line') {
+    return lines.map((raw, i) => ({ raw, line: i + 1 })).filter(({ raw }) => raw.trim().length > 0).slice(0, maximum);
+  }
+  // Every blank physical line ends the current logical record. Nothing executes here.
+  const records: { raw: string; line: number }[] = [];
+  let parts: string[] = [];
+  let firstLine = 1;
+  const flush = () => {
+    if (parts.length) records.push({ raw: parts.join('\n'), line: firstLine });
+    parts = [];
+  };
+  for (let i = 0; i < lines.length && records.length < maximum; i++) {
+    const raw = lines[i];
+    if (!raw.trim()) {
+      flush();
+    } else {
+      if (!parts.length) firstLine = i + 1;
+      parts.push(raw);
+    }
+  }
+  if (parts.length && records.length < maximum) flush();
+  return records;
 }
 
-function processEvent(raw: string, line: number, index: number, draft: ParserDraft): EventResult {
+function processEvent(raw: string, line: number, index: number, draft: ParserDraft, boundary: EventBoundary = 'single-line'): EventResult {
   const detected = detectFormat(raw);
   const effectiveFormat = draft.format === 'auto' ? detected.format : draft.format;
   const diagnostics: Diagnostic[] = [];
   const trace: TraceStep[] = [];
   const error = (stage: Diagnostic['stage'], code: string, message: string, field?: string) =>
     diagnostics.push({ stage, severity: 'error', code, message, field });
-  trace.push({ stage: 'Event boundary', detail: 'Physical line ' + line, ok: true });
+  trace.push({ stage: 'Event boundary', detail: boundary === 'blank-line' ? 'Blank-line grouped event beginning on physical line ' + line : 'Physical line ' + line, ok: true });
   trace.push({ stage: 'Detection', detail: detected.format + ' · ' + detected.reason, ok: detected.format !== 'unknown' });
   let fields: Record<string, unknown> = {};
   let matched = false;
@@ -255,11 +278,16 @@ export function preview(input: string, draft: ParserDraft): SuiteResult {
       engine: 'browser-preview', nativeFluentdVerified: false, stellarExportVerified: false,
     };
   }
-  const lines = splitEvents(input);
-  const events = lines.map(({ raw, line }, i) => processEvent(raw, line, i, draft));
-  if (input.replace(/\r\n?/g, '\n').split('\n').filter((x) => x.trim()).length > MAX_EVENTS) {
+  const boundary = draft.guided?.eventBoundary ?? 'single-line';
+  const allRecords = splitEvents(input, boundary, MAX_EVENTS + 1);
+  const records = allRecords.slice(0, MAX_EVENTS);
+  const events = records.map(({ raw, line }, i) => processEvent(raw, line, i, draft, boundary));
+  if (allRecords.length > MAX_EVENTS) {
     const last = events[events.length - 1];
-    if (last) last.diagnostics.push({ stage: 'break', severity: 'warning', code: 'EVENT_LIMIT', message: 'Preview limited to first ' + MAX_EVENTS + ' events' });
+    if (last) {
+      last.diagnostics.push({ stage: 'break', severity: 'warning', code: 'EVENT_LIMIT', message: 'Preview limited to first ' + MAX_EVENTS + ' logical events' });
+      if (last.status === 'pass') last.status = 'warning';
+    }
   }
   const counts = {
     total: events.length, matched: events.filter((x) => x.matched).length,
