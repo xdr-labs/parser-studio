@@ -1,10 +1,14 @@
-name: Backend pair compiler
+name: Parser Studio backend native checks (inactive template)
 on:
   pull_request:
-    paths: ["backend/**", ".github/workflows/backend-pair.yml"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-pair.yml"
   push:
     branches: ["main"]
-    paths: ["backend/**", ".github/workflows/backend-pair.yml"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-pair.yml"
 permissions:
   contents: read
 jobs:
@@ -19,21 +23,14 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
-      - name: Install pinned backend dependencies
-        run: npm ci --prefix backend
-      - name: Typecheck
-        run: npm run check --prefix backend
-      - name: Node validation, compiler and HTTP integration tests
-        run: npm test --prefix backend
-      - name: Build distributable backend
-        run: npm run build --prefix backend
-      - name: Ruby syntax and callback smoke on synthetic artifacts
+          ruby-version: "3.2"
+      - name: Install pinned Ruby and Node dependencies
         working-directory: backend
         run: |
-          node dist/scripts/create-synthetic.js
-          ruby -c .tmp/native-fixtures/customized_sample_firewall
-          ruby -c .tmp/native-fixtures/customized_sample_kv
-          ruby -c .tmp/native-fixtures/customized_sample_extended
-          ruby test_native/fragment_smoke.rb .tmp/native-fixtures
-          test ! -e .tmp/native-fixtures/customized_sample_firewall.rb
+          gem install bundler -v 4.0.22 --no-document
+          bundle _4.0.22_ config set --local path vendor/bundle
+          bundle _4.0.22_ install --jobs 2 --retry 2 --frozen
+          npm ci
+      - name: Strict TypeScript, API, compiler and native synthetic Fluentd suite
+        working-directory: backend
+        run: bash scripts/qualify.sh

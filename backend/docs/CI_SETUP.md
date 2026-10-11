@@ -1,26 +1,27 @@
-# Pending backend CI workflow — permission-bound
+# Backend CI Setup — GitHub workflow scope limitation
 
-The repository-side workflow template lives in [backend-pair.workflow.yml](backend-pair.workflow.yml). It is *not* installed in the active `.github/workflows` directory.
+The [backend-pair.workflow.yml](backend-pair.workflow.yml) is only a **template** under `backend/docs`. It is not installed at `.github/workflows` and will not execute on PRs yet.
 
-On the 2026-10-12 backend branch the authenticated GitHub OAuth account rejected workflow-file push with:
+On 2026-10-12 GitHub refused a backend workflow push with:
 
 > refusing to allow an OAuth App to create or update workflow `.github/workflows/backend-pair.yml` without `workflow` scope
 
-The repository's existing permissions and protected authentication were not modified. Backend source was committed separately, without a workflow-file mutation. When an authorized maintainer later adds the intended workflow, evaluate the template against the current Engineering System release/CI contracts and verify its exact code SHA.
+Do not bypass the GitHub OAuth permission boundary. A maintainer with appropriate authorization can install this workflow later, after reviewing it against Engineering System and running it on the intended exact PR HEAD. The permission limit is **not a blocker to testing backend code in the separate development runtime**.
 
-**Actual dev-drlink evidence:** Node unit/API tests **8/8 PASS**, `npm run check` PASS and `npm run build` PASS. Ruby 3.2.3 was downloaded as signed-index Ubuntu packages and extracted to ignored project-local `.tmp/ruby-root` without modifying system packages; Ruby syntax on **three generated synthetic fragments PASS** and the Ruby callback smoke suite **8 synthetic cases PASS**. This does **not** establish a real Fluentd/plugin loader or Stellar Cyber target import, and no GitHub CI ran because workflow creation permission was denied.
+## Reproducible local qualification
 
-Once Ruby is available in a sandbox or properly authorized CI:
+On the isolated dev-drlink backend checkout, Node 22 and project-local Ruby 3.2.3 were used with Fluentd 1.17.1 and test-unit 3.6.7 locked by `Gemfile.lock`.
 
 ```sh
 cd backend
 npm ci
-npm run check
-npm test
-npm run build
-node dist/scripts/create-synthetic.js
-ruby -c .tmp/native-fixtures/customized_sample_firewall
-ruby -c .tmp/native-fixtures/customized_sample_kv
-ruby -c .tmp/native-fixtures/customized_sample_extended
-ruby test_native/fragment_smoke.rb .tmp/native-fixtures
+# Use isolated Ruby and the exact locked Gemfile dependencies.
+bundle install
+bash scripts/qualify.sh
 ```
+
+Tests include JSON/KV/CSV/RFC5424/CEF/LEEF formats, typed mapping, ordered enrichment and category routing, generated Ruby fragment callbacks, and **Fluentd 1.17.1 actual Parser Plugin and config AST checks**. The fixed td-agent transport include path is removed only in memory for config parsing.
+
+The report is `.tmp/synthetic-native-report.json`, ignored by Git. It records branch HEAD, dirty state, hashes and the explicit `targetImportVerified:false`.
+
+**This is not** a complete Stellar Cyber loader test, live Fluentd listener check or a customer raw-log E2E. The user retains responsibility for final real Stellar Cyber application/acceptance. Do not alter `rickmodular`.

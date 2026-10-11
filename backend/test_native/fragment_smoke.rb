@@ -63,7 +63,9 @@ bad_port = JSON.generate({
   'action' => 'deny'
 })
 invalid_port = parse_once(json_path, bad_port)
-assert(invalid_port['parser_err_msg'] == 'ArgumentError', 'invalid port rejected')
+assert(invalid_port['parser_err_msg'] == 'MappedFieldError', 'invalid port rejected')
+assert(invalid_port['parser_err_stage'] == 'normalization', 'normalization failure stage')
+assert(invalid_port['parser_err_field'] == 'destination.port', 'exact invalid source field')
 
 bad_ip = JSON.generate({
   'source' => {'ip' => '999.999.999.999'},
@@ -71,7 +73,8 @@ bad_ip = JSON.generate({
   'action' => 'allow'
 })
 invalid_ip = parse_once(json_path, bad_ip)
-assert(invalid_ip.key?('parser_err_msg'), 'invalid IP rejected')
+assert(invalid_ip['parser_err_msg'] == 'MappedFieldError', 'invalid IP rejected')
+assert(invalid_ip['parser_err_field'] == 'source.ip', 'invalid IP path identified')
 
 extended = JSON.generate({
   'source' => {'ip' => '192.0.2.9'},
@@ -91,4 +94,13 @@ assert(extended_time.is_a?(Time), 'date event time')
 assert(extended_time.utc.iso8601 == '2026-10-12T12:34:56Z', 'timezone UTC')
 assert(extended_record.dig('Synthetic', 'username') == 'synthetic-user', 'vendor field mapping')
 
-puts 'Ruby fragment synthetic callback tests: 8 cases PASS (not Fluentd/target import)'
+tzless = JSON.generate({
+  'source' => {'ip' => '192.0.2.9'},
+  'destination' => {'port' => '443', 'ip' => '198.51.100.7'},
+  'action' => 'allow', 'event_time' => '2026-10-12T12:34:56'
+})
+_, tzless_record = nil, nil
+tzless_record = parse_once(extended_file, tzless)
+assert(tzless_record['parser_err_field'] == 'event_time', 'Unzoned timestamp cannot silently use local timezone')
+
+puts 'Ruby fragment synthetic callback tests: 9 cases PASS (not Stellar target import)'

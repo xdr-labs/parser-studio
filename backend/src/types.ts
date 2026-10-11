@@ -23,7 +23,13 @@ export interface ParserProject {
     tcpFraming: "line" | "delimiter";
     delimiter?: string;
   };
-  extraction: { format: "json" | "kv"; maxDepth?: number };
+  extraction: {
+    format: "json" | "kv" | "csv" | "syslog_rfc5424" | "cef" | "leef";
+    csvColumns?: string[];
+    csvDelimiter?: "," | ";" | "\t";
+    syslogBodyFormat?: "raw" | "json" | "kv";
+    maxDepth?: number;
+  };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -33,6 +39,10 @@ export interface ParserProject {
     nsFields: FieldMap;
     vendorFields: FieldMap;
   };
+  enrichment?: Array<
+    | { operator: "set_const"; target: string; value: string | number | boolean }
+    | { operator: "copy" | "lowercase" | "uppercase"; source: string; target: string }
+  >;
   classification: {
     defaultIndex: LogIndex;
     rules: Array<{

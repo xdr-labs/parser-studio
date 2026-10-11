@@ -1,18 +1,18 @@
-# Parser Studio backend — R1.5 isolated integration contract
+# Parser Studio backend — R1.5/R3 synthetic native parser qualification
 
 **Ownership:** Backend only. Other session owns the Web UI in Draft PR #3. This branch deliberately changes only `backend/**` (the denied workflow lives only as a template under `backend/docs/`); it does not modify any UI, legacy docs, remote td-agent or production target.
 
 ## Supported, precisely
 
 - Strict, version-neutral `ParserProject` 0.1 JSON Schema in [schema/parser-project.v0.1.schema.json](schema/parser-project.v0.1.schema.json).
-- Safe JSON / basic whitespace-delimited key=value extraction, with top-level, nested and vendor mappings; typed `string`, `integer`, `ip`, `port`, `boolean`, `iso8601 date`.
-- Ordered classification by `equals` or `exists`, default `syslog`, and a generated `stellar_log_index`.
+- Supported subset: JSON, strict quoted KV, CSV, RFC5424 Syslog (optional JSON/KV body), standalone CEF and LEEF. Typed top-level/nested/vendor field mapping supports `string`, `integer`, `ip`, `port`, `boolean` and ISO8601 timestamps requiring an explicit timezone.
+- Ordered classification by `equals` or `exists` (including enriched output), default `syslog`, and generated `stellar_log_index`. Allowlisted no-code enrichments: `set_const`, `copy`, `lowercase`, `uppercase`. Typed field errors include stage and input field path without leaking log content.
 - UDP/TCP source blocks, host-reference custom parser type/tag, transport settings include and rewrite-tag routing.
 - Deterministic compiler produces two files, **`customized_<slug>.conf` and extensionless `customized_<slug>`**, with SHA-256 and an explicitly **DRAFT** manifest.
 - Local stateless HTTP validate/generate and schema endpoints for the separate UI to consume. No file writes from API.
-- Node unit/API tests **8/8 PASS**, three generated Ruby fragments passed syntax checks, and eight synthetic Ruby callback cases passed using a project-local Ruby 3.2.3 runtime on dev-drlink. These are **not native Fluentd or Stellar import tests**. The pending GitHub Actions workflow is a documentation template because the current OAuth token lacks workflow modification scope.
+- Project-local pinned Ruby 3.2.3 + Fluentd 1.17.1 synthetic qualification passes Node tests, eight Ruby syntax profiles, pure Ruby callbacks, Fluentd Parser Plugin API and Fluentd config grammar checks. This is **not** vendor's extensionless-source wrapper/loader import or Stellar Cyber installation. The pending CI workflow is only a template because the current OAuth token lacks workflow modification scope.
 
-**Not supported yet:** real vendor upload adapters, true Fluentd/plugin registration or runtime validation, enrichment, regex/Grok, CEF/LEEF, arbitrary Ruby, product-specific branches, HTTP receiver, multi-line parsing, real private sample log fixtures, production deployment. The asset is a Ruby **fragment**, not a standalone Fluentd plugin. The manifest must never claim `ENGINE_TESTED` or `TARGET_IMPORT_VERIFIED` based solely on Ruby harness tests.
+**Not supported yet:** proprietary vendor loader/portal adapters, live UDP/TCP listener or transport-include behavior, general regex/Grok editing, arbitrary Ruby, deeply customized CEF/LEEF edge cases, RFC3164, HTTP receiver, multi-line parsing, private raw-event fixtures, production deployment. The asset is a Ruby **fragment**, not a standalone Fluentd plugin. The manifest must never claim `ENGINE_TESTED` or `TARGET_IMPORT_VERIFIED` based solely on Ruby harness tests.
 
 ## Run
 
@@ -25,19 +25,17 @@ npm run build
 npm start                  # listen only on 127.0.0.1:4179
 ```
 
-To run the **synthetic Ruby-only smoke test** when Ruby is installed (or after the workflow template has been explicitly enabled with suitable GitHub permissions):
+For full synthetic native qualification, install the pinned Ruby Gemfile.lock in a disposable runner and execute:
 
 ```sh
-node dist/scripts/create-synthetic.js
-ruby -c .tmp/native-fixtures/customized_sample_firewall
-ruby -c .tmp/native-fixtures/customized_sample_kv
-ruby -c .tmp/native-fixtures/customized_sample_extended
-ruby test_native/fragment_smoke.rb .tmp/native-fixtures
+bash scripts/qualify.sh
 ```
 
-These are not Fluentd or actual Stellar target tests.
+The suite writes `.tmp/synthetic-native-report.json` with SHA-256 provenance and explicit `targetImportVerified:false`. It exercises Fluentd's real Parser Plugin API and config syntax but **does not** install a plugin, open a live listener, or validate Stellar Cyber imports. See [native qualification](docs/NATIVE_QUALIFICATION.md) and [CI permissions](docs/CI_SETUP.md).
 
 ## Web UI contract
+
+See [complete API contract](docs/API_CONTRACT.md) for all form fields, additional log formats, supported enrichment operations, input limits, errors, and honest export readiness.
 
 All API input/output is UTF-8 JSON; **no CORS response header** is provided. For development, run UI and backend through a same-origin proxy; do not expose this unauthenticated backend on a public interface.
 

@@ -1,0 +1,34 @@
+# Backend native synthetic qualification
+
+**Only synthetic fixtures and generated fixed templates.** This document does not claim actual Stellar Cyber installation, loader compatibility or real customer-log behavior.
+
+## Runtime profile
+
+- Node.js 22+, strict TypeScript and Node test runner.
+- Ruby **3.2.3** (dev-drlink local project-only extracted Ubuntu packages; no global installation).
+- Fluentd **1.17.1**, Ruby test-unit **3.6.7**; dependency versions pinned by `Gemfile.lock`.
+- A transient local `.tmp/ruby-root` and `.tmp/gems` are ignored by Git; target `rickmodular` was not modified.
+
+## Reproduce
+
+```sh
+cd backend
+npm ci
+# Install the exact Ruby/Fluentd Gemfile.lock dependency set in an isolated runner.
+bundle install
+bash scripts/qualify.sh
+```
+
+`scripts/qualify.sh` works with `PARSER_RUBY_BIN` or its project-local Ruby fallback if present. It checks Node validation/generator/API, builds eight synthetic artifact pairs, Ruby fragment syntax, pure Ruby callbacks, and actual Fluentd 1.17.1 Parser Plugin driver + native Fluent config AST (using an in-memory removal of the production-only transport include).
+
+The generated `.tmp/synthetic-native-report.json` includes HEAD, worktree-dirty state, SHA-256 hashes and explicit `targetImportVerified:false`. An uncommitted/dirty run is **not** exact-HEAD qualification; commit and rerun before asserting exact-HEAD PASS.
+
+## Real scope of native verification
+
+Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone CEF and LEEF, typed normalization, stage+field error diagnostics, ordered enrichment, event classification, emitted UDP/TCP config parse syntax and Fluentd Parser Plugin API callback behavior.
+
+Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
+
+## Safety boundary
+
+The runner only executes **repo-generated synthetic artifacts**. Never accept arbitrary customer Ruby or logs into this script. It is not a hardened, multi-user sandbox; real uploaded fixtures require separate isolated workers and limits. The HTTP server does not spawn this runner. Reference host `rickmodular` remains read-only, and the owner separately controls actual Stellar Cyber application.

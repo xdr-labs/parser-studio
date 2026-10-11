@@ -54,12 +54,31 @@ export function validateProject(input: unknown): ValidationResult {
     issue(issues, "framing", "/receiver/delimiter", "Only delimiter framing may specify a delimiter.");
   }
 
+  const extraction = p.extraction;
+  if (extraction.format === "csv") {
+    if (!extraction.csvColumns?.length) {
+      issue(issues, "csv_columns", "/extraction/csvColumns", "CSV requires an explicit field name for each column.");
+    } else {
+      for (const [index, column] of extraction.csvColumns.entries()) {
+        if (UNSAFE_PARTS.has(column)) {
+          issue(issues, "unsafe_field", `/extraction/csvColumns/${index}`, "Unsafe CSV column name.");
+        }
+      }
+    }
+  } else if (extraction.csvColumns !== undefined || extraction.csvDelimiter !== undefined) {
+    issue(issues, "format_options", "/extraction", "CSV options are allowed only with CSV format.");
+  }
+  if (extraction.format !== "syslog_rfc5424" && extraction.syslogBodyFormat !== undefined) {
+    issue(issues, "format_options", "/extraction/syslogBodyFormat", "Syslog body format is only supported for RFC5424.");
+  }
+
   if (p.unsupportedOpaqueBlocks?.length) {
     issue(issues, "opaque_unsupported", "/unsupportedOpaqueBlocks", "Opaque imported Ruby cannot be safely compiled from the no-code model.");
   }
 
   const destinations: Array<{ path: string; output: string }> = [];
   const normalizedNames = new Set<string>();
+  const normalizedTypes = new Map<string, string>();
   const namespaces: Array<keyof ParserProject["normalization"]> = ["topFields", "nsFields", "vendorFields"];
   for (const section of namespaces) {
     const mappings = p.normalization[section] as FieldMap;
@@ -77,15 +96,42 @@ export function validateProject(input: unknown): ValidationResult {
         issue(issues, "date_format", path, "Time policies are only applicable to date fields.");
 
       const output = section === "vendorFields"
-        ? `vendor.${mapping.normalized_name}` : mapping.normalized_name;
+        ? `${p.vendor}.${mapping.normalized_name}` : mapping.normalized_name;
       const duplicate = destinations.find(entry => conflicts(entry.output, output));
       if (duplicate) issue(issues, "destination_collision", path, `Destination collides with ${duplicate.path}.`);
       destinations.push({path, output});
-      if (section !== "vendorFields") normalizedNames.add(mapping.normalized_name);
+      normalizedNames.add(output);
+      normalizedTypes.set(output, mapping.data_type);
     }
   }
   if (destinations.length === 0)
     issue(issues, "no_fields", "/normalization", "Map at least one source field before compiling.");
+  for (const [index, entry] of (p.enrichment ?? []).entries()) {
+    const path = `/enrichment/${index}`;
+    if (entry.operator !== "set_const" && !normalizedNames.has(entry.source)) {
+      issue(issues, "unmapped_enrichment_source", path, "Enrichment source must already exist in the normalized output.");
+    }
+    if ((entry.operator === "lowercase" || entry.operator === "uppercase") &&
+        normalizedTypes.has(entry.source) && normalizedTypes.get(entry.source) !== "string") {
+      issue(issues, "enrichment_type", path, "Text case transforms require a string source field.");
+    }
+    for (const segment of entry.target.split(".")) {
+      if (UNSAFE_PARTS.has(segment)) {
+        issue(issues, "unsafe_field", path, "Prototype/constructor destination segments are forbidden.");
+      }
+    }
+    if (RESERVED.has(entry.target.split(".")[0]!)) {
+      issue(issues, "reserved_field", path, "System-managed output field is reserved.");
+    }
+    const duplicate = destinations.find(candidate => conflicts(candidate.output, entry.target));
+    if (duplicate) {
+      issue(issues, "destination_collision", path, `Enrichment target collides with ${duplicate.path}.`);
+    }
+    destinations.push({path, output: entry.target});
+    normalizedNames.add(entry.target);
+    normalizedTypes.set(entry.target, entry.operator === "set_const" ? typeof entry.value : (normalizedTypes.get(entry.source) ?? "unknown"));
+  }
+
   for (const rule of p.classification.rules) {
     const path = "/classification/rules";
     if (!normalizedNames.has(rule.field))
