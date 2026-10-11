@@ -57,4 +57,38 @@ assert(kv['srcip'] == '192.0.2.9', 'KV src')
 assert(kv['dstport'] == 80, 'KV port')
 assert(kv['stellar_log_index'] == 'threat', 'KV threat')
 
-puts 'Ruby fragment synthetic callback tests: 5 cases PASS (not Fluentd/target import)'
+bad_port = JSON.generate({
+  'source' => {'ip' => '192.0.2.9'},
+  'destination' => {'port' => '65536', 'ip' => '198.51.100.7'},
+  'action' => 'deny'
+})
+invalid_port = parse_once(json_path, bad_port)
+assert(invalid_port['parser_err_msg'] == 'ArgumentError', 'invalid port rejected')
+
+bad_ip = JSON.generate({
+  'source' => {'ip' => '999.999.999.999'},
+  'destination' => {'port' => '80', 'ip' => '198.51.100.7'},
+  'action' => 'allow'
+})
+invalid_ip = parse_once(json_path, bad_ip)
+assert(invalid_ip.key?('parser_err_msg'), 'invalid IP rejected')
+
+extended = JSON.generate({
+  'source' => {'ip' => '192.0.2.9'},
+  'destination' => {'port' => '443', 'ip' => '198.51.100.7'},
+  'action' => 'allow', 'event_time' => '2026-10-12T12:34:56Z', 'username' => 'synthetic-user'
+})
+extended_file = File.join(root, 'customized_sample_extended')
+extended_record = nil
+extended_time = nil
+extended_class = Class.new
+extended_class.class_eval(File.read(extended_file), extended_file, 1)
+extended_class.new.parse(extended) do |event_time, record|
+  extended_time = event_time
+  extended_record = record
+end
+assert(extended_time.is_a?(Time), 'date event time')
+assert(extended_time.utc.iso8601 == '2026-10-12T12:34:56Z', 'timezone UTC')
+assert(extended_record.dig('Synthetic', 'username') == 'synthetic-user', 'vendor field mapping')
+
+puts 'Ruby fragment synthetic callback tests: 8 cases PASS (not Fluentd/target import)'

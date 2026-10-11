@@ -1,6 +1,6 @@
 # Parser Studio backend — R1.5 isolated integration contract
 
-**Ownership:** Backend only. Other session owns the Web UI in Draft PR #3. This branch deliberately changes only `backend/**` and `.github/workflows/backend-pair.yml`; it does not modify any UI, legacy docs, remote td-agent or production target.
+**Ownership:** Backend only. Other session owns the Web UI in Draft PR #3. This branch deliberately changes only `backend/**` (the denied workflow lives only as a template under `backend/docs/`); it does not modify any UI, legacy docs, remote td-agent or production target.
 
 ## Supported, precisely
 
@@ -10,7 +10,7 @@
 - UDP/TCP source blocks, host-reference custom parser type/tag, transport settings include and rewrite-tag routing.
 - Deterministic compiler produces two files, **`customized_<slug>.conf` and extensionless `customized_<slug>`**, with SHA-256 and an explicitly **DRAFT** manifest.
 - Local stateless HTTP validate/generate and schema endpoints for the separate UI to consume. No file writes from API.
-- Synthetic Node unit/integration tests run locally. An isolated GitHub Actions Ruby syntax/callback smoke template is supplied but **not installed as an active workflow** because the current GitHub OAuth credential lacks workflow modification scope.
+- Node unit/API tests **8/8 PASS**, three generated Ruby fragments passed syntax checks, and eight synthetic Ruby callback cases passed using a project-local Ruby 3.2.3 runtime on dev-drlink. These are **not native Fluentd or Stellar import tests**. The pending GitHub Actions workflow is a documentation template because the current OAuth token lacks workflow modification scope.
 
 **Not supported yet:** real vendor upload adapters, true Fluentd/plugin registration or runtime validation, enrichment, regex/Grok, CEF/LEEF, arbitrary Ruby, product-specific branches, HTTP receiver, multi-line parsing, real private sample log fixtures, production deployment. The asset is a Ruby **fragment**, not a standalone Fluentd plugin. The manifest must never claim `ENGINE_TESTED` or `TARGET_IMPORT_VERIFIED` based solely on Ruby harness tests.
 
@@ -31,6 +31,7 @@ To run the **synthetic Ruby-only smoke test** when Ruby is installed (or after t
 node dist/scripts/create-synthetic.js
 ruby -c .tmp/native-fixtures/customized_sample_firewall
 ruby -c .tmp/native-fixtures/customized_sample_kv
+ruby -c .tmp/native-fixtures/customized_sample_extended
 ruby test_native/fragment_smoke.rb .tmp/native-fixtures
 ```
 

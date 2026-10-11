@@ -34,5 +34,6 @@ jobs:
           node dist/scripts/create-synthetic.js
           ruby -c .tmp/native-fixtures/customized_sample_firewall
           ruby -c .tmp/native-fixtures/customized_sample_kv
+          ruby -c .tmp/native-fixtures/customized_sample_extended
           ruby test_native/fragment_smoke.rb .tmp/native-fixtures
           test ! -e .tmp/native-fixtures/customized_sample_firewall.rb
