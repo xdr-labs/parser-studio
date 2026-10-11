@@ -143,6 +143,16 @@ class CrudTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(crud.UnsafeCrudError):
                 crud.assert_test_name(name)
 
+    def test_default_unique_name_is_accepted_by_guard(self):
+        # The no-argument CLI path must never construct a test name that the
+        # mutation safety guard itself refuses. Run only through fake HTTP.
+        session = FakeSession(existing=["existing_parser"])
+        with unittest.mock.patch.object(crud.secrets, "token_hex", return_value="cafebabe01"):
+            result = crud.run_crud(self.profile, session=session, port=7891)
+        self.assertEqual(result["test_parser_name"], "ps_api_crud_test_cafebabe01")
+        self.assertEqual(result["create_http"], 200)
+        self.assertTrue(result["cleanup_confirmed"])
+
     def test_validate_target_poc_only(self):
         with self.assertRaises(crud.UnsafeCrudError):
             crud.validate_target({"host":"https://prod.example.com", "tenant":"tenant-A", "key":"key"})

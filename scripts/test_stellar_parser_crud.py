@@ -16,7 +16,6 @@ import sys
 import requests
 
 from probe_stellar_test_api import load_private_profile
-from verified_pair_fixture import make_host_parser_pair, InvalidSyntheticFixture, TEST_NAME_RE
 
 API_PREFIX = "/connect/api/v1"
 APPROVED_POC = "https://poc-apac.stellarcyber.cloud"
@@ -233,7 +232,7 @@ def call_mutation(session, method: str, url: str, *, jwt: str, tenant: str,
 def run_crud(profile: dict, *, session=None, test_name=None, port=7891) -> dict:
     """Execute POST→GET→PUT→DELETE against a newly generated test-only identity."""
     validate_target(profile)
-    name = test_name or "customized_ps_api_crud_test_" + secrets.token_hex(5)
+    name = test_name or "ps_api_crud_test_" + secrets.token_hex(5)
     assert_test_name(name)
     make_modular_parser(name, port, "1.0.0")
     client = session if session is not None else requests.Session()
