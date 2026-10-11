@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { compilePair } from "./compiler.js";
+import { inspectPair, MAX_IMPORT_BYTES, PairInspectionError } from "./import.js";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
 import { MAX_PROJECT_BYTES, validateProject } from "./validate.js";
 
@@ -15,14 +16,14 @@ function send(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-async function jsonInput(req: IncomingMessage): Promise<unknown> {
+async function jsonInput(req: IncomingMessage, maxBytes = MAX_PROJECT_BYTES): Promise<unknown> {
   let size = 0;
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
     size += bytes.length;
-    if (size > MAX_PROJECT_BYTES) {
-      throw Object.assign(new Error("Request body exceeds 256 KiB"), { code: "LIMIT" });
+    if (size > maxBytes) {
+      throw Object.assign(new Error("Request body exceeds configured size limit"), { code: "LIMIT" });
     }
     chunks.push(bytes);
   }
@@ -47,17 +48,36 @@ export function createBackendServer(): Server {
     }
     const validate = path === "/api/v1/parser-pairs/validate";
     const generate = path === "/api/v1/parser-pairs/generate";
-    if (!validate && !generate) { send(res, 404, {error:"NOT_FOUND"});return; }
+    const inspect = path === "/api/v1/parser-pairs/inspect";
+    if (!validate && !generate && !inspect) { send(res, 404, {error:"NOT_FOUND"});return; }
     if (req.method !== "POST") { send(res, 405, {error:"METHOD_NOT_ALLOWED"});return; }
     if (!/^application\/json(?:\s*;.*)?$/i.test(req.headers["content-type"] || "")) {
       send(res, 415, {error:"UNSUPPORTED_MEDIA_TYPE"});return;
     }
     const declaredLength = Number(req.headers["content-length"] || 0);
-    if (Number.isFinite(declaredLength) && declaredLength > MAX_PROJECT_BYTES) {
+    const maxBytes = inspect ? MAX_IMPORT_BYTES : MAX_PROJECT_BYTES;
+    if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
       send(res, 413, {error:"INPUT_TOO_LARGE"});return;
     }
     try {
-      const input = await jsonInput(req);
+      const input = await jsonInput(req, maxBytes);
+      if (inspect) {
+        try {
+          const inspected = inspectPair(input as { name: string; confContent: string; fragmentContent: string });
+          send(res, 200, inspected);
+        } catch (error) {
+          if (error instanceof PairInspectionError) {
+            const path = error.code === "PAIR_NAME_INVALID" ? "/name"
+              : error.code === "PAIR_CONTENT_INVALID" ? "/files" : "/";
+            send(res, 422, {error:"INVALID_PAIR",issues:[{
+              code:error.code,path,message:error.message
+            }]});
+          } else {
+            send(res, 500, {error:"INSPECTION_ERROR"});
+          }
+        }
+        return;
+      }
       const result = validateProject(input);
       if (validate) {
         send(res, result.ok ? 200 : 422, result);

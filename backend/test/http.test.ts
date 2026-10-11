@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
-import { createBackendServer } from "../src/index.js";
+import { createBackendServer, compilePair } from "../src/index.js";
 import { sampleProject } from "./fixture.js";
 async function withServer(fn:(base:string)=>Promise<void>){
  const srv=createBackendServer();
@@ -39,5 +39,56 @@ test("reject invalid input, too large input and wrong content types",async()=>{
   const plain=await fetch(base+"/api/v1/parser-pairs/generate",{method:"POST",headers:{"content-type":"text/plain"},body:"hi"});
   assert.equal(plain.status,415);
   const unknown=await fetch(base+"/unknown");assert.equal(unknown.status,404);
+ });
+});
+
+test("POST inspect supports exact self-generated project and safe opaque legacy inspection", async () => {
+ await withServer(async base => {
+   const generated=compilePair(sampleProject());
+   const pair={
+     name:"customized_sample_firewall",
+     confContent:generated.files[0]!.content,
+     fragmentContent:generated.files[1]!.content,
+   };
+   const ok=await post(base,"/api/v1/parser-pairs/inspect",pair);
+   assert.equal(ok.status,200);
+   const result=await ok.json() as any;
+   assert.equal(result.roundTripVerified,true);
+   assert.equal(result.importStatus,"EDITABLE_EXACT");
+   assert.equal(result.portableProject.slug,"sample_firewall");
+   assert.equal(JSON.stringify(result).includes("# STELLAR_INIT_BEGIN"),false);
+
+   const legacy=await post(base,"/api/v1/parser-pairs/inspect",{
+     name:"customized_legacy",
+     confContent:"<source>\n @type udp\n port 7123\n tag customized_legacy\n</source>",
+     fragmentContent:"# STELLAR_INIT_BEGIN\n# vendor-private-secret\n# STELLAR_INIT_END"
+   });
+   assert.equal(legacy.status,200);
+   const opaque=await legacy.json() as any;
+   assert.equal(opaque.importStatus,"OPAQUE_READ_ONLY");
+   assert.equal(JSON.stringify(opaque).includes("vendor-private-secret"),false);
+ });
+});
+
+test("inspect API rejects malformed and oversized pairs without echoing private content", async () => {
+ await withServer(async base => {
+   const path="/api/v1/parser-pairs/inspect";
+   const bad=await post(base,path,{name:"../private",confContent:"TOP_SECRET_ABC",fragmentContent:"RubyPrivate_123"});
+   assert.equal(bad.status,422);
+   const error=await bad.json() as any;
+   assert.equal(error.error,"INVALID_PAIR");
+   assert.equal(error.issues[0].code,"PAIR_NAME_INVALID");
+   assert.equal(JSON.stringify(error).includes("TOP_SECRET_ABC"),false);
+
+   const wrong=await post(base,path,{name:"customized_example",confContent:18,fragmentContent:"RubyPrivate_123"});
+   assert.equal(wrong.status,422);
+   assert.equal(((await wrong.json()) as any).issues[0].code,"PAIR_CONTENT_INVALID");
+
+   const garbage=await fetch(base+path,{method:"POST",headers:{"content-type":"application/json"},body:"{ bad json"});
+   assert.equal(garbage.status,400);
+   const plain=await fetch(base+path,{method:"POST",headers:{"content-type":"text/plain"},body:"raw logs"});
+   assert.equal(plain.status,415);
+   const huge=await post(base,path,{name:"customized_example",confContent:"a".repeat(2*1024*1024),fragmentContent:"x"});
+   assert.equal(huge.status,413);
  });
 });

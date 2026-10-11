@@ -9,7 +9,7 @@
 - Ordered classification by `equals` or `exists` (including enriched output), default `syslog`, and generated `stellar_log_index`. Allowlisted no-code enrichments: `set_const`, `copy`, `lowercase`, `uppercase`. Typed field errors include stage and input field path without leaking log content.
 - UDP/TCP source blocks, host-reference custom parser type/tag, transport settings include and rewrite-tag routing.
 - Deterministic compiler produces two files, **`customized_<slug>.conf` and extensionless `customized_<slug>`**, with SHA-256 and an explicitly **DRAFT** manifest.
-- Local stateless HTTP validate/generate and schema endpoints for the separate UI to consume. No file writes from API.
+- Local stateless HTTP validate/generate/schema **and safe read-only pair inspection** endpoints for the separate UI. No file writes from API. Only byte-for-byte self-generated pairs become editable projects; arbitrary vendor Ruby stays opaque.
 - Project-local pinned Ruby 3.2.3 + Fluentd 1.17.1 synthetic qualification passes Node tests, eight Ruby syntax profiles, pure Ruby callbacks, Fluentd Parser Plugin API and Fluentd config grammar checks. This is **not** vendor's extensionless-source wrapper/loader import or Stellar Cyber installation. The pending CI workflow is only a template because the current OAuth token lacks workflow modification scope.
 
 **Not supported yet:** proprietary vendor loader/portal adapters, live UDP/TCP listener or transport-include behavior, general regex/Grok editing, arbitrary Ruby, deeply customized CEF/LEEF edge cases, RFC3164, HTTP receiver, multi-line parsing, private raw-event fixtures, production deployment. The asset is a Ruby **fragment**, not a standalone Fluentd plugin. The manifest must never claim `ENGINE_TESTED` or `TARGET_IMPORT_VERIFIED` based solely on Ruby harness tests.
@@ -45,6 +45,7 @@ All API input/output is UTF-8 JSON; **no CORS response header** is provided. For
 | `GET /api/v1/parser-pairs/schema` | — | JSON Schema for all guided form controls |
 | `POST /api/v1/parser-pairs/validate` | Complete `ParserProject` JSON | `{ok,issues:[{code,path,message}]}` and HTTP 422 on invalid |
 | `POST /api/v1/parser-pairs/generate` | Complete `ParserProject` JSON | `{contract, files:[{name,content,sha256,bytes}],manifest}` or HTTP 422 |
+| `POST /api/v1/parser-pairs/inspect` | `{name,confContent,fragmentContent}` | SHA-256, sanitized diagnostic codes, opaque/read-only status; never raw source code in response |
 
 **Usage contract:**
 
@@ -58,6 +59,6 @@ Example payload is in [examples/synthetic-firewall.json](examples/synthetic-fire
 
 ## Persistence and security boundary
 
-The server is stateless, bounded to 256 KiB JSON input and bound to loopback by default; not remotely published and has no authentication or tenant isolation yet. It does not execute Ruby or manage files. Generated Ruby embeds model JSON as Base64 to prevent source-code injection; only a reviewed fixed template is emitted. The runtime runner must be separate, pinned, isolated and privilege-limited before it processes untrusted customer records or before this is made multi-user.
+The server is stateless, bounded to 256 KiB generation JSON and 2 MiB **read-only inspection** input, and bound to loopback by default; not remotely published and has no authentication or tenant isolation yet. It does not execute Ruby or manage files. Generated Ruby embeds model JSON as Base64 to prevent source-code injection; only a reviewed fixed template is emitted. The runtime runner must be separate, pinned, isolated and privilege-limited before it processes untrusted customer records or before this is made multi-user.
 
 **Integration note:** The docs/no-code-custom-parser-design PR #2 sets the future six-step UX and full generator requirements. Do not merge this backend without reconciling its API contract with the UI PR #3, which may independently advance.
