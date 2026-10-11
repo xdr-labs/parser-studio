@@ -2,6 +2,10 @@
 
 **Status:** Approved goal and initial product direction (2026-10-11); detailed output-format contracts pending owner's real samples.
 
+## Product mandate update — owner clarification (2026-10-12)
+
+The primary goal is **replace the external parser developer with a complete no-code GUI for general users**. Primary generated outputs are the two files observed on the authorized rickmodular reference host: `customized_<slug>.conf` and `customized_<slug>` (extensionless Ruby fragment). All routine creation functions must work without typing Ruby, regex or Fluentd configurations. The three-pane Workbench is advanced detail, not the initial guided UX. Official 6.5 modular JSON uploads are a separate adapter; no false cross-version file-equivalence claim. Canonical details: docs/08 and docs/09.
+
 ## 1. Problem and outcome
 
 Stellar Cyber Parser Studio does not provide an effective field-engineer workflow for repeatedly developing and correcting custom log parsers. Our product will be a **separate Web application**, not a modification of the vendor's UI.

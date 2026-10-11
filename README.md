@@ -17,6 +17,10 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 
 **Version-neutral** means the editor, internal model and regression tests do not require selecting a Stellar Cyber release. It **does not** mean a single undocumented config format will load unchanged into every release. Export adapters are capability-tested against actual parser examples and target environments.
 
+## No-code, developer-replacement priority
+
+**Primary user:** a field SE, customer or partner who does not program in Ruby, Regex or Fluentd. The default six-step Guided Builder must generate a matched pair of `customized_<slug>.conf` and extensionless `customized_<slug>` Ruby parser source fragment as found on `rickmodular`. It is not merely a Regex tester. A separate, evidence-backed export adapter is needed for the vendor's modular JSON upload workflow; a host Ruby fragment is not automatically the documented portal JSON upload file.
+
 ## Canonical documents
 
 - [01 — Product vision & scope](docs/01_PRODUCT_VISION.md)
@@ -25,13 +29,15 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 - [04 — Architecture, compatibility and security](docs/04_ARCHITECTURE.md)
 - [05 — Competitor research and design rationale](docs/05_COMPETITOR_RESEARCH.md)
 - [06 — Roadmap and acceptance criteria](docs/06_ROADMAP_AND_ACCEPTANCE.md)
+- [08 — No-code UX contract](docs/08_NO_CODE_USER_EXPERIENCE.md)
+- [09 — Paired parser backend architecture and real host evidence](docs/09_BACKEND_PAIRED_ARTIFACT_DESIGN.md)
 
 ## Current scope
 
 - This repository belongs to **xdr-labs** and follows [datarelay-labs/engineering-system](https://github.com/datarelay-labs/engineering-system).
 - Current deliverables are specs and roadmap, **not** a functioning parser application.
 - Original customer logs, exports and credentials must never be committed by default.
-- First hands-on implementation step after receiving the promised samples: characterize sample logs and sample parser, pin expected parsing outcomes, validate compatible import/export shapes, then build the workbench.
+- The owner supplied read-only access to 454 real `.conf` + extensionless Ruby parser pairs on `rickmodular`. Structural analysis is complete in document 09; private raw event samples and exact portal loader/import semantics still require separate behavioral evidence. The next implementation target is safe pair generation and an easy, six-step guided UI.
 
 ## Non-goals
 

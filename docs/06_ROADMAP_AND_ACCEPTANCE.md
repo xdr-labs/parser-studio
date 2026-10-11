@@ -1,5 +1,9 @@
 # 06. Roadmap, Gates and Next Action
 
+## 2026-10-12 Product priority correction
+
+**Owner mandate:** replace external Ruby/Fluentd parser developer with a no-code, six-step Web UI for a nondeveloper. The required first output is the matched `customized_<slug>.conf` + extensionless Ruby `customized_<slug>` file pair matching the inspected `rickmodular` reference contract. Refer to [No-code UI contract](08_NO_CODE_USER_EXPERIENCE.md) and [Backend generation design / evidence](09_BACKEND_PAIRED_ARTIFACT_DESIGN.md). These requirements **take priority over the old Expert Workbench and generic Fluentd export work**. Do not require private raw log samples to start stable IR/compiler contracts or the no-code UI.
+
 ## Overall
 
 **Goal:** Independently build a dependable Parser Studio Web application, with portable authoring and evidence-backed Fluentd/Stellar output.
@@ -14,17 +18,27 @@
 
 ### R1 — Samples, truth contracts and model (NEXT PRIORITY)
 
-- [ ] Receive representative raw logs and at least one actual parser artifact from owner.
-- [ ] Classify artifacts: Fluentd config, Stellar legacy files, Stellar modular JSON or other.
-- [ ] Identify syntax, ingestion/header rules, event families, normalization fields, timestamp policies and unsupported features.
+- [x] Inspect real parser artifacts from authorized `rickmodular` in read-only mode: 454 matched CONF + Ruby fragments, aggregate fields, routing and generator markers. Evidence: docs/09.
+- [ ] Collect privacy-reviewed *raw event* samples for behavior and golden outputs (structure reference artifacts already inspected).
+- [x] Classify observed artifact pair as extensionless Ruby fragment + Fluentd receiver/routing CONF. Official portal legacy/Modular JSON formats require separately proven adapters.
+- [x] Identify primary config/source shape, type maps, timestamps and `stellar_log_index` classification from representative artifacts; unusual format subclasses remain to be covered in capability tests.
 - [ ] Define portable IR v0.1 + JSON Schema and golden fixtures; privacy-screen all fixtures before commit.
 - [ ] RED tests for correct extraction, type mapping, failures and native-runtime equivalence.
 - **Done:** sample-based contract and fixture expectations; unknowns explicitly recorded.
 
-### R2 — Working web workbench / core parsing (P0)
+### R1.5 — No-code compiler foundation (TOP PRIORITY)
 
-- [ ] Create app skeleton, Workbench panes, sample upload/paste and raw event viewer.
-- [ ] Event splitting, format candidates, route variants and field highlighting.
+- [ ] Finalize stable typed IR + schema from verified host structural evidence and synthetic tests.
+- [ ] Build safe `.conf` + Ruby-fragment renderers for a declared supported subset with filename/name/tag matching and generator-section guards.
+- [ ] Validate receiver protocols/port/frame settings, strict type map, date/zone, event classification and unsupported Ruby branches.
+- [ ] Add isolated syntax/runtime testing; `ruby -c` alone is insufficient.
+- **Done:** reproducible pair for synthetic fixture with verifiable native engine output and clear unsupported capability states, without touching live `rickmodular`.
+
+### R2 — Guided Builder UI and optional Expert Workbench (P0)
+
+- [ ] Commit/push preexisting local workbench scaffold (local dev-drlink: 13 unit/UI tests PASS + Vite build PASS; uncommitted/staged branch preserved). Treat this as optional Expert View, not product-complete.
+- [ ] Implement six-step no-code Guided Builder (Upload logs → Extract → Map & enrich → Receive & classify → Native test → Generate two files) for ordinary users.
+- [ ] Event splitting, format candidates, route variants and visual field highlighting.
 - [ ] Rule builder with regex/JSON/KV/Syslog/CSV support and transformations.
 - [ ] Typed normalization mapper to evidence-backed Interflow fields.
 - [ ] Live RAW/EXTRACTED/NORMALIZED stage preview with test runner integration.
@@ -35,7 +49,7 @@
 - [ ] Sandboxed pinned Fluentd runner with plugin capability manifest.
 - [ ] Fixture suite, per-event diagnostics, error grouping, coverage and before/after diff.
 - [ ] Revision storage with deterministic hashes, consistent result export.
-- [ ] Fluentd output adapter, actual native-engine test, honest compatibility labels.
+- [ ] Verified `host-customized-pair` export adapter and native-engine test; separate conditional `portal-legacy-pair` and `modular-json` adapters.
 - [ ] Implement Stellar-specific export only for formats grounded by sample artifacts and real target evidence.
 - **Done:** repeatable test report and proven artifact for each supported adapter (no unsupported success).
 
@@ -70,4 +84,4 @@ R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable mil
 
 ## Concrete NEXT_ACTION
 
-**Await owner sample log(s) and existing parser(s) as the only missing product-specific input; then immediately begin R1 characterization, IR/fixture contract and RED tests.** Until samples arrive, implementation may proceed only on independently specified, testable UI scaffolding without asserting Stellar export compatibility. Use this file as the single canonical roadmap and carry precise Git/CI/fixture status into future handoffs.
+**Start R1.5 stable IR and safe paired-artifact renderer from already inspected `rickmodular` reference files; create synthetic RED→GREEN fixtures and six-step Guided Builder UI.** Do not wait for more parser files; only private raw events and the exact target-portal loader proof remain for end-to-end validation. Preserve the existing staged `feat/ui-workbench-scaffold` branch and move its validated UI toward the Guided Builder rather than duplicating it. Use this file as the single canonical roadmap and carry precise Git/CI/fixture status into future handoffs.

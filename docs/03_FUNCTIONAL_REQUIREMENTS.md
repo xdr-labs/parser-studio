@@ -1,5 +1,7 @@
 # 03. Functional Requirements and Priority
 
+**Reprioritization note — owner clarification (2026-10-12):** Required P0 includes six-step no-code wizard, real two-file compilation (`customized_<slug>.conf` + extensionless Ruby fragment), visual classification/transport selection, import/clone reference pairs where representable, typed normalization, safe enrichment, and native verification. Advanced source editing, modular JSON export, AI and collaboration remain optional P1+. The original table below is historical detail; these P0 mandates and [08_NO_CODE_USER_EXPERIENCE.md](08_NO_CODE_USER_EXPERIENCE.md) take precedence where a priority conflicts. No target must be reported verified from a Ruby syntax check alone.
+
 Each feature below needs deterministic tests and a visible user flow. **P0** is the first usable product; **P1/P2** extend it after validated MVP behavior.
 
 | ID | Priority | Capability | Observable definition of done |

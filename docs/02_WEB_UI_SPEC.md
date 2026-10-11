@@ -1,5 +1,7 @@
 # 02. Web UI / UX Specification
 
+**Owner-corrected UI hierarchy (2026-10-12):** The default product is a no-code **six-step Guided Builder** from raw logs to a matched parser + CONF pair. It must replace external developer tasks. This document's three-pane technical Workbench is retained as an optional Expert View; see [08_NO_CODE_USER_EXPERIENCE.md](08_NO_CODE_USER_EXPERIENCE.md) for authoritative primary navigation, stages and end-user acceptance.
+
 **Design baseline:** Cribl-like pipeline preview + Datadog-like sample testing + no-code field mapping + precise per-event diagnostics. Build an original visual language and components.
 
 ## 1. Navigation / information architecture

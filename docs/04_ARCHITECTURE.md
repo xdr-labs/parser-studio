@@ -1,5 +1,7 @@
 # 04. Architecture, Version Independence and Security
 
+**Architecture correction — real-host inspection 2026-10-12:** The primary export contract is a paired legacy-style `.conf` receiver/routing file plus an **extensionless Ruby source fragment**, generated from one version-neutral IR. Do **not** mistake the source fragment for a standalone JSON parser or assume it can be uploaded wherever the official 6.5 Modular JSON flow is documented. The source's marked init/parse zones, mapping schema, classification and compiled config behavior are detailed in [09_BACKEND_PAIRED_ARTIFACT_DESIGN.md](09_BACKEND_PAIRED_ARTIFACT_DESIGN.md). This design evidence is sufficient to proceed with safe IR and renderer contracts before the owner supplies private raw event fixtures.
+
 **Design status:** Approved boundaries; specific import/export file schemas and target runtimes remain evidence-driven until real artifacts are supplied.
 
 ## 1. Stable conceptual pipeline

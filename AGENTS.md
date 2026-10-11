@@ -24,4 +24,4 @@ Continue the current highest-priority incomplete work, preserve unrelated and di
 
 ## Initial workstream
 
-The first remaining technical task is ingesting the owner's real sample logs and sample parsers and recording verified contracts. Do not fabricate fixtures as evidence of Stellar compatibility. Read docs/06_ROADMAP_AND_ACCEPTANCE.md for the ordered roadmap.
+The owner has designated a no-code developer-replacement product: field SEs and partners must generate the two actual host reference files without manually writing Ruby/Regex/Fluentd. Read docs/08_NO_CODE_USER_EXPERIENCE.md and docs/09_BACKEND_PAIRED_ARTIFACT_DESIGN.md before UI, compiler or export work. Read-only reference pair structures were inspected on `rickmodular`; do not modify its live td-agent. No raw user event corpus has been supplied. Do not fabricate fixtures as evidence of real Stellar compatibility. Work in roadmap priority: stable IR and safe pair renderer → accessible Guided Builder → isolated native tests → target import validation. Preserve the preexisting staged `feat/ui-workbench-scaffold` changes.
