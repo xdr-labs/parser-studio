@@ -20,7 +20,7 @@ Source/target mapping lists are converted to backend `topFields`, `nsFields`, `v
 
 The backend's classification rules address **normalized top/namespace fields**, not raw source fields. UI `sourceField=action` is translated to its mapped output `custom.action`, and category `Threat`/`Session`/`Syslog`/`Winlogevent` becomes lowercase. Classification references confined to vendor-only groups are reported as unsupported until the backend explicitly supports them. Default `action` now belongs to `top_fields` for the backend-supported subset.
 
-Only explicit `json` or `kv` extraction can be handed to this backend version. Advanced regex/CSV/Syslog preview still works locally but must not be mislabeled supported by the R1.5 pair renderer. Neither sample text nor browser run outputs are part of the API JSON.
+Only explicit JSON, KV, and comma CSV can be handed to paired DRAFT export after same-origin GET /capabilities confirms support. The Guided UI supplies ordered CSV column names and rejects duplicates/invalid identifiers. Generic Syslog, Regex and multiline stay preview-only; RFC5424/CEF/LEEF need exact dialect UI integration. Raw sample events are excluded from validate/generate requests.
 
 ## 3. Safety, test evidence and download qualification
 
@@ -49,6 +49,12 @@ Keep the current PRs and worktrees isolated: PR #3 Guided Builder, PR #5 field-h
 No production writes, live td-agent reloads, credentials/permissions changes, or unverified success claims.
 **UI addition (2026-10-12):** field proposal review highlights the selected source token and structural capture positions in up to 20 sample events, including unmatched variants. The browser Web Worker remains authoritative for full-sample denominators. Highlighting is not native runtime evidence. See `src/guided/fieldHighlights.ts`, `src/guided/fieldHighlights.test.ts` and `tests/guided.spec.ts`.
 
-**Next UI-only backlog (do not overlap backend session):** guided family-branch editor; multi-line boundary chooser; confirmed schema suggestions; explanation/recovery for parser field variants; saved project labels and test evidence; final API wiring only after backend contract agreed.
+**Next UI-only backlog:** exact RFC5424/CEF/LEEF no-code editors, enrichment, field-path recovery, schema suggestions, accessibility and exact-HEAD user E2E. Field highlights, blank-line browser preview and comma CSV are complete. Backend compiler/native runner remain separate.
 
 **Do not work on** Ruby fragment templates, native td-agent/Fluentd runner, IR schema/compiler implementation or deployment from this UI lane. The separate backend session owns those deliverables.
+
+### 2026-10-12 — Opt-in legacy pair inspection
+
+The Step 6 advanced inspector accepts a matching customized_<slug>.conf plus extensionless customized_<slug> pair. File selection alone performs no upload or persistence. On explicit user action, the client validates names, size and strict UTF-8, verifies server-advertised read-only inspection support, then POSTs the pair through the loopback same-origin API. The local client cross-checks SHA-256 of both original files, rejects inconsistent editable flags and unrecognized diagnostics, and displays **code-only** structural observations without original Ruby/CONF bodies or server-supplied diagnostic messages.
+
+EDITABLE_EXACT means a byte-identical internal generator output; it does NOT import the IR into the current Guided editor or prove Stellar Cyber target compatibility. Unknown Ruby stays OPAQUE_READ_ONLY. No Ruby execution or host loader changes are requested. Unit tests cover hashing, opaque status, tampering, invalid filenames and oversized inputs; browser checks cover explicit submission and no raw source in results.

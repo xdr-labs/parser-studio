@@ -301,3 +301,17 @@
 .guided-boundary-count { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; color: #8095a4; padding: 5px 0 7px; font-size: 10px; }
 .guided-boundary-count strong { font: 700 11px var(--mono); color: #17858a; margin-left: 3px; }
 @media (max-width: 530px) { .guided-boundary-options { grid-template-columns: minmax(0, 1fr); } }
+
+/* Pair inspection remains an explicit, collapsed advanced path, never an export-ready signal. */
+.guided-pair-inspect { border:1px solid #dae6eb; border-radius:8px; padding:13px; margin:18px 0; background:#f9fbfc; }
+.guided-pair-inspect summary { display:flex; align-items:center; gap:8px; cursor:pointer; color:#3b7380; font-size:12px; font-weight:800; }
+.guided-pair-inspect > p { color:#718997; font-size:11px; line-height:1.65; margin:12px 0; }
+.guided-pair-inspect-files { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:13px 0; }
+.guided-pair-inspect-files label { display:flex; flex-direction:column; min-width:0; gap:8px; color:#536f7c; font-size:11px; font-weight:700; }
+.guided-pair-inspect-files input { width:100%; min-width:0; font-size:10px; }
+.guided-pair-inspection-result { margin-top:13px; padding:12px; border-radius:7px; border:1px solid #cfe0e7; background:white; font-size:11px; overflow-wrap:anywhere; }
+.guided-pair-inspection-result strong { color:#396f7b; }
+.guided-pair-inspection-result p { color:#667e89; font-size:10px; margin:9px 0; }
+.guided-pair-inspection-result ul { margin:8px 0; padding-left:20px; color:#916d4f; }
+.guided-pair-inspection-result small { display:block; color:#9b6e55; font-size:10px; line-height:1.6; }
+@media (max-width: 530px) { .guided-pair-inspect-files { grid-template-columns:minmax(0,1fr); } }

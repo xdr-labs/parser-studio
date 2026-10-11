@@ -13,6 +13,7 @@ import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
+import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import {
@@ -89,6 +90,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [backendAttempt, setBackendAttempt] = useState<{ key: string; project: BackendParserProject; result: BackendValidationResult } | null>(null);
   const [generatedPair, setGeneratedPair] = useState<{ key: string; pair: GeneratedPair } | null>(null);
   const [backendError, setBackendError] = useState<{ key: string; message: string } | null>(null);
+  const [inspectConf, setInspectConf] = useState<File | null>(null);
+  const [inspectFragment, setInspectFragment] = useState<File | null>(null);
+  const [inspecting, setInspecting] = useState(false);
+  const [inspectionResult, setInspectionResult] = useState<PairInspectionSummary | null>(null);
+  const [inspectionError, setInspectionError] = useState('');
+
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
   const activeEvent = suite?.events.find((event) => event.id === selectedId) ?? suite?.events[0];
@@ -236,6 +243,36 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       setBackendError({ key: draftKey, message: error instanceof Error ? error.message : '백엔드에 연결할 수 없습니다.' });
     } finally {
       setValidatingBackend(false);
+    }
+  };
+
+  const inspectChosenPair = async () => {
+    setInspectionResult(null);
+    setInspectionError('');
+    if (!inspectConf || !inspectFragment) return;
+    const name = inspectFragment.name;
+    if (!/^customized_[a-z][a-z0-9_]{1,47}$/.test(name) || inspectConf.name !== name + '.conf') {
+      setInspectionError('동일한 customized_<slug> 이름의 CONF와 확장자 없는 파서 파일을 선택하세요.');
+      return;
+    }
+    if (inspectConf.size + inspectFragment.size > 2 * 1024 * 1024) {
+      setInspectionError('입력 파일의 합계가 2 MiB를 초과합니다.');
+      return;
+    }
+    setInspecting(true);
+    try {
+      const capabilities = await fetchBackendCapabilities();
+      if (!capabilities.import.structuralInspectionOnly) throw new Error('이 백엔드는 읽기 전용 구조 검사 기능을 제공하지 않습니다.');
+      const decoder = new TextDecoder('utf-8', { fatal: true });
+      const [confBytes, fragmentBytes] = await Promise.all([inspectConf.arrayBuffer(), inspectFragment.arrayBuffer()]);
+      const result = await inspectParserPair({
+        name, confContent: decoder.decode(confBytes), fragmentContent: decoder.decode(fragmentBytes),
+      });
+      setInspectionResult(result);
+    } catch (error) {
+      setInspectionError(error instanceof Error ? error.message : '파일 검사에 실패했습니다.');
+    } finally {
+      setInspecting(false);
     }
   };
 
@@ -535,6 +572,25 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <button className="guided-cta-secondary" key={file.name} type="button" onClick={() => localDownload(file.name, file.content, 'application/octet-stream')}><Download size={15} /> {file.name}</button>)}</div>
               <div className="guided-generated-warnings">{qualifiedPair.manifest.warnings.map((warning, index) => <p key={index}><AlertTriangle size={13} /> {warning}</p>)}</div>
             </div>}
+            <details className="guided-pair-inspect">
+              <summary><FileArchive size={16} /> 기존 Parser Pair 읽기 전용 검사 (고급)</summary>
+              <p>파일을 선택해도 자동 전송하지 않습니다. 아래 버튼을 누를 때만 개발 서버의 같은 출처·로컬 API로 두 파일을 전송해 구조와 SHA-256을 확인합니다. 원본 내용은 저장하거나 화면에 표시하지 않습니다.</p>
+              <div className="guided-pair-inspect-files">
+                <label>수신 설정 (.conf)<input type="file" aria-label="Inspect pair CONF" accept=".conf,text/plain" onChange={(event) => { setInspectConf(event.target.files?.[0] ?? null); setInspectionResult(null); setInspectionError(''); }} /></label>
+                <label>확장자 없는 Ruby 파서 조각<input type="file" aria-label="Inspect pair Ruby fragment" onChange={(event) => { setInspectFragment(event.target.files?.[0] ?? null); setInspectionResult(null); setInspectionError(''); }} /></label>
+              </div>
+              <button type="button" className="guided-cta-secondary" disabled={!inspectConf || !inspectFragment || inspecting} onClick={() => { void inspectChosenPair(); }}>
+                <ShieldCheck size={15} /> {inspecting ? '로컬 구조 검사 중…' : '선택한 두 파일의 구조만 검사'}
+              </button>
+              {inspectionError && <p className="guided-error" role="alert">{inspectionError}</p>}
+              {inspectionResult && <div className="guided-pair-inspection-result" aria-label="Parser pair inspection results">
+                <strong>{inspectionResult.editable ? '동일 생성기 출력과 바이트 일치 · 편집형 IR 확인' : '알 수 없는 원본 · OPAQUE READ-ONLY'}</strong>
+                <p>수신기 {inspectionResult.sourceCount}개 · 프로토콜 {inspectionResult.protocols.join(', ') || '미확인'} · 포트 {inspectionResult.ports.join(', ') || '미확인'}</p>
+                <p>파일 SHA-256: CONF {inspectionResult.confSha256.slice(0, 16)}… / Parser {inspectionResult.fragmentSha256.slice(0, 16)}…</p>
+                {inspectionResult.diagnostics.length > 0 && <ul>{inspectionResult.diagnostics.map((code) => <li key={code}>{code}</li>)}</ul>}
+                <small>원본 Ruby 실행·자동 수정·Parser Studio 가져오기는 수행하지 않습니다. 실제 Stellar Cyber 적용도 검증되지 않았습니다.</small>
+              </div>}
+            </details>
             <div className="guided-hint"><HelpCircle size={16} /> 프로젝트 JSON에는 원본 로그가 포함되지 않습니다. 제공 가능한 파일은 DRAFT Ruby 조각과 CONF이며, 포털 업로드 형식이나 네이티브 엔진 검증 결과로 간주할 수 없습니다.</div>
           </>}
         </div>
