@@ -321,3 +321,11 @@
 .guided-backend-issue > span { flex:1 1 180px; overflow-wrap:anywhere; }
 .guided-fix-link { border:1px solid #c6dfe2; border-radius:5px; background:#eff9f7; color:#187c80; padding:6px 10px; font-size:10px; font-weight:800; cursor:pointer; }
 .guided-fix-link:focus-visible { outline:2px solid #136f84; outline-offset:2px; }
+
+/* Ordered no-code enrichment steps share the existing typed mapping visual hierarchy. */
+.guided-enrichment-list { display:flex; flex-direction:column; gap:10px; margin:13px 0; }
+.guided-enrichment-rule { background:#fbfcfd; border:1px solid #dce8ec; border-radius:8px; padding:12px; }
+.guided-enrichment-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; align-items:end; }
+.guided-enrichment-fields .guided-field { min-width:0; }
+.guided-enrichment-fields input, .guided-enrichment-fields select { min-width:0; width:100%; }
+@media (max-width: 650px) { .guided-enrichment-fields { grid-template-columns:minmax(0,1fr); } }

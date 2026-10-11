@@ -14,6 +14,10 @@ export interface BackendField {
   timezone?: 'UTC';
 }
 
+export type BackendEnrichmentRule =
+  | { operator: 'set_const'; target: string; value: string }
+  | { operator: 'copy' | 'lowercase' | 'uppercase'; source: string; target: string };
+
 export interface BackendParserProject {
   schemaRevision: '0.1';
   projectId: string;
@@ -39,6 +43,7 @@ export interface BackendParserProject {
     nsFields: Record<string, BackendField>;
     vendorFields: Record<string, BackendField>;
   };
+  enrichment?: BackendEnrichmentRule[];
   classification: {
     defaultIndex: BackendLogIndex;
     rules: { field: string; operator: 'equals'; value: string; index: BackendLogIndex }[];
@@ -158,6 +163,12 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       ignoreValues: ['', 'N/A', '-'],
       topFields, nsFields, vendorFields,
     },
+    ...(options.enrichment?.length ? {
+      enrichment: options.enrichment.map((rule): BackendEnrichmentRule =>
+        rule.operator === 'set_const'
+          ? { operator: 'set_const', target: rule.target, value: rule.value }
+          : { operator: rule.operator, source: rule.source, target: rule.target }),
+    } : {}),
     classification: {
       defaultIndex: indexMap[options.classification.defaultIndex],
       rules,

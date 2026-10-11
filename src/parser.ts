@@ -249,6 +249,32 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     if (converted.error) error('normalize', 'TYPE_ERROR', source + ': ' + converted.error, source);
     else normalized[target] = converted.value;
   }
+  // Preview the reviewed declarative enrichment steps in order, never Ruby.
+  for (const [index, rule] of (draft.guided?.enrichment ?? []).entries()) {
+    const target = rule.target.trim();
+    if (!VALID_TARGET.test(target) || Object.prototype.hasOwnProperty.call(normalized, target) ||
+        target.split('.').some((part) => ['__proto__', 'constructor', 'prototype'].includes(part))) {
+      error('normalize', 'ENRICHMENT_TARGET', 'Unsafe or duplicate enrichment output at step ' + (index + 1));
+      continue;
+    }
+    if (rule.operator === 'set_const') {
+      normalized[target] = rule.value;
+      continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(normalized, rule.source)) {
+      error('normalize', 'ENRICHMENT_SOURCE', 'Source field unavailable at step ' + (index + 1));
+      continue;
+    }
+    const source = normalized[rule.source];
+    if (rule.operator === 'copy') normalized[target] = source;
+    else if (rule.operator === 'lowercase' || rule.operator === 'uppercase') {
+      if (typeof source !== 'string') {
+        error('normalize', 'ENRICHMENT_TYPE', 'Text transform requires a string source');
+        continue;
+      }
+      normalized[target] = rule.operator === 'lowercase' ? source.toLowerCase() : source.toUpperCase();
+    } else error('normalize', 'ENRICHMENT_UNSUPPORTED', 'Unsupported enrichment operator');
+  }
   const unmapped = Object.keys(fields).filter((field) => !mapped.has(field));
   if (unmapped.length) diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'UNMAPPED_FIELDS', message: unmapped.length + ' source fields remain available without mappings' });
   const hasErrors = diagnostics.some((issue) => issue.severity === 'error');

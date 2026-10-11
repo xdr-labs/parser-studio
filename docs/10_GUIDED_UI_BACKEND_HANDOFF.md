@@ -49,7 +49,7 @@ Keep the current PRs and worktrees isolated: PR #3 Guided Builder, PR #5 field-h
 No production writes, live td-agent reloads, credentials/permissions changes, or unverified success claims.
 **UI addition (2026-10-12):** field proposal review highlights the selected source token and structural capture positions in up to 20 sample events, including unmatched variants. The browser Web Worker remains authoritative for full-sample denominators. Highlighting is not native runtime evidence. See `src/guided/fieldHighlights.ts`, `src/guided/fieldHighlights.test.ts` and `tests/guided.spec.ts`.
 
-**Next UI-only backlog:** exact RFC5424/CEF/LEEF no-code editors, enrichment, field-path recovery, schema suggestions, accessibility and exact-HEAD user E2E. Field highlights, blank-line browser preview and comma CSV are complete. Backend compiler/native runner remain separate.
+**Next UI-only backlog:** deeper field dictionary/schema guidance, exact browser/native parity evidence for unusual format variants, accessible correction workflows, saved revisions and same-HEAD full user E2E. Explicit RFC5424, standalone CEF/LEEF, safe enrichment, field validation recovery, comma CSV and preview-only multiline are implemented, not Stellar target verified.
 
 **Do not work on** Ruby fragment templates, native td-agent/Fluentd runner, IR schema/compiler implementation or deployment from this UI lane. The separate backend session owns those deliverables.
 

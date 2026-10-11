@@ -19,7 +19,7 @@ import { validateBackendProject, generateBackendPair, type BackendValidationResu
 import { highlightPreview, matchContext } from './fieldHighlights';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
-  plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type Transport,
+  plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
 } from './contract';
 
 export interface GuidedBuilderProps {
@@ -203,6 +203,19 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       ...old,
       mappings: old.mappings.map((rule) => rule.id === id ? { ...rule, [key]: value } : rule),
     }));
+
+  const addEnrichment = () => setGuided({
+    ...options, enrichment: [...(options.enrichment ?? []), {
+      id: crypto.randomUUID(), operator: 'set_const', source: '', target: '', value: '',
+    }],
+  });
+  const changeEnrichment = (id: string, key: keyof GuidedEnrichmentRule, value: string) => setGuided({
+    ...options, enrichment: (options.enrichment ?? []).map((rule) => rule.id === id
+      ? { ...rule, [key]: value } as GuidedEnrichmentRule : rule),
+  });
+  const removeEnrichment = (id: string) => setGuided({
+    ...options, enrichment: (options.enrichment ?? []).filter((rule) => rule.id !== id),
+  });
 
   const setReceiver = (key: keyof GuidedOptions['receiver'], value: unknown) =>
     setGuided({ ...options, receiver: { ...options.receiver, [key]: value } });
@@ -466,6 +479,30 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> 새 필드 매핑</button>
               {Object.keys(activeEvent?.fields ?? {}).filter((field) => !draft.mappings.some((mapping) => mapping.source === field)).length > 0 && <button className="guided-link" type="button" onClick={() => { const first = Object.keys(activeEvent?.fields ?? {}).find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> 남은 필드 추천 추가</button>}</div>
             <div className="guided-note"><ShieldCheck size={15} /> 원본 필드는 미매핑 상태에서도 미리보기에 보존됩니다. 중복 매핑·타입 변환 오류는 전체 샘플 검사에서 확인합니다.</div>
+            <div className="guided-section-title"><span>02</span> 선택형 필드 보강 <span className="guided-inline-badge">{options.enrichment?.length ?? 0}단계</span></div>
+            <p className="guided-description">정규화된 필드에서 상수 추가, 복사, 소문자 또는 대문자 변환을 순서대로 적용합니다. 원본 로그는 사용하지 않습니다.</p>
+            <datalist id="guided-normalized-suggestions">
+              {draft.mappings.filter((mapping) => (options.groups[mapping.id] ?? 'vendor_fields') !== 'vendor_fields').map((mapping) => <option key={mapping.id} value={mapping.target} />)}
+              {(options.enrichment ?? []).map((rule) => <option key={rule.id} value={rule.target} />)}
+            </datalist>
+            <div className="guided-enrichment-list">{(options.enrichment ?? []).map((rule, index) => <div key={rule.id} className="guided-enrichment-rule">
+              <div className="guided-map-number"><span>보강 {index + 1}</span>
+                <button type="button" aria-label={'Remove enrichment ' + index} onClick={() => removeEnrichment(rule.id)}><Trash2 size={15} /></button>
+              </div>
+              <div className="guided-enrichment-fields">
+                <label className="guided-field"><span>작업</span><select aria-label={'Enrichment operator ' + index} value={rule.operator} onChange={(event) => changeEnrichment(rule.id, 'operator', event.target.value)}>
+                  <option value="set_const">고정 값 추가</option><option value="copy">필드 복사</option>
+                  <option value="lowercase">소문자 변환</option><option value="uppercase">대문자 변환</option>
+                </select></label>
+                {rule.operator === 'set_const'
+                  ? <label className="guided-field"><span>추가할 값 (텍스트)</span><input aria-label={'Enrichment value ' + index} value={rule.value} onChange={(event) => changeEnrichment(rule.id, 'value', event.target.value)} /></label>
+                  : <label className="guided-field"><span>기존 정규화 필드</span><input aria-label={'Enrichment source ' + index} list="guided-normalized-suggestions" value={rule.source} onChange={(event) => changeEnrichment(rule.id, 'source', event.target.value)} /></label>}
+                <label className="guided-field"><span>신규 출력 필드</span><input aria-label={'Enrichment target ' + index} value={rule.target} placeholder="custom.extra" onChange={(event) => changeEnrichment(rule.id, 'target', event.target.value)} /></label>
+              </div>
+            </div>)}</div>
+            <button type="button" className="guided-cta-secondary" onClick={addEnrichment} disabled={(options.enrichment?.length ?? 0) >= 64}><Plus size={15} /> 필드 보강 단계 추가</button>
+            <div className="guided-hint"><ShieldCheck size={15} /> 생성 전 5단계에서 필드 보강 결과를 포함한 브라우저 미리보기를 검사합니다. 실제 Fluentd 실행·Stellar 적재는 별도 검증입니다.</div>
+
           </>}
 
           {step === 3 && <>
