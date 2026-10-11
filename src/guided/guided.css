@@ -329,3 +329,11 @@
 .guided-enrichment-fields .guided-field { min-width:0; }
 .guided-enrichment-fields input, .guided-enrichment-fields select { min-width:0; width:100%; }
 @media (max-width: 650px) { .guided-enrichment-fields { grid-template-columns:minmax(0,1fr); } }
+
+/* Optional synthetic templates: explicit replacement only, no automatic sample upload. */
+.guided-starter-choice { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:12px; margin:8px 0 12px; }
+.guided-starter-choice > .guided-field { min-width:0; margin:0; }
+.guided-starter-choice select { width:100%; min-width:0; }
+.guided-starter-choice button { white-space:nowrap; padding:11px 13px; }
+.guided-starter-choice button:focus-visible { outline:2px solid #167d86; outline-offset:2px; }
+@media (max-width:530px) { .guided-starter-choice { grid-template-columns:minmax(0,1fr); } .guided-starter-choice button { justify-content:center; } }

@@ -15,6 +15,7 @@ import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
+import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import {
@@ -96,6 +97,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [inspecting, setInspecting] = useState(false);
   const [inspectionResult, setInspectionResult] = useState<PairInspectionSummary | null>(null);
   const [inspectionError, setInspectionError] = useState('');
+  const [starterChoice, setStarterChoice] = useState<StarterTemplateId | ''>('');
 
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
@@ -128,6 +130,22 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const changeDraft = <K extends keyof ParserDraft>(field: K, value: ParserDraft[K]) =>
     setDraft((old) => ({ ...old, [field]: value }));
   const notify = (text: string) => setMessage(text);
+
+  const applyStarter = () => {
+    if (!starterChoice) return;
+    const template = loadStarterTemplate(starterChoice);
+    setDraft(template.draft);
+    setSample(template.sample);
+    setDatasetName('합성 예제 · ' + template.label);
+    setSelectedValue('');
+    setSelectedId('event-1');
+    setProposalResult(null);
+    setBackendAttempt(null);
+    setGeneratedPair(null);
+    setBackendError(null);
+    setStarterChoice('');
+    notify('선택한 합성 로그·규칙으로 새 초안을 적용했습니다. 실제 고객 로그가 아니며, 브라우저 테스트가 다시 필요합니다.');
+  };
 
   const readSampleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -376,10 +394,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <label className="guided-field"><span>로그 소스 유형</span><select aria-label="Source category" value={options.sourceCategory ?? 'network'} onChange={(e) => setGuided({ ...options, sourceCategory: e.target.value as NonNullable<GuidedOptions['sourceCategory']> })}>
               <option value="network">네트워크 장비</option><option value="endpoint">엔드포인트</option><option value="cloud">클라우드</option><option value="application">애플리케이션</option><option value="other">기타</option>
             </select></label>
-            <div className="guided-section-title"><span>02</span> 샘플 로그 추가</div>
+            <div className="guided-section-title"><span>02</span> 합성 예제로 시작 <span className="guided-inline-badge">선택 사항</span></div>
+            <div className="guided-starter-choice">
+              <label className="guided-field"><span>파서 형식 예제</span>
+                <select aria-label="Synthetic starter template" value={starterChoice} onChange={(event) => setStarterChoice(event.target.value as StarterTemplateId | '')}>
+                  <option value="">원하는 형식을 선택하세요</option>
+                  {starterTemplateIds.map((id) => <option value={id} key={id}>{starterTemplateInfo(id).label}</option>)}
+                </select>
+              </label>
+              <button className="guided-cta-secondary" type="button" disabled={!starterChoice} onClick={applyStarter}>
+                <WandSparkles size={15} /> 합성 예제 적용
+              </button>
+            </div>
+            <div className="guided-hint"><AlertTriangle size={16} /> 예제 적용 버튼을 누르면 현재 초안 규칙과 샘플을 새 합성 예제로 대체합니다. 선택만으로는 변경하거나 서버에 전송하지 않습니다. 예제는 장비·엔진 호환성의 검증 근거가 아닙니다.</div>
+            <div className="guided-section-title"><span>03</span> 샘플 로그 추가</div>
             <div className="guided-upload"><FileUp size={21} /><span>로그 텍스트를 직접 입력하거나 파일을 불러오세요.</span><label htmlFor="guided-upload-file" className="guided-upload-button">파일 선택</label><input type="file" id="guided-upload-file" onChange={readSampleFile} accept=".txt,.log,.json,.csv,text/plain" hidden /><small>UTF-8 · 최대 64 KiB · 외부 서버로 전송 안 함</small></div>
             <label className="guided-field"><span>원본 로그 <small>{datasetName}</small></span><textarea aria-label="Guided raw sample logs" spellCheck={false} className="guided-raw-input" value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('입력한 샘플 · 임시'); }} placeholder="장비의 원본 로그를 여러 줄 붙여 넣으세요" /></label>
-            <div className="guided-section-title"><span>03</span> 이벤트 경계 설정</div>
+            <div className="guided-section-title"><span>04</span> 이벤트 경계 설정</div>
             <div className="guided-boundary-options" role="group" aria-label="Event boundary selector">
               <button type="button" aria-pressed={(options.eventBoundary ?? 'single-line') === 'single-line'} className={(options.eventBoundary ?? 'single-line') === 'single-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'single-line' })}>
                 <FileText size={18} /><span><strong>한 줄 = 한 이벤트</strong><small>일반적인 Syslog / JSON Lines / KV 로그</small></span>
