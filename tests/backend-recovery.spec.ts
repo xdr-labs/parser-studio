@@ -30,4 +30,6 @@ test('backend field error offers a keyboard-accessible route to its no-code edit
   await expect(page.getByLabel('Backend validation errors')).toContainText('UNMAPPED_ROUTE');
   await page.getByRole('button', { name: '분류 설정으로 이동' }).click();
   await expect(page.locator('.guided-step.active')).toContainText('수신·분류');
+  // The just-removed correction button must not strand keyboard focus.
+  await expect(page.locator('.guided-content-head h2')).toBeFocused();
 });

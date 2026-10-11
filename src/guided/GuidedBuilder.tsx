@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import {
   AlertCircle, AlertTriangle, ArrowRight, ArrowLeft, Check, CheckCircle2, ChevronRight,
@@ -80,6 +80,16 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     suite, pending, runPreview, runState, onRunSuite, onExpert, onSave,
   } = props;
   const [step, setStep] = useState(0);
+  const stageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const lastFocusedStage = useRef(step);
+  useEffect(() => {
+    // Step navigation unmounts the previous keyboard control. Move focus to
+    // the new section heading, but never steal focus on initial render.
+    if (lastFocusedStage.current !== step) {
+      lastFocusedStage.current = step;
+      stageHeadingRef.current?.focus();
+    }
+  }, [step]);
   const [selectedId, setSelectedId] = useState('event-1');
   const [selectedValue, setSelectedValue] = useState('');
   const [fieldName, setFieldName] = useState('new_field');
@@ -368,7 +378,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       <section className="guided-workspace" aria-live="polite">
         <div className="guided-content-head">
           <div className="guided-content-eyebrow">STEP {String(step + 1).padStart(2, '0')} <span>/ 06</span></div>
-          <h2>{[
+          <h2 ref={stageHeadingRef} tabIndex={-1}>{[
             '어떤 로그를 처리할까요?', '로그에서 어떤 값을 추출할까요?',
             '추출한 정보를 어떻게 해석할까요?', '로그는 어디에서 들어오고 어떻게 분류되나요?',
             '모든 샘플이 제대로 처리되나요?', '어떤 파일을 생성하게 되나요?',
