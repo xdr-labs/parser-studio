@@ -78,3 +78,22 @@ describe('six-step guided builder UI-to-backend configuration boundary', () => {
     if (result.ok) expect(result.project.slug).toBe('demo_firewall');
   });
 });
+
+
+describe('multiline preview cannot produce untested native pair', () => {
+  it('explicitly blocks paired compiler handoff until blank-line event breaks are supported', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.guided = { ...defaultGuidedOptions(), eventBoundary: 'blank-line' };
+    const result = compilerDraftContract(draft);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.join(' ')).toContain('Blank-line grouping is preview-only');
+  });
+
+  it('keeps the currently supported single-line JSON interchange contract available', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.guided = { ...defaultGuidedOptions(), eventBoundary: 'single-line' };
+    expect(compilerDraftContract(draft).ok).toBe(true);
+  });
+});

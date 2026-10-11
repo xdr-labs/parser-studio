@@ -86,3 +86,55 @@ describe('safe, version-neutral browser preview', () => {
     expect(tooLarge.counts.failures).toBe(1);
   });
 });
+
+
+describe('logical event boundary modes', () => {
+  it('groups pretty multiline JSON by blank separators with physical line provenance', () => {
+    const sample = '{\r\n  "action":"allow",\r\n  "src_ip":"198.51.100.12",\r\n  "dst_port":443\r\n}\r\n\r\n{"action":"deny","src_ip":"203.0.113.5","dst_port":22}';
+    const records = splitEvents(sample, 'blank-line');
+    expect(records).toHaveLength(2);
+    expect(records.map((event) => event.line)).toEqual([1, 7]);
+    expect(records[0].raw).toContain('\n  "action":"allow"');
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.guided = { ...draft.guided!, eventBoundary: 'blank-line' };
+    const result = preview(sample, draft);
+    expect(result.counts.total).toBe(2);
+    expect(result.counts.extracted).toBe(2);
+    expect(result.counts.normalized).toBe(2);
+    expect(result.events[0].trace[0].detail).toContain('physical line 1');
+    expect(result.events[1].trace[0].detail).toContain('physical line 7');
+    expect(result.nativeFluentdVerified).toBe(false);
+  });
+
+  it('keeps legacy single-line behavior as the unchanged default', () => {
+    const sample = 'action=allow\nsrc_ip=198.51.100.10\n\n  action=deny';
+    expect(splitEvents(sample).map((event) => event.line)).toEqual([1, 2, 4]);
+    expect(splitEvents(sample, 'single-line')).toEqual(splitEvents(sample));
+    expect(splitEvents(sample, 'blank-line').map((event) => event.line)).toEqual([1, 4]);
+    expect(splitEvents(sample, 'blank-line')[0].raw).toContain('\n');
+  });
+
+  it('reports truncation based on logical events instead of physical lines', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.guided = { ...draft.guided!, eventBoundary: 'blank-line' };
+    const small = ['{\n  "action": "allow"\n}', '{"action":"deny"}'].join('\n\n');
+    expect(preview(small, draft).counts.total).toBe(2);
+    const large = Array.from({ length: 501 }, () => '{"action":"allow"}').join('\n\n');
+    const limited = preview(large, draft);
+    expect(limited.counts.total).toBe(500);
+    expect(limited.events.at(-1)?.diagnostics.some((x) => x.code === 'EVENT_LIMIT')).toBe(true);
+    expect(limited.events.at(-1)?.status).toBe('warning');
+  });
+
+  it('preserves safe logical-event size limits after grouping', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.guided = { ...draft.guided!, eventBoundary: 'blank-line' };
+    const hugeLogical = ['{', ' '.repeat(4100) + '"action":"allow"', '}'].join('\n');
+    const result = preview(hugeLogical, draft);
+    expect(result.counts.failures).toBe(1);
+    expect(result.events[0].diagnostics.some((x) => x.code === 'LINE_TOO_LONG')).toBe(true);
+  });
+});

@@ -47,3 +47,8 @@ Only explicit `json` or `kv` extraction can be handed to this backend version. A
 Keep the current PRs and worktrees isolated: PR #3 Guided Builder, PR #5 field-highlighting UX, PR #6 multiline **preview only**, PR #4 independent backend. Integrate them only after reconciling schema/capability contracts. Next UI work: usability/regression and safe multi-variant workflow. Backend owns Ruby compiler, native Fluentd runner, plugin/wrapper semantics, proprietary portal adapter and actual target qualification.
 
 No production writes, live td-agent reloads, credentials/permissions changes, or unverified success claims.
+**UI addition (2026-10-12):** field proposal review highlights the selected source token and structural capture positions in up to 20 sample events, including unmatched variants. The browser Web Worker remains authoritative for full-sample denominators. Highlighting is not native runtime evidence. See `src/guided/fieldHighlights.ts`, `src/guided/fieldHighlights.test.ts` and `tests/guided.spec.ts`.
+
+**Next UI-only backlog (do not overlap backend session):** guided family-branch editor; multi-line boundary chooser; confirmed schema suggestions; explanation/recovery for parser field variants; saved project labels and test evidence; final API wiring only after backend contract agreed.
+
+**Do not work on** Ruby fragment templates, native td-agent/Fluentd runner, IR schema/compiler implementation or deployment from this UI lane. The separate backend session owns those deliverables.

@@ -13,6 +13,7 @@ import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
+import { highlightPreview, matchContext } from './fieldHighlights';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type Transport,
@@ -95,6 +96,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     : null, [activeEvent, selectedValue, fieldName]);
   const proposalKey = JSON.stringify([sample, draft, activeEvent?.id, selectedValue, fieldName]);
   const acceptedResult = proposalResult?.key === proposalKey ? proposalResult : null;
+  const fieldHighlights = useMemo(() => (
+    acceptedResult && proposal && !('error' in proposal) && suite
+      ? highlightPreview(suite.events, proposal)
+      : null
+  ), [acceptedResult, proposal, suite]);
   const artifactContract = compilerDraftContract(draft);
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
@@ -319,6 +325,20 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-section-title"><span>02</span> 샘플 로그 추가</div>
             <div className="guided-upload"><FileUp size={21} /><span>로그 텍스트를 직접 입력하거나 파일을 불러오세요.</span><label htmlFor="guided-upload-file" className="guided-upload-button">파일 선택</label><input type="file" id="guided-upload-file" onChange={readSampleFile} accept=".txt,.log,.json,.csv,text/plain" hidden /><small>UTF-8 · 최대 64 KiB · 외부 서버로 전송 안 함</small></div>
             <label className="guided-field"><span>원본 로그 <small>{datasetName}</small></span><textarea aria-label="Guided raw sample logs" spellCheck={false} className="guided-raw-input" value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('입력한 샘플 · 임시'); }} placeholder="장비의 원본 로그를 여러 줄 붙여 넣으세요" /></label>
+            <div className="guided-section-title"><span>03</span> 이벤트 경계 설정</div>
+            <div className="guided-boundary-options" role="group" aria-label="Event boundary selector">
+              <button type="button" aria-pressed={(options.eventBoundary ?? 'single-line') === 'single-line'} className={(options.eventBoundary ?? 'single-line') === 'single-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'single-line' })}>
+                <FileText size={18} /><span><strong>한 줄 = 한 이벤트</strong><small>일반적인 Syslog / JSON Lines / KV 로그</small></span>
+              </button>
+              <button type="button" aria-pressed={options.eventBoundary === 'blank-line'} className={options.eventBoundary === 'blank-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'blank-line' })}>
+                <Layers3 size={18} /><span><strong>빈 줄로 이벤트 구분</strong><small>여러 줄 JSON 등 줄바꿈이 포함된 레코드</small></span>
+              </button>
+            </div>
+            <div className="guided-boundary-count" role="status">
+              <span>내용이 있는 물리 줄 <strong>{sample.replace(/\r\n?/g, '\n').split('\n').filter((line) => line.trim()).length}</strong></span>
+              <span>논리 이벤트 <strong>{pending ? '계산 중…' : (suite?.counts.total ?? 0)}</strong></span>
+            </div>
+            {options.eventBoundary === 'blank-line' && <div className="guided-hint"><AlertTriangle size={16} /> 빈 줄 구분은 브라우저 샘플 미리보기 전용입니다. 생성 엔진의 다중 줄 이벤트 지원이 검증되기 전에는 파서 파일 생성을 허용하지 않습니다.</div>}
             <div className="guided-inline-actions"><button className="guided-link" type="button" onClick={() => { setSample(DEMO_SAMPLES); setDatasetName('Synthetic demo events'); }}><RotateCcw size={14} /> 데모 로그 복원</button><button type="button" className="guided-link" onClick={() => { setSample(''); setDatasetName('비어 있음'); }}><Trash2 size={14} /> 샘플 비우기</button></div>
             <div className="guided-note"><ShieldCheck size={16} /> {hasLogs ? `현재 ${suite?.counts.total}개 이벤트를 찾았습니다. 다음 단계에서 형식을 확인하세요.` : '아직 입력된 이벤트가 없습니다. 실제 또는 합성 샘플을 추가하세요.'}</div>
           </>}
@@ -344,7 +364,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               </div>
               <div className="guided-event-raw">
                 <div className="guided-raw-label">원본 이벤트 · 값을 드래그해 선택</div>
-                {activeEvent ? <pre aria-label="Guided selectable raw event" tabIndex={0} onMouseUp={() => captureValue(window.getSelection()?.toString() ?? '')}>{activeEvent.raw}</pre> : <div className="guided-no-events">먼저 로그를 입력해 주세요.</div>}
+                {activeEvent ? <pre aria-label="Guided selectable raw event" tabIndex={0} onMouseUp={() => captureValue(window.getSelection()?.toString() ?? '')}>{selectedValue && activeEvent.raw.includes(selectedValue) ? <>
+                  {activeEvent.raw.slice(0, activeEvent.raw.indexOf(selectedValue))}
+                  <mark className="guided-selected-token">{selectedValue}</mark>
+                  {activeEvent.raw.slice(activeEvent.raw.indexOf(selectedValue) + selectedValue.length)}
+                </> : activeEvent.raw}</pre> : <div className="guided-no-events">먼저 로그를 입력해 주세요.</div>}
                 <div className="guided-extracted-tags">확인된 필드: {Object.keys(activeEvent?.fields ?? {}).length ? Object.keys(activeEvent!.fields).map((field) => <button type="button" title="필드 매핑 단계에서 편집" key={field} onClick={() => { setStep(2); }}><Plus size={12} /> {field}</button>) : '아직 없습니다'}</div>
               </div>
             </div>
@@ -358,6 +382,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <div className="guided-inline-actions"><button className="guided-cta-secondary" type="button" onClick={checkProposal} disabled={proposalTesting}>{proposalTesting ? '검사 중…' : '전체 샘플에서 일치 검사'}</button>
                   <button className="guided-cta-main" type="button" onClick={addRule} disabled={!acceptedResult?.matched}>필드 규칙 적용</button></div>
                 {acceptedResult && <p className="guided-preview-evidence" role="status">미리보기: {acceptedResult.matched} / {acceptedResult.total}개 이벤트 일치 · Fluentd 검증 아님</p>}
+                {fieldHighlights && <div className="guided-match-review" aria-label="Field match examples">
+                  <div className="guided-match-header"><strong>샘플별 필드 추출 비교</strong><span>처음 {fieldHighlights.sampled} / {fieldHighlights.total}개 표시</span></div>
+                  {fieldHighlights.rows.map((row) => {
+                    const snippet = matchContext(row);
+                    return <div className="guided-match-row" key={row.id}>
+                      <div className="guided-match-row-head">
+                        <strong>#{row.line}</strong>
+                        <span className={'guided-match-status ' + row.status}>
+                          {row.status === 'matched' ? '일치' : row.status === 'unmatched' ? '미일치' : '검사하지 않음'}
+                        </span>
+                      </div>
+                      <code>{snippet.before}{snippet.selected ? <mark className="guided-match-highlight">{snippet.selected}</mark> : null}{snippet.after}</code>
+                    </div>;
+                  })}
+                  {fieldHighlights.omitted > 0 && <p className="guided-match-omitted">나머지 {fieldHighlights.omitted}개는 여기에서 생략했습니다. 전체 일치 건수는 위의 Web Worker 테스트 결과를 참조하세요.</p>}
+                  <p className="guided-match-disclaimer">강조 표시는 임시 브라우저 정규식 결과입니다. Native Fluentd 검증이나 공식 필드 매핑의 증거가 아닙니다.</p>
+                </div>}
               </> : null}
             </div>}
           </>}
