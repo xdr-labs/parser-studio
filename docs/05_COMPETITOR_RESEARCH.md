@@ -1,6 +1,6 @@
 # 05. Competitor Research — Adopt Interactions, Not Proprietary Code
 
-Research basis: public official vendor documentation, checked 2026-10-11. This is a **target UX synthesis**, not a claim of license to reuse source, assets or brand styling.
+Research basis: public official vendor documentation, checked 2026-10-11. **This is design evidence, not an implementation priority list.** The owner's no-code six-step Guided Builder in document 08 supersedes any suggestion to make a technical three-pane editor the default. This is a **target UX synthesis**, not a claim of license to reuse source, assets or brand styling.
 
 | Product | Verified interaction/function | Design adaptation | Source |
 | --- | --- | --- | --- |

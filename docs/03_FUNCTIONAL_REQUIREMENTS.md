@@ -1,6 +1,6 @@
 # 03. Functional Requirements and Priority
 
-**Reprioritization note — owner clarification (2026-10-12):** Required P0 includes six-step no-code wizard, real two-file compilation (`customized_<slug>.conf` + extensionless Ruby fragment), visual classification/transport selection, import/clone reference pairs where representable, typed normalization, safe enrichment, and native verification. Advanced source editing, modular JSON export, AI and collaboration remain optional P1+. The original table below is historical detail; these P0 mandates and [08_NO_CODE_USER_EXPERIENCE.md](08_NO_CODE_USER_EXPERIENCE.md) take precedence where a priority conflicts. No target must be reported verified from a Ruby syntax check alone.
+**P0 contract:** the no-code six-step Guided Builder and paired file generator are mandatory. The detailed IDs below align to [06 — Roadmap](06_ROADMAP_AND_ACCEPTANCE.md), [08 — Primary UI](08_NO_CODE_USER_EXPERIENCE.md) and [09 — Paired Backend](09_BACKEND_PAIRED_ARTIFACT_DESIGN.md). Existing browser preview is not native validation. Expert source editing, comprehensive templates, AI and modular JSON are later/conditional.
 
 Each feature below needs deterministic tests and a visible user flow. **P0** is the first usable product; **P1/P2** extend it after validated MVP behavior.
 
@@ -19,12 +19,12 @@ Each feature below needs deterministic tests and a visible user flow. **P0** is 
 | F11 | P0 | Live triple preview | Raw, extracted and normalized per-event views plus before/after diff |
 | F12 | P0 | Test Lab | Aggregate counts, filtering by error class, per-stage trace and exact failing records |
 | F13 | P0 | Revision/regression | Baseline and candidate compare using identical fixtures; reproducible suite output |
-| F14 | P0 | Fluentd export | Generate only supported syntax and prove with native-engine roundtrip test |
+| F14 | P0 | Matched two-file compiler/export | Generate matching `customized_<slug>.conf` and extensionless Ruby `customized_<slug>`; validate compiler/syntax here and native behavior in R3 |
 | F15 | P0 | Export safety | Capability check, warnings, manifest, checksums and no unverified compatibility badges |
 | F16 | P0 | Security/privacy | Upload limits, safe parsing execution, sensitive field controls and no default external transfer |
-| F17 | P1 | Import existing parser | Read supported vendor/Fluentd artifacts; report unknown constructs rather than dropping them |
-| F18 | P1 | Stellar parser export adapters | Validated legacy/modular artifact profiles after real samples and target import tests |
-| F19 | P1 | Parser library/templates | Named vendor families, tags, clone, browse and revision history |
+| F17 | P0 | Basic import/clone of reference parser pair | Identify supported sections, start an editable copy, preserve opaque Ruby read-only with explicit warnings; full roundtrip remains P1 |
+| F18 | P1 | Portal legacy and modular JSON adapters | Separate export profiles only when upload/loader format and real target import evidence are verified |
+| F19 | P1 | Extended parser library/templates | Search, tags, vendor-specific starter templates and revision history; basic cloning is F17 |
 | F20 | P1 | Smart mapping/field suggestion | Explain confidence; user can override and evidence supports recommendation |
 | F21 | P1 | Advanced editor | Source-level expressions and supported GUI↔source equivalence checks |
 | F22 | P1 | Multitenant workspace roles | Optional viewer/editor/admin after authentication/security design |
@@ -32,6 +32,8 @@ Each feature below needs deterministic tests and a visible user flow. **P0** is 
 | F24 | P2 | Extended transforms/plugins | Capability-gated Grok, LEEF/CEF edge cases, lookups and custom enrichment |
 | F25 | P2 | Lab/test-system integration | Optional connector to an isolated Stellar Cyber instance, never production by default |
 | F26 | P2 | Team review workflow | Approval evidence, revision comments, immutable test reports |
+| F27 | P0 | Guided Builder | All six user steps operate without requiring Ruby/Regex/Fluentd input and end in truthful pair-generation results |
+| F28 | P0 | Visual receiver/routing configuration | Configure UDP/TCP/eligible HTTP, port/framing and Session/Threat/Syslog event routing without writing Fluentd config |
 
 ## Functional notes
 
@@ -47,6 +49,10 @@ Each feature below needs deterministic tests and a visible user flow. **P0** is 
 - Ports must be numeric within valid range; IP addresses must parse properly. Avoid implicit coercion to success.
 - Record mapping precedence and behavior when multiple raw fields target one normalized field.
 - The exact Stellar dictionary and mandatory metadata contract must be grounded by official documentation and supplied parser samples; do not assume unchanged across deployments.
+
+### Nondeveloper acceptance invariant
+
+P0 is not complete until a first-time user can paste multiple representative events, select extracted fields, map to typed Stellar fields, configure transport and classification, inspect specific failed samples and generate the matched two-file pair **without editing code**. Implemented subsets and unsupported formats must be visible; full native/target verification is a separate R3 gate.
 
 ### Engine and compatibility
 - Fluentd-compatible means a declared version/profile is exercised by an actual Fluentd process with pinned plugins, isolated from the host and with no unrestricted network/filesystem access.

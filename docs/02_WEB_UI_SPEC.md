@@ -4,16 +4,13 @@
 
 **Design baseline:** Cribl-like pipeline preview + Datadog-like sample testing + no-code field mapping + precise per-event diagnostics. Build an original visual language and components.
 
-## 1. Navigation / information architecture
+## 1. Optional Expert View, not default navigation
 
-Primary navigation (desktop):
-1. **Projects / Parser Library** — search, new project, templates, recent versions, test health.
-2. **Workbench** — main 3-pane editing flow; most work stays here.
-3. **Test Lab** — sample sets, regression runs, failures, coverage, before/after diffs.
-4. **Export & History** — target profiles, compatibility proof, artifact bundles, revision compare.
-5. **Settings** — schema catalog, local runtime profiles, workspace defaults, privacy.
+The default product workflow is the six-step **Guided Builder** in [08_NO_CODE_USER_EXPERIENCE.md](08_NO_CODE_USER_EXPERIENCE.md). It is intended for a user who does not know Ruby, Regex or Fluentd. It starts from adding sample logs and ends with generation of two matching files.
 
-The Workbench exposes tabs/drawers for Import, Extraction, Normalization, Transform, Enrichment, and Tests without forcing the user to leave the editing context. Do not create a page per wizard step.
+The three-pane Workbench below is an **Expert/Detail View** that users can open during extraction, normalization or debugging. It must retain the selected project, rule and sample when switching back to the guided workflow. Workbench tabs for Import, Extraction, Normalization, Transform, Enrichment and Tests must never become mandatory technical steps for a nondeveloper.
+
+Global product navigation is defined by document 08. This document owns only the detailed advanced pane interactions and accessibility characteristics.
 
 ## 2. Desktop wireframe (concept)
 

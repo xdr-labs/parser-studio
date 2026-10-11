@@ -60,4 +60,4 @@ Stellar Cyber Parser Studio does not provide an effective field-engineer workflo
 
 ## 7. Unresolved evidence—not blockers for spec work
 
-The owner will provide real **sample logs and sample parser artifact(s)** later. They will establish supported runtime features, vendor-specific file layouts, naming/metadata constraints, Interflow fields and import/export acceptance tests. Until then, mark those adapters as PENDING EVIDENCE, not completed.
+The owner authorized read-only analysis of actual reference parser artifacts on `rickmodular`: 454 matching CONF plus extensionless Ruby source pairs were inspected. **Private raw event logs**, expected real normalized outputs, and the vendor's actual upload/loader contract remain separate evidence gaps. They do not block typed IR or safe pair compiler development, but full behavioral compatibility must remain `PENDING_EVIDENCE` until verified. See docs/09 for findings and docs/06 for prioritized work.

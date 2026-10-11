@@ -37,7 +37,7 @@ A draft is represented internally as a **portable parser IR (intermediate repres
 - target_profiles: *separate* export/runtime adapters and evidence, not intrinsic core schema.
 - run_evidence: runner build digest, plugin versions, suite hash, results, export hash.
 
-A formal JSON Schema is an M1 deliverable after inspecting owner-provided real parser samples so that round-trip semantics are not guessed.
+Typed `ParserProject` JSON Schema is an **R1.5** deliverable based on the observed real host pair structure. Actual raw event fixtures and native callback/loader tests are separate evidence requirements; do not wait for those fixtures to design the safe IR.
 
 ## 4. What “works regardless of Stellar version” means
 
@@ -73,12 +73,12 @@ A formal JSON Schema is an M1 deliverable after inspecting owner-provided real p
 - File upload handling must guard size, compressed bombs, path traversal, malformed encodings, multi-line exhaustion and injection.
 - Do not execute arbitrary untrusted enrichment scripts in the application process; use a locked-down runner and allowlisted operations.
 - Multi-user auth, persistent service storage, secrets and backups are **not** implemented now. Introduce formal contracts before enabling them.
-- No application is yet deployed; initial repository is docs only. Production release requires separate approval, runtime qualification, browser acceptance and Full User E2E.
+- These are architectural targets, not an assertion about any concurrent development session's current code or deployed state. Check actual Git/runtime evidence. Production release requires separate approval, runtime qualification, browser acceptance and Full User E2E.
 
 ## 8. Open design choices pending evidence
 
-- Exact Stellar parser artifact and loader contracts by format family (not by UI screenshot alone).
-- Whether provided parser is raw Fluentd, proprietary legacy JSON/CONF pair or modular JSON, or another custom shape.
+- The reference host's `.conf` + extensionless Ruby fragment format **is established**; assembly into installed Fluentd plugin and portal upload/loader compatibility remain unverified.
+- Legacy portal pair and modular JSON require **different** evidence-backed adapters and must not be silently substituted for a Ruby source fragment.
 - Minimal plugin set, Ruby/regex engine feature subset and target deployment safety.
 - Concrete Interflow mapping dictionary and precedence, including source tenant metadata.
 - Persistent datastore and authentication stack, if/when collaboration becomes part of the first release.
