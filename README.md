@@ -26,6 +26,7 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 - [05 — Competitor research and design rationale](docs/05_COMPETITOR_RESEARCH.md)
 - [06 — Roadmap and acceptance criteria](docs/06_ROADMAP_AND_ACCEPTANCE.md)
 - [09 — Secure test Stellar Cyber API setup](docs/09_STELLAR_API_TEST_SETUP.md)
+- [10 — Verified POC Custom Parser CRUD evidence](docs/10_POC_CUSTOM_PARSER_CRUD_EVIDENCE.md)
 
 ## Configure test API credentials on dev-atlas
 
