@@ -1,0 +1,35 @@
+engineering_system:
+  version: 1.7.0
+  policy_epoch: 26
+  governance_epoch: 0
+  mode: adopted
+  baseline: dcce075522a7749765d4ef017234a49f76861072
+  ci_mode: shared
+  native_ci_workflows: []
+  merge_gate_status: advisory
+project:
+  name: parser-studio
+  type: generic
+  maturity: development
+  user_facing: true
+  primary_user_surface: web
+domains:
+  - web-ui
+  - parser-core
+  - compatibility-adapters
+  - data-normalization
+  - deterministic-testing
+platforms:
+  - linux
+  - browser
+operations:
+  production_oriented: false
+  runbook_required: false
+  incident_response_required: false
+  persistent_state: false
+  runbook_paths: []
+  health_command: ''
+  backup_command: ''
+  restore_test_command: ''
+  upgrade_command: ''
+  rollback_command: ''

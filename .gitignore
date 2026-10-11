@@ -1,0 +1,21 @@
+# Credentials and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.secrets/
+# Customer-originated logs and parser artifacts (not test fixtures)
+samples/private/
+fixtures/private/
+customer-data/
+exports/private/
+# Local build artifacts
+node_modules/
+dist/
+build/
+coverage/
+.pytest_cache/
+__pycache__/
+*.pyc
+.DS_Store
