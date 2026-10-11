@@ -92,3 +92,32 @@ test("inspect API rejects malformed and oversized pairs without echoing private 
    assert.equal(huge.status,413);
  });
 });
+
+test("capabilities API must truthfully advertise only supported and verified backend scope", async () => {
+ await withServer(async base => {
+   const response = await fetch(base+"/api/v1/parser-pairs/capabilities");
+   assert.equal(response.status,200);
+   assert.equal(response.headers.get("cache-control"),"no-store");
+   const info=await response.json() as any;
+   assert.equal(info.contract,"host-customized-pair.v0.1");
+   assert.deepEqual(info.authoring.receiverProtocols,["udp","tcp"]);
+   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc5424","cef","leef"]);
+   assert.equal(info.authoring.httpReceiver,false);
+   assert.equal(info.authoring.multipleDistinctReceiverPorts,false);
+   assert.equal(info.authoring.formatCoverage,"reviewed-bounded-subset");
+   assert.equal(info.authoring.multiline,false);
+   assert.equal(info.authoring.arbitraryRuby,false);
+   assert.equal(info.import.exactInternalPairsEditable,true);
+   assert.equal(info.import.unknownLegacyRubyEditable,false);
+   assert.equal(info.verification.nativeSyntheticProfile,"ruby3.2.3-fluentd1.17.1");
+   assert.equal(info.verification.liveListenerVerified,false);
+   assert.equal(info.verification.proprietaryLoaderVerified,false);
+   assert.equal(info.verification.targetImportVerified,false);
+   assert.equal(info.verification.engineVerified,false);
+   assert.equal(info.limits.maxInspectBodyBytes,2*1024*1024);
+   assert.equal(info.limits.maxProjectBodyBytes,256*1024);
+   assert.equal(JSON.stringify(info).includes("TARGET_IMPORT_VERIFIED"),false);
+   const badMethod=await post(base,"/api/v1/parser-pairs/capabilities",{});
+   assert.equal(badMethod.status,405);
+ });
+});

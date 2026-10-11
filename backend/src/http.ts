@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { compilePair } from "./compiler.js";
+import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import { inspectPair, MAX_IMPORT_BYTES, PairInspectionError } from "./import.js";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
 import { MAX_PROJECT_BYTES, validateProject } from "./validate.js";
@@ -44,6 +45,14 @@ export function createBackendServer(): Server {
     }
     if (path === "/api/v1/parser-pairs/schema" && req.method === "GET") {
       send(res, 200, projectSchema);
+      return;
+    }
+    if (path === "/api/v1/parser-pairs/capabilities") {
+      if (req.method !== "GET") {
+        send(res, 405, {error: "METHOD_NOT_ALLOWED"});
+      } else {
+        send(res, 200, BACKEND_CAPABILITIES);
+      }
       return;
     }
     const validate = path === "/api/v1/parser-pairs/validate";

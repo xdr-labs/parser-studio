@@ -43,9 +43,12 @@ All API input/output is UTF-8 JSON; **no CORS response header** is provided. For
 | --- | --- | --- |
 | `GET /health` | — | `{status:"ok",service:"parser-pair-backend",version:"0.1"}` |
 | `GET /api/v1/parser-pairs/schema` | — | JSON Schema for all guided form controls |
+| `GET /api/v1/parser-pairs/capabilities` | — | Schema-aligned authoring subset, import limits, feature flags and unverified target gates |
 | `POST /api/v1/parser-pairs/validate` | Complete `ParserProject` JSON | `{ok,issues:[{code,path,message}]}` and HTTP 422 on invalid |
 | `POST /api/v1/parser-pairs/generate` | Complete `ParserProject` JSON | `{contract, files:[{name,content,sha256,bytes}],manifest}` or HTTP 422 |
 | `POST /api/v1/parser-pairs/inspect` | `{name,confContent,fragmentContent}` | SHA-256, sanitized diagnostic codes, opaque/read-only status; never raw source code in response |
+
+**Capability negotiation:** Use GET /api/v1/parser-pairs/capabilities to gate UI controls. The six extraction formats are a **reviewed, bounded subset** of each format, not every variant of CEF, LEEF, CSV or RFC5424. HTTP receiver, multiple distinct source ports, multiline events and arbitrary Ruby authoring are NOT supported; legacy configurations remain inspection-only. The pinned nativeSyntheticProfile identifies a **synthetic test runner**, not a particular parser, live listener, proprietary wrapper, target import, or release readiness.
 
 **Usage contract:**
 

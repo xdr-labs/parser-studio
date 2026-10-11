@@ -1,0 +1,41 @@
+/**
+ * Public shape for the local-only parser backend integration. These are
+ * capabilities, not deployment or provenance claims. Keep aligned with the
+ * validated ParserProject v0.1 schema and reviewed compiler implementation.
+ */
+import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
+import { MAX_IMPORT_BYTES } from "./import.js";
+import { MAX_PROJECT_BYTES } from "./validate.js";
+
+const props = projectSchema.properties;
+export const BACKEND_CAPABILITIES = Object.freeze({
+  contract: "host-customized-pair.v0.1" as const,
+  projectSchemaRevision: "0.1" as const,
+  authoring: {
+    receiverProtocols: [...props.receiver.properties.protocols.items.enum],
+    extractionFormats: [...props.extraction.properties.format.enum],
+    httpReceiver: false,
+    multipleDistinctReceiverPorts: false,
+    formatCoverage: "reviewed-bounded-subset" as const,
+    multiline: false,
+    arbitraryRuby: false,
+  },
+  import: {
+    exactInternalPairsEditable: true,
+    unknownLegacyRubyEditable: false,
+    structuralInspectionOnly: true,
+  },
+  verification: {
+    // Identifies the synthetics-qualified offline runner, NOT a per-project
+    // engine/target verification result or vendor loader qualification.
+    nativeSyntheticProfile: "ruby3.2.3-fluentd1.17.1" as const,
+    liveListenerVerified: false,
+    proprietaryLoaderVerified: false,
+    targetImportVerified: false,
+    engineVerified: false,
+  },
+  limits: {
+    maxInspectBodyBytes: MAX_IMPORT_BYTES,
+    maxProjectBodyBytes: MAX_PROJECT_BYTES,
+  },
+});

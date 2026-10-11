@@ -14,11 +14,22 @@ No raw log content or executable Ruby is accepted by these endpoints. A complete
 | --- | --- | --- | --- |
 | GET `/health` | none | `{status:"ok",service:"parser-pair-backend",version:"0.1"}` | 404 for other paths |
 | GET `/api/v1/parser-pairs/schema` | none | Current v0.1 JSON Schema | — |
+| GET `/api/v1/parser-pairs/capabilities` | none | v0.1 supported formats, receivers, import restrictions, target status and size limits | HTTP 405 for non-GET |
 | POST `/api/v1/parser-pairs/validate` | JSON `ParserProject` | HTTP 200 `{ok:true,issues:[]}` | HTTP 422 `{ok:false,issues:[{code,path,message}]}` |
 | POST `/api/v1/parser-pairs/generate` | JSON `ParserProject` | HTTP 200 `{contract,files,manifest}` | HTTP 422 `{error:"INVALID_PROJECT",issues}` |
 | POST `/api/v1/parser-pairs/inspect` | `{name,confContent,fragmentContent}` | Inspection with SHA-256, importStatus, safe diagnostic codes, portableProject only for byte-exact internal output | HTTP 422 `{error:"INVALID_PAIR"}` |
 
 Responses include `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, same-origin resource policy. Validate/generate JSON input is limited to 256 KiB; import/inspect body is limited to 2 MiB and never executes Ruby. Oversized body is HTTP 413; non-JSON POST HTTP 415; malformed JSON HTTP 400. No server-side file write, no production deployment action, no RPC to Stellar Cyber.
+
+## Backend capability negotiation
+
+GET /api/v1/parser-pairs/capabilities returns a stateless capability contract with no file bodies:
+
+- contract = host-customized-pair.v0.1; projectSchemaRevision = 0.1; receiverProtocols (udp/tcp) and extractionFormats (json/kv/csv/syslog_rfc5424/cef/leef) reflect the validated schema.
+- authoring.formatCoverage = reviewed-bounded-subset. HTTP receiver, multi-distinct-port receiver, multiline events and arbitrary Ruby authoring are false. Opaque legacy files can be inspected but never treated as an editable clone.
+- import.exactInternalPairsEditable is true ONLY for byte-identical output of our reviewed generator. import.unknownLegacyRubyEditable is false.
+- verification.nativeSyntheticProfile = ruby3.2.3-fluentd1.17.1 identifies the pinned offline synthetic test runner only. liveListenerVerified, proprietaryLoaderVerified, targetImportVerified and engineVerified are all false. Never infer production or vendor import compatibility from this endpoint.
+- limits.maxProjectBodyBytes = 262144; limits.maxInspectBodyBytes = 2097152. No customer logs, source files or secrets are present.
 
 ## Project v0.1 essentials
 
