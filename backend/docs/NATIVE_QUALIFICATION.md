@@ -44,6 +44,16 @@ breaker or validate production message boundaries.
 
 The fixture writer uses a single ignored project-local directory, rejects a redirected PAIR_OUTPUT_DIR, and will not overwrite symlinks, hard links, unexpected file types or invalid parser filenames (Linux O_NOFOLLOW). The pinned golden runner rejects unexpected input directories and source-file symlinks before class evaluation. The qualifying script checks an explicit untrusted-path refusal. This is a defense for offline synthetic testing, not a general-purpose sandbox for customer files.
 
+## Per-child resource budgets
+
+All synthetic Ruby native checks now execute through the same nonprivileged
+child wrapper, limiting address space to 1 GiB and CPU time to 30 seconds,
+with a 25-second wall-clock timeout (plus a two-second kill grace). A Ruby
+smoke test checks the live process RLIMIT_AS/RLIMIT_CPU values before other
+native Ruby checks begin. The final local qualification report records
+these values and the resource-limit smoke status. These limits reduce
+runaway synthetics; they are **not isolation for customer supplied Ruby**.
+
 ## Pre-execution source integrity gate
 
 Before any generated Ruby is evaluated, all offline Ruby/Fluentd smoke harnesses read each approved fixture through a common read-only guard in test_native/synthetic_fixture_guard.rb. It checks exact project-local file paths, Linux no-follow opens, regular-file and single-link constraints, a bounded source length, and SHA-256 matching the validated generated-pair import/recompile evidence from the current Git HEAD. CONF parser sources use the same gate. A dedicated smoke test asserts altered bytes and three unsupported paths/names are rejected. The final native report records generatedFixtureSourceIntegrityChecked=true and sourceIntegrityNegativeCases=4 only after these checks run.

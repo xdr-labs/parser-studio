@@ -29,34 +29,50 @@ if ! command -v "$RUBY_COMMAND" >/dev/null 2>&1; then
   fi
 fi
 
+# Apply identical non-privileged resource limits to every isolated Ruby child.
+# This is a bounded offline smoke harness, not a sandbox for untrusted uploads.
+RUBY_MAX_VIRTUAL_KIB=1048576
+RUBY_MAX_CPU_SECONDS=30
+RUBY_MAX_WALL_SECONDS=25
+run_bounded_ruby() {
+  (
+    ulimit -v "$RUBY_MAX_VIRTUAL_KIB" || exit 1
+    ulimit -t "$RUBY_MAX_CPU_SECONDS" || exit 1
+    timeout --signal=TERM --kill-after=2s "$RUBY_MAX_WALL_SECONDS"s "$RUBY_COMMAND" "$@"
+  )
+}
+
+echo "[2a/5] Assert Ruby child process resource budget"
+run_bounded_ruby --disable-gems test_native/runner_limits_smoke.rb
+
 echo "[2/5] Locked Ruby/Fluentd profile"
-"$RUBY_COMMAND" -v
-"$RUBY_COMMAND" -rbundler/setup -e '
+run_bounded_ruby -v
+run_bounded_ruby -rbundler/setup -e '
   raise "Fluentd version mismatch" unless Gem.loaded_specs.fetch("fluentd").version.to_s == "1.17.1"
   puts "fluentd=1.17.1 test-unit=#{Gem::Specification.find_by_name("test-unit").version}"
 '
 
 echo "[2b/5] Verify generated Ruby/CONF integrity before any native execution"
-"$RUBY_COMMAND" --disable-gems test_native/synthetic_integrity_smoke.rb
+run_bounded_ruby --disable-gems test_native/synthetic_integrity_smoke.rb
 
 echo "[3/5] Ruby parser syntax and pure callback fixtures"
 for file in .tmp/native-fixtures/customized_*; do
   [[ "$file" == *.conf ]] && continue
-  "$RUBY_COMMAND" --disable-gems -c "$file"
+  run_bounded_ruby --disable-gems -c "$file"
 done
-"$RUBY_COMMAND" --disable-gems test_native/fragment_smoke.rb .tmp/native-fixtures
-"$RUBY_COMMAND" --disable-gems test_native/format_smoke.rb .tmp/native-fixtures
-"$RUBY_COMMAND" --disable-gems test_native/enrichment_smoke.rb .tmp/native-fixtures
+run_bounded_ruby --disable-gems test_native/fragment_smoke.rb .tmp/native-fixtures
+run_bounded_ruby --disable-gems test_native/format_smoke.rb .tmp/native-fixtures
+run_bounded_ruby --disable-gems test_native/enrichment_smoke.rb .tmp/native-fixtures
 
 echo "[4/5] Fluentd native parser API and configuration grammar"
 # No uploaded Ruby is evaluated. A fixed template and synthetics are tested.
-timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/fluentd_plugin_smoke.rb .tmp/native-fixtures
-timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/fluentd_config_smoke.rb .tmp/native-fixtures
+run_bounded_ruby -rbundler/setup test_native/fluentd_plugin_smoke.rb .tmp/native-fixtures
+run_bounded_ruby -rbundler/setup test_native/fluentd_config_smoke.rb .tmp/native-fixtures
 echo "[4b/5] Immutable synthetic golden expected-record comparison via pinned Fluentd API"
-timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/golden_events_smoke.rb \
+run_bounded_ruby -rbundler/setup test_native/golden_events_smoke.rb \
   .tmp/native-fixtures test_native/fixtures/synthetic-golden.v0.1.json
 # Attempting to substitute an arbitrary Ruby source path must fail before class_eval.
-if guard_output=$(timeout 7s "$RUBY_COMMAND" -rbundler/setup \
+if guard_output=$(run_bounded_ruby -rbundler/setup \
     test_native/golden_events_smoke.rb /tmp/native-untrusted \
     test_native/fixtures/synthetic-golden.v0.1.json 2>&1); then
   echo "ERROR: Golden runner accepted an untrusted source directory." >&2
@@ -106,6 +122,10 @@ const report = {
   result: "SYNTHETIC_FLUENTD_PARSER_AND_CONF_AST_PASS",
   pluginParserCallbackChecked: true,
   generatedFixtureSourceIntegrityChecked: true,
+  rubyChildVirtualMemoryLimitKiB: 1048576,
+  rubyChildCpuLimitSeconds: 30,
+  rubyChildWallLimitSeconds: 25,
+  rubyChildResourceLimitsChecked: true,
   sourceIntegrityNegativeCases: 4,
   configParsedWithTransportIncludeRemovedInMemory: true,
   verifiedExactPairImports: imported.verifiedExactPairs,
