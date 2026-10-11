@@ -88,6 +88,8 @@ Primary sources:
 - `tests/guided.spec.ts`: true Chromium actions for beginner journey, errors, privacy, shared Expert state and narrow viewports.
 - Existing Workbench tests remain active in `tests/browser.spec.ts` / `e2e/workbench.spec.ts`.
 
-**Next UI-only backlog (do not overlap backend session):** guided family-branch editor; multi-line boundary chooser; direct value-match span highlighting; confirmed schema suggestions; explanation/recovery for parser field variants; saved project labels and test evidence; final API wiring only after backend contract agreed.
+**UI addition (2026-10-12):** field proposal review highlights the selected source token and structural capture positions in up to 20 sample events, including unmatched variants. The browser Web Worker remains authoritative for full-sample denominators. Highlighting is not native runtime evidence. See `src/guided/fieldHighlights.ts`, `src/guided/fieldHighlights.test.ts` and `tests/guided.spec.ts`.
+
+**Next UI-only backlog (do not overlap backend session):** guided family-branch editor; multi-line boundary chooser; confirmed schema suggestions; explanation/recovery for parser field variants; saved project labels and test evidence; final API wiring only after backend contract agreed.
 
 **Do not work on** Ruby fragment templates, native td-agent/Fluentd runner, IR schema/compiler implementation or deployment from this UI lane. The separate backend session owns those deliverables.

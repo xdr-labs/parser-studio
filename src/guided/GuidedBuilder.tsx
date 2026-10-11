@@ -11,6 +11,7 @@ import { DEMO_SAMPLES } from '../model';
 import { formatLabel, MAX_DATASET_BYTES } from '../parser';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
+import { highlightPreview, matchContext } from './fieldHighlights';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type Transport,
@@ -88,6 +89,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     : null, [activeEvent, selectedValue, fieldName]);
   const proposalKey = JSON.stringify([sample, draft, activeEvent?.id, selectedValue, fieldName]);
   const acceptedResult = proposalResult?.key === proposalKey ? proposalResult : null;
+  const fieldHighlights = useMemo(() => (
+    acceptedResult && proposal && !('error' in proposal) && suite
+      ? highlightPreview(suite.events, proposal)
+      : null
+  ), [acceptedResult, proposal, suite]);
   const artifactContract = compilerDraftContract(draft);
   const names = plannedPairNames(options.slug);
   const hasLogs = Boolean(suite?.counts.total);
@@ -289,7 +295,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               </div>
               <div className="guided-event-raw">
                 <div className="guided-raw-label">원본 이벤트 · 값을 드래그해 선택</div>
-                {activeEvent ? <pre aria-label="Guided selectable raw event" tabIndex={0} onMouseUp={() => captureValue(window.getSelection()?.toString() ?? '')}>{activeEvent.raw}</pre> : <div className="guided-no-events">먼저 로그를 입력해 주세요.</div>}
+                {activeEvent ? <pre aria-label="Guided selectable raw event" tabIndex={0} onMouseUp={() => captureValue(window.getSelection()?.toString() ?? '')}>{selectedValue && activeEvent.raw.includes(selectedValue) ? <>
+                  {activeEvent.raw.slice(0, activeEvent.raw.indexOf(selectedValue))}
+                  <mark className="guided-selected-token">{selectedValue}</mark>
+                  {activeEvent.raw.slice(activeEvent.raw.indexOf(selectedValue) + selectedValue.length)}
+                </> : activeEvent.raw}</pre> : <div className="guided-no-events">먼저 로그를 입력해 주세요.</div>}
                 <div className="guided-extracted-tags">확인된 필드: {Object.keys(activeEvent?.fields ?? {}).length ? Object.keys(activeEvent!.fields).map((field) => <button type="button" title="필드 매핑 단계에서 편집" key={field} onClick={() => { setStep(2); }}><Plus size={12} /> {field}</button>) : '아직 없습니다'}</div>
               </div>
             </div>
@@ -303,6 +313,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <div className="guided-inline-actions"><button className="guided-cta-secondary" type="button" onClick={checkProposal} disabled={proposalTesting}>{proposalTesting ? '검사 중…' : '전체 샘플에서 일치 검사'}</button>
                   <button className="guided-cta-main" type="button" onClick={addRule} disabled={!acceptedResult?.matched}>필드 규칙 적용</button></div>
                 {acceptedResult && <p className="guided-preview-evidence" role="status">미리보기: {acceptedResult.matched} / {acceptedResult.total}개 이벤트 일치 · Fluentd 검증 아님</p>}
+                {fieldHighlights && <div className="guided-match-review" aria-label="Field match examples">
+                  <div className="guided-match-header"><strong>샘플별 필드 추출 비교</strong><span>처음 {fieldHighlights.sampled} / {fieldHighlights.total}개 표시</span></div>
+                  {fieldHighlights.rows.map((row) => {
+                    const snippet = matchContext(row);
+                    return <div className="guided-match-row" key={row.id}>
+                      <div className="guided-match-row-head">
+                        <strong>#{row.line}</strong>
+                        <span className={'guided-match-status ' + row.status}>
+                          {row.status === 'matched' ? '일치' : row.status === 'unmatched' ? '미일치' : '검사하지 않음'}
+                        </span>
+                      </div>
+                      <code>{snippet.before}{snippet.selected ? <mark className="guided-match-highlight">{snippet.selected}</mark> : null}{snippet.after}</code>
+                    </div>;
+                  })}
+                  {fieldHighlights.omitted > 0 && <p className="guided-match-omitted">나머지 {fieldHighlights.omitted}개는 여기에서 생략했습니다. 전체 일치 건수는 위의 Web Worker 테스트 결과를 참조하세요.</p>}
+                  <p className="guided-match-disclaimer">강조 표시는 임시 브라우저 정규식 결과입니다. Native Fluentd 검증이나 공식 필드 매핑의 증거가 아닙니다.</p>
+                </div>}
               </> : null}
             </div>}
           </>}

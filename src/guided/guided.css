@@ -256,3 +256,21 @@
 .guided-route-state.fallback {background:#fff5e8;color:#a47a37;}
 .guided-route-state.unresolved {background:#fff0f0;color:#b85d64;}
 .guided-route-empty {font-size:10px;color:#879da7;margin:0;padding:15px;}
+
+/* Privacy-safe source-span comparison. The displayed values never enter revision storage. */
+.guided-selected-token { color: #162a32; background: #f8d77b; padding: 1px 2px; border-radius: 3px; font-weight: 800; }
+.guided-match-review { margin: 14px 0 5px; border: 1px solid #d1e4e2; border-radius: 8px; background: #fff; overflow: hidden; }
+.guided-match-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f1f7f7; padding: 11px 12px; border-bottom: 1px solid #d8e7e8; }
+.guided-match-header strong { color: #3e6c76; font-size: 11px; }
+.guided-match-header span { font-size: 9px; color: #7b949c; white-space: nowrap; }
+.guided-match-row { border-bottom: 1px solid #e7edef; padding: 10px 12px; }
+.guided-match-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
+.guided-match-row-head strong { font: 600 10px var(--mono); color: #55768a; }
+.guided-match-status { border: 1px solid #d2dfe4; background: #f1f5f6; border-radius: 4px; padding: 3px 6px; color: #76929d; font-size: 9px; font-weight: 800; }
+.guided-match-status.matched { border-color: #b5dfce; background: #e6f5ec; color: #237a60; }
+.guided-match-status.unmatched { border-color: #f0d6c3; background: #fff3e9; color: #ab6e36; }
+.guided-match-status.not-checked { border-color: #ead0d4; background: #fff2f4; color: #b9616b; }
+.guided-match-row > code { display: block; font: 10px/1.75 var(--mono); color: #607989; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guided-match-highlight { color: #1a513f; background: #bcefd2; border: 1px solid #8ed7b4; border-radius: 3px; padding: 0 2px; font-weight: 700; }
+.guided-match-omitted { margin: 0; padding: 10px 12px; color: #9b7552; background: #fff9f1; font-size: 10px; }
+.guided-match-disclaimer { margin: 0; padding: 9px 12px; color: #778e98; background: #f8fafb; font-size: 10px; line-height: 1.6; }
