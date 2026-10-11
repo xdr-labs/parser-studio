@@ -11,6 +11,9 @@ npm test
 npm run build
 node dist/scripts/create-synthetic.js
 
+echo "[1b/5] Synthetic import round-trip + no-echo tamper gate"
+node dist/scripts/inspect-synthetic.js
+
 RUBY_COMMAND="${PARSER_RUBY_BIN:-ruby}"
 if ! command -v "$RUBY_COMMAND" >/dev/null 2>&1; then
   LOCAL_ROOT="$ROOT/.tmp/ruby-root"
@@ -57,6 +60,15 @@ const hashes = Object.fromEntries(files.map(name =>
   [name, createHash("sha256").update(readFileSync(".tmp/native-fixtures/"+name)).digest("hex")]
 ));
 const head = execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+const imported = JSON.parse(readFileSync(".tmp/synthetic-import-report.json","utf8"));
+if (imported.backendHead !== head || imported.origin !== "synthetic-repository-fixtures" ||
+    imported.verifiedExactPairs !== files.length/2 ||
+    imported.rejectedModifiedPairs !== files.length/2 ||
+    imported.targetImportVerified !== false ||
+    Object.keys(imported.originalHashes).length !== files.length ||
+    files.some(name => hashes[name] !== imported.originalHashes[name])) {
+  throw new Error("Synthetic pair import evidence does not match generated native fixture hashes");
+}
 const dirty = execFileSync("git",["status","--porcelain"],{encoding:"utf8"}).trim().length > 0;
 const report = {
   kind: "xdr-labs.parser-studio.synthetic-native-profile.v0.1",
@@ -66,6 +78,8 @@ const report = {
   result: "SYNTHETIC_FLUENTD_PARSER_AND_CONF_AST_PASS",
   pluginParserCallbackChecked: true,
   configParsedWithTransportIncludeRemovedInMemory: true,
+  verifiedExactPairImports: imported.verifiedExactPairs,
+  rejectedModifiedPairImports: imported.rejectedModifiedPairs,
   actualTdAgentOrStellarImport: false,
   targetImportVerified: false,
   fileHashes: hashes,
