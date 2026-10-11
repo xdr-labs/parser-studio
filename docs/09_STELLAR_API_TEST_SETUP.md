@@ -66,20 +66,29 @@ only status codes, response shape, and record counts — never the Key, JWT,
 parser names, or raw server responses. The script uses the Python standard
 library and never creates, edits, activates, or deletes a parser.
 
-Parser create/update/delete/enable requires an approved nonproduction target
-and independent evidence of behavior. Published 6.5s/7.0s Swagger exposes
-POST `/custom_log_parsers` and PUT `/custom_log_parsers/{name}` with required
-`multipart/form-data` (`cust_id`, `version`, binary `file` array; POST also
-requires `parser_name`) and DELETE `/custom_log_parsers/{name}`. These **write
-operations have not been verified** with a User Scope Key. Likewise, the
-published API does not establish a specific modular-parser enable endpoint.
+Parser create/update/delete required an approved nonproduction test target,
+which the owner explicitly authorized for this POC. The verified API contract,
+including the exact legacy filename pattern and the HTTP 422/400 diagnostic
+sequence, is documented in [POC Parser API CRUD Evidence](10_STELLAR_POC_API_CRUD_EVIDENCE.md).
 
-**Confirmed during the initial owner-authorized read-only live test:** JWT
-exchange HTTP 200 and both parser GETs HTTP 200 on the configured target.
-Do not copy tenant-specific response data into GitHub or logs.
+**Verified on the authorized POC:** User Scope JWT exchange and both GETs 200,
+POST with a legacy JSON/CONF multipart pair 200, PUT 200 with version 1.0.1
+confirmed by GET, DELETE 200, and a final GET with no test parser residue.
+Neither modular-parser activation nor sensor/runtime parsing was verified.
+
+To inspect the CRUD test workflow safely without executing an API call:
+
+```bash
+python3 scripts/test_stellar_parser_crud.py
+```
+
+Running it with `--execute` **changes the live POC** and requires explicit
+approval for that DP and tenant. The CLI targets exactly the authorized POC,
+creates a unique throwaway name, checks port collisions, and attempts cleanup
+with read-back. Do not copy tenant-specific response data into GitHub or logs.
 
 ## Local tests
 
 ```bash
-python3 -m unittest discover -s tests -p 'test_*stellar_test_api.py' -v
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```

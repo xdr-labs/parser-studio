@@ -26,6 +26,7 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 - [05 — Competitor research and design rationale](docs/05_COMPETITOR_RESEARCH.md)
 - [06 — Roadmap and acceptance criteria](docs/06_ROADMAP_AND_ACCEPTANCE.md)
 - [09 — Secure test Stellar Cyber API setup](docs/09_STELLAR_API_TEST_SETUP.md)
+- [10 — Verified POC Custom Parser API CRUD contract](docs/10_STELLAR_POC_API_CRUD_EVIDENCE.md)
 
 ## Configure test API credentials on dev-atlas
 
@@ -37,6 +38,9 @@ To safely validate User Scope JWT authentication and tenant-scoped parser GET AP
 run `python3 scripts/probe_stellar_test_api.py` after saving the credentials.
 The probe never uploads, enables, modifies, or deletes parsers, and reports only
 sanitized HTTP statuses/counts (not keys, JWTs, raw responses, or parser names).
+The separate `scripts/test_stellar_parser_crud.py` supports an explicitly
+approved POC-only CREATE → read-back → UPDATE → read-back → DELETE workflow;
+it is dry-run by default and its `--execute` option changes the live POC.
 
 ## Current scope
 
