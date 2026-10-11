@@ -12,6 +12,8 @@
 - Local stateless HTTP validate/generate/schema **and safe read-only pair inspection** endpoints for the separate UI. No file writes from API. Only byte-for-byte self-generated pairs become editable projects; arbitrary vendor Ruby stays opaque.
 - Project-local pinned Ruby 3.2.3 + Fluentd 1.17.1 synthetic qualification passes Node tests, eight Ruby syntax profiles, pure Ruby callbacks, Fluentd Parser Plugin API and Fluentd config grammar checks. A shared pre-execution SHA-256 guard checks all eight generated Ruby/CONF profiles against current-HEAD import/recompile evidence before any Ruby class evaluation; the local attestation is not a hardened sandbox. This is **not** vendor's extensionless-source wrapper/loader import or Stellar Cyber installation. The pending CI workflow is only a template because the current OAuth token lacks workflow modification scope.
 
+**Optional offline private-fixture preparation:** A local-only preflight validates strictly bounded private golden-event JSON shape and local filesystem permissions without executing Ruby, persisting reports, transferring log content, or creating an HTTP endpoint. See [private fixture preflight](docs/PRIVATE_FIXTURE_PREFLIGHT.md). Its success is NOT native or Stellar import verification.
+
 **Not supported yet:** proprietary vendor loader/portal adapters, live UDP/TCP listener or transport-include behavior, general regex/Grok editing, arbitrary Ruby, deeply customized CEF/LEEF edge cases, RFC3164, HTTP receiver, multi-line parsing, private raw-event fixtures, production deployment. The asset is a Ruby **fragment**, not a standalone Fluentd plugin. The manifest must never claim `ENGINE_TESTED` or `TARGET_IMPORT_VERIFIED` based solely on Ruby harness tests.
 
 ## Run
