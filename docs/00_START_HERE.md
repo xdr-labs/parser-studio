@@ -39,6 +39,16 @@ The editor is independent of Stellar Cyber versions. Actual compatibility is **p
 - The host reference directory is not confirmed as directly included in the running `td-agent` configuration; installed plugin wrappers are different from those source fragments.
 - Private raw-event golden fixtures and confirmed target portal import/loader semantics are still missing. They block **full compatibility claims**, not implementation of a typed IR, safe pair renderer or user-first Guided Builder.
 
+## Existing implementation-lane research — do not duplicate
+
+The separate [UI development PR #3](https://github.com/xdr-labs/parser-studio/pull/3) already has concrete, first-party-source-based competitive research and its own code-level UI design decisions:
+
+- [16-product comparison, UX gap matrix and licenses](https://github.com/xdr-labs/parser-studio/blob/feat/r2-web-workbench/docs/07_COMPETITOR_RESEARCH_AND_GAP.md): **implementation research / evidence**, not a second product roadmap.
+- [Implemented UI design decisions](https://github.com/xdr-labs/parser-studio/blob/feat/r2-web-workbench/docs/08_UI_DESIGN_DECISIONS.md): Workbench component specification for the developer's current PR; the **default nondeveloper journey** remains [08_NO_CODE_USER_EXPERIENCE.md](08_NO_CODE_USER_EXPERIENCE.md).
+- [UI development PR #3](https://github.com/xdr-labs/parser-studio/pull/3): review current code/CI there, without duplicating its work in this docs PR.
+
+**Merge reconciliation:** Both the implementation PR #3 and design PR #2 modify `docs/06_ROADMAP_AND_ACCEPTANCE.md`. When integrating, preserve the canonical **no-code + paired-generator priority** from this documentation branch and reconcile the latest **actual R2 implementation evidence** from PR #3/Issue #1. Do not blindly overwrite either side; do not treat the existence of two draft branches as a release gate.
+
 ## Work coordination (two independent sessions)
 
 - **Development session** owns implementation branch/worktree, its ACTIVE Work Packet, code, tests, PR and CI. Continue its exact unfinished step first. Do not repeat completed features.
