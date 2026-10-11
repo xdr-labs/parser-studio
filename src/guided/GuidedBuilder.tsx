@@ -14,6 +14,7 @@ import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
+import { backendIssueTarget } from './backendIssueGuide';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import {
@@ -553,7 +554,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <span>{qualifiedBackend?.result.ok ? 'Schema PASS · 엔진 미검증' : '검사 대기 / 백엔드 연결 필요'}</span>
             </div>
             {qualifiedBackend && !qualifiedBackend.result.ok && <div className="guided-contract-errors" aria-label="Backend validation errors">
-              {qualifiedBackend.result.issues.map((issue, index) => <div key={issue.code + index}><AlertCircle size={15} /><span>{issue.code}: {issue.message} ({issue.path})</span></div>)}
+              {qualifiedBackend.result.issues.map((issue, index) => {
+                const destination = backendIssueTarget(issue.path);
+                return <div key={issue.code + index} className="guided-backend-issue">
+                  <AlertCircle size={15} /><span>{issue.code}: {issue.message} ({issue.path})</span>
+                  <button type="button" className="guided-fix-link" onClick={() => setStep(destination.step)}>{destination.label}</button>
+                </div>;
+              })}
             </div>}
             {currentBackendError && <div className="guided-error" role="alert">{currentBackendError}</div>}
             <div className="guided-section-title"><span>04</span> 두 파일 생성 및 다운로드</div>
