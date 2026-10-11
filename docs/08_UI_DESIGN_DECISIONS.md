@@ -45,7 +45,7 @@
 
 | Component | Ownership / implementation | Tests |
 |---|---|---|
-| App shell, nav and 3-pane layout | src/App.tsx + src/styles.css | responsive browser test (pending) |
+| App shell, nav and 3-pane layout | src/App.tsx + src/styles.css | GitHub Chromium 9/9 PASS at d751252; keyboard/contrast accessibility audit still pending |
 | Private sample clipboard/file import | src/App.tsx + src/preview.worker.ts | dataset limits, encoding, fixture/source segregation |
 | Pure parser candidates and stages | src/parser.ts + src/model.ts | src/parser.test.ts |
 | Runner boundary (browser only now) | src/preview.worker.ts | timeout/status/per-event trace; no native claim |

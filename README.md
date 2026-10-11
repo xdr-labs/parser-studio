@@ -34,7 +34,7 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 - Current development branch provides a local Vite/React Workbench with multiple sample events, browser-only parser simulation, typed mapping, per-event diagnostics, selected-source field proposal, and rule-only revision history.
 - **Export:** only a JSON draft is available. Fluentd `.conf` and Stellar parser export are deliberately disabled until native/target evidence is provided.
 - Original customer logs, exports and credentials must never be committed by default.
-- Real owner parser files are still required to characterize and validate the actual `.conf` plus matching parser artifact contract. Live browser qualification is also still pending.
+- Real owner parser files are still required to characterize and validate the actual `.conf` plus matching parser artifact contract. GitHub Chromium browser 9/9 PASS was recorded in [GitHub Actions run 38153121808](https://github.com/xdr-labs/parser-studio/actions/runs/38153121808) for commit `d751252`; full user E2E and native compatibility are not complete.
 
 ## Non-goals
 

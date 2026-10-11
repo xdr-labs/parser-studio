@@ -23,7 +23,7 @@
 
 ### R2 — Working web workbench / core parsing (P0)
 
-- [x] Create original app skeleton, 3-pane Workbench, UTF-8 sample upload/paste and raw event viewer (**local code and unit/build proof; real browser E2E outstanding**).
+- [x] Create original app skeleton, 3-pane Workbench, UTF-8 sample upload/paste and raw event viewer (**unit 17/17, build PASS, GitHub Chromium browser 9/9 PASS on commit d751252; full user E2E and native engine remain separate**).
 - [ ] Event splitting, format candidates, route variants and field highlighting.
 - [ ] Rule builder with regex/JSON/KV/Syslog/CSV support and transformations. Narrow browser-only regex/JSON/KV/CSV/RFC5424 subset implemented; full native semantics and route variants pending.
 - [ ] Typed normalization mapper to evidence-backed Interflow fields.
@@ -65,7 +65,7 @@ R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable mil
 
 - [x] Survey documented workflows and screenshots, record license constraints, prioritize differentiating functions.
 - [x] Original visual shell, event list, stage preview, typed local mapping, source selection→field proposal, preview-only suite, privacy-preserving browser revision scaffolding.
-- [ ] **P0-A:** actual browser smoke/accessibility verification and responsive usability; Chromium on dev-atlas currently lacks OS shared libraries, test design committed for CI execution.
+- [ ] **P0-A:** GitHub Chromium browser smoke 9/9 PASS (d751252); developer desktop Chromium is missing system dependencies, so CI is the browser-test environment. Verify accessibility/keyboard traversal and final candidate HEAD before closing P0-A.
 - [ ] **P0-B:** multi-family routing and multiline breaking; selected-source highlights and per-rule trace; strengthen regex safety.
 - [ ] **P0-C:** native pinned Fluentd sandbox, golden fixtures, regression/baseline comparison.
 - [ ] **P0-D:** real owner `.conf` and matching parser characterization, evidence-based target schema/adapter with import/export loss report. Owner-specific artifacts may not be assumed from public documentation.
