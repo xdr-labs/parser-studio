@@ -387,14 +387,14 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           {step === 1 && <>
             <div className="guided-section-title"><span>01</span> 로그 형식 선택 <span className="guided-inline-badge">정확한 형식 선택이 중요합니다</span></div>
             <div className="guided-format-choices" role="group" aria-label="Guided format">
-              {(['auto', 'json', 'kv', 'csv', 'syslog', 'regex'] as const).map((format) =>
+              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef', 'syslog', 'regex'] as const).map((format) =>
                 <button type="button" key={format} aria-pressed={draft.format === format} className={'guided-format ' + (draft.format === format ? 'active' : '')} onClick={() => changeDraft('format', format)}>
                   {draft.format === format ? <CheckCircle2 size={17} /> : <FileText size={17} />}
                   <strong>{formatLabel(format)}</strong>
                 </button>)}
             </div>
             {draft.format === 'csv' && <label className="guided-field"><span>CSV 열 이름 <small>(쉼표 구분 · 1~100개)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>열 순서대로 적용됩니다. 쉼표 CSV 1행당 1이벤트만 DRAFT 생성 대상입니다.</small></label>}
-            <div className="guided-hint"><AlertCircle size={16} /> 브라우저 추출은 미리보기입니다. JSON / Key-Value / 쉼표 CSV만 검증된 백엔드 버전·기능 확인 후 DRAFT 파일을 생성합니다. Syslog·Regex 등 미지원 형식은 생성되지 않습니다.</div>
+            <div className="guided-hint"><AlertCircle size={16} /> 브라우저 추출은 미리보기입니다. JSON, KV, CSV, 정확한 RFC5424, 단독 CEF/LEEF만 기능 계약 확인 후 DRAFT 생성할 수 있습니다. 일반 Syslog·Regex 및 복합/멀티라인은 미지원입니다.</div>
             <div className="guided-section-title"><span>02</span> 샘플에서 값 선택하기</div>
             <div className="guided-event-picker">
               <div className="guided-event-buttons" aria-label="Guided event list">

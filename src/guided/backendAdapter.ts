@@ -29,7 +29,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line';
   };
-  extraction: { format: 'json' | 'kv' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' };
+  extraction: { format: 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -150,7 +150,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     },
     extraction: draft.format === 'csv'
       ? { format: 'csv', csvColumns: draft.csvColumns.split(',').map((column) => column.trim()), csvDelimiter: ',' }
-      : { format: draft.format as 'json' | 'kv' },
+      : { format: draft.format as 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' },
     normalization: {
       msgOriginSource: options.slug,
       msgClass: options.slug,

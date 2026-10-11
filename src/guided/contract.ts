@@ -37,7 +37,7 @@ export interface PairProjectContract {
     messageLimit: number;
     framing: 'newline';
   };
-  input: { format: 'json' | 'kv' | 'csv' | 'regex' | 'syslog' };
+  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc5424' | 'cef' | 'leef' | 'regex' | 'syslog' };
   normalization: Record<FieldGroup, {
     source: string;
     normalized_name: string;
@@ -95,8 +95,8 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     errors.push('Blank-line grouping is preview-only until the paired backend compiler declares a supported multiline event breaker');
   }
 
-  if (!(['json', 'kv', 'csv'] as string[]).includes(draft.format)) {
-    errors.push('This compiler subset requires explicit JSON, Key / Value or comma CSV; Auto, generic Syslog and Regex are preview-only');
+  if (!(['json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef'] as string[]).includes(draft.format)) {
+    errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
   }
   if (draft.format === 'csv') {
     const columns = draft.csvColumns.split(',').map((name) => name.trim());
@@ -143,7 +143,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       vendor: draft.vendor,
       product: draft.name,
       receiver: options.receiver,
-      input: { format: draft.format as 'json' | 'kv' | 'csv' },
+      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc5424' | 'cef' | 'leef' },
       normalization,
       classification: {
         rules: options.classification.rules.map(({ sourceField, equals, index }) => ({ sourceField, equals, index })),

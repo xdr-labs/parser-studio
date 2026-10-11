@@ -1,4 +1,5 @@
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
+import { detectStructuredFamily, extractStructuredFamily } from './structuredFamilies';
 import type { EventBoundary } from './guided/contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
@@ -9,6 +10,8 @@ const VALID_TARGET = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
 
 export function detectFormat(raw: string): Detection {
   const value = raw.trim();
+  const structured = detectStructuredFamily(value);
+  if (structured) return { format: structured, confidence: 0.96, reason: 'Recognized standalone structured log header' };
   if (/^[{[]/.test(value)) return { format: 'json', confidence: 0.96, reason: 'Starts with JSON object or array syntax' };
   if (/^<\d{1,3}>(?:\d\s|[A-Z][a-z]{2}\s|\d{4}-)/.test(value)) {
     return { format: 'syslog', confidence: 0.87, reason: 'Syslog priority and header detected' };
@@ -138,6 +141,9 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns);
     case 'syslog': return extractSyslog(raw);
+    case 'syslog_rfc5424':
+    case 'cef':
+    case 'leef': return extractStructuredFamily(raw, format);
     case 'regex': return extractRegex(raw, draft.pattern);
   }
 }
@@ -302,7 +308,8 @@ export function preview(input: string, draft: ParserDraft): SuiteResult {
 export function formatLabel(format: Format | 'unknown'): string {
   const labels: Record<Format | 'unknown', string> = {
     auto: 'Auto detect', json: 'JSON', kv: 'Key / Value', csv: 'CSV',
-    syslog: 'Syslog', regex: 'Regex', unknown: 'Unrecognized',
+    syslog_rfc5424: 'RFC5424', cef: 'CEF', leef: 'LEEF',
+    syslog: 'Syslog (preview)', regex: 'Regex', unknown: 'Unrecognized',
   };
   return labels[format];
 }

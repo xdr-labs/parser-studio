@@ -20,7 +20,7 @@ Source/target mapping lists are converted to backend `topFields`, `nsFields`, `v
 
 The backend's classification rules address **normalized top/namespace fields**, not raw source fields. UI `sourceField=action` is translated to its mapped output `custom.action`, and category `Threat`/`Session`/`Syslog`/`Winlogevent` becomes lowercase. Classification references confined to vendor-only groups are reported as unsupported until the backend explicitly supports them. Default `action` now belongs to `top_fields` for the backend-supported subset.
 
-Only explicit JSON, KV, and comma CSV can be handed to paired DRAFT export after same-origin GET /capabilities confirms support. The Guided UI supplies ordered CSV column names and rejects duplicates/invalid identifiers. Generic Syslog, Regex and multiline stay preview-only; RFC5424/CEF/LEEF need exact dialect UI integration. Raw sample events are excluded from validate/generate requests.
+Backend DRAFT authoring now accepts explicit JSON, KV, comma CSV, bounded RFC5424 (raw body), standalone CEF and LEEF only when GET /capabilities confirms that format. The browser's format-specific checks remain an approximation, not the pinned native Fluentd golden fixture test. Generic Syslog, Regex, multiline, Syslog-prefixed CEF and arbitrary LEEF extensions remain blocked; no raw samples are sent to validate/generate requests.
 
 ## 3. Safety, test evidence and download qualification
 

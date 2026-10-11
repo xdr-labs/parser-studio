@@ -6,7 +6,7 @@ describe('safe, version-neutral browser preview', () => {
   it('detects known sample formats and declines unknowns', () => {
     expect(detectFormat('{"action":"allow"}').format).toBe('json');
     expect(detectFormat('action=allow ip=198.51.100.10').format).toBe('kv');
-    expect(detectFormat('<34>1 2026-10-12T00:00:00Z host app 123 ID47 - msg').format).toBe('syslog');
+    expect(detectFormat('<34>1 2026-10-12T00:00:00Z host app 123 ID47 - msg').format).toBe('syslog_rfc5424');
     expect(detectFormat('one,two,three').format).toBe('csv');
     expect(detectFormat('freeform event').format).toBe('unknown');
   });
