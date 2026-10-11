@@ -22,6 +22,8 @@ bash scripts/qualify.sh
 
 Tests include JSON/KV/CSV/RFC5424/CEF/LEEF formats, typed mapping, ordered enrichment and category routing, generated Ruby fragment callbacks, and **Fluentd 1.17.1 actual Parser Plugin and config AST checks**. The fixed td-agent transport include path is removed only in memory for config parsing.
 
+Current synthetic qualification additionally runs 10 golden events against exact expected Fluentd parser callback records (eight source profiles), verifies the golden source SHA-256 and the existing 8 import + 8 tamper cases. These checks are available locally even while GitHub backend Actions workflow remains uninstalled.
+
 The report is `.tmp/synthetic-native-report.json`, ignored by Git. It records branch HEAD, dirty state, hashes and the explicit `targetImportVerified:false`.
 
 **This is not** a complete Stellar Cyber loader test, live Fluentd listener check or a customer raw-log E2E. The user retains responsibility for final real Stellar Cyber application/acceptance. Do not alter `rickmodular`.

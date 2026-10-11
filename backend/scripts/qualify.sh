@@ -49,6 +49,9 @@ echo "[4/5] Fluentd native parser API and configuration grammar"
 # No uploaded Ruby is evaluated. A fixed template and synthetics are tested.
 timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/fluentd_plugin_smoke.rb .tmp/native-fixtures
 timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/fluentd_config_smoke.rb .tmp/native-fixtures
+echo "[4b/5] Immutable synthetic golden expected-record comparison via pinned Fluentd API"
+timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/golden_events_smoke.rb \
+  .tmp/native-fixtures test_native/fixtures/synthetic-golden.v0.1.json
 
 echo "[5/5] Immutable-style synthetic evidence manifest"
 node --input-type=module <<'NODE'
@@ -69,6 +72,17 @@ if (imported.backendHead !== head || imported.origin !== "synthetic-repository-f
     files.some(name => hashes[name] !== imported.originalHashes[name])) {
   throw new Error("Synthetic pair import evidence does not match generated native fixture hashes");
 }
+const golden = JSON.parse(readFileSync(".tmp/synthetic-golden-report.json","utf8"));
+const fixtureBytes = readFileSync("test_native/fixtures/synthetic-golden.v0.1.json");
+const fixtureSha256 = createHash("sha256").update(fixtureBytes).digest("hex");
+if (golden.backendHead !== head || golden.origin !== "independently-authored-public-synthetic" ||
+    golden.kind !== "parser-studio.synthetic-golden-native.v0.1" ||
+    golden.fixtureSha256 !== fixtureSha256 || golden.casesPassed !== 10 ||
+    golden.profilesPassed !== 8 || golden.fluentd !== "1.17.1" ||
+    golden.actualTdAgentOrStellarImport !== false ||
+    golden.targetImportVerified !== false) {
+  throw new Error("Pinned Fluentd synthetic golden evidence is missing or mismatched");
+}
 const dirty = execFileSync("git",["status","--porcelain"],{encoding:"utf8"}).trim().length > 0;
 const report = {
   kind: "xdr-labs.parser-studio.synthetic-native-profile.v0.1",
@@ -80,6 +94,9 @@ const report = {
   configParsedWithTransportIncludeRemovedInMemory: true,
   verifiedExactPairImports: imported.verifiedExactPairs,
   rejectedModifiedPairImports: imported.rejectedModifiedPairs,
+  syntheticGoldenCases: golden.casesPassed,
+  syntheticGoldenProfiles: golden.profilesPassed,
+  syntheticGoldenFixtureHash: golden.fixtureSha256,
   actualTdAgentOrStellarImport: false,
   targetImportVerified: false,
   fileHashes: hashes,
