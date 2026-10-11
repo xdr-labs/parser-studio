@@ -22,6 +22,7 @@ export class PairInspectionError extends Error {
 export type InspectionDiagnosticCode =
   | "CONF_NO_SOURCE" | "CONF_UNSUPPORTED_PROTOCOL" | "CONF_INVALID_PORT"
   | "CONF_SOURCE_MISMATCH" | "CONF_SOURCE_MISSING_REFERENCE"
+  | "CONF_RECEIVER_NOT_EDITABLE" | "CONF_MULTI_PORT_LAYOUT"
   | "RUBY_MARKERS_INCOMPLETE" | "RUBY_PARSE_ENTRY_MISSING" | "PAIR_NOT_REPRODUCIBLE";
 
 export interface PairInspectionDiagnostic {
@@ -88,6 +89,9 @@ function parseConfSource(conf: string, pairName: string, diagnostics: PairInspec
     const type = directive(outsideParse, "@type");
     if (type === "udp" || type === "tcp" || type === "http") {
       if (!protocols.includes(type)) protocols.push(type);
+      if (type === "http") {
+        warn(diagnostics, "CONF_RECEIVER_NOT_EDITABLE", "HTTP receiver is visible for inspection but not supported in the current no-code receiver model.");
+      }
     } else {
       warn(diagnostics, "CONF_UNSUPPORTED_PROTOCOL", "Source protocol is unknown or not recognized.");
     }
@@ -110,6 +114,9 @@ function parseConfSource(conf: string, pairName: string, diagnostics: PairInspec
         })) {
       warn(diagnostics, "CONF_SOURCE_MISMATCH", "CONF source parser/tag is inconsistent with the provided pair name.");
     }
+  }
+  if (ports.length > 1) {
+    warn(diagnostics, "CONF_MULTI_PORT_LAYOUT", "Legacy sources use multiple distinct ports; the current no-code receiver model supports one shared port.");
   }
   return { protocols, ports, count: sources.length };
 }

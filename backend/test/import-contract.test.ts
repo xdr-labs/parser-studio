@@ -112,3 +112,40 @@ test("reject invalid input with stable codes; structurally invalid receivers sta
   }
   assert.equal(legacy.importStatus,"OPAQUE_READ_ONLY");
 });
+
+test("sanitized legacy reference-layout HTTP and split-port receivers stay read-only", () => {
+  // Synthesized structures only: no vendor config bodies or actual port values.
+  const httpConf = [
+    "<source>", "  @type http", "  port 8101",
+    "  tag customized_reference_http",
+    "  <parse>", "    @type customized_reference_http", "  </parse>",
+    "</source>",
+  ].join("\r\n");
+  const source = "# STELLAR_INIT_BEGIN\n# STELLAR_INIT_END\n# STELLAR_PARSE_BEGIN\ndef parse(text)\n yield nil, {}\nend\n# STELLAR_PARSE_END";
+  const http = inspectPair({
+    name: "customized_reference_http", confContent: httpConf, fragmentContent: source,
+  });
+  assert.equal(http.importStatus, "OPAQUE_READ_ONLY");
+  assert.deepEqual(http.receiver.protocols, ["http"]);
+  assert.deepEqual(http.receiver.ports, [8101]);
+  assert.equal(http.receiver.sourceCount, 1);
+  assert.ok(http.diagnostics.some(x => x.code === "CONF_RECEIVER_NOT_EDITABLE"));
+
+  const splitPort = inspectPair({
+    name: "customized_reference_split",
+    confContent: [
+      "<source>\n @type udp\n port 8102\n tag customized_reference_split",
+      " <parse>\n  @type customized_reference_split\n </parse>\n</source>",
+      "<source>\n @type tcp\n port 8103",
+      " @include /etc/td-agent/transport_settings.conf",
+      " tag customized_reference_split\n <parse>",
+      "  @type customized_reference_split\n </parse>\n</source>",
+    ].join("\n"),
+    fragmentContent: source,
+  });
+  assert.equal(splitPort.importStatus, "OPAQUE_READ_ONLY");
+  assert.deepEqual(splitPort.receiver.protocols, ["udp", "tcp"]);
+  assert.deepEqual(splitPort.receiver.ports, [8102, 8103]);
+  assert.equal(splitPort.receiver.sourceCount, 2);
+  assert.ok(splitPort.diagnostics.some(x => x.code === "CONF_MULTI_PORT_LAYOUT"));
+});

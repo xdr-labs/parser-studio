@@ -77,7 +77,7 @@ The lengths and hashes above are illustrative and must be read from the **actual
 
 ### Import/inspect structured diagnostics
 
-The inspect response includes diagnostics with stable code, severity=warning and a static message. Codes are CONF_NO_SOURCE, CONF_UNSUPPORTED_PROTOCOL, CONF_INVALID_PORT, CONF_SOURCE_MISMATCH, CONF_SOURCE_MISSING_REFERENCE, RUBY_MARKERS_INCOMPLETE, RUBY_PARSE_ENTRY_MISSING and PAIR_NOT_REPRODUCIBLE. Invalid pair errors return HTTP 422 with issues containing code, path and message; error codes are PAIR_NAME_INVALID, PAIR_CONTENT_INVALID and PAIR_SIZE_EXCEEDED. Neither editable nor opaque inspection verifies live Fluentd transport, proprietary loader or Stellar Cyber target import. No source bytes are returned for opaque inspected pairs.
+The inspect response includes diagnostics with stable code, severity=warning and a static message. Codes are CONF_NO_SOURCE, CONF_UNSUPPORTED_PROTOCOL, CONF_INVALID_PORT, CONF_SOURCE_MISMATCH, CONF_SOURCE_MISSING_REFERENCE, CONF_RECEIVER_NOT_EDITABLE, CONF_MULTI_PORT_LAYOUT, RUBY_MARKERS_INCOMPLETE, RUBY_PARSE_ENTRY_MISSING and PAIR_NOT_REPRODUCIBLE. Invalid pair errors return HTTP 422 with issues containing code, path and message; error codes are PAIR_NAME_INVALID, PAIR_CONTENT_INVALID and PAIR_SIZE_EXCEEDED. Neither editable nor opaque inspection verifies live Fluentd transport, proprietary loader or Stellar Cyber target import. No source bytes are returned for opaque inspected pairs.
 
 ## Client integration sequence
 
