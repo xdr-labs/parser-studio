@@ -50,12 +50,36 @@ python3 scripts/configure_stellar_test_api.py  # prompts before replacing saved 
 ```
 
 `--status` does not print the key and does not validate the remote credentials.
-Once configured, a separate read-only authenticated API probe can use the
-local file to verify access; parser create/update/delete/enable requires an
-approved nonproduction target and independent evidence of behavior.
+Once configured, use the **read-only live API probe**:
+
+```bash
+python3 scripts/probe_stellar_test_api.py
+python3 scripts/probe_stellar_test_api.py --json  # machine-readable redacted summary
+```
+
+The probe exchanges the User Scope API Key for a short-lived JWT using
+`POST /connect/api/v1/access_token`, then only makes two tenant-scoped GETs:
+`GET /connect/api/v1/custom_log_parsers?cust_id=...` and
+`GET /connect/api/v1/custom_log_parsers/parsers?cust_id=...`.
+TLS validation is enabled and HTTP redirects are rejected. The output contains
+only status codes, response shape, and record counts — never the Key, JWT,
+parser names, or raw server responses. The script uses the Python standard
+library and never creates, edits, activates, or deletes a parser.
+
+Parser create/update/delete/enable requires an approved nonproduction target
+and independent evidence of behavior. Published 6.5s/7.0s Swagger exposes
+POST `/custom_log_parsers` and PUT `/custom_log_parsers/{name}` with required
+`multipart/form-data` (`cust_id`, `version`, binary `file` array; POST also
+requires `parser_name`) and DELETE `/custom_log_parsers/{name}`. These **write
+operations have not been verified** with a User Scope Key. Likewise, the
+published API does not establish a specific modular-parser enable endpoint.
+
+**Confirmed during the initial owner-authorized read-only live test:** JWT
+exchange HTTP 200 and both parser GETs HTTP 200 on the configured target.
+Do not copy tenant-specific response data into GitHub or logs.
 
 ## Local tests
 
 ```bash
-python3 -m unittest discover -s tests -p 'test_configure_stellar_test_api.py' -v
+python3 -m unittest discover -s tests -p 'test_*stellar_test_api.py' -v
 ```

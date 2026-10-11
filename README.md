@@ -32,7 +32,11 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 From an interactive SSH terminal, run `python3 scripts/configure_stellar_test_api.py`.
 This saves DP URL, Tenant ID and a hidden API Key only to your private user configuration,
 not to Git. Run with `--status` to verify the local file exists (not the remote connection).
-No vendor API calls or parser deployments are performed by this script.
+No vendor API calls or parser deployments are performed by this setup script.
+To safely validate User Scope JWT authentication and tenant-scoped parser GET APIs,
+run `python3 scripts/probe_stellar_test_api.py` after saving the credentials.
+The probe never uploads, enables, modifies, or deletes parsers, and reports only
+sanitized HTTP statuses/counts (not keys, JWTs, raw responses, or parser names).
 
 ## Current scope
 
