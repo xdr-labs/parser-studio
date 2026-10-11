@@ -36,6 +36,9 @@ echo "[2/5] Locked Ruby/Fluentd profile"
   puts "fluentd=1.17.1 test-unit=#{Gem::Specification.find_by_name("test-unit").version}"
 '
 
+echo "[2b/5] Verify generated Ruby/CONF integrity before any native execution"
+"$RUBY_COMMAND" --disable-gems test_native/synthetic_integrity_smoke.rb
+
 echo "[3/5] Ruby parser syntax and pure callback fixtures"
 for file in .tmp/native-fixtures/customized_*; do
   [[ "$file" == *.conf ]] && continue
@@ -102,6 +105,8 @@ const report = {
   rubyProfile: "3.2", fluentd: "1.17.1", fixturePairs: files.length / 2,
   result: "SYNTHETIC_FLUENTD_PARSER_AND_CONF_AST_PASS",
   pluginParserCallbackChecked: true,
+  generatedFixtureSourceIntegrityChecked: true,
+  sourceIntegrityNegativeCases: 4,
   configParsedWithTransportIncludeRemovedInMemory: true,
   verifiedExactPairImports: imported.verifiedExactPairs,
   rejectedModifiedPairImports: imported.rejectedModifiedPairs,

@@ -1,5 +1,6 @@
 # Synthetic fixture coverage only — not production Fluentd or Stellar target E2E.
 require 'json'
+require_relative 'synthetic_fixture_guard'
 require 'time'
 
 def assert(condition, message)
@@ -9,7 +10,7 @@ end
 def execute_parser(directory, slug, raw)
   path = File.join(directory, "customized_#{slug}")
   parser_class = Class.new
-  parser_class.class_eval(File.read(path), path, 1)
+  parser_class.class_eval(SyntheticFixtureGuard.read_source(path), path, 1)
   parser = parser_class.new
   count = 0
   result_time = nil

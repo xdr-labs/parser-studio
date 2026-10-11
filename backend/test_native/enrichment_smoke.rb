@@ -1,6 +1,7 @@
 # Tests allowlisted normalization enrichments on the generated Ruby fragment.
 # The test is synthetic, not a Stellar Cyber upload/installation test.
 require 'json'
+require_relative 'synthetic_fixture_guard'
 
 def check(condition, message)
   raise "FAILED: #{message}" unless condition
@@ -9,7 +10,7 @@ end
 folder = ARGV.fetch(0)
 file = File.join(folder, 'customized_sample_enriched')
 generated = Class.new
-generated.class_eval(File.read(file), file, 1)
+generated.class_eval(SyntheticFixtureGuard.read_source(file), file, 1)
 parser = generated.new
 
 input = JSON.generate({

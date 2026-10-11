@@ -5,6 +5,7 @@
 require 'json'
 require 'digest'
 require 'time'
+require_relative 'synthetic_fixture_guard'
 require 'fluent/plugin/parser'
 require 'fluent/test'
 require 'fluent/test/driver/parser'
@@ -45,7 +46,7 @@ allowed_profiles.each do |slug|
   assert(stat.file? && !stat.symlink? && stat.nlink == 1,
     "Synthetic native fixture boundary rejects unsafe generated source files")
   parser_class = Class.new(Fluent::Plugin::Parser)
-  parser_class.class_eval(File.binread(path), path, 1)
+  parser_class.class_eval(SyntheticFixtureGuard.read_source(path), path, 1)
   Fluent::Plugin.register_parser("customized_#{slug}", parser_class)
   drivers[slug] = Fluent::Test::Driver::Parser.new(parser_class).configure('')
 end

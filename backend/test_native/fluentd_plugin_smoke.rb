@@ -5,6 +5,7 @@ require 'fluent/plugin/parser'
 require 'fluent/test'
 require 'fluent/test/driver/parser'
 require 'json'
+require_relative 'synthetic_fixture_guard'
 
 def assert(condition, detail)
   raise "FAIL: #{detail}" unless condition
@@ -12,7 +13,7 @@ end
 
 def driver_for(directory, slug)
   file = File.join(directory, "customized_#{slug}")
-  source = File.read(file)
+  source = SyntheticFixtureGuard.read_source(file)
   subclass = Class.new(Fluent::Plugin::Parser)
   subclass.class_eval(source, file, 1)
   Fluent::Plugin.register_parser("customized_#{slug}", subclass)

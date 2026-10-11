@@ -3,6 +3,7 @@
 # replace that exact static include only IN MEMORY, not on disk. This is not
 # an actual open socket test nor a Stellar Cyber loader/import test.
 require 'fluent/config'
+require_relative 'synthetic_fixture_guard'
 
 def assert(cond, detail)
   raise "FAILED: #{detail}" unless cond
@@ -12,7 +13,7 @@ root = ARGV.fetch(0)
 names = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_cef sample_leef sample_enriched]
 names.each do |slug|
   filename = File.join(root, "customized_#{slug}.conf")
-  original = File.read(filename, encoding: 'UTF-8')
+  original = SyntheticFixtureGuard.read_source(filename)
   assert(original.ascii_only?, "#{slug}: CONF must be plain ASCII")
   transport_include = '  @include /etc/td-agent/transport_settings.conf'
   assert(!original.include?('@include /etc') || original.include?(transport_include), "#{slug}: unexpected include")

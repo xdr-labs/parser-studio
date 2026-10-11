@@ -35,6 +35,12 @@ Not verified: vendor's proprietary plugin assembly/loading from the extensionles
 
 The fixture writer uses a single ignored project-local directory, rejects a redirected PAIR_OUTPUT_DIR, and will not overwrite symlinks, hard links, unexpected file types or invalid parser filenames (Linux O_NOFOLLOW). The pinned golden runner rejects unexpected input directories and source-file symlinks before class evaluation. The qualifying script checks an explicit untrusted-path refusal. This is a defense for offline synthetic testing, not a general-purpose sandbox for customer files.
 
+## Pre-execution source integrity gate
+
+Before any generated Ruby is evaluated, all offline Ruby/Fluentd smoke harnesses read each approved fixture through a common read-only guard in test_native/synthetic_fixture_guard.rb. It checks exact project-local file paths, Linux no-follow opens, regular-file and single-link constraints, a bounded source length, and SHA-256 matching the validated generated-pair import/recompile evidence from the current Git HEAD. CONF parser sources use the same gate. A dedicated smoke test asserts altered bytes and three unsupported paths/names are rejected. The final native report records generatedFixtureSourceIntegrityChecked=true and sourceIntegrityNegativeCases=4 only after these checks run.
+
+This reduces accidental or simple post-generation fixture substitution. The ignored local report is **not cryptographically signed**, and this execution environment is **not a sandbox** against a hostile user able to edit both source, attestation, and runner. Do not run customer-provided Ruby in it or infer Stellar Cyber plugin-loader compatibility.
+
 ## Safety boundary
 
 The runner only executes **repo-generated synthetic artifacts**. Never accept arbitrary customer Ruby or logs into this script. It is not a hardened, multi-user sandbox; real uploaded fixtures require separate isolated workers and limits. The HTTP server does not spawn this runner. Reference host `rickmodular` remains read-only, and the owner separately controls actual Stellar Cyber application.

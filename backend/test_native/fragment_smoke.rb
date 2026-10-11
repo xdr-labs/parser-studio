@@ -1,6 +1,7 @@
 # Synthetic input only. Tests the generated Ruby callback; no Fluentd or
 # proprietary Stellar target import is exercised by this test.
 require 'json'
+require_relative 'synthetic_fixture_guard'
 
 def assert(value, message)
   raise "FAIL: #{message}" unless value
@@ -8,7 +9,7 @@ end
 
 def parse_once(file, text)
   klass = Class.new
-  klass.class_eval(File.read(file), file, 1)
+  klass.class_eval(SyntheticFixtureGuard.read_source(file), file, 1)
   parser = klass.new
   result = nil
   invoked = 0
@@ -85,7 +86,7 @@ extended_file = File.join(root, 'customized_sample_extended')
 extended_record = nil
 extended_time = nil
 extended_class = Class.new
-extended_class.class_eval(File.read(extended_file), extended_file, 1)
+extended_class.class_eval(SyntheticFixtureGuard.read_source(extended_file), extended_file, 1)
 extended_class.new.parse(extended) do |event_time, record|
   extended_time = event_time
   extended_record = record
