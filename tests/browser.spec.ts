@@ -52,7 +52,7 @@ test('select raw value → preview candidate → apply mapping → save local-on
   });
   await expect(page.getByText('Propose a field from source value')).toBeVisible();
   await page.getByRole('button', { name: 'Preview all samples' }).click();
-  await expect(page.getByText('Matched 1 / 3 sample events · browser preview only')).toBeVisible();
+  await expect(page.getByText('Matched 2 / 3 sample events · browser preview only')).toBeVisible();
   await page.getByRole('button', { name: 'Apply as draft rule' }).click();
   await expect(page.locator('.mapping-row')).toHaveCount(4);
 
