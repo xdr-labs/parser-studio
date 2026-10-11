@@ -33,6 +33,15 @@ Not verified: vendor's proprietary plugin assembly/loading from the extensionles
 
 ## Bounded RFC5424 Structured Data subset
 
+RFC5424 parameter syntax is additionally checked in
+test_native/rfc5424_sd_smoke.rb with two positive and nine negative
+synthetic SD cases, including quoted values, escaped bracket/quote/backslash,
+missing equals and quotes, duplicate IDs/parameter names and unsupported
+characters. A separate Fluentd Parser API check asserts one successful
+adjacent-SD event and one invalid parameter fails at the extraction stage.
+Only supported SD grammar is asserted; full RFC5424 compliance remains unproven.
+
+
 The native Ruby parser now retains one or more adjacent RFC5424 SD-ELEMENT
 blocks with escaped right-brackets inside quoted parameter values, up to
 1024 bytes of structured-data text. Tests cover normal multi-block and

@@ -58,6 +58,16 @@ syslog = "<34>1 2026-10-12T02:03:04Z edge fw 122 CONNECT - src_ip=198.51.100.14 
 syslog_time, parsed = parse_once(drivers['sample_syslog'], syslog)
 assert(parsed['srcip'] == '198.51.100.14', 'native syslog structured body')
 assert(syslog_time && syslog_time.utc.strftime('%Y-%m-%dT%H:%M:%SZ') == '2026-10-12T02:03:04Z', 'native syslog event time')
+sd_native = '<165>1 2026-10-12T02:03:04Z edge fw 122 CONNECT [meta@32473 note="alpha"][trace@32473 id="1"] src_ip=198.51.100.14 action=deny'
+_, valid_sd = parse_once(drivers['sample_syslog'], sd_native)
+assert(valid_sd['srcip'] == '198.51.100.14' &&
+       valid_sd['stellar_log_index'] == 'threat', 'native RFC5424 adjacent SD grammar')
+bad_sd_native = '<165>1 2026-10-12T02:03:04Z edge fw 122 CONNECT [meta@32473 note=invalid] src_ip=198.51.100.14 action=deny'
+_, invalid_sd = parse_once(drivers['sample_syslog'], bad_sd_native)
+assert(invalid_sd['parser_err_msg'] == 'ArgumentError' &&
+       invalid_sd['parser_err_stage'] == 'extraction' &&
+       !invalid_sd.key?('srcip'), 'native RFC5424 invalid parameter fails closed')
+
 
 _, cef = parse_once(drivers['sample_cef'], 'CEF:0|Acme|FW|1|100|Blocked|8|src=192.0.2.11 dst=198.51.100.22 dpt=443 act=deny')
 assert(cef['dstip'] == '198.51.100.22', 'native CEF extension')

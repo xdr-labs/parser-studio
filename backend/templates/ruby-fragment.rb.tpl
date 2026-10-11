@@ -132,47 +132,69 @@ def parserstudio_csv(text, settings)
   Hash[fields.zip(row)]
 end
 
-# A bounded RFC5424 header with one or more adjacent SD-ELEMENT blocks.
-# Retain raw structured data for explicit optional mapping; do not execute it.
-# Full RFC5424 SD parameter semantic validation is not claimed here.
+# A validated, bounded RFC5424 SD-ELEMENT subset, preserving source SD bytes.
+# No arbitrary Grok/regex or executable parameter syntax is accepted.
+def parserstudio_rfc5424_sd_name(rest, offset)
+  start = offset
+  while offset < rest.bytesize
+    byte = rest.getbyte(offset)
+    # Printable ASCII, with [ and backslash intentionally excluded in the
+    # reviewed subset in addition to RFC SD-NAME reserved punctuation.
+    break unless byte >= 33 && byte <= 126 &&
+      ![34, 61, 91, 92, 93].include?(byte)
+    offset += 1
+  end
+  count = offset - start
+  raise ArgumentError, 'Invalid RFC5424 SD identifier or parameter' unless count >= 1 && count <= 32
+  [rest.byteslice(start, count), offset]
+end
+
 def parserstudio_rfc5424_sd(rest)
   if rest.start_with?('-')
     raise ArgumentError, 'Malformed RFC5424 NILVALUE' unless rest == '-' || rest.start_with?('- ')
     return ['-', rest == '-' ? nil : rest[2..-1]]
   end
   raise ArgumentError, 'RFC5424 SD block required' unless rest.start_with?('[')
-
   offset = 0
+  seen_ids = {}
   while rest.getbyte(offset) == 91 # [
-    element_start = offset
     offset += 1
-    quoted = false
-    escaped = false
-    closed = false
-    while offset < rest.bytesize
-      character = rest.getbyte(offset)
-      if escaped
-        # RFC5424 quoted parameter escapes for ], " and backslash.
-        raise ArgumentError, 'Invalid RFC5424 SD escape' unless [34, 92, 93].include?(character)
-        escaped = false
-      elsif quoted && character == 92
-        escaped = true
-      elsif character == 34 # "
-        quoted = !quoted
-      elsif character == 93 && !quoted # ]
-        offset += 1
-        closed = true
-        break
-      elsif character == 91 && !quoted # nested [
-        raise ArgumentError, 'Unexpected nested RFC5424 SD element'
-      elsif character == 92 && !quoted
-        raise ArgumentError, 'Unexpected RFC5424 SD escape outside parameter'
-      end
+    sd_id, offset = parserstudio_rfc5424_sd_name(rest, offset)
+    raise ArgumentError, 'Repeated RFC5424 SD identifier' if seen_ids.key?(sd_id)
+    seen_ids[sd_id] = true
+    seen_params = {}
+    while rest.getbyte(offset) == 32 # SPACE introduces a parameter
       offset += 1
+      name, offset = parserstudio_rfc5424_sd_name(rest, offset)
+      raise ArgumentError, 'Repeated RFC5424 SD parameter' if seen_params.key?(name)
+      seen_params[name] = true
+      raise ArgumentError, 'Missing RFC5424 SD parameter equals' unless rest.getbyte(offset) == 61
+      offset += 1
+      raise ArgumentError, 'Missing RFC5424 quoted SD value' unless rest.getbyte(offset) == 34
+      offset += 1
+      closed = false
+      while offset < rest.bytesize
+        char = rest.getbyte(offset)
+        if char == 34 # closing "
+          offset += 1
+          closed = true
+          break
+        elsif char == 92 # escaped ], " or backslash
+          following = rest.getbyte(offset + 1)
+          raise ArgumentError, 'Invalid RFC5424 SD escape' unless [34, 92, 93].include?(following)
+          offset += 2
+        elsif char == 93 || char < 32 || char == 127
+          raise ArgumentError, 'Unsafe or unescaped RFC5424 SD parameter character'
+        else
+          offset += 1
+        end
+        raise ArgumentError, 'RFC5424 SD exceeds supported bound' if offset > 1024
+      end
+      raise ArgumentError, 'Incomplete RFC5424 quoted SD value' unless closed
     end
-    raise ArgumentError, 'Incomplete RFC5424 SD element' unless
-      closed && !quoted && !escaped && (offset - element_start) > 2
-    raise ArgumentError, 'RFC5424 SD exceeds bounded subset' if offset > 1024
+    raise ArgumentError, 'Incomplete RFC5424 SD element' unless rest.getbyte(offset) == 93
+    offset += 1
+    raise ArgumentError, 'RFC5424 SD exceeds supported bound' if offset > 1024
   end
   structured = rest.byteslice(0, offset)
   trailing = rest.byteslice(offset..-1)

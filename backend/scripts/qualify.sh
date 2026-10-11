@@ -62,6 +62,7 @@ for file in .tmp/native-fixtures/customized_*; do
 done
 run_bounded_ruby --disable-gems test_native/fragment_smoke.rb .tmp/native-fixtures
 run_bounded_ruby --disable-gems test_native/format_smoke.rb .tmp/native-fixtures
+run_bounded_ruby --disable-gems test_native/rfc5424_sd_smoke.rb
 run_bounded_ruby --disable-gems test_native/enrichment_smoke.rb .tmp/native-fixtures
 
 echo "[4/5] Fluentd native parser API and configuration grammar"
@@ -126,6 +127,9 @@ const report = {
   rubyChildCpuLimitSeconds: 30,
   rubyChildWallLimitSeconds: 25,
   rubyChildResourceLimitsChecked: true,
+  rfc5424SdNameAndParameterGrammarChecked: true,
+  rfc5424SdPositiveCases: 2,
+  rfc5424SdNegativeCases: 9,
   sourceIntegrityNegativeCases: 4,
   configParsedWithTransportIncludeRemovedInMemory: true,
   verifiedExactPairImports: imported.verifiedExactPairs,

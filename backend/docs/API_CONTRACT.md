@@ -43,7 +43,7 @@ Main fields: `schemaRevision`, `projectId`, `revision`, `slug`, `vendor`, `produ
 | `json` | `maxDepth`: 1–8, default 8 | JSON object root; nested objects; invalid/deep JSON rejected |
 | `kv` | none | Strict single-line key=value with optional quotes/backslash escapes; literal CR/LF and trailing garbage reject |
 | `csv` | `csvColumns` **required**, `csvDelimiter` optional `,`, `;` or TAB | Strict column count and quoting, one physical CSV line only; literal CR/LF rejects |
-| `syslog_rfc5424` | `syslogBodyFormat`: `raw`, `json` or `kv` | RFC5424 header with adjacent structured-data elements (up to 1024 bytes total; escaped quoted brackets); no full SD parameter semantic validation, RFC3164 or multiline |
+| `syslog_rfc5424` | `syslogBodyFormat`: `raw`, `json` or `kv` | RFC5424 header with adjacent structured-data elements (up to 1024 bytes total; bounded SD-ID/PARAM-NAME and quoted escaped parameter grammar); no full SD parameter semantic validation, RFC3164 or multiline |
 | `cef` | none | Standalone single-line CEF:version, escaped header delimiter, strict KV extension subset; no multiline or Syslog-prefixed CEF |
 | `leef` | none | Standalone single-line LEEF 1.0 TAB and 2.0 one-character delimiter subset; empty extension tokens and CR/LF reject |
 
