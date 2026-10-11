@@ -31,6 +31,10 @@ Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone
 
 Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
 
+## Fixed synthetic fixture output boundary
+
+The fixture writer uses a single ignored project-local directory, rejects a redirected PAIR_OUTPUT_DIR, and will not overwrite symlinks, hard links, unexpected file types or invalid parser filenames (Linux O_NOFOLLOW). The pinned golden runner rejects unexpected input directories and source-file symlinks before class evaluation. The qualifying script checks an explicit untrusted-path refusal. This is a defense for offline synthetic testing, not a general-purpose sandbox for customer files.
+
 ## Safety boundary
 
 The runner only executes **repo-generated synthetic artifacts**. Never accept arbitrary customer Ruby or logs into this script. It is not a hardened, multi-user sandbox; real uploaded fixtures require separate isolated workers and limits. The HTTP server does not spawn this runner. Reference host `rickmodular` remains read-only, and the owner separately controls actual Stellar Cyber application.

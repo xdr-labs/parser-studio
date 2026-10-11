@@ -52,6 +52,17 @@ timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/fluentd_config_smoke.rb 
 echo "[4b/5] Immutable synthetic golden expected-record comparison via pinned Fluentd API"
 timeout 25s "$RUBY_COMMAND" -rbundler/setup test_native/golden_events_smoke.rb \
   .tmp/native-fixtures test_native/fixtures/synthetic-golden.v0.1.json
+# Attempting to substitute an arbitrary Ruby source path must fail before class_eval.
+if guard_output=$(timeout 7s "$RUBY_COMMAND" -rbundler/setup \
+    test_native/golden_events_smoke.rb /tmp/native-untrusted \
+    test_native/fixtures/synthetic-golden.v0.1.json 2>&1); then
+  echo "ERROR: Golden runner accepted an untrusted source directory." >&2
+  exit 1
+elif [[ "$guard_output" != *"Synthetic native fixture boundary"* ]]; then
+  echo "ERROR: Golden runner did not fail by its explicit fixture boundary." >&2
+  exit 1
+fi
+echo "Golden runner untrusted-path refusal PASS"
 
 echo "[5/5] Immutable-style synthetic evidence manifest"
 node --input-type=module <<'NODE'

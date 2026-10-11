@@ -13,8 +13,18 @@ def assert(condition, message)
   raise "Synthetic golden fixture validation failed: #{message}" unless condition
 end
 
-directory = File.realpath(ARGV.fetch(0))
-fixture_file = File.realpath(ARGV.fetch(1))
+expected_directory = File.expand_path('../.tmp/native-fixtures', __dir__)
+expected_fixture = File.expand_path('fixtures/synthetic-golden.v0.1.json', __dir__)
+arg_directory = File.expand_path(ARGV.fetch(0))
+arg_fixture = File.expand_path(ARGV.fetch(1))
+assert(arg_directory == expected_directory && arg_fixture == expected_fixture,
+  'Synthetic native fixture boundary requires the fixed generated directory and reviewed golden source')
+directory = File.realpath(arg_directory)
+fixture_file = File.realpath(arg_fixture)
+assert(directory == expected_directory && fixture_file == expected_fixture,
+  'Synthetic native fixture boundary rejects symlink redirection')
+assert(!File.lstat(expected_directory).symlink? && !File.lstat(expected_fixture).symlink?,
+  'Synthetic native fixture boundary rejects symlinks')
 fixture = JSON.parse(File.binread(fixture_file))
 assert(fixture['kind'] == 'parser-studio.synthetic-golden-events.v0.1', 'contract kind')
 assert(fixture['origin'] == 'independently-authored-public-synthetic', 'fixture provenance')
@@ -31,6 +41,9 @@ drivers = {}
 allowed_profiles.each do |slug|
   path = File.join(directory, "customized_#{slug}")
   assert(File.file?(path), "generated fixture missing: #{slug}")
+  stat = File.lstat(path)
+  assert(stat.file? && !stat.symlink? && stat.nlink == 1,
+    "Synthetic native fixture boundary rejects unsafe generated source files")
   parser_class = Class.new(Fluent::Plugin::Parser)
   parser_class.class_eval(File.binread(path), path, 1)
   Fluent::Plugin.register_parser("customized_#{slug}", parser_class)

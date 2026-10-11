@@ -1,10 +1,8 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { compilePair } from "../src/index.js";
+import { safeSyntheticOutputDirectory, writeSyntheticFixture } from "../src/synthetic-fixture-safety.js";
 import { sampleProject } from "../test/fixture.js";
 
-const out = resolve(process.env["PAIR_OUTPUT_DIR"] || ".tmp/native-fixtures");
-mkdirSync(out, {recursive: true});
+const out = safeSyntheticOutputDirectory(process.env["PAIR_OUTPUT_DIR"]);
 const json = sampleProject();
 const kv = sampleProject();
 kv.slug = "sample_kv";
@@ -74,7 +72,7 @@ enriched.classification.rules[0]!.field = "log.action_lower";
 for (const project of [json,kv,extended,csv,syslog,cef,leef,enriched]) {
   const pair = compilePair(project);
   for (const file of pair.files) {
-    writeFileSync(resolve(out, file.name), file.content, {flag:"w",mode:0o600});
+    writeSyntheticFixture(out, file.name, file.content);
     process.stdout.write(file.name + " " + file.sha256 + "\n");
   }
 }
