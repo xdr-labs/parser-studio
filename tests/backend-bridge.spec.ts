@@ -4,6 +4,23 @@ import { createHash } from 'node:crypto';
 
 const sha = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
+const backendCapabilities = {
+  contract: 'host-customized-pair.v0.1', projectSchemaRevision: '0.1',
+  authoring: { receiverProtocols: ['udp', 'tcp'], extractionFormats: ['json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef'],
+    formatCoverage: 'reviewed-bounded-subset', multiline: false, arbitraryRuby: false,
+    httpReceiver: false, multipleDistinctReceiverPorts: false },
+  import: { exactInternalPairsEditable: true, unknownLegacyRubyEditable: false, structuralInspectionOnly: true },
+  verification: { engineVerified: false, targetImportVerified: false, liveListenerVerified: false, proprietaryLoaderVerified: false },
+  limits: { maxProjectBodyBytes: 262144, maxInspectBodyBytes: 2097152 },
+};
+
+test.beforeEach(async ({ page }) => {
+  if (process.env.PARSER_STUDIO_LIVE_BACKEND === '1') return;
+  await page.route('**/api/v1/parser-pairs/capabilities', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify(backendCapabilities),
+  }));
+});
+
 const sample = [
   '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
   '{"action":"deny","src_ip":"203.0.113.5","dst_port":22}',

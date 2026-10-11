@@ -12,6 +12,7 @@ import { formatLabel, MAX_DATASET_BYTES } from '../parser';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
+import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import {
@@ -226,6 +227,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     }
     setValidatingBackend(true);
     try {
+      const capabilities = await fetchBackendCapabilities();
+      assertBackendProjectSupported(backendProject.project, capabilities);
       const result = await validateBackendProject(backendProject.project);
       setBackendAttempt({ key: draftKey, project: backendProject.project, result });
       if (result.ok) notify('백엔드 입력 스키마 검사를 통과했습니다. 네이티브 실행 검증은 별도로 필요합니다.');
@@ -352,7 +355,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <strong>{formatLabel(format)}</strong>
                 </button>)}
             </div>
-            <div className="guided-hint"><AlertCircle size={16} /> 현재 형식 감지는 브라우저 미리보기입니다. JSON과 Key/Value 이외의 생성·실행 지원은 백엔드 검증 이후에 연결됩니다.</div>
+            {draft.format === 'csv' && <label className="guided-field"><span>CSV 열 이름 <small>(쉼표 구분 · 1~100개)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>열 순서대로 적용됩니다. 쉼표 CSV 1행당 1이벤트만 DRAFT 생성 대상입니다.</small></label>}
+            <div className="guided-hint"><AlertCircle size={16} /> 브라우저 추출은 미리보기입니다. JSON / Key-Value / 쉼표 CSV만 검증된 백엔드 버전·기능 확인 후 DRAFT 파일을 생성합니다. Syslog·Regex 등 미지원 형식은 생성되지 않습니다.</div>
             <div className="guided-section-title"><span>02</span> 샘플에서 값 선택하기</div>
             <div className="guided-event-picker">
               <div className="guided-event-buttons" aria-label="Guided event list">

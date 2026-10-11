@@ -103,4 +103,24 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     draft.guided = { ...defaultGuidedOptions(), receiver: { ...defaultGuidedOptions().receiver, protocols: [], port: 22 } };
     expect(toBackendProject(draft).ok).toBe(false);
   });
+  it('produces backend-compatible comma CSV metadata with the entered column order', () => {
+    const draft = createDraft();
+    draft.format = 'csv';
+    draft.csvColumns = 'action,src_ip,dst_port';
+    const converted = toBackendProject(draft);
+    expect(converted.ok).toBe(true);
+    if (converted.ok) expect(converted.project.extraction).toEqual({
+      format: 'csv', csvColumns: ['action', 'src_ip', 'dst_port'], csvDelimiter: ',',
+    });
+  });
+
+  it.each(['', 'action,action', '1bad,action', 'action,first-name', 'action,,src_ip'])(
+    'fails closed on ambiguous or invalid CSV columns: %s', (columns) => {
+      const draft = createDraft();
+      draft.format = 'csv';
+      draft.csvColumns = columns;
+      expect(toBackendProject(draft).ok).toBe(false);
+    },
+  );
+
 });

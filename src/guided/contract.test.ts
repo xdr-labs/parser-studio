@@ -7,7 +7,7 @@ describe('six-step guided builder UI-to-backend configuration boundary', () => {
     const draft = createDraft();
     const result = compilerDraftContract(draft);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors.join(' ')).toContain('explicit JSON or Key / Value');
+    if (!result.ok) expect(result.errors.join(' ')).toContain('explicit JSON');
     expect(result.diagnostics.join(' ')).toContain('backend compiler');
   });
 

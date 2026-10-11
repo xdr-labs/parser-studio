@@ -95,8 +95,15 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     errors.push('Blank-line grouping is preview-only until the paired backend compiler declares a supported multiline event breaker');
   }
 
-  if (!(['json', 'kv'] as string[]).includes(draft.format)) {
-    errors.push('This proposed compiler subset requires an explicit JSON or Key / Value format; Auto and other formats are not yet enabled for pairing');
+  if (!(['json', 'kv', 'csv'] as string[]).includes(draft.format)) {
+    errors.push('This compiler subset requires explicit JSON, Key / Value or comma CSV; Auto, generic Syslog and Regex are preview-only');
+  }
+  if (draft.format === 'csv') {
+    const columns = draft.csvColumns.split(',').map((name) => name.trim());
+    if (columns.length > 100 || !columns.every((name) => /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)) ||
+        new Set(columns).size !== columns.length) {
+      errors.push('CSV requires 1–100 unique valid column names with no empty columns');
+    }
   }
 
   if (!draft.mappings.length) errors.push('Map at least one extracted field');
@@ -136,7 +143,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       vendor: draft.vendor,
       product: draft.name,
       receiver: options.receiver,
-      input: { format: draft.format as 'json' | 'kv' },
+      input: { format: draft.format as 'json' | 'kv' | 'csv' },
       normalization,
       classification: {
         rules: options.classification.rules.map(({ sourceField, equals, index }) => ({ sourceField, equals, index })),
