@@ -3,9 +3,11 @@ import type { FieldType, ParserDraft } from '../model';
 export type EventClass = 'Session' | 'Threat' | 'Syslog' | 'Winlogevent';
 export type FieldGroup = 'top_fields' | 'ns_fields' | 'vendor_fields';
 export type Transport = 'udp' | 'tcp';
+export type SourceCategory = 'network' | 'endpoint' | 'cloud' | 'application' | 'other';
 
 export interface GuidedOptions {
   slug: string;
+  sourceCategory?: SourceCategory;
   groups: Record<string, FieldGroup>;
   receiver: {
     protocols: Transport[];
@@ -57,7 +59,9 @@ export const FIELD_GROUPS: FieldGroup[] = ['top_fields', 'ns_fields', 'vendor_fi
 export function defaultGuidedOptions(): GuidedOptions {
   return {
     slug: 'demo_firewall',
-    groups: { 'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'vendor_fields' },
+    sourceCategory: 'network',
+    // The current backend classifies on normalized top/ns fields; action is top-level.
+    groups: { 'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'top_fields' },
     receiver: { protocols: ['udp', 'tcp'], port: 7501, bindPolicy: 'loopback', messageLimit: 8192, framing: 'newline' },
     classification: {
       defaultIndex: 'Syslog',

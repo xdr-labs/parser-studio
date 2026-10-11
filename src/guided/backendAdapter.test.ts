@@ -1,0 +1,106 @@
+import { describe, expect, it } from 'vitest';
+import { createDraft, DEMO_SAMPLES } from '../model';
+import { defaultGuidedOptions } from './contract';
+import { toBackendProject } from './backendAdapter';
+
+describe('no-code UI to R1.5 backend project schema translation', () => {
+  it('turns a guided JSON draft into the exact backend 0.1 field groups and lowercase routing', () => {
+    const draft = createDraft();
+    draft.name = 'Synthetic Firewall';
+    draft.vendor = 'Synthetic';
+    draft.format = 'json';
+    const result = toBackendProject(draft);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.project).toMatchObject({
+      schemaRevision: '0.1',
+      projectId: 'draft-demo_firewall',
+      revision: 1,
+      slug: 'demo_firewall',
+      sourceCategory: 'network',
+      receiver: {
+        protocols: ['udp', 'tcp'],
+        port: 7501,
+        bindAddress: '127.0.0.1',
+        messageLengthLimit: 8192,
+        tcpFraming: 'line',
+      },
+      extraction: { format: 'json' },
+      normalization: {
+        topFields: {
+          src_ip: { normalized_name: 'custom.source_ip', data_type: 'ip' },
+          action: { normalized_name: 'custom.action', data_type: 'string' },
+        },
+        nsFields: { dst_port: { normalized_name: 'custom.destination_port', data_type: 'port' } },
+        msgOriginSource: 'demo_firewall',
+        msgClass: 'demo_firewall',
+        msgOriginCategory: 'network',
+      },
+      classification: {
+        defaultIndex: 'syslog',
+        rules: [
+          { field: 'custom.action', operator: 'equals', value: 'deny', index: 'threat' },
+          { field: 'custom.action', operator: 'equals', value: 'allow', index: 'session' },
+        ],
+      },
+    });
+    expect(JSON.stringify(result.project)).not.toContain('198.51.100.10');
+    expect(JSON.stringify(result.project)).not.toContain(DEMO_SAMPLES);
+  });
+
+  it('maps timestamp to a supported backend date rule with explicit UTC', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.mappings.push({ id: 'when', source: 'event_time', target: 'custom.event_time', type: 'timestamp' });
+    draft.guided = { ...defaultGuidedOptions(), sourceCategory: 'cloud', groups: { ...defaultGuidedOptions().groups, when: 'ns_fields' } };
+    const result = toBackendProject(draft);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.project.sourceCategory).toBe('cloud');
+    expect(result.project.normalization.nsFields.event_time).toEqual({
+      normalized_name: 'custom.event_time', data_type: 'date', time_format: 'iso8601', timezone: 'UTC',
+    });
+  });
+
+  it('refuses to silently classify a vendor-only field unsupported by backend rule compiler', () => {
+    const draft = createDraft();
+    draft.format = 'kv';
+    draft.guided = { ...defaultGuidedOptions(), groups: { ...defaultGuidedOptions().groups, action: 'vendor_fields' } };
+    const result = toBackendProject(draft);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.map((x) => x.code)).toContain('CLASSIFICATION_SOURCE_NOT_AVAILABLE');
+    expect(result.issues[0].message).toContain('공통 또는 네트워크');
+  });
+
+  it('rejects duplicate source keys instead of losing one mapping during object serialization', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.mappings.push({ id: 'other', source: 'src_ip', target: 'custom.duplicate_ip', type: 'ip' });
+    draft.guided = { ...defaultGuidedOptions(), groups: { ...defaultGuidedOptions().groups, other: 'top_fields' } };
+    const result = toBackendProject(draft);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.map((x) => x.code)).toContain('DUPLICATE_SOURCE');
+  });
+
+  it('blocks unsafe prototype fields, even when the local UI input allows their syntax', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    draft.mappings.push({ id: 'hazard', source: '__proto__.key', target: 'custom.unsafe', type: 'string' });
+    const result = toBackendProject(draft);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.map((x) => x.code)).toContain('UNSAFE_FIELD');
+  });
+
+  it('fails closed on mismatched transport, format and expired UI draft requirements', () => {
+    const draft = createDraft();
+    expect(toBackendProject(draft).ok).toBe(false);
+    draft.format = 'regex';
+    expect(toBackendProject(draft).ok).toBe(false);
+    draft.format = 'json';
+    draft.guided = { ...defaultGuidedOptions(), receiver: { ...defaultGuidedOptions().receiver, protocols: [], port: 22 } };
+    expect(toBackendProject(draft).ok).toBe(false);
+  });
+});

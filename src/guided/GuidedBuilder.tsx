@@ -11,6 +11,8 @@ import { DEMO_SAMPLES } from '../model';
 import { formatLabel, MAX_DATASET_BYTES } from '../parser';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
+import { toBackendProject, type BackendParserProject } from './backendAdapter';
+import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type Transport,
@@ -56,8 +58,8 @@ const CLASS_LABELS: Record<EventClass, string> = {
   Syslog: 'Syslog / 일반 로그', Winlogevent: 'Winlogevent / Windows',
 };
 
-function localDownload(filename: string, source: string) {
-  const url = URL.createObjectURL(new Blob([source], { type: 'application/json;charset=utf-8' }));
+function localDownload(filename: string, source: string, mediaType = 'application/json;charset=utf-8') {
+  const url = URL.createObjectURL(new Blob([source], { type: mediaType }));
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
@@ -80,6 +82,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [proposalResult, setProposalResult] = useState<{ key: string; matched: number; total: number } | null>(null);
   const [message, setMessage] = useState('');
   const [errorFilter, setErrorFilter] = useState<'all' | 'fail' | 'warning'>('all');
+  const [validatingBackend, setValidatingBackend] = useState(false);
+  const [generatingPair, setGeneratingPair] = useState(false);
+  const [backendAttempt, setBackendAttempt] = useState<{ key: string; project: BackendParserProject; result: BackendValidationResult } | null>(null);
+  const [generatedPair, setGeneratedPair] = useState<{ key: string; pair: GeneratedPair } | null>(null);
+  const [backendError, setBackendError] = useState<{ key: string; message: string } | null>(null);
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
   const activeEvent = suite?.events.find((event) => event.id === selectedId) ?? suite?.events[0];
@@ -89,6 +96,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const proposalKey = JSON.stringify([sample, draft, activeEvent?.id, selectedValue, fieldName]);
   const acceptedResult = proposalResult?.key === proposalKey ? proposalResult : null;
   const artifactContract = compilerDraftContract(draft);
+  const backendProject = toBackendProject(draft);
+  // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
+  const draftKey = JSON.stringify([draft, sample]);
+  const qualifiedBackend = backendAttempt?.key === draftKey ? backendAttempt : null;
+  const qualifiedPair = generatedPair?.key === draftKey ? generatedPair.pair : null;
+  const currentBackendError = backendError?.key === draftKey ? backendError.message : '';
   const names = plannedPairNames(options.slug);
   const hasLogs = Boolean(suite?.counts.total);
   const hardFails = suite?.counts.failures ?? 0;
@@ -197,6 +210,45 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     },
   });
 
+  const checkBackend = async () => {
+    setBackendAttempt(null);
+    setGeneratedPair(null);
+    setBackendError(null);
+    if (!backendProject.ok) {
+      setBackendError({ key: draftKey, message: '필드 매핑과 분류 설정 오류를 먼저 해결하세요.' });
+      return;
+    }
+    setValidatingBackend(true);
+    try {
+      const result = await validateBackendProject(backendProject.project);
+      setBackendAttempt({ key: draftKey, project: backendProject.project, result });
+      if (result.ok) notify('백엔드 입력 스키마 검사를 통과했습니다. 네이티브 실행 검증은 별도로 필요합니다.');
+    } catch (error) {
+      setBackendError({ key: draftKey, message: error instanceof Error ? error.message : '백엔드에 연결할 수 없습니다.' });
+    } finally {
+      setValidatingBackend(false);
+    }
+  };
+
+  const buildDraftPair = async () => {
+    if (!qualifiedBackend?.result.ok || !runState?.suite.counts.total ||
+        runState.suite.counts.matched !== runState.suite.counts.total ||
+        runState.suite.counts.normalized !== runState.suite.counts.total ||
+        runState.suite.counts.failures > 0) return;
+    setGeneratingPair(true);
+    setBackendError(null);
+    setGeneratedPair(null);
+    try {
+      const pair = await generateBackendPair(qualifiedBackend.project);
+      setGeneratedPair({ key: draftKey, pair });
+      notify('두 파일을 받았습니다. SHA-256 검사 PASS, 실행·적재 호환성은 검증되지 않은 DRAFT입니다.');
+    } catch (error) {
+      setBackendError({ key: draftKey, message: error instanceof Error ? error.message : '파일 생성에 실패했습니다.' });
+    } finally {
+      setGeneratingPair(false);
+    }
+  };
+
   const stageStatus = (number: number): 'complete' | 'attention' | 'future' => {
     if (number === 0) return hasLogs ? 'complete' : 'attention';
     if (number === 1) return hasLogs && draft.format !== 'auto' ? 'complete' : hasLogs ? 'attention' : 'future';
@@ -261,6 +313,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <label className="guided-field"><span>장비 제조사</span><input aria-label="Guided vendor" value={draft.vendor} maxLength={80} onChange={(e) => changeDraft('vendor', e.target.value)} placeholder="예: Firewall Vendor" /></label>
             </div>
             <label className="guided-field"><span>파서 ID <small>(출력 파일 이름으로 사용)</small></span><input aria-label="Parser ID" value={options.slug} onChange={(e) => setGuided({ ...options, slug: e.target.value.toLowerCase() })} /><small>영문 소문자, 숫자, 밑줄만 허용합니다. 첫 글자는 영문자로 시작해야 합니다.</small></label>
+            <label className="guided-field"><span>로그 소스 유형</span><select aria-label="Source category" value={options.sourceCategory ?? 'network'} onChange={(e) => setGuided({ ...options, sourceCategory: e.target.value as NonNullable<GuidedOptions['sourceCategory']> })}>
+              <option value="network">네트워크 장비</option><option value="endpoint">엔드포인트</option><option value="cloud">클라우드</option><option value="application">애플리케이션</option><option value="other">기타</option>
+            </select></label>
             <div className="guided-section-title"><span>02</span> 샘플 로그 추가</div>
             <div className="guided-upload"><FileUp size={21} /><span>로그 텍스트를 직접 입력하거나 파일을 불러오세요.</span><label htmlFor="guided-upload-file" className="guided-upload-button">파일 선택</label><input type="file" id="guided-upload-file" onChange={readSampleFile} accept=".txt,.log,.json,.csv,text/plain" hidden /><small>UTF-8 · 최대 64 KiB · 외부 서버로 전송 안 함</small></div>
             <label className="guided-field"><span>원본 로그 <small>{datasetName}</small></span><textarea aria-label="Guided raw sample logs" spellCheck={false} className="guided-raw-input" value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('입력한 샘플 · 임시'); }} placeholder="장비의 원본 로그를 여러 줄 붙여 넣으세요" /></label>
@@ -399,19 +454,43 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           </>}
 
           {step === 5 && <>
-            <div className="guided-export-status"><LockKeyhole size={22} /><div><strong>생성 엔진 연결 대기</strong><p>현재 브라우저 초안은 저장할 수 있지만 Fluentd 및 Stellar Cyber로 검증한 설치용 두 파일은 생성하지 않습니다. 백엔드 컴파일러가 연결된 후 생성 기능이 활성화됩니다.</p></div></div>
+            <div className="guided-export-status"><LockKeyhole size={22} /><div><strong>{qualifiedPair ? '파서 초안 생성 완료 · DRAFT' : '검증 가능한 초안 생성 단계'}</strong><p>백엔드 입력 검증과 브라우저 샘플 테스트를 통과하면 2개의 DRAFT 파일을 생성할 수 있습니다. 네이티브 Fluentd 실행 및 Stellar Cyber 대상 적재는 아직 검증되지 않았으며, 실제 장비에 자동 배포하지 않습니다.</p></div></div>
             <div className="guided-section-title"><span>01</span> 계획된 출력 파일</div>
             <div className="guided-pair-files">
-              <div><FileText size={21} /><span><strong>{names?.config ?? '유효한 파서 ID가 필요합니다'}</strong><small>로그 수신·라우팅 설정 · 생성 대기</small></span><span className="guided-pending-tag">NOT GENERATED</span></div>
-              <div><FileText size={21} /><span><strong>{names?.parser ?? '유효한 파서 ID가 필요합니다'}</strong><small>확장자 없는 Ruby 파서 조각 · 생성 대기</small></span><span className="guided-pending-tag">NOT GENERATED</span></div>
+              <div><FileText size={21} /><span><strong>{names?.config ?? '유효한 파서 ID가 필요합니다'}</strong><small>로그 수신·라우팅 설정 · 생성 대기</small></span><span className="guided-pending-tag">{qualifiedPair ? 'DRAFT · SHA OK' : 'NOT GENERATED'}</span></div>
+              <div><FileText size={21} /><span><strong>{names?.parser ?? '유효한 파서 ID가 필요합니다'}</strong><small>확장자 없는 Ruby 파서 조각 · 생성 대기</small></span><span className="guided-pending-tag">{qualifiedPair ? 'DRAFT · SHA OK' : 'NOT GENERATED'}</span></div>
             </div>
             <div className="guided-section-title"><span>02</span> 작성한 데이터 계약 검사</div>
             {artifactContract.ok ? <div className="guided-note"><ClipboardCheck size={17} /> UI 입력 검사는 통과했습니다. 실제 엔진·대상 적재 호환성 검사는 별도입니다.</div> : <div className="guided-contract-errors">{artifactContract.errors.map((issue) => <div key={issue}><AlertCircle size={15} /><span>{issue}</span></div>)}</div>}
-            <div className="guided-export-actions">
-              <button type="button" className="guided-cta-main" disabled><FileArchive size={15} /> 파서 2개 파일 생성 (연결 대기)</button>
-              <button type="button" className="guided-cta-secondary" disabled={!artifactContract.ok} onClick={() => { if (artifactContract.ok) localDownload('parser-project-'+artifactContract.project.slug+'.json', JSON.stringify(artifactContract.project, null, 2)); }}><Download size={15} /> 백엔드용 프로젝트 JSON 다운로드</button>
+            {!backendProject.ok && <div className="guided-contract-errors" aria-label="Backend mapping compatibility errors">{backendProject.issues.map((issue, index) => <div key={issue.code + index}><AlertCircle size={15} /><span>{issue.message}</span></div>)}</div>}
+            <div className="guided-section-title"><span>03</span> 로컬 백엔드 계약 검사</div>
+            <div className="guided-backend-control">
+              <button type="button" className="guided-cta-secondary" onClick={() => { void checkBackend(); }} disabled={!backendProject.ok || validatingBackend}>
+                <ShieldCheck size={15} /> {validatingBackend ? '백엔드 검사 중…' : '백엔드 입력 검사'}
+              </button>
+              <span>{qualifiedBackend?.result.ok ? 'Schema PASS · 엔진 미검증' : '검사 대기 / 백엔드 연결 필요'}</span>
             </div>
-            <div className="guided-hint"><HelpCircle size={16} /> 다운로드되는 프로젝트 JSON에는 원본 샘플 로그가 포함되지 않습니다. 이는 완성된 .conf 또는 Ruby 파일이 아닙니다.</div>
+            {qualifiedBackend && !qualifiedBackend.result.ok && <div className="guided-contract-errors" aria-label="Backend validation errors">
+              {qualifiedBackend.result.issues.map((issue, index) => <div key={issue.code + index}><AlertCircle size={15} /><span>{issue.code}: {issue.message} ({issue.path})</span></div>)}
+            </div>}
+            {currentBackendError && <div className="guided-error" role="alert">{currentBackendError}</div>}
+            <div className="guided-section-title"><span>04</span> 두 파일 생성 및 다운로드</div>
+            <div className="guided-export-actions">
+              {qualifiedBackend?.result.ok
+                ? <button type="button" className="guided-cta-main" onClick={() => { void buildDraftPair(); }} disabled={generatingPair || !runState?.suite.counts.total || runState.suite.counts.matched !== runState.suite.counts.total || runState.suite.counts.normalized !== runState.suite.counts.total || runState.suite.counts.failures > 0}>
+                  <FileArchive size={15} /> {generatingPair ? '초안 생성 중…' : '파서 초안 2개 파일 생성 (DRAFT)'}
+                </button>
+                : <button type="button" className="guided-cta-main" disabled><FileArchive size={15} /> 파서 2개 파일 생성 (연결 대기)</button>}
+              <button type="button" className="guided-cta-secondary" disabled={!backendProject.ok} onClick={() => { if (backendProject.ok) localDownload('parser-project-'+backendProject.project.slug+'.json', JSON.stringify(backendProject.project, null, 2)); }}><Download size={15} /> 백엔드용 프로젝트 JSON 다운로드</button>
+            </div>
+            {qualifiedBackend?.result.ok && (!runState?.suite.counts.total || runState.suite.counts.matched !== runState.suite.counts.total || runState.suite.counts.normalized !== runState.suite.counts.total || runState.suite.counts.failures > 0) && <div className="guided-hint"><AlertTriangle size={16} /> 동일 초안·샘플로 5단계 전체 브라우저 테스트를 실행하고 모든 이벤트가 추출·정규화됐는지 확인해야 DRAFT 파일 생성이 열립니다.</div>}
+            {qualifiedPair && <div className="guided-generated-pair" aria-label="Generated draft parser pair">
+              <div className="guided-generated-header"><FileCheck2 size={18} /><div><strong>2개 DRAFT 파일 · SHA-256 무결성 확인</strong><small>Native Fluentd / Stellar import 검증 없음 · 자동 배포 없음</small></div></div>
+              <div className="guided-generated-files">{qualifiedPair.files.map((file) =>
+                <button className="guided-cta-secondary" key={file.name} type="button" onClick={() => localDownload(file.name, file.content, 'application/octet-stream')}><Download size={15} /> {file.name}</button>)}</div>
+              <div className="guided-generated-warnings">{qualifiedPair.manifest.warnings.map((warning, index) => <p key={index}><AlertTriangle size={13} /> {warning}</p>)}</div>
+            </div>}
+            <div className="guided-hint"><HelpCircle size={16} /> 프로젝트 JSON에는 원본 로그가 포함되지 않습니다. 제공 가능한 파일은 DRAFT Ruby 조각과 CONF이며, 포털 업로드 형식이나 네이티브 엔진 검증 결과로 간주할 수 없습니다.</div>
           </>}
         </div>
 
@@ -440,7 +519,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
         <div className="guided-checks"><div><CheckCircle2 size={15} /><span>브라우저 미리보기</span><strong>{pending ? '실행 중' : suite ? '실행됨' : '미실행'}</strong></div>
           <div><AlertTriangle size={15} /><span>Ruby/Fluentd 테스트</span><strong>미검증</strong></div>
           <div><AlertTriangle size={15} /><span>Stellar 적재 검증</span><strong>미검증</strong></div>
-          <div><LockKeyhole size={15} /><span>생성 및 배포</span><strong>비활성</strong></div>
+          <div><LockKeyhole size={15} /><span>자동 배포</span><strong>비활성</strong></div>
         </div>
         <div className="guided-inspector-bottom"><ShieldCheck size={16} /> 모델은 Stellar 버전과 독립적으로 작성합니다. 지원 여부는 실제 출력 어댑터 검증 후 판단합니다.</div>
       </aside>

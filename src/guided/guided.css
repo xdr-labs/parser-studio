@@ -256,3 +256,18 @@
 .guided-route-state.fallback {background:#fff5e8;color:#a47a37;}
 .guided-route-state.unresolved {background:#fff0f0;color:#b85d64;}
 .guided-route-empty {font-size:10px;color:#879da7;margin:0;padding:15px;}
+
+/* Explicit backend-validation and draft-only artifact flow: never an export-ready badge. */
+.guided-backend-control { display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:10px 0 16px; }
+.guided-backend-control span { color:#7f96a2;font-size:10px; }
+.guided-generated-pair {border:1px solid #badbd3;background:#f5fbf9;border-radius:8px;padding:14px;margin:17px 0;}
+.guided-generated-header {display:flex;gap:10px;align-items:flex-start;color:#2a9a86;}
+.guided-generated-header svg {flex:none;}
+.guided-generated-header > div {display:flex;flex-direction:column;gap:4px;}
+.guided-generated-header strong {color:#317f77;font-size:12px;}
+.guided-generated-header small {color:#91a6a5;font-size:10px;}
+.guided-generated-files {display:flex;flex-wrap:wrap;gap:9px;margin:15px 0;}
+.guided-generated-files button {font-family:var(--mono);font-size:10px;}
+.guided-generated-warnings {border-top:1px solid #d5e8e2;padding-top:8px;}
+.guided-generated-warnings p {display:flex;gap:6px;align-items:flex-start;font-size:10px;line-height:1.55;color:#8f845d;margin:6px 0;}
+.guided-generated-warnings svg {flex:none;}

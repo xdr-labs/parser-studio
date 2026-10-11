@@ -22,6 +22,7 @@ describe('six-step guided builder UI-to-backend configuration boundary', () => {
     expect(result.project.classification.rules[0].index).toBe('Threat');
     expect(result.project.normalization.top_fields).toEqual([
       { source: 'src_ip', normalized_name: 'custom.source_ip', data_type: 'ip' },
+      { source: 'action', normalized_name: 'custom.action', data_type: 'string' },
       { source: 'event_time', normalized_name: 'custom.event_time', data_type: 'date', time_format: 'iso8601', timezone: 'UTC' },
     ]);
     expect(result.project.normalization.ns_fields[0].data_type).toBe('port');

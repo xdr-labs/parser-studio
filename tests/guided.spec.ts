@@ -55,7 +55,7 @@ test('complete six UI stages, execute browser test, download typed contract but 
   await page.getByRole('button', { name: '다음 단계' }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
   await page.getByRole('button', { name: '다음 단계' }).click();
-  await page.getByRole('combobox', { name: 'Mapping group 2' }).selectOption('vendor_fields');
+  await page.getByRole('combobox', { name: 'Mapping group 2' }).selectOption('ns_fields');
   await page.getByRole('button', { name: '다음 단계' }).click();
   await expect(page.getByRole('heading', { name: '로그는 어디에서 들어오고 어떻게 분류되나요?' })).toBeVisible();
   await page.getByLabel('Receiving port').fill('7512');
@@ -82,9 +82,9 @@ test('complete six UI stages, execute browser test, download typed contract but 
   expect(project.slug).toBe('sample_fw');
   expect(project.receiver.port).toBe(7512);
   expect(project.receiver.protocols).toEqual(['udp', 'tcp']);
-  expect(project.classification.rules[0].index).toBe('Threat');
-  expect(project.normalization.top_fields[0].data_type).toBe('ip');
-  expect(project.input.format).toBe('json');
+  expect(project.classification.rules[0].index).toBe('threat');
+  expect(project.normalization.topFields.src_ip.data_type).toBe('ip');
+  expect(project.extraction.format).toBe('json');
   expect(JSON.stringify(project)).not.toContain('DEMO-FW');
   expect(JSON.stringify(project)).not.toContain('198.51.100.10');
 });
@@ -97,8 +97,8 @@ test('invalid port and output name block project contract handoff', async ({ pag
   await page.getByLabel('UDP receiver').uncheck();
   await page.getByLabel('TCP receiver').uncheck();
   await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
-  await expect(page.locator('.guided-contract-errors')).toContainText('Parser ID');
-  await expect(page.locator('.guided-contract-errors')).toContainText('Receiving port');
+  await expect(page.locator('.guided-contract-errors').first()).toContainText('Parser ID');
+  await expect(page.locator('.guided-contract-errors').first()).toContainText('Receiving port');
   await expect(page.getByRole('button', { name: '백엔드용 프로젝트 JSON 다운로드' })).toBeDisabled();
   await expect(page.getByRole('button', { name: '파서 2개 파일 생성 (연결 대기)' })).toBeDisabled();
 });
