@@ -25,6 +25,14 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 - [04 — Architecture, compatibility and security](docs/04_ARCHITECTURE.md)
 - [05 — Competitor research and design rationale](docs/05_COMPETITOR_RESEARCH.md)
 - [06 — Roadmap and acceptance criteria](docs/06_ROADMAP_AND_ACCEPTANCE.md)
+- [09 — Secure test Stellar Cyber API setup](docs/09_STELLAR_API_TEST_SETUP.md)
+
+## Configure test API credentials on dev-atlas
+
+From an interactive SSH terminal, run `python3 scripts/configure_stellar_test_api.py`.
+This saves DP URL, Tenant ID and a hidden API Key only to your private user configuration,
+not to Git. Run with `--status` to verify the local file exists (not the remote connection).
+No vendor API calls or parser deployments are performed by this script.
 
 ## Current scope
 
