@@ -240,7 +240,7 @@ test('nondeveloper can group pretty JSON samples by blank lines without leaking 
   await expect(page.locator('.guided-event-option')).toHaveCount(2);
   await expect(page.getByLabel('Guided selectable raw event')).toContainText('"src_ip":"198.51.100.25"');
   await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
-  await expect(page.locator('.guided-contract-errors')).toContainText('Blank-line grouping is preview-only');
+  await expect(page.locator('.guided-contract-errors').first()).toContainText('Blank-line grouping is preview-only');
   await expect(page.getByRole('button', { name: '파서 2개 파일 생성 (연결 대기)' })).toBeDisabled();
   await expect(page.getByRole('button', { name: '백엔드용 프로젝트 JSON 다운로드' })).toBeDisabled();
 });
