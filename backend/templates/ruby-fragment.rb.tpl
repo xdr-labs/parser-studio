@@ -57,6 +57,11 @@ end
 def parserstudio_extract(text)
   raise ArgumentError, 'Record is longer than the configured message limit' if text.bytesize > @parser_rule_set['receiver']['messageLengthLimit']
   settings = @parser_rule_set['extraction']
+  # The generated receiver has no multiline event-breaker. Reject additional
+  # physical lines for non-JSON logs instead of parsing an incomplete event.
+  if settings['format'] != 'json' && (text.include?("\n") || text.include?("\r"))
+    raise ArgumentError, 'Multiline non-JSON event is unsupported'
+  end
   case settings['format']
   when 'json'
     parserstudio_json_object(text)
@@ -228,7 +233,7 @@ def parserstudio_leef(text)
   extension = parts.last
   unless extension.nil? || extension.empty?
     extension.split(delimiter, -1).each do |piece|
-      next if piece.empty?
+      raise ArgumentError, 'Empty LEEF extension token' if piece.empty?
       key, value = piece.split('=', 2)
       raise ArgumentError, 'Malformed LEEF extension' unless key && value && key.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*\z/)
       raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)

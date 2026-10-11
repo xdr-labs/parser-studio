@@ -31,6 +31,15 @@ Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone
 
 Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
 
+## Format boundary regression
+
+Four extra negative native callback scenarios enforce fail-closed behavior for
+single-record non-JSON families: CEF/LEEF trailing physical newlines, CSV CRLF,
+and empty LEEF 2.0 extension segments. They must produce extraction-stage
+diagnostics without partially normalized events. Pretty-formatted JSON remains
+an extraction-level JSON object; this does **not** implement a multiline event
+breaker or validate production message boundaries.
+
 ## Fixed synthetic fixture output boundary
 
 The fixture writer uses a single ignored project-local directory, rejects a redirected PAIR_OUTPUT_DIR, and will not overwrite symlinks, hard links, unexpected file types or invalid parser filenames (Linux O_NOFOLLOW). The pinned golden runner rejects unexpected input directories and source-file symlinks before class evaluation. The qualifying script checks an explicit untrusted-path refusal. This is a defense for offline synthetic testing, not a general-purpose sandbox for customer files.

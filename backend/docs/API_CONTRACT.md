@@ -41,11 +41,11 @@ Main fields: `schemaRevision`, `projectId`, `revision`, `slug`, `vendor`, `produ
 | `extraction.format` | Optional settings | Important limitations |
 | --- | --- | --- |
 | `json` | `maxDepth`: 1–8, default 8 | JSON object root; nested objects; invalid/deep JSON rejected |
-| `kv` | none | Strict whitespace-separated key=value with optional quotes/backslash escapes; unknown suffix rejects |
-| `csv` | `csvColumns` **required**, `csvDelimiter` optional `,`, `;` or TAB | Strict column count, quotes supported; one logical CSV record |
+| `kv` | none | Strict single-line key=value with optional quotes/backslash escapes; literal CR/LF and trailing garbage reject |
+| `csv` | `csvColumns` **required**, `csvDelimiter` optional `,`, `;` or TAB | Strict column count and quoting, one physical CSV line only; literal CR/LF rejects |
 | `syslog_rfc5424` | `syslogBodyFormat`: `raw`, `json` or `kv` | RFC5424 header with single structured-data segment, not RFC3164 or multiline |
-| `cef` | none | Standalone CEF:version, escaped header delimiter, strict KV extension subset; no Syslog-prefixed CEF |
-| `leef` | none | Standalone LEEF 1.0 TAB and 2.0 one-character delimiter subset; not arbitrary LEEF extensions |
+| `cef` | none | Standalone single-line CEF:version, escaped header delimiter, strict KV extension subset; no multiline or Syslog-prefixed CEF |
+| `leef` | none | Standalone single-line LEEF 1.0 TAB and 2.0 one-character delimiter subset; empty extension tokens and CR/LF reject |
 
 **Normalization:** `topFields`, `nsFields`, `vendorFields` maps with `normalized_name`, `data_type` (`string|integer|ip|port|boolean|date`), date `time_format:"iso8601"` plus explicit source timezone; `timezone:"UTC"` is available. Invalid ports, IP and unzoned timestamps fail. Names cannot collide with system fields or other outputs.
 

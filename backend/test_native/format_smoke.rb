@@ -68,4 +68,19 @@ assert(bad_delimiter.key?("parser_err_msg"), "LEEF unsupported delimiter")
 _, kv_bad = execute_parser(folder, "sample_kv", "src_ip=192.0.2.7 extra-word")
 assert(kv_bad.key?("parser_err_msg"), "Strict KV trailing-garbage detection")
 
-puts "Extended synthetic formats: 12 assertions/scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+# Explicit no-multiline authoring: fail closed instead of classifying a
+# malformed event with a dropped newline or an empty LEEF extension token.
+malformed_single_event = [
+  ["sample_cef", "CEF:0|Synthetic|FW|1|42|Denied|8|src=192.0.2.8 dpt=443 act=deny\n"],
+  ["sample_leef", "LEEF:1.0|Synthetic|FW|1|5|src=192.0.2.8\tdstPort=443\tact=deny\n"],
+  ["sample_csv", "192.0.2.8,443,deny\r\n"],
+  ["sample_leef", "LEEF:2.0|Synthetic|FW|1|6|^|src=192.0.2.8^^dstPort=443^act=deny"]
+]
+malformed_single_event.each do |slug, raw|
+  _, rejected = execute_parser(folder, slug, raw)
+  assert(rejected['parser_err_msg'] == 'ArgumentError', "#{slug}: malformed event must be rejected")
+  assert(rejected['parser_err_stage'] == 'extraction', "#{slug}: extraction-stage error required")
+  assert(!rejected.key?('srcip'), "#{slug}: malformed event cannot yield partial fields")
+end
+
+puts "Extended synthetic formats: 16 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
