@@ -92,7 +92,7 @@ test('read-only Legacy upload-file contract plan never submits credentials or in
   await expect(proof).toContainText('Parser Pair Integrity Verified');
   await expect(proof).toContainText('No Upload');
   await expect(proof).toContainText('Tenant synthetic-tenant');
-  await expect(proof).toContainText('Port 7501');
+  await expect(proof).toContainText('Parser listener port 7501');
   await expect(proof).toContainText('Unverified');
   expect(calls).toBe(1);
   expect(forbidden).toBe(0);
