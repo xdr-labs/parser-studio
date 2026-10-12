@@ -3,6 +3,7 @@ import { TextDecoder } from "node:util";
 import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
+import {listParserTemplates,instantiateParserTemplate,ParserTemplateError} from "./parser-templates.js";
 import {TargetApplyMockGateway} from "./target-apply-bff.js";
 import {TargetDeploymentError} from "./target-deployment.js";
 import {ArtifactRevisionHistory,ArtifactRevisionHistoryError,
@@ -137,6 +138,47 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Public synthetic template catalog; instantiation is offline only.
+    const templateBase="/api/v1/parser-pairs/templates";
+    if(path===templateBase||path===templateBase+"/instantiate"){
+      const instantiate=path===templateBase+"/instantiate";
+      if(req.method!==(instantiate?"POST":"GET")){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      if(!instantiate){
+        send(res,200,{contract:"parser-template-catalog.v0.1",
+          offlineOnly:true,templates:listParserTemplates()});
+        return;
+      }
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]??0)>MAX_PROJECT_BYTES){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const raw=await jsonInput(req,MAX_PROJECT_BYTES);
+        if(!raw||typeof raw!=="object"||Array.isArray(raw)||
+          Object.keys(raw).sort().join(",")!=="options,templateId"||
+          typeof (raw as Record<string,unknown>)["templateId"]!=="string"){
+          send(res,422,{error:"TEMPLATE_REQUEST_INVALID"});return;
+        }
+        const input=raw as Record<string,unknown>;
+        const project=instantiateParserTemplate(input["templateId"] as string,
+          input["options"] as Parameters<typeof instantiateParserTemplate>[1]);
+        send(res,200,{contract:"parser-template-draft.v0.1",
+          project,targetImportVerified:false,deployableNow:false,autodeploy:false});
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof ParserTemplateError)
+          send(res,error.code==="TEMPLATE_NOT_FOUND"?404:422,{error:error.code});
+        else send(res,500,{error:"TEMPLATE_FAILED"});
       }
       return;
     }

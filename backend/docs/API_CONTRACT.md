@@ -112,8 +112,12 @@ tested. The synthetic mapping is only an editable starting suggestion.
 
 The catalog intentionally does not include proprietary customer samples,
 credentials, target references, automatic deployment or receiver port
-reservation. The exported utility is currently not connected to the default
-HTTP service or UI; those wiring changes require separate safe review.
+reservation. The loopback backend now provides read-only
+GET /api/v1/parser-pairs/templates and
+POST /api/v1/parser-pairs/templates/instantiate. They return synthetic
+catalog metadata and a validated editable ParserProject, respectively.
+Neither route reads a DP profile, reserves ports, deploys or sends data.
+UI integration and actual target/native runtime validation remain separate.
 
 ## P1 read-only import loss assessment
 
