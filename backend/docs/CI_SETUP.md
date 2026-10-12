@@ -33,8 +33,11 @@ existing reviewed workflow on Draft PR #4 (commit b67ac9d). The first Actions
 run #38244003529 reached dependency setup but failed because the template
 used Bundler 4's removed --frozen CLI option. The option is replaced by
 bundle config set --local frozen true, and the exact PR HEAD checkout is set
-explicitly. CI PASS must be verified for the *new* HEAD and must never be
-inferred from these past runs or from local qualification alone.
+explicitly. A follow-up run #38244406140 exposed missing gem SHA-256 entries
+in the historical Gemfile.lock; Bundler 4 restored all missing entries from
+RubyGems without changing pinned dependency versions. CI PASS must be verified
+for the *new* HEAD and must never be inferred from prior runs or local
+qualification alone.
 
 ## Local reproducibility
 
