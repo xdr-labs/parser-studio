@@ -84,3 +84,45 @@ test('all-family audit supports keyboard activation without storing or uploading
   await expect(page.getByLabel('All-family browser audit result')).toContainText('4 original events accounted for');
   expect(requests).toBe(0);
 });
+
+
+test('user-downloadable family audit evidence contains only SHA-256 provenance and redacted counts',async({page})=>{
+  let backendCalls=0;
+  page.on('request',request=>{if(request.url().includes('/api/v1/'))backendCalls++;});
+  await page.goto('/');
+  await page.getByLabel('Guided raw sample logs').fill(mixed);
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
+  await page.getByLabel('Local family isolation workspace').locator('summary').click();
+  await page.getByRole('button',{name:'Audit All Detected Families Locally'}).click();
+  const report=page.getByLabel('All-family browser audit result');
+  await expect(report).toContainText('4 original events accounted for');
+  const downloadPromise=page.waitForEvent('download');
+  await report.getByRole('button',{name:'Download Redacted Family Audit JSON'}).click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^parser_studio_[a-z0-9_]+_family_audit\.json$/);
+  const {readFile}=await import('node:fs/promises');
+  const body=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(body).toMatchObject({
+    reportSchema:'parser-studio.browser-family-audit-evidence.v0.1',
+    engine:'browser-preview',status:'DRAFT_ONLY',
+    compatibility:{
+      nativeFluentdVerified:false,stellarTargetVerified:false,
+      singleMixedFormatParserVerified:false,
+    },
+    privacy:{
+      rawLogsIncluded:false,normalizedValuesIncluded:false,
+      diagnosticMessagesIncluded:false,
+    },
+    overview:{sourceEvents:4,reviewedEvents:3,unreviewableEvents:1},
+    families:[{format:'json',sourceEvents:2},{format:'kv',sourceEvents:1}],
+    unreviewable:[{originalLine:4,format:'unknown'}],
+  });
+  expect(body.source.sampleSha256).toMatch(/^[0-9a-f]{64}$/);
+  expect(body.source.draftSha256).toMatch(/^[0-9a-f]{64}$/);
+  const serialized=JSON.stringify(body);
+  for(const privateValue of [
+    'CUSTOMER_SECRET_A','CUSTOMER_SECRET_B','PRIVATE_USER',
+    'PRIVATE_UNSUPPORTED_CONTENT','198.51.100.10','203.0.113.10',
+  ]) expect(serialized).not.toContain(privateValue);
+  expect(backendCalls).toBe(0);
+});

@@ -47,6 +47,7 @@ import {
   type FamilyIsolationReport, type IsolatableFamily,
 } from './familyIsolation';
 import {planAllFamilyAudit,summarizeAllFamilyAudit,type AllFamilyAuditReport} from './familyAudit';
+import {createAllFamilyAuditEvidence} from './familyAuditEvidence';
 import { createBrowserEvidence } from './browserEvidence';
 import { compareBrowserEvidence, type BrowserEvidenceComparison } from './browserEvidenceComparison';
 import { createLocalReplayPlan, synthesizeFromReplayPlan, type LocalReplayPlan, type ReplayMutation } from './replayPreview';
@@ -181,6 +182,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [allFamilyAuditError,setAllFamilyAuditError]=useState('');
   const [allFamilyAuditAttempt,setAllFamilyAuditAttempt]=useState<{key:string;report:AllFamilyAuditReport}|null>(null);
   const allFamilyAuditToken=useRef(0);
+  const [allFamilyEvidenceBusy,setAllFamilyEvidenceBusy]=useState(false);
+  const [allFamilyEvidenceError,setAllFamilyEvidenceError]=useState('');
   const [selectedValue, setSelectedValue] = useState('');
   const [keyboardValue,setKeyboardValue] = useState('');
   const [fieldName, setFieldName] = useState('new_field');
@@ -436,6 +439,27 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
          sourceKey===latestDraftKeyRef.current)
         setAllFamilyAuditError('The complete format-family audit could not be verified. Rerun the full source preview and check source boundaries and format detection. No family was silently omitted.');
     }finally{setAllFamilyAuditPending(false);}
+  };
+
+  const downloadAllFamilyAuditReport=async()=>{
+    if(!currentAllFamilyAudit || !suite || pending ||
+       allFamilyAuditPending || allFamilyEvidenceBusy)return;
+    const key=allFamilyAuditKey;
+    setAllFamilyEvidenceBusy(true);setAllFamilyEvidenceError('');
+    try{
+      const evidence=await createAllFamilyAuditEvidence({
+        sample,draft,suite,report:currentAllFamilyAudit,
+      });
+      if(key!==latestDraftKeyRef.current)return;
+      const slug=/^[a-z][a-z0-9_]{2,47}$/.test(options.slug)
+        ? options.slug:'local_draft';
+      localDownload('parser_studio_'+slug+'_family_audit.json',
+        JSON.stringify(evidence,null,2)+'\n');
+      notify('Downloaded source-SHA-bound browser family audit metadata. No raw logs, normalized values or vendor compatibility claims are included.');
+    }catch{
+      if(key===latestDraftKeyRef.current)
+        setAllFamilyEvidenceError('The current browser family audit could not be verified for a safe, metadata-only download.');
+    }finally{setAllFamilyEvidenceBusy(false);}
   };
 
   const checkParserListenerPort = async (override: boolean) => {
@@ -1303,6 +1327,15 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                         Unsupported source events still require a separately reviewed parser.
                       </p>}
                     <small>All source events remain in the original dataset. The original draft, raw sample and previously verified files remain unchanged. Passing browser family tests cannot validate a single mixed-format Ruby/CONF parser or live sensor ingestion.</small>
+                    <button type="button" className="guided-cta-secondary"
+                      disabled={allFamilyEvidenceBusy||pending||allFamilyAuditPending}
+                      onClick={()=>{void downloadAllFamilyAuditReport();}}>
+                      <FileDown size={15}/>
+                      {allFamilyEvidenceBusy?'Preparing Redacted Audit…':'Download Redacted Family Audit JSON'}
+                    </button>
+                    <small>Explicit download only: the file binds this source/draft to SHA-256 hashes and contains aggregate format counts, source line numbers and explicit unsupported event counts, never raw customer event values.</small>
+                    {allFamilyEvidenceError &&
+                      <p role="alert" className="guided-error">{allFamilyEvidenceError}</p>}
                   </div>}
                 </div>
                 <small>Nothing is uploaded, exported, saved, or installed by this action. Unknown, unsupported, multiline, oversized or stale event families cannot silently disappear. Create and validate a separate draft for each supported format before exporting DRAFT files.</small>
