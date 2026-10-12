@@ -28,7 +28,7 @@ type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
 function download(filename:string,content:string|ArrayBuffer,binary=false){
- const object=new Blob([content],{type:binary?'application/zip':'text/plain;charset=utf-8'});
+ const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
  const url=URL.createObjectURL(object);
  const anchor=document.createElement('a');
  anchor.href=url;anchor.download=filename;document.body.append(anchor);anchor.click();anchor.remove();
