@@ -49,8 +49,11 @@ read-only list requests. **Every write requires `confirmed=True`** and a
 disposable name matching `ps_api_crud_test_<hex>` or
 `customized_ps_api_crud_test_<hex>`. Reads/updates/deletes are tenant-scoped,
 and the code rejects collisions, missing expected records, and version mismatches
-before mutation. HTTP errors are categorized by method/status only, with no
-raw vendor error body, key, JWT, or parser source in exceptions.
+before mutation. JWTs are refreshed after a bounded eight-minute cache window;
+read-only GET requests may retry once after HTTP 401 with a refreshed JWT.
+**POST/PUT/DELETE are never automatically retried after HTTP 401** to avoid
+unintended repeated mutations. HTTP errors are categorized by method/status only,
+with no raw vendor error body, key, JWT, or parser source in exceptions.
 
 The adapter uses the documented multipart request fields:
 `cust_id`, `parser_name` (POST only), `version`, and **two repeated

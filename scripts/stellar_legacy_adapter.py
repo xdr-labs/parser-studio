@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import hashlib
 import re
+import time
 from typing import Any, Mapping, Sequence
 
 import requests
@@ -20,6 +21,7 @@ import requests
 POC_HOST = "https://poc-apac.stellarcyber.cloud"
 API_PREFIX = "/connect/api/v1"
 HTTP_TIMEOUT = (10, 25)
+JWT_REFRESH_AGE_SECONDS = 8 * 60
 MAX_FILE_BYTES = 512_000
 
 # Exact current backend schema: slug ^[a-z][a-z0-9_]{1,47}$.
@@ -220,6 +222,7 @@ class LegacyPocClient:
         self.tenant = profile["tenant"]
         self._key = profile["key"]
         self._jwt = None
+        self._jwt_obtained_at = None
         self._client = session if session is not None else requests.Session()
         self._owns_session = session is None
 
@@ -228,7 +231,9 @@ class LegacyPocClient:
             self._client.close()
 
     def _token(self) -> str:
-        if self._jwt is None:
+        now = time.monotonic()
+        if (self._jwt is None or self._jwt_obtained_at is None
+                or now - self._jwt_obtained_at >= JWT_REFRESH_AGE_SECONDS):
             try:
                 r = self._client.post(
                     self.host + API_PREFIX + "/access_token",
@@ -246,20 +251,29 @@ class LegacyPocClient:
             if not isinstance(jwt, str) or not jwt:
                 raise LegacyContractError("Invalid access-token response")
             self._jwt = jwt
+            self._jwt_obtained_at = time.monotonic()
         return self._jwt
 
     def _headers(self) -> dict[str, str]:
         return {"Authorization": "Bearer " + self._token(), "Accept": "application/json"}
 
     def _records(self, path: str) -> list[dict]:
-        try:
-            r = self._client.get(
+        def fetch():
+            return self._client.get(
                 self.host + API_PREFIX + path,
                 params={"cust_id": self.tenant},
                 headers=self._headers(),
                 allow_redirects=False,
                 timeout=HTTP_TIMEOUT,
             )
+        try:
+            r = fetch()
+            if r.status_code == 401:
+                # GET is idempotent; one refresh/retry is safe. Never retry a
+                # non-idempotent POST/PUT/DELETE without a new confirmation.
+                self._jwt = None
+                self._jwt_obtained_at = None
+                r = fetch()
         except requests.RequestException as exc:
             raise LegacyContractError("Parser listing network failure: " + type(exc).__name__) from None
         if r.status_code != 200:

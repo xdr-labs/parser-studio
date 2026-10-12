@@ -8,9 +8,11 @@ import json
 import pathlib
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
 
+import stellar_legacy_adapter as adapter_module
 from stellar_legacy_adapter import (
     LegacyPocClient,
     LegacyUpload,
@@ -273,6 +275,59 @@ class LegacyAdapterTests(unittest.TestCase):
         client = make_client(FakeHttpSession())
         with self.assertRaises(LegacyContractError):
             client.delete("existing_parser", expected_version="1.0.0", confirmed=True)
+
+    def test_expired_jwt_read_reauthenticates_once(self):
+        class ExpiredGet:
+            def __init__(self):
+                self.jwt_issue_count = 0
+                self.get_tokens = []
+            def post(self, url, **kwargs):
+                assert url.endswith('/access_token')
+                self.jwt_issue_count += 1
+                return FakeResponse(200, {'access_token': 'jwt-' + str(self.jwt_issue_count)})
+            def get(self, url, **kwargs):
+                token = kwargs['headers']['Authorization']
+                self.get_tokens.append(token)
+                if token == 'Bearer jwt-1':
+                    return FakeResponse(401, {'sensitive': 'untrusted'})
+                return FakeResponse(200, {'data': []})
+            def close(self):
+                pass
+        session = ExpiredGet()
+        client = make_client(session)
+        self.assertEqual(client._records('/custom_log_parsers'), [])
+        self.assertEqual(session.jwt_issue_count, 2)
+        self.assertEqual(session.get_tokens, ['Bearer jwt-1', 'Bearer jwt-2'])
+
+    def test_cached_jwt_expires_after_bounded_time(self):
+        class JwtWindowSession:
+            def __init__(self):
+                self.auth_count = 0
+                self.seen = []
+            def post(self, url, **kwargs):
+                self.auth_count += 1
+                return FakeResponse(200, {'access_token': 'jwt-' + str(self.auth_count)})
+            def get(self, url, **kwargs):
+                self.seen.append(kwargs['headers']['Authorization'])
+                return FakeResponse(200, {'data': []})
+            def close(self):
+                pass
+        session = JwtWindowSession()
+        client = make_client(session)
+        with patch.object(adapter_module.time, 'monotonic', side_effect=[1000.0, 1001.0, 1500.0, 1501.0]):
+            self.assertEqual(client._records('/custom_log_parsers'), [])
+            self.assertEqual(client._records('/custom_log_parsers'), [])
+        self.assertEqual(session.auth_count, 2)
+        self.assertEqual(session.seen, ['Bearer jwt-1', 'Bearer jwt-2'])
+
+    def test_non_idempotent_create_never_retries_after_401(self):
+        session = FakeHttpSession(create=401)
+        client = make_client(session)
+        plan = LegacyUpload.from_generated(generated_pair(), tenant=TENANT, version='1.0.0')
+        with self.assertRaises(LegacyApiError) as caught:
+            client.create(plan, confirmed=True)
+        self.assertEqual(caught.exception.status, 401)
+        self.assertEqual(sum(verb == 'CREATE' for verb, _ in session.calls), 1)
 
     def test_rejected_upload_is_not_success(self):
         s = FakeHttpSession(create=422)
