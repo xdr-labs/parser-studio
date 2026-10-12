@@ -14,7 +14,7 @@ test('nondeveloper can inspect mixed JSON/KV sample families without false expor
   await expect(coverage).toContainText('JSON');
   await expect(coverage).toContainText('Key / Value');
   await expect(coverage).toContainText('Samples differing from chosen format: 1');
-  await expect(coverage).toContainText('test using a separate parser draft');
+  await expect(coverage).toContainText('Separate and test incompatible event families in distinct drafts.');
   await expect(page.getByRole('note', { name:'Mixed format guidance' })).toBeVisible();
   await coverage.getByRole('button',{name:'Inspect Different-Format Samples'}).click();
   await expect(page.getByLabel('Guided selectable raw event')).toContainText('action=deny');
