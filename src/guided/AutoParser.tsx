@@ -691,6 +691,10 @@ export default function AutoParser({
        {currentAIPrompt&&(currentAIPrompt.ok
          ? <div aria-label="Privacy-safe AI prompt" role="status">
            <strong>SCHEMA-ONLY · No raw logs · No automatic upload</strong>
+           {!currentAIPrompt.currentProjectImportReady&&<span>
+             Current parser draft is not backend-compatible. The prompt requests
+             plain-English review rather than a fabricated import-ready recipe.
+           </span>}
            <textarea aria-label="Copyable AI prompt" readOnly rows={8}
              value={currentAIPrompt.prompt}/>
            <button type="button" onClick={()=>{void copyAIPrompt();}}>Copy Prompt Manually</button>

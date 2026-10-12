@@ -25,6 +25,17 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
    expect(r.prompt).not.toContain(secret);
   expect(r.prompt).toContain('REVIEW_ONLY');
  });
+ it('still offers a privacy-safe diagnostic prompt for unknown logs and untouched novice auto mode',async()=>{
+  const auto=createDraft();
+  const unknown='PRIVATE_CUSTOMER_EVENT alpha beta\nPRIVATE_LOGIN failed user';
+  const result=await createPrivacySafeAIPrompt(unknown,auto,preview(unknown,auto));
+  expect(result).toMatchObject({ok:true,currentProjectImportReady:false,
+   rawLogsIncluded:false,automaticUpload:false});
+  if(!result.ok)return;
+  expect(result.prompt).toContain('plain-English diagnostic');
+  expect(result.prompt).not.toContain('PRIVATE_CUSTOMER_EVENT');
+  expect(result.prompt).not.toContain('PRIVATE_LOGIN');
+ });
  it('accepts an exact bounded v0.2 structure only as a review, with no automatic parser compiler claim',async()=>{
   const built=await buildReviewableRecipe(source,draft,suite());
   expect(built.ok).toBe(true);

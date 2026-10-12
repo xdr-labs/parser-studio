@@ -17,7 +17,7 @@ export type AIExchangeReason='SOURCE_LIMIT'|'UNTRUSTED_PREVIEW'|
  'FORMAT_MISMATCH'|'UNSUPPORTED_OPERATION';
 export type AIPromptResult=
  | {ok:true;prompt:string;sampleSha256:string;sourceCount:number;
-     rawLogsIncluded:false;automaticUpload:false}
+     currentProjectImportReady:boolean;rawLogsIncluded:false;automaticUpload:false}
  | {ok:false;reason:AIExchangeReason};
 export type AIImportResult=
  | {ok:true;candidate:ParserRecipeV2;
@@ -49,20 +49,21 @@ export async function createPrivacySafeAIPrompt(
 ):Promise<AIPromptResult>{
  if(!verified(source,suite))return {ok:false,reason:'UNTRUSTED_PREVIEW'};
  const projected=toBackendProject(draft);
- if(!projected.ok)return {ok:false,reason:'PROJECT_UNSUPPORTED'};
  const ledger=analyzeLogEnvelopes(source,'single-line');
  if(ledger.status!=='READY'||ledger.accounted!==suite.events.length)
   return {ok:false,reason:'SOURCE_LIMIT'};
  const hash=await digest(source);
  const families=ledger.families.map(({envelope,body,count})=>({envelope,body,count}));
- const meta={projectId:projected.project.projectId,sourceCount:ledger.sourceCount,
+ const meta={projectId:projected.ok?projected.project.projectId:null,
+  currentProjectImportReady:projected.ok,sourceCount:ledger.sourceCount,
   sourceHash:hash,families,unsupported:ledger.unsupported};
  const prompt=[
   'Create a conservative Parser Studio v0.2 REVIEW_ONLY JSON recipe proposal.',
   'The JSON object MUST contain only these root keys:',
   'contract, schemaRevision, compilerMode, projectId, sourceFormat, bodyFormat, sample, stages, nativeVerified, targetVerified.',
   'Use contract parser-studio.recipe.v0.2; schemaRevision 0.2; compilerMode REVIEW_ONLY; nativeVerified=false; targetVerified=false.',
-  'projectId must match the metadata below; sample must be {sha256: sourceHash, events: sourceCount}.',
+  'If projectId is present, it must match the metadata below; sample must be {sha256: sourceHash, events: sourceCount}.',
+  'If projectId is null, the current draft is not backend-compatible: provide a plain-English diagnostic and request reviewed redacted examples instead of inventing a valid recipe.',
   'Allow only stages: split_event(single-line), optional unwrap_syslog(version 1, strict_header),',
   'one parse_json/parse_kv/parse_cef/parse_leef/parse_csv, map_field, adjacent cast_type, classify, fallback_unparsed.',
   'Never provide Ruby, executable code, Regex, JSONata, credentials, API requests or deployment instructions.',
@@ -73,7 +74,7 @@ export async function createPrivacySafeAIPrompt(
   'If you need more context, ASK for explicitly user-approved, manually redacted example records; do not invent semantics.',
  ].join('\n');
  return {ok:true,prompt,sampleSha256:hash,sourceCount:ledger.sourceCount,
-  rawLogsIncluded:false,automaticUpload:false};
+  currentProjectImportReady:projected.ok,rawLogsIncluded:false,automaticUpload:false};
 }
 const mapping=(stages:ReviewStage[])=>stages.filter(
  (x):x is Extract<ReviewStage,{op:'map_field'}>=>x.op==='map_field');
