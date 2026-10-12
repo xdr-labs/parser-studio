@@ -90,3 +90,57 @@ test("changing trusted delivery policy mid-session fails closed and never retrie
     socket.close();
   }
 });
+
+test("approved mixed JSON/CEF scenario sends bounded UDP datagrams and Stop halts all families",async()=>{
+  const socket=createSocket("udp4");
+  await new Promise<void>(resolve=>socket.bind(0,"127.0.0.1",resolve));
+  const target={ip:"127.0.0.1",port:(socket.address() as {port:number}).port,
+    protocol:"udp" as const};
+  const output:string[]=[];
+  socket.on("message",msg=>output.push(msg.toString("utf8")));
+  const sink=createApprovedSensorSink({
+    target,allowedTargets:[target],
+    authorizeDelivery:async()=>true,
+    auditDelivery:async()=>{},
+  });
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,deliver:sink,
+  });
+  try{
+    const running=await runner.start({
+      scenario:{
+        scenarioId:"synthetic-local-story",mode:"constant-rate",
+        events:[
+          {id:"firewall",sample:{
+            format:"json",source:JSON.stringify({
+              src_ip:"192.0.2.6",action:"deny",run_id:"old"}),
+            seed:1,sequence:0,runMarkerField:"run_id",
+            variableFields:[{path:"src_ip",kind:"ipv4"}],
+          }},
+          {id:"endpoint",sample:{
+            format:"cef",
+            source:"CEF:0|Synthetic|FW|1|42|Blocked|8|src=203.0.113.7 act=deny run_id=old",
+            seed:2,sequence:0,runMarkerField:"run_id",
+            variableFields:[{path:"src",kind:"ipv4"}],
+          }},
+        ],
+      },
+      approvalId:"owner-local-scenario",ratePerSecond:5,
+      leaseMs:1500,maxEvents:12,
+    },"local-scenario-owner");
+    await sleep(545);
+    assert.ok(output.length>=2);
+    assert.ok(output[0]!.startsWith("{"));
+    assert.ok(output[1]!.startsWith("CEF:0|"));
+    assert.ok(output.every(x=>x.includes(running.runId)));
+    const state=runner.stop(running.runId,"local-scenario-owner");
+    assert.equal(state.state,"STOPPED");
+    assert.equal(state.parserLifecycleNotModified,true);
+    const sent=output.length;
+    await sleep(290);
+    assert.equal(output.length,sent);
+  }finally{
+    runner.stopAll();
+    socket.close();
+  }
+});

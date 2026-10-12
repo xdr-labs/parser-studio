@@ -400,3 +400,84 @@ test("approved RFC5424 KV synthetic session emits refreshed header time and boun
     runner.stop(running.runId,"syslog-owner");
   }finally{runner.stopAll();}
 });
+
+test("approved constant-rate scenario rotates JSON and CEF while retaining one run owner and Stop",async()=>{
+  const events:string[]=[];
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    deliver:async event=>{events.push(event);},
+  });
+  const scenario={
+    scenarioId:"synthetic-family-mix",
+    mode:"constant-rate" as const,
+    events:[
+      {id:"json-event",sample:{
+        format:"json" as const,source:JSON.stringify({
+          action:"deny",src_ip:"192.0.2.1",run_id:"synthetic-old"}),
+        seed:123,sequence:0,variableFields:[{path:"src_ip",kind:"ipv4" as const}],
+        runMarkerField:"run_id",
+      }},
+      {id:"cef-event",sample:{
+        format:"cef" as const,
+        source:"CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.2 act=deny run_id=old",
+        seed:456,sequence:0,variableFields:[{path:"src",kind:"ipv4" as const}],
+        runMarkerField:"run_id",
+      }},
+    ],
+  };
+  try{
+    const started=await runner.start({
+      scenario,approvalId:"owner-test-scenario",
+      ratePerSecond:5,leaseMs:1300,maxEvents:12,
+    },"scenario-actor");
+    assert.equal(started.replayMode,"constant-rate");
+    assert.equal(started.sampleFamilyCount,2);
+    assert.equal(JSON.stringify(started).includes("synthetic-old"),false);
+    await sleep(550);
+    assert.ok(events.length>=2);
+    assert.ok(events[0]!.startsWith("{"));
+    assert.ok(events[1]!.startsWith("CEF:0|"));
+    assert.ok(events.every(event=>event.includes(started.runId)));
+    const stopped=runner.stop(started.runId,"scenario-actor");
+    assert.equal(stopped.state,"STOPPED");
+    assert.equal(stopped.sensorIngestVerified,false);
+  }finally{runner.stopAll();}
+});
+
+test("original-gap scenario preserves per-event ordering and rejects unapproved faster timings",async()=>{
+  const output:string[]=[];
+  const sample=()=>{
+    return {format:"kv" as const,
+      source:"src_ip=192.0.2.7 action=deny run_id=old",
+      seed:77,sequence:0,runMarkerField:"run_id",
+      variableFields:[{path:"src_ip",kind:"ipv4" as const}]};
+  };
+  const scenario={scenarioId:"synthetic-original-gaps",
+    mode:"original-gaps" as const,cycleMs:1300,
+    events:[
+      {id:"source-a",offsetMs:0,sample:sample()},
+      {id:"source-b",offsetMs:400,sample:sample()},
+      {id:"source-c",offsetMs:850,sample:sample()},
+    ],
+  };
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    deliver:async event=>{output.push(event);},
+  });
+  try{
+    await assert.rejects(()=>runner.start({
+      scenario,approvalId:"owner-test-scenario",ratePerSecond:1,
+      leaseMs:1700,maxEvents:9,
+    },"scenario-actor"),/TESTLAB_SCENARIO_(?:RATE_CONFLICT|TIMING_INVALID)/);
+    const started=await runner.start({
+      scenario,approvalId:"owner-test-scenario",ratePerSecond:5,
+      leaseMs:1700,maxEvents:9,
+    },"scenario-actor");
+    assert.equal(started.replayMode,"original-gaps");
+    await sleep(1050);
+    assert.ok(output.length>=3);
+    assert.ok(output.every(event=>event.includes(started.runId)));
+    assert.equal(runner.status(started.runId,"scenario-actor").sampleFamilyCount,3);
+    runner.stop(started.runId,"scenario-actor");
+  }finally{runner.stopAll();}
+});

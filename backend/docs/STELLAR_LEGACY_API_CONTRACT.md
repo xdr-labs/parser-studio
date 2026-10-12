@@ -252,6 +252,43 @@ traffic sent remains zero. An opt-in server-side sink module has been added
 and validated only with local ephemeral loopback UDP/TCP test receivers.
 The static capabilities continue to mark liveSensorSenderEnabled=false.
 
+## P0-LIVE-3 curated multi-event replay scenario (offline qualified)
+
+The bounded pure backend scenario planner accepts two to twelve sanitized,
+individually format-aware synthetic samples, each with a fixed ID and an
+existing run-marker field. The user chooses one of two deterministic
+schedules: constant-rate cycles round-robin through all samples using
+the separately approved events-per-second ceiling, while original-gaps
+uses explicit relative millisecond offsets plus a finite cycle period
+to retain the reviewed event spacing pattern. Every interval must be at
+least the rate-limit interval, and a review cycle is at most 15 seconds,
+with no gap longer than three seconds. Invalid rates, duplicated sample
+IDs, malformed formats/markers and unsupported source content fail closed
+without echoing source strings.
+
+The separately authenticated POST /api/v1/test-lab/scenario/preview
+takes a scenario, zero-based sequence and approved max ratePerSecond. It
+returns one selected sample event, nextDelayMs, family ID and honest
+unverified flags using an obviously synthetic placeholder run marker.
+It does not allocate a live session or open any socket. UI can preview
+all selections before requesting an independent Start approval.
+
+Existing POST /api/v1/test-lab/sessions/start remains backward-compatible:
+a caller supplies EITHER one sample or one scenario, never both. The server
+evaluates all entries against the supported synthetic extractor first,
+then injects its generated run ID, uses one authenticated session owner
+and approval, and routes only through a separately configured trusted sink.
+Status adds replayMode and sampleFamilyCount, not any raw sample.
+Stop/expiry/server shutdown cancels the entire scenario and purges the
+retained source text from each family. A lease remains finite, requiring
+independent operator-approved renewal. No automatic DP upload occurs.
+
+This is a user-reviewed gap schedule, NOT automatically derived timing
+from arbitrary private event logs, and is NOT real sensor delivery proof.
+Native Fluentd crosschecks still cover the individual format variants.
+Recorded-gaps and scenario features are backend-only until UI PR #7
+integrates the documented schema.
+
 ## P0-LIVE-4 Interflow search/correlation — MOCK contract, no POC data access
 
 A separate User Scope read client now composes the documented

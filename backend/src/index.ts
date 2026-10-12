@@ -54,3 +54,6 @@ export type {InterflowSearchRequest,InterflowQueryPlan,InterflowFieldResult,
 
 export {pollBoundedInterflow,InterflowPollError} from "./stellar-interflow-poll.js";
 export type {InterflowPollOptions,InterflowPollResult} from "./stellar-interflow-poll.js";
+
+export {validateReplayScenario,selectScenarioPreview,ScenarioContractError} from "./testlab-scenario.js";
+export type {ReplayScenario,ScenarioEntry,ScenarioMode,ScenarioEvidence,ScenarioPick} from "./testlab-scenario.js";

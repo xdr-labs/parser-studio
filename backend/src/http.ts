@@ -10,6 +10,8 @@ import {SyntheticSessionController,TestLabSessionError} from "./testlab-session.
 import {buildInterflowQuery,compareInterflowHits,
   InterflowContractError} from "./stellar-interflow.js";
 import {pollBoundedInterflow,InterflowPollError} from "./stellar-interflow-poll.js";
+import {ScenarioContractError,selectScenarioPreview,
+  type ReplayScenario} from "./testlab-scenario.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -258,7 +260,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
           }
           const allowed=action==="start"?
-            ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]:
+            (Object.hasOwn(input,"scenario")?
+              ["scenario","approvalId","ratePerSecond","leaseMs","maxEvents"]:
+              ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]):
             action==="renew"?["runId","approvalId","leaseMs","additionalEvents"]:
             ["runId"];
           if(Object.keys(input).sort().join(",")!==allowed.sort().join(",")){
@@ -294,6 +298,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         const data=input!;
         const result=await sessions.start({
           sample:data["sample"] as Parameters<typeof sessions.start>[0]["sample"],
+          scenario:data["scenario"] as Parameters<typeof sessions.start>[0]["scenario"],
           approvalId:data["approvalId"] as string,
           ratePerSecond:data["ratePerSecond"] as number,
           leaseMs:data["leaseMs"] as number,
@@ -304,6 +309,8 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         const code=(error as {code?:string}).code;
         if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
         else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof ScenarioContractError)
+          send(res,422,{error:error.code});
         else if(error instanceof TestLabSessionError){
           const status=error.code==="TESTLAB_SESSION_NOT_FOUND"?404:
             error.code==="TESTLAB_CAPACITY_REACHED"?429:
@@ -312,6 +319,51 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             /DISABLED|DENIED/.test(error.code)?403:422;
           send(res,status,{error:error.code});
         }else send(res,500,{error:"TESTLAB_SESSION_FAILED"});
+      }
+      return;
+    }
+    // Authenticated offline multi-family preview: no sender, credentials or
+    // live run. Uses a fixed synthetic marker, not a caller-chosen session ID.
+    if(path==="/api/v1/test-lab/scenario/preview"){
+      if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      let allowed=false;
+      try{allowed=options.authorizeTestLabPreview!==undefined&&
+        await options.authorizeTestLabPreview(req)===true;}
+      catch{/* No preview rights on product auth failure. */}
+      if(!allowed){send(res,403,{error:"TESTLAB_PREVIEW_NOT_AUTHORIZED"});return;}
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]||0)>MAX_PROJECT_BYTES){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const raw=await jsonInput(req,MAX_PROJECT_BYTES) as Record<string,unknown>;
+        if(!raw||typeof raw!=="object"||Array.isArray(raw)||
+          Object.keys(raw).sort().join(",")!=="ratePerSecond,scenario,sequence"){
+          send(res,422,{error:"TESTLAB_SCENARIO_REQUEST_INVALID"});return;
+        }
+        const scenario=raw["scenario"] as ReplayScenario;
+        const selected=selectScenarioPreview(scenario,
+          raw["sequence"] as number,
+          options.syntheticClock?.()??Date.now(),
+          "test_run_00000000000000000000000000000000",
+          raw["ratePerSecond"] as number);
+        send(res,200,{
+          ...selected,
+          replayMode:scenario.mode,
+          sampleFamilyCount:scenario.events.length,
+          safeToSendToSensor:false,
+          sensorReceivedVerified:false,
+          runtimeParsingVerified:false,
+        });
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof ScenarioContractError)send(res,422,{error:error.code});
+        else send(res,500,{error:"TESTLAB_SCENARIO_FAILED"});
       }
       return;
     }

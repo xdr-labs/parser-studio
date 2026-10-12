@@ -129,3 +129,10 @@ a max 15-second bounded request. Per-attempt read permission, run ownership,
 and audit are rechecked; results expose only MATCH/MISMATCH/MISSING, count,
 attempts and false end-to-end/real target verification flags. No vendor
 cursor, unbounded polling worker or production search permission is claimed.
+
+
+Offline scenario inspection: POST /api/v1/test-lab/scenario/preview
+(requires server-side preview authorization) takes a bounded scenario,
+sequence and max rate and returns only one generated synthetic event and
+safe scheduling metadata. It does NOT open a sender, create a live run,
+reuse credentials or send customer data to any target.

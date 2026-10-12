@@ -224,3 +224,78 @@ test("HTTP renewal requires authenticated run owner and independent backend reap
     });
   }finally{runner.stopAll();}
 });
+
+test("HTTP scenario Start selects constant-rate format families without exposing raw sources",async()=>{
+  const sent:string[]=[];
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    deliver:async event=>{sent.push(event);},
+  });
+  const scenario={scenarioId:"synthetic-mixed-events",mode:"constant-rate",
+    events:[
+      {id:"firewall-json",sample:{
+        format:"json",source:JSON.stringify({src_ip:"192.0.2.1",action:"deny",run_id:"old"}),
+        seed:3,sequence:0,variableFields:[{path:"src_ip",kind:"ipv4"}],
+        runMarkerField:"run_id",
+      }},
+      {id:"firewall-cef",sample:{
+        format:"cef",source:"CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.2 act=deny run_id=old",
+        seed:4,sequence:0,variableFields:[{path:"src",kind:"ipv4"}],
+        runMarkerField:"run_id",
+      }},
+    ],
+  };
+  try{
+    await withServer({testLabController:runner,
+      authorizeTestLabSession:async()=> "scenario-owner",
+    },async base=>{
+      const res=await post(base,"/api/v1/test-lab/sessions/start",{
+        scenario,approvalId:"owner-test-http-scenario",
+        ratePerSecond:5,leaseMs:1350,maxEvents:9,
+      });
+      assert.equal(res.status,200);
+      const started=await res.json() as any;
+      assert.equal(started.replayMode,"constant-rate");
+      assert.equal(started.sampleFamilyCount,2);
+      assert.equal(JSON.stringify(started).includes("192.0.2.1"),false);
+      await sleep(550);
+      assert.ok(sent.length>=2);
+      assert.ok(sent[0]?.startsWith("{"));
+      assert.ok(sent[1]?.startsWith("CEF:0|"));
+      assert.ok(sent.every(line=>line.includes(started.runId)));
+      const stop=await post(base,"/api/v1/test-lab/sessions/stop",{runId:started.runId});
+      assert.equal(stop.status,200);
+      assert.equal((await stop.json() as any).state,"STOPPED");
+    });
+  }finally{runner.stopAll();}
+});
+
+test("HTTP scenario Start cannot submit both sample and scenario, or malicious timings",async()=>{
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,deliver:async()=>{},
+  });
+  const source={format:"kv",source:"src_ip=192.0.2.1 action=deny run_id=old",
+    seed:1,sequence:0,variableFields:[{path:"src_ip",kind:"ipv4"}],
+    runMarkerField:"run_id"};
+  const scenario={scenarioId:"synthetic-rotation",mode:"original-gaps",
+    cycleMs:400,events:[
+      {id:"source-one",offsetMs:0,sample:source},
+      {id:"source-two",offsetMs:100,sample:source},
+    ]};
+  try{
+    await withServer({testLabController:runner,
+      authorizeTestLabSession:async()=> "scenario-owner",
+    },async base=>{
+      const baseReq={approvalId:"owner-test-http-scenario",
+        ratePerSecond:5,leaseMs:1000,maxEvents:10};
+      const both=await post(base,"/api/v1/test-lab/sessions/start",{
+        ...baseReq,sample:source,scenario});
+      assert.equal(both.status,422);
+      assert.equal((await both.json() as any).error,"TESTLAB_SESSION_INPUT_INVALID");
+      const fast=await post(base,"/api/v1/test-lab/sessions/start",{
+        ...baseReq,scenario});
+      assert.equal(fast.status,422);
+      assert.match((await fast.json() as any).error,/^TESTLAB_SCENARIO_/);
+    });
+  }finally{runner.stopAll();}
+});

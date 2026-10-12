@@ -8,10 +8,13 @@
 import {randomUUID} from "node:crypto";
 import {createSyntheticPreview,SyntheticPreviewError,
   type SyntheticPreviewRequest} from "./testlab-synthetic.js";
+import {selectScenarioPreview,validateReplayScenario,ScenarioContractError,
+  type ReplayScenario} from "./testlab-scenario.js";
 
 export type TestLabState="RUNNING"|"PAUSED"|"STOPPED"|"EXPIRED"|"FAILED"|"COMPLETED";
 export type TestLabStartRequest={
-  sample:SyntheticPreviewRequest;
+  sample?:SyntheticPreviewRequest;
+  scenario?:ReplayScenario;
   approvalId:string;
   ratePerSecond:number;
   leaseMs:number;
@@ -32,6 +35,8 @@ export type TestLabStatus={
   state:TestLabState;
   sentCount:number;
   nextSequence:number;
+  replayMode:"single"|"constant-rate"|"original-gaps";
+  sampleFamilyCount:number;
   ratePerSecond:number;
   maxEvents:number;
   leaseExpiresAt:string;
@@ -64,6 +69,7 @@ type ActiveSession={
   runId:string;
   ownerId:string|null;
   sample:SyntheticPreviewRequest;
+  scenario?:ReplayScenario;
   ratePerSecond:number;
   intervalMs:number;
   leaseDeadline:number;
@@ -105,6 +111,8 @@ export class SyntheticSessionController{
       state:session.state,
       sentCount:session.sentCount,
       nextSequence:session.nextSequence,
+      replayMode:session.scenario?.mode??"single",
+      sampleFamilyCount:session.scenario?.events.length??1,
       ratePerSecond:session.ratePerSecond,
       maxEvents:session.maxEvents,
       leaseExpiresAt:new Date(session.leaseDeadline).toISOString(),
@@ -134,8 +142,11 @@ export class SyntheticSessionController{
     if(item.expiryTimer)clearTimeout(item.expiryTimer);
     item.tickTimer=null;item.expiryTimer=null;
     item.cancellation.abort();
-    // Clear source/sample from memory on every terminal state.
+    // Purge the raw sample(s) from retained session state on terminal paths.
     item.sample={...item.sample,source:""};
+    if(item.scenario)item.scenario={...item.scenario,events:item.scenario.events.map(entry=>({
+      ...entry,sample:{...entry.sample,source:""},
+    }))};
   }
   stop(runId:string,ownerId?:string):TestLabStatus{
     const item=this.#owned(runId,ownerId);
@@ -238,11 +249,14 @@ export class SyntheticSessionController{
     const now=this.#now();
     if(now>=item.leaseDeadline){this.#end(item,"EXPIRED");return;}
     try{
-      const event=createSyntheticPreview({
-        ...item.sample,sequence:item.nextSequence,
-        ...(item.sample.runMarkerField===undefined?{}:{runId:item.runId}),
-      },now);
-      await this.#deliver!(event.syntheticEvent,{
+      const picked=item.scenario?
+        selectScenarioPreview(item.scenario,item.nextSequence,now,item.runId,
+          item.ratePerSecond):
+        {preview:createSyntheticPreview({
+          ...item.sample,sequence:item.nextSequence,
+          ...(item.sample.runMarkerField===undefined?{}:{runId:item.runId}),
+        },now),nextDelayMs:item.intervalMs};
+      await this.#deliver!(picked.preview.syntheticEvent,{
         runId:item.runId,sequence:item.nextSequence,signal:item.cancellation.signal,
       });
       if(item.state!=="RUNNING"||item.cancellation.signal.aborted)return;
@@ -250,7 +264,7 @@ export class SyntheticSessionController{
       item.nextSequence++;
       item.lastSentAt=new Date(this.#now()).toISOString();
       if(item.sentCount>=item.maxEvents){this.#end(item,"COMPLETED");return;}
-      this.#schedule(item,item.intervalMs);
+      this.#schedule(item,picked.nextDelayMs);
     }catch{
       // Never echo transport exceptions or original event values.
       this.#end(item,"FAILED","TESTLAB_SINK_FAILED");
@@ -262,7 +276,8 @@ export class SyntheticSessionController{
       !/^[A-Za-z0-9_.:@-]{1,128}$/.test(ownerId)))
       invalid("TESTLAB_OWNER_INVALID");
     if(!this.#approve||!this.#deliver)invalid("TESTLAB_SENDER_DISABLED");
-    if(!input||!input.sample||typeof input.approvalId!=="string"||
+    if(!input||Boolean(input.sample)===Boolean(input.scenario)||
+      typeof input.approvalId!=="string"||
       !/^[A-Za-z0-9_.-]{8,96}$/.test(input.approvalId)||
       !Number.isFinite(input.ratePerSecond)||input.ratePerSecond<0.2||
       input.ratePerSecond>5||
@@ -274,7 +289,10 @@ export class SyntheticSessionController{
     // Without this, concurrent Start calls can both pass the first check.
     if(this.#activeCount()+this.#pendingStarts>=this.#maxConcurrent)
       invalid("TESTLAB_CAPACITY_REACHED");
-    if(input.sample.runId!==undefined)invalid("TESTLAB_RUN_ID_RESERVED");
+    if(input.scenario&&(!Array.isArray(input.scenario.events)||
+      input.scenario.events.length<2))
+      invalid("TESTLAB_SCENARIO_INVALID");
+    if(input.sample?.runId!==undefined)invalid("TESTLAB_RUN_ID_RESERVED");
     this.#pendingStarts++;
     try{
     const runId="test_run_"+randomUUID().replace(/-/g,"");
@@ -282,18 +300,30 @@ export class SyntheticSessionController{
     let allowed=false;
     try{
       allowed=await this.#approve({
-        approvalId:input.approvalId,runId,format:input.sample.format,
+        approvalId:input.approvalId,runId,
+        format:input.scenario?"scenario:"+input.scenario.mode:input.sample!.format,
         ratePerSecond:input.ratePerSecond,maxEvents:input.maxEvents,
         leaseMs:input.leaseMs,
       });
     }catch{/* Trusted approval service failure means deny. */}
     if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
     if(allowed!==true)invalid("TESTLAB_START_DENIED");
-    // Validate the grammar/field selection before any delivery.
-    const sample={...input.sample,sequence:0,
-      ...(input.sample.runMarkerField===undefined?{}:{runId})};
-    try{createSyntheticPreview(sample,now);}
-    catch(error){
+    // Validate ALL scenario source families before any delivery. Never
+    // accept a caller-chosen runId or mismatched original-gap rate.
+    let scenario:ReplayScenario|undefined;
+    const sampleInput=input.sample??input.scenario!.events[0]?.sample;
+    if(!sampleInput)invalid("TESTLAB_SAMPLE_INVALID");
+    const sample={...sampleInput,sequence:0,
+      ...(sampleInput.runMarkerField===undefined?{}:{runId})};
+    try{
+      if(input.scenario){
+        validateReplayScenario(input.scenario,input.ratePerSecond);
+        scenario={...input.scenario,events:input.scenario.events.map(entry=>({
+          ...entry,sample:{...entry.sample},
+        }))};
+      }else createSyntheticPreview(sample,now);
+    }catch(error){
+      if(error instanceof ScenarioContractError)invalid(error.code);
       if(error instanceof SyntheticPreviewError)invalid(error.code);
       invalid("TESTLAB_SAMPLE_INVALID");
     }
@@ -308,6 +338,7 @@ export class SyntheticSessionController{
     }
     const item:ActiveSession={
       runId,ownerId:ownerId??null,state:"RUNNING",sample,
+      ...(scenario?{scenario}:{}),
       ratePerSecond:input.ratePerSecond,intervalMs:Math.ceil(1000/input.ratePerSecond),
       leaseDeadline:now+input.leaseMs,maxEvents:input.maxEvents,
       sentCount:0,nextSequence:0,lastSentAt:null,errorCode:null,
