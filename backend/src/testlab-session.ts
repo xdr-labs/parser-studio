@@ -28,6 +28,10 @@ export type TestLabRenewRequest={
   leaseMs:number;
   additionalEvents:number;
 };
+export type TestLabRateChangeRequest={
+  approvalId:string;
+  ratePerSecond:number;
+};
 export type TestLabSendContext={
   runId:string;
   sequence:number;
@@ -59,6 +63,10 @@ export type TestLabSessionConfig={
   approveRenewal?:(intent:{approvalId:string;runId:string;ownerId:string|null;
     leaseMs:number;additionalEvents:number;currentExpiry:string;
     sentCount:number})=>Promise<boolean>;
+  /** An independent approval is required for EACH bounded rate change. */
+  approveRateChange?:(intent:{approvalId:string;runId:string;
+    ownerId:string|null;currentRatePerSecond:number;ratePerSecond:number;
+    sentCount:number;leaseExpiresAt:string})=>Promise<boolean>;
   /** Backend-controlled trusted sink; no default network implementation. */
   deliver?:(event:string,context:TestLabSendContext)=>Promise<void>;
   now?:()=>number;
@@ -87,6 +95,7 @@ type ActiveSession={
   lastSentAt:string|null;
   errorCode:string|null;
   cancellation:AbortController;
+  deliveryInFlight:boolean;
   tickTimer:ReturnType<typeof setTimeout>|null;
   expiryTimer:ReturnType<typeof setTimeout>|null;
 };
@@ -96,6 +105,8 @@ export class SyntheticSessionController{
   #pendingStarts=0;
   #closed=false;
   #pendingRenewals=new Set<string>();
+  #pendingRateChanges=new Set<string>();
+  #approveRateChange?:TestLabSessionConfig["approveRateChange"];
   #approve?:TestLabSessionConfig["approveStart"];
   #approveRenewal?:TestLabSessionConfig["approveRenewal"];
   #deliver?:TestLabSessionConfig["deliver"];
@@ -105,6 +116,7 @@ export class SyntheticSessionController{
   constructor(config:TestLabSessionConfig){
     this.#approve=config.approveStart;
     this.#approveRenewal=config.approveRenewal;
+    this.#approveRateChange=config.approveRateChange;
     this.#deliver=config.deliver;
     this.#now=config.now??(()=>Date.now());
     this.#recordTransition=config.recordTransition;
@@ -189,12 +201,19 @@ export class SyntheticSessionController{
     // resurrect sessions after the HTTP listener closes.
     this.#closed=true;
     this.#pendingRenewals.clear();
+    this.#pendingRateChanges.clear();
     for(const item of this.#sessions.values())this.#end(item,"STOPPED");
     this.#sessions.clear();
   }
   pause(runId:string,ownerId?:string):TestLabStatus{
     const item=this.#owned(runId,ownerId);
     if(item.state!=="RUNNING")invalid("TESTLAB_SESSION_NOT_RUNNING");
+    // We cannot know whether an unresolved sink has already accepted bytes.
+    // Terminalize instead of replaying the same sequence after Resume.
+    if(item.deliveryInFlight){
+      this.#end(item,"FAILED","TESTLAB_SEND_OUTCOME_UNCERTAIN");
+      return this.#public(item);
+    }
     item.state="PAUSED";
     if(item.tickTimer)clearTimeout(item.tickTimer);
     item.tickTimer=null;
@@ -279,6 +298,59 @@ export class SyntheticSessionController{
     }
   }
 
+  async changeRate(runId:string,request:TestLabRateChangeRequest,
+    ownerId?:string):Promise<TestLabStatus>{
+    if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+    const item=this.#owned(runId,ownerId);
+    if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    if(!this.#approveRateChange)invalid("TESTLAB_RATE_CHANGE_DISABLED");
+    if(!request||typeof request.approvalId!=="string"||
+       !/^[A-Za-z0-9_.-]{8,96}$/.test(request.approvalId)||
+       !Number.isFinite(request.ratePerSecond)||
+       request.ratePerSecond<0.2||request.ratePerSecond>5)
+      invalid("TESTLAB_RATE_CHANGE_LIMITS_INVALID");
+    // Original event offsets are intentional and cannot be rescaled.
+    if(item.scenario?.mode==="original-gaps")
+      invalid("TESTLAB_RATE_CHANGE_SCENARIO_UNSUPPORTED");
+    if(item.deliveryInFlight)invalid("TESTLAB_RATE_CHANGE_IN_FLIGHT");
+    if(this.#pendingRateChanges.has(runId))
+      invalid("TESTLAB_RATE_CHANGE_IN_PROGRESS");
+    if(this.#now()>=item.leaseDeadline){
+      this.#end(item,"EXPIRED");
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    }
+    this.#pendingRateChanges.add(runId);
+    try{
+      let approved=false;
+      try{
+        approved=await this.#approveRateChange({
+          approvalId:request.approvalId,runId,ownerId:item.ownerId,
+          currentRatePerSecond:item.ratePerSecond,
+          ratePerSecond:request.ratePerSecond,sentCount:item.sentCount,
+          leaseExpiresAt:new Date(item.leaseDeadline).toISOString(),
+        });
+      }catch{/* Independent server approval unavailable: deny. */}
+      if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+      if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+        invalid("TESTLAB_SESSION_NOT_RUNNING");
+      if(this.#now()>=item.leaseDeadline){
+        this.#end(item,"EXPIRED");invalid("TESTLAB_SESSION_NOT_RUNNING");
+      }
+      if(item.deliveryInFlight)invalid("TESTLAB_RATE_CHANGE_IN_FLIGHT");
+      if(approved!==true)invalid("TESTLAB_RATE_CHANGE_DENIED");
+      item.ratePerSecond=request.ratePerSecond;
+      item.intervalMs=Math.ceil(1000/request.ratePerSecond);
+      // No quota/lease alteration; existing pending timer is rescheduled.
+      if(item.state==="RUNNING"&&item.tickTimer){
+        clearTimeout(item.tickTimer);
+        item.tickTimer=null;
+        this.#schedule(item,item.intervalMs);
+      }
+      return this.#public(item);
+    }finally{this.#pendingRateChanges.delete(runId);}
+  }
+
   #schedule(item:ActiveSession,delayMs:number){
     if(item.state!=="RUNNING")return;
     item.tickTimer=setTimeout(()=>{
@@ -299,9 +371,12 @@ export class SyntheticSessionController{
           ...item.sample,sequence:item.nextSequence,
           ...(item.sample.runMarkerField===undefined?{}:{runId:item.runId}),
         },now),nextDelayMs:item.intervalMs};
-      await this.#deliver!(picked.preview.syntheticEvent,{
-        runId:item.runId,sequence:item.nextSequence,signal:item.cancellation.signal,
-      });
+      item.deliveryInFlight=true;
+      try{
+        await this.#deliver!(picked.preview.syntheticEvent,{
+          runId:item.runId,sequence:item.nextSequence,signal:item.cancellation.signal,
+        });
+      }finally{item.deliveryInFlight=false;}
       if(item.state!=="RUNNING"||item.cancellation.signal.aborted)return;
       item.sentCount++;
       item.nextSequence++;
@@ -396,7 +471,8 @@ export class SyntheticSessionController{
       ratePerSecond:input.ratePerSecond,intervalMs:Math.ceil(1000/input.ratePerSecond),
       leaseDeadline:now+input.leaseMs,maxEvents:input.maxEvents,
       sentCount:0,nextSequence:0,lastSentAt:null,errorCode:null,
-      cancellation:new AbortController(),tickTimer:null,expiryTimer:null,
+      cancellation:new AbortController(),deliveryInFlight:false,
+      tickTimer:null,expiryTimer:null,
     };
     // Durable START MUST succeed before queueing any synthetic delivery.
     this.#journal(item);

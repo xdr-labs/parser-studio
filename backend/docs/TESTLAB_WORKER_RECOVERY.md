@@ -55,3 +55,18 @@ The default createBackendServer() and server.ts do NOT inject a journal,
 network sink, secrets or approval policy. Real sensor send and indexed
 Interflow correlation require owner authorization and a separately
 qualified in-network agent.
+
+## Offline rate update and concurrent delivery safety
+
+The in-memory controller can change a mock replay rate only with a separate
+backend approval through approveRateChange. The allowed 0.2 to 5 events/s
+range cannot extend its finite lease or event quota. A change is denied for
+another actor, an unresolved delivery, concurrent requests, a terminal run,
+or original-gap replay. The next pending timer is rescheduled after approval.
+
+If Pause occurs while an asynchronous mock delivery is unresolved, the
+session becomes FAILED with TESTLAB_SEND_OUTCOME_UNCERTAIN. The cancellation
+signal is aborted, and Resume cannot replay that sequence. This is a
+conservative acknowledgement rule, not proof that a network packet was or
+was not delivered. No HTTP rate-update route or live sensor sender has
+been enabled.
