@@ -17,5 +17,5 @@ test('no-code classification honors exact dotted KV source fields and explains m
   await expect(routes.locator('.guided-routing-row').first()).toContainText('조건 1');
   await expect(routes.locator('.guided-routing-row').first()).toContainText('조건 일치');
   await expect(routes.locator('.guided-routing-row').nth(1)).toContainText('기본값');
-  await expect(routes).toContainText('실제 stellar_log_index 태그');
+  await expect(page.getByText(/실제 stellar_log_index 태그 라우팅은 별도 Fluentd 엔진 검증이 필요합니다/)).toBeVisible();
 });
