@@ -24,7 +24,7 @@ test("Start generates multiple approved UDP loopback events and Stop halts witho
   const received:string[]=[];
   const events:SensorTransportAudit[]=[];
   socket.on("message",msg=>received.push(msg.toString("utf8")));
-  const sink=createApprovedSensorSink({target,allowedTargets:[target],
+  const sink=createApprovedSensorSink({target,parserListenerPort:target.port,allowedTargets:[target],
     authorizeDelivery:async()=>true,
     auditDelivery:async item=>{events.push(item);},
   });
@@ -65,7 +65,7 @@ test("changing trusted delivery policy mid-session fails closed and never retrie
     protocol:"udp" as const};
   let approved=0,received=0;
   socket.on("message",()=>{received++;});
-  const sink=createApprovedSensorSink({target,allowedTargets:[target],
+  const sink=createApprovedSensorSink({target,parserListenerPort:target.port,allowedTargets:[target],
     authorizeDelivery:async()=>++approved===1,
     auditDelivery:async()=>{},
   });
@@ -99,7 +99,7 @@ test("approved mixed JSON/CEF scenario sends bounded UDP datagrams and Stop halt
   const output:string[]=[];
   socket.on("message",msg=>output.push(msg.toString("utf8")));
   const sink=createApprovedSensorSink({
-    target,allowedTargets:[target],
+    target,parserListenerPort:target.port,allowedTargets:[target],
     authorizeDelivery:async()=>true,
     auditDelivery:async()=>{},
   });

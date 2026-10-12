@@ -173,3 +173,13 @@ and returns a provisional non-conflicting candidate or known collision.
 This does not reserve a port, inspect live sensor bindings, store a
 selected port or enable deployment. It outputs no customer parser names
 or API Key.
+
+
+Parser listener/Modular Sensor ingest port contract: both values MUST be
+identical. A single port entered via configure-target.py is written for
+both, and existing profiles with null preferred_listener_port inherit the
+sensor port. RFC5424 Syslog parser CONF ports must be >=6800; the Syslog
+port proposal starts at 6800 and avoids observed occupied ports.
+The guarded sensor sink rejects a destination/CONF port mismatch.
+Even a collision-free candidate never proves actual sensor/runtime
+availability; the target must be rechecked before any approved upload.

@@ -3,7 +3,8 @@
  *
  * This module NEVER selects a network destination from an HTTP request:
  * an authorized in-network backend agent must construct an exact approved
- * IP-literal/protocol/port target and supply separate policy+audit functions.
+ * IP-literal/protocol/port target, match the generated CONF listener port,
+ * and supply separate policy+audit functions.
  * No default target or sender is instantiated by the Parser Studio server.
  *
  * UDP/TCP kernel submission is NOT evidence of sensor reception, DP indexing,
@@ -28,6 +29,9 @@ export type SensorTransportAudit={
 };
 export type ApprovedSensorSinkConfig={
   target:SensorTarget;
+  /** Must match the reviewed generated .conf <source> port exactly.
+   * A distinct sensor receiver port is not a supported configuration. */
+  parserListenerPort:number;
   allowedTargets:readonly SensorTarget[];
   /** Mandatory independently authorized target/lease policy, per event. */
   authorizeDelivery?:(context:{runId:string;sequence:number;target:SensorTarget})=>Promise<boolean>;
@@ -121,6 +125,9 @@ export function createApprovedSensorSink(config:ApprovedSensorSinkConfig):
   (event:string,context:TestLabSendContext)=>Promise<void>{
   if(!config||!validTarget(config.target))
     fail("SENSOR_IP_LITERAL_REQUIRED");
+  if(!Number.isInteger(config.parserListenerPort)||
+    config.parserListenerPort!==config.target.port)
+    fail("SENSOR_CONF_PORT_MISMATCH");
   if(!Array.isArray(config.allowedTargets)||
     config.allowedTargets.length>100||
     !config.allowedTargets.some(target=>validTarget(target)&&exact(target,config.target)))

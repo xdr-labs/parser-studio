@@ -23,7 +23,7 @@ test("approved loopback UDP delivery sends exactly one synthetic packet, with sa
       receiver.once("error",reject);
     });
     const sink=createApprovedSensorSink({
-      target:{ip:"127.0.0.1",port,protocol:"udp"},
+      target:{ip:"127.0.0.1",port,protocol:"udp"},parserListenerPort:port,
       allowedTargets:[{ip:"127.0.0.1",port,protocol:"udp"}],
       authorizeDelivery:async()=>true,
       auditDelivery:async item=>{events.push(item);},
@@ -47,7 +47,7 @@ test("approved loopback TCP delivery sends one framed event then closes",async()
   const port=(server.address() as AddressInfo).port;
   try{
     const sink=createApprovedSensorSink({
-      target:{ip:"127.0.0.1",port,protocol:"tcp"},
+      target:{ip:"127.0.0.1",port,protocol:"tcp"},parserListenerPort:port,
       allowedTargets:[{ip:"127.0.0.1",port,protocol:"tcp"}],
       authorizeDelivery:async()=>true,
       auditDelivery:async()=>{},
@@ -60,20 +60,21 @@ test("approved loopback TCP delivery sends one framed event then closes",async()
 test("never send without exact trusted destination allowlist and audit/authorization policy",async()=>{
   const target={ip:"127.0.0.1",port:42199,protocol:"udp" as const};
   assert.throws(()=>createApprovedSensorSink({
-    target,allowedTargets:[],authorizeDelivery:async()=>true,auditDelivery:async()=>{},
+    target,parserListenerPort:target.port,allowedTargets:[],authorizeDelivery:async()=>true,auditDelivery:async()=>{},
   }),/SENSOR_TARGET_NOT_APPROVED/);
   assert.throws(()=>createApprovedSensorSink({
     target:{ip:"localhost",port:42199,protocol:"udp"},
+    parserListenerPort:target.port,
     allowedTargets:[target],authorizeDelivery:async()=>true,auditDelivery:async()=>{},
   }),/SENSOR_IP_LITERAL_REQUIRED/);
   assert.throws(()=>createApprovedSensorSink({
-    target,allowedTargets:[target],authorizeDelivery:async()=>true,
+    target,parserListenerPort:target.port,allowedTargets:[target],authorizeDelivery:async()=>true,
   }),/SENSOR_TRUST_POLICY_REQUIRED/);
   assert.throws(()=>createApprovedSensorSink({
-    target,allowedTargets:[target],auditDelivery:async()=>{},
+    target,parserListenerPort:target.port,allowedTargets:[target],auditDelivery:async()=>{},
   }),/SENSOR_TRUST_POLICY_REQUIRED/);
   let audits=0;
-  const denied=createApprovedSensorSink({target,allowedTargets:[target],
+  const denied=createApprovedSensorSink({target,parserListenerPort:target.port,allowedTargets:[target],
     authorizeDelivery:async()=>false,
     auditDelivery:async()=>{audits++;},
   });
@@ -85,7 +86,7 @@ test("sender refuses real-looking/raw input without matching run ID, unsafe fram
   const target={ip:"127.0.0.1",port:42199,protocol:"udp" as const};
   let audits=0,granted=0;
   const sink=createApprovedSensorSink({
-    target,allowedTargets:[target],
+    target,parserListenerPort:target.port,allowedTargets:[target],
     authorizeDelivery:async()=>{granted++;return true;},
     auditDelivery:async()=>{audits++;},
   });
@@ -105,10 +106,22 @@ test("sender refuses real-looking/raw input without matching run ID, unsafe fram
 test("audit sink failure prevents network attempt; vendor target remains independently unverified",async()=>{
   const target={ip:"127.0.0.1",port:42199,protocol:"udp" as const};
   const sink=createApprovedSensorSink({
-    target,allowedTargets:[target],
+    target,parserListenerPort:target.port,allowedTargets:[target],
     authorizeDelivery:async()=>true,
     auditDelivery:async()=>{throw Error("DO_NOT_ECHO_FROM_AUDIT");},
   });
   await assert.rejects(()=>sink(sample,context()),(e:unknown)=>
     e instanceof Error && e.message==="SENSOR_AUDIT_UNAVAILABLE");
+});
+
+test("injected sink cannot target a different port from the generated CONF listener",()=>{
+  const target={ip:"127.0.0.1",port:6800,protocol:"udp" as const};
+  assert.throws(()=>createApprovedSensorSink({
+    target,parserListenerPort:6801,allowedTargets:[target],
+    authorizeDelivery:async()=>true,auditDelivery:async()=>{},
+  }),/SENSOR_CONF_PORT_MISMATCH/);
+  assert.throws(()=>createApprovedSensorSink({
+    target,parserListenerPort:6799,allowedTargets:[target],
+    authorizeDelivery:async()=>true,auditDelivery:async()=>{},
+  }),/SENSOR_CONF_PORT_MISMATCH/);
 });

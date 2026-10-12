@@ -58,9 +58,9 @@ test("incomplete or malformed inventory fails closed rather than guessing collis
     /PORT_NO_CANDIDATE/);
 });
 
-test("parser listener port and sensor ingest destination port remain distinct concepts",()=>{
+test("one chosen listener port must be used for sensor ingestion and generated CONF",()=>{
   const result=proposeParserPort(fullyKnown(),{requestedPort:20333});
   assert.equal(result.recommendedPort,20333);
-  assert.equal(result.sensorIngestPort,null);
+  assert.equal(result.sensorIngestPort,20333);
   assert.equal(result.verifiedIngestPort,false);
 });

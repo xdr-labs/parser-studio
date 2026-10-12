@@ -20,7 +20,7 @@ import ssl
 import sys
 from typing import Any, Callable
 from urllib import error, parse, request
-from port_inventory import propose_from_ports
+from port_inventory import SYSLOG_MIN_PORT, propose_from_ports
 
 ALLOWED_POC_ORIGIN = "https://poc-apac.stellarcyber.cloud"
 PREFIX = "/connect/api/v1"
@@ -148,7 +148,7 @@ def verify(
     """Returns metadata ONLY. NEVER returns a key, JWT, parser or raw data."""
     p = validated_profile(profile)
     if check_port is not None and (
-        type(check_port) is not int or not 1024 <= check_port <= 65535
+        type(check_port) is not int or not SYSLOG_MIN_PORT <= check_port <= 65535
     ):
         no("PORT_INVALID")
     port_rows = {}
@@ -194,12 +194,21 @@ def verify(
                     ports.add(value)
             port_count = len(ports) if ports else None
         if include_port_plan:
-            if valid and all(
-                type(item.get("port")) is int
-                and 1 <= item["port"] <= 65535
-                and item.get("cust_id", p["tenant"]) == p["tenant"]
+            # /custom_log_parsers is requested with cust_id, and each
+            # explicit row tenant must match. But /parsers is the shared
+            # built-in/global catalogue: a system or other tenant cust_id
+            # still denotes an occupied port and MUST be included.
+            full_ports = valid and all(
+                type(item.get("port")) is int and 1 <= item["port"] <= 65535
                 for item in data
-            ):
+            )
+            tenant_valid = (
+                route != GET_ROUTES[0] or all(
+                    item.get("cust_id", p["tenant"]) == p["tenant"]
+                    for item in data
+                )
+            ) if valid else False
+            if full_ports and tenant_valid:
                 port_rows[route] = [item["port"] for item in data]
             else:
                 port_rows[route] = None

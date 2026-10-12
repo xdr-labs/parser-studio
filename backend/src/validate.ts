@@ -41,6 +41,13 @@ export function validateProject(input: unknown): ValidationResult {
   if (!validateSchema(input)) {
     for (const error of validateSchema.errors ?? []) {
       const path = error.instancePath || (error.params as { additionalProperty?: string }).additionalProperty || "/";
+      if (error.keyword === "minimum" && error.instancePath === "/receiver/port" &&
+          (input as ParserProject | null)?.extraction?.format === "syslog_rfc5424" &&
+          (error.params as { limit?: number }).limit === 6800) {
+        issue(issues, "syslog_port_minimum", "/receiver/port",
+          "RFC5424 Syslog parser listener port must be at least 6800.");
+        continue;
+      }
       issue(issues, "schema", path, `Schema validation: ${error.keyword}`);
     }
     return { ok: false, issues };

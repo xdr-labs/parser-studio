@@ -446,5 +446,42 @@
         "winlogevent"
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "extraction": {
+            "properties": {
+              "format": {
+                "const": "syslog_rfc5424"
+              }
+            },
+            "required": [
+              "format"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "extraction"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "receiver": {
+            "properties": {
+              "port": {
+                "minimum": 6800,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ]
 }

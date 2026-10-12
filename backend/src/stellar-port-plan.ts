@@ -16,7 +16,7 @@ export type PortInventory={
   cataloguePorts:readonly number[];
   /** Tenant-owned/custom legacy parser ports from authorized inventory. */
   tenantLegacyPorts:readonly number[];
-  /** Separately evidenced ACTIVE SENSOR PARSER LISTENER bindings, not ingest ports. */
+  /** Independently evidenced active receiver/source bindings, the SAME ingest port. */
   sensorParserPorts:readonly number[];
   /** Server-side lease inventory for concurrent authoring sessions. */
   localReservedPorts:readonly number[];
@@ -33,6 +33,8 @@ export type PortPlanOptions={
   rangeStart?:number;
   rangeEnd?:number;
   requestedPort?:number;
+  /** Syslog RFC5424 enforces the 6800 listener minimum; others unaffected. */
+  parserFormat?:"syslog_rfc5424";
 };
 export type PortProposal={
   contract:"stellar-parser-listener-port-proposal.v0.1";
@@ -44,7 +46,8 @@ export type PortProposal={
   candidateOnly:true;
   deployableNow:false;
   verifiedIngestPort:false;
-  sensorIngestPort:null;
+  /** Same chosen source port for sensor destination and generated CONF. */
+  sensorIngestPort:number;
   needsFinalRecheck:true;
 };
 
@@ -67,9 +70,12 @@ function knownOccupancy(data:PortInventory):Set<number>{
 }
 
 /** Browser override changes compiled Ruby+CONF before either download/apply. */
-export function validatePortOverride(port:unknown,data:PortInventory):number{
+export function validatePortOverride(port:unknown,data:PortInventory,
+  parserFormat?:"syslog_rfc5424"):number{
   const occupied=knownOccupancy(data);
   if(!validPort(port))reject("PORT_INVALID");
+  if(parserFormat==="syslog_rfc5424"&&port<6800)
+    reject("PORT_SYSLOG_MINIMUM");
   if(port<1024)reject("PORT_PRIVILEGED");
   if(occupied.has(port))reject("PORT_ALREADY_OCCUPIED");
   return port;
@@ -78,14 +84,18 @@ export function validatePortOverride(port:unknown,data:PortInventory):number{
 export function proposeParserPort(data:PortInventory,
   options:PortPlanOptions={}):PortProposal{
   const occupied=knownOccupancy(data);
-  const start=options.rangeStart??20000;
+  if(options.parserFormat!==undefined&&options.parserFormat!=="syslog_rfc5424")
+    reject("PORT_FORMAT_INVALID");
+  const start=options.rangeStart??(options.parserFormat==="syslog_rfc5424"?6800:20000);
   const end=options.rangeEnd??30000;
+  if(options.parserFormat==="syslog_rfc5424"&&start<6800)
+    reject("PORT_SYSLOG_MINIMUM");
   if(!validPort(start)||!validPort(end)||start<1024||start>end||
     end-start>30000)reject("PORT_RANGE_INVALID");
   let chosen:number;
   let source:PortProposal["source"];
   if(options.requestedPort!==undefined){
-    chosen=validatePortOverride(options.requestedPort,data);
+    chosen=validatePortOverride(options.requestedPort,data,options.parserFormat);
     source="USER_OVERRIDE";
   }else{
     let candidate:number|undefined;
@@ -111,6 +121,6 @@ export function proposeParserPort(data:PortInventory,
     status:missingEvidence.length?"INCOMPLETE_EVIDENCE":"CANDIDATE_REQUIRES_DEPLOY_RECHECK",
     missingEvidence,occupiedPorts:[...occupied].sort((a,b)=>a-b),
     candidateOnly:true,deployableNow:false,verifiedIngestPort:false,
-    sensorIngestPort:null,needsFinalRecheck:true,
+    sensorIngestPort:chosen,needsFinalRecheck:true,
   };
 }

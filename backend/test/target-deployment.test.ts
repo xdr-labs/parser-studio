@@ -44,7 +44,7 @@ function setup(settings?:{
     },
   };
   const coordinator=new TargetDeploymentCoordinator({
-    target:{origin:target,tenant},
+    target:{origin:target,tenant,sensorIngestPort:7123},
     permittedOrigins:[target],
     api,
     approve:settings?.approval??(async()=>true),
@@ -198,7 +198,7 @@ test("fresh port inventory changes immediately before upload fail closed",async(
     writePair:async()=>{writes++;return {httpStatus:200};},
   };
   const runner=new TargetDeploymentCoordinator({
-    target:{origin:target,tenant},permittedOrigins:[target],api,
+    target:{origin:target,tenant,sensorIngestPort:7123},permittedOrigins:[target],api,
     approve:async()=>true,audit:async()=>{},
   });
   const artifact=bundle();
@@ -221,4 +221,27 @@ test("deployment failures never mutate the independent offline download archive"
   }),/TARGET_WRITE_UNCERTAIN/);
   assert.ok(zip.equals(pkg.zip));
   assert.ok(zip.equals(buildArtifactPackage(pair(),"1.0.0").zip));
+});
+
+
+test("general Apply rejects a target sensor port different from its generated CONF port",async()=>{
+  let calls=0;
+  const api:TargetDeploymentApi={
+    listParsers:async()=>{calls++;return [];},
+    listCatalogue:async()=>{calls++;return [];},
+    sensorBindings:async()=>({complete:true,ports:[]}),
+    localReservations:async()=>({complete:true,ports:[]}),
+    writePair:async()=>{calls++;return {httpStatus:200};},
+  };
+  const runner=new TargetDeploymentCoordinator({
+    target:{origin:target,tenant,sensorIngestPort:6800},
+    permittedOrigins:[target],api,approve:async()=>true,audit:async()=>{},
+  });
+  const artifact=bundle(); // reviewed synthetic CONF port 7123
+  await assert.rejects(()=>runner.create({
+    artifact,pair:pair(),expectedRevisionId:artifact.manifest.artifactRevisionId,
+    confirmation:{approved:true,approvalId:"owner-explicit-1",
+      targetOrigin:target,tenant,expectedName:"customized_sample_firewall"},
+  }),/TARGET_SENSOR_CONF_PORT_MISMATCH/);
+  assert.equal(calls,0,"port mismatch must stop before target inventory or write");
 });

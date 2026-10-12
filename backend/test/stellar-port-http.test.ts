@@ -31,7 +31,7 @@ test("tenant-authorized port candidate reads verified backend inventory but stay
     assert.equal(p.needsFinalRecheck,true);
     assert.equal(p.status,"INCOMPLETE_EVIDENCE");
     assert.ok(p.missingEvidence.includes("sensorBindings"));
-    assert.equal(p.sensorIngestPort,null);
+    assert.equal(p.sensorIngestPort,p.recommendedPort);
     assert.equal(JSON.stringify(p).includes("local-secret"),false);
     const conflict=await fetch(base+"/api/v1/stellar/legacy/port-proposal?port=20000");
     assert.equal(conflict.status,422);
@@ -41,6 +41,18 @@ test("tenant-authorized port candidate reads verified backend inventory but stay
     assert.equal(choice.recommendedPort,25000);
     assert.equal(choice.source,"USER_OVERRIDE");
     assert.equal(choice.deployableNow,false);
+    const syslog=await fetch(base+"/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424");
+    assert.equal(syslog.status,200);
+    const port=await syslog.json() as any;
+    assert.equal(port.recommendedPort,6800);
+    assert.equal(port.sensorIngestPort,6800);
+    assert.equal(port.deployableNow,false);
+    const belowMin=await fetch(base+"/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424&port=6799");
+    assert.equal(belowMin.status,422);
+    assert.equal((await belowMin.json() as any).error,"PORT_SYSLOG_MINIMUM");
+    const matching=await fetch(base+"/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424&port=6800");
+    assert.equal(matching.status,200);
+    assert.equal((await matching.json() as any).sensorIngestPort,6800);
     assert.ok(upstream.includes("/connect/api/v1/custom_log_parsers/parsers"));
   });
 });

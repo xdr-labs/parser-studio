@@ -16,11 +16,18 @@ The script prompts for:
 4. Modular Sensor IP — numeric IP address
 5. Sensor log-ingest port — actual sensor receiver port
 6. UDP or TCP — protocol the sensor accepts
-7. Preferred parser CONF listener port — optional (Enter to skip)
 
-The SENSOR INGEST destination port and the generated CONF parser listener
-port may be different and require later target-side mapping and collision
-validation.
+**One port, not two:** the value entered for the sensor log-ingest port
+is recorded as the SAME parser listener port for later CONF generation.
+The setup script only stores configuration; it does not generate or
+deploy a CONF file. For example, UDP sensor port 6800 requires the
+subsequently generated CONF source port to be 6800.
+The UI must use the same number for both values and reject any mismatch.
+For RFC5424 Syslog parser configurations the port must be 6800 or higher.
+An older private profile where preferred_listener_port is null is
+compatible: this means "inherit the saved sensor port" rather than
+"choose a second independent port". The user's saved settings are not
+silently edited or redeployed by this correction.
 
 ## Location and security
 
@@ -100,14 +107,18 @@ A preferred user-overridden parser listener port can be checked with:
 
     python3 backend/scripts/verify-target-readonly.py --execute --check-port 23000
 
-The default candidate range is 20000–30000, and the report returns
+For Syslog, the default candidate range is 6800–30000, and the report returns
 CANDIDATE_REQUIRES_TARGET_RECHECK, KNOWN_COLLISION or
 INCOMPLETE_EVIDENCE. Parsing fails closed for missing/invalid source ports
 or unexpected tenant metadata. Even if a proposed port was not observed in
 the readable catalogue, server-side local reservations, sensor mappings,
 simultaneous changes and Fluentd runtime binding are still UNVERIFIED.
-The suggested listener port is NOT the sensor UDP/TCP ingest destination,
-is NOT a socket reservation, and is NOT written to the private profile.
+The suggested listener port IS the port that must also be used as the
+sensor UDP/TCP ingest destination when the actual parser is applied.
+If it differs from the sensor port already saved, the operator must
+explicitly select and configure the new common port in both places
+before any upload or test. This proposal is NOT a socket reservation
+and does not automatically change the private profile or deployed CONF.
 
 Live connection verification is separate from the native/parser runtime
 qualification and full User E2E gate.

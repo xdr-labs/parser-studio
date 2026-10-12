@@ -3,7 +3,8 @@ from port_inventory import propose_from_ports
 
 class PortInventoryTests(unittest.TestCase):
     def test_skip_union_and_choose_next_candidate(self):
-        x=propose_from_ports([20000,20003],[20000,20001,20005])
+        x=propose_from_ports([20000,20003],[20000,20001,20005],
+                             range_start=20000,range_end=30000)
         self.assertEqual(x['candidate'],20002)
         self.assertEqual(x['status'],'CANDIDATE_REQUIRES_TARGET_RECHECK')
         self.assertFalse(x['reserved'])
@@ -22,7 +23,22 @@ class PortInventoryTests(unittest.TestCase):
     def test_invalid_override_not_a_port(self):
         self.assertEqual(propose_from_ports([],[20001],requested=80)['status'],'INVALID_OVERRIDE')
     def test_full_range_returns_no_candidate(self):
-        x=propose_from_ports(list(range(20000,26000)),list(range(26000,30001)))
+        x=propose_from_ports(list(range(20000,26000)),list(range(26000,30001)),
+                             range_start=20000,range_end=30000)
         self.assertEqual(x['status'],'NO_CANDIDATE')
+
+
+    def test_syslog_candidate_starts_at_6800_not_20000(self):
+        x=propose_from_ports([20000],[20001])
+        self.assertEqual(x["candidate"],6800)
+        self.assertFalse(x["reserved"])
+
+    def test_syslog_respects_6800_floor_and_skips_collision(self):
+        x=propose_from_ports([6800,6801],[6802,6802])
+        self.assertEqual(x["candidate"],6803)
+        self.assertEqual(x["status"],"CANDIDATE_REQUIRES_TARGET_RECHECK")
+        self.assertEqual(propose_from_ports([],[6800],requested=6799)["status"],"INVALID_OVERRIDE")
+        self.assertEqual(propose_from_ports([],[6800],requested=6800)["status"],"KNOWN_COLLISION")
+        self.assertEqual(propose_from_ports([],[6800],requested=6801)["status"],"CANDIDATE_REQUIRES_TARGET_RECHECK")
 
 if __name__=='__main__':unittest.main()

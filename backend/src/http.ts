@@ -496,12 +496,15 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
               runtimeParsingVerified:false,targetImportVerified:false});
           }else if(portProposal){
             const url=new URL(req.url||"","http://localhost");
-            if([...url.searchParams.keys()].some(k=>k!=="port") ||
-               url.searchParams.getAll("port").length>1){
+            if([...url.searchParams.keys()].some(k=>k!=="port"&&k!=="format") ||
+               url.searchParams.getAll("port").length>1 ||
+               url.searchParams.getAll("format").length>1){
               send(res,422,{error:"PORT_QUERY_INVALID"});return;
             }
             const rawPort=url.searchParams.get("port");
-            if(rawPort!==null&&!/^[0-9]{1,5}$/.test(rawPort)){
+            const rawFormat=url.searchParams.get("format");
+            if((rawPort!==null&&!/^[0-9]{1,5}$/.test(rawPort)) ||
+               (rawFormat!==null&&rawFormat!=="syslog_rfc5424")){
               send(res,422,{error:"PORT_QUERY_INVALID"});return;
             }
             const [catalogue,parsers]=await Promise.all([
@@ -522,6 +525,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
               },
             },{
               ...(rawPort===null?{}:{requestedPort:Number(rawPort)}),
+              ...(rawFormat===null?{}:{parserFormat:rawFormat}),
               ...(trusted?.rangeStart===undefined?{}:{rangeStart:trusted.rangeStart}),
               ...(trusted?.rangeEnd===undefined?{}:{rangeEnd:trusted.rangeEnd}),
             });

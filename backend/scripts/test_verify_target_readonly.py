@@ -212,7 +212,7 @@ class VerifyContractTests(unittest.TestCase):
         result=probe.verify(P,send=send,include_port_plan=True)
         self.assertEqual(result["portEvidence"]["status"],
                          "CANDIDATE_REQUIRES_TARGET_RECHECK")
-        self.assertEqual(result["portEvidence"]["candidate"],20002)
+        self.assertEqual(result["portEvidence"]["candidate"],6800)
         self.assertEqual(result["portEvidence"]["observedDistinctPorts"],4)
         self.assertEqual(len(calls),3)
         self.assertEqual([method for method,route in calls],["POST","GET","GET"])
@@ -220,11 +220,44 @@ class VerifyContractTests(unittest.TestCase):
         with redirect_stdout(out):
             self.assertTrue(probe.print_result(result))
         text=out.getvalue()
-        self.assertIn("PARSER_LISTENER_PORT_CANDIDATE: 20002",text)
+        self.assertIn("PARSER_LISTENER_PORT_CANDIDATE: 6800",text)
         self.assertIn("PORT_READY_FOR_DEPLOYMENT: NO",text)
         self.assertNotIn("customer-record",text)
         self.assertNotIn(TEST_JWT,text)
         self.assertNotIn(TEST_KEY,text)
+
+    def test_catalogue_system_and_other_scope_are_still_occupied_ports(self):
+        # The /parsers catalogue is system-wide: built-ins can report
+        # non-requested cust_id values. They MUST remain in collision checks.
+        def send(method,route,token,*,tenant):
+            if method=="POST":
+                return 200,{"access_token":TEST_JWT}
+            if route.endswith("/parsers"):
+                return 200,{"data":[
+                    {"port":6800,"cust_id":"system"},
+                    {"port":6801,"cust_id":"other_tenant"},
+                    {"port":6802},
+                ]}
+            return 200,{"data":[{"port":6803,"cust_id":P["tenant"]}]}
+        result=probe.verify(P,send=send,include_port_plan=True)
+        self.assertEqual(result["portEvidence"]["candidate"],6804)
+        self.assertEqual(result["portEvidence"]["status"],
+                         "CANDIDATE_REQUIRES_TARGET_RECHECK")
+        self.assertEqual(result["portEvidence"]["observedDistinctPorts"],4)
+        self.assertFalse(result["portEvidence"]["reserved"])
+        self.assertFalse(result["portEvidence"]["sensorBindingsVerified"])
+        self.assertNotIn("other_tenant",json.dumps(result))
+
+    def test_custom_tenant_scope_mismatch_fails_closed_but_catalogue_is_global(self):
+        def reply(method,route,token,*,tenant):
+            if method=="POST":
+                return 200,{"access_token":TEST_JWT}
+            if route.endswith("/parsers"):
+                return 200,{"data":[{"port":6801,"cust_id":"different"}]}
+            return 200,{"data":[{"port":6802,"cust_id":"different"}]}
+        response=probe.verify(P,send=reply,include_port_plan=True)
+        self.assertEqual(response["portEvidence"]["status"],"INCOMPLETE_EVIDENCE")
+        self.assertIsNone(response["portEvidence"]["candidate"])
 
     def test_port_override_collision_and_unknown_sources_fail_closed(self):
         def fixture(method,route,auth,*,tenant):

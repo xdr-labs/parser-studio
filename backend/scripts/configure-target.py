@@ -130,7 +130,11 @@ def validate_profile(profile: object) -> dict:
     validate_port(sensor["port"])
     if sensor["protocol"] not in ("udp", "tcp"):
         fail("SENSOR_PROTOCOL_INVALID")
-    validate_port(parser["preferred_listener_port"], optional=True)
+    requested_listener = validate_port(parser["preferred_listener_port"], optional=True)
+    # Legacy profiles allowed "no preference"; this means the SAME
+    # sensor ingress/CONF source port, not a second unknown port.
+    if requested_listener is not None and requested_listener != sensor["port"]:
+        fail("SENSOR_PARSER_PORT_MISMATCH")
     if parser["port_verified"] is not False:
         fail("PROFILE_INVALID")
     raw = json.dumps(profile, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -261,12 +265,9 @@ def prompt_profile(input_fn=input, secret_fn=getpass.getpass) -> dict:
         fail("PORT_INVALID")
     sensor_port = validate_port(int(sensor_port_raw))
     protocol = input_fn("전송 프로토콜 [udp/tcp]: ").strip().lower()
-    parser_port_raw = input_fn("파서 .conf 포트 [모르면 Enter]: ").strip()
-    parser_port = None
-    if parser_port_raw:
-        if not parser_port_raw.isdecimal():
-            fail("PORT_INVALID")
-        parser_port = validate_port(int(parser_port_raw), optional=True)
+    # Exactly one receiver port: it is used both as the sensor's log
+    # destination and as the generated Fluentd CONF <source> port.
+    parser_port = sensor_port
     value = {
         "schema": SCHEMA,
         "dp": {"url": dp_url, "tenant_id": tenant, "api_key": key},

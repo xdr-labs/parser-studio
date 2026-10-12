@@ -18,7 +18,12 @@ const TENANT=/^[A-Za-z0-9_-]{1,128}$/;
 const APPROVAL=/^[A-Za-z0-9._-]{8,96}$/;
 const NAME=/^customized_[a-z][a-z0-9_]{1,47}$/;
 
-export type TargetReference={origin:string;tenant:string};
+export type TargetReference={
+  origin:string;
+  tenant:string;
+  /** Server-verified sensor UDP/TCP ingest port; must equal generated CONF. */
+  sensorIngestPort:number;
+};
 export type TargetKnownParser={name:string;version:string;port:number};
 export type TargetCatalogueEntry={name:string;port:number};
 export type TargetInventoryGroup={complete:boolean;ports:number[]};
@@ -134,13 +139,14 @@ export class TargetDeploymentCoordinator {
   #cfg:TargetCoordinatorSettings;
   constructor(cfg:TargetCoordinatorSettings){
     if(!cfg||!cfg.target||typeof cfg.target.tenant!=="string"||
-      !TENANT.test(cfg.target.tenant)||!cfg.api||
+      !TENANT.test(cfg.target.tenant)||!validPort(cfg.target.sensorIngestPort)||!cfg.api||
       typeof cfg.approve!=="function"||typeof cfg.audit!=="function"||
       !["listParsers","listCatalogue","sensorBindings","localReservations","writePair"]
         .every(key=>typeof cfg.api[key as keyof TargetDeploymentApi]==="function"))
       denied("TARGET_CONFIGURATION_INVALID");
     const v=validateDpTarget(cfg.target.origin,cfg.permittedOrigins);
-    this.target={tenant:cfg.target.tenant,origin:v.origin};
+    this.target={tenant:cfg.target.tenant,origin:v.origin,
+      sensorIngestPort:cfg.target.sensorIngestPort};
     this.#cfg=cfg;
   }
   async #inventoryCheck(name:string,port:number):Promise<void>{
@@ -185,6 +191,10 @@ export class TargetDeploymentCoordinator {
       denied("TARGET_CONFIRMATION_MISMATCH");
     if(!validPort(manifest.selectedParserPort)||!NAME.test(name))
       denied("TARGET_ARTIFACT_UNVERIFIED");
+    // The sensor ingest destination is the CONF receiver source port.
+    // Do not allow Apply against an independently numbered sensor port.
+    if(manifest.selectedParserPort!==this.target.sensorIngestPort)
+      denied("TARGET_SENSOR_CONF_PORT_MISMATCH");
     const key=this.target.origin+"|"+this.target.tenant+"|"+name;
     if(active.has(key))denied("TARGET_APPLY_IN_FLIGHT");
     active.add(key);

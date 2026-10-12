@@ -41,7 +41,7 @@ def synthetic():
             "api_key": TEST_KEY,
         },
         "sensor": {"ip": TEST_SENSOR_IP, "port": 5514, "protocol": "udp"},
-        "parser": {"preferred_listener_port": 22150, "port_verified": False},
+        "parser": {"preferred_listener_port": 5514, "port_verified": False},
         "deployment": {"automatic_apply_enabled": False},
     }
 
@@ -158,6 +158,23 @@ class ConfigTests(unittest.TestCase):
                 with self.assertRaises(config.ProfileError):
                     config.validate_profile(broken)
 
+    def test_one_sensor_ingest_port_equals_conf_port_and_legacy_blank_stays_supported(self):
+        profile = synthetic()
+        self.assertEqual(profile["sensor"]["port"], profile["parser"]["preferred_listener_port"])
+        changed = synthetic()
+        changed["parser"]["preferred_listener_port"] = 6800
+        with self.assertRaisesRegex(config.ProfileError, "SENSOR_PARSER_PORT_MISMATCH"):
+            config.validate_profile(changed)
+        legacy = synthetic()
+        legacy["parser"]["preferred_listener_port"] = None
+        self.assertEqual(config.validate_profile(legacy), legacy)
+        # Existing private profiles with old optional port unset inherit
+        # their sensor port; no private file is rewritten on code upgrade.
+        effective = (legacy["parser"]["preferred_listener_port"]
+                     if legacy["parser"]["preferred_listener_port"] is not None
+                     else legacy["sensor"]["port"])
+        self.assertEqual(effective, legacy["sensor"]["port"])
+
     def test_existing_profile_requires_intentional_replace(self):
         first = synthetic()
         config.save_profile(first)
@@ -210,7 +227,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_prompt_requires_secret_injected_hidden_only_and_no_auto_apply(self):
         answers = iter([
-            TEST_URL, "tenant_test_123", TEST_SENSOR_IP, "5514", "udp", "",
+            TEST_URL, "tenant_test_123", TEST_SENSOR_IP, "5514", "udp",
         ])
         seen = []
         def get_input(prompt):
@@ -223,7 +240,7 @@ class ConfigTests(unittest.TestCase):
                 secret_fn=lambda _: TEST_KEY,
             )
         self.assertEqual(profile["dp"]["api_key"], TEST_KEY)
-        self.assertIsNone(profile["parser"]["preferred_listener_port"])
+        self.assertEqual(profile["parser"]["preferred_listener_port"], profile["sensor"]["port"])
         self.assertFalse(profile["deployment"]["automatic_apply_enabled"])
         self.assertNotIn(TEST_KEY, printed.getvalue())
         self.assertNotIn(TEST_KEY, " ".join(seen))
@@ -240,7 +257,6 @@ class ConfigTests(unittest.TestCase):
             (b"Modular Sensor IP", TEST_SENSOR_IP),
             ("센서 로그 수신 포트".encode("utf-8"), "5514"),
             ("전송 프로토콜".encode("utf-8"), "udp"),
-            ("파서 .conf 포트".encode("utf-8"), "22150"),
         ]
         pid, terminal = pty.fork()
         if pid == 0:

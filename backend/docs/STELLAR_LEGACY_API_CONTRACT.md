@@ -397,13 +397,19 @@ completeness flags were verified, or INCOMPLETE_EVIDENCE otherwise; neither
 status is a deployment approval. Every result sets deployableNow=false,
 candidateOnly=true and needsFinalRecheck=true. Never accept inventory
 completeness fields from an untrusted browser or assume a catalog GET is
-an atomic reservation. Sensor *ingest destination* ports are separate from
-internal parser listener ports. Do not infer a sensor mapping from the
-suggested parser port.
+an atomic reservation. sensor ingest destination* and generated CONF <source> listener ports
+MUST be the same selected port. Sensor reachability and active ownership
+are still unverified until the real target E2E; a numeric match alone
+does not mean the listener exists.
 
 Authorized UI callers may query GET /api/v1/stellar/legacy/port-proposal
-and optionally supply ?port=NNNNN for a user override. It reads both known
-POC/tenant inventory endpoints but, without independently injected active
+and optionally supply ?port=NNNNN for a user override.
+Use ?format=syslog_rfc5424 for a Syslog-specific candidate starting at
+6800 and a hard 6800 minimum for manual overrides; non-Syslog formats
+retain their existing legacy default recommendation policy. The returned
+sensorIngestPort equals recommendedPort by contract but the actual sensor
+binding is NOT VERIFIED. It reads both known POC/tenant inventory
+endpoints but, without independently injected active
 sensor binding data and local reservations, always returns
 INCOMPLETE_EVIDENCE and deployableNow=false. UI must not describe this
 as confirmed port availability. Only the backend operator can inject

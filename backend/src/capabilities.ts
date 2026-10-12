@@ -19,6 +19,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     formatCoverage: "reviewed-bounded-subset" as const,
     rfc5424AdjacentStructuredDataSubset: true,
     rfc5424StructuredDataMaxBytes: 1024,
+    syslogMinimumReceiverPort: 6800,
     rfc5424BodyFormats: [...props.extraction.properties.syslogBodyFormat.enum],
     leefHexSeparatorSubset: true,
     multiline: false,

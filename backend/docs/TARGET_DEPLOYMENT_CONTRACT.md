@@ -29,19 +29,26 @@ Before each POST, the coordinator:
    with no URL userinfo, query, fragment, path or implicit localhost target.
    A future real transport MUST independently verify TLS certificates,
    DNS resolution/pinning and egress policy before each network request.
-3. Requires explicit confirmation of name, tenant, origin and approval ID,
+3. Uses the SAME destination/CONF source port for the sensor ingest
+   and generated parser listener. The trusted injected TargetReference
+   supplies sensorIngestPort, and mismatch with manifest.selectedParserPort
+   fails BEFORE any target inventory GET or parser write;
+   RFC5424 Syslog parser listeners below 6800 are invalid.
+   An unverified port recommendation cannot enable Apply. The selected
+   common port changes both generated artifacts and their revision hash.
+4. Requires explicit confirmation of name, tenant, origin and approval ID,
    plus independent trusted backend approval. A UI checkbox is insufficient.
-4. Looks up actual parser list, built-in/custom port catalogue and
+5. Looks up actual parser list, built-in/custom port catalogue and
    separately trusted sensor bindings and authoring reservations. Missing
    completeness evidence, name conflicts and occupied ports fail closed.
    Rechecks inventory just before write, and uses an in-process
    origin+tenant+name lock. Remote port allocation remains non-atomic.
-5. Writes a metadata-only BEFORE audit record, submits the unchanged files
+6. Writes a metadata-only BEFORE audit record, submits the unchanged files
    to its trusted injected backend API without automatic retry, and
    verifies a unique matching name/version/port by GET readback.
    Unknown status or no readback is UNCERTAIN. Never auto-delete
    a general user parser after uncertainty.
-6. Returns API_REGISTERED_READBACK separately from targetImportVerified,
+7. Returns API_REGISTERED_READBACK separately from targetImportVerified,
    sensorReadyVerified and realRuntimeParsingVerified, all false.
 
 Offline tests use only synthetic in-memory responses. No external DP,
