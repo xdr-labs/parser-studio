@@ -122,3 +122,28 @@ Real DP access still requires an entirely separate approved backend adapter,
 durable artifact and audit stores, verified TLS/DNS/egress, tenant authorization,
 real target readback, and per-write authorization. Neither the owner private
 profile nor a live sensor is used by this test-only gateway.
+
+## Offline revision history, hash diff and downloadable restore preview
+
+The separate ArtifactRevisionHistory provides an in-memory owner+tenant
+history of exact generated Ruby/CONF packages. Every inserted package is
+recompiled and verified by buildArtifactPackage, then defensively copied.
+The immutable revision SHA-256 is scoped to its owner and tenant: different
+owners can independently store identical artifact digests. The register,
+list, diff, download and prepareRestore methods require a trusted caller
+identity; no browser-provided identity or self-asserted ownership is trusted.
+
+Diff is limited to exact manifest hashes, version and the one shared sensor
+and CONF listener port. It never includes private parser bodies or raw logs.
+Owned ZIP downloads are reverified and copied before being returned. A
+restore preview requires both owned revisions and the exact latest stored
+revision as a concurrency check. It returns the old ZIP for offline review
+and explicitly does NOT change history, perform a PUT/DELETE, modify
+target state, or assert runtime parser support.
+
+This test-only contract is not integrated into the default backend HTTP
+server or a database. Storage is capped at 128 revisions and 24 hours,
+then is lost on expiry or process restart; it is not an authoritative
+persistent audit or disaster-recovery backup. Production restore still
+requires an approved durable storage and provenance design, separate
+target authorization and actual readback verification.
