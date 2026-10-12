@@ -389,3 +389,8 @@
 .guided-family-warning > span { flex:1 1 180px; }
 .guided-family-warning button { flex:none; padding:5px 9px; border-radius:5px; border:1px solid #e6d0b3; background:#fff; color:#936331; font-size:10px; font-weight:750; cursor:pointer; }
 .guided-family-warning button:focus-visible { outline:2px solid #177e85; outline-offset:3px; }
+
+/* Local browser test evidence export has no customer sample payload. */
+.guided-evidence-export { margin:13px 0 16px; padding:12px; border:1px solid #d7e5e9; border-radius:8px; background:#fafcfc; display:flex; flex-direction:column; gap:9px; align-items:flex-start; }
+.guided-evidence-export small { color:#778e9a; font-size:10px; line-height:1.6; }
+.guided-evidence-export button:focus-visible { outline:2px solid #197b87; outline-offset:2px; }

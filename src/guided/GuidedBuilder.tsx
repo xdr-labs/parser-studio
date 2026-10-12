@@ -25,6 +25,7 @@ import { suggestUnmappedFields } from './fieldMappingSuggestions';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
+import { createBrowserEvidence } from './browserEvidence';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
@@ -155,6 +156,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [schemaError, setSchemaError] = useState('');
   const [metadataError, setMetadataError] = useState<{mappingId:string;message:string} | null>(null);
   const [starterChoice, setStarterChoice] = useState<StarterTemplateId | ''>('');
+  const [evidenceDownloading, setEvidenceDownloading] = useState(false);
+  const [evidenceError, setEvidenceError] = useState('');
 
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
@@ -195,6 +198,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const changeDraft = <K extends keyof ParserDraft>(field: K, value: ParserDraft[K]) =>
     setDraft((old) => ({ ...old, [field]: value }));
   const notify = (text: string) => setMessage(text);
+
+  const downloadBrowserTestEvidence = async () => {
+    if (!runState || evidenceDownloading || pending) return;
+    setEvidenceDownloading(true);
+    setEvidenceError('');
+    try {
+      const report = await createBrowserEvidence({ sample, draft, suite: runState.suite });
+      const slug = /^[a-z][a-z0-9_]{2,47}$/.test(options.slug) ? options.slug : 'local_draft';
+      localDownload('parser_studio_' + slug + '_browser_test_evidence.json',
+        JSON.stringify(report, null, 2) + '\n');
+      notify('브라우저 테스트 증거를 다운로드했습니다. 원본 로그·정규화 값은 제외되며 네이티브/실제 Stellar 검증은 아닙니다.');
+    } catch (error) {
+      setEvidenceError(error instanceof Error ? error.message : '로컬 테스트 증거를 생성할 수 없습니다.');
+    } finally {
+      setEvidenceDownloading(false);
+    }
+  };
 
   const applyStarter = () => {
     if (!starterChoice) return;
@@ -783,6 +803,15 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               ].map(([label, value]) => <div key={label} className="guided-test-metric"><span>{label}</span><strong>{value}</strong></div>)}
             </div>
             <div className="guided-hint"><ShieldAlert size={16} /> {runState ? '테스트 엔진: browser-preview · 네이티브 Fluentd/실제 Stellar 적재 성공이 아닙니다.' : '아직 이 초안의 전체 샘플 테스트 기록이 없습니다. 먼저 브라우저 테스트를 실행하세요.'}</div>
+            <div className="guided-evidence-export" aria-label="Browser test evidence export">
+              <button type="button" className="guided-cta-secondary"
+                disabled={!runState || pending || evidenceDownloading}
+                onClick={() => { void downloadBrowserTestEvidence(); }}>
+                <FileDown size={15} /> {evidenceDownloading ? '증거 생성 중…' : '브라우저 테스트 증거 JSON 다운로드'}
+              </button>
+              <small>현재 초안·샘플로 직접 실행한 결과만 저장합니다. 원본 이벤트·정규화 값·오류 메시지는 제외하고 SHA-256 및 진단 코드만 포함합니다. Fluentd/실제 Stellar 적용은 미검증입니다.</small>
+              {evidenceError && <p role="alert" className="guided-error">{evidenceError}</p>}
+            </div>
             <div className="guided-filter"><span>이벤트별 결과 {suite?.events.length ?? 0}건</span><div>{(['all','fail','warning'] as const).map((filter) => <button type="button" aria-pressed={errorFilter === filter} key={filter} className={errorFilter === filter ? 'selected' : ''} onClick={() => setErrorFilter(filter)}>{filter === 'all' ? '전체' : filter === 'fail' ? '실패만' : '경고만'}</button>)}</div></div>
             <div className="guided-test-events">{(suite?.events ?? []).filter((event) => errorFilter === 'all' || event.status === errorFilter).map((event) =>
               <button className="guided-test-event" type="button" key={event.id} onClick={() => { setSelectedId(event.id); setStep(1); }}>
