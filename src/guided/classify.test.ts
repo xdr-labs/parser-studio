@@ -29,6 +29,20 @@ describe('explainable local classification suggestions', () => {
     expect(suggestClassification(event, options).status).toBe('fallback');
   });
 
+  it('matches an exact dotted KV source field before attempting nested JSON traversal', () => {
+    const draft=createDraft();
+    draft.format='kv';
+    const event=preview('event.action=deny src_ip=198.51.100.10', draft).events[0];
+    expect(event.fields['event.action']).toBe('deny');
+    const options=defaultGuidedOptions();
+    options.classification.rules = [
+      {id:'flat-dot',sourceField:'event.action',equals:'deny',index:'Threat'},
+    ];
+    expect(suggestClassification(event,options)).toMatchObject({
+      index:'Threat',rule:0,status:'matched',
+    });
+  });
+
   it('has case-sensitive exact conditions, never claiming native routing success', () => {
     const event = preview('{"action":"DENY"}', createDraft()).events[0];
     const result = suggestClassification(event, defaultGuidedOptions());
