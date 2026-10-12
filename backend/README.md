@@ -69,3 +69,6 @@ Example payload is in [examples/synthetic-firewall.json](examples/synthetic-fire
 The server is stateless, bounded to 256 KiB generation JSON and 2 MiB **read-only inspection** input, and bound to loopback by default; not remotely published and has no authentication or tenant isolation yet. It does not execute Ruby or manage files. Generated Ruby embeds model JSON as Base64 to prevent source-code injection; only a reviewed fixed template is emitted. The runtime runner must be separate, pinned, isolated and privilege-limited before it processes untrusted customer records or before this is made multi-user.
 
 **Integration note:** The docs/no-code-custom-parser-design PR #2 sets the future six-step UX and full generator requirements. Do not merge this backend without reconciling its API contract with the UI PR #3, which may independently advance.
+
+
+**Stellar Cyber Legacy POC API adapter:** See [backend/UI API integration contract](docs/STELLAR_LEGACY_API_CONTRACT.md) for server-only User Scope JWT, strict paired-file manifest validation, readback/version checks, explicit test-only write approval and static unverified Modular/runtime gates. General writes remain disabled.

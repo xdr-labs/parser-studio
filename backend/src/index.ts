@@ -18,3 +18,9 @@ export type {
   LegacyAuditEvent, LegacyWriteIntent, LegacyPocClientConfig,
   LegacyOperationResult, LegacyParserMetadata, LegacyCatalogueRecord,
 } from "./stellar-legacy-client.js";
+
+
+export {
+  loadPocProfileClient,createPocFileAuditSink,
+} from "./stellar-legacy-server-secrets.js";
+export type { BackendServerOptions } from "./http.js";
