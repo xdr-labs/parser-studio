@@ -125,7 +125,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     const sessionPath="/api/v1/test-lab/sessions/";
     if(path.startsWith(sessionPath)){
       const action=path.slice(sessionPath.length);
-      if(!["start","status","pause","resume","stop"].includes(action)){
+      if(!["start","status","pause","resume","stop","renew"].includes(action)){
         send(res,404,{error:"NOT_FOUND"});return;
       }
       if(req.method!==(action==="status"?"GET":"POST")){
@@ -157,7 +157,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
           }
           const allowed=action==="start"?
-            ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]:["runId"];
+            ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]:
+            action==="renew"?["runId","approvalId","leaseMs","additionalEvents"]:
+            ["runId"];
           if(Object.keys(input).sort().join(",")!==allowed.sort().join(",")){
             send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
           }
@@ -178,6 +180,16 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         if(action==="pause"){send(res,200,sessions.pause(runId!,actor));return;}
         if(action==="resume"){send(res,200,sessions.resume(runId!,actor));return;}
         if(action==="stop"){send(res,200,sessions.stop(runId!,actor));return;}
+        if(action==="renew"){
+          const request=input!;
+          const revised=await sessions.renew(runId!,{
+            approvalId:request["approvalId"] as string,
+            leaseMs:request["leaseMs"] as number,
+            additionalEvents:request["additionalEvents"] as number,
+          },actor);
+          send(res,200,revised);
+          return;
+        }
         const data=input!;
         const result=await sessions.start({
           sample:data["sample"] as Parameters<typeof sessions.start>[0]["sample"],
@@ -194,6 +206,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         else if(error instanceof TestLabSessionError){
           const status=error.code==="TESTLAB_SESSION_NOT_FOUND"?404:
             error.code==="TESTLAB_CAPACITY_REACHED"?429:
+            error.code==="TESTLAB_RENEWAL_IN_PROGRESS"?409:
             error.code==="TESTLAB_SENDER_SHUTDOWN"?503:
             /DISABLED|DENIED/.test(error.code)?403:422;
           send(res,status,{error:error.code});

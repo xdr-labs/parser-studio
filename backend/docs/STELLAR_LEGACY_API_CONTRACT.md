@@ -188,8 +188,8 @@ Stopping the session cancels timers without changing or deleting any parser.
 
 With an injected controller and a trusted per-request product identity
 callback, the HTTP paths are POST /api/v1/test-lab/sessions/start,
-POST .../pause, POST .../resume, POST .../stop and
-GET .../status?runId=.... The identity callback MUST return a stable
+POST .../pause, POST .../resume, POST .../stop,
+POST .../renew, and GET .../status?runId=.... The identity callback MUST return a stable
 authenticated actor ID from the server's existing identity provider,
 never an unverified browser-provided header. The controller binds each
 run to its authenticated owner and masks foreign and unknown run IDs as
@@ -204,8 +204,15 @@ cannot retract an already-sent packet. Concurrent approval requests reserve
 capacity before awaiting the external authorization, closing the backend
 server cancels/purges all sessions, and late approval cannot restart a
 closed controller. The current in-memory loop is NOT durable across server
-restart and has no lease renewal or worker recovery yet. Pause/Stop never
-modify or delete the deployed parser.
+restart and has no worker recovery yet. With a separate trusted approveRenewal
+callback, a verified session owner can POST /renew with runId, approvalId,
+leaseMs and additionalEvents. Each renewal independently validates owner,
+operator approval, remaining lease, 250ms..15min new lease, 0..3000 extra
+events and a bounded total 300000 events. Concurrent or late renewal is
+rejected; STOP, EXPIRE and SHUTDOWN always win. The session can continue
+while the owner keeps explicitly renewing finite leases, rather than
+gaining an uncontrolled infinite network sender.
+Pause/Stop never modify or delete the deployed parser.
 Any real in-network UDP/TCP adapter additionally needs target ownership,
 egress protection and direct sensor authorization before enabling product UI.
 

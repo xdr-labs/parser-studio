@@ -170,3 +170,57 @@ test("closing the backend listener cancels and purges owned synthetic sessions",
     runner.stopAll();
   }
 });
+
+test("HTTP renewal requires authenticated run owner and independent backend reapproval",async()=>{
+  let approvals=0;
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    approveRenewal:async intent=>{
+      approvals++;
+      assert.equal(intent.ownerId,"actor-a");
+      return true;
+    },
+    deliver:async()=>{},
+  });
+  const auth=(owner:string)=>({
+    "content-type":"application/json","x-synthetic-actor":owner,
+  });
+  const cmd=(base:string,path:string,body:unknown,owner:string)=>fetch(base+path,{
+    method:"POST",headers:auth(owner),body:JSON.stringify(body),
+  });
+  try{
+    await withServer({testLabController:runner,
+      authorizeTestLabSession:async req=>
+        req.headers["x-synthetic-actor"]==="actor-a"?"actor-a":
+        req.headers["x-synthetic-actor"]==="actor-b"?"actor-b":null,
+    },async base=>{
+      const started=await cmd(base,"/api/v1/test-lab/sessions/start",{
+        sample:sample(),approvalId:"owner-approved-session",
+        ratePerSecond:1,leaseMs:900,maxEvents:3,
+      },"actor-a");
+      assert.equal(started.status,200);
+      const {runId}=await started.json() as {runId:string};
+      const original=runner.status(runId,"actor-a");
+      const renewal={runId,approvalId:"owner-renew-session",
+        leaseMs:1600,additionalEvents:15};
+      const foreign=await cmd(base,"/api/v1/test-lab/sessions/renew",renewal,"actor-b");
+      assert.equal(foreign.status,404,"other actor must not renew a private run");
+      assert.equal(approvals,0);
+      const bad=await cmd(base,"/api/v1/test-lab/sessions/renew",{
+        ...renewal,leaseMs:90000001,
+      },"actor-a");
+      assert.equal(bad.status,422);
+      assert.equal(approvals,0);
+      const ok=await cmd(base,"/api/v1/test-lab/sessions/renew",renewal,"actor-a");
+      assert.equal(ok.status,200);
+      const updated=await ok.json() as any;
+      assert.equal(updated.maxEvents,18);
+      assert.ok(Date.parse(updated.leaseExpiresAt)>Date.parse(original.leaseExpiresAt));
+      assert.equal(approvals,1);
+      const stop=await cmd(base,"/api/v1/test-lab/sessions/stop",{runId},"actor-a");
+      assert.equal(stop.status,200);
+      const denied=await cmd(base,"/api/v1/test-lab/sessions/renew",renewal,"actor-a");
+      assert.equal(denied.status,422,"stopped run cannot be resurrected");
+    });
+  }finally{runner.stopAll();}
+});

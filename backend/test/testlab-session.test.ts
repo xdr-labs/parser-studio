@@ -164,3 +164,140 @@ test("controller shutdown during pending asynchronous approval prevents late ses
     assert.equal(sends,0,"late approval cannot resurrect a stopped controller");
   }finally{release();runner.stopAll();}
 });
+
+test("approved lease renewal extends bounded session beyond original expiry and adds event quota",async()=>{
+  let renewApprovals=0,events=0;
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    approveRenewal:async intent=>{
+      renewApprovals++;
+      assert.equal(intent.ownerId,"renew-actor");
+      assert.equal(intent.additionalEvents,25);
+      return true;
+    },
+    deliver:async()=>{events++;},
+  });
+  try{
+    const start=await runner.start({
+      sample:sample(),approvalId:"owner-test-renew-1",
+      ratePerSecond:5,leaseMs:480,maxEvents:12,
+    },"renew-actor");
+    const prior=runner.status(start.runId,"renew-actor");
+    assert.equal(prior.maxEvents,12);
+    await sleep(200);
+    const extended=await runner.renew(start.runId,{
+      approvalId:"owner-test-renew-2",leaseMs:1300,additionalEvents:25,
+    },"renew-actor");
+    assert.equal(extended.maxEvents,37);
+    assert.ok(Date.parse(extended.leaseExpiresAt)>Date.parse(prior.leaseExpiresAt));
+    await sleep(530);
+    assert.equal(runner.status(start.runId,"renew-actor").state,"RUNNING",
+      "fresh approval must extend beyond initial finite lease");
+    assert.equal(renewApprovals,1);
+    assert.ok(events>=2);
+    runner.stop(start.runId,"renew-actor");
+  }finally{runner.stopAll();}
+});
+
+test("unauthorized lease renewal or denied backend renewal preserves original expiry",async()=>{
+  let approved=0;
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    approveRenewal:async()=>{approved++;return false;},
+    deliver:async()=>{},
+  });
+  try{
+    const start=await runner.start({
+      sample:sample(),approvalId:"owner-test-renew-1",
+      ratePerSecond:1,leaseMs:520,maxEvents:12,
+    },"renew-actor");
+    await assert.rejects(()=>runner.renew(start.runId,{
+      approvalId:"owner-test-renew-2",leaseMs:1300,additionalEvents:100,
+    },"foreign-actor"),/TESTLAB_SESSION_NOT_FOUND/);
+    assert.equal(approved,0);
+    await assert.rejects(()=>runner.renew(start.runId,{
+      approvalId:"owner-test-renew-2",leaseMs:1300,additionalEvents:100,
+    },"renew-actor"),/TESTLAB_RENEWAL_DENIED/);
+    assert.equal(approved,1);
+    await sleep(580);
+    assert.equal(runner.status(start.runId,"renew-actor").state,"EXPIRED");
+  }finally{runner.stopAll();}
+});
+
+test("concurrent reapprovals cannot extend the same lease twice",async()=>{
+  let release=()=>{};
+  const barrier=new Promise<void>(resolve=>{release=resolve;});
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    approveRenewal:async()=>{await barrier;return true;},
+    deliver:async()=>{},
+  });
+  try{
+    const start=await runner.start({sample:sample(),
+      approvalId:"owner-test-renew-1",ratePerSecond:1,
+      leaseMs:1200,maxEvents:10,
+    },"renew-actor");
+    const choice={approvalId:"owner-test-renew-2",leaseMs:1400,additionalEvents:10};
+    const first=runner.renew(start.runId,choice,"renew-actor");
+    const second=runner.renew(start.runId,choice,"renew-actor");
+    release();
+    const settled=await Promise.allSettled([first,second]);
+    assert.equal(settled.filter(x=>x.status==="fulfilled").length,1);
+    assert.equal(settled.filter(x=>x.status==="rejected").length,1);
+    assert.equal(runner.status(start.runId,"renew-actor").maxEvents,20);
+    runner.stop(start.runId,"renew-actor");
+  }finally{release();runner.stopAll();}
+});
+
+test("no asynchronous renewal approval can resurrect a stopped or shut down session",async()=>{
+  let release=()=>{};
+  const barrier=new Promise<void>(resolve=>{release=resolve;});
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    approveRenewal:async()=>{await barrier;return true;},
+    deliver:async()=>{},
+  });
+  try{
+    const start=await runner.start({sample:sample(),
+      approvalId:"owner-test-renew-1",ratePerSecond:1,
+      leaseMs:1200,maxEvents:10,
+    },"renew-actor");
+    const pending=runner.renew(start.runId,{
+      approvalId:"owner-test-renew-2",leaseMs:1400,additionalEvents:20,
+    },"renew-actor");
+    runner.stop(start.runId,"renew-actor");
+    release();
+    await assert.rejects(pending,/TESTLAB_SESSION_NOT_RUNNING/);
+    assert.equal(runner.status(start.runId,"renew-actor").state,"STOPPED");
+  }finally{release();runner.stopAll();}
+});
+
+test("no renewal without a separate backend approval function; invalid increments fail closed",async()=>{
+  const withoutRenewal=new SyntheticSessionController({
+    approveStart:async()=>true,deliver:async()=>{},
+  });
+  try{
+    const s=await withoutRenewal.start({
+      sample:sample(),approvalId:"owner-test-no-renew",
+      ratePerSecond:1,leaseMs:1300,maxEvents:8,
+    },"renew-actor");
+    await assert.rejects(()=>withoutRenewal.renew(s.runId,{
+      approvalId:"owner-test-renewal",leaseMs:1500,additionalEvents:5,
+    },"renew-actor"),/TESTLAB_RENEWAL_DISABLED/);
+    withoutRenewal.stop(s.runId,"renew-actor");
+  }finally{withoutRenewal.stopAll();}
+  const withRenewal=new SyntheticSessionController({
+    approveStart:async()=>true,approveRenewal:async()=>true,
+    deliver:async()=>{},
+  });
+  try{
+    const s=await withRenewal.start({
+      sample:sample(),approvalId:"owner-test-with-renew",
+      ratePerSecond:1,leaseMs:1300,maxEvents:8,
+    },"renew-actor");
+    await assert.rejects(()=>withRenewal.renew(s.runId,{
+      approvalId:"owner-test-renewal",leaseMs:1500,additionalEvents:3001,
+    },"renew-actor"),/TESTLAB_RENEWAL_LIMITS_INVALID/);
+    assert.equal(withRenewal.status(s.runId,"renew-actor").maxEvents,8);
+  }finally{withRenewal.stopAll();}
+});

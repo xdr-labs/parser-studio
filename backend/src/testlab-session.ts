@@ -17,6 +17,11 @@ export type TestLabStartRequest={
   leaseMs:number;
   maxEvents:number;
 };
+export type TestLabRenewRequest={
+  approvalId:string;
+  leaseMs:number;
+  additionalEvents:number;
+};
 export type TestLabSendContext={
   runId:string;
   sequence:number;
@@ -28,6 +33,7 @@ export type TestLabStatus={
   sentCount:number;
   nextSequence:number;
   ratePerSecond:number;
+  maxEvents:number;
   leaseExpiresAt:string;
   lastSentAt:string|null;
   errorCode:string|null;
@@ -40,6 +46,10 @@ export type TestLabSessionConfig={
   /** Supplied by trusted backend, never by a browser alone. */
   approveStart?:(intent:{approvalId:string;runId:string;format:string;
     ratePerSecond:number;maxEvents:number;leaseMs:number})=>Promise<boolean>;
+  /** New explicit operator decision for EVERY lease renewal. */
+  approveRenewal?:(intent:{approvalId:string;runId:string;ownerId:string|null;
+    leaseMs:number;additionalEvents:number;currentExpiry:string;
+    sentCount:number})=>Promise<boolean>;
   /** Backend-controlled trusted sink; no default network implementation. */
   deliver?:(event:string,context:TestLabSendContext)=>Promise<void>;
   now?:()=>number;
@@ -71,12 +81,15 @@ export class SyntheticSessionController{
   #sessions=new Map<string,ActiveSession>();
   #pendingStarts=0;
   #closed=false;
+  #pendingRenewals=new Set<string>();
   #approve?:TestLabSessionConfig["approveStart"];
+  #approveRenewal?:TestLabSessionConfig["approveRenewal"];
   #deliver?:TestLabSessionConfig["deliver"];
   #now:()=>number;
   #maxConcurrent:number;
   constructor(config:TestLabSessionConfig){
     this.#approve=config.approveStart;
+    this.#approveRenewal=config.approveRenewal;
     this.#deliver=config.deliver;
     this.#now=config.now??(()=>Date.now());
     this.#maxConcurrent=config.maxConcurrent??2;
@@ -93,6 +106,7 @@ export class SyntheticSessionController{
       sentCount:session.sentCount,
       nextSequence:session.nextSequence,
       ratePerSecond:session.ratePerSecond,
+      maxEvents:session.maxEvents,
       leaseExpiresAt:new Date(session.leaseDeadline).toISOString(),
       lastSentAt:session.lastSentAt,
       errorCode:session.errorCode,
@@ -132,6 +146,7 @@ export class SyntheticSessionController{
     // Shutdown is terminal. A late asynchronous approval must never
     // resurrect sessions after the HTTP listener closes.
     this.#closed=true;
+    this.#pendingRenewals.clear();
     for(const item of this.#sessions.values())this.#end(item,"STOPPED");
     this.#sessions.clear();
   }
@@ -153,6 +168,63 @@ export class SyntheticSessionController{
     this.#schedule(item,0);
     return this.#public(item);
   }
+  async renew(runId:string,request:TestLabRenewRequest,
+    ownerId?:string):Promise<TestLabStatus>{
+    if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+    const item=this.#owned(runId,ownerId);
+    if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    if(!this.#approveRenewal)invalid("TESTLAB_RENEWAL_DISABLED");
+    if(!request||typeof request.approvalId!=="string"||
+      !/^[A-Za-z0-9_.-]{8,96}$/.test(request.approvalId)||
+      !Number.isInteger(request.leaseMs)||request.leaseMs<250||
+      request.leaseMs>900000||
+      !Number.isInteger(request.additionalEvents)||
+      request.additionalEvents<0||request.additionalEvents>3000)
+      invalid("TESTLAB_RENEWAL_LIMITS_INVALID");
+    if(item.maxEvents+request.additionalEvents>300000)
+      invalid("TESTLAB_RENEWAL_TOTAL_QUOTA");
+    if(this.#pendingRenewals.has(runId))
+      invalid("TESTLAB_RENEWAL_IN_PROGRESS");
+    if(this.#now()>=item.leaseDeadline){
+      this.#end(item,"EXPIRED");
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    }
+    this.#pendingRenewals.add(runId);
+    try{
+      let approved=false;
+      try{
+        approved=await this.#approveRenewal({
+          approvalId:request.approvalId,runId,
+          ownerId:item.ownerId,
+          leaseMs:request.leaseMs,
+          additionalEvents:request.additionalEvents,
+          currentExpiry:new Date(item.leaseDeadline).toISOString(),
+          sentCount:item.sentCount,
+        });
+      }catch{/* Fail closed if independent authorization is unavailable. */}
+      if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+      if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+        invalid("TESTLAB_SESSION_NOT_RUNNING");
+      if(this.#now()>=item.leaseDeadline){
+        this.#end(item,"EXPIRED");
+        invalid("TESTLAB_SESSION_NOT_RUNNING");
+      }
+      if(approved!==true)invalid("TESTLAB_RENEWAL_DENIED");
+      const nextDeadline=this.#now()+request.leaseMs;
+      if(nextDeadline<=item.leaseDeadline)
+        invalid("TESTLAB_RENEWAL_NOT_EXTENDING");
+      item.maxEvents+=request.additionalEvents;
+      item.leaseDeadline=nextDeadline;
+      if(item.expiryTimer)clearTimeout(item.expiryTimer);
+      item.expiryTimer=setTimeout(()=>this.#end(item,"EXPIRED"),request.leaseMs);
+      item.expiryTimer.unref?.();
+      return this.#public(item);
+    }finally{
+      this.#pendingRenewals.delete(runId);
+    }
+  }
+
   #schedule(item:ActiveSession,delayMs:number){
     if(item.state!=="RUNNING")return;
     item.tickTimer=setTimeout(()=>{

@@ -95,7 +95,9 @@ lease expiry, sequential backpressure and sanitized status. All session
 HTTP routes require separately injected trusted backend approval, authenticated
 server-side actor identity, and delivery sink. Sessions are actor-bound,
 concurrency-limited and cancelled/purged when the backend HTTP listener
-closes. Stop signals cancellation to the sink. The default app has no sink
+closes. A separately reapproved /sessions/renew extends the bounded
+lease and per-session event quota, without resetting Stop semantics.
+Stop signals cancellation to the sink. The default app has no sink
 and performs no sensor traffic; sessions do not survive server restart,
 and no real sensor/Interflow parsing result is claimed.
 
