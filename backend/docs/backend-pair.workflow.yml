@@ -38,3 +38,10 @@ jobs:
       - name: Strict TypeScript, API, compiler and native synthetic Fluentd suite
         working-directory: backend
         run: bash scripts/qualify.sh
+      - name: Publish fixed public-synthetic native capability manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-native-synthetic-capabilities
+          path: backend/.tmp/synthetic-native-capabilities.json
+          if-no-files-found: error
+          retention-days: 7

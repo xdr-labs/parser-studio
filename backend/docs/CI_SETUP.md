@@ -56,3 +56,19 @@ HEAD, worktree dirtiness, golden fixture SHA and always-false vendor gates.
 
 No PR merge, production deployment, release or permissions escalation follows
 automatically from a passing workflow.
+
+
+## Read-only native capability evidence artifact
+
+After a successful exact-HEAD backend native qualification, the Actions job
+uploads only the fixed public-synthetic redacted capability manifest as a
+seven-day artifact named parser-studio-native-synthetic-capabilities. No Ruby
+parser bodies, customer events, credentials, private operator profiles,
+untrusted source logs, or raw Fluentd outputs are uploaded. Missing files fail
+the job, never silently produce an evidence-free success.
+
+The JSON manifest contains its own SHA-256 digest, exact Git HEAD, ten
+public-synthetic parser profiles, 23 native golden cases and all separately
+unverified Stellar target/sensor/customer claims set false. Artifact upload
+is a convenience for reviewing synthetic evidence, not a vendor compatibility
+attestation, a cryptographic signature, or approval to deploy a parser.
