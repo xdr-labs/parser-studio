@@ -565,3 +565,13 @@
 /* Explicit, name-only field chip mapping: make the selected draft rule visible. */
 .guided-map-card.selected-field { border-color:#188f91; box-shadow:0 0 0 2px rgba(24,143,145,.14); }
 .guided-extracted-tags button:focus-visible { outline:2px solid #147f84; outline-offset:3px; }
+
+/* Accessible keyboard alternative to mouse-only raw-value selection. */
+.guided-keyboard-value { margin:10px 0; padding:10px 12px; background:#f8fbfc; border:1px solid #dae7ec; border-radius:8px; }
+.guided-keyboard-value summary { cursor:pointer; color:#356779; font-size:11px; font-weight:750; }
+.guided-keyboard-value > p,.guided-keyboard-value > small { display:block; color:#627f89; line-height:1.7; font-size:10px; margin:9px 0; }
+.guided-keyboard-value-controls { display:flex; flex-wrap:wrap; align-items:flex-end; gap:9px; }
+.guided-keyboard-value-controls .guided-field { flex:1 1 190px; min-width:0; margin:0; }
+.guided-keyboard-value-controls input { width:100%; min-width:0; }
+.guided-keyboard-value-controls button { flex:1 1 175px; }
+.guided-keyboard-value :is(summary,input,button):focus-visible { outline:2px solid #14868a; outline-offset:2px; }

@@ -174,6 +174,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [isolatedError,setIsolatedError] = useState('');
   const isolatedRequestToken=useRef(0);
   const [selectedValue, setSelectedValue] = useState('');
+  const [keyboardValue,setKeyboardValue] = useState('');
   const [fieldName, setFieldName] = useState('new_field');
   const [proposalTesting, setProposalTesting] = useState(false);
   const [proposalResult, setProposalResult] = useState<{ key: string; matched: number; total: number } | null>(null);
@@ -270,6 +271,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
   const activeEvent = suite?.events.find((event) => event.id === selectedId) ?? suite?.events[0];
   const activeFieldNames = useMemo(() => activeEvent ? listSafeLeafPaths(activeEvent.fields) : [], [activeEvent]);
+  const keyboardCandidate=keyboardValue.trim();
+  const keyboardCandidateValid=Boolean(activeEvent && keyboardCandidate &&
+    keyboardCandidate.length<=80 && !keyboardCandidate.includes('\n') &&
+    !keyboardCandidate.includes('\r') && activeEvent.raw.includes(keyboardCandidate));
   const proposal = useMemo(() => activeEvent && selectedValue
     ? createFieldProposal(activeEvent.raw, selectedValue, fieldName)
     : null, [activeEvent, selectedValue, fieldName]);
@@ -701,6 +706,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       notify('Only UTF-8 text files can be uploaded.');
     }
   };
+
+  useEffect(()=>{
+    // Explicit keyboard alternative is transient and must not hold values
+    // from a previous customer sample after the input has been edited.
+    setKeyboardValue('');
+  },[sample]);
 
   const captureValue = (text: string) => {
     const value = text.trim();
@@ -1150,7 +1161,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-event-picker">
               <div className="guided-event-buttons" aria-label="Guided event list">
                 {(suite?.events ?? []).slice(0, 100).map((event) =>
-                  <button type="button" key={event.id} onClick={() => { setSelectedId(event.id); setSelectedValue(''); }} className={'guided-event-option ' + (activeEvent?.id === event.id ? 'active' : '')}>
+                  <button type="button" key={event.id} onClick={() => { setSelectedId(event.id); setSelectedValue(''); setKeyboardValue(''); }} className={'guided-event-option ' + (activeEvent?.id === event.id ? 'active' : '')}>
                     <span className={'guided-status-dot ' + event.status} />
                     <strong>#{event.line}</strong><span>{formatLabel(event.detected.format)}</span>
                   </button>)}
@@ -1162,6 +1173,28 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <mark className="guided-selected-token">{selectedValue}</mark>
                   {activeEvent.raw.slice(activeEvent.raw.indexOf(selectedValue) + selectedValue.length)}
                 </> : activeEvent.raw}</pre> : <div className="guided-no-events">Add logs first.</div>}
+                <details className="guided-keyboard-value" aria-label="Keyboard raw-value selection">
+                  <summary>Keyboard Alternative: Select an Exact Raw Value</summary>
+                  <p>Enter or paste a short value that appears exactly in the selected raw event. Use the explicit button to prepare a field proposal. The value stays in browser memory; this action does not modify parser rules or send network requests.</p>
+                  <div className="guided-keyboard-value-controls">
+                    <label className="guided-field"><span>Exact Raw Value from Selected Event</span>
+                      <input aria-label="Exact raw value to select" value={keyboardValue}
+                        maxLength={80} autoComplete="off" spellCheck={false}
+                        onChange={(event)=>setKeyboardValue(event.target.value)}
+                        placeholder="Select up to 80 characters from the event"/>
+                    </label>
+                    <button type="button" className="guided-cta-secondary"
+                      disabled={!keyboardCandidateValid}
+                      onClick={()=>{
+                        if(!keyboardCandidateValid) return;
+                        captureValue(keyboardCandidate);
+                        setKeyboardValue('');
+                      }}>
+                      <ShieldCheck size={15}/> Use Value for Field Proposal
+                    </button>
+                  </div>
+                  <small>The button remains disabled when the value is absent, spans multiple lines or exceeds the 80-character limit. Keyboard selection is an alternative to mouse highlighting; it is not automatic field mapping or native parser verification.</small>
+                </details>
                 <div className="guided-extracted-tags">Detected fields: {activeFieldNames.length ? activeFieldNames.map((field) => {
                   const mapped=draft.mappings.some(mapping=>mapping.source===field);
                   const suggested=unmappedSuggestions.some(candidate=>candidate.source===field);

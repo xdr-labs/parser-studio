@@ -255,3 +255,21 @@ keyboard Enter works because every chip is a real button. A browser regression
 tests duplicate prevention, unmapped source mapping, unsafe prototype names,
 local-only sample privacy and keyboard operation. This feature does not claim
 native parsing or target import compatibility.
+
+
+### 2026-10-12 — Keyboard alternative for source-event value selection
+
+Guided Step 2 now offers an optional collapsed panel for users who cannot or
+do not want to drag-select a value inside the raw-event code view. An editable,
+accessible input is constrained to 80 characters; a separate explicit button
+accepts the value only if it is present verbatim in the currently selected
+browser event. This reuses the same existing field proposal, regex safety and
+all-sample browser review path used for mouse selection. The proposal is not
+silently applied and cannot unlock native draft export by itself. The input
+resets when source event or sample changes and is never serialized, logged,
+uploaded to a backend, or included in redacted test evidence.
+
+Browser E2E tests in tests/keyboard-raw-selection.spec.ts cover keyboard
+focus/Enter, invalid source refusal, stale value clearing, local-only privacy
+and 390px layout. This supplements accessible one-click safe field-name mapping
+chips, without equating browser regex previews with native Fluentd validation.

@@ -136,3 +136,21 @@ dictionary, type inference beyond the conservative string choice, or real
 Fluentd/Stellar export. Keyboard, duplicate prevention, source retention,
 privacy and unsafe-name regression paths are exercised through
 tests/field-chip-mapping.spec.ts.
+
+
+## R2 P0-A — Keyboard raw-value selection alternative (2026-10-12)
+
+The no-code Step 2 value-selection path no longer requires mouse-only text
+highlighting. A collapsed, explicitly labeled **Keyboard Alternative: Select
+an Exact Raw Value** panel lets keyboard-only/mobile users enter a bounded
+exact substring of the selected source event, then separately invoke the
+existing field proposal workflow. An unmatched, multiline or overlong value
+cannot enable the action. Values are transient in browser memory, are cleared
+when the source sample changes, and are not stored in revisions, telemetry or
+remote requests. The proposal still requires explicit test coverage and
+acceptance before any draft rule can change.
+
+Browser scenarios confirm actual keyboard Enter activation, no backend calls,
+value-match validation, clearing stale input after sample edits, preserving the
+original complete source and responsive 390px viewport layout. This is a
+frontend accessibility/usability improvement, not a native runtime proof.
