@@ -21,7 +21,7 @@ bash scripts/qualify.sh
 
 `scripts/qualify.sh` works with `PARSER_RUBY_BIN` or its project-local Ruby fallback if present. It checks Node validation/generator/API, builds ten synthetic artifact pairs, Ruby fragment syntax, pure Ruby callbacks, and actual Fluentd 1.17.1 Parser Plugin driver + native Fluent config AST (using an in-memory removal of the production-only transport include).
 
-The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 16 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the sixteen PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
+The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 19 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the nineteen PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
 
 The generated `.tmp/synthetic-native-report.json` includes HEAD, worktree-dirty state, SHA-256 hashes and explicit `targetImportVerified:false`. An uncommitted/dirty run is **not** exact-HEAD qualification; commit and rerun before asserting exact-HEAD PASS.
 
@@ -30,6 +30,14 @@ The generated `.tmp/synthetic-native-report.json` includes HEAD, worktree-dirty 
 Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone CEF and LEEF, typed normalization, stage+field error diagnostics, ordered enrichment, event classification, emitted UDP/TCP config parse syntax and Fluentd Parser Plugin API callback behavior.
 
 Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
+
+## Metadata fail-closed checks
+
+The bounded RFC5424 extractor validates explicit UTC/offset timestamps
+(or '-' NILVALUE) *before* optional normalization fields are selected.
+CEF extraction explicitly accepts version 0 only; unsupported versions
+produce extraction diagnostics. The native smoke suite validates the
+negative raw extractor behavior, not just downstream type coercion.
 
 ## Bounded LEEF 2.0 hexadecimal separator support
 

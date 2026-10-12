@@ -108,7 +108,7 @@ const fixtureBytes = readFileSync("test_native/fixtures/synthetic-golden.v0.1.js
 const fixtureSha256 = createHash("sha256").update(fixtureBytes).digest("hex");
 if (golden.backendHead !== head || golden.origin !== "independently-authored-public-synthetic" ||
     golden.kind !== "parser-studio.synthetic-golden-native.v0.1" ||
-    golden.fixtureSha256 !== fixtureSha256 || golden.casesPassed !== 16 ||
+    golden.fixtureSha256 !== fixtureSha256 || golden.casesPassed !== 19 ||
     golden.profilesPassed !== 10 || golden.fluentd !== "1.17.1" ||
     golden.actualTdAgentOrStellarImport !== false ||
     golden.targetImportVerified !== false) {

@@ -271,6 +271,39 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "id": "rfc5424-timestamp-invalid",
+      "slug": "sample_syslog",
+      "raw": "<165>1 invalid-timestamp synthetic-edge01 synthetic-fw 123 ID42 - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "cef-unsupported-version",
+      "slug": "sample_cef",
+      "raw": "CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.10 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-cef-unsupported-version",
+      "slug": "sample_syslog_cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.10 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
     }
   ]
 }

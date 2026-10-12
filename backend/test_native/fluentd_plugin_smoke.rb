@@ -67,6 +67,12 @@ _, invalid_sd = parse_once(drivers['sample_syslog'], bad_sd_native)
 assert(invalid_sd['parser_err_msg'] == 'ArgumentError' &&
        invalid_sd['parser_err_stage'] == 'extraction' &&
        !invalid_sd.key?('srcip'), 'native RFC5424 invalid parameter fails closed')
+bad_time = '<165>1 invalid-timestamp edge fw 122 ID - src_ip=192.0.2.10 action=deny'
+_, invalid_time = parse_once(drivers['sample_syslog'], bad_time)
+assert(invalid_time['parser_err_stage'] == 'extraction', 'native RFC5424 invalid timestamp rejected')
+_, invalid_cef_version = parse_once(drivers['sample_cef'],
+  'CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.10 dpt=443 act=deny')
+assert(invalid_cef_version['parser_err_stage'] == 'extraction', 'native CEF unsupported version rejected')
 
 syslog_cef = '<165>1 2026-10-12T02:03:04Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny'
 _, cef_enveloped = parse_once(drivers['sample_syslog_cef'], syslog_cef)

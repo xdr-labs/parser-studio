@@ -29,7 +29,7 @@ assert(!File.lstat(expected_directory).symlink? && !File.lstat(expected_fixture)
 fixture = JSON.parse(File.binread(fixture_file))
 assert(fixture['kind'] == 'parser-studio.synthetic-golden-events.v0.1', 'contract kind')
 assert(fixture['origin'] == 'independently-authored-public-synthetic', 'fixture provenance')
-assert(fixture['cases'].is_a?(Array) && fixture['cases'].length == 16, 'expected ten events')
+assert(fixture['cases'].is_a?(Array) && fixture['cases'].length == 19, 'expected ten events')
 
 allowed_profiles = %w[
   sample_firewall sample_kv sample_extended sample_csv sample_syslog

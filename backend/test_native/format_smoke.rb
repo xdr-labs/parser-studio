@@ -145,4 +145,34 @@ _, nested_hex = execute_parser(folder, "sample_syslog_leef",
   '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.24|dstPort=80|act=allow')
 assert(nested_hex['srcip'] == '203.0.113.24' &&
        nested_hex['stellar_log_index'] == 'session', "RFC5424 nested LEEF hex separator")
-puts "Extended synthetic formats: 31 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+# Reject unsupported event version and malformed timestamp before mapping.
+# These invoke the extractor directly, so rejection cannot accidentally be
+# attributed to an optional normalization mapping or a downstream coercion.
+cef_parser_path = File.join(folder, 'customized_sample_cef')
+cef_class = Class.new
+cef_class.class_eval(SyntheticFixtureGuard.read_source(cef_parser_path), cef_parser_path, 1)
+cef_instance = cef_class.new
+unsupported_cef = 'CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.7 dpt=443 act=deny'
+begin
+  cef_instance.parserstudio_extract(unsupported_cef)
+  raise 'Unknown CEF version silently accepted'
+rescue ArgumentError
+  # expected
+end
+invalid_syslog_timestamps = [
+  'not-a-timestamp',
+  '2026-99-99T25:01:01Z',
+  '2026-10-12T01:02:03',
+]
+invalid_syslog_timestamps.each do |stamp|
+  record = "<165>1 #{stamp} edge fw 1 ID - src_ip=192.0.2.11 action=deny"
+  begin
+    sd_instance.parserstudio_extract(record)
+    raise "Malformed RFC5424 timestamp silently accepted"
+  rescue ArgumentError
+    # expected extraction stage, independent of field mapping
+  end
+end
+nil_value = sd_instance.parserstudio_extract('<165>1 - edge fw 1 ID - src_ip=192.0.2.11 action=deny')
+assert(nil_value['syslog_timestamp'] == '-', "RFC5424 timestamp NILVALUE preserved")
+puts "Extended synthetic formats: 36 scenarios PASS (CSV/RFC5424/CEF/LEEF)"

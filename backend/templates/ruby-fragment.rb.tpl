@@ -210,6 +210,13 @@ def parserstudio_syslog_rfc5424(text, settings)
   raise ArgumentError, 'Unsupported RFC5424 syslog header' unless match
   priority = Integer(match[1], 10)
   raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= 191
+  # RFC5424 timestamp is NILVALUE or explicit offset-bearing RFC3339.
+  # Reject malformed metadata before downstream optional field selection.
+  if match[3] != '-'
+    raise ArgumentError, 'Invalid RFC5424 timestamp' unless
+      match[3].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
+    Time.iso8601(match[3])
+  end
   structured_data, message = parserstudio_rfc5424_sd(match[8])
   record = {
     'syslog_pri' => priority,
@@ -273,6 +280,8 @@ end
 def parserstudio_cef(text)
   match = /\ACEF:(\d+)\|(.*)\z/m.match(text)
   raise ArgumentError, 'Invalid CEF preamble' unless match
+  # This compiler implements CEF version 0 only, not vendor-specific upgrades.
+  raise ArgumentError, 'Unsupported CEF version' unless match[1] == '0'
   fields = parserstudio_split_escaped(match[2], '|', 6)
   record = {
     'cef_version' => match[1],
