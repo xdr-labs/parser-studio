@@ -28,3 +28,7 @@ export type { BackendServerOptions } from "./http.js";
 
 export {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 export type {ArtifactRevisionManifest,ArtifactPackage} from "./artifact-package.js";
+
+
+export {proposeParserPort,validatePortOverride,PortPlanError} from "./stellar-port-plan.js";
+export type {PortInventory,PortPlanOptions,PortProposal} from "./stellar-port-plan.js";

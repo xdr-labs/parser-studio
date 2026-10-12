@@ -147,6 +147,37 @@ additional target-ownership checks and matching artifact-revision hashes
 before POST/PUT. Only guarded POC test deployment is currently enabled
 and user-target Apply is not yet ready; Download remains independent.
 
+## P0-LIVE-1 — Port proposal (NOT atomic or a live sensor check)
+
+The backend-only stellar-port-plan.ts module merges trusted lists of known
+occupied parser-listener ports from the tenant Custom Parser listing, built-in
+parser catalogue, independently evidenced sensor parser bindings, local
+authoring-session reservations, and administrator-reserved ports. Its default
+editable candidate range is 20000..30000. It skips known collisions and
+rejects manual overrides on an occupied or privileged port.
+
+The returned status is CANDIDATE_REQUIRES_DEPLOY_RECHECK if all four inventory
+completeness flags were verified, or INCOMPLETE_EVIDENCE otherwise; neither
+status is a deployment approval. Every result sets deployableNow=false,
+candidateOnly=true and needsFinalRecheck=true. Never accept inventory
+completeness fields from an untrusted browser or assume a catalog GET is
+an atomic reservation. Sensor *ingest destination* ports are separate from
+internal parser listener ports. Do not infer a sensor mapping from the
+suggested parser port.
+
+Authorized UI callers may query GET /api/v1/stellar/legacy/port-proposal
+and optionally supply ?port=NNNNN for a user override. It reads both known
+POC/tenant inventory endpoints but, without independently injected active
+sensor binding data and local reservations, always returns
+INCOMPLETE_EVIDENCE and deployableNow=false. UI must not describe this
+as confirmed port availability. Only the backend operator can inject
+portPlanningContext inventory and configurable recommended range.
+
+A future target-specific service must resolve and recheck sensor bindings,
+permissions and port reservations before separately approved upload, then
+regenerate Ruby+CONF+manifest for the selected port and invalidate the old
+artifact revision.
+
 ## UI PR #7 consumption handoff
 
 1. Fetch /capabilities. Keep Modular upload/activation controls disabled

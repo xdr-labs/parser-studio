@@ -4,6 +4,7 @@ import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
+import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -55,12 +56,24 @@ export interface BackendServerOptions {
   legacyClient?:LegacyPocClient;
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
+  /** Injected trusted backend/in-network inventory; never from browser JSON. */
+  portPlanningContext?:{
+    sensorParserPorts:readonly number[];
+    localReservedPorts:readonly number[];
+    adminReservedPorts:readonly number[];
+    sensorBindingsComplete:boolean;
+    reservationsComplete:boolean;
+    rangeStart?:number;
+    rangeEnd?:number;
+  };
 }
 
 function mappedLegacyError(res:ServerResponse,error:unknown):void{
   if(error instanceof LegacyApiError){
     send(res,502,{error:"LEGACY_UPSTREAM_HTTP",operation:error.method,
       upstreamStatus:error.httpStatus,runtimeParsingVerified:false});
+  }else if(error instanceof PortPlanError){
+    send(res,422,{error:error.code,deployableNow:false});
   }else if(error instanceof LegacyContractError){
     const code=error.code;
     const status=/CONFLICT|UNVERIFIED/.test(code)?409:
@@ -151,7 +164,8 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             options.authorizeLegacyRead&&options.legacyClient.toJSON().writesEnabled)});
         return;
       }
-      const list=action==="parsers"||action==="catalogue";
+      const portProposal=action==="port-proposal";
+      const list=action==="parsers"||action==="catalogue"||portProposal;
       const mutation=action==="create"||action==="update"||action==="delete";
       const prepare=action==="prepare";
       if(!list&&!mutation&&!prepare){send(res,404,{error:"NOT_FOUND"});return;}
@@ -179,6 +193,38 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             send(res,200,{contract:"stellar-legacy-poc.v0.1",
               tenant:options.legacyClient!.tenant,parsers,
               runtimeParsingVerified:false,targetImportVerified:false});
+          }else if(portProposal){
+            const url=new URL(req.url||"","http://localhost");
+            if([...url.searchParams.keys()].some(k=>k!=="port") ||
+               url.searchParams.getAll("port").length>1){
+              send(res,422,{error:"PORT_QUERY_INVALID"});return;
+            }
+            const rawPort=url.searchParams.get("port");
+            if(rawPort!==null&&!/^[0-9]{1,5}$/.test(rawPort)){
+              send(res,422,{error:"PORT_QUERY_INVALID"});return;
+            }
+            const [catalogue,parsers]=await Promise.all([
+              options.legacyClient!.listCatalogue(),options.legacyClient!.listParsers()
+            ]);
+            const trusted=options.portPlanningContext;
+            const proposal=proposeParserPort({
+              cataloguePorts:catalogue.map(x=>x.port).filter((x):x is number=>x!==undefined),
+              tenantLegacyPorts:parsers.map(x=>x.port).filter((x):x is number=>x!==undefined),
+              sensorParserPorts:trusted?.sensorParserPorts??[],
+              localReservedPorts:trusted?.localReservedPorts??[],
+              adminReservedPorts:trusted?.adminReservedPorts??[],
+              evidence:{
+                catalogueComplete:catalogue.every(x=>x.port!==undefined),
+                tenantComplete:parsers.every(x=>x.port!==undefined),
+                sensorBindingsComplete:trusted?.sensorBindingsComplete===true,
+                reservationsComplete:trusted?.reservationsComplete===true,
+              },
+            },{
+              ...(rawPort===null?{}:{requestedPort:Number(rawPort)}),
+              ...(trusted?.rangeStart===undefined?{}:{rangeStart:trusted.rangeStart}),
+              ...(trusted?.rangeEnd===undefined?{}:{rangeEnd:trusted.rangeEnd}),
+            });
+            send(res,200,proposal);
           }else{
             const catalogue=await options.legacyClient!.listCatalogue();
             send(res,200,{contract:"stellar-legacy-poc.v0.1",
