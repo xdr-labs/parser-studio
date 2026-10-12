@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { TextDecoder } from "node:util";
+import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import { inspectPair, MAX_IMPORT_BYTES, PairInspectionError } from "./import.js";
@@ -33,7 +34,9 @@ async function jsonInput(req: IncomingMessage, maxBytes = MAX_PROJECT_BYTES): Pr
     // Buffer.toString silently substitutes malformed UTF-8 bytes. Imported
     // Ruby/CONF and normalization drafts must not be altered on ingestion.
     const source=new TextDecoder("utf-8",{fatal:true}).decode(Buffer.concat(chunks));
-    return JSON.parse(source) as unknown;
+    const input=JSON.parse(source) as unknown;
+    if(!hasValidUnicodeJson(input))throw new Error("Invalid Unicode escape");
+    return input;
   }
   catch { throw Object.assign(new Error("Invalid JSON request"), {code: "JSON"}); }
 }

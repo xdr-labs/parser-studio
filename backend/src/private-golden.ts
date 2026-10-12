@@ -4,6 +4,7 @@
  * The return value is a shape/size check, NOT a native or target attestation.
  */
 import { TextDecoder } from "node:util";
+import { hasOnlyPairedSurrogates } from "./unicode.js";
 
 /** Decode evidence bytes without replacement characters or source-content errors. */
 export function decodePrivateGoldenBytes(bytes: Uint8Array): string {
@@ -28,19 +29,6 @@ const SLUG = /^[a-z][a-z0-9_]{1,47}$/;
 const FIELD = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 const UNSAFE = new Set(["__proto__","constructor","prototype"]);
 const TIME = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
-
-/** JSON permits escaped lone UTF-16 surrogates; UTF-8 encoding would alter them. */
-function hasOnlyPairedSurrogates(text:string):boolean {
-  for(let index=0;index<text.length;index++){
-    const current=text.charCodeAt(index);
-    if(current>=0xD800 && current<=0xDBFF){
-      const next=index+1<text.length?text.charCodeAt(index+1):-1;
-      if(next<0xDC00 || next>0xDFFF)return false;
-      index++;
-    }else if(current>=0xDC00 && current<=0xDFFF)return false;
-  }
-  return true;
-}
 
 function isObject(value:unknown):value is Record<string,unknown> {
   return value!==null && typeof value==="object" && !Array.isArray(value) &&

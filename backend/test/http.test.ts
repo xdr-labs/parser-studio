@@ -155,3 +155,29 @@ test("HTTP rejects malformed UTF-8 bytes and unsupported JSON charset before ins
     assert.equal(goodCharset.status,200);
   });
 });
+
+test("HTTP JSON rejects unpaired escaped Unicode while allowing valid supplementary pairs",async()=>{
+  await withServer(async base=>{
+    const path="/api/v1/parser-pairs/inspect";
+    const malformed=await fetch(base+path,{
+      method:"POST",headers:{"content-type":"application/json"},
+      body:'{"name":"customized_test","confContent":"\\ud800","fragmentContent":""}',
+    });
+    assert.equal(malformed.status,400);
+    assert.equal(((await malformed.json()) as any).error,"INVALID_JSON");
+
+    const key=await fetch(base+path,{
+      method:"POST",headers:{"content-type":"application/json"},
+      body:'{"name":"customized_test","\\udc00":"value","confContent":"","fragmentContent":""}',
+    });
+    assert.equal(key.status,400,"Invalid escaped Unicode object keys must fail before inspection");
+    const paired=await fetch(base+path,{
+      method:"POST",headers:{"content-type":"application/json"},
+      body:'{"name":"customized_test","confContent":"\\ud83d\\ude00","fragmentContent":""}',
+    });
+    assert.equal(paired.status,200);
+    const result=await paired.json() as any;
+    assert.equal(result.importStatus,"OPAQUE_READ_ONLY");
+    assert.equal(result.portableProject,null);
+  });
+});
