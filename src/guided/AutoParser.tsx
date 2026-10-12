@@ -12,6 +12,8 @@ import {verifyGeneratedPair,packageGeneratedPair} from './artifactPackageClient'
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
+import {proposeReviewableMapping,compareCandidate,
+ type CandidateComparison} from './autoParserRegression';
 import type {EventBoundary} from './contract';
 
 interface Props {
@@ -62,6 +64,10 @@ export default function AutoParser({
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
  const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
+ const [holdout,setHoldout]=useState('');
+ const [repair,setRepair]=useState<{key:string;candidate:ParserDraft;
+   comparison:CandidateComparison;source:string;target:string}|null>(null);
+ const [repairNotice,setRepairNotice]=useState('');
  const epoch=useRef(0);
  const identity=JSON.stringify([draft,sample]);
  const currentRef=useRef(identity);currentRef.current=identity;
@@ -69,7 +75,8 @@ export default function AutoParser({
    (draft.guided?.eventBoundary??'single-line') as EventBoundary),
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
-   epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);setMessage('');
+   epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
+   setRepair(null);setRepairNotice('');setMessage('');
  },[identity]);
  const assessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -78,6 +85,8 @@ export default function AutoParser({
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
  const currentRecipe=recipe?.key===identity?recipe.value:null;
+ const repairKey=JSON.stringify([identity,holdout]);
+ const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
@@ -161,6 +170,31 @@ export default function AutoParser({
        setEvidence({key:expected,status:'FAILED',total:report.sourceCount,
          issues:['The current draft could not pass verified backend compilation and file integrity checks.']});
      }
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function compareRepair(){
+   if(!suite||busy||pending)return;
+   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
+   setBusy(true);setRepair(null);setRepairNotice('');
+   try{
+     const suggestion=proposeReviewableMapping(sample,draft,suite);
+     if(!suggestion.ok){setRepairNotice('No safe one-field repair is available: '+suggestion.reason);return;}
+     if(holdout&&new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT){
+       setRepairNotice('Holdout exceeds 64 KiB; reduce the input.');return;
+     }
+     const candidate=await runPreview(suggestion.candidate,sample);
+     const held=holdout?{
+       source:holdout,baseline:await runPreview(draft,holdout),
+       candidate:await runPreview(suggestion.candidate,holdout),
+     }:undefined;
+     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
+     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
+     setRepair({key:JSON.stringify([expected,requestedHoldout]),
+       candidate:suggestion.candidate,comparison,
+       source:suggestion.mapping.source,target:suggestion.mapping.target});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRepairNotice('Local regression could not be verified. No rules were changed.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function previewRecipe(){
@@ -325,6 +359,53 @@ export default function AutoParser({
            onClick={()=>{void zipPair();}}><FileArchive size={16}/> Download Verified DRAFT ZIP</button>
          {currentZip&&<small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>}
        </div>}
+       <details className="auto-parser-recipe" aria-label="Whole-sample regression and holdout review">
+         <summary>Review safe repair · Full-sample and holdout regression</summary>
+         <p>Compare one suggested missing-field mapping against the entire original sample.
+           Supply independent log events as holdout input to enable approval. Every
+           event and field-shape change is audited locally. Nothing is auto-applied,
+           stored, or sent to the backend.</p>
+         <label>Independent holdout events (optional for comparison; required for approval)
+           <textarea aria-label="Independent holdout logs" rows={4}
+             value={holdout} onChange={e=>{setHoldout(e.target.value);setRepair(null);setRepairNotice('');}}
+             placeholder="Paste fresh events not used to suggest fields; kept in browser memory." />
+         </label>
+         <button type="button" disabled={busy||pending||!suite}
+           onClick={()=>{void compareRepair();}}>Compare One Safe Repair</button>
+         {repairNotice&&<p role="status">{repairNotice}</p>}
+         {currentRepair&&<div aria-label="Candidate regression comparison" role="status">
+           <strong>Candidate only · Approval required · Native NOT VERIFIED</strong>
+           <span>{currentRepair.source} → {currentRepair.target} (one proposed mapping)</span>
+           <span>Original events: {currentRepair.comparison.baseline.accounted}/
+             {currentRepair.comparison.baseline.sourceCount} accounted ·
+             Previous passes: {currentRepair.comparison.baseline.positiveBefore} ·
+             Candidate passes: {currentRepair.comparison.baseline.positiveAfter}</span>
+           <span>Regressions: {currentRepair.comparison.baseline.regressions} ·
+             Added field shapes: {currentRepair.comparison.baseline.fieldAdditions} ·
+             Removed: {currentRepair.comparison.baseline.fieldRemovals} ·
+             Type changes: {currentRepair.comparison.baseline.typeChanges}</span>
+           <span>Holdout: {currentRepair.comparison.holdoutStatus} ·
+             {currentRepair.comparison.holdout?.sourceCount??0} events ·
+             {currentRepair.comparison.holdout?.regressions??0} regressions</span>
+           {currentRepair.comparison.baseline.families.map(f=><span key={f.family}>
+             {f.family}: {f.count} events · Passed {f.beforePassed} → {f.afterPassed}
+           </span>)}
+           {currentRepair.comparison.baseline.issues.map(i=><span key={i.reason}>
+             {i.reason}: {i.count}
+           </span>)}
+           <button type="button" disabled={busy||pending||
+             !currentRepair.comparison.acceptedWithoutRegression||
+             currentRepair.comparison.holdoutStatus!=='TESTED'}
+             onClick={()=>{setDraft(currentRepair.candidate);setRepair(null);
+               setRepairNotice('One reviewed mapping was accepted. Re-run all tests before generating files.');}}>
+             Approve Reviewed Mapping
+           </button>
+           {currentRepair.comparison.holdoutStatus!=='TESTED'&&
+             <p>Holdout NOT TESTED — approval requires new independent events.</p>}
+           {!currentRepair.comparison.acceptedWithoutRegression&&
+             <p>Regression detected — approval blocked. Previous passing events must not regress.</p>}
+         </div>}
+       </details>
        <details className="auto-parser-recipe" aria-label="ParserRecipe v0.2 review">
          <summary>Advanced · Review ParserRecipe v0.2 (not compilable)</summary>
          <p>This is a local-only staged review, not a native compiler or a deployment.
