@@ -114,3 +114,16 @@ The catalog intentionally does not include proprietary customer samples,
 credentials, target references, automatic deployment or receiver port
 reservation. The exported utility is currently not connected to the default
 HTTP service or UI; those wiring changes require separate safe review.
+
+## P1 read-only import loss assessment
+
+The backend import-loss-report utility delegates to the existing bounded
+PairInspection validator. An exact, byte-identical generated pair is labeled
+EXACT_EDITABLE. Any older, unknown or modified Ruby/CONF pair remains
+OPAQUE_KEEP_ORIGINALS with knownConversionLoss=null (unknown), and must retain
+the original source. No unsupported Ruby is evaluated or silently converted.
+
+The report includes only source SHA-256 values, discovered structural ports,
+supported protocol names and fixed diagnostic codes. It never includes source
+Ruby, CONF text, customer event values or credentials. It does not perform a
+target write, imply real loader verification, or add any network routes.
