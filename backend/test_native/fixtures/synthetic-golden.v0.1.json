@@ -330,7 +330,7 @@
     {
       "id": "rfc5424-nonascii-header",
       "slug": "sample_syslog",
-      "raw": "<165>1 2026-10-12T01:02:03Z 테스트 fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "raw": "<165>1 2026-10-12T01:02:03Z \uD14C\uC2A4\uD2B8 fw 1 ID - src_ip=192.0.2.10 action=deny",
       "expectedTime": null,
       "expectedRecord": {
         "stellar_log_index": "syslog",

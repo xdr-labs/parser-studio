@@ -78,8 +78,8 @@ test("private golden preflight rejects empty or oversized collections",()=>{
 });
 
 test("private golden UTF-8 decoding must reject malformed bytes rather than rewriting evidence", () => {
-  const intact = Buffer.from('{"rawEvent":"synthetic-한글"}', "utf8");
-  assert.equal(decodePrivateGoldenBytes(intact),'{"rawEvent":"synthetic-한글"}');
+  const intact = Buffer.from('{"rawEvent":"synthetic-\uD55C\uAE00"}', "utf8");
+  assert.equal(decodePrivateGoldenBytes(intact),'{"rawEvent":"synthetic-\uD55C\uAE00"}');
   const damaged = Uint8Array.from([0x7b,0x22,0x78,0x22,0x3a,0x22,0xc3,0x28,0x22,0x7d]);
   assert.throws(()=>decodePrivateGoldenBytes(damaged),(error:unknown)=>
     error instanceof Error && error.message==="PRIVATE_INVALID_UTF8");

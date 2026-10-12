@@ -183,3 +183,15 @@ port proposal starts at 6800 and avoids observed occupied ports.
 The guarded sensor sink rejects a destination/CONF port mismatch.
 Even a collision-free candidate never proves actual sensor/runtime
 availability; the target must be rechecked before any approved upload.
+
+
+## Source Language Policy
+
+Parser Studio UI labels, CLI prompts, application messages, error diagnostics,
+source comments, tests, examples and documentation must be authored in **English**
+(confirmed by the project owner on October 12, 2026). Non-ASCII inputs remain
+valid test cases for encoding/parsing correctness, but are represented using
+ASCII Unicode escape syntax in tracked fixtures and test source. This preserves
+the actual decoded test payloads without introducing non-English product copy.
+The Python regression \`scripts/test_english_source.py\` checks tracked backend
+source files and validates the escaped RFC5424 negative fixture.

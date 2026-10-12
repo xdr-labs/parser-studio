@@ -186,7 +186,7 @@ header_cases = [
   ['appname-size', "<165>1 2026-10-12T01:02:03Z edge #{'a' * 49} 123 ID - src_ip=192.0.2.11 action=deny"],
   ['procid-size', "<165>1 2026-10-12T01:02:03Z edge fw #{'p' * 129} ID - src_ip=192.0.2.11 action=deny"],
   ['msgid-size', "<165>1 2026-10-12T01:02:03Z edge fw 123 #{'i' * 33} - src_ip=192.0.2.11 action=deny"],
-  ['hostname-non-ascii', '<165>1 2026-10-12T01:02:03Z 테스트 fw 123 ID - src_ip=192.0.2.11 action=deny'],
+  ['hostname-non-ascii', "<165>1 2026-10-12T01:02:03Z \uD14C\uC2A4\uD2B8 fw 123 ID - src_ip=192.0.2.11 action=deny"],
   ['hostname-nul', "<165>1 2026-10-12T01:02:03Z e\x00dge fw 123 ID - src_ip=192.0.2.11 action=deny"],
 ]
 header_cases.each do |id, text|

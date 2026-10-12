@@ -252,19 +252,19 @@ def save_profile(profile: dict, *, replace: bool = False) -> None:
 
 
 def prompt_profile(input_fn=input, secret_fn=getpass.getpass) -> dict:
-    print("Parser Studio — 테스트 DP / Modular Sensor 연결정보 저장", flush=True)
-    print("연결·배포·로그 전송은 수행되지 않습니다.", flush=True)
-    dp_url = validate_url(input_fn("DP HTTPS URL (예: https://dp.example.local): ").strip())
+    print("Parser Studio — Save Development DP / Modular Sensor Connection Profile", flush=True)
+    print("No connection, deployment, or log delivery is performed.", flush=True)
+    dp_url = validate_url(input_fn("DP HTTPS URL (example: https://dp.example.local): ").strip())
     tenant = input_fn("Tenant ID: ").strip()
     if not TENANT.fullmatch(tenant):
         fail("TENANT_INVALID")
-    key = secret_fn("DP User Scope API Key (입력 숨김): ")
+    key = secret_fn("DP User Scope API Key (input hidden): ")
     sensor_ip = validate_sensor_ip(input_fn("Modular Sensor IP: ").strip())
-    sensor_port_raw = input_fn("센서 로그 수신 포트: ").strip()
+    sensor_port_raw = input_fn("Sensor log receiver port: ").strip()
     if not sensor_port_raw.isdecimal():
         fail("PORT_INVALID")
     sensor_port = validate_port(int(sensor_port_raw))
-    protocol = input_fn("전송 프로토콜 [udp/tcp]: ").strip().lower()
+    protocol = input_fn("Transport protocol [udp/tcp]: ").strip().lower()
     # Exactly one receiver port: it is used both as the sensor's log
     # destination and as the generated Fluentd CONF <source> port.
     parser_port = sensor_port
@@ -300,15 +300,15 @@ def main() -> int:
             fail("INTERACTIVE_TTY_REQUIRED")
         previous = read_profile()
         if previous is not None:
-            confirm = input("이미 저장된 설정이 있습니다. 전체 교체할까요? [yes/no]: ")
+            confirm = input("A profile already exists. Replace the entire profile? [yes/no]: ")
             if confirm.strip().lower() != "yes":
-                print("변경하지 않았습니다.")
+                print("No changes were made.")
                 return 0
         profile = prompt_profile()
         save_profile(profile, replace=previous is not None)
-        print("저장 완료: " + str(PROFILE_PATH))
-        print("권한: 디렉터리 0700, 파일 0600. API Key는 표시하지 않습니다.")
-        print("실제 DP 연결·센서 전송·파서 배포는 수행하지 않았습니다.")
+        print("Profile saved: " + str(PROFILE_PATH))
+        print("Permissions: directory 0700 and file 0600. The API key is never displayed.")
+        print("No DP connection, sensor delivery, or parser deployment was performed.")
         return 0
     except (ProfileError, KeyboardInterrupt, EOFError) as exc:
         code = str(exc) if isinstance(exc, ProfileError) else "CANCELLED"

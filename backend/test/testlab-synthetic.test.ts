@@ -265,7 +265,7 @@ test("RFC5424 synthetic replay fails closed on unknown version, invalid timestam
     {...input,source:source.replace(">1 ",">2 ")},
     {...input,source:source.replace("2025-01-01T01:02:03Z","not-timestamp")},
     {...input,source:source.replace(" - src_ip"," [origin@32473] src_ip")},
-    {...input,source:source.replace("edge","테스트")},
+    {...input,source:source.replace("edge","\uD14C\uC2A4\uD2B8")},
     {...input,syslogBodyFormat:"cef"},
     {...input,source:source.replace("action=deny","action=\"quoted value\"")},
   ]){

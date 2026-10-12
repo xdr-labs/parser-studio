@@ -255,8 +255,8 @@ class ConfigTests(unittest.TestCase):
             (b"Tenant ID", "tenant_test_123"),
             (b"DP User Scope API Key", TEST_KEY),
             (b"Modular Sensor IP", TEST_SENSOR_IP),
-            ("센서 로그 수신 포트".encode("utf-8"), "5514"),
-            ("전송 프로토콜".encode("utf-8"), "udp"),
+            (b"Sensor log receiver port", "5514"),
+            (b"Transport protocol", "udp"),
         ]
         pid, terminal = pty.fork()
         if pid == 0:
