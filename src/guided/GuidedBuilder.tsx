@@ -147,7 +147,8 @@ function LocalFormatRecommendationView(props:{
   onApply:(format:NonNullable<LocalFormatAdvice['format']>)=>void;
 }){
   const {advice,selected,pending,onApply}=props;
-  const detected=advice.status==='RECOMMENDED'&&advice.format!==null;
+  const detected=advice.format!==null&&
+    (advice.status==='RECOMMENDED'||advice.status==='CANDIDATE_UNTESTED');
   const status:Record<LocalFormatAdvice['status'],string>={
     NO_SAMPLES:'Add at least one log event to receive a format recommendation.',
     NO_PREVIEW:'Analyzing the current sample locally…',
@@ -159,6 +160,7 @@ function LocalFormatRecommendationView(props:{
     UNKNOWN_EVENTS:'Unrecognized source events remain. No single format can be recommended safely.',
     MANUAL_REVIEW:'The detected format requires manual configuration or is not supported for generated native output.',
     PREVIEW_FAILED:'The detected format did not extract all current events. Choose Auto detect and retry the local preview.',
+    CANDIDATE_UNTESTED:'A different extraction format is selected. The current source signatures suggest this candidate; switch and recheck the full browser preview.',
     RECOMMENDED:'Every bounded event has the same recognized extraction format.',
   };
   return <div className={'guided-format-advisor'+(detected?' recommended':'')}
@@ -178,7 +180,8 @@ function LocalFormatRecommendationView(props:{
       <button type="button" className="guided-cta-secondary"
         disabled={pending||selected===advice.format} aria-label="Apply recommended log format"
         onClick={()=>{if(advice.format)onApply(advice.format);}}>
-        <Check size={15}/>{selected===advice.format?'Already Selected':'Use Detected Format'}
+        <Check size={15}/>{selected===advice.format?'Already Selected':
+          advice.status==='CANDIDATE_UNTESTED'?'Try Detected Format':'Use Detected Format'}
       </button>
     </div>}
     <small>No log contents or credentials leave the browser. This changes only the selected draft extraction format after a click; mappings and sample logs are not changed. Backend support, native runtime and Stellar import remain unverified.</small>

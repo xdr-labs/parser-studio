@@ -77,3 +77,27 @@ test('format advice updates after source edit without reusing old sample, sendin
   await expect(page.locator('.guided-map-card')).toHaveCount(3);
   expect(requests).toBe(0);
 });
+
+test('manually selected wrong format receives a cautious one-click recheck, not a false extraction PASS',async({page})=>{
+  let requests=0;
+  page.on('request',r=>{if(r.url().includes('/api/v1/'))requests++;});
+  await page.goto('/');
+  const input=page.getByLabel('Guided raw sample logs');
+  await input.fill(json);
+  await expect(advisor(page)).toContainText('Suggested: JSON');
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
+  await page.getByRole('button',{name:'Key / Value',exact:true}).click();
+  const panel=advisor(page);
+  await expect(panel).toContainText('A different extraction format is selected');
+  await expect(panel).toContainText('Suggested: JSON');
+  await expect(panel).toContainText('0/2 extracted');
+  expect(await panel.innerText()).not.toContain('CUSTOMER_A');
+  await panel.getByRole('button',{name:'Apply recommended log format'}).click();
+  await expect(page.getByRole('button',{name:'JSON',exact:true}))
+    .toHaveAttribute('aria-pressed','true');
+  await expect(panel).toContainText('2/2 extracted');
+  await expect(page.getByLabel('Guided raw sample logs')).toHaveValue(json);
+  await page.getByRole('button',{name:/3\. Map Fields/}).click();
+  await expect(page.locator('.guided-map-card')).toHaveCount(3);
+  expect(requests).toBe(0);
+});

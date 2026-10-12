@@ -14,7 +14,7 @@ const SAFE=new Set<string>(['json','kv','syslog_rfc5424','cef','leef']);
 export type LocalFormatStatus=
   'NO_SAMPLES'|'NO_PREVIEW'|'LIMIT_EXCEEDED'|'MULTILINE_UNVERIFIED'|
   'UNTRUSTED_PREVIEW'|'SOURCE_MISMATCH'|'MIXED_FORMATS'|'UNKNOWN_EVENTS'|
-  'MANUAL_REVIEW'|'PREVIEW_FAILED'|'RECOMMENDED';
+  'MANUAL_REVIEW'|'PREVIEW_FAILED'|'CANDIDATE_UNTESTED'|'RECOMMENDED';
 export interface LocalFormatAdvice{
   status:LocalFormatStatus;
   format:ConcreteFormat|null;
@@ -84,7 +84,17 @@ export function recommendLocalFormat(
   const one=families[0]?.format;
   if(!one||!SAFE.has(one)||minConfidence<0.85)
     return {...summary,status:'MANUAL_REVIEW'};
-  if(reviewed!==source.length)
+  if(reviewed!==source.length){
+    // A wrong manually selected extractor may fail every source even when
+    // all signatures consistently indicate a different reviewed family.
+    // Offer only a candidate; never label its extraction verified.
+    const alternate=suite.events.every(event=>
+      event.effectiveFormat!==one &&
+      typeof event.effectiveFormat==='string'&&
+      ALL.has(event.effectiveFormat));
+    if(alternate)return {...summary,status:'CANDIDATE_UNTESTED',
+      format:one as ConcreteFormat};
     return {...summary,status:'PREVIEW_FAILED'};
+  }
   return {...summary,status:'RECOMMENDED',format:one as ConcreteFormat};
 }

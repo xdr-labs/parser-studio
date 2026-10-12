@@ -72,9 +72,17 @@ describe('offline beginner format recommendation',()=>{
     expect(recommendLocalFormat(json,undefined,'single-line').status).toBe('NO_PREVIEW');
     expect(candidate('   \n  ').status).toBe('NO_SAMPLES');
   });
-  it('does not override a manually chosen incompatible format via a false extraction PASS',()=>{
+  it('offers only a recheck candidate when the user manually chose an incompatible extractor',()=>{
     const selected=candidate(json,'kv');
-    expect(selected.status).toBe('PREVIEW_FAILED');
-    expect(selected.format).toBeNull();
+    expect(selected.status).toBe('CANDIDATE_UNTESTED');
+    expect(selected.format).toBe('json');
+    expect(selected.reviewedEvents).toBe(0);
+    expect(selected.nativeVerified).toBe(false);
+    expect(JSON.stringify(selected)).not.toContain('CUSTOMER');
+  });
+  it('does not accept malformed events under their already selected matching extractor',()=>{
+    const malformed=candidate('{"action":"PRIVATE_PARTIAL"','json');
+    expect(malformed.status).toBe('PREVIEW_FAILED');
+    expect(malformed.format).toBeNull();
   });
 });

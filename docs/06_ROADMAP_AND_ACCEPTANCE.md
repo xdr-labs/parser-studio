@@ -298,6 +298,16 @@ and stale-edit acceptance are maintained in
 golden fixtures, mixed-family routing and target verification remain separately
 gated.
 
+### Manually incorrect format choice (review-only fallback)
+
+When the sample has one high-confidence supported format but the user has
+manually selected a different extractor, the browser reports a
+`CANDIDATE_UNTESTED` format, with an explicit **Try Detected Format** action.
+This is a signature-only suggestion, **not** an extraction PASS. After the
+user chooses it, the full unchanged source is parsed again locally.
+Malformed records under the already matching extractor remain blocked; mixed
+families and unknown events never become a recommended native parser.
+
 ## P0-LIVE Test Lab — Separately approved active-session rate adjustment (2026-10-12)
 
 For an already owner-authenticated **RUNNING** or **PAUSED** Test Lab
@@ -322,29 +332,3 @@ a synthetic server rate change.
 Affected regression evidence:
 `src/guided/approvedTestLabSession.test.ts`,
 `tests/approved-testlab-rate.spec.ts`.
-
-## R2/P0-A — Beginner-safe local log format recommendation (2026-10-12)
-
-The Guided Builder now provides an **Automatic Format Check · Browser Only**
-on import and extraction steps. Users may paste single-line raw logs without
-knowing whether the input is JSON, key/value, RFC5424, CEF or LEEF. A bounded,
-source-identity-checked browser Web Worker preview proposes **one supported,
-homogeneous, successfully extracted format**, with reviewed event counts,
-minimum signature confidence and no raw values.
-
-The format is **never changed automatically**: the user must select
-`Use Detected Format`. Approval only updates `draft.format`, retaining
-the original sample and existing field mappings. Mixed, unknown, unsupported
-CSV/generic Syslog/regex, malformed, stale, truncated, oversized, multiline
-and untrusted worker previews fail closed or require explicit manual review;
-minority events cannot be silently dropped. Format detection does not prove
-that native Fluentd/Stellar parser output is verified or deployable. No log
-bytes, extracted values, credentials or API requests leave the browser via
-this recommendation.
-
-Deterministic RED→GREEN unit and Chromium keyboard, privacy, cross-family
-and stale-edit acceptance are maintained in
-`src/guided/localFormatAdvisor.test.ts` and
-`tests/local-format-advisor.spec.ts`. Native runtime, actual customer-parser
-golden fixtures, mixed-family routing and target verification remain separately
-gated.
