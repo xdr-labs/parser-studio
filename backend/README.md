@@ -273,3 +273,34 @@ observer callbacks exist, the summary's realSensorVerified,
 runtimeParsingVerified and liveE2eVerified flags are always false.
 Reports are transient, subject to existing run TTL, and never constitute
 a Stellar Cyber production E2E verdict.
+
+
+## F13 pinned synthetic native regression comparison (offline only)
+
+The fixed reviewer-authored PUBLIC SYNTHETIC golden runner records a
+value-free per-event result (PASS/error class plus SHA-256 of the canonical
+normalized output, not the raw or normalized record). Native qualification
+still FAILS if any golden case fails. After an exact-HEAD successful offline
+qualification, its reviewed per-case evidence is archived to the ignored,
+owner-only backend/.tmp/native-regression directory using 0700/0600 modes
+and a bounded 64-HEAD retention limit. Unsafe paths, overwrites and conflicts
+fail closed, never delete a prior baseline automatically.
+
+From the backend directory, compare two already qualified Git commits with:
+
+    node dist/scripts/native-regression.js compare BASELINE_HEAD CANDIDATE_HEAD
+
+Both arguments must be full 40-character Git commit IDs as returned by
+git rev-parse HEAD, not the 64-character artifact or fixture SHA-256.
+The comparison requires identical fixture SHA-256, the same pinned
+Ruby 3.2 / Fluentd 1.17.1 engine, and identical case IDs/parser profiles.
+Results include SHA-only output changes and redacted improvements,
+regressions, other failure changes and unchanged counts. Malformed reports,
+changed fixtures or spoofed vendor success claims are rejected.
+
+Only FIXED PUBLIC SYNTHETIC fixtures are supported. There is no arbitrary
+Ruby execution, no automatic target Apply, no raw log/credential persistence
+and no actual Stellar Cyber loader, DP, sensor, Interflow or customer-data E2E
+claim. SHA checks detect accidental corruption but do not attest to an
+independently trusted or signed operator. Genuine owner-supplied fixtures
+and vendor verification remain separately gated.

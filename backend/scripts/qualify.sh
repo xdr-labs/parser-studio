@@ -128,8 +128,26 @@ if (imported.backendHead !== head || imported.origin !== "synthetic-repository-f
   throw new Error("Synthetic pair import evidence does not match generated native fixture hashes");
 }
 const golden = JSON.parse(readFileSync(".tmp/synthetic-golden-report.json","utf8"));
+const caseBytes = readFileSync(".tmp/synthetic-golden-cases-report.json");
+const nativeCase = JSON.parse(caseBytes.toString("utf8"));
+const nativeCaseSha256 = createHash("sha256").update(caseBytes).digest("hex");
 const fixtureBytes = readFileSync("test_native/fixtures/synthetic-golden.v0.1.json");
 const fixtureSha256 = createHash("sha256").update(fixtureBytes).digest("hex");
+const fixedCases = JSON.parse(fixtureBytes.toString("utf8")).cases;
+if (nativeCase.kind !== "parser-studio.synthetic-native-case-evidence.v0.1" ||
+    nativeCase.origin !== "independently-authored-public-synthetic" ||
+    nativeCase.backendHead !== head || nativeCase.fixtureSha256 !== fixtureSha256 ||
+    nativeCase.ruby !== "3.2" || nativeCase.fluentd !== "1.17.1" ||
+    nativeCase.targetImportVerified !== false ||
+    nativeCase.actualTdAgentOrStellarImport !== false ||
+    nativeCase.sensorTrafficSent !== false ||
+    !Array.isArray(nativeCase.cases) || nativeCase.cases.length !== 23 ||
+    nativeCase.cases.some((item,i) => item.id !== fixedCases[i].id ||
+      item.slug !== fixedCases[i].slug || item.status !== "PASS" ||
+      typeof item.outputSha256 !== "string" ||
+      !/^[0-9a-f]{64}$/.test(item.outputSha256))) {
+  throw new Error("Native per-event case evidence failed deterministic suite validation");
+}
 if (golden.backendHead !== head || golden.origin !== "independently-authored-public-synthetic" ||
     golden.kind !== "parser-studio.synthetic-golden-native.v0.1" ||
     golden.fixtureSha256 !== fixtureSha256 || golden.casesPassed !== 23 ||
@@ -170,6 +188,7 @@ const report = {
   syntheticGoldenCases: golden.casesPassed,
   syntheticGoldenProfiles: golden.profilesPassed,
   syntheticGoldenFixtureHash: golden.fixtureSha256,
+  syntheticGoldenCaseReportSha256: nativeCaseSha256,
   actualTdAgentOrStellarImport: false,
   targetImportVerified: false,
   fileHashes: hashes,
@@ -178,4 +197,6 @@ const report = {
 writeFileSync(".tmp/synthetic-native-report.json",JSON.stringify(report,null,2)+"\n",{mode:0o600});
 console.log("SHA-256 hashes: "+files.length+"; HEAD="+head.slice(0,12)+"; dirty="+dirty);
 NODE
+echo "[5b/5] Archive exact-HEAD reviewed synthetic native case metadata only"
+node dist/scripts/native-regression.js archive
 echo "PASS synthetic native parser profile, NOT Stellar Cyber deployment."
