@@ -3,6 +3,7 @@
 The tests use mocked HTTP. No live POC calls or credential-file reads occur.
 """
 
+import base64
 import hashlib
 import json
 import pathlib
@@ -24,6 +25,20 @@ from stellar_legacy_adapter import (
 NAME = "customized_ps_api_crud_test_aabbcc"
 HOST = "https://poc-apac.stellarcyber.cloud"
 TENANT = "test-tenant-id"
+
+# Minimal test-only representation of the pinned Ruby compiler layout.
+# Its hash is injected into the module allowlist ONLY for mocked tests; no
+# new trusted compiler fingerprint is added to shipped production policy.
+TEST_RUBY_TEMPLATE = (
+    "# STELLAR_INIT_BEGIN\n"
+    "require 'json'\nrequire 'base64'\n"
+    "def initialize()\n"
+    "  @parser_rule_set = JSON.parse(Base64.strict_decode64('__PARSER_PROJECT_B64__'))\n"
+    "end\n# STELLAR_INIT_END\n"
+    "# STELLAR_PARSE_BEGIN\n"
+    "def parse(text)\n  yield nil, nil\nend\n"
+    "# STELLAR_PARSE_END\n"
+)
 
 
 def source_file(name, text):
@@ -47,9 +62,18 @@ def generated_pair(name=NAME, *, port=7891):
         f"<match {name}.**>\n"
         "  @type null\n</match>\n"
     )
+    project = {
+        "projectId": "synthetic-fixture", "schemaRevision": "0.1",
+        "slug": name.removeprefix("customized_"), "vendor": "Synthetic",
+        "receiver": {"port": port, "bindAddress": "127.0.0.1", "protocols": ["udp"]},
+    }
+    embedded = base64.b64encode(
+        json.dumps(project, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii")
+    ruby = TEST_RUBY_TEMPLATE.replace("__PARSER_PROJECT_B64__", embedded)
     files = [
         source_file(name + ".conf", conf),
-        source_file(name, "# STELLAR_INIT_BEGIN\n" "def parse(text)\n  yield nil, nil\nend\n"),
+        source_file(name, ruby),
     ]
     return {
         "contract": "host-customized-pair.v0.1",
@@ -139,6 +163,17 @@ def make_client(session=None):
 
 
 class LegacyAdapterTests(unittest.TestCase):
+    def setUp(self):
+        # A mock compiler template fingerprint is trusted for test execution,
+        # but shipped policy only contains real pinned backend Git templates.
+        mock_digest = hashlib.sha256(TEST_RUBY_TEMPLATE.encode()).hexdigest()
+        patcher = patch.object(
+            adapter_module, "REVIEWED_TEMPLATE_SHA256",
+            adapter_module.REVIEWED_TEMPLATE_SHA256 | {mock_digest},
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_pair_contract_prepare_proves_hashes_names_and_bytes(self):
         plan = LegacyUpload.from_generated(generated_pair(), tenant=TENANT, version="1.0.0")
         self.assertEqual(plan.name, NAME)
@@ -298,6 +333,104 @@ class LegacyAdapterTests(unittest.TestCase):
         http = FakeHttpSession()
         with self.assertRaises(LegacyContractError):
             make_client(http).update(plan, expected_version='1.0.0', confirmed=True)
+        self.assertEqual(http.calls, [])
+
+    def test_unapproved_fluentd_directives_are_rejected_before_http(self):
+        safe = generated_pair()
+        original = safe["files"][0]["content"]
+        modifications = {
+            "filter_block": original + "\n<filter **>\n  @type record_transformer\n</filter>\n",
+            "source_label": original.replace("  bind 127.0.0.1", "  bind 127.0.0.1\n  @label @OUTPUT"),
+            "parse_exec": original.replace(
+                "  </parse>", "    @type exec\n  </parse>"
+            ),
+            "match_extra": original.replace("  @type null", "  @type null\n  @log_level debug"),
+            "root_attribute": original + "\n  @log_level debug\n",
+            "unknown_stanza": original + "\n<worker 0>\n</worker>\n",
+            "extra_parse": original.replace(
+                "  </parse>", "    <format>\n      @type json\n    </format>\n  </parse>"
+            ),
+        }
+        for kind, contents in modifications.items():
+            project = generated_pair()
+            project["files"][0] = source_file(NAME + ".conf", contents)
+            project["manifest"]["fileHashes"][NAME + ".conf"] = project["files"][0]["sha256"]
+            plan = LegacyUpload.from_generated(project, tenant=TENANT, version="1.0.0")
+            fake = FakeHttpSession()
+            with self.subTest(kind=kind), self.assertRaises(LegacyContractError):
+                make_client(fake).create(plan, confirmed=True)
+            self.assertEqual(fake.calls, [], "unsafe CONF must not obtain JWT")
+
+    def test_unsigned_ruby_never_uploads_even_with_self_consistent_hashes(self):
+        for untrusted in (
+            "system('unsafe')\n",
+            "require 'json'\ndef parse(text)\n  yield nil,nil\nend\n",
+            TEST_RUBY_TEMPLATE.replace("# STELLAR_PARSE_END", "  system('unsafe')\n# STELLAR_PARSE_END"),
+        ):
+            project = generated_pair()
+            project["files"][1] = source_file(NAME, untrusted)
+            project["manifest"]["fileHashes"][NAME] = project["files"][1]["sha256"]
+            plan = LegacyUpload.from_generated(project, tenant=TENANT, version="1.0.0")
+            fake = FakeHttpSession()
+            with self.subTest(untrusted=untrusted[:25]), self.assertRaises(LegacyContractError):
+                make_client(fake).create(plan, confirmed=True)
+            self.assertEqual(fake.calls, [], "unsafe Ruby must not obtain JWT")
+
+    def test_template_attestation_checks_embedded_ir_name_port_and_synthetic_source(self):
+        for invalid in ("slug", "port", "bind", "project_id", "vendor", "protocols"):
+            data = generated_pair()
+            p = {
+                "projectId": "synthetic-fixture", "schemaRevision": "0.1",
+                "slug": NAME.removeprefix("customized_"), "vendor": "Synthetic",
+                "receiver": {"port": 7891, "bindAddress": "127.0.0.1", "protocols": ["udp"]},
+            }
+            if invalid == "slug":
+                p["slug"] = "wrong_slug"
+            elif invalid == "port":
+                p["receiver"]["port"] = 7892
+            elif invalid == "bind":
+                p["receiver"]["bindAddress"] = "0.0.0.0"
+            elif invalid == "project_id":
+                p["projectId"] = "unreviewed-user-upload"
+            elif invalid == "vendor":
+                p["vendor"] = "UnknownCompany"
+            elif invalid == "protocols":
+                p["receiver"]["protocols"] = ["tcp"]
+            encoded = base64.b64encode(json.dumps(p).encode()).decode()
+            ruby = TEST_RUBY_TEMPLATE.replace("__PARSER_PROJECT_B64__", encoded)
+            data["files"][1] = source_file(NAME, ruby)
+            data["manifest"]["fileHashes"][NAME] = data["files"][1]["sha256"]
+            plan = LegacyUpload.from_generated(data, tenant=TENANT, version="1.0.0")
+            fake = FakeHttpSession()
+            with self.subTest(invalid=invalid), self.assertRaises(LegacyContractError):
+                make_client(fake).create(plan, confirmed=True)
+            self.assertEqual(fake.calls, [])
+
+    def test_pinned_backend_template_fingerprints_are_explicit(self):
+        # These are template fingerprints from committed backend sources, not
+        # arbitrary SHA-256 values included by the uploader in a manifest.
+        self.assertEqual(
+            adapter_module.REVIEWED_TEMPLATE_SHA256 - {
+                hashlib.sha256(TEST_RUBY_TEMPLATE.encode()).hexdigest()
+            },
+            {
+                "e56812e5efd75ddc255e0813ecbd02f675bfb7b85928b35ff0db6b472791044e",
+                "e941f631da790103cc4c53a89e2eebca2b5df470300935690ebd3450d2e4e911",
+            },
+        )
+
+    def test_duplicate_json_keys_in_embedded_project_are_rejected(self):
+        project = generated_pair()
+        bad = '{"projectId":"synthetic-fixture","projectId":"synthetic-fixture","slug":"ps_api_crud_test_aabbcc","schemaRevision":"0.1","vendor":"Synthetic","receiver":{"port":7891,"bindAddress":"127.0.0.1","protocols":["udp"]}}'
+        ruby = TEST_RUBY_TEMPLATE.replace(
+            "__PARSER_PROJECT_B64__", base64.b64encode(bad.encode()).decode()
+        )
+        project["files"][1] = source_file(NAME, ruby)
+        project["manifest"]["fileHashes"][NAME] = project["files"][1]["sha256"]
+        plan = LegacyUpload.from_generated(project, tenant=TENANT, version="1.0.0")
+        http = FakeHttpSession()
+        with self.assertRaises(LegacyContractError):
+            make_client(http).create(plan, confirmed=True)
         self.assertEqual(http.calls, [])
 
     def test_version_conflict_fails_before_update_delete(self):

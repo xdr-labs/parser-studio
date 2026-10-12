@@ -54,7 +54,16 @@ before mutation. Test-only POST and PUT also require port **7800–7999**,
 a single matching `@type null` output and no external `@include`.
 Backend-generated configurations for live routing (for example `0.0.0.0`,
 `rewrite_tag_filter`) are intentionally **not deployable** through this
-POC-only writer. See [public API capability and isolation gates](12_PUBLIC_API_CAPABILITY_EVIDENCE.md).
+POC-only writer. The Fluentd CONF must match an **exact minimal
+source/parse/null-sink grammar**, rejecting all extra filters, labels,
+includes, and top-level directives. The Ruby fragment must match an
+explicit SHA-256-pinned **committed compiler template** after replacing
+only its embedded Base64 project data; that data must declare the
+synthetic-fixture project, approved vendor, exact slug, loopback bind,
+port and receiver protocols. Self-reported file hashes alone are not
+accepted as compiler provenance. An unknown or updated template is
+**fail-closed** until reviewed; no generic Ruby sandbox is claimed.
+See [public API capability and isolation gates](12_PUBLIC_API_CAPABILITY_EVIDENCE.md).
 JWTs are refreshed after a bounded eight-minute cache window;
 read-only GET requests may retry once after HTTP 401 with a refreshed JWT.
 **POST/PUT/DELETE are never automatically retried after HTTP 401** to avoid

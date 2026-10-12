@@ -81,8 +81,14 @@ CREATE/UPDATE before any HTTP request unless the artifact is a
   (discard). Broad match patterns, external `@include` and public binds
   are refused.
 - Exact file bytes/lengths/individual SHA-256 and independent compiler
-  manifest SHA-256 are checked. Arbitrary/edited files are not silently
-  considered vendor-compatible.
+  manifest SHA-256 are checked. In addition, **Ruby compiler template
+  provenance is pinned** to committed backend templates from revisions
+  `687be44` and `7457e29`. The only variable Base64 JSON IR must describe
+  a synthetic fixture with matching slug, protocol, port and loopback bind.
+  Unreviewed Ruby is rejected even with self-consistent SHA-256 values.
+- The disposable CONF is parsed as an **exact, closed source/parse/null-sink
+  grammar**. Extra filter blocks, labels, unrelated directives, multiple
+  sinks or non-loopback routes are rejected before obtaining a JWT.
 - Every write uses an exact test-only name, an owner-approved POC hostname,
   and selected tenant, with version collision checks.
 
