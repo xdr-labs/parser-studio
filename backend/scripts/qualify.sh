@@ -88,6 +88,10 @@ echo "[4c/5] Strict offline POC disposable null-sink CONF grammar with Fluentd A
 node dist/scripts/stellar-disposable-smoke.js |
   run_bounded_ruby -rbundler/setup test_native/stellar_poc_disposable_config_smoke.rb
 
+echo "[4d/5] Bounded JSON/KV synthetic preview checked against pinned native parser callbacks"
+node dist/scripts/testlab-native-fixtures.js |
+  run_bounded_ruby -rbundler/setup test_native/testlab_synthetic_smoke.rb .tmp/native-fixtures
+
 echo "[5/5] Immutable-style synthetic evidence manifest"
 node --input-type=module <<'NODE'
 import { createHash } from "node:crypto";
@@ -133,6 +137,9 @@ const report = {
   rubyChildResourceLimitsChecked: true,
   pocDisposableLoopbackNullSinkAstChecked: true,
   pocApiMutationPerformed: false,
+  offlineSyntheticPreviewNativeChecked: true,
+  offlineSyntheticPreviewCases: 2,
+  sensorTrafficSent: false,
   rfc5424SdNameAndParameterGrammarChecked: true,
   rfc5424SdPositiveCases: 2,
   rfc5424SdNegativeCases: 9,

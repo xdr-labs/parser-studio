@@ -32,3 +32,7 @@ export type {ArtifactRevisionManifest,ArtifactPackage} from "./artifact-package.
 
 export {proposeParserPort,validatePortOverride,PortPlanError} from "./stellar-port-plan.js";
 export type {PortInventory,PortPlanOptions,PortProposal} from "./stellar-port-plan.js";
+
+
+export {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
+export type {SyntheticPreviewRequest,SyntheticPreview,SyntheticVariable} from "./testlab-synthetic.js";

@@ -24,6 +24,17 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     multiline: false,
     arbitraryRuby: false,
   },
+  testLab: {
+    offlineJsonPreview: true,
+    offlineKvPreview: true,
+    offlineCefPreview: false,
+    offlineLeefPreview: false,
+    offlineSyslogPreview: false,
+    offlineCsvPreview: false,
+    requiresBackendPreviewAuthorization: true,
+    liveSensorSenderEnabled: false,
+    runtimeParsingVerified: false,
+  },
   downloads: {
     individualGeneratedFiles: true,
     zipWithManifest: true,

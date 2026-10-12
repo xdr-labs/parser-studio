@@ -5,6 +5,7 @@ import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
+import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -57,6 +58,10 @@ export interface BackendServerOptions {
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
   /** Injected trusted backend/in-network inventory; never from browser JSON. */
+  /** Required for raw event preview; unconfigured preview is denied. */
+  authorizeTestLabPreview?:(request:IncomingMessage)=>Promise<boolean>;
+  /** Deterministic synthetic tests inject a clock; never client-supplied. */
+  syntheticClock?:()=>number;
   portPlanningContext?:{
     sensorParserPorts:readonly number[];
     localReservedPorts:readonly number[];
@@ -105,6 +110,42 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // User-opt-in synthetic preview. In-memory only, no stream or sensor IO.
+    if(path==="/api/v1/test-lab/preview"){
+      if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      let authorized=false;
+      try{authorized=options.authorizeTestLabPreview!==undefined&&
+        await options.authorizeTestLabPreview(req)===true;}
+      catch{/* Fail closed if the product auth provider is unavailable. */}
+      if(!authorized){send(res,403,{error:"TESTLAB_PREVIEW_NOT_AUTHORIZED"});return;}
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]||0)>MAX_PROJECT_BYTES){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const raw=await jsonInput(req,MAX_PROJECT_BYTES) as Record<string,unknown>;
+        const fields=["format","source","seed","sequence","timestampField",
+          "variableFields","runMarkerField","runId"];
+        if(!raw||typeof raw!=="object"||Array.isArray(raw)||
+          Object.keys(raw).some(k=>!fields.includes(k))){
+          send(res,422,{error:"TESTLAB_REQUEST_INVALID"});return;
+        }
+        const generated=createSyntheticPreview(
+          raw as unknown as Parameters<typeof createSyntheticPreview>[0],
+          options.syntheticClock?.()??Date.now());
+        send(res,200,generated);
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof SyntheticPreviewError)send(res,422,{error:error.code});
+        else send(res,500,{error:"TESTLAB_PREVIEW_FAILED"});
       }
       return;
     }

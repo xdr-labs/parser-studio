@@ -147,6 +147,35 @@ additional target-ownership checks and matching artifact-revision hashes
 before POST/PUT. Only guarded POC test deployment is currently enabled
 and user-target Apply is not yet ready; Download remains independent.
 
+## P0-LIVE-3 initial: format-aware synthetic preview, NO network sender
+
+The backend provides a pure in-memory JSON/unquoted-KV preview generator
+in testlab-synthetic.ts and an explicitly authenticated local POST
+/api/v1/test-lab/preview. The request selects raw sample, deterministic seed,
+sequence, optional timestamp field, selected IPv4/username/URL field paths,
+and optional existing run-marker field. Timestamp is updated to current
+server time while preserving an explicit Z/offset and fractional precision
+for the supported RFC3339 string subset. Safe documentation-only IPv4,
+synthetic usernames and synthetic.invalid URLs are generated via typed field
+parsing, not global regex substitution. Unsupported grammars, paths, old
+timestamps, and unsafe values fail closed without echoing raw logs in errors.
+
+Server must inject authorizeTestLabPreview from the current user's trusted
+identity; otherwise the route is 403. Preview responses expressly mark
+safeToSendToSensor=false, runtimeParsingVerified=false and
+targetSensorVerified=false. There is no UDP/TCP connection, continuous
+worker, real sensor verification or customer data retention in this batch.
+Only approved, sanitized source samples should be supplied to the preview.
+Other log family emitters await their own synthetic/native qualification.
+
+The clean offline native qualification separately emits two reviewed
+synthetic JSON/KV previews from fixed public-synthetic source fixtures, runs
+both through the pinned Fluentd Parser Plugin API and verifies mapped srcip,
+unchanged action, classification and one callback per event. Its ignored
+exact-HEAD report records offlineSyntheticPreviewNativeChecked=true,
+offlineSyntheticPreviewCases=2, sensorTrafficSent=false.
+This is not an actual in-network sensor sender.
+
 ## P0-LIVE-1 — Port proposal (NOT atomic or a live sensor check)
 
 The backend-only stellar-port-plan.ts module merges trusted lists of known
