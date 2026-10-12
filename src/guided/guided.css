@@ -367,3 +367,13 @@
 .guided-type-proposal button { border:1px solid #9ecfc4; border-radius:5px; color:#167e77; background:#fff; padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
 .guided-type-proposal button:hover { background:#e8f6f3; }
 .guided-type-proposal button:focus-visible { outline:2px solid #147e85; outline-offset:2px; }
+
+/* Short, attributable public metadata dictionary subset, not a deployable parser schema. */
+.guided-official-field { margin-top:11px; border-top:1px dashed #dce8eb; padding-top:11px; }
+.guided-official-field summary { color:#37727c; font-size:11px; font-weight:750; cursor:pointer; }
+.guided-official-field summary:focus-visible { outline:2px solid #147e85; outline-offset:2px; }
+.guided-official-field p:not(.guided-error) { color:#758d99; font-size:10px; line-height:1.6; }
+.guided-official-field .guided-field { margin:10px 0 4px; }
+.guided-official-field select { min-width:0; width:100%; }
+.guided-note a { color:#187c85; text-decoration:underline; text-underline-offset:2px; }
+.guided-note a:focus-visible { outline:2px solid #187c85; outline-offset:2px; }
