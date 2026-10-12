@@ -70,3 +70,24 @@ signal is aborted, and Resume cannot replay that sequence. This is a
 conservative acknowledgement rule, not proof that a network packet was or
 was not delivered. No HTTP rate-update route or live sensor sender has
 been enabled.
+
+## Redacted per-stage evidence ledger (P0-LIVE-4, offline contract)
+
+The optional TestLabEvidenceLedger is a standalone, in-memory metadata
+contract. It is NOT wired into the default sender, HTTP API or live sensor,
+and does not collect raw records or restore runs from a previous process.
+A trusted future sender integration must explicitly supply its owner, run ID,
+reviewed artifact SHA-256 and monotonically produced synthetic sequence.
+
+For each event, it distinguishes local GENERATED, SEND_ATTEMPTED and
+SINK_ACCEPTED from independently observed SENSOR_OBSERVED and DP_INDEXED.
+The latter two are only accepted with a strongly scoped receipt and a
+separately injected backend observer. DP field comparison stores only
+field names and MATCH/MISMATCH/MISSING states, never compared values.
+No local callback, fake observer or report proves a real DP runtime.
+Every report retains liveE2eVerified=false and runtimeParsingVerified=false.
+
+Finite retention defaults to 64 runs, 500 events/run and 15 minutes.
+Actor and artifact identities, strict stage ordering, error-code allowlists
+and bounded redacted reports are enforced. A restart loses all status and
+cannot replay, reauthorize or prove prior delivery.
