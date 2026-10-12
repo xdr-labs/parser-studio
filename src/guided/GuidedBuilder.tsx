@@ -15,6 +15,7 @@ import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
+import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
 import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
 import { suggestUnmappedFields } from './fieldMappingSuggestions';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
@@ -108,6 +109,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [inspecting, setInspecting] = useState(false);
   const [inspectionResult, setInspectionResult] = useState<PairInspectionSummary | null>(null);
   const [inspectionError, setInspectionError] = useState('');
+  const [schemaLoading, setSchemaLoading] = useState(false);
+  const [schemaGuide, setSchemaGuide] = useState<BackendSchemaGuide | null>(null);
+  const [schemaError, setSchemaError] = useState('');
   const [starterChoice, setStarterChoice] = useState<StarterTemplateId | ''>('');
 
 
@@ -311,6 +315,20 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       setBackendError({ key: draftKey, message: error instanceof Error ? error.message : '백엔드에 연결할 수 없습니다.' });
     } finally {
       setValidatingBackend(false);
+    }
+  };
+
+  const loadAuthoringSchema = async () => {
+    setSchemaLoading(true);
+    setSchemaGuide(null);
+    setSchemaError('');
+    try {
+      const guide = await fetchBackendSchemaGuide();
+      setSchemaGuide(guide);
+    } catch (error) {
+      setSchemaError(error instanceof Error ? error.message : '백엔드 스키마를 확인할 수 없습니다.');
+    } finally {
+      setSchemaLoading(false);
     }
   };
 
@@ -528,6 +546,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           {step === 2 && <>
             <div className="guided-section-title"><span>01</span> 추출 필드와 정규화 대상 <span className="guided-inline-badge">{draft.mappings.length}개 규칙</span></div>
             <div className="guided-hint"><AlertTriangle size={16} /> 현재 입력한 대상 필드명은 초안입니다. 공식 Stellar Cyber Interflow 필드 사전은 검증 완료 전까지 제공되지 않습니다.</div>
+            <details className="guided-schema-guide" aria-label="Backend authoring schema guide">
+              <summary>백엔드에서 허용하는 입력 규격 확인 (공식 필드 사전 아님)</summary>
+              <p>현재 연결된 로컬 백엔드의 ParserProject JSON Schema만 읽습니다. 원본 샘플·매핑 값은 전송하지 않으며, Stellar Cyber 공식 필드 사전이나 실행·적재 검증 정보가 아닙니다.</p>
+              <button type="button" className="guided-cta-secondary" disabled={schemaLoading} onClick={() => { void loadAuthoringSchema(); }}>
+                <ShieldCheck size={15} /> {schemaLoading ? '스키마 확인 중…' : '백엔드 스키마 확인 (GET)'}
+              </button>
+              {schemaError && <p className="guided-error" role="alert">{schemaError}</p>}
+              {schemaGuide && <div className="guided-schema-verified" aria-label="Verified backend schema summary">
+                <strong>ParserProject {schemaGuide.revision} · 로컬 백엔드 스키마 확인</strong>
+                <p><b>추출 형식</b> {schemaGuide.formats.join(' · ')}</p>
+                <p><b>정규화 타입</b> {schemaGuide.fieldTypes.join(' · ')}</p>
+                <p><b>원본·목적지 이름 규격 (최대 {schemaGuide.fieldNameMaxLength}자)</b></p>
+                <code>{schemaGuide.fieldNamePattern}</code>
+                <p><b>수신 방식</b> {schemaGuide.receiverProtocols.join(' · ')} · 포트 {schemaGuide.port.min}–{schemaGuide.port.max} · 메시지 {schemaGuide.messageLength.min}–{schemaGuide.messageLength.max} bytes</p>
+                <small>이 목록은 백엔드가 허용하는 데이터 형식과 타입만 설명합니다. 특정 정규화 필드의 공식 의미·존재 여부는 보증하지 않습니다. UI 자체는 더 엄격한 일부 제한을 적용할 수 있습니다.</small>
+              </div>}
+            </details>
             <div className="guided-map-list">{draft.mappings.map((mapping, index) =>
               <div className="guided-map-card" key={mapping.id}>
                 <div className="guided-map-number"><span>FIELD {String(index + 1).padStart(2, '0')}</span>
