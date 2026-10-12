@@ -99,7 +99,8 @@ test('mixed families and unknown logs are not dropped or transmitted to validati
  await page.getByRole('button',{name:'Review Detected Results'}).click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
  await expect(page.getByRole('alert')).toContainText('mixed, malformed, or unrecognized');
- await expect(page.getByRole('button',{name:'Test & Generate',exact:true})).toBeDisabled();
+ await expect(page.getByRole('navigation',{name:'Auto Parser steps'})
+   .getByRole('button',{name:/Test & Generate/})).toBeDisabled();
  expect(posts()).toBe(0);
 });
 test('denied backend metadata blocks beginner compilation and does not exfiltrate samples',async({page})=>{
@@ -120,7 +121,10 @@ test('narrow viewport allows keyboard controls, avoids horizontal overflow, and 
  await page.getByLabel('Auto Parser raw logs').fill(input);
  await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2');
  await expect(page.evaluate(()=>document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(392);
- await page.getByRole('button',{name:'Review Detected Results'}).focus();
+ const review=page.getByRole('button',{name:'Review Detected Results'});
+ await expect(review).toBeEnabled();
+ await review.focus();
+ await expect(review).toBeFocused();
  await page.keyboard.press('Enter');
  await expect(page.getByLabel('Review Results stage')).toBeVisible();
 });
