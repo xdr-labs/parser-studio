@@ -550,6 +550,16 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <option value=",">쉼표 (,)</option><option value=";">세미콜론 (;)</option><option value={'\t'}>TAB (탭)</option>
               </select><small>한 줄 = 한 레코드만 지원하며 인용 부호 안의 구분자는 값으로 처리합니다.</small></label>
             </div>}
+            {draft.format === 'syslog_rfc5424' && <label className="guided-field">
+              <span>RFC5424 메시지 본문 추출 방식</span>
+              <select aria-label="RFC5424 message body format" value={draft.syslogBodyFormat ?? 'raw'}
+                onChange={(event) => changeDraft('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv')}>
+                <option value="raw">원문 텍스트 (message)</option>
+                <option value="json">JSON 객체 (body.*)</option>
+                <option value="kv">Key/Value 필드 (body.*)</option>
+              </select>
+              <small>RFC5424 헤더 형식만 지원합니다. Syslog RFC3164·복합 포맷·멀티라인은 별도 파서이며 생성 호환성을 보증하지 않습니다.</small>
+            </label>}
             <div className="guided-hint"><AlertCircle size={16} /> 브라우저 추출은 미리보기입니다. JSON, KV, CSV, 정확한 RFC5424, 단독 CEF/LEEF만 기능 계약 확인 후 DRAFT 생성할 수 있습니다. 일반 Syslog·Regex 및 복합/멀티라인은 미지원입니다.</div>
             <div className="guided-section-title"><span>02</span> 샘플에서 값 선택하기</div>
             <div className="guided-event-picker">

@@ -157,7 +157,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
     case 'syslog': return extractSyslog(raw);
-    case 'syslog_rfc5424':
+    case 'syslog_rfc5424': return extractStructuredFamily(raw, format, draft.syslogBodyFormat ?? 'raw');
     case 'cef':
     case 'leef': return extractStructuredFamily(raw, format);
     case 'regex': return extractRegex(raw, draft.pattern);

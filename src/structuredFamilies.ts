@@ -51,17 +51,50 @@ function strictKeyValues(input: string): StructuredExtraction {
   return { fields: values, errors: [] };
 }
 
-export function extractStructuredFamily(input: string, format: StructuredFamily): StructuredExtraction {
+/** Mirror the reviewed backend's bounded JSON object body shape. */
+function boundedJsonObject(text: string): StructuredExtraction {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return failure('RFC5424 JSON body must be an object');
+    }
+    function depthOkay(value: unknown, depth: number): boolean {
+      if (depth > 8) return false;
+      if (Array.isArray(value)) return value.every((v) => depthOkay(v, depth + 1));
+      if (value && typeof value === 'object') {
+        return Object.values(value).every((v) => depthOkay(v, depth + 1));
+      }
+      return true;
+    }
+    if (!depthOkay(parsed, 0)) return failure('RFC5424 JSON body exceeds reviewed nesting depth');
+    return { fields: parsed as Record<string, unknown>, errors: [] };
+  } catch {
+    return failure('RFC5424 JSON body is not valid JSON');
+  }
+}
+
+export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' = 'raw'): StructuredExtraction {
   if (input.includes('\n') || input.includes('\r')) return failure('Only one logical record per physical line is supported for pairing.');
   if (format === 'syslog_rfc5424') {
     const match = /^<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (-|\[[^\]\n]{1,1024}\])(?: ([^\n]*))?$/.exec(input);
     if (!match || Number(match[1]) > 191) return failure('Only bounded single-record RFC5424 headers are supported');
+    const body: Record<string, unknown> = {};
+    if (match[9]) {
+      if (bodyFormat === 'raw') body.message = match[9];
+      else if (bodyFormat === 'json' || bodyFormat === 'kv') {
+        const nested = bodyFormat === 'json'
+          ? boundedJsonObject(match[9])
+          : strictKeyValues(match[9]);
+        if (nested.errors.length > 0) return nested;
+        body.body = nested.fields;
+      } else return failure('Unsupported RFC5424 body dialect');
+    }
     return { fields: {
       syslog_pri: Number(match[1]), syslog_version: Number(match[2]),
       syslog_timestamp: match[3], syslog_hostname: match[4],
       syslog_appname: match[5], syslog_procid: match[6],
       syslog_msgid: match[7], syslog_structured_data: match[8],
-      ...(match[9] ? { message: match[9] } : {}),
+      ...body,
     }, errors: [] };
   }
   if (format === 'cef') {

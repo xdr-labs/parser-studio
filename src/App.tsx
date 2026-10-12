@@ -377,6 +377,16 @@ export default function App() {
                       <option value={'\t'}>TAB</option>
                     </select>
                   </>}
+                  {draft.format === 'syslog_rfc5424' && <>
+                    <label className="form-label" htmlFor="rfc5424-body">RFC5424 message body</label>
+                    <select id="rfc5424-body" value={draft.syslogBodyFormat ?? 'raw'}
+                      onChange={(event) => update('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv')}>
+                      <option value="raw">Raw text (message)</option>
+                      <option value="json">JSON object (body.*)</option>
+                      <option value="kv">Strict Key/Value (body.*)</option>
+                    </select>
+                    <p className="helper warn-helper">Bounded RFC5424 only. Native/target compatibility is not verified.</p>
+                  </>}
                   <div className="recognition-card">
                     <div className="recognition-head"><span className="field-caption">SELECTED EVENT · FORMAT CANDIDATE</span><StatusPill status={activeEvent?.detected.format === 'unknown' ? 'warning' : 'pending'}>{activeEvent ? formatLabel(activeEvent.detected.format) : 'No event'}</StatusPill></div>
                     <div className="confidence-row"><span>Detection confidence</span><strong>{activeEvent ? Math.round(activeEvent.detected.confidence * 100) + '%' : '—'}</strong></div>

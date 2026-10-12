@@ -34,6 +34,35 @@ describe('reviewed standalone structured log families in local no-code preview',
     });
   });
 
+
+  it.each([
+    ['json', '{"action":"deny","src_ip":"198.51.100.10"}', {action:'deny',src_ip:'198.51.100.10'}],
+    ['kv', 'action=deny src_ip=198.51.100.10', {action:'deny',src_ip:'198.51.100.10'}],
+  ] as const)('RFC5424 %s body yields backend-compatible nested body fields', (bodyFormat, body, expected) => {
+    const draft=createDraft();draft.format='syslog_rfc5424';draft.syslogBodyFormat=bodyFormat;
+    const log='<34>1 2026-10-12T00:00:00Z fw app 1 EV01 - '+body;
+    const parsed=extractFields(log,'syslog_rfc5424',draft);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.fields.body).toEqual(expected);
+    const converted=toBackendProject(draft);
+    expect(converted.ok).toBe(true);
+    if (converted.ok) expect(converted.project.extraction).toEqual({
+      format:'syslog_rfc5424',syslogBodyFormat:bodyFormat,
+    });
+  });
+
+  it('fails closed for malformed RFC5424 JSON/KV body or unreviewed body syntax', () => {
+    const draft=createDraft();draft.format='syslog_rfc5424';
+    const prefix='<34>1 2026-10-12T00:00:00Z fw app 1 EV01 - ';
+    draft.syslogBodyFormat='json';
+    expect(extractFields(prefix+'[1,2]', 'syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
+    expect(extractFields(prefix+'{"action":', 'syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
+    draft.syslogBodyFormat='kv';
+    expect(extractFields(prefix+'action=deny bad suffix', 'syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
+    draft.syslogBodyFormat='code' as 'raw';
+    expect(toBackendProject(draft).ok).toBe(false);
+  });
+
   it('rejects malformed CEF/LEEF structures and unsupported mixed headers in local preview', () => {
     const draft = createDraft();
     draft.format = 'cef';

@@ -33,7 +33,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line';
   };
-  extraction: { format: 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -155,7 +155,11 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     },
     extraction: draft.format === 'csv'
       ? { format: 'csv', csvColumns: draft.csvColumns.split(',').map((column) => column.trim()), csvDelimiter: draft.csvDelimiter ?? ',' }
-      : { format: draft.format as 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' },
+      : draft.format === 'syslog_rfc5424'
+        ? { format: 'syslog_rfc5424',
+            ...(draft.syslogBodyFormat && draft.syslogBodyFormat !== 'raw'
+              ? { syslogBodyFormat: draft.syslogBodyFormat } : {}) }
+        : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' },
     normalization: {
       msgOriginSource: options.slug,
       msgClass: options.slug,

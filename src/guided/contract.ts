@@ -122,6 +122,10 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if (!(['json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef'] as string[]).includes(draft.format)) {
     errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
   }
+  if (draft.format === 'syslog_rfc5424' &&
+      !['raw', 'json', 'kv'].includes(draft.syslogBodyFormat ?? 'raw')) {
+    errors.push('Unsupported RFC5424 body format; use raw, JSON object or strict Key/Value');
+  }
   if (draft.format === 'csv') {
     if (![',', ';', '\t'].includes(draft.csvDelimiter ?? ',')) {
       errors.push('CSV data separator must be comma, semicolon or TAB');
