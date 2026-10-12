@@ -96,6 +96,7 @@ test('manually selected wrong format receives a cautious one-click recheck, not 
   await expect(page.getByRole('button',{name:'JSON',exact:true}))
     .toHaveAttribute('aria-pressed','true');
   await expect(panel).toContainText('2/2 extracted');
+  await page.getByRole('button',{name:/1\. Import Logs/}).click();
   await expect(page.getByLabel('Guided raw sample logs')).toHaveValue(json);
   await page.getByRole('button',{name:/3\. Map Fields/}).click();
   await expect(page.locator('.guided-map-card')).toHaveCount(3);
