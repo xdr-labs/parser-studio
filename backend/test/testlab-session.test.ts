@@ -336,3 +336,37 @@ test("approved in-memory CSV session replaces marker and IP each event without m
     runner.stop(started.runId,"csv-owner");
   }finally{runner.stopAll();}
 });
+
+test("approved CEF and LEEF session callbacks maintain run marker and raw extension semantics",async()=>{
+  const styles=[
+    {
+      format:"cef" as const,
+      source:"CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.6 dpt=443 act=deny run_id=old",
+    },
+    {
+      format:"leef" as const,
+      source:"LEEF:2.0|Synthetic|FW|1|501|0x5E|src=192.0.2.6^dstPort=443^act=deny^run_id=old",
+    },
+  ];
+  for(const style of styles){
+    const sent:string[]=[];
+    const runner=new SyntheticSessionController({
+      approveStart:async()=>true,deliver:async event=>{sent.push(event);},
+    });
+    try{
+      const running=await runner.start({
+        sample:{format:style.format,source:style.source,
+          seed:123,sequence:0,variableFields:[{path:"src",kind:"ipv4"}],
+          runMarkerField:"run_id"},
+        approvalId:"owner-test-structured",ratePerSecond:5,
+        leaseMs:1000,maxEvents:4,
+      },"structured-owner");
+      await new Promise(resolve=>setTimeout(resolve,520));
+      assert.ok(sent.length>=2);
+      assert.ok(sent.every(x=>x.includes("run_id="+running.runId)));
+      assert.ok(sent.every(x=>x.includes("act=deny")));
+      assert.notEqual(sent[0],sent[1]);
+      runner.stop(running.runId,"structured-owner");
+    }finally{runner.stopAll();}
+  }
+});

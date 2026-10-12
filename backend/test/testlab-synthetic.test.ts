@@ -139,3 +139,83 @@ test("malformed CSV, duplicate schema, unsupported delimiter and multiline fail 
     assert.ok(!text.includes("PRIVATE_SECRET_ROW"));
   }
 });
+
+test("CEF 0 synthetic header remains stable and selected KV body fields rotate safely",()=>{
+  const source="CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|src=192.0.2.10 dpt=443 act=deny rt=2025-01-01T01:02:03Z user=old run_id=old";
+  const value=createSyntheticPreview({
+    format:"cef",source,seed:10,sequence:4,timestampField:"rt",
+    variableFields:[{path:"src",kind:"ipv4"},{path:"user",kind:"username"}],
+    runMarkerField:"run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  },now);
+  assert.equal(value.format,"cef");
+  assert.ok(value.syntheticEvent.startsWith("CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|"));
+  assert.match(value.syntheticEvent,/src=(?:192\.0\.2|198\.51\.100|203\.0\.113)\.\d+ /);
+  assert.ok(value.syntheticEvent.includes(" dpt=443 act=deny rt=2026-10-12T01:02:03Z "));
+  assert.ok(value.syntheticEvent.includes("user=synthetic_user_"));
+  assert.ok(value.syntheticEvent.endsWith("run_id=test_run_0123456789abcdef0123456789abcdef"));
+  assert.equal(value.runtimeParsingVerified,false);
+  assert.equal(createSyntheticPreview({...{
+    format:"cef" as const,source,seed:10,sequence:4,timestampField:"rt",
+    variableFields:[{path:"src",kind:"ipv4" as const},{path:"user",kind:"username" as const}],
+    runMarkerField:"run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  }},now).syntheticEvent,value.syntheticEvent);
+});
+
+test("LEEF 2.0 hexadecimal field separator preserves header, classification and timestamps",()=>{
+  const source="LEEF:2.0|Synthetic|FW|1|501|0x5E|src=203.0.113.2^dstPort=443^act=allow^rt=2025-01-01T01:02:03Z^user=old^run_id=old";
+  const value=createSyntheticPreview({
+    format:"leef",source,seed:32,sequence:2,timestampField:"rt",
+    variableFields:[{path:"src",kind:"ipv4"},{path:"user",kind:"username"}],
+    runMarkerField:"run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  },now);
+  assert.ok(value.syntheticEvent.startsWith("LEEF:2.0|Synthetic|FW|1|501|0x5E|"));
+  assert.ok(value.syntheticEvent.includes("^dstPort=443^act=allow^rt=2026-10-12T01:02:03Z^"));
+  assert.ok(value.syntheticEvent.includes("^user=synthetic_user_"));
+  assert.ok(value.syntheticEvent.endsWith("^run_id=test_run_0123456789abcdef0123456789abcdef"));
+  assert.equal(value.targetSensorVerified,false);
+});
+
+test("unsupported CEF/LEEF versions, delimiters and malformed extensions reject without echoing input",()=>{
+  const cef="CEF:0|Synthetic|FW|1|42|Denied|8|src=192.0.2.1 act=deny PRIVATE_SECRET=1";
+  const leef="LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^act=deny";
+  for(const change of [
+    {format:"cef",source:cef.replace("CEF:0","CEF:9")},
+    {format:"cef",source:cef.replace("act=deny","stray-token")},
+    {format:"cef",source:"CEF:0|Synthetic|FW|1|42|Denied\\",variableFields:[]},
+    {format:"leef",source:leef.replace("|^|","|0x00|")},
+    {format:"leef",source:leef.replace("^act=deny","^^act=deny")},
+    {format:"leef",source:leef.replace("LEEF:2.0","LEEF:3.0")},
+    {format:"leef",source:leef.replace("^act=deny","^run_id=duplicate^run_id=duplicate")},
+  ]){
+    let message="";
+    try{
+      createSyntheticPreview({format:change.format as any,source:change.source,
+        seed:5,sequence:0,variableFields:change.variableFields??[{path:"src",kind:"ipv4"}]},
+        now);
+    }catch(error){message=(error as Error).message;}
+    assert.match(message,/^TESTLAB_(CEF|LEEF)_/);
+    assert.equal(message.includes("PRIVATE_SECRET"),false);
+  }
+});
+
+test("LEEF 1.0 TAB and LEEF 2.0 hexadecimal pipe delimiter replay safely",()=>{
+  const older=createSyntheticPreview({
+    format:"leef",
+    source:"LEEF:1.0|Synthetic|FW|1|500|src=192.0.2.3\tdstPort=443\tact=deny\trun_id=old",
+    seed:100,sequence:5,
+    variableFields:[{path:"src",kind:"ipv4"}],
+    runMarkerField:"run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  },now);
+  assert.match(older.syntheticEvent,/^LEEF:1\.0\|Synthetic\|FW\|1\|500\|src=/);
+  assert.ok(older.syntheticEvent.includes("\tdstPort=443\tact=deny\trun_id=test_run_"));
+  const pipe=createSyntheticPreview({
+    format:"leef",
+    source:"LEEF:2.0|Synthetic|FW|1|501|0x7C|src=192.0.2.3|dstPort=443|act=deny|run_id=old",
+    seed:100,sequence:5,
+    variableFields:[{path:"src",kind:"ipv4"}],
+    runMarkerField:"run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  },now);
+  assert.ok(pipe.syntheticEvent.startsWith("LEEF:2.0|Synthetic|FW|1|501|0x7C|"));
+  assert.ok(pipe.syntheticEvent.includes("|dstPort=443|act=deny|run_id=test_run_"));
+  assert.equal(pipe.runtimeParsingVerified,false);
+});

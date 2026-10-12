@@ -51,7 +51,7 @@ test("test-lab preview rejects unexpected secrets, unsupported parsing families 
     const cef=await post(base,{...options,format:"cef"});
     assert.equal(cef.status,422);
     const err=await cef.json() as any;
-    assert.equal(err.error,"TESTLAB_FORMAT_UNSUPPORTED");
+    assert.equal(err.error,"TESTLAB_CEF_HEADER_INVALID");
     assert.equal(JSON.stringify(err).includes("DO_NOT_ECHO"),false);
     const stale=await post(base,{...options,timestampField:"missing"});
     assert.equal(stale.status,422);
@@ -81,5 +81,41 @@ test("authenticated Test Lab HTTP generates schema-aligned CSV with current time
     const broken=await post(base,{...input,csvColumns:["src_ip","action"]});
     assert.equal(broken.status,422);
     assert.equal((await broken.json() as any).error,"TESTLAB_CSV_COLUMNS_INVALID");
+  });
+});
+
+test("authenticated HTTP CEF/LEEF previews emit stable headers and only sanitized selected fields",async()=>{
+  await server(async base=>{
+    const cap=(await (await fetch(base+"/api/v1/parser-pairs/capabilities")).json() as any).testLab;
+    assert.equal(cap.offlineCefPreview,true);
+    assert.equal(cap.offlineLeefPreview,true);
+    assert.equal(cap.offlineSyslogPreview,false);
+    const samples=[
+      {
+        format:"cef",
+        source:"CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.6 dpt=443 act=deny rt=2025-01-01T01:02:03Z run_id=old",
+        header:"CEF:0|Synthetic|FW|1|42|Blocked|8|",
+      },
+      {
+        format:"leef",
+        source:"LEEF:2.0|Synthetic|FW|1|501|0x5E|src=192.0.2.6^dstPort=443^act=deny^rt=2025-01-01T01:02:03Z^run_id=old",
+        header:"LEEF:2.0|Synthetic|FW|1|501|0x5E|",
+      },
+    ];
+    for(const item of samples){
+      const response=await post(base,{
+        ...item,header:undefined,seed:13,sequence:3,timestampField:"rt",
+        variableFields:[{path:"src",kind:"ipv4"}],
+        runMarkerField:"run_id",
+        runId:"test_run_0123456789abcdef0123456789abcdef",
+      });
+      assert.equal(response.status,200);
+      const output=await response.json() as any;
+      assert.ok(output.syntheticEvent.startsWith(item.header));
+      assert.ok(output.syntheticEvent.includes("rt=2026-10-12T01:02:03Z"));
+      assert.ok(output.syntheticEvent.includes("run_id=test_run_0123456789abcdef0123456789abcdef"));
+      assert.equal(output.targetSensorVerified,false);
+      assert.equal(output.runtimeParsingVerified,false);
+    }
   });
 });

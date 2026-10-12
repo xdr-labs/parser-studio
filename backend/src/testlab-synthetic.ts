@@ -10,7 +10,7 @@ import {hasValidUnicodeJson} from "./unicode.js";
 export type SyntheticVariableKind="ipv4"|"username"|"url";
 export type SyntheticVariable={path:string;kind:SyntheticVariableKind};
 export type SyntheticPreviewRequest={
-  format:"json"|"kv"|"csv";
+  format:"json"|"kv"|"csv"|"cef"|"leef";
   source:string;
   csvColumns?:readonly string[];
   csvDelimiter?:","|";"|"\t";
@@ -23,7 +23,7 @@ export type SyntheticPreviewRequest={
 };
 export type SyntheticPreview={
   contract:"parser-studio.synthetic-preview.v0.1";
-  format:"json"|"kv"|"csv";
+  format:"json"|"kv"|"csv"|"cef"|"leef";
   syntheticEvent:string;
   generatedAt:string;
   sequence:number;
@@ -97,6 +97,92 @@ function serializeCsvLine(columns:readonly string[],source:Record<string,unknown
 }
 const prohibited=new Set(["__proto__","prototype","constructor"]);
 
+/** Read exactly the reviewed CEF/LEEF header fields, including escaped
+ * pipes/backslashes. Preserve original header bytes for replay output.
+ */
+function delimitedEnvelope(source:string,header:string,splits:number,
+  label:"CEF"|"LEEF"):{prefix:string;body:string;fields:string[]}{
+  if(!source.startsWith(header)||/[\r\n\u0000]/.test(source))
+    fail("TESTLAB_"+label+"_HEADER_INVALID");
+  let i=header.length,escaped=false;
+  const fields:string[]=[];
+  let value="";
+  while(i<source.length){
+    const c=source[i++]!;
+    if(escaped){
+      if(c!=="|"&&c!=="\\")fail("TESTLAB_"+label+"_HEADER_INVALID");
+      value+=c;
+      escaped=false;
+    }else if(c==="\\"){
+      escaped=true;
+    }else if(c==="|"){
+      fields.push(value);
+      value="";
+      if(fields.length===splits){
+        if(fields.some(x=>!x||x.length>512)||i>2048)
+          fail("TESTLAB_"+label+"_HEADER_INVALID");
+        return {prefix:source.slice(0,i),body:source.slice(i),fields};
+      }
+    }else{value+=c;}
+    if(i>2048)fail("TESTLAB_"+label+"_HEADER_INVALID");
+  }
+  fail("TESTLAB_"+label+"_HEADER_INVALID");
+}
+function cefEnvelope(source:string){
+  return delimitedEnvelope(source,"CEF:0|",6,"CEF");
+}
+function leefEnvelope(source:string):{
+  prefix:string;body:string;separator:string;
+}{
+  const v=source.startsWith("LEEF:1.0|")?"1.0":
+    source.startsWith("LEEF:2.0|")?"2.0":null;
+  if(v===null)fail("TESTLAB_LEEF_HEADER_INVALID");
+  const p=delimitedEnvelope(source,"LEEF:"+v+"|",v==="1.0"?4:5,"LEEF");
+  let separator=v==="1.0"?"\t":p.fields[4]!;
+  const hex=/^0x([0-9a-fA-F]{1,2})$/.exec(separator);
+  if(hex)separator=String.fromCharCode(parseInt(hex[1]!,16));
+  if(separator.length!==1||
+    !(separator==="\t"||(separator.charCodeAt(0)>=33&&
+      separator.charCodeAt(0)<=126&&
+      separator!=="="&&separator!=="\\")))
+    fail("TESTLAB_LEEF_SEPARATOR_INVALID");
+  return {prefix:p.prefix,body:p.body,separator};
+}
+function parseSimpleKv(source:string,label:"KV"|"CEF"):Record<string,unknown>{
+  if(/[\r\n]/.test(source))fail("TESTLAB_"+label+"_UNSUPPORTED");
+  const parts=source.trim().split(/[ \t]+/);
+  if(!parts.length||parts.length>80)fail("TESTLAB_"+label+"_UNSUPPORTED");
+  const map:Record<string,unknown>=Object.create(null);
+  for(const part of parts){
+    const m=KV.exec(part);
+    if(!m||Object.hasOwn(map,m[1]!)||prohibited.has(m[1]!))
+      fail("TESTLAB_"+label+"_UNSUPPORTED");
+    map[m[1]!]=m[2]!;
+  }
+  return map;
+}
+function parseLeefFields(text:string,separator:string):Record<string,unknown>{
+  if(!text)fail("TESTLAB_LEEF_EXTENSION_INVALID");
+  const tokens=text.split(separator);
+  if(tokens.length>80)fail("TESTLAB_LEEF_EXTENSION_INVALID");
+  const fields:Record<string,unknown>=Object.create(null);
+  for(const token of tokens){
+    const pos=token.indexOf("=");
+    const key=token.slice(0,pos);
+    if(pos<1||!/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(key)||
+      prohibited.has(key)||Object.hasOwn(fields,key))
+      fail("TESTLAB_LEEF_EXTENSION_INVALID");
+    fields[key]=token.slice(pos+1);
+  }
+  return fields;
+}
+function serializeLeefFields(root:Record<string,unknown>,separator:string):string{
+  return Object.entries(root).map(([key,value])=>{
+    if(typeof value!=="string"||/[\r\n\u0000]/.test(value)||
+      value.includes(separator))fail("TESTLAB_LEEF_EXTENSION_INVALID");
+    return key+"="+value;
+  }).join(separator);
+}
 function pathParts(input:string):string[]{
   if(typeof input!=="string"||!PATH.test(input))fail("TESTLAB_PATH_INVALID");
   const parts=input.split(".");
@@ -129,18 +215,12 @@ function strictSource(input:SyntheticPreviewRequest):Record<string,unknown>{
     for(let index=0;index<columns.length;index++)root[columns[index]!]=values[index]!;
     return root;
   }
-  if(input.format==="kv"){
-    if(/[\r\n]/.test(input.source))fail("TESTLAB_KV_UNSUPPORTED");
-    const parts=input.source.trim().split(/[ \t]+/);
-    if(!parts.length||parts.length>80)fail("TESTLAB_KV_UNSUPPORTED");
-    const map:Record<string,unknown>=Object.create(null);
-    for(const part of parts){
-      const m=KV.exec(part);
-      if(!m||Object.hasOwn(map,m[1]!)||prohibited.has(m[1]!))
-        fail("TESTLAB_KV_UNSUPPORTED");
-      map[m[1]!]=m[2]!;
-    }
-    return map;
+  if(input.format==="kv")return parseSimpleKv(input.source,"KV");
+  if(input.format==="cef")
+    return parseSimpleKv(cefEnvelope(input.source).body,"CEF");
+  if(input.format==="leef"){
+    const envelope=leefEnvelope(input.source);
+    return parseLeefFields(envelope.body,envelope.separator);
   }
   fail("TESTLAB_FORMAT_UNSUPPORTED");
 }
@@ -200,7 +280,7 @@ function currentTimestamp(reference:string,nowMs:number):string{
 export function createSyntheticPreview(input:SyntheticPreviewRequest,
   nowMs=Date.now()):SyntheticPreview{
   if(!input||typeof input!=="object"||
-    !["json","kv","csv"].includes(input.format))fail("TESTLAB_FORMAT_UNSUPPORTED");
+    !["json","kv","csv","cef","leef"].includes(input.format))fail("TESTLAB_FORMAT_UNSUPPORTED");
   if(typeof input.source!=="string"||
     Buffer.byteLength(input.source,"utf8")>16384||input.source.length<1||
     input.source.includes("\u0000")||!hasValidUnicodeJson(input.source))
@@ -243,6 +323,10 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
   const syntheticEvent=input.format==="json"?JSON.stringify(roots):
     input.format==="csv"?serializeCsvLine(csvDefinition(input).columns,roots,
       csvDefinition(input).separator):
+    input.format==="cef"?cefEnvelope(input.source).prefix+
+      Object.entries(roots).map(([key,value])=>key+"="+value).join(" "):
+    input.format==="leef"?leefEnvelope(input.source).prefix+
+      serializeLeefFields(roots,leefEnvelope(input.source).separator):
     Object.entries(roots).map(([key,value])=>key+"="+value).join(" ");
   if(Buffer.byteLength(syntheticEvent,"utf8")>16384)
     fail("TESTLAB_OUTPUT_TOO_LARGE");

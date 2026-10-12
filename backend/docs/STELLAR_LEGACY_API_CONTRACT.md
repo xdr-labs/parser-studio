@@ -173,16 +173,27 @@ newlines and invalid quote escaping; otherwise serializes CSV values using
 double-quote escaping, preserving column positions and parseability.
 Any timestamp column is updated only if explicitly selected. CSV is covered
 by both Node contract tests and the pinned native sample_csv parser callback.
+Standalone CEF version 0 and LEEF 1.0/2.0 have separate, bounded
+field-aware replay support. They preserve original raw header and carefully
+parse extension fields before changing any value. The CEF extension follows
+the strict unquoted KV subset. LEEF 2.0 supports approved single-byte,
+including 0xHH, delimiters with unsafe whitespace/newline/NUL/equals
+variants rejected. Malformed escaped delimiters, duplicate/unknown fields,
+unsupported versions and physical multiline fail closed. Native tests use
+the matching generated standalone CEF and LEEF Parser Plugin profiles.
+RFC5424 wrappers and syslog multiline are not replay-supported yet.
+
 Other log families remain unsupported for Test Lab preview until qualified.
 
 Other log family emitters await their own synthetic/native qualification.
 
-The clean offline native qualification separately emits three reviewed
-synthetic JSON/KV/CSV previews from fixed public-synthetic source fixtures,
-runs all three through the pinned Fluentd Parser Plugin API and verifies mapped
-srcip, unchanged action, classification and one callback per event. Its ignored
-exact-HEAD report records offlineSyntheticPreviewNativeChecked=true,
-offlineSyntheticPreviewCases=3, sensorTrafficSent=false.
+The clean offline native qualification separately emits six reviewed
+synthetic JSON/KV/CSV/CEF/LEEF previews (both LEEF 1.0 and 2.0) from fixed
+public-synthetic fixtures and runs all six through pinned Fluentd Parser
+Plugin API. It verifies
+mapped srcip, unchanged action, classification and one callback per event.
+The ignored exact-HEAD report records offlineSyntheticPreviewNativeChecked=true,
+offlineSyntheticPreviewCases=6 and sensorTrafficSent=false.
 This is not an actual in-network sensor sender.
 
 ## P0-LIVE-3 session control — server-only trusted sink

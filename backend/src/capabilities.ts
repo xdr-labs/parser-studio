@@ -27,8 +27,8 @@ export const BACKEND_CAPABILITIES = Object.freeze({
   testLab: {
     offlineJsonPreview: true,
     offlineKvPreview: true,
-    offlineCefPreview: false,
-    offlineLeefPreview: false,
+    offlineCefPreview: true,
+    offlineLeefPreview: true,
     offlineSyslogPreview: false,
     offlineCsvPreview: true,
     requiresBackendPreviewAuthorization: true,
