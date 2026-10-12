@@ -24,6 +24,14 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     multiline: false,
     arbitraryRuby: false,
   },
+  downloads: {
+    individualGeneratedFiles: true,
+    zipWithManifest: true,
+    requiresDpConnection: false,
+    requiresApiKey: false,
+    autoDeploys: false,
+    exactArtifactRevision: true,
+  },
   import: {
     exactInternalPairsEditable: true,
     unknownLegacyRubyEditable: false,

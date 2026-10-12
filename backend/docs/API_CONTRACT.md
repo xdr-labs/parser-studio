@@ -18,6 +18,7 @@ No raw log content or executable Ruby is accepted by these endpoints. A complete
 | POST `/api/v1/parser-pairs/validate` | JSON `ParserProject` | HTTP 200 `{ok:true,issues:[]}` | HTTP 422 `{ok:false,issues:[{code,path,message}]}` |
 | POST `/api/v1/parser-pairs/generate` | JSON `ParserProject` | HTTP 200 `{contract,files,manifest}` | HTTP 422 `{error:"INVALID_PROJECT",issues}` |
 | POST `/api/v1/parser-pairs/inspect` | `{name,confContent,fragmentContent}` | Inspection with SHA-256, importStatus, safe diagnostic codes, portableProject only for byte-exact internal output | HTTP 422 `{error:"INVALID_PAIR"}` |
+| POST `/api/v1/parser-pairs/package` | `{pair,version}` previously generated exact PairExport + version, no DP credentials | Raw application/zip with immutable Ruby, CONF and manifest.json, response revision + SHA-256 headers | HTTP 422 ARTIFACT_* on invalid pair, 400 invalid JSON, 413 oversized |
 
 Responses include `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, same-origin resource policy. Validate/generate JSON input is limited to 256 KiB; import/inspect body is limited to 2 MiB and never executes Ruby. Oversized body is HTTP 413; non-JSON or non-UTF-8 declared JSON charset HTTP 415; malformed JSON or invalid UTF-8 bytes or unpaired JSON Unicode escapes HTTP 400 (no replacement decoding). No server-side file write, no production deployment action, no RPC to Stellar Cyber.
 

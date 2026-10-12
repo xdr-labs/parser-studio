@@ -123,6 +123,30 @@ server-authorized CLEANUP may issue at most one DELETE for that exact
 owned disposable name and recheck absence; otherwise mark unresolved for
 operator reconciliation. Never delete unrelated tenant parsers.
 
+## P0-LIVE-0 — Independent download (no DP URL or API Key)
+
+After /api/v1/parser-pairs/generate returns its DRAFT PairExport, the user
+can always download the original two files separately using returned files[]
+contents, without configuring any Stellar DP. For a combined archive POST
+/api/v1/parser-pairs/package with exactly a pair containing the unchanged
+PairExport and version 1.0.0.
+The response is a binary ZIP with extensionless Ruby, matching .conf and
+manifest.json, and stable revision/SHA-256 headers. It validates names,
+byte lengths, hashes, manifest and exact reproduccibility; it never rewrites
+the compiled Ruby/CONF or calls a vendor API.
+
+The manifest declares selectedParserPort, receiverProtocols, projectRevision,
+version, artifactRevisionId, both file byte counts/hashes and all verification
+flags false. Port/rule edits must re-run Generate: a selected port change
+changes BOTH file hashes and artifactRevisionId. ZIP is deterministic.
+Download never reads DP URL/Key, requires no tenant/login and cannot
+invoke parser registration.
+
+Apply to Stellar is a separate explicitly confirmed operation. It requires
+additional target-ownership checks and matching artifact-revision hashes
+before POST/PUT. Only guarded POC test deployment is currently enabled
+and user-target Apply is not yet ready; Download remains independent.
+
 ## UI PR #7 consumption handoff
 
 1. Fetch /capabilities. Keep Modular upload/activation controls disabled

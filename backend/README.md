@@ -72,3 +72,11 @@ The server is stateless, bounded to 256 KiB generation JSON and 2 MiB **read-onl
 
 
 **Stellar Cyber Legacy POC API adapter:** See [backend/UI API integration contract](docs/STELLAR_LEGACY_API_CONTRACT.md) for server-only User Scope JWT, strict paired-file manifest validation, readback/version checks, explicit test-only write approval and static unverified Modular/runtime gates. General writes remain disabled.
+
+
+P0-LIVE-0 independent ZIP download: POST /api/v1/parser-pairs/package takes
+the same exact PairExport plus version and returns a reproducible ZIP with
+extensionless Ruby, .conf and manifest.json, including listener port,
+immutable artifact revision and SHA-256. It works with no DP URL/API Key;
+generation and downloading never auto-deploy.
+See docs/STELLAR_LEGACY_API_CONTRACT.md.

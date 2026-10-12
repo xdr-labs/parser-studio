@@ -3,6 +3,7 @@ import { TextDecoder } from "node:util";
 import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
+import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -91,6 +92,49 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Offline ZIP download is independent from Legacy/DP configuration.
+    // The request MUST carry the identical generated pair and manifest;
+    // the package builder verifies exact compiler reproduction before zipping.
+    if(path==="/api/v1/parser-pairs/package"){
+      if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]||0)>MAX_IMPORT_BYTES){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const input=await jsonInput(req,MAX_IMPORT_BYTES) as Record<string,unknown>;
+        if(!input||typeof input!=="object"||Array.isArray(input)||
+          Object.keys(input).sort().join(",")!=="pair,version"){
+          send(res,422,{error:"ARTIFACT_REQUEST_INVALID"});return;
+        }
+        const result=buildArtifactPackage(input["pair"] as PairExport,input["version"] as string);
+        res.writeHead(200,{
+          "content-type":"application/zip",
+          "content-disposition":'attachment; filename="'+result.filename+'"',
+          "content-length":result.zip.length,
+          "cache-control":"no-store",
+          "x-content-type-options":"nosniff",
+          "referrer-policy":"no-referrer",
+          "x-frame-options":"DENY",
+          "cross-origin-resource-policy":"same-origin",
+          "x-parser-artifact-revision":result.manifest.artifactRevisionId,
+          "x-parser-zip-sha256":result.zipSha256,
+          "x-parser-listener-port":String(result.manifest.selectedParserPort),
+        });
+        res.end(result.zip);
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof ArtifactPackageError)
+          send(res,422,{error:error.code});
+        else send(res,500,{error:"ARTIFACT_PACKAGE_FAILED"});
       }
       return;
     }

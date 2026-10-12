@@ -24,3 +24,7 @@ export {
   loadPocProfileClient,createPocFileAuditSink,
 } from "./stellar-legacy-server-secrets.js";
 export type { BackendServerOptions } from "./http.js";
+
+
+export {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
+export type {ArtifactRevisionManifest,ArtifactPackage} from "./artifact-package.js";
