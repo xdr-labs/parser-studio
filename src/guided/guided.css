@@ -360,3 +360,10 @@
 .guided-map-coverage button:hover { background:#fff7ef; }
 .guided-map-coverage button:focus-visible { outline:2px solid #147e85; outline-offset:2px; }
 .guided-map-coverage small { flex-basis:100%; font-size:9px; color:#83949b; }
+
+/* Data-type suggestion is only a local guess from two+ values, never auto applied. */
+.guided-type-proposal { margin-top:10px; padding:10px; border:1px solid #cfe6e1; border-radius:7px; background:#f4faf8; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; }
+.guided-type-proposal span { flex:1 1 175px; color:#447a77; font-size:10px; line-height:1.55; }
+.guided-type-proposal button { border:1px solid #9ecfc4; border-radius:5px; color:#167e77; background:#fff; padding:7px 10px; font-size:10px; font-weight:800; cursor:pointer; }
+.guided-type-proposal button:hover { background:#e8f6f3; }
+.guided-type-proposal button:focus-visible { outline:2px solid #147e85; outline-offset:2px; }

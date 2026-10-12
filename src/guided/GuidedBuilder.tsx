@@ -11,6 +11,7 @@ import { DEMO_SAMPLES } from '../model';
 import { formatLabel, MAX_DATASET_BYTES } from '../parser';
 import { listSafeLeafPaths } from '../fieldPaths';
 import { mappingCoverage } from './mappingCoverage';
+import { suggestMappingType } from './typeSuggestions';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
@@ -76,6 +77,21 @@ function localDownload(filename: string, source: string, mediaType = 'applicatio
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function TypeSuggestionView(props: {
+  suite?: SuiteResult;
+  mapping: MappingRule;
+  index: number;
+  onApply: (type: FieldType) => void;
+}) {
+  const suggestion = suggestMappingType(props.suite, props.mapping);
+  if (!suggestion || suggestion.type === props.mapping.type) return null;
+  return <div className="guided-type-proposal" aria-label={'Mapping type suggestion ' + props.index}>
+    <span>브라우저 샘플 {suggestion.evidence}/{suggestion.total}건으로 {TYPE_LABELS[suggestion.type]} 타입 추정 · 공식 필드 사전·네이티브 검증 아님</span>
+    <button type="button" aria-label={'Apply type suggestion ' + props.index}
+      onClick={() => props.onApply(suggestion.type)}>추천 타입 직접 적용</button>
+  </div>;
 }
 
 function MappingCoverageView(props: {
@@ -602,6 +618,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 </div>
                 <MappingCoverageView suite={suite} mapping={mapping} index={index}
                   onInspect={(eventId) => { setSelectedId(eventId); setSelectedValue(''); setStep(1); }} />
+                <TypeSuggestionView suite={suite} mapping={mapping} index={index}
+                  onApply={(type) => setMapping(mapping.id, 'type', type)} />
               </div>)}</div>
             <datalist id="guided-field-suggestions">{activeFieldNames.map((name) => <option value={name} key={name} />)}</datalist>
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> 새 필드 매핑</button>
