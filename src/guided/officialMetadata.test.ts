@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createDraft } from '../model';
 import { toBackendProject } from './backendAdapter';
-import { curatedOfficialMetadata, applyOfficialMetadataField, officialDictionaryUrl } from './officialMetadata';
+import { curatedOfficialMetadata, applyOfficialMetadataField, officialDictionaryUrl, officialDictionaryUrl65 } from './officialMetadata';
 
 describe('curated factual field names from published Stellar Cyber Metadata Dictionary', () => {
   it('provides a short version-labeled official reference, never a whole proprietary schema', () => {
     expect(officialDictionaryUrl).toBe('https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm');
+    expect(officialDictionaryUrl65).toBe('https://docs.stellarcyber.ai/6.5.xs/Common/Metadata-Dictionary.htm');
     expect(curatedOfficialMetadata.length).toBeGreaterThanOrEqual(12);
     expect(curatedOfficialMetadata.length).toBeLessThanOrEqual(25);
     const src = curatedOfficialMetadata.find((field) => field.name === 'srcip');

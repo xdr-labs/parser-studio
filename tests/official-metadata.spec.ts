@@ -13,8 +13,9 @@ test('user explicitly selects documented scalar standard fields without changing
   await page.getByRole('button', { name:/2\. 필드 추출/ }).click();
   await page.getByRole('button', { name:'JSON', exact:true }).click();
   await page.getByRole('button', { name:/3\. 필드 매핑/ }).click();
-  const reference = page.getByRole('link', { name:'Standard Metadata Dictionary' });
+  const reference = page.getByRole('link', { name:'7.0 Standard Metadata Dictionary' });
   await expect(reference).toHaveAttribute('href', 'https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm');
+  await expect(page.getByRole('link', { name:'6.5 Metadata Dictionary' })).toHaveAttribute('href', 'https://docs.stellarcyber.ai/6.5.xs/Common/Metadata-Dictionary.htm');
   await expect(page.getByLabel('Destination field 0')).toHaveValue('custom.source_ip');
   await page.locator('.guided-map-card').nth(0).locator('.guided-official-field summary').click();
   await page.getByLabel('Official metadata field 0').selectOption('srcip');

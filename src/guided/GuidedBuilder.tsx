@@ -12,7 +12,7 @@ import { formatLabel, MAX_DATASET_BYTES } from '../parser';
 import { listSafeLeafPaths } from '../fieldPaths';
 import { mappingCoverage } from './mappingCoverage';
 import { suggestMappingType } from './typeSuggestions';
-import { curatedOfficialMetadata, applyOfficialMetadataField, officialDictionaryUrl } from './officialMetadata';
+import { curatedOfficialMetadata, applyOfficialMetadataField, officialDictionaryUrl, officialDictionaryUrl65 } from './officialMetadata';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
@@ -616,7 +616,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <small>이 목록은 백엔드가 허용하는 데이터 형식과 타입만 설명합니다. 특정 정규화 필드의 공식 의미·존재 여부는 보증하지 않습니다. UI 자체는 더 엄격한 일부 제한을 적용할 수 있습니다.</small>
               </div>}
             </details>
-            <div className="guided-note"><HelpCircle size={15} /> Stellar Cyber 7.0 공개 <a href={officialDictionaryUrl} target="_blank" rel="noopener noreferrer">Standard Metadata Dictionary</a>에서 확인한 일부 스칼라 필드만 선택적으로 제공합니다. 설치 버전과 실제 적용 대상에서의 적재 지원은 검증되지 않았습니다.</div>
+            <div className="guided-note"><HelpCircle size={15} /> Stellar Cyber 공개 <a href={officialDictionaryUrl65} target="_blank" rel="noopener noreferrer">6.5 Metadata Dictionary</a> · <a href={officialDictionaryUrl} target="_blank" rel="noopener noreferrer">7.0 Standard Metadata Dictionary</a>에서 대조한 일부 스칼라 필드입니다. 실제 대상 DP 버전·파서 적용 호환성은 별도 검증이 필요합니다.</div>
             <div className="guided-map-list">{draft.mappings.map((mapping, index) =>
               <div className="guided-map-card" key={mapping.id}>
                 <div className="guided-map-number"><span>FIELD {String(index + 1).padStart(2, '0')}</span>
@@ -631,7 +631,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <label className="guided-field"><span>필드 분류</span><select aria-label={'Mapping group ' + index} value={options.groups[mapping.id] ?? 'vendor_fields'} onChange={(e) => setGuided({ ...options, groups: { ...options.groups, [mapping.id]: e.target.value as FieldGroup } })}>{FIELD_GROUPS.map((group) => <option key={group} value={group}>{GROUP_LABELS[group]}</option>)}</select></label>
                 </div>
                 <details className="guided-official-field">
-                  <summary>공개 표준 목적지 선택 (7.0 문서 기반)</summary>
+                  <summary>공개 표준 목적지 선택 (6.5/7.0 문서)</summary>
                   <p>이 규칙의 목적지·변환 타입·그룹만 변경합니다. 공식 목록 전체가 아니며 자동 추천 또는 대상 호환성 검증도 아닙니다.</p>
                   <label className="guided-field"><span>공개 표준 메타데이터 후보</span>
                     <select aria-label={'Official metadata field ' + index} value="" onChange={(event) => {
