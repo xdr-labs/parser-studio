@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Download,FileArchive,GitCompare,History,RotateCcw,ShieldCheck} from 'lucide-react';
 import type {GeneratedPair} from './backendClient';
+import MockTargetApplyPanel from './MockTargetApplyPanel';
 import {registerArtifactRevision,listArtifactRevisions,compareArtifactRevisions,
   retrieveRevisionZip,type RevisionSummary,type RevisionDiff,type VerifiedRevisionZip,
 } from './artifactRevisionClient';
@@ -168,6 +169,7 @@ export default function ArtifactRevisionHistoryPanel({
           <code>Before: {file.fromSha256}</code><code>After: {file.toSha256}</code></div>)}
         <small>Native parsing, DP installation and runtime rollback are not verified.</small>
       </div>}
+      {current&&<MockTargetApplyPanel revision={current}/>}
       {preview&&<div className="guided-revision-preview" aria-label="Verified offline restore preview">
         <strong><FileArchive size={15}/> Verified Preview Only · No Mutation</strong>
         <p>{preview.filename} · SHA-256 {preview.sha256}</p>

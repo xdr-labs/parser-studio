@@ -650,3 +650,14 @@
 .guided-revision-diff strong,.guided-revision-preview strong {font-size:11px;color:#286779;}
 .guided-revision-preview strong {display:flex;align-items:center;gap:5px;}
 @media(max-width:550px){.guided-revision-toolbar,.guided-revision-actions{display:grid;grid-template-columns:minmax(0,1fr);}}
+
+/* Explicit mock-only backend Apply verification, never live DP configuration. */
+.guided-mock-target {margin:15px 0;background:#fff;border:1px solid #d6e5ed;border-radius:7px;padding:12px;}
+.guided-mock-target summary {display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;font-weight:700;}
+.guided-mock-target p,.guided-mock-target small {display:block;font-size:11px;line-height:1.65;color:#526b76;margin:10px 0;}
+.guided-mock-target .guided-field {display:block;margin:12px 0;}
+.guided-mock-target .guided-field input {max-width:380px;width:100%;}
+.guided-mock-target .guided-owner-check {display:flex;gap:9px;font-size:11px;align-items:start;line-height:1.6;margin:12px 0;}
+.guided-mock-target .guided-owner-check input {margin-top:4px;}
+.guided-mock-target button {margin:7px 0;max-width:100%;}
+.guided-mock-target :is(button,input,summary):focus-visible {outline:2px solid #187d80;outline-offset:2px;}

@@ -190,3 +190,22 @@ Native compatibility and actual platform ingestion remain unverified.
 Unit regressions: `src/guided/artifactRevisionClient.test.ts`.
 Chromium user/denial/tamper scenarios:
 `tests/artifact-revision-history.spec.ts`.
+
+## P0-LIVE-2 — Explicit MOCK_ONLY Apply UX (2026-10-12)
+
+When the owner-scoped revision list is explicitly loaded, Step 6 offers a
+separately collapsed **MOCK_ONLY Apply Test** for its current immutable DRAFT
+revision. A user may check the temporary mock status, then enter a server-issued
+mock approval reference and explicitly confirm before submitting a metadata-only
+request to `/api/v1/parser-pairs/target/apply`. The client refuses any proof
+that is not strictly `MOCK_ONLY` against a `.invalid` HTTPS destination,
+does not contain the selected revision's exact file hashes, or claims real
+runtime, target import or sensor verification. It never collects or submits
+DP URLs, DP API keys, raw logs, sensor addresses, or generated Ruby/CONF bodies.
+The default response is 403 unless a trusted server operator enables the mock
+gateway. The user cannot turn this into real deployment using browser controls.
+
+This is a pre-production mock contract and does **not** satisfy general-user
+DP Apply, actual parser installation, same-port sensor proof, or Full User E2E.
+Those separate tasks remain gated by the authenticated real backend
+and owner-authorized target evidence.

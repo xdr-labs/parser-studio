@@ -178,3 +178,72 @@ test('tampered ZIP SHA never produces a browser download or unverified restore c
   expect(downloads).toBe(0);
   await expect(page.getByLabel('Verified offline restore preview')).toHaveCount(0);
 });
+
+test('Mock-only Apply status and explicit approved simulation never become real DP Apply',async({page})=>{
+  let statusCalls=0,applyCalls=0;
+  await page.route('**/api/v1/parser-pairs/revisions/**',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify(history([first]))}));
+  await page.route('**/api/v1/parser-pairs/target/apply**',route=>{
+    if(route.request().method()==='GET'){
+      statusCalls++;
+      expect(new URL(route.request().url()).searchParams.get('artifactRevisionId')).toBe(first.artifactRevisionId);
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        contract:'target-apply-mock.v0.1',mode:'MOCK_ONLY',artifactRevisionId:first.artifactRevisionId,
+        status:'NOT_ATTEMPTED',ephemeral:true,realTargetVerified:false,
+        sensorReadyVerified:false,targetImportVerified:false,realRuntimeParsingVerified:false,
+      })});
+    }
+    applyCalls++;
+    expect(route.request().method()).toBe('POST');
+    expect(route.request().postDataJSON()).toEqual({
+      artifactRevisionId:first.artifactRevisionId,expectedName:parser,
+      expectedVersion:'1.0.0',approvalId:'MOCK-OWNER-APPROVAL-123',confirmed:true,
+    });
+    expect(route.request().postData()).not.toContain('apiKey');
+    expect(route.request().postData()).not.toContain('198.51.100.10');
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      artifactRevisionId:first.artifactRevisionId,
+      fileHashes,name:parser,version:'1.0.0',selectedParserPort:7501,
+      tenant:'mock-tenant',origin:'https://mock-target.invalid',
+      registration:{status:'API_REGISTERED_READBACK',apiReadbackVerified:true,
+        realRuntimeParsingVerified:false,sensorReadyVerified:false,targetImportVerified:false},
+      mode:'MOCK_ONLY',status:'MOCK_READBACK_VERIFIED',realTargetVerified:false,
+    })});
+  });
+  await ready(page);
+  expect(statusCalls+applyCalls).toBe(0);
+  await page.getByRole('button',{name:'Load My Revision List'}).click();
+  await page.locator('.guided-mock-target summary').click();
+  await expect(page.getByRole('button',{name:'Run Approved Mock-only Apply'})).toBeDisabled();
+  await page.getByRole('button',{name:'Check My Mock Apply Status'}).click();
+  await expect(page.locator('.guided-mock-target [role="status"]')).toContainText('NOT_ATTEMPTED');
+  await page.getByLabel('Mock Apply approval ID').fill('MOCK-OWNER-APPROVAL-123');
+  await expect(page.getByRole('button',{name:'Run Approved Mock-only Apply'})).toBeDisabled();
+  await page.getByLabel('Acknowledge mock-only Apply').check();
+  await page.getByRole('button',{name:'Run Approved Mock-only Apply'}).click();
+  await expect(page.getByLabel('Verified mock-only Apply result')).toContainText('MOCK_READBACK_VERIFIED');
+  await expect(page.getByLabel('Verified mock-only Apply result')).toContainText('No Real Deployment');
+  await expect(page.getByLabel('Mock Apply approval ID')).toHaveValue('');
+  const storage=await page.evaluate(()=>JSON.stringify(localStorage));
+  expect(storage).not.toContain('MOCK-OWNER-APPROVAL-123');
+  expect(statusCalls).toBe(1);
+  expect(applyCalls).toBe(1);
+});
+
+test('default 403 refuses Mock-only Apply without storing approval or showing success',async({page})=>{
+  let applyCalls=0;
+  await page.route('**/api/v1/parser-pairs/revisions/**',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify(history([first]))}));
+  await page.route('**/api/v1/parser-pairs/target/apply**',route=>{
+    applyCalls++;
+    return route.fulfill({status:403,contentType:'application/json',
+      body:JSON.stringify({error:'TARGET_APPLY_DISABLED'})});
+  });
+  await ready(page);
+  await page.getByRole('button',{name:'Load My Revision List'}).click();
+  await page.locator('.guided-mock-target summary').click();
+  await page.getByRole('button',{name:'Check My Mock Apply Status'}).click();
+  await expect(page.locator('.guided-mock-target [role="alert"]')).toContainText('access denied or unavailable');
+  await expect(page.getByLabel('Verified mock-only Apply result')).toHaveCount(0);
+  expect(applyCalls).toBe(1);
+});
