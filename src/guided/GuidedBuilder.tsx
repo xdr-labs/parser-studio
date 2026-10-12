@@ -46,6 +46,7 @@ import {
   ISOLATABLE_FAMILIES, planFamilyIsolation, summarizeIsolatedFamilyPreview,
   type FamilyIsolationReport, type IsolatableFamily,
 } from './familyIsolation';
+import {planAllFamilyAudit,summarizeAllFamilyAudit,type AllFamilyAuditReport} from './familyAudit';
 import { createBrowserEvidence } from './browserEvidence';
 import { compareBrowserEvidence, type BrowserEvidenceComparison } from './browserEvidenceComparison';
 import { createLocalReplayPlan, synthesizeFromReplayPlan, type LocalReplayPlan, type ReplayMutation } from './replayPreview';
@@ -176,6 +177,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [isolatedAttempt,setIsolatedAttempt] = useState<{key:string;report:FamilyIsolationReport}|null>(null);
   const [isolatedError,setIsolatedError] = useState('');
   const isolatedRequestToken=useRef(0);
+  const [allFamilyAuditPending,setAllFamilyAuditPending]=useState(false);
+  const [allFamilyAuditError,setAllFamilyAuditError]=useState('');
+  const [allFamilyAuditAttempt,setAllFamilyAuditAttempt]=useState<{key:string;report:AllFamilyAuditReport}|null>(null);
+  const allFamilyAuditToken=useRef(0);
   const [selectedValue, setSelectedValue] = useState('');
   const [keyboardValue,setKeyboardValue] = useState('');
   const [fieldName, setFieldName] = useState('new_field');
@@ -312,6 +317,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const isolatedKey=JSON.stringify([draft,sample,activeIsolatedFamily]);
   const currentIsolatedReport=isolatedAttempt?.key===isolatedKey
     ? isolatedAttempt.report : null;
+  const allFamilyAuditKey=JSON.stringify([draft,sample]);
+  const currentAllFamilyAudit=allFamilyAuditAttempt?.key===allFamilyAuditKey
+    ? allFamilyAuditAttempt.report : null;
   const artifactContract = compilerDraftContract(draft);
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
@@ -400,6 +408,34 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       if(token===isolatedRequestToken.current&&sourceKey===latestDraftKeyRef.current)
         setIsolatedError('This format family cannot be isolated safely from the current sample. Verify single-line records, review the full sample, and retry.');
     }finally {setIsolatedPending(false);}
+  };
+
+  const auditEveryDetectedFamily=async()=>{
+    if(allFamilyAuditPending||isolatedPending||pending||!suite||!isolatableOptions.length)return;
+    const sourceKey=draftKey;
+    const token=++allFamilyAuditToken.current;
+    setAllFamilyAuditPending(true);setAllFamilyAuditError('');setAllFamilyAuditAttempt(null);
+    try{
+      const plan=planAllFamilyAudit(sample,draft,suite);
+      const reviewed:SuiteResult[]=[];
+      // One bounded local Web Worker per family. Run sequentially so mixed
+      // source content never goes to a backend or floods CPU workers.
+      for(const item of plan.plans){
+        const result=await runPreview({...draft,format:item.format},item.sample);
+        if(token!==allFamilyAuditToken.current ||
+           sourceKey!==latestDraftKeyRef.current)return;
+        reviewed.push(result);
+      }
+      const report=summarizeAllFamilyAudit(plan,reviewed);
+      if(token!==allFamilyAuditToken.current ||
+         sourceKey!==latestDraftKeyRef.current)return;
+      setAllFamilyAuditAttempt({key:sourceKey,report});
+      notify('Local-only format-family audit finished. Unsupported events remain explicitly accounted for; no source bytes were uploaded or saved.');
+    }catch{
+      if(token===allFamilyAuditToken.current &&
+         sourceKey===latestDraftKeyRef.current)
+        setAllFamilyAuditError('The complete format-family audit could not be verified. Rerun the full source preview and check source boundaries and format detection. No family was silently omitted.');
+    }finally{setAllFamilyAuditPending(false);}
   };
 
   const checkParserListenerPort = async (override: boolean) => {
@@ -1229,6 +1265,46 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     <small>Only 12 per-event statuses are shown here. All selected records are included in the aggregate counts.</small>}
                   <small>No original event values are included in this report. The source dataset and draft remain unchanged. This browser test is not a native Fluentd run, generated second parser, or Stellar target compatibility proof.</small>
                 </div>}
+                <div className="guided-all-family-audit" aria-label="All detected families local audit workspace">
+                  <strong>Audit All Detected Event Families · Local-only</strong>
+                  <p>Inspect every supported event family in separate, bounded browser Web Workers, then account for all unsupported and unknown source events. This does not create native multi-format routing, new parser files, saved revisions, or an export-ready validation result.</p>
+                  <button type="button" className="guided-cta-secondary"
+                    disabled={allFamilyAuditPending||isolatedPending||pending||!isolatableOptions.length}
+                    onClick={()=>{void auditEveryDetectedFamily();}}>
+                    <ShieldCheck size={15}/>
+                    {allFamilyAuditPending?'Auditing Detected Families Locally…':'Audit All Detected Families Locally'}
+                  </button>
+                  {allFamilyAuditError && <p role="alert" className="guided-error">{allFamilyAuditError}</p>}
+                  {currentAllFamilyAudit && <div className="guided-all-family-result"
+                    aria-label="All-family browser audit result" role="status">
+                    <strong>Browser-only Audit · Native and Stellar Verification Not Established</strong>
+                    <p>{currentAllFamilyAudit.sourceCount} original events accounted for
+                      {' · '}{currentAllFamilyAudit.reviewedCount} reviewed in supported format families
+                      {' · '}{currentAllFamilyAudit.unreviewableCount} unsupported or unknown</p>
+                    <div className="guided-all-family-table" role="group" aria-label="Audited format-family summaries">
+                      {currentAllFamilyAudit.families.map(family=>
+                        <div className="guided-all-family-row" key={family.format}>
+                          <strong>{formatLabel(family.format)}</strong>
+                          <span>{family.selectedCount} source events</span>
+                          <span>{family.counts.extracted} extracted</span>
+                          <span>{family.counts.normalized} normalized</span>
+                          <span>{family.counts.failures} failed</span>
+                          <small>Source lines: {family.perEvent.slice(0,12)
+                            .map(event=>event.originalLine).join(', ')}
+                            {family.perEvent.length>12?' (+more)':''}</small>
+                        </div>)}
+                    </div>
+                    {currentAllFamilyAudit.unreviewableCount>0 &&
+                      <p className="guided-all-family-unknown" role="note">
+                        Not silently discarded: {currentAllFamilyAudit.unreviewableEvents.slice(0,16)
+                          .map(event=>'line '+event.originalLine+' ('+formatLabel(event.format)+')')
+                          .join(', ')}
+                        {currentAllFamilyAudit.unreviewableCount>16?' (+more)':''}.
+                        Unsupported source events still require a separately reviewed parser.
+                      </p>}
+                    <small>All source events remain in the original dataset. The original draft, raw sample and previously verified files remain unchanged. Passing browser family tests cannot validate a single mixed-format Ruby/CONF parser or live sensor ingestion.</small>
+                  </div>}
+                </div>
                 <small>Nothing is uploaded, exported, saved, or installed by this action. Unknown, unsupported, multiline, oversized or stale event families cannot silently disappear. Create and validate a separate draft for each supported format before exporting DRAFT files.</small>
               </details>}
             <div className="guided-section-title"><span>02</span> Select a Value in the Sample</div>
