@@ -187,3 +187,57 @@ test('active remote session Stop stays visible after navigating away from export
   await expect(banner).toHaveCount(0);
   expect(actions).toEqual(['start','stop']);
 });
+
+
+test('after page reload, authorized user can recover a RUNNING session by ID and stop it without a new Start',async({page})=>{
+  const actions:string[]=[];
+  await page.route('**/api/v1/test-lab/sessions/*',route=>{
+    const url=new URL(route.request().url());
+    const action=url.pathname.split('/').pop()??'';
+    actions.push(action);
+    if(action==='status'){
+      expect(route.request().method()).toBe('GET');
+      expect(url.search).toBe('?runId='+runId);
+      expect(route.request().postData()).toBeNull();
+    }else if(action==='stop'){
+      expect(route.request().postDataJSON()).toEqual({runId});
+    }
+    return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({...session,state:action==='stop'?'STOPPED':'RUNNING'})});
+  });
+  await page.goto('/');
+  await page.getByRole('button',{name:/6\. 파일 생성/}).click();
+  await page.locator('.guided-owner-testlab summary').click();
+  const button=page.getByRole('button',{name:'실행 ID로 Test Lab 세션 조회'});
+  await expect(button).toBeDisabled();
+  await page.getByLabel('Existing Test Lab run ID').fill(runId);
+  await expect(button).toBeEnabled();
+  await button.click();
+  const shown=page.getByLabel('Test Lab session status');
+  await expect(shown).toContainText('RUNNING');
+  await expect(shown).toContainText(runId);
+  await shown.getByRole('button',{name:'서버 세션 중지'}).click();
+  await expect(shown).toContainText('STOPPED');
+  expect(actions).toEqual(['status','stop']);
+});
+
+test('invalid or foreign session run ID cannot be used for recovery or authorization',async({page})=>{
+  let queried=0;
+  await page.route('**/api/v1/test-lab/sessions/status*',route=>{
+    queried++;
+    return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'TESTLAB_SESSION_NOT_FOUND'})});
+  });
+  await page.goto('/');
+  await page.getByRole('button',{name:/6\. 파일 생성/}).click();
+  await page.locator('.guided-owner-testlab summary').click();
+  const runInput=page.getByLabel('Existing Test Lab run ID');
+  const recover=page.getByRole('button',{name:'실행 ID로 Test Lab 세션 조회'});
+  await runInput.fill('test_run_wrong');
+  await expect(recover).toBeDisabled();
+  expect(queried).toBe(0);
+  await runInput.fill(runId);
+  await recover.click();
+  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('조회할 수 없습니다');
+  await expect(page.getByLabel('Test Lab session status')).toHaveCount(0);
+  expect(queried).toBe(1);
+});

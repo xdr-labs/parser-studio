@@ -218,6 +218,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [sessionBusy, setSessionBusy] = useState(false);
   const [sessionError, setSessionError] = useState('');
   const [sessionRenewApproval, setSessionRenewApproval] = useState('');
+  const [sessionRecoveryRunId, setSessionRecoveryRunId] = useState('');
   const sessionActionToken = useRef(0);
   const [localReplaySource, setLocalReplaySource] = useState<{ index: number; line: number; total: number } | null>(null);
   // Source samples stay in memory only. Never serialize this plan into project
@@ -401,6 +402,24 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
         setSessionError('Test Lab 시작이 거부됐습니다. 별도 사용자/운영자 승인, 신뢰된 sink 및 네트워크 허용 정책을 확인하세요.');
     } finally {setSessionBusy(false);}
   };
+  const recoverApprovedTestLabStatus = async () => {
+    if (!/^test_run_[0-9a-f]{32}$/.test(sessionRecoveryRunId) ||
+        sessionBusy || sessionStatus) return;
+    const token=++sessionActionToken.current;
+    setSessionBusy(true);setSessionError('');
+    try {
+      // Run IDs are NOT authorization tokens: backend still validates the
+      // authenticated session owner and does not echo source events.
+      const recovered=await fetchApprovedSessionStatus(sessionRecoveryRunId);
+      if (token!==sessionActionToken.current) return;
+      setSessionStatus(recovered);setSessionRecoveryRunId('');
+      notify('인증된 서버에서 기존 세션 상태를 다시 확인했습니다. 이것은 새로운 Start 요청이 아닙니다.');
+    } catch {
+      if(token===sessionActionToken.current)
+        setSessionError('실행 ID로 세션을 조회할 수 없습니다. 서버 인증·소유권 또는 세션 만료 여부를 확인하세요. 전송을 시작하지 않았습니다.');
+    } finally {setSessionBusy(false);}
+  };
+
   const actOnApprovedTestLab = async (action:'refresh'|'pause'|'resume'|'stop'|'renew') => {
     const id=sessionStatus?.runId;
     if(!id || sessionBusy) return;
@@ -1371,6 +1390,20 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <ShieldCheck size={15} /> {sessionReadiness==='checking'
                   ? '서버 전송 조건 확인 중…' : 'Test Lab 전송 조건 확인'}
               </button>
+              {!sessionStatus && <div className="guided-owner-session-recovery">
+                <label className="guided-field"><span>기존 실행 ID로 본인 세션 상태 확인 (새 Start 없음)</span>
+                  <input aria-label="Existing Test Lab run ID" autoComplete="off"
+                    value={sessionRecoveryRunId} maxLength={41}
+                    placeholder="test_run_0123456789abcdef0123456789abcdef"
+                    onChange={(event)=>setSessionRecoveryRunId(event.target.value)} />
+                </label>
+                <button type="button" className="guided-cta-secondary"
+                  disabled={sessionBusy || !/^test_run_[0-9a-f]{32}$/.test(sessionRecoveryRunId)}
+                  onClick={()=>{void recoverApprovedTestLabStatus();}}>
+                  <ShieldCheck size={15} /> 실행 ID로 Test Lab 세션 조회
+                </button>
+                <small>세션 ID는 사용자 인증을 대체하지 않습니다. 승인된 소유자만 자신의 세션을 조회·중지할 수 있으며 미지원 백엔드에서는 거부됩니다.</small>
+              </div>}
               {sessionReadiness==='available' && !sessionStatus && <div className="guided-owner-testlab-confirm">
                 <p>서버의 승인형 전송 기능이 확인됐습니다. 별도의 운영 승인 ID가 있어야만 요청할 수 있습니다. <strong>1분·최대 100개 합성 이벤트</strong>, 자동 갱신 없음.</p>
                 <label className="guided-field"><span>테스트 송신 운영 승인 ID (API Key 아님)</span>

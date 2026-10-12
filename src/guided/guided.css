@@ -503,3 +503,10 @@
 .guided-session-still-active span { flex:1 1 190px; }
 .guided-session-still-active button { flex:0 1 auto; border:1px solid #cfae78; border-radius:5px; background:#fff; padding:7px 9px; color:#896033; font-size:10px; font-weight:800; cursor:pointer; }
 .guided-session-still-active button:focus-visible { outline:2px solid #147e85; outline-offset:2px; }
+
+/* Recover an already-owned backend Test Lab run; lookup never starts a session. */
+.guided-owner-session-recovery { margin:13px 0; border:1px solid #e9ddca; border-radius:7px; padding:11px; background:#fff; display:flex; flex-direction:column; gap:9px; }
+.guided-owner-session-recovery .guided-field { margin:0; min-width:0; }
+.guided-owner-session-recovery input { width:100%; min-width:0; font:10px/1.6 var(--mono); }
+.guided-owner-session-recovery small { color:#998166; font-size:10px; line-height:1.6; }
+.guided-owner-session-recovery button:focus-visible { outline:2px solid #187d85; outline-offset:2px; }
