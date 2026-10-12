@@ -20,7 +20,8 @@ function readOperatorFile(): string {
   const parent=resolve(".tmp");
   const parentStat=lstatSync(parent,{throwIfNoEntry:false});
   if (!parentStat || !parentStat.isDirectory() || parentStat.isSymbolicLink() ||
-      parentStat.uid!==uid)throw new Refusal("PRIVATE_PARENT_UNSAFE");
+      parentStat.uid!==uid || (parentStat.mode & 0o022)!==0)
+    throw new Refusal("PRIVATE_PARENT_UNSAFE");
   const root=resolve(parent,"private-fixtures");
   const file=resolve(root,"golden.json");
   const dirStat=lstatSync(root,{throwIfNoEntry:false});

@@ -29,6 +29,19 @@ const FIELD = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 const UNSAFE = new Set(["__proto__","constructor","prototype"]);
 const TIME = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
 
+/** JSON permits escaped lone UTF-16 surrogates; UTF-8 encoding would alter them. */
+function hasOnlyPairedSurrogates(text:string):boolean {
+  for(let index=0;index<text.length;index++){
+    const current=text.charCodeAt(index);
+    if(current>=0xD800 && current<=0xDBFF){
+      const next=index+1<text.length?text.charCodeAt(index+1):-1;
+      if(next<0xDC00 || next>0xDFFF)return false;
+      index++;
+    }else if(current>=0xDC00 && current<=0xDFFF)return false;
+  }
+  return true;
+}
+
 function isObject(value:unknown):value is Record<string,unknown> {
   return value!==null && typeof value==="object" && !Array.isArray(value) &&
     (Object.getPrototypeOf(value)===Object.prototype || Object.getPrototypeOf(value)===null);
@@ -85,8 +98,11 @@ export function inspectPrivateGolden(input:unknown):PrivateGoldenPreflight {
         }
         walk(entry,path,depth+1);
       }
-    }else if(value!==null && typeof value!=="string" &&
-      typeof value!=="boolean" && !(typeof value==="number" && Number.isFinite(value))){
+    }else if(typeof value==="string"){
+      if(!hasOnlyPairedSurrogates(value))
+        add("PRIVATE_INVALID_UNICODE",path,"Expected text contains invalid Unicode scalar encoding.");
+    }else if(value!==null && typeof value!=="boolean" &&
+      !(typeof value==="number" && Number.isFinite(value))){
       add("PRIVATE_EXPECTED_TYPE",path,"Expected field value is not a supported JSON scalar.");
     }
   };
@@ -117,6 +133,8 @@ export function inspectPrivateGolden(input:unknown):PrivateGoldenPreflight {
       Buffer.byteLength(item.rawEvent,"utf8")>MAX_PRIVATE_EVENT_BYTES ||
       item.rawEvent.includes("\u0000")){
       add("PRIVATE_EVENT_SIZE",path+"/rawEvent","Raw event is empty, too large or contains unsupported bytes.");
+    }else if(!hasOnlyPairedSurrogates(item.rawEvent)){
+      add("PRIVATE_INVALID_UNICODE",path+"/rawEvent","Raw event contains invalid Unicode scalar encoding.");
     }
     if(item.expectedTime!==null &&
       (typeof item.expectedTime!=="string"||!TIME.test(item.expectedTime)||

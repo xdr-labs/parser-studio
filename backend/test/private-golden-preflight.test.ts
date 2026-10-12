@@ -84,3 +84,27 @@ test("private golden UTF-8 decoding must reject malformed bytes rather than rewr
   assert.throws(()=>decodePrivateGoldenBytes(damaged),(error:unknown)=>
     error instanceof Error && error.message==="PRIVATE_INVALID_UTF8");
 });
+
+test("private fixture rejects unpaired Unicode surrogates before any future replay", () => {
+  const raw = syntheticDocument() as any;
+  raw.cases[0].rawEvent = "PRIVATE_RAW_\uD800_END";
+  const rejectedRaw = inspectPrivateGolden(raw);
+  assert.equal(rejectedRaw.ok,false);
+  assert.ok(!rejectedRaw.ok && rejectedRaw.issues.some(x=>
+    x.code==="PRIVATE_INVALID_UNICODE" && x.path==="/cases/0/rawEvent"));
+  assert.equal(JSON.stringify(rejectedRaw).includes("PRIVATE_RAW_"),false);
+
+  const expected = syntheticDocument() as any;
+  expected.cases[1].expectedRecord.log.action = "PRIVATE_EXPECTED_\uDC00_END";
+  const rejectedValue = inspectPrivateGolden(expected);
+  assert.equal(rejectedValue.ok,false);
+  assert.ok(!rejectedValue.ok && rejectedValue.issues.some(x=>
+    x.code==="PRIVATE_INVALID_UNICODE" && x.path==="/cases/1/expectedRecord"));
+  assert.equal(JSON.stringify(rejectedValue).includes("PRIVATE_EXPECTED_"),false);
+
+  const paired = syntheticDocument() as any;
+  paired.cases[0].rawEvent = "synthetic \uD83D\uDE00";
+  paired.cases[0].expectedRecord.log = { action:"synthetic \uD83D\uDE00" };
+  const checked = inspectPrivateGolden(paired);
+  assert.equal(checked.ok,true,JSON.stringify(checked));
+});
