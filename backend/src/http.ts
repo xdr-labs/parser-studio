@@ -9,6 +9,7 @@ import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.
 import {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
 import {buildInterflowQuery,compareInterflowHits,
   InterflowContractError} from "./stellar-interflow.js";
+import {pollBoundedInterflow,InterflowPollError} from "./stellar-interflow-poll.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -129,7 +130,8 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     }
     // Raw-data lookup uses a separate tenant/actor/audit grant, and is
     // never implied by the Legacy parser CRUD permission or HTTP status.
-    if(path==="/api/v1/test-lab/interflow/search"){
+    const interflowPoll=path==="/api/v1/test-lab/interflow/poll";
+    if(path==="/api/v1/test-lab/interflow/search"||interflowPoll){
       if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
       if(!options.legacyClient||!options.testLabController||
         !options.authorizeInterflowRead||!options.auditInterflowRead){
@@ -144,9 +146,11 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       }
       try{
         const input=await jsonInput(req,MAX_PROJECT_BYTES) as Record<string,unknown>;
+        const expectedKeys=interflowPoll
+          ? "endMs,expectedFields,index,intervalMs,limit,markerField,maxAttempts,runId,startMs"
+          : "endMs,expectedFields,index,limit,markerField,runId,startMs";
         if(!input||typeof input!=="object"||Array.isArray(input)||
-          Object.keys(input).sort().join(",")!==
-            "endMs,expectedFields,index,limit,markerField,runId,startMs"){
+          Object.keys(input).sort().join(",")!==expectedKeys){
           send(res,422,{error:"INTERFLOW_REQUEST_INVALID"});return;
         }
         const request={
@@ -158,33 +162,62 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         const plan=buildInterflowQuery(options.legacyClient.tenant,request);
         const expected=input["expectedFields"] as Record<string,string|number|boolean>;
         compareInterflowHits({hits:{hits:[]}},plan,expected);
-        let actor:string|null=null;
-        try{
-          const principal=await options.authorizeInterflowRead(req,plan.runId);
-          if(typeof principal==="string"&&/^[A-Za-z0-9_.:@-]{1,128}$/.test(principal))
-            actor=principal;
-        }catch{/* Fail closed on absent raw-data permission. */}
-        if(!actor){send(res,403,{error:"INTERFLOW_SEARCH_DENIED"});return;}
-        try{options.testLabController.status(plan.runId,actor);}
-        catch{send(res,404,{error:"INTERFLOW_RUN_NOT_FOUND"});return;}
-        try{
-          await options.auditInterflowRead({
-            tenant:plan.tenant,runId:plan.runId,
-            index:request.index,startMs:plan.startMs,endMs:plan.endMs,
-            fieldNames:Object.keys(expected),
-          });
-        }catch{
-          send(res,503,{error:"INTERFLOW_AUDIT_UNAVAILABLE"});return;
+        // Every polling attempt independently checks data-read permission,
+        // same run ownership and durable audit BEFORE contacting the DP.
+        const readOne=async()=>{
+          let actor:string|null=null;
+          try{
+            const principal=await options.authorizeInterflowRead!(req,plan.runId);
+            if(typeof principal==="string"&&/^[A-Za-z0-9_.:@-]{1,128}$/.test(principal))
+              actor=principal;
+          }catch{/* Product raw-data read permission unavailable. */}
+          if(!actor)throw new InterflowPollError("INTERFLOW_SEARCH_DENIED");
+          try{options.testLabController!.status(plan.runId,actor);}
+          catch{throw new InterflowPollError("INTERFLOW_RUN_NOT_FOUND");}
+          try{
+            await options.auditInterflowRead!({
+              tenant:plan.tenant,runId:plan.runId,
+              index:request.index,startMs:plan.startMs,endMs:plan.endMs,
+              fieldNames:Object.keys(expected),
+            });
+          }catch{
+            throw new InterflowPollError("INTERFLOW_AUDIT_UNAVAILABLE");
+          }
+          return options.legacyClient!.searchInterflow(request,expected);
+        };
+        if(interflowPoll){
+          // HTTP client cancellation aborts sleeps immediately. Any pending
+          // upstream GET has its own bounded deadline and never retries writes.
+          const controller=new AbortController();
+          const onClose=()=>controller.abort();
+          res.once("close",onClose);
+          try{
+            const result=await pollBoundedInterflow(readOne,{
+              maxAttempts:input["maxAttempts"] as number,
+              intervalMs:input["intervalMs"] as number,
+              signal:controller.signal,
+            });
+            if(!res.destroyed)send(res,200,result);
+          }finally{
+            res.off("close",onClose);
+          }
+        }else{
+          const result=await readOne();
+          send(res,200,result);
         }
-        const result=await options.legacyClient.searchInterflow(request,expected);
-        send(res,200,result);
       }catch(error){
         const code=(error as {code?:string}).code;
         if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
         else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
         else if(error instanceof InterflowContractError)
           send(res,422,{error:error.code});
-        else mappedLegacyError(res,error);
+        else if(error instanceof InterflowPollError){
+          const status=error.code==="INTERFLOW_AUDIT_UNAVAILABLE"?503:
+            error.code==="INTERFLOW_RUN_NOT_FOUND"?404:
+            error.code==="INTERFLOW_SEARCH_DENIED"?403:
+            error.code==="INTERFLOW_POLL_CANCELLED"?499:422;
+          if(!res.destroyed)send(res,status,{error:error.code});
+        }else if(!res.destroyed)mappedLegacyError(res,error);
       }
       return;
     }

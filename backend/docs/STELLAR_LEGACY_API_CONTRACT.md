@@ -254,8 +254,23 @@ request shape has been reused. The current user's User Scope key has NOT
 been checked for actual Interflow search permission, and there has been
 no live DP Interflow lookup. The UI must label this UNVERIFIED for the
 real target until an owner-approved in-network E2E proves otherwise.
-Polling/cursors, indexed event evidence and full normalized field proof
-are separate remaining work.
+Bounded polling is available via
+POST /api/v1/test-lab/interflow/poll using the same exact seven search
+fields as /search plus maxAttempts (1..6) and intervalMs (250..3000),
+with total bounded attempt window no greater than 15 seconds.
+Polling stops at the first complete field match, otherwise returns
+NO_MATCH or FIELD_MISMATCH without claiming sensor receipt.
+Permission checks, run-owner verification and metadata-only audit
+repeat BEFORE every single upstream GET; access revocation, upstream
+403/401 failure or malformed response aborts polling with no automatic
+retry. If the browser connection closes, the backoff sleep is cancelled.
+The response includes attempts and explicitly unverified cursor and
+search-permission flags. This is request-bound bounded polling, NOT an
+unbounded background job. The vendor cursor API has not been evidenced
+or implemented.
+
+Actual indexed event proof and full end-to-end normalized field proof
+remain separately owner-gated and unverified.
 
 ## P0-LIVE-3 opt-in UDP/TCP transport — local loopback evidence only
 

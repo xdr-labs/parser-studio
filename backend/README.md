@@ -119,3 +119,12 @@ bounded tenant/time/index/run-marker filters and pre-query audit. It returns
 only MATCH/MISMATCH/MISSING statuses, never raw vendor logs. The module was
 tested with synthetic fake HTTP responses; real Interflow permission,
 indexing, runtime field normalization and sensor receipt remain unverified.
+
+
+P0-LIVE-4 bounded Interflow polling (MOCKED, no actual DP queries):
+POST /api/v1/test-lab/interflow/poll uses the same tenant/run-marker/time
+and field-diff contract as /search, adding maxAttempts and intervalMs with
+a max 15-second bounded request. Per-attempt read permission, run ownership,
+and audit are rechecked; results expose only MATCH/MISMATCH/MISSING, count,
+attempts and false end-to-end/real target verification flags. No vendor
+cursor, unbounded polling worker or production search permission is claimed.

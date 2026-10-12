@@ -50,3 +50,7 @@ export {buildInterflowQuery,compareInterflowHits,
   InterflowContractError} from "./stellar-interflow.js";
 export type {InterflowSearchRequest,InterflowQueryPlan,InterflowFieldResult,
   InterflowFieldStatus} from "./stellar-interflow.js";
+
+
+export {pollBoundedInterflow,InterflowPollError} from "./stellar-interflow-poll.js";
+export type {InterflowPollOptions,InterflowPollResult} from "./stellar-interflow-poll.js";
