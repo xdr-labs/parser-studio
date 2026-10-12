@@ -27,6 +27,7 @@ import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
 import { createBrowserEvidence } from './browserEvidence';
 import { compareBrowserEvidence, type BrowserEvidenceComparison } from './browserEvidenceComparison';
+import { synthesizeReplayPreview, type ReplayMutation } from './replayPreview';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
@@ -163,6 +164,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [comparingEvidence, setComparingEvidence] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<{ key: string; diff: BrowserEvidenceComparison } | null>(null);
   const [comparisonError, setComparisonError] = useState<{ key: string; message: string } | null>(null);
+  const [localReplayRunning, setLocalReplayRunning] = useState(false);
+  const [localReplayRate, setLocalReplayRate] = useState<1 | 2 | 5 | 10>(2);
+  const [localReplayCount, setLocalReplayCount] = useState(0);
+  const [localReplayText, setLocalReplayText] = useState('');
+  const [localReplayMutations, setLocalReplayMutations] = useState<ReplayMutation[]>([]);
+  const [localReplayError, setLocalReplayError] = useState('');
 
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
@@ -189,6 +196,19 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
   const draftKey = JSON.stringify([draft, sample]);
+  const replayInputRef = useRef(draftKey);
+  useEffect(() => {
+    // Stop simulation if rules or sample change; never silently reuse stale
+    // source events or continue after the Guided UI is unmounted.
+    if (replayInputRef.current !== draftKey) {
+      replayInputRef.current = draftKey;
+      setLocalReplayRunning(false);
+      setLocalReplayText('');
+      setLocalReplayMutations([]);
+      setLocalReplayCount(0);
+      setLocalReplayError('');
+    }
+  }, [draftKey]);
   const qualifiedBackend = backendAttempt?.key === draftKey ? backendAttempt : null;
   const currentComparison = comparisonResult?.key === draftKey ? comparisonResult.diff : null;
   const currentComparisonError = comparisonError?.key === draftKey ? comparisonError.message : '';
@@ -247,6 +267,36 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       setComparingEvidence(false);
     }
   };
+
+  const produceLocalReplay = (): boolean => {
+    try {
+      const sourceLine = sample.split(/\r?\n/).find((line) => line.trim());
+      if (!sourceLine) throw new Error('반복 생성할 로그 샘플이 없습니다.');
+      const output = synthesizeReplayPreview(sourceLine, draft);
+      setLocalReplayText(output.log);
+      setLocalReplayMutations(output.mutations);
+      setLocalReplayCount((count) => Math.min(count + 1, Number.MAX_SAFE_INTEGER));
+      return true;
+    } catch {
+      setLocalReplayRunning(false);
+      setLocalReplayError('합성 로그 생성 실패: 지원 형식의 한 줄 로그 및 브라우저 보안 컨텍스트를 확인하세요.');
+      return false;
+    }
+  };
+  const startLocalReplay = () => {
+    setLocalReplayText('');
+    setLocalReplayCount(0);
+    setLocalReplayError('');
+    setLocalReplayMutations([]);
+    if (produceLocalReplay()) setLocalReplayRunning(true);
+  };
+  useEffect(() => {
+    if (!localReplayRunning) return;
+    const interval = window.setInterval(() => {
+      void produceLocalReplay();
+    }, 1000 / localReplayRate);
+    return () => window.clearInterval(interval);
+  }, [localReplayRunning, localReplayRate, sample, draft]);
 
   const applyStarter = () => {
     if (!starterChoice) return;
@@ -945,6 +995,30 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 {inspectionResult.diagnostics.length > 0 && <ul>{inspectionResult.diagnostics.map((code) => <li key={code}>{code}</li>)}</ul>}
                 <small>원본 Ruby 실행·자동 수정·Parser Studio 가져오기는 수행하지 않습니다. 실제 Stellar Cyber 적용도 검증되지 않았습니다.</small>
               </div>}
+            </details>
+            <details className="guided-replay-preview" aria-label="Local synthetic replay preview">
+              <summary>합성 로그 반복 미리보기 · 센서 전송 없음</summary>
+              <p>현재 입력한 로그의 첫 번째 한 줄만 브라우저 안에서 변형해 반복 생성합니다. 현재 시각, 테스트용 IP, 사용자명과 URL을 바꾸며 생성 결과는 서버에 전송하거나 저장하지 않습니다.</p>
+              <div className="guided-replay-controls">
+                <label className="guided-field"><span>로컬 미리보기 생성 속도</span>
+                  <select aria-label="Replay preview rate" value={localReplayRate}
+                    onChange={(event) => setLocalReplayRate(Number(event.target.value) as 1 | 2 | 5 | 10)}>
+                    {[1, 2, 5, 10].map((rate) => <option key={rate} value={rate}>{rate} events/sec</option>)}
+                  </select>
+                </label>
+                {localReplayRunning
+                  ? <button className="guided-cta-secondary" type="button" onClick={() => setLocalReplayRunning(false)}>로컬 반복 생성 중지</button>
+                  : <button className="guided-cta-secondary" type="button" onClick={startLocalReplay}>로컬 반복 생성 시작</button>}
+              </div>
+              <div className="guided-replay-status" role="status">
+                로컬 생성 {localReplayCount}건 · 실제 센서 전송 <strong>0건</strong> · {localReplayRunning ? '로컬 생성 중' : '중지됨'}
+              </div>
+              {localReplayError && <p role="alert" className="guided-error">{localReplayError}</p>}
+              {localReplayText && <div className="guided-replay-output">
+                <span>최근 합성 로그 · 변경 항목: {localReplayMutations.join(', ') || '없음'}</span>
+                <pre aria-label="Local synthetic replay output">{localReplayText}</pre>
+              </div>}
+              <small>이 기능은 실제 DP 업로드 또는 센서 UDP/TCP 전송이 아닙니다. 전송 API와 실제 Stellar Cyber 적용·적재 검증은 별도의 백엔드 개발·승인 단계가 필요합니다.</small>
             </details>
             <div className="guided-hint"><HelpCircle size={16} /> 프로젝트 JSON에는 원본 로그가 포함되지 않습니다. 제공 가능한 파일은 DRAFT Ruby 조각과 CONF이며, 포털 업로드 형식이나 네이티브 엔진 검증 결과로 간주할 수 없습니다.</div>
           </>}

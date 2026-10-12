@@ -407,3 +407,17 @@
 .guided-comparison-result p { color:#476d78; font-size:11px; margin:8px 0; }
 .guided-comparison-result ul { color:#6e8390; font-size:10px; margin:8px 0; padding-left:20px; }
 .guided-comparison-result small { display:block; color:#966c52; font-size:10px; line-height:1.6; }
+
+/* Local-only, bounded replay generation. Never indicates UDP/TCP sensor traffic. */
+.guided-replay-preview { margin:15px 0; padding:12px; border:1px solid #d7e4e9; border-radius:8px; background:#fafcfd; }
+.guided-replay-preview summary { font-size:11px; font-weight:800; color:#366d77; cursor:pointer; }
+.guided-replay-preview p, .guided-replay-preview > small { display:block; margin:10px 0; color:#6f8696; font-size:10px; line-height:1.6; }
+.guided-replay-controls { display:flex; align-items:end; flex-wrap:wrap; gap:10px; margin:12px 0; }
+.guided-replay-controls > .guided-field { min-width:140px; flex:1 1 145px; margin:0; }
+.guided-replay-controls button { flex:none; padding:10px 12px; }
+.guided-replay-preview :is(summary,button,select):focus-visible { outline:2px solid #147e85; outline-offset:2px; }
+.guided-replay-status { margin-top:10px; border-radius:6px; padding:8px 10px; font-size:11px; font-weight:750; color:#7c693c; background:#fcf5e9; }
+.guided-replay-status strong { font-weight:900; }
+.guided-replay-output { margin-top:12px; }
+.guided-replay-output > span { display:block; font-size:10px; color:#597887; margin-bottom:7px; }
+.guided-replay-output pre { max-height:145px; padding:11px; overflow:auto; border:1px solid #d9e4e8; border-radius:6px; background:white; white-space:pre-wrap; overflow-wrap:anywhere; font:11px/1.65 var(--mono); }
