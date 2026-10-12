@@ -380,10 +380,12 @@ export default function App() {
                   {draft.format === 'syslog_rfc5424' && <>
                     <label className="form-label" htmlFor="rfc5424-body">RFC5424 message body</label>
                     <select id="rfc5424-body" value={draft.syslogBodyFormat ?? 'raw'}
-                      onChange={(event) => update('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv')}>
+                      onChange={(event) => update('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv' | 'cef' | 'leef')}>
                       <option value="raw">Raw text (message)</option>
                       <option value="json">JSON object (body.*)</option>
                       <option value="kv">Strict Key/Value (body.*)</option>
+                      <option value="cef">RFC5424 + CEF (body.*) · backend gated</option>
+                      <option value="leef">RFC5424 + LEEF (body.*) · backend gated</option>
                     </select>
                     <p className="helper warn-helper">Bounded RFC5424 only. Native/target compatibility is not verified.</p>
                   </>}

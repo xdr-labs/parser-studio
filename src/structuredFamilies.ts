@@ -1,3 +1,4 @@
+import { parseRfc5424Subset } from './rfc5424Subset';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
 export type StructuredFamily = 'syslog_rfc5424' | 'cef' | 'leef';
@@ -29,7 +30,7 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
       output[output.length - 1] += char;
     }
   }
-  if (escaped) output[output.length - 1] += '\\';
+  if (escaped) return null;
   return output.length === splits + 1 ? output : null;
 }
 
@@ -73,33 +74,29 @@ function boundedJsonObject(text: string): StructuredExtraction {
   }
 }
 
-export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' = 'raw'): StructuredExtraction {
+export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' | 'cef' | 'leef' = 'raw'): StructuredExtraction {
   if (input.includes('\n') || input.includes('\r')) return failure('Only one logical record per physical line is supported for pairing.');
   if (format === 'syslog_rfc5424') {
-    const match = /^<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (-|\[[^\]\n]{1,1024}\])(?: ([^\n]*))?$/.exec(input);
-    if (!match || Number(match[1]) > 191) return failure('Only bounded single-record RFC5424 headers are supported');
+    const scanned=parseRfc5424Subset(input);
+    if (!scanned.ok) return failure(scanned.error);
     const body: Record<string, unknown> = {};
-    if (match[9]) {
-      if (bodyFormat === 'raw') body.message = match[9];
-      else if (bodyFormat === 'json' || bodyFormat === 'kv') {
+    if (scanned.message) {
+      if (bodyFormat === 'raw') body.message = scanned.message;
+      else if (['json','kv','cef','leef'].includes(bodyFormat)) {
         const nested = bodyFormat === 'json'
-          ? boundedJsonObject(match[9])
-          : strictKeyValues(match[9]);
+          ? boundedJsonObject(scanned.message)
+          : bodyFormat === 'kv'
+            ? strictKeyValues(scanned.message)
+            : extractStructuredFamily(scanned.message, bodyFormat as 'cef' | 'leef');
         if (nested.errors.length > 0) return nested;
         body.body = nested.fields;
       } else return failure('Unsupported RFC5424 body dialect');
     }
-    return { fields: {
-      syslog_pri: Number(match[1]), syslog_version: Number(match[2]),
-      syslog_timestamp: match[3], syslog_hostname: match[4],
-      syslog_appname: match[5], syslog_procid: match[6],
-      syslog_msgid: match[7], syslog_structured_data: match[8],
-      ...body,
-    }, errors: [] };
+    return { fields: { ...scanned.fields, ...body }, errors: [] };
   }
   if (format === 'cef') {
     const match = /^CEF:(\d+)\|(.*)$/.exec(input);
-    if (!match) return failure('Only standalone CEF header events are supported');
+    if (!match || match[1] !== '0') return failure('Only standalone CEF version zero events are supported');
     const parts = splitEscaped(match[2], '|', 6);
     if (!parts) return failure('CEF requires six header fields and an extension slot');
     const record: Record<string, unknown> = {
@@ -122,8 +119,11 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
   if (!parts) return failure('LEEF header or declared delimiter is incomplete');
-  const delimiter = isV2 ? (parts[4] === '0x09' || parts[4] === '0x9' ? '\t' : parts[4]) : '\t';
-  if (delimiter.length !== 1) return failure('LEEF 2.0 requires a one-character delimiter');
+  const hex = isV2 ? /^0x([0-9a-fA-F]{1,2})$/.exec(parts[4]) : null;
+  const delimiter = isV2 ? (hex ? String.fromCharCode(parseInt(hex[1], 16)) : parts[4]) : '\t';
+  if (!(delimiter === '\t' || (/^[!-~]$/.test(delimiter) && delimiter !== '=' && delimiter !== '\\'))) {
+    return failure('Unsupported LEEF 2.0 data delimiter');
+  }
   const record: Record<string, unknown> = {
     leef_version: match[1], leef_vendor: parts[0], leef_product: parts[1],
     leef_product_version: parts[2], leef_event_id: parts[3],

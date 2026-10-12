@@ -553,10 +553,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             {draft.format === 'syslog_rfc5424' && <label className="guided-field">
               <span>RFC5424 메시지 본문 추출 방식</span>
               <select aria-label="RFC5424 message body format" value={draft.syslogBodyFormat ?? 'raw'}
-                onChange={(event) => changeDraft('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv')}>
+                onChange={(event) => changeDraft('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv' | 'cef' | 'leef')}>
                 <option value="raw">원문 텍스트 (message)</option>
                 <option value="json">JSON 객체 (body.*)</option>
                 <option value="kv">Key/Value 필드 (body.*)</option>
+                <option value="cef">RFC5424 안의 단독 CEF (body.*) · 백엔드 기능 확인 필요</option>
+                <option value="leef">RFC5424 안의 단독 LEEF (body.*) · 백엔드 기능 확인 필요</option>
               </select>
               <small>RFC5424 헤더 형식만 지원합니다. Syslog RFC3164·복합 포맷·멀티라인은 별도 파서이며 생성 호환성을 보증하지 않습니다.</small>
             </label>}

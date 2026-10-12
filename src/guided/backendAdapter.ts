@@ -33,7 +33,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line';
   };
-  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;

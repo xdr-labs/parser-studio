@@ -8,6 +8,11 @@ export interface BackendCapabilities {
     receiverProtocols: Array<'udp' | 'tcp'>;
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc5424' | 'cef' | 'leef'>;
     formatCoverage: 'reviewed-bounded-subset';
+    /** Only advertised by backend revisions implementing bounded nested bodies/SD. */
+    rfc5424BodyFormats?: Array<'raw' | 'json' | 'kv' | 'cef' | 'leef'>;
+    rfc5424AdjacentStructuredDataSubset?: true;
+    rfc5424StructuredDataMaxBytes?: 1024;
+    leefHexSeparatorSubset?: true;
     httpReceiver: false;
     multipleDistinctReceiverPorts: false;
     multiline: false;
@@ -30,6 +35,7 @@ export interface BackendCapabilities {
 const BASE = '/api/v1/parser-pairs';
 const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef']);
 const KNOWN_PROTOCOLS = new Set(['udp', 'tcp']);
+const KNOWN_RFC_BODIES = new Set(['raw','json','kv','cef','leef']);
 
 export async function fetchBackendCapabilities(
   requester: typeof fetch = fetch,
@@ -70,10 +76,32 @@ export async function fetchBackendCapabilities(
       (l?.maxProjectBodyBytes ?? 0) < 1024 || (l?.maxInspectBodyBytes ?? 0) < 1024) {
     throw new Error('백엔드 기능·검증 상태를 신뢰할 수 없어 DRAFT 생성을 차단했습니다.');
   }
+  const extended = a.rfc5424BodyFormats !== undefined ||
+    a.rfc5424AdjacentStructuredDataSubset !== undefined ||
+    a.rfc5424StructuredDataMaxBytes !== undefined ||
+    a.leefHexSeparatorSubset !== undefined;
+  if (extended && (
+    !Array.isArray(a.rfc5424BodyFormats) ||
+    a.rfc5424BodyFormats.length < 3 ||
+    a.rfc5424BodyFormats.length > KNOWN_RFC_BODIES.size ||
+    new Set(a.rfc5424BodyFormats).size !== a.rfc5424BodyFormats.length ||
+    !a.rfc5424BodyFormats.every((mode) => KNOWN_RFC_BODIES.has(mode)) ||
+    a.rfc5424AdjacentStructuredDataSubset !== true ||
+    a.rfc5424StructuredDataMaxBytes !== 1024 ||
+    a.leefHexSeparatorSubset !== true
+  )) throw new Error('확장 RFC5424/LEEF 기능 선언이 현재 검토한 계약과 다릅니다.');
   return cap as BackendCapabilities;
 }
 
 export function assertBackendProjectSupported(project: BackendParserProject, cap: BackendCapabilities): void {
+  if (project.extraction.format === 'syslog_rfc5424') {
+    const mode = project.extraction.syslogBodyFormat ?? 'raw';
+    if ((cap.authoring.rfc5424BodyFormats && !cap.authoring.rfc5424BodyFormats.includes(mode)) ||
+        (['cef', 'leef'].includes(mode) &&
+          !cap.authoring.rfc5424BodyFormats?.includes(mode as 'cef' | 'leef'))) {
+      throw new Error('백엔드가 RFC5424 내부 ' + mode.toUpperCase() + ' 추출 형식을 명시적으로 지원하지 않습니다.');
+    }
+  }
   if (!cap.authoring.extractionFormats.includes(project.extraction.format)) {
     throw new Error('백엔드가 ' + project.extraction.format.toUpperCase() + ' 포맷을 지원한다고 확인하지 않았습니다.');
   }

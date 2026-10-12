@@ -21,7 +21,7 @@ export interface ParserDraft {
   /** Data-record CSV delimiter; column names always use commas. Older saved drafts default to comma. */
   csvDelimiter?: ',' | ';' | '\t';
   /** Only for exact bounded RFC5424 headers; raw is the backward-compatible default. */
-  syslogBodyFormat?: 'raw' | 'json' | 'kv';
+  syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef';
   mappings: MappingRule[];
   guided?: GuidedOptions;
 }
