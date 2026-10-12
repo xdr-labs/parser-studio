@@ -208,3 +208,32 @@ The typed frontend client is `src/guided/syntheticScenarioPreview.ts`, with capa
 ### 2026-10-12 — Syslog sensor/CONF shared-port contract (owner confirmed)
 
 The Guided Builder and backend's real RFC5424 Syslog schema use **one shared port**: the Modular Sensor log-receiving destination and the generated parser CONF \`<source> port\` must be exactly the same. The UI no longer suggests they are independent. This is a single user-editable value. The RFC5424 Syslog format requires port **6800–65535** and displays an immediate fail-closed warning for smaller inputs; other reviewed formats retain their existing 1024–65535 limit. Client schema validation and the Stage 4 completion indicator enforce this minimum before DRAFT file generation. The candidate lookup sends explicit \`format=syslog_rfc5424\` to the backend for Syslog and rejects any response below 6800, mismatched \`sensorIngestPort\`, forged verified binding or deployment-ready state. \`sensorIngestPort\` in the proposal is the chosen *same port*, while \`verifiedIngestPort=false\`, \`deployableNow=false\` and the final collision/binding recheck remain mandatory. These checks **do not send logs, bind a port, upload a parser or prove sensor runtime connectivity**.
+
+
+### 2026-10-12 — Non-destructive mixed-family browser test (R2 P0-B)
+
+The Step 2 Guided format distribution now offers an explicit **Review One Event
+Family Separately** browser-only preview for detected JSON, KV, CSV, bounded
+RFC5424, standalone CEF and LEEF. This addresses the common user journey in
+which a single pasted sample has several log formats and no single DRAFT parser
+can safely implement native mixed routing. It is not automatic export or a
+mechanism for silently dropping unsupported minority events.
+
+The module src/guided/familyIsolation.ts rechecks source event count and exact
+original line/content identity against the active browser test, prohibits
+unsupported blank-line grouping and dataset limits, and constructs a temporary
+single-family fixture for one Web Worker test. The source dataset and parser
+draft are **never modified or saved**; a sample edit invalidates prior isolation
+reports. The result object is a **value-free projection** with full aggregate
+counts, at most twelve visually listed original line numbers/diagnostic codes,
+and explicit browser-only/not-native/not-Stellar verification flags. It does not
+include raw event bytes or normalized values, and has no backend endpoint.
+The remaining families and unknown records stay in the original sample.
+
+Unit regression src/guided/familyIsolation.test.ts covers mixed JSON/KV,
+non-destructive source preservation, per-event diagnostics, stale/truncated or
+unsupported source rejection, and data-leak prevention. Browser regression
+tests/family-isolation.spec.ts covers explicit user selection, local-only
+network behavior, retained mixed source and authoring format, stale evidence
+invalidation, absence on single-family samples and unknown-only refusal.
+This is a preview-to-correction aid, not a native routing or release claim.

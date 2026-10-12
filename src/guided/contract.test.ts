@@ -8,7 +8,7 @@ describe('six-step guided builder UI-to-backend configuration boundary', () => {
     const result = compilerDraftContract(draft);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.join(' ')).toContain('explicit JSON');
-    expect(result.diagnostics.join(' ')).toContain('backend compiler');
+    expect(result.diagnostics.join(' ')).toContain('backend DRAFT compiler');
   });
 
   it('produces typed, ordered normalized groups and branch classifications without source sample logs', () => {
@@ -65,7 +65,7 @@ describe('six-step guided builder UI-to-backend configuration boundary', () => {
     expect(plannedPairNames('sample_parser')).toEqual({ config: 'customized_sample_parser.conf', parser: 'customized_sample_parser' });
     expect(plannedPairNames('../escape')).toBeNull();
     expect(compilerDraftContract({ ...createDraft(), format: 'json' }).diagnostics)
-      .toEqual(expect.arrayContaining([expect.stringContaining('not been connected')]));
+      .toEqual(expect.arrayContaining([expect.stringContaining('native Fluentd execution and actual Stellar target import are not verified')]));
   });
 
   it('rejects unsupported number conversions and repeated route conditions', () => {

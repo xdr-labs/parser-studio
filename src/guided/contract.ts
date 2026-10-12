@@ -105,7 +105,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   const options = draft.guided ?? defaultGuidedOptions();
   const errors: string[] = [];
   const diagnostics: string[] = [
-    'UI-side contract preview only. The backend compiler and native target validation have not been connected.',
+    'UI-side contract preview only. The backend DRAFT compiler is connected; native Fluentd execution and actual Stellar target import are not verified.',
     'Stored reference configurations sharing a port do not prove an active target collision.',
   ];
 

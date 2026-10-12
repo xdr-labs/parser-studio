@@ -39,6 +39,10 @@ import { suggestUnmappedFields } from './fieldMappingSuggestions';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
+import {
+  ISOLATABLE_FAMILIES, planFamilyIsolation, summarizeIsolatedFamilyPreview,
+  type FamilyIsolationReport, type IsolatableFamily,
+} from './familyIsolation';
 import { createBrowserEvidence } from './browserEvidence';
 import { compareBrowserEvidence, type BrowserEvidenceComparison } from './browserEvidenceComparison';
 import { createLocalReplayPlan, synthesizeFromReplayPlan, type LocalReplayPlan, type ReplayMutation } from './replayPreview';
@@ -56,7 +60,8 @@ export interface GuidedBuilderProps {
   setDatasetName: (value: string) => void;
   suite?: SuiteResult;
   pending: boolean;
-  runPreview: (draft: ParserDraft) => Promise<SuiteResult>;
+  /** Optional isolated local-only sample passed exclusively to the Web Worker. */
+  runPreview: (draft: ParserDraft, temporarySample?: string) => Promise<SuiteResult>;
   runState?: { suite: SuiteResult; timestamp: string } | null;
   onRunSuite: () => void;
   onExpert: () => void;
@@ -162,6 +167,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     }
   }, [step]);
   const [selectedId, setSelectedId] = useState('event-1');
+  const [isolatedFamilyChoice, setIsolatedFamilyChoice] = useState<IsolatableFamily|null>(null);
+  const [isolatedPending,setIsolatedPending] = useState(false);
+  const [isolatedAttempt,setIsolatedAttempt] = useState<{key:string;report:FamilyIsolationReport}|null>(null);
+  const [isolatedError,setIsolatedError] = useState('');
+  const isolatedRequestToken=useRef(0);
   const [selectedValue, setSelectedValue] = useState('');
   const [fieldName, setFieldName] = useState('new_field');
   const [proposalTesting, setProposalTesting] = useState(false);
@@ -276,6 +286,15 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     () => summarizeFamilyCoverage(suite?.events ?? [], draft.format),
     [suite?.events, draft.format],
   );
+  const isolatableOptions=familyCoverage.groups
+    .filter(group=>ISOLATABLE_FAMILIES.some(format=>format===group.format))
+    .map(group=>group.format as IsolatableFamily);
+  const activeIsolatedFamily=isolatedFamilyChoice &&
+    isolatableOptions.includes(isolatedFamilyChoice)
+      ? isolatedFamilyChoice : isolatableOptions[0]??null;
+  const isolatedKey=JSON.stringify([draft,sample,activeIsolatedFamily]);
+  const currentIsolatedReport=isolatedAttempt?.key===isolatedKey
+    ? isolatedAttempt.report : null;
   const artifactContract = compilerDraftContract(draft);
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
@@ -345,6 +364,25 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
         setLegacyDryError({key,tenant,version,message:
           'Read-only Legacy preflight was denied. Check the tenant, version, and parser-pair contract. No upload was performed.'});
     } finally { setLegacyDryPending(false); }
+  };
+
+  const previewSelectedFamily = async () => {
+    if(isolatedPending || pending || !suite || !activeIsolatedFamily) return;
+    const key=isolatedKey,sourceKey=draftKey,token=++isolatedRequestToken.current;
+    setIsolatedPending(true);setIsolatedError('');setIsolatedAttempt(null);
+    try{
+      const plan=planFamilyIsolation(sample,draft,suite,activeIsolatedFamily);
+      const result=await runPreview({...draft,format:activeIsolatedFamily},plan.sample);
+      if(token!==isolatedRequestToken.current ||
+         sourceKey!==latestDraftKeyRef.current) return;
+      setIsolatedAttempt({
+        key,report:summarizeIsolatedFamilyPreview(plan,result),
+      });
+      notify('A separate local-only format-family preview finished. Original events, parser rules and backend deployment status were not changed.');
+    }catch{
+      if(token===isolatedRequestToken.current&&sourceKey===latestDraftKeyRef.current)
+        setIsolatedError('This format family cannot be isolated safely from the current sample. Verify single-line records, review the full sample, and retry.');
+    }finally {setIsolatedPending(false);}
   };
 
   const checkParserListenerPort = async (override: boolean) => {
@@ -1025,6 +1063,56 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 </button>}
               </div>}
             </div>
+            {familyCoverage.incompatible && isolatableOptions.length>0 &&
+              <details className="guided-family-isolation" aria-label="Local family isolation workspace">
+                <summary>Review One Event Family Separately · No Data Transfer</summary>
+                <p>Mixed event formats require separate parser drafts. This temporary local Web Worker preview selects only one detected format, without editing your complete sample, existing mappings, saved revisions, or backend deployment state. Detected formats are estimates, not guaranteed native parser support.</p>
+                <div className="guided-family-isolation-controls">
+                  <label className="guided-field"><span>Detected Event Family</span>
+                    <select aria-label="Family for isolated browser preview"
+                      value={activeIsolatedFamily??''}
+                      onChange={(event)=>{
+                        setIsolatedFamilyChoice(event.target.value as IsolatableFamily);
+                        setIsolatedError('');
+                      }}>
+                      {isolatableOptions.map(format=>
+                        <option key={format} value={format}>{formatLabel(format)}
+                          {' · '+(familyCoverage.groups.find(g=>g.format===format)?.count??0)+' event(s)'}
+                        </option>)}
+                    </select>
+                  </label>
+                  <button type="button" className="guided-cta-secondary"
+                    disabled={pending||isolatedPending||!activeIsolatedFamily}
+                    onClick={()=>{void previewSelectedFamily();}}>
+                    <ShieldCheck size={15}/>
+                    {isolatedPending?'Testing Isolated Family Locally…':'Preview Selected Family Locally'}
+                  </button>
+                </div>
+                {isolatedError && <p role="alert" className="guided-error">{isolatedError}</p>}
+                {currentIsolatedReport && <div className="guided-family-isolation-result"
+                  aria-label="Isolated family browser result" role="status">
+                  <strong>{formatLabel(currentIsolatedReport.format)} · Browser-only Family Preview</strong>
+                  <p>{currentIsolatedReport.selectedCount} selected of {currentIsolatedReport.sourceCount} original events
+                    {' · '}{currentIsolatedReport.excludedCount} other-family events preserved in the original dataset</p>
+                  <div className="guided-family-isolation-metrics">
+                    <span>Matched <b>{currentIsolatedReport.counts.matched}</b></span>
+                    <span>Extracted <b>{currentIsolatedReport.counts.extracted}</b></span>
+                    <span>Normalized <b>{currentIsolatedReport.counts.normalized}</b></span>
+                    <span>Failed <b>{currentIsolatedReport.counts.failures}</b></span>
+                  </div>
+                  <ul aria-label="Isolated event diagnostics">
+                    {currentIsolatedReport.perEvent.slice(0,12).map((ev,i)=>
+                      <li key={ev.originalLine+'-'+i}>
+                        Original line {ev.originalLine} · {ev.status.toUpperCase()}
+                        {ev.diagnosticCodes.length>0?' · '+ev.diagnosticCodes.join(', '):' · No diagnostics'}
+                      </li>)}
+                  </ul>
+                  {currentIsolatedReport.perEvent.length>12 &&
+                    <small>Only 12 per-event statuses are shown here. All selected records are included in the aggregate counts.</small>}
+                  <small>No original event values are included in this report. The source dataset and draft remain unchanged. This browser test is not a native Fluentd run, generated second parser, or Stellar target compatibility proof.</small>
+                </div>}
+                <small>Nothing is uploaded, exported, saved, or installed by this action. Unknown, unsupported, multiline, oversized or stale event families cannot silently disappear. Create and validate a separate draft for each supported format before exporting DRAFT files.</small>
+              </details>}
             <div className="guided-section-title"><span>02</span> Select a Value in the Sample</div>
             <div className="guided-event-picker">
               <div className="guided-event-buttons" aria-label="Guided event list">

@@ -307,7 +307,7 @@ export default function App() {
           draft={draft} setDraft={setDraft} sample={sample} setSample={setSample}
           datasetName={datasetName} setDatasetName={setDatasetName}
           suite={suite} pending={live.pending} runState={validRun}
-          runPreview={(candidate) => runInWorker(sample, candidate)}
+          runPreview={(candidate, temporarySample) => runInWorker(temporarySample ?? sample, candidate)}
           onRunSuite={() => { void runSuite('guided'); }}
           onExpert={() => setPage('workbench')} onSave={handleSave}
         />}

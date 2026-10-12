@@ -85,4 +85,34 @@ R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable mil
 ## Concrete NEXT_ACTION
 
 **Await owner sample log(s) and existing parser(s) as the only missing product-specific input; then immediately begin R1 characterization, IR/fixture contract and RED tests.** Until samples arrive, implementation may proceed only on independently specified, testable UI scaffolding without asserting Stellar export compatibility. Use this file as the single canonical roadmap and carry precise Git/CI/fixture status into future handoffs.
-\n## Owner language decision (2026-10-12)\n\nEvery Parser Studio screen, accessibility label, status, error, code comment, test, fixture, and project document must be written in **English only**. A bilingual UI is no longer in scope. All previously established import, target, privacy, and release gates still apply.\n
+
+## Owner language decision (2026-10-12)
+
+Every Parser Studio screen, accessibility label, status, error, code comment, test, fixture, and project document must be written in **English only**. A bilingual UI is no longer in scope. All previously established import, target, privacy, and release gates still apply.
+
+
+## R2 P0-B — Isolated mixed-family browser tests (implementation evidence, 2026-10-12)
+
+A mixed sample set may include independently detected JSON, KV, CSV, bounded RFC5424,
+standalone CEF and LEEF records. The Step 2 **Review One Event Family Separately**
+control now permits an explicit local-only Web Worker preview of one recognized
+extraction family while **preserving the entire original sample and the draft
+unmodified**. The plan enforces 64 KiB/500 events and refuses stale, unsupported,
+unknown or blank-line grouped source evidence rather than silently dropping
+outliers. The summary includes exact source/selected/excluded counts, matched,
+extracted, normalized and failed counts, and original physical-line numbers
+with value-free diagnostic codes. No unredacted sample values appear in reports,
+saved revisions, API requests or evidence downloads. The isolated fixture
+stays transiently in browser memory and is passed only to the Web Worker. This is NOT native mixed-family routing,
+a second generated parser, a live network sender or target import verification.
+
+R2 P0-B is **partially implemented**; actual multi-parser native routing, robust
+multiline event breakers, matched owner fixtures and real Stellar target validation
+remain pending their respective backend/owner evidence gates. UI-only testing
+continues independently without claiming a release gate has passed.
+
+**Current development discipline:** This file contains historical acceptance
+checklists; do not mistake old unchecked boxes for entirely unimplemented
+features. Confirm actual HEAD, Work Packet, code and precise tests before
+choosing the next runnable work item. Continue in R1 -> R2 -> R3 -> R4 -> R5
+order, skipping only owner-input or unavailable runtime gates.
