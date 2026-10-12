@@ -11,6 +11,7 @@ import {validateBackendProject,generateBackendPair,type GeneratedPair} from './b
 import {verifyGeneratedPair,packageGeneratedPair} from './artifactPackageClient';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
+import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import type {EventBoundary} from './contract';
 
 interface Props {
@@ -60,6 +61,7 @@ export default function AutoParser({
  const [evidence,setEvidence]=useState<Evidence|null>(null);
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
+ const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
  const epoch=useRef(0);
  const identity=JSON.stringify([draft,sample]);
  const currentRef=useRef(identity);currentRef.current=identity;
@@ -67,7 +69,7 @@ export default function AutoParser({
    (draft.guided?.eventBoundary??'single-line') as EventBoundary),
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
-   epoch.current++;setEvidence(null);setPair(null);setZip(null);setMessage('');
+   epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);setMessage('');
  },[identity]);
  const assessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -75,6 +77,7 @@ export default function AutoParser({
  const currentPair=pair?.key===identity?pair.value:null;
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
+ const currentRecipe=recipe?.key===identity?recipe.value:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
@@ -158,6 +161,19 @@ export default function AutoParser({
        setEvidence({key:expected,status:'FAILED',total:report.sourceCount,
          issues:['The current draft could not pass verified backend compilation and file integrity checks.']});
      }
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function previewRecipe(){
+   if(!suite||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setRecipe(null);
+   try{
+     const result=await buildReviewableRecipe(sample,draft,suite);
+     if(token===epoch.current&&currentRef.current===expected)
+       setRecipe({key:expected,value:result});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRecipe({key:expected,value:{ok:false,reason:'UNTRUSTED_PREVIEW'}});
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function zipPair(){
@@ -309,6 +325,25 @@ export default function AutoParser({
            onClick={()=>{void zipPair();}}><FileArchive size={16}/> Download Verified DRAFT ZIP</button>
          {currentZip&&<small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>}
        </div>}
+       <details className="auto-parser-recipe" aria-label="ParserRecipe v0.2 review">
+         <summary>Advanced · Review ParserRecipe v0.2 (not compilable)</summary>
+         <p>This is a local-only staged review, not a native compiler or a deployment.
+           The current backend accepts ParserProject v0.1 only; the original v0.1
+           contract is preserved independently and no recipe is sent to the backend.</p>
+         <button type="button" disabled={busy||pending||!suite}
+           onClick={()=>{void previewRecipe();}}>Review Staged Recipe</button>
+         {currentRecipe&&(currentRecipe.ok
+           ? <div role="status" aria-label="Review-only staged recipe">
+             <strong>REVIEW_ONLY · Native and target NOT VERIFIED</strong>
+             <span>{currentRecipe.recipe.stages.length} allowlisted stages ·
+               {currentRecipe.recipe.sample.events} events ·
+               Source SHA-256 {currentRecipe.recipe.sample.sha256.slice(0,12)}…</span>
+             <span>v0.1 snapshot: {currentRecipe.lossReport.status} ·
+               v0.2 compiler NOT AVAILABLE</span>
+             <p>{currentRecipe.recipe.stages.map(stage=>stage.op).join(' → ')}</p>
+           </div>
+           : <p role="status">Review cannot be generated safely: {statusMessage(currentRecipe.reason)}</p>)}
+       </details>
        <p className="auto-parser-note"><LockKeyhole size={14}/> No API key, DP install or sensor send.
          Native Fluentd compatibility and real Stellar Cyber import remain unverified.</p>
        <div className="auto-parser-actions">

@@ -234,6 +234,14 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     expect((await generated).status()).toBe(200);
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
+    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByRole('button',{name:'Review Staged Recipe'}).click();
+    const reviewed=page.getByLabel('Review-only staged recipe');
+    await expect(reviewed).toContainText('REVIEW_ONLY');
+    await expect(reviewed).toContainText('v0.2 compiler NOT AVAILABLE');
+    await expect(reviewed).toContainText('parse_json');
+    await expect(reviewed).not.toContainText('198.51.100.10');
+    await expect(reviewed).not.toContainText('203.0.113.5');
     for(const filename of ['customized_demo_firewall.conf','customized_demo_firewall']){
       const download=page.waitForEvent('download');
       await page.getByLabel('Generated Auto Parser DRAFT pair').getByRole('button',{name:filename,exact:true}).click();

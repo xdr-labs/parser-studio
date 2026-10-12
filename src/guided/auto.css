@@ -49,5 +49,13 @@
 .auto-parser-result span,.auto-parser-download small{font-size:11px;color:#587582;overflow-wrap:anywhere;}
 .auto-parser-download strong{display:flex;gap:7px;align-items:center;}
 .auto-parser-download button{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid #cfdfdf;background:#fff;border-radius:6px;font-size:11px;color:#256476;padding:9px 10px;max-width:100%;overflow-wrap:anywhere;}
+.auto-parser-recipe{margin:15px 0;border:1px solid #d6e4eb;border-radius:8px;padding:12px 14px;background:#f8fbfc;color:#476b7c;font-size:11px;line-height:1.6;}
+.auto-parser-recipe summary{cursor:pointer;font-weight:700;color:#285c70;}
+.auto-parser-recipe summary:focus-visible{outline:2px solid #0e9c98;outline-offset:3px;}
+.auto-parser-recipe p{font-size:11px;line-height:1.65;}
+.auto-parser-recipe button{border:1px solid #bfd7de;border-radius:6px;background:#fff;color:#22687a;padding:8px 12px;font-size:11px;font-weight:700;}
+.auto-parser-recipe [role=status]{border:1px solid #d3e6e2;border-radius:6px;background:#fff;display:grid;gap:6px;padding:10px;margin-top:11px;overflow-wrap:anywhere;}
+.auto-parser-recipe [role=status] strong{color:#256d6b;}
+
 @media(max-width:850px){.auto-parser-preview{grid-template-columns:1fr;}.auto-parser-intro{padding:22px;}}
 @media(max-width:540px){.auto-parser-workspace{padding:12px 8px 35px;}.auto-parser-steps{gap:4px;}.auto-parser-steps button{font-size:10px;padding:7px 5px;gap:5px;flex-wrap:wrap;justify-content:center;text-align:center;}.auto-parser-steps button span{width:22px;height:22px;}.auto-parser-body{padding:14px 11px;}.auto-parser-actions button{width:100%;justify-content:center;}}
