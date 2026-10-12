@@ -148,3 +148,22 @@ a particular vendor log actually contains a suggested field. The local
 backend exposes POST /api/v1/parser-pairs/mapping-suggestions for names and
 existing destination hints only; neither this endpoint nor the utility
 automatically changes the Workbench or generates deployable parser files.
+
+## Composed offline HTTP contract regression (synthetic-only)
+
+The test backend/test/offline-workflow-e2e.test.ts drives a local loopback
+backend through the public synthetic template catalog, editable
+ParserProject validation/generation, exact matched Ruby/CONF ZIP output,
+per-user in-memory revision registration/download, a separately
+authenticated fake Apply coordinator and an approved synthetic Test Lab
+run with redacted per-event evidence. Two cases also check that changing
+the source/listener port regenerates an independent artifact revision and
+that a different sensor-ingest port blocks fake Apply before any injected
+target transport call.
+
+The scenario runs with an explicit .invalid fake DP target and an injected
+in-memory callback sink. It does not contact or authenticate to a vendor DP,
+send any UDP/TCP event to a real sensor, validate a proprietary loader,
+grant production permissions, or prove Stellar Cyber parsing. Mock DP
+readback and sink acceptance remain distinct from verified target import,
+sensor observation, DP indexing and real per-field normalization.
