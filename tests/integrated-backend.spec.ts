@@ -247,7 +247,7 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(sample);
     await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"allow","src_ip":"192.0.2.8","dst_port":80}');
-    await expect(page.getByRole('button',{name:'Test & Generate',exact:true})).toBeDisabled();
+    await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button',{name:/Test & Generate/})).toBeDisabled();
   });
 
 });
