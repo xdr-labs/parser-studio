@@ -447,3 +447,18 @@
 .guided-port-result p { color:#997147; line-height:1.6; font-size:10px; margin:8px 0; }
 .guided-port-result small { display:block; color:#9a744e; line-height:1.6; font-size:10px; overflow-wrap:anywhere; }
 .guided-port-result button { margin-top:10px; }
+
+/* Legacy POC file-plan preflight: explicitly nondeploying and without secret inputs. */
+.guided-legacy-preflight { margin-top:14px; padding:13px; border:1px solid #d8e5e6; background:#fbfcfd; border-radius:8px; }
+.guided-legacy-preflight summary { cursor:pointer; font-size:11px; font-weight:800; color:#477483; }
+.guided-legacy-preflight > p, .guided-legacy-preflight > small { display:block; margin:9px 0; font-size:10px; color:#718595; line-height:1.65; }
+.guided-legacy-preflight > p code { font:10px var(--mono); overflow-wrap:anywhere; }
+.guided-legacy-inputs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:12px 0; }
+.guided-legacy-inputs .guided-field { min-width:0; }
+.guided-legacy-inputs input { width:100%; }
+.guided-legacy-preflight :is(summary,button,input):focus-visible { outline:2px solid #147e85; outline-offset:2px; }
+.guided-legacy-proof { margin-top:12px; padding:12px; border:1px solid #d6e9e3; background:#fff; border-radius:6px; overflow-wrap:anywhere; }
+.guided-legacy-proof strong { display:block; font-size:11px; color:#36796c; }
+.guided-legacy-proof p { font-size:10px; color:#6c8390; line-height:1.55; }
+.guided-legacy-proof small { display:block; margin:6px 0; font-size:10px; color:#9d734c; line-height:1.55; }
+@media (max-width:600px) { .guided-legacy-inputs { grid-template-columns:minmax(0,1fr); } }

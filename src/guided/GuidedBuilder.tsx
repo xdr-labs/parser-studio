@@ -19,6 +19,7 @@ import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
+import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
@@ -185,6 +186,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [portPlanLoading, setPortPlanLoading] = useState(false);
   const [portPlanAttempt, setPortPlanAttempt] = useState<{ key: string; plan: ParserPortProposal } | null>(null);
   const [portPlanError, setPortPlanError] = useState<{ key: string; message: string } | null>(null);
+  const [legacyDryTenant, setLegacyDryTenant] = useState('');
+  const [legacyDryVersion, setLegacyDryVersion] = useState('1.0.0');
+  const [legacyDryPending, setLegacyDryPending] = useState(false);
+  const [legacyDryProof, setLegacyDryProof] = useState<{key:string;tenant:string;version:string;proof:LegacyPreflightResult}|null>(null);
+  const [legacyDryError, setLegacyDryError] = useState<{key:string;tenant:string;version:string;message:string}|null>(null);
+  const legacyRequestToken = useRef(0);
   const [zipVersion, setZipVersion] = useState('1.0.0');
   const [zipDownloading, setZipDownloading] = useState(false);
   const [zipReceipt, setZipReceipt] = useState<{
@@ -247,6 +254,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const currentComparisonError = comparisonError?.key === draftKey ? comparisonError.message : '';
   const qualifiedPair = generatedPair?.key === draftKey ? generatedPair.pair : null;
   const currentBackendError = backendError?.key === draftKey ? backendError.message : '';
+  const currentLegacyProof = legacyDryProof?.key === draftKey &&
+    legacyDryProof.tenant === legacyDryTenant && legacyDryProof.version === legacyDryVersion
+    ? legacyDryProof.proof : null;
+  const currentLegacyError = legacyDryError?.key === draftKey &&
+    legacyDryError.tenant === legacyDryTenant && legacyDryError.version === legacyDryVersion
+    ? legacyDryError.message : '';
   const currentZipReceipt = zipReceipt?.key === draftKey && zipReceipt.version === zipVersion ? zipReceipt : null;
   const currentZipError = zipError?.key === draftKey && zipError.version === zipVersion ? zipError.message : '';
   const currentPortPlan = portPlanAttempt?.key === draftKey ? portPlanAttempt.plan : null;
@@ -262,6 +275,28 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const changeDraft = <K extends keyof ParserDraft>(field: K, value: ParserDraft[K]) =>
     setDraft((old) => ({ ...old, [field]: value }));
   const notify = (text: string) => setMessage(text);
+
+  const runLegacyDryRun = async () => {
+    if (!qualifiedPair || !qualifiedBackend?.result.ok || legacyDryPending || pending) return;
+    const key = draftKey;
+    const tenant = legacyDryTenant, version = legacyDryVersion;
+    const token = ++legacyRequestToken.current;
+    setLegacyDryPending(true);
+    setLegacyDryProof(null);
+    setLegacyDryError(null);
+    try {
+      const proof = await prepareLegacyUploadPlan(
+        qualifiedPair, tenant, version, qualifiedBackend.project.receiver.port,
+      );
+      if (latestDraftKeyRef.current !== key || legacyRequestToken.current !== token) return;
+      setLegacyDryProof({key,tenant,version,proof});
+      notify('Legacy 쌍 구조와 해시 사전검사를 완료했습니다. 실제 DP 전송·활성화는 실행하지 않았습니다.');
+    } catch {
+      if (latestDraftKeyRef.current === key && legacyRequestToken.current === token)
+        setLegacyDryError({key,tenant,version,message:
+          '읽기 전용 Legacy 사전검사가 거부됐습니다. tenant/버전/파서 파일 계약을 확인하세요. 실제 업로드는 하지 않았습니다.'});
+    } finally { setLegacyDryPending(false); }
+  };
 
   const checkParserListenerPort = async (override: boolean) => {
     if (portPlanLoading) return;
@@ -1113,6 +1148,46 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <div className="guided-generated-files">{qualifiedPair.files.map((file) =>
                 <button className="guided-cta-secondary" key={file.name} type="button" onClick={() => localDownload(file.name, file.content, 'application/octet-stream')}><Download size={15} /> {file.name}</button>)}</div>
               <div className="guided-generated-warnings">{qualifiedPair.manifest.warnings.map((warning, index) => <p key={index}><AlertTriangle size={13} /> {warning}</p>)}</div>
+              <details className="guided-legacy-preflight" aria-label="Legacy deployment preflight only">
+                <summary>Legacy POC 파일 업로드 사전검사 (실제 전송 없음)</summary>
+                <p>검증된 두 파일의 이름·리비전·포트·SHA-256을 백엔드에서 검사하는 <code>/stellar/legacy/prepare</code>만 호출합니다. 실제 DP 등록·활성화·API Key 사용은 수행하지 않습니다.</p>
+                <div className="guided-legacy-inputs">
+                  <label className="guided-field"><span>테넌트 식별자 (암호·API Key 아님)</span>
+                    <input aria-label="Legacy dry-run tenant" value={legacyDryTenant}
+                      placeholder="synthetic-tenant" autoComplete="off" maxLength={128}
+                      onChange={(event) => {
+                        legacyRequestToken.current++;
+                        setLegacyDryTenant(event.target.value);setLegacyDryProof(null);setLegacyDryError(null);
+                      }} />
+                  </label>
+                  <label className="guided-field"><span>Legacy 파일 버전 라벨</span>
+                    <input aria-label="Legacy dry-run version" value={legacyDryVersion}
+                      maxLength={64} placeholder="1.0.0"
+                      onChange={(event) => {
+                        legacyRequestToken.current++;
+                        setLegacyDryVersion(event.target.value);setLegacyDryProof(null);setLegacyDryError(null);
+                      }} />
+                  </label>
+                </div>
+                <button type="button" className="guided-cta-secondary"
+                  disabled={legacyDryPending || pending ||
+                    !/^[A-Za-z0-9_-]{1,128}$/.test(legacyDryTenant) ||
+                    !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(legacyDryVersion)}
+                  onClick={() => { void runLegacyDryRun(); }}>
+                  <ShieldCheck size={15} /> {legacyDryPending ? 'Legacy 사전검사 중…' : 'Legacy 파일 업로드 계약만 검사'}
+                </button>
+                {currentLegacyError && <p className="guided-error" role="alert">{currentLegacyError}</p>}
+                {currentLegacyProof && <div className="guided-legacy-proof" aria-label="Legacy preflight proof">
+                  <strong>파일 쌍 무결성 확인 · DRAFT · 실제 업로드 미실행</strong>
+                  <p>{currentLegacyProof.name} · 파서 리스너 포트 {currentLegacyProof.port} · 테넌트 {currentLegacyProof.tenant}</p>
+                  <p>Ruby SHA-256: {currentLegacyProof.parserHash.slice(0,16)}… / CONF: {currentLegacyProof.confHash.slice(0,16)}…</p>
+                  <small>{currentLegacyProof.testOnlyWriteEligible
+                    ? '별도 제한된 합성 POC 테스트 적격성만 확인됨. 일반 배포 승인 아님'
+                    : '일반 파서: 제한된 POC 테스트 쓰기 적격성이 확인되지 않음'}</small>
+                  <small>실제 API 등록 미검증 · 런타임 파싱 미검증 · Stellar 적재 미검증 · 자동 배포 없음</small>
+                </div>}
+                <small>이 검사는 사전 자료 검토일 뿐입니다. 실제 Legacy API 쓰기는 다른 백엔드 세션의 별도 승인된 POC 절차에서만 수행됩니다.</small>
+              </details>
               <div className="guided-package-download" aria-label="Draft ZIP bundle download">
                 <div className="guided-section-title"><span>ZIP</span> 두 파일 + 무결성 매니페스트</div>
                 <p>이 기능은 최신 로컬 백엔드가 명시적으로 지원하는 경우에만 사용할 수 있습니다. 생성한 두 파일과 manifest.json을 묶지만 DP 연결·API Key·자동 설치가 필요하거나 수행되지 않습니다.</p>
