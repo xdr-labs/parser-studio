@@ -625,3 +625,28 @@
 /* Diagnoses each source record without echoing customer text or unsafe codes. */
 .guided-all-family-diagnostics { flex:1 1 100%; margin:2px 0 4px; padding-left:18px; font-size:10px; line-height:1.65; color:#5d7382; }
 .guided-all-family-diagnostics li { overflow-wrap:anywhere; padding:2px 0; }
+
+/* Opt-in offline artifact revision history: metadata-only and keyboard accessible. */
+.guided-revision-history {margin:18px 0;padding:15px;border:1px solid #cce1e8;border-radius:9px;background:#f8fbfd;}
+.guided-revision-history summary {display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;color:#286779;font-size:12px;}
+.guided-revision-history > p,.guided-revision-history > small {display:block;font-size:11px;line-height:1.65;color:#526b76;margin:12px 0;}
+.guided-revision-boundary {border-left:3px solid #d6b46c;padding-left:11px;}
+.guided-revision-toolbar {display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:13px 0;}
+.guided-revision-toolbar .guided-field {min-width:170px;flex:1 1 180px;margin:0;}
+.guided-revision-toolbar :is(input,select) {width:100%;min-width:0;}
+.guided-revision-toolbar button {flex:1 1 200px;}
+.guided-revision-actions {display:flex;gap:8px;flex-wrap:wrap;margin:13px 0;}
+.guided-revision-actions button {flex:1 1 180px;}
+.guided-revision-history :is(button,input,select,summary):focus-visible {outline:2px solid #187d80;outline-offset:3px;}
+.guided-revision-workspace {margin-top:13px;border-top:1px solid #d7e8ec;padding-top:13px;}
+.guided-revision-list {display:grid;gap:8px;padding:0;margin:9px 0;list-style:none;max-height:255px;overflow:auto;}
+.guided-revision-list li {display:grid;gap:4px;background:#fff;border:1px solid #dfebf0;border-radius:6px;padding:11px;}
+.guided-revision-list li strong {font-size:12px;color:#255e70;}
+.guided-revision-list li span,.guided-revision-list li small {font-size:10px;color:#526b76;overflow-wrap:anywhere;}
+.guided-revision-history code {font-size:10px;overflow-wrap:anywhere;white-space:normal;}
+.guided-revision-diff,.guided-revision-preview {padding:12px;margin:12px 0;background:#fff;border:1px solid #d4e7ec;border-radius:8px;overflow-wrap:anywhere;}
+.guided-revision-diff p,.guided-revision-preview p {font-size:11px;color:#526b76;}
+.guided-revision-diff > div {display:grid;gap:4px;margin-top:11px;padding-top:8px;border-top:1px solid #ebf1f5;}
+.guided-revision-diff strong,.guided-revision-preview strong {font-size:11px;color:#286779;}
+.guided-revision-preview strong {display:flex;align-items:center;gap:5px;}
+@media(max-width:550px){.guided-revision-toolbar,.guided-revision-actions{display:grid;grid-template-columns:minmax(0,1fr);}}

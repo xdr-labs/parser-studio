@@ -18,6 +18,7 @@ import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
+import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
@@ -1807,6 +1808,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 </div>}
               </div>
             </div>}
+            <ArtifactRevisionHistoryPanel
+              projectId={backendProject.ok ? backendProject.project.projectId : qualifiedPair?.manifest.projectId}
+              draftKey={draftKey}
+              pair={qualifiedPair}
+              listenerPort={qualifiedBackend?.project.receiver.port ?? null}
+              onDownload={localDownloadBinary}
+            />
             <details className="guided-pair-inspect">
               <summary><FileArchive size={16} /> Inspect Existing Parser Pair (Advanced, Read-only)</summary>
               <p>Selecting files does not upload them automatically. Only an explicit click sends both files to a same-origin local development API for structure and SHA-256 checks. Raw contents are not stored or displayed.</p>

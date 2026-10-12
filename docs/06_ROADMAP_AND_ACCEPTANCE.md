@@ -168,3 +168,25 @@ The all-family local-only audit can now be **explicitly downloaded as metadata-o
 ## R2 P0-B — Whitelisted local audit diagnostics (2026-10-12)
 
 A regression test exposed that an arbitrary, uppercase Web Worker diagnostic code could be copied into browser-visible metadata. This was corrected at the shared family-isolation summarizer: **only fixed, previously reviewed parser diagnostic codes are retained**, and unknown codes are replaced by `DIAGNOSTIC_UNAVAILABLE`. The same allowlist protects both one-family previews and the new all-family reports. Step 2 displays at most eight sanitized source-line/status/diagnostic summaries per family, preserving full aggregate counts and keeping all actual log bodies and diagnostic messages out of reports. Unit tests deliberately inject private-looking worker diagnostic codes and verify neither those identifiers nor messages escape.
+
+## P0-LIVE-0/2 — Owner-scoped offline artifact revision UI (2026-10-12)
+
+Guided Step 6 has an **opt-in** offline revision workspace for exact generated
+DRAFT Ruby + CONF pairs. The separately maintained backend supplies
+`/api/v1/parser-pairs/revisions/register`, `list`, `diff`, `download`, and
+`restore-preview`. The browser verifies the input pair, project-scoped
+metadata, revision identity, two file hashes, immutable ZIP SHA-256 and
+restore-preview response contract before displaying or downloading anything.
+Diffs expose only version, port, filenames and SHA values, never code bodies,
+raw sample logs, keys, or tenant identifiers.
+
+No request is made until the owner explicitly clicks an action. All requests
+use same-origin authentication; an unconfigured or unauthorized endpoint
+returns **403 and stays unavailable**. The backend history is owner/tenant
+scoped, temporary and non-persistent. A restore preview returns an old,
+verified ZIP for optional manual download: it does not replace the draft,
+rollback any actual DP parser, send to a sensor, or invoke any target API.
+Native compatibility and actual platform ingestion remain unverified.
+Unit regressions: `src/guided/artifactRevisionClient.test.ts`.
+Chromium user/denial/tamper scenarios:
+`tests/artifact-revision-history.spec.ts`.

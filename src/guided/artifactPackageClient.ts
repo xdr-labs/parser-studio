@@ -35,7 +35,7 @@ async function sha256(bytes: string | ArrayBuffer):Promise<string> {
   const digest=await globalThis.crypto.subtle.digest('SHA-256',binary);
   return [...new Uint8Array(digest)].map(item=>item.toString(16).padStart(2,'0')).join('');
 }
-async function verifyPair(pair:GeneratedPair):Promise<{parserName:string;revision:number}> {
+export async function verifyGeneratedPair(pair:GeneratedPair):Promise<{parserName:string;revision:number}> {
   if(!pair || pair.contract!=='host-customized-pair.v0.1' ||
      !pair.manifest || pair.manifest.contract!==pair.contract ||
      pair.manifest.status!=='DRAFT' || pair.manifest.schemaRevision!=='0.1' ||
@@ -85,7 +85,7 @@ export async function packageGeneratedPair(
   if(!Number.isInteger(expectedPort) || expectedPort<1 || expectedPort>65535) {
     throw new Error('A valid listener port is not configured.');
   }
-  const {parserName,revision}=await verifyPair(pair);
+  const {parserName,revision}=await verifyGeneratedPair(pair);
   const requestBody=JSON.stringify({pair,version});
   if(new TextEncoder().encode(requestBody).byteLength>MAX_ZIP_BYTES) {
     throw new Error('ZIP generation request exceeds the size limit.');
