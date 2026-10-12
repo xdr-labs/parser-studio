@@ -155,8 +155,9 @@ The test backend/test/offline-workflow-e2e.test.ts drives a local loopback
 backend through the public synthetic template catalog, editable
 ParserProject validation/generation, exact matched Ruby/CONF ZIP output,
 per-user in-memory revision registration/download, a separately
-authenticated fake Apply coordinator and an approved synthetic Test Lab
-run with redacted per-event evidence. Two cases also check that changing
+authenticated fake Apply coordinator that resolves only the owner's exact
+registered revision through the shared trusted in-memory revision store,
+and an approved synthetic Test Lab run with redacted per-event evidence. Two cases also check that changing
 the source/listener port regenerates an independent artifact revision and
 that a different sensor-ingest port blocks fake Apply before any injected
 target transport call.

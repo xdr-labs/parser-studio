@@ -42,6 +42,13 @@ export type ArtifactRevisionDiff={
   realTargetVerified:false;
   appliesToDp:false;
 };
+export type ServerOwnedArtifactRevision={
+  /** Only returned to trusted backend code; never serialize this to HTTP. */
+  ownerId:string;
+  tenant:string;
+  pair:PairExport;
+  artifact:ArtifactPackage;
+};
 export type ArtifactRevisionDownload={
   artifactRevisionId:string;
   zip:Buffer;
@@ -154,6 +161,25 @@ export class ArtifactRevisionHistory{
       .filter(row=>row.owner.ownerId===actor.ownerId&&
         row.owner.tenant===actor.tenant&&row.archive.manifest.projectId===projectId)
       .map(row=>this.#summary(row));
+  }
+  /**
+   * Server-only resolver for a separately authenticated Apply coordinator.
+   * Rechecks all exact ZIP/CONF/Ruby bytes and tenant/owner on EVERY lookup.
+   * Clones all mutable bytes so callers cannot alter stored revisions.
+   * No target network connection or Apply operation is implied.
+   */
+  resolveOwnedRevision(actor:RevisionOwner,id:string):ServerOwnedArtifactRevision{
+    const row=this.#owned(actor,id);
+    const verified=this.#verifiedArchive(row);
+    return {
+      ownerId:row.owner.ownerId,tenant:row.owner.tenant,
+      pair:structuredClone(row.pair),
+      artifact:{
+        zip:Buffer.from(verified.zip),zipSha256:verified.zipSha256,
+        filename:verified.filename,
+        manifest:structuredClone(verified.manifest),
+      },
+    };
   }
   download(actor:RevisionOwner,id:string):ArtifactRevisionDownload{
     const row=this.#owned(actor,id);

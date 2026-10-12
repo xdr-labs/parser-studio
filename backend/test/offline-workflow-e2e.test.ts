@@ -77,16 +77,17 @@ async function withFlow(run:(f:Fixture)=>Promise<void>){
     target:{origin,tenant,sensorIngestPort:7123},permittedOrigins:[origin],
     api,approve:async()=>true,audit:async entry=>{audits.push(entry.phase);},
   });
+  const history=new ArtifactRevisionHistory();
   const mockGateway=new TargetApplyMockGateway({
     mode:"MOCK_ONLY",
     authorize:async req=>local(req),
+    // No pre-seeded or browser-supplied files: Apply gets the exact pair
+    // registered for this authenticated owner through the same BFF store.
     resolveRevision:async(actor,id)=>{
-      if(actor.id!=="alice")return null;
-      if(id===rev)return {ownerId:"alice",tenant,pair,artifact};
-      if(id===alternateRevision)return {
-        ownerId:"alice",tenant,pair:alternatePair,artifact:alternateArtifact,
-      };
-      return null;
+      try{return history.resolveOwnedRevision({
+        ownerId:actor.id,tenant:actor.tenant,
+      },id);}
+      catch{return null;}
     },
     getCoordinator:async()=>coordinator,
     audit:async entry=>{audits.push("HTTP_"+entry.phase);},
@@ -99,7 +100,7 @@ async function withFlow(run:(f:Fixture)=>Promise<void>){
   });
   const server=createBackendServer({
     targetApplyMockGateway:mockGateway,
-    artifactRevisionHistory:new ArtifactRevisionHistory(),
+    artifactRevisionHistory:history,
     authorizeArtifactRevision:async req=>allowed(req)?
       {ownerId:"alice",tenant}:null,
     testLabController:controller,
@@ -138,6 +139,15 @@ test("one synthetic user HTTP journey: template, pair, ZIP, revision, fake Apply
     const downloaded=Buffer.from(await bundle.arrayBuffer());
     assert.equal(hash(downloaded),artifact.zipSha256);
     assert.equal(bundle.headers.get("x-parser-artifact-revision"),rev);
+
+    const attemptBeforeRegistration=await send(
+      url,"/api/v1/parser-pairs/target/apply",{
+        artifactRevisionId:rev,expectedName:artifact.manifest.parserName,
+        expectedVersion:"1.0.0",approvalId:"owner-allow-123",confirmed:true,
+      });
+    assert.equal(attemptBeforeRegistration.status,404,
+      "an unregistered revision must never be accepted for Apply");
+    assert.equal(writes(),0);
 
     const registered=await send(url,"/api/v1/parser-pairs/revisions/register",{
       pair:generated,version:"1.0.0",
@@ -213,6 +223,11 @@ test("changing the selected CONF port changes both hashes and blocks fake Apply 
     assert.equal(reg.status,200);
     const data=await reg.json() as any;
     assert.notEqual(data.artifactRevisionId,rev);
+    assert.equal(data.selectedParserPort,7324);
+    for(const [name,previousHash] of Object.entries(artifact.manifest.fileHashes)){
+      assert.notEqual(data.fileHashes[name],previousHash,
+        "both Ruby and CONF must be regenerated when source port changes");
+    }
     const zip=await read(url,
       "/api/v1/parser-pairs/revisions/download?artifactRevisionId="+data.artifactRevisionId);
     assert.equal(zip.status,200);

@@ -158,7 +158,14 @@ GET /api/v1/parser-pairs/revisions/download?artifactRevisionId=...,
 POST /api/v1/parser-pairs/revisions/diff and
 POST /api/v1/parser-pairs/revisions/restore-preview.
 Every route checks the server-resolved owner/tenant, and all archive
-downloads have no-store headers. Offline restore-preview returns the
+downloads have no-store headers. The optional
+ArtifactRevisionHistory.resolveOwnedRevision(actor, revisionId) additionally
+lets a trusted backend mock-Apply resolver retrieve the exact stored
+Ruby/CONF pair and revalidated ZIP. Every internal lookup rechecks owner,
+tenant and checksums; it returns defensive copies and is NEVER an HTTP
+route, a customer-data export, or authorization to perform a real DP write.
+The composed offline contract test now reads only revisions actually
+registered by the HTTP user, with no preseeded Apply candidate. Offline restore-preview returns the
 previous owner-owned ZIP without mutating target state or recorded history.
 Storage is capped at 128 revisions and 24 hours, then lost on expiry
 or process restart; this is not a persistent audit or disaster-recovery

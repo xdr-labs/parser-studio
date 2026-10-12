@@ -128,3 +128,29 @@ test("retention quota and TTL are finite with no implied persistent restore",()=
   assert.throws(()=>history.download(alice,a.artifactRevisionId),/REVISION_NOT_FOUND/);
   assert.equal(history.register(alice,next(),"1.0.1").projectRevision,2);
 });
+
+
+test("server-only owned Apply resolver returns immutable exact pair and denies cross-owner IDs",()=>{
+  const history=new ArtifactRevisionHistory();
+  const id=history.register(alice,first(),"1.0.0").artifactRevisionId;
+  for(const unauthorized of [bob,otherTenant]){
+    assert.throws(()=>history.resolveOwnedRevision(unauthorized,id),
+      /REVISION_NOT_FOUND/);
+  }
+  const owned=history.resolveOwnedRevision(alice,id);
+  assert.equal(owned.ownerId,alice.ownerId);
+  assert.equal(owned.tenant,alice.tenant);
+  assert.equal(owned.artifact.manifest.artifactRevisionId,id);
+  assert.equal(owned.artifact.manifest.selectedParserPort,7123);
+  const parser=owned.pair.files.find(f=>f.name==="customized_sample_firewall");
+  assert.ok(parser);
+  parser.content="MUTATED_IN_CALLER";
+  owned.artifact.zip[30]=0xff;
+  owned.artifact.manifest.fileHashes["customized_sample_firewall"]="0".repeat(64);
+  const next=history.resolveOwnedRevision(alice,id);
+  assert.notEqual(next.pair.files.find(f=>f.name==="customized_sample_firewall")!.content,
+    "MUTATED_IN_CALLER");
+  assert.notEqual(next.artifact.zip[30],0xff);
+  assert.notEqual(next.artifact.manifest.fileHashes["customized_sample_firewall"],
+    "0".repeat(64));
+});
