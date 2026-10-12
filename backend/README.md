@@ -142,8 +142,9 @@ Operator connection setup (offline only): Run
 python3 backend/scripts/configure-target.py on a trusted interactive
 dev-atlas SSH terminal to enter test DP HTTPS URL/Tenant/User Scope Key
 and Modular Sensor IP/port/UDP-TCP; optional parser listener port.
-The key uses hidden terminal input and the ignored profile is protected
-0600. --check verifies stored permissions without printing private values.
+The key uses hidden terminal input and is saved OUTSIDE the repository at
+~/.parser-studio-secrets/connection.json, protected by 0700/0600 permissions.
+--check verifies stored permissions without printing private values.
 No automatic DP connection, synthetic sending, or deployment is enabled.
 See [operator setup](docs/TARGET_CONNECTION_SETUP.md).
 

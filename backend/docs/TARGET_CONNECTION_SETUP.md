@@ -24,15 +24,20 @@ validation.
 
 ## Location and security
 
-File saved on dev-atlas only:
+File saved on dev-atlas only, OUTSIDE the repository:
 
-    /home/aella/parser-studio-backend/backend/.tmp/stellar-target/connection.json
+    /home/aella/.parser-studio-secrets/connection.json
 
-Private directory is mode 0700 and file is mode 0600. The entire .tmp
-tree is Git-ignored. Setup is atomic and refuses unsafe symlinks, hardlinks,
-existing file permissions and writable parents. Re-running asks for
-explicit yes before replacing the existing profile. Cancellation leaves
-the previous profile intact.
+Private directory is mode 0700 and file is mode 0600. This path is not
+inside any Git worktree. The existing backend/.tmp directory on dev-atlas
+has group-writable development permissions (0775), so it is deliberately
+NOT used to store an API Key. Do not change permissions of that shared
+development directory to work around secret storage.
+
+Setup is atomic and refuses unsafe symlinks, hardlinks, existing file
+permissions and group/world-writable parent directories. Re-running asks
+for explicit yes before replacing the existing profile. Cancellation
+leaves the previous profile intact.
 
 Verify format, presence and file permissions WITHOUT echoing the
 URL, Tenant, Sensor IP or API Key:

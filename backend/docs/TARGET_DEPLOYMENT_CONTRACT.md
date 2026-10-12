@@ -53,7 +53,8 @@ The owner can now enter DP HTTPS URL, Tenant/User Scope API Key, Sensor IP,
 ingest port/protocol and optional parser listener port using the operator
 interactive script backend/scripts/configure-target.py. See
 [TARGET_CONNECTION_SETUP.md](TARGET_CONNECTION_SETUP.md). It writes only
-to the ignored private on-host profile, never imports preexisting secrets,
+to a private owner-only profile outside the Git worktree at
+~/.parser-studio-secrets/connection.json, never imports preexisting secrets,
 and does NOT make API calls, reserve a port, or authorize deployment.
 
 ## Environment and owner gates (deferred)

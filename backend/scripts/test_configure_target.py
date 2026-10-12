@@ -6,10 +6,14 @@ import importlib.util
 from io import StringIO
 import os
 from pathlib import Path
+import pty
+import select
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -23,6 +27,9 @@ spec.loader.exec_module(config)
 TEST_KEY = "synthetic_example_only_N3v3rUse"
 TEST_URL = "https://dp-test.example.invalid"
 TEST_SENSOR_IP = "192.0.2.34"
+ORIGINAL_HOME_PARENT = config.PARENT
+ORIGINAL_PRIVATE_DIR = config.PRIVATE_DIR
+ORIGINAL_PROFILE_PATH = config.PROFILE_PATH
 
 
 def synthetic():
@@ -55,6 +62,50 @@ class ConfigTests(unittest.TestCase):
         for p in self.patchers:
             p.start()
             self.addCleanup(p.stop)
+
+    def test_default_private_target_is_outside_group_writable_git_worktree(self):
+        self.assertEqual(ORIGINAL_HOME_PARENT, Path.home())
+        self.assertEqual(ORIGINAL_PRIVATE_DIR.parent, Path.home())
+        self.assertEqual(ORIGINAL_PRIVATE_DIR.name, ".parser-studio-secrets")
+        self.assertEqual(ORIGINAL_PROFILE_PATH, ORIGINAL_PRIVATE_DIR / "connection.json")
+        self.assertNotEqual(ORIGINAL_PRIVATE_DIR, config.BACKEND / ".tmp")
+        with self.assertRaises(ValueError):
+            ORIGINAL_PROFILE_PATH.relative_to(config.BACKEND)
+
+    def test_group_writable_checkout_tmp_is_not_modified_by_safe_secret_setup(self):
+        shared_checkout = self.root / "shared-parser-checkout"
+        shared_tmp = shared_checkout / "backend" / ".tmp"
+        shared_tmp.mkdir(parents=True, mode=0o775)
+        os.chmod(shared_checkout, 0o775)
+        os.chmod(shared_tmp, 0o775)
+        safe_private = self.root / ".parser-studio-secrets"
+        safe_file = safe_private / "connection.json"
+        with (
+            patch.object(config, "PARENT", self.root),
+            patch.object(config, "PRIVATE_DIR", safe_private),
+            patch.object(config, "PROFILE_PATH", safe_file),
+        ):
+            config.save_profile(synthetic())
+            self.assertEqual(config.read_profile(), synthetic())
+            self.assertEqual(stat.S_IMODE(safe_private.stat().st_mode), 0o700)
+            self.assertEqual(stat.S_IMODE(safe_file.stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(shared_tmp.stat().st_mode), 0o775)
+        self.assertEqual(list(shared_tmp.iterdir()), [])
+
+    def test_home_parent_mode_0750_is_allowed_but_group_writable_parent_is_not(self):
+        os.chmod(self.root, 0o750)
+        private = self.root / ".parser-studio-secrets"
+        with (
+            patch.object(config, "PARENT", self.root),
+            patch.object(config, "PRIVATE_DIR", private),
+            patch.object(config, "PROFILE_PATH", private / "connection.json"),
+        ):
+            config.save_profile(synthetic())
+            self.assertEqual(config.read_profile(), synthetic())
+            os.chmod(self.root, 0o770)
+            with self.assertRaisesRegex(config.ProfileError, "DIRECTORY_UNSAFE"):
+                config.read_profile()
+        os.chmod(self.root, 0o700)
 
     def test_canonical_profile_and_private_mode(self):
         profile = synthetic()
@@ -176,6 +227,79 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse(profile["deployment"]["automatic_apply_enabled"])
         self.assertNotIn(TEST_KEY, printed.getvalue())
         self.assertNotIn(TEST_KEY, " ".join(seen))
+
+    def test_real_cli_interactive_tty_saves_synthetic_profile_without_api_key_echo(self):
+        # Full real CLI entrypoint against a temporary HOME (never the
+        # operator's actual home or their existing credentials).
+        home = self.root / "synthetic-home"
+        home.mkdir(mode=0o700)
+        prompts = [
+            (b"DP HTTPS URL", TEST_URL),
+            (b"Tenant ID", "tenant_test_123"),
+            (b"DP User Scope API Key", TEST_KEY),
+            (b"Modular Sensor IP", TEST_SENSOR_IP),
+            ("센서 로그 수신 포트".encode("utf-8"), "5514"),
+            ("전송 프로토콜".encode("utf-8"), "udp"),
+            ("파서 .conf 포트".encode("utf-8"), "22150"),
+        ]
+        pid, terminal = pty.fork()
+        if pid == 0:
+            os.environ["HOME"] = str(home)
+            os.execv(sys.executable, [sys.executable, str(SOURCE)])
+        captured = bytearray()
+        all_output = bytearray()
+        sent = 0
+        deadline = time.monotonic() + 12
+        code = None
+        try:
+            while time.monotonic() < deadline:
+                got, _, _ = select.select([terminal], [], [], 0.1)
+                if got:
+                    try:
+                        piece = os.read(terminal, 4096)
+                    except OSError:  # Linux PTY reports EIO after child exits
+                        piece = b""
+                    captured.extend(piece)
+                    all_output.extend(piece)
+                    if len(all_output) > 20000:
+                        self.fail("Interactive setup emitted unexpected large output")
+                if sent < len(prompts) and prompts[sent][0] in captured:
+                    os.write(terminal, (prompts[sent][1] + "\n").encode("utf-8"))
+                    sent += 1
+                    captured.clear()
+                child, wait = os.waitpid(pid, os.WNOHANG)
+                if child == pid:
+                    code = os.waitstatus_to_exitcode(wait)
+                    break
+            self.assertIsNotNone(code, "Synthetic interactive SSH setup hung")
+            self.assertEqual(code, 0, "Synthetic setup failed before collecting all prompts")
+            self.assertEqual(sent, len(prompts))
+            target = home / ".parser-studio-secrets" / "connection.json"
+            self.assertTrue(target.is_file())
+            self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(target.parent.stat().st_mode), 0o700)
+            parsed = __import__("json").loads(target.read_text("utf-8"))
+            self.assertEqual(parsed, synthetic())
+            self.assertNotIn(TEST_KEY.encode("utf-8"), bytes(all_output),
+                             "Hidden key must never echo anywhere in the terminal transcript")
+            checked = subprocess.run(
+                [sys.executable, str(SOURCE), "--check"],
+                env={**os.environ, "HOME": str(home)},
+                text=True, capture_output=True, timeout=10, check=False,
+            )
+            self.assertEqual(checked.returncode, 0)
+            self.assertIn("PROFILE_VALID_PRIVATE", checked.stdout)
+            for private in (TEST_KEY, TEST_URL, TEST_SENSOR_IP, "tenant_test_123"):
+                self.assertNotIn(private, checked.stdout + checked.stderr)
+        finally:
+            try:
+                os.kill(pid, signal.SIGKILL)
+                os.waitpid(pid, 0)
+            except ProcessLookupError:
+                pass
+            except ChildProcessError:
+                pass
+            os.close(terminal)
 
     def test_cli_without_tty_refuses_to_receive_secret_on_stdin(self):
         result = subprocess.run(

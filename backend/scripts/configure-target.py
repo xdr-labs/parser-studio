@@ -4,8 +4,8 @@
 Run on a trusted SSH terminal; no CLI secret arguments, environment secrets,
 HTTP calls, deployment, telemetry or log content. Python stdlib only.
 
-Profile (ignored by git):
-  backend/.tmp/stellar-target/connection.json
+Profile (outside all repository worktrees):
+  ~/.parser-studio-secrets/connection.json
 
 The normal backend does NOT auto-read this file or enable network features.
 A separately approved in-network backend service must authenticate the
@@ -27,8 +27,12 @@ from urllib.parse import urlsplit
 
 SCHEMA = "parser-studio.target-connection.v0.1"
 BACKEND = Path(__file__).resolve().parents[1]
-PARENT = BACKEND / ".tmp"
-PRIVATE_DIR = PARENT / "stellar-target"
+# The dev-atlas Parser Studio checkout and backend/.tmp use shared 0775
+# development permissions. Never place plaintext API Keys there. Store
+# operator-only secrets directly under the owner-controlled home directory.
+# This path is independent of the working directory and outside Git.
+PARENT = Path.home()
+PRIVATE_DIR = PARENT / ".parser-studio-secrets"
 PROFILE_PATH = PRIVATE_DIR / "connection.json"
 MAX_PROFILE_BYTES = 16 * 1024
 TENANT = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
@@ -143,8 +147,8 @@ def _check_directory(path: Path, *, private: bool) -> bool:
     if (not stat.S_ISDIR(item.st_mode) or item.st_uid != os.getuid()
             or stat.S_ISLNK(item.st_mode)):
         fail("DIRECTORY_UNSAFE")
-    # The ignored .tmp parent can be 0755, but it must NOT be writable by
-    # group/others. Private directory must be 0700 (owner-only).
+    # The owning home directory can be 0750/0755, but must not be writable
+    # by group/others. The dedicated secret directory MUST be 0700.
     if item.st_mode & (0o077 if private else 0o022):
         fail("DIRECTORY_UNSAFE")
     return True
