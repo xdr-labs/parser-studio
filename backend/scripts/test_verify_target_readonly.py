@@ -197,6 +197,75 @@ class VerifyContractTests(unittest.TestCase):
                                             "PROFILE_UNAVAILABLE"):
                     probe.read_private_profile()
 
+    def test_port_proposal_uses_both_gets_without_revealing_parser_names(self):
+        calls=[]
+        def send(method,route,auth,*,tenant):
+            calls.append((method,route))
+            if method=="POST":
+                return 200,{"access_token":TEST_JWT}
+            if route.endswith("/parsers"):
+                return 200,{"data":[{"port":20000},{"port":20001},{"port":20005}]}
+            return 200,{"data":[
+                {"port":20001,"parser_name":"customer-record-a"},
+                {"port":20003,"parser_name":"customer-record-b"},
+            ]}
+        result=probe.verify(P,send=send,include_port_plan=True)
+        self.assertEqual(result["portEvidence"]["status"],
+                         "CANDIDATE_REQUIRES_TARGET_RECHECK")
+        self.assertEqual(result["portEvidence"]["candidate"],20002)
+        self.assertEqual(result["portEvidence"]["observedDistinctPorts"],4)
+        self.assertEqual(len(calls),3)
+        self.assertEqual([method for method,route in calls],["POST","GET","GET"])
+        out=StringIO()
+        with redirect_stdout(out):
+            self.assertTrue(probe.print_result(result))
+        text=out.getvalue()
+        self.assertIn("PARSER_LISTENER_PORT_CANDIDATE: 20002",text)
+        self.assertIn("PORT_READY_FOR_DEPLOYMENT: NO",text)
+        self.assertNotIn("customer-record",text)
+        self.assertNotIn(TEST_JWT,text)
+        self.assertNotIn(TEST_KEY,text)
+
+    def test_port_override_collision_and_unknown_sources_fail_closed(self):
+        def fixture(method,route,auth,*,tenant):
+            if method=="POST":
+                return 200,{"access_token":TEST_JWT}
+            return 200,{"data":[{"port":20000},{"port":20003}]}
+        collision=probe.verify(P,send=fixture,include_port_plan=True,check_port=20003)
+        self.assertEqual(collision["portEvidence"]["status"],"KNOWN_COLLISION")
+        candidate=probe.verify(P,send=fixture,include_port_plan=True,check_port=24000)
+        self.assertEqual(candidate["portEvidence"]["status"],
+                         "CANDIDATE_REQUIRES_TARGET_RECHECK")
+        def broken(method,route,auth,*,tenant):
+            if method=="POST":
+                return 200,{"access_token":TEST_JWT}
+            return 200,{"data":[{"name":"not-verified"}]}
+        no_port=probe.verify(P,send=broken,include_port_plan=True)
+        self.assertEqual(no_port["portEvidence"]["status"],"INCOMPLETE_EVIDENCE")
+        self.assertIsNone(no_port["portEvidence"]["candidate"])
+        def other_tenant(method,route,auth,*,tenant):
+            if method=="POST":
+                return 200,{"access_token":TEST_JWT}
+            return 200,{"data":[{"port":20003,"cust_id":"other_tenant"}]}
+        mismatch=probe.verify(P,send=other_tenant,include_port_plan=True)
+        self.assertEqual(mismatch["portEvidence"]["status"],"INCOMPLETE_EVIDENCE")
+        self.assertIsNone(mismatch["portEvidence"]["candidate"])
+        with self.assertRaisesRegex(probe.ReadonlyProbeError,"PORT_INVALID"):
+            probe.verify(P,send=fixture,include_port_plan=True,check_port=80)
+
+    def test_preflight_port_flags_cannot_read_secrets_in_offline_mode(self):
+        with patch.object(probe,"read_private_profile",
+                          side_effect=AssertionError("Must not load operator profile")):
+            out=StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(probe.main([]),0)
+        self.assertNotIn(TEST_KEY,out.getvalue())
+        stderr=StringIO()
+        from contextlib import redirect_stderr
+        with redirect_stderr(stderr):
+            self.assertEqual(probe.main(["--suggest-port"]),2)
+        self.assertIn("PORT_PRECHECK_REQUIRES_EXECUTE",stderr.getvalue())
+
     def test_main_defaults_offline_without_loading_profile_or_network(self):
         with patch.object(probe,"read_private_profile",
                           side_effect=AssertionError("Do not read actual user profile by default")):

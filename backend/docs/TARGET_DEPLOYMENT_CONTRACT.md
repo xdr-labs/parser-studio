@@ -67,10 +67,12 @@ exchange POST and two tenant-scoped Custom Parser inventory GET requests.
 See TARGET_CONNECTION_SETUP.md.
 
 This CLI does not authorize any writes and does not activate the backend
-target adapter. A successful inventory response alone cannot guarantee
-sensor/listener port availability, indexed Interflow data, or normalizer
-runtime operation. The externally approved POC read check must be
-recorded separately from synthetic/mock tests.
+target adapter. The owner has now provided redacted JWT HTTP 200 and two
+HTTP 200 inventory GET results (Custom 4 rows; Catalogue 441 rows).
+Optional --suggest-port and --check-port inspect the same two GET responses
+without an additional network request. The resulting listener proposal
+NEVER authorizes deployment or proves sensor binding availability,
+target port reservation or a working Fluentd runtime normalizer.
 
 ## Environment and owner gates (deferred)
 

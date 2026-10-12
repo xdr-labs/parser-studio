@@ -15,6 +15,8 @@ echo "[1a/5] Offline DP/Sensor operator profile setup security (synthetic only)"
 python3 -m unittest discover -s scripts -p "test_configure_target.py"
 echo "[1aa/5] Read-only DP JWT/GET allowlist contract (MOCK, NO LIVE DP REQUESTS)"
 python3 -m unittest discover -s scripts -p "test_verify_target_readonly.py"
+echo "[1ab/5] Offline known-listener port inventory comparison (synthetic only)"
+python3 -m unittest discover -s scripts -p "test_port_inventory.py"
 
 echo "[1b/5] Synthetic import round-trip + no-echo tamper gate"
 node dist/scripts/inspect-synthetic.js
@@ -142,6 +144,7 @@ const report = {
   rubyChildResourceLimitsChecked: true,
   operatorTargetProfileInputTestsPassed: true,
   operatorTargetReadOnlyProbeMockTestsPassed: true,
+  operatorPortPlanningMockTestsPassed: true,
   pocDisposableLoopbackNullSinkAstChecked: true,
   pocApiMutationPerformed: false,
   offlineSyntheticPreviewNativeChecked: true,

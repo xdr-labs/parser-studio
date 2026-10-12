@@ -20,6 +20,7 @@ import ssl
 import sys
 from typing import Any, Callable
 from urllib import error, parse, request
+from port_inventory import propose_from_ports
 
 ALLOWED_POC_ORIGIN = "https://poc-apac.stellarcyber.cloud"
 PREFIX = "/connect/api/v1"
@@ -141,9 +142,16 @@ def verify(
     profile: dict,
     *,
     send: Callable[..., tuple[int, Any]] = request_json,
+    include_port_plan: bool = False,
+    check_port: int | None = None,
 ) -> dict:
     """Returns metadata ONLY. NEVER returns a key, JWT, parser or raw data."""
     p = validated_profile(profile)
+    if check_port is not None and (
+        type(check_port) is not int or not 1024 <= check_port <= 65535
+    ):
+        no("PORT_INVALID")
+    port_rows = {}
     auth_status, reply = send("POST", AUTH_ROUTE, p["key"], tenant=None)
     result = {
         "auth": {
@@ -185,6 +193,16 @@ def verify(
                 if isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 65535:
                     ports.add(value)
             port_count = len(ports) if ports else None
+        if include_port_plan:
+            if valid and all(
+                type(item.get("port")) is int
+                and 1 <= item["port"] <= 65535
+                and item.get("cust_id", p["tenant"]) == p["tenant"]
+                for item in data
+            ):
+                port_rows[route] = [item["port"] for item in data]
+            else:
+                port_rows[route] = None
         result["reads"].append({
             "route": PREFIX + route,
             "httpStatus": status,
@@ -192,7 +210,29 @@ def verify(
             "recordCount": len(data) if valid else None,
             "distinctReportedPorts": port_count,
         })
+    if include_port_plan:
+        custom = port_rows.get(GET_ROUTES[0])
+        catalogue = port_rows.get(GET_ROUTES[1])
+        result["portEvidence"] = (
+            propose_from_ports(custom, catalogue, requested=check_port)
+            if custom is not None and catalogue is not None
+            else {"status": "INCOMPLETE_EVIDENCE", "candidate": None,
+                  "reserved": False}
+        )
     return result
+
+
+def print_port_evidence(port_data: dict) -> None:
+    """Show a tentative port without returning a vendor record or raw data."""
+    print("PORT_INVENTORY_STATUS:", port_data["status"])
+    print("PARSER_LISTENER_PORT_CANDIDATE:",
+          port_data["candidate"] if port_data["candidate"] is not None else "NONE")
+    if "observedDistinctPorts" in port_data:
+        print("OBSERVED_DISTINCT_PORT_UNION:", port_data["observedDistinctPorts"])
+    print("PORT_RESERVED: NO")
+    print("SENSOR_BINDINGS: NOT_VERIFIED")
+    print("LOCAL_RESERVATIONS: NOT_VERIFIED")
+    print("PORT_READY_FOR_DEPLOYMENT: NO")
 
 
 def print_result(result: dict) -> bool:
@@ -209,6 +249,8 @@ def print_result(result: dict) -> bool:
     print("POC_READ_ONLY_VALIDATION:", "PASS" if pass_read else "NOT_VERIFIED")
     print("PARSER_WRITES=0 SENSOR_SENDS=0")
     print("PORT_COLLISION=NOT_VERIFIED RUNTIME_PARSING=NOT_VERIFIED")
+    if "portEvidence" in result:
+        print_port_evidence(result["portEvidence"])
     return bool(pass_read)
 
 
@@ -216,14 +258,24 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="POC JWT + read-only parser inventory check")
     parser.add_argument("--execute", action="store_true",
                         help="Perform approved JWT exchange POST and two tenant-scoped GETs")
+    port_flags = parser.add_mutually_exclusive_group()
+    port_flags.add_argument("--suggest-port", action="store_true",
+                            help="Propose a port absent from the two inventory GETs")
+    port_flags.add_argument("--check-port", type=int, metavar="PORT",
+                            help="Check a user-selected listener port against the two GETs")
     args = parser.parse_args(argv)
+    if (args.suggest_port or args.check_port is not None) and not args.execute:
+        print("PORT_PRECHECK_REQUIRES_EXECUTE", file=sys.stderr)
+        return 2
     if not args.execute:
         print("OFFLINE_ONLY: no credential read or network request.")
         print("To perform approved live JWT/GET verification, use --execute on dev-atlas.")
         print("NETWORK_ALLOWLIST: 1 JWT exchange POST, 2 parser inventory GET, no mutations.")
         return 0
     try:
-        result = verify(read_private_profile())
+        result = verify(read_private_profile(),
+                        include_port_plan=(args.suggest_port or args.check_port is not None),
+                        check_port=args.check_port)
         return 0 if print_result(result) else 1
     except ReadonlyProbeError as exc:
         print("READ_ONLY_PROBE_FAILED:", str(exc), file=sys.stderr)

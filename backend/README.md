@@ -165,3 +165,11 @@ HTTP statuses/counts only, with redirects disabled and verified HTTPS.
 There are no parser mutations, sensor packets or Interflow lookups.
 Live verification is distinct from offline unit-test PASS. See
 docs/TARGET_CONNECTION_SETUP.md.
+
+The read-only verifier also accepts --execute --suggest-port or
+--execute --check-port PORT. Using only the same permitted JWT exchange
+and two GETs, it checks known Custom Parser/catalogue listener ports
+and returns a provisional non-conflicting candidate or known collision.
+This does not reserve a port, inspect live sensor bindings, store a
+selected port or enable deployment. It outputs no customer parser names
+or API Key.

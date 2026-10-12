@@ -81,8 +81,36 @@ errors entirely OFFLINE with fake tokens/GET replies:
 
     python3 -m unittest discover -s backend/scripts -p test_verify_target_readonly.py -q
 
-Until the operator runs --execute successfully, live DP JWT and
-Custom Parser list access remain NOT VERIFIED by this integration.
+The owner independently ran the read-only command on dev-atlas
+and reported JWT HTTP 200 PASS, tenant Custom Parser list HTTP 200
+(4 rows with 4 distinct reported ports), and Parser catalogue HTTP 200
+(441 rows with 441 distinct reported ports), no mutations/sensor sends.
+Only the operator-supplied redacted status and counts are evidence of
+real API readability. These two lists may overlap.
+
+### Read-only parser listener port comparison (optional)
+
+The existing read-only CLI can also inspect actual numeric ports from
+the two authorized GETs. It never prints customer parser names or raw
+response JSON and does not store the inventory or reserve a port:
+
+    python3 backend/scripts/verify-target-readonly.py --execute --suggest-port
+
+A preferred user-overridden parser listener port can be checked with:
+
+    python3 backend/scripts/verify-target-readonly.py --execute --check-port 23000
+
+The default candidate range is 20000–30000, and the report returns
+CANDIDATE_REQUIRES_TARGET_RECHECK, KNOWN_COLLISION or
+INCOMPLETE_EVIDENCE. Parsing fails closed for missing/invalid source ports
+or unexpected tenant metadata. Even if a proposed port was not observed in
+the readable catalogue, server-side local reservations, sensor mappings,
+simultaneous changes and Fluentd runtime binding are still UNVERIFIED.
+The suggested listener port is NOT the sensor UDP/TCP ingest destination,
+is NOT a socket reservation, and is NOT written to the private profile.
+
+Live connection verification is separate from the native/parser runtime
+qualification and full User E2E gate.
 
 ## Verification and deployment boundaries
 
