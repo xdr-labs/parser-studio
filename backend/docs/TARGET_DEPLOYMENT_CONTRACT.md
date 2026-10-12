@@ -95,3 +95,30 @@ that are not established by the POC-only reference.
 The real deployment/Full User E2E can happen only with an owner-approved
 test target. The offline coordinator is NOT a claim of real Stellar runtime
 or proprietary parser compatibility.
+
+## Mock-only user-target Apply service (P0-LIVE-2 partial)
+
+The standalone TargetApplyMockGateway now implements a server-injected
+mock-only Apply boundary. No default HTTP route or CLI feature is enabled.
+The missing authenticated HTTP route remains pending separate review.
+
+The trusted backend must inject a verified actor and tenant resolver,
+a server-owned immutable revision lookup, independent operation approval,
+an audit sink and an in-memory fake TargetDeploymentCoordinator. Its origin
+MUST end in the non-routable .invalid domain. The browser may only submit
+the revision digest, expected parser name/version, approval ID and explicit
+confirmation; target URLs, API Keys, tenant identifiers, file bytes and
+raw log content are never accepted as Apply inputs.
+
+A mock attempt reuses the coordinator's exact Ruby/CONF hash checks, common
+sensor/listener port constraint, collision inventories, last-second recheck,
+auditing, one POST and unique name/version/port GET reconciliation.
+The mock response is explicitly MOCK_READBACK_VERIFIED, not a real target
+compatibility result. Unknown readback remains UNVERIFIED, with no retry or
+delete. Status is scoped to the authenticated actor and revision, bounded
+to 128 metadata entries with 15-minute expiry, and ephemeral across restart.
+
+Real DP access still requires an entirely separate approved backend adapter,
+durable artifact and audit stores, verified TLS/DNS/egress, tenant authorization,
+real target readback, and per-write authorization. Neither the owner private
+profile nor a live sensor is used by this test-only gateway.
