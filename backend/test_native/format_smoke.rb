@@ -175,4 +175,29 @@ invalid_syslog_timestamps.each do |stamp|
 end
 nil_value = sd_instance.parserstudio_extract('<165>1 - edge fw 1 ID - src_ip=192.0.2.11 action=deny')
 assert(nil_value['syslog_timestamp'] == '-', "RFC5424 timestamp NILVALUE preserved")
-puts "Extended synthetic formats: 36 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+# Strict RFC5424 header subset: version 1 and bounded, printable ASCII
+# HOSTNAME/APP-NAME/PROCID/MSGID. No silent version upgrades or controls.
+rfc5424_head = '<165>1 2026-10-12T01:02:03Z edge fw 123 ID - src_ip=192.0.2.11 action=deny'
+head_ok = sd_instance.parserstudio_extract(rfc5424_head)
+assert(head_ok['syslog_version'] == 1, "RFC5424 valid v1")
+header_cases = [
+  ['version-two', '<165>2 2026-10-12T01:02:03Z edge fw 123 ID - src_ip=192.0.2.11 action=deny'],
+  ['hostname-size', "<165>1 2026-10-12T01:02:03Z #{'h' * 256} fw 123 ID - src_ip=192.0.2.11 action=deny"],
+  ['appname-size', "<165>1 2026-10-12T01:02:03Z edge #{'a' * 49} 123 ID - src_ip=192.0.2.11 action=deny"],
+  ['procid-size', "<165>1 2026-10-12T01:02:03Z edge fw #{'p' * 129} ID - src_ip=192.0.2.11 action=deny"],
+  ['msgid-size', "<165>1 2026-10-12T01:02:03Z edge fw 123 #{'i' * 33} - src_ip=192.0.2.11 action=deny"],
+  ['hostname-non-ascii', '<165>1 2026-10-12T01:02:03Z 테스트 fw 123 ID - src_ip=192.0.2.11 action=deny'],
+  ['hostname-nul', "<165>1 2026-10-12T01:02:03Z e\x00dge fw 123 ID - src_ip=192.0.2.11 action=deny"],
+]
+header_cases.each do |id, text|
+  begin
+    sd_instance.parserstudio_extract(text)
+    raise "RFC5424 invalid header #{id} silently accepted"
+  rescue ArgumentError
+    # Fail closed before field normalization, never emit partial data.
+  end
+end
+max_hostname = '<165>1 2026-10-12T01:02:03Z ' + ('h' * 255) + ' fw 123 ID - src_ip=192.0.2.11 action=deny'
+assert(sd_instance.parserstudio_extract(max_hostname)['body']['src_ip'] == '192.0.2.11',
+       "RFC5424 maximum reviewed hostname length")
+puts "Extended synthetic formats: 45 scenarios PASS (CSV/RFC5424/CEF/LEEF)"

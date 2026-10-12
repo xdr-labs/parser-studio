@@ -304,6 +304,39 @@
         "parser_err_msg": "ArgumentError",
         "parser_err_stage": "extraction"
       }
+    },
+    {
+      "id": "rfc5424-version-two",
+      "slug": "sample_syslog",
+      "raw": "<165>2 2026-10-12T01:02:03Z edge fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-header-overlength",
+      "slug": "sample_syslog",
+      "raw": "<165>1 2026-10-12T01:02:03Z hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-nonascii-header",
+      "slug": "sample_syslog",
+      "raw": "<165>1 2026-10-12T01:02:03Z 테스트 fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
     }
   ]
 }

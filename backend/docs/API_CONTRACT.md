@@ -43,7 +43,7 @@ Main fields: `schemaRevision`, `projectId`, `revision`, `slug`, `vendor`, `produ
 | `json` | `maxDepth`: 1–8, default 8 | JSON object root; nested objects; invalid/deep JSON rejected |
 | `kv` | none | Strict single-line key=value with optional quotes/backslash escapes; literal CR/LF and trailing garbage reject |
 | `csv` | `csvColumns` **required**, `csvDelimiter` optional `,`, `;` or TAB | Strict column count and quoting, one physical CSV line only; literal CR/LF rejects |
-| `syslog_rfc5424` | `syslogBodyFormat`: raw, json, kv, cef or leef | RFC5424 header with explicit RFC3339 timestamp or NILVALUE, bounded adjacent SD elements (up to 1024 bytes), optional nested CEF/LEEF under body.*; no RFC3164, multiline or arbitrary vendor extension syntax |
+| `syslog_rfc5424` | `syslogBodyFormat`: raw, json, kv, cef or leef | RFC5424 v1 header with bounded printable-ASCII HOSTNAME/APP-NAME/PROCID/MSGID and explicit RFC3339 timestamp or NILVALUE, bounded adjacent SD elements (up to 1024 bytes), optional nested CEF/LEEF under body.*; no RFC3164, multiline or arbitrary vendor extension syntax |
 | `cef` | none | Standalone single-line CEF version 0 only, escaped header delimiter and strict KV extension subset; RFC5424-enveloped CEF uses explicit syslog body mode, no arbitrary prefixes |
 | `leef` | none | Standalone LEEF 1.0 TAB and bounded LEEF 2.0 one-byte or hexadecimal 0xHH delimiter subset; ambiguous NUL/newline/equals separators, empty extension tokens and CR/LF reject |
 

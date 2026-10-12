@@ -21,7 +21,7 @@ bash scripts/qualify.sh
 
 `scripts/qualify.sh` works with `PARSER_RUBY_BIN` or its project-local Ruby fallback if present. It checks Node validation/generator/API, builds ten synthetic artifact pairs, Ruby fragment syntax, pure Ruby callbacks, and actual Fluentd 1.17.1 Parser Plugin driver + native Fluent config AST (using an in-memory removal of the production-only transport include).
 
-The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 19 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the nineteen PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
+The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 22 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the twenty-two PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
 
 The generated `.tmp/synthetic-native-report.json` includes HEAD, worktree-dirty state, SHA-256 hashes and explicit `targetImportVerified:false`. An uncommitted/dirty run is **not** exact-HEAD qualification; commit and rerun before asserting exact-HEAD PASS.
 
@@ -32,6 +32,13 @@ Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone
 Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
 
 ## Metadata fail-closed checks
+
+The bounded RFC5424 header now requires VERSION=1, printable US-ASCII
+HOSTNAME (maximum 255 octets), APP-NAME (48), PROCID (128), and MSGID (32).
+A native negative suite checks unknown version, overlong headers, controls,
+and non-ASCII host tokens before normalization, alongside upper bounds and
+valid NILVALUE. These are RFC5424 version-one limits, not vendor compatibility.
+
 
 The bounded RFC5424 extractor validates explicit UTC/offset timestamps
 (or '-' NILVALUE) *before* optional normalization fields are selected.

@@ -208,6 +208,16 @@ def parserstudio_syslog_rfc5424(text, settings)
   pattern = /\A<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)\z/
   match = pattern.match(text)
   raise ArgumentError, 'Unsupported RFC5424 syslog header' unless match
+  # This export implements the RFC5424 VERSION=1 subset only. Reject all
+  # future/unknown versions before normalization can imply support.
+  raise ArgumentError, 'Unsupported RFC5424 version' unless match[2] == '1'
+  # RFC5424 printable US-ASCII HEADER fields with bounded octet lengths;
+  # "-" is a valid NILVALUE within those bounds.
+  {4 => 255, 5 => 48, 6 => 128, 7 => 32}.each do |field, maximum|
+    token = match[field]
+    raise ArgumentError, 'Invalid RFC5424 header token' unless
+      token.bytesize <= maximum && token.match?(/\A[!-~]+\z/)
+  end
   priority = Integer(match[1], 10)
   raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= 191
   # RFC5424 timestamp is NILVALUE or explicit offset-bearing RFC3339.
