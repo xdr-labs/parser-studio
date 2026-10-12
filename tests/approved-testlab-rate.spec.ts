@@ -14,7 +14,7 @@ async function ownedRun(page:Page,status:unknown=base){
     expect(new URL(route.request().url()).searchParams.get('runId')).toBe(runId);
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(status)});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     '{"action":"allow","username":"CUSTOMER_SECRET","src_ip":"198.51.100.10"}');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();

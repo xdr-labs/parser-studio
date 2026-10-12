@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 /** Combined mobile check covers only frontend surfaces; no native parser or target calls. */
 test('390px mobile Guided path retains access to expanded parser controls without horizontal overflow',async({page})=>{
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const width=async(stage:string)=>{
     const metrics=await page.evaluate(()=>({
       page:document.documentElement.scrollWidth,viewport:window.innerWidth,

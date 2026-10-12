@@ -5,7 +5,7 @@ test('user explicitly selects documented scalar standard fields without changing
   page.on('request', request => {
     if (request.url().includes('/api/v1/parser-pairs/')) calls++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}\n' +
     '{"action":"deny","src_ip":"203.0.113.11","dst_port":22}',
@@ -37,7 +37,7 @@ test('user explicitly selects documented scalar standard fields without changing
 });
 
 test('standard field conflicts stay visible and do not overwrite another mapping', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name:/3\. Map Fields/ }).click();
   await page.locator('.guided-map-card').nth(0).locator('.guided-official-field summary').click();
   await page.getByLabel('Official metadata field 0').selectOption('srcip');

@@ -27,7 +27,7 @@ for (const [label, format, event] of fixtures) {
       transmitted.push(route.request().postDataJSON());
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok:true, issues:[] }) });
     });
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Guided raw sample logs').fill(event);
     await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
     await page.getByRole('button', { name: label, exact: true }).click();

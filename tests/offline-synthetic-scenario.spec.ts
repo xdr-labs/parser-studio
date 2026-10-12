@@ -42,7 +42,7 @@ function mockResult(mode:'constant-rate'|'original-gaps',sequence:number){
 }
 
 async function openScenario(page:import('@playwright/test').Page){
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-scenario-preview summary').click();
   return page.getByRole('button',{name:'Preview Selected Synthetic Scenario Event'});

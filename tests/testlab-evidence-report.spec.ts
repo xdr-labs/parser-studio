@@ -34,7 +34,7 @@ async function prepareOwnedRun(page:Page){
     expect(new URL(route.request().url()).searchParams.get('runId')).toBe(runId);
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(session)});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"username":"CUSTOMER_SECRET","src_ip":"198.51.100.101"}');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').first().click();

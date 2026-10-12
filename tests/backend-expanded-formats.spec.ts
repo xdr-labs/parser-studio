@@ -27,7 +27,7 @@ for(const [mode,body] of [
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,issues:[]})});
     });
     const head='<165>1 2026-10-12T01:02:03Z edge fw 1 ID ';
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Guided raw sample logs').fill(
       head+'- '+body+'\n'+head+'- '+body,
     );
@@ -59,7 +59,7 @@ test('old backend is not treated as authorizing newer RFC5424 nested CEF',async(
     validationCalls++;
     return route.abort();
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'RFC5424',exact:true}).click();
   await page.getByLabel('RFC5424 message body format').selectOption('cef');

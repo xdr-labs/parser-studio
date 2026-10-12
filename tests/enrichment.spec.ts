@@ -18,7 +18,7 @@ test('nondeveloper adds a safe constant enrichment and sees it in backend-only p
     posted.push(route.request().postDataJSON());
     return route.fulfill({ status:200,contentType:'application/json',body:JSON.stringify({ ok:true,issues:[] }) });
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"deny","src_ip":"198.51.100.13","dst_port":443}');
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact:true }).click();

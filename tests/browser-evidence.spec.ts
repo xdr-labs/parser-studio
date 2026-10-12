@@ -8,7 +8,7 @@ test('explicit downloaded browser suite evidence is bound to samples but exclude
   page.on('request',request=>{
     if (request.url().includes('/api/v1/parser-pairs/')) backendCalls++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/5\. Test & Fix/}).click();
   const button=page.getByRole('button',{name:'Download Browser Test Evidence JSON'});
   await expect(button).toBeDisabled();
@@ -39,7 +39,7 @@ test('explicit downloaded browser suite evidence is bound to samples but exclude
 });
 
 test('editing the sample invalidates the previous browser evidence download',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/5\. Test & Fix/}).click();
   const button=page.getByRole('button',{name:'Download Browser Test Evidence JSON'});
   await page.getByRole('button',{name:'Run Full Browser Test'}).click();

@@ -9,7 +9,7 @@ const samples=[
 test('local per-event rule trace distinguishes mapped, missing and invalid types without values or backend calls',async({page})=>{
   let requests=0;
   page.on('request',r=>{if(r.url().includes('/api/v1/'))requests++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(samples);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'JSON',exact:true}).click();
@@ -38,7 +38,7 @@ test('local per-event rule trace distinguishes mapped, missing and invalid types
 test('source revision changes cannot reuse an old per-rule trace and never download or transmit samples',async({page})=>{
   let calls=0;
   page.on('request',r=>{if(r.url().includes('/api/v1/'))calls++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(samples);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'JSON',exact:true}).click();

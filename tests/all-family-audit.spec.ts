@@ -10,7 +10,7 @@ const mixed=[
 test('one explicit browser-only audit accounts for every mixed-family event and reports unsupported lines',async({page})=>{
   let apiCalls=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/'))apiCalls++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('group',{name:'Guided format'}).getByRole('button',{name:'JSON',exact:true}).click();
@@ -52,7 +52,7 @@ test('one explicit browser-only audit accounts for every mixed-family event and 
 });
 
 test('all-family coverage is invalidated immediately after a source event edit',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByLabel('Local family isolation workspace').locator('summary').click();
@@ -65,7 +65,7 @@ test('all-family coverage is invalidated immediately after a source event edit',
 });
 
 test('unknown-only source cannot be presented as a supported all-family audit',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     'first unrecognized event\nsecond unrecognized event',
   );
@@ -78,7 +78,7 @@ test('unknown-only source cannot be presented as a supported all-family audit',a
 test('all-family audit supports keyboard activation without storing or uploading samples',async({page})=>{
   let requests=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/'))requests++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   const workspace=page.getByLabel('Local family isolation workspace');
@@ -95,7 +95,7 @@ test('all-family audit supports keyboard activation without storing or uploading
 test('user-downloadable family audit evidence contains only SHA-256 provenance and redacted counts',async({page})=>{
   let backendCalls=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/'))backendCalls++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByLabel('Local family isolation workspace').locator('summary').click();

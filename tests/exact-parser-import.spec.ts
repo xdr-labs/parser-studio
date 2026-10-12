@@ -32,7 +32,7 @@ const capabilities={
   limits:{maxProjectBodyBytes:262144,maxInspectBodyBytes:2097152},
 };
 async function selectExactPair(page:import('@playwright/test').Page){
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('PRIVATE_CUSTOMER_LOG_DO_NOT_STORE');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-pair-inspect summary').click();

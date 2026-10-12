@@ -10,7 +10,7 @@ test('source field chip creates only an explicitly requested safe draft mapping 
   page.on('request',req=>{
     if(req.url().includes('/api/v1/'))apiRequests++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(fixture);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('group',{name:'Guided format'}).getByRole('button',{name:'JSON',exact:true}).click();
@@ -44,7 +44,7 @@ test('source field chip creates only an explicitly requested safe draft mapping 
 });
 
 test('already mapped fields navigate to existing rule without creating duplicate or calling backend',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(fixture);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('group',{name:'Guided format'}).getByRole('button',{name:'JSON',exact:true}).click();
@@ -56,7 +56,7 @@ test('already mapped fields navigate to existing rule without creating duplicate
 });
 
 test('unsafe prototype properties are never promoted to suggested mappings',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     '{"__proto__":"do-not-map","constructor":"not-safe","action":"allow","src_ip":"192.0.2.10","dst_port":80}\n'+
     '{"__proto__":"do-not-map","constructor":"not-safe","action":"deny","src_ip":"192.0.2.11","dst_port":22}',

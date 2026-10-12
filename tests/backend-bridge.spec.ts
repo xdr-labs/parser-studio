@@ -27,7 +27,7 @@ const sample = [
 ].join('\n');
 
 async function readyForBackend(page: import('@playwright/test').Page) {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(sample);
   await page.getByRole('button', { name: 'Next Step' }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();

@@ -26,7 +26,7 @@ test('novice reviews RFC3164 wrapped KV as unsupported without sending sample by
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)});
   });
   page.on('request',request=>{if(request.method()==='POST'&&request.url().includes('/api/v1/'))posts++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(source3164);
   const block=envelope(page);
   expect(gets).toBe(0);
@@ -46,7 +46,7 @@ test('novice reviews RFC3164 wrapped KV as unsupported without sending sample by
 test('RFC5424 JSON recognized and explicitly selected as a draft candidate, without native/target PASS',async({page})=>{
   await page.route('**/api/v1/parser-pairs/capabilities',route=>
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(source5424);
   const block=envelope(page);
   await block.getByRole('button',{name:'Analyze Logs',exact:true}).click();
@@ -68,7 +68,7 @@ test('RFC5424 JSON recognized and explicitly selected as a draft candidate, with
 test('mixed/unknown and multiline events are counted without a false single-format compiler green',async({page})=>{
   await page.route('**/api/v1/parser-pairs/capabilities',route=>
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const input=page.getByLabel('Guided raw sample logs');
   const block=envelope(page);
   await input.fill(source5424+'\n'+source3164+'\nUNRECOGNIZED_PRIVATE_RECORD');
@@ -93,7 +93,7 @@ test('server 403 and forged backend verification keep compilation unverified and
     return route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({...cap,verification:{...cap.verification,targetImportVerified:true}})});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(source5424);
   const block=envelope(page);
   await block.getByRole('button',{name:'Analyze Logs',exact:true}).click();

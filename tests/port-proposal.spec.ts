@@ -21,7 +21,7 @@ test('authorized backend port suggestion is explicitly opted into and never trea
   page.on('request',request=>{
     if(request.method()!=='GET' && request.url().includes('/api/v1/'))writes++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
   await expect(page.getByLabel('Receiving port')).toHaveValue('7501');
   expect(reads).toBe(0);
@@ -48,7 +48,7 @@ test('checking a manually edited parser port does not send credentials or switch
       occupiedPorts:[514,7501,20001],sensorIngestPort:22550,
     })});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
   await page.getByLabel('Receiving port').fill('22550');
   await page.getByRole('button',{name:'Review Entered Port'}).click();
@@ -67,7 +67,7 @@ test('Syslog candidate and sensor/CONF receiving port use one value >= 6800',asy
       body:JSON.stringify({...suggestion,recommendedPort:6800,sensorIngestPort:6800}),
     });
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('group',{name:'Guided format'}).getByRole('button',{name:'RFC5424'}).click();
   await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
@@ -91,7 +91,7 @@ test('unconfigured backend shows a non-blocking warning, leaving manual receiver
     calls++;
     return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'LEGACY_NOT_CONFIGURED'})});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
   await page.getByRole('button',{name:'Request Port Candidate'}).click();
   await expect(page.locator('.guided-port-proposal [role="alert"]')).toContainText('HTTP 503');

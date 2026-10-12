@@ -11,7 +11,7 @@ const STEPS = [
 const NON_ENGLISH_COPY = /[\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF]/u;
 
 test('Guided Builder presents six English-only steps, labels and accessibility metadata', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { name: /Build a custom parser/ })).toBeVisible();
 
@@ -29,7 +29,7 @@ test('Guided Builder presents six English-only steps, labels and accessibility m
 test('English-only status and errors remain clear when offline backend is unavailable', async ({ page }) => {
   await page.route('**/api/v1/parser-pairs/capabilities', (route) =>
     route.fulfill({ status: 503, body: '{"error":"unavailable"}', contentType: 'application/json' }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /6\. Generate Files/ }).click();
   await page.locator('.guided-backend-synthetic summary').click();
   await page.getByRole('button', { name: 'Preview Backend Public Synthetic Sample' }).click();

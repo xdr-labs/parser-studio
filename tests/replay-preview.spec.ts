@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('synthetic log preview continuously mutates timestamp IP username URL until Stop, with zero sensor sends',async({page})=>{
   let apiCalls=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/parser-pairs/'))apiCalls++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(JSON.stringify({
     timestamp:'2020-01-02T03:04:05Z',
     action:'deny',src_ip:'10.0.0.1',username:'private.user',
@@ -38,7 +38,7 @@ test('synthetic log preview continuously mutates timestamp IP username URL until
 });
 
 test('unsupported preview format fails visibly and never pretends to start replay to a sensor',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'Regex',exact:true}).click();
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
@@ -50,7 +50,7 @@ test('unsupported preview format fails visibly and never pretends to start repla
 });
 
 test('changing source sample invalidates previously running local synthetic preview',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"timestamp":"2020-01-02T03:04:05Z","src_ip":"10.0.0.2"}');
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'JSON',exact:true}).click();
@@ -75,7 +75,7 @@ test('all provided single-line JSON samples rotate in order and stop when leavin
   ].join('\n');
   let apiCalls = 0;
   page.on('request', request => { if (request.url().includes('/api/v1/parser-pairs/')) apiCalls++; });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(events);
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact:true }).click();
@@ -105,7 +105,7 @@ test('all provided single-line JSON samples rotate in order and stop when leavin
 test('invalid later log record rejects all replay before any partial output or network call', async({page})=>{
   let apiCalls=0;
   page.on('request', request=>{ if(request.url().includes('/api/v1/parser-pairs/'))apiCalls++; });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"allow"}\naction=deny');
   await page.getByRole('button', { name:/2\. Extract Fields/ }).click();
   await page.getByRole('button', { name:'JSON', exact:true }).click();

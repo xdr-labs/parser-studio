@@ -11,7 +11,7 @@ test('mixed JSON/KV events can be reviewed as two non-destructive browser-only f
   page.on('request',request=>{
     if(request.url().includes('/api/v1/'))backendCalls++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('group',{name:'Guided format'}).getByRole('button',{name:'JSON',exact:true}).click();
@@ -58,7 +58,7 @@ test('mixed JSON/KV events can be reviewed as two non-destructive browser-only f
 });
 
 test('isolated preview evidence is invalidated after the sample changes',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByLabel('Local family isolation workspace').locator('summary').click();
@@ -72,7 +72,7 @@ test('isolated preview evidence is invalidated after the sample changes',async({
 });
 
 test('one-family input has no misleading split-workspace suggestion',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     '{"action":"allow","src_ip":"192.0.2.1","dst_port":80}\n'+
     '{"action":"deny","src_ip":"192.0.2.2","dst_port":22}',
@@ -84,7 +84,7 @@ test('one-family input has no misleading split-workspace suggestion',async({page
 });
 
 test('unknown-only events cannot silently become an exportable isolated family',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     'raw message with no parseable fields here\n\nunknown syntax please ignore me',
   );
@@ -95,7 +95,7 @@ test('unknown-only events cannot silently become an exportable isolated family',
 
 
 test('mixed-family review remains keyboard-operated and exposes status with text, not color alone',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(mixed);
   const stage=page.getByRole('button',{name:/2\. Extract Fields/});
   await stage.focus();

@@ -62,7 +62,7 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       }
     });
 
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Guided raw sample logs').fill(sample);
     await page.getByRole('button',{name:/2\. Extract Fields/}).click();
     await page.getByRole('button',{name:'JSON',exact:true}).click();
@@ -191,7 +191,7 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       pair.files[0].sha256='0'.repeat(64);
       await route.fulfill({response:original,contentType:'application/json',body:JSON.stringify(pair)});
     });
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Guided raw sample logs').fill(sample);
     await page.getByRole('button',{name:/2\. Extract Fields/}).click();
     await page.getByRole('button',{name:'JSON',exact:true}).click();
@@ -205,4 +205,49 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     await expect(page.getByLabel('Generated draft parser pair')).toHaveCount(0);
     expect(realCalls).toBe(1);
   });
+  test('AP2 novice flow compiles a real backend DRAFT pair without choosing parser syntax',async({page})=>{
+    const actions:string[]=[];
+    const sample=[
+      '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
+      '{"action":"deny","src_ip":"203.0.113.5","dst_port":22}',
+    ].join('\n');
+    page.on('request',request=>{
+      const path=new URL(request.url()).pathname;
+      if(request.method()==='POST'&&path.startsWith('/api/v1/parser-pairs/')){
+        actions.push(path.split('/').at(-1)!);
+        const body=request.postData()||'';
+        expect(body).not.toContain('198.51.100.10');
+        expect(body).not.toContain('203.0.113.5');
+        expect(body).not.toContain('apiKey');
+      }
+    });
+    await page.goto('/');
+    await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await expect(page.getByLabel('Suggested field mappings')).toContainText('src_ip');
+    await page.getByLabel('Review Results stage').getByRole('button',{name:/Test & Generate/}).click();
+    await expect(page.getByLabel('Test and Generate stage')).toBeVisible();
+    const generated=page.waitForResponse(r=>r.url().endsWith('/generate')&&r.request().method()==='POST');
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    expect((await generated).status()).toBe(200);
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
+    for(const filename of ['customized_demo_firewall.conf','customized_demo_firewall']){
+      const download=page.waitForEvent('download');
+      await page.getByLabel('Generated Auto Parser DRAFT pair').getByRole('button',{name:filename,exact:true}).click();
+      const result=await download;
+      expect(result.suggestedFilename()).toBe(filename);
+      const bytes=await readFile(await result.path());
+      expect(bytes.byteLength).toBeGreaterThan(0);
+    }
+    expect(actions).toEqual(['validate','generate']);
+    await page.getByLabel('Test and Generate stage').getByRole('button',{name:'Review Results'}).click();
+    await page.getByRole('button',{name:'Back to Logs'}).click();
+    await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(sample);
+    await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"allow","src_ip":"192.0.2.8","dst_port":80}');
+    await expect(page.getByRole('button',{name:'Test & Generate',exact:true})).toBeDisabled();
+  });
+
 });

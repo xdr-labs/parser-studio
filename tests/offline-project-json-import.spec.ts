@@ -11,7 +11,7 @@ if(!result.ok)throw Error('Reviewed fixture does not satisfy frontend schema');
 const project=result.project;
 const bytes=(value:unknown)=>Buffer.from(JSON.stringify(value),'utf8');
 async function open(page:import('@playwright/test').Page){
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('PRIVATE_CUSTOMER_SAMPLE_MUST_NOT_BE_STORED');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-local-project-import summary').click();

@@ -9,7 +9,7 @@ test('typed value hint is browser-only and changes a mapping only after explicit
   page.on('request', request => {
     if (request.url().includes('/api/v1/parser-pairs/')) sent++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(sample);
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name:'JSON', exact:true }).click();

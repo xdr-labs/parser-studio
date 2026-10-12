@@ -8,7 +8,7 @@ const events=[
 test('keyboard-only user can propose a raw field without mouse drag or backend access',async({page})=>{
   let backendCalls=0;
   page.on('request',req=>{if(req.url().includes('/api/v1/'))backendCalls++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(events);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('group',{name:'Guided format'}).getByRole('button',{name:'JSON',exact:true}).click();
@@ -42,7 +42,7 @@ test('keyboard-only user can propose a raw field without mouse drag or backend a
 });
 
 test('keyboard source value must match selected event and is discarded on sample edits',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(events);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   const alternative=page.getByLabel('Keyboard raw-value selection');
@@ -64,7 +64,7 @@ test('keyboard source value must match selected event and is discarded on sample
 
 test('compact viewport keeps the keyboard selection control reachable without overflow',async({page})=>{
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(events);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   const alternative=page.getByLabel('Keyboard raw-value selection');

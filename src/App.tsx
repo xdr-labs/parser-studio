@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 import {
   Activity, AlertCircle, AlertTriangle, ArrowLeftRight, BookOpen, Check, CheckCircle2,
@@ -11,10 +11,12 @@ import type { FieldType, Format, MappingRule, ParserDraft, SuiteResult } from '.
 import { createDraft, DEMO_SAMPLES, FORMATS } from './model';
 import { formatLabel, MAX_DATASET_BYTES } from './parser';
 import { createFieldProposal } from './pattern';
-import GuidedBuilder from './guided/GuidedBuilder';
+// The advanced six-step editor is an on-demand path. Auto Parser is the default.
+const GuidedBuilder = lazy(() => import('./guided/GuidedBuilder'));
+import AutoParser from './guided/AutoParser';
 import { exportPortableDraft, readRevisions, saveRevision, type SavedRevision } from './storage';
 
-type Page = 'guided' | 'workbench' | 'test-lab' | 'library' | 'export' | 'schema';
+type Page = 'auto' | 'guided' | 'workbench' | 'test-lab' | 'library' | 'export' | 'schema';
 type Stage = 'raw' | 'extracted' | 'normalized' | 'diff';
 type EditorTab = 'extraction' | 'mapping';
 type PreviewState = { key: string; suite?: SuiteResult; error?: string };
@@ -22,8 +24,9 @@ type RunState = { key: string; suite: SuiteResult; timestamp: string };
 type NavEntry = { id: Page; label: string; icon: typeof Activity };
 
 const NAV: NavEntry[] = [
-  { id: 'guided', label: 'Guided Builder', icon: WandSparkles },
-  { id: 'workbench', label: 'Workbench', icon: LayoutGrid },
+  { id: 'auto', label: 'Auto Parser', icon: WandSparkles },
+  { id: 'guided', label: 'Edit Details', icon: SlidersHorizontal },
+  { id: 'workbench', label: 'Expert Workbench', icon: LayoutGrid },
   { id: 'test-lab', label: 'Test Lab', icon: FlaskConical },
   { id: 'library', label: 'Parser Library', icon: FolderOpen },
   { id: 'export', label: 'Export & History', icon: GitBranch },
@@ -114,10 +117,17 @@ function saveDownload(name: string, content: string) {
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>('guided');
+  const [page, setPage] = useState<Page>(() => {
+    const workspace = new URLSearchParams(window.location.search).get('workspace');
+    return workspace==='guided'?'guided':workspace==='expert'?'workbench':'auto';
+  });
   const [draft, setDraft] = useState<ParserDraft>(() => createDraft());
-  const [sample, setSample] = useState(DEMO_SAMPLES);
-  const [datasetName, setDatasetName] = useState('Synthetic demo events');
+  const [sample, setSample] = useState(() =>
+    new URLSearchParams(window.location.search).get('workspace')==='guided'
+      ? DEMO_SAMPLES : '');
+  const [datasetName, setDatasetName] = useState(() =>
+    new URLSearchParams(window.location.search).get('workspace')==='guided'
+      ? 'Synthetic demo events' : 'No sample selected');
   const [selectedId, setSelectedId] = useState('event-1');
   const [stage, setStage] = useState<Stage>('normalized');
   const [editorTab, setEditorTab] = useState<EditorTab>('extraction');
@@ -180,7 +190,7 @@ export default function App() {
     setSelectedId('event-1');
     setRevision(null);
     setRunState(null);
-    setPage('guided');
+    setPage('auto');
   };
 
   const openRevision = (saved: SavedRevision) => {
@@ -289,7 +299,7 @@ export default function App() {
           </div>
         </header>
 
-        {page !== 'guided' && <div className="content-heading">
+        {page !== 'guided' && page !== 'auto' && <div className="content-heading">
           <div className="heading-stack">
             <div className="breadcrumbs">WORKSPACE <ChevronRight size={13} /> <strong>{NAV.find((item) => item.id === page)?.label}</strong></div>
             {page === 'workbench' ? (
@@ -303,14 +313,22 @@ export default function App() {
           <div className="stage-marker"><span className="stage-index">01</span><div>WORKBENCH PREVIEW <small>R2 / in development</small></div></div>
         </div>}
 
-        {page === 'guided' && <GuidedBuilder
+        {page === 'auto' && <AutoParser
+          draft={draft} setDraft={setDraft} sample={sample} setSample={setSample}
+          datasetName={datasetName} setDatasetName={setDatasetName}
+          suite={suite} pending={live.pending}
+          runPreview={(candidate,temporarySample)=>runInWorker(temporarySample??sample,candidate)}
+          onEditDetails={()=>setPage('guided')} onExpert={()=>setPage('workbench')}
+        />}
+
+        {page === 'guided' && <Suspense fallback={<p className="guided-note">Loading Edit Details…</p>}><GuidedBuilder
           draft={draft} setDraft={setDraft} sample={sample} setSample={setSample}
           datasetName={datasetName} setDatasetName={setDatasetName}
           suite={suite} pending={live.pending} runState={validRun}
           runPreview={(candidate, temporarySample) => runInWorker(temporarySample ?? sample, candidate)}
           onRunSuite={() => { void runSuite('guided'); }}
           onExpert={() => setPage('workbench')} onSave={handleSave}
-        />}
+        /></Suspense>}
 
         {feedback && <div className="toast" role="status"><CircleHelp size={16} />{feedback}<button aria-label="Dismiss notification" onClick={() => setFeedback('')}><X size={14} /></button></div>}
 

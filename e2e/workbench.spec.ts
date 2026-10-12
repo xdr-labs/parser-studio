@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 test('three-pane editor displays per-event counts, format and unverified export states', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Workbench', exact: true }).click();
+  await page.goto('/?workspace=guided');
+  await page.getByRole('button', { name: 'Expert Workbench', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Sample logs' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Parser pipeline' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Live result' })).toBeVisible();
@@ -23,8 +23,8 @@ test('three-pane editor displays per-event counts, format and unverified export 
 });
 
 test('selected log token produces editable regex and tests all samples before application', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Workbench', exact: true }).click();
+  await page.goto('/?workspace=guided');
+  await page.getByRole('button', { name: 'Expert Workbench', exact: true }).click();
   await page.getByLabel('PASTE RAW EVENTS').fill('src=198.51.100.4 status=ok\nsrc=198.51.100.5 status=ok');
   await page.getByRole('tab', { name: 'RAW' }).click();
   await expect(page.locator('footer.status-strip')).toContainText('Dataset 2');
@@ -53,14 +53,14 @@ test('selected log token produces editable regex and tests all samples before ap
 });
 
 test('failed sample is visible in test lab, and rule-only revisions reopen without samples', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Workbench', exact: true }).click();
+  await page.goto('/?workspace=guided');
+  await page.getByRole('button', { name: 'Expert Workbench', exact: true }).click();
   await page.getByRole('button', { name: 'Run suite' }).click();
   await expect(page.getByRole('heading', { name: 'Fixture runs & diagnostics' })).toBeVisible();
   await expect(page.getByText('Browser suite executed')).toBeVisible();
   await expect(page.locator('.metric-grid')).toContainText('Failed');
   await expect(page.locator('.report-table tbody tr')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Workbench', exact: true }).click();
+  await page.getByRole('button', { name: 'Expert Workbench', exact: true }).click();
   await page.getByLabel('Parser project name').fill('Example Test Parser');
   await page.getByRole('button', { name: 'Save revision' }).click();
   await page.getByRole('button', { name: 'Parser Library' }).click();
@@ -73,8 +73,8 @@ test('failed sample is visible in test lab, and rule-only revisions reopen witho
 
 test('narrow devices show panels without browser-wide horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Workbench', exact: true }).click();
+  await page.goto('/?workspace=guided');
+  await page.getByRole('button', { name: 'Expert Workbench', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Sample logs' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Parser pipeline' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Live result' })).toBeVisible();

@@ -40,7 +40,7 @@ test('disabled by default Test Lab never activates a browser session or sends se
     body:JSON.stringify({...caps,testLab:{...testLab,liveSensorSenderEnabled:false}}),
   }));
   await page.route('**/api/v1/test-lab/sessions/*',route=>{starts++;return route.abort();});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"deny","username":"CUSTOMER_SECRET"}');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
@@ -83,7 +83,7 @@ test('separately approved synthetic Test Lab session: explicit start/pause/resum
       }),
     });
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"allow","username":"CUSTOMER_SECRET","src_ip":"10.0.0.23"}');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
@@ -125,7 +125,7 @@ test('renewing a server session requires separate approval, no implicit renewal'
       }),
     });
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
   await page.getByRole('button',{name:'Check Test Lab Delivery Requirements'}).click();
@@ -149,7 +149,7 @@ test('server 403 denial after capability discovery never invents an active Test 
   await page.route('**/api/v1/test-lab/sessions/start',route=>route.fulfill({
     status:403,contentType:'application/json',body:JSON.stringify({error:'TESTLAB_START_DENIED'}),
   }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
   await page.getByRole('button',{name:'Check Test Lab Delivery Requirements'}).click();
@@ -172,7 +172,7 @@ test('active remote session Stop stays visible after navigating away from export
     return route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({...session,state:action==='stop'?'STOPPED':'RUNNING'})});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
   await page.getByRole('button',{name:'Check Test Lab Delivery Requirements'}).click();
@@ -205,7 +205,7 @@ test('after page reload, authorized user can recover a RUNNING session by ID and
     return route.fulfill({status:200,contentType:'application/json',
       body:JSON.stringify({...session,state:action==='stop'?'STOPPED':'RUNNING'})});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
   const button=page.getByRole('button',{name:'Look Up Test Lab Session by Run ID'});
@@ -227,7 +227,7 @@ test('invalid or foreign session run ID cannot be used for recovery or authoriza
     queried++;
     return route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'TESTLAB_SESSION_NOT_FOUND'})});
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').click();
   const runInput=page.getByLabel('Existing Test Lab run ID');

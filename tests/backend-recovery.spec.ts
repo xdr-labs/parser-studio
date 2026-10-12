@@ -21,7 +21,7 @@ test('backend field error offers a keyboard-accessible route to its no-code edit
       issues: [{ code:'UNMAPPED_ROUTE',path:'/classification/rules/0',message:'Route requires a normalized field' }],
     }),
   }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"allow","src_ip":"198.51.100.10","dst_port":443}');
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();

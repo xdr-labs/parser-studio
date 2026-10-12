@@ -22,7 +22,7 @@ for (const [dialect, eventBody] of [
       sent.push(route.request().postDataJSON() as Record<string, unknown>);
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,issues:[]})});
     });
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Synthetic starter template').selectOption('syslog_rfc5424');
     await page.getByRole('button', {name:'Apply Synthetic Template'}).click();
     await page.getByLabel('Guided raw sample logs').fill(
@@ -45,7 +45,7 @@ for (const [dialect, eventBody] of [
 }
 
 test('existing RFC5424 drafts default to raw body to preserve legacy parser behavior', async ({page}) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'RFC5424',exact:true}).click();
   await expect(page.getByLabel('RFC5424 message body format')).toHaveValue('raw');

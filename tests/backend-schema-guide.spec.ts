@@ -31,7 +31,7 @@ test('explicit local backend schema guide shows supported types, not an official
     expect(route.request().postData()).toBeNull();
     await route.fulfill({ status:200, contentType:'application/json', body:JSON.stringify(schema) });
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"src_ip":"198.51.100.200","action":"allow"}');
   await page.getByRole('button', { name: /3\. Map Fields/ }).click();
   await page.locator('.guided-schema-guide summary').click();
@@ -52,7 +52,7 @@ test('unsupported future backend schema never appears as verified guidance', asy
   await page.route('**/api/v1/parser-pairs/schema', async (route) =>
     route.fulfill({ status:200, contentType:'application/json',
       body: JSON.stringify({ ...schema, $id: 'urn:unknown:parser-studio:v2' }) }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /3\. Map Fields/ }).click();
   await page.locator('.guided-schema-guide summary').click();
   await page.getByRole('button', { name: 'Fetch Backend Schema (GET)' }).click();

@@ -11,7 +11,7 @@ const advisor=(page:import('@playwright/test').Page)=>
 test('beginner pastes JSON without knowing its format and explicitly accepts one safe suggestion',async({page})=>{
   let backendRequests=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/'))backendRequests++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(json);
   const panel=advisor(page);
   await expect(panel).toContainText('Suggested: JSON');
@@ -36,7 +36,7 @@ test('beginner pastes JSON without knowing its format and explicitly accepts one
 test('mixed families, unknown lines, CSV and grouped multiline never get an automatic single-format choice',async({page})=>{
   let requests=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/'))requests++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const input=page.getByLabel('Guided raw sample logs');
   await input.fill(json.split('\n')[0]+'\n'+kv.split('\n')[0]);
   await expect(advisor(page)).toContainText('Multiple log families');
@@ -61,7 +61,7 @@ test('mixed families, unknown lines, CSV and grouped multiline never get an auto
 test('format advice updates after source edit without reusing old sample, sending source or overwriting mappings',async({page})=>{
   let requests=0;
   page.on('request',request=>{if(request.url().includes('/api/v1/'))requests++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const input=page.getByLabel('Guided raw sample logs');
   await input.fill(json);
   await expect(advisor(page)).toContainText('Suggested: JSON');
@@ -81,7 +81,7 @@ test('format advice updates after source edit without reusing old sample, sendin
 test('manually selected wrong format receives a cautious one-click recheck, not a false extraction PASS',async({page})=>{
   let requests=0;
   page.on('request',r=>{if(r.url().includes('/api/v1/'))requests++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const input=page.getByLabel('Guided raw sample logs');
   await input.fill(json);
   await expect(advisor(page)).toContainText('Suggested: JSON');

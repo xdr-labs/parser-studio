@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-test('guided builder is the default six-step no-code experience', async ({ page }) => {
-  await page.goto('/');
+test('the legacy six-step no-code builder remains accessible in Edit Details', async ({ page }) => {
+  await page.goto('/?workspace=guided');
   await expect(page.getByRole('main', { name: 'No-code Parser Guided Builder' })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Build a custom parser/ })).toBeVisible();
   await expect(page.locator('.guided-step')).toHaveCount(6);
@@ -14,7 +14,7 @@ test('guided builder is the default six-step no-code experience', async ({ page 
 });
 
 test('nondeveloper can select a token, test a field proposal and keep JSON family intact', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: 'Next Step' }).click();
   await expect(page.getByRole('heading', { name: 'Which fields do you need to extract?' })).toBeVisible();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
@@ -48,7 +48,7 @@ test('nondeveloper can select a token, test a field proposal and keep JSON famil
 });
 
 test('complete six UI stages, execute browser test, download typed contract but never unverified pair', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided parser name').fill('Synthetic Firewall');
   await page.getByLabel('Guided vendor').fill('Fictitious Network Lab');
   await page.getByLabel('Parser ID').fill('sample_fw');
@@ -90,7 +90,7 @@ test('complete six UI stages, execute browser test, download typed contract but 
 });
 
 test('invalid port and output name block project contract handoff', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Parser ID').fill('../unsafe');
   await page.getByRole('button', { name: /4\. Receive & Classify/ }).click();
   await page.getByLabel('Receiving port').fill('22');
@@ -104,12 +104,12 @@ test('invalid port and output name block project contract handoff', async ({ pag
 });
 
 test('guided draft and expert editor share rules, samples and local revision state', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided vendor').fill('Shared Draft Vendor');
   await page.getByRole('button', { name: 'Open Expert Workbench' }).click();
   await expect(page.getByRole('heading', { name: 'Parser pipeline' })).toBeVisible();
   await expect(page.locator('.input-row input')).toHaveValue('Shared Draft Vendor');
-  await page.getByRole('button', { name: 'Guided Builder' }).click();
+  await page.getByRole('button', { name: 'Edit Details' }).click();
   await expect(page.getByLabel('Guided vendor')).toHaveValue('Shared Draft Vendor');
   await page.getByRole('button', { name: /4\. Receive & Classify/ }).click();
   await page.getByLabel('Receiving port').fill('7588');
@@ -126,7 +126,7 @@ test('guided draft and expert editor share rules, samples and local revision sta
 
 test('small-screen guided mode never hides validation or overflows browser width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await expect(page.getByRole('main', { name: 'No-code Parser Guided Builder' })).toBeVisible();
   await page.getByRole('button', { name: /4\. Receive & Classify/ }).click();
   await expect(page.getByLabel('Receiving port')).toBeVisible();
@@ -138,7 +138,7 @@ test('small-screen guided mode never hides validation or overflows browser width
 });
 
 test('ordered no-code event classification previews the reason per sample without native claims', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /4\. Receive & Classify/ }).click();
   await expect(page.locator('.guided-routing-row')).toHaveCount(3);
   await expect(page.locator('.guided-routing-row').nth(0)).toContainText('Session');
@@ -155,7 +155,7 @@ test('ordered no-code event classification previews the reason per sample withou
 
 
 test('no-code classification shows per-event rule reason and fallback without claiming native routing', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /4\. Receive & Classify/ }).click();
   const routes = page.getByLabel('Sample classification preview');
   await expect(routes.locator('.guided-routing-row')).toHaveCount(3);
@@ -174,7 +174,7 @@ test('no-code classification shows per-event rule reason and fallback without cl
 });
 
 test('malformed sample remains explicitly unclassified instead of being silently routed', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('a log message with no structured fields');
   await page.getByRole('button', { name: /4\. Receive & Classify/ }).click();
   const routes = page.getByLabel('Sample classification preview');
@@ -186,7 +186,7 @@ test('malformed sample remains explicitly unclassified instead of being silently
 
 
 test('visual field review highlights actual capture spans and keeps failed variants visible', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: 'Next Step' }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
   const raw = page.getByLabel('Guided selectable raw event');
@@ -220,7 +220,7 @@ test('visual field review highlights actual capture spans and keeps failed varia
 });
 
 test('nondeveloper can group pretty JSON samples by blank lines without leaking native export readiness', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const sample = [
     '{',
     '  "action":"allow",',
@@ -246,7 +246,7 @@ test('nondeveloper can group pretty JSON samples by blank lines without leaking 
 });
 
 test('changing back to single-line mode restores original per-line preview and survives local revision save', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"allow"}\ncontinuation text\n\n{"action":"deny"}');
   await page.getByRole('button', { name: /Separate events using blank lines/ }).click();
   await expect(page.locator('.guided-boundary-count')).toContainText('Logical events 2');

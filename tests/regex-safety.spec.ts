@@ -5,8 +5,8 @@ test('browser preview refuses known pathological regex before running untrusted 
   page.on('request', request => {
     if (request.url().includes('/api/v1/parser-pairs/')) backendRequests++;
   });
-  await page.goto('/');
-  await page.getByRole('button',{name:'Workbench',exact:true}).click();
+  await page.goto('/?workspace=guided');
+  await page.getByRole('button',{name:'Expert Workbench',exact:true}).click();
   await page.getByLabel('Input format').selectOption('regex');
   await page.getByLabel('Named-group regular expression').fill('(?<x>(a|aa)+)$');
   await page.locator('#sample-textarea').fill('a'.repeat(50)+'!');

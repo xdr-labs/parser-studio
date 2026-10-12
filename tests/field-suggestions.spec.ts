@@ -5,7 +5,7 @@ test('guided user adds all safe unmapped CEF fields with one explicit click', as
   page.on('request', request => {
     if (request.url().includes('/api/v1/parser-pairs/')) backendCalls++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Synthetic starter template').selectOption('cef');
   await page.getByRole('button', { name: 'Apply Synthetic Template' }).click();
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();

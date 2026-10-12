@@ -47,7 +47,7 @@ async function prepareOwnedRun(page:import('@playwright/test').Page) {
   await page.route('**/api/v1/test-lab/sessions/start',route=>route.fulfill({
     status:200,contentType:'application/json',body:JSON.stringify(session),
   }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').first().click();
   await page.getByRole('button',{name:'Check Test Lab Delivery Requirements'}).click();
@@ -97,7 +97,7 @@ test('audited Interflow field match is an explicitly requested, bounded and unve
 test('Interflow readback is hidden until a separately authorized backend run exists',async({page})=>{
   let readCalls=0;
   await page.route('**/api/v1/test-lab/interflow/search',route=>{readCalls++;return route.abort();});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-owner-testlab summary').first().click();
   await expect(page.locator('.guided-interflow-readback')).toHaveCount(0);

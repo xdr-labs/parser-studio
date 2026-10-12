@@ -22,7 +22,7 @@ for (const {name, separator} of [
       projects.push(route.request().postDataJSON() as Record<string, unknown>);
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,issues:[]})});
     });
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Guided raw sample logs').fill(
       ['allow','198.51.100.10','443'].join(separator) + '\n' +
       ['deny','203.0.113.12','22'].join(separator),
@@ -48,7 +48,7 @@ for (const {name, separator} of [
 }
 
 test('legacy CSV drafts without a delimiter remain comma based', async ({page}) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'CSV',exact:true}).click();
   await expect(page.getByLabel('Guided CSV data delimiter')).toHaveValue(',');

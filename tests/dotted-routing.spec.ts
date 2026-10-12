@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('no-code classification honors exact dotted KV source fields and explains matched rule', async ({page}) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     'event.action=deny src_ip=198.51.100.10\n' +
     'event.action=allow src_ip=203.0.113.12',

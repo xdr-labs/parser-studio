@@ -5,7 +5,7 @@ test('malformed dotted output is blocked before any backend API call', async ({ 
   page.on('request', request => {
     if (request.url().includes('/api/v1/parser-pairs/')) requests++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
   await page.getByRole('button', { name: /3\. Map Fields/ }).click();
@@ -18,7 +18,7 @@ test('malformed dotted output is blocked before any backend API call', async ({ 
 });
 
 test('prefix-overlapping output target is rejected with actionable error before backend', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
   await page.getByRole('button', { name: /3\. Map Fields/ }).click();
@@ -29,7 +29,7 @@ test('prefix-overlapping output target is rejected with actionable error before 
 });
 
 test('unsupported floating-point mapping option cannot be selected in no-code export', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /3\. Map Fields/ }).click();
   await expect(page.getByLabel('Field type 0').locator('option[value="number"]')).toHaveAttribute('disabled', '');
 });

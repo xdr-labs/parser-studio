@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 async function choosePair(page: import('@playwright/test').Page, fragmentName = 'customized_demo_fw') {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button', { name: /6\. Generate Files/ }).click();
   await page.locator('.guided-pair-inspect summary').click();
   await page.getByLabel('Inspect pair CONF').setInputFiles({

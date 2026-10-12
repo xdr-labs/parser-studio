@@ -55,7 +55,7 @@ test('user-authorized fixed synthetic preview never sends customer logs, keys, o
   page.on('request',req=>{
     if(req.url().includes('/api/v1/test-lab/sessions/'))otherCalls++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(
     '{"action":"allow","username":"CUSTOMER_TOP_SECRET","src_ip":"10.0.0.90"}',
   );
@@ -85,7 +85,7 @@ test('unsupported or unconfigured backend never sends a synthetic preview POST',
     }),
   }));
   await page.route('**/api/v1/test-lab/preview',route=>{post++;return route.abort();});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-backend-synthetic summary').click();
   await page.getByRole('button',{name:'Preview Backend Public Synthetic Sample'}).click();
@@ -101,7 +101,7 @@ test('backend denies preview even when advertised, so UI does not claim successf
   await page.route('**/api/v1/test-lab/preview',route=>route.fulfill({
     status:403,contentType:'application/json',body:JSON.stringify({error:'TESTLAB_PREVIEW_NOT_AUTHORIZED'}),
   }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-backend-synthetic summary').click();
   await page.getByRole('button',{name:'Preview Backend Public Synthetic Sample'}).click();
@@ -117,7 +117,7 @@ test('forged sensor ready flag or extra source data is never rendered',async({pa
     status:200,contentType:'application/json',
     body:JSON.stringify({...preview,targetSensorVerified:true,customerSecret:'never-display-this'}),
   }));
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-backend-synthetic summary').click();
   await page.getByRole('button',{name:'Preview Backend Public Synthetic Sample'}).click();

@@ -24,7 +24,7 @@ for(const [id,mode,portSource] of [
       sent.push(route.request().postDataJSON() as Record<string,unknown>);
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,issues:[]})});
     });
-    await page.goto('/');
+    await page.goto('/?workspace=guided');
     await page.getByLabel('Synthetic starter template').selectOption(id);
     await page.getByRole('button',{name:'Apply Synthetic Template'}).click();
     await expect(page.getByLabel('Parser ID')).toHaveValue('example_'+id);

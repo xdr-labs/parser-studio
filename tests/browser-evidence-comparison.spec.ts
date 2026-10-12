@@ -9,7 +9,7 @@ const logs = [
 test('same hashed sample report shows one improvement after correcting a type',async({page})=>{
   let backendCalls=0;
   page.on('request',req=>{if(req.url().includes('/api/v1/parser-pairs/'))backendCalls++;});
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill(logs);
   await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'JSON',exact:true}).click();
@@ -51,7 +51,7 @@ test('same hashed sample report shows one improvement after correcting a type',a
 });
 
 test('a hostile previous report is rejected without reflecting any source content',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/5\. Test & Fix/}).click();
   await page.getByRole('button',{name:'Run Full Browser Test'}).click();
   await page.locator('.guided-baseline-compare summary').click();

@@ -5,7 +5,7 @@ test('synthetic CSV starter changes nothing until Apply and provides guided fiel
   page.on('request', request => {
     if (request.url().includes('/api/v1/parser-pairs/')) backendRequests++;
   });
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   const input = page.getByLabel('Guided raw sample logs');
   const original = await input.inputValue();
   await page.getByLabel('Synthetic starter template').selectOption('csv');
@@ -26,7 +26,7 @@ test('synthetic CSV starter changes nothing until Apply and provides guided fiel
 });
 
 test('RFC5424 synthetic starter prepares field mappings and remains DRAFT-only', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?workspace=guided');
   await page.getByLabel('Synthetic starter template').selectOption('syslog_rfc5424');
   await page.getByRole('button', { name: 'Apply Synthetic Template' }).click();
   await expect(page.getByLabel('Guided raw sample logs')).toHaveValue(/<34>1 /);
