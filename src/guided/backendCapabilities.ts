@@ -23,6 +23,17 @@ export interface BackendCapabilities {
     offlineJsonPreview?: boolean;
     requiresBackendPreviewAuthorization?: boolean;
     liveSensorSenderEnabled?: boolean;
+    trustedSinkSessionControlAvailable?: boolean;
+    sessionControlRequiresBackendAuthorization?: boolean;
+    sessionMaxRatePerSecond?: number;
+    sessionMaxLeaseMs?: number;
+    sessionMaxAdditionalEventsPerRenewal?: number;
+    sessionMaxCumulativeEvents?: number;
+    sessionRenewalRequiresSeparateApproval?: boolean;
+    sessionDurableAcrossRestart?: boolean;
+    serverInjectedUdpTcpSinkAvailable?: boolean;
+    sinkRequiresIpLiteralAllowlist?: boolean;
+    sinkRequiresPerDeliveryPolicyAndAudit?: boolean;
     sensorIngestVerified?: boolean;
     runtimeParsingVerified?: boolean;
   };

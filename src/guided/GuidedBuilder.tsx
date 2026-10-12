@@ -21,6 +21,11 @@ import { packageGeneratedPair, assertPackageCapability } from './artifactPackage
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
+import {
+  assertApprovedSessionReady, startApprovedSyntheticSession,
+  fetchApprovedSessionStatus, controlApprovedSession, renewApprovedSession,
+  type ApprovedTestLabStatus,
+} from './approvedTestLabSession';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
@@ -205,6 +210,15 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [backendSyntheticData, setBackendSyntheticData] = useState<AuthorizedSyntheticPreview | null>(null);
   const [backendSyntheticError, setBackendSyntheticError] = useState('');
   const backendSyntheticRequestId = useRef(0);
+  const [sessionReadiness, setSessionReadiness] = useState<'unchecked'|'checking'|'available'|'blocked'>('unchecked');
+  const [sessionApproval, setSessionApproval] = useState('');
+  const [sessionAcknowledged, setSessionAcknowledged] = useState(false);
+  const [sessionRate, setSessionRate] = useState<1|2|5>(1);
+  const [sessionStatus, setSessionStatus] = useState<ApprovedTestLabStatus | null>(null);
+  const [sessionBusy, setSessionBusy] = useState(false);
+  const [sessionError, setSessionError] = useState('');
+  const [sessionRenewApproval, setSessionRenewApproval] = useState('');
+  const sessionActionToken = useRef(0);
   const [localReplaySource, setLocalReplaySource] = useState<{ index: number; line: number; total: number } | null>(null);
   // Source samples stay in memory only. Never serialize this plan into project
   // revisions, API calls or downloaded evidence.
@@ -354,6 +368,55 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     } finally {
       setZipDownloading(false);
     }
+  };
+
+  const checkApprovedTestLabSession = async () => {
+    if (sessionReadiness==='checking' || sessionBusy) return;
+    setSessionReadiness('checking');setSessionError('');
+    try {
+      const cap=await fetchBackendCapabilities();
+      assertApprovedSessionReady(cap);
+      setSessionReadiness('available');
+    } catch {
+      setSessionReadiness('blocked');
+      setSessionError('이 백엔드는 별도 승인된 센서 전송용 sink/권한/허용 목록/감사 기능을 활성화하지 않았습니다. 세션 시작은 차단됩니다.');
+    }
+  };
+  const startApprovedTestLab = async () => {
+    if (sessionReadiness!=='available' || !sessionAcknowledged ||
+        !/^[A-Za-z0-9_.-]{8,96}$/.test(sessionApproval) || sessionBusy ||
+        sessionStatus && ['RUNNING','PAUSED'].includes(sessionStatus.state)) return;
+    const token=++sessionActionToken.current;
+    setSessionBusy(true);setSessionError('');
+    try {
+      // Recheck *now*, not only the capability initially discovered.
+      const cap=await fetchBackendCapabilities();
+      const status=await startApprovedSyntheticSession(sessionApproval,sessionRate,cap);
+      if (token!==sessionActionToken.current) return;
+      setSessionStatus(status);
+      setSessionApproval('');setSessionAcknowledged(false);
+      notify('백엔드가 별도 승인형 Test Lab 세션을 시작했습니다. 전송 성공은 Stellar 파싱/적재 성공의 증거가 아닙니다.');
+    } catch {
+      if(token===sessionActionToken.current)
+        setSessionError('Test Lab 시작이 거부됐습니다. 별도 사용자/운영자 승인, 신뢰된 sink 및 네트워크 허용 정책을 확인하세요.');
+    } finally {setSessionBusy(false);}
+  };
+  const actOnApprovedTestLab = async (action:'refresh'|'pause'|'resume'|'stop'|'renew') => {
+    const id=sessionStatus?.runId;
+    if(!id || sessionBusy) return;
+    const token=++sessionActionToken.current;
+    setSessionBusy(true);setSessionError('');
+    try {
+      const status=action==='refresh'?await fetchApprovedSessionStatus(id):
+        action==='renew'?await renewApprovedSession(id,sessionRenewApproval,60000,20):
+        await controlApprovedSession(id,action);
+      if(token!==sessionActionToken.current)return;
+      setSessionStatus(status);
+      if(action==='renew')setSessionRenewApproval('');
+    }catch {
+      if(token===sessionActionToken.current)
+        setSessionError('서버가 세션 작업을 거부했습니다. 이 화면은 이전 상태일 수 있습니다. 소유자 권한·세션 ID·임대 만료를 확인하세요.');
+    }finally{setSessionBusy(false);}
   };
 
   const requestBackendSyntheticSample = async () => {
@@ -1298,6 +1361,82 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <small>모든 주소와 ID는 문서용 합성 값입니다. 센서 전송 불가 · 실제 Fluentd 실행 미검증 · Stellar 적재 미검증</small>
               </div>}
               <small>승인 거부(HTTP 403), 기능 미지원 또는 불일치 시에는 실행된 것으로 표시하지 않습니다. 이 기능은 세션 시작·센서 전송 버튼이 아닙니다.</small>
+            </details>
+            <details className="guided-owner-testlab" aria-label="Owner approved Test Lab session controls">
+              <summary>Test Lab 승인형 세션 · 독립적인 실제 송신 권한 필요</summary>
+              <p>아래 기능은 브라우저 로컬 미리보기와 다릅니다. 서버 운영자가 별도로 설치한 IP 허용 목록 기반 UDP/TCP sink, 사용자 인증, 운영 승인·감사가 갖춰진 경우에만 실행할 수 있습니다. <b>현재 편집 중인 고객 로그나 DP 자격증명은 세션에 보내지 않으며 공개 합성 JSON만 사용합니다.</b></p>
+              <button className="guided-cta-secondary" type="button"
+                disabled={sessionReadiness==='checking' || sessionBusy}
+                onClick={() => { void checkApprovedTestLabSession(); }}>
+                <ShieldCheck size={15} /> {sessionReadiness==='checking'
+                  ? '서버 전송 조건 확인 중…' : 'Test Lab 전송 조건 확인'}
+              </button>
+              {sessionReadiness==='available' && !sessionStatus && <div className="guided-owner-testlab-confirm">
+                <p>서버의 승인형 전송 기능이 확인됐습니다. 별도의 운영 승인 ID가 있어야만 요청할 수 있습니다. <strong>1분·최대 100개 합성 이벤트</strong>, 자동 갱신 없음.</p>
+                <label className="guided-field"><span>테스트 송신 운영 승인 ID (API Key 아님)</span>
+                  <input aria-label="Test Lab approval identifier" autoComplete="off" maxLength={96}
+                    value={sessionApproval} placeholder="owner-approved-synthetic"
+                    onChange={(event) => setSessionApproval(event.target.value)} />
+                </label>
+                <label className="guided-field"><span>서버에 요청할 최대 생성 속도</span>
+                  <select aria-label="Approved Test Lab rate" value={sessionRate}
+                    onChange={(event) => setSessionRate(Number(event.target.value) as 1|2|5)}>
+                    {[1,2,5].map(rate=><option key={rate} value={rate}>{rate} events/sec</option>)}
+                  </select>
+                </label>
+                <label className="guided-owner-check">
+                  <input type="checkbox" aria-label="I confirm approved sensor test" checked={sessionAcknowledged}
+                    onChange={(event) => setSessionAcknowledged(event.target.checked)} />
+                  별도의 대상·운영자 허용 범위를 승인받았으며 서버 측 최대 60초 세션으로 실행하는 데 동의합니다.
+                </label>
+                <button type="button" className="guided-cta-secondary"
+                  disabled={sessionBusy || !sessionAcknowledged ||
+                    !/^[A-Za-z0-9_.-]{8,96}$/.test(sessionApproval)}
+                  onClick={()=>{void startApprovedTestLab();}}>
+                  <Play size={15} /> 승인형 Test Lab 시작 (최대 60초/100건)
+                </button>
+              </div>}
+              {sessionStatus && <div className="guided-owner-session-status" aria-label="Test Lab session status">
+                <strong>서버 세션 {sessionStatus.state} · 신뢰된 sink의 전송 호출 수 {sessionStatus.sentCount}/{sessionStatus.maxEvents}</strong>
+                <p>실행 ID <code>{sessionStatus.runId}</code> · 임대 만료 {sessionStatus.leaseExpiresAt}</p>
+                <p>재생: {sessionStatus.replayMode} · 합성 형식 {sessionStatus.sampleFamilyCount}개 · 요청 속도 {sessionStatus.ratePerSecond}/초</p>
+                <small>이 숫자는 서버 송신 콜백 호출 수일 뿐 실제 센서 수신·Fluentd 정규화·Stellar 적재가 성공했다는 의미가 아닙니다.</small>
+                <div className="guided-owner-session-buttons">
+                  <button type="button" className="guided-cta-secondary" disabled={sessionBusy}
+                    onClick={()=>{void actOnApprovedTestLab('refresh');}}>상태 새로고침</button>
+                  {sessionStatus.state==='RUNNING' && <button type="button" className="guided-cta-secondary"
+                    disabled={sessionBusy} onClick={()=>{void actOnApprovedTestLab('pause');}}>세션 일시정지</button>}
+                  {sessionStatus.state==='PAUSED' && <button type="button" className="guided-cta-secondary"
+                    disabled={sessionBusy} onClick={()=>{void actOnApprovedTestLab('resume');}}>세션 재개</button>}
+                  {['RUNNING','PAUSED'].includes(sessionStatus.state) && <button type="button"
+                    className="guided-cta-secondary" disabled={sessionBusy}
+                    onClick={()=>{void actOnApprovedTestLab('stop');}}>서버 세션 중지</button>}
+                </div>
+                {['RUNNING','PAUSED'].includes(sessionStatus.state) && <div className="guided-owner-renew">
+                  <label className="guided-field"><span>세션 연장용 새로운 승인 ID (기존 승인 재사용 아님)</span>
+                    <input aria-label="New Test Lab renewal approval" autoComplete="off" maxLength={96}
+                      value={sessionRenewApproval} onChange={(event)=>setSessionRenewApproval(event.target.value)} />
+                  </label>
+                  <button type="button" className="guided-cta-secondary"
+                    disabled={sessionBusy || !/^[A-Za-z0-9_.-]{8,96}$/.test(sessionRenewApproval)}
+                    onClick={()=>{void actOnApprovedTestLab('renew');}}>
+                    60초·20건 추가 승인 요청
+                  </button>
+                  <small>연장은 운영자의 독립적인 재승인이 필요하며 자동으로 실행되지 않습니다.</small>
+                </div>}
+                {['STOPPED','COMPLETED','EXPIRED','FAILED'].includes(sessionStatus.state) &&
+                  <div>
+                    <p>세션 종료 상태입니다. 다시 실행하려면 새 운영 승인·조건 확인이 필요합니다.</p>
+                    <button type="button" className="guided-cta-secondary" onClick={()=>{
+                      setSessionStatus(null);setSessionReadiness('unchecked');
+                      setSessionApproval('');setSessionRenewApproval('');setSessionAcknowledged(false);
+                      setSessionError('');
+                    }}>새 승인으로 세션 준비</button>
+                  </div>}
+              </div>}
+              {sessionError && <p role="alert" className="guided-error">{sessionError}</p>}
+              {sessionReadiness==='blocked' && <small>기본 개발 서버에서는 기능이 꺼져 있습니다. 승인 없이는 시작/UDP/TCP 송신/Interflow 확인을 수행할 수 없습니다.</small>}
+              <small>이 UI는 인증·IP 허용·전송 감사 서비스를 설정하지 않습니다. 브라우저 종료만으로 서버 Stop을 보장하지 않으므로 직접 중지하세요. 미중지 세션도 최대 60초/100개 제한으로 종료되며, 운영 재승인 없이는 자동 연장되지 않습니다.</small>
             </details>
             <div className="guided-hint"><HelpCircle size={16} /> 프로젝트 JSON에는 원본 로그가 포함되지 않습니다. 제공 가능한 파일은 DRAFT Ruby 조각과 CONF이며, 포털 업로드 형식이나 네이티브 엔진 검증 결과로 간주할 수 없습니다.</div>
           </>}

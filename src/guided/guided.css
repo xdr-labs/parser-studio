@@ -474,3 +474,26 @@
 .guided-backend-synthetic-result p { color:#59828a; font-size:10px; }
 .guided-backend-synthetic-result pre { white-space:pre-wrap; overflow-wrap:anywhere; color:#477078; font:10px/1.65 var(--mono); padding:9px; background:#f5faf9; border-radius:5px; max-height:160px; overflow:auto; }
 .guided-backend-synthetic-result small { display:block; font-size:10px; color:#9d774e; line-height:1.6; }
+
+/* Separately owner-approved backend Test Lab session, default DISABLED. */
+.guided-owner-testlab { margin:15px 0; padding:13px; border:1px solid #e4d9c4; border-radius:8px; background:#fffcf6; }
+.guided-owner-testlab summary { color:#936b43; font-size:11px; font-weight:850; cursor:pointer; }
+.guided-owner-testlab > p, .guided-owner-testlab > small { color:#8d765b; font-size:10px; line-height:1.65; display:block; margin:9px 0 12px; }
+.guided-owner-testlab button { font-size:10px; }
+.guided-owner-testlab :is(summary,button,input,select):focus-visible { outline:2px solid #167a85; outline-offset:2px; }
+.guided-owner-testlab-confirm { display:flex; flex-direction:column; gap:10px; margin:10px 0; padding:11px; background:#fff; border:1px solid #e9ddcc; border-radius:7px; }
+.guided-owner-testlab-confirm p { margin:0; color:#7f6b59; font-size:10px; line-height:1.6; }
+.guided-owner-testlab-confirm .guided-field { min-width:0; margin:0; }
+.guided-owner-testlab-confirm :is(input,select) { width:100%; min-width:0; }
+.guided-owner-check { display:flex; align-items:flex-start; gap:9px; line-height:1.55; font-size:10px; color:#8a6b45; }
+.guided-owner-check input { flex:none; width:16px; height:16px; }
+.guided-owner-session-status { border:1px solid #dcd7c7; padding:11px; background:#fff; border-radius:7px; margin:12px 0; overflow-wrap:anywhere; }
+.guided-owner-session-status > strong { font-size:12px; color:#696644; }
+.guided-owner-session-status p, .guided-owner-session-status small { font-size:10px; line-height:1.6; color:#887968; display:block; margin:7px 0; }
+.guided-owner-session-status code { font-size:10px; overflow-wrap:anywhere; }
+.guided-owner-session-buttons { display:flex; flex-wrap:wrap; gap:7px; margin:10px 0; }
+.guided-owner-session-buttons button { flex:1 1 105px; }
+.guided-owner-renew { border-top:1px solid #ede4d8; padding-top:12px; }
+.guided-owner-renew .guided-field { margin:6px 0; }
+.guided-owner-renew input { width:100%; min-width:0; }
+.guided-owner-renew > small { display:block; font-size:10px; margin-top:8px; color:#a17750; }
