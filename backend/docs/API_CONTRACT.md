@@ -127,3 +127,16 @@ The report includes only source SHA-256 values, discovered structural ports,
 supported protocol names and fixed diagnostic codes. It never includes source
 Ruby, CONF text, customer event values or credentials. It does not perform a
 target write, imply real loader verification, or add any network routes.
+
+## P1 deterministic mapping suggestions
+
+The optional mapping-suggestions utility reviews only a finite set of
+source field NAMES and existing normalized destination names. It offers
+common aliases for source/destination IP, destination port, user, URL and
+action, with type hints and a mandatory REVIEW_REQUIRED status.
+
+Name collisions, unknown source names and already-used destinations are
+reported but never auto-applied. It does not read private log values,
+execute regular expressions on source, access target APIs, or validate that
+a particular vendor log actually contains a suggested field. It is not
+enabled as an HTTP endpoint or as an automatic Workbench rewrite.
