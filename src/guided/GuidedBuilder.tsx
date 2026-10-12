@@ -26,6 +26,7 @@ import { validateBackendProject, generateBackendPair, type BackendValidationResu
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
 import { createBrowserEvidence } from './browserEvidence';
+import { compareBrowserEvidence, type BrowserEvidenceComparison } from './browserEvidenceComparison';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
@@ -158,6 +159,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [starterChoice, setStarterChoice] = useState<StarterTemplateId | ''>('');
   const [evidenceDownloading, setEvidenceDownloading] = useState(false);
   const [evidenceError, setEvidenceError] = useState('');
+  const [baselineEvidenceFile, setBaselineEvidenceFile] = useState<File | null>(null);
+  const [comparingEvidence, setComparingEvidence] = useState(false);
+  const [comparisonResult, setComparisonResult] = useState<{ key: string; diff: BrowserEvidenceComparison } | null>(null);
+  const [comparisonError, setComparisonError] = useState<{ key: string; message: string } | null>(null);
 
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
@@ -185,6 +190,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
   const draftKey = JSON.stringify([draft, sample]);
   const qualifiedBackend = backendAttempt?.key === draftKey ? backendAttempt : null;
+  const currentComparison = comparisonResult?.key === draftKey ? comparisonResult.diff : null;
+  const currentComparisonError = comparisonError?.key === draftKey ? comparisonError.message : '';
   const qualifiedPair = generatedPair?.key === draftKey ? generatedPair.pair : null;
   const currentBackendError = backendError?.key === draftKey ? backendError.message : '';
   const names = plannedPairNames(options.slug);
@@ -213,6 +220,31 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       setEvidenceError(error instanceof Error ? error.message : '로컬 테스트 증거를 생성할 수 없습니다.');
     } finally {
       setEvidenceDownloading(false);
+    }
+  };
+
+  const comparePreviousBrowserEvidence = async () => {
+    if (!runState || !baselineEvidenceFile || comparingEvidence || pending) return;
+    const key = draftKey;
+    setComparingEvidence(true);
+    setComparisonResult(null);
+    setComparisonError(null);
+    try {
+      if (baselineEvidenceFile.size < 2 || baselineEvidenceFile.size > 512 * 1024) {
+        throw new Error('이전 테스트 증거는 512 KiB 이하의 JSON이어야 합니다.');
+      }
+      const content = new TextDecoder('utf-8', { fatal: true })
+        .decode(await baselineEvidenceFile.arrayBuffer());
+      const previous: unknown = JSON.parse(content);
+      const current = await createBrowserEvidence({ sample, draft, suite: runState.suite });
+      const diff = compareBrowserEvidence(previous, current);
+      setComparisonResult({ key, diff });
+      notify('같은 원본 샘플의 브라우저 테스트 증거를 비교했습니다. 결과는 현재 세션에만 표시합니다.');
+    } catch {
+      // Do not echo arbitrary parsing errors or untrusted file bodies.
+      setComparisonError({ key, message: '비교 실패: 이전 테스트 파일 형식과 원본 샘플 SHA-256이 일치하는지 확인하세요. 데이터는 전송되지 않았습니다.' });
+    } finally {
+      setComparingEvidence(false);
     }
   };
 
@@ -811,7 +843,35 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               </button>
               <small>현재 초안·샘플로 직접 실행한 결과만 저장합니다. 원본 이벤트·정규화 값·오류 메시지는 제외하고 SHA-256 및 진단 코드만 포함합니다. Fluentd/실제 Stellar 적용은 미검증입니다.</small>
               {evidenceError && <p role="alert" className="guided-error">{evidenceError}</p>}
-            </div>
+            </div>            <details className="guided-baseline-compare" aria-label="Browser evidence baseline comparison">
+              <summary>이전 브라우저 테스트와 비교 · 개선·퇴행 확인</summary>
+              <p>이전 단계에서 다운로드한 증거 JSON을 선택하세요. 파일은 브라우저에서만 검사하며 현재 샘플의 SHA-256이 정확히 같아야 비교됩니다. 실제 Fluentd/장비 E2E는 아닙니다.</p>
+              <label className="guided-field"><span>이전 브라우저 테스트 증거 파일</span>
+                <input type="file" accept=".json,application/json" aria-label="Previous browser evidence JSON"
+                  onChange={(event) => {
+                    setBaselineEvidenceFile(event.target.files?.[0] ?? null);
+                    setComparisonResult(null);
+                    setComparisonError(null);
+                  }} />
+              </label>
+              <button type="button" className="guided-cta-secondary"
+                disabled={!runState || !baselineEvidenceFile || comparingEvidence || pending}
+                onClick={() => { void comparePreviousBrowserEvidence(); }}>
+                <ClipboardCheck size={15} /> {comparingEvidence ? '기준 증거 확인 중…' : '동일 샘플 증거 비교'}
+              </button>
+              {currentComparisonError && <p className="guided-error" role="alert">{currentComparisonError}</p>}
+              {currentComparison && <div className="guided-comparison-result" aria-label="Browser evidence comparison result">
+                <strong>같은 원본 샘플 · 초안 {currentComparison.sameDraft ? '동일' : '변경됨'}</strong>
+                <p>개선 {currentComparison.improved} · 퇴행 {currentComparison.regressed} · 동일 {currentComparison.unchanged} · 진단 변화 {currentComparison.changedDiagnostics}</p>
+                {currentComparison.changed.length > 0 && <ul>
+                  {currentComparison.changed.map((event) => <li key={event.event}>
+                    이벤트 #{event.event} (라인 {event.line}) · {event.change === 'improved' ? '개선' : '퇴행'}
+                  </li>)}
+                </ul>}
+                <small>정규화 성공 여부만 비교합니다. 원본·정규화 값은 표시하지 않으며 Fluentd·Stellar 호환성은 미검증입니다.</small>
+              </div>}
+            </details>
+
             <div className="guided-filter"><span>이벤트별 결과 {suite?.events.length ?? 0}건</span><div>{(['all','fail','warning'] as const).map((filter) => <button type="button" aria-pressed={errorFilter === filter} key={filter} className={errorFilter === filter ? 'selected' : ''} onClick={() => setErrorFilter(filter)}>{filter === 'all' ? '전체' : filter === 'fail' ? '실패만' : '경고만'}</button>)}</div></div>
             <div className="guided-test-events">{(suite?.events ?? []).filter((event) => errorFilter === 'all' || event.status === errorFilter).map((event) =>
               <button className="guided-test-event" type="button" key={event.id} onClick={() => { setSelectedId(event.id); setStep(1); }}>
