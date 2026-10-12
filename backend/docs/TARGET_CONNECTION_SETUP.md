@@ -1,10 +1,10 @@
 # Configure a Test DP + Modular Sensor (operator input)
 
 This config is NOT collected through ChatGPT or the Parser Studio browser.
-Use a trusted interactive SSH terminal on dev-drlink under the normal
+Use a trusted interactive SSH terminal on dev-atlas under the normal
 backend OS account (aella, not sudo):
 
-    cd /home/aella/projects/parser-studio-backend
+    cd /home/aella/parser-studio-backend
     python3 backend/scripts/configure-target.py
 
 The script prompts for:
@@ -24,9 +24,9 @@ validation.
 
 ## Location and security
 
-File saved on dev-drlink only:
+File saved on dev-atlas only:
 
-    /home/aella/projects/parser-studio-backend/backend/.tmp/stellar-target/connection.json
+    /home/aella/parser-studio-backend/backend/.tmp/stellar-target/connection.json
 
 Private directory is mode 0700 and file is mode 0600. The entire .tmp
 tree is Git-ignored. Setup is atomic and refuses unsafe symlinks, hardlinks,
@@ -57,6 +57,6 @@ An independently authorized backend operator will later connect a secure
 target adapter with validated TLS/egress and explicit owner permissions
 before any real sensor/DP testing.
 
-The existing POC User Scope Key on dev-atlas is not copied by this script.
-If that key is needed, handle it using an authorized secret-handling process
-or enter a separate test-only key privately in the trusted SSH session.
+Any existing POC User Scope Key stored elsewhere on dev-atlas is NOT
+read or imported automatically by this script. Enter a separate dedicated
+revocable test-only key through the trusted SSH session after approval.

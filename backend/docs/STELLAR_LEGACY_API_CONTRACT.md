@@ -24,8 +24,8 @@ The server-only TypeScript modules are:
 
 The ordinary server entrypoint creates the backend **without a Legacy
 client, credential, read grant or write gate**. It cannot make POC requests.
-The owner's User Scope Key remains on **dev-atlas**; this implementation did
-not retrieve, copy or assume that secret exists on dev-drlink. A future
+An existing User Scope Key may be protected elsewhere on **dev-atlas**;
+this implementation does not retrieve, read or assume that secret. A future
 approved BFF/operator service may inject a LegacyPocClient with a key obtained
 from its own private secret manager, a read authorization callback, and
 server-side durable approval/audit handlers. Do not send an API Key or JWT

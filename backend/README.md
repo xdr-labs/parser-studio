@@ -140,7 +140,7 @@ reuse credentials or send customer data to any target.
 
 Operator connection setup (offline only): Run
 python3 backend/scripts/configure-target.py on a trusted interactive
-dev-drlink SSH terminal to enter test DP HTTPS URL/Tenant/User Scope Key
+dev-atlas SSH terminal to enter test DP HTTPS URL/Tenant/User Scope Key
 and Modular Sensor IP/port/UDP-TCP; optional parser listener port.
 The key uses hidden terminal input and the ignored profile is protected
 0600. --check verifies stored permissions without printing private values.

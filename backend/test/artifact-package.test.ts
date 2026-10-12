@@ -18,10 +18,21 @@ function unzipEntries(buf:Buffer,names:string[]){
   const path=join(dir,"generated.zip");
   try{
     writeFileSync(path,buf,{mode:0o600});
-    execFileSync("unzip",["-tqq",path],{timeout:5000});
-    return Object.fromEntries(names.map(name=>[
-      name,execFileSync("unzip",["-p",path,name],{timeout:5000}).toString("utf8")
-    ]));
+    // Python stdlib ZIP validation is portable between dev-atlas and
+    // dev-drlink; avoid depending on a globally installed unzip binary.
+    // This is test verification only. Production ZIP generation is TypeScript.
+    const verify = [
+      "import json, sys, zipfile",
+      "with zipfile.ZipFile(sys.argv[1]) as archive:",
+      "    assert archive.testzip() is None",
+      "    wanted = json.loads(sys.argv[2])",
+      "    assert set(archive.namelist()) == set(wanted)",
+      "    print(json.dumps({name: archive.read(name).decode('utf-8') for name in wanted}))",
+    ].join("\n");
+    const result=execFileSync("python3",["-c",verify,path,JSON.stringify(names)],{
+      encoding:"utf8",timeout:5000,
+    });
+    return JSON.parse(result) as Record<string,string>;
   }finally{rmSync(dir,{recursive:true,force:true});}
 }
 async function localServer(run:(url:string)=>Promise<void>){

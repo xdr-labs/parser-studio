@@ -16,8 +16,9 @@ loopback/null-sink protection.
 There is NO default network transport and NO public HTTP Apply route.
 A trusted backend operator injects an exact origin allowlist, tenant,
 a TargetDeploymentApi, an independent per-write approve callback and a
-durable audit callback. No key is read from dev-atlas or stored in this
-repository, URL, browser state, manifest, stdout or a log.
+durable audit callback. No key is imported from an existing dev-atlas
+secret store or checked into this repository, URL, browser state, manifest,
+stdout or a log.
 
 Before each POST, the coordinator:
 
@@ -52,7 +53,7 @@ The owner can now enter DP HTTPS URL, Tenant/User Scope API Key, Sensor IP,
 ingest port/protocol and optional parser listener port using the operator
 interactive script backend/scripts/configure-target.py. See
 [TARGET_CONNECTION_SETUP.md](TARGET_CONNECTION_SETUP.md). It writes only
-to the ignored private on-host profile, never copies keys from dev-atlas,
+to the ignored private on-host profile, never imports preexisting secrets,
 and does NOT make API calls, reserve a port, or authorize deployment.
 
 ## Environment and owner gates (deferred)
