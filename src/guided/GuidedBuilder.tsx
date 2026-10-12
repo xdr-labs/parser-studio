@@ -44,6 +44,7 @@ import { validateBackendProject, generateBackendPair, type BackendValidationResu
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
 import { recommendLocalFormat, type LocalFormatAdvice } from './localFormatAdvisor';
+import AutoParserAnalyzePanel from './AutoParserAnalyzePanel';
 import {
   ISOLATABLE_FAMILIES, planFamilyIsolation, summarizeIsolatedFamilyPreview,
   type FamilyIsolationReport, type IsolatableFamily,
@@ -1246,6 +1247,14 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-section-title"><span>03</span> Add Sample Logs</div>
             <div className="guided-upload"><FileUp size={21} /><span>Paste log text or upload a file.</span><label htmlFor="guided-upload-file" className="guided-upload-button">Choose File</label><input type="file" id="guided-upload-file" onChange={readSampleFile} accept=".txt,.log,.json,.csv,text/plain" hidden /><small>UTF-8 · Max 64 KiB · No automatic external upload</small></div>
             <label className="guided-field"><span>Raw Logs <small>{datasetName}</small></span><textarea aria-label="Guided raw sample logs" spellCheck={false} className="guided-raw-input" value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('User-provided sample · Session only'); }} placeholder="Paste raw device logs, one event per line" /></label>
+            <AutoParserAnalyzePanel sample={sample}
+              boundary={options.eventBoundary??'single-line'}
+              selectedFormat={draft.format}
+              selectedBody={draft.syslogBodyFormat??'raw'}
+              onApply={(format,body)=>setDraft(old=>({
+                ...old,format,
+                ...(format==='syslog_rfc5424'&&body?{syslogBodyFormat:body}:{}),
+              }))}/>
             <LocalFormatRecommendationView advice={localFormatAdvice}
               selected={draft.format} pending={pending}
               onApply={(format)=>changeDraft('format',format)}/>
