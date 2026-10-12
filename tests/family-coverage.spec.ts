@@ -15,6 +15,7 @@ test('nondeveloper can inspect mixed JSON/KV sample families without false expor
   await expect(coverage).toContainText('Key / Value');
   await expect(coverage).toContainText('다른 샘플 1개');
   await expect(coverage).toContainText('별도 파서 초안으로 나눠 검증');
+  await expect(page.getByRole('note', { name:'Mixed format guidance' })).toBeVisible();
   await coverage.getByRole('button',{name:'다른 형식 샘플 확인'}).click();
   await expect(page.getByLabel('Guided selectable raw event')).toContainText('action=deny');
   await page.getByRole('button',{name:/5\. 검사·수정/}).click();

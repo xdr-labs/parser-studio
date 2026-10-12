@@ -577,7 +577,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 </span>)}
                 {!familyCoverage.groups.length && <span>샘플 없음</span>}
               </div>
-              {familyCoverage.incompatible && <div className="guided-family-warning" role="status">
+              {familyCoverage.incompatible && <div className="guided-family-warning" role="note" aria-label="Mixed format guidance">
                 <AlertTriangle size={15} />
                 <span>{draft.format === 'auto'
                   ? '자동 감지는 브라우저 미리보기 전용이며 DRAFT 파일을 생성할 형식을 명시적으로 선택해야 합니다.'
