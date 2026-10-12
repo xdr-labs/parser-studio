@@ -14,6 +14,7 @@ const capabilities={
     requiresBackendPreviewAuthorization:true,liveSensorSenderEnabled:false,
     sensorIngestVerified:false,runtimeParsingVerified:false,
   },
+  import:{exactInternalPairsEditable:true,unknownLegacyRubyEditable:false,structuralInspectionOnly:true},
   verification:{engineVerified:false,targetImportVerified:false,liveListenerVerified:false,proprietaryLoaderVerified:false},
   limits:{maxProjectBodyBytes:262144,maxInspectBodyBytes:2097152},
 };
