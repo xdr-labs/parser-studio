@@ -621,3 +621,7 @@
 .guided-all-family-row > strong { min-width:100px; color:#286a7c; }
 .guided-all-family-row > small { flex-basis:100%; color:#84989f; line-height:1.5; overflow-wrap:anywhere; }
 .guided-all-family-result p.guided-all-family-unknown { border-left:3px solid #d2a275; background:#fff9f1; padding:10px; color:#8c633f; overflow-wrap:anywhere; }
+
+/* Diagnoses each source record without echoing customer text or unsafe codes. */
+.guided-all-family-diagnostics { flex:1 1 100%; margin:2px 0 4px; padding-left:18px; font-size:10px; line-height:1.65; color:#5d7382; }
+.guided-all-family-diagnostics li { overflow-wrap:anywhere; padding:2px 0; }

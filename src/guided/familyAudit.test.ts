@@ -81,6 +81,18 @@ describe('strict browser-only audit of all detected families (P0-B)',()=>{
     expect(()=>summarizeAllFamilyAudit(plan,[runs[0]])).toThrow();
   });
 
+  it('redacts arbitrary diagnostic codes before showing cross-family event details',()=>{
+    const draft=createDraft();draft.format='json';
+    const plan=planAllFamilyAudit(sample,draft,preview(sample,draft));
+    const runs=plan.plans.map(item=>preview(item.sample,{...draft,format:item.format}));
+    runs[0].events[0].diagnostics.push({stage:'validate',severity:'warning',
+      code:'CUSTOMER_SECRET_A',message:'Do not show this raw private content'});
+    const report=summarizeAllFamilyAudit(plan,runs);
+    expect(JSON.stringify(report)).not.toContain('CUSTOMER_SECRET_A');
+    expect(JSON.stringify(report)).not.toContain('Do not show this raw private content');
+    expect(report.families[0].perEvent[0].diagnosticCodes).toContain('DIAGNOSTIC_UNAVAILABLE');
+  });
+
   it('supports an exactly accountable recognized mixed input with zero unknown events',()=>{
     const known=sample.split('\n').slice(0,3).join('\n');
     const draft=createDraft();draft.format='json';

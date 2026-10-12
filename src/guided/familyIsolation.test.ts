@@ -89,6 +89,19 @@ describe('one-family independent browser preview for mixed input',()=>{
     })).toThrow('event');
   });
 
+  it('never exposes arbitrary worker diagnostic code or messages in a family report',()=>{
+    const draft=createDraft();draft.format='json';
+    const suite=preview(source,draft);
+    const plan=planFamilyIsolation(source,draft,suite,'json');
+    const result=preview(plan.sample,{...draft,format:'json'});
+    result.events[0].diagnostics.push({stage:'validate',severity:'warning',
+      code:'PRIVATE_USER_ACCOUNT',message:'secret-event-raw-message'});
+    const summary=summarizeIsolatedFamilyPreview(plan,result);
+    expect(summary.perEvent[0].diagnosticCodes).toContain('DIAGNOSTIC_UNAVAILABLE');
+    expect(JSON.stringify(summary)).not.toContain('PRIVATE_USER_ACCOUNT');
+    expect(JSON.stringify(summary)).not.toContain('secret-event-raw-message');
+  });
+
   it('includes all per-event failure codes without copying the original source values',()=>{
     const draft=createDraft();
     draft.format='json';

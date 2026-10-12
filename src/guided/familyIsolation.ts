@@ -18,6 +18,16 @@ export const ISOLATABLE_FAMILIES = [
 
 export type IsolatableFamily=(typeof ISOLATABLE_FAMILIES)[number];
 
+// Diagnostic codes originate in the browser parser, but a malformed worker
+// must never turn a customer identifier into a report-visible 'code'.
+const SAFE_DIAGNOSTIC_CODES=new Set([
+  'DATASET_TOO_LARGE','EVENT_LIMIT','UNSUPPORTED_FORMAT','EXTRACTION_FAILED',
+  'INVALID_MAPPING','TARGET_COLLISION','SOURCE_NOT_FOUND','TYPE_ERROR',
+  'ENRICHMENT_TARGET','ENRICHMENT_SOURCE','ENRICHMENT_TYPE',
+  'ENRICHMENT_UNSUPPORTED','UNMAPPED_FIELDS','NO_MAPPINGS',
+  'DIAGNOSTIC_UNAVAILABLE',
+]);
+
 export interface FamilyIsolationPlan {
   format: IsolatableFamily;
   /** Ephemeral original event bytes, passed exclusively to local Web Worker. */
@@ -119,7 +129,7 @@ export function summarizeIsolatedFamilyPreview(
       originalLine:plan.originalLines[i]!,
       status:event.status,
       diagnosticCodes:event.diagnostics.map(diag=>
-        /^[A-Z][A-Z0-9_]{0,63}$/.test(diag.code)?diag.code:'DIAGNOSTIC_UNAVAILABLE',
+        SAFE_DIAGNOSTIC_CODES.has(diag.code)?diag.code:'DIAGNOSTIC_UNAVAILABLE',
       ),
     };
   });

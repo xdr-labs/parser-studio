@@ -29,6 +29,12 @@ test('one explicit browser-only audit accounts for every mixed-family event and 
   await expect(report).toContainText('Key / Value');
   await expect(report).toContainText('2 source events');
   await expect(report).toContainText('1 source events');
+  await expect(report.getByLabel('All-family event diagnostics for json'))
+    .toContainText('Original line 1');
+  await expect(report.getByLabel('All-family event diagnostics for kv'))
+    .toContainText('Original line 2');
+  await expect(report.getByLabel('All-family event diagnostics for json'))
+    .toContainText('UNMAPPED_FIELDS');
   await expect(report.getByRole('note')).toContainText('line 4 (Unrecognized)');
   await expect(report).toContainText('not validate a single mixed-format Ruby/CONF parser');
   for(const secret of ['CUSTOMER_SECRET_A','CUSTOMER_SECRET_B','PRIVATE_USER','PRIVATE_UNSUPPORTED_CONTENT']){

@@ -1316,6 +1316,16 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                           <small>Source lines: {family.perEvent.slice(0,12)
                             .map(event=>event.originalLine).join(', ')}
                             {family.perEvent.length>12?' (+more)':''}</small>
+                          <ul className="guided-all-family-diagnostics"
+                            aria-label={'All-family event diagnostics for '+family.format}>
+                            {family.perEvent.slice(0,8).map(event=>
+                              <li key={event.originalLine}>
+                                Original line {event.originalLine} · {event.status.toUpperCase()}
+                                {event.diagnosticCodes.length?' · '+event.diagnosticCodes.join(', '):' · No diagnostics'}
+                              </li>)}
+                          </ul>
+                          {family.perEvent.length>8 &&
+                            <small>Only 8 event statuses are displayed per family. All records remain counted in the audit.</small>}
                         </div>)}
                     </div>
                     {currentAllFamilyAudit.unreviewableCount>0 &&
