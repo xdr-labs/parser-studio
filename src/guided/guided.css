@@ -434,3 +434,16 @@
 .guided-zip-receipt { overflow-wrap:anywhere; margin-top:12px; border:1px solid #d5e9e1; background:#fff; padding:11px; border-radius:7px; }
 .guided-zip-receipt strong { color:#307e73; font-size:11px; }
 .guided-zip-receipt p, .guided-zip-receipt small { color:#6c7b81; font-size:10px; margin:6px 0; display:block; line-height:1.55; }
+
+/* Explicit read-only parser-listener port analysis, never live port availability. */
+.guided-port-proposal { margin:13px 0 15px; padding:13px; border:1px solid #d8e6e8; border-radius:8px; background:#fafcfd; }
+.guided-port-proposal > strong { color:#457781; font-size:11px; }
+.guided-port-proposal > p { color:#6b8692; font-size:10px; line-height:1.6; margin:8px 0 12px; }
+.guided-port-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.guided-port-actions button { flex:1 1 180px; font-size:10px; }
+.guided-port-actions button:focus-visible, .guided-port-result button:focus-visible { outline:2px solid #127988; outline-offset:2px; }
+.guided-port-result { margin-top:13px; border:1px solid #e7d4b4; background:#fffbf5; padding:12px; border-radius:7px; }
+.guided-port-result strong { color:#98642f; font-size:14px; }
+.guided-port-result p { color:#997147; line-height:1.6; font-size:10px; margin:8px 0; }
+.guided-port-result small { display:block; color:#9a744e; line-height:1.6; font-size:10px; overflow-wrap:anywhere; }
+.guided-port-result button { margin-top:10px; }

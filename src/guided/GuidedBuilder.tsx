@@ -18,6 +18,7 @@ import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
+import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
@@ -181,6 +182,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [localReplayCount, setLocalReplayCount] = useState(0);
   const [localReplayText, setLocalReplayText] = useState('');
   const [localReplayMutations, setLocalReplayMutations] = useState<ReplayMutation[]>([]);
+  const [portPlanLoading, setPortPlanLoading] = useState(false);
+  const [portPlanAttempt, setPortPlanAttempt] = useState<{ key: string; plan: ParserPortProposal } | null>(null);
+  const [portPlanError, setPortPlanError] = useState<{ key: string; message: string } | null>(null);
   const [zipVersion, setZipVersion] = useState('1.0.0');
   const [zipDownloading, setZipDownloading] = useState(false);
   const [zipReceipt, setZipReceipt] = useState<{
@@ -245,6 +249,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const currentBackendError = backendError?.key === draftKey ? backendError.message : '';
   const currentZipReceipt = zipReceipt?.key === draftKey && zipReceipt.version === zipVersion ? zipReceipt : null;
   const currentZipError = zipError?.key === draftKey && zipError.version === zipVersion ? zipError.message : '';
+  const currentPortPlan = portPlanAttempt?.key === draftKey ? portPlanAttempt.plan : null;
+  const currentPortPlanError = portPlanError?.key === draftKey ? portPlanError.message : '';
   const names = plannedPairNames(options.slug);
   const hasLogs = Boolean(suite?.counts.total);
   const hardFails = suite?.counts.failures ?? 0;
@@ -256,6 +262,32 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const changeDraft = <K extends keyof ParserDraft>(field: K, value: ParserDraft[K]) =>
     setDraft((old) => ({ ...old, [field]: value }));
   const notify = (text: string) => setMessage(text);
+
+  const checkParserListenerPort = async (override: boolean) => {
+    if (portPlanLoading) return;
+    const key = draftKey;
+    setPortPlanLoading(true);
+    setPortPlanError(null);
+    setPortPlanAttempt(null);
+    try {
+      const plan = await fetchParserPortProposal(override ? options.receiver.port : undefined);
+      if (latestDraftKeyRef.current === key) setPortPlanAttempt({ key, plan });
+    } catch (error) {
+      if (latestDraftKeyRef.current === key) {
+        setPortPlanError({ key,
+          message: error instanceof Error ? error.message : '로컬 백엔드의 포트 목록을 확인할 수 없습니다.' });
+      }
+    } finally {
+      setPortPlanLoading(false);
+    }
+  };
+  const useSuggestedParserPort = () => {
+    if (!currentPortPlan || currentPortPlan.source !== 'SUGGESTED' || currentPortPlan.deployableNow) return;
+    setReceiver('port', currentPortPlan.recommendedPort);
+    setPortPlanAttempt(null);
+    setPortPlanError(null);
+    notify('추천 포트를 초안에만 적용했습니다. CONF 재생성 및 최종 배포 전 포트 충돌 재확인이 필요합니다.');
+  };
 
   const downloadCheckedArtifactZip = async () => {
     if (!qualifiedPair || !qualifiedBackend?.result.ok || pending || zipDownloading) return;
@@ -921,7 +953,33 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <label className="guided-field"><span>바인드 방식</span><select aria-label="Bind policy" value={options.receiver.bindPolicy} onChange={(e) => setReceiver('bindPolicy', e.target.value)}><option value="loopback">로컬 테스트 (127.0.0.1)</option><option value="all">전체 인터페이스 (0.0.0.0)</option></select></label>
               <label className="guided-field"><span>최대 메시지 (bytes)</span><input aria-label="Message limit" type="number" min={1024} max={65536} value={options.receiver.messageLimit} onChange={(e) => setReceiver('messageLimit', Number(e.target.value))} /></label>
             </div>
-            <div className="guided-hint"><ShieldAlert size={16} /> 실제 서버의 수신 포트 충돌·권한 여부는 아직 확인할 수 없습니다. 저장된 샘플의 동일 포트 사용은 활성 충돌의 증거가 아닙니다.</div>
+            <div className="guided-port-proposal" aria-label="Parser listener port candidate">
+              <strong>실제 파서 리스너 포트 후보 · 읽기 전용</strong>
+              <p>권한 있는 로컬 백엔드가 제공하는 파서·카탈로그 목록과 예약 정보만 확인합니다. 포트 후보는 실제 센서 수집 목적지 포트가 아니며 배포 직전 충돌·권한 재확인이 반드시 필요합니다.</p>
+              <div className="guided-port-actions">
+                <button type="button" className="guided-cta-secondary" disabled={portPlanLoading}
+                  onClick={() => { void checkParserListenerPort(false); }}>
+                  <ShieldCheck size={15} /> {portPlanLoading ? '목록 확인 중…' : '추천 포트 후보 조회'}
+                </button>
+                <button type="button" className="guided-cta-secondary" disabled={portPlanLoading}
+                  onClick={() => { void checkParserListenerPort(true); }}>
+                  <HelpCircle size={15} /> 현재 입력 포트 검토
+                </button>
+              </div>
+              {currentPortPlanError && <p className="guided-error" role="alert">{currentPortPlanError}</p>}
+              {currentPortPlan && <div className="guided-port-result" aria-label="Parser port proposal result">
+                <strong>{currentPortPlan.recommendedPort} · {currentPortPlan.source === 'USER_OVERRIDE' ? '사용자 입력 포트' : '추천 후보'}</strong>
+                <p>포트 점유 증거 {currentPortPlan.occupiedPorts.length}개 확인 · {currentPortPlan.status === 'INCOMPLETE_EVIDENCE'
+                  ? 'INCOMPLETE_EVIDENCE · 센서 바인딩/예약 증거 미완성 가능'
+                  : 'CANDIDATE_REQUIRES_DEPLOY_RECHECK · 배포 직전 재확인 필요'}</p>
+                {currentPortPlan.missingEvidence.length > 0 && <small>미확인 자료: {currentPortPlan.missingEvidence.join(', ')}</small>}
+                <small>후보일 뿐: 현재 배포 불가 · 사용 가능 확정 아님 · 실제 센서 수신 포트 확인 아님</small>
+                {currentPortPlan.source === 'SUGGESTED' && <button type="button" className="guided-cta-secondary" onClick={useSuggestedParserPort}>
+                  추천 후보를 초안 포트로 설정 (재검증 필요)
+                </button>}
+              </div>}
+            </div>
+            <div className="guided-hint"><ShieldAlert size={16} /> 실제 센서 파서 바인딩 또는 동시 예약 여부가 확인되기 전에는 어느 포트도 사용 가능하다고 보증할 수 없습니다. 추천을 적용해도 자동 배포하거나 실제 네트워크 소켓을 열지 않습니다.</div>
             <div className="guided-section-title"><span>02</span> 이벤트 유형 분류</div>
             <p className="guided-description">로그에 있는 필드 값에 따라 이벤트 유형을 자동 선택합니다. 여러 규칙이 일치하면 위쪽 규칙을 우선합니다.</p>
             <div className="guided-conditions">{options.classification.rules.map((rule, index) =>
