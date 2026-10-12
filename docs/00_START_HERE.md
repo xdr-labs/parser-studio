@@ -1,12 +1,12 @@
 # Parser Studio — Start Here
 
-**Product:** Standalone no-code Stellar Cyber custom parser builder  
-**Canonical roadmap:** [Issue #1](https://github.com/xdr-labs/parser-studio/issues/1) and [06 — Roadmap](06_ROADMAP_AND_ACCEPTANCE.md)  
+**Product:** Standalone no-code Stellar Cyber custom parser builder — Auto Parser v2 P0 first  
+**Canonical roadmap and FIRST priority:** [Issue #1](https://github.com/xdr-labs/parser-studio/issues/1), [06 — Roadmap](06_ROADMAP_AND_ACCEPTANCE.md), [12 — Auto Parser v2](12_AUTO_PARSER_V2_PRIORITY_ROADMAP.md)  
 **Execution:** A separate chat/session owns implementation. This documentation branch must not touch its worktree, source, CI or production service.
 
 ## Goal — replace external parser authoring
 
-A field SE, partner or ordinary user pastes/uploads raw device logs, configures parsing and Stellar Cyber field mapping in a **six-step guided Web UI without writing Ruby, Regex or Fluentd**, tests all representative records, and downloads the reference-format pair:
+**Owner priority (2026-10-12):** A field SE, partner or ordinary user pastes/uploads raw device logs *without knowing the format*, reviews automatically extracted fields, and tests/generates a parser through **three default steps** — **Add Logs → Review Results → Test & Generate**. The implemented six-step Guided Builder remains available as a detailed editor, and Expert Workbench remains optional. No Ruby, Regex, Fluentd or manual format choice is required for supported beginner cases. After truthful native validation the user can download the reference-format pair:
 
 ```text
 customized_<slug>.conf    # receiver and routing rules
@@ -20,7 +20,8 @@ The editor is independent of Stellar Cyber versions. Actual compatibility is **p
 | Document | Authoritative subject |
 | --- | --- |
 | **[06 Roadmap](06_ROADMAP_AND_ACCEPTANCE.md)** | Single implementation priority order, milestone acceptance, evidence gates |
-| **[08 No-code UI](08_NO_CODE_USER_EXPERIENCE.md)** | Default six-step Guided Builder, controls, screen behaviors and user scenarios |
+| **[12 Auto Parser v2](12_AUTO_PARSER_V2_PRIORITY_ROADMAP.md)** | Owner-directed top P0 tasks, 3-step default UI, new Recipe IR, full tests and privacy criteria |
+| **[08 No-code UI](08_NO_CODE_USER_EXPERIENCE.md)** | Existing secondary six-step Guided Builder, controls, screen behaviors and user scenarios |
 | **[09 Paired backend](09_BACKEND_PAIRED_ARTIFACT_DESIGN.md)** | Actual host pair shapes, IR/compiler, native runner, routing and safety boundaries |
 | [03 Requirements](03_FUNCTIONAL_REQUIREMENTS.md) | Functional IDs, typed mapping, core safety and regression requirements |
 | [02 Expert Workbench](02_WEB_UI_SPEC.md) | Optional three-pane advanced view — not the default experience |
