@@ -3,7 +3,7 @@ import {createDraft} from '../model';
 import {preview} from '../parser';
 import {compareCandidate} from './autoParserRegression';
 import {readApprovedPatterns,saveApprovedMapping,validApprovedPattern,
- prepareApprovedPatternDraft} from './approvedPatterns';
+ prepareApprovedPatternDraft,forgetApprovedPattern} from './approvedPatterns';
 
 function storage():Storage{
  const data=new Map<string,string>();
@@ -62,6 +62,16 @@ describe('P1-AP7 explicit safe reusable patterns',()=>{
    .toMatchObject({ok:false,reason:'DUPLICATE_OR_CONFLICT'});
   expect(prepareApprovedPatternDraft({...draft,format:'kv'},saved))
    .toMatchObject({ok:false,reason:'MISMATCHED_FORMAT'});
+ });
+ it('forgets only an explicitly selected browser-local pattern, not the live draft',()=>{
+  const s=storage(),{draft,candidate,mapping,comparison}=ready();
+  const saved=saveApprovedMapping({draft:candidate,mapping,comparison},s);
+  expect(forgetApprovedPattern('review-not-a-valid-id',s)).toBe(false);
+  expect(readApprovedPatterns(s)).toHaveLength(1);
+  expect(forgetApprovedPattern(saved.id,s)).toBe(true);
+  expect(readApprovedPatterns(s)).toEqual([]);
+  expect(draft.mappings).toHaveLength(3);
+  expect(forgetApprovedPattern(saved.id,s)).toBe(false);
  });
  it('filters tampered entries, unsafe keys, oversized or invalid list',()=>{
   const s=storage(),{candidate,mapping,comparison}=ready();

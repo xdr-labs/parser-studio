@@ -17,7 +17,7 @@ import type {StructuralMiningReport} from './localPatternMining';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
   proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
-  type ApprovedPattern} from './approvedPatterns';
+  forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 import {prepareBoundedPathCandidate} from './boundedPathReview';
 import {proposeReviewableMapping,compareCandidate,
  type CandidateComparison} from './autoParserRegression';
@@ -639,6 +639,13 @@ export default function AutoParser({
          </label>
          <button type="button" disabled={!selectedPattern||busy||pending||!suite}
            onClick={()=>{void compareStoredPattern();}}>Compare Saved Pattern with Holdout</button>
+         <button type="button" disabled={!selectedPattern||busy}
+           onClick={()=>{
+             if(!window.confirm('Forget the selected browser-local mapping signature? This does not change current parser rules.'))return;
+             if(forgetApprovedPattern(selectedPattern)){
+               setApprovedPatterns(readApprovedPatterns());setSelectedPattern('');
+             }else setRepairNotice('Unable to remove the selected browser-local mapping.');
+           }}>Forget Selected Saved Pattern</button>
          <span>{approvedPatterns.length} approved browser-local mapping signatures</span>
        </details>
        <div className="auto-parser-note" aria-label="Local review session metrics">

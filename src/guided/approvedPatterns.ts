@@ -112,3 +112,15 @@ export function prepareApprovedPatternDraft(draft:ParserDraft,pattern:unknown):P
  if(!toBackendProject(candidate).ok)return {ok:false,reason:'UNSUPPORTED_BACKEND'};
  return {ok:true,draft:candidate,source:mapping.source,target:mapping.target};
 }
+
+/** Explicit local pattern removal; never changes the live draft or any revision. */
+export function forgetApprovedPattern(id:string,storage?:Storage):boolean{
+ if(typeof id!=='string'||!/^review-[a-f0-9-]{12,40}$/.test(id))return false;
+ try{
+   const before=readApprovedPatterns(storage);
+   const next=before.filter(entry=>entry.id!==id);
+   if(next.length===before.length)return false;
+   store(storage).setItem(KEY,JSON.stringify(next));
+   return true;
+ }catch{return false;}
+}
