@@ -17,6 +17,7 @@ import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
+import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
@@ -75,6 +76,17 @@ const CLASS_LABELS: Record<EventClass, string> = {
 
 function localDownload(filename: string, source: string, mediaType = 'application/json;charset=utf-8') {
   const url = URL.createObjectURL(new Blob([source], { type: mediaType }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function localDownloadBinary(filename: string, bytes: ArrayBuffer) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }));
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
@@ -169,6 +181,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [localReplayCount, setLocalReplayCount] = useState(0);
   const [localReplayText, setLocalReplayText] = useState('');
   const [localReplayMutations, setLocalReplayMutations] = useState<ReplayMutation[]>([]);
+  const [zipVersion, setZipVersion] = useState('1.0.0');
+  const [zipDownloading, setZipDownloading] = useState(false);
+  const [zipReceipt, setZipReceipt] = useState<{
+    key: string; version: string; filename: string; sha256: string;
+    artifactRevisionId: string; listenerPort: number;
+  } | null>(null);
+  const [zipError, setZipError] = useState<{ key: string; version: string; message: string } | null>(null);
   const [localReplayError, setLocalReplayError] = useState('');
   const [localReplaySource, setLocalReplaySource] = useState<{ index: number; line: number; total: number } | null>(null);
   // Source samples stay in memory only. Never serialize this plan into project
@@ -201,6 +220,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
   const draftKey = JSON.stringify([draft, sample]);
+  const latestDraftKeyRef = useRef(draftKey);
+  useEffect(() => { latestDraftKeyRef.current = draftKey; }, [draftKey]);
   const replayInputRef = useRef(draftKey);
   useEffect(() => {
     // Stop simulation if rules or sample change; never silently reuse stale
@@ -222,6 +243,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const currentComparisonError = comparisonError?.key === draftKey ? comparisonError.message : '';
   const qualifiedPair = generatedPair?.key === draftKey ? generatedPair.pair : null;
   const currentBackendError = backendError?.key === draftKey ? backendError.message : '';
+  const currentZipReceipt = zipReceipt?.key === draftKey && zipReceipt.version === zipVersion ? zipReceipt : null;
+  const currentZipError = zipError?.key === draftKey && zipError.version === zipVersion ? zipError.message : '';
   const names = plannedPairNames(options.slug);
   const hasLogs = Boolean(suite?.counts.total);
   const hardFails = suite?.counts.failures ?? 0;
@@ -233,6 +256,33 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const changeDraft = <K extends keyof ParserDraft>(field: K, value: ParserDraft[K]) =>
     setDraft((old) => ({ ...old, [field]: value }));
   const notify = (text: string) => setMessage(text);
+
+  const downloadCheckedArtifactZip = async () => {
+    if (!qualifiedPair || !qualifiedBackend?.result.ok || pending || zipDownloading) return;
+    const key = draftKey;
+    const version = zipVersion;
+    setZipDownloading(true);
+    setZipError(null);
+    setZipReceipt(null);
+    try {
+      const capabilities = await fetchBackendCapabilities();
+      assertPackageCapability(capabilities);
+      const archive = await packageGeneratedPair(
+        qualifiedPair, version, capabilities, qualifiedBackend.project.receiver.port,
+      );
+      // An in-flight packaging reply cannot download files for an edited draft.
+      if (latestDraftKeyRef.current !== key) return;
+      localDownloadBinary(archive.filename, archive.bytes);
+      setZipReceipt({ key, version, filename: archive.filename, sha256: archive.sha256,
+        artifactRevisionId: archive.artifactRevisionId, listenerPort: archive.listenerPort });
+      notify('SHA-256가 확인된 DRAFT ZIP 패키지를 다운로드했습니다. DP 배포·엔진 검증은 수행하지 않았습니다.');
+    } catch {
+      if (latestDraftKeyRef.current === key) setZipError({ key, version,
+        message: 'DRAFT ZIP 패키지 생성이 지원되지 않거나 무결성 확인에 실패했습니다. 두 파일의 개별 다운로드는 유지됩니다.' });
+    } finally {
+      setZipDownloading(false);
+    }
+  };
 
   const downloadBrowserTestEvidence = async () => {
     if (!runState || evidenceDownloading || pending) return;
@@ -1005,6 +1055,32 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <div className="guided-generated-files">{qualifiedPair.files.map((file) =>
                 <button className="guided-cta-secondary" key={file.name} type="button" onClick={() => localDownload(file.name, file.content, 'application/octet-stream')}><Download size={15} /> {file.name}</button>)}</div>
               <div className="guided-generated-warnings">{qualifiedPair.manifest.warnings.map((warning, index) => <p key={index}><AlertTriangle size={13} /> {warning}</p>)}</div>
+              <div className="guided-package-download" aria-label="Draft ZIP bundle download">
+                <div className="guided-section-title"><span>ZIP</span> 두 파일 + 무결성 매니페스트</div>
+                <p>이 기능은 최신 로컬 백엔드가 명시적으로 지원하는 경우에만 사용할 수 있습니다. 생성한 두 파일과 manifest.json을 묶지만 DP 연결·API Key·자동 설치가 필요하거나 수행되지 않습니다.</p>
+                <div className="guided-package-controls">
+                  <label className="guided-field"><span>ZIP 버전 라벨</span>
+                    <input aria-label="Draft ZIP package version" maxLength={64}
+                      value={zipVersion} onChange={(event) => {
+                        setZipVersion(event.target.value);
+                        setZipReceipt(null);
+                        setZipError(null);
+                      }} placeholder="1.0.0" />
+                  </label>
+                  <button type="button" className="guided-cta-secondary"
+                    disabled={zipDownloading || pending || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(zipVersion)}
+                    onClick={() => { void downloadCheckedArtifactZip(); }}>
+                    <FileArchive size={15} /> {zipDownloading ? 'ZIP 검증 중…' : 'DRAFT ZIP 패키지 다운로드'}
+                  </button>
+                </div>
+                {currentZipError && <p role="alert" className="guided-error">{currentZipError}</p>}
+                {currentZipReceipt && <div className="guided-zip-receipt" aria-label="Draft ZIP integrity receipt">
+                  <strong>{currentZipReceipt.filename} · DRAFT ZIP · SHA-256 확인</strong>
+                  <p>수신 포트 {currentZipReceipt.listenerPort} · 엔진 실행/대상 적재/자동 배포 미검증</p>
+                  <small>ZIP SHA-256: {currentZipReceipt.sha256}</small>
+                  <small>아티팩트 리비전: {currentZipReceipt.artifactRevisionId}</small>
+                </div>}
+              </div>
             </div>}
             <details className="guided-pair-inspect">
               <summary><FileArchive size={16} /> 기존 Parser Pair 읽기 전용 검사 (고급)</summary>

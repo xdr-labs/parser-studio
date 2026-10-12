@@ -18,6 +18,14 @@ export interface BackendCapabilities {
     multiline: false;
     arbitraryRuby: false;
   };
+  downloads?: {
+    individualGeneratedFiles: true;
+    zipWithManifest: true;
+    requiresDpConnection: false;
+    requiresApiKey: false;
+    autoDeploys: false;
+    exactArtifactRevision: true;
+  };
   import: {
     exactInternalPairsEditable: true;
     unknownLegacyRubyEditable: false;
@@ -90,6 +98,17 @@ export async function fetchBackendCapabilities(
     a.rfc5424StructuredDataMaxBytes !== 1024 ||
     a.leefHexSeparatorSubset !== true
   )) throw new Error('확장 RFC5424/LEEF 기능 선언이 현재 검토한 계약과 다릅니다.');
+  if (cap.downloads !== undefined) {
+    const dl = cap.downloads;
+    if (!dl || typeof dl !== 'object' ||
+        Object.keys(dl).sort().join(',') !==
+          'autoDeploys,exactArtifactRevision,individualGeneratedFiles,requiresApiKey,requiresDpConnection,zipWithManifest' ||
+        dl.individualGeneratedFiles !== true || dl.zipWithManifest !== true ||
+        dl.requiresDpConnection !== false || dl.requiresApiKey !== false ||
+        dl.autoDeploys !== false || dl.exactArtifactRevision !== true) {
+      throw new Error('백엔드 ZIP 다운로드 기능 계약이 검토된 범위와 일치하지 않습니다.');
+    }
+  }
   return cap as BackendCapabilities;
 }
 

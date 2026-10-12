@@ -22,6 +22,9 @@ export interface GeneratedPair {
     status: 'DRAFT';
     contract: 'host-customized-pair.v0.1';
     schemaRevision: '0.1';
+    /** Populated by the reviewed compiler; required by ZIP packaging. */
+    projectId?: string;
+    projectRevision?: number;
     fileHashes: Record<string, string>;
     engineVerified: false;
     targetImportVerified: false;
