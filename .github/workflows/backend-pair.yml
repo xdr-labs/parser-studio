@@ -1,0 +1,36 @@
+name: Parser Studio backend native checks
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-pair.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-pair.yml"
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+      - name: Install pinned Ruby and Node dependencies
+        working-directory: backend
+        run: |
+          gem install bundler -v 4.0.22 --no-document
+          bundle _4.0.22_ config set --local path vendor/bundle
+          bundle _4.0.22_ install --jobs 2 --retry 2 --frozen
+          npm ci
+      - name: Strict TypeScript, API, compiler and native synthetic Fluentd suite
+        working-directory: backend
+        run: bash scripts/qualify.sh
