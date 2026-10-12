@@ -67,6 +67,21 @@ export type ContractResult =
 
 export const CLASSIFICATIONS: EventClass[] = ['Session', 'Threat', 'Syslog', 'Winlogevent'];
 export const FIELD_GROUPS: FieldGroup[] = ['top_fields', 'ns_fields', 'vendor_fields'];
+// A conservative subset of the v0.1 backend field path grammar. The browser
+// preview also uses this narrower syntax; do not claim a full Interflow dictionary.
+const SAFE_UI_FIELD_PATH = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+const UNSAFE_FIELD_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
+const RESERVED_OUTPUT_ROOTS = new Set([
+  'msg_origin', 'stellar_log_index', 'parser_err_msg', 'parser_err_stage', 'parser_err_field',
+]);
+function safeUiPath(path: string): boolean {
+  return path.length > 0 && path.length <= 128 && SAFE_UI_FIELD_PATH.test(path) &&
+    path.split('.').every((part) => !UNSAFE_FIELD_SEGMENTS.has(part));
+}
+function overlappingDestination(first: string, second: string): boolean {
+  return first.startsWith(second + '.') || second.startsWith(first + '.');
+}
+
 
 export function defaultGuidedOptions(): GuidedOptions {
   return {
@@ -120,11 +135,16 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   const normalization: PairProjectContract['normalization'] = { top_fields: [], ns_fields: [], vendor_fields: [] };
   const supportedTypes: FieldType[] = ['string', 'integer', 'timestamp', 'ip', 'port', 'boolean'];
   for (const mapping of draft.mappings) {
-    if (!mapping.source.trim() || !/^[A-Za-z_][A-Za-z0-9_.]{0,63}$/.test(mapping.source)) errors.push('Invalid source field: ' + mapping.source);
-    if (!/^[A-Za-z_][A-Za-z0-9_.]{0,63}$/.test(mapping.target)) errors.push('Invalid destination field: ' + mapping.target);
+    if (!safeUiPath(mapping.source)) errors.push('Invalid source field: ' + mapping.source);
+    if (!safeUiPath(mapping.target)) errors.push('Invalid destination field: ' + mapping.target);
     if (targets.has(mapping.target)) errors.push('Duplicate normalized destination: ' + mapping.target);
+    else if ([...targets].some((target) => overlappingDestination(target, mapping.target))) {
+      errors.push('Normalized destination collision: ' + mapping.target);
+    }
     targets.add(mapping.target);
-    if (['msg_origin', 'stellar_log_index'].includes(mapping.target)) errors.push('Reserved destination: ' + mapping.target);
+    if (RESERVED_OUTPUT_ROOTS.has(mapping.target.split('.')[0])) {
+      errors.push('Reserved destination: ' + mapping.target);
+    }
     if (!supportedTypes.includes(mapping.type)) errors.push('Backend subset does not support type ' + mapping.type + ' for ' + mapping.source);
     const group = options.groups[mapping.id] ?? 'vendor_fields';
     const data_type = mapping.type === 'timestamp' ? 'date' : mapping.type;
@@ -172,7 +192,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   }
   const ruleKeys = new Set<string>();
   for (const rule of options.classification.rules) {
-    if (!/^[A-Za-z_][A-Za-z0-9_.]{0,63}$/.test(rule.sourceField) || !rule.equals.trim()) errors.push('Complete every event classification condition');
+    if (!safeUiPath(rule.sourceField) || !rule.equals.trim()) errors.push('Complete every event classification condition');
     if (ruleKeys.has(rule.sourceField + '\0' + rule.equals)) errors.push('Duplicate event classification condition: ' + rule.sourceField);
     ruleKeys.add(rule.sourceField + '\0' + rule.equals);
   }

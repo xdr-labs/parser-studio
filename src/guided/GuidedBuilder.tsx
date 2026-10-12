@@ -573,7 +573,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <label className="guided-field"><span>정규화 필드</span><input aria-label={'Destination field ' + index} value={mapping.target} onChange={(e) => setMapping(mapping.id, 'target', e.target.value)} /></label>
                 </div>
                 <div className="guided-map-inputs">
-                  <label className="guided-field"><span>변환 타입</span><select aria-label={'Field type ' + index} value={mapping.type} onChange={(e) => setMapping(mapping.id, 'type', e.target.value)}>{TYPES.map((type) => <option value={type} key={type}>{TYPE_LABELS[type]}</option>)}</select></label>
+                  <label className="guided-field"><span>변환 타입</span><select aria-label={'Field type ' + index} value={mapping.type} onChange={(e) => setMapping(mapping.id, 'type', e.target.value)}>{TYPES.map((type) => <option value={type} key={type} disabled={type === 'number'}>{TYPE_LABELS[type]}</option>)}</select></label>
                   <label className="guided-field"><span>필드 분류</span><select aria-label={'Mapping group ' + index} value={options.groups[mapping.id] ?? 'vendor_fields'} onChange={(e) => setGuided({ ...options, groups: { ...options.groups, [mapping.id]: e.target.value as FieldGroup } })}>{FIELD_GROUPS.map((group) => <option key={group} value={group}>{GROUP_LABELS[group]}</option>)}</select></label>
                 </div>
               </div>)}</div>

@@ -84,14 +84,15 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     expect(result.issues.map((x) => x.code)).toContain('DUPLICATE_SOURCE');
   });
 
-  it('blocks unsafe prototype fields, even when the local UI input allows their syntax', () => {
+  it('blocks unsafe prototype fields immediately at local UI preflight, before backend requests', () => {
     const draft = createDraft();
     draft.format = 'json';
     draft.mappings.push({ id: 'hazard', source: '__proto__.key', target: 'custom.unsafe', type: 'string' });
     const result = toBackendProject(draft);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.issues.map((x) => x.code)).toContain('UNSAFE_FIELD');
+    expect(result.issues.map((x) => x.code)).toContain('UI_VALIDATION');
+    expect(result.issues[0].message).toContain('Invalid source field');
   });
 
   it('fails closed on mismatched transport, format and expired UI draft requirements', () => {
