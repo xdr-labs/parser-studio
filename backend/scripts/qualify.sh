@@ -28,8 +28,17 @@ if ! command -v "$RUBY_COMMAND" >/dev/null 2>&1; then
     RUBY_COMMAND="$LOCAL_ROOT/usr/bin/ruby3.2"
     export LD_LIBRARY_PATH="$LOCAL_ROOT/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     export RUBYLIB="$LOCAL_ROOT/usr/lib/ruby/3.2.0:$LOCAL_ROOT/usr/lib/x86_64-linux-gnu/ruby/3.2.0${RUBYLIB:+:$RUBYLIB}"
-    export GEM_HOME="${GEM_HOME:-$ROOT/.tmp/gems}"
-    export GEM_PATH="${GEM_PATH:-$ROOT/.tmp/gems}"
+    # RubyGems may place gems under GEM_HOME/ruby/3.2.0 when installed
+    # with a separate project-local Ruby. Accept either offline layout;
+    # include the outer directory for its pinned Bundler 4.0.22 gem.
+    LOCAL_GEMS="$ROOT/.tmp/gems"
+    if [[ -f "$LOCAL_GEMS/ruby/3.2.0/specifications/fluentd-1.17.1.gemspec" ]]; then
+      export GEM_HOME="${GEM_HOME:-$LOCAL_GEMS/ruby/3.2.0}"
+      export GEM_PATH="${GEM_PATH:-$LOCAL_GEMS/ruby/3.2.0:$LOCAL_GEMS}"
+    else
+      export GEM_HOME="${GEM_HOME:-$LOCAL_GEMS}"
+      export GEM_PATH="${GEM_PATH:-$LOCAL_GEMS}"
+    fi
   else
     echo "ERROR: Ruby 3.2 unavailable; set PARSER_RUBY_BIN or install in an isolated runner." >&2
     exit 1
