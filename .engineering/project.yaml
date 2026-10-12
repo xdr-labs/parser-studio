@@ -5,7 +5,8 @@ engineering_system:
   mode: adopted
   baseline: dcce075522a7749765d4ef017234a49f76861072
   ci_mode: shared
-  native_ci_workflows: []
+  native_ci_workflows:
+    - .github/workflows/backend-pair.yml
   merge_gate_status: advisory
 project:
   name: parser-studio

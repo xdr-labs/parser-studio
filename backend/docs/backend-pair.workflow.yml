@@ -1,4 +1,4 @@
-name: Parser Studio backend native checks (inactive template)
+name: Parser Studio backend native checks
 on:
   pull_request:
     paths:
@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -29,7 +32,8 @@ jobs:
         run: |
           gem install bundler -v 4.0.22 --no-document
           bundle _4.0.22_ config set --local path vendor/bundle
-          bundle _4.0.22_ install --jobs 2 --retry 2 --frozen
+          bundle _4.0.22_ config set --local frozen true
+          bundle _4.0.22_ install --jobs 2 --retry 2
           npm ci
       - name: Strict TypeScript, API, compiler and native synthetic Fluentd suite
         working-directory: backend

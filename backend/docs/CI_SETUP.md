@@ -1,29 +1,55 @@
-# Backend CI Setup — GitHub workflow scope limitation
+# Parser Studio Backend CI — Active PR Workflow
 
-The [backend-pair.workflow.yml](backend-pair.workflow.yml) is only a **template** under `backend/docs`. It is not installed at `.github/workflows` and will not execute on PRs yet.
+The backend-only GitHub Actions workflow is installed on the backend Draft
+PR branch at .github/workflows/backend-pair.yml. It runs on changes to
+backend/** or the workflow file, with contents:read permissions and no
+production secrets, external parser samples, DP credentials or sensor actions.
 
-On 2026-10-12 GitHub refused a backend workflow push with:
+## Exact-HEAD qualification
 
-> refusing to allow an OAuth App to create or update workflow `.github/workflows/backend-pair.yml` without `workflow` scope
+The pull_request job explicitly checks out github.event.pull_request.head.sha
+instead of GitHub's temporary PR merge commit. For pushes on main, github.sha
+is selected. This is the candidate commit tested by the runner. The workflow:
 
-Do not bypass the GitHub OAuth permission boundary. A maintainer with appropriate authorization can install this workflow later, after reviewing it against Engineering System and running it on the intended exact PR HEAD. The permission limit is **not a blocker to testing backend code in the separate development runtime**.
+1. Installs Node 22 and Ruby 3.2.x on Ubuntu 22.04.
+2. Installs the locked Bundler 4.0.22 and dependencies from Gemfile.lock,
+   enabling Bundler 4 frozen mode through local configuration (not --frozen).
+3. Runs npm ci and bash scripts/qualify.sh.
+4. Requires Node/API, Python operator safety, fixed synthetic Ruby/Fluentd
+   parser/CONF, exact golden event records, tamper guards and native synthetic
+   per-case evidence archive PASS on that checked-out Git HEAD.
 
-## Reproducible local qualification
+Fluentd is locked to 1.17.1; the Ruby CI patch version can differ from the
+project-local dev-atlas Ruby 3.2.3. Check the actual CI job for its Ruby version.
+A successful synthetic test still DOES NOT qualify Stellar Cyber's proprietary
+loader, actual DP import, sensor listener or customer Interflow E2E.
 
-On the isolated dev-drlink backend checkout, Node 22 and project-local Ruby 3.2.3 were used with Fluentd 1.17.1 and test-unit 3.6.7 locked by `Gemfile.lock`.
+## Historical credential boundary and CI recovery
 
-```sh
-cd backend
-npm ci
-# Use isolated Ruby and the exact locked Gemfile dependencies.
-bundle install
-bash scripts/qualify.sh
-```
+The initial attempt on 2026-10-12 to install the workflow through a different
+OAuth credential was rejected because it lacked workflow scope. That operation
+was not bypassed. A subsequent ordinary authorized Git push installed the
+existing reviewed workflow on Draft PR #4 (commit b67ac9d). The first Actions
+run #38244003529 reached dependency setup but failed because the template
+used Bundler 4's removed --frozen CLI option. The option is replaced by
+bundle config set --local frozen true, and the exact PR HEAD checkout is set
+explicitly. CI PASS must be verified for the *new* HEAD and must never be
+inferred from these past runs or from local qualification alone.
 
-Tests include JSON/KV/CSV/RFC5424/CEF/LEEF formats, typed mapping, ordered enrichment and category routing, generated Ruby fragment callbacks, and **Fluentd 1.17.1 actual Parser Plugin and config AST checks**. The fixed td-agent transport include path is removed only in memory for config parsing.
+## Local reproducibility
 
-Current synthetic qualification additionally runs 23 golden events against exact expected Fluentd parser callback records (ten generated profiles), verifies the golden source SHA-256 and the existing 8 import + 8 tamper cases. These checks are available locally even while GitHub backend Actions workflow remains uninstalled.
+On the development backend worktree:
 
-The report is `.tmp/synthetic-native-report.json`, ignored by Git. It records branch HEAD, dirty state, hashes and the explicit `targetImportVerified:false`.
+    cd /home/aella/parser-studio-backend/backend
+    npm ci
+    # Use the existing isolated Ruby 3.2 profile and pinned Fluentd gems.
+    bash scripts/qualify.sh
 
-**This is not** a complete Stellar Cyber loader test, live Fluentd listener check or a customer raw-log E2E. The user retains responsibility for final real Stellar Cyber application/acceptance. Do not alter `rickmodular`.
+The script creates ignored, synthetic-only .tmp reports and a private per-HEAD
+regression archive of metadata/hashes. It does not contact a DP, access the
+private operator profile, start a real sensor sender, activate a parser, or
+execute uploaded arbitrary Ruby. The final report includes the exact backend
+HEAD, worktree dirtiness, golden fixture SHA and always-false vendor gates.
+
+No PR merge, production deployment, release or permissions escalation follows
+automatically from a passing workflow.

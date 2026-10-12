@@ -2,6 +2,9 @@ node_modules/
 dist/
 .tmp/
 coverage/
+# Local Bundler configuration and dependency installation from CI and dev hosts
+.bundle/
+vendor/bundle/
 .env
 .env.*
 !.env.example
