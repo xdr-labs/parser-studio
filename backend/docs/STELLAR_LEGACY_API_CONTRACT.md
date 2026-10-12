@@ -214,8 +214,45 @@ trusted controller and per-user/session authorization are injected. A
 successful synthetic callback or nonzero sentCount means only that the
 injected sink accepted a synthetic event, not that any real sensor ingested
 it or Stellar indexed and parsed the expected fields. This implementation
-has NO real UDP/TCP adapter; actual sensor traffic sent remains zero.
+has no UDP/TCP agent configured by default; actual customer sensor
+traffic sent remains zero. An opt-in server-side sink module has been added
+and validated only with local ephemeral loopback UDP/TCP test receivers.
 The static capabilities continue to mark liveSensorSenderEnabled=false.
+
+## P0-LIVE-3 opt-in UDP/TCP transport — local loopback evidence only
+
+The module backend/src/testlab-transport.ts exports createApprovedSensorSink,
+which can be injected as the session controller's trusted delivery function.
+It requires an exact numeric IP literal, selected ingest port/protocol
+(UDP or TCP), a backend-owned allowlist with an exact matching target, a
+trusted authorization callback evaluated before each packet and a
+separate mandatory pre/post audit sink. The destination is never taken from
+a Test Lab HTTP request. No DNS names are accepted, avoiding DNS rebinding
+and implicit SSRF to attacker-selected hosts. A safe operational egress
+controller and direct target ownership authorization are still required
+for an actual customer sensor.
+
+The current bounded sender writes a raw datagram for UDP and appends
+one newline frame for TCP. The initial JSON/simple-KV subset includes
+a run marker which must match the authorized run ID. It enforces a 16 KiB
+event limit, no physical multi-line or NUL values, per-attempt timeout,
+AbortSignal cancellation, no automatic retransmit and metadata-only audit
+without raw logs, API keys or tokens. On delivery failure the session
+fails closed. The injected sink MUST be owned by the trusted in-network
+backend, not the browser. Audit success proves only local kernel socket
+acceptance, not sensor ingestion or actual Interflow indexing.
+
+Synthetic tests create ephemeral UDP/TCP receivers on 127.0.0.1 only,
+including Start to multiple UDP raw events to Stop, independent TCP
+framing and a policy revocation mid-session. No real sensor, DP, POC
+or production destination was contacted. Exact-HEAD native qualification
+records syntheticLoopbackUdpTcpNodeTestsPassed=true alongside
+sensorTrafficSent=false and targetImportVerified=false.
+
+Current backend/src/server.ts does NOT wire this transport in; default
+product liveSensorSenderEnabled=false. External in-network delivery and
+real matching Interflow results remain gated by owner-approved target
+policy, credentials, sensor reachable network and full User E2E.
 
 ## P0-LIVE-1 — Port proposal (NOT atomic or a live sensor check)
 

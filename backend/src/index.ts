@@ -40,3 +40,8 @@ export type {SyntheticPreviewRequest,SyntheticPreview,SyntheticVariable} from ".
 
 export {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
 export type {TestLabStartRequest,TestLabStatus,TestLabState,TestLabSessionConfig} from "./testlab-session.js";
+
+
+export {createApprovedSensorSink,SensorTransportError} from "./testlab-transport.js";
+export type {SensorTarget,SensorTransportAudit,
+  ApprovedSensorSinkConfig} from "./testlab-transport.js";

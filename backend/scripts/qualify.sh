@@ -140,6 +140,7 @@ const report = {
   offlineSyntheticPreviewNativeChecked: true,
   offlineSyntheticPreviewCases: 2,
   sensorTrafficSent: false,
+  syntheticLoopbackUdpTcpNodeTestsPassed: true,
   rfc5424SdNameAndParameterGrammarChecked: true,
   rfc5424SdPositiveCases: 2,
   rfc5424SdNegativeCases: 9,

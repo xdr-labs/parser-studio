@@ -98,3 +98,13 @@ concurrency-limited and cancelled/purged when the backend HTTP listener
 closes. Stop signals cancellation to the sink. The default app has no sink
 and performs no sensor traffic; sessions do not survive server restart,
 and no real sensor/Interflow parsing result is claimed.
+
+
+P0-LIVE-3 optional sensor transport (NOT ENABLED): server-only
+createApprovedSensorSink supports bounded UDP (raw datagrams) and TCP
+(newline framing) with exact numeric-IP/port/protocol allowlist, per-event
+trusted approval, metadata-only audit, abort and no retries. The standard
+server entrypoint does not configure this module. Synthetic local 127.0.0.1
+receivers are tested; NO live sensor/POC/production traffic, Interflow
+indexing or parser-runtime success is claimed. See
+docs/STELLAR_LEGACY_API_CONTRACT.md.
