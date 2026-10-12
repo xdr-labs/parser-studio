@@ -7,6 +7,7 @@
  */
 import {randomUUID} from "node:crypto";
 import type {WorkerMetadata} from "./testlab-worker-journal.js";
+import type {TestLabEvidenceLedger} from "./testlab-evidence.js";
 import {createSyntheticPreview,SyntheticPreviewError,
   type SyntheticPreviewRequest} from "./testlab-synthetic.js";
 import {selectScenarioPreview,validateReplayScenario,ScenarioContractError,
@@ -74,6 +75,8 @@ export type TestLabSessionConfig={
   /** Synchronous owner-only durable write. START fails BEFORE sending
    * if this callback is configured and its journal write is unavailable. */
   recordTransition?:(event:WorkerMetadata)=>void;
+  /** Optional bounded per-event metadata, disabled unless injected. */
+  evidenceLedger?:TestLabEvidenceLedger;
 };
 export class TestLabSessionError extends Error{
   constructor(readonly code:string){super(code);this.name="TestLabSessionError";}
@@ -113,6 +116,7 @@ export class SyntheticSessionController{
   #now:()=>number;
   #maxConcurrent:number;
   #recordTransition?:TestLabSessionConfig["recordTransition"];
+  #evidence?:TestLabEvidenceLedger;
   constructor(config:TestLabSessionConfig){
     this.#approve=config.approveStart;
     this.#approveRenewal=config.approveRenewal;
@@ -120,6 +124,7 @@ export class SyntheticSessionController{
     this.#deliver=config.deliver;
     this.#now=config.now??(()=>Date.now());
     this.#recordTransition=config.recordTransition;
+    this.#evidence=config.evidenceLedger;
     this.#maxConcurrent=config.maxConcurrent??2;
     if(!Number.isInteger(this.#maxConcurrent)||this.#maxConcurrent<1||
        this.#maxConcurrent>10)invalid("TESTLAB_CAPACITY_INVALID");
@@ -173,6 +178,12 @@ export class SyntheticSessionController{
   status(runId:string,ownerId?:string):TestLabStatus{
     return this.#public(this.#owned(runId,ownerId));
   }
+  evidenceReport(runId:string,ownerId?:string){
+    const item=this.#owned(runId,ownerId);
+    if(!this.#evidence||!item.ownerId)
+      invalid("TESTLAB_EVIDENCE_DISABLED");
+    return this.#evidence.report(item.runId,item.ownerId);
+  }
   #end(item:ActiveSession,state:TestLabState,errorCode:string|null=null){
     if(item.state==="STOPPED"||item.state==="COMPLETED"||
        item.state==="EXPIRED"||item.state==="FAILED")return;
@@ -182,6 +193,12 @@ export class SyntheticSessionController{
     if(item.expiryTimer)clearTimeout(item.expiryTimer);
     item.tickTimer=null;item.expiryTimer=null;
     item.cancellation.abort();
+    if(item.deliveryInFlight&&this.#evidence&&item.ownerId){
+      // The sink might already have accepted bytes. Do not replay on Resume.
+      try{this.#evidence.failure(item.runId,item.ownerId,item.nextSequence,
+        "SEND_OUTCOME_UNCERTAIN");}
+      catch{/* Preserve terminal Stop/expiry even on evidence error. */}
+    }
     // Stop always wins, even if its metadata-only audit sink is unavailable.
     try{this.#journal(item);}
     catch{item.errorCode="TESTLAB_JOURNAL_UNAVAILABLE";}
@@ -253,6 +270,8 @@ export class SyntheticSessionController{
       invalid("TESTLAB_RENEWAL_LIMITS_INVALID");
     if(item.maxEvents+request.additionalEvents>300000)
       invalid("TESTLAB_RENEWAL_TOTAL_QUOTA");
+    if(this.#evidence&&item.maxEvents+request.additionalEvents>500)
+      invalid("TESTLAB_EVIDENCE_EVENT_LIMIT");
     if(this.#pendingRenewals.has(runId))
       invalid("TESTLAB_RENEWAL_IN_PROGRESS");
     if(this.#now()>=item.leaseDeadline){
@@ -371,13 +390,38 @@ export class SyntheticSessionController{
           ...item.sample,sequence:item.nextSequence,
           ...(item.sample.runMarkerField===undefined?{}:{runId:item.runId}),
         },now),nextDelayMs:item.intervalMs};
+      if(this.#evidence&&item.ownerId){
+        try{
+          this.#evidence.generated(item.runId,item.ownerId,item.nextSequence);
+          this.#evidence.sendAttempted(item.runId,item.ownerId,item.nextSequence);
+        }catch{
+          this.#end(item,"FAILED","TESTLAB_EVIDENCE_UNAVAILABLE");
+          return;
+        }
+      }
       item.deliveryInFlight=true;
+      let delivered=false;
       try{
         await this.#deliver!(picked.preview.syntheticEvent,{
           runId:item.runId,sequence:item.nextSequence,signal:item.cancellation.signal,
         });
-      }finally{item.deliveryInFlight=false;}
+        delivered=true;
+      }finally{
+        item.deliveryInFlight=false;
+        if(!delivered&&this.#evidence&&item.ownerId){
+          try{this.#evidence.failure(item.runId,item.ownerId,item.nextSequence,
+            "SEND_FAILED");}
+          catch{/* Do not expose log content or emit a duplicate. */}
+        }
+      }
       if(item.state!=="RUNNING"||item.cancellation.signal.aborted)return;
+      if(this.#evidence&&item.ownerId){
+        try{this.#evidence.sinkAccepted(item.runId,item.ownerId,item.nextSequence);}
+        catch{
+          this.#end(item,"FAILED","TESTLAB_EVIDENCE_UNAVAILABLE");
+          return;
+        }
+      }
       item.sentCount++;
       item.nextSequence++;
       item.lastSentAt=new Date(this.#now()).toISOString();
@@ -397,6 +441,14 @@ export class SyntheticSessionController{
     if(!this.#approve||!this.#deliver)invalid("TESTLAB_SENDER_DISABLED");
     if(this.#recordTransition && !ownerId)
       invalid("TESTLAB_JOURNAL_OWNER_REQUIRED");
+    if(this.#evidence&&!ownerId)
+      invalid("TESTLAB_EVIDENCE_OWNER_REQUIRED");
+    if(this.#evidence&&
+      (typeof input?.artifactRevisionId!=="string"||
+       !/^[0-9a-f]{64}$/.test(input.artifactRevisionId)))
+      invalid("TESTLAB_EVIDENCE_ARTIFACT_REQUIRED");
+    if(this.#evidence&&input?.maxEvents>500)
+      invalid("TESTLAB_EVIDENCE_EVENT_LIMIT");
     if(this.#recordTransition &&
       (typeof input?.artifactRevisionId!=="string"||
        !/^[0-9a-f]{64}$/.test(input.artifactRevisionId)))
@@ -476,6 +528,10 @@ export class SyntheticSessionController{
     };
     // Durable START MUST succeed before queueing any synthetic delivery.
     this.#journal(item);
+    if(this.#evidence){
+      try{this.#evidence.begin(runId,ownerId!,input.artifactRevisionId!);}
+      catch{invalid("TESTLAB_EVIDENCE_UNAVAILABLE");}
+    }
     this.#sessions.set(runId,item);
     item.expiryTimer=setTimeout(()=>this.#end(item,"EXPIRED"),input.leaseMs);
     item.expiryTimer.unref?.();

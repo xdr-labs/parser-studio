@@ -68,16 +68,20 @@ If Pause occurs while an asynchronous mock delivery is unresolved, the
 session becomes FAILED with TESTLAB_SEND_OUTCOME_UNCERTAIN. The cancellation
 signal is aborted, and Resume cannot replay that sequence. This is a
 conservative acknowledgement rule, not proof that a network packet was or
-was not delivered. No HTTP rate-update route or live sensor sender has
-been enabled.
+was not delivered. The rate-change HTTP route is opt-in only; no live
+sensor sender is enabled.
 
 ## Redacted per-stage evidence ledger (P0-LIVE-4, offline contract)
 
-The optional TestLabEvidenceLedger is a standalone, in-memory metadata
-contract. It is NOT wired into the default sender, HTTP API or live sensor,
-and does not collect raw records or restore runs from a previous process.
-A trusted future sender integration must explicitly supply its owner, run ID,
-reviewed artifact SHA-256 and monotonically produced synthetic sequence.
+The optional TestLabEvidenceLedger is an in-memory metadata contract.
+It can now be injected into SyntheticSessionController and retrieved via
+GET /api/v1/test-lab/sessions/evidence?runId=... only when both the
+controller and its authenticated per-session identity resolver are injected.
+No default listener, live sensor integration, or customer-data access is
+enabled. Opt-in Start requires a trusted actor and reviewed artifact SHA-256,
+and each bounded synthetic delivery records its sequence without raw bytes.
+The owned JSON response is a redacted report; unknown actors receive the
+same NOT_FOUND response as a nonexistent run.
 
 For each event, it distinguishes local GENERATED, SEND_ATTEMPTED and
 SINK_ACCEPTED from independently observed SENSOR_OBSERVED and DP_INDEXED.
@@ -88,6 +92,9 @@ No local callback, fake observer or report proves a real DP runtime.
 Every report retains liveE2eVerified=false and runtimeParsingVerified=false.
 
 Finite retention defaults to 64 runs, 500 events/run and 15 minutes.
+With evidence enabled, Start and renewal enforce the 500-event ceiling.
+Stopping an unresolved mock delivery records SEND_OUTCOME_UNCERTAIN,
+never sensor acceptance or a successful send.
 Actor and artifact identities, strict stage ordering, error-code allowlists
 and bounded redacted reports are enforced. A restart loses all status and
 cannot replay, reauthorize or prove prior delivery.

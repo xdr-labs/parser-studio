@@ -9,6 +9,7 @@ import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
 import {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
+import {TestLabEvidenceError} from "./testlab-evidence.js";
 import {buildInterflowQuery,compareInterflowHits,
   InterflowContractError} from "./stellar-interflow.js";
 import {pollBoundedInterflow,InterflowPollError} from "./stellar-interflow-poll.js";
@@ -284,10 +285,10 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     const sessionPath="/api/v1/test-lab/sessions/";
     if(path.startsWith(sessionPath)){
       const action=path.slice(sessionPath.length);
-      if(!["start","status","pause","resume","stop","renew","rate"].includes(action)){
+      if(!["start","status","pause","resume","stop","renew","rate","evidence"].includes(action)){
         send(res,404,{error:"NOT_FOUND"});return;
       }
-      if(req.method!==(action==="status"?"GET":"POST")){
+      if(req.method!==((action==="status"||action==="evidence")?"GET":"POST")){
         send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
       }
       if(!options.testLabController||!options.authorizeTestLabSession){
@@ -296,7 +297,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       try{
         let runId:string|undefined;
         let input:Record<string,unknown>|undefined;
-        if(action==="status"){
+        if(action==="status"||action==="evidence"){
           const query=new URL(req.url||"","http://localhost").searchParams;
           if([...query.keys()].some(x=>x!=="runId")||
             query.getAll("runId").length!==1){
@@ -342,6 +343,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         if(!actor){send(res,403,{error:"TESTLAB_SESSION_DENIED"});return;}
         const sessions=options.testLabController;
         if(action==="status"){send(res,200,sessions.status(runId!,actor));return;}
+        if(action==="evidence"){send(res,200,sessions.evidenceReport(runId!,actor));return;}
         if(action==="pause"){send(res,200,sessions.pause(runId!,actor));return;}
         if(action==="resume"){send(res,200,sessions.resume(runId!,actor));return;}
         if(action==="stop"){send(res,200,sessions.stop(runId!,actor));return;}
@@ -380,7 +382,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
         else if(error instanceof ScenarioContractError)
           send(res,422,{error:error.code});
-        else if(error instanceof TestLabSessionError){
+        else if(error instanceof TestLabEvidenceError){
+          send(res,error.code==="EVIDENCE_RUN_NOT_FOUND"?404:422,{error:error.code});
+        }else if(error instanceof TestLabSessionError){
           const status=error.code==="TESTLAB_SESSION_NOT_FOUND"?404:
             error.code==="TESTLAB_CAPACITY_REACHED"?429:
             error.code==="TESTLAB_RENEWAL_IN_PROGRESS"||
