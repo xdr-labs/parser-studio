@@ -19,9 +19,9 @@ bundle install
 bash scripts/qualify.sh
 ```
 
-`scripts/qualify.sh` works with `PARSER_RUBY_BIN` or its project-local Ruby fallback if present. It checks Node validation/generator/API, builds eight synthetic artifact pairs, Ruby fragment syntax, pure Ruby callbacks, and actual Fluentd 1.17.1 Parser Plugin driver + native Fluent config AST (using an in-memory removal of the production-only transport include).
+`scripts/qualify.sh` works with `PARSER_RUBY_BIN` or its project-local Ruby fallback if present. It checks Node validation/generator/API, builds ten synthetic artifact pairs, Ruby fragment syntax, pure Ruby callbacks, and actual Fluentd 1.17.1 Parser Plugin driver + native Fluent config AST (using an in-memory removal of the production-only transport include).
 
-The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 10 fixed synthetic event inputs to full independently authored expected normalized records on all eight generated formats. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the ten PASS cases and eight profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
+The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 14 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the fourteen PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
 
 The generated `.tmp/synthetic-native-report.json` includes HEAD, worktree-dirty state, SHA-256 hashes and explicit `targetImportVerified:false`. An uncommitted/dirty run is **not** exact-HEAD qualification; commit and rerun before asserting exact-HEAD PASS.
 
@@ -32,6 +32,14 @@ Verified on synthetic examples: JSON, strict KV, CSV, RFC5424 Syslog, standalone
 Not verified: vendor's proprietary plugin assembly/loading from the extensionless Ruby fragment, transport include on the running td-agent, actual listener/network behavior, official portal import format, customer data correctness, other parsers from 454-reference corpus, or production use.
 
 ## Bounded RFC5424 Structured Data subset
+
+The bounded RFC5424 envelope now optionally extracts explicitly selected
+standalone CEF or LEEF bodies under body.*, preserving typed mapping and
+RFC5424 event time. Two additional generated profiles exercise the native
+Fluentd Parser API; four new synthetic golden events include both success
+and malformed body rejection. This is not RFC3164, arbitrary vendor syntax
+or multiline event breaker support.
+
 
 RFC5424 parameter syntax is additionally checked in
 test_native/rfc5424_sd_smoke.rb with two positive and nine negative

@@ -31,7 +31,7 @@ end
 
 directory = ARGV.fetch(0)
 Fluent::Test.setup
-names = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_cef sample_leef sample_enriched]
+names = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_syslog_cef sample_syslog_leef sample_cef sample_leef sample_enriched]
 drivers = {}
 names.each do |slug|
   drivers[slug] = driver_for(directory, slug)
@@ -68,6 +68,15 @@ assert(invalid_sd['parser_err_msg'] == 'ArgumentError' &&
        invalid_sd['parser_err_stage'] == 'extraction' &&
        !invalid_sd.key?('srcip'), 'native RFC5424 invalid parameter fails closed')
 
+syslog_cef = '<165>1 2026-10-12T02:03:04Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny'
+_, cef_enveloped = parse_once(drivers['sample_syslog_cef'], syslog_cef)
+assert(cef_enveloped['srcip'] == '192.0.2.11' &&
+       cef_enveloped['stellar_log_index'] == 'threat', 'native RFC5424 CEF body classification')
+syslog_leef = '<165>1 2026-10-12T02:03:04Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=allow'
+_, leef_enveloped = parse_once(drivers['sample_syslog_leef'], syslog_leef)
+assert(leef_enveloped['srcip'] == '203.0.113.8' &&
+       leef_enveloped['stellar_log_index'] == 'session', 'native RFC5424 LEEF body classification')
+
 
 _, cef = parse_once(drivers['sample_cef'], 'CEF:0|Acme|FW|1|100|Blocked|8|src=192.0.2.11 dst=198.51.100.22 dpt=443 act=deny')
 assert(cef['dstip'] == '198.51.100.22', 'native CEF extension')
@@ -87,4 +96,4 @@ _, bad = parse_once(drivers['sample_cef'], 'CEF:0|Acme|FW|1|100|Blocked|8|garbag
 assert(bad.key?('parser_err_msg'), 'native malformed CEF rejected')
 
 assert(Gem.loaded_specs.fetch('fluentd').version.to_s == '1.17.1', 'runtime version pinned')
-puts 'Fluentd 1.17.1 Parser Plugin API: 8 profiles + failure path PASS (synthetic only)'
+puts 'Fluentd 1.17.1 Parser Plugin API: 10 profiles + failure path PASS (synthetic only)'

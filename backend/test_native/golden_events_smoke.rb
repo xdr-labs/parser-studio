@@ -29,13 +29,13 @@ assert(!File.lstat(expected_directory).symlink? && !File.lstat(expected_fixture)
 fixture = JSON.parse(File.binread(fixture_file))
 assert(fixture['kind'] == 'parser-studio.synthetic-golden-events.v0.1', 'contract kind')
 assert(fixture['origin'] == 'independently-authored-public-synthetic', 'fixture provenance')
-assert(fixture['cases'].is_a?(Array) && fixture['cases'].length == 10, 'expected ten events')
+assert(fixture['cases'].is_a?(Array) && fixture['cases'].length == 14, 'expected ten events')
 
 allowed_profiles = %w[
   sample_firewall sample_kv sample_extended sample_csv sample_syslog
-  sample_cef sample_leef sample_enriched
+  sample_syslog_cef sample_syslog_leef sample_cef sample_leef sample_enriched
 ]
-assert(fixture['cases'].map { |item| item['slug'] }.uniq.sort == allowed_profiles.sort, 'eight profiles')
+assert(fixture['cases'].map { |item| item['slug'] }.uniq.sort == allowed_profiles.sort, 'ten profiles')
 
 Fluent::Test.setup
 drivers = {}

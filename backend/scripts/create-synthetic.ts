@@ -39,6 +39,28 @@ syslog.normalization.topFields = {
 };
 syslog.normalization.nsFields = {};
 
+// Explicit RFC5424 envelopes containing bounded, standalone CEF/LEEF bodies.
+const syslogCef = sampleProject();
+syslogCef.slug = "sample_syslog_cef";
+syslogCef.extraction = {format:"syslog_rfc5424", syslogBodyFormat:"cef"};
+syslogCef.normalization.topFields = {
+  "body.src": {normalized_name:"srcip",data_type:"ip"},
+  "body.dpt": {normalized_name:"dstport",data_type:"port"},
+  "body.act": {normalized_name:"action",data_type:"string"},
+  "syslog_timestamp": {normalized_name:"timestamp",data_type:"date",time_format:"iso8601",timezone:"UTC"},
+};
+syslogCef.normalization.nsFields = {};
+const syslogLeef = sampleProject();
+syslogLeef.slug = "sample_syslog_leef";
+syslogLeef.extraction = {format:"syslog_rfc5424", syslogBodyFormat:"leef"};
+syslogLeef.normalization.topFields = {
+  "body.src": {normalized_name:"srcip",data_type:"ip"},
+  "body.dstPort": {normalized_name:"dstport",data_type:"port"},
+  "body.act": {normalized_name:"action",data_type:"string"},
+  "syslog_timestamp": {normalized_name:"timestamp",data_type:"date",time_format:"iso8601",timezone:"UTC"},
+};
+syslogLeef.normalization.nsFields = {};
+
 const cef = sampleProject();
 cef.slug = "sample_cef";
 cef.extraction = { format: "cef" };
@@ -69,7 +91,7 @@ enriched.enrichment = [
   { operator: "uppercase", source: "log.action_lower", target: "log.action_upper" },
 ];
 enriched.classification.rules[0]!.field = "log.action_lower";
-for (const project of [json,kv,extended,csv,syslog,cef,leef,enriched]) {
+for (const project of [json,kv,extended,csv,syslog,syslogCef,syslogLeef,cef,leef,enriched]) {
   const pair = compilePair(project);
   for (const file of pair.files) {
     writeSyntheticFixture(out, file.name, file.content);

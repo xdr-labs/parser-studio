@@ -12,7 +12,7 @@ import { compilePair, inspectPair } from "../src/index.js";
 
 const dir = resolve(process.env["PAIR_OUTPUT_DIR"] || ".tmp/native-fixtures");
 const confNames = readdirSync(dir).filter(name => /^customized_[a-z][a-z0-9_]*\.conf$/.test(name)).sort();
-assert.equal(confNames.length, 8, "Expected exactly eight generated, synthetic parser profiles");
+assert.equal(confNames.length, 10, "Expected exactly ten generated synthetic parser profiles");
 
 const hash = (source: string): string => createHash("sha256").update(source, "utf8").digest("hex");
 const originals: Record<string, string> = {};

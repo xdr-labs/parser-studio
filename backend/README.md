@@ -5,12 +5,12 @@
 ## Supported, precisely
 
 - Strict, version-neutral `ParserProject` 0.1 JSON Schema in [schema/parser-project.v0.1.schema.json](schema/parser-project.v0.1.schema.json).
-- Supported subset: JSON, strict quoted KV, CSV, RFC5424 Syslog (optional JSON/KV body), standalone CEF and LEEF. Typed top-level/nested/vendor field mapping supports `string`, `integer`, `ip`, `port`, `boolean` and ISO8601 timestamps requiring an explicit timezone.
+- Supported subset: JSON, strict quoted KV, CSV, RFC5424 Syslog (optional JSON/KV/CEF/LEEF body), standalone CEF and LEEF. Typed top-level/nested/vendor field mapping supports `string`, `integer`, `ip`, `port`, `boolean` and ISO8601 timestamps requiring an explicit timezone.
 - Ordered classification by `equals` or `exists` (including enriched output), default `syslog`, and generated `stellar_log_index`. Allowlisted no-code enrichments: `set_const`, `copy`, `lowercase`, `uppercase`. Typed field errors include stage and input field path without leaking log content.
 - UDP/TCP source blocks, host-reference custom parser type/tag, transport settings include and rewrite-tag routing.
 - Deterministic compiler produces two files, **`customized_<slug>.conf` and extensionless `customized_<slug>`**, with SHA-256 and an explicitly **DRAFT** manifest.
 - Local stateless HTTP validate/generate/schema **and safe read-only pair inspection** endpoints for the separate UI. No file writes from API. Only byte-for-byte self-generated pairs become editable projects; arbitrary vendor Ruby stays opaque.
-- Project-local pinned Ruby 3.2.3 + Fluentd 1.17.1 synthetic qualification passes Node tests, eight Ruby syntax profiles, pure Ruby callbacks, Fluentd Parser Plugin API and Fluentd config grammar checks. A shared pre-execution SHA-256 guard checks all eight generated Ruby/CONF profiles against current-HEAD import/recompile evidence before any Ruby class evaluation; the local attestation is not a hardened sandbox. This is **not** vendor's extensionless-source wrapper/loader import or Stellar Cyber installation. The pending CI workflow is only a template because the current OAuth token lacks workflow modification scope.
+- Project-local pinned Ruby 3.2.3 + Fluentd 1.17.1 synthetic qualification passes Node tests, ten Ruby syntax profiles, pure Ruby callbacks, Fluentd Parser Plugin API and Fluentd config grammar checks. A shared pre-execution SHA-256 guard checks all ten generated Ruby/CONF profiles against current-HEAD import/recompile evidence before any Ruby class evaluation; the local attestation is not a hardened sandbox. This is **not** vendor's extensionless-source wrapper/loader import or Stellar Cyber installation. The pending CI workflow is only a template because the current OAuth token lacks workflow modification scope.
 
 **Optional offline private-fixture preparation:** A local-only preflight validates strictly bounded private golden-event JSON shape and local filesystem permissions without executing Ruby, persisting reports, transferring log content, or creating an HTTP endpoint. See [private fixture preflight](docs/PRIVATE_FIXTURE_PREFLIGHT.md). Its success is NOT native or Stellar import verification.
 
@@ -33,7 +33,7 @@ For full synthetic native qualification, install the pinned Ruby Gemfile.lock in
 bash scripts/qualify.sh
 ```
 
-The pinned Fluentd Parser API suite additionally checks 10 **independently authored public synthetic golden events** across the eight generated profiles against full expected normalized records, including event timestamps and sanitised failure paths. The committed fixture set is under test_native/fixtures; no real customer/vendor raw log is committed. Separate ignored synthetic-import and synthetic-golden reports include exact source hashes. Successful synthetic replay is **not** a real target loader or customer raw-log E2E.
+The pinned Fluentd Parser API suite additionally checks 14 **independently authored public synthetic golden events** across the ten generated profiles against full expected normalized records, including event timestamps and sanitised failure paths. The committed fixture set is under test_native/fixtures; no real customer/vendor raw log is committed. Separate ignored synthetic-import and synthetic-golden reports include exact source hashes. Successful synthetic replay is **not** a real target loader or customer raw-log E2E.
 
 The suite writes `.tmp/synthetic-native-report.json` with SHA-256 provenance and explicit `targetImportVerified:false`. It exercises Fluentd's real Parser Plugin API and config syntax but **does not** install a plugin, open a live listener, or validate Stellar Cyber imports. See [native qualification](docs/NATIVE_QUALIFICATION.md) and [CI permissions](docs/CI_SETUP.md).
 

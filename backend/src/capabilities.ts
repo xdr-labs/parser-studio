@@ -19,6 +19,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     formatCoverage: "reviewed-bounded-subset" as const,
     rfc5424AdjacentStructuredDataSubset: true,
     rfc5424StructuredDataMaxBytes: 1024,
+    rfc5424BodyFormats: [...props.extraction.properties.syslogBodyFormat.enum],
     multiline: false,
     arbitraryRuby: false,
   },

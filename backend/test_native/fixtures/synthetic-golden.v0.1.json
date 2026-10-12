@@ -178,6 +178,64 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "id": "rfc5424-cef-threat",
+      "slug": "sample_syslog_cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-leef-session",
+      "slug": "sample_syslog_leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 80,
+        "action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-cef-invalid",
+      "slug": "sample_syslog_cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 malformed",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-leef-invalid",
+      "slug": "sample_syslog_leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - LEEF:2.0|Synthetic|FW|1|501|::|src=203.0.113.8",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
     }
   ]
 }

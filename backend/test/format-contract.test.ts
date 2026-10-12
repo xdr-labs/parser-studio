@@ -57,3 +57,22 @@ test("format metadata influences artifact deterministically, not parser naming",
   assert.deepEqual(x.files.map(file => file.name), y.files.map(file => file.name));
   assert.notEqual(x.files[1]?.sha256, y.files[1]?.sha256);
 });
+
+test("RFC5424 nested standalone CEF and LEEF body formats are explicit supported profiles", () => {
+  for (const body of ["cef", "leef"] as const) {
+    const project=sampleProject();
+    project.extraction={format:"syslog_rfc5424",syslogBodyFormat:body};
+    project.normalization.topFields = body==="cef"
+      ? {"body.src":{normalized_name:"srcip",data_type:"ip"},
+         "body.dpt":{normalized_name:"dstport",data_type:"port"},
+         "body.act":{normalized_name:"action",data_type:"string"}}
+      : {"body.src":{normalized_name:"srcip",data_type:"ip"},
+         "body.dstPort":{normalized_name:"dstport",data_type:"port"},
+         "body.act":{normalized_name:"action",data_type:"string"}};
+    project.normalization.nsFields={};
+    assert.equal(validateProject(project).ok,true,body);
+    const pair=compilePair(project);
+    assert.equal(pair.files.length,2);
+    assert.equal(pair.manifest.targetImportVerified,false);
+  }
+});

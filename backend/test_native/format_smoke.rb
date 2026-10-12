@@ -107,4 +107,21 @@ sd_junk = '<165>1 2026-10-12T01:02:03Z edge01 firewall 123 ID42 [origin@32473]ju
 _, invalid_junk = execute_parser(folder, "sample_syslog", sd_junk)
 assert(invalid_junk['parser_err_stage'] == 'extraction', "RFC5424 trailing junk rejected")
 
-puts "Extended synthetic formats: 20 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+# RFC5424 envelopes containing explicitly selected standalone CEF/LEEF bodies.
+syslog_cef = '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny'
+time_cef, parsed_cef = execute_parser(folder, "sample_syslog_cef", syslog_cef)
+assert(parsed_cef['srcip'] == '192.0.2.11' && parsed_cef['dstport'] == 443, "RFC5424 nested CEF typed mapping")
+assert(parsed_cef['stellar_log_index'] == 'threat', "RFC5424 nested CEF classification")
+assert(time_cef.utc.iso8601 == "2026-10-12T01:02:03Z", "RFC5424 nested CEF event time")
+syslog_leef = '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=allow'
+time_leef, parsed_leef = execute_parser(folder, "sample_syslog_leef", syslog_leef)
+assert(parsed_leef['srcip'] == '203.0.113.8' && parsed_leef['dstport'] == 80, "RFC5424 nested LEEF typed mapping")
+assert(parsed_leef['stellar_log_index'] == 'session', "RFC5424 nested LEEF classification")
+assert(time_leef.utc.iso8601 == "2026-10-12T01:02:03Z", "RFC5424 nested LEEF event time")
+_, bad_nested_cef = execute_parser(folder, "sample_syslog_cef",
+  '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 extra')
+assert(bad_nested_cef['parser_err_stage'] == 'extraction' && !bad_nested_cef.key?('srcip'), "Malformed nested CEF fails closed")
+_, bad_nested_leef = execute_parser(folder, "sample_syslog_leef",
+  '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|::|src=203.0.113.8')
+assert(bad_nested_leef['parser_err_stage'] == 'extraction' && !bad_nested_leef.key?('srcip'), "Malformed nested LEEF fails closed")
+puts "Extended synthetic formats: 24 scenarios PASS (CSV/RFC5424/CEF/LEEF)"

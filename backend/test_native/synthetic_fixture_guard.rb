@@ -10,7 +10,7 @@ module SyntheticFixtureGuard
   class BoundaryError < StandardError; end
   extend self
 
-  PROFILES = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_cef sample_leef sample_enriched].freeze
+  PROFILES = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_syslog_cef sample_syslog_leef sample_cef sample_leef sample_enriched].freeze
   FILE_NAMES = PROFILES.flat_map { |s| ["customized_#{s}", "customized_#{s}.conf"] }.freeze
   FIXTURES = File.expand_path('../.tmp/native-fixtures', __dir__).freeze
   EVIDENCE = File.expand_path('../.tmp/synthetic-import-report.json', __dir__).freeze
@@ -60,7 +60,7 @@ module SyntheticFixtureGuard
     refuse('cannot establish HEAD provenance') unless status.success? &&
       data['backendHead'] == head.strip
     hashes = data['originalHashes']
-    refuse('source manifest does not cover exactly eight generated parser pairs') unless
+    refuse('source manifest does not cover exactly ten generated parser pairs') unless
       hashes.is_a?(Hash) && hashes.keys.sort == FILE_NAMES.sort &&
       hashes.values.all? { |h| h.is_a?(String) && h.match?(/\A[0-9a-f]{64}\z/) }
     @expected_hashes = hashes.freeze

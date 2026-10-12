@@ -27,7 +27,7 @@ export interface ParserProject {
     format: "json" | "kv" | "csv" | "syslog_rfc5424" | "cef" | "leef";
     csvColumns?: string[];
     csvDelimiter?: "," | ";" | "\t";
-    syslogBodyFormat?: "raw" | "json" | "kv";
+    syslogBodyFormat?: "raw" | "json" | "kv" | "cef" | "leef";
     maxDepth?: number;
   };
   normalization: {

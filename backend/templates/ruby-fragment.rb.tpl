@@ -230,6 +230,10 @@ def parserstudio_syslog_rfc5424(text, settings)
       record['body'] = parserstudio_json_object(message)
     when 'kv'
       record['body'] = parserstudio_key_values(message)
+    when 'cef'
+      record['body'] = parserstudio_cef(message)
+    when 'leef'
+      record['body'] = parserstudio_leef(message)
     else
       raise ArgumentError, 'Unsupported syslog body format'
     end

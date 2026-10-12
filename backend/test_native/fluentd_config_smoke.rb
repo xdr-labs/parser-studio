@@ -10,7 +10,7 @@ def assert(cond, detail)
 end
 
 root = ARGV.fetch(0)
-names = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_cef sample_leef sample_enriched]
+names = %w[sample_firewall sample_kv sample_extended sample_csv sample_syslog sample_syslog_cef sample_syslog_leef sample_cef sample_leef sample_enriched]
 names.each do |slug|
   filename = File.join(root, "customized_#{slug}.conf")
   original = SyntheticFixtureGuard.read_source(filename)

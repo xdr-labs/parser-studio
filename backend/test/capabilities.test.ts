@@ -16,6 +16,8 @@ test("capability response matches reviewed schema, not future unimplemented tran
   assert.equal(authoring.formatCoverage, "reviewed-bounded-subset");
   assert.equal(authoring.rfc5424AdjacentStructuredDataSubset, true);
   assert.equal(authoring.rfc5424StructuredDataMaxBytes, 1024);
+  assert.deepEqual(authoring.rfc5424BodyFormats,
+    projectSchema.properties.extraction.properties.syslogBodyFormat.enum);
   assert.equal(verification.liveListenerVerified, false);
   assert.equal(verification.proprietaryLoaderVerified, false);
   assert.equal(verification.targetImportVerified, false);
