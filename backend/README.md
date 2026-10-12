@@ -33,7 +33,7 @@ For full synthetic native qualification, install the pinned Ruby Gemfile.lock in
 bash scripts/qualify.sh
 ```
 
-The pinned Fluentd Parser API suite additionally checks 14 **independently authored public synthetic golden events** across the ten generated profiles against full expected normalized records, including event timestamps and sanitised failure paths. The committed fixture set is under test_native/fixtures; no real customer/vendor raw log is committed. Separate ignored synthetic-import and synthetic-golden reports include exact source hashes. Successful synthetic replay is **not** a real target loader or customer raw-log E2E.
+The pinned Fluentd Parser API suite additionally checks 16 **independently authored public synthetic golden events** across the ten generated profiles against full expected normalized records, including event timestamps and sanitised failure paths. The committed fixture set is under test_native/fixtures; no real customer/vendor raw log is committed. Separate ignored synthetic-import and synthetic-golden reports include exact source hashes. Successful synthetic replay is **not** a real target loader or customer raw-log E2E.
 
 The suite writes `.tmp/synthetic-native-report.json` with SHA-256 provenance and explicit `targetImportVerified:false`. It exercises Fluentd's real Parser Plugin API and config syntax but **does not** install a plugin, open a live listener, or validate Stellar Cyber imports. See [native qualification](docs/NATIVE_QUALIFICATION.md) and [CI permissions](docs/CI_SETUP.md).
 

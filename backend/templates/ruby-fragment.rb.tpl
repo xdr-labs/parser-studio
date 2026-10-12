@@ -302,8 +302,16 @@ def parserstudio_leef(text)
     'leef_event_id' => parts[3]
   }
   delimiter = version == '2.0' ? parts[4] : "\t"
-  delimiter = "\t" if delimiter == '0x09' || delimiter == '0x9'
-  raise ArgumentError, 'Unsupported LEEF delimiter' unless delimiter.length == 1
+  if version == '2.0' && (hex = /\A0x([0-9a-fA-F]{1,2})\z/.match(delimiter))
+    delimiter = Integer(hex[1], 16).chr
+  end
+  # Keep key=value unambiguous. Bounded accepted separators: TAB or
+  # printable ASCII excluding space, equals and backslash.
+  valid_separator = delimiter.bytesize == 1 &&
+    (delimiter == "\t" ||
+     (delimiter.ord >= 33 && delimiter.ord <= 126 &&
+      delimiter != '=' && delimiter != '\\'))
+  raise ArgumentError, 'Unsupported LEEF delimiter' unless valid_separator
   extension = parts.last
   unless extension.nil? || extension.empty?
     extension.split(delimiter, -1).each do |piece|

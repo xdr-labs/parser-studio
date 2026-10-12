@@ -18,6 +18,7 @@ test("capability response matches reviewed schema, not future unimplemented tran
   assert.equal(authoring.rfc5424StructuredDataMaxBytes, 1024);
   assert.deepEqual(authoring.rfc5424BodyFormats,
     projectSchema.properties.extraction.properties.syslogBodyFormat.enum);
+  assert.equal(authoring.leefHexSeparatorSubset, true);
   assert.equal(verification.liveListenerVerified, false);
   assert.equal(verification.proprietaryLoaderVerified, false);
   assert.equal(verification.targetImportVerified, false);

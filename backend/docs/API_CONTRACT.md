@@ -45,7 +45,7 @@ Main fields: `schemaRevision`, `projectId`, `revision`, `slug`, `vendor`, `produ
 | `csv` | `csvColumns` **required**, `csvDelimiter` optional `,`, `;` or TAB | Strict column count and quoting, one physical CSV line only; literal CR/LF rejects |
 | `syslog_rfc5424` | `syslogBodyFormat`: raw, json, kv, cef or leef | RFC5424 header with bounded adjacent SD elements (up to 1024 bytes). Optional standalone CEF/LEEF body parsed under body.*. No RFC3164, full SD semantic validation, multiline or arbitrary vendor extension syntax |
 | `cef` | none | Standalone single-line CEF:version, escaped header delimiter, strict KV extension subset; no multiline or Syslog-prefixed CEF |
-| `leef` | none | Standalone single-line LEEF 1.0 TAB and 2.0 one-character delimiter subset; empty extension tokens and CR/LF reject |
+| `leef` | none | Standalone LEEF 1.0 TAB and bounded LEEF 2.0 one-byte or hexadecimal 0xHH delimiter subset; ambiguous NUL/newline/equals separators, empty extension tokens and CR/LF reject |
 
 **Normalization:** `topFields`, `nsFields`, `vendorFields` maps with `normalized_name`, `data_type` (`string|integer|ip|port|boolean|date`), date `time_format:"iso8601"` plus explicit source timezone; `timezone:"UTC"` is available. Invalid ports, IP and unzoned timestamps fail. Names cannot collide with system fields or other outputs.
 

@@ -12,7 +12,7 @@ test("synthetic golden event contract covers ten bounded synthetic parser profil
   }> };
   assert.equal(fixture.kind, "parser-studio.synthetic-golden-events.v0.1");
   assert.equal(fixture.origin, "independently-authored-public-synthetic");
-  assert.ok(fixture.cases.length >= 14);
+  assert.ok(fixture.cases.length >= 16);
   assert.equal(new Set(fixture.cases.map(value => value.id)).size, fixture.cases.length);
   assert.deepEqual(new Set(fixture.cases.map(value => value.slug)), new Set([
     "sample_firewall", "sample_kv", "sample_extended", "sample_csv",

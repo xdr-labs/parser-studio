@@ -236,6 +236,41 @@
         "parser_err_msg": "ArgumentError",
         "parser_err_stage": "extraction"
       }
+    },
+    {
+      "id": "leef-hex-pipe-session",
+      "slug": "sample_leef",
+      "raw": "LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.23|dstPort=80|act=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.23",
+        "dstport": 80,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-leef-hex-session",
+      "slug": "sample_syslog_leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.24|dstPort=80|act=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "203.0.113.24",
+        "dstport": 80,
+        "action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ]
 }

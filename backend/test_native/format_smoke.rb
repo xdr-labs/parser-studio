@@ -124,4 +124,25 @@ assert(bad_nested_cef['parser_err_stage'] == 'extraction' && !bad_nested_cef.key
 _, bad_nested_leef = execute_parser(folder, "sample_syslog_leef",
   '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|::|src=203.0.113.8')
 assert(bad_nested_leef['parser_err_stage'] == 'extraction' && !bad_nested_leef.key?('srcip'), "Malformed nested LEEF fails closed")
-puts "Extended synthetic formats: 24 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+# Explicit LEEF 2.0 0xHH delimiter subset. The hexadecimal representation
+# is part of the LEEF header, not an instruction to execute arbitrary data.
+leef_hex_caret = 'LEEF:2.0|Synthetic|FW|1|501|0x5E|src=203.0.113.22^dstPort=443^act=deny'
+_, hex_caret = execute_parser(folder, "sample_leef", leef_hex_caret)
+assert(hex_caret['srcip'] == '203.0.113.22' &&
+       hex_caret['dstport'] == 443 &&
+       hex_caret['stellar_log_index'] == 'threat', "LEEF 2.0 0x5E extension")
+leef_hex_pipe = 'LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.23|dstPort=80|act=allow'
+_, hex_pipe = execute_parser(folder, "sample_leef", leef_hex_pipe)
+assert(hex_pipe['srcip'] == '203.0.113.23' &&
+       hex_pipe['stellar_log_index'] == 'session', "LEEF 2.0 0x7C extension")
+["0x0A", "0x00", "0x3D", "0xGG"].each do |hex|
+  bad_hex = "LEEF:2.0|Synthetic|FW|1|501|#{hex}|src=203.0.113.25^dstPort=80^act=deny"
+  _, rejected = execute_parser(folder, "sample_leef", bad_hex)
+  assert(rejected['parser_err_stage'] == 'extraction' &&
+         !rejected.key?('srcip'), "Unsupported LEEF separator #{hex} must reject")
+end
+_, nested_hex = execute_parser(folder, "sample_syslog_leef",
+  '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.24|dstPort=80|act=allow')
+assert(nested_hex['srcip'] == '203.0.113.24' &&
+       nested_hex['stellar_log_index'] == 'session', "RFC5424 nested LEEF hex separator")
+puts "Extended synthetic formats: 31 scenarios PASS (CSV/RFC5424/CEF/LEEF)"

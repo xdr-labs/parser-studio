@@ -83,6 +83,13 @@ assert(cef['dstip'] == '198.51.100.22', 'native CEF extension')
 
 _, leef = parse_once(drivers['sample_leef'], "LEEF:1.0|Acme|FW|1|7|src=203.0.113.5\tdstPort=80\tact=deny")
 assert(leef['srcip'] == '203.0.113.5', 'native LEEF')
+_, hex_leef = parse_once(drivers['sample_leef'],
+  'LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.23|dstPort=80|act=allow')
+assert(hex_leef['srcip'] == '203.0.113.23' &&
+       hex_leef['stellar_log_index'] == 'session', 'native LEEF hex delimiter')
+_, nested_hex = parse_once(drivers['sample_syslog_leef'],
+  '<165>1 2026-10-12T02:03:04Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.24|dstPort=80|act=allow')
+assert(nested_hex['srcip'] == '203.0.113.24', 'native nested LEEF hex delimiter')
 
 _, enriched = parse_once(drivers['sample_enriched'], JSON.generate({
   'source' => {'ip' => '192.0.2.17'},
