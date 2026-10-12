@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { TextDecoder } from "node:util";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import { inspectPair, MAX_IMPORT_BYTES, PairInspectionError } from "./import.js";
@@ -28,7 +29,12 @@ async function jsonInput(req: IncomingMessage, maxBytes = MAX_PROJECT_BYTES): Pr
     }
     chunks.push(bytes);
   }
-  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown; }
+  try {
+    // Buffer.toString silently substitutes malformed UTF-8 bytes. Imported
+    // Ruby/CONF and normalization drafts must not be altered on ingestion.
+    const source=new TextDecoder("utf-8",{fatal:true}).decode(Buffer.concat(chunks));
+    return JSON.parse(source) as unknown;
+  }
   catch { throw Object.assign(new Error("Invalid JSON request"), {code: "JSON"}); }
 }
 
@@ -60,7 +66,7 @@ export function createBackendServer(): Server {
     const inspect = path === "/api/v1/parser-pairs/inspect";
     if (!validate && !generate && !inspect) { send(res, 404, {error:"NOT_FOUND"});return; }
     if (req.method !== "POST") { send(res, 405, {error:"METHOD_NOT_ALLOWED"});return; }
-    if (!/^application\/json(?:\s*;.*)?$/i.test(req.headers["content-type"] || "")) {
+    if (!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(req.headers["content-type"] || "")) {
       send(res, 415, {error:"UNSUPPORTED_MEDIA_TYPE"});return;
     }
     const declaredLength = Number(req.headers["content-length"] || 0);

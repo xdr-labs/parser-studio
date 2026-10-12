@@ -41,7 +41,7 @@ The suite writes `.tmp/synthetic-native-report.json` with SHA-256 provenance and
 
 See [complete API contract](docs/API_CONTRACT.md) for all form fields, additional log formats, supported enrichment operations, input limits, errors, and honest export readiness.
 
-All API input/output is UTF-8 JSON; **no CORS response header** is provided. For development, run UI and backend through a same-origin proxy; do not expose this unauthenticated backend on a public interface.
+All API input/output is strictly UTF-8 JSON, with invalid UTF-8 rejected rather than silently replaced; only application/json and an optional charset=utf-8 are accepted. **No CORS response header** is provided. For development, run UI and backend through a same-origin proxy; do not expose this unauthenticated backend on a public interface.
 
 | Endpoint | Request | Response |
 | --- | --- | --- |

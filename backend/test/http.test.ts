@@ -125,3 +125,33 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(badMethod.status,405);
  });
 });
+
+test("HTTP rejects malformed UTF-8 bytes and unsupported JSON charset before inspection or generation", async()=>{
+  await withServer(async base=>{
+    const inspectPath="/api/v1/parser-pairs/inspect";
+    // Synthetic invalid UTF-8 in an otherwise legal JSON body.
+    const bytes=Buffer.concat([
+      Buffer.from('{"name":"customized_test","confContent":"'),
+      Buffer.from([0xc3,0x28]),
+      Buffer.from('","fragmentContent":""}'),
+    ]);
+    const corrupt=await fetch(base+inspectPath,{
+      method:"POST",headers:{"content-type":"application/json"},body:bytes,
+    });
+    assert.equal(corrupt.status,400,"malformed bytes must not become a changed imported pair");
+    const error=await corrupt.json() as any;
+    assert.equal(error.error,"INVALID_JSON");
+    assert.equal(JSON.stringify(error).includes("\uFFFD"),false);
+
+    const badCharset=await fetch(base+"/api/v1/parser-pairs/validate",{
+      method:"POST",headers:{"content-type":"application/json; charset=iso-8859-1"},
+      body:JSON.stringify(sampleProject()),
+    });
+    assert.equal(badCharset.status,415);
+    const goodCharset=await fetch(base+"/api/v1/parser-pairs/validate",{
+      method:"POST",headers:{"content-type":"application/json; charset=UTF-8"},
+      body:JSON.stringify(sampleProject()),
+    });
+    assert.equal(goodCharset.status,200);
+  });
+});
