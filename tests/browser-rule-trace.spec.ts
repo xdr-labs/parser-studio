@@ -52,7 +52,7 @@ test('source revision changes cannot reuse an old per-rule trace and never downl
   const current=page.getByLabel('Browser-only per-rule event trace');
   await current.locator('summary').click();
   await expect(current.getByLabel('Value-free per-rule results')).toContainText('SOURCE_MISSING');
-  await expect(current.getByLabel('Value-free per-rule results')).toContainText('1/3');
+  await expect(current.getByLabel('Value-free per-rule results')).toContainText('2/3');
   await expect(current.getByLabel('Trace event number').locator('option')).toHaveCount(1);
   expect(calls).toBe(0);
 });
