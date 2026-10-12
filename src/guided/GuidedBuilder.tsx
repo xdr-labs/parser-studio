@@ -9,6 +9,7 @@ import {
 import type { FieldType, MappingRule, ParserDraft, SuiteResult } from '../model';
 import { DEMO_SAMPLES } from '../model';
 import { formatLabel, MAX_DATASET_BYTES } from '../parser';
+import { listSafeLeafPaths } from '../fieldPaths';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
@@ -117,6 +118,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
   const activeEvent = suite?.events.find((event) => event.id === selectedId) ?? suite?.events[0];
+  const activeFieldNames = useMemo(() => activeEvent ? listSafeLeafPaths(activeEvent.fields) : [], [activeEvent]);
   const proposal = useMemo(() => activeEvent && selectedValue
     ? createFieldProposal(activeEvent.raw, selectedValue, fieldName)
     : null, [activeEvent, selectedValue, fieldName]);
@@ -509,7 +511,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <mark className="guided-selected-token">{selectedValue}</mark>
                   {activeEvent.raw.slice(activeEvent.raw.indexOf(selectedValue) + selectedValue.length)}
                 </> : activeEvent.raw}</pre> : <div className="guided-no-events">먼저 로그를 입력해 주세요.</div>}
-                <div className="guided-extracted-tags">확인된 필드: {Object.keys(activeEvent?.fields ?? {}).length ? Object.keys(activeEvent!.fields).map((field) => <button type="button" title="필드 매핑 단계에서 편집" key={field} onClick={() => { setStep(2); }}><Plus size={12} /> {field}</button>) : '아직 없습니다'}</div>
+                <div className="guided-extracted-tags">확인된 필드: {activeFieldNames.length ? activeFieldNames.map((field) => <button type="button" title="필드 매핑 단계에서 편집" key={field} onClick={() => { setStep(2); }}><Plus size={12} /> {field}</button>) : '아직 없습니다'}</div>
               </div>
             </div>
             {selectedValue && <div className="guided-proposal">
@@ -577,9 +579,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <label className="guided-field"><span>필드 분류</span><select aria-label={'Mapping group ' + index} value={options.groups[mapping.id] ?? 'vendor_fields'} onChange={(e) => setGuided({ ...options, groups: { ...options.groups, [mapping.id]: e.target.value as FieldGroup } })}>{FIELD_GROUPS.map((group) => <option key={group} value={group}>{GROUP_LABELS[group]}</option>)}</select></label>
                 </div>
               </div>)}</div>
-            <datalist id="guided-field-suggestions">{Object.keys(activeEvent?.fields ?? {}).map((name) => <option value={name} key={name} />)}</datalist>
+            <datalist id="guided-field-suggestions">{activeFieldNames.map((name) => <option value={name} key={name} />)}</datalist>
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> 새 필드 매핑</button>
-              {Object.keys(activeEvent?.fields ?? {}).filter((field) => !draft.mappings.some((mapping) => mapping.source === field)).length > 0 && <button className="guided-link" type="button" onClick={() => { const first = Object.keys(activeEvent?.fields ?? {}).find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> 남은 필드 추천 추가</button>}
+              {activeFieldNames.some((field) => !draft.mappings.some((mapping) => mapping.source === field)) && <button className="guided-link" type="button" onClick={() => { const first = activeFieldNames.find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> 남은 필드 추천 추가</button>}
               <button className="guided-cta-secondary" type="button" disabled={!unmappedSuggestions.length} onClick={applyUnmappedSuggestions}>
                 <WandSparkles size={15} /> 안전한 남은 필드 모두 추가 ({unmappedSuggestions.length})
               </button></div>

@@ -31,5 +31,5 @@ test('prefix-overlapping output target is rejected with actionable error before 
 test('unsupported floating-point mapping option cannot be selected in no-code export', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /3\. 필드 매핑/ }).click();
-  await expect(page.getByLabel('Field type 0').locator('option[value="number"]')).toBeDisabled();
+  await expect(page.getByLabel('Field type 0').locator('option[value="number"]')).toHaveAttribute('disabled', '');
 });

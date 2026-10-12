@@ -1,5 +1,6 @@
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily } from './structuredFamilies';
+import { lookupFieldValue } from './fieldPaths';
 import type { EventBoundary } from './guided/contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
@@ -240,12 +241,13 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       error('normalize', 'TARGET_COLLISION', 'Output field is mapped more than once: ' + target, target);
       continue;
     }
-    if (!Object.prototype.hasOwnProperty.call(fields, source)) {
+    const sourceValue = lookupFieldValue(fields, source);
+    if (!sourceValue.found) {
       diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'SOURCE_NOT_FOUND', message: 'Source field is absent: ' + source, field: source });
       continue;
     }
     mapped.add(source);
-    const converted = convertValue(fields[source], mapping.type);
+    const converted = convertValue(sourceValue.value, mapping.type);
     if (converted.error) error('normalize', 'TYPE_ERROR', source + ': ' + converted.error, source);
     else normalized[target] = converted.value;
   }

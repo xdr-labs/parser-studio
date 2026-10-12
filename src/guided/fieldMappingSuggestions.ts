@@ -1,5 +1,6 @@
 import type { MappingRule, ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
+import { listSafeLeafPaths } from '../fieldPaths';
 
 export interface SuggestedFieldMapping {
   source: string;
@@ -31,7 +32,7 @@ export function suggestUnmappedFields(
   const proposals: SuggestedFieldMapping[] = [];
 
   for (const fields of samples) {
-    for (const source of Object.keys(fields)) {
+    for (const source of listSafeLeafPaths(fields)) {
       if (proposals.length >= 50) return proposals;
       if (found.has(source) || existingSources.has(source) || !SAFE_PATH.test(source)) continue;
       found.add(source);
