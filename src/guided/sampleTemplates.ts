@@ -2,7 +2,7 @@ import { createDraft, type MappingRule, type ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 
 export const starterTemplateIds = [
-  'json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef',
+  'json', 'kv', 'csv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
 ] as const;
 export type StarterTemplateId = (typeof starterTemplateIds)[number];
 
@@ -47,6 +47,22 @@ const presets: Record<StarterTemplateId, { label: string; description: string; s
       '<34>1 2026-10-12T00:00:01Z demo-fw network 12 EVT02 - deny connection',
     ],
   },
+  rfc5424_cef: {
+    label: 'RFC5424 + CEF · 보안 이벤트',
+    description: 'RFC5424 v1 헤더에 CEF:0 본문, 일부 인접 Structured Data',
+    samples: [
+      '<165>1 2026-10-12T00:00:00Z demo-fw security 12 EV01 [origin@32473 site="demo"][trace@32473 id="1"] CEF:0|Example|Firewall|1|100|Allowed|5|act=allow src=198.51.100.10 dpt=443',
+      '<165>1 2026-10-12T00:00:01Z demo-fw security 12 EV02 - CEF:0|Example|Firewall|1|101|Denied|8|act=deny src=203.0.113.11 dpt=22',
+    ],
+  },
+  rfc5424_leef: {
+    label: 'RFC5424 + LEEF · 보안 이벤트',
+    description: 'RFC5424 v1 헤더에 LEEF 2.0 0xHH 구분자 본문',
+    samples: [
+      '<165>1 2026-10-12T00:00:00Z demo-fw security 12 EV01 - LEEF:2.0|Example|Firewall|1|100|0x5E|act=allow^src=198.51.100.10^dstPort=443',
+      '<165>1 2026-10-12T00:00:01Z demo-fw security 12 EV02 - LEEF:2.0|Example|Firewall|1|101|0x5E|act=deny^src=203.0.113.11^dstPort=22',
+    ],
+  },
   cef: {
     label: 'CEF · 보안 이벤트',
     description: 'Syslog 접두부 없는 독립 CEF 레코드',
@@ -75,12 +91,30 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
   const draft = createDraft();
   draft.name = 'Synthetic ' + spec.label;
   draft.vendor = 'Synthetic demo (no customer data)';
-  draft.format = id;
+  draft.format = id === 'rfc5424_cef' || id === 'rfc5424_leef'
+    ? 'syslog_rfc5424' : id;
   draft.csvColumns = 'action,src_ip,dst_port';
   const guided = defaultGuidedOptions();
   guided.slug = 'example_' + id;
   guided.eventBoundary = 'single-line';
   guided.enrichment = [];
+
+  if (id === 'rfc5424_cef' || id === 'rfc5424_leef') {
+    const isCef = id === 'rfc5424_cef';
+    draft.syslogBodyFormat = isCef ? 'cef' : 'leef';
+    const portSource = isCef ? 'body.dpt' : 'body.dstPort';
+    draft.mappings = [
+      { id: 'source-ip', source: 'body.src', target: 'custom.source_ip', type: 'ip' },
+      { id: 'target-port', source: portSource, target: 'custom.destination_port', type: 'port' },
+      { id: 'action', source: 'body.act', target: 'custom.action', type: 'string' },
+    ];
+    guided.groups = {
+      'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'top_fields',
+    };
+    guided.classification.rules = guided.classification.rules.map(rule => ({
+      ...rule, sourceField: 'body.act',
+    }));
+  }
 
   if (id === 'syslog_rfc5424') {
     const rfcMappings: MappingRule[] = [
