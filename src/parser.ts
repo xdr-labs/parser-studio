@@ -1,6 +1,7 @@
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily } from './structuredFamilies';
 import { lookupFieldValue } from './fieldPaths';
+import { validatePreviewRegexPattern } from './regexSafety';
 import type { EventBoundary } from './guided/contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
@@ -124,20 +125,9 @@ function extractSyslog(raw: string): Extraction {
   };
 }
 
-function validatePattern(pattern: string): string | null {
-  if (!pattern.trim()) return 'Enter a named-group regular expression';
-  if (pattern.length > 256) return 'Regex exceeds 256 characters';
-  // Reject nested repetitions and backreferences in the browser preview.
-  // This is a conservative heuristic, not a substitute for isolated execution.
-  if (/\\[1-9]|\(\?<[=!]|\((?:[^()]|\\.)*[+*](?:[^()]|\\.)*\)[+*{]/.test(pattern)) {
-    return 'Regex uses an unsupported or potentially expensive construct';
-  }
-  if (!pattern.includes('(?<')) return 'Add at least one (?<field>...) named capture';
-  return null;
-}
 
 function extractRegex(raw: string, pattern: string): Extraction {
-  const issue = validatePattern(pattern);
+  const issue = validatePreviewRegexPattern(pattern);
   if (issue) return { fields: {}, errors: [issue] };
   try {
     const expression = new RegExp(pattern);
