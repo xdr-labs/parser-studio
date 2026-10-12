@@ -183,3 +183,55 @@ port proposal starts at 6800 and avoids observed occupied ports.
 The guarded sensor sink rejects a destination/CONF port mismatch.
 Even a collision-free candidate never proves actual sensor/runtime
 availability; the target must be rechecked before any approved upload.
+
+
+## Optional offline durable artifact revision and mock Apply audit store
+
+By default all revision APIs are disabled and no revision artifacts, log samples,
+credentials, mock Apply audit or target state are persisted. A trusted backend
+operator may explicitly inject DurableArtifactRevisionHistory instead of the
+ephemeral ArtifactRevisionHistory into createBackendServer. This is a
+single-writer, offline-only development adapter, not a production database.
+
+Provision an existing private directory owned by the service user (mode 0700),
+outside shared project trees and outside the private DP credential directory.
+Pass its canonical absolute artifact-revisions.json path to the constructor.
+The adapter never creates/relaxes directory permissions. It stores the approved
+paired Ruby/CONF artifact contents under a private mode-0600 JSON snapshot.
+Only actor/tenant/revision/time/phase/status metadata appears in the embedded
+mock audit ledger; there are no sample log events, API keys, DP origins, sensor
+addresses or approval tokens in audit entries. The /revisions/list response
+returns persistent:true only for an explicitly injected durable adapter, and
+/capabilities reflects that opt-in state.
+
+Example of trusted server-side injection (not a browser route):
+
+    const history = new DurableArtifactRevisionHistory(
+      "/trusted/private/dir/artifact-revisions.json");
+    // Supply independent server-side identity verification and a
+    // .invalid-only mock coordinator; never trust browser-provided IDs.
+    createBackendServer({
+      artifactRevisionHistory: history,
+      authorizeArtifactRevision: authenticateTrustedRevisionOwner,
+      targetApplyMockGateway: new TargetApplyMockGateway({
+        mode: "MOCK_ONLY",
+        authorize: authenticateTrustedTargetActor,
+        resolveRevision: async (a, id) => {
+          try { return history.resolveOwnedRevision({ownerId:a.id,tenant:a.tenant},id); }
+          catch { return null; }
+        },
+        getCoordinator: trustedMockCoordinatorOnly,
+        audit: async event => { history.recordMockApplyAudit(event); },
+      }),
+    });
+
+Every operation reopens the snapshot and revalidates the exact ZIP/pair SHA-256,
+tenant/actor, checksum, version and file permissions. Atomic fsync+rename,
+exclusive writer lock, TTL, maximum 256 metadata-only audit events and bounded
+artifact capacity fail closed on corruption or unsafe paths. A stale lock or
+broken ledger requires explicit operator reconciliation; never remove a lock
+without verifying there is no active writer. Whole-file hashes detect accidental
+corruption, not malicious modification by the authorized host/file owner.
+The file contains parser artifact bodies, so never publish or commit it.
+There is no default on-disk location, automatic server startup integration,
+real DP write, sensor send or live target verification.

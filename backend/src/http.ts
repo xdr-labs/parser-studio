@@ -139,7 +139,10 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       if (req.method !== "GET") {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
-        send(res, 200, BACKEND_CAPABILITIES);
+        send(res, 200, {...BACKEND_CAPABILITIES,downloads:{
+          ...BACKEND_CAPABILITIES.downloads,
+          revisionHistoryDurableAcrossRestart:options.artifactRevisionHistory?.persistent===true,
+        }});
       }
       return;
     }
@@ -272,7 +275,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           const id=query.get(key)!;
           if(action==="list"){
             send(res,200,{contract:"offline-revision-history.v0.1",
-              revisions:history.list(actor,id),persistent:false,
+              revisions:history.list(actor,id),persistent:history.persistent,
               deploymentPerformed:false});
           }else sendZip(history.download(actor,id));
           return;
@@ -316,7 +319,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           const status=error.code==="REVISION_NOT_FOUND"?404:
             /DUPLICATE|CURRENT_CONFLICT|PROJECT_MISMATCH/.test(error.code)?409:
             error.code==="REVISION_CAPACITY_REACHED"?429:
-            error.code==="REVISION_INTEGRITY_UNVERIFIED"?503:
+            /INTEGRITY|FILE_UNSAFE|DIRECTORY_UNSAFE|STORE_LOCKED|STORE_IO_ERROR|AUDIT_CAPACITY|NOFOLLOW_UNAVAILABLE/.test(error.code)?503:
             error.code==="REVISION_ACTOR_INVALID"?403:422;
           send(res,status,{error:error.code,realTargetVerified:false});
         }else send(res,500,{error:"REVISION_REQUEST_FAILED"});

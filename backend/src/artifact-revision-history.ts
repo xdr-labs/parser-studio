@@ -76,6 +76,8 @@ type Stored={
   createdAt:number;
 };
 export class ArtifactRevisionHistory{
+  /** Default offline history is volatile; durable stores must opt in. */
+  get persistent():boolean{return false;}
   #rows=new Map<string,Stored>();
   #key(actor:RevisionOwner,id:string){
     return actor.tenant+"|"+actor.ownerId+"|"+id;
