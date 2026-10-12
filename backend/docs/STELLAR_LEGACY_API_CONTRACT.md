@@ -154,6 +154,19 @@ POC_RUBY_UNREVIEWED (422), POC_CONF_UNSAFE (422),
 LEGACY_UPSTREAM_HTTP (502 with method/status).
 The backend's unverified capability flags must remain false.
 
+## Independent local native guard for disposable test configuration
+
+The clean exact-HEAD native qualification now emits a fixed, publicly
+synthetic disposable pair through stellar-disposable-smoke.ts (nothing
+uploaded or persisted). The reviewed TypeScript pair/manifest and template
+guard must pass before its CONF is streamed to the pinned Fluentd 1.17.1
+configuration parser. The AST check enforces two UDP/TCP sources, localhost
+bind, reserved test port, exact parser name and a single null sink with
+no external includes. The evidence report records
+pocDisposableLoopbackNullSinkAstChecked=true and
+pocApiMutationPerformed=false. This is **not** an installed POC loader or
+live listener test.
+
 ## Verification status
 
 TypeScript API tests use synthetic in-memory fake transport and never

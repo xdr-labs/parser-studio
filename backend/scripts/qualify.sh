@@ -84,6 +84,10 @@ elif [[ "$guard_output" != *"Synthetic native fixture boundary"* ]]; then
 fi
 echo "Golden runner untrusted-path refusal PASS"
 
+echo "[4c/5] Strict offline POC disposable null-sink CONF grammar with Fluentd AST"
+node dist/scripts/stellar-disposable-smoke.js |
+  run_bounded_ruby -rbundler/setup test_native/stellar_poc_disposable_config_smoke.rb
+
 echo "[5/5] Immutable-style synthetic evidence manifest"
 node --input-type=module <<'NODE'
 import { createHash } from "node:crypto";
@@ -127,6 +131,8 @@ const report = {
   rubyChildCpuLimitSeconds: 30,
   rubyChildWallLimitSeconds: 25,
   rubyChildResourceLimitsChecked: true,
+  pocDisposableLoopbackNullSinkAstChecked: true,
+  pocApiMutationPerformed: false,
   rfc5424SdNameAndParameterGrammarChecked: true,
   rfc5424SdPositiveCases: 2,
   rfc5424SdNegativeCases: 9,
