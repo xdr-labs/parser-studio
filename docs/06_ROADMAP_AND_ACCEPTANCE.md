@@ -209,3 +209,25 @@ This is a pre-production mock contract and does **not** satisfy general-user
 DP Apply, actual parser installation, same-port sensor proof, or Full User E2E.
 Those separate tasks remain gated by the authenticated real backend
 and owner-authorized target evidence.
+
+## R2/P0 Test Lab — Redacted summary and integrity-checked evidence download (2026-10-12)
+
+The existing owner-authorized Test Lab session workspace now has a separately
+collapsed, **opt-in offline evidence review** for the authenticated run. Its
+read-only same-origin `GET /api/v1/test-lab/sessions/evidence-summary` action
+displays bounded stage counts, field match/mismatch/missing and coverage ratios,
+and a fixed allowlist of failure codes, never source values. Its separate
+`evidence-export` download verifies size, attachment headers, exact run ID,
+optional previously reviewed artifact revision ID, UTF-8 JSON schema, per-event
+stages and SHA-256 from the backend before downloading the original bytes.
+Unsupported or cross-owner endpoints are denied by default (403/404); the
+browser never infers authorization from knowledge of a run ID.
+
+The panel does not automatically query, persist evidence, configure a Test Lab
+sink or send events. The result is explicitly **OFFLINE_CONTRACT** and remains
+unverified for real sensor reception, native Ruby/Fluentd parsing, Stellar DP
+ingestion and Full User E2E even when an offline mock field comparison is
+reported. No raw logs, private event values, tokens, credentials or target
+locations are sent or exported. Synthetic RED→GREEN regression coverage:
+`src/guided/testLabEvidenceClient.test.ts` and
+`tests/testlab-evidence-report.spec.ts`.

@@ -19,6 +19,7 @@ import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
+import TestLabEvidencePanel from './TestLabEvidencePanel';
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
@@ -2060,6 +2061,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     }}>Prepare New Approved Session</button>
                   </div>}
               </div>}
+              {sessionStatus && <TestLabEvidencePanel
+                runId={sessionStatus.runId} onDownload={localDownload}/>}
               {sessionStatus && <details className="guided-interflow-readback" aria-label="Audited Interflow field comparison">
                 <summary>Compare Parsed Fields in Interflow · Separate Read Approval</summary>
                 <p>This is a single bounded, read-only lookup, not a parser deployment or live sensor validation. Your backend must independently verify the run owner, tenant data-read permission and audit sink. Only a run marker, one expected scalar field and a bounded time range are sent; raw events, tenant credentials and DP API keys are never sent from this page.</p>
