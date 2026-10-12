@@ -15,6 +15,7 @@ file. The public backend HTTP API does not read or receive these events.
 - From backend/, after npm run build, run:
   node dist/scripts/preflight-private-golden.js
 - Inputs may not specify another file path. No data is written or copied.
+  The parent .tmp must also be an owner-owned real directory (not a symlink).
   An ignored .tmp directory prevents normal Git tracking.
 
 ## Input contract and exclusions
@@ -29,6 +30,7 @@ containing between 1 and 32 entries. Every case has exactly:
 - expectedRecord: an object of JSON scalars / safe nested object fields
   with maximum nesting depth of eight
 
+Invalid UTF-8 is rejected without substituting the replacement character.
 Unknown fields, unsafe destination names, duplicate case IDs, oversized or
 empty input, arrays in expected records, NUL bytes and malformed timestamps
 are rejected. Only fixed diagnostic codes and structural JSON pointers are

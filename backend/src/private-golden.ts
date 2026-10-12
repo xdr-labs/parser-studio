@@ -3,6 +3,17 @@
  * Never echoes raw samples/expected values and never runs uploaded Ruby.
  * The return value is a shape/size check, NOT a native or target attestation.
  */
+import { TextDecoder } from "node:util";
+
+/** Decode evidence bytes without replacement characters or source-content errors. */
+export function decodePrivateGoldenBytes(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", {fatal:true}).decode(bytes);
+  } catch {
+    throw new Error("PRIVATE_INVALID_UTF8");
+  }
+}
+
 export const MAX_PRIVATE_GOLDEN_BYTES = 512 * 1024;
 export const MAX_PRIVATE_EVENT_BYTES = 16 * 1024;
 export const MAX_PRIVATE_GOLDEN_CASES = 32;

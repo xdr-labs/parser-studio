@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { inspectPrivateGolden } from "../src/private-golden.js";
+import { inspectPrivateGolden, decodePrivateGoldenBytes } from "../src/private-golden.js";
 
 function syntheticDocument(): unknown {
   return {
@@ -75,4 +75,12 @@ test("private golden preflight rejects empty or oversized collections",()=>{
   const many=inspectPrivateGolden(base);
   assert.equal(many.ok,false);
   assert.ok(!many.ok && many.issues.some(x=>x.code==="PRIVATE_CASE_COUNT"));
+});
+
+test("private golden UTF-8 decoding must reject malformed bytes rather than rewriting evidence", () => {
+  const intact = Buffer.from('{"rawEvent":"synthetic-한글"}', "utf8");
+  assert.equal(decodePrivateGoldenBytes(intact),'{"rawEvent":"synthetic-한글"}');
+  const damaged = Uint8Array.from([0x7b,0x22,0x78,0x22,0x3a,0x22,0xc3,0x28,0x22,0x7d]);
+  assert.throws(()=>decodePrivateGoldenBytes(damaged),(error:unknown)=>
+    error instanceof Error && error.message==="PRIVATE_INVALID_UTF8");
 });

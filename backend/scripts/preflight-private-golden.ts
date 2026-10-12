@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { resolve } from "node:path";
 import {
-  MAX_PRIVATE_GOLDEN_BYTES, inspectPrivateGolden,
+  MAX_PRIVATE_GOLDEN_BYTES, inspectPrivateGolden, decodePrivateGoldenBytes,
 } from "../src/private-golden.js";
 
 class Refusal extends Error { constructor(readonly code:string) {super(code);} }
@@ -17,7 +17,11 @@ function readOperatorFile(): string {
   if (process.argv.length!==2) throw new Refusal("PRIVATE_ARGUMENTS_UNSUPPORTED");
   const uid=process.getuid?.();
   if(uid===undefined)throw new Refusal("PRIVATE_PLATFORM_UNSUPPORTED");
-  const root=resolve(".tmp/private-fixtures");
+  const parent=resolve(".tmp");
+  const parentStat=lstatSync(parent,{throwIfNoEntry:false});
+  if (!parentStat || !parentStat.isDirectory() || parentStat.isSymbolicLink() ||
+      parentStat.uid!==uid)throw new Refusal("PRIVATE_PARENT_UNSAFE");
+  const root=resolve(parent,"private-fixtures");
   const file=resolve(root,"golden.json");
   const dirStat=lstatSync(root,{throwIfNoEntry:false});
   if (!dirStat) throw new Refusal("PRIVATE_DIRECTORY_MISSING");
@@ -39,7 +43,7 @@ function readOperatorFile(): string {
     if (!opened.isFile() || opened.nlink!==1 ||
         opened.uid!==uid || (opened.mode & 0o077)!==0 ||
         opened.size>MAX_PRIVATE_GOLDEN_BYTES)throw new Refusal("PRIVATE_FILE_UNSAFE");
-    return readFileSync(fd,{encoding:"utf8"});
+    return decodePrivateGoldenBytes(readFileSync(fd));
   }finally{
     closeSync(fd);
   }
@@ -59,6 +63,9 @@ try {
       " profiles="+outcome.profileCount+" native=false target=false");
   }
 }catch(error){
-  console.error("PRIVATE_PREFLIGHT_"+(error instanceof Refusal?error.code:"INVALID_OR_UNAVAILABLE"));
+  const code=error instanceof Refusal ? error.code :
+    error instanceof Error && error.message==="PRIVATE_INVALID_UTF8" ? "PRIVATE_INVALID_UTF8" :
+    "INVALID_OR_UNAVAILABLE";
+  console.error("PRIVATE_PREFLIGHT_"+code);
   process.exitCode=2;
 }
