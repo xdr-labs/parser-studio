@@ -167,6 +167,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     }
   }, [step]);
   const [selectedId, setSelectedId] = useState('event-1');
+  const [selectedMappingId,setSelectedMappingId]=useState<string|null>(null);
   const [isolatedFamilyChoice, setIsolatedFamilyChoice] = useState<IsolatableFamily|null>(null);
   const [isolatedPending,setIsolatedPending] = useState(false);
   const [isolatedAttempt,setIsolatedAttempt] = useState<{key:string;report:FamilyIsolationReport}|null>(null);
@@ -744,6 +745,38 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     notify('Added the field rule to the draft. Compound formats may require a separate routing rule.');
   };
 
+  const openFieldMapping = (source: string) => {
+    const existing=draft.mappings.find(mapping=>mapping.source===source);
+    if(existing) {
+      setSelectedMappingId(existing.id);
+      setStep(2);
+      notify('Opened the existing source-field mapping. Review the normalized destination and type before generation.');
+      return;
+    }
+    // Only the reviewed name-based suggestion is allowed. Raw sample values
+    // stay in the browser and never enter rules or outgoing API requests.
+    const suggestion=unmappedSuggestions.find(candidate=>candidate.source===source);
+    if(!suggestion) {
+      setStep(2);
+      notify('This extracted source field cannot be safely prefilled. Review the mapping manually.');
+      return;
+    }
+    const id=crypto.randomUUID();
+    setDraft(old=>{
+      if(old.mappings.some(mapping=>mapping.source===source))return old;
+      const options=old.guided??defaultGuidedOptions();
+      return {...old,
+        mappings:[...old.mappings,{
+          id,source:suggestion.source,target:suggestion.target,type:suggestion.type,
+        }],
+        guided:{...options,groups:{...options.groups,[id]:suggestion.group}},
+      };
+    });
+    setSelectedMappingId(id);
+    setStep(2);
+    notify('Added the selected source field as a conservative string DRAFT mapping. Review and test before generating files.');
+  };
+
   const addMapping = (source = '') => {
     const next: MappingRule = {
       id: crypto.randomUUID(), source,
@@ -1129,7 +1162,17 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <mark className="guided-selected-token">{selectedValue}</mark>
                   {activeEvent.raw.slice(activeEvent.raw.indexOf(selectedValue) + selectedValue.length)}
                 </> : activeEvent.raw}</pre> : <div className="guided-no-events">Add logs first.</div>}
-                <div className="guided-extracted-tags">Detected fields: {activeFieldNames.length ? activeFieldNames.map((field) => <button type="button" title="Edit in mapping stage" key={field} onClick={() => { setStep(2); }}><Plus size={12} /> {field}</button>) : 'None yet'}</div>
+                <div className="guided-extracted-tags">Detected fields: {activeFieldNames.length ? activeFieldNames.map((field) => {
+                  const mapped=draft.mappings.some(mapping=>mapping.source===field);
+                  const suggested=unmappedSuggestions.some(candidate=>candidate.source===field);
+                  const label=mapped?'Review mapping for '+field:
+                    suggested?'Add draft mapping for '+field:
+                    'Review field in mapping editor: '+field;
+                  return <button type="button" title={label} aria-label={label}
+                    key={field} onClick={()=>openFieldMapping(field)}>
+                    <Plus size={12}/> {field}
+                  </button>;
+                }) : 'None yet'}</div>
               </div>
             </div>
             {selectedValue && <div className="guided-proposal">
@@ -1185,7 +1228,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             </details>
             <div className="guided-note"><HelpCircle size={15} /> Only a reviewed subset of scalar fields from Stellar Cyber's public <a href={officialDictionaryUrl65} target="_blank" rel="noopener noreferrer">6.5 Metadata Dictionary</a> · <a href={officialDictionaryUrl} target="_blank" rel="noopener noreferrer">7.0 Standard Metadata Dictionary</a> is shown. Actual DP version and parser compatibility require independent validation.</div>
             <div className="guided-map-list">{draft.mappings.map((mapping, index) =>
-              <div className="guided-map-card" key={mapping.id}>
+              <div className={'guided-map-card'+(selectedMappingId===mapping.id?' selected-field':'')}
+                key={mapping.id} data-selected={selectedMappingId===mapping.id}
+                aria-label={'Mapping for '+mapping.source}>
                 <div className="guided-map-number"><span>FIELD {String(index + 1).padStart(2, '0')}</span>
                   <button type="button" title="Remove Mapping" aria-label={'Remove mapping ' + index} onClick={() => setDraft((old) => ({ ...old, mappings: old.mappings.filter((item) => item.id !== mapping.id) }))}><Trash2 size={15} /></button></div>
                 <div className="guided-map-inputs">

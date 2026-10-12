@@ -237,3 +237,21 @@ tests/family-isolation.spec.ts covers explicit user selection, local-only
 network behavior, retained mixed source and authoring format, stale evidence
 invalidation, absence on single-family samples and unknown-only refusal.
 This is a preview-to-correction aid, not a native routing or release claim.
+
+
+### 2026-10-12 — Explicit safe source-field chip to mapping navigation
+
+Previously selecting an extracted-field chip in Step 2 only navigated to Step 3
+without selecting the mapping or creating the requested source rule. The
+explicit field-chip buttons now distinguish **Review mapping for X** for a
+previously mapped source from **Add draft mapping for X** when the reviewed,
+value-free unmapped-source suggestion list provides a safe candidate. The
+addition is a single conservative string mapping with a collision-screened
+custom destination and an appropriate reviewed group. No value inference,
+source event body or API request occurs. Unsafe/unavailable suggestions are
+never silently imported; the user receives an explanation to review manually.
+A highlighted, accessible mapping card is shown after navigation. Direct
+keyboard Enter works because every chip is a real button. A browser regression
+tests duplicate prevention, unmapped source mapping, unsafe prototype names,
+local-only sample privacy and keyboard operation. This feature does not claim
+native parsing or target import compatibility.

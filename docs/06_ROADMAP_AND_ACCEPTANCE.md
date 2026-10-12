@@ -116,3 +116,23 @@ checklists; do not mistake old unchecked boxes for entirely unimplemented
 features. Confirm actual HEAD, Work Packet, code and precise tests before
 choosing the next runnable work item. Continue in R1 -> R2 -> R3 -> R4 -> R5
 order, skipping only owner-input or unavailable runtime gates.
+
+
+## R2 P0-A — Keyboard-operated source field → mapping correction (2026-10-12)
+
+Extracted source-field chips in Guided Step 2 now have explicit accessible
+button names and distinguish **review an existing mapping** from **add a safe
+draft mapping**. One keyboard Enter/click action can add a **single reviewed,
+conservative string** mapping in Step 3, using only the structural source
+identifier produced by the existing safe unmapped-field suggestion contract.
+The action preserves all current rules, refuses unknown/unsafe/prototype or
+destination-colliding field paths and never stores or sends event values.
+An existing mapping is opened without duplicate creation. The active rule is
+visually distinguished with an accessible mapping label, and stage navigation
+keeps keyboard focus on the destination heading.
+
+This is browser/local draft usability and does NOT verify a vendor metadata
+dictionary, type inference beyond the conservative string choice, or real
+Fluentd/Stellar export. Keyboard, duplicate prevention, source retention,
+privacy and unsafe-name regression paths are exercised through
+tests/field-chip-mapping.spec.ts.
