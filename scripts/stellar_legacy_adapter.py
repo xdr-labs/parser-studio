@@ -205,6 +205,58 @@ class LegacyUpload:
         ]
 
 
+def _validate_disposable_test_route(plan: LegacyUpload) -> None:
+    """Allow POC writes only for isolated, localhost-only test receivers.
+
+    Real backend generation may legitimately use 0.0.0.0, an include, or
+    rewrite_tag_filter. Such production-shaped configs must NEVER pass this
+    disposal-only write gate without a separately approved deployer.
+    """
+    if not 7800 <= plan.port <= 7999:
+        raise LegacyContractError("Disposable POC receiver must use test port 7800..7999")
+    try:
+        config = plan.conf_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        raise LegacyContractError("Unexpected receiver encoding") from None
+    # Ignore comments; reject includes even when they appear outside a source.
+    clean = re.sub(r"(?m)^[ \t]*#.*$", "", config)
+    if re.search(r"(?m)^[ \t]*@include\b", clean):
+        raise LegacyContractError("External Fluentd includes are not allowed for POC tests")
+
+    sources = re.findall(r"<source>(.*?)</source>", clean, flags=re.S)
+    if not 1 <= len(sources) <= 2 or len(sources) != clean.count("<source>"):
+        raise LegacyContractError("Unsupported disposable test receiver layout")
+
+    protocols = []
+    for source in sources:
+        header = source.split("<parse>", 1)[0]
+        types = re.findall(r"(?m)^[ \t]*@type[ \t]+(\S+)[ \t]*$", header)
+        bindings = re.findall(r"(?m)^[ \t]*bind[ \t]+(\S+)[ \t]*$", header)
+        ports = [int(v) for v in re.findall(r"(?m)^[ \t]*port[ \t]+(\d+)[ \t]*$", header)]
+        tags = re.findall(r"(?m)^[ \t]*tag[ \t]+(\S+)[ \t]*$", header)
+        if (len(types) != 1 or types[0] not in ("udp", "tcp")
+                or bindings != ["127.0.0.1"]
+                or ports != [plan.port]
+                or tags != [plan.name]):
+            raise LegacyContractError("Disposable POC listener must be loopback-only with exact tag")
+        protocols.append(types[0])
+        parse_sections = re.findall(r"<parse>(.*?)</parse>", source, flags=re.S)
+        if (len(parse_sections) != 1
+                or not re.search(r"(?m)^\s*@type\s+" + re.escape(plan.name) + r"\s*$",
+                                 parse_sections[0])):
+            raise LegacyContractError("Disposable POC parser must use exact local parser type")
+    if len(set(protocols)) != len(protocols):
+        raise LegacyContractError("Duplicated disposable receiver protocol")
+
+    matches = re.findall(r"<match\s+([^<>\n]+)>(.*?)</match>", clean, flags=re.S)
+    if len(matches) != 1 or len(matches) != clean.count("<match "):
+        raise LegacyContractError("POC fixture requires exactly one null routing sink")
+    tag_pattern, body = matches[0]
+    sink_types = re.findall(r"(?m)^[ \t]*@type[ \t]+(\S+)[ \t]*$", body)
+    if tag_pattern.strip() != plan.name + ".**" or sink_types != ["null"]:
+        raise LegacyContractError("Disposable POC logs may only go to an exact-name null sink")
+
+
 class LegacyPocClient:
     """Explicit, test-only bridge for a verified POC legacy pair REST contract."""
 
@@ -305,6 +357,7 @@ class LegacyPocClient:
         if not isinstance(plan, LegacyUpload) or plan.tenant != self.tenant:
             raise LegacyContractError("Selected tenant differs from upload plan")
         self._write_guard(plan.name, confirmed)
+        _validate_disposable_test_route(plan)
 
     def _write(self, method: str, name: str, **kwargs) -> int:
         fn = {"POST": self._client.post, "PUT": self._client.put, "DELETE": self._client.delete}[method]

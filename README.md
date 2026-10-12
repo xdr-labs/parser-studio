@@ -28,6 +28,7 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 - [09 — Secure test Stellar Cyber API setup](docs/09_STELLAR_API_TEST_SETUP.md)
 - [10 — Verified POC Custom Parser API CRUD contract](docs/10_STELLAR_POC_API_CRUD_EVIDENCE.md)
 - [11 — Guarded POC Legacy Parser REST Adapter](docs/11_POC_LEGACY_DEPLOY_ADAPTER.md)
+- [12 — Verified public Parser API capability inventory](docs/12_PUBLIC_API_CAPABILITY_EVIDENCE.md)
 
 ## Configure test API credentials on dev-atlas
 

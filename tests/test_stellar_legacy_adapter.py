@@ -38,14 +38,14 @@ def source_file(name, text):
 
 def generated_pair(name=NAME, *, port=7891):
     conf = (
-        "<source>\n  @type udp\n"
+        "<source>\n  @type udp\n  bind 127.0.0.1\n"
         f"  port {port}\n"
         f"  tag {name}\n"
         "  <parse>\n"
         f"    @type {name}\n"
         "  </parse>\n</source>\n"
         f"<match {name}.**>\n"
-        "  @type rewrite_tag_filter\n</match>\n"
+        "  @type null\n</match>\n"
     )
     files = [
         source_file(name + ".conf", conf),
@@ -258,6 +258,47 @@ class LegacyAdapterTests(unittest.TestCase):
         with self.assertRaises(LegacyContractError):
             client.create(plan, confirmed=True)
         self.assertFalse(any(x[0] == "CREATE" for x in s.calls))
+
+    def test_test_only_write_requires_localhost_and_no_live_forwarding(self):
+        base = generated_pair()
+        source = base['files'][0]['content']
+        for unsafe in (
+            source.replace('bind 127.0.0.1', 'bind 0.0.0.0'),
+            source.replace('bind 127.0.0.1', ''),
+            source.replace('@type null', '@type rewrite_tag_filter'),
+            source.replace('  @type udp', '  @type exec'),
+            source.replace('  @type udp', '  @include /etc/td-agent/transport_settings.conf\n  @type udp'),
+            source.replace(f'<match {NAME}.**>', '<match **>'),
+            source.replace(f'tag {NAME}', 'tag unrelated'),
+        ):
+            data = generated_pair()
+            data['files'][0] = source_file(NAME + '.conf', unsafe)
+            data['manifest']['fileHashes'][NAME + '.conf'] = data['files'][0]['sha256']
+            plan = LegacyUpload.from_generated(data, tenant=TENANT, version='1.0.0')
+            http = FakeHttpSession()
+            client = make_client(http)
+            with self.subTest(config=unsafe[:100]), self.assertRaises(LegacyContractError):
+                client.create(plan, confirmed=True)
+            self.assertEqual(http.calls, [], 'blocked writes must not exchange JWT or call server')
+
+    def test_test_only_write_rejects_non_reserved_ports(self):
+        data = generated_pair(port=8123)
+        plan = LegacyUpload.from_generated(data, tenant=TENANT, version='1.0.0')
+        http = FakeHttpSession()
+        with self.assertRaises(LegacyContractError):
+            make_client(http).create(plan, confirmed=True)
+        self.assertEqual(http.calls, [])
+
+    def test_test_only_update_uses_same_isolation_gate(self):
+        data = generated_pair()
+        text = data['files'][0]['content'].replace('bind 127.0.0.1', 'bind 0.0.0.0')
+        data['files'][0] = source_file(NAME + '.conf', text)
+        data['manifest']['fileHashes'][NAME + '.conf'] = data['files'][0]['sha256']
+        plan = LegacyUpload.from_generated(data, tenant=TENANT, version='1.0.1')
+        http = FakeHttpSession()
+        with self.assertRaises(LegacyContractError):
+            make_client(http).update(plan, expected_version='1.0.0', confirmed=True)
+        self.assertEqual(http.calls, [])
 
     def test_version_conflict_fails_before_update_delete(self):
         s = FakeHttpSession()

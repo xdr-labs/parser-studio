@@ -49,7 +49,13 @@ read-only list requests. **Every write requires `confirmed=True`** and a
 disposable name matching `ps_api_crud_test_<hex>` or
 `customized_ps_api_crud_test_<hex>`. Reads/updates/deletes are tenant-scoped,
 and the code rejects collisions, missing expected records, and version mismatches
-before mutation. JWTs are refreshed after a bounded eight-minute cache window;
+before mutation. Test-only POST and PUT also require port **7800–7999**,
+`bind 127.0.0.1` for every UDP/TCP source, the exact test tag/parser name,
+a single matching `@type null` output and no external `@include`.
+Backend-generated configurations for live routing (for example `0.0.0.0`,
+`rewrite_tag_filter`) are intentionally **not deployable** through this
+POC-only writer. See [public API capability and isolation gates](12_PUBLIC_API_CAPABILITY_EVIDENCE.md).
+JWTs are refreshed after a bounded eight-minute cache window;
 read-only GET requests may retry once after HTTP 401 with a refreshed JWT.
 **POST/PUT/DELETE are never automatically retried after HTTP 401** to avoid
 unintended repeated mutations. HTTP errors are categorized by method/status only,
