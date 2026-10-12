@@ -24,6 +24,7 @@ import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type Star
 import { suggestUnmappedFields } from './fieldMappingSuggestions';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
+import { summarizeFamilyCoverage } from './familyCoverage';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
@@ -172,6 +173,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const unmappedSuggestions = useMemo(() => suggestUnmappedFields(
     (suite?.events ?? []).map(event => event.fields), draft,
   ), [suite?.events, draft]);
+  const familyCoverage = useMemo(
+    () => summarizeFamilyCoverage(suite?.events ?? [], draft.format),
+    [suite?.events, draft.format],
+  );
   const artifactContract = compilerDraftContract(draft);
   const backendProject = toBackendProject(draft);
   // Bind validation, generated files and suite evidence to the exact draft AND fixture set.
@@ -563,6 +568,28 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <small>RFC5424 헤더 형식만 지원합니다. Syslog RFC3164·복합 포맷·멀티라인은 별도 파서이며 생성 호환성을 보증하지 않습니다.</small>
             </label>}
             <div className="guided-hint"><AlertCircle size={16} /> 브라우저 추출은 미리보기입니다. JSON, KV, CSV, 정확한 RFC5424, 단독 CEF/LEEF만 기능 계약 확인 후 DRAFT 생성할 수 있습니다. 일반 Syslog·Regex 및 복합/멀티라인은 미지원입니다.</div>
+            <div className={'guided-family-coverage ' + (familyCoverage.incompatible ? 'attention' : '')}
+              aria-label="Sample format distribution">
+              <strong>전체 샘플 형식 분포 · 브라우저 추정</strong>
+              <div className="guided-family-counts">
+                {familyCoverage.groups.map(group => <span key={group.format}>
+                  {formatLabel(group.format)} <b>{group.count}</b>
+                </span>)}
+                {!familyCoverage.groups.length && <span>샘플 없음</span>}
+              </div>
+              {familyCoverage.incompatible && <div className="guided-family-warning" role="status">
+                <AlertTriangle size={15} />
+                <span>{draft.format === 'auto'
+                  ? '자동 감지는 브라우저 미리보기 전용이며 DRAFT 파일을 생성할 형식을 명시적으로 선택해야 합니다.'
+                  : '입력 형식과 다른 샘플 ' + familyCoverage.unexpected + '개 · 미확인 ' + familyCoverage.unknown + '개.'}
+                  하나의 DRAFT 파서는 추출 형식 하나만 지원합니다. 서로 다른 로그 형식은 별도 파서 초안으로 나눠 검증하세요.
+                  자동 혼합 분류/네이티브 라우팅은 지원되지 않습니다.</span>
+                {familyCoverage.firstUnexpectedEventId && <button type="button"
+                  onClick={() => { setSelectedId(familyCoverage.firstUnexpectedEventId!); setSelectedValue(''); }}>
+                  다른 형식 샘플 확인
+                </button>}
+              </div>}
+            </div>
             <div className="guided-section-title"><span>02</span> 샘플에서 값 선택하기</div>
             <div className="guided-event-picker">
               <div className="guided-event-buttons" aria-label="Guided event list">

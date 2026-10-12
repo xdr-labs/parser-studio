@@ -377,3 +377,15 @@
 .guided-official-field select { min-width:0; width:100%; }
 .guided-note a { color:#187c85; text-decoration:underline; text-underline-offset:2px; }
 .guided-note a:focus-visible { outline:2px solid #187c85; outline-offset:2px; }
+
+/* Browser-only family breakdown; never silently create cross-family native parser branches. */
+.guided-family-coverage { border:1px solid #dce7eb; background:#f7fafb; border-radius:8px; padding:11px 12px; margin:12px 0 18px; }
+.guided-family-coverage > strong { color:#567784; font-size:11px; }
+.guided-family-coverage.attention { border-color:#eed5b5; background:#fffbf5; }
+.guided-family-counts { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin:9px 0 0; }
+.guided-family-counts > span { display:flex; gap:6px; align-items:center; color:#456e7b; font-size:10px; padding:5px 7px; border:1px solid #d6e5e8; background:#fff; border-radius:5px; }
+.guided-family-counts b { color:#167c83; font:750 11px var(--mono); }
+.guided-family-warning { margin-top:9px; border-top:1px solid #f1e4d2; padding-top:9px; display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; color:#987044; font-size:10px; line-height:1.65; }
+.guided-family-warning > span { flex:1 1 180px; }
+.guided-family-warning button { flex:none; padding:5px 9px; border-radius:5px; border:1px solid #e6d0b3; background:#fff; color:#936331; font-size:10px; font-weight:750; cursor:pointer; }
+.guided-family-warning button:focus-visible { outline:2px solid #177e85; outline-offset:3px; }
