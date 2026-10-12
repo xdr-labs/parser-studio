@@ -254,3 +254,20 @@ source-retention, stale-edit and data-leak scenarios:
 This completes only the local **per-rule inspection usability** part of
 R2 P0-B. Actual multi-family native routing and robust Fluentd multiline
 event breaking remain unverified and must not be marked complete.
+
+## R4 — On-demand detailed workspaces and initial JavaScript budget (2026-10-12)
+
+The generated Step 6 revision history, authenticated Test Lab evidence panel
+and local per-rule trace are now loaded with React Suspense **only when
+needed**, preserving the same server authorization and user-action gates.
+They do not initiate network requests on module import, nor start a sender,
+runtime runner, vendor query or target operation.
+
+At the prior UI HEAD `1056449`, the Vite initial JavaScript chunk was
+**518.94 kB (151.40 kB gzip)**. After separating those three panels into
+on-demand chunks, it is **481.70 kB (141.73 kB gzip)**, with independently
+loaded 4.16 kB, 11.64 kB and 23.27 kB panel bundles. This is a
+build-artifact size improvement, **not** an independently measured browser
+load-time, memory or Core Web Vitals PASS. Existing Chromium user flows,
+keyboard navigation and disabled-by-default API behavior remain the
+required exact-HEAD regression checks.

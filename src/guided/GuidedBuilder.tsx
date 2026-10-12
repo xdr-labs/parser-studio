@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import {
   AlertCircle, AlertTriangle, ArrowRight, ArrowLeft, Check, CheckCircle2, ChevronRight,
@@ -18,9 +18,6 @@ import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 import { fetchBackendCapabilities, assertBackendProjectSupported } from './backendCapabilities';
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
-import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
-import TestLabEvidencePanel from './TestLabEvidencePanel';
-import BrowserRuleTracePanel from './BrowserRuleTracePanel';
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
@@ -58,6 +55,10 @@ import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
 } from './contract';
+
+const ArtifactRevisionHistoryPanel=lazy(()=>import('./ArtifactRevisionHistoryPanel'));
+const TestLabEvidencePanel=lazy(()=>import('./TestLabEvidencePanel'));
+const BrowserRuleTracePanel=lazy(()=>import('./BrowserRuleTracePanel'));
 
 export interface GuidedBuilderProps {
   draft: ParserDraft;
@@ -1647,6 +1648,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             </details>
 
             <div className="guided-filter"><span>Per-event Results: {suite?.events.length ?? 0} events</span><div>{(['all','fail','warning'] as const).map((filter) => <button type="button" aria-pressed={errorFilter === filter} key={filter} className={errorFilter === filter ? 'selected' : ''} onClick={() => setErrorFilter(filter)}>{filter === 'all' ? 'All' : filter === 'fail' ? 'Failures' : 'Warnings'}</button>)}</div></div>
+            <Suspense fallback={<p className="guided-note">Loading local rule diagnostics…</p>}>
             <BrowserRuleTracePanel suite={suite} pending={pending}
               mappings={draft.mappings} selectedEventId={selectedId}
               onSelectEvent={setSelectedId}
@@ -1654,6 +1656,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 setSelectedMappingId(draft.mappings[index]?.id??null);
                 setStep(2);
               }}/>
+            </Suspense>
             <div className="guided-test-events">{(suite?.events ?? []).filter((event) => errorFilter === 'all' || event.status === errorFilter).map((event) =>
               <button className="guided-test-event" type="button" key={event.id} onClick={() => { setSelectedId(event.id); setStep(1); }}>
                 <span className={'guided-status-dot ' + event.status} />
@@ -1817,6 +1820,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 </div>}
               </div>
             </div>}
+            <Suspense fallback={<p className="guided-note">Loading offline version history…</p>}>
             <ArtifactRevisionHistoryPanel
               projectId={backendProject.ok ? backendProject.project.projectId : qualifiedPair?.manifest.projectId}
               draftKey={draftKey}
@@ -1824,6 +1828,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               listenerPort={qualifiedBackend?.project.receiver.port ?? null}
               onDownload={localDownloadBinary}
             />
+            </Suspense>
             <details className="guided-pair-inspect">
               <summary><FileArchive size={16} /> Inspect Existing Parser Pair (Advanced, Read-only)</summary>
               <p>Selecting files does not upload them automatically. Only an explicit click sends both files to a same-origin local development API for structure and SHA-256 checks. Raw contents are not stored or displayed.</p>
@@ -2069,8 +2074,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     }}>Prepare New Approved Session</button>
                   </div>}
               </div>}
-              {sessionStatus && <TestLabEvidencePanel
-                runId={sessionStatus.runId} onDownload={localDownload}/>}
+              {sessionStatus && <Suspense fallback={<p className="guided-note">Loading offline Test Lab evidence…</p>}>
+                <TestLabEvidencePanel runId={sessionStatus.runId}
+                  onDownload={localDownload}/>
+              </Suspense>}
               {sessionStatus && <details className="guided-interflow-readback" aria-label="Audited Interflow field comparison">
                 <summary>Compare Parsed Fields in Interflow · Separate Read Approval</summary>
                 <p>This is a single bounded, read-only lookup, not a parser deployment or live sensor validation. Your backend must independently verify the run owner, tenant data-read permission and audit sink. Only a run marker, one expected scalar field and a bounded time range are sent; raw events, tenant credentials and DP API keys are never sent from this page.</p>
