@@ -1,6 +1,6 @@
 # 08 — User-first, No-code Parser Studio: Product UI Contract
 
-**Priority: P0, accepted product direction.** The principal user is a field SE, partner, customer administrator or analyst who knows the logs but **does not write Ruby, Regex or Fluentd configurations**. The application replaces the external parser developer's authoring and debugging labor. The developer is an exception persona, not the default user.
+**Legacy secondary detailed editor: P0 baseline.** The **new owner-directed first-priority default** is the three-step Auto Parser in [12](12_AUTO_PARSER_V2_PRIORITY_ROADMAP.md): Add Logs → Review Results → Test & Generate. The six-step Guided Builder documented below remains available through Edit Details/Advanced, and the Expert Workbench remains optional; do not remove its completed functions. The principal user is a field SE, partner, customer administrator or analyst who knows the logs but **does not write Ruby, Regex or Fluentd configurations**. The application replaces the external parser developer's authoring and debugging labor. The developer is an exception persona, not the default user.
 
 ## North-star acceptance
 
@@ -10,7 +10,7 @@
 
 ## Why this changes the prior prototype
 
-The existing three-pane Workbench is useful for technical debugging but cannot be the primary entry flow for nondevelopers. Keep it as an **Expert / Detail View** behind the default **Guided Builder**, with task-oriented labels instead of source-code jargon. The user should not need to understand `parse(text)`, `@parser_rule_set`, `<source>`, `stellar_log_index`, Ruby or regex. Advanced editing is optional and always followed by native tests.
+The existing three-pane Workbench is useful for technical debugging but cannot be the primary entry flow for nondevelopers. Keep it as an **Expert / Detail View** behind the new default **Auto Parser** and the preserved secondary six-step Guided Builder, with task-oriented labels instead of source-code jargon. The user should not need to understand `parse(text)`, `@parser_rule_set`, `<source>`, `stellar_log_index`, Ruby or regex. Advanced editing is optional and always followed by native tests.
 
 ## Primary navigation
 
@@ -22,7 +22,7 @@ The existing three-pane Workbench is useful for technical debugging but cannot b
 
 Advanced settings (templates, runtime profiles, privacy, schema update) are not surfaced in the first-time creation flow.
 
-## Six-step guided creation flow
+## Existing secondary six-step guided creation flow
 
 | Step | User question | Non-code UI capabilities | Generated backend concepts | PASS evidence |
 | --- | --- | --- | --- | --- |
