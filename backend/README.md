@@ -156,3 +156,12 @@ Any interrupted run requires reapproval; there is no automatic restoration
 of source logs, network sockets or delivery, and the default server never
 enables this journal. See
 [worker recovery design](docs/TESTLAB_WORKER_RECOVERY.md).
+
+Read-only operator DP check: python3 backend/scripts/verify-target-readonly.py
+is OFFLINE by default; --execute in a trusted dev-atlas SSH terminal uses
+the private on-host test profile for exactly one User Scope JWT exchange POST
+and two tenant-scoped Custom Parser inventory GETs. It prints redacted
+HTTP statuses/counts only, with redirects disabled and verified HTTPS.
+There are no parser mutations, sensor packets or Interflow lookups.
+Live verification is distinct from offline unit-test PASS. See
+docs/TARGET_CONNECTION_SETUP.md.

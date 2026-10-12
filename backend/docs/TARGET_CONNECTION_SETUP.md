@@ -49,6 +49,41 @@ Use a dedicated revocable TEST-ONLY User Scope API Key, with machine disk
 encryption and access controls. Do not paste a key into this chat, GitHub,
 shell command arguments or screenshots. Do not upload this private file.
 
+## Read-only DP verification (requires separate operator execution)
+
+An independent scope-limited verifier is available. It is OFFLINE by
+default and does not read the private profile without --execute.
+
+From the existing dev-atlas SSH terminal:
+
+    cd /home/aella/parser-studio-backend
+    python3 backend/scripts/verify-target-readonly.py --execute
+
+This command is restricted to the owner-approved POC origin, with system
+CA/TLS certificate verification and redirects disabled. It performs
+exactly POST /connect/api/v1/access_token to exchange the User Scope Key
+for a JWT, followed by tenant-scoped GET /custom_log_parsers and
+GET /custom_log_parsers/parsers. It does NOT call parser POST/PUT/DELETE,
+read Interflow/customer events, probe other URL paths, or send UDP/TCP
+packets to a sensor.
+
+The terminal displays only HTTP status codes, parser-list record counts,
+and numbers of distinct valid ports (if returned). No Key, JWT, parsed
+event, existing parser name or raw vendor body is displayed or saved.
+HTTP 403, missing/invalid responses or TLS/network failure are reported
+as NOT VERIFIED, never PASS. A successful GET only verifies that this
+credential can read the selected tenant's two inventory API responses;
+it does not prove parser write privileges, specific listener availability,
+sensor reachability or actual runtime parsing.
+
+The standard test suite exercises all allowable requests and security
+errors entirely OFFLINE with fake tokens/GET replies:
+
+    python3 -m unittest discover -s backend/scripts -p test_verify_target_readonly.py -q
+
+Until the operator runs --execute successfully, live DP JWT and
+Custom Parser list access remain NOT VERIFIED by this integration.
+
 ## Verification and deployment boundaries
 
 The script performs ZERO HTTP requests, ZERO UDP/TCP sensor sends, ZERO

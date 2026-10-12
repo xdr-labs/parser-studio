@@ -57,6 +57,21 @@ to a private owner-only profile outside the Git worktree at
 ~/.parser-studio-secrets/connection.json, never imports preexisting secrets,
 and does NOT make API calls, reserve a port, or authorize deployment.
 
+## Read-only connection inventory preflight
+
+An owner-invoked read-only verifier is provided at
+backend/scripts/verify-target-readonly.py. Its default mode is offline.
+When the operator explicitly supplies --execute, it reads only the
+private on-host test DP profile and performs exactly one User Scope JWT
+exchange POST and two tenant-scoped Custom Parser inventory GET requests.
+See TARGET_CONNECTION_SETUP.md.
+
+This CLI does not authorize any writes and does not activate the backend
+target adapter. A successful inventory response alone cannot guarantee
+sensor/listener port availability, indexed Interflow data, or normalizer
+runtime operation. The externally approved POC read check must be
+recorded separately from synthetic/mock tests.
+
 ## Environment and owner gates (deferred)
 
 An actual per-target connection requires a securely authenticated operator
