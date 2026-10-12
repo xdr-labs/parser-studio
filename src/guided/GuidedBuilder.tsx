@@ -27,7 +27,7 @@ import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
 import { createBrowserEvidence } from './browserEvidence';
 import { compareBrowserEvidence, type BrowserEvidenceComparison } from './browserEvidenceComparison';
-import { synthesizeReplayPreview, type ReplayMutation } from './replayPreview';
+import { createLocalReplayPlan, synthesizeFromReplayPlan, type LocalReplayPlan, type ReplayMutation } from './replayPreview';
 import {
   CLASSIFICATIONS, FIELD_GROUPS, compilerDraftContract, defaultGuidedOptions,
   plannedPairNames, type EventClass, type FieldGroup, type GuidedOptions, type GuidedEnrichmentRule, type Transport,
@@ -170,6 +170,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [localReplayText, setLocalReplayText] = useState('');
   const [localReplayMutations, setLocalReplayMutations] = useState<ReplayMutation[]>([]);
   const [localReplayError, setLocalReplayError] = useState('');
+  const [localReplaySource, setLocalReplaySource] = useState<{ index: number; line: number; total: number } | null>(null);
+  // Source samples stay in memory only. Never serialize this plan into project
+  // revisions, API calls or downloaded evidence.
+  const localReplayPlanRef = useRef<LocalReplayPlan | null>(null);
+  const localReplayCursorRef = useRef(0);
 
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
@@ -207,6 +212,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       setLocalReplayMutations([]);
       setLocalReplayCount(0);
       setLocalReplayError('');
+      setLocalReplaySource(null);
+      localReplayPlanRef.current = null;
+      localReplayCursorRef.current = 0;
     }
   }, [draftKey]);
   const qualifiedBackend = backendAttempt?.key === draftKey ? backendAttempt : null;
@@ -270,25 +278,43 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
 
   const produceLocalReplay = (): boolean => {
     try {
-      const sourceLine = sample.split(/\r?\n/).find((line) => line.trim());
-      if (!sourceLine) throw new Error('반복 생성할 로그 샘플이 없습니다.');
-      const output = synthesizeReplayPreview(sourceLine, draft);
+      const plan = localReplayPlanRef.current;
+      if (!plan) throw new Error('No reviewed local replay plan');
+      const output = synthesizeFromReplayPlan(plan, draft, localReplayCursorRef.current);
+      localReplayCursorRef.current++;
       setLocalReplayText(output.log);
       setLocalReplayMutations(output.mutations);
+      setLocalReplaySource({ index: output.sourceEvent, line: output.sourceLine, total: output.sourceTotal });
       setLocalReplayCount((count) => Math.min(count + 1, Number.MAX_SAFE_INTEGER));
       return true;
     } catch {
       setLocalReplayRunning(false);
-      setLocalReplayError('합성 로그 생성 실패: 지원 형식의 한 줄 로그 및 브라우저 보안 컨텍스트를 확인하세요.');
+      localReplayPlanRef.current = null;
+      setLocalReplayError('합성 로그 생성 실패: 지원 형식의 단일 레코드 로그들 및 브라우저 보안 컨텍스트를 확인하세요.');
       return false;
     }
+  };
+  const stopLocalReplay = () => {
+    setLocalReplayRunning(false);
+    localReplayPlanRef.current = null;
   };
   const startLocalReplay = () => {
     setLocalReplayText('');
     setLocalReplayCount(0);
     setLocalReplayError('');
     setLocalReplayMutations([]);
-    if (produceLocalReplay()) setLocalReplayRunning(true);
+    setLocalReplaySource(null);
+    localReplayCursorRef.current = 0;
+    try {
+      // Entire sample is reviewed before starting the timer; one malformed
+      // later record aborts rather than silently dropping it.
+      localReplayPlanRef.current = createLocalReplayPlan(sample, draft);
+      if (produceLocalReplay()) setLocalReplayRunning(true);
+    } catch {
+      localReplayPlanRef.current = null;
+      setLocalReplayRunning(false);
+      setLocalReplayError('로컬 반복 생성 시작 실패: 샘플 전체가 동일한 지원 형식이어야 하며 64 KiB/500개 단일 줄 이벤트 제한을 지켜야 합니다.');
+    }
   };
   useEffect(() => {
     if (!localReplayRunning) return;
@@ -297,6 +323,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     }, 1000 / localReplayRate);
     return () => window.clearInterval(interval);
   }, [localReplayRunning, localReplayRate, sample, draft]);
+  useEffect(() => {
+    if (step !== 5 && localReplayRunning) stopLocalReplay();
+  }, [step, localReplayRunning]);
 
   const applyStarter = () => {
     if (!starterChoice) return;
@@ -998,7 +1027,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             </details>
             <details className="guided-replay-preview" aria-label="Local synthetic replay preview">
               <summary>합성 로그 반복 미리보기 · 센서 전송 없음</summary>
-              <p>현재 입력한 로그의 첫 번째 한 줄만 브라우저 안에서 변형해 반복 생성합니다. 현재 시각, 테스트용 IP, 사용자명과 URL을 바꾸며 생성 결과는 서버에 전송하거나 저장하지 않습니다.</p>
+              <p>현재 입력한 단일 줄 로그 <b>전체</b>를 시작 전에 검사하고, 순서대로 반복합니다(최대 500개 · 64 KiB). 현재 시각, 문서용 테스트 IP, 사용자명·URL만 변형하며 알 수 없는 다른 필드 값은 그대로 남을 수 있습니다. 생성 결과는 서버에 전송하거나 저장하지 않습니다.</p>
               <div className="guided-replay-controls">
                 <label className="guided-field"><span>로컬 미리보기 생성 속도</span>
                   <select aria-label="Replay preview rate" value={localReplayRate}
@@ -1007,11 +1036,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   </select>
                 </label>
                 {localReplayRunning
-                  ? <button className="guided-cta-secondary" type="button" onClick={() => setLocalReplayRunning(false)}>로컬 반복 생성 중지</button>
+                  ? <button className="guided-cta-secondary" type="button" onClick={stopLocalReplay}>로컬 반복 생성 중지</button>
                   : <button className="guided-cta-secondary" type="button" onClick={startLocalReplay}>로컬 반복 생성 시작</button>}
               </div>
               <div className="guided-replay-status" role="status">
                 로컬 생성 {localReplayCount}건 · 실제 센서 전송 <strong>0건</strong> · {localReplayRunning ? '로컬 생성 중' : '중지됨'}
+                {localReplaySource && <span> · 원본 {localReplaySource.index}/{localReplaySource.total} (라인 {localReplaySource.line})</span>}
               </div>
               {localReplayError && <p role="alert" className="guided-error">{localReplayError}</p>}
               {localReplayText && <div className="guided-replay-output">

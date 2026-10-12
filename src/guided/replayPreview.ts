@@ -1,5 +1,5 @@
 import type { ConcreteFormat, ParserDraft } from '../model';
-import { extractFields, MAX_LINE_CHARS } from '../parser';
+import { extractFields, MAX_LINE_CHARS, MAX_DATASET_BYTES, MAX_EVENTS, splitEvents } from '../parser';
 
 export type ReplayMutation = 'timestamp' | 'ip' | 'username' | 'url';
 export interface SyntheticReplayPreview {
@@ -129,4 +129,68 @@ export function synthesizeReplayPreview(
     throw new Error('Generated preview does not satisfy the selected browser extraction format');
   }
   return {mode:'LOCAL_PREVIEW_ONLY',sentToSensor:false,log:result,mutations:ORDER.filter(type=>categories.has(type))};
+}
+
+
+/** Prepared in browser memory on explicit Start. All source records are
+ * validated up front; never silently drop a malformed later event.
+ * This in-memory plan can contain private event text: never send/store it. */
+export interface LocalReplayPlan {
+  mode: 'LOCAL_PREVIEW_ONLY';
+  format: ParserDraft['format'];
+  total: number;
+  entries: ReadonlyArray<Readonly<{ raw: string; line: number }>>;
+}
+
+export function createLocalReplayPlan(sample: string, draft: ParserDraft): LocalReplayPlan {
+  if (draft.guided?.eventBoundary && draft.guided.eventBoundary !== 'single-line') {
+    throw new Error('Replay supports only single-line event boundaries; multiline source requires a separate review');
+  }
+  const size = new TextEncoder().encode(sample).byteLength;
+  if (!size || size > MAX_DATASET_BYTES) throw new Error('Replay source exceeds the browser dataset size limit');
+  const records = splitEvents(sample, 'single-line', MAX_EVENTS + 1);
+  if (!records.length || records.length > MAX_EVENTS) {
+    throw new Error('Replay needs between one and ' + MAX_EVENTS + ' bounded source events');
+  }
+  if (!['json', 'kv', 'csv', 'cef', 'leef', 'syslog_rfc5424'].includes(draft.format)) {
+    throw new Error('Replay supports reviewed JSON/KV/CSV/CEF/LEEF/RFC5424 source formats only');
+  }
+  for (const record of records) {
+    if (record.raw.length > MAX_LINE_CHARS ||
+        extractFields(record.raw, draft.format as ConcreteFormat, draft).errors.length) {
+      throw new Error('Unsupported or malformed replay source event at physical line ' + record.line);
+    }
+  }
+  return {
+    mode: 'LOCAL_PREVIEW_ONLY',
+    format: draft.format,
+    total: records.length,
+    entries: records.map(({raw, line}) => ({raw, line})),
+  };
+}
+
+/** Generates exactly one local-only event in a bounded round-robin sequence.
+ * The UI owns its timer and stops it on edit, unmount, or explicit Stop. */
+export function synthesizeFromReplayPlan(
+  plan: LocalReplayPlan,
+  draft: ParserDraft,
+  cursor: number,
+  now: Date = new Date(),
+  random?: () => number,
+): SyntheticReplayPreview & { sourceEvent: number; sourceLine: number; sourceTotal: number } {
+  if (!Number.isSafeInteger(cursor) || cursor < 0 || plan.mode !== 'LOCAL_PREVIEW_ONLY' ||
+      !plan.total || plan.total !== plan.entries.length || plan.format !== draft.format) {
+    throw new Error('Invalid or stale synthetic replay plan');
+  }
+  const position = cursor % plan.total;
+  const entry = plan.entries[position];
+  const generated = random
+    ? synthesizeReplayPreview(entry.raw, draft, now, random)
+    : synthesizeReplayPreview(entry.raw, draft, now);
+  return {
+    ...generated,
+    sourceEvent: position + 1,
+    sourceLine: entry.line,
+    sourceTotal: plan.total,
+  };
 }

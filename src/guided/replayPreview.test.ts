@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDraft } from '../model';
 import { extractFields } from '../parser';
-import { synthesizeReplayPreview } from './replayPreview';
+import { synthesizeReplayPreview, createLocalReplayPlan, synthesizeFromReplayPlan } from './replayPreview';
 
 const now=new Date('2026-10-12T11:34:56.000Z');
 const entropy=()=>0.42;
@@ -87,5 +87,59 @@ describe('bounded, synthetic local replay preview: never send to a sensor',()=>{
     expect(()=>synthesizeReplayPreview('{"user":"bob"}\n{"user":"alice"}',draft,now,entropy)).toThrow();
     expect(()=>synthesizeReplayPreview('x'.repeat(4097),draft,now,entropy)).toThrow();
     expect(()=>synthesizeReplayPreview('{"user":"bob"}',draft,now,()=>-1)).toThrow();
+  });
+
+  it('preflights and cycles all physical sample records in original order, never sending a sample', () => {
+    const draft = createDraft();
+    draft.format = 'json';
+    const source = [
+      '{"action":"allow","src_ip":"10.0.0.1","username":"secret_a"}',
+      '{"action":"deny","src_ip":"10.0.0.2","username":"secret_b"}',
+      '{"action":"alert","src_ip":"10.0.0.3","username":"secret_c"}',
+    ].join('\n');
+    const plan = createLocalReplayPlan(source, draft);
+    expect(plan.total).toBe(3);
+    expect(plan.mode).toBe('LOCAL_PREVIEW_ONLY');
+    const records = [0,1,2,3].map(index => synthesizeFromReplayPlan(plan,draft,index,now,entropy));
+    expect(records.map(rec=>JSON.parse(rec.log).action)).toEqual(['allow','deny','alert','allow']);
+    expect(records.map(rec=>rec.sourceEvent)).toEqual([1,2,3,1]);
+    expect(records.map(rec=>rec.sourceLine)).toEqual([1,2,3,1]);
+    expect(records.every(rec=>rec.sentToSensor===false)).toBe(true);
+    expect(records.every(rec=>!rec.log.includes('secret_'))).toBe(true);
+  });
+
+  it('skips blank physical lines and retains actual original line positions for replay',()=>{
+    const draft=createDraft();draft.format='json';
+    const source='\n{"action":"allow"}\n\n  {"action":"deny"}\n';
+    const plan=createLocalReplayPlan(source,draft);
+    expect(plan.total).toBe(2);
+    expect(synthesizeFromReplayPlan(plan,draft,0,now,entropy)).toMatchObject({sourceEvent:1,sourceLine:2});
+    expect(synthesizeFromReplayPlan(plan,draft,1,now,entropy)).toMatchObject({sourceEvent:2,sourceLine:4});
+  });
+
+  it('preflights all records, never silently skipping invalid later events',()=>{
+    const draft=createDraft();draft.format='json';
+    const first='{"action":"allow"}';
+    const invalid='action=deny';
+    expect(()=>createLocalReplayPlan(first+'\n'+invalid,draft)).toThrow(/2|unsupported|invalid|malformed/i);
+    expect(()=>createLocalReplayPlan(first+'\n'.repeat(3)+invalid,draft)).toThrow();
+  });
+
+  it('refuses multiline boundaries, oversized datasets and too many records before a timer starts',()=>{
+    const draft=createDraft();draft.format='json';
+    const first='{"action":"allow"}';
+    draft.guided!.eventBoundary='blank-line';
+    expect(()=>createLocalReplayPlan(first,draft)).toThrow(/single-line|multiline|boundary/i);
+    draft.guided!.eventBoundary='single-line';
+    expect(()=>createLocalReplayPlan(first.repeat(4500),draft)).toThrow();
+    expect(()=>createLocalReplayPlan(Array.from({length:501},()=>first).join('\n'),draft)).toThrow(/500|limit/i);
+    expect(()=>createLocalReplayPlan('  \n ',draft)).toThrow();
+  });
+
+  it('rejects stale or invalid record-index requests without leaking a partial network sender',()=>{
+    const draft=createDraft();draft.format='json';
+    const plan=createLocalReplayPlan('{"action":"allow"}',draft);
+    expect(()=>synthesizeFromReplayPlan(plan,draft,-1,now,entropy)).toThrow();
+    expect(()=>synthesizeFromReplayPlan(plan,draft,Number.NaN,now,entropy)).toThrow();
   });
 });
