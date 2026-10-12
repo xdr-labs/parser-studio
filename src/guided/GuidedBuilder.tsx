@@ -10,6 +10,7 @@ import type { FieldType, MappingRule, ParserDraft, SuiteResult } from '../model'
 import { DEMO_SAMPLES } from '../model';
 import { formatLabel, MAX_DATASET_BYTES } from '../parser';
 import { listSafeLeafPaths } from '../fieldPaths';
+import { mappingCoverage } from './mappingCoverage';
 import { createFieldProposal } from '../pattern';
 import { suggestClassification } from './classify';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
@@ -75,6 +76,27 @@ function localDownload(filename: string, source: string, mediaType = 'applicatio
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function MappingCoverageView(props: {
+  suite?: SuiteResult;
+  mapping: MappingRule;
+  index: number;
+  onInspect: (eventId: string) => void;
+}) {
+  const counts = mappingCoverage(props.suite, props.mapping);
+  return <div className={'guided-map-coverage ' + (counts.typeFailures || counts.missing ? 'attention' : '')}
+    aria-label={'Mapping coverage ' + props.index}>
+    {counts.total ? <>
+      <span>샘플 {counts.total}개 · 소스 {counts.sourcePresent}/{counts.total} · 정규화 {counts.normalized}/{counts.total}</span>
+      {counts.missing > 0 && <span>미발견 {counts.missing}</span>}
+      {counts.typeFailures > 0 && <span>타입 오류 {counts.typeFailures}</span>}
+      {counts.firstProblemEventId && <button type="button"
+        aria-label={'Inspect mapping issue ' + props.index}
+        onClick={() => props.onInspect(counts.firstProblemEventId!)}>문제 샘플 보기</button>}
+    </> : <span>샘플 추출 후 매핑 적용 범위가 표시됩니다.</span>}
+    <small>브라우저 미리보기만 · Fluentd/실제 적재 미검증</small>
+  </div>;
 }
 
 export default function GuidedBuilder(props: GuidedBuilderProps) {
@@ -578,6 +600,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <label className="guided-field"><span>변환 타입</span><select aria-label={'Field type ' + index} value={mapping.type} onChange={(e) => setMapping(mapping.id, 'type', e.target.value)}>{TYPES.map((type) => <option value={type} key={type} disabled={type === 'number'}>{TYPE_LABELS[type]}</option>)}</select></label>
                   <label className="guided-field"><span>필드 분류</span><select aria-label={'Mapping group ' + index} value={options.groups[mapping.id] ?? 'vendor_fields'} onChange={(e) => setGuided({ ...options, groups: { ...options.groups, [mapping.id]: e.target.value as FieldGroup } })}>{FIELD_GROUPS.map((group) => <option key={group} value={group}>{GROUP_LABELS[group]}</option>)}</select></label>
                 </div>
+                <MappingCoverageView suite={suite} mapping={mapping} index={index}
+                  onInspect={(eventId) => { setSelectedId(eventId); setSelectedValue(''); setStep(1); }} />
               </div>)}</div>
             <datalist id="guided-field-suggestions">{activeFieldNames.map((name) => <option value={name} key={name} />)}</datalist>
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> 새 필드 매핑</button>

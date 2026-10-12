@@ -350,3 +350,13 @@
 .guided-schema-verified code { display:block; white-space:pre-wrap; overflow-wrap:anywhere; padding:8px; border-radius:4px; font:10px/1.65 var(--mono); background:#f1f6f7; }
 .guided-schema-verified small { display:block; color:#8d6c51; font-size:10px; line-height:1.55; }
 .guided-schema-guide summary:focus-visible, .guided-schema-guide button:focus-visible { outline:2px solid #147e85; outline-offset:3px; }
+
+/* Per-field sample coverage is browser-only, and carries counts rather than log values. */
+.guided-map-coverage { border-top:1px solid #e4ecef; padding-top:10px; margin-top:11px; display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; font-size:10px; color:#426f78; }
+.guided-map-coverage.attention { color:#94663f; }
+.guided-map-coverage > span { display:inline-flex; padding:3px 5px; border-radius:4px; background:#eff6f7; }
+.guided-map-coverage.attention > span { background:#fff6ee; }
+.guided-map-coverage button { border:1px solid #d7beac; border-radius:5px; padding:5px 9px; background:#fff; color:#966b44; font-size:10px; font-weight:750; cursor:pointer; }
+.guided-map-coverage button:hover { background:#fff7ef; }
+.guided-map-coverage button:focus-visible { outline:2px solid #147e85; outline-offset:2px; }
+.guided-map-coverage small { flex-basis:100%; font-size:9px; color:#83949b; }
