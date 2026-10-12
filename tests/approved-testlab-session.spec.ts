@@ -65,7 +65,7 @@ test('separately approved synthetic Test Lab session: explicit start/pause/resum
       expect(body).toMatchObject({
         approvalId:'owner-approved-synthetic',ratePerSecond:2,
         leaseMs:60000,maxEvents:100,
-        sample:{format:'json',runMarkerField:'test.run_id',seed:42,sequence:0},
+        sample:{format:'json',runMarkerField:'test.run_id',seed:42,sequence:0,variableFields:[{path:'src_ip',kind:'ipv4'},{path:'username',kind:'username'},{path:'url',kind:'url'}]},
       });
       const raw=JSON.stringify(body);
       expect(raw).not.toContain('CUSTOMER_SECRET');

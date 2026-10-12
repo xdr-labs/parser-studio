@@ -63,10 +63,11 @@ describe('explicit owner-approved Test Lab session UI client, never default sens
       sample:{
         format:'json',seed:42,sequence:0,timestampField:'time',
         runMarkerField:'test.run_id',
-        variableFields:[{path:'src_ip',kind:'ipv4'},{path:'username',kind:'username'}],
+        variableFields:[{path:'src_ip',kind:'ipv4'},{path:'username',kind:'username'},{path:'url',kind:'url'}],
       },
     });
     expect(body.sample.source).toContain('192.0.2.10');
+    expect(body.sample.source).toContain('https://example.invalid/synthetic');
     for(const sensitive of ['198.51.100.21','API_KEY','PRIVATE_USER','sensorIp','dpUrl','tenant','targetHost']){
       expect(JSON.stringify(body)).not.toContain(sensitive);
     }

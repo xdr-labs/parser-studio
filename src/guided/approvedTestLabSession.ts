@@ -36,7 +36,7 @@ const STATUS_FIELDS=[
 ].sort().join(',');
 const SYNTHETIC_SOURCE=JSON.stringify({
   time:'2026-01-01T01:00:00Z',src_ip:'192.0.2.10',
-  username:'example_user',action:'allow',
+  username:'example_user',url:'https://example.invalid/synthetic',action:'allow',
   test:{run_id:'synthetic_initial'},
 });
 const FIXTURE={
@@ -44,6 +44,7 @@ const FIXTURE={
   timestampField:'time',variableFields:[
     {path:'src_ip',kind:'ipv4' as const},
     {path:'username',kind:'username' as const},
+    {path:'url',kind:'url' as const},
   ],
   runMarkerField:'test.run_id',
 };
