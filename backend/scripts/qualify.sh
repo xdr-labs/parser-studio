@@ -199,4 +199,6 @@ console.log("SHA-256 hashes: "+files.length+"; HEAD="+head.slice(0,12)+"; dirty=
 NODE
 echo "[5b/5] Archive exact-HEAD reviewed synthetic native case metadata only"
 node dist/scripts/native-regression.js archive
+echo "[5c/5] Exact-HEAD fixed synthetic Fluentd capability manifest"
+node dist/scripts/native-capabilities.js
 echo "PASS synthetic native parser profile, NOT Stellar Cyber deployment."

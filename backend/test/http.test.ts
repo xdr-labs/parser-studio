@@ -113,7 +113,7 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(info.authoring.arbitraryRuby,false);
    assert.equal(info.import.exactInternalPairsEditable,true);
    assert.equal(info.import.unknownLegacyRubyEditable,false);
-   assert.equal(info.verification.nativeSyntheticProfile,"ruby3.2.3-fluentd1.17.1");
+   assert.equal(info.verification.nativeSyntheticProfile,"ruby3.2.x-fluentd1.17.1");
    assert.equal(info.verification.liveListenerVerified,false);
    assert.equal(info.verification.proprietaryLoaderVerified,false);
    assert.equal(info.verification.targetImportVerified,false);

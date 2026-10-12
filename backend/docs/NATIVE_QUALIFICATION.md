@@ -121,3 +121,37 @@ This reduces accidental or simple post-generation fixture substitution. The igno
 ## Safety boundary
 
 The runner only executes **repo-generated synthetic artifacts**. Never accept arbitrary customer Ruby or logs into this script. It is not a hardened, multi-user sandbox; real uploaded fixtures require separate isolated workers and limits. The HTTP server does not spawn this runner. Reference host `rickmodular` remains read-only, and the owner separately controls actual Stellar Cyber application.
+
+
+## Exact-HEAD native capability manifest (public synthetic only)
+
+The final phase of bash scripts/qualify.sh produces an ignored, private
+.tmp/synthetic-native-capabilities.json with a fixed, redacted capability
+manifest (parser-studio.synthetic-native-capabilities.v0.1). It is generated
+only after the pinned Fluentd 1.17.1 syntax/Parser Plugin/CONF AST suite,
+23 golden events, 10 reviewed profile import round-trips, and per-HEAD
+synthetic regression archive pass. The manifest validates all evidence hashes,
+the same Git HEAD, fixed case identities, the trusted fixture checksum and
+reviewed profile/file names. A dirty worktree, stale report, tampered byte
+sequence or incompatible fixture fails closed; no manifest success is claimed.
+
+The manifest reports 10 reviewed synthetic profiles and 23 golden cases,
+including standalone JSON, KV, CSV, CEF, LEEF and bounded RFC5424 KV/CEF/LEEF
+body combinations. Each entry contains only format names, case counts and
+Ruby/CONF SHA-256 hashes. No raw events, normalized values, sensor IPs, API
+keys, customer data or free-form diagnostic strings are exported.
+
+nativeCapabilityVerified=true is qualified exclusively to the fixed public
+synthetic tests on Ruby 3.2.x and Fluentd 1.17.1. It is not evidence that a
+user's parser runs under Fluentd, or that the proprietary Stellar Cyber
+loader/target, real sensor, customer logs or tenant Interflow are verified.
+These separate flags remain false. RFC3164, multiline, mixed-format routing,
+arbitrary Ruby/Regex and JSONata remain explicitly unverified. The static
+HTTP capabilities endpoint continues to advertise engine/target verification
+as false; the operator-local manifest is not automatically published to Web
+UI clients or usable to bypass an Apply approval gate.
+
+The digest binds the manifest's redacted fields; it is not a signature or
+independent provenance attestation. The environment is not a sandbox for
+arbitrary customer-provided Ruby. Only the fixed reviewed public synthetic
+suite is eligible.
