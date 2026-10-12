@@ -28,6 +28,7 @@ import {
 import {
   assertApprovedSessionReady, startApprovedSyntheticSession,
   fetchApprovedSessionStatus, controlApprovedSession, renewApprovedSession,
+  changeApprovedSessionRate,
   type ApprovedTestLabStatus,
 } from './approvedTestLabSession';
 import { queryApprovedInterflowReadback, type InterflowReadbackResult, type InterflowIndex } from './approvedInterflowReadback';
@@ -42,6 +43,7 @@ import { suggestUnmappedFields } from './fieldMappingSuggestions';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
+import { recommendLocalFormat, type LocalFormatAdvice } from './localFormatAdvisor';
 import {
   ISOLATABLE_FAMILIES, planFamilyIsolation, summarizeIsolatedFamilyPreview,
   type FamilyIsolationReport, type IsolatableFamily,
@@ -135,6 +137,51 @@ function TypeSuggestionView(props: {
     <span>Browser samples {suggestion.evidence}/{suggestion.total} suggest {TYPE_LABELS[suggestion.type]} type; not official metadata or native validation</span>
     <button type="button" aria-label={'Apply type suggestion ' + props.index}
       onClick={() => props.onApply(suggestion.type)}>Apply Suggested Type</button>
+  </div>;
+}
+
+function LocalFormatRecommendationView(props:{
+  advice:LocalFormatAdvice;
+  selected:ParserDraft['format'];
+  pending:boolean;
+  onApply:(format:NonNullable<LocalFormatAdvice['format']>)=>void;
+}){
+  const {advice,selected,pending,onApply}=props;
+  const detected=advice.status==='RECOMMENDED'&&advice.format!==null;
+  const status:Record<LocalFormatAdvice['status'],string>={
+    NO_SAMPLES:'Add at least one log event to receive a format recommendation.',
+    NO_PREVIEW:'Analyzing the current sample locally…',
+    LIMIT_EXCEEDED:'This sample exceeds the 64 KiB / 500 event preview limit. Reduce it before format recommendation.',
+    MULTILINE_UNVERIFIED:'Grouped multiline input needs manual review. Native multiline parser output is unsupported.',
+    UNTRUSTED_PREVIEW:'Local preview metadata could not be verified. Rerun the preview before selecting a format.',
+    SOURCE_MISMATCH:'The preview no longer matches every source event. No format will be selected.',
+    MIXED_FORMATS:'Multiple log families were detected. Review each family separately; one parser format cannot cover them all.',
+    UNKNOWN_EVENTS:'Unrecognized source events remain. No single format can be recommended safely.',
+    MANUAL_REVIEW:'The detected format requires manual configuration or is not supported for generated native output.',
+    PREVIEW_FAILED:'The detected format did not extract all current events. Choose Auto detect and retry the local preview.',
+    RECOMMENDED:'Every bounded event has the same recognized extraction format.',
+  };
+  return <div className={'guided-format-advisor'+(detected?' recommended':'')}
+    aria-label="Local sample format recommendation">
+    <strong><WandSparkles size={15}/> Automatic Format Check · Browser Only</strong>
+    <p>{status[advice.status]}</p>
+    {advice.totalEvents>0&&<div className="guided-format-advisor-metrics">
+      <span>{advice.reviewedEvents}/{advice.totalEvents} extracted in current browser preview</span>
+      {detected&&<span>Signature confidence (minimum): {advice.confidencePercent}%</span>}
+    </div>}
+    {advice.families.length>0&&<div className="guided-format-advisor-families"
+      aria-label="Detected format candidates">
+      {advice.families.map(f=><span key={f.format}>{formatLabel(f.format)}: {f.count}</span>)}
+    </div>}
+    {detected&&<div className="guided-format-advisor-action">
+      <strong>Suggested: {formatLabel(advice.format!)}</strong>
+      <button type="button" className="guided-cta-secondary"
+        disabled={pending||selected===advice.format} aria-label="Apply recommended log format"
+        onClick={()=>{if(advice.format)onApply(advice.format);}}>
+        <Check size={15}/>{selected===advice.format?'Already Selected':'Use Detected Format'}
+      </button>
+    </div>}
+    <small>No log contents or credentials leave the browser. This changes only the selected draft extraction format after a click; mappings and sample logs are not changed. Backend support, native runtime and Stellar import remain unverified.</small>
   </div>;
 }
 
@@ -260,6 +307,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [sessionApproval, setSessionApproval] = useState('');
   const [sessionAcknowledged, setSessionAcknowledged] = useState(false);
   const [sessionRate, setSessionRate] = useState<1|2|5>(1);
+  const [sessionNewRate,setSessionNewRate]=useState<0.2|1|2|5>(2);
+  const [sessionRateApproval,setSessionRateApproval]=useState('');
+  const [sessionRateConfirmed,setSessionRateConfirmed]=useState(false);
   const [sessionStatus, setSessionStatus] = useState<ApprovedTestLabStatus | null>(null);
   const [sessionBusy, setSessionBusy] = useState(false);
   const [sessionError, setSessionError] = useState('');
@@ -314,6 +364,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const familyCoverage = useMemo(
     () => summarizeFamilyCoverage(suite?.events ?? [], draft.format),
     [suite?.events, draft.format],
+  );
+  const localFormatAdvice=useMemo(
+    ()=>recommendLocalFormat(sample,pending?undefined:suite,
+      options.eventBoundary??'single-line'),
+    [sample,pending,suite,options.eventBoundary],
   );
   const isolatableOptions=familyCoverage.groups
     .filter(group=>ISOLATABLE_FAMILIES.some(format=>format===group.format))
@@ -548,6 +603,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       if (token!==sessionActionToken.current) return;
       setSessionStatus(status);
       setSessionApproval('');setSessionAcknowledged(false);
+      setSessionRateApproval('');setSessionRateConfirmed(false);
       notify('The backend started an independently authorized Test Lab session. Delivery does not prove Stellar parsing or ingestion.');
     } catch {
       if(token===sessionActionToken.current)
@@ -565,6 +621,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       const recovered=await fetchApprovedSessionStatus(sessionRecoveryRunId);
       if (token!==sessionActionToken.current) return;
       setSessionStatus(recovered);setSessionRecoveryRunId('');
+      setSessionRateApproval('');setSessionRateConfirmed(false);
       notify('An authenticated server returned the existing session status. No new Start request was sent.');
     } catch {
       if(token===sessionActionToken.current)
@@ -572,7 +629,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     } finally {setSessionBusy(false);}
   };
 
-  const actOnApprovedTestLab = async (action:'refresh'|'pause'|'resume'|'stop'|'renew') => {
+  const actOnApprovedTestLab = async (action:'refresh'|'pause'|'resume'|'stop'|'renew'|'rate') => {
     const id=sessionStatus?.runId;
     if(!id || sessionBusy) return;
     const token=++sessionActionToken.current;
@@ -580,13 +637,22 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     try {
       const status=action==='refresh'?await fetchApprovedSessionStatus(id):
         action==='renew'?await renewApprovedSession(id,sessionRenewApproval,60000,20):
+        action==='rate'?await changeApprovedSessionRate(sessionStatus!,sessionRateApproval,sessionNewRate):
         await controlApprovedSession(id,action);
       if(token!==sessionActionToken.current)return;
       setSessionStatus(status);
       if(action==='renew')setSessionRenewApproval('');
+      if(action==='rate'){
+        setSessionRateApproval('');setSessionRateConfirmed(false);
+        notify('Backend returned a newly approved synthetic session rate. The lease and event quota remain unchanged.');
+      }
     }catch {
-      if(token===sessionActionToken.current)
-        setSessionError('The server denied the session action. The displayed status may be stale. Check ownership, run ID, and lease expiry.');
+      if(token===sessionActionToken.current){
+        if(action==='rate'){
+          setSessionRateApproval('');setSessionRateConfirmed(false);
+          setSessionError('The server did not authorize the requested session rate. Existing lease, quota and displayed rate are unchanged; refresh status before retrying.');
+        }else setSessionError('The server denied the session action. The displayed status may be stale. Check ownership, run ID, and lease expiry.');
+      }
     }finally{setSessionBusy(false);}
   };
 
@@ -1177,6 +1243,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-section-title"><span>03</span> Add Sample Logs</div>
             <div className="guided-upload"><FileUp size={21} /><span>Paste log text or upload a file.</span><label htmlFor="guided-upload-file" className="guided-upload-button">Choose File</label><input type="file" id="guided-upload-file" onChange={readSampleFile} accept=".txt,.log,.json,.csv,text/plain" hidden /><small>UTF-8 · Max 64 KiB · No automatic external upload</small></div>
             <label className="guided-field"><span>Raw Logs <small>{datasetName}</small></span><textarea aria-label="Guided raw sample logs" spellCheck={false} className="guided-raw-input" value={sample} onChange={(e) => { setSample(e.target.value); setDatasetName('User-provided sample · Session only'); }} placeholder="Paste raw device logs, one event per line" /></label>
+            <LocalFormatRecommendationView advice={localFormatAdvice}
+              selected={draft.format} pending={pending}
+              onApply={(format)=>changeDraft('format',format)}/>
             <div className="guided-section-title"><span>04</span> Event Boundaries</div>
             <div className="guided-boundary-options" role="group" aria-label="Event boundary selector">
               <button type="button" aria-pressed={(options.eventBoundary ?? 'single-line') === 'single-line'} className={(options.eventBoundary ?? 'single-line') === 'single-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'single-line' })}>
@@ -1204,6 +1273,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <strong>{formatLabel(format)}</strong>
                 </button>)}
             </div>
+            <LocalFormatRecommendationView advice={localFormatAdvice}
+              selected={draft.format} pending={pending}
+              onApply={(format)=>changeDraft('format',format)}/>
             {draft.format === 'csv' && <div className="guided-two-fields">
               <label className="guided-field"><span>CSV Column Names <small>(Always comma-separated · 1–100 columns)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>Columns are assigned in the order provided.</small></label>
               <label className="guided-field"><span>CSV Data Delimiter</span><select aria-label="Guided CSV data delimiter" value={draft.csvDelimiter ?? ','} onChange={(event) => changeDraft('csvDelimiter', event.target.value as ',' | ';' | '\t')}>
@@ -2052,6 +2124,51 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     className="guided-cta-secondary" disabled={sessionBusy}
                     onClick={()=>{void actOnApprovedTestLab('stop');}}>Stop Server Session</button>}
                 </div>
+                {['RUNNING','PAUSED'].includes(sessionStatus.state) &&
+                    sessionStatus.replayMode!=='original-gaps' && <details
+                    className="guided-owner-rate" aria-label="Approved Test Lab rate adjustment">
+                  <summary>Adjust Synthetic Session Rate · New Approval Required</summary>
+                  <p>Change only the delivery cadence of this already-owned Test Lab run.
+                    This never extends the server lease, raises the event quota, starts a
+                    new run, or verifies any sensor or DP result. The backend must independently
+                    approve this exact request; no rate changes automatically.</p>
+                  <label className="guided-field"><span>Requested New Rate (0.2–5 synthetic events/sec)</span>
+                    <select aria-label="New approved Test Lab rate"
+                      value={sessionNewRate}
+                      onChange={(event)=>{
+                        setSessionNewRate(Number(event.target.value) as 0.2|1|2|5);
+                        setSessionRateConfirmed(false);
+                      }}>
+                      {([0.2,1,2,5] as const).map(rate=><option key={rate} value={rate}>
+                        {rate} events/sec
+                      </option>)}
+                    </select>
+                  </label>
+                  <label className="guided-field"><span>Separate Operator Approval ID (not an API key)</span>
+                    <input type="password" autoComplete="off" maxLength={96}
+                      aria-label="New Test Lab rate approval"
+                      value={sessionRateApproval} onChange={(event)=>{
+                        setSessionRateApproval(event.target.value);
+                        setSessionRateConfirmed(false);
+                      }} />
+                  </label>
+                  <label className="guided-owner-check">
+                    <input type="checkbox" aria-label="Confirm separately approved Test Lab rate"
+                      checked={sessionRateConfirmed}
+                      onChange={(event)=>setSessionRateConfirmed(event.target.checked)}/>
+                    I have independent operator approval for this specific rate on the current run.
+                    The server will revalidate ownership, destination policy and active lease.
+                  </label>
+                  <button type="button" className="guided-cta-secondary"
+                    disabled={sessionBusy||!sessionRateConfirmed||
+                      !/^[A-Za-z0-9._-]{8,96}$/.test(sessionRateApproval)||
+                      sessionNewRate===sessionStatus.ratePerSecond}
+                    onClick={()=>{void actOnApprovedTestLab('rate');}}>
+                    Apply Separately Approved Rate
+                  </button>
+                  <small>A denied or unconfigured backend cannot change the displayed
+                    rate. The current rate always comes from verified session metadata.</small>
+                </details>}
                 {['RUNNING','PAUSED'].includes(sessionStatus.state) && <div className="guided-owner-renew">
                   <label className="guided-field"><span>New Approval ID for Renewal (Do Not Reuse Previous Approval)</span>
                     <input aria-label="New Test Lab renewal approval" autoComplete="off" maxLength={96}
@@ -2070,6 +2187,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     <button type="button" className="guided-cta-secondary" onClick={()=>{
                       setSessionStatus(null);setSessionReadiness('unchecked');
                       setSessionApproval('');setSessionRenewApproval('');setSessionAcknowledged(false);
+                      setSessionRateApproval('');setSessionRateConfirmed(false);
                       setSessionError('');
                     }}>Prepare New Approved Session</button>
                   </div>}

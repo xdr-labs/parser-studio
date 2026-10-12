@@ -3,6 +3,7 @@ import type { BackendCapabilities } from './backendCapabilities';
 import {
   assertApprovedSessionReady, startApprovedSyntheticSession,
   fetchApprovedSessionStatus, controlApprovedSession, renewApprovedSession,
+  changeApprovedSessionRate,
 } from './approvedTestLabSession';
 
 const testLab = {
@@ -90,6 +91,65 @@ describe('explicit owner-approved Test Lab session UI client, never default sens
     const [url,init]=(request as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe('/api/v1/test-lab/sessions/'+action);
     expect(JSON.parse(init.body)).toEqual({runId});
+  });
+
+  it('rate adjustment requires independent approval and posts metadata only to an existing run',async()=>{
+    const request=fake({...status,ratePerSecond:0.2});
+    const applied=await changeApprovedSessionRate(
+      status as import('./approvedTestLabSession').ApprovedTestLabStatus,
+      'rate-approved-2026',0.2,request);
+    expect(applied.ratePerSecond).toBe(0.2);
+    expect(applied.maxEvents).toBe(100);
+    expect(applied.realSensorVerified).toBe(false);
+    const [url,init]=(request as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toBe('/api/v1/test-lab/sessions/rate');
+    expect(init).toMatchObject({method:'POST',cache:'no-store',credentials:'same-origin'});
+    const data=JSON.parse(init.body);
+    expect(data).toEqual({runId,approvalId:'rate-approved-2026',ratePerSecond:0.2});
+    for(const privateValue of ['sample','apiKey','sensorIp','dpUrl','rawLog','PRIVATE_USER']){
+      expect(init.body).not.toContain(privateValue);
+    }
+  });
+
+  it('denies unchanged, unsupported, unapproved, stopped and original-gaps rate changes locally',async()=>{
+    const request=fake({...status,ratePerSecond:5});
+    const active=status as import('./approvedTestLabSession').ApprovedTestLabStatus;
+    for(const attempt of [
+      {row:active,approval:'bad',rate:5},
+      {row:active,approval:'rate-approved-2026',rate:2},
+      {row:active,approval:'rate-approved-2026',rate:7},
+      {row:{...active,state:'STOPPED'},approval:'rate-approved-2026',rate:5},
+      {row:{...active,replayMode:'original-gaps'},approval:'rate-approved-2026',rate:5},
+    ]){
+      await expect(changeApprovedSessionRate(
+        attempt.row as typeof active,attempt.approval,attempt.rate as 5,request)).rejects.toThrow();
+    }
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('rejects rate-change replies that are altered, unverified, change quota or reference other sessions',async()=>{
+    const active=status as import('./approvedTestLabSession').ApprovedTestLabStatus;
+    const expected={...status,ratePerSecond:5};
+    for(const response of [
+      {...expected,ratePerSecond:1},
+      {...expected,runId:'test_run_'+'f'.repeat(32)},
+      {...expected,realSensorVerified:true},
+      {...expected,maxEvents:999},
+      {...expected,leaseExpiresAt:'2026-10-12T05:02:00.000Z'},
+      {...expected,token:'CUSTOMER_SECRET'},
+    ]){
+      await expect(changeApprovedSessionRate(active,'rate-approved-2026',5,fake(response))).rejects.toThrow();
+    }
+  });
+
+  it('does not treat 403 or 409 as an authorized rate change or claim a new run',async()=>{
+    const active=status as import('./approvedTestLabSession').ApprovedTestLabStatus;
+    for(const code of [403,409,422,503]){
+      const request=fake({error:'TESTLAB_RATE_CHANGE_DENIED',rawEvent:'CUSTOMER_SECRET'},code);
+      await expect(changeApprovedSessionRate(active,'rate-approved-2026',5,request))
+        .rejects.toThrow(String(code));
+      expect((request as unknown as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+    }
   });
 
   it('requires a separate new owner approval for any additional time or event quota',async()=>{

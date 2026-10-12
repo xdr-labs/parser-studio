@@ -99,7 +99,7 @@ export function validateApprovedSessionStatus(value:unknown,expectedRunId?:strin
 }
 
 async function requestSession(
-  action:'start'|'status'|'pause'|'resume'|'stop'|'renew',
+  action:'start'|'status'|'pause'|'resume'|'stop'|'renew'|'rate',
   body:Record<string,unknown>|null,
   requester:typeof fetch,
 ):Promise<ApprovedTestLabStatus> {
@@ -155,6 +155,38 @@ export async function controlApprovedSession(
   }
   return requestSession(action,{runId},requester);
 }
+/** Explicit, separately approved rate adjustment for an existing owned run.
+ * This does not start, renew, deploy or verify any sensor or DP. The backend
+ * makes its own owner/rate/approval checks on every request.
+ */
+export async function changeApprovedSessionRate(
+  current:ApprovedTestLabStatus,
+  approvalId:string,
+  requestedRate:0.2|1|2|5,
+  requester:typeof fetch=fetch,
+):Promise<ApprovedTestLabStatus>{
+  const owned=validateApprovedSessionStatus(current);
+  if(owned.state!=='RUNNING'&&owned.state!=='PAUSED')
+    throw new Error('Only an active or paused owned Test Lab session can change rate.');
+  if(owned.replayMode==='original-gaps')
+    throw new Error('Original-gap replay cannot change its reviewed timing offsets.');
+  if(typeof approvalId!=='string'||!APPROVAL.test(approvalId)||
+     ![0.2,1,2,5].includes(requestedRate)||
+     owned.ratePerSecond===requestedRate)
+    throw new Error('Rate change requires a separate valid approval and a different bounded rate.');
+  const result=await requestSession('rate',{
+    runId:owned.runId,approvalId,ratePerSecond:requestedRate,
+  },requester);
+  if(result.ratePerSecond!==requestedRate||
+     result.maxEvents!==owned.maxEvents||
+     result.leaseExpiresAt!==owned.leaseExpiresAt||
+     result.sampleFamilyCount!==owned.sampleFamilyCount||
+     result.replayMode!==owned.replayMode||
+     result.state!=='RUNNING'&&result.state!=='PAUSED')
+    throw new Error('Backend rate change did not preserve the owned run and original quota.');
+  return result;
+}
+
 export async function renewApprovedSession(
   runId:string,approvalId:string,leaseMs:number,additionalEvents:number,
   requester:typeof fetch=fetch,
