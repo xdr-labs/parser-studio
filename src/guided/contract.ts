@@ -123,6 +123,9 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
   }
   if (draft.format === 'csv') {
+    if (![',', ';', '\t'].includes(draft.csvDelimiter ?? ',')) {
+      errors.push('CSV data separator must be comma, semicolon or TAB');
+    }
     const columns = draft.csvColumns.split(',').map((name) => name.trim());
     if (columns.length > 100 || !columns.every((name) => /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)) ||
         new Set(columns).size !== columns.length) {

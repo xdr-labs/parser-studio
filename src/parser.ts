@@ -6,7 +6,6 @@ import type { EventBoundary } from './guided/contract';
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
 export const MAX_LINE_CHARS = 4096;
-const KEY = /^[-\w.]+$/;
 const VALID_TARGET = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
 
 export function detectFormat(raw: string): Detection {
@@ -60,34 +59,50 @@ function extractKV(raw: string): Extraction {
   return { fields, errors };
 }
 
-function tokenizeCSV(raw: string): string[] | null {
+function tokenizeCSV(raw: string, delimiter: string): string[] | null {
+  // The backend compiles Ruby CSV.parse_line with liberal_parsing: false.
+  // This browser subset is intentionally conservative; malformed quoted
+  // cells never become successful evidence for native generation.
+  if (![',', ';', '\t'].includes(delimiter)) return null;
   const out: string[] = [];
   let token = '';
-  let quoted = false;
+  let state: 'start' | 'plain' | 'quoted' | 'afterQuote' = 'start';
   for (let i = 0; i < raw.length; i++) {
     const c = raw[i];
-    if (c === '"') {
-      if (quoted && raw[i + 1] === '"') { token += '"'; i++; }
-      else quoted = !quoted;
-    } else if (c === ',' && !quoted) {
-      out.push(token.trim());
-      token = '';
+    if (state === 'quoted') {
+      if (c === '"') {
+        if (raw[i + 1] === '"') { token += '"'; i++; }
+        else state = 'afterQuote';
+      } else token += c;
+    } else if (state === 'afterQuote') {
+      if (c === delimiter) { out.push(token); token = ''; state = 'start'; }
+      else return null;
+    } else if (c === delimiter) {
+      out.push(token.trim()); token = ''; state = 'start';
+    } else if (c === '"') {
+      if (state !== 'start') return null;
+      state = 'quoted';
     } else {
       token += c;
+      state = 'plain';
     }
   }
-  if (quoted) return null;
-  out.push(token.trim());
+  if (state === 'quoted') return null;
+  out.push(state === 'afterQuote' ? token : token.trim());
   return out;
 }
 
-function extractCSV(raw: string, columns: string): Extraction {
-  const names = columns.split(',').map((x) => x.trim()).filter(Boolean);
-  if (!names.length || names.some((x) => !KEY.test(x)) || new Set(names).size !== names.length) {
+function extractCSV(raw: string, columns: string, delimiter: string): Extraction {
+  if (![',', ';', '\t'].includes(delimiter)) {
+    return { fields: {}, errors: ['Unsupported CSV data delimiter'] };
+  }
+  const names = columns.split(',').map((x) => x.trim());
+  if (!names.length || names.length > 100 || names.some((x) => !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x)) ||
+      new Set(names).size !== names.length) {
     return { fields: {}, errors: ['Provide unique valid CSV column names'] };
   }
-  const values = tokenizeCSV(raw);
-  if (!values) return { fields: {}, errors: ['Unclosed CSV quotation'] };
+  const values = tokenizeCSV(raw, delimiter);
+  if (!values) return { fields: {}, errors: ['Malformed CSV quotation or unsupported delimiter'] };
   if (values.length !== names.length) {
     return { fields: {}, errors: ['CSV column count mismatch: expected ' + names.length + ', received ' + values.length] };
   }
@@ -140,7 +155,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
   switch (format) {
     case 'json': return extractJSON(raw);
     case 'kv': return extractKV(raw);
-    case 'csv': return extractCSV(raw, draft.csvColumns);
+    case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
     case 'syslog': return extractSyslog(raw);
     case 'syslog_rfc5424':
     case 'cef':

@@ -115,6 +115,26 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     });
   });
 
+  it.each([
+    [';', ['action', 'src_ip', 'dst_port']],
+    ['\t', ['action', 'src_ip', 'dst_port']],
+  ] as const)('passes reviewed CSV delimiter %s to the backend JSON contract', (delimiter, columns) => {
+    const draft = createDraft(); draft.format = 'csv';
+    draft.csvColumns = 'action,src_ip,dst_port';
+    draft.csvDelimiter = delimiter;
+    const project = toBackendProject(draft);
+    expect(project.ok).toBe(true);
+    if (project.ok) expect(project.project.extraction).toEqual({
+      format: 'csv', csvColumns: columns, csvDelimiter: delimiter,
+    });
+  });
+
+  it('rejects unexpected data delimiter rather than producing a wrong draft artifact', () => {
+    const draft = createDraft(); draft.format = 'csv';
+    draft.csvDelimiter = '|' as ',';
+    expect(toBackendProject(draft).ok).toBe(false);
+  });
+
   it.each(['', 'action,action', '1bad,action', 'action,first-name', 'action,,src_ip'])(
     'fails closed on ambiguous or invalid CSV columns: %s', (columns) => {
       const draft = createDraft();

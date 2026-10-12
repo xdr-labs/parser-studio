@@ -18,6 +18,8 @@ export interface ParserDraft {
   format: Format;
   pattern: string;
   csvColumns: string;
+  /** Data-record CSV delimiter; column names always use commas. Older saved drafts default to comma. */
+  csvDelimiter?: ',' | ';' | '\t';
   mappings: MappingRule[];
   guided?: GuidedOptions;
 }
@@ -88,6 +90,7 @@ export function createDraft(): ParserDraft {
     format: 'auto',
     pattern: '(?<action>\\w+)\\s+src=(?<src_ip>\\S+)',
     csvColumns: 'time,action,src_ip,dst_port',
+    csvDelimiter: ',',
     guided: defaultGuidedOptions(),
     mappings: [
       { id: 'source-ip', source: 'src_ip', target: 'custom.source_ip', type: 'ip' },

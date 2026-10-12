@@ -544,7 +544,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <strong>{formatLabel(format)}</strong>
                 </button>)}
             </div>
-            {draft.format === 'csv' && <label className="guided-field"><span>CSV 열 이름 <small>(쉼표 구분 · 1~100개)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>열 순서대로 적용됩니다. 쉼표 CSV 1행당 1이벤트만 DRAFT 생성 대상입니다.</small></label>}
+            {draft.format === 'csv' && <div className="guided-two-fields">
+              <label className="guided-field"><span>CSV 열 이름 <small>(항상 쉼표로 구분 · 1~100개)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>입력 순서대로 필드 이름을 적용합니다.</small></label>
+              <label className="guided-field"><span>로그 데이터 구분자</span><select aria-label="Guided CSV data delimiter" value={draft.csvDelimiter ?? ','} onChange={(event) => changeDraft('csvDelimiter', event.target.value as ',' | ';' | '\t')}>
+                <option value=",">쉼표 (,)</option><option value=";">세미콜론 (;)</option><option value={'\t'}>TAB (탭)</option>
+              </select><small>한 줄 = 한 레코드만 지원하며 인용 부호 안의 구분자는 값으로 처리합니다.</small></label>
+            </div>}
             <div className="guided-hint"><AlertCircle size={16} /> 브라우저 추출은 미리보기입니다. JSON, KV, CSV, 정확한 RFC5424, 단독 CEF/LEEF만 기능 계약 확인 후 DRAFT 생성할 수 있습니다. 일반 Syslog·Regex 및 복합/멀티라인은 미지원입니다.</div>
             <div className="guided-section-title"><span>02</span> 샘플에서 값 선택하기</div>
             <div className="guided-event-picker">

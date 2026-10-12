@@ -31,6 +31,27 @@ describe('safe, version-neutral browser preview', () => {
     expect(extractFields('deny', 'csv', draft).errors[0]).toContain('column count mismatch');
   });
 
+
+  it('parses semicolon-delimited CSV with quoted separators and retains declared column order', () => {
+    const draft = { ...createDraft(), csvColumns: 'action,detail,dst_port', csvDelimiter: ';' as const };
+    const result = extractFields('deny;"semi;quoted";443', 'csv', draft);
+    expect(result).toEqual({ fields: { action: 'deny', detail: 'semi;quoted', dst_port: '443' }, errors: [] });
+  });
+
+  it('parses TAB-delimited CSV using the same declarative mapping contract', () => {
+    const draft = { ...createDraft(), csvColumns: 'action,src_ip,dst_port', csvDelimiter: '\t' as const };
+    expect(extractFields('deny\t198.51.100.10\t443', 'csv', draft).fields)
+      .toEqual({ action: 'deny', src_ip: '198.51.100.10', dst_port: '443' });
+  });
+
+  it('fails closed on unsupported CSV delimiters or malformed quoted cells', () => {
+    const bad = { ...createDraft(), csvColumns: 'action,detail', csvDelimiter: '|' as unknown as ',' };
+    expect(extractFields('deny|message', 'csv', bad).errors.length).toBeGreaterThan(0);
+    const csv = { ...createDraft(), csvColumns: 'action,detail', csvDelimiter: ',' as const };
+    expect(extractFields('deny,"bad"suffix', 'csv', csv).errors.length).toBeGreaterThan(0);
+    expect(extractFields('deny,"unterminated', 'csv', csv).errors.length).toBeGreaterThan(0);
+  });
+
   it('parses the declared RFC5424 header subset, not arbitrary syslog variants', () => {
     const draft = createDraft();
     const result = extractFields('<34>1 2026-10-12T00:00:00Z host app 123 ID47 - logged in', 'syslog', draft);

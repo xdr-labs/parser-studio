@@ -33,7 +33,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line';
   };
-  extraction: { format: 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' };
+  extraction: { format: 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -154,7 +154,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       tcpFraming: 'line',
     },
     extraction: draft.format === 'csv'
-      ? { format: 'csv', csvColumns: draft.csvColumns.split(',').map((column) => column.trim()), csvDelimiter: ',' }
+      ? { format: 'csv', csvColumns: draft.csvColumns.split(',').map((column) => column.trim()), csvDelimiter: draft.csvDelimiter ?? ',' }
       : { format: draft.format as 'json' | 'kv' | 'syslog_rfc5424' | 'cef' | 'leef' },
     normalization: {
       msgOriginSource: options.slug,

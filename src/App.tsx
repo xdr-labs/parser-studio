@@ -370,6 +370,12 @@ export default function App() {
                   {draft.format === 'csv' && <>
                     <label className="form-label" htmlFor="csv-columns">CSV columns (ordered, comma-separated)</label>
                     <input id="csv-columns" value={draft.csvColumns} onChange={(e) => update('csvColumns', e.target.value)} />
+                    <label className="form-label" htmlFor="csv-data-delimiter">CSV record delimiter (column names still comma-separated)</label>
+                    <select id="csv-data-delimiter" value={draft.csvDelimiter ?? ','} onChange={(e) => update('csvDelimiter', e.target.value as ',' | ';' | '\t')}>
+                      <option value=",">Comma (,)</option>
+                      <option value=";">Semicolon (;)</option>
+                      <option value={'\t'}>TAB</option>
+                    </select>
                   </>}
                   <div className="recognition-card">
                     <div className="recognition-head"><span className="field-caption">SELECTED EVENT · FORMAT CANDIDATE</span><StatusPill status={activeEvent?.detected.format === 'unknown' ? 'warning' : 'pending'}>{activeEvent ? formatLabel(activeEvent.detected.format) : 'No event'}</StatusPill></div>
