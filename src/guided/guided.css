@@ -527,3 +527,18 @@
 .guided-interflow-result ul { padding-left:18px; font-size:10px; color:#5c727a; line-height:1.7; }
 .guided-interflow-result li strong { color:#336a79; }
 .guided-interflow-result small { color:#8c7966; font-size:10px; line-height:1.6; display:block; }
+
+/* Bounded authorized offline synthetic scenario; no session or sensor transport. */
+.guided-scenario-preview { border:1px solid #c9dfe4; border-radius:8px; margin:14px 0; padding:13px; background:#f8fbfc; }
+.guided-scenario-preview summary { color:#2e6879; cursor:pointer; font-weight:800; font-size:11px; }
+.guided-scenario-preview > p, .guided-scenario-preview > small { font-size:10px; color:#68818d; line-height:1.7; display:block; margin:10px 0; }
+.guided-scenario-controls { background:#fff; border:1px solid #e0e8ee; border-radius:7px; padding:10px; display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:11px; }
+.guided-scenario-controls .guided-field { margin:0; min-width:0; }
+.guided-scenario-controls select { width:100%; min-width:0; }
+.guided-scenario-controls button { grid-column:1/-1; }
+.guided-scenario-preview :is(summary,button,select):focus-visible { outline:2px solid #12858b; outline-offset:2px; }
+.guided-scenario-result { background:white; margin:11px 0; padding:11px; border:1px solid #cbe3db; border-radius:7px; }
+.guided-scenario-result strong { color:#277569; font-size:11px; }
+.guided-scenario-result p { font-size:10px; line-height:1.6; color:#617e85; }
+.guided-scenario-result pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#f5faf9; padding:9px; color:#376b71; border-radius:5px; font:10px/1.65 var(--mono); max-height:180px; overflow:auto; }
+.guided-scenario-result small { display:block; line-height:1.65; color:#916c4c; font-size:10px; }

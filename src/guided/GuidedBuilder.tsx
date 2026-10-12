@@ -22,6 +22,10 @@ import { fetchParserPortProposal, type ParserPortProposal } from './portProposal
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
 import {
+  requestOfflineSyntheticScenarioPreview,
+  type SyntheticScenarioSelection,type SyntheticScenarioMode,type SyntheticScenarioSequence,
+} from './syntheticScenarioPreview';
+import {
   assertApprovedSessionReady, startApprovedSyntheticSession,
   fetchApprovedSessionStatus, controlApprovedSession, renewApprovedSession,
   type ApprovedTestLabStatus,
@@ -211,6 +215,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [backendSyntheticData, setBackendSyntheticData] = useState<AuthorizedSyntheticPreview | null>(null);
   const [backendSyntheticError, setBackendSyntheticError] = useState('');
   const backendSyntheticRequestId = useRef(0);
+  const [scenarioMode,setScenarioMode]=useState<SyntheticScenarioMode>('constant-rate');
+  const [scenarioSequence,setScenarioSequence]=useState<SyntheticScenarioSequence>(0);
+  const [scenarioPending,setScenarioPending]=useState(false);
+  const [scenarioError,setScenarioError]=useState('');
+  const [scenarioAttempt,setScenarioAttempt]=useState<{key:string;data:SyntheticScenarioSelection}|null>(null);
+  const scenarioRequestToken=useRef(0);
   const [sessionReadiness, setSessionReadiness] = useState<'unchecked'|'checking'|'available'|'blocked'>('unchecked');
   const [sessionApproval, setSessionApproval] = useState('');
   const [sessionAcknowledged, setSessionAcknowledged] = useState(false);
@@ -242,6 +252,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     interflowField,interflowExpectedValue,interflowWindow]);
   const currentInterflowResult=interflowAttempt?.key===interflowKey
     ? interflowAttempt.result : null;
+
+  const scenarioKey=JSON.stringify([scenarioMode,scenarioSequence]);
+  const currentScenarioResult=scenarioAttempt?.key===scenarioKey?scenarioAttempt.data:null;
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
   const activeEvent = suite?.events.find((event) => event.id === selectedId) ?? suite?.events[0];
@@ -481,6 +494,25 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
         'Interflow readback was denied or unavailable. Check separate tenant read permission, session ownership, audit policy and the requested index. No target parsing success is claimed.'
       );
     }finally {setInterflowPending(false);}
+  };
+
+  const previewOfflineSyntheticScenario=async()=>{
+    if(scenarioPending)return;
+    const key=scenarioKey,token=++scenarioRequestToken.current;
+    setScenarioPending(true);setScenarioError('');setScenarioAttempt(null);
+    try{
+      const cap=await fetchBackendCapabilities();
+      const result=await requestOfflineSyntheticScenarioPreview(
+        cap,scenarioMode,scenarioSequence,
+      );
+      if(scenarioRequestToken.current!==token)return;
+      setScenarioAttempt({key,data:result});
+      notify('An authorized offline synthetic scenario event was generated. No Test Lab session or sensor transport was started.');
+    }catch{
+      if(scenarioRequestToken.current===token)setScenarioError(
+        'The backend denied or cannot verify the offline scenario preview. A preview authorization grant is required; no sensor data was sent.'
+      );
+    }finally{setScenarioPending(false);}
   };
 
   const requestBackendSyntheticSample = async () => {
@@ -1425,6 +1457,51 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <small>All addresses and IDs are synthetic documentation values. Sensor delivery disabled; Fluentd execution and Stellar ingestion unverified.</small>
               </div>}
               <small>No success is claimed after HTTP 403, unsupported capability, or invalid response. This is not a session-start or sensor-delivery control.</small>
+            </details>
+            <details className="guided-scenario-preview" aria-label="Authorized offline synthetic scenario preview">
+              <summary>Multi-event Synthetic Scenario · Offline Preview Only</summary>
+              <p>Review two fixed public JSON families (allow / deny), each with a current timestamp, documentation-only IP, synthetic username and URL, and a placeholder run marker. Preview up to four manually selected events. No customer sample, active Test Lab run, network destination, DP credentials, or sensor output is sent.</p>
+              <div className="guided-scenario-controls">
+                <label className="guided-field"><span>Replay Timing Plan</span>
+                  <select aria-label="Offline synthetic scenario mode" value={scenarioMode}
+                    onChange={(event)=>{
+                      setScenarioMode(event.target.value as SyntheticScenarioMode);
+                      setScenarioError('');
+                    }}>
+                    <option value="constant-rate">Constant Rate · 2 events/sec</option>
+                    <option value="original-gaps">Reviewed Example Gaps · 600 ms</option>
+                  </select>
+                </label>
+                <label className="guided-field"><span>Synthetic Event Selection</span>
+                  <select aria-label="Offline synthetic scenario sequence" value={scenarioSequence}
+                    onChange={(event)=>{
+                      setScenarioSequence(Number(event.target.value) as SyntheticScenarioSequence);
+                      setScenarioError('');
+                    }}>
+                    {[0,1,2,3].map(sequence=><option key={sequence} value={sequence}>
+                      Event #{sequence+1} · {sequence%2===0?'allow':'deny'}
+                    </option>)}
+                  </select>
+                </label>
+                <button type="button" className="guided-cta-secondary"
+                  disabled={scenarioPending}
+                  onClick={()=>{void previewOfflineSyntheticScenario();}}>
+                  <ShieldCheck size={15}/>
+                  {scenarioPending?'Checking Authorized Scenario…':'Preview Selected Synthetic Scenario Event'}
+                </button>
+              </div>
+              {scenarioError && <p className="guided-error" role="alert">{scenarioError}</p>}
+              {currentScenarioResult && <div className="guided-scenario-result" aria-label="Offline synthetic scenario result">
+                <strong>{currentScenarioResult.sampleId} · Event #{currentScenarioResult.preview.sequence+1}
+                  {' · '+currentScenarioResult.replayMode}</strong>
+                <p>Next event gap: {currentScenarioResult.nextDelayMs} ms
+                  {' · '} Families: {currentScenarioResult.sampleFamilyCount}
+                  {' · '} Generated: {currentScenarioResult.preview.generatedAt}</p>
+                <p>Changed: {currentScenarioResult.preview.changedPaths.join(', ')}</p>
+                <pre aria-label="Public synthetic scenario event">{currentScenarioResult.preview.syntheticEvent}</pre>
+                <small>Not sent to a sensor. No parser started, and backend flags actual sensor ingress, runtime parsing and target verification as false. Only separately authorized sessions can perform live delivery.</small>
+              </div>}
+              <small>Authorization is checked server-side for each click. Mode or selection changes never start a loop, transport, session or upload. The original-gaps example uses explicit reviewed 600 ms offsets, not inferred customer log timing.</small>
             </details>
             <details className="guided-owner-testlab" aria-label="Owner approved Test Lab session controls">
               <summary>Owner-approved Test Lab Session · Separate Delivery Authorization Required</summary>

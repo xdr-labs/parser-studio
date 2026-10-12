@@ -35,6 +35,13 @@ export interface BackendCapabilities {
     sinkRequiresIpLiteralAllowlist?: boolean;
     sinkRequiresPerDeliveryPolicyAndAudit?: boolean;
     /** Advertised query code is NOT a grant to read tenant event data. */
+    /** Read-only bounded scenario preview; never implies sender readiness. */
+    scenarioOfflinePreviewAvailable?: boolean;
+    multiSampleReplayAvailable?: boolean;
+    constantRateScenarioAvailable?: boolean;
+    boundedOriginalGapsScenarioAvailable?: boolean;
+    scenarioMaxSamples?: number;
+    scenarioRunMarkerRequired?: boolean;
     interflowReadClientAvailable?: boolean;
     interflowBoundedPollingAvailable?: boolean;
     interflowMaxPollAttempts?: number;
