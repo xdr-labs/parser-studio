@@ -110,3 +110,12 @@ server entrypoint does not configure this module. Synthetic local 127.0.0.1
 receivers are tested; NO live sensor/POC/production traffic, Interflow
 indexing or parser-runtime success is claimed. See
 docs/STELLAR_LEGACY_API_CONTRACT.md.
+
+
+P0-LIVE-4 Interflow read-only correlation (MOCKED CONTRACT):
+POST /api/v1/test-lab/interflow/search requires a separately authenticated
+run owner, a server-held User Scope credential, explicit raw-data permission,
+bounded tenant/time/index/run-marker filters and pre-query audit. It returns
+only MATCH/MISMATCH/MISSING statuses, never raw vendor logs. The module was
+tested with synthetic fake HTTP responses; real Interflow permission,
+indexing, runtime field normalization and sensor receipt remain unverified.

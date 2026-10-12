@@ -6,6 +6,8 @@
  */
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   LegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
+import {buildInterflowQuery,compareInterflowHits,
+  type InterflowSearchRequest,type InterflowFieldResult} from "./stellar-interflow.js";
 
 const PREFIX="/connect/api/v1";
 const MAX_RESPONSE_BYTES=2*1024*1024;
@@ -152,6 +154,32 @@ export class LegacyPocClient{
         ...(item.port===undefined?{}:{port:item.port as number})});
     }
     return out;
+  }
+
+  /**
+   * Strict User Scope GET-only Interflow query: bounded tenant, run marker,
+   * timestamp range and index. Reuses the privately cached JWT.
+   * POC evidence has NOT established raw search permissions for this key.
+   */
+  async searchInterflow(request:InterflowSearchRequest,
+    expected:Record<string,string|number|boolean>):Promise<InterflowFieldResult>{
+    const plan=buildInterflowQuery(this.tenant,request);
+    const route=plan.path+"?"+plan.params.toString();
+    // Exact generated path uses a known index; NEVER accept a raw URL.
+    const get=async(token:string):Promise<Response>=>{
+      try{
+        return await this.#fetch(this.host+route,{
+          method:"GET",redirect:"manual",
+          headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+          signal:AbortSignal.timeout(25000),
+        });
+      }catch{err("POC_NETWORK_FAILURE");}
+    };
+    let result=await get(await this.#auth());
+    if(result.status===401)result=await get(await this.#auth(true));
+    if(result.status!==200)throw new LegacyApiError("INTERFLOW_GET",result.status);
+    const payload=await readJsonBounded(result);
+    return compareInterflowHits(payload,plan,expected);
   }
 
   async listCatalogue():Promise<LegacyCatalogueRecord[]>{

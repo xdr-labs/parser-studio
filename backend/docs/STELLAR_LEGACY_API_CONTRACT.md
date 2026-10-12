@@ -226,6 +226,37 @@ traffic sent remains zero. An opt-in server-side sink module has been added
 and validated only with local ephemeral loopback UDP/TCP test receivers.
 The static capabilities continue to mark liveSensorSenderEnabled=false.
 
+## P0-LIVE-4 Interflow search/correlation — MOCK contract, no POC data access
+
+A separate User Scope read client now composes the documented
+GET /connect/api/data/{index}/_search request with Stellar Lucene q,
+size, track_total_hits=false and strict tenantid, bounded UTC millisecond
+timestamp range, explicit generated run marker and one known normalized
+index (session, threat, syslog or winlogevent). The query is bounded to
+100 results and a 15-minute time window. It reuses the server-held JWT;
+only GET may refresh/retry once on HTTP 401. HTTP 403 or unsupported
+response structures never count as verified parser success.
+
+POST /api/v1/test-lab/interflow/search is available only when the backend
+operator injects the authorized Legacy POC client, an in-memory Test Lab
+controller, a separate tenant data-read principal callback AND a mandatory
+private audit sink. The supplied runId is checked against the session owner;
+no raw log search is permitted from just the parser CRUD authorization.
+The server validates every expected field name and its scalar value before
+requesting upstream data, but logs only field names/tenant/run/time in audit.
+The response contains MATCHED_RESPONSE_FIELDS, FIELD_MISMATCH, or NO_MATCH
+plus field-level MATCH/MISMATCH/MISSING; it contains NO raw vendor document,
+API Key, JWT or actual field value. A matched mock or API response alone
+never sets sensorReceivedVerified or endToEndVerified true.
+
+Only the independently inspected xdr-labs/stellar-data-exporter User Scope
+request shape has been reused. The current user's User Scope key has NOT
+been checked for actual Interflow search permission, and there has been
+no live DP Interflow lookup. The UI must label this UNVERIFIED for the
+real target until an owner-approved in-network E2E proves otherwise.
+Polling/cursors, indexed event evidence and full normalized field proof
+are separate remaining work.
+
 ## P0-LIVE-3 opt-in UDP/TCP transport — local loopback evidence only
 
 The module backend/src/testlab-transport.ts exports createApprovedSensorSink,

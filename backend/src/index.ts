@@ -45,3 +45,8 @@ export type {TestLabStartRequest,TestLabRenewRequest,TestLabStatus,TestLabState,
 export {createApprovedSensorSink,SensorTransportError} from "./testlab-transport.js";
 export type {SensorTarget,SensorTransportAudit,
   ApprovedSensorSinkConfig} from "./testlab-transport.js";
+
+export {buildInterflowQuery,compareInterflowHits,
+  InterflowContractError} from "./stellar-interflow.js";
+export type {InterflowSearchRequest,InterflowQueryPlan,InterflowFieldResult,
+  InterflowFieldStatus} from "./stellar-interflow.js";

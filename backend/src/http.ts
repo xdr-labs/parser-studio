@@ -7,6 +7,8 @@ import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
 import {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
+import {buildInterflowQuery,compareInterflowHits,
+  InterflowContractError} from "./stellar-interflow.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -69,6 +71,11 @@ export interface BackendServerOptions {
   /** Authenticate the current user and return their stable server-side actor ID.
    * Never use an unverified browser-provided actor ID. Null denies access. */
   authorizeTestLabSession?:(request:IncomingMessage,runId?:string)=>Promise<string|null>;
+  /** Independent tenant-scoped Interflow data-read permission for run owner. */
+  authorizeInterflowRead?:(request:IncomingMessage,runId:string)=>Promise<string|null>;
+  /** Private audit records schema, tenant, time and field names only. */
+  auditInterflowRead?:(event:{tenant:string;runId:string;index:string;
+    startMs:number;endMs:number;fieldNames:string[]})=>Promise<void>;
   portPlanningContext?:{
     sensorParserPorts:readonly number[];
     localReservedPorts:readonly number[];
@@ -117,6 +124,67 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Raw-data lookup uses a separate tenant/actor/audit grant, and is
+    // never implied by the Legacy parser CRUD permission or HTTP status.
+    if(path==="/api/v1/test-lab/interflow/search"){
+      if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      if(!options.legacyClient||!options.testLabController||
+        !options.authorizeInterflowRead||!options.auditInterflowRead){
+        send(res,403,{error:"INTERFLOW_SEARCH_DISABLED"});return;
+      }
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]||0)>MAX_PROJECT_BYTES){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const input=await jsonInput(req,MAX_PROJECT_BYTES) as Record<string,unknown>;
+        if(!input||typeof input!=="object"||Array.isArray(input)||
+          Object.keys(input).sort().join(",")!==
+            "endMs,expectedFields,index,limit,markerField,runId,startMs"){
+          send(res,422,{error:"INTERFLOW_REQUEST_INVALID"});return;
+        }
+        const request={
+          index:input["index"],runId:input["runId"],
+          markerField:input["markerField"],startMs:input["startMs"],
+          endMs:input["endMs"],limit:input["limit"],
+        } as Parameters<typeof options.legacyClient.searchInterflow>[0];
+        // Validate query and expected-fields BEFORE any target request.
+        const plan=buildInterflowQuery(options.legacyClient.tenant,request);
+        const expected=input["expectedFields"] as Record<string,string|number|boolean>;
+        compareInterflowHits({hits:{hits:[]}},plan,expected);
+        let actor:string|null=null;
+        try{
+          const principal=await options.authorizeInterflowRead(req,plan.runId);
+          if(typeof principal==="string"&&/^[A-Za-z0-9_.:@-]{1,128}$/.test(principal))
+            actor=principal;
+        }catch{/* Fail closed on absent raw-data permission. */}
+        if(!actor){send(res,403,{error:"INTERFLOW_SEARCH_DENIED"});return;}
+        try{options.testLabController.status(plan.runId,actor);}
+        catch{send(res,404,{error:"INTERFLOW_RUN_NOT_FOUND"});return;}
+        try{
+          await options.auditInterflowRead({
+            tenant:plan.tenant,runId:plan.runId,
+            index:request.index,startMs:plan.startMs,endMs:plan.endMs,
+            fieldNames:Object.keys(expected),
+          });
+        }catch{
+          send(res,503,{error:"INTERFLOW_AUDIT_UNAVAILABLE"});return;
+        }
+        const result=await options.legacyClient.searchInterflow(request,expected);
+        send(res,200,result);
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof InterflowContractError)
+          send(res,422,{error:error.code});
+        else mappedLegacyError(res,error);
       }
       return;
     }
