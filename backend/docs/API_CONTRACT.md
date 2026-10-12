@@ -99,3 +99,18 @@ The inspect response includes diagnostics with stable code, severity=warning and
 4. Show status **DRAFT**, evidence restrictions and exact filenames; never imply Stellar Cyber installation occurred.
 
 Ruby callback diagnostics (to expose in future Test Lab after isolated native runner integration): `parser_err_msg` is a stable type/error marker, `parser_err_stage` indicates extraction/normalization/enrichment/classification, and `parser_err_field` identifies schema-controlled original field where applicable. The current HTTP API has **no user log execution endpoint**; no arbitrary user log/Ruby runtime is exposed.
+
+## P1 offline synthetic starter templates
+
+The optional backend utility in src/parser-templates.ts provides six reviewed
+portable-schema starters: JSON, KV, CSV, RFC5424 Syslog, CEF and LEEF.
+They compile into deterministic DRAFT Ruby/CONF pairs after the user selects
+a project ID, parser slug, revision, one shared listener/sensor port, and
+UDP/TCP protocol(s). Syslog requires port >= 6800. No fixture or template
+asserts that a real vendor log, native Fluentd engine or Stellar loader was
+tested. The synthetic mapping is only an editable starting suggestion.
+
+The catalog intentionally does not include proprietary customer samples,
+credentials, target references, automatic deployment or receiver port
+reservation. The exported utility is currently not connected to the default
+HTTP service or UI; those wiring changes require separate safe review.
