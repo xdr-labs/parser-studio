@@ -20,6 +20,7 @@ import { fetchBackendCapabilities, assertBackendProjectSupported } from './backe
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import TestLabEvidencePanel from './TestLabEvidencePanel';
+import BrowserRuleTracePanel from './BrowserRuleTracePanel';
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
 import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
@@ -1646,6 +1647,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             </details>
 
             <div className="guided-filter"><span>Per-event Results: {suite?.events.length ?? 0} events</span><div>{(['all','fail','warning'] as const).map((filter) => <button type="button" aria-pressed={errorFilter === filter} key={filter} className={errorFilter === filter ? 'selected' : ''} onClick={() => setErrorFilter(filter)}>{filter === 'all' ? 'All' : filter === 'fail' ? 'Failures' : 'Warnings'}</button>)}</div></div>
+            <BrowserRuleTracePanel suite={suite} pending={pending}
+              mappings={draft.mappings} selectedEventId={selectedId}
+              onSelectEvent={setSelectedId}
+              onEditMapping={(index)=>{
+                setSelectedMappingId(draft.mappings[index]?.id??null);
+                setStep(2);
+              }}/>
             <div className="guided-test-events">{(suite?.events ?? []).filter((event) => errorFilter === 'all' || event.status === errorFilter).map((event) =>
               <button className="guided-test-event" type="button" key={event.id} onClick={() => { setSelectedId(event.id); setStep(1); }}>
                 <span className={'guided-status-dot ' + event.status} />

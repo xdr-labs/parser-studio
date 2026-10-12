@@ -231,3 +231,26 @@ reported. No raw logs, private event values, tokens, credentials or target
 locations are sent or exported. Synthetic RED→GREEN regression coverage:
 `src/guided/testLabEvidenceClient.test.ts` and
 `tests/testlab-evidence-report.spec.ts`.
+
+## R2 P0-B — Per-event, per-rule browser-only diagnostics (2026-10-12)
+
+Guided Step 5 now includes a keyboard-accessible **Inspect Rule-by-Rule
+Outcome** panel. It consumes the current draft-bound browser Web Worker
+preview and shows each mapping rule by numeric index, with fixed diagnostic
+states for emitted output, missing source, invalid type, unsafe/unsupported
+rule, ambiguous duplicate destination, incomplete extraction or unresolved
+output. Users can choose an event number, review a rule, and jump to its
+existing editable Step 3 mapping card without changing its field contents.
+
+No raw sample values, normalized values, arbitrary untrusted diagnostic
+messages/codes or customer log bodies are copied into the trace. The entire
+source remains unchanged and no network request, native runner, sensor send,
+DP registration or automatic transformation occurs. Stale source/draft
+previews and forged native verification flags are rejected. Unit regression:
+`src/guided/browserRuleTrace.test.ts`. Chromium keyboard/navigation,
+source-retention, stale-edit and data-leak scenarios:
+`tests/browser-rule-trace.spec.ts`.
+
+This completes only the local **per-rule inspection usability** part of
+R2 P0-B. Actual multi-family native routing and robust Fluentd multiline
+event breaking remain unverified and must not be marked complete.
