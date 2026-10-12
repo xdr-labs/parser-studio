@@ -91,3 +91,16 @@ Finite retention defaults to 64 runs, 500 events/run and 15 minutes.
 Actor and artifact identities, strict stage ordering, error-code allowlists
 and bounded redacted reports are enforced. A restart loses all status and
 cannot replay, reauthorize or prove prior delivery.
+
+## Authenticated bounded rate-change HTTP (P0-LIVE-3)
+
+The existing authenticated session HTTP handler now accepts
+POST /api/v1/test-lab/sessions/rate only if an in-memory
+SyntheticSessionController and server-side authorizeTestLabSession identity
+callback are injected. The request contains exactly runId, approvalId and
+ratePerSecond (0.2..5). Its owner authorization is identical to existing
+Pause/Resume/Stop routes. A separate approveRateChange callback must grant
+each change or the API rejects it. A rate change never extends the finite
+session lease or increases event quota; original-gap scenario rates cannot
+be rescaled. No default HTTP server, private credential profile or sensor
+sink is initialized by this endpoint. Real sensor verification remains false.

@@ -284,7 +284,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     const sessionPath="/api/v1/test-lab/sessions/";
     if(path.startsWith(sessionPath)){
       const action=path.slice(sessionPath.length);
-      if(!["start","status","pause","resume","stop","renew"].includes(action)){
+      if(!["start","status","pause","resume","stop","renew","rate"].includes(action)){
         send(res,404,{error:"NOT_FOUND"});return;
       }
       if(req.method!==(action==="status"?"GET":"POST")){
@@ -320,6 +320,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
               ["scenario","approvalId","ratePerSecond","leaseMs","maxEvents"]:
               ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]):
             action==="renew"?["runId","approvalId","leaseMs","additionalEvents"]:
+            action==="rate"?["runId","approvalId","ratePerSecond"]:
             ["runId"];
           const permitted=action==="start"?
             [...required,"artifactRevisionId"]:required;
@@ -344,6 +345,14 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         if(action==="pause"){send(res,200,sessions.pause(runId!,actor));return;}
         if(action==="resume"){send(res,200,sessions.resume(runId!,actor));return;}
         if(action==="stop"){send(res,200,sessions.stop(runId!,actor));return;}
+        if(action==="rate"){
+          const request=input!;
+          send(res,200,await sessions.changeRate(runId!,{
+            approvalId:request["approvalId"] as string,
+            ratePerSecond:request["ratePerSecond"] as number,
+          },actor));
+          return;
+        }
         if(action==="renew"){
           const request=input!;
           const revised=await sessions.renew(runId!,{
@@ -374,7 +383,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         else if(error instanceof TestLabSessionError){
           const status=error.code==="TESTLAB_SESSION_NOT_FOUND"?404:
             error.code==="TESTLAB_CAPACITY_REACHED"?429:
-            error.code==="TESTLAB_RENEWAL_IN_PROGRESS"?409:
+            error.code==="TESTLAB_RENEWAL_IN_PROGRESS"||
+            error.code==="TESTLAB_RATE_CHANGE_IN_PROGRESS"||
+            error.code==="TESTLAB_RATE_CHANGE_IN_FLIGHT"?409:
             error.code==="TESTLAB_SENDER_SHUTDOWN"||
               error.code==="TESTLAB_JOURNAL_UNAVAILABLE"?503:
             /DISABLED|DENIED/.test(error.code)?403:422;
