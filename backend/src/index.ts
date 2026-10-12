@@ -57,3 +57,10 @@ export type {InterflowPollOptions,InterflowPollResult} from "./stellar-interflow
 
 export {validateReplayScenario,selectScenarioPreview,ScenarioContractError} from "./testlab-scenario.js";
 export type {ReplayScenario,ScenarioEntry,ScenarioMode,ScenarioEvidence,ScenarioPick} from "./testlab-scenario.js";
+
+export {TargetDeploymentCoordinator,TargetDeploymentError,
+  validateDpTarget,validateTargetArtifact} from "./target-deployment.js";
+export type {TargetReference,TargetKnownParser,TargetCatalogueEntry,
+  TargetInventoryGroup,TargetDeploymentApi,TargetOperationIntent,
+  TargetDeploymentAudit,TargetApplyResult,TargetCreateRequest,
+  TargetApproval} from "./target-deployment.js";

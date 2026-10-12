@@ -123,6 +123,15 @@ server-authorized CLEANUP may issue at most one DELETE for that exact
 owned disposable name and recheck absence; otherwise mark unresolved for
 operator reconciliation. Never delete unrelated tenant parsers.
 
+## General user-target readiness (owner/environment gated)
+
+A separate general-target backend coordinator in target-deployment.ts
+validates exact downloaded ZIP/PairExport revision and port hashes, uses a
+trusted DP HTTPS origin/tenant allowlist, requires real sensor port evidence,
+independently approved writes and redacted durable audit with GET readback.
+It does not have a default transport or HTTP endpoint, so it cannot yet
+apply to arbitrary user DPs. See TARGET_DEPLOYMENT_CONTRACT.md.
+
 ## P0-LIVE-0 — Independent download (no DP URL or API Key)
 
 After /api/v1/parser-pairs/generate returns its DRAFT PairExport, the user
