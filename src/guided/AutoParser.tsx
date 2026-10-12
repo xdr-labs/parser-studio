@@ -18,6 +18,7 @@ import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
   proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   type ApprovedPattern} from './approvedPatterns';
+import {prepareBoundedPathCandidate} from './boundedPathReview';
 import {proposeReviewableMapping,compareCandidate,
  type CandidateComparison} from './autoParserRegression';
 import type {EventBoundary} from './contract';
@@ -74,6 +75,7 @@ export default function AutoParser({
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
  const [aiText,setAIText]=useState('');
+ const [boundedPath,setBoundedPath]=useState('');
  const [aiImport,setAIImport]=useState<{key:string;value:AIImportResult}|null>(null);
  const [aiCopyNotice,setAICopyNotice]=useState('');
  const [approvedPatterns,setApprovedPatterns]=useState<ApprovedPattern[]>(()=>readApprovedPatterns());
@@ -94,6 +96,7 @@ export default function AutoParser({
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
    setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
    setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
+   setBoundedPath('');
    setSaveAfterApproval(false);
    setBusy(false);setMessage('');
  },[identity]);
@@ -326,6 +329,31 @@ export default function AutoParser({
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setAIImport({key:expected,value:{ok:false,reason:'UNTRUSTED_RECIPE'}});
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function compareSimplePath(){
+   if(!suite||busy||pending)return;
+   const proposed=prepareBoundedPathCandidate(boundedPath,sample,draft,suite);
+   if(!proposed.ok){setRepairNotice('Simple path cannot become a safe parser mapping: '+proposed.reason);return;}
+   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
+   setBusy(true);setRepair(null);setRepairNotice('');
+   try{
+     if(!holdout||new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT)
+       throw new Error('HOLDOUT_REQUIRED');
+     const candidate=await runPreview(proposed.candidate,sample);
+     const held={source:holdout,baseline:await runPreview(draft,holdout),
+       candidate:await runPreview(proposed.candidate,holdout)};
+     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
+     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
+     setRepair({key:JSON.stringify([expected,requestedHoldout]),
+       candidate:proposed.candidate,comparison,
+       source:proposed.source,target:proposed.target});
+     setReviewMetrics(x=>({...x,compared:x.compared+1,
+       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
+     setRepairNotice('Safe path field proposed in Full-sample regression; manual approval is still required.');
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRepairNotice('Simple path review needs an independent holdout. No rules changed.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function compareImportedAIMapping(){
@@ -662,6 +690,15 @@ export default function AutoParser({
            {aiCopyNotice&&<span>{aiCopyNotice}</span>}
          </div>
          : <p role="status">Prompt unavailable: {currentAIPrompt.reason}</p>)}
+       <label>Optional simple JSONata-compatible property path only (no functions or expressions)
+         <input type="text" aria-label="Safe JSONata-style field path" maxLength={128}
+           value={boundedPath} placeholder="$.event.user" onChange={e=>setBoundedPath(e.target.value)}/>
+       </label>
+       <button type="button" disabled={!boundedPath.trim()||busy||pending||!suite}
+         onClick={()=>{void compareSimplePath();}}>Compare Safe Field Path with Holdout</button>
+       <p>Only eight or fewer dot-separated property names are supported.
+         No general JSONata, Regex or Ruby is executed. Full-sample comparison,
+         independent holdout and explicit approval are required before use.</p>
        <label>Paste a v0.2 JSON recipe suggested by an external assistant (maximum 32 KiB)
          <textarea aria-label="Pasted AI review-only recipe" rows={5} spellCheck={false}
            maxLength={32768} value={aiText} onChange={e=>{

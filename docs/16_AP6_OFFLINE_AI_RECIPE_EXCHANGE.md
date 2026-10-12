@@ -10,6 +10,8 @@
 
 The current backend supports only ParserProject v0.1 for actual DRAFT pair generation. `parserRecipeV2.ts` remains the canonical UI review-only contract. Formal v0.2 backend JSON Schema, compound operator compiler and native qualification must be jointly reviewed with backend Draft PR #4 before any AI-proposed staged recipe becomes executable. Do not interpret an AI-import PASS as compilation or actual sensor readiness.
 
+Only a narrow JSONata-compatible path subset (`$.event.field` or `event.field`, maximum eight safe segments) is recognized as a candidate property lookup. It performs no JSONata evaluation, only existing safe field-path lookup, and proceeds through the same independent-holdout AP4 approval gate before any mapping changes. Arbitrary expressions/functions/filters/array indexing are rejected.
+
 An integrated LLM provider, token/cost controls, default redaction/consent preview and broader JSONata engine are **not enabled**. User intent and privacy must be explicit before any external transfer; this is a local copy/paste workflow.
 
 ## Tests
