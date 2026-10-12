@@ -201,3 +201,21 @@ max_hostname = '<165>1 2026-10-12T01:02:03Z ' + ('h' * 255) + ' fw 123 ID - src_
 assert(sd_instance.parserstudio_extract(max_hostname)['body']['src_ip'] == '192.0.2.11',
        "RFC5424 maximum reviewed hostname length")
 puts "Extended synthetic formats: 45 scenarios PASS (CSV/RFC5424/CEF/LEEF)"
+
+# Escaped CEF/LEEF header delimiters must not accept an incomplete escape.
+# A dangling backslash is not evidence of a complete parsed event.
+delimiter_parser_path = File.join(folder, 'customized_sample_cef')
+delimiter_parser_class = Class.new
+delimiter_parser_class.class_eval(SyntheticFixtureGuard.read_source(delimiter_parser_path), delimiter_parser_path, 1)
+delimiter_parser = delimiter_parser_class.new
+begin
+  delimiter_parser.parserstudio_split_escaped("first|second\\", '|', 1)
+  raise "Incomplete CEF header escape silently accepted"
+rescue ArgumentError
+  # Expected a static extraction error.
+end
+_, leef_dangling = execute_parser(folder, 'sample_leef', "LEEF:1.0|Synthetic|FW|1|500|src=203.0.113.7\\")
+assert(leef_dangling['parser_err_msg'] == 'ArgumentError' &&
+       leef_dangling['parser_err_stage'] == 'extraction' &&
+       !leef_dangling.key?('srcip'), 'LEEF dangling header escape must fail closed')
+puts "Delimited header escape safety: 2 malformed cases REJECTED (synthetic only)"

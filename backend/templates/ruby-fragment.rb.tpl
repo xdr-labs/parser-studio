@@ -279,7 +279,7 @@ def parserstudio_split_escaped(text, delimiter, maximum_splits)
       buffer << character
     end
   end
-  buffer << '\\' if escaped
+  raise ArgumentError, 'Incomplete escaped delimited header' if escaped
   parts << buffer
   raise ArgumentError, 'Invalid delimited header' unless parts.length == maximum_splits + 1
   parts

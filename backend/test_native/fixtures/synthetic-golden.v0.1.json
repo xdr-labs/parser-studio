@@ -337,6 +337,17 @@
         "parser_err_msg": "ArgumentError",
         "parser_err_stage": "extraction"
       }
+    },
+    {
+      "id": "leef-incomplete-escape",
+      "slug": "sample_leef",
+      "raw": "LEEF:1.0|Synthetic|FW|1|500|src=203.0.113.7\\",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
     }
   ]
 }

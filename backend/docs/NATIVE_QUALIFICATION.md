@@ -21,7 +21,7 @@ bash scripts/qualify.sh
 
 `scripts/qualify.sh` works with `PARSER_RUBY_BIN` or its project-local Ruby fallback if present. It checks Node validation/generator/API, builds ten synthetic artifact pairs, Ruby fragment syntax, pure Ruby callbacks, and actual Fluentd 1.17.1 Parser Plugin driver + native Fluent config AST (using an in-memory removal of the production-only transport include).
 
-The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 22 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the twenty-two PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
+The run also executes test_native/golden_events_smoke.rb through Fluentd's Parser Test Driver, comparing 23 fixed synthetic event inputs to full independently authored expected normalized records across all ten generated parser profiles. It uses the public-synthetic JSON fixture in test_native/fixtures and writes an ignored .tmp/synthetic-golden-report.json recording the fixed input SHA-256 and pinned runtime. The final synthetic native report validates this hash, the twenty-three PASS cases and ten profiles, alongside the pair import checks. Neither report attests to proprietary loader/receiver operation.
 
 The generated `.tmp/synthetic-native-report.json` includes HEAD, worktree-dirty state, SHA-256 hashes and explicit `targetImportVerified:false`. An uncommitted/dirty run is **not** exact-HEAD qualification; commit and rerun before asserting exact-HEAD PASS.
 
@@ -45,6 +45,13 @@ The bounded RFC5424 extractor validates explicit UTC/offset timestamps
 CEF extraction explicitly accepts version 0 only; unsupported versions
 produce extraction diagnostics. The native smoke suite validates the
 negative raw extractor behavior, not just downstream type coercion.
+
+## Escaped delimiter integrity
+
+Generated CEF/LEEF header scanning rejects an unterminated backslash rather
+than silently retaining an ambiguous escape sequence. A direct fixed-template
+scanner negative and an end-to-end LEEF extraction-stage negative exercise the
+fail-closed path. Header/extension escapes remain deliberately a limited subset.
 
 ## Bounded LEEF 2.0 hexadecimal separator support
 
