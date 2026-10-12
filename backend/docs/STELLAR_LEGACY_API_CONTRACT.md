@@ -176,6 +176,47 @@ exact-HEAD report records offlineSyntheticPreviewNativeChecked=true,
 offlineSyntheticPreviewCases=2, sensorTrafficSent=false.
 This is not an actual in-network sensor sender.
 
+## P0-LIVE-3 session control — server-only trusted sink
+
+The backend implements a bounded in-memory SyntheticSessionController with
+Start, Status, Pause, Resume and Stop, backed only by a trusted injected
+approval callback and delivery sink. It has no default transport or sensor
+destination, so ordinary server startup CANNOT transmit logs. Session state
+tracks a server-generated run ID, next sequence, last delivery time, counts,
+lease deadline and static errors; status never returns the original raw log.
+Stopping the session cancels timers without changing or deleting any parser.
+
+With an injected controller and a trusted per-request product identity
+callback, the HTTP paths are POST /api/v1/test-lab/sessions/start,
+POST .../pause, POST .../resume, POST .../stop and
+GET .../status?runId=.... The identity callback MUST return a stable
+authenticated actor ID from the server's existing identity provider,
+never an unverified browser-provided header. The controller binds each
+run to its authenticated owner and masks foreign and unknown run IDs as
+the same 404 error. Owner identity is not returned to the browser.
+Start needs selected bounded sample/schema, explicit approval reference,
+rate 0.2..5 events/s, a finite 250ms..15min lease and a max 3000 event cap.
+Stop, expiry and delivery failure release source from retained session memory.
+The async delivery path serializes attempts and never automatically retries
+a failed send. Every delivery callback receives an AbortSignal; a future
+trusted sensor sink MUST honor cancellation. Stop suppresses future ticks but
+cannot retract an already-sent packet. Concurrent approval requests reserve
+capacity before awaiting the external authorization, closing the backend
+server cancels/purges all sessions, and late approval cannot restart a
+closed controller. The current in-memory loop is NOT durable across server
+restart and has no lease renewal or worker recovery yet. Pause/Stop never
+modify or delete the deployed parser.
+Any real in-network UDP/TCP adapter additionally needs target ownership,
+egress protection and direct sensor authorization before enabling product UI.
+
+All HTTP session routes return TESTLAB_SENDER_DISABLED (403) unless both the
+trusted controller and per-user/session authorization are injected. A
+successful synthetic callback or nonzero sentCount means only that the
+injected sink accepted a synthetic event, not that any real sensor ingested
+it or Stellar indexed and parsed the expected fields. This implementation
+has NO real UDP/TCP adapter; actual sensor traffic sent remains zero.
+The static capabilities continue to mark liveSensorSenderEnabled=false.
+
 ## P0-LIVE-1 — Port proposal (NOT atomic or a live sensor check)
 
 The backend-only stellar-port-plan.ts module merges trusted lists of known

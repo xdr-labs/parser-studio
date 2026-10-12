@@ -36,3 +36,7 @@ export type {PortInventory,PortPlanOptions,PortProposal} from "./stellar-port-pl
 
 export {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
 export type {SyntheticPreviewRequest,SyntheticPreview,SyntheticVariable} from "./testlab-synthetic.js";
+
+
+export {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
+export type {TestLabStartRequest,TestLabStatus,TestLabState,TestLabSessionConfig} from "./testlab-session.js";

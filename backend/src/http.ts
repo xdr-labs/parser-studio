@@ -6,6 +6,7 @@ import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
+import {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
 import {LegacyPocClient,LegacyApiError} from "./stellar-legacy-client.js";
 import {LEGACY_POC_CAPABILITIES,LegacyContractError,
   makeLegacyUploadPlan,requireDisposablePocWrite} from "./stellar-legacy-plan.js";
@@ -62,6 +63,12 @@ export interface BackendServerOptions {
   authorizeTestLabPreview?:(request:IncomingMessage)=>Promise<boolean>;
   /** Deterministic synthetic tests inject a clock; never client-supplied. */
   syntheticClock?:()=>number;
+  /** Server-controlled in-network delivery agent and session permissions.
+   *  Defaults to UNCONFIGURED; never accepts target/sink from caller JSON. */
+  testLabController?:SyntheticSessionController;
+  /** Authenticate the current user and return their stable server-side actor ID.
+   * Never use an unverified browser-provided actor ID. Null denies access. */
+  authorizeTestLabSession?:(request:IncomingMessage,runId?:string)=>Promise<string|null>;
   portPlanningContext?:{
     sensorParserPorts:readonly number[];
     localReservedPorts:readonly number[];
@@ -95,7 +102,7 @@ function mappedLegacyError(res:ServerResponse,error:unknown):void{
  * a caller invokes server.listen. When run from the CLI, binds loopback only.
  */
 export function createBackendServer(options:BackendServerOptions={}): Server {
-  return createServer(async (req, res) => {
+  const server=createServer(async (req, res) => {
     const path = req.url?.split("?")[0] || "";
     if (path === "/health" && req.method === "GET") {
       send(res, 200, {status:"ok", service:"parser-pair-backend", version:"0.1"});
@@ -110,6 +117,87 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Start/Pause/Resume/Stop are server-side lease controls over a
+    // separately injected trusted sink; no configured sink => NO emission.
+    const sessionPath="/api/v1/test-lab/sessions/";
+    if(path.startsWith(sessionPath)){
+      const action=path.slice(sessionPath.length);
+      if(!["start","status","pause","resume","stop"].includes(action)){
+        send(res,404,{error:"NOT_FOUND"});return;
+      }
+      if(req.method!==(action==="status"?"GET":"POST")){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      if(!options.testLabController||!options.authorizeTestLabSession){
+        send(res,403,{error:"TESTLAB_SENDER_DISABLED"});return;
+      }
+      try{
+        let runId:string|undefined;
+        let input:Record<string,unknown>|undefined;
+        if(action==="status"){
+          const query=new URL(req.url||"","http://localhost").searchParams;
+          if([...query.keys()].some(x=>x!=="runId")||
+            query.getAll("runId").length!==1){
+            send(res,422,{error:"TESTLAB_SESSION_QUERY_INVALID"});return;
+          }
+          runId=query.get("runId")??undefined;
+        }else{
+          if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+            req.headers["content-type"]||"")){
+            send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+          }
+          if(Number(req.headers["content-length"]||0)>MAX_PROJECT_BYTES){
+            send(res,413,{error:"INPUT_TOO_LARGE"});return;
+          }
+          input=await jsonInput(req,MAX_PROJECT_BYTES) as Record<string,unknown>;
+          if(!input||typeof input!=="object"||Array.isArray(input)){
+            send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
+          }
+          const allowed=action==="start"?
+            ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]:["runId"];
+          if(Object.keys(input).sort().join(",")!==allowed.sort().join(",")){
+            send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
+          }
+          if(action!=="start")runId=input["runId"] as string;
+        }
+        if(action!=="start"&&!/^test_run_[0-9a-f]{32}$/.test(runId||"")){
+          send(res,422,{error:"TESTLAB_SESSION_ID_INVALID"});return;
+        }
+        let actor:string|null=null;
+        try{
+          const resolved=await options.authorizeTestLabSession(req,runId);
+          if(typeof resolved==="string"&&/^[A-Za-z0-9_.:@-]{1,128}$/.test(resolved))
+            actor=resolved;
+        }catch{/* Product auth store unavailable: reject. */}
+        if(!actor){send(res,403,{error:"TESTLAB_SESSION_DENIED"});return;}
+        const sessions=options.testLabController;
+        if(action==="status"){send(res,200,sessions.status(runId!,actor));return;}
+        if(action==="pause"){send(res,200,sessions.pause(runId!,actor));return;}
+        if(action==="resume"){send(res,200,sessions.resume(runId!,actor));return;}
+        if(action==="stop"){send(res,200,sessions.stop(runId!,actor));return;}
+        const data=input!;
+        const result=await sessions.start({
+          sample:data["sample"] as Parameters<typeof sessions.start>[0]["sample"],
+          approvalId:data["approvalId"] as string,
+          ratePerSecond:data["ratePerSecond"] as number,
+          leaseMs:data["leaseMs"] as number,
+          maxEvents:data["maxEvents"] as number,
+        },actor);
+        send(res,200,result);
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof TestLabSessionError){
+          const status=error.code==="TESTLAB_SESSION_NOT_FOUND"?404:
+            error.code==="TESTLAB_CAPACITY_REACHED"?429:
+            error.code==="TESTLAB_SENDER_SHUTDOWN"?503:
+            /DISABLED|DENIED/.test(error.code)?403:422;
+          send(res,status,{error:error.code});
+        }else send(res,500,{error:"TESTLAB_SESSION_FAILED"});
       }
       return;
     }
@@ -382,4 +470,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       else send(res, 500, {error:"GENERATION_ERROR"});
     }
   });
+  // The network-facing server owns its injected in-memory Test Lab
+  // controller. Closing the server cancels all timers and active sessions.
+  if(options.testLabController)
+    server.once("close",()=>options.testLabController!.stopAll());
+  return server;
 }

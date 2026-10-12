@@ -87,3 +87,14 @@ server-authorization gated and generates deterministic JSON/unquoted KV
 synthetic events with current RFC3339 timestamp and documentation IP,
 username and URL variants. It does not open network connections or claim
 actual sensor delivery/parsing; see docs/STELLAR_LEGACY_API_CONTRACT.md.
+
+
+P0-LIVE-3 sender lifecycle primitive: SyntheticSessionController provides
+bounded in-memory Start/Pause/Resume/Stop, a run ID, five-events/s ceiling,
+lease expiry, sequential backpressure and sanitized status. All session
+HTTP routes require separately injected trusted backend approval, authenticated
+server-side actor identity, and delivery sink. Sessions are actor-bound,
+concurrency-limited and cancelled/purged when the backend HTTP listener
+closes. Stop signals cancellation to the sink. The default app has no sink
+and performs no sensor traffic; sessions do not survive server restart,
+and no real sensor/Interflow parsing result is claimed.
