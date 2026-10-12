@@ -18,6 +18,14 @@ export interface BackendCapabilities {
     multiline: false;
     arbitraryRuby: false;
   };
+  /** Optional gated synthetic-only backend preview capabilities. Not sensor readiness. */
+  testLab?: {
+    offlineJsonPreview?: boolean;
+    requiresBackendPreviewAuthorization?: boolean;
+    liveSensorSenderEnabled?: boolean;
+    sensorIngestVerified?: boolean;
+    runtimeParsingVerified?: boolean;
+  };
   downloads?: {
     individualGeneratedFiles: true;
     zipWithManifest: true;

@@ -462,3 +462,15 @@
 .guided-legacy-proof p { font-size:10px; color:#6c8390; line-height:1.55; }
 .guided-legacy-proof small { display:block; margin:6px 0; font-size:10px; color:#9d734c; line-height:1.55; }
 @media (max-width:600px) { .guided-legacy-inputs { grid-template-columns:minmax(0,1fr); } }
+
+/* Authorized synthetic-only Test Lab preview — never a sender control. */
+.guided-backend-synthetic { border:1px solid #d9e7e8; border-radius:8px; padding:12px; margin:15px 0; background:#f9fbfc; }
+.guided-backend-synthetic summary { font-size:11px; font-weight:800; color:#336c7a; cursor:pointer; }
+.guided-backend-synthetic > p, .guided-backend-synthetic > small { font-size:10px; color:#6c8290; line-height:1.6; display:block; margin:10px 0; }
+.guided-backend-synthetic button { margin:6px 0; }
+.guided-backend-synthetic :is(summary,button):focus-visible { outline:2px solid #167a85; outline-offset:3px; }
+.guided-backend-synthetic-result { border-radius:7px; background:white; border:1px solid #d4e6dd; margin:12px 0; padding:10px; }
+.guided-backend-synthetic-result strong { color:#28786d; font-size:11px; }
+.guided-backend-synthetic-result p { color:#59828a; font-size:10px; }
+.guided-backend-synthetic-result pre { white-space:pre-wrap; overflow-wrap:anywhere; color:#477078; font:10px/1.65 var(--mono); padding:9px; background:#f5faf9; border-radius:5px; max-height:160px; overflow:auto; }
+.guided-backend-synthetic-result small { display:block; font-size:10px; color:#9d774e; line-height:1.6; }

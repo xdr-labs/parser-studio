@@ -20,6 +20,7 @@ import { fetchBackendCapabilities, assertBackendProjectSupported } from './backe
 import { packageGeneratedPair, assertPackageCapability } from './artifactPackageClient';
 import { fetchParserPortProposal, type ParserPortProposal } from './portProposalClient';
 import { prepareLegacyUploadPlan, type LegacyPreflightResult } from './legacyPreflightClient';
+import { requestAuthorizedSyntheticPreview, type AuthorizedSyntheticPreview } from './backendSyntheticPreview';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
@@ -200,6 +201,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   } | null>(null);
   const [zipError, setZipError] = useState<{ key: string; version: string; message: string } | null>(null);
   const [localReplayError, setLocalReplayError] = useState('');
+  const [backendSyntheticPending, setBackendSyntheticPending] = useState(false);
+  const [backendSyntheticData, setBackendSyntheticData] = useState<AuthorizedSyntheticPreview | null>(null);
+  const [backendSyntheticError, setBackendSyntheticError] = useState('');
+  const backendSyntheticRequestId = useRef(0);
   const [localReplaySource, setLocalReplaySource] = useState<{ index: number; line: number; total: number } | null>(null);
   // Source samples stay in memory only. Never serialize this plan into project
   // revisions, API calls or downloaded evidence.
@@ -349,6 +354,24 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     } finally {
       setZipDownloading(false);
     }
+  };
+
+  const requestBackendSyntheticSample = async () => {
+    if (backendSyntheticPending) return;
+    const id = ++backendSyntheticRequestId.current;
+    setBackendSyntheticPending(true);
+    setBackendSyntheticData(null);
+    setBackendSyntheticError('');
+    try {
+      const cap = await fetchBackendCapabilities();
+      const result = await requestAuthorizedSyntheticPreview(cap);
+      if (backendSyntheticRequestId.current !== id) return;
+      setBackendSyntheticData(result);
+      notify('백엔드 승인형 공개 합성 JSON 예제를 확인했습니다. 사용자 로그·센서 트래픽은 전송되지 않았습니다.');
+    } catch {
+      if (backendSyntheticRequestId.current === id)
+        setBackendSyntheticError('합성 JSON 미리보기는 승인된 백엔드에서만 제공됩니다. 현재 서버가 거부했거나 응답의 미전송 상태를 확인할 수 없습니다.');
+    } finally { setBackendSyntheticPending(false); }
   };
 
   const downloadBrowserTestEvidence = async () => {
@@ -1258,6 +1281,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <pre aria-label="Local synthetic replay output">{localReplayText}</pre>
               </div>}
               <small>이 기능은 실제 DP 업로드 또는 센서 UDP/TCP 전송이 아닙니다. 전송 API와 실제 Stellar Cyber 적용·적재 검증은 별도의 백엔드 개발·승인 단계가 필요합니다.</small>
+            </details>
+            <details className="guided-backend-synthetic" aria-label="Authorized backend synthetic preview">
+              <summary>백엔드 승인형 합성 JSON 샘플 확인 · 실제 센서 전송 없음</summary>
+              <p>버튼을 눌러도 현재 고객 로그나 파서 초안은 전송하지 않습니다. 미리 정의된 공개 문서용 JSON 예제만 인증·승인을 갖춘 같은 출처의 Test Lab 미리보기 API로 보내며, 센서·DP 연결은 하지 않습니다.</p>
+              <button type="button" className="guided-cta-secondary"
+                disabled={backendSyntheticPending}
+                onClick={() => { void requestBackendSyntheticSample(); }}>
+                <ShieldCheck size={15} /> {backendSyntheticPending ? '승인형 합성 예제 확인 중…' : '백엔드 공개 합성 예제 미리보기'}
+              </button>
+              {backendSyntheticError && <p className="guided-error" role="alert">{backendSyntheticError}</p>}
+              {backendSyntheticData && <div className="guided-backend-synthetic-result" aria-label="Approved synthetic sample result">
+                <strong>JSON 합성 예제 · 로컬 백엔드 승인 확인</strong>
+                <p>변경 필드: {backendSyntheticData.changedPaths.join(' · ')} · 생성 시각: {backendSyntheticData.generatedAt}</p>
+                <pre aria-label="Backend public synthetic log">{backendSyntheticData.syntheticEvent}</pre>
+                <small>모든 주소와 ID는 문서용 합성 값입니다. 센서 전송 불가 · 실제 Fluentd 실행 미검증 · Stellar 적재 미검증</small>
+              </div>}
+              <small>승인 거부(HTTP 403), 기능 미지원 또는 불일치 시에는 실행된 것으로 표시하지 않습니다. 이 기능은 세션 시작·센서 전송 버튼이 아닙니다.</small>
             </details>
             <div className="guided-hint"><HelpCircle size={16} /> 프로젝트 JSON에는 원본 로그가 포함되지 않습니다. 제공 가능한 파일은 DRAFT Ruby 조각과 CONF이며, 포털 업로드 형식이나 네이티브 엔진 검증 결과로 간주할 수 없습니다.</div>
           </>}
