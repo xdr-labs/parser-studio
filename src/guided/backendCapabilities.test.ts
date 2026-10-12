@@ -54,6 +54,53 @@ describe('read-only backend capabilities (never native target approval)', () => 
     const request = vi.fn(async () => response(200, broken)) as unknown as typeof fetch;
     await expect(fetchBackendCapabilities(request)).rejects.toThrow();
   });
+  it('accepts exact latest backend offline revision and public-synthetic manifest extensions',async()=>{
+    const current={...capabilities,
+      downloads:{individualGeneratedFiles:true,zipWithManifest:true,
+        requiresDpConnection:false,requiresApiKey:false,autoDeploys:false,
+        exactArtifactRevision:true,ownedOfflineRevisionHistoryOptIn:true,
+        ownedOfflineRevisionHttpAvailableWhenInjected:true,
+        revisionRestorePreviewNeverWritesTarget:true,
+        revisionHistoryDurableAcrossRestart:false},
+      import:{...capabilities.import,redactedImportLossReportHttpAvailable:true,
+        opaqueImportRemainsReadOnly:true},
+      verification:{...capabilities.verification,
+        nativeSyntheticProfile:'ruby3.2.x-fluentd1.17.1',
+        nativeCapabilityManifestHttpOptInAvailable:true,
+        nativeCapabilityManifestEnabledByDefault:false},
+    };
+    const fetcher=vi.fn(async()=>response(200,current)) as unknown as typeof fetch;
+    const safe=await fetchBackendCapabilities(fetcher);
+    expect(safe.downloads?.revisionHistoryDurableAcrossRestart).toBe(false);
+    expect(safe.verification.targetImportVerified).toBe(false);
+    expect(safe.verification.engineVerified).toBe(false);
+    expect(safe.verification.nativeCapabilityManifestEnabledByDefault).toBe(false);
+    expect(() => assertBackendProjectSupported(csvProject(),safe)).not.toThrow();
+  });
+  it.each([
+    {ownedOfflineRevisionHttpAvailableWhenInjected:false},
+    {revisionRestorePreviewNeverWritesTarget:false},
+    {ownedOfflineRevisionHistoryOptIn:'true'},
+    {revisionHistoryDurableAcrossRestart:'true'},
+    {arbitraryUnknownFlag:true},
+  ])('fails closed for forged or incomplete revision history extensions',async delta=>{
+    const caps={...capabilities,downloads:{
+      individualGeneratedFiles:true,zipWithManifest:true,
+      requiresDpConnection:false,requiresApiKey:false,autoDeploys:false,
+      exactArtifactRevision:true,ownedOfflineRevisionHistoryOptIn:true,
+      ownedOfflineRevisionHttpAvailableWhenInjected:true,
+      revisionRestorePreviewNeverWritesTarget:true,
+      revisionHistoryDurableAcrossRestart:false,...delta},
+    };
+    await expect(fetchBackendCapabilities(vi.fn(async()=>response(200,caps)) as unknown as typeof fetch)).rejects.toThrow();
+  });
+  it('rejects forged verified public-synthetic native manifest flags',async()=>{
+    const forged={...capabilities,verification:{...capabilities.verification,
+      nativeSyntheticProfile:'ruby3.2.x-fluentd1.17.1',
+      nativeCapabilityManifestHttpOptInAvailable:true,
+      nativeCapabilityManifestEnabledByDefault:true}};
+    await expect(fetchBackendCapabilities(vi.fn(async()=>response(200,forged)) as unknown as typeof fetch)).rejects.toThrow();
+  });
   it('rejects unavailable and non-json capability API', async () => {
     await expect(fetchBackendCapabilities(vi.fn(async () => response(404, {})) as unknown as typeof fetch)).rejects.toThrow();
     await expect(fetchBackendCapabilities(vi.fn(async () => ({ status:200, json:async () => { throw Error('bad'); } })) as unknown as typeof fetch)).rejects.toThrow();

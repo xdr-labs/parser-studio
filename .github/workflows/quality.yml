@@ -27,6 +27,27 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser user scenarios
         run: npm run test:browser
+      # Integration tests use an exact, separately reviewed backend commit,
+      # not a PR merge, live DP credential, sensor, or customer fixture.
+      - name: Checkout pinned independent parser backend
+        uses: actions/checkout@v4
+        with:
+          repository: xdr-labs/parser-studio
+          ref: 5a0a58881296bb10ca3a381acba267ac63b50763
+          path: .integration-backend-src
+          sparse-checkout: backend
+      - name: Build pinned loopback backend
+        run: |
+          test "$(git -C .integration-backend-src rev-parse HEAD)" = 5a0a58881296bb10ca3a381acba267ac63b50763
+          npm ci --prefix .integration-backend-src/backend --no-audit --no-fund
+          npm run build --prefix .integration-backend-src/backend
+      - name: Real Chromium and HTTP integration over localhost
+        env:
+          PARSER_STUDIO_LIVE_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
+          PARSER_STUDIO_BACKEND_HEAD: 5a0a58881296bb10ca3a381acba267ac63b50763
+          PARSER_STUDIO_BACKEND_PORT: '4191'
+        run: npx playwright test tests/integrated-backend.spec.ts --project=chromium --workers=1
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

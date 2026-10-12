@@ -59,17 +59,28 @@ export interface BackendCapabilities {
     requiresApiKey: false;
     autoDeploys: false;
     exactArtifactRevision: true;
+    /** Optional server-gated metadata, not owner authorization. */
+    ownedOfflineRevisionHistoryOptIn?: true;
+    ownedOfflineRevisionHttpAvailableWhenInjected?: true;
+    revisionRestorePreviewNeverWritesTarget?: true;
+    revisionHistoryDurableAcrossRestart?: boolean;
   };
   import: {
     exactInternalPairsEditable: true;
     unknownLegacyRubyEditable: false;
     structuralInspectionOnly: true;
+    redactedImportLossReportHttpAvailable?: true;
+    opaqueImportRemainsReadOnly?: true;
   };
   verification: {
     engineVerified: false;
     targetImportVerified: false;
     liveListenerVerified: false;
     proprietaryLoaderVerified: false;
+    /** Applies to fixed synthetic corpus only, NEVER a generated user parser. */
+    nativeSyntheticProfile?: 'ruby3.2.x-fluentd1.17.1';
+    nativeCapabilityManifestHttpOptInAvailable?: true;
+    nativeCapabilityManifestEnabledByDefault?: false;
   };
   limits: { maxProjectBodyBytes: number; maxInspectBodyBytes: number };
 }
@@ -134,14 +145,36 @@ export async function fetchBackendCapabilities(
   )) throw new Error('Extended RFC5424/LEEF capability declarations do not match the reviewed contract.');
   if (cap.downloads !== undefined) {
     const dl = cap.downloads;
+    const coreKeys='autoDeploys,exactArtifactRevision,individualGeneratedFiles,requiresApiKey,requiresDpConnection,zipWithManifest';
+    const extendedKeys='autoDeploys,exactArtifactRevision,individualGeneratedFiles,ownedOfflineRevisionHistoryOptIn,ownedOfflineRevisionHttpAvailableWhenInjected,requiresApiKey,requiresDpConnection,revisionHistoryDurableAcrossRestart,revisionRestorePreviewNeverWritesTarget,zipWithManifest';
+    const actualKeys=Object.keys(dl).sort().join(',');
     if (!dl || typeof dl !== 'object' ||
-        Object.keys(dl).sort().join(',') !==
-          'autoDeploys,exactArtifactRevision,individualGeneratedFiles,requiresApiKey,requiresDpConnection,zipWithManifest' ||
+        (actualKeys !== coreKeys && actualKeys !== extendedKeys) ||
         dl.individualGeneratedFiles !== true || dl.zipWithManifest !== true ||
         dl.requiresDpConnection !== false || dl.requiresApiKey !== false ||
-        dl.autoDeploys !== false || dl.exactArtifactRevision !== true) {
-      throw new Error('Backend ZIP download capabilities do not match the reviewed contract.');
+        dl.autoDeploys !== false || dl.exactArtifactRevision !== true ||
+        (actualKeys === extendedKeys &&
+          (dl.ownedOfflineRevisionHistoryOptIn !== true ||
+           dl.ownedOfflineRevisionHttpAvailableWhenInjected !== true ||
+           dl.revisionRestorePreviewNeverWritesTarget !== true ||
+           typeof dl.revisionHistoryDurableAcrossRestart !== 'boolean'))) {
+      throw new Error('Backend ZIP/revision capabilities do not match the reviewed contract.');
     }
+  }
+  // Native capability evidence is an opt-in fixed synthetic manifest, not
+  // per-project compiler/native execution or a proof of vendor installation.
+  const nativeKeys=['nativeSyntheticProfile','nativeCapabilityManifestHttpOptInAvailable',
+    'nativeCapabilityManifestEnabledByDefault'] as const;
+  if (nativeKeys.some(k=>v[k]!==undefined) &&
+    (v.nativeSyntheticProfile!=='ruby3.2.x-fluentd1.17.1' ||
+     v.nativeCapabilityManifestHttpOptInAvailable!==true ||
+     v.nativeCapabilityManifestEnabledByDefault!==false)) {
+    throw new Error('Native manifest capability must remain synthetic-only and disabled by default.');
+  }
+  const importKeys=['redactedImportLossReportHttpAvailable','opaqueImportRemainsReadOnly'] as const;
+  if(importKeys.some(k=>im[k]!==undefined) &&
+    (im.redactedImportLossReportHttpAvailable!==true || im.opaqueImportRemainsReadOnly!==true)) {
+    throw new Error('Backend import capability cannot widen opaque legacy write access.');
   }
   return cap as BackendCapabilities;
 }
