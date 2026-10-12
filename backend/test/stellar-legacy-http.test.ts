@@ -146,3 +146,43 @@ test("Legacy test-only routes require backend enable + approval and verify CREAT
     assert.deepEqual(methods,["POST"]);
   });
 });
+
+test("Legacy HTTP update and delete enforce stale-version conflict and GET verification",async()=>{
+  const saved=[{parser_name:"customized_ps_api_crud_test_a1b2c3",version:"1.0.0",port:7891,cust_id:tenant}];
+  const writes:string[]=[];
+  const client=new LegacyPocClient({host,tenant,apiKey:"synthetic-key",
+    fetchImpl:async(input,init)=>{
+      const url=new URL(String(input)),method=init?.method??"GET";
+      if(url.pathname.endsWith("/access_token"))return json({access_token:"synthetic-jwt"});
+      if(url.pathname.endsWith("/parsers"))return json({data:[{parser_name:saved[0]?.parser_name,port:7891}]});
+      if(method==="GET")return json({data:saved});
+      writes.push(method);
+      if(method==="PUT")saved[0]!.version=String((init?.body as FormData).get("version"));
+      if(method==="DELETE")saved.splice(0);
+      return json({});
+    },approveWrite:async()=>true,audit:async()=>{},
+  });
+  await serverWith({legacyClient:client,authorizeLegacyRead:async()=>true,
+    legacyTestWritesEnabled:true},async base=>{
+    const stale=await request(base,"/api/v1/stellar/legacy/update",{
+      pair:disposablePair(),confirmed:true,approvalId:"ticket-22",version:"1.0.0",
+      expectedVersion:"0.0.9",
+    });
+    assert.equal(stale.status,409);
+    assert.deepEqual(writes,[]);
+    const updated=await request(base,"/api/v1/stellar/legacy/update",{
+      pair:disposablePair(),confirmed:true,approvalId:"ticket-22",
+      version:"1.0.0",expectedVersion:"1.0.0",
+    });
+    assert.equal(updated.status,200);
+    assert.equal((await updated.json() as any).runtimeParsingVerified,false);
+    const deleted=await request(base,"/api/v1/stellar/legacy/delete",{
+      name:"customized_ps_api_crud_test_a1b2c3",confirmed:true,
+      approvalId:"ticket-33",expectedVersion:"1.0.0",
+    });
+    assert.equal(deleted.status,200);
+    assert.equal((await deleted.json() as any).apiRegistrationVerified,true);
+    assert.deepEqual(writes,["PUT","DELETE"]);
+    assert.equal(saved.length,0);
+  });
+});
