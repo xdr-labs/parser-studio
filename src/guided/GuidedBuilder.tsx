@@ -44,6 +44,7 @@ import { validateBackendProject, generateBackendPair, type BackendValidationResu
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
 import { recommendLocalFormat, type LocalFormatAdvice } from './localFormatAdvisor';
+import { recommendLocalFormat, type LocalFormatAdvice } from './localFormatAdvisor';
 import {
   ISOLATABLE_FAMILIES, planFamilyIsolation, summarizeIsolatedFamilyPreview,
   type FamilyIsolationReport, type IsolatableFamily,
@@ -137,6 +138,51 @@ function TypeSuggestionView(props: {
     <span>Browser samples {suggestion.evidence}/{suggestion.total} suggest {TYPE_LABELS[suggestion.type]} type; not official metadata or native validation</span>
     <button type="button" aria-label={'Apply type suggestion ' + props.index}
       onClick={() => props.onApply(suggestion.type)}>Apply Suggested Type</button>
+  </div>;
+}
+
+function LocalFormatRecommendationView(props:{
+  advice:LocalFormatAdvice;
+  selected:ParserDraft['format'];
+  pending:boolean;
+  onApply:(format:NonNullable<LocalFormatAdvice['format']>)=>void;
+}){
+  const {advice,selected,pending,onApply}=props;
+  const detected=advice.status==='RECOMMENDED'&&advice.format!==null;
+  const status:Record<LocalFormatAdvice['status'],string>={
+    NO_SAMPLES:'Add at least one log event to receive a format recommendation.',
+    NO_PREVIEW:'Analyzing the current sample locally…',
+    LIMIT_EXCEEDED:'This sample exceeds the 64 KiB / 500 event preview limit. Reduce it before format recommendation.',
+    MULTILINE_UNVERIFIED:'Grouped multiline input needs manual review. Native multiline parser output is unsupported.',
+    UNTRUSTED_PREVIEW:'Local preview metadata could not be verified. Rerun the preview before selecting a format.',
+    SOURCE_MISMATCH:'The preview no longer matches every source event. No format will be selected.',
+    MIXED_FORMATS:'Multiple log families were detected. Review each family separately; one parser format cannot cover them all.',
+    UNKNOWN_EVENTS:'Unrecognized source events remain. No single format can be recommended safely.',
+    MANUAL_REVIEW:'The detected format requires manual configuration or is not supported for generated native output.',
+    PREVIEW_FAILED:'The detected format did not extract all current events. Choose Auto detect and retry the local preview.',
+    RECOMMENDED:'Every bounded event has the same recognized extraction format.',
+  };
+  return <div className={'guided-format-advisor'+(detected?' recommended':'')}
+    aria-label="Local sample format recommendation">
+    <strong><WandSparkles size={15}/> Automatic Format Check · Browser Only</strong>
+    <p>{status[advice.status]}</p>
+    {advice.totalEvents>0&&<div className="guided-format-advisor-metrics">
+      <span>{advice.reviewedEvents}/{advice.totalEvents} extracted in current browser preview</span>
+      {detected&&<span>Signature confidence (minimum): {advice.confidencePercent}%</span>}
+    </div>}
+    {advice.families.length>0&&<div className="guided-format-advisor-families"
+      aria-label="Detected format candidates">
+      {advice.families.map(f=><span key={f.format}>{formatLabel(f.format)}: {f.count}</span>)}
+    </div>}
+    {detected&&<div className="guided-format-advisor-action">
+      <strong>Suggested: {formatLabel(advice.format!)}</strong>
+      <button type="button" className="guided-cta-secondary"
+        disabled={pending||selected===advice.format} aria-label="Apply recommended log format"
+        onClick={()=>{if(advice.format)onApply(advice.format);}}>
+        <Check size={15}/>{selected===advice.format?'Already Selected':'Use Detected Format'}
+      </button>
+    </div>}
+    <small>No log contents or credentials leave the browser. This changes only the selected draft extraction format after a click; mappings and sample logs are not changed. Backend support, native runtime and Stellar import remain unverified.</small>
   </div>;
 }
 
@@ -364,6 +410,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const familyCoverage = useMemo(
     () => summarizeFamilyCoverage(suite?.events ?? [], draft.format),
     [suite?.events, draft.format],
+  );
+  const localFormatAdvice=useMemo(
+    ()=>recommendLocalFormat(sample,pending?undefined:suite,
+      options.eventBoundary??'single-line'),
+    [sample,pending,suite,options.eventBoundary],
   );
   const localFormatAdvice=useMemo(
     ()=>recommendLocalFormat(sample,pending?undefined:suite,
@@ -1246,6 +1297,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <LocalFormatRecommendationView advice={localFormatAdvice}
               selected={draft.format} pending={pending}
               onApply={(format)=>changeDraft('format',format)}/>
+            <LocalFormatRecommendationView advice={localFormatAdvice}
+              selected={draft.format} pending={pending}
+              onApply={(format)=>changeDraft('format',format)}/>
             <div className="guided-section-title"><span>04</span> Event Boundaries</div>
             <div className="guided-boundary-options" role="group" aria-label="Event boundary selector">
               <button type="button" aria-pressed={(options.eventBoundary ?? 'single-line') === 'single-line'} className={(options.eventBoundary ?? 'single-line') === 'single-line' ? 'selected' : ''} onClick={() => setGuided({ ...options, eventBoundary: 'single-line' })}>
@@ -1273,6 +1327,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   <strong>{formatLabel(format)}</strong>
                 </button>)}
             </div>
+            <LocalFormatRecommendationView advice={localFormatAdvice}
+              selected={draft.format} pending={pending}
+              onApply={(format)=>changeDraft('format',format)}/>
             <LocalFormatRecommendationView advice={localFormatAdvice}
               selected={draft.format} pending={pending}
               onApply={(format)=>changeDraft('format',format)}/>

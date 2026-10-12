@@ -322,3 +322,29 @@ a synthetic server rate change.
 Affected regression evidence:
 `src/guided/approvedTestLabSession.test.ts`,
 `tests/approved-testlab-rate.spec.ts`.
+
+## R2/P0-A — Beginner-safe local log format recommendation (2026-10-12)
+
+The Guided Builder now provides an **Automatic Format Check · Browser Only**
+on import and extraction steps. Users may paste single-line raw logs without
+knowing whether the input is JSON, key/value, RFC5424, CEF or LEEF. A bounded,
+source-identity-checked browser Web Worker preview proposes **one supported,
+homogeneous, successfully extracted format**, with reviewed event counts,
+minimum signature confidence and no raw values.
+
+The format is **never changed automatically**: the user must select
+`Use Detected Format`. Approval only updates `draft.format`, retaining
+the original sample and existing field mappings. Mixed, unknown, unsupported
+CSV/generic Syslog/regex, malformed, stale, truncated, oversized, multiline
+and untrusted worker previews fail closed or require explicit manual review;
+minority events cannot be silently dropped. Format detection does not prove
+that native Fluentd/Stellar parser output is verified or deployable. No log
+bytes, extracted values, credentials or API requests leave the browser via
+this recommendation.
+
+Deterministic RED→GREEN unit and Chromium keyboard, privacy, cross-family
+and stale-edit acceptance are maintained in
+`src/guided/localFormatAdvisor.test.ts` and
+`tests/local-format-advisor.spec.ts`. Native runtime, actual customer-parser
+golden fixtures, mixed-family routing and target verification remain separately
+gated.
