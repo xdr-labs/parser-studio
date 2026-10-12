@@ -11,6 +11,17 @@ const sample={
 const plan={sample,approvalId:"owner-start-123",ratePerSecond:1,
   leaseMs:1500,maxEvents:20};
 const wait=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
+// Production session ticks deliberately use unref() to avoid keeping Node
+// alive. An async test expecting a tick must retain a bounded referenced
+// timer or Node 22 may cancel the unresolved Promise before the tick fires.
+async function awaitFirstDelivery(started:Promise<void>):Promise<void>{
+  let deadline:ReturnType<typeof setTimeout>|undefined;
+  try{
+    await Promise.race([started,new Promise<never>((_,reject)=>{
+      deadline=setTimeout(()=>reject(Error("TESTLAB_DELIVERY_START_TIMEOUT")),2000);
+    })]);
+  }finally{if(deadline!==undefined)clearTimeout(deadline);}
+}
 
 test("rate cannot change without separate backend approval or under another owner",async()=>{
   const runner=new SyntheticSessionController({
@@ -104,7 +115,7 @@ test("backpressure: pausing during unresolved mock delivery is terminal UNCERTAI
   });
   try{
     const started=await runner.start({...plan,ratePerSecond:5},"owner-a");
-    await entered;
+    await awaitFirstDelivery(entered);
     const paused=runner.pause(started.runId,"owner-a");
     assert.equal(paused.state,"FAILED");
     assert.equal(paused.errorCode,"TESTLAB_SEND_OUTCOME_UNCERTAIN");
