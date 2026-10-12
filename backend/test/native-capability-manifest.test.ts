@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {readFileSync} from "node:fs";
 import {resolve} from "node:path";
-import {buildSyntheticNativeCapabilityManifest,NativeCapabilityManifestError}
+import {buildSyntheticNativeCapabilityManifest,verifySyntheticNativeCapabilityManifest,NativeCapabilityManifestError}
   from "../src/native-capability-manifest.js";
 
 const sha=(value:Buffer|string)=>createHash("sha256").update(value).digest("hex");
@@ -143,4 +143,37 @@ test("head/fixture/case list/version/case evidence changes reject rather than si
   reject(()=>make({cases:c2,native:native(c2)}));
   const c3=cases();c3.cases.push({...c3.cases[0]!});
   reject(()=>make({cases:c3,native:native(c3)}));
+});
+
+test("trusted backend manifest verification preserves a bounded detached redacted snapshot",()=>{
+  const src=make();
+  const verified=verifySyntheticNativeCapabilityManifest(src,head);
+  assert.deepEqual(verified,src);
+  assert.equal(verified.digest,src.digest);
+  src.profiles[0]!.rubySha256="0".repeat(64);
+  assert.notEqual(verified.profiles[0]!.rubySha256,src.profiles[0]!.rubySha256);
+  assert.equal(verified.stellarImportVerified,false);
+  assert.equal(JSON.stringify(verified).includes("rawEvent"),false);
+});
+test("stale head, incorrect digest, untrusted fields and forged vendor truth refuse read-only manifest",()=>{
+  const original=make();
+  const changes=[
+    {...original,backendHead:"b".repeat(40)},
+    {...original,digest:"f".repeat(64)},
+    {...original,rawEvent:"PRIVATE_CUSTOMER_LOG"},
+    {...original,stellarImportVerified:true},
+    {...original,optionalSupportVerified:{
+      ...original.optionalSupportVerified,multiline:true}},
+    {...original,profiles:original.profiles.slice(1)},
+    {...original,profiles:original.profiles.map((p,i)=>i===0?{
+      ...p,unknownField:"SENSITIVE"}:p)},
+    {...original,profiles:original.profiles.map((p,i)=>i===0?{
+      ...p,slug:"sample_unknown"}:p)},
+    {...original,profiles:original.profiles.map((p,i)=>i===0?{
+      ...p,goldenCases:0}:p)},
+  ];
+  for(const candidate of changes){
+    reject(()=>verifySyntheticNativeCapabilityManifest(candidate,head));
+  }
+  reject(()=>verifySyntheticNativeCapabilityManifest(original,"f".repeat(40)));
 });

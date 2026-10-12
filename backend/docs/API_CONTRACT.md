@@ -168,3 +168,25 @@ send any UDP/TCP event to a real sensor, validate a proprietary loader,
 grant production permissions, or prove Stellar Cyber parsing. Mock DP
 readback and sink acceptance remain distinct from verified target import,
 sensor observation, DP indexing and real per-field normalization.
+
+
+## Optional authenticated synthetic native qualification manifest
+
+GET /api/v1/parser-pairs/native-capability-manifest is disabled by default
+(403). A separately configured backend can provide reviewed exact-HEAD
+public-synthetic capability metadata to independently authorized users.
+This API has no default local file access and never accepts a user-provided
+HEAD, credential, parser artifact or target verification flag.
+
+It requires server-side nativeCapabilityAccess with three fields:
+a reviewed manifest, the server's expected backend Git HEAD, and an
+independently authenticated read-authorizer callback. The endpoint supports
+GET without query parameters only. It validates the fixed public synthetic
+profile list, per-profile evidence, report digest and the always-unverified
+proprietary target/sensor/customer scope. Corrupt or stale reports fail closed
+with a redacted 503; unauthorized reads receive 403.
+
+There is no Ruby execution, target connection, sensor send, or Apply side
+effect. The ordinary capabilities endpoint continues to report user-parser
+engineVerified=false and targetImportVerified=false. The synthetic manifest
+does not provide signed independent provenance or vendor loader proof.

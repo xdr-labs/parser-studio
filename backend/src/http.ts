@@ -10,6 +10,8 @@ import {TargetApplyMockGateway} from "./target-apply-bff.js";
 import {TargetDeploymentError} from "./target-deployment.js";
 import {ArtifactRevisionHistory,ArtifactRevisionHistoryError,
   type RevisionOwner} from "./artifact-revision-history.js";
+import {verifySyntheticNativeCapabilityManifest}
+  from "./native-capability-manifest.js";
 import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
@@ -75,6 +77,12 @@ export interface BackendServerOptions {
   /** Owner-only, in-memory offline artifact history; disabled by default. */
   artifactRevisionHistory?:ArtifactRevisionHistory;
   authorizeArtifactRevision?:(request:IncomingMessage)=>Promise<RevisionOwner|null>;
+  /** Optional PRIVATE offline qualification evidence, never user/target proof. */
+  nativeCapabilityAccess?:{
+    manifest:unknown;
+    expectedHead:string;
+    authorize:(request:IncomingMessage)=>Promise<boolean>;
+  };
   legacyClient?:LegacyPocClient;
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
@@ -145,6 +153,35 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           ...BACKEND_CAPABILITIES.downloads,
           revisionHistoryDurableAcrossRestart:options.artifactRevisionHistory?.persistent===true,
         }});
+      }
+      return;
+    }
+    // Explicitly injected, authenticated, PUBLIC-SYNTHETIC native evidence.
+    // Default server does not load local qualification files or expose this.
+    if(path==="/api/v1/parser-pairs/native-capability-manifest"){
+      if(req.method!=="GET"){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      if(req.url?.includes("?")){
+        send(res,422,{error:"NATIVE_CAPABILITY_QUERY_INVALID"});return;
+      }
+      const access=options.nativeCapabilityAccess;
+      if(!access||typeof access.authorize!=="function"){
+        send(res,403,{error:"NATIVE_CAPABILITY_DISABLED"});return;
+      }
+      let allowed=false;
+      try{allowed=await access.authorize(req)===true;}
+      catch{/* Private auth errors are never returned. */}
+      if(!allowed){
+        send(res,403,{error:"NATIVE_CAPABILITY_ACCESS_DENIED"});return;
+      }
+      try{
+        const manifest=verifySyntheticNativeCapabilityManifest(
+          access.manifest,access.expectedHead);
+        send(res,200,manifest);
+      }catch{
+        send(res,503,{error:"NATIVE_CAPABILITY_EVIDENCE_UNAVAILABLE",
+          targetImportVerified:false});
       }
       return;
     }

@@ -223,3 +223,71 @@ export function buildSyntheticNativeCapabilityManifest(
   };
   return {...withoutDigest,digest:sha(JSON.stringify(withoutDigest))};
 }
+
+
+/**
+ * Verify an operator-injected, reviewed PUBLIC-SYNTHETIC manifest before a
+ * read-only HTTP response. This verifies structure and checksum, not a
+ * signature or independently trusted test provenance. The backend alone
+ * supplies the required exact HEAD and authenticates the HTTP principal.
+ */
+export function verifySyntheticNativeCapabilityManifest(
+  input:unknown, expectedHead:string
+):NativeCapabilityManifest{
+  const ROOT=[
+    "contract","proofScope","backendHead","fixtureSha256",
+    "caseEvidenceSha256","engine","casesPassed",
+    "nativeCapabilityVerified","profiles","optionalSupportVerified",
+    "stellarImportVerified","sensorReceivingVerified",
+    "customerSampleVerified","supportedBeyondSynthetic","digest",
+  ];
+  if(!HEAD.test(expectedHead)||!keysMatch(input,ROOT)||
+     input.contract!=="parser-studio.synthetic-native-capabilities.v0.1"||
+     input.proofScope!=="REVIEWED_PUBLIC_SYNTHETIC_ONLY"||
+     input.backendHead!==expectedHead||
+     typeof input.fixtureSha256!=="string"||!SHA.test(input.fixtureSha256)||
+     typeof input.caseEvidenceSha256!=="string"||!SHA.test(input.caseEvidenceSha256)||
+     typeof input.digest!=="string"||!SHA.test(input.digest)||
+     !keysMatch(input.engine,["ruby","fluentd","validation"])||
+     input.engine.ruby!=="3.2.x"||input.engine.fluentd!=="1.17.1"||
+     input.engine.validation!=="PINNED_FLUENTD_PARSER_PLUGIN_API_AND_CONF_AST"||
+     input.casesPassed!==23||input.nativeCapabilityVerified!==true||
+     input.stellarImportVerified!==false||
+     input.sensorReceivingVerified!==false||
+     input.customerSampleVerified!==false||
+     input.supportedBeyondSynthetic!==false||
+     !keysMatch(input.optionalSupportVerified,[
+       "rfc3164","multiline","arbitraryRegex","jsonata",
+       "mixedFormatAutoRouting","arbitraryRuby",
+     ])||
+     Object.values(input.optionalSupportVerified).some(value=>value!==false)||
+     !Array.isArray(input.profiles)||input.profiles.length!==10)
+    return deny("NATIVE_CAPABILITY_MANIFEST_INVALID");
+
+  let count=0;
+  for(const [i,p] of input.profiles.entries()){
+    const slug=SLUGS[i]!;
+    const profile=PROFILES[slug as keyof typeof PROFILES];
+    if(!keysMatch(p,[
+      "slug","extraction","bodyFormat","goldenCases",
+      "rubySha256","confSha256","fluentdSyntheticCallbackVerified",
+      "fluentdConfAstVerified","stellarLoaderVerified",
+    ])||
+      p.slug!==slug||p.extraction!==profile.extraction||
+      p.bodyFormat!==profile.bodyFormat||
+      !Number.isSafeInteger(p.goldenCases)||typeof p.goldenCases!=="number"||
+      p.goldenCases<1||p.goldenCases>23||
+      typeof p.rubySha256!=="string"||!SHA.test(p.rubySha256)||
+      typeof p.confSha256!=="string"||!SHA.test(p.confSha256)||
+      p.fluentdSyntheticCallbackVerified!==true||
+      p.fluentdConfAstVerified!==true||p.stellarLoaderVerified!==false)
+      return deny("NATIVE_CAPABILITY_MANIFEST_INVALID");
+    count+=p.goldenCases as number;
+  }
+  if(count!==23)return deny("NATIVE_CAPABILITY_MANIFEST_INVALID");
+
+  const {digest,...unsigned}=input;
+  if(sha(JSON.stringify(unsigned))!==digest)
+    return deny("NATIVE_CAPABILITY_MANIFEST_INVALID");
+  return structuredClone(input) as NativeCapabilityManifest;
+}

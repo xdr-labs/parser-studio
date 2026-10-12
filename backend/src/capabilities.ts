@@ -102,6 +102,8 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     // Identifies the synthetics-qualified offline runner, NOT a per-project
     // engine/target verification result or vendor loader qualification.
     nativeSyntheticProfile: "ruby3.2.x-fluentd1.17.1" as const,
+    nativeCapabilityManifestHttpOptInAvailable: true,
+    nativeCapabilityManifestEnabledByDefault: false,
     liveListenerVerified: false,
     proprietaryLoaderVerified: false,
     targetImportVerified: false,
