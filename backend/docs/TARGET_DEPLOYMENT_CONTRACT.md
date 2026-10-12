@@ -46,6 +46,15 @@ Before each POST, the coordinator:
 Offline tests use only synthetic in-memory responses. No external DP,
 POC or sensor was contacted.
 
+## Test environment input — manual secure profile
+
+The owner can now enter DP HTTPS URL, Tenant/User Scope API Key, Sensor IP,
+ingest port/protocol and optional parser listener port using the operator
+interactive script backend/scripts/configure-target.py. See
+[TARGET_CONNECTION_SETUP.md](TARGET_CONNECTION_SETUP.md). It writes only
+to the ignored private on-host profile, never copies keys from dev-atlas,
+and does NOT make API calls, reserve a port, or authorize deployment.
+
 ## Environment and owner gates (deferred)
 
 An actual per-target connection requires a securely authenticated operator
