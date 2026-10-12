@@ -12,6 +12,8 @@ import {verifyGeneratedPair,packageGeneratedPair} from './artifactPackageClient'
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
+import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
+import type {StructuralMiningReport} from './localPatternMining';
 import {proposeReviewableMapping,compareCandidate,
  type CandidateComparison} from './autoParserRegression';
 import type {EventBoundary} from './contract';
@@ -64,6 +66,8 @@ export default function AutoParser({
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
  const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
+ const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
+ const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [holdout,setHoldout]=useState('');
  const [repair,setRepair]=useState<{key:string;candidate:ParserDraft;
    comparison:CandidateComparison;source:string;target:string}|null>(null);
@@ -76,7 +80,7 @@ export default function AutoParser({
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
-   setRepair(null);setRepairNotice('');setMessage('');
+   setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);setBusy(false);setMessage('');
  },[identity]);
  const assessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -85,6 +89,8 @@ export default function AutoParser({
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
  const currentRecipe=recipe?.key===identity?recipe.value:null;
+ const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
+ const currentStructural=structural?.key===identity?structural.value:null;
  const repairKey=JSON.stringify([identity,holdout]);
  const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
@@ -197,6 +203,36 @@ export default function AutoParser({
        setRepairNotice('Local regression could not be verified. No rules were changed.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
+ function findKnownTemplates(){
+   if(!suite||busy||pending)return;
+   try{setFingerprints({key:identity,value:matchKnownParserFingerprints(sample,suite)});}
+   catch{setFingerprints(null);setMessage('The local template review could not verify this exact source.');}
+ }
+ async function mineUnknownShapes(){
+   if(!suite||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setStructural(null);
+   try{
+     const value=await new Promise<StructuralMiningReport>((resolve,reject)=>{
+       const worker=new Worker(new URL('./patternMiner.worker.ts',import.meta.url),{type:'module'});
+       let settled=false;
+       const finish=(value?:StructuralMiningReport)=>{
+         if(settled)return;settled=true;window.clearTimeout(timeout);worker.terminate();
+         if(value)resolve(value);else reject(new Error('Worker unavailable'));
+       };
+       const timeout=window.setTimeout(()=>finish(),1800);
+       worker.onmessage=(event:MessageEvent<{report?:StructuralMiningReport}>)=>
+         finish(event.data.report);
+       worker.onerror=()=>finish();
+       worker.postMessage({source:sample});
+     });
+     if(token===epoch.current&&currentRef.current===expected)
+       setStructural({key:expected,value});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setMessage('Local structural grouping was unavailable; no source was uploaded.');
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
  async function previewRecipe(){
    if(!suite||busy||pending)return;
    const token=++epoch.current,expected=identity;
@@ -278,6 +314,33 @@ export default function AutoParser({
        </div>
        <p className="auto-parser-note">Unknown, malformed, RFC3164 and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
+       <details className="auto-parser-recipe" aria-label="Public synthetic parser fingerprints">
+         <summary>Optional · Match familiar log patterns</summary>
+         <p>Compare all event field names against reviewed public-synthetic starter shapes.
+           Results are local hints only: no log values leave the browser, no template is
+           automatically applied, and no native parser compatibility is implied.</p>
+         <button type="button" disabled={busy||pending||!suite}
+           onClick={findKnownTemplates}>Find Reviewed Pattern Hints</button>
+         <button type="button" disabled={busy||pending||!suite}
+           onClick={()=>{void mineUnknownShapes();}}>Group Unknown Text Locally</button>
+         {currentStructural&&<div role="status" aria-label="Local structural hints">
+           <strong>{currentStructural.unknownCount} unknown events ·
+             {currentStructural.groupedCount} grouped · Browser worker only</strong>
+           {currentStructural.groups.map((group,i)=><span key={i}>
+             {group.count} events · {group.fingerprint} · REVIEW ONLY
+           </span>)}
+           <span>Structural hints are not regex expressions or native parsers.</span>
+         </div>}
+         {currentFingerprints&&<div role="status" aria-label="Reviewed pattern hints">
+           <strong>{currentFingerprints.status} · {currentFingerprints.sourceCount} original events</strong>
+           {currentFingerprints.hints.length===0&&
+             <span>No safe single-family public-synthetic pattern was matched.</span>}
+           {currentFingerprints.hints.map(hint=><span key={hint.id}>
+             {hint.label}: {hint.matchedFieldCount}/{hint.expectedFieldCount} required fields
+             consistently seen · Review only, not automatically applied
+           </span>)}
+         </div>}
+       </details>
        <button type="button" className="auto-parser-primary"
          disabled={!canReview} onClick={()=>{void review();}}>
          {busy?'Checking the backend…':'Review Detected Results'} <ArrowRight size={16}/>
