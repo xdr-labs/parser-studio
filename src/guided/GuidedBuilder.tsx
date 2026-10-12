@@ -1442,6 +1442,14 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           </>}
         </div>
 
+        {sessionStatus && ['RUNNING','PAUSED'].includes(sessionStatus.state) && step!==5 &&
+          <div className="guided-session-still-active" aria-label="Active Test Lab session indicator">
+            <ShieldAlert size={16} />
+            <span>승인형 Test Lab 서버 세션 {sessionStatus.state} · 진행 {sessionStatus.sentCount}/{sessionStatus.maxEvents}. 화면 이동은 서버 전송을 중단하지 않습니다.</span>
+            <button type="button" disabled={sessionBusy} onClick={() => {void actOnApprovedTestLab('stop');}}>
+              서버 세션 즉시 중지
+            </button>
+          </div>}
         {message && <div className="guided-message" role="status"><HelpCircle size={15} /> {message}<button type="button" onClick={() => setMessage('')}>닫기</button></div>}
         <div className="guided-bottom-bar">
           <button type="button" className="guided-cta-secondary" onClick={prevStep} disabled={step === 0}><ArrowLeft size={15} /> 이전</button>

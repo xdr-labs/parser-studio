@@ -159,3 +159,31 @@ test('server 403 denial after capability discovery never invents an active Test 
   await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('거부');
   await expect(page.getByLabel('Test Lab session status')).toHaveCount(0);
 });
+
+
+test('active remote session Stop stays visible after navigating away from export stage',async({page})=>{
+  const actions:string[]=[];
+  await page.route('**/api/v1/parser-pairs/capabilities',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify(caps),
+  }));
+  await page.route('**/api/v1/test-lab/sessions/*',route=>{
+    const action=new URL(route.request().url()).pathname.split('/').pop()??'';
+    actions.push(action);
+    return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({...session,state:action==='stop'?'STOPPED':'RUNNING'})});
+  });
+  await page.goto('/');
+  await page.getByRole('button',{name:/6\. 파일 생성/}).click();
+  await page.locator('.guided-owner-testlab summary').click();
+  await page.getByRole('button',{name:'Test Lab 전송 조건 확인'}).click();
+  await page.getByLabel('Test Lab approval identifier').fill('owner-approved-synthetic');
+  await page.getByLabel('I confirm approved sensor test').check();
+  await page.getByRole('button',{name:'승인형 Test Lab 시작 (최대 60초/100건)'}).click();
+  await expect(page.getByLabel('Test Lab session status')).toContainText('RUNNING');
+  await page.getByRole('button',{name:/3\. 필드 매핑/}).click();
+  const banner=page.getByLabel('Active Test Lab session indicator');
+  await expect(banner).toContainText('화면 이동은 서버 전송을 중단하지 않습니다');
+  await banner.getByRole('button',{name:'서버 세션 즉시 중지'}).click();
+  await expect(banner).toHaveCount(0);
+  expect(actions).toEqual(['start','stop']);
+});

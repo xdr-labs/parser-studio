@@ -497,3 +497,9 @@
 .guided-owner-renew .guided-field { margin:6px 0; }
 .guided-owner-renew input { width:100%; min-width:0; }
 .guided-owner-renew > small { display:block; font-size:10px; margin-top:8px; color:#a17750; }
+
+/* Keep Stop reachable while an owner-approved server session is active off Stage 6. */
+.guided-session-still-active { display:flex; flex-wrap:wrap; gap:9px; align-items:center; background:#fff2df; border:1px solid #e5c896; border-radius:7px; color:#946332; padding:11px; margin:12px 0; font-size:10px; line-height:1.65; }
+.guided-session-still-active span { flex:1 1 190px; }
+.guided-session-still-active button { flex:0 1 auto; border:1px solid #cfae78; border-radius:5px; background:#fff; padding:7px 9px; color:#896033; font-size:10px; font-weight:800; cursor:pointer; }
+.guided-session-still-active button:focus-visible { outline:2px solid #147e85; outline-offset:2px; }
