@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -14,6 +14,8 @@ const SKIP = new Set(['node_modules', 'dist', '.git', 'test-results',
   'playwright-report', 'coverage']);
 
 function collect(root: string): string[] {
+  // Git ignores optional local fixture directories. CI may not contain them.
+  if (!existsSync(root)) return [];
   const result: string[] = [];
   for (const item of readdirSync(root, { withFileTypes: true })) {
     if (SKIP.has(item.name)) continue;
