@@ -84,3 +84,47 @@ test("owner-only evidence download is content-addressed, safe and never inflates
     });
   }finally{controller.stopAll();}
 });
+
+test("owner-only Test Lab comparison summary exposes grouped statuses without log values",async()=>{
+  await withHttp(undefined,async base=>{
+    const res=await fetch(base+route+"evidence-summary?runId=test_run_"+"e".repeat(32));
+    assert.equal(res.status,403);
+  });
+  const controller=new SyntheticSessionController({
+    approveStart:async()=>true,evidenceLedger:new TestLabEvidenceLedger(),
+    deliver:async()=>{},
+  });
+  try{
+    await withHttp(controller,async base=>{
+      const started=await post(base,"start",{sample,
+        artifactRevisionId:"a".repeat(64),approvalId:"synthetic-approval-123",
+        ratePerSecond:5,leaseMs:1800,maxEvents:15});
+      assert.equal(started.status,200);
+      const {runId}=await started.json() as {runId:string};
+      await new Promise(ok=>setTimeout(ok,235));
+      const path=route+"evidence-summary?runId="+runId;
+      const summary=await fetch(base+path,{headers:headers("alice")});
+      assert.equal(summary.status,200);
+      assert.equal(summary.headers.get("cache-control"),"no-store");
+      const result=await summary.json() as any;
+      assert.equal(result.contract,"testlab-redacted-summary.v0.1");
+      assert.equal(result.comparisonStatus,"NOT_VERIFIED");
+      assert.ok(result.counts.generated>=1);
+      assert.equal(result.counts.dpIndexed,0);
+      assert.deepEqual(result.fieldCoverage,[]);
+      assert.deepEqual(result.failureGroups,[]);
+      assert.equal(result.liveE2eVerified,false);
+      for(const secret of ["private-sample-user","192.0.2.8","synthetic-approval-123"]){
+        assert.equal(JSON.stringify(result).includes(secret),false);
+      }
+      assert.equal((await fetch(base+path,{headers:headers("bob")})).status,404);
+      assert.equal((await fetch(base+path)).status,403);
+      for(const query of ["?runId=wrong","?runId="+runId+"&owner=alice",""]){
+        assert.equal((await fetch(base+route+"evidence-summary"+query,
+          {headers:headers("alice")})).status,422);
+      }
+      assert.equal((await post(base,"evidence-summary",{runId})).status,405);
+      await post(base,"stop",{runId});
+    });
+  }finally{controller.stopAll();}
+});

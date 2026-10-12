@@ -16,6 +16,7 @@ import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.
 import {SyntheticSessionController,TestLabSessionError} from "./testlab-session.js";
 import {TestLabEvidenceError} from "./testlab-evidence.js";
 import {exportRedactedEvidenceReport,TestLabReportExportError} from "./testlab-report-export.js";
+import {summarizeRedactedEvidenceReport} from "./testlab-evidence-summary.js";
 import {buildInterflowQuery,compareInterflowHits,
   InterflowContractError} from "./stellar-interflow.js";
 import {pollBoundedInterflow,InterflowPollError} from "./stellar-interflow-poll.js";
@@ -477,10 +478,10 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     const sessionPath="/api/v1/test-lab/sessions/";
     if(path.startsWith(sessionPath)){
       const action=path.slice(sessionPath.length);
-      if(!["start","status","pause","resume","stop","renew","rate","evidence","evidence-export"].includes(action)){
+      if(!["start","status","pause","resume","stop","renew","rate","evidence","evidence-export","evidence-summary"].includes(action)){
         send(res,404,{error:"NOT_FOUND"});return;
       }
-      if(req.method!==((action==="status"||action==="evidence"||action==="evidence-export")?"GET":"POST")){
+      if(req.method!==((action==="status"||action==="evidence"||action==="evidence-export"||action==="evidence-summary")?"GET":"POST")){
         send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
       }
       if(!options.testLabController||!options.authorizeTestLabSession){
@@ -489,7 +490,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       try{
         let runId:string|undefined;
         let input:Record<string,unknown>|undefined;
-        if(action==="status"||action==="evidence"||action==="evidence-export"){
+        if(action==="status"||action==="evidence"||action==="evidence-export"||action==="evidence-summary"){
           const query=new URL(req.url||"","http://localhost").searchParams;
           if([...query.keys()].some(x=>x!=="runId")||
             query.getAll("runId").length!==1){
@@ -536,6 +537,11 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         const sessions=options.testLabController;
         if(action==="status"){send(res,200,sessions.status(runId!,actor));return;}
         if(action==="evidence"){send(res,200,sessions.evidenceReport(runId!,actor));return;}
+        if(action==="evidence-summary"){
+          send(res,200,summarizeRedactedEvidenceReport(
+            sessions.evidenceReport(runId!,actor)));
+          return;
+        }
         if(action==="evidence-export"){
           const download=exportRedactedEvidenceReport(sessions.evidenceReport(runId!,actor));
           res.writeHead(200,{

@@ -255,3 +255,21 @@ run-owner checks; the default server leaves the route disabled.
 No exported run survives the existing in-memory TTL unless an operator
 independently saves the authorized download. No automatic sensor sending,
 real DP interaction or extra persistent state is enabled.
+
+
+## Opt-in Test Lab field coverage and grouped failure summary
+
+GET /api/v1/test-lab/sessions/evidence-summary?runId=<test_run_id>
+uses the same authenticated, owner-only and disabled-by-default session path
+as the redacted evidence report. No new sensor, DP query or callback occurs.
+The backend revalidates the exact evidence-report allowlist and recomputes
+the counters, then exposes only field *names* with matched/mismatched/missing
+counts, coverage percent across separately observed DP-indexed events, and
+known send failure codes with grouped event counts. Field values, vendor
+event content, credentials, proof receipts and origins are never returned.
+If no authenticated independent DP observer verified any events, the comparison
+status is NOT_VERIFIED and field coverage is empty. Even when offline/mocked
+observer callbacks exist, the summary's realSensorVerified,
+runtimeParsingVerified and liveE2eVerified flags are always false.
+Reports are transient, subject to existing run TTL, and never constitute
+a Stellar Cyber production E2E verdict.

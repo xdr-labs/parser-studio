@@ -61,6 +61,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     redactedSessionEvidenceOptInAvailable: true,
     redactedEvidenceHttpAvailableWhenInjected: true,
     redactedEvidenceExportHttpAvailableWhenInjected: true,
+    redactedEvidenceSummaryHttpAvailableWhenInjected: true,
     evidenceMaxEventsPerRun: 500,
     evidencePersistedAcrossRestart: false,
     sessionAutoResumeAfterRestart: false,
