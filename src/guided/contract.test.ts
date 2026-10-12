@@ -48,6 +48,19 @@ describe('six-step guided builder UI-to-backend configuration boundary', () => {
     expect(result.errors.join(' ')).toContain('Duplicate normalized destination');
   });
 
+  it('RFC5424 Syslog draft requires one shared sensor/CONF listener port >= 6800',()=>{
+    const draft=createDraft();draft.format='syslog_rfc5424';
+    const options=defaultGuidedOptions();
+    draft.guided={...options,receiver:{...options.receiver,port:6799}};
+    const reject=compilerDraftContract(draft);
+    expect(reject.ok).toBe(false);
+    if(!reject.ok)expect(reject.errors.join(' ')).toContain('at least 6800');
+    draft.guided.receiver.port=6800;
+    const accept=compilerDraftContract(draft);
+    expect(accept.ok).toBe(true);
+    if(accept.ok)expect(accept.project.receiver.port).toBe(6800);
+  });
+
   it('does not claim a checked active-target port or generated files', () => {
     expect(plannedPairNames('sample_parser')).toEqual({ config: 'customized_sample_parser.conf', parser: 'customized_sample_parser' });
     expect(plannedPairNames('../escape')).toBeNull();

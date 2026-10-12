@@ -354,7 +354,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     setPortPlanError(null);
     setPortPlanAttempt(null);
     try {
-      const plan = await fetchParserPortProposal(override ? options.receiver.port : undefined);
+      const plan = await fetchParserPortProposal(
+        override ? options.receiver.port : undefined,
+        fetch,
+        draft.format==='syslog_rfc5424'?'syslog_rfc5424':undefined,
+      );
       if (latestDraftKeyRef.current === key) setPortPlanAttempt({ key, plan });
     } catch (error) {
       if (latestDraftKeyRef.current === key) {
@@ -873,7 +877,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     if (number === 0) return hasLogs ? 'complete' : 'attention';
     if (number === 1) return hasLogs && draft.format !== 'auto' ? 'complete' : hasLogs ? 'attention' : 'future';
     if (number === 2) return draft.mappings.length > 0 ? 'complete' : 'attention';
-    if (number === 3) return options.receiver.protocols.length && Number.isInteger(options.receiver.port) && options.receiver.port >= 1024 && options.receiver.port <= 65535 ? 'complete' : 'attention';
+    if (number === 3) return options.receiver.protocols.length && Number.isInteger(options.receiver.port) &&
+      options.receiver.port >= (draft.format==='syslog_rfc5424'?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
     if (number === 4) return runState?.suite.counts.total && runState.suite.counts.failures === 0 ? 'complete' : 'attention';
     return 'future';
   };
@@ -1166,13 +1171,16 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 {options.receiver.protocols.includes(protocol) && <CheckCircle2 size={18} />}
               </label>)}</div>
             <div className="guided-three-fields">
-              <label className="guided-field"><span>Listener Port</span><input aria-label="Receiving port" type="number" min={1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
+              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={draft.format==='syslog_rfc5424'?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
               <label className="guided-field"><span>Bind Policy</span><select aria-label="Bind policy" value={options.receiver.bindPolicy} onChange={(e) => setReceiver('bindPolicy', e.target.value)}><option value="loopback">Loopback test (127.0.0.1)</option><option value="all">All interfaces (0.0.0.0)</option></select></label>
               <label className="guided-field"><span>Maximum Message Size (bytes)</span><input aria-label="Message limit" type="number" min={1024} max={65536} value={options.receiver.messageLimit} onChange={(e) => setReceiver('messageLimit', Number(e.target.value))} /></label>
             </div>
+            <div className="guided-note"><ShieldCheck size={15}/> One shared port: the sensor log destination and generated <code>.conf</code> receiver <code>&lt;source&gt;</code> use the same number. It is not a separate transport port. This does not establish listener readiness.</div>
+            {draft.format==='syslog_rfc5424' && options.receiver.port<6800 &&
+              <p role="alert" className="guided-error">RFC5424 Syslog sensor and CONF listener port must be at least 6800.</p>}
             <div className="guided-port-proposal" aria-label="Parser listener port candidate">
               <strong>Parser Listener Port Candidate · Read-only</strong>
-              <p>Only parser inventories and reservations supplied by an authorized local backend are checked. This candidate is not the sensor destination port. Recheck ownership and conflicts immediately before deployment.</p>
+              <p>Only parser inventories and reservations supplied by an authorized local backend are checked. The candidate is the intended SAME port for sensor log receipt and the generated CONF listener, but actual sensor binding and port availability remain unverified. Recheck ownership and conflicts immediately before deployment.</p>
               <div className="guided-port-actions">
                 <button type="button" className="guided-cta-secondary" disabled={portPlanLoading}
                   onClick={() => { void checkParserListenerPort(false); }}>
@@ -1190,7 +1198,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   ? 'INCOMPLETE_EVIDENCE · Sensor binding or reservation evidence incomplete'
                   : 'CANDIDATE_REQUIRES_DEPLOY_RECHECK · Recheck before deployment'}</p>
                 {currentPortPlan.missingEvidence.length > 0 && <small>Missing Evidence: {currentPortPlan.missingEvidence.join(', ')}</small>}
-                <small>Candidate only: not deployable, not proven free, and not a verified sensor receiver port.</small>
+                <small>Shared sensor/CONF port: {currentPortPlan.sensorIngestPort} · Candidate only: not deployable, not proven free, and no verified sensor binding or reservation.</small>
                 {currentPortPlan.source === 'SUGGESTED' && <button type="button" className="guided-cta-secondary" onClick={useSuggestedParserPort}>
                   Apply Candidate to Draft (recheck required)
                 </button>}

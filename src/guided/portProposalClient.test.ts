@@ -8,7 +8,7 @@ const candidate={
   missingEvidence:['sensorBindings','localReservations'],
   occupiedPorts:[514,7501,20001],
   candidateOnly:true,deployableNow:false,
-  verifiedIngestPort:false,sensorIngestPort:null,needsFinalRecheck:true,
+  verifiedIngestPort:false,sensorIngestPort:20000,needsFinalRecheck:true,
 };
 const fake=(body:unknown,status=200)=>vi.fn(async()=>({
   status,json:async()=>body,
@@ -29,7 +29,7 @@ describe('backend-authorized, read-only provisional parser listener port proposa
     expect(init.body).toBeUndefined();
   });
   it('checks the explicitly typed receiver port without modifying a parser',async()=>{
-    const response={...candidate,recommendedPort:7501,source:'USER_OVERRIDE',occupiedPorts:[514,20001]};
+    const response={...candidate,recommendedPort:7501,source:'USER_OVERRIDE',occupiedPorts:[514,20001],sensorIngestPort:7501};
     const request=fake(response);
     const result=await fetchParserPortProposal(7501,request);
     expect(result.recommendedPort).toBe(7501);
@@ -43,6 +43,7 @@ describe('backend-authorized, read-only provisional parser listener port proposa
       {...candidate,candidateOnly:false},
       {...candidate,verifiedIngestPort:true},
       {...candidate,sensorIngestPort:514},
+      {...candidate,sensorIngestPort:null},
       {...candidate,needsFinalRecheck:false},
       {...candidate,status:'CANDIDATE_REQUIRES_DEPLOY_RECHECK'},
       {...candidate,missingEvidence:['privateTenantSecret']},
@@ -56,6 +57,24 @@ describe('backend-authorized, read-only provisional parser listener port proposa
     expect(await fetchParserPortProposal(undefined,fake(response))).toMatchObject({
       recommendedPort:20000,deployableNow:false,candidateOnly:true,needsFinalRecheck:true,
     });
+  });
+  it('Syslog RFC5424 chooses the same sensor and CONF port at or above 6800',async()=>{
+    const response={...candidate,recommendedPort:6800,sensorIngestPort:6800};
+    const request=fake(response);
+    const result=await fetchParserPortProposal(undefined,request,'syslog_rfc5424');
+    expect(result.recommendedPort).toBe(result.sensorIngestPort);
+    expect(result.recommendedPort).toBe(6800);
+    expect(result.deployableNow).toBe(false);
+    const [url]=(request as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toBe('/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424');
+    const fakeRequest=fake(response);
+    await expect(fetchParserPortProposal(6799,fakeRequest,'syslog_rfc5424')).rejects.toThrow('6800');
+    expect(fakeRequest).not.toHaveBeenCalled();
+    const manual={...response,source:'USER_OVERRIDE'};
+    const req=fake(manual);
+    await fetchParserPortProposal(6800,req,'syslog_rfc5424');
+    expect((req as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])
+      .toBe('/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424&port=6800');
   });
   it('rejects invalid manual overrides without a request',async()=>{
     for(const bad of [0,80,65536,1.5,NaN,-3]){

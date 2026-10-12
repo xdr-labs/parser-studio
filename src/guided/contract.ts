@@ -113,6 +113,12 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if (!draft.vendor.trim() || !draft.name.trim()) errors.push('Set a product name and vendor');
   if (!options.receiver.protocols.length || new Set(options.receiver.protocols).size !== options.receiver.protocols.length) errors.push('Choose one or more unique UDP/TCP receiver protocols');
   if (!Number.isInteger(options.receiver.port) || options.receiver.port < 1024 || options.receiver.port > 65535) errors.push('Receiving port must be an integer in 1024–65535');
+  // One shared sensor ingress / generated CONF <source> port. The backend
+  // enforces a narrower minimum for RFC5424 Syslog parser pairs.
+  if (draft.format === 'syslog_rfc5424' &&
+      Number.isInteger(options.receiver.port) && options.receiver.port<6800) {
+    errors.push('RFC5424 Syslog sensor and CONF listener port must be at least 6800');
+  }
   if (!Number.isInteger(options.receiver.messageLimit) || options.receiver.messageLimit < 1024 || options.receiver.messageLimit > 65536) errors.push('Message limit must be an integer in 1024–65536 bytes');
 
   if (options.eventBoundary && options.eventBoundary !== 'single-line') {

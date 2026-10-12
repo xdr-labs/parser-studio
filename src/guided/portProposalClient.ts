@@ -1,6 +1,7 @@
-/** Read-only, server-authorized provisional parser *listener* port analysis.
- * NEVER equivalent to a reservation, sensor ingestion port, DP deployment,
- * or confirmation that no existing parser is using the port.
+/** Read-only, server-authorized provisional shared receiver-port analysis.
+ * The chosen value is ONE port for the sensor log destination AND generated
+ * Fluentd CONF <source>. It is never proof that a listener actually exists,
+ * or an inventory reservation, DP deployment, or collision-free target.
  */
 export interface ParserPortProposal {
   contract: 'stellar-parser-listener-port-proposal.v0.1';
@@ -12,7 +13,7 @@ export interface ParserPortProposal {
   candidateOnly: true;
   deployableNow: false;
   verifiedIngestPort: false;
-  sensorIngestPort: null;
+  sensorIngestPort: number;
   needsFinalRecheck: true;
 }
 
@@ -28,11 +29,20 @@ const isPort=(value:unknown):value is number=>
 export async function fetchParserPortProposal(
   requestedPort?:number,
   requester:typeof fetch=fetch,
+  parserFormat?:'syslog_rfc5424',
 ):Promise<ParserPortProposal> {
+  if(parserFormat!==undefined&&parserFormat!=='syslog_rfc5424')
+    throw new Error('Unsupported parser format for port proposal.');
   if(requestedPort!==undefined && (!isPort(requestedPort) || requestedPort<1024)) {
-    throw new Error('The listener port must be an integer from 1024 to 65535.');
+    throw new Error('The shared sensor/CONF port must be an integer from 1024 to 65535.');
   }
-  const url=BASE+(requestedPort===undefined?'':'?port='+requestedPort);
+  if(parserFormat==='syslog_rfc5424' &&
+     requestedPort!==undefined && requestedPort<6800)
+    throw new Error('RFC5424 Syslog sensor and CONF listener ports must be at least 6800.');
+  const query=new URLSearchParams();
+  if(parserFormat==='syslog_rfc5424') query.set('format',parserFormat);
+  if(requestedPort!==undefined)query.set('port',String(requestedPort));
+  const url=BASE+(query.size?'?'+query.toString():'');
   const res=await requester(url,{
     method:'GET',cache:'no-store',credentials:'same-origin',
     headers:{Accept:'application/json'},
@@ -52,10 +62,12 @@ export async function fetchParserPortProposal(
   if(Object.keys(plan).sort().join(',')!==KEYS ||
      plan.contract!=='stellar-parser-listener-port-proposal.v0.1' ||
      !isPort(plan.recommendedPort) || plan.recommendedPort<1024 ||
+     (parserFormat==='syslog_rfc5424'&&plan.recommendedPort<6800) ||
      plan.source!==(requestedPort===undefined?'SUGGESTED':'USER_OVERRIDE') ||
      (requestedPort!==undefined && plan.recommendedPort!==requestedPort) ||
      plan.candidateOnly!==true || plan.deployableNow!==false ||
-     plan.verifiedIngestPort!==false || plan.sensorIngestPort!==null ||
+     plan.verifiedIngestPort!==false ||
+     plan.sensorIngestPort!==plan.recommendedPort ||
      plan.needsFinalRecheck!==true ||
      !Array.isArray(occupancy) || occupancy.length>20000 ||
      !occupancy.every(isPort) || new Set(occupancy).size!==occupancy.length ||
