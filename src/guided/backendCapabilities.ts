@@ -73,12 +73,12 @@ export async function fetchBackendCapabilities(
     credentials: 'same-origin',
     headers: { Accept: 'application/json' },
   });
-  if (response.status !== 200) throw new Error('기능 확인 API가 응답하지 않습니다 (HTTP ' + response.status + ').');
+  if (response.status !== 200) throw new Error('Backend capabilities request failed (HTTP ' + response.status + ').');
   let value: unknown;
   try { value = await response.json(); } catch {
-    throw new Error('기능 확인 API가 올바른 JSON을 반환하지 않았습니다.');
+    throw new Error('The capabilities API returned invalid JSON.');
   }
-  if (!value || typeof value !== 'object') throw new Error('백엔드 기능 계약이 없습니다.');
+  if (!value || typeof value !== 'object') throw new Error('Backend capability contract is missing.');
   const cap = value as Partial<BackendCapabilities>;
   const a = cap.authoring;
   const im = cap.import;
@@ -101,7 +101,7 @@ export async function fetchBackendCapabilities(
       v.liveListenerVerified !== false || v.proprietaryLoaderVerified !== false ||
       !Number.isInteger(l?.maxProjectBodyBytes) || !Number.isInteger(l?.maxInspectBodyBytes) ||
       (l?.maxProjectBodyBytes ?? 0) < 1024 || (l?.maxInspectBodyBytes ?? 0) < 1024) {
-    throw new Error('백엔드 기능·검증 상태를 신뢰할 수 없어 DRAFT 생성을 차단했습니다.');
+    throw new Error('DRAFT generation blocked due to untrusted backend capabilities or verification flags.');
   }
   const extended = a.rfc5424BodyFormats !== undefined ||
     a.rfc5424AdjacentStructuredDataSubset !== undefined ||
@@ -116,7 +116,7 @@ export async function fetchBackendCapabilities(
     a.rfc5424AdjacentStructuredDataSubset !== true ||
     a.rfc5424StructuredDataMaxBytes !== 1024 ||
     a.leefHexSeparatorSubset !== true
-  )) throw new Error('확장 RFC5424/LEEF 기능 선언이 현재 검토한 계약과 다릅니다.');
+  )) throw new Error('Extended RFC5424/LEEF capability declarations do not match the reviewed contract.');
   if (cap.downloads !== undefined) {
     const dl = cap.downloads;
     if (!dl || typeof dl !== 'object' ||
@@ -125,7 +125,7 @@ export async function fetchBackendCapabilities(
         dl.individualGeneratedFiles !== true || dl.zipWithManifest !== true ||
         dl.requiresDpConnection !== false || dl.requiresApiKey !== false ||
         dl.autoDeploys !== false || dl.exactArtifactRevision !== true) {
-      throw new Error('백엔드 ZIP 다운로드 기능 계약이 검토된 범위와 일치하지 않습니다.');
+      throw new Error('Backend ZIP download capabilities do not match the reviewed contract.');
     }
   }
   return cap as BackendCapabilities;
@@ -137,16 +137,16 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     if ((cap.authoring.rfc5424BodyFormats && !cap.authoring.rfc5424BodyFormats.includes(mode)) ||
         (['cef', 'leef'].includes(mode) &&
           !cap.authoring.rfc5424BodyFormats?.includes(mode as 'cef' | 'leef'))) {
-      throw new Error('백엔드가 RFC5424 내부 ' + mode.toUpperCase() + ' 추출 형식을 명시적으로 지원하지 않습니다.');
+      throw new Error('Backend does not explicitly support RFC5424-embedded ' + mode.toUpperCase() + ' extraction.');
     }
   }
   if (!cap.authoring.extractionFormats.includes(project.extraction.format)) {
-    throw new Error('백엔드가 ' + project.extraction.format.toUpperCase() + ' 포맷을 지원한다고 확인하지 않았습니다.');
+    throw new Error('Backend did not confirm support for ' + project.extraction.format.toUpperCase() + ' format.');
   }
   if (!project.receiver.protocols.every((protocol) => cap.authoring.receiverProtocols.includes(protocol))) {
-    throw new Error('백엔드가 선택한 UDP/TCP 수신 방식을 지원하지 않습니다.');
+    throw new Error('Backend does not support the selected UDP/TCP receiver protocol.');
   }
   if (new TextEncoder().encode(JSON.stringify(project)).length > cap.limits.maxProjectBodyBytes) {
-    throw new Error('백엔드 프로젝트 크기 제한을 초과했습니다.');
+    throw new Error('Backend project size limit exceeded.');
   }
 }

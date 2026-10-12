@@ -17,25 +17,25 @@ export interface OfficialMetadataField {
   label: string;
 }
 export const curatedOfficialMetadata: readonly OfficialMetadataField[] = [
-  {name:'srcip',documentedType:'ip',uiType:'ip',label:'출발지 IP'},
-  {name:'dstip',documentedType:'ip',uiType:'ip',label:'목적지 IP'},
-  {name:'srcport',documentedType:'integer',uiType:'port',label:'출발지 포트'},
-  {name:'dstport',documentedType:'integer',uiType:'port',label:'목적지 포트'},
-  {name:'action',documentedType:'string',uiType:'string',label:'허용·차단 등 동작'},
-  {name:'event_name',documentedType:'string',uiType:'string',label:'이벤트 이름 (탐지 Job)'},
-  {name:'event_description',documentedType:'string',uiType:'string',label:'이벤트 설명'},
-  {name:'severity',documentedType:'integer',uiType:'integer',label:'이벤트 심각도'},
-  {name:'proto_name',documentedType:'string',uiType:'string',label:'네트워크 프로토콜 이름'},
-  {name:'hostname',documentedType:'string',uiType:'string',label:'호스트 이름 (Linux Audit)'},
-  {name:'hostip',documentedType:'ip',uiType:'ip',label:'호스트 IP'},
-  {name:'username',documentedType:'string',uiType:'string',label:'사용자 이름'},
-  {name:'login_result',documentedType:'string',uiType:'string',label:'로그인 결과'},
-  {name:'file_name',documentedType:'string',uiType:'string',label:'파일 이름'},
-  {name:'file_path',documentedType:'string',uiType:'string',label:'파일 경로'},
-  {name:'process_name',documentedType:'string',uiType:'string',label:'프로세스 이름 (에이전트)'},
-  {name:'sha256',documentedType:'string',uiType:'string',label:'파일 SHA-256'},
+  {name:'srcip',documentedType:'ip',uiType:'ip',label:'Source IP'},
+  {name:'dstip',documentedType:'ip',uiType:'ip',label:'Destination IP'},
+  {name:'srcport',documentedType:'integer',uiType:'port',label:'Source Port'},
+  {name:'dstport',documentedType:'integer',uiType:'port',label:'Destination Port'},
+  {name:'action',documentedType:'string',uiType:'string',label:'Action (allow, deny, etc.)'},
+  {name:'event_name',documentedType:'string',uiType:'string',label:'Event name (detection job)'},
+  {name:'event_description',documentedType:'string',uiType:'string',label:'Event description'},
+  {name:'severity',documentedType:'integer',uiType:'integer',label:'Event severity'},
+  {name:'proto_name',documentedType:'string',uiType:'string',label:'Network protocol name'},
+  {name:'hostname',documentedType:'string',uiType:'string',label:'Host name (Linux audit)'},
+  {name:'hostip',documentedType:'ip',uiType:'ip',label:'Host IP'},
+  {name:'username',documentedType:'string',uiType:'string',label:'Username'},
+  {name:'login_result',documentedType:'string',uiType:'string',label:'Login outcome'},
+  {name:'file_name',documentedType:'string',uiType:'string',label:'Filename'},
+  {name:'file_path',documentedType:'string',uiType:'string',label:'File path'},
+  {name:'process_name',documentedType:'string',uiType:'string',label:'Process name (endpoint)'},
+  {name:'sha256',documentedType:'string',uiType:'string',label:'File SHA-256'},
   {name:'url',documentedType:'string',uiType:'string',label:'URL'},
-  {name:'file_size',documentedType:'integer',uiType:'integer',label:'파일 크기'},
+  {name:'file_size',documentedType:'integer',uiType:'integer',label:'File size'},
 ] as const;
 
 export type OfficialMetadataSelection =
@@ -52,12 +52,12 @@ export function applyOfficialMetadataField(
   draft: ParserDraft, mappingId: string, metadataName: string,
 ): OfficialMetadataSelection {
   const field = curatedOfficialMetadata.find(x => x.name === metadataName);
-  if (!field) return {ok:false,error:'선택한 필드는 검토된 6.5/7.0 표준 메타데이터 후보가 아닙니다.'};
+  if (!field) return {ok:false,error:'Selected field is not a reviewed public 6.5/7.0 metadata candidate.'};
   const mapping = draft.mappings.find(x => x.id === mappingId);
-  if (!mapping) return {ok:false,error:'선택할 매핑 규칙을 찾지 못했습니다.'};
-  if (!mapping.source.trim()) return {ok:false,error:'먼저 원본 필드를 선택해야 표준 목적지를 연결할 수 있습니다.'};
+  if (!mapping) return {ok:false,error:'Selected mapping rule was not found.'};
+  if (!mapping.source.trim()) return {ok:false,error:'Select a source field before linking a standard destination.'};
   if (draft.mappings.some(other => other.id !== mappingId && overlaps(other.target, field.name))) {
-    return {ok:false,error:'선택한 표준 필드가 기존 정규화 목적지와 충돌합니다.'};
+    return {ok:false,error:'Selected standard field conflicts with an existing normalized destination.'};
   }
   const options = draft.guided ?? defaultGuidedOptions();
   return {

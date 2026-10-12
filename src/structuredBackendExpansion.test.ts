@@ -52,7 +52,7 @@ describe('new backend RFC5424/CEF/LEEF reviewed subset browser parity', () => {
     '<165>2 2026-10-12T01:02:03Z edge fw 1 ID - src_ip=192.0.2.2',
     '<165>1 2026-99-99T25:01:01Z edge fw 1 ID - src_ip=192.0.2.2',
     '<165>1 2026-10-12T01:02:03 edge fw 1 ID - src_ip=192.0.2.2',
-    '<165>1 2026-10-12T01:02:03Z 테스트 fw 1 ID - src_ip=192.0.2.2',
+    '<165>1 2026-10-12T01:02:03Z t\u00E9st fw 1 ID - src_ip=192.0.2.2',
   ])('rejects invalid RFC5424 version/timestamp/header before preview passes', text=>{
     const draft=createDraft();draft.format='syslog_rfc5424';
     expect(extractFields(text,'syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);

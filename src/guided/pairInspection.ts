@@ -28,7 +28,7 @@ const DIAGNOSTICS = new Set([
   'RUBY_MARKERS_INCOMPLETE', 'RUBY_PARSE_ENTRY_MISSING', 'PAIR_NOT_REPRODUCIBLE',
 ]);
 async function sha256(value: string): Promise<string> {
-  if (!globalThis.crypto?.subtle) throw new Error('로컬 파일의 SHA-256 검증에는 안전한 브라우저 컨텍스트가 필요합니다.');
+  if (!globalThis.crypto?.subtle) throw new Error('SHA-256 verification of local files requires a secure browser context.');
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((part) => part.toString(16).padStart(2, '0')).join('');
 }
@@ -38,21 +38,21 @@ export async function inspectParserPair(
   requester: typeof fetch = fetch,
 ): Promise<PairInspectionSummary> {
   if (!NAME.test(input.name) || !input.confContent || !input.fragmentContent) {
-    throw new Error('두 파일은 customized_<slug> 및 customized_<slug>.conf 형식이어야 합니다.');
+    throw new Error('Files must be named customized_<slug> and customized_<slug>.conf.');
   }
   const body = JSON.stringify(input);
-  if (new TextEncoder().encode(body).length > LIMIT) throw new Error('로컬 검사 입력은 합계 2 MiB 미만이어야 합니다.');
+  if (new TextEncoder().encode(body).length > LIMIT) throw new Error('Local inspection input must total less than 2 MiB.');
   const response = await requester(BASE, {
     method: 'POST', credentials: 'same-origin', cache: 'no-store',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body,
   });
-  if (response.status !== 200) throw new Error('백엔드 검사 실패 (HTTP ' + response.status + '). 원본 파일은 저장되지 않았습니다.');
+  if (response.status !== 200) throw new Error('Backend inspection failed (HTTP ' + response.status + '). Raw files were not stored.');
   let data: unknown;
   try { data = await response.json(); } catch {
-    throw new Error('백엔드 검사 응답 형식이 잘못되었습니다.');
+    throw new Error('Invalid backend inspection response format.');
   }
-  if (!data || typeof data !== 'object') throw new Error('검사 결과가 올바르지 않습니다.');
+  if (!data || typeof data !== 'object') throw new Error('Invalid inspection results.');
   const result = data as Record<string, unknown>;
   const hashes = result.originalHashes as Record<string, unknown> | undefined;
   const receiver = result.receiver as Record<string, unknown> | undefined;
@@ -76,11 +76,11 @@ export async function inspectParserPair(
       typeof fragment.hasParseEntry !== 'boolean' || typeof fragment.opaqueRuby !== 'boolean' ||
       !Array.isArray(diagnostics) || diagnostics.length > 64 ||
       !diagnostics.every((d) => DIAGNOSTICS.has(String(d.code)) && d.severity === 'warning')) {
-    throw new Error('백엔드 검사 계약 또는 편집 가능 상태가 일치하지 않습니다.');
+    throw new Error('Backend inspection contract or editable status is inconsistent.');
   }
   if (hashes.conf !== await sha256(input.confContent) ||
       hashes.fragment !== await sha256(input.fragmentContent)) {
-    throw new Error('원본 파일의 SHA-256 검증 실패: 검사 결과를 표시하지 않습니다.');
+    throw new Error('Original-file SHA-256 verification failed; results are not displayed.');
   }
   // Never echo response messages or source fragments; expose only known codes.
   return {

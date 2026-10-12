@@ -6,7 +6,7 @@
 
 - Default Guided Builder has six steps: input logs → extraction → typed mapping → receiver/classification → test/fix → generate. Original 3-pane Expert Workbench remains available and shares a version-neutral rule draft.
 - The UI uses a **same-origin development proxy** for the separate backend's `POST /api/v1/parser-pairs/validate` and `POST /api/v1/parser-pairs/generate` endpoints. Backend binds `127.0.0.1:4179` only.
-- The user explicitly clicks **백엔드 입력 검사**, runs the current browser suite, and then explicitly requests **DRAFT pair generation**. Nothing sends customer raw sample text when typing, moving steps or performing browser-only preview.
+- The user explicitly clicks **Validate Backend Input**, runs the current browser suite, and then explicitly requests **DRAFT pair generation**. Nothing sends customer raw sample text when typing, moving steps or performing browser-only preview.
 - The currently supported backend output is `customized_<slug>.conf` + extensionless `customized_<slug>` Ruby fragment. It is a **host-reference DRAFT**, not a vendor portal `.json`, installed Fluentd plugin, or proven Stellar import format.
 - **No native Fluentd/plugin validation, active-target import verification, production installation, deployment, or credential changes** have been performed. Both DRAFT downloads clearly retain that boundary.
 

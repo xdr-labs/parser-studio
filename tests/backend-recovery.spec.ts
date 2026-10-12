@@ -23,13 +23,13 @@ test('backend field error offers a keyboard-accessible route to its no-code edit
   }));
   await page.goto('/');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"allow","src_ip":"198.51.100.10","dst_port":443}');
-  await page.getByRole('button', { name: /2\. 필드 추출/ }).click();
+  await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
-  await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
-  await page.getByRole('button', { name: '백엔드 입력 검사' }).click();
+  await page.getByRole('button', { name: /6\. Generate Files/ }).click();
+  await page.getByRole('button', { name: 'Validate Backend Input' }).click();
   await expect(page.getByLabel('Backend validation errors')).toContainText('UNMAPPED_ROUTE');
-  await page.getByRole('button', { name: '분류 설정으로 이동' }).click();
-  await expect(page.locator('.guided-step.active')).toContainText('수신·분류');
+  await page.getByRole('button', { name: 'Go to Classification Settings' }).click();
+  await expect(page.locator('.guided-step.active')).toContainText('Receive & Classify');
   // The just-removed correction button must not strand keyboard focus.
   await expect(page.locator('.guided-content-head h2')).toBeFocused();
 });

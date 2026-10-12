@@ -152,15 +152,15 @@ export default function App() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > MAX_DATASET_BYTES) { notify('파일이 64 KiB 제한을 초과했습니다.'); return; }
+    if (file.size > MAX_DATASET_BYTES) { notify('File exceeds the 64 KiB limit.'); return; }
     try {
       const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
       setSample(text);
       setDatasetName(file.name);
       setSelectedId('event-1');
       setRunState(null);
-      notify('로컬 브라우저 메모리에만 샘플을 불러왔습니다.');
-    } catch { notify('UTF-8 텍스트 파일만 지원합니다.'); }
+      notify('Loaded the sample into local browser memory only.');
+    } catch { notify('Only UTF-8 text files are supported.'); }
   };
 
   const handleSave = () => {
@@ -168,8 +168,8 @@ export default function App() {
       const saved = saveRevision(draft);
       setRevision(saved);
       setRevisions(readRevisions());
-      notify('버전 저장됨 · 브라우저 로컬 · 원본 로그 미포함');
-    } catch { notify('브라우저 로컬 저장에 실패했습니다. 저장 공간이나 권한을 확인하세요.'); }
+      notify('Revision saved locally in the browser without raw logs.');
+    } catch { notify('Browser-local save failed. Check storage space and permissions.'); }
   };
 
   const newDraft = () => {

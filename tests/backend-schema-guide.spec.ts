@@ -33,12 +33,12 @@ test('explicit local backend schema guide shows supported types, not an official
   });
   await page.goto('/');
   await page.getByLabel('Guided raw sample logs').fill('{"src_ip":"198.51.100.200","action":"allow"}');
-  await page.getByRole('button', { name: /3\. 필드 매핑/ }).click();
+  await page.getByRole('button', { name: /3\. Map Fields/ }).click();
   await page.locator('.guided-schema-guide summary').click();
   expect(count).toBe(0);
   const guide = page.getByLabel('Backend authoring schema guide');
-  await expect(guide).toContainText('공식 필드 사전 아님');
-  await guide.getByRole('button', { name: '백엔드 스키마 확인 (GET)' }).click();
+  await expect(guide).toContainText('Not an Official Field Dictionary');
+  await guide.getByRole('button', { name: 'Fetch Backend Schema (GET)' }).click();
   const result = page.getByLabel('Verified backend schema summary');
   await expect(result).toContainText('ParserProject 0.1');
   await expect(result).toContainText('json · kv · csv');
@@ -53,9 +53,9 @@ test('unsupported future backend schema never appears as verified guidance', asy
     route.fulfill({ status:200, contentType:'application/json',
       body: JSON.stringify({ ...schema, $id: 'urn:unknown:parser-studio:v2' }) }));
   await page.goto('/');
-  await page.getByRole('button', { name: /3\. 필드 매핑/ }).click();
+  await page.getByRole('button', { name: /3\. Map Fields/ }).click();
   await page.locator('.guided-schema-guide summary').click();
-  await page.getByRole('button', { name: '백엔드 스키마 확인 (GET)' }).click();
-  await expect(page.locator('.guided-schema-guide [role="alert"]')).toContainText('지원되지 않는');
+  await page.getByRole('button', { name: 'Fetch Backend Schema (GET)' }).click();
+  await expect(page.locator('.guided-schema-guide [role="alert"]')).toContainText('Unsupported');
   await expect(page.getByLabel('Verified backend schema summary')).toHaveCount(0);
 });

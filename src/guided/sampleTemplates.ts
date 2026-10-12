@@ -16,64 +16,64 @@ export interface StarterTemplate {
 
 const presets: Record<StarterTemplateId, { label: string; description: string; samples: string[] }> = {
   json: {
-    label: 'JSON · 방화벽',
-    description: '한 줄에 하나의 JSON 객체',
+    label: 'JSON · Firewall',
+    description: 'One JSON object per line',
     samples: [
       '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
       '{"action":"deny","src_ip":"203.0.113.11","dst_port":22}',
     ],
   },
   kv: {
-    label: 'Key / Value · 방화벽',
-    description: '공백으로 구분된 key=value',
+    label: 'Key / Value · Firewall',
+    description: 'Whitespace-delimited key=value',
     samples: [
       'action=allow src_ip=198.51.100.10 dst_port=443',
       'action=deny src_ip=203.0.113.11 dst_port=22',
     ],
   },
   csv: {
-    label: 'CSV · 방화벽',
-    description: '쉼표로 분리된 action,src_ip,dst_port',
+    label: 'CSV · Firewall',
+    description: 'Comma-separated action,src_ip,dst_port',
     samples: [
       'allow,198.51.100.10,443',
       'deny,203.0.113.11,22',
     ],
   },
   syslog_rfc5424: {
-    label: 'RFC5424 · 시스템 로그',
-    description: '정확한 RFC5424 헤더와 일반 텍스트 본문',
+    label: 'RFC5424 · System Log',
+    description: 'Strict RFC5424 header with plain-text body',
     samples: [
       '<34>1 2026-10-12T00:00:00Z demo-fw network 12 EVT01 - allow connection',
       '<34>1 2026-10-12T00:00:01Z demo-fw network 12 EVT02 - deny connection',
     ],
   },
   rfc5424_cef: {
-    label: 'RFC5424 + CEF · 보안 이벤트',
-    description: 'RFC5424 v1 헤더에 CEF:0 본문, 일부 인접 Structured Data',
+    label: 'RFC5424 + CEF · Security Event',
+    description: 'RFC5424 v1 header with CEF:0 body and supported adjacent structured data',
     samples: [
       '<165>1 2026-10-12T00:00:00Z demo-fw security 12 EV01 [origin@32473 site="demo"][trace@32473 id="1"] CEF:0|Example|Firewall|1|100|Allowed|5|act=allow src=198.51.100.10 dpt=443',
       '<165>1 2026-10-12T00:00:01Z demo-fw security 12 EV02 - CEF:0|Example|Firewall|1|101|Denied|8|act=deny src=203.0.113.11 dpt=22',
     ],
   },
   rfc5424_leef: {
-    label: 'RFC5424 + LEEF · 보안 이벤트',
-    description: 'RFC5424 v1 헤더에 LEEF 2.0 0xHH 구분자 본문',
+    label: 'RFC5424 + LEEF · Security Event',
+    description: 'RFC5424 v1 header with a LEEF 2.0 hex-delimited body',
     samples: [
       '<165>1 2026-10-12T00:00:00Z demo-fw security 12 EV01 - LEEF:2.0|Example|Firewall|1|100|0x5E|act=allow^src=198.51.100.10^dstPort=443',
       '<165>1 2026-10-12T00:00:01Z demo-fw security 12 EV02 - LEEF:2.0|Example|Firewall|1|101|0x5E|act=deny^src=203.0.113.11^dstPort=22',
     ],
   },
   cef: {
-    label: 'CEF · 보안 이벤트',
-    description: 'Syslog 접두부 없는 독립 CEF 레코드',
+    label: 'CEF · Security Event',
+    description: 'Standalone CEF record without a Syslog prefix',
     samples: [
       'CEF:0|Example|Firewall|1|100|Allowed|5|action=allow src_ip=198.51.100.10 dst_port=443',
       'CEF:0|Example|Firewall|1|101|Denied|8|action=deny src_ip=203.0.113.11 dst_port=22',
     ],
   },
   leef: {
-    label: 'LEEF · 보안 이벤트',
-    description: 'LEEF 1.0의 TAB 구분 필드',
+    label: 'LEEF · Security Event',
+    description: 'LEEF 1.0 with tab-delimited fields',
     samples: [
       'LEEF:1.0|Example|Firewall|1|100|action=allow\tsrc_ip=198.51.100.10\tdst_port=443',
       'LEEF:1.0|Example|Firewall|1|101|action=deny\tsrc_ip=203.0.113.11\tdst_port=22',

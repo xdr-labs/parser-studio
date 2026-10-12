@@ -6,16 +6,16 @@ test('no-code classification honors exact dotted KV source fields and explains m
     'event.action=deny src_ip=198.51.100.10\n' +
     'event.action=allow src_ip=203.0.113.12',
   );
-  await page.getByRole('button',{name:/2\. 필드 추출/}).click();
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'Key / Value',exact:true}).click();
-  await page.getByRole('button',{name:/4\. 수신·분류/}).click();
+  await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
   await page.getByLabel('Rule field 0').fill('event.action');
   await page.getByLabel('Rule value 0').fill('deny');
   const routes=page.getByLabel('Sample classification preview');
   await expect(routes.locator('.guided-routing-row')).toHaveCount(2);
   await expect(routes.locator('.guided-routing-row').first()).toContainText('Threat');
-  await expect(routes.locator('.guided-routing-row').first()).toContainText('조건 1');
-  await expect(routes.locator('.guided-routing-row').first()).toContainText('조건 일치');
-  await expect(routes.locator('.guided-routing-row').nth(1)).toContainText('기본값');
-  await expect(page.getByText(/실제 stellar_log_index 태그 라우팅은 별도 Fluentd 엔진 검증이 필요합니다/)).toBeVisible();
+  await expect(routes.locator('.guided-routing-row').first()).toContainText('Condition 1');
+  await expect(routes.locator('.guided-routing-row').first()).toContainText('Condition Matched');
+  await expect(routes.locator('.guided-routing-row').nth(1)).toContainText('Default');
+  await expect(page.getByText(/Actual stellar_log_index tag routing requires independent Fluentd engine validation/)).toBeVisible();
 });

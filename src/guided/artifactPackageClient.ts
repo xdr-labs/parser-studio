@@ -26,7 +26,7 @@ export function assertPackageCapability(cap:BackendCapabilities):void {
       cap.downloads.requiresApiKey!==false ||
       cap.downloads.autoDeploys!==false ||
       cap.downloads.exactArtifactRevision!==true) {
-    throw new Error('현재 로컬 백엔드는 검증된 비배포 ZIP 패키지 다운로드를 제공하지 않습니다.');
+    throw new Error('The local backend does not support verified, non-deploying ZIP downloads.');
   }
 }
 async function sha256(bytes: string | ArrayBuffer):Promise<string> {
@@ -45,16 +45,16 @@ async function verifyPair(pair:GeneratedPair):Promise<{parserName:string;revisio
      Number(pair.manifest.projectRevision)<1 || Number(pair.manifest.projectRevision)>1_000_000 ||
      !Array.isArray(pair.files) || pair.files.length!==2 ||
      !pair.manifest.fileHashes || typeof pair.manifest.fileHashes!=='object') {
-    throw new Error('이미 생성된 DRAFT 파일의 계약 또는 프로젝트 리비전이 유효하지 않습니다.');
+    throw new Error('The generated DRAFT files have an invalid contract or project revision.');
   }
   const parser=pair.files.find(file=>typeof file?.name==='string' && PARSER_NAME.test(file.name));
-  if(!parser) throw new Error('안전한 확장자 없는 파서 파일 이름이 필요합니다.');
+  if(!parser) throw new Error('A safe extensionless parser filename is required.');
   const config=pair.files.find(file=>file?.name===parser.name+'.conf');
   if(!config || parser===config || new Set(pair.files.map(file=>file.name)).size!==2) {
-    throw new Error('동일한 이름의 Ruby/CONF 파일 쌍이 필요합니다.');
+    throw new Error('The Ruby and CONF filenames must form a matching pair.');
   }
   if(Object.keys(pair.manifest.fileHashes).length!==2) {
-    throw new Error('두 파일의 SHA-256 매니페스트가 필요합니다.');
+    throw new Error('A SHA-256 manifest is required for both files.');
   }
   for(const file of pair.files) {
     if(typeof file.content!=='string' || !HEX.test(file.sha256) ||
@@ -62,7 +62,7 @@ async function verifyPair(pair:GeneratedPair):Promise<{parserName:string;revisio
        pair.manifest.fileHashes[file.name]!==file.sha256 ||
        new TextEncoder().encode(file.content).byteLength!==file.bytes ||
        await sha256(file.content)!==file.sha256) {
-      throw new Error('로컬 DRAFT 파일의 해시 또는 길이가 불일치하여 ZIP 전송을 차단했습니다.');
+      throw new Error('ZIP packaging blocked: local DRAFT file hashes or byte lengths did not match.');
     }
   }
   return {parserName:parser.name,revision:pair.manifest.projectRevision!};
@@ -80,22 +80,22 @@ export async function packageGeneratedPair(
 ):Promise<CheckedArtifactZip> {
   assertPackageCapability(capabilities);
   if(typeof version!=='string' || !VERSION.test(version)) {
-    throw new Error('패키지 버전은 1–64자의 영문·숫자·점·하이픈·밑줄만 허용합니다.');
+    throw new Error('Package version must be 1–64 ASCII alphanumeric characters, dots, hyphens, or underscores.');
   }
   if(!Number.isInteger(expectedPort) || expectedPort<1 || expectedPort>65535) {
-    throw new Error('유효한 수신 포트가 설정돼 있지 않습니다.');
+    throw new Error('A valid listener port is not configured.');
   }
   const {parserName,revision}=await verifyPair(pair);
   const requestBody=JSON.stringify({pair,version});
   if(new TextEncoder().encode(requestBody).byteLength>MAX_ZIP_BYTES) {
-    throw new Error('ZIP 생성 요청의 최대 크기를 초과했습니다.');
+    throw new Error('ZIP generation request exceeds the size limit.');
   }
   const response=await requester(BASE,{
     method:'POST',cache:'no-store',credentials:'same-origin',
     headers:{'Content-Type':'application/json',Accept:'application/zip'},
     body:requestBody,
   });
-  if(response.status!==200) throw new Error('백엔드 ZIP 생성 거부 (HTTP '+response.status+'). 개별 파일은 그대로 유지됩니다.');
+  if(response.status!==200) throw new Error('Backend ZIP generation denied (HTTP '+response.status+'). Individual files remain available.');
   const filename=parserName+'-r'+revision+'.zip';
   const contentType=response.headers.get('content-type');
   const disposition=response.headers.get('content-disposition');
@@ -110,7 +110,7 @@ export async function packageGeneratedPair(
      declaredPort!==String(expectedPort) ||
      !declaredLength || !/^[1-9][0-9]*$/.test(declaredLength) ||
      !Number.isSafeInteger(bytesLength) || bytesLength>MAX_ZIP_BYTES) {
-    throw new Error('ZIP 파일 이름·버전·포트·무결성 계약을 확인할 수 없습니다.');
+    throw new Error('ZIP filename, version, port, or integrity contract is invalid.');
   }
   const bytes=await response.arrayBuffer();
   const data=new Uint8Array(bytes);
@@ -120,7 +120,7 @@ export async function packageGeneratedPair(
      end<0 || data[end]!==0x50 || data[end+1]!==0x4b ||
      data[end+2]!==0x05 || data[end+3]!==0x06 ||
      await sha256(bytes)!==sha) {
-    throw new Error('ZIP 응답의 형식·크기·SHA-256 불일치로 다운로드를 차단했습니다.');
+    throw new Error('ZIP download blocked due to invalid response format, size, or SHA-256.');
   }
   return {filename,bytes,size:bytesLength,sha256:sha,
     artifactRevisionId:revisionId,listenerPort:expectedPort};

@@ -20,17 +20,17 @@ test('nondeveloper adds a safe constant enrichment and sees it in backend-only p
   });
   await page.goto('/');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"deny","src_ip":"198.51.100.13","dst_port":443}');
-  await page.getByRole('button', { name: /2\. 필드 추출/ }).click();
+  await page.getByRole('button', { name: /2\. Extract Fields/ }).click();
   await page.getByRole('button', { name: 'JSON', exact:true }).click();
-  await page.getByRole('button', { name: /3\. 필드 매핑/ }).click();
-  await page.getByRole('button', { name: '필드 보강 단계 추가' }).click();
+  await page.getByRole('button', { name: /3\. Map Fields/ }).click();
+  await page.getByRole('button', { name: 'Add Enrichment Step' }).click();
   await page.getByLabel('Enrichment target 0').fill('custom.site');
   await page.getByLabel('Enrichment value 0').fill('seoul');
-  await page.getByRole('button', { name: /5\. 검사·수정/ }).click();
-  await page.getByRole('button', { name: '브라우저 전체 테스트' }).click();
-  await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
-  await page.getByRole('button', { name: '백엔드 입력 검사' }).click();
-  await expect(page.getByText('Schema PASS · 엔진 미검증')).toBeVisible();
+  await page.getByRole('button', { name: /5\. Test & Fix/ }).click();
+  await page.getByRole('button', { name: 'Run Full Browser Test' }).click();
+  await page.getByRole('button', { name: /6\. Generate Files/ }).click();
+  await page.getByRole('button', { name: 'Validate Backend Input' }).click();
+  await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
   expect(posted).toHaveLength(1);
   expect((posted[0] as { enrichment: unknown[] }).enrichment).toEqual([
     {operator:'set_const',target:'custom.site',value:'seoul'},

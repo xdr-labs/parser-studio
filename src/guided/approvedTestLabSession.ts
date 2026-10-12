@@ -70,13 +70,13 @@ export function assertApprovedSessionReady(cap:BackendCapabilities):void {
      t.sessionMaxCumulativeEvents!==300000 ||
      t.sensorIngestVerified!==false ||
      t.runtimeParsingVerified!==false) {
-    throw new Error('별도 백엔드 승인·허용 목록·감사 전송 정책이 확인되지 않아 Test Lab 센서 송신이 차단됐습니다.');
+    throw new Error('Test Lab delivery is blocked: independent backend authorization, destination allowlisting, or audited sink policy is missing.');
   }
 }
 export function validateApprovedSessionStatus(value:unknown,expectedRunId?:string):ApprovedTestLabStatus {
   if(!value || typeof value!=='object' || Array.isArray(value) ||
      Object.keys(value).sort().join(',')!==STATUS_FIELDS) {
-    throw new Error('Test Lab 세션 메타데이터 계약이 검증되지 않았습니다.');
+    throw new Error('Test Lab session metadata contract is unverified.');
   }
   const v=value as Partial<ApprovedTestLabStatus>;
   if(!id(v.runId) || (expectedRunId && v.runId!==expectedRunId) ||
@@ -93,7 +93,7 @@ export function validateApprovedSessionStatus(value:unknown,expectedRunId?:strin
      v.parserLifecycleNotModified!==true ||
      v.realSensorVerified!==false || v.runtimeParsingVerified!==false ||
      v.sensorIngestVerified!==false) {
-    throw new Error('Test Lab 세션 결과의 원본·센서 검증 범위를 신뢰할 수 없습니다.');
+    throw new Error('Test Lab session response includes untrusted source or sensor verification claims.');
   }
   return v as ApprovedTestLabStatus;
 }
@@ -106,7 +106,7 @@ async function requestSession(
   let res:Response;
   if(action==='status'){
     const runId=body?.runId;
-    if(!id(runId))throw new Error('잘못된 Test Lab 실행 ID입니다.');
+    if(!id(runId))throw new Error('Invalid Test Lab run ID.');
     res=await requester(ROOT+'/status?runId='+runId,{
       method:'GET',credentials:'same-origin',cache:'no-store',
       headers:{Accept:'application/json'},
@@ -118,10 +118,10 @@ async function requestSession(
       body:JSON.stringify(body),
     });
   }
-  if(res.status!==200)throw new Error('Test Lab 서버 승인이 없거나 작업이 거부됐습니다 (HTTP '+res.status+').');
+  if(res.status!==200)throw new Error('Test Lab action lacked backend approval or was denied (HTTP '+res.status+').');
   let data:unknown;
   try{data=await res.json();}
-  catch{throw new Error('Test Lab 상태 응답 형식이 잘못되었습니다.');}
+  catch{throw new Error('Invalid Test Lab status response format.');}
   return validateApprovedSessionStatus(data,action==='start'?undefined:body?.runId as string);
 }
 
@@ -134,7 +134,7 @@ export async function startApprovedSyntheticSession(
 ):Promise<ApprovedTestLabStatus> {
   assertApprovedSessionReady(capability);
   if(!APPROVAL.test(approvalId) || ![1,2,5].includes(rate)) {
-    throw new Error('유효한 별도 승인 ID 및 최대 5 이벤트/초 속도가 필요합니다.');
+    throw new Error('A separate valid approval ID and a rate up to 5 events per second are required.');
   }
   return requestSession('start',{
     sample:FIXTURE,approvalId,ratePerSecond:rate,leaseMs:60000,maxEvents:100,
@@ -143,7 +143,7 @@ export async function startApprovedSyntheticSession(
 export async function fetchApprovedSessionStatus(
   runId:string,requester:typeof fetch=fetch,
 ):Promise<ApprovedTestLabStatus> {
-  if(!id(runId))throw new Error('유효한 실행 ID가 필요합니다.');
+  if(!id(runId))throw new Error('A valid run ID is required.');
   return requestSession('status',{runId},requester);
 }
 export async function controlApprovedSession(
@@ -151,7 +151,7 @@ export async function controlApprovedSession(
   requester:typeof fetch=fetch,
 ):Promise<ApprovedTestLabStatus> {
   if(!id(runId) || !['pause','resume','stop'].includes(action)) {
-    throw new Error('승인된 실행 ID 및 중지·일시정지·재개 작업만 허용합니다.');
+    throw new Error('Only Stop, Pause, or Resume on an authorized run ID is permitted.');
   }
   return requestSession(action,{runId},requester);
 }
@@ -161,7 +161,7 @@ export async function renewApprovedSession(
 ):Promise<ApprovedTestLabStatus> {
   if(!id(runId) || !APPROVAL.test(approvalId) ||
      !u(leaseMs,250,900000) || !u(additionalEvents,0,3000)) {
-    throw new Error('세션 연장은 별도의 유효한 승인 ID와 제한된 시간/이벤트 수가 필요합니다.');
+    throw new Error('Renewal requires another valid approval ID and bounded time/event quotas.');
   }
   return requestSession('renew',{
     runId,approvalId,leaseMs,additionalEvents,

@@ -24,7 +24,7 @@ const ALLOWED_PROTOCOLS = ['udp', 'tcp'];
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('백엔드 스키마에서 필수 계약을 확인할 수 없습니다.');
+    throw new Error('Required schema contract could not be verified.');
   }
   return value as Record<string, unknown>;
 }
@@ -37,13 +37,13 @@ function knownEnums(input: unknown, allowed: readonly string[]): string[] {
   if (!Array.isArray(input) || input.length === 0 || input.length > allowed.length ||
       !input.every((value) => typeof value === 'string' && allowed.includes(value)) ||
       new Set(input).size !== input.length) {
-    throw new Error('지원하지 않거나 모호한 백엔드 필드 규격입니다.');
+    throw new Error('Backend field definitions are unsupported or ambiguous.');
   }
   return input;
 }
 function boundedInteger(input: unknown, lower: number, upper: number): number {
   if (!Number.isInteger(input) || Number(input) < lower || Number(input) > upper) {
-    throw new Error('백엔드 스키마 값의 범위가 지원되지 않습니다.');
+    throw new Error('Backend schema value ranges are unsupported.');
   }
   return Number(input);
 }
@@ -52,7 +52,7 @@ export function parseBackendSchemaGuide(input: unknown): BackendSchemaGuide {
   if (member(input, '$id') !== 'urn:xdr-labs:parser-project:v0.1' ||
       member(input, '$schema') !== 'http://json-schema.org/draft-07/schema#' ||
       member(input, 'properties', 'schemaRevision', 'const') !== '0.1') {
-    throw new Error('지원되지 않는 ParserProject 스키마 버전입니다.');
+    throw new Error('Unsupported ParserProject schema revision.');
   }
   const formats = knownEnums(member(input, 'properties','extraction','properties','format','enum'), ALLOWED_FORMATS);
   const types = knownEnums(member(input, '$defs','fieldRule','properties','data_type','enum'), ALLOWED_TYPES);
@@ -61,21 +61,21 @@ export function parseBackendSchemaGuide(input: unknown): BackendSchemaGuide {
   const sourceName = record(member(input, '$defs','mapping','propertyNames'));
   const targetName = record(member(input, '$defs','fieldRule','properties','normalized_name'));
   if (sourceName.pattern !== FIELD_PATH_PATTERN || targetName.pattern !== FIELD_PATH_PATTERN) {
-    throw new Error('검증되지 않은 필드 이름 규칙이어서 스키마 안내를 차단했습니다.');
+    throw new Error('Schema guidance blocked due to unverified field naming rules.');
   }
   const sourceMax = boundedInteger(sourceName.maxLength, 1, 128);
   const targetMax = boundedInteger(targetName.maxLength, 1, 128);
-  if (sourceMax !== targetMax) throw new Error('입력/출력 필드 규격이 서로 일치하지 않습니다.');
+  if (sourceMax !== targetMax) throw new Error('Input and output field name rules do not match.');
   const receiver = member(input,'properties','receiver','properties');
   const p = record(member(receiver,'port'));
   const m = record(member(receiver,'messageLengthLimit'));
   if (p.type !== 'integer' || m.type !== 'integer') {
-    throw new Error('포트 및 메시지 크기 규격이 지원되지 않습니다.');
+    throw new Error('Port or message size constraints are unsupported.');
   }
   const port = { min: boundedInteger(p.minimum, 1, 65535), max: boundedInteger(p.maximum, 1, 65535) };
   const messageLength = { min: boundedInteger(m.minimum, 256, 65536), max: boundedInteger(m.maximum, 256, 65536) };
   if (port.min > port.max || messageLength.min > messageLength.max) {
-    throw new Error('백엔드 스키마의 허용 범위가 잘못되었습니다.');
+    throw new Error('Backend schema contains invalid allowed ranges.');
   }
   return {
     revision: '0.1', formats, fieldTypes: types, sourceCategories: categories,
@@ -89,10 +89,10 @@ export async function fetchBackendSchemaGuide(requester: typeof fetch = fetch): 
     method: 'GET', credentials: 'same-origin', cache: 'no-store',
     headers: { Accept: 'application/json' },
   });
-  if (response.status !== 200) throw new Error('백엔드 스키마 조회가 실패했습니다 (HTTP ' + response.status + ').');
+  if (response.status !== 200) throw new Error('Backend schema request failed (HTTP ' + response.status + ').');
   let body: unknown;
   try { body = await response.json(); } catch {
-    throw new Error('백엔드가 올바른 JSON 스키마를 반환하지 않았습니다.');
+    throw new Error('Backend returned an invalid JSON schema.');
   }
   return parseBackendSchemaGuide(body);
 }

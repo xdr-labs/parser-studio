@@ -54,15 +54,15 @@ async function ready(page:Page){
   }));
   await page.goto('/');
   await page.getByLabel('Guided raw sample logs').fill(sample);
-  await page.getByRole('button',{name:/2\. 필드 추출/}).click();
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'JSON',exact:true}).click();
-  await page.getByRole('button',{name:/5\. 검사·수정/}).click();
-  await page.getByRole('button',{name:'브라우저 전체 테스트'}).click();
-  await page.getByRole('button',{name:/6\. 파일 생성/}).click();
-  await page.getByRole('button',{name:'백엔드 입력 검사'}).click();
-  await expect(page.getByText('Schema PASS · 엔진 미검증')).toBeVisible();
-  await page.getByRole('button',{name:'파서 초안 2개 파일 생성 (DRAFT)'}).click();
-  await expect(page.getByLabel('Generated draft parser pair')).toContainText('SHA-256 무결성 확인');
+  await page.getByRole('button',{name:/5\. Test & Fix/}).click();
+  await page.getByRole('button',{name:'Run Full Browser Test'}).click();
+  await page.getByRole('button',{name:/6\. Generate Files/}).click();
+  await page.getByRole('button',{name:'Validate Backend Input'}).click();
+  await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
+  await page.getByRole('button',{name:'Generate 2 Parser Files (DRAFT)'}).click();
+  await expect(page.getByLabel('Generated draft parser pair')).toContainText('SHA-256 Verified');
   await page.locator('.guided-legacy-preflight summary').click();
 }
 
@@ -83,17 +83,17 @@ test('read-only Legacy upload-file contract plan never submits credentials or in
   });
   await ready(page);
   expect(calls).toBe(0);
-  const button=page.getByRole('button',{name:'Legacy 파일 업로드 계약만 검사'});
+  const button=page.getByRole('button',{name:'Check Legacy Upload Contract Only'});
   await expect(button).toBeDisabled();
   await page.getByLabel('Legacy dry-run tenant').fill(tenant);
   await expect(button).toBeEnabled();
   await button.click();
   const proof=page.getByLabel('Legacy preflight proof');
-  await expect(proof).toContainText('파일 쌍 무결성 확인');
-  await expect(proof).toContainText('실제 업로드 미실행');
-  await expect(proof).toContainText('테넌트 synthetic-tenant');
-  await expect(proof).toContainText('포트 7501');
-  await expect(proof).toContainText('미검증');
+  await expect(proof).toContainText('Parser Pair Integrity Verified');
+  await expect(proof).toContainText('No Actual Upload');
+  await expect(proof).toContainText('Tenant synthetic-tenant');
+  await expect(proof).toContainText('Port 7501');
+  await expect(proof).toContainText('Unverified');
   expect(calls).toBe(1);
   expect(forbidden).toBe(0);
   await page.getByLabel('Legacy dry-run tenant').fill('tenant-other');
@@ -107,8 +107,8 @@ test('Legacy preflight rejects forged target verification metadata instead of sh
   }));
   await ready(page);
   await page.getByLabel('Legacy dry-run tenant').fill(tenant);
-  await page.getByRole('button',{name:'Legacy 파일 업로드 계약만 검사'}).click();
-  await expect(page.locator('.guided-legacy-preflight [role="alert"]')).toContainText('읽기 전용 Legacy 사전검사가 거부');
+  await page.getByRole('button',{name:'Check Legacy Upload Contract Only'}).click();
+  await expect(page.locator('.guided-legacy-preflight [role="alert"]')).toContainText('Read-only Legacy preflight denied');
   await expect(page.getByLabel('Legacy preflight proof')).toHaveCount(0);
 });
 
@@ -117,6 +117,6 @@ test('invalid tenant identifier is blocked before any backend preflight request'
   await page.route('**/api/v1/stellar/legacy/prepare',route=>{sent++;return route.abort();});
   await ready(page);
   await page.getByLabel('Legacy dry-run tenant').fill('../bad');
-  await expect(page.getByRole('button',{name:'Legacy 파일 업로드 계약만 검사'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Check Legacy Upload Contract Only'})).toBeDisabled();
   expect(sent).toBe(0);
 });

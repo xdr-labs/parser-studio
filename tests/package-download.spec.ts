@@ -54,15 +54,15 @@ async function readyForPackage(page:Page, caps:unknown=capabilities){
   }));
   await page.goto('/');
   await page.getByLabel('Guided raw sample logs').fill(sample);
-  await page.getByRole('button',{name:/2\. 필드 추출/}).click();
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'JSON',exact:true}).click();
-  await page.getByRole('button',{name:/5\. 검사·수정/}).click();
-  await page.getByRole('button',{name:'브라우저 전체 테스트'}).click();
-  await page.getByRole('button',{name:/6\. 파일 생성/}).click();
-  await page.getByRole('button',{name:'백엔드 입력 검사'}).click();
-  await expect(page.getByText('Schema PASS · 엔진 미검증')).toBeVisible();
-  await page.getByRole('button',{name:'파서 초안 2개 파일 생성 (DRAFT)'}).click();
-  await expect(page.getByLabel('Generated draft parser pair')).toContainText('SHA-256 무결성 확인');
+  await page.getByRole('button',{name:/5\. Test & Fix/}).click();
+  await page.getByRole('button',{name:'Run Full Browser Test'}).click();
+  await page.getByRole('button',{name:/6\. Generate Files/}).click();
+  await page.getByRole('button',{name:'Validate Backend Input'}).click();
+  await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
+  await page.getByRole('button',{name:'Generate 2 Parser Files (DRAFT)'}).click();
+  await expect(page.getByLabel('Generated draft parser pair')).toContainText('SHA-256 Verified');
 }
 
 test('checks approved same-origin packaged ZIP, version/sha/port and downloads without customer sample or key',async({page})=>{
@@ -88,12 +88,12 @@ test('checks approved same-origin packaged ZIP, version/sha/port and downloads w
   const version=page.getByLabel('Draft ZIP package version');
   await expect(version).toHaveValue('1.0.0');
   const promised=page.waitForEvent('download');
-  await page.getByRole('button',{name:'DRAFT ZIP 패키지 다운로드'}).click();
+  await page.getByRole('button',{name:'Download DRAFT ZIP Package'}).click();
   const file=await promised;
   expect(file.suggestedFilename()).toBe(parserName+'-r1.zip');
   expect(sha(await readFile(await file.path()))).toBe(sha(zipped));
-  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('수신 포트 7501');
-  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('미검증');
+  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('Listener port 7501');
+  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('Unverified');
   expect(packages).toBe(1);
 });
 
@@ -102,8 +102,8 @@ test('older backend without exact packaging capability cannot receive a ZIP POST
   await page.route('**/api/v1/parser-pairs/package',route=>{sent++;return route.abort();});
   const {downloads:_skip,...withoutDownloads}=capabilities;
   await readyForPackage(page,withoutDownloads);
-  await page.getByRole('button',{name:'DRAFT ZIP 패키지 다운로드'}).click();
-  await expect(page.locator('.guided-package-download [role="alert"]')).toContainText('지원되지 않거나');
+  await page.getByRole('button',{name:'Download DRAFT ZIP Package'}).click();
+  await expect(page.locator('.guided-package-download [role="alert"]')).toContainText('Unsupported or');
   expect(sent).toBe(0);
 });
 
@@ -119,7 +119,7 @@ test('tampered ZIP hash blocks download and never displays verified revision',as
     },body:Buffer.from(zipped),
   }));
   await readyForPackage(page);
-  await page.getByRole('button',{name:'DRAFT ZIP 패키지 다운로드'}).click();
+  await page.getByRole('button',{name:'Download DRAFT ZIP Package'}).click();
   await expect(page.locator('.guided-package-download [role="alert"]')).toBeVisible();
   await expect(page.getByLabel('Draft ZIP integrity receipt')).toHaveCount(0);
 });

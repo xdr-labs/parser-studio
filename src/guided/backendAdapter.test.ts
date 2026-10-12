@@ -70,7 +70,7 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.map((x) => x.code)).toContain('CLASSIFICATION_SOURCE_NOT_AVAILABLE');
-    expect(result.issues[0].message).toContain('공통 또는 네트워크');
+    expect(result.issues[0].message).toContain('Common or Network');
   });
 
   it('rejects duplicate source keys instead of losing one mapping during object serialization', () => {

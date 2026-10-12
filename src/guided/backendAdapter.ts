@@ -127,7 +127,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       issues.push({
         code: 'CLASSIFICATION_SOURCE_NOT_AVAILABLE',
         path: '/classification/rules/' + index,
-        message: '분류 조건 ' + (index + 1) + ': ' + rule.sourceField + ' 필드는 공통 또는 네트워크 필드로 매핑해야 현재 백엔드에서 분류할 수 있습니다.',
+        message: 'Classification rule ' + (index + 1) + ': ' + rule.sourceField + ' must map to Common or Network Fields to support classification on this backend.',
       });
       continue;
     }

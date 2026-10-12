@@ -65,8 +65,8 @@ describe('same-origin, no-raw-data backend validate/generate client', () => {
   });
 
   it('rejects malformed and contradictory validation responses', async () => {
-    await expect(validateBackendProject(project(), vi.fn(async () => fake(200, {})) as unknown as typeof fetch)).rejects.toThrow('필수 항목');
-    await expect(validateBackendProject(project(), vi.fn(async () => fake(422, { ok: true, issues: [] })) as unknown as typeof fetch)).rejects.toThrow('일치하지');
+    await expect(validateBackendProject(project(), vi.fn(async () => fake(200, {})) as unknown as typeof fetch)).rejects.toThrow('required properties');
+    await expect(validateBackendProject(project(), vi.fn(async () => fake(422, { ok: true, issues: [] })) as unknown as typeof fetch)).rejects.toThrow('conflicts');
   });
 
   it('only accepts exact matching conf/extensionless files with SHA-256 and DRAFT evidence', async () => {
@@ -88,17 +88,17 @@ describe('same-origin, no-raw-data backend validate/generate client', () => {
 
     const wrongName = pairPayload(p.slug);
     wrongName.files[1].name = '../out-of-path';
-    await expect(generateBackendPair(p, vi.fn(async () => fake(200, wrongName)) as unknown as typeof fetch)).rejects.toThrow('이름');
+    await expect(generateBackendPair(p, vi.fn(async () => fake(200, wrongName)) as unknown as typeof fetch)).rejects.toThrow('name');
 
     const unqualified = pairPayload(p.slug);
     (unqualified.manifest as { engineVerified: boolean }).engineVerified = true;
-    await expect(generateBackendPair(p, vi.fn(async () => fake(200, unqualified)) as unknown as typeof fetch)).rejects.toThrow('검증 상태');
+    await expect(generateBackendPair(p, vi.fn(async () => fake(200, unqualified)) as unknown as typeof fetch)).rejects.toThrow('verification status');
   });
 
   it('never considers an unreachable or non-JSON backend a successful validation', async () => {
     const unreachable = vi.fn(async () => { throw new Error('ECONNREFUSED'); }) as unknown as typeof fetch;
     await expect(validateBackendProject(project(), unreachable)).rejects.toThrow('ECONNREFUSED');
     const html = vi.fn(async () => ({ status: 500, json: async () => { throw new Error('not JSON'); } })) as unknown as typeof fetch;
-    await expect(validateBackendProject(project(), html)).rejects.toThrow('유효한 JSON');
+    await expect(validateBackendProject(project(), html)).rejects.toThrow('valid JSON');
   });
 });

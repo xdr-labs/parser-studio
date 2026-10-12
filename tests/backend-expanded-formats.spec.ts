@@ -31,19 +31,19 @@ for(const [mode,body] of [
     await page.getByLabel('Guided raw sample logs').fill(
       head+'- '+body+'\n'+head+'- '+body,
     );
-    await page.getByRole('button',{name:/2\. 필드 추출/}).click();
+    await page.getByRole('button',{name:/2\. Extract Fields/}).click();
     await page.getByRole('button',{name:'RFC5424',exact:true}).click();
     await page.getByLabel('RFC5424 message body format').selectOption(mode);
     await expect(page.locator('.guided-extracted-tags')).toContainText('body.src');
-    await page.getByRole('button',{name:/3\. 필드 매핑/}).click();
-    await page.getByRole('button',{name:/안전한 남은 필드 모두 추가/}).click();
-    await page.getByRole('button',{name:/5\. 검사·수정/}).click();
-    await page.getByRole('button',{name:'브라우저 전체 테스트'}).click();
-    await expect(page.locator('.guided-test-metric').filter({hasText:'실패'}).locator('strong')).toHaveText('0');
-    await expect(page.locator('.guided-test-metric').filter({hasText:'정규화 성공'}).locator('strong')).toHaveText('2');
-    await page.getByRole('button',{name:/6\. 파일 생성/}).click();
-    await page.getByRole('button',{name:'백엔드 입력 검사'}).click();
-    await expect(page.getByText('Schema PASS · 엔진 미검증')).toBeVisible();
+    await page.getByRole('button',{name:/3\. Map Fields/}).click();
+    await page.getByRole('button',{name:/Add Remaining Safe Fields/}).click();
+    await page.getByRole('button',{name:/5\. Test & Fix/}).click();
+    await page.getByRole('button',{name:'Run Full Browser Test'}).click();
+    await expect(page.locator('.guided-test-metric').filter({hasText:'Failures'}).locator('strong')).toHaveText('0');
+    await expect(page.locator('.guided-test-metric').filter({hasText:'Normalized'}).locator('strong')).toHaveText('2');
+    await page.getByRole('button',{name:/6\. Generate Files/}).click();
+    await page.getByRole('button',{name:'Validate Backend Input'}).click();
+    await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
     expect(sent).toHaveLength(1);
     expect(sent[0].extraction).toEqual({format:'syslog_rfc5424',syslogBodyFormat:mode});
     expect(JSON.stringify(sent)).not.toContain('192.0.2.11');
@@ -60,12 +60,12 @@ test('old backend is not treated as authorizing newer RFC5424 nested CEF',async(
     return route.abort();
   });
   await page.goto('/');
-  await page.getByRole('button',{name:/2\. 필드 추출/}).click();
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
   await page.getByRole('button',{name:'RFC5424',exact:true}).click();
   await page.getByLabel('RFC5424 message body format').selectOption('cef');
-  await page.getByRole('button',{name:/6\. 파일 생성/}).click();
-  await page.getByRole('button',{name:'백엔드 입력 검사'}).click();
+  await page.getByRole('button',{name:/6\. Generate Files/}).click();
+  await page.getByRole('button',{name:'Validate Backend Input'}).click();
   await expect(page.getByRole('alert')).toContainText('CEF');
-  await expect(page.getByRole('button',{name:'파서 2개 파일 생성 (연결 대기)'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Generate 2 Parser Files (Backend Required)'})).toBeDisabled();
   expect(validationCalls).toBe(0);
 });

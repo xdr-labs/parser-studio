@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 });
 async function choosePair(page: import('@playwright/test').Page, fragmentName = 'customized_demo_fw') {
   await page.goto('/');
-  await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
+  await page.getByRole('button', { name: /6\. Generate Files/ }).click();
   await page.locator('.guided-pair-inspect summary').click();
   await page.getByLabel('Inspect pair CONF').setInputFiles({
     name: 'customized_demo_fw.conf', mimeType: 'text/plain', buffer: Buffer.from(conf),
@@ -48,7 +48,7 @@ test('legacy pair inspection is opt-in, read-only and never echoes source code',
   });
   await choosePair(page);
   expect(requests).toBe(0);
-  await page.getByRole('button', { name: '선택한 두 파일의 구조만 검사' }).click();
+  await page.getByRole('button', { name: 'Inspect Selected Pair (Read-only)' }).click();
   const result = page.getByLabel('Parser pair inspection results');
   await expect(result).toContainText('OPAQUE READ-ONLY');
   await expect(result).toContainText('PAIR_NOT_REPRODUCIBLE');
@@ -63,7 +63,7 @@ test('mismatched pair file names stop before any API submission', async ({ page 
     return route.abort();
   });
   await choosePair(page, 'customized_wrong');
-  await page.getByRole('button', { name: '선택한 두 파일의 구조만 검사' }).click();
-  await expect(page.getByRole('alert')).toContainText('동일한 customized_');
+  await page.getByRole('button', { name: 'Inspect Selected Pair (Read-only)' }).click();
+  await expect(page.getByRole('alert')).toContainText('Matching customized_');
   expect(requests).toBe(0);
 });

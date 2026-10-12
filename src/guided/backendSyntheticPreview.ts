@@ -47,7 +47,7 @@ export function validateBackendSyntheticPreviewCapability(cap:BackendCapabilitie
      testLab.liveSensorSenderEnabled!==false ||
      testLab.sensorIngestVerified!==false ||
      testLab.runtimeParsingVerified!==false) {
-    throw new Error('서버에서 승인한 JSON 합성 미리보기 또는 미전송 상태를 확인할 수 없습니다.');
+    throw new Error('The backend-authorized JSON synthetic preview or its no-delivery status could not be verified.');
   }
 }
 
@@ -61,13 +61,13 @@ export async function requestAuthorizedSyntheticPreview(
     headers:{'Content-Type':'application/json',Accept:'application/json'},
     body:JSON.stringify(REQUEST),
   });
-  if(res.status!==200) throw new Error('승인된 합성 미리보기를 실행할 수 없습니다 (HTTP '+res.status+').');
+  if(res.status!==200) throw new Error('Unable to execute the authorized synthetic preview (HTTP '+res.status+').');
   let payload:unknown;
   try{payload=await res.json();}
-  catch{throw new Error('합성 미리보기 응답이 유효한 JSON이 아닙니다.');}
+  catch{throw new Error('Synthetic preview response is not valid JSON.');}
   if(!payload || typeof payload!=='object' || Array.isArray(payload) ||
      Object.keys(payload).sort().join(',')!==RESULT_KEYS) {
-    throw new Error('승인되지 않은 미리보기 데이터 형식입니다.');
+    throw new Error('Unrecognized synthetic preview response format.');
   }
   const result=payload as Partial<AuthorizedSyntheticPreview>;
   if(result.contract!=='parser-studio.synthetic-preview.v0.1' ||
@@ -80,12 +80,12 @@ export async function requestAuthorizedSyntheticPreview(
      result.changedPaths.length!==CHANGED.length ||
      result.changedPaths.some((value,i)=>value!==CHANGED[i]) ||
      typeof result.syntheticEvent!=='string'||result.syntheticEvent.length>8192) {
-    throw new Error('미리보기 응답에 미검증 전송·실행 또는 형식 오류가 있습니다.');
+    throw new Error('Preview contains unverified delivery/runtime claims or an invalid format.');
   }
   let event:unknown;
   try{event=JSON.parse(result.syntheticEvent);}
-  catch{throw new Error('합성 미리보기는 유효한 JSON 객체여야 합니다.');}
-  if(!event||Array.isArray(event)||typeof event!=='object') throw new Error('잘못된 미리보기 이벤트입니다.');
+  catch{throw new Error('Synthetic preview must contain a valid JSON object.');}
+  if(!event||Array.isArray(event)||typeof event!=='object') throw new Error('Invalid synthetic preview event.');
   const parsed=event as Record<string,unknown>;
   if(Object.keys(parsed).sort().join(',')!=='action,src_ip,time,url,username' ||
      parsed.action!=='allow' ||
@@ -93,7 +93,7 @@ export async function requestAuthorizedSyntheticPreview(
      typeof parsed.src_ip!=='string'||!DOC_IPV4.test(parsed.src_ip) ||
      typeof parsed.username!=='string'||!/^synthetic_user_\d{6}$/.test(parsed.username) ||
      typeof parsed.url!=='string'||!/^https:\/\/synthetic\.invalid\/synthetic\/[a-f0-9]{8}$/.test(parsed.url)) {
-    throw new Error('백엔드 합성 미리보기에 고객 데이터 또는 미지원 값이 감지됐습니다.');
+    throw new Error('Backend synthetic preview contains customer data or unsupported values.');
   }
   return result as AuthorizedSyntheticPreview;
 }

@@ -29,14 +29,14 @@ const sample = [
 async function readyForBackend(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByLabel('Guided raw sample logs').fill(sample);
-  await page.getByRole('button', { name: '다음 단계' }).click();
+  await page.getByRole('button', { name: 'Next Step' }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
-  await page.getByRole('button', { name: /5\. 검사·수정/ }).click();
-  await page.getByRole('button', { name: '브라우저 전체 테스트' }).click();
-  await expect(page.locator('.guided-test-metrics')).toContainText('입력 이벤트');
+  await page.getByRole('button', { name: /5\. Test & Fix/ }).click();
+  await page.getByRole('button', { name: 'Run Full Browser Test' }).click();
+  await expect(page.locator('.guided-test-metrics')).toContainText('Input Events');
   await expect(page.locator('.guided-test-metrics')).toContainText('2');
-  await expect(page.locator('.guided-test-metrics')).toContainText('실패');
-  await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
+  await expect(page.locator('.guided-test-metrics')).toContainText('Failures');
+  await page.getByRole('button', { name: /6\. Generate Files/ }).click();
 }
 
 test('explicit backend validation and draft pair generation downloads two exact SHA-verified files', async ({ page }) => {
@@ -66,12 +66,12 @@ test('explicit backend validation and draft pair generation downloads two exact 
   });
   await readyForBackend(page);
   expect(captures).toHaveLength(0);
-  await expect(page.getByRole('button', { name: '파서 2개 파일 생성 (연결 대기)' })).toBeDisabled();
-  await page.getByRole('button', { name: '백엔드 입력 검사' }).click();
-  await expect(page.getByText('Schema PASS · 엔진 미검증')).toBeVisible();
-  await expect(page.getByRole('button', { name: '파서 초안 2개 파일 생성 (DRAFT)' })).toBeEnabled();
-  await page.getByRole('button', { name: '파서 초안 2개 파일 생성 (DRAFT)' }).click();
-  await expect(page.getByLabel('Generated draft parser pair')).toContainText('2개 DRAFT 파일 · SHA-256 무결성 확인');
+  await expect(page.getByRole('button', { name: 'Generate 2 Parser Files (Backend Required)' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Validate Backend Input' }).click();
+  await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Generate 2 Parser Files (DRAFT)' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Generate 2 Parser Files (DRAFT)' }).click();
+  await expect(page.getByLabel('Generated draft parser pair')).toContainText('2 DRAFT Files · SHA-256 Verified');
   await expect(page.getByLabel('Generated draft parser pair')).toContainText('Native Fluentd/target compatibility NOT VERIFIED');
   expect(captures).toHaveLength(2);
   for (const body of captures) {
@@ -95,9 +95,9 @@ test('HTTP 422 backend validation errors stop draft generation and expose code a
       ok: false, issues: [{ code: 'unmapped_classification_field', path: '/classification/rules/0', message: 'Sample backend rejected the normalized route' }],
     }) }));
   await readyForBackend(page);
-  await page.getByRole('button', { name: '백엔드 입력 검사' }).click();
+  await page.getByRole('button', { name: 'Validate Backend Input' }).click();
   await expect(page.getByLabel('Backend validation errors')).toContainText('unmapped_classification_field');
-  await expect(page.getByRole('button', { name: '파서 2개 파일 생성 (연결 대기)' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Generate 2 Parser Files (Backend Required)' })).toBeDisabled();
 });
 
 test('SHA mismatch cannot become a downloadable or verified parser', async ({ page }) => {
@@ -118,8 +118,8 @@ test('SHA mismatch cannot become a downloadable or verified parser', async ({ pa
       },
     }) }));
   await readyForBackend(page);
-  await page.getByRole('button', { name: '백엔드 입력 검사' }).click();
-  await page.getByRole('button', { name: '파서 초안 2개 파일 생성 (DRAFT)' }).click();
+  await page.getByRole('button', { name: 'Validate Backend Input' }).click();
+  await page.getByRole('button', { name: 'Generate 2 Parser Files (DRAFT)' }).click();
   await expect(page.getByRole('alert')).toContainText('SHA-256');
   await expect(page.getByLabel('Generated draft parser pair')).toHaveCount(0);
 });
@@ -133,15 +133,15 @@ test('live isolated backend PR4 validates, generates, hashes and downloads real 
     if (request.url().includes('/api/v1/parser-pairs/')) posted.push(request.postData() ?? '');
   });
   await readyForBackend(page);
-  await page.getByRole('button', { name: '백엔드 입력 검사' }).click();
-  await expect(page.getByText('Schema PASS · 엔진 미검증')).toBeVisible();
+  await page.getByRole('button', { name: 'Validate Backend Input' }).click();
+  await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
   const generating = page.waitForResponse((response) =>
     response.url().includes('/api/v1/parser-pairs/generate'));
-  await page.getByRole('button', { name: '파서 초안 2개 파일 생성 (DRAFT)' }).click();
+  await page.getByRole('button', { name: 'Generate 2 Parser Files (DRAFT)' }).click();
   const response = await generating;
   expect(response.status()).toBe(200);
-  await expect(page.getByLabel('Generated draft parser pair')).toContainText('2개 DRAFT 파일 · SHA-256 무결성 확인');
-  await expect(page.getByText('파서 초안 생성 완료 · DRAFT')).toBeVisible();
+  await expect(page.getByLabel('Generated draft parser pair')).toContainText('2 DRAFT Files · SHA-256 Verified');
+  await expect(page.getByText('Parser Draft Generated · DRAFT')).toBeVisible();
   expect(posted).toHaveLength(2);
   for (const body of posted) {
     expect(body).not.toContain('198.51.100.10');
@@ -161,9 +161,9 @@ test('live isolated backend PR4 validates, generates, hashes and downloads real 
   expect(artifacts['customized_demo_firewall.conf']).toContain('@type udp');
   expect(artifacts['customized_demo_firewall']).toContain('STELLAR_PARSE_BEGIN');
   // Any input change invalidates the displayed generation/validation evidence.
-  await page.getByRole('button', { name: /1\. 로그 가져오기/ }).click();
+  await page.getByRole('button', { name: /1\. Import Logs/ }).click();
   await page.getByLabel('Guided raw sample logs').fill(sample + '\n{"action":"allow","src_ip":"198.51.100.1","dst_port":443}');
-  await page.getByRole('button', { name: /6\. 파일 생성/ }).click();
+  await page.getByRole('button', { name: /6\. Generate Files/ }).click();
   await expect(page.getByLabel('Generated draft parser pair')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '파서 2개 파일 생성 (연결 대기)' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Generate 2 Parser Files (Backend Required)' })).toBeDisabled();
 });

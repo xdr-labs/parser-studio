@@ -47,6 +47,6 @@ describe('explainable local classification suggestions', () => {
     const event = preview('{"action":"DENY"}', createDraft()).events[0];
     const result = suggestClassification(event, defaultGuidedOptions());
     expect(result.status).toBe('fallback');
-    expect(result.reason).toContain('기본 이벤트');
+    expect(result.reason).toContain('default event');
   });
 });

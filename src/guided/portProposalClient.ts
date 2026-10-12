@@ -30,7 +30,7 @@ export async function fetchParserPortProposal(
   requester:typeof fetch=fetch,
 ):Promise<ParserPortProposal> {
   if(requestedPort!==undefined && (!isPort(requestedPort) || requestedPort<1024)) {
-    throw new Error('수신 포트는 권한 포트가 아닌 1024–65535 범위의 정수여야 합니다.');
+    throw new Error('The listener port must be an integer from 1024 to 65535.');
   }
   const url=BASE+(requestedPort===undefined?'':'?port='+requestedPort);
   const res=await requester(url,{
@@ -38,13 +38,13 @@ export async function fetchParserPortProposal(
     headers:{Accept:'application/json'},
   });
   if(res.status!==200){
-    throw new Error('승인된 로컬 파서 포트 목록 확인이 불가능합니다 (HTTP '+res.status+'). 현재 포트는 미검증입니다.');
+    throw new Error('Authorized local parser port inventory unavailable (HTTP '+res.status+'). Candidate ports are unverified.');
   }
   let value:unknown;
   try {value=await res.json();}
-  catch {throw new Error('파서 수신 포트 조회 결과가 JSON 형식이 아닙니다.');}
+  catch {throw new Error('Parser listener port response is not valid JSON.');}
   if(!value || typeof value!=='object' || Array.isArray(value)) {
-    throw new Error('파서 포트 조회 결과가 지원 계약과 일치하지 않습니다.');
+    throw new Error('Parser port response does not match the supported contract.');
   }
   const plan=value as Partial<ParserPortProposal>;
   const occupancy=plan.occupiedPorts;
@@ -65,7 +65,7 @@ export async function fetchParserPortProposal(
      new Set(missing).size!==missing.length ||
      !missing.every(field=>MISSING.has(field)) ||
      plan.status!==(missing.length?'INCOMPLETE_EVIDENCE':'CANDIDATE_REQUIRES_DEPLOY_RECHECK')) {
-    throw new Error('포트 후보의 점유 현황·증거 완전성·배포 미승인 상태가 검증되지 않았습니다.');
+    throw new Error('Port candidate occupancy, evidence completeness, or no-deployment status cannot be verified.');
   }
   return plan as ParserPortProposal;
 }

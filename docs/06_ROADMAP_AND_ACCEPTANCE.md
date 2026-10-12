@@ -42,7 +42,7 @@
 ### R4 — Production-quality usability / supportability (P1)
 
 - [ ] Templates/library, advanced source mode, import error/loss reports and mapping suggestions.
-- [ ] Responsive/accessible UI, bilingual labels, security and large dataset behavior.
+- [ ] Responsive/accessible UI, English-only labels, security and large dataset behavior.
 - [ ] Optional AI assistance under strict opt-in/privacy and deterministic verification.
 - [ ] Document packaging, operations, recovery and deployment boundaries.
 - **Done:** consistent user journeys, no unsafe feature default, review-ready artifact.
@@ -69,7 +69,7 @@ R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable mil
 - [ ] **P0-B:** multi-family routing and multiline breaking; selected-source highlights and per-rule trace; strengthen regex safety.
 - [ ] **P0-C:** native pinned Fluentd sandbox, golden fixtures, regression/baseline comparison.
 - [ ] **P0-D:** real owner `.conf` and matching parser characterization, evidence-based target schema/adapter with import/export loss report. Owner-specific artifacts may not be assumed from public documentation.
-- [ ] **P1:** bilingual interface, advanced source mode, schema explorer populated from validated Interflow catalog, richer test/failure UX.
+- [ ] **P1:** English-only interface, advanced source mode, schema explorer populated from validated Interflow catalog, richer test/failure UX.
 
 **Gates preserved:** R1 sample proof stays pending; R2 UI implementation may proceed while R1 is gated but is not a substitution for missing parser contracts. This is not a release or a claim of actual Fluentd/Stellar compatibility. Remaining work executes in the R1 → R2 → R3 → R4 → R5 order where runnable.
 
@@ -85,3 +85,4 @@ R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable mil
 ## Concrete NEXT_ACTION
 
 **Await owner sample log(s) and existing parser(s) as the only missing product-specific input; then immediately begin R1 characterization, IR/fixture contract and RED tests.** Until samples arrive, implementation may proceed only on independently specified, testable UI scaffolding without asserting Stellar export compatibility. Use this file as the single canonical roadmap and carry precise Git/CI/fixture status into future handoffs.
+\n## Owner language decision (2026-10-12)\n\nEvery Parser Studio screen, accessibility label, status, error, code comment, test, fixture, and project document must be written in **English only**. A bilingual UI is no longer in scope. All previously established import, target, privacy, and release gates still apply.\n
