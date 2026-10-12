@@ -2,15 +2,18 @@
  * P0 Live Test Lab — offline format-aware synthetic event PREVIEW.
  * Deliberately NO sockets, sensor sends, timers, persistence or credentials.
  * User preview and explicit target authorization must precede transmission.
- * Bounded initial subset: JSON object and simple unquoted one-line KV.
+ * Bounded reviewed subset: JSON object, simple unquoted one-line KV,
+ * and strict single-line CSV with an explicit source column contract.
  */
 import {hasValidUnicodeJson} from "./unicode.js";
 
 export type SyntheticVariableKind="ipv4"|"username"|"url";
 export type SyntheticVariable={path:string;kind:SyntheticVariableKind};
 export type SyntheticPreviewRequest={
-  format:"json"|"kv";
+  format:"json"|"kv"|"csv";
   source:string;
+  csvColumns?:readonly string[];
+  csvDelimiter?:","|";"|"\t";
   seed:number;
   sequence:number;
   timestampField?:string;
@@ -20,7 +23,7 @@ export type SyntheticPreviewRequest={
 };
 export type SyntheticPreview={
   contract:"parser-studio.synthetic-preview.v0.1";
-  format:"json"|"kv";
+  format:"json"|"kv"|"csv";
   syntheticEvent:string;
   generatedAt:string;
   sequence:number;
@@ -35,6 +38,63 @@ export class SyntheticPreviewError extends Error{
 function fail(code:string):never{throw new SyntheticPreviewError(code);}
 const PATH=/^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*){0,7}$/;
 const KV=/^([A-Za-z_][A-Za-z0-9_.-]*)=([^\s"'\\]+)$/;
+
+const CSV_COLUMN=/^[A-Za-z][A-Za-z0-9_]{0,63}$/;
+/** This encoder/decoder intentionally excludes CSV multiline and nonstandard
+ * trailing text. The reviewed generated Ruby uses CSV.parse_line.
+ */
+function csvDefinition(input:SyntheticPreviewRequest):{columns:readonly string[];separator:string}{
+  const columns=input.csvColumns;
+  const separator=input.csvDelimiter??",";
+  if(!Array.isArray(columns)||columns.length<1||columns.length>100||
+    ![",",";","\t"].includes(separator)||
+    new Set(columns).size!==columns.length||
+    columns.some(x=>typeof x!=="string"||!CSV_COLUMN.test(x)||
+      prohibited.has(x)))fail("TESTLAB_CSV_SCHEMA_INVALID");
+  return {columns,separator};
+}
+function parseCsvLine(source:string,separator:string):string[]{
+  if(/[\r\n]/.test(source))fail("TESTLAB_CSV_MULTILINE_UNSUPPORTED");
+  const output:string[]=[];
+  let position=0;
+  while(true){
+    if(output.length>=100)fail("TESTLAB_CSV_COLUMNS_INVALID");
+    let value="";
+    if(source[position]==='"'){
+      position++;
+      let closed=false;
+      while(position<source.length){
+        const character=source[position]!;
+        if(character==='"'){
+          if(source[position+1]==='"'){value+='"';position+=2;}
+          else{position++;closed=true;break;}
+        }else{value+=character;position++;}
+      }
+      if(!closed)fail("TESTLAB_CSV_QUOTE_INVALID");
+      if(position<source.length&&source[position]!==separator)
+        fail("TESTLAB_CSV_QUOTE_INVALID");
+    }else{
+      while(position<source.length&&source[position]!==separator){
+        if(source[position]==='"')fail("TESTLAB_CSV_QUOTE_INVALID");
+        value+=source[position++];
+      }
+    }
+    output.push(value);
+    if(position>=source.length)break;
+    position++;
+  }
+  return output;
+}
+function serializeCsvLine(columns:readonly string[],source:Record<string,unknown>,
+  separator:string):string{
+  return columns.map(key=>{
+    const item=source[key];
+    if(typeof item!=="string")fail("TESTLAB_CSV_OUTPUT_INVALID");
+    if(/[\r\n]/.test(item))fail("TESTLAB_CSV_MULTILINE_UNSUPPORTED");
+    return item.includes('"')||item.includes(separator)?
+      '"'+item.replace(/"/g,'""')+'"':item;
+  }).join(separator);
+}
 const prohibited=new Set(["__proto__","prototype","constructor"]);
 
 function pathParts(input:string):string[]{
@@ -60,6 +120,14 @@ function strictSource(input:SyntheticPreviewRequest):Record<string,unknown>{
     if(!value||Array.isArray(value)||typeof value!=="object"||
        !safeTree(value))fail("TESTLAB_JSON_UNSUPPORTED");
     return value as Record<string,unknown>;
+  }
+  if(input.format==="csv"){
+    const {columns,separator}=csvDefinition(input);
+    const values=parseCsvLine(input.source,separator);
+    if(values.length!==columns.length)fail("TESTLAB_CSV_COLUMNS_INVALID");
+    const root:Record<string,unknown>=Object.create(null);
+    for(let index=0;index<columns.length;index++)root[columns[index]!]=values[index]!;
+    return root;
   }
   if(input.format==="kv"){
     if(/[\r\n]/.test(input.source))fail("TESTLAB_KV_UNSUPPORTED");
@@ -132,7 +200,7 @@ function currentTimestamp(reference:string,nowMs:number):string{
 export function createSyntheticPreview(input:SyntheticPreviewRequest,
   nowMs=Date.now()):SyntheticPreview{
   if(!input||typeof input!=="object"||
-    !["json","kv"].includes(input.format))fail("TESTLAB_FORMAT_UNSUPPORTED");
+    !["json","kv","csv"].includes(input.format))fail("TESTLAB_FORMAT_UNSUPPORTED");
   if(typeof input.source!=="string"||
     Buffer.byteLength(input.source,"utf8")>16384||input.source.length<1||
     input.source.includes("\u0000")||!hasValidUnicodeJson(input.source))
@@ -149,6 +217,9 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
     fail("TESTLAB_RUN_MARKER_INVALID");
   if(input.runId!==undefined&&input.runMarkerField===undefined)
     fail("TESTLAB_RUN_MARKER_INVALID");
+  if(input.format!=="csv"&&
+    (input.csvColumns!==undefined||input.csvDelimiter!==undefined))
+    fail("TESTLAB_CSV_SCHEMA_INVALID");
   const roots=strictSource(input);
   const changed:string[]=[];
   const selected=new Set<string>();
@@ -169,8 +240,10 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
   }
   if(input.runMarkerField!==undefined)
     modify(input.runMarkerField,()=>input.runId!);
-  const syntheticEvent=input.format==="json"?
-    JSON.stringify(roots):Object.entries(roots).map(([key,value])=>key+"="+value).join(" ");
+  const syntheticEvent=input.format==="json"?JSON.stringify(roots):
+    input.format==="csv"?serializeCsvLine(csvDefinition(input).columns,roots,
+      csvDefinition(input).separator):
+    Object.entries(roots).map(([key,value])=>key+"="+value).join(" ");
   if(Buffer.byteLength(syntheticEvent,"utf8")>16384)
     fail("TESTLAB_OUTPUT_TOO_LARGE");
   return {contract:"parser-studio.synthetic-preview.v0.1",

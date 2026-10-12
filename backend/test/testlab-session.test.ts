@@ -301,3 +301,38 @@ test("no renewal without a separate backend approval function; invalid increment
     assert.equal(withRenewal.status(s.runId,"renew-actor").maxEvents,8);
   }finally{withRenewal.stopAll();}
 });
+
+test("approved in-memory CSV session replaces marker and IP each event without mutating source",async()=>{
+  const events:string[]=[];
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    deliver:async content=>{events.push(content);},
+  });
+  try{
+    const started=await runner.start({
+      sample:{
+        format:"csv",
+        source:"192.0.2.8,443,deny,2025-01-01T01:02:03Z,synthetic_before",
+        csvColumns:["src_ip","dst_port","action","timestamp","run_id"],
+        seed:42,sequence:0,timestampField:"timestamp",
+        variableFields:[{path:"src_ip",kind:"ipv4"}],
+        runMarkerField:"run_id",
+      },
+      approvalId:"owner-test-csv-session",
+      ratePerSecond:5,leaseMs:1400,maxEvents:6,
+    },"csv-owner");
+    await new Promise(resolve=>setTimeout(resolve,520));
+    assert.ok(events.length>=2);
+    for(const line of events){
+      const parts=line.split(",");
+      assert.equal(parts.length,5);
+      assert.match(parts[0]!,/^(?:192\.0\.2|198\.51\.100|203\.0\.113)\.\d+$/);
+      assert.equal(parts[1],"443");
+      assert.equal(parts[2],"deny");
+      assert.match(parts[3]!,/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
+      assert.equal(parts[4],started.runId);
+    }
+    assert.notEqual(events[0],events[1]);
+    runner.stop(started.runId,"csv-owner");
+  }finally{runner.stopAll();}
+});

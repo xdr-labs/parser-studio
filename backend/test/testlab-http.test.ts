@@ -59,3 +59,27 @@ test("test-lab preview rejects unexpected secrets, unsupported parsing families 
     assert.equal(wrongMethod.status,405);
   });
 });
+
+test("authenticated Test Lab HTTP generates schema-aligned CSV with current timestamp but no send",async()=>{
+  await server(async base=>{
+    const cap=await (await fetch(base+"/api/v1/parser-pairs/capabilities")).json() as any;
+    assert.equal(cap.testLab.offlineCsvPreview,true);
+    assert.equal(cap.testLab.liveSensorSenderEnabled,false);
+    const input={
+      format:"csv",source:'192.0.2.7,443,"deny",2025-01-01T01:02:03Z',
+      csvColumns:["src_ip","dst_port","action","event_time"],csvDelimiter:",",
+      seed:9,sequence:1,timestampField:"event_time",
+      variableFields:[{path:"src_ip",kind:"ipv4"}],
+    };
+    const preview=await post(base,input);
+    assert.equal(preview.status,200);
+    const payload=await preview.json() as any;
+    assert.equal(payload.format,"csv");
+    assert.match(payload.syntheticEvent,/^(192\.0\.2|198\.51\.100|203\.0\.113)\.[0-9]+,443,deny,2026-10-12T01:02:03Z$/);
+    assert.equal(payload.targetSensorVerified,false);
+    assert.equal(payload.safeToSendToSensor,false);
+    const broken=await post(base,{...input,csvColumns:["src_ip","action"]});
+    assert.equal(broken.status,422);
+    assert.equal((await broken.json() as any).error,"TESTLAB_CSV_COLUMNS_INVALID");
+  });
+});

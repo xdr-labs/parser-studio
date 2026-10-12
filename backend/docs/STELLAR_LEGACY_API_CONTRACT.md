@@ -166,14 +166,23 @@ safeToSendToSensor=false, runtimeParsingVerified=false and
 targetSensorVerified=false. There is no UDP/TCP connection, continuous
 worker, real sensor verification or customer data retention in this batch.
 Only approved, sanitized source samples should be supplied to the preview.
+CSV synthetic preview additionally accepts explicit ParserProject-matching
+csvColumns (ordered array) and csvDelimiter (comma, semicolon or TAB).
+It rejects mismatched column count, duplicate/unsafe column names, physical
+newlines and invalid quote escaping; otherwise serializes CSV values using
+double-quote escaping, preserving column positions and parseability.
+Any timestamp column is updated only if explicitly selected. CSV is covered
+by both Node contract tests and the pinned native sample_csv parser callback.
+Other log families remain unsupported for Test Lab preview until qualified.
+
 Other log family emitters await their own synthetic/native qualification.
 
-The clean offline native qualification separately emits two reviewed
-synthetic JSON/KV previews from fixed public-synthetic source fixtures, runs
-both through the pinned Fluentd Parser Plugin API and verifies mapped srcip,
-unchanged action, classification and one callback per event. Its ignored
+The clean offline native qualification separately emits three reviewed
+synthetic JSON/KV/CSV previews from fixed public-synthetic source fixtures,
+runs all three through the pinned Fluentd Parser Plugin API and verifies mapped
+srcip, unchanged action, classification and one callback per event. Its ignored
 exact-HEAD report records offlineSyntheticPreviewNativeChecked=true,
-offlineSyntheticPreviewCases=2, sensorTrafficSent=false.
+offlineSyntheticPreviewCases=3, sensorTrafficSent=false.
 This is not an actual in-network sensor sender.
 
 ## P0-LIVE-3 session control — server-only trusted sink

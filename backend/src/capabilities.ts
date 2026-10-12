@@ -30,7 +30,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     offlineCefPreview: false,
     offlineLeefPreview: false,
     offlineSyslogPreview: false,
-    offlineCsvPreview: false,
+    offlineCsvPreview: true,
     requiresBackendPreviewAuthorization: true,
     trustedSinkSessionControlAvailable: true,
     sessionControlRequiresBackendAuthorization: true,

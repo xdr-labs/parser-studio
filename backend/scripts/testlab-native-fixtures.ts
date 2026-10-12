@@ -21,6 +21,14 @@ const kv=createSyntheticPreview({
   seed:2718,sequence:11,timestampField:"event_time",
   variableFields:[{path:"src_ip",kind:"ipv4"},{path:"user",kind:"username"}],
 },now);
-if(json.safeToSendToSensor!==false||kv.safeToSendToSensor!==false)
+const csv=createSyntheticPreview({
+  format:"csv",
+  source:'192.0.2.12,443,"deny"',
+  csvColumns:["src_ip","dst_port","action"],csvDelimiter:",",
+  seed:2718,sequence:12,
+  variableFields:[{path:"src_ip",kind:"ipv4"}],
+},now);
+if([json,kv,csv].some(event=>event.safeToSendToSensor!==false||
+  event.runtimeParsingVerified!==false||event.targetSensorVerified!==false))
   throw new Error("Synthetic preview has unexpected network readiness");
-process.stdout.write(JSON.stringify({json,kv})+"\n");
+process.stdout.write(JSON.stringify({json,kv,csv})+"\n");

@@ -333,7 +333,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       try{
         const raw=await jsonInput(req,MAX_PROJECT_BYTES) as Record<string,unknown>;
         const fields=["format","source","seed","sequence","timestampField",
-          "variableFields","runMarkerField","runId"];
+          "variableFields","runMarkerField","runId","csvColumns","csvDelimiter"];
         if(!raw||typeof raw!=="object"||Array.isArray(raw)||
           Object.keys(raw).some(k=>!fields.includes(k))){
           send(res,422,{error:"TESTLAB_REQUEST_INVALID"});return;

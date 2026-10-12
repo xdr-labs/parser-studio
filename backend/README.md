@@ -84,8 +84,9 @@ See docs/STELLAR_LEGACY_API_CONTRACT.md.
 
 P0-LIVE-3 offline synthetic preview: POST /api/v1/test-lab/preview is
 server-authorization gated and generates deterministic JSON/unquoted KV
-synthetic events with current RFC3339 timestamp and documentation IP,
-username and URL variants. It does not open network connections or claim
+and strict single-line CSV synthetic events with current RFC3339 timestamp
+(if an event timestamp field exists) and documentation IP, username and URL
+variants. It does not open network connections or claim
 actual sensor delivery/parsing; see docs/STELLAR_LEGACY_API_CONTRACT.md.
 
 

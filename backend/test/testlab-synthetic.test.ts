@@ -84,3 +84,58 @@ test("unsupported formats/quotes/paths/bounds fail closed without echoing privat
     seed:12,sequence:0,variableFields:[{path:"src_ip",kind:"ipv4"}],
   },now),/TESTLAB_KV_UNSUPPORTED/);
 });
+
+test("CSV synthetic preview updates only chosen IP/user/timestamp while preserving column order and quoting",()=>{
+  const preview=createSyntheticPreview({
+    format:"csv",
+    source:'192.0.2.4,443,"deny",2026-01-01T01:02:03Z,synthetic-old,test-run-old',
+    csvColumns:["src_ip","dst_port","action","event_time","username","run_id"],
+    csvDelimiter:",",
+    seed:55,sequence:3,timestampField:"event_time",
+    variableFields:[{path:"src_ip",kind:"ipv4"},{path:"username",kind:"username"}],
+    runMarkerField:"run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  },now);
+  assert.equal(preview.format,"csv");
+  assert.match(preview.syntheticEvent,/^(192\.0\.2|198\.51\.100|203\.0\.113)\.\d+,443,deny,2026-10-12T01:02:03Z,synthetic_user_/);
+  assert.ok(preview.syntheticEvent.endsWith(",test_run_0123456789abcdef0123456789abcdef"));
+  assert.equal(preview.safeToSendToSensor,false);
+  assert.equal(preview.runtimeParsingVerified,false);
+});
+
+test("CSV quoting and alternative delimiter preserve unchanged field values",()=>{
+  const preview=createSyntheticPreview({
+    format:"csv",
+    source:'203.0.113.1;"Allowed; Reviewed";"say ""hello""";2026-01-01T01:02:03Z',
+    csvColumns:["src_ip","classification","message","timestamp"],
+    csvDelimiter:";",
+    seed:9,sequence:0,timestampField:"timestamp",
+    variableFields:[{path:"src_ip",kind:"ipv4"}],
+  },now);
+  assert.match(preview.syntheticEvent,/^((192\.0\.2|198\.51\.100|203\.0\.113)\.\d+);/);
+  assert.ok(preview.syntheticEvent.includes(';"Allowed; Reviewed";"say ""hello""";'));
+  assert.ok(preview.syntheticEvent.endsWith("2026-10-12T01:02:03Z"));
+});
+
+test("malformed CSV, duplicate schema, unsupported delimiter and multiline fail without echoing source",()=>{
+  const base={
+    format:"csv",source:"192.0.2.1,443,PRIVATE_SECRET_ROW",
+    csvColumns:["src_ip","dst_port","action"],
+    seed:4,sequence:1,variableFields:[{path:"src_ip",kind:"ipv4"}],
+  };
+  for(const broken of [
+    {...base,source:"192.0.2.1,443"},
+    {...base,source:'"192.0.2.1,443,PRIVATE_SECRET_ROW'},
+    {...base,source:'192.0.2.1,443,"action"garbage'},
+    {...base,source:"192.0.2.1,443,PRIVATE_SECRET_ROW\n"},
+    {...base,csvColumns:["src_ip","dst_port","src_ip"]},
+    {...base,csvColumns:["src_ip","__proto__","action"]},
+    {...base,csvDelimiter:"|"},
+    {...base,variableFields:[{path:"not_a_column",kind:"ipv4"}]},
+  ]){
+    let text="";
+    try{createSyntheticPreview(broken as any,now);}
+    catch(error){text=(error as Error).message;}
+    assert.match(text,/^TESTLAB_CSV_|^TESTLAB_FIELD_MISSING/,JSON.stringify(broken).slice(0,70));
+    assert.ok(!text.includes("PRIVATE_SECRET_ROW"));
+  }
+});
