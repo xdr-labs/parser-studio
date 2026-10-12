@@ -130,7 +130,9 @@ the original source. No unsupported Ruby is evaluated or silently converted.
 The report includes only source SHA-256 values, discovered structural ports,
 supported protocol names and fixed diagnostic codes. It never includes source
 Ruby, CONF text, customer event values or credentials. It does not perform a
-target write, imply real loader verification, or add any network routes.
+target write or imply real loader verification. The local backend now
+exposes this pure analysis through POST /api/v1/parser-pairs/import-loss-report
+with a strict bounded pair input. The response excludes original source bytes.
 
 ## P1 deterministic mapping suggestions
 
@@ -142,5 +144,7 @@ action, with type hints and a mandatory REVIEW_REQUIRED status.
 Name collisions, unknown source names and already-used destinations are
 reported but never auto-applied. It does not read private log values,
 execute regular expressions on source, access target APIs, or validate that
-a particular vendor log actually contains a suggested field. It is not
-enabled as an HTTP endpoint or as an automatic Workbench rewrite.
+a particular vendor log actually contains a suggested field. The local
+backend exposes POST /api/v1/parser-pairs/mapping-suggestions for names and
+existing destination hints only; neither this endpoint nor the utility
+automatically changes the Workbench or generates deployable parser files.

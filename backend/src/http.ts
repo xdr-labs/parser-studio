@@ -4,6 +4,8 @@ import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {listParserTemplates,instantiateParserTemplate,ParserTemplateError} from "./parser-templates.js";
+import {buildImportLossReport} from "./import-loss-report.js";
+import {suggestFieldMappings,MappingSuggestionError} from "./mapping-suggestions.js";
 import {TargetApplyMockGateway} from "./target-apply-bff.js";
 import {TargetDeploymentError} from "./target-deployment.js";
 import {ArtifactRevisionHistory,ArtifactRevisionHistoryError,
@@ -138,6 +140,45 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Pure, read-only diagnostics: no Ruby execution, raw-log output or DP IO.
+    const importLoss=path==="/api/v1/parser-pairs/import-loss-report";
+    const mappingHints=path==="/api/v1/parser-pairs/mapping-suggestions";
+    if(importLoss||mappingHints){
+      if(req.method!=="POST"){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      const limit=importLoss?MAX_IMPORT_BYTES:MAX_PROJECT_BYTES;
+      if(Number(req.headers["content-length"]??0)>limit){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const input=await jsonInput(req,limit);
+        if(importLoss){
+          if(!input||typeof input!=="object"||Array.isArray(input)||
+             Object.keys(input).sort().join(",")!==
+             "confContent,fragmentContent,name"){
+            send(res,422,{error:"IMPORT_LOSS_INPUT_INVALID"});return;
+          }
+          send(res,200,buildImportLossReport(input as
+            Parameters<typeof buildImportLossReport>[0]));
+        }else send(res,200,suggestFieldMappings(input as
+          Parameters<typeof suggestFieldMappings>[0]));
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof PairInspectionError)
+          send(res,422,{error:error.code});
+        else if(error instanceof MappingSuggestionError)
+          send(res,422,{error:error.code});
+        else send(res,500,{error:"ANALYSIS_FAILED"});
       }
       return;
     }

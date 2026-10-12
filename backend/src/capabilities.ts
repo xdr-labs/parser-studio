@@ -20,6 +20,8 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     syntheticStarterTemplatesAvailable: true,
     syntheticStarterTemplatesNativeVerified: false,
     syntheticTemplateHttpAvailable: true,
+    deterministicNameOnlyMappingHttpAvailable: true,
+    mappingSuggestionsAutoApplied: false,
     rfc5424AdjacentStructuredDataSubset: true,
     rfc5424StructuredDataMaxBytes: 1024,
     syslogMinimumReceiverPort: 6800,
@@ -90,6 +92,8 @@ export const BACKEND_CAPABILITIES = Object.freeze({
   import: {
     exactInternalPairsEditable: true,
     unknownLegacyRubyEditable: false,
+    redactedImportLossReportHttpAvailable: true,
+    opaqueImportRemainsReadOnly: true,
     structuralInspectionOnly: true,
   },
   verification: {
