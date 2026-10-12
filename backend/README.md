@@ -235,3 +235,23 @@ corruption, not malicious modification by the authorized host/file owner.
 The file contains parser artifact bodies, so never publish or commit it.
 There is no default on-disk location, automatic server startup integration,
 real DP write, sensor send or live target verification.
+
+
+## Opt-in redacted Test Lab evidence file export
+
+When a trusted server injects an authenticated SyntheticSessionController with
+TestLabEvidenceLedger, the existing owner-scoped run evidence is available
+through GET /api/v1/test-lab/sessions/evidence-export?runId=<test_run_id>.
+This **read-only** download returns deterministic, bounded JSON as an attachment:
+testlab-evidence-<test_run_id>.json. The x-parser-evidence-sha256 response
+header lets the caller compare bytes against a locally calculated SHA-256;
+it does not authenticate an untrusted server, prove independent provenance
+or establish successful ingestion.
+The exporter rechecks the strict evidence schema and stage/count consistency
+before any bytes are returned. It rejects extra values, source logs, keys,
+credentials and unproven runtime/DP/sensor success flags. Anonymous, cross-run
+and cross-actor requests are rejected by existing server authentication and
+run-owner checks; the default server leaves the route disabled.
+No exported run survives the existing in-memory TTL unless an operator
+independently saves the authorized download. No automatic sensor sending,
+real DP interaction or extra persistent state is enabled.
