@@ -88,7 +88,7 @@ echo "[4c/5] Strict offline POC disposable null-sink CONF grammar with Fluentd A
 node dist/scripts/stellar-disposable-smoke.js |
   run_bounded_ruby -rbundler/setup test_native/stellar_poc_disposable_config_smoke.rb
 
-echo "[4d/5] Bounded JSON/KV/CSV/CEF/LEEF synthetic preview checked against pinned native parser callbacks"
+echo "[4d/5] Bounded JSON/KV/CSV/CEF/LEEF/RFC5424 preview checked against pinned native parser callbacks"
 node dist/scripts/testlab-native-fixtures.js |
   run_bounded_ruby -rbundler/setup test_native/testlab_synthetic_smoke.rb .tmp/native-fixtures
 
@@ -138,7 +138,7 @@ const report = {
   pocDisposableLoopbackNullSinkAstChecked: true,
   pocApiMutationPerformed: false,
   offlineSyntheticPreviewNativeChecked: true,
-  offlineSyntheticPreviewCases: 6,
+  offlineSyntheticPreviewCases: 7,
   sensorTrafficSent: false,
   syntheticLoopbackUdpTcpNodeTestsPassed: true,
   rfc5424SdNameAndParameterGrammarChecked: true,

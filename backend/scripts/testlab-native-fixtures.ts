@@ -46,7 +46,13 @@ const leef1=createSyntheticPreview({
   seed:2718,sequence:15,
   variableFields:[{path:"src",kind:"ipv4"}],
 },now);
-if([json,kv,csv,cef,leef,leef1].some(event=>event.safeToSendToSensor!==false||
+const syslog=createSyntheticPreview({
+  format:"syslog_rfc5424",syslogBodyFormat:"kv",
+  source:"<165>1 2025-01-01T01:02:03Z synthetic-edge01 firewall 123 ID42 - src_ip=198.51.100.5 action=deny",
+  seed:2718,sequence:16,timestampField:"syslog_timestamp",
+  variableFields:[{path:"body.src_ip",kind:"ipv4"}],
+},now);
+if([json,kv,csv,cef,leef,leef1,syslog].some(event=>event.safeToSendToSensor!==false||
   event.runtimeParsingVerified!==false||event.targetSensorVerified!==false))
   throw new Error("Synthetic preview has unexpected network readiness");
-process.stdout.write(JSON.stringify({json,kv,csv,cef,leef,leef1})+"\n");
+process.stdout.write(JSON.stringify({json,kv,csv,cef,leef,leef1,syslog})+"\n");

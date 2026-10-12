@@ -181,19 +181,25 @@ including 0xHH, delimiters with unsafe whitespace/newline/NUL/equals
 variants rejected. Malformed escaped delimiters, duplicate/unknown fields,
 unsupported versions and physical multiline fail closed. Native tests use
 the matching generated standalone CEF and LEEF Parser Plugin profiles.
-RFC5424 wrappers and syslog multiline are not replay-supported yet.
+The RFC5424 v1 preview additionally supports exactly NILVALUE Structured
+Data (-) with an explicit KV body. The header PRI/host/app/process/msgid
+is retained and the RFC3339 header clock is automatically regenerated.
+Variables use parsed nested body.field paths; the optional timestampField
+can identify syslog_timestamp or an existing body timestamp field.
+Adjacent Structured Data elements, Syslog-embedded CEF/LEEF and multiline
+are NOT Test Lab preview-supported yet.
 
 Other log families remain unsupported for Test Lab preview until qualified.
 
 Other log family emitters await their own synthetic/native qualification.
 
-The clean offline native qualification separately emits six reviewed
-synthetic JSON/KV/CSV/CEF/LEEF previews (both LEEF 1.0 and 2.0) from fixed
-public-synthetic fixtures and runs all six through pinned Fluentd Parser
-Plugin API. It verifies
+The clean offline native qualification separately emits seven reviewed
+synthetic JSON/KV/CSV/CEF/LEEF/RFC5424 previews (both LEEF 1.0 and 2.0)
+from fixed public-synthetic fixtures and runs all seven through pinned
+Fluentd Parser Plugin API. It verifies
 mapped srcip, unchanged action, classification and one callback per event.
 The ignored exact-HEAD report records offlineSyntheticPreviewNativeChecked=true,
-offlineSyntheticPreviewCases=6 and sensorTrafficSent=false.
+offlineSyntheticPreviewCases=7 and sensorTrafficSent=false.
 This is not an actual in-network sensor sender.
 
 ## P0-LIVE-3 session control — server-only trusted sink

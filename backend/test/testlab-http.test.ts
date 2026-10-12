@@ -89,7 +89,9 @@ test("authenticated HTTP CEF/LEEF previews emit stable headers and only sanitize
     const cap=(await (await fetch(base+"/api/v1/parser-pairs/capabilities")).json() as any).testLab;
     assert.equal(cap.offlineCefPreview,true);
     assert.equal(cap.offlineLeefPreview,true);
-    assert.equal(cap.offlineSyslogPreview,false);
+    assert.equal(cap.offlineSyslogPreview,true);
+    assert.equal(cap.syslogPreviewStructuredDataSubset,"nilvalue-only");
+    assert.deepEqual(cap.syslogPreviewBodyFormats,["kv"]);
     const samples=[
       {
         format:"cef",
@@ -117,5 +119,32 @@ test("authenticated HTTP CEF/LEEF previews emit stable headers and only sanitize
       assert.equal(output.targetSensorVerified,false);
       assert.equal(output.runtimeParsingVerified,false);
     }
+  });
+});
+
+test("HTTP RFC5424 bounded KV preview refreshes syslog header and typed body fields, never sends",async()=>{
+  await server(async base=>{
+    const input={
+      format:"syslog_rfc5424",syslogBodyFormat:"kv",
+      source:"<165>1 2025-01-01T01:02:03Z edge fw 1 ID - src_ip=192.0.2.4 action=deny run_id=old",
+      seed:10,sequence:2,timestampField:"syslog_timestamp",
+      variableFields:[{path:"body.src_ip",kind:"ipv4"}],
+      runMarkerField:"body.run_id",
+      runId:"test_run_0123456789abcdef0123456789abcdef",
+    };
+    const valid=await post(base,input);
+    assert.equal(valid.status,200);
+    const result=await valid.json() as any;
+    assert.equal(result.format,"syslog_rfc5424");
+    assert.match(result.syntheticEvent,/^<165>1 2026-10-12T01:02:03Z edge fw 1 ID - src_ip=/);
+    assert.ok(result.syntheticEvent.endsWith("action=deny run_id=test_run_0123456789abcdef0123456789abcdef"));
+    assert.equal(result.safeToSendToSensor,false);
+    assert.equal(result.targetSensorVerified,false);
+    const unsupported=await post(base,{...input,syslogBodyFormat:"cef"});
+    assert.equal(unsupported.status,422);
+    assert.equal((await unsupported.json() as any).error,"TESTLAB_SYSLOG_BODY_UNSUPPORTED");
+    const malformed=await post(base,{...input,source:input.source.replace(" - src_ip"," [origin@32473] src_ip")});
+    assert.equal(malformed.status,422);
+    assert.equal((await malformed.json() as any).error,"TESTLAB_SYSLOG_HEADER_UNSUPPORTED");
   });
 });

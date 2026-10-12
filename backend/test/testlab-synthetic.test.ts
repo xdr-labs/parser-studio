@@ -219,3 +219,59 @@ test("LEEF 1.0 TAB and LEEF 2.0 hexadecimal pipe delimiter replay safely",()=>{
   assert.ok(pipe.syntheticEvent.includes("|dstPort=443|act=deny|run_id=test_run_"));
   assert.equal(pipe.runtimeParsingVerified,false);
 });
+
+test("RFC5424 KV synthetic preview updates header clock and nested body fields without rewriting PRI/identity",()=>{
+  const sample="<165>1 2025-01-01T01:02:03Z edge-fw firewall 123 ID42 - src_ip=192.0.2.3 action=deny user=old run_id=old";
+  const input={
+    format:"syslog_rfc5424" as const,syslogBodyFormat:"kv" as const,
+    source:sample,seed:75,sequence:3,
+    timestampField:"syslog_timestamp",
+    variableFields:[{path:"body.src_ip",kind:"ipv4" as const},
+      {path:"body.user",kind:"username" as const}],
+    runMarkerField:"body.run_id",runId:"test_run_0123456789abcdef0123456789abcdef",
+  };
+  const result=createSyntheticPreview(input,now);
+  assert.equal(result.format,"syslog_rfc5424");
+  assert.match(result.syntheticEvent,
+    /^<165>1 2026-10-12T01:02:03Z edge-fw firewall 123 ID42 - src_ip=/);
+  assert.ok(result.syntheticEvent.includes(" action=deny user=synthetic_user_"));
+  assert.ok(result.syntheticEvent.endsWith("run_id=test_run_0123456789abcdef0123456789abcdef"));
+  assert.ok(result.changedPaths.includes("syslog_timestamp"));
+  assert.ok(result.changedPaths.includes("body.src_ip"));
+  assert.equal(result.safeToSendToSensor,false);
+  assert.equal(createSyntheticPreview(input,now).syntheticEvent,result.syntheticEvent);
+  assert.equal(sample.includes("2025-01-01"),true);
+});
+
+test("RFC5424 offset and selected nested body timestamp advance using current clock",()=>{
+  const result=createSyntheticPreview({
+    format:"syslog_rfc5424",syslogBodyFormat:"kv",
+    source:"<165>1 2025-01-01T01:02:03+09:00 edge fw 1 ID - src_ip=192.0.2.3 action=allow event_time=2025-01-01T02:03:04Z",
+    seed:19,sequence:1,timestampField:"body.event_time",
+    variableFields:[{path:"body.src_ip",kind:"ipv4"}],
+  },now);
+  assert.match(result.syntheticEvent,/^<165>1 2026-10-12T10:02:03\+09:00 edge fw 1 ID - src_ip=/);
+  assert.ok(result.syntheticEvent.endsWith("action=allow event_time=2026-10-12T01:02:03Z"));
+});
+
+test("RFC5424 synthetic replay fails closed on unknown version, invalid timestamp, SD extensions and body format",()=>{
+  const source="<165>1 2025-01-01T01:02:03Z edge fw 1 ID - src_ip=192.0.2.7 action=deny PRIVATE_SOURCE=never-echo";
+  const input={
+    format:"syslog_rfc5424" as const,syslogBodyFormat:"kv" as const,
+    source,seed:18,sequence:0,
+    variableFields:[{path:"body.src_ip",kind:"ipv4" as const}],
+  };
+  for(const bad of [
+    {...input,source:source.replace(">1 ",">2 ")},
+    {...input,source:source.replace("2025-01-01T01:02:03Z","not-timestamp")},
+    {...input,source:source.replace(" - src_ip"," [origin@32473] src_ip")},
+    {...input,source:source.replace("edge","테스트")},
+    {...input,syslogBodyFormat:"cef"},
+    {...input,source:source.replace("action=deny","action=\"quoted value\"")},
+  ]){
+    let message="";
+    try{createSyntheticPreview(bad as any,now);}catch(error){message=(error as Error).message;}
+    assert.match(message,/^TESTLAB_SYSLOG_/);
+    assert.equal(message.includes("PRIVATE_SOURCE"),false);
+  }
+});

@@ -1,4 +1,4 @@
-# Fixed public-synthetic JSON/KV/CSV/CEF/LEEF preview through pinned Fluentd Parser API.
+# Fixed public-synthetic JSON/KV/CSV/CEF/LEEF/RFC5424 preview through pinned Fluentd Parser API.
 # No live sensor, customer logs, network transport, or runtime target import.
 require 'json'
 require 'fluent/plugin/parser'
@@ -15,7 +15,7 @@ verified(directory==File.expand_path('../.tmp/native-fixtures',__dir__), 'DIRECT
 input=STDIN.read(65536)
 verified(input.bytesize>0 && input.bytesize<65536, 'SIZE')
 events=JSON.parse(input)
-verified(events.keys.sort==%w[cef csv json kv leef leef1], 'CONTRACT')
+verified(events.keys.sort==%w[cef csv json kv leef leef1 syslog], 'CONTRACT')
 Fluent::Test.setup
 events.each do |format, preview|
   verified(preview['safeToSendToSensor']==false &&
@@ -25,7 +25,8 @@ events.each do |format, preview|
   verified(preview['syntheticEvent'].is_a?(String) &&
     preview['syntheticEvent'].bytesize<=16384,'BOUNDS')
   slug={'json'=>'sample_firewall','kv'=>'sample_kv','csv'=>'sample_csv',
-    'cef'=>'sample_cef','leef'=>'sample_leef','leef1'=>'sample_leef'}[format]
+    'cef'=>'sample_cef','leef'=>'sample_leef','leef1'=>'sample_leef',
+    'syslog'=>'sample_syslog'}[format]
   verified(!slug.nil?, 'FORMAT')
   file=File.join(directory,"customized_#{slug}")
   klass=Class.new(Fluent::Plugin::Parser)
@@ -36,7 +37,11 @@ events.each do |format, preview|
     results << [event_time,record]
   end
   verified(results.length==1,'CALLBACK_COUNT')
-  _,record=results.first
+  time,record=results.first
+  if format=='syslog'
+    verified(time && time.utc.strftime('%Y-%m-%dT%H:%M:%SZ')==
+      '2026-10-12T01:02:03Z','SYSLOG_NATIVE_CURRENT_TIME')
+  end
   verified(record.is_a?(Hash) && record['parser_err_msg'].nil?,'NO_PARSER_ERRORS')
   verified(record['stellar_log_index']=='threat','CLASSIFICATION')
   verified(record['srcip'].is_a?(String) &&
@@ -44,4 +49,4 @@ events.each do |format, preview|
     'DOCUMENTATION_IP')
   verified(record['action']=='deny','ACTION_PRESERVED')
 end
-puts 'Synthetic Test Lab JSON/KV/CSV/CEF/LEEF event previews: 6 Fluentd native callbacks PASS, sent=0'
+puts 'Synthetic Test Lab JSON/KV/CSV/CEF/LEEF/RFC5424 event previews: 7 Fluentd native callbacks PASS, sent=0'

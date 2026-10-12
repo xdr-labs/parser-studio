@@ -370,3 +370,33 @@ test("approved CEF and LEEF session callbacks maintain run marker and raw extens
     }finally{runner.stopAll();}
   }
 });
+
+test("approved RFC5424 KV synthetic session emits refreshed header time and bounded run marker",async()=>{
+  const output:string[]=[];
+  const runner=new SyntheticSessionController({
+    approveStart:async()=>true,
+    deliver:async event=>{output.push(event);},
+  });
+  try{
+    const running=await runner.start({
+      sample:{
+        format:"syslog_rfc5424",syslogBodyFormat:"kv",
+        source:"<165>1 2025-01-01T01:02:03Z edge-fw fw 123 ID - src_ip=192.0.2.7 action=deny run_id=old",
+        seed:44,sequence:0,timestampField:"syslog_timestamp",
+        variableFields:[{path:"body.src_ip",kind:"ipv4"}],
+        runMarkerField:"body.run_id",
+      },
+      approvalId:"owner-test-syslog-v1",ratePerSecond:5,
+      leaseMs:1050,maxEvents:5,
+    },"syslog-owner");
+    await new Promise(resolve=>setTimeout(resolve,520));
+    assert.ok(output.length>=2);
+    for(const event of output){
+      assert.match(event,/^<165>1 \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ edge-fw fw 123 ID - src_ip=/);
+      assert.ok(event.includes(" action=deny run_id="+running.runId));
+      assert.equal(event.includes("\n"),false);
+    }
+    assert.notEqual(output[0],output[1]);
+    runner.stop(running.runId,"syslog-owner");
+  }finally{runner.stopAll();}
+});

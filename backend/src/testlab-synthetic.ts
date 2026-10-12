@@ -10,10 +10,11 @@ import {hasValidUnicodeJson} from "./unicode.js";
 export type SyntheticVariableKind="ipv4"|"username"|"url";
 export type SyntheticVariable={path:string;kind:SyntheticVariableKind};
 export type SyntheticPreviewRequest={
-  format:"json"|"kv"|"csv"|"cef"|"leef";
+  format:"json"|"kv"|"csv"|"cef"|"leef"|"syslog_rfc5424";
   source:string;
   csvColumns?:readonly string[];
   csvDelimiter?:","|";"|"\t";
+  syslogBodyFormat?:"kv";
   seed:number;
   sequence:number;
   timestampField?:string;
@@ -23,7 +24,7 @@ export type SyntheticPreviewRequest={
 };
 export type SyntheticPreview={
   contract:"parser-studio.synthetic-preview.v0.1";
-  format:"json"|"kv"|"csv"|"cef"|"leef";
+  format:"json"|"kv"|"csv"|"cef"|"leef"|"syslog_rfc5424";
   syntheticEvent:string;
   generatedAt:string;
   sequence:number;
@@ -183,6 +184,26 @@ function serializeLeefFields(root:Record<string,unknown>,separator:string):strin
     return key+"="+value;
   }).join(separator);
 }
+/** Bounded RFC5424 v1 with NILVALUE Structured Data only. Parser
+ * selection is explicit: no automatic body format inference.
+ */
+function syslogEnvelope(input:SyntheticPreviewRequest):{
+  pri:number;timestamp:string;hostname:string;appname:string;
+  procid:string;msgid:string;body:string;
+}{
+  if(input.syslogBodyFormat!=="kv")fail("TESTLAB_SYSLOG_BODY_UNSUPPORTED");
+  const m=/^<([0-9]{1,3})>1 (\S+) (\S+) (\S+) (\S+) (\S+) - (.+)$/.exec(input.source);
+  if(!m||Number(m[1])>191)fail("TESTLAB_SYSLOG_HEADER_UNSUPPORTED");
+  for(const [index,limit] of [[3,255],[4,48],[5,128],[6,32]] as const){
+    const value=m[index]!;
+    if(Buffer.byteLength(value,"utf8")>limit||!/^[!-~]+$/.test(value))
+      fail("TESTLAB_SYSLOG_HEADER_UNSUPPORTED");
+  }
+  try{currentTimestamp(m[2]!,0);}
+  catch{fail("TESTLAB_SYSLOG_TIMESTAMP_UNSUPPORTED");}
+  return {pri:Number(m[1]),timestamp:m[2]!,hostname:m[3]!,
+    appname:m[4]!,procid:m[5]!,msgid:m[6]!,body:m[7]!};
+}
 function pathParts(input:string):string[]{
   if(typeof input!=="string"||!PATH.test(input))fail("TESTLAB_PATH_INVALID");
   const parts=input.split(".");
@@ -221,6 +242,15 @@ function strictSource(input:SyntheticPreviewRequest):Record<string,unknown>{
   if(input.format==="leef"){
     const envelope=leefEnvelope(input.source);
     return parseLeefFields(envelope.body,envelope.separator);
+  }
+  if(input.format==="syslog_rfc5424"){
+    const envelope=syslogEnvelope(input);
+    let body:Record<string,unknown>;
+    try{body=parseSimpleKv(envelope.body,"KV");}
+    catch{fail("TESTLAB_SYSLOG_BODY_UNSUPPORTED");}
+    const root:Record<string,unknown>=Object.create(null);
+    root.body=body;
+    return root;
   }
   fail("TESTLAB_FORMAT_UNSUPPORTED");
 }
@@ -280,7 +310,8 @@ function currentTimestamp(reference:string,nowMs:number):string{
 export function createSyntheticPreview(input:SyntheticPreviewRequest,
   nowMs=Date.now()):SyntheticPreview{
   if(!input||typeof input!=="object"||
-    !["json","kv","csv","cef","leef"].includes(input.format))fail("TESTLAB_FORMAT_UNSUPPORTED");
+    !["json","kv","csv","cef","leef","syslog_rfc5424"].includes(input.format))
+    fail("TESTLAB_FORMAT_UNSUPPORTED");
   if(typeof input.source!=="string"||
     Buffer.byteLength(input.source,"utf8")>16384||input.source.length<1||
     input.source.includes("\u0000")||!hasValidUnicodeJson(input.source))
@@ -300,6 +331,12 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
   if(input.format!=="csv"&&
     (input.csvColumns!==undefined||input.csvDelimiter!==undefined))
     fail("TESTLAB_CSV_SCHEMA_INVALID");
+  if(input.format!=="syslog_rfc5424"&&input.syslogBodyFormat!==undefined)
+    fail("TESTLAB_SYSLOG_BODY_UNSUPPORTED");
+  if(input.format==="syslog_rfc5424"&&input.timestampField!==undefined&&
+    input.timestampField!=="syslog_timestamp"&&
+    !input.timestampField.startsWith("body."))
+    fail("TESTLAB_SYSLOG_TIMESTAMP_FIELD_INVALID");
   const roots=strictSource(input);
   const changed:string[]=[];
   const selected=new Set<string>();
@@ -310,7 +347,11 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
     host[key]=value(host[key] as string,changed.length);
     changed.push(path);
   };
-  if(input.timestampField!==undefined)
+  if(input.format==="syslog_rfc5424"){
+    changed.push("syslog_timestamp");
+    selected.add("syslog_timestamp");
+  }
+  if(input.timestampField!==undefined&&input.timestampField!=="syslog_timestamp")
     modify(input.timestampField,previous=>currentTimestamp(previous,nowMs));
   for(const entry of input.variableFields){
     if(!entry||!["ipv4","username","url"].includes(entry.kind))
@@ -320,14 +361,24 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
   }
   if(input.runMarkerField!==undefined)
     modify(input.runMarkerField,()=>input.runId!);
-  const syntheticEvent=input.format==="json"?JSON.stringify(roots):
-    input.format==="csv"?serializeCsvLine(csvDefinition(input).columns,roots,
-      csvDefinition(input).separator):
-    input.format==="cef"?cefEnvelope(input.source).prefix+
-      Object.entries(roots).map(([key,value])=>key+"="+value).join(" "):
-    input.format==="leef"?leefEnvelope(input.source).prefix+
-      serializeLeefFields(roots,leefEnvelope(input.source).separator):
-    Object.entries(roots).map(([key,value])=>key+"="+value).join(" ");
+  const kvLine=(record:Record<string,unknown>)=>
+    Object.entries(record).map(([key,value])=>key+"="+value).join(" ");
+  let syntheticEvent:string;
+  if(input.format==="json")syntheticEvent=JSON.stringify(roots);
+  else if(input.format==="csv")syntheticEvent=serializeCsvLine(
+    csvDefinition(input).columns,roots,csvDefinition(input).separator);
+  else if(input.format==="cef")
+    syntheticEvent=cefEnvelope(input.source).prefix+kvLine(roots);
+  else if(input.format==="leef"){
+    const envelope=leefEnvelope(input.source);
+    syntheticEvent=envelope.prefix+serializeLeefFields(roots,envelope.separator);
+  }else if(input.format==="syslog_rfc5424"){
+    const header=syslogEnvelope(input);
+    const newTimestamp=currentTimestamp(header.timestamp,nowMs);
+    const body=roots.body as Record<string,unknown>;
+    syntheticEvent="<"+header.pri+">1 "+newTimestamp+" "+header.hostname+" "+
+      header.appname+" "+header.procid+" "+header.msgid+" - "+kvLine(body);
+  }else syntheticEvent=kvLine(roots);
   if(Buffer.byteLength(syntheticEvent,"utf8")>16384)
     fail("TESTLAB_OUTPUT_TOO_LARGE");
   return {contract:"parser-studio.synthetic-preview.v0.1",
