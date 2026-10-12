@@ -37,7 +37,7 @@ test('explicit local backend schema guide shows supported types, not an official
   await page.locator('.guided-schema-guide summary').click();
   expect(count).toBe(0);
   const guide = page.getByLabel('Backend authoring schema guide');
-  await expect(guide).toContainText('Not an Official Field Dictionary');
+  await expect(guide).toContainText('not an official field dictionary');
   await guide.getByRole('button', { name: 'Fetch Backend Schema (GET)' }).click();
   const result = page.getByLabel('Verified backend schema summary');
   await expect(result).toContainText('ParserProject 0.1');

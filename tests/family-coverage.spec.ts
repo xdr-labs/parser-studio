@@ -13,7 +13,7 @@ test('nondeveloper can inspect mixed JSON/KV sample families without false expor
   const coverage=page.getByLabel('Sample format distribution');
   await expect(coverage).toContainText('JSON');
   await expect(coverage).toContainText('Key / Value');
-  await expect(coverage).toContainText('1 different-format sample');
+  await expect(coverage).toContainText('Samples differing from chosen format: 1');
   await expect(coverage).toContainText('test using a separate parser draft');
   await expect(page.getByRole('note', { name:'Mixed format guidance' })).toBeVisible();
   await coverage.getByRole('button',{name:'Inspect Different-Format Samples'}).click();

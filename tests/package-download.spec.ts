@@ -93,7 +93,7 @@ test('checks approved same-origin packaged ZIP, version/sha/port and downloads w
   expect(file.suggestedFilename()).toBe(parserName+'-r1.zip');
   expect(sha(await readFile(await file.path()))).toBe(sha(zipped));
   await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('Listener port 7501');
-  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('Unverified');
+  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('unverified');
   expect(packages).toBe(1);
 });
 
@@ -103,7 +103,7 @@ test('older backend without exact packaging capability cannot receive a ZIP POST
   const {downloads:_skip,...withoutDownloads}=capabilities;
   await readyForPackage(page,withoutDownloads);
   await page.getByRole('button',{name:'Download DRAFT ZIP Package'}).click();
-  await expect(page.locator('.guided-package-download [role="alert"]')).toContainText('Unsupported or');
+  await expect(page.locator('.guided-package-download [role="alert"]')).toContainText('DRAFT ZIP packaging is unavailable');
   expect(sent).toBe(0);
 });
 

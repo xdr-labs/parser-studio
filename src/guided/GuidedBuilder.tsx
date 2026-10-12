@@ -26,6 +26,7 @@ import {
   fetchApprovedSessionStatus, controlApprovedSession, renewApprovedSession,
   type ApprovedTestLabStatus,
 } from './approvedTestLabSession';
+import { queryApprovedInterflowReadback, type InterflowReadbackResult, type InterflowIndex } from './approvedInterflowReadback';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
@@ -220,12 +221,27 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [sessionRenewApproval, setSessionRenewApproval] = useState('');
   const [sessionRecoveryRunId, setSessionRecoveryRunId] = useState('');
   const sessionActionToken = useRef(0);
+  const [interflowIndex, setInterflowIndex] = useState<InterflowIndex>('syslog');
+  const [interflowMarker, setInterflowMarker] = useState('test.run_id');
+  const [interflowField, setInterflowField] = useState('action');
+  const [interflowExpectedValue, setInterflowExpectedValue] = useState('allow');
+  const [interflowWindow, setInterflowWindow] = useState<1|5|10>(5);
+  const [interflowAcknowledged, setInterflowAcknowledged] = useState(false);
+  const [interflowPending, setInterflowPending] = useState(false);
+  const [interflowError, setInterflowError] = useState('');
+  const [interflowAttempt, setInterflowAttempt] = useState<{key:string;result:InterflowReadbackResult}|null>(null);
+  const interflowQueryToken = useRef(0);
   const [localReplaySource, setLocalReplaySource] = useState<{ index: number; line: number; total: number } | null>(null);
   // Source samples stay in memory only. Never serialize this plan into project
   // revisions, API calls or downloaded evidence.
   const localReplayPlanRef = useRef<LocalReplayPlan | null>(null);
   const localReplayCursorRef = useRef(0);
 
+
+  const interflowKey=JSON.stringify([sessionStatus?.runId,interflowIndex,interflowMarker,
+    interflowField,interflowExpectedValue,interflowWindow]);
+  const currentInterflowResult=interflowAttempt?.key===interflowKey
+    ? interflowAttempt.result : null;
 
   const options: GuidedOptions = draft.guided ?? defaultGuidedOptions();
   const activeEvent = suite?.events.find((event) => event.id === selectedId) ?? suite?.events[0];
@@ -436,6 +452,35 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       if(token===sessionActionToken.current)
         setSessionError('The server denied the session action. The displayed status may be stale. Check ownership, run ID, and lease expiry.');
     }finally{setSessionBusy(false);}
+  };
+
+  const readApprovedInterflow = async () => {
+    const runId=sessionStatus?.runId;
+    if(!runId || !interflowAcknowledged || interflowPending) return;
+    const key=JSON.stringify([runId,interflowIndex,interflowMarker,interflowField,
+      interflowExpectedValue,interflowWindow]);
+    const token=++interflowQueryToken.current;
+    setInterflowPending(true);
+    setInterflowError('');
+    setInterflowAttempt(null);
+    try {
+      // A capability flag is NOT a tenant data-read grant: the backend still
+      // checks both authenticated session ownership and a separate audit sink.
+      const cap=await fetchBackendCapabilities();
+      const result=await queryApprovedInterflowReadback(cap,{
+        runId,index:interflowIndex,markerField:interflowMarker,
+        expectedField:interflowField,expectedValue:interflowExpectedValue,
+        lookbackMinutes:interflowWindow,
+      });
+      if(interflowQueryToken.current===token) {
+        setInterflowAttempt({key,result});
+        notify('The audited Interflow field comparison completed. Native parsing, sensor receipt and target ingestion remain unverified.');
+      }
+    }catch {
+      if(interflowQueryToken.current===token) setInterflowError(
+        'Interflow readback was denied or unavailable. Check separate tenant read permission, session ownership, audit policy and the requested index. No target parsing success is claimed.'
+      );
+    }finally {setInterflowPending(false);}
   };
 
   const requestBackendSyntheticSample = async () => {
@@ -1467,6 +1512,64 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     }}>Prepare New Approved Session</button>
                   </div>}
               </div>}
+              {sessionStatus && <details className="guided-interflow-readback" aria-label="Audited Interflow field comparison">
+                <summary>Compare Parsed Fields in Interflow · Separate Read Approval</summary>
+                <p>This is a single bounded, read-only lookup, not a parser deployment or live sensor validation. Your backend must independently verify the run owner, tenant data-read permission and audit sink. Only a run marker, one expected scalar field and a bounded time range are sent; raw events, tenant credentials and DP API keys are never sent from this page.</p>
+                <div className="guided-interflow-form">
+                  <label className="guided-field"><span>Interflow Index</span>
+                    <select aria-label="Interflow index" value={interflowIndex}
+                      onChange={(event)=>setInterflowIndex(event.target.value as InterflowIndex)}>
+                      {(['session','threat','syslog','winlogevent'] as const).map(index=>
+                        <option key={index} value={index}>{index}</option>)}
+                    </select>
+                  </label>
+                  <label className="guided-field"><span>Run Marker Field</span>
+                    <input aria-label="Interflow run marker field" autoComplete="off"
+                      maxLength={96} value={interflowMarker}
+                      onChange={(event)=>setInterflowMarker(event.target.value)}/>
+                  </label>
+                  <label className="guided-field"><span>Expected Normalized Field</span>
+                    <input aria-label="Interflow expected field" autoComplete="off"
+                      maxLength={96} value={interflowField}
+                      onChange={(event)=>setInterflowField(event.target.value)}/>
+                  </label>
+                  <label className="guided-field"><span>Expected Text Value (exact comparison)</span>
+                    <input aria-label="Interflow expected value" autoComplete="off"
+                      maxLength={128} value={interflowExpectedValue}
+                      onChange={(event)=>setInterflowExpectedValue(event.target.value)}/>
+                  </label>
+                  <label className="guided-field"><span>Recent Search Window</span>
+                    <select aria-label="Interflow lookback minutes" value={interflowWindow}
+                      onChange={(event)=>setInterflowWindow(Number(event.target.value) as 1|5|10)}>
+                      {[1,5,10].map(minutes=><option key={minutes} value={minutes}>Last {minutes} minute{minutes===1?'':'s'}</option>)}
+                    </select>
+                  </label>
+                  <label className="guided-owner-check">
+                    <input type="checkbox" aria-label="I confirm independent tenant read approval"
+                      checked={interflowAcknowledged}
+                      onChange={(event)=>setInterflowAcknowledged(event.target.checked)}/>
+                    I have an independent authorization to read this tenant's Interflow data. I will not enter secrets or personal data as expected values.
+                  </label>
+                  <button type="button" className="guided-cta-secondary"
+                    disabled={interflowPending || !interflowAcknowledged}
+                    onClick={()=>{void readApprovedInterflow();}}>
+                    <ShieldCheck size={15}/> {interflowPending ? 'Comparing Fields…' : 'Compare Fields (Read-only, Max 20 Events)'}
+                  </button>
+                </div>
+                {interflowError && <p className="guided-error" role="alert">{interflowError}</p>}
+                {currentInterflowResult && <div className="guided-interflow-result" aria-label="Interflow field comparison result">
+                  <strong>{currentInterflowResult.state==='MATCHED_RESPONSE_FIELDS'
+                    ? 'Requested Fields Matched · E2E Unverified'
+                    : currentInterflowResult.state==='FIELD_MISMATCH'
+                    ? 'Field Difference Found · E2E Unverified'
+                    : 'No Matching Event · E2E Unverified'}</strong>
+                  <p>Run {sessionStatus.runId} · Matching events {currentInterflowResult.matchCount}</p>
+                  <ul>{currentInterflowResult.fields.map(field=>
+                    <li key={field.field}>{field.field}: <strong>{field.status}</strong></li>)}</ul>
+                  <small>These are comparisons returned by the audited backend. No raw vendor records are displayed. The backend explicitly reports sensor receipt, runtime parsing, target import and end-to-end verification as false—even when a requested scalar field matches.</small>
+                </div>}
+                <small>Manual request only · Maximum 20 results · Last 1–10 minutes · No automatic polling or session start. HTTP 403/404 is a permission/session denial, not a successful empty result.</small>
+              </details>}
               {sessionError && <p role="alert" className="guided-error">{sessionError}</p>}
               {sessionReadiness==='blocked' && <small>The development backend disables delivery by default. No Start, UDP/TCP sends, or Interflow validation can occur without authorization.</small>}
               <small>This UI does not configure authentication, network allowlists, or delivery auditing. Closing the browser does not guarantee Stop; stop the session explicitly. An unattended run is bounded to 60 seconds / 100 events and cannot renew without a new approval.</small>

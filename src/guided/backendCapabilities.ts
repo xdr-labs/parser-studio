@@ -34,6 +34,14 @@ export interface BackendCapabilities {
     serverInjectedUdpTcpSinkAvailable?: boolean;
     sinkRequiresIpLiteralAllowlist?: boolean;
     sinkRequiresPerDeliveryPolicyAndAudit?: boolean;
+    /** Advertised query code is NOT a grant to read tenant event data. */
+    interflowReadClientAvailable?: boolean;
+    interflowBoundedPollingAvailable?: boolean;
+    interflowMaxPollAttempts?: number;
+    interflowMaxPollWindowMs?: number;
+    interflowCursorVerified?: boolean;
+    interflowSearchPermissionsVerified?: boolean;
+    interflowRealTargetVerified?: boolean;
     sensorIngestVerified?: boolean;
     runtimeParsingVerified?: boolean;
   };

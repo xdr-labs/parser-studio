@@ -43,6 +43,6 @@ test('standard field conflicts stay visible and do not overwrite another mapping
   await page.getByLabel('Official metadata field 0').selectOption('srcip');
   await page.locator('.guided-map-card').nth(1).locator('.guided-official-field summary').click();
   await page.getByLabel('Official metadata field 1').selectOption('srcip');
-  await expect(page.locator('.guided-map-card').nth(1).getByRole('alert')).toContainText('Conflict');
+  await expect(page.locator('.guided-map-card').nth(1).getByRole('alert')).toContainText('conflicts with an existing normalized destination');
   await expect(page.getByLabel('Destination field 1')).toHaveValue('custom.destination_port');
 });

@@ -44,7 +44,7 @@ test('unsupported preview format fails visibly and never pretends to start repla
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-replay-preview summary').click();
   await page.getByRole('button',{name:'Start Local Replay'}).click();
-  await expect(page.locator('.guided-replay-preview [role="alert"]')).toContainText('Start Local Replay Failures');
+  await expect(page.locator('.guided-replay-preview [role="alert"]')).toContainText('Cannot start local replay');
   await expect(page.locator('.guided-replay-status')).toContainText('Sensor deliveries 0 events');
   await expect(page.getByRole('button',{name:'Stop Local Replay'})).toHaveCount(0);
 });
@@ -114,7 +114,7 @@ test('invalid later log record rejects all replay before any partial output or n
   await page.getByRole('button',{name:'Start Local Replay'}).click();
   await expect(page.locator('.guided-replay-status')).toContainText('Locally generated 0 events');
   await expect(page.locator('.guided-replay-status')).toContainText('Stopped');
-  await expect(page.locator('.guided-replay-preview [role="alert"]')).toContainText('Start Local Replay Failures');
+  await expect(page.locator('.guided-replay-preview [role="alert"]')).toContainText('Cannot start local replay');
   await expect(page.getByLabel('Local synthetic replay output')).toHaveCount(0);
   expect(apiCalls).toBe(0);
 });

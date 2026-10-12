@@ -90,7 +90,7 @@ test('read-only Legacy upload-file contract plan never submits credentials or in
   await button.click();
   const proof=page.getByLabel('Legacy preflight proof');
   await expect(proof).toContainText('Parser Pair Integrity Verified');
-  await expect(proof).toContainText('No Actual Upload');
+  await expect(proof).toContainText('No Upload');
   await expect(proof).toContainText('Tenant synthetic-tenant');
   await expect(proof).toContainText('Port 7501');
   await expect(proof).toContainText('Unverified');
@@ -108,7 +108,7 @@ test('Legacy preflight rejects forged target verification metadata instead of sh
   await ready(page);
   await page.getByLabel('Legacy dry-run tenant').fill(tenant);
   await page.getByRole('button',{name:'Check Legacy Upload Contract Only'}).click();
-  await expect(page.locator('.guided-legacy-preflight [role="alert"]')).toContainText('Read-only Legacy preflight denied');
+  await expect(page.locator('.guided-legacy-preflight [role="alert"]')).toContainText('Read-only Legacy preflight was denied');
   await expect(page.getByLabel('Legacy preflight proof')).toHaveCount(0);
 });
 

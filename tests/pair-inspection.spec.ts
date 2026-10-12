@@ -64,6 +64,6 @@ test('mismatched pair file names stop before any API submission', async ({ page 
   });
   await choosePair(page, 'customized_wrong');
   await page.getByRole('button', { name: 'Inspect Selected Pair (Read-only)' }).click();
-  await expect(page.getByRole('alert')).toContainText('Matching customized_');
+  await expect(page.getByRole('alert')).toContainText('Select a matching customized_');
   expect(requests).toBe(0);
 });

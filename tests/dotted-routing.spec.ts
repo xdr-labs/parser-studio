@@ -17,5 +17,5 @@ test('no-code classification honors exact dotted KV source fields and explains m
   await expect(routes.locator('.guided-routing-row').first()).toContainText('Condition 1');
   await expect(routes.locator('.guided-routing-row').first()).toContainText('Condition Matched');
   await expect(routes.locator('.guided-routing-row').nth(1)).toContainText('Default');
-  await expect(page.getByText(/Actual stellar_log_index tag routing requires independent Fluentd engine validation/)).toBeVisible();
+  await expect(page.getByText(/Actual stellar_log_index routing requires independent Fluentd engine validation/)).toBeVisible();
 });

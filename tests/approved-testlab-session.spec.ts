@@ -47,7 +47,7 @@ test('disabled by default Test Lab never activates a browser session or sends se
   await expect(page.getByRole('button',{name:'Check Test Lab Delivery Requirements'})).toBeVisible();
   await expect(page.getByLabel('Test Lab approval identifier')).toHaveCount(0);
   await page.getByRole('button',{name:'Check Test Lab Delivery Requirements'}).click();
-  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('Blocked');
+  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('blocked');
   await expect(page.getByRole('button',{name:/Start Approved Test Lab/})).toHaveCount(0);
   expect(starts).toBe(0);
 });
@@ -99,7 +99,7 @@ test('separately approved synthetic Test Lab session: explicit start/pause/resum
   const status=page.getByLabel('Test Lab session status');
   await expect(status).toContainText('RUNNING');
   await expect(status).toContainText(runId);
-  await expect(status).toContainText('Actual Sensor Receipt');
+  await expect(status).toContainText('not proof of sensor receipt');
   await expect(status).not.toContainText('CUSTOMER_SECRET');
   await status.getByRole('button',{name:'Pause Session'}).click();
   await expect(status).toContainText('PAUSED');
@@ -156,7 +156,7 @@ test('server 403 denial after capability discovery never invents an active Test 
   await page.getByLabel('Test Lab approval identifier').fill('owner-approved-synthetic');
   await page.getByLabel('I confirm approved sensor test').check();
   await page.getByRole('button',{name:'Start Approved Test Lab (Max 60s / 100 Events)'}).click();
-  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('Denied');
+  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('was denied');
   await expect(page.getByLabel('Test Lab session status')).toHaveCount(0);
 });
 
@@ -237,7 +237,7 @@ test('invalid or foreign session run ID cannot be used for recovery or authoriza
   expect(queried).toBe(0);
   await runInput.fill(runId);
   await recover.click();
-  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('Could not retrieve');
+  await expect(page.locator('.guided-owner-testlab [role="alert"]')).toContainText('Cannot retrieve');
   await expect(page.getByLabel('Test Lab session status')).toHaveCount(0);
   expect(queried).toBe(1);
 });

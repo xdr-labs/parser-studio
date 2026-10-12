@@ -150,7 +150,7 @@ test('ordered no-code event classification previews the reason per sample withou
   await expect(page.locator('.guided-routing-row').nth(0)).toContainText('Winlogevent');
   await expect(page.locator('.guided-routing-row').nth(0)).toContainText('Default');
   await expect(page.locator('.guided-routing-row').nth(1)).toContainText('Threat');
-  await expect(page.getByText('Actual stellar_log_index tag routing requires separate Fluentd engine validation')).toBeVisible();
+  await expect(page.getByText('Actual stellar_log_index routing requires independent Fluentd engine validation')).toBeVisible();
 });
 
 
@@ -169,7 +169,7 @@ test('no-code classification shows per-event rule reason and fallback without cl
   await expect(routes.locator('.guided-routing-row').nth(1)).toContainText('Applied default event category');
   await page.getByLabel('Default classification').selectOption('Winlogevent');
   await expect(routes.locator('.guided-routing-row').nth(1)).toContainText('Winlogevent');
-  await expect(page.getByText('Actual stellar_log_index tag routing requires independent Fluentd engine validation.')).toBeVisible();
+  await expect(page.getByText('Actual stellar_log_index routing requires independent Fluentd engine validation.')).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('guided-routing-preview.png'), fullPage: true });
 });
 
@@ -210,7 +210,7 @@ test('visual field review highlights actual capture spans and keeps failed varia
   await expect(review.locator('.guided-match-status.matched')).toHaveCount(2);
   await expect(review.locator('.guided-match-status.unmatched')).toHaveCount(1);
   await expect(review.locator('mark.guided-match-highlight')).toHaveCount(2);
-  await expect(review).toContainText('Does not prove native Fluentd validation or official field mapping.');
+  await expect(review).toContainText('They do not prove native Fluentd support or official metadata mapping.');
 
   await page.getByRole('button', { name: 'Apply Field Rule' }).click();
   await page.getByRole('button', { name: 'Save Draft' }).click();
@@ -234,7 +234,7 @@ test('nondeveloper can group pretty JSON samples by blank lines without leaking 
   await page.getByRole('button', { name: /Separate events using blank lines/ }).click();
   await expect(page.locator('.guided-boundary-count')).toContainText('Logical events 2');
   await expect(page.locator('.guided-boundary-count')).toContainText('Nonempty source lines 6');
-  await expect(page.getByText('Blank-line separation is for browser sample preview only.')).toBeVisible();
+  await expect(page.getByText(/Blank-line grouping applies to browser preview only/)).toBeVisible();
   await page.getByRole('button', { name: 'Next Step' }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
   await expect(page.locator('.guided-event-option')).toHaveCount(2);

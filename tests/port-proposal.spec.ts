@@ -29,7 +29,7 @@ test('authorized backend port suggestion is explicitly opted into and never trea
   const result=page.getByLabel('Parser port proposal result');
   await expect(result).toContainText('20000');
   await expect(result).toContainText('INCOMPLETE_EVIDENCE');
-  await expect(result).toContainText('Not Proven Available');
+  await expect(result).toContainText('not proven free');
   await expect(result).toContainText('sensorBindings');
   await expect(page.getByLabel('Receiving port')).toHaveValue('7501');
   await result.getByRole('button',{name:'Apply Candidate to Draft (recheck required)'}).click();
@@ -53,7 +53,7 @@ test('checking a manually edited parser port does not send credentials or switch
   await page.getByLabel('Receiving port').fill('22550');
   await page.getByRole('button',{name:'Review Entered Port'}).click();
   await expect(page.getByLabel('Parser port proposal result')).toContainText('User-entered Port');
-  await expect(page.getByLabel('Parser port proposal result')).toContainText('Not Deployable');
+  await expect(page.getByLabel('Parser port proposal result')).toContainText('not deployable');
   await expect(page.getByLabel('Receiving port')).toHaveValue('22550');
   expect(requested).toBe('?port=22550');
   await expect(page.getByRole('button',{name:/Apply Candidate to Draft Port/})).toHaveCount(0);

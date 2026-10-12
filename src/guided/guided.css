@@ -510,3 +510,20 @@
 .guided-owner-session-recovery input { width:100%; min-width:0; font:10px/1.6 var(--mono); }
 .guided-owner-session-recovery small { color:#998166; font-size:10px; line-height:1.6; }
 .guided-owner-session-recovery button:focus-visible { outline:2px solid #187d85; outline-offset:2px; }
+
+/* Read-only, owner-authenticated Interflow correlation; no raw vendor records. */
+.guided-interflow-readback { margin:14px 0; padding:13px; background:#f8fbfc; border:1px solid #cddfe5; border-radius:8px; }
+.guided-interflow-readback summary { cursor:pointer; color:#246e80; font-size:11px; font-weight:800; }
+.guided-interflow-readback > p, .guided-interflow-readback > small { color:#62818e; font-size:10px; display:block; line-height:1.65; margin:10px 0; }
+.guided-interflow-readback :is(summary,button,input,select):focus-visible { outline:2px solid #16858d; outline-offset:2px; }
+.guided-interflow-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:11px; padding:10px; background:#fff; border:1px solid #dce6eb; border-radius:7px; }
+.guided-interflow-form .guided-field { margin:0; min-width:0; }
+.guided-interflow-form :is(input,select) { min-width:0; width:100%; }
+.guided-interflow-form .guided-owner-check { grid-column:1/-1; color:#5c7280; }
+.guided-interflow-form > button { grid-column:1/-1; }
+.guided-interflow-result { padding:11px; margin:10px 0; background:#fff; border:1px solid #cfe5e5; border-radius:7px; }
+.guided-interflow-result > strong { color:#336d72; font-size:11px; }
+.guided-interflow-result p { color:#607f87; font-size:10px; overflow-wrap:anywhere; }
+.guided-interflow-result ul { padding-left:18px; font-size:10px; color:#5c727a; line-height:1.7; }
+.guided-interflow-result li strong { color:#336a79; }
+.guided-interflow-result small { color:#8c7966; font-size:10px; line-height:1.6; display:block; }

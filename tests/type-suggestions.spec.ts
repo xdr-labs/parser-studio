@@ -17,7 +17,7 @@ test('typed value hint is browser-only and changes a mapping only after explicit
   await page.getByRole('button', { name:/Add Remaining Safe Fields/ }).click();
   await expect(page.getByLabel('Source field 3')).toHaveValue('request_count');
   const suggested = page.getByLabel('Mapping type suggestion 3');
-  await expect(suggested).toContainText('Integer type estimate');
+  await expect(suggested).toContainText('suggest Integer type');
   await expect(page.getByLabel('Field type 3')).toHaveValue('string');
   await suggested.getByRole('button', { name:'Apply type suggestion 3' }).click();
   await expect(page.getByLabel('Field type 3')).toHaveValue('integer');

@@ -66,7 +66,7 @@ test('user-authorized fixed synthetic preview never sends customer logs, keys, o
   await page.getByRole('button',{name:'Preview Backend Public Synthetic Sample'}).click();
   const display=page.getByLabel('Approved synthetic sample result');
   await expect(display).toContainText('Synthetic JSON');
-  await expect(display).toContainText('Sensor Delivery Disabled');
+  await expect(display).toContainText('Sensor delivery disabled');
   const log=page.getByLabel('Backend public synthetic log');
   await expect(log).toContainText('192.0.2.42');
   await expect(log).toContainText('synthetic_user_100123');
@@ -89,7 +89,7 @@ test('unsupported or unconfigured backend never sends a synthetic preview POST',
   await page.getByRole('button',{name:/6\. Generate Files/}).click();
   await page.locator('.guided-backend-synthetic summary').click();
   await page.getByRole('button',{name:'Preview Backend Public Synthetic Sample'}).click();
-  await expect(page.locator('.guided-backend-synthetic [role="alert"]')).toContainText('Authorized Backend');
+  await expect(page.locator('.guided-backend-synthetic [role="alert"]')).toContainText('requires backend authorization');
   await expect(page.getByLabel('Approved synthetic sample result')).toHaveCount(0);
   expect(post).toBe(0);
 });

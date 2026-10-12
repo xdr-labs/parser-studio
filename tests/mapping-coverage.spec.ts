@@ -17,7 +17,7 @@ test('field mapping card explains missing and type-invalid samples, then opens f
   await page.getByRole('button', { name: /3\. Map Fields/ }).click();
   const coverage = page.getByLabel('Mapping coverage 0');
   await expect(coverage).toContainText('source 2/3');
-  await expect(coverage).toContainText('Normalized 1/3');
+  await expect(coverage).toContainText('normalized 1/3');
   await expect(coverage).toContainText('Missing 1');
   await expect(coverage).toContainText('Type Errors 1');
   await coverage.getByRole('button', { name: 'Inspect mapping issue 0' }).click();
