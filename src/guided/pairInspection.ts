@@ -1,4 +1,6 @@
-/** Read-only local pair inspection. Does not evaluate scripts or adopt imported rules. */
+/** Read-only local pair inspection. Never evaluates Ruby or adopts rules
+ * without a separate explicit, proven non-lossy reconstruction step.
+ */
 export interface PairInspectionRequest {
   name: string;
   confContent: string;
@@ -16,6 +18,11 @@ export interface PairInspectionSummary {
   markersComplete: boolean;
   hasParseEntry: boolean;
   diagnostics: string[];
+  /** In-memory only. Present solely if the backend proved exact byte
+   * reproduction and the browser separately verified both original hashes.
+   * Never include this source model in a metadata-only loss report.
+   */
+  portableProject?: unknown;
 }
 const BASE = '/api/v1/parser-pairs/inspect';
 const LIMIT = 2 * 1024 * 1024;
@@ -66,6 +73,7 @@ export async function inspectParserPair(
         (result.portableProject as { slug?: unknown }).slug !== input.name.replace(/^customized_/, '') ||
         (result.portableProject as { schemaRevision?: unknown }).schemaRevision !== '0.1')) ||
       (!exact && result.portableProject !== null) ||
+      (exact && new TextEncoder().encode(JSON.stringify(result.portableProject)).length>262144) ||
       !hashes || !HEX.test(String(hashes.conf)) || !HEX.test(String(hashes.fragment)) ||
       !receiver || !Array.isArray(receiver.protocols) ||
       !receiver.protocols.every((p) => p === 'udp' || p === 'tcp' || p === 'http') ||
@@ -89,5 +97,6 @@ export async function inspectParserPair(
     protocols: receiver.protocols, ports: receiver.ports, sourceCount: receiver.sourceCount as number,
     markersComplete: fragment.markersComplete, hasParseEntry: fragment.hasParseEntry,
     diagnostics: diagnostics.map((d) => String(d.code)),
+    ...(exact ? { portableProject: result.portableProject } : {}),
   };
 }

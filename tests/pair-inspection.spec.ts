@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 
 const conf = '<source>\n  @type udp\n  port 5514\n</source>\n';
 const fragment = '# synthetic parser\n';
@@ -54,6 +55,24 @@ test('legacy pair inspection is opt-in, read-only and never echoes source code',
   await expect(result).toContainText('PAIR_NOT_REPRODUCIBLE');
   await expect(result).toContainText('5514');
   await expect(result).not.toContainText(fragment);
+  const assessment=page.getByLabel('Parser import compatibility review');
+  await expect(assessment).toContainText('Opaque Legacy Source · Manual Migration Required');
+  await expect(assessment).toContainText('PAIR_NOT_REPRODUCIBLE');
+  await expect(assessment).toContainText('Guided draft import unavailable');
+  await expect(assessment).not.toContainText(fragment);
+  const downloadPromise=page.waitForEvent('download');
+  await assessment.getByRole('button',{name:'Download Safe Import Review JSON'}).click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toBe('parser-import-review-customized_demo_fw.json');
+  const exported=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(exported).toMatchObject({
+    classification:'OPAQUE_LEGACY_PAIR',guidedImportAvailable:false,
+    parserNativeVerified:false,sensorIngestVerified:false,targetImportVerified:false,
+    rawFilesIncluded:false,rawLogsIncluded:false,credentialsIncluded:false,
+  });
+  expect(exported.findings.map((x:{code:string})=>x.code)).toEqual(['PAIR_NOT_REPRODUCIBLE']);
+  expect(JSON.stringify(exported)).not.toContain(fragment);
+  expect(JSON.stringify(exported)).not.toContain('sensitive text');
   expect(requests).toBe(1);
 });
 test('mismatched pair file names stop before any API submission', async ({ page }) => {

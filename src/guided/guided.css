@@ -575,3 +575,21 @@
 .guided-keyboard-value-controls input { width:100%; min-width:0; }
 .guided-keyboard-value-controls button { flex:1 1 175px; }
 .guided-keyboard-value :is(summary,input,button):focus-visible { outline:2px solid #14868a; outline-offset:2px; }
+
+/* Import/loss assessment never renders or exports the original Ruby/CONF files. */
+.guided-pair-import-review {border-top:1px solid #d5e1e3;margin-top:13px;padding-top:12px;display:flex;flex-direction:column;gap:9px;overflow-wrap:anywhere}
+.guided-pair-import-review strong {font-size:11px;color:#32726e}
+.guided-pair-import-review p {margin:0;font-size:10px;line-height:1.65;color:#5b7680}
+.guided-pair-import-review ul {margin:0;padding-left:17px;font-size:10px;line-height:1.65;color:#5b7680}
+.guided-pair-import-review li {padding:2px 0}
+.guided-pair-import-review li code {font:10px/1.6 var(--mono)}
+.guided-pair-import-review small {font-size:10px;line-height:1.6;color:#8b755c}
+.guided-pair-import-review button {align-self:flex-start}
+.guided-pair-import-review button:focus-visible {outline:2px solid #187d85;outline-offset:2px}
+
+/* Exact pair restoration is an independent, manual and explicit draft replacement. */
+.guided-exact-pair-import {border-top:1px solid #d6e4de;padding-top:10px;display:flex;flex-direction:column;gap:9px}
+.guided-exact-pair-import strong {font-size:11px;color:#2e7966}
+.guided-exact-pair-import p {font-size:10px;line-height:1.65;color:#5e7780;margin:0}
+.guided-exact-pair-import .guided-owner-check {color:#6b654d}
+.guided-exact-pair-import button:focus-visible {outline:2px solid #167d8a;outline-offset:2px}

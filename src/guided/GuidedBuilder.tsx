@@ -32,6 +32,8 @@ import {
 } from './approvedTestLabSession';
 import { queryApprovedInterflowReadback, type InterflowReadbackResult, type InterflowIndex } from './approvedInterflowReadback';
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
+import { buildPairImportReview } from './pairImportReview';
+import { reconstructExactBackendDraft } from './pairProjectImport';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
 import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
@@ -190,6 +192,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [inspecting, setInspecting] = useState(false);
   const [inspectionResult, setInspectionResult] = useState<PairInspectionSummary | null>(null);
   const [inspectionError, setInspectionError] = useState('');
+  const [importReplaceConfirmed,setImportReplaceConfirmed]=useState(false);
+  const inspectRequestId=useRef(0);
   const [schemaLoading, setSchemaLoading] = useState(false);
   const [schemaGuide, setSchemaGuide] = useState<BackendSchemaGuide | null>(null);
   const [schemaError, setSchemaError] = useState('');
@@ -907,6 +911,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   };
 
   const inspectChosenPair = async () => {
+    const requestId=++inspectRequestId.current;
+    setImportReplaceConfirmed(false);
     setInspectionResult(null);
     setInspectionError('');
     if (!inspectConf || !inspectFragment) return;
@@ -928,11 +934,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       const result = await inspectParserPair({
         name, confContent: decoder.decode(confBytes), fragmentContent: decoder.decode(fragmentBytes),
       });
-      setInspectionResult(result);
+      if(requestId===inspectRequestId.current)setInspectionResult(result);
     } catch (error) {
-      setInspectionError(error instanceof Error ? error.message : 'File inspection failed.');
+      if(requestId===inspectRequestId.current)
+        setInspectionError(error instanceof Error ? error.message : 'File inspection failed.');
     } finally {
-      setInspecting(false);
+      if(requestId===inspectRequestId.current)setInspecting(false);
     }
   };
 
@@ -964,6 +971,34 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     if (number === 4) return runState?.suite.counts.total && runState.suite.counts.failures === 0 ? 'complete' : 'attention';
     return 'future';
   };
+
+  // Reconstruct only a byte-verified, semantically identical internal project.
+  // Never import unknown Ruby files or unsupported project fields.
+  const importableDraft=useMemo(()=>{
+    if(!inspectionResult?.editable || !inspectionResult.portableProject)return null;
+    return reconstructExactBackendDraft(
+      inspectionResult.portableProject,inspectionResult.name,
+    );
+  },[inspectionResult]);
+  const applyExactPairAsDraft=()=>{
+    if(!importReplaceConfirmed || !importableDraft || inspecting)return;
+    inspectRequestId.current++;
+    setDraft(importableDraft);
+    setSample('');
+    setDatasetName('Imported backend-exact draft · No sample logs');
+    setInspectConf(null);setInspectFragment(null);
+    setInspectionResult(null);setInspectionError('');
+    setImportReplaceConfirmed(false);
+    setStep(2);
+    notify('Imported an exact backend-reproducible project as an unsaved draft. Existing samples were cleared. Run browser/native tests separately; no real target import was performed.');
+  };
+
+  // Safe metadata only: no Ruby, CONF or customer data is retained in this report.
+  const importReview=useMemo(()=>{
+    if(!inspectionResult)return null;
+    try{return buildPairImportReview(inspectionResult);}
+    catch{return null;} // A malformed backend response must never crash the UI.
+  },[inspectionResult]);
 
   const nextStep = () => setStep(Math.min(5, step + 1));
   const prevStep = () => setStep(Math.max(0, step - 1));
@@ -1575,19 +1610,72 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <summary><FileArchive size={16} /> Inspect Existing Parser Pair (Advanced, Read-only)</summary>
               <p>Selecting files does not upload them automatically. Only an explicit click sends both files to a same-origin local development API for structure and SHA-256 checks. Raw contents are not stored or displayed.</p>
               <div className="guided-pair-inspect-files">
-                <label>Receiver Configuration (.conf)<input type="file" aria-label="Inspect pair CONF" accept=".conf,text/plain" onChange={(event) => { setInspectConf(event.target.files?.[0] ?? null); setInspectionResult(null); setInspectionError(''); }} /></label>
-                <label>Extensionless Ruby Parser Fragment<input type="file" aria-label="Inspect pair Ruby fragment" onChange={(event) => { setInspectFragment(event.target.files?.[0] ?? null); setInspectionResult(null); setInspectionError(''); }} /></label>
+                <label>Receiver Configuration (.conf)<input type="file" aria-label="Inspect pair CONF" accept=".conf,text/plain" onChange={(event) => { inspectRequestId.current++; setInspectConf(event.target.files?.[0] ?? null); setInspecting(false); setImportReplaceConfirmed(false); setInspectionResult(null); setInspectionError(''); }} /></label>
+                <label>Extensionless Ruby Parser Fragment<input type="file" aria-label="Inspect pair Ruby fragment" onChange={(event) => { inspectRequestId.current++; setInspectFragment(event.target.files?.[0] ?? null); setInspecting(false); setImportReplaceConfirmed(false); setInspectionResult(null); setInspectionError(''); }} /></label>
               </div>
               <button type="button" className="guided-cta-secondary" disabled={!inspectConf || !inspectFragment || inspecting} onClick={() => { void inspectChosenPair(); }}>
                 <ShieldCheck size={15} /> {inspecting ? 'Inspecting Structure…' : 'Inspect Selected Pair (Read-only)'}
               </button>
               {inspectionError && <p className="guided-error" role="alert">{inspectionError}</p>}
               {inspectionResult && <div className="guided-pair-inspection-result" aria-label="Parser pair inspection results">
-                <strong>{inspectionResult.editable ? 'Byte-for-byte Generator Match · Editable IR Identified' : 'Unknown Original · OPAQUE READ-ONLY'}</strong>
+                <strong>{inspectionResult.editable ? 'Byte-for-byte Generator Match · Import Requires Lossless Conversion' : 'Unknown Original · OPAQUE READ-ONLY'}</strong>
                 <p>Receivers {inspectionResult.sourceCount} · Protocols {inspectionResult.protocols.join(', ') || 'Unknown'} · Ports {inspectionResult.ports.join(', ') || 'Unknown'}</p>
                 <p>File SHA-256: CONF {inspectionResult.confSha256.slice(0, 16)}… / Parser {inspectionResult.fragmentSha256.slice(0, 16)}…</p>
                 {inspectionResult.diagnostics.length > 0 && <ul>{inspectionResult.diagnostics.map((code) => <li key={code}>{code}</li>)}</ul>}
                 <small>Raw Ruby execution, automatic edits, and Parser Studio import are not performed. Stellar target deployment is unverified.</small>
+                {!importReview && <p className="guided-error" role="alert">
+                  A safe import review is unavailable because structural metadata is incomplete or inconsistent. Original files remain unchanged.
+                </p>}
+                {importReview && <div className="guided-pair-import-review" aria-label="Parser import compatibility review">
+                  <strong>{importReview.classification==='EXACT_BACKEND_PAIR'
+                    ? 'Exact Backend Pair · Import Not Performed'
+                    : 'Opaque Legacy Source · Manual Migration Required'}</strong>
+                  <p>{importReview.advice}</p>
+                  <p>File integrity: CONF and Ruby SHA-256 verified · Sources: {importReview.source.receiverCount}
+                    {' · '}Known ports: {importReview.source.receiverPorts.join(', ')||'None'}
+                    {' · '}Protocols: {importReview.source.receiverProtocols.join(', ')||'None'}</p>
+                  {importReview.findings.length>0 && <ul>
+                    {importReview.findings.map(item=><li key={item.code}>
+                      <code>{item.code}</code> — {item.explanation}
+                    </li>)}
+                  </ul>}
+                  <small>Import status: {importReview.lossAssessment} ·
+                    {importReview.guidedImportAvailable
+                      ? 'Manual lossless Guided draft reconstruction available'
+                      : 'Guided draft import unavailable'} ·
+                    Native execution, sensor receipt, and Stellar target loading unverified.</small>
+                  <button type="button" className="guided-cta-secondary"
+                    onClick={()=>localDownload(
+                      'parser-import-review-'+importReview.pairName+'.json',
+                      JSON.stringify(importReview,null,2)
+                    )}>
+                    <FileDown size={15}/> Download Safe Import Review JSON
+                  </button>
+                  <small>Export contains only verified hashes, receiver metadata and fixed diagnostic codes.
+                    It excludes raw parser files, raw sample events, secrets and original error messages.</small>
+                  {importableDraft && <div className="guided-exact-pair-import" aria-label="Exact parser pair import controls">
+                    <strong>Exact Reproducible Project · Optional Guided Draft Restore</strong>
+                    <p>The backend reports byte-identical files and this browser independently reconstructed
+                      the same complete supported project. This does not execute Ruby, perform a DP import,
+                      prove native compatibility or save a revision automatically.</p>
+                    <label className="guided-owner-check">
+                      <input type="checkbox" aria-label="Confirm replace current parser draft"
+                        checked={importReplaceConfirmed}
+                        onChange={event=>setImportReplaceConfirmed(event.target.checked)}/>
+                      Replace the current unsaved draft and clear ALL current sample logs. Continue editing
+                      in Guided Builder; save only when explicitly requested.
+                    </label>
+                    <button type="button" className="guided-cta-secondary"
+                      disabled={!importReplaceConfirmed || inspecting}
+                      onClick={applyExactPairAsDraft}>
+                      <FileCheck2 size={15}/> Restore Exact Pair as Unsaved Draft
+                    </button>
+                  </div>}
+                  {importReview.backendByteReproducible && !importableDraft &&
+                    <small>The backend proved its own file reproduction, but this project cannot be
+                      converted losslessly to the currently supported Guided Builder model.
+                      Original files remain read-only and unchanged.</small>}
+                </div>}
               </div>}
             </details>
             <details className="guided-replay-preview" aria-label="Local synthetic replay preview">

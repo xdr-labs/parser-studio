@@ -273,3 +273,53 @@ Browser E2E tests in tests/keyboard-raw-selection.spec.ts cover keyboard
 focus/Enter, invalid source refusal, stale value clearing, local-only privacy
 and 390px layout. This supplements accessible one-click safe field-name mapping
 chips, without equating browser regex previews with native Fluentd validation.
+
+
+### 2026-10-12 — Read-only parser-pair import compatibility and loss review
+
+After explicit inspection of a user-selected matching \`customized_<slug>.conf\` and
+extensionless Ruby fragment, the UI displays a **metadata-only** import/loss
+assessment, based strictly on the backend's structural metadata and the
+**browser-reverified SHA-256 hashes of the exact selected files**. It
+distinguishes an exact backend-reproducible pair from opaque vendor/legacy Ruby.
+Unknown or lossy cases are not imported or executed by the Guided Builder.
+Specifically, an exact backend pair is NOT presented as directly editable
+without a validated reverse adapter; an opaque original requires manual
+migration and cannot safely claim to reconstruct fields, routing, conversion
+semantics or a lossless mapping.
+
+The optional **Download Safe Import Review JSON** action exports an English,
+deterministic, versioned \`parser-studio.import-review.v0.1\` with verified
+hashes, structural protocol/port/source counts, whitelisted diagnostic codes
+and fixed explanations. No original CONF, Ruby code, raw log, backend diagnostic
+message, data values, credentials or target configuration are included.
+The report sets Guided import availability to TRUE only for exact
+byte-verified **and** independently reversible projects; an explicit user
+confirmation is still required to replace the unsaved draft and clear all
+sample logs. The reverse action never executes original Ruby, never saves
+automatically and never contacts DP or sensors. All native parsing,
+sensor ingestion and target-loading verification flags remain FALSE.
+No automatic mutation, browser draft replacement or backend write occurs.
+
+\`src/guided/pairImportReview.ts\` and \`src/guided/pairImportReview.test.ts\`
+define and verify the safe report; \`tests/pair-inspection.spec.ts\` exercises
+the English visual warning, user-initiated JSON export and source-code exclusion
+with Chromium. Real owner-provided legacy parser files remain a separate
+acceptance/compatibility evidence gate.
+
+### 2026-10-12 — Exact pair → unsaved Guided draft (manually reviewed)
+
+After a backend-verified byte-for-byte pair inspection with browser-confirmed
+file hashes, the frontend can restore **only** exact projects whose entire
+portable model round-trips through the existing Guided Builder adapter without
+loss or coercion. Any difference (unsupported project ID, receiver protocol,
+source field, normalization target/group, classification rule, enrichment,
+unknown property, unsafe prototype field, non-representable condition) disables
+the restore button while retaining the read-only safe import report. The
+conversion never evaluates Ruby, and there is no attempt to guess arbitrary
+legacy parser meaning. The user must separately tick a confirmation that the
+current **unsaved draft** will be replaced and **all sample logs cleared**;
+the action does not submit a DP write, start a sensor sender or save a revision.
+The replacement immediately opens the normalization/mapping screen for review.
+A stale in-flight inspection is discarded when either selected file changes,
+so an old inspected pair cannot replace a newer user selection.
