@@ -105,6 +105,27 @@ The integration must continue to distinguish:
    have immediate operational effects; no silent auto-upload should be
    initiated by the general Web UI.
 
+## Modular Parser UI fallback is distinct from the Legacy REST contract
+
+The official Parser Studio UI instructions do document uploading a **Modular
+Parser JSON** exported from another tenant/instance. Uploading it through
+**System > DATA SOURCE MANAGEMENT > Parser Studio > Parsers > Create Parser >
+Upload Custom Parser** is a **UI action**, not a verified public REST API.
+The downloaded JSON must have valid five-stage structure and an appropriate
+selected tenant. The UI verifies configured port use, creates new parser and
+configuration IDs, and refreshes the version; such files are independent of
+the original parser after upload.
+
+The vendor's UI instructions require **root-level user access with read/write
+privileges** for parser creation. Our POC User Scope key successfully managed
+*Legacy* Custom Parser pairs via REST, but that does **not** establish root
+privileges or Modular JSON upload permission. Also, our current backend's
+extensionless Ruby + CONF output is **not** a vendor Modular JSON export, so
+it must not be represented as one to bypass the API evidence gate.
+
+Manual vendor UI upload is a fallback for an independently validated vendor
+Modular JSON, not a substitute for implementing an undocumented API.
+
 ## Remaining validation request
 
 To implement Modular Parser activation/bulk management, obtain an
