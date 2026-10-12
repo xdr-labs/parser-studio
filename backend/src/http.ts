@@ -3,6 +3,8 @@ import { TextDecoder } from "node:util";
 import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
+import {TargetApplyMockGateway} from "./target-apply-bff.js";
+import {TargetDeploymentError} from "./target-deployment.js";
 import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
@@ -60,6 +62,8 @@ async function jsonInput(req: IncomingMessage, maxBytes = MAX_PROJECT_BYTES): Pr
  * read authorization or write capability, regardless of caller body.
  */
 export interface BackendServerOptions {
+  /** Explicit offline mock-only target Apply injection. Default disabled. */
+  targetApplyMockGateway?:TargetApplyMockGateway;
   legacyClient?:LegacyPocClient;
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
@@ -127,6 +131,58 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Opt-in, isolated mock transport: real target writes are not supported.
+    // User input is metadata only; server independently resolves the artifact.
+    const applyRoute="/api/v1/parser-pairs/target/apply";
+    if(path===applyRoute||path===applyRoute+"/status"){
+      const isStatus=path===applyRoute+"/status";
+      if(req.method!==(isStatus?"GET":"POST")){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      const gateway=options.targetApplyMockGateway;
+      if(!gateway){send(res,403,{error:"TARGET_APPLY_DISABLED"});return;}
+      const actor=await gateway.authenticate(req);
+      if(!actor){send(res,403,{error:"TARGET_APPLY_IDENTITY_DENIED"});return;}
+      if(isStatus){
+        try{
+          const query=new URL(req.url??"", "http://localhost").searchParams;
+          if([...query.keys()].some(k=>k!=="artifactRevisionId")||
+             query.getAll("artifactRevisionId").length!==1){
+            send(res,422,{error:"TARGET_APPLY_QUERY_INVALID"});return;
+          }
+          send(res,200,gateway.status(actor,query.get("artifactRevisionId")!));
+        }catch{
+          send(res,422,{error:"TARGET_APPLY_QUERY_INVALID"});
+        }
+        return;
+      }
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      const maxBody=2048;
+      const size=Number(req.headers["content-length"]??0);
+      if(!Number.isSafeInteger(size)||size>maxBody||size<0){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const input=await jsonInput(req,maxBody);
+        send(res,200,await gateway.apply(actor,input));
+      }catch(error){
+        const code=(error as {code?:string}).code??"";
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof TargetDeploymentError){
+          const status=code==="TARGET_APPLY_REVISION_NOT_FOUND"?404:
+            /VERSION_CONFLICT|NAME_CONFLICT|PORT_CONFLICT|IN_FLIGHT|REVISION_CONFLICT|SENSOR_CONF_PORT_MISMATCH/.test(code)?409:
+            /DENIED|MOCK_TARGET_REQUIRED|CONFIRMATION_REQUIRED|CONFIRMATION_MISMATCH/.test(code)?403:
+            /AUDIT_UNAVAILABLE|TARGET_UNAVAILABLE|INVENTORY_UNAVAILABLE|SENSOR_EVIDENCE_INCOMPLETE/.test(code)?503:
+            /WRITE_UNCERTAIN|READBACK_UNVERIFIED|APPLY_FAILED/.test(code)?502:422;
+          send(res,status,{error:code,realTargetVerified:false});
+        }else send(res,502,{error:"TARGET_APPLY_FAILED",realTargetVerified:false});
       }
       return;
     }

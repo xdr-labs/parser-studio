@@ -13,7 +13,7 @@ TargetDeploymentCoordinator, validateDpTarget and validateTargetArtifact.
 It is separate from POC-only LegacyPocClient: do not weaken that class's
 loopback/null-sink protection.
 
-There is NO default network transport and NO public HTTP Apply route.
+There is NO default network transport and NO enabled real-target Apply route. The optional mock-only HTTP route is disabled in the standard CLI server.
 A trusted backend operator injects an exact origin allowlist, tenant,
 a TargetDeploymentApi, an independent per-write approve callback and a
 durable audit callback. No key is imported from an existing dev-atlas
@@ -99,8 +99,15 @@ or proprietary parser compatibility.
 ## Mock-only user-target Apply service (P0-LIVE-2 partial)
 
 The standalone TargetApplyMockGateway now implements a server-injected
-mock-only Apply boundary. No default HTTP route or CLI feature is enabled.
-The missing authenticated HTTP route remains pending separate review.
+mock-only Apply boundary. The test-only `POST /api/v1/parser-pairs/target/apply` and
+`GET /api/v1/parser-pairs/target/apply/status?artifactRevisionId=...`
+are available only when a trusted server explicitly injects
+`targetApplyMockGateway`. `createBackendServer()` without injection
+returns `TARGET_APPLY_DISABLED` and never creates a target client.
+The mock route enforces independent backend actor authentication, strict
+2 KiB JSON metadata-only requests, owned immutable revision selection,
+per-write approval and audit, separate inventory recheck and unique fake
+GET readback. The default CLI has no general target Apply enabled.
 
 The trusted backend must inject a verified actor and tenant resolver,
 a server-owned immutable revision lookup, independent operation approval,
