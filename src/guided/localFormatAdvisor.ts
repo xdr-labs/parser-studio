@@ -84,17 +84,18 @@ export function recommendLocalFormat(
   const one=families[0]?.format;
   if(!one||!SAFE.has(one)||minConfidence<0.85)
     return {...summary,status:'MANUAL_REVIEW'};
-  if(reviewed!==source.length){
-    // A wrong manually selected extractor may fail every source even when
-    // all signatures consistently indicate a different reviewed family.
-    // Offer only a candidate; never label its extraction verified.
-    const alternate=suite.events.every(event=>
-      event.effectiveFormat!==one &&
+  // A forced extractor may produce fields even when it differs from the
+  // detected family. Do not count that as extraction verified for the
+  // proposed parser format; offer a signature-only recheck instead.
+  if(!suite.events.every(event=>event.effectiveFormat===one)){
+    if(!suite.events.every(event=>
       typeof event.effectiveFormat==='string'&&
-      ALL.has(event.effectiveFormat));
-    if(alternate)return {...summary,status:'CANDIDATE_UNTESTED',
+      ALL.has(event.effectiveFormat)&&event.effectiveFormat!=='unknown'))
+      return {...summary,status:'UNTRUSTED_PREVIEW',format:null};
+    return {...summary,status:'CANDIDATE_UNTESTED',
       format:one as ConcreteFormat};
-    return {...summary,status:'PREVIEW_FAILED'};
   }
+  if(reviewed!==source.length)
+    return {...summary,status:'PREVIEW_FAILED'};
   return {...summary,status:'RECOMMENDED',format:one as ConcreteFormat};
 }

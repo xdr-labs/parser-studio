@@ -80,6 +80,16 @@ describe('offline beginner format recommendation',()=>{
     expect(selected.nativeVerified).toBe(false);
     expect(JSON.stringify(selected)).not.toContain('CUSTOMER');
   });
+  it('never treats a wrong extractor as verified merely because its preview produced some fields',()=>{
+    const draft=createDraft(),suite=preview(json,draft);
+    // A stale or mismatched extractor can claim field matches without running
+    // the detected extraction format. Only a candidate may be offered.
+    for(const event of suite.events)event.effectiveFormat='kv';
+    const result=recommendLocalFormat(json,suite,'single-line');
+    expect(result.status).toBe('CANDIDATE_UNTESTED');
+    expect(result.format).toBe('json');
+    expect(result.nativeVerified).toBe(false);
+  });
   it('does not accept malformed events under their already selected matching extractor',()=>{
     const malformed=candidate('{"action":"PRIVATE_PARTIAL"','json');
     expect(malformed.status).toBe('PREVIEW_FAILED');
