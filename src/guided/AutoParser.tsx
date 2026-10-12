@@ -14,6 +14,10 @@ import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import type {StructuralMiningReport} from './localPatternMining';
+import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
+  proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
+import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
+  type ApprovedPattern} from './approvedPatterns';
 import {proposeReviewableMapping,compareCandidate,
  type CandidateComparison} from './autoParserRegression';
 import type {EventBoundary} from './contract';
@@ -68,6 +72,14 @@ export default function AutoParser({
  const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
+ const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
+ const [aiText,setAIText]=useState('');
+ const [aiImport,setAIImport]=useState<{key:string;value:AIImportResult}|null>(null);
+ const [aiCopyNotice,setAICopyNotice]=useState('');
+ const [approvedPatterns,setApprovedPatterns]=useState<ApprovedPattern[]>(()=>readApprovedPatterns());
+ const [selectedPattern,setSelectedPattern]=useState('');
+ const [saveAfterApproval,setSaveAfterApproval]=useState(false);
+ const [reviewMetrics,setReviewMetrics]=useState({compared:0,approved:0,blocked:0});
  const [holdout,setHoldout]=useState('');
  const [repair,setRepair]=useState<{key:string;candidate:ParserDraft;
    comparison:CandidateComparison;source:string;target:string}|null>(null);
@@ -80,7 +92,10 @@ export default function AutoParser({
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
-   setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);setBusy(false);setMessage('');
+   setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
+   setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
+   setSaveAfterApproval(false);
+   setBusy(false);setMessage('');
  },[identity]);
  const assessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -91,6 +106,8 @@ export default function AutoParser({
  const currentRecipe=recipe?.key===identity?recipe.value:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
+ const currentAIPrompt=aiPrompt?.key===identity?aiPrompt.value:null;
+ const currentAIImport=aiImport?.key===identity?aiImport.value:null;
  const repairKey=JSON.stringify([identity,holdout]);
  const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
@@ -198,10 +215,56 @@ export default function AutoParser({
      setRepair({key:JSON.stringify([expected,requestedHoldout]),
        candidate:suggestion.candidate,comparison,
        source:suggestion.mapping.source,target:suggestion.mapping.target});
+     setReviewMetrics(x=>({...x,compared:x.compared+1,
+       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setRepairNotice('Local regression could not be verified. No rules were changed.');
    }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function compareStoredPattern(){
+   if(!suite||busy||pending)return;
+   const item=approvedPatterns.find(x=>x.id===selectedPattern);
+   if(!item){setRepairNotice('Select one previously approved browser-local mapping.');return;}
+   const proposal=prepareApprovedPatternDraft(draft,item);
+   if(!proposal.ok){setRepairNotice('Stored mapping cannot be reused: '+proposal.reason);return;}
+   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
+   setBusy(true);setRepair(null);setRepairNotice('');
+   try{
+     if(holdout&&new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT)
+       throw new Error('HOLDOUT_LIMIT');
+     const candidate=await runPreview(proposal.draft,sample);
+     const held=holdout?{source:holdout,
+       baseline:await runPreview(draft,holdout),
+       candidate:await runPreview(proposal.draft,holdout)}:undefined;
+     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
+     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
+     setRepair({key:JSON.stringify([expected,requestedHoldout]),
+       candidate:proposal.draft,comparison,source:proposal.source,target:proposal.target});
+     setReviewMetrics(x=>({...x,compared:x.compared+1,
+       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRepairNotice('Stored mapping regression was not verified; no rules changed.');
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ function approveRepair(){
+   if(!currentRepair||!currentRepair.comparison.acceptedWithoutRegression||
+      currentRepair.comparison.holdoutStatus!=='TESTED'||busy||pending)return;
+   const accepted=currentRepair;
+   if(saveAfterApproval){
+     try{
+       const mapping=accepted.candidate.mappings.at(-1);
+       if(!mapping)throw new Error('INVALID_MAPPING');
+       saveApprovedMapping({draft:accepted.candidate,mapping,
+         comparison:accepted.comparison});
+       setApprovedPatterns(readApprovedPatterns());
+     }catch{
+       setRepairNotice('Mapping approved for this draft; local pattern save was unavailable.');
+     }
+   }
+   setDraft(accepted.candidate);setRepair(null);
+   setReviewMetrics(x=>({...x,approved:x.approved+1}));
  }
  function findKnownTemplates(){
    if(!suite||busy||pending)return;
@@ -231,6 +294,63 @@ export default function AutoParser({
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setMessage('Local structural grouping was unavailable; no source was uploaded.');
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function prepareAIPrompt(){
+   if(!suite||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setAIPrompt(null);setAICopyNotice('');
+   try{
+     const value=await createPrivacySafeAIPrompt(sample,draft,suite);
+     if(token===epoch.current&&currentRef.current===expected)
+       setAIPrompt({key:expected,value});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setAIPrompt({key:expected,value:{ok:false,reason:'UNTRUSTED_PREVIEW'}});
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function copyAIPrompt(){
+   if(!currentAIPrompt?.ok)return;
+   try{await navigator.clipboard.writeText(currentAIPrompt.prompt);
+     setAICopyNotice('Privacy-safe prompt copied by explicit user action.');}
+   catch{setAICopyNotice('Clipboard access denied. Select and copy the visible prompt manually.');}
+ }
+ async function reviewAIImport(){
+   if(!suite||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setAIImport(null);
+   try{
+     const value=await importReviewOnlyAIRecipe(aiText,sample,draft,suite);
+     if(token===epoch.current&&currentRef.current===expected)
+       setAIImport({key:expected,value});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setAIImport({key:expected,value:{ok:false,reason:'UNTRUSTED_RECIPE'}});
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function compareImportedAIMapping(){
+   if(!currentAIImport||!suite||busy||pending)return;
+   const proposed=proposeV01FieldMappingFromAI(currentAIImport,sample,draft,suite);
+   if(!proposed.ok){setRepairNotice('Imported staged changes cannot be safely mapped to v0.1: '+proposed.reason);return;}
+   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
+   setBusy(true);setRepair(null);setRepairNotice('');
+   try{
+     if(!holdout||new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT)
+       throw new Error('HOLDOUT_REQUIRED');
+     const candidate=await runPreview(proposed.candidate,sample);
+     const held={source:holdout,baseline:await runPreview(draft,holdout),
+       candidate:await runPreview(proposed.candidate,holdout)};
+     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
+     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
+     setRepair({key:JSON.stringify([expected,requestedHoldout]),
+       candidate:proposed.candidate,comparison,
+       source:proposed.source,target:proposed.target});
+     setReviewMetrics(x=>({...x,compared:x.compared+1,
+       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
+     setRepairNotice('AI-proposed field is a reviewed candidate in Full-sample regression; approval remains a separate action.');
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRepairNotice('AI mapping comparison requires a valid independent holdout. No rules changed.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function previewRecipe(){
@@ -456,11 +576,16 @@ export default function AutoParser({
            {currentRepair.comparison.baseline.issues.map(i=><span key={i.reason}>
              {i.reason}: {i.count}
            </span>)}
+           <label className="auto-parser-persist-label">
+             <input type="checkbox" checked={saveAfterApproval}
+               onChange={e=>setSaveAfterApproval(e.target.checked)}/>
+             Also save approved mapping names/types to browser-local pattern library (no sample values)
+           </label>
            <button type="button" disabled={busy||pending||
              !currentRepair.comparison.acceptedWithoutRegression||
              currentRepair.comparison.holdoutStatus!=='TESTED'}
-             onClick={()=>{setDraft(currentRepair.candidate);setRepair(null);
-               setRepairNotice('One reviewed mapping was accepted. Re-run all tests before generating files.');}}>
+             onClick={approveRepair}>
+
              Approve Reviewed Mapping
            </button>
            {currentRepair.comparison.holdoutStatus!=='TESTED'&&
@@ -469,6 +594,30 @@ export default function AutoParser({
              <p>Regression detected — approval blocked. Previous passing events must not regress.</p>}
          </div>}
        </details>
+       <details className="auto-parser-recipe" aria-label="Reusable approved mapping patterns">
+         <summary>Optional · Reuse previously approved mapping</summary>
+         <p>Only explicitly stored source/target names, types and anonymized
+           regression counts are kept in this browser. Reuse requires the same
+           source family, a new full-sample comparison and a fresh independent
+           holdout. Nothing is silently applied or uploaded.</p>
+         <label>Select browser-local reviewed mapping
+           <select aria-label="Approved mapping pattern" value={selectedPattern}
+             onChange={e=>setSelectedPattern(e.target.value)}>
+             <option value="">Choose a saved mapping</option>
+             {approvedPatterns.map(item=><option key={item.id} value={item.id}>
+               {item.family}: {item.mapping.source} → {item.mapping.target}
+             </option>)}
+           </select>
+         </label>
+         <button type="button" disabled={!selectedPattern||busy||pending||!suite}
+           onClick={()=>{void compareStoredPattern();}}>Compare Saved Pattern with Holdout</button>
+         <span>{approvedPatterns.length} approved browser-local mapping signatures</span>
+       </details>
+       <div className="auto-parser-note" aria-label="Local review session metrics">
+         Session-only review counts: {reviewMetrics.compared} compared ·
+         {reviewMetrics.approved} user approved · {reviewMetrics.blocked} regression blocks.
+         Not a measured human usability study; no telemetry or raw samples are sent.
+       </div>
        <details className="auto-parser-recipe" aria-label="ParserRecipe v0.2 review">
          <summary>Advanced · Review ParserRecipe v0.2 (not compilable)</summary>
          <p>This is a local-only staged review, not a native compiler or a deployment.
@@ -495,6 +644,50 @@ export default function AutoParser({
          <button type="button" onClick={onEditDetails}>Edit Details & Advanced Verification</button>
        </div>
      </section>}
+     <details className="auto-parser-recipe" aria-label="Optional privacy-safe AI recipe exchange">
+       <summary>Optional · Copy AI Prompt / Paste Reviewed AI Recipe</summary>
+       <p>Nothing is sent automatically to an LLM or external service. A generated
+         prompt contains only event counts, source digest and detected format families,
+         never raw log lines, addresses, usernames, or observed field values.
+         Copy only if you choose to share this limited metadata externally.
+         AI suggestions are untrusted review candidates, NOT runnable Ruby/Regex/JSONata.</p>
+       <button type="button" disabled={busy||pending||!suite}
+         onClick={()=>{void prepareAIPrompt();}}>Prepare Privacy-Safe AI Prompt</button>
+       {currentAIPrompt&&(currentAIPrompt.ok
+         ? <div aria-label="Privacy-safe AI prompt" role="status">
+           <strong>SCHEMA-ONLY · No raw logs · No automatic upload</strong>
+           <textarea aria-label="Copyable AI prompt" readOnly rows={8}
+             value={currentAIPrompt.prompt}/>
+           <button type="button" onClick={()=>{void copyAIPrompt();}}>Copy Prompt Manually</button>
+           {aiCopyNotice&&<span>{aiCopyNotice}</span>}
+         </div>
+         : <p role="status">Prompt unavailable: {currentAIPrompt.reason}</p>)}
+       <label>Paste a v0.2 JSON recipe suggested by an external assistant (maximum 32 KiB)
+         <textarea aria-label="Pasted AI review-only recipe" rows={5} spellCheck={false}
+           maxLength={32768} value={aiText} onChange={e=>{
+             setAIText(e.target.value);setAIImport(null);}}/>
+       </label>
+       <button type="button" disabled={!aiText.trim()||busy||pending||!suite}
+         onClick={()=>{void reviewAIImport();}}>Validate AI Recipe for Review Only</button>
+       {currentAIImport&&(currentAIImport.ok
+         ? <div role="status" aria-label="Validated AI recipe review">
+           <strong>REVIEW_ONLY · Explicit user approval required</strong>
+           <span>{currentAIImport.report.sampleEvents} original events ·
+             {currentAIImport.report.changedStageCount} changed stages ·
+             {currentAIImport.report.addedMappings} new mappings ·
+             {currentAIImport.report.removedMappings} removed mappings</span>
+           <span>v0.2 backend compiler NOT AVAILABLE. No recipe imported into parser
+             rules or sent to the backend. Review unsupported operations in Edit Details.</span>
+           <button type="button" disabled={busy||pending||!suite}
+             onClick={()=>{void compareImportedAIMapping();}}>
+             Compare One Compatible AI Mapping with Holdout
+           </button>
+           <span>Only a single additive, compatible v0.1 field mapping can be
+             considered; the independent holdout and user approval are required in
+             Full-sample regression. Other AI stage changes remain review-only.</span>
+         </div>
+         : <p role="status">AI recipe rejected: {currentAIImport.reason}. No rules changed.</p>)}
+     </details>
      {message&&<p role="alert" className="auto-parser-warning"><ShieldAlert size={16}/> {message}</p>}
    </div>
  </main>;
