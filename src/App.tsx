@@ -199,7 +199,7 @@ export default function App() {
     const key = live.key;
     try {
       const result = await runInWorker(sample, draft);
-      setRunState({ key, suite: result, timestamp: new Date().toLocaleString('ko-KR') });
+      setRunState({ key, suite: result, timestamp: new Date().toLocaleString('en-US') });
       setPage(target);
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Suite failed to run');
@@ -478,7 +478,7 @@ export default function App() {
         {page === 'library' && <div className="surface-page">
           <div className="surface-top"><div><span className="pane-index">PROJECTS / LOCAL HISTORY</span><h2>Saved parser revisions</h2><p>Rule configurations stored in this browser only; raw log samples are deliberately excluded.</p></div><button className="button secondary" type="button" onClick={newDraft}><Plus size={15} /> New draft</button></div>
           {revisions.length ? <div className="revision-grid">{revisions.map((item) => <button className="revision-card" type="button" key={item.id} onClick={() => openRevision(item)}>
-            <div><span className="revision-icon"><FileCode2 size={21} /></span><StatusPill status="pending">Local draft</StatusPill></div><h3>{item.draft.name}</h3><p>{item.draft.vendor}</p><div className="revision-meta"><span><Clock3 size={13} /> {new Date(item.createdAt).toLocaleString('ko-KR')}</span><span>{item.draft.mappings.length} mappings <ChevronRight size={14} /></span></div>
+            <div><span className="revision-icon"><FileCode2 size={21} /></span><StatusPill status="pending">Local draft</StatusPill></div><h3>{item.draft.name}</h3><p>{item.draft.vendor}</p><div className="revision-meta"><span><Clock3 size={13} /> {new Date(item.createdAt).toLocaleString('en-US')}</span><span>{item.draft.mappings.length} mappings <ChevronRight size={14} /></span></div>
           </button>)}</div> : <SectionEmpty icon={<FolderOpen size={26} />} title="No saved revisions" detail="Save your current parser rules to create a local revision. Sample logs will not be persisted." />}
         </div>}
 

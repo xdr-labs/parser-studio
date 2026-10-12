@@ -81,7 +81,7 @@ Persistent top bar: Project / parser name; Dirty status; Undo/Redo; Dataset; Run
 ## 5. UX behavior / accessibility
 
 - Use a desktop-first workbench with a minimum practical viewport around 1280 px; at smaller widths panes become tabs. Mobile supports browsing/results, not a promise of full dense editor equivalence.
-- Korean / English-ready labels; monospace editor, readable large datasets, keyboard focus, non-color-only error indicators.
+- English-only labels; monospace editor, readable large datasets, keyboard focus, non-color-only error indicators.
 - Autosave local draft is optional; explicit persisted Save Revision is always identifiable.
 - Undo/redo per editing session; Warn before navigating away with unpersisted rules.
 - Preserve editor scroll, selected event and error focus between test runs.

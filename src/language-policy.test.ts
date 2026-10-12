@@ -47,6 +47,16 @@ describe('English-only product and development content', () => {
     expect(violations, 'Non-English product content detected').toEqual([]);
   });
 
+  it('uses an English UI locale instead of a Korean-first or bilingual presentation', () => {
+    const root=process.cwd();
+    const app=readFileSync(path.join(root,'src/App.tsx'),'utf8');
+    expect(app).not.toContain("'ko-KR'");
+    expect(app).toContain("toLocaleString('en-US')");
+    const readme=readFileSync(path.join(root,'README.md'),'utf8');
+    expect(readme).toContain('English-only Guided Builder');
+    expect(readme).not.toContain('Korean-first');
+  });
+
   it('sets the document language to English', () => {
     const html = readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
     expect(html).toContain('lang="en"');

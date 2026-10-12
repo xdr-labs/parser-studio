@@ -86,7 +86,7 @@ Legend: **DONE-LOCAL** = locally implemented, test verification must be reported
 | UX-09 | Local draft saved/reopened without raw data | DONE-LOCAL | Versioned, reproducible project storage when backend contract defined (P0/P1) |
 | UX-10 | Native Fluentd sandbox and parser runner | PENDING | Runtime version/plugin manifest, pinned containment, native equivalence (P0) |
 | UX-11 | Actual .conf + matching parser artifact importer/exporter | PENDING | Owner real pair, loss report, actual target test (P0) |
-| UX-12 | Internationalization, accessibility and responsiveness | PARTIAL | Korean/English toggle, keyboard and real browser checks (P1) |
+| UX-12 | Internationalization, accessibility and responsiveness | PARTIAL | English-only labels, keyboard traversal and real browser checks (P1) |
 | UX-13 | AI-assist and general node graph | PENDING | **DEFER** until core correctness and privacy proven (P2) |
 
 ## 5. Decision matrix & selection rationale

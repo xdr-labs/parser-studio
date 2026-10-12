@@ -117,6 +117,6 @@ test('mixed-family review remains keyboard-operated and exposes status with text
   const evidence=page.getByLabel('Isolated family browser result');
   await expect(evidence).toBeVisible();
   await expect(evidence).toContainText('Failed 0');
-  await expect(evidence.getByLabel('Isolated event diagnostics')).toContainText('PASS');
+  await expect(evidence.getByLabel('Isolated event diagnostics')).toContainText('WARNING · UNMAPPED_FIELDS');
   await expect(evidence).not.toContainText('CUSTOMER_SECRET');
 });

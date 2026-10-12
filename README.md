@@ -32,7 +32,7 @@ Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a
 ## Current scope
 
 - This repository belongs to **xdr-labs** and follows [datarelay-labs/engineering-system](https://github.com/datarelay-labs/engineering-system).
-- The default screen is a six-step Korean-first Guided Builder: samples → visual field creation → typed normalization → receiver and classification → tests → guarded artifact handoff. Expert Workbench remains optional. They share one draft and session-local sample logs.
+- The default screen is a six-step English-only Guided Builder: samples → visual field creation → typed normalization → receiver and classification → tests → guarded artifact handoff. Expert Workbench remains optional. They share one draft and session-local sample logs.
 - **Export:** only a JSON draft is available. Fluentd `.conf` and Stellar parser export are deliberately disabled until native/target evidence is provided.
 - Original customer logs, exports and credentials must never be committed by default.
 - The separate docs session conducted a read-only inventory of real `.conf` / extensionless Ruby reference pairs. Real fixture behavior, native loader assembly and target import remain unverified. Prior GitHub Chromium browser 9/9 PASS was recorded in [Actions run 38153121808](https://github.com/xdr-labs/parser-studio/actions/runs/38153121808) for commit `d751252`; new Guided Builder tests must also pass on the target PR HEAD before release.
