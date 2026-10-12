@@ -44,7 +44,7 @@ test('unsupported preview format fails visibly and never pretends to start repla
   await page.getByRole('button',{name:/6\. 파일 생성/}).click();
   await page.locator('.guided-replay-preview summary').click();
   await page.getByRole('button',{name:'로컬 반복 생성 시작'}).click();
-  await expect(page.locator('.guided-replay-preview [role="alert"]')).toContainText('합성 로그 생성 실패');
+  await expect(page.locator('.guided-replay-preview [role="alert"]')).toContainText('로컬 반복 생성 시작 실패');
   await expect(page.locator('.guided-replay-status')).toContainText('실제 센서 전송 0건');
   await expect(page.getByRole('button',{name:'로컬 반복 생성 중지'})).toHaveCount(0);
 });
