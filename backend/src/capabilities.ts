@@ -79,6 +79,10 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     requiresApiKey: false,
     autoDeploys: false,
     exactArtifactRevision: true,
+    ownedOfflineRevisionHistoryOptIn: true,
+    ownedOfflineRevisionHttpAvailableWhenInjected: true,
+    revisionRestorePreviewNeverWritesTarget: true,
+    revisionHistoryDurableAcrossRestart: false,
   },
   import: {
     exactInternalPairsEditable: true,

@@ -5,6 +5,8 @@ import { compilePair } from "./compiler.js";
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {TargetApplyMockGateway} from "./target-apply-bff.js";
 import {TargetDeploymentError} from "./target-deployment.js";
+import {ArtifactRevisionHistory,ArtifactRevisionHistoryError,
+  type RevisionOwner} from "./artifact-revision-history.js";
 import {buildArtifactPackage,ArtifactPackageError} from "./artifact-package.js";
 import {proposeParserPort,PortPlanError} from "./stellar-port-plan.js";
 import {createSyntheticPreview,SyntheticPreviewError} from "./testlab-synthetic.js";
@@ -65,6 +67,9 @@ async function jsonInput(req: IncomingMessage, maxBytes = MAX_PROJECT_BYTES): Pr
 export interface BackendServerOptions {
   /** Explicit offline mock-only target Apply injection. Default disabled. */
   targetApplyMockGateway?:TargetApplyMockGateway;
+  /** Owner-only, in-memory offline artifact history; disabled by default. */
+  artifactRevisionHistory?:ArtifactRevisionHistory;
+  authorizeArtifactRevision?:(request:IncomingMessage)=>Promise<RevisionOwner|null>;
   legacyClient?:LegacyPocClient;
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
@@ -132,6 +137,106 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
         send(res, 405, {error: "METHOD_NOT_ALLOWED"});
       } else {
         send(res, 200, BACKEND_CAPABILITIES);
+      }
+      return;
+    }
+    // Owner-scoped temporary artifact history. No DP access or activation.
+    const revisionPrefix="/api/v1/parser-pairs/revisions/";
+    if(path.startsWith(revisionPrefix)){
+      const action=path.slice(revisionPrefix.length);
+      if(!["register","list","download","diff","restore-preview"].includes(action)){
+        send(res,404,{error:"NOT_FOUND"});return;
+      }
+      const isRead=action==="list"||action==="download";
+      if(req.method!==(isRead?"GET":"POST")){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      const history=options.artifactRevisionHistory;
+      const authorize=options.authorizeArtifactRevision;
+      if(!history||!authorize){
+        send(res,403,{error:"REVISION_HISTORY_DISABLED"});return;
+      }
+      let actor:RevisionOwner|null=null;
+      try{actor=await authorize(req);}
+      catch{/* Private authentication unavailable. */}
+      if(!actor){
+        send(res,403,{error:"REVISION_ACCESS_DENIED"});return;
+      }
+      const sendZip=(file:{zip:Buffer;filename:string;artifactRevisionId:string;
+        zipSha256:string},restored=false)=>{
+        res.writeHead(200,{
+          "content-type":"application/zip",
+          "content-disposition":'attachment; filename="'+file.filename+'"',
+          "content-length":file.zip.length,
+          "cache-control":"no-store",
+          "x-content-type-options":"nosniff",
+          "referrer-policy":"no-referrer",
+          "x-frame-options":"DENY",
+          "cross-origin-resource-policy":"same-origin",
+          "x-parser-artifact-revision":file.artifactRevisionId,
+          "x-parser-zip-sha256":file.zipSha256,
+          ...(restored?{"x-parser-restore-status":"OFFLINE_RESTORE_PREVIEW"}:{}),
+        });
+        res.end(file.zip);
+      };
+      try{
+        if(isRead){
+          const query=new URL(req.url??"","http://localhost").searchParams;
+          const key=action==="list"?"projectId":"artifactRevisionId";
+          if([...query.keys()].some(k=>k!==key)||query.getAll(key).length!==1){
+            send(res,422,{error:"REVISION_QUERY_INVALID"});return;
+          }
+          const id=query.get(key)!;
+          if(action==="list"){
+            send(res,200,{contract:"offline-revision-history.v0.1",
+              revisions:history.list(actor,id),persistent:false,
+              deploymentPerformed:false});
+          }else sendZip(history.download(actor,id));
+          return;
+        }
+        if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+          req.headers["content-type"]||"")){
+          send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+        }
+        const declared=Number(req.headers["content-length"]??0);
+        if(!Number.isSafeInteger(declared)||declared<0||declared>MAX_IMPORT_BYTES){
+          send(res,413,{error:"INPUT_TOO_LARGE"});return;
+        }
+        const raw=await jsonInput(req,MAX_IMPORT_BYTES);
+        if(!raw||typeof raw!=="object"||Array.isArray(raw)){
+          send(res,422,{error:"REVISION_REQUEST_INVALID"});return;
+        }
+        const data=raw as Record<string,unknown>;
+        const exact=action==="register"?["pair","version"]:
+          action==="diff"?["fromRevisionId","toRevisionId"]:
+          ["previousRevisionId","expectedCurrentRevisionId"];
+        if(Object.keys(data).sort().join(",")!==[...exact].sort().join(",")){
+          send(res,422,{error:"REVISION_REQUEST_INVALID"});return;
+        }
+        if(action==="register"){
+          send(res,200,history.register(actor,data["pair"] as PairExport,
+            data["version"] as string));
+        }else if(action==="diff"){
+          send(res,200,history.diff(actor,data["fromRevisionId"] as string,
+            data["toRevisionId"] as string));
+        }else{
+          sendZip(history.prepareRestore(actor,data["previousRevisionId"] as string,
+            data["expectedCurrentRevisionId"] as string),true);
+        }
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof ArtifactPackageError)
+          send(res,422,{error:error.code});
+        else if(error instanceof ArtifactRevisionHistoryError){
+          const status=error.code==="REVISION_NOT_FOUND"?404:
+            /DUPLICATE|CURRENT_CONFLICT|PROJECT_MISMATCH/.test(error.code)?409:
+            error.code==="REVISION_CAPACITY_REACHED"?429:
+            error.code==="REVISION_INTEGRITY_UNVERIFIED"?503:
+            error.code==="REVISION_ACTOR_INVALID"?403:422;
+          send(res,status,{error:error.code,realTargetVerified:false});
+        }else send(res,500,{error:"REVISION_REQUEST_FAILED"});
       }
       return;
     }

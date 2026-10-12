@@ -148,9 +148,20 @@ revision as a concurrency check. It returns the old ZIP for offline review
 and explicitly does NOT change history, perform a PUT/DELETE, modify
 target state, or assert runtime parser support.
 
-This test-only contract is not integrated into the default backend HTTP
-server or a database. Storage is capped at 128 revisions and 24 hours,
-then is lost on expiry or process restart; it is not an authoritative
-persistent audit or disaster-recovery backup. Production restore still
+This test-only contract is not enabled in the default CLI and is not
+integrated with any database. An explicitly injected
+ArtifactRevisionHistory and independent authorizeArtifactRevision callback
+enable only these authenticated offline routes:
+POST /api/v1/parser-pairs/revisions/register,
+GET /api/v1/parser-pairs/revisions/list?projectId=...,
+GET /api/v1/parser-pairs/revisions/download?artifactRevisionId=...,
+POST /api/v1/parser-pairs/revisions/diff and
+POST /api/v1/parser-pairs/revisions/restore-preview.
+Every route checks the server-resolved owner/tenant, and all archive
+downloads have no-store headers. Offline restore-preview returns the
+previous owner-owned ZIP without mutating target state or recorded history.
+Storage is capped at 128 revisions and 24 hours, then lost on expiry
+or process restart; this is not a persistent audit or disaster-recovery
+backup. Production restore still
 requires an approved durable storage and provenance design, separate
 target authorization and actual readback verification.
