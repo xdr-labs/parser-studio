@@ -259,13 +259,16 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           if(!input||typeof input!=="object"||Array.isArray(input)){
             send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
           }
-          const allowed=action==="start"?
+          const required=action==="start"?
             (Object.hasOwn(input,"scenario")?
               ["scenario","approvalId","ratePerSecond","leaseMs","maxEvents"]:
               ["sample","approvalId","ratePerSecond","leaseMs","maxEvents"]):
             action==="renew"?["runId","approvalId","leaseMs","additionalEvents"]:
             ["runId"];
-          if(Object.keys(input).sort().join(",")!==allowed.sort().join(",")){
+          const permitted=action==="start"?
+            [...required,"artifactRevisionId"]:required;
+          if(Object.keys(input).some(key=>!permitted.includes(key))||
+            required.some(key=>!Object.hasOwn(input!,key))){
             send(res,422,{error:"TESTLAB_SESSION_INPUT_INVALID"});return;
           }
           if(action!=="start")runId=input["runId"] as string;
@@ -303,6 +306,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           ratePerSecond:data["ratePerSecond"] as number,
           leaseMs:data["leaseMs"] as number,
           maxEvents:data["maxEvents"] as number,
+          artifactRevisionId:data["artifactRevisionId"] as string|undefined,
         },actor);
         send(res,200,result);
       }catch(error){
@@ -315,7 +319,8 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           const status=error.code==="TESTLAB_SESSION_NOT_FOUND"?404:
             error.code==="TESTLAB_CAPACITY_REACHED"?429:
             error.code==="TESTLAB_RENEWAL_IN_PROGRESS"?409:
-            error.code==="TESTLAB_SENDER_SHUTDOWN"?503:
+            error.code==="TESTLAB_SENDER_SHUTDOWN"||
+              error.code==="TESTLAB_JOURNAL_UNAVAILABLE"?503:
             /DISABLED|DENIED/.test(error.code)?403:422;
           send(res,status,{error:error.code});
         }else send(res,500,{error:"TESTLAB_SESSION_FAILED"});

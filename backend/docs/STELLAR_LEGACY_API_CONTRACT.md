@@ -238,8 +238,12 @@ trusted sensor sink MUST honor cancellation. Stop suppresses future ticks but
 cannot retract an already-sent packet. Concurrent approval requests reserve
 capacity before awaiting the external authorization, closing the backend
 server cancels/purges all sessions, and late approval cannot restart a
-closed controller. The current in-memory loop is NOT durable across server
-restart and has no worker recovery yet. With a separate trusted approveRenewal
+closed controller. The in-memory loop is NOT durable across server
+restart. An optional secure metadata-only journal can report
+REAPPROVAL_REQUIRED or EXPIRED_NO_RESTART after restart, but never
+automatically resumes network packets or restores raw source. See
+[worker recovery](TESTLAB_WORKER_RECOVERY.md).
+With a separate trusted approveRenewal
 callback, a verified session owner can POST /renew with runId, approvalId,
 leaseMs and additionalEvents. Each renewal independently validates owner,
 operator approval, remaining lease, 250ms..15min new lease, 0..3000 extra

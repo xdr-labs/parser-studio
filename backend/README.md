@@ -146,3 +146,12 @@ The key uses hidden terminal input and the ignored profile is protected
 0600. --check verifies stored permissions without printing private values.
 No automatic DP connection, synthetic sending, or deployment is enabled.
 See [operator setup](docs/TARGET_CONNECTION_SETUP.md).
+
+
+Test Lab operator worker recovery (opt-in, no live traffic): metadata-only
+TestLabWorkerJournal records actor, artifact revision, lease, counts and
+STOP/FAIL transitions to a private hash-linked append-only 0600 journal.
+Any interrupted run requires reapproval; there is no automatic restoration
+of source logs, network sockets or delivery, and the default server never
+enables this journal. See
+[worker recovery design](docs/TESTLAB_WORKER_RECOVERY.md).

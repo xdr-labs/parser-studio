@@ -48,6 +48,8 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     sessionMaxCumulativeEvents: 300000,
     sessionRenewalRequiresSeparateApproval: true,
     sessionDurableAcrossRestart: false,
+    sessionMetadataJournalOptInAvailable: true,
+    sessionAutoResumeAfterRestart: false,
     serverInjectedUdpTcpSinkAvailable: true,
     sinkRequiresIpLiteralAllowlist: true,
     sinkRequiresPerDeliveryPolicyAndAudit: true,

@@ -36,6 +36,8 @@ test("test-lab session controls are unavailable without trusted backend sink/aut
     assert.equal(c.testLab.liveSensorSenderEnabled,false);
     assert.equal(c.testLab.trustedSinkSessionControlAvailable,true);
     assert.equal(c.testLab.sessionDurableAcrossRestart,false);
+    assert.equal(c.testLab.sessionMetadataJournalOptInAvailable,true);
+    assert.equal(c.testLab.sessionAutoResumeAfterRestart,false);
     assert.equal(c.testLab.sessionMaxRatePerSecond,5);
   });
 });

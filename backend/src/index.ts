@@ -64,3 +64,7 @@ export type {TargetReference,TargetKnownParser,TargetCatalogueEntry,
   TargetInventoryGroup,TargetDeploymentApi,TargetOperationIntent,
   TargetDeploymentAudit,TargetApplyResult,TargetCreateRequest,
   TargetApproval} from "./target-deployment.js";
+
+
+export {TestLabWorkerJournal,WorkerJournalError} from "./testlab-worker-journal.js";
+export type {WorkerMetadata,WorkerLifecycle,WorkerReconciliation} from "./testlab-worker-journal.js";

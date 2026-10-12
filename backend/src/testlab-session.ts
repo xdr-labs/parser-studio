@@ -6,6 +6,7 @@
  * agent may inject a delivery callback and server-side approval policy.
  */
 import {randomUUID} from "node:crypto";
+import type {WorkerMetadata} from "./testlab-worker-journal.js";
 import {createSyntheticPreview,SyntheticPreviewError,
   type SyntheticPreviewRequest} from "./testlab-synthetic.js";
 import {selectScenarioPreview,validateReplayScenario,ScenarioContractError,
@@ -15,6 +16,8 @@ export type TestLabState="RUNNING"|"PAUSED"|"STOPPED"|"EXPIRED"|"FAILED"|"COMPLE
 export type TestLabStartRequest={
   sample?:SyntheticPreviewRequest;
   scenario?:ReplayScenario;
+  /** Exact SHA-256 of an independently reviewed compiled package. */
+  artifactRevisionId?:string;
   approvalId:string;
   ratePerSecond:number;
   leaseMs:number;
@@ -50,7 +53,8 @@ export type TestLabStatus={
 export type TestLabSessionConfig={
   /** Supplied by trusted backend, never by a browser alone. */
   approveStart?:(intent:{approvalId:string;runId:string;format:string;
-    ratePerSecond:number;maxEvents:number;leaseMs:number})=>Promise<boolean>;
+    ratePerSecond:number;maxEvents:number;leaseMs:number;
+    artifactRevisionId?:string})=>Promise<boolean>;
   /** New explicit operator decision for EVERY lease renewal. */
   approveRenewal?:(intent:{approvalId:string;runId:string;ownerId:string|null;
     leaseMs:number;additionalEvents:number;currentExpiry:string;
@@ -59,6 +63,9 @@ export type TestLabSessionConfig={
   deliver?:(event:string,context:TestLabSendContext)=>Promise<void>;
   now?:()=>number;
   maxConcurrent?:number;
+  /** Synchronous owner-only durable write. START fails BEFORE sending
+   * if this callback is configured and its journal write is unavailable. */
+  recordTransition?:(event:WorkerMetadata)=>void;
 };
 export class TestLabSessionError extends Error{
   constructor(readonly code:string){super(code);this.name="TestLabSessionError";}
@@ -68,6 +75,7 @@ type ActiveSession={
   state:TestLabState;
   runId:string;
   ownerId:string|null;
+  artifactRevisionId?:string;
   sample:SyntheticPreviewRequest;
   scenario?:ReplayScenario;
   ratePerSecond:number;
@@ -93,17 +101,37 @@ export class SyntheticSessionController{
   #deliver?:TestLabSessionConfig["deliver"];
   #now:()=>number;
   #maxConcurrent:number;
+  #recordTransition?:TestLabSessionConfig["recordTransition"];
   constructor(config:TestLabSessionConfig){
     this.#approve=config.approveStart;
     this.#approveRenewal=config.approveRenewal;
     this.#deliver=config.deliver;
     this.#now=config.now??(()=>Date.now());
+    this.#recordTransition=config.recordTransition;
     this.#maxConcurrent=config.maxConcurrent??2;
     if(!Number.isInteger(this.#maxConcurrent)||this.#maxConcurrent<1||
        this.#maxConcurrent>10)invalid("TESTLAB_CAPACITY_INVALID");
   }
   #activeCount(){
     return [...this.#sessions.values()].filter(x=>x.state==="RUNNING"||x.state==="PAUSED").length;
+  }
+  #journal(session:ActiveSession):void{
+    if(!this.#recordTransition)return;
+    if(!session.ownerId)invalid("TESTLAB_JOURNAL_OWNER_REQUIRED");
+    if(!session.artifactRevisionId||
+       !/^[0-9a-f]{64}$/.test(session.artifactRevisionId))
+      invalid("TESTLAB_JOURNAL_ARTIFACT_REQUIRED");
+    const data:WorkerMetadata={
+      runId:session.runId,actorId:session.ownerId,
+      state:session.state,
+      leaseExpiresAt:new Date(session.leaseDeadline).toISOString(),
+      sentCount:session.sentCount,maxEvents:session.maxEvents,
+      artifactRevisionId:session.artifactRevisionId,
+      replayMode:session.scenario?.mode??"single",
+      sampleFamilyCount:session.scenario?.events.length??1,
+    };
+    try{this.#recordTransition(data);}
+    catch{invalid("TESTLAB_JOURNAL_UNAVAILABLE");}
   }
   #public(session:ActiveSession):TestLabStatus{
     return {
@@ -142,6 +170,9 @@ export class SyntheticSessionController{
     if(item.expiryTimer)clearTimeout(item.expiryTimer);
     item.tickTimer=null;item.expiryTimer=null;
     item.cancellation.abort();
+    // Stop always wins, even if its metadata-only audit sink is unavailable.
+    try{this.#journal(item);}
+    catch{item.errorCode="TESTLAB_JOURNAL_UNAVAILABLE";}
     // Purge the raw sample(s) from retained session state on terminal paths.
     item.sample={...item.sample,source:""};
     if(item.scenario)item.scenario={...item.scenario,events:item.scenario.events.map(entry=>({
@@ -167,6 +198,10 @@ export class SyntheticSessionController{
     item.state="PAUSED";
     if(item.tickTimer)clearTimeout(item.tickTimer);
     item.tickTimer=null;
+    try{this.#journal(item);}catch{
+      this.#end(item,"FAILED","TESTLAB_JOURNAL_UNAVAILABLE");
+      invalid("TESTLAB_JOURNAL_UNAVAILABLE");
+    }
     return this.#public(item);
   }
   resume(runId:string,ownerId?:string):TestLabStatus{
@@ -176,6 +211,10 @@ export class SyntheticSessionController{
       this.#end(item,"EXPIRED");return this.#public(item);
     }
     item.state="RUNNING";
+    try{this.#journal(item);}catch{
+      this.#end(item,"FAILED","TESTLAB_JOURNAL_UNAVAILABLE");
+      invalid("TESTLAB_JOURNAL_UNAVAILABLE");
+    }
     this.#schedule(item,0);
     return this.#public(item);
   }
@@ -230,6 +269,10 @@ export class SyntheticSessionController{
       if(item.expiryTimer)clearTimeout(item.expiryTimer);
       item.expiryTimer=setTimeout(()=>this.#end(item,"EXPIRED"),request.leaseMs);
       item.expiryTimer.unref?.();
+      try{this.#journal(item);}catch{
+        this.#end(item,"FAILED","TESTLAB_JOURNAL_UNAVAILABLE");
+        invalid("TESTLAB_JOURNAL_UNAVAILABLE");
+      }
       return this.#public(item);
     }finally{
       this.#pendingRenewals.delete(runId);
@@ -263,6 +306,7 @@ export class SyntheticSessionController{
       item.sentCount++;
       item.nextSequence++;
       item.lastSentAt=new Date(this.#now()).toISOString();
+      this.#journal(item);
       if(item.sentCount>=item.maxEvents){this.#end(item,"COMPLETED");return;}
       this.#schedule(item,picked.nextDelayMs);
     }catch{
@@ -276,6 +320,12 @@ export class SyntheticSessionController{
       !/^[A-Za-z0-9_.:@-]{1,128}$/.test(ownerId)))
       invalid("TESTLAB_OWNER_INVALID");
     if(!this.#approve||!this.#deliver)invalid("TESTLAB_SENDER_DISABLED");
+    if(this.#recordTransition && !ownerId)
+      invalid("TESTLAB_JOURNAL_OWNER_REQUIRED");
+    if(this.#recordTransition &&
+      (typeof input?.artifactRevisionId!=="string"||
+       !/^[0-9a-f]{64}$/.test(input.artifactRevisionId)))
+      invalid("TESTLAB_JOURNAL_ARTIFACT_REQUIRED");
     if(!input||Boolean(input.sample)===Boolean(input.scenario)||
       typeof input.approvalId!=="string"||
       !/^[A-Za-z0-9_.-]{8,96}$/.test(input.approvalId)||
@@ -304,6 +354,8 @@ export class SyntheticSessionController{
         format:input.scenario?"scenario:"+input.scenario.mode:input.sample!.format,
         ratePerSecond:input.ratePerSecond,maxEvents:input.maxEvents,
         leaseMs:input.leaseMs,
+        ...(input.artifactRevisionId===undefined?{}:
+          {artifactRevisionId:input.artifactRevisionId}),
       });
     }catch{/* Trusted approval service failure means deny. */}
     if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
@@ -339,11 +391,15 @@ export class SyntheticSessionController{
     const item:ActiveSession={
       runId,ownerId:ownerId??null,state:"RUNNING",sample,
       ...(scenario?{scenario}:{}),
+      ...(input.artifactRevisionId===undefined?{}:
+        {artifactRevisionId:input.artifactRevisionId}),
       ratePerSecond:input.ratePerSecond,intervalMs:Math.ceil(1000/input.ratePerSecond),
       leaseDeadline:now+input.leaseMs,maxEvents:input.maxEvents,
       sentCount:0,nextSequence:0,lastSentAt:null,errorCode:null,
       cancellation:new AbortController(),tickTimer:null,expiryTimer:null,
     };
+    // Durable START MUST succeed before queueing any synthetic delivery.
+    this.#journal(item);
     this.#sessions.set(runId,item);
     item.expiryTimer=setTimeout(()=>this.#end(item,"EXPIRED"),input.leaseMs);
     item.expiryTimer.unref?.();
