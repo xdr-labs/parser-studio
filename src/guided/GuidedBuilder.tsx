@@ -34,6 +34,7 @@ import { queryApprovedInterflowReadback, type InterflowReadbackResult, type Inte
 import { inspectParserPair, type PairInspectionSummary } from './pairInspection';
 import { buildPairImportReview } from './pairImportReview';
 import { reconstructExactBackendDraft } from './pairProjectImport';
+import { reviewLocalProjectJson, MAX_PROJECT_JSON_BYTES } from './localProjectImport';
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
 import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
@@ -194,6 +195,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const [inspectionError, setInspectionError] = useState('');
   const [importReplaceConfirmed,setImportReplaceConfirmed]=useState(false);
   const inspectRequestId=useRef(0);
+  const [localProjectFile,setLocalProjectFile]=useState<File|null>(null);
+  const [localProjectCandidate,setLocalProjectCandidate]=useState<ParserDraft|null>(null);
+  const [localProjectReviewBusy,setLocalProjectReviewBusy]=useState(false);
+  const [localProjectError,setLocalProjectError]=useState('');
+  const [localProjectReplaceConfirmed,setLocalProjectReplaceConfirmed]=useState(false);
+  const localProjectReviewId=useRef(0);
   const [schemaLoading, setSchemaLoading] = useState(false);
   const [schemaGuide, setSchemaGuide] = useState<BackendSchemaGuide | null>(null);
   const [schemaError, setSchemaError] = useState('');
@@ -910,6 +917,38 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     }
   };
 
+  const inspectLocalProjectFile=async()=>{
+    const file=localProjectFile;
+    if(!file || localProjectReviewBusy)return;
+    const token=++localProjectReviewId.current;
+    setLocalProjectError('');setLocalProjectCandidate(null);
+    setLocalProjectReplaceConfirmed(false);
+    setLocalProjectReviewBusy(true);
+    try{
+      if(!/\.json$/i.test(file.name)||file.size>MAX_PROJECT_JSON_BYTES||file.size===0)
+        throw new Error('Choose a Project JSON file up to 256 KiB.');
+      const draft=reviewLocalProjectJson(new Uint8Array(await file.arrayBuffer()));
+      if(token!==localProjectReviewId.current)return;
+      setLocalProjectCandidate(draft);
+    }catch(error){
+      if(token===localProjectReviewId.current)setLocalProjectError(
+        error instanceof Error?error.message:'Project JSON cannot be safely restored.');
+    }finally {
+      if(token===localProjectReviewId.current)setLocalProjectReviewBusy(false);
+    }
+  };
+  const applyLocalProjectDraft=()=>{
+    if(!localProjectReplaceConfirmed||!localProjectCandidate||
+      localProjectReviewBusy)return;
+    ++localProjectReviewId.current;
+    setDraft(localProjectCandidate);
+    setSample('');setDatasetName('Validated local Project JSON · No sample logs');
+    setLocalProjectFile(null);setLocalProjectCandidate(null);
+    setLocalProjectReplaceConfirmed(false);setLocalProjectError('');
+    setStep(2);
+    notify('Loaded a reviewed Project JSON into an unsaved Guided draft. Sample logs were cleared; no backend request or device action occurred.');
+  };
+
   const inspectChosenPair = async () => {
     const requestId=++inspectRequestId.current;
     setImportReplaceConfirmed(false);
@@ -1533,6 +1572,49 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 : <button type="button" className="guided-cta-main" disabled><FileArchive size={15} /> Generate 2 Parser Files (Backend Required)</button>}
               <button type="button" className="guided-cta-secondary" disabled={!backendProject.ok} onClick={() => { if (backendProject.ok) localDownload('parser-project-'+backendProject.project.slug+'.json', JSON.stringify(backendProject.project, null, 2)); }}><Download size={15} /> Download Project JSON for Backend</button>
             </div>
+            <details className="guided-local-project-import" aria-label="Offline Project JSON restore">
+              <summary>Restore Existing Project JSON · Offline, Explicit &amp; Lossless</summary>
+              <p>Previously downloaded Parser Studio project JSON can be reviewed locally.
+                Selecting a file never sends it to a server or changes your draft.
+                Unsupported fields, receiver settings, type conversions and routes are refused
+                rather than silently dropped.</p>
+              <label className="guided-field"><span>Existing Project JSON</span>
+                <input type="file" aria-label="Offline project JSON file"
+                  accept=".json,application/json" onChange={event=>{
+                    localProjectReviewId.current++;
+                    setLocalProjectFile(event.target.files?.[0]??null);
+                    setLocalProjectCandidate(null);setLocalProjectReplaceConfirmed(false);
+                    setLocalProjectReviewBusy(false);setLocalProjectError('');
+                  }}/>
+              </label>
+              <button type="button" className="guided-cta-secondary"
+                disabled={!localProjectFile||localProjectReviewBusy}
+                onClick={()=>{void inspectLocalProjectFile();}}>
+                <ShieldCheck size={15}/>
+                {localProjectReviewBusy?'Validating Project JSON…':'Validate Local Project JSON'}
+              </button>
+              {localProjectError&&<p role="alert" className="guided-error">{localProjectError}</p>}
+              {localProjectCandidate&&<div className="guided-local-project-ready" aria-label="Validated local project">
+                <strong>Lossless Project Model Verified · No Import Yet</strong>
+                <p>{localProjectCandidate.name} · {localProjectCandidate.format.toUpperCase()}
+                  {' · '}Mappings: {localProjectCandidate.mappings.length}
+                  {' · '}One shared port: {localProjectCandidate.guided?.receiver.port}</p>
+                <label className="guided-owner-check">
+                  <input type="checkbox" aria-label="Confirm replace draft with Project JSON"
+                    checked={localProjectReplaceConfirmed}
+                    onChange={event=>setLocalProjectReplaceConfirmed(event.target.checked)}/>
+                  Replace the current unsaved draft and clear ALL raw sample logs.
+                  This file is not saved as a revision automatically.
+                </label>
+                <button type="button" className="guided-cta-secondary"
+                  disabled={!localProjectReplaceConfirmed||localProjectReviewBusy}
+                  onClick={applyLocalProjectDraft}>
+                  <FileCheck2 size={15}/> Restore Validated JSON as Unsaved Draft
+                </button>
+              </div>}
+              <small>256 KiB maximum · Strict UTF-8 · No Ruby execution · No DP/sensor traffic ·
+                Exact schema and semantics required. Native Fluentd and target import remain unverified.</small>
+            </details>
             {qualifiedBackend?.result.ok && (!runState?.suite.counts.total || runState.suite.counts.matched !== runState.suite.counts.total || runState.suite.counts.normalized !== runState.suite.counts.total || runState.suite.counts.failures > 0) && <div className="guided-hint"><AlertTriangle size={16} /> Run the full browser test in step 5 for this exact draft and sample. All events must be extracted and normalized before DRAFT generation is enabled.</div>}
             {qualifiedPair && <div className="guided-generated-pair" aria-label="Generated draft parser pair">
               <div className="guided-generated-header"><FileCheck2 size={18} /><div><strong>2 DRAFT Files · SHA-256 Verified</strong><small>Native Fluentd and Stellar import unverified · No automatic deployment</small></div></div>

@@ -593,3 +593,16 @@
 .guided-exact-pair-import p {font-size:10px;line-height:1.65;color:#5e7780;margin:0}
 .guided-exact-pair-import .guided-owner-check {color:#6b654d}
 .guided-exact-pair-import button:focus-visible {outline:2px solid #167d8a;outline-offset:2px}
+
+/* Independent, offline-only project JSON review and explicitly confirmed restore. */
+.guided-local-project-import {border:1px solid #d7e3de;border-radius:8px;padding:13px;margin:14px 0;background:#f8fbfa}
+.guided-local-project-import summary {cursor:pointer;color:#28736a;font-size:11px;font-weight:850}
+.guided-local-project-import > p,.guided-local-project-import > small {color:#638078;display:block;font-size:10px;line-height:1.65;margin:10px 0}
+.guided-local-project-import .guided-field {margin:8px 0;min-width:0}
+.guided-local-project-import input[type=file] {max-width:100%;font-size:10px}
+.guided-local-project-import :is(summary,button,input):focus-visible {outline:2px solid #137b85;outline-offset:2px}
+.guided-local-project-ready {display:flex;flex-direction:column;gap:10px;border:1px solid #c9e3d5;border-radius:7px;background:white;padding:12px;margin:12px 0}
+.guided-local-project-ready strong {font-size:11px;color:#30776a}
+.guided-local-project-ready p {margin:0;font-size:10px;color:#5d7c77;line-height:1.6}
+.guided-local-project-ready .guided-owner-check {font-size:10px;color:#7d704e}
+.guided-local-project-ready button {align-self:flex-start}

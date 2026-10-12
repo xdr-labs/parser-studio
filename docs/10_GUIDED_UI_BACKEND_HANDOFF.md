@@ -323,3 +323,26 @@ the action does not submit a DP write, start a sensor sender or save a revision.
 The replacement immediately opens the normalization/mapping screen for review.
 A stale in-flight inspection is discarded when either selected file changes,
 so an old inspected pair cannot replace a newer user selection.
+
+### 2026-10-12 — Offline ParserProject JSON review and explicit unsaved restoration
+
+Guided Step 6 now accepts a previously downloaded `ParserProject` JSON file via
+**browser-local review**; selecting it makes no network request or draft change.
+The user must explicitly press **Validate Local Project JSON**. The importer
+rejects empty files, files above 256 KiB, unsupported file extensions, malformed
+UTF-8 and JSON, unsafe slugs, unsupported groups/operators/format/receiver
+settings, foreign project IDs and every field that cannot be reconstructed with
+perfect equality. It uses `reconstructExactBackendDraft` and the existing
+UI-to-backend adapter for a full semantic round-trip before marking a project
+eligible. It never evaluates Ruby or arbitrary scripts and never sends the JSON
+to the backend or target DP.
+
+Only after a separate checkbox confirmation does **Restore Validated JSON as
+Unsaved Draft** replace the current unsaved UI draft, clear all original sample
+logs and navigate to mapping review. This action neither autosaves a local
+revision nor invokes sensor, target, deployment or Interflow APIs. Local file
+read operations use a per-selection token to discard stale replies after a
+different file is chosen. The original file remains unchanged. Unit regressions
+cover UTF-8, 256 KiB bounds, ignored/unsupported fields and exact round-trip;
+`tests/offline-project-json-import.spec.ts` verifies explicit confirmation,
+zero backend API calls, clearing sample logs and rejection without mutation.
