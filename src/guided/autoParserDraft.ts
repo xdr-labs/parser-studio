@@ -53,8 +53,8 @@ export function prepareAutoParserDraft(
     const census=[...new Set(ledger.families.map(x=>
       x.envelope==='rfc5424'&&['cef','leef','json','kv'].includes(x.body)?
         'rfc5424_'+x.body:
-      x.envelope==='rfc3164'&&x.body==='kv'?
-        'rfc3164_kv':x.envelope==='none'?x.body:'UNSUPPORTED'))].sort();
+      x.envelope==='rfc3164'&&['kv','cef','leef'].includes(x.body)?
+        'rfc3164_'+x.body:x.envelope==='none'?x.body:'UNSUPPORTED'))].sort();
     if(!same(census,approved))return failed('MIXED_OR_UNKNOWN');
   }
   const relevant=ledger.events.every(entry=>entry.status==='RECOGNIZED');

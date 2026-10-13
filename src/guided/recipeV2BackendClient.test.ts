@@ -170,6 +170,29 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
   await expect(checkRecipeV02Compiler(forged as typeof fetch,undefined,true))
     .rejects.toThrow(/not verified/);
  });
+ it('requires 11 reviewed mixed families for RFC3164 CEF/LEEF and denies old or forged IDs',async()=>{
+  const make=(families:string[])=>vi.fn(async()=>response({...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'mixed'],
+    strictMixedSingleLineFamilies:families}));
+  const older=['json','kv','cef','leef','rfc5424_cef','rfc5424_leef',
+    'rfc3164_kv','rfc5424_json','rfc5424_kv'];
+  const denied=make(older);
+  await expect(checkRecipeV02Compiler(denied as typeof fetch,
+    'rfc3164_strict_no_year_or_zone',true,false,
+    ['json','kv','rfc3164_cef','rfc3164_leef'])).rejects.toThrow(/not verified/);
+  const valid=[...older,'rfc3164_cef','rfc3164_leef'];
+  const good=make(valid);
+  expect(await checkRecipeV02Compiler(good as typeof fetch,
+    'rfc3164_strict_no_year_or_zone',true,false,
+    ['json','kv','rfc3164_cef','rfc3164_leef'])).toBe(true);
+  for(const invalid of [
+    [...older,'rfc3164_cef','experimental'],
+    [...valid,'experimental'],
+  ]){
+    await expect(checkRecipeV02Compiler(make(invalid) as typeof fetch,
+      'rfc3164_strict_no_year_or_zone',true)).rejects.toThrow(/not verified/);
+  }
+ });
  it('gates explicit TCP blank-line JSON by exact backend v0.2 transport claims',async()=>{
   const supported=vi.fn(async()=>response(capability));
   expect(await checkRecipeV02Compiler(supported as typeof fetch,undefined,false,true))

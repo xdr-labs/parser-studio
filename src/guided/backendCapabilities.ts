@@ -9,7 +9,7 @@ export interface BackendCapabilities {
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
-    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'>;
+    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
     strictMixedRequiresExplicitAllowlist?: true;
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
@@ -146,12 +146,14 @@ export async function fetchBackendCapabilities(
   const nested=['rfc5424_json','rfc5424_kv'];
   if(mixedAdvertised){
     if(a.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(mixed)||![4,6,7,9].includes(mixed.length)||
+      !Array.isArray(mixed)||![4,6,7,9,11].includes(mixed.length)||
       new Set(mixed).size!==mixed.length||
       !reviewedMixed.every(f=>mixed.includes(f as 'json'))||
       (mixed.length>=6&&!wrapped.every(f=>mixed.includes(f as 'rfc5424_cef')))||
       (mixed.length>=7&&!mixed.includes('rfc3164_kv'))||
-      (mixed.length===9&&!nested.every(f=>mixed.includes(f as 'rfc5424_json'))))
+      (mixed.length>=9&&!nested.every(f=>mixed.includes(f as 'rfc5424_json')))||
+      (mixed.length===11&&!['rfc3164_cef','rfc3164_leef'].every(f=>
+        mixed.includes(f as 'rfc3164_cef'))))
       throw new Error('Backend mixed routing requires one of the exact reviewed family allowlists.');
   }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
     throw new Error('Unsupported mixed routing capability was advertised.');
@@ -245,14 +247,15 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
   }
   if(project.extraction.format==='mixed'){
     const formats=project.extraction.mixedFormats;
-    if(formats.some(f=>['rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv'].includes(f))&&
+    if(formats.some(f=>['rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(f))&&
        project.receiver.port<6800)
       throw new Error('Syslog-wrapped mixed parser sensor/CONF listener port must be >=6800.');
-    if(formats.includes('rfc3164_kv')&&(
+    if(formats.some(f=>f.startsWith('rfc3164_'))&&(
       cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
       cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
       cap.authoring.rfc3164NativeTimeReconstruction!==false||
-      !cap.authoring.rfc3164BodyFormats?.includes('kv')))
+      !formats.filter(f=>f.startsWith('rfc3164_')).every(f=>
+        cap.authoring.rfc3164BodyFormats?.includes(f.slice(8) as 'kv'|'cef'|'leef'))))
       throw new Error('Backend must explicitly support yearless RFC3164 mixed TAG KV.');
     if(cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
       !Array.isArray(formats)||formats.length<2||formats.length>4||

@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -67,6 +67,23 @@ describe('safe synthetic no-code starter templates', () => {
     }
   });
 
+  it('offers strict yearless RFC3164 CEF/LEEF and standalone JSON/KV synthetic starter',()=>{
+    const template=loadStarterTemplate('mixed_rfc3164_cefleef');
+    expect(template.draft.format).toBe('mixed');
+    expect(template.draft.mixedFormats).toEqual(['json','kv','rfc3164_cef','rfc3164_leef']);
+    expect(template.draft.guided?.receiver.port).toBeGreaterThanOrEqual(6800);
+    expect(template.draft.mappings.some(m=>m.source==='syslog_timestamp'&&m.type==='timestamp')).toBe(false);
+    const report=preview(template.sample,template.draft);
+    expect(report.counts).toMatchObject({total:4,matched:4,normalized:4,failures:0});
+    expect(report.events[2]?.fields).toMatchObject({
+      body:{src:'192.0.2.11',act:'deny'},
+      syslog_time_policy:'YEAR_AND_ZONE_UNKNOWN'});
+    const backend=toBackendProject(template.draft);
+    expect(backend.ok).toBe(true);
+    if(backend.ok)expect(backend.project.extraction).toEqual({
+      format:'mixed',mixedFormats:['json','kv','rfc3164_cef','rfc3164_leef']});
+    expect(JSON.stringify(backend)).not.toContain('203.0.113.8');
+  });
   it('offers strict RFC5424-wrapped JSON/KV and standalone JSON/KV synthetic starter',()=>{
     const template=loadStarterTemplate('mixed_rfc5424_bodies');
     expect(template.draft.format).toBe('mixed');

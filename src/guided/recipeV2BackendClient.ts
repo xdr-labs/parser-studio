@@ -71,7 +71,7 @@ export async function checkRecipeV02Compiler(
   (requireMixed&&(
     !values.includes('mixed')||!ops.includes('dispatch_family')||
     !Array.isArray(cap.strictMixedSingleLineFamilies)||
-    ![4,6,7,9].includes(cap.strictMixedSingleLineFamilies.length)||
+    ![4,6,7,9,11].includes(cap.strictMixedSingleLineFamilies.length)||
     new Set(cap.strictMixedSingleLineFamilies).size!==cap.strictMixedSingleLineFamilies.length||
     !['json','kv','cef','leef'].every(f=>
       (cap.strictMixedSingleLineFamilies as unknown[]).includes(f))||
@@ -80,8 +80,11 @@ export async function checkRecipeV02Compiler(
         (cap.strictMixedSingleLineFamilies as unknown[]).includes(f)))||
     (cap.strictMixedSingleLineFamilies.length>=7&&
       !(cap.strictMixedSingleLineFamilies as unknown[]).includes('rfc3164_kv'))||
-    (cap.strictMixedSingleLineFamilies.length===9&&
+    (cap.strictMixedSingleLineFamilies.length>=9&&
       !['rfc5424_json','rfc5424_kv'].every(f=>
+        (cap.strictMixedSingleLineFamilies as unknown[]).includes(f)))||
+    (cap.strictMixedSingleLineFamilies.length===11&&
+      !['rfc3164_cef','rfc3164_leef'].every(f=>
         (cap.strictMixedSingleLineFamilies as unknown[]).includes(f)))||
     !requiredMixedFamilies.every(f=>
       (cap.strictMixedSingleLineFamilies as unknown[]).includes(f))

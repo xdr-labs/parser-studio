@@ -31,7 +31,7 @@ export type CompilerAssessment={
     'COLUMNS_REQUIRED'|'BOUNDARY_REVIEW'|'BACKEND_UNAVAILABLE'|
     'BACKEND_UNTRUSTED'|'SOURCE_LIMIT';
   format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|'mixed'|null;
-  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'>;
+  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
   bodyFormat:'raw'|'json'|'kv'|'cef'|'leef'|null;
   nativeVerified:false;targetVerified:false;
 };
@@ -177,11 +177,11 @@ export function assessEnvelopeCompilation(
       f.envelope==='none'?f.body:
       f.envelope==='rfc5424'&&['cef','leef','json','kv'].includes(f.body)?
         'rfc5424_'+f.body:
-      f.envelope==='rfc3164'&&f.body==='kv'?
-        'rfc3164_kv':null);
+      f.envelope==='rfc3164'&&['kv','cef','leef'].includes(f.body)?
+        'rfc3164_'+f.body:null);
     const basic=['json','kv','cef','leef'];
     const wrapped=['rfc5424_cef','rfc5424_leef'];
-    const rfc3164=['rfc3164_kv'];
+    const rfc3164=['rfc3164_kv','rfc3164_cef','rfc3164_leef'];
     const nested=['rfc5424_json','rfc5424_kv'];
     const known=[...basic,...wrapped,...rfc3164,...nested];
     if(formats.some(f=>f===null||!known.includes(f))||
@@ -192,24 +192,26 @@ export function assessEnvelopeCompilation(
     const mixedClaim:unknown=cap.authoring?.strictMixedRequiresExplicitAllowlist;
     if(mixedClaim===false)return no('BACKEND_UNTRUSTED');
     const advertised=cap.authoring?.strictMixedSingleLineFamilies;
-    if(formats.includes('rfc3164_kv')&&(
+    if(formats.some(name=>name?.startsWith('rfc3164_'))&&(
       cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
       cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
       cap.authoring.rfc3164NativeTimeReconstruction!==false||
-      !cap.authoring.rfc3164BodyFormats?.includes('kv')))
+      !formats.filter(name=>name?.startsWith('rfc3164_')).every(name=>
+        cap.authoring.rfc3164BodyFormats?.includes(name!.slice(8) as 'kv'|'cef'|'leef'))))
       return no('COMPILER_UNSUPPORTED');
     if(!cap.authoring?.extractionFormats?.includes('mixed')||
       cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(advertised)||![4,6,7,9].includes(advertised.length)||
+      !Array.isArray(advertised)||![4,6,7,9,11].includes(advertised.length)||
       new Set(advertised).size!==advertised.length||
       !basic.every(name=>advertised.includes(name as 'json'))||
       (advertised.length>=6&&!wrapped.every(name=>advertised.includes(name as 'rfc5424_cef')))||
-      (advertised.length>=7&&!rfc3164.every(name=>advertised.includes(name as 'rfc3164_kv')))||
-      (advertised.length===9&&!nested.every(name=>advertised.includes(name as 'rfc5424_json')))||
+      (advertised.length>=7&&!advertised.includes('rfc3164_kv'))||
+      (advertised.length===11&&!rfc3164.every(name=>advertised.includes(name as 'rfc3164_kv')))||
+      (advertised.length>=9&&!nested.every(name=>advertised.includes(name as 'rfc5424_json')))||
       !formats.every(name=>advertised.includes(name as 'json')))
       return no('COMPILER_UNSUPPORTED');
     return {status:'DRAFT_COMPILABLE',format:'mixed',
-      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'>,
+      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>,
       nativeVerified:false,targetVerified:false};
   }
   if(report.families.length!==1)return no('MIXED_OR_UNKNOWN');

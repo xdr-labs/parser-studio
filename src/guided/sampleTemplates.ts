@@ -2,7 +2,7 @@ import { createDraft, type MappingRule, type ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 
 export const starterTemplateIds = [
-  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies',
+  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef',
 ] as const;
 export type StarterTemplateId = (typeof starterTemplateIds)[number];
 
@@ -79,6 +79,16 @@ const presets: Record<StarterTemplateId, { label: string; description: string; s
       'CEF:0|Example|Firewall|1|101|Denied|8|action=deny src_ip=203.0.113.11 dst_port=22',
     ],
   },
+  mixed_rfc3164_cefleef:{
+    label:'Mixed JSON/KV + RFC3164 CEF/LEEF · Firewall',
+    description:'One strict yearless RFC3164 TAG: parser with standalone JSON/KV and CEF/LEEF wrapped events',
+    samples:[
+      '{"src_ip":"192.0.2.10","action":"deny"}',
+      'src_ip=198.51.100.8 action=allow',
+      '<165>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny',
+      '<165>Nov 12 02:03:04 edge fw[122]: LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.8\tdstPort=80\tact=allow',
+    ],
+  },
   mixed_rfc5424_bodies:{
     label:'Mixed JSON/KV + RFC5424 JSON/KV · Firewall',
     description:'One explicitly reviewed listener for standalone and RFC5424-wrapped JSON and KV',
@@ -138,13 +148,34 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
   draft.name = 'Synthetic ' + spec.label;
   draft.vendor = 'Synthetic demo (no customer data)';
   draft.format = id === 'rfc5424_cef' || id === 'rfc5424_leef'
-    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':(id==='mixed_rfc5424'||id==='mixed_rfc3164'||id==='mixed_rfc5424_bodies')?'mixed':id;
+    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':(id==='mixed_rfc5424'||id==='mixed_rfc3164'||id==='mixed_rfc5424_bodies'||id==='mixed_rfc3164_cefleef')?'mixed':id;
   draft.csvColumns = 'action,src_ip,dst_port';
   const guided = defaultGuidedOptions();
   guided.slug = 'example_' + id;
   guided.eventBoundary = 'single-line';
   guided.enrichment = [];
 
+  if(id==='mixed_rfc3164_cefleef'){
+    draft.mixedFormats=['json','kv','rfc3164_cef','rfc3164_leef'];
+    draft.mappings=[
+      {id:'plain-ip',source:'src_ip',target:'custom.source_ip',type:'ip'},
+      {id:'plain-action',source:'action',target:'custom.action',type:'string'},
+      {id:'wrapped-ip',source:'body.src',target:'custom.wrapped_ip',type:'ip'},
+      {id:'wrapped-action',source:'body.act',target:'custom.wrapped_action',type:'string'},
+      {id:'wrapped-cef-port',source:'body.dpt',target:'custom.wrapped_cef_port',type:'port'},
+      {id:'wrapped-leef-port',source:'body.dstPort',target:'custom.wrapped_leef_port',type:'port'},
+      {id:'unknown-year',source:'syslog_time_policy',target:'custom.year_zone_policy',type:'string'},
+    ];
+    guided.groups={
+      'plain-ip':'top_fields','plain-action':'top_fields','wrapped-ip':'top_fields',
+      'wrapped-action':'top_fields','wrapped-cef-port':'ns_fields',
+      'wrapped-leef-port':'ns_fields','unknown-year':'vendor_fields',
+    };
+    guided.classification={defaultIndex:'Syslog',rules:[
+      {id:'deny-plain',sourceField:'action',equals:'deny',index:'Threat'},
+      {id:'deny-wrapped',sourceField:'body.act',equals:'deny',index:'Threat'},
+    ]};
+  }
   if(id==='mixed_rfc5424_bodies'){
     draft.mixedFormats=['json','kv','rfc5424_json','rfc5424_kv'];
     draft.mappings=[
