@@ -1,8 +1,9 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Bot,FileText,LockKeyhole,Plus,WandSparkles} from 'lucide-react';
 import {createDraft,type ParserDraft,type SuiteResult} from './model';
 import AutoParser from './guided/AutoParser';
-import {controlApprovedSession,type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
+import {controlApprovedSession,fetchApprovedSessionStatus,
+  type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
 import ChatGPTAssist from './guided/ChatGPTAssist';
 import {MAX_DATASET_BYTES} from './parser';
 
@@ -69,9 +70,43 @@ export default function App(){
   const [activeSession,setActiveSession]=useState<ApprovedTestLabStatus|null>(null);
   const [stopBusy,setStopBusy]=useState(false);
   const [stopError,setStopError]=useState('');
-  useEffect(()=>setStopError(''),[activeSession?.runId]);
+  const [recoveryId,setRecoveryId]=useState('');
+  const [recoverBusy,setRecoverBusy]=useState(false);
+  const [recoverError,setRecoverError]=useState('');
+  const [recoverNotice,setRecoverNotice]=useState('');
+  const runIdSafe=/^test_run_[0-9a-f]{32}$/.test(recoveryId);
+  const recoveryEpoch=useRef(0);
+  const latestRun=useRef(activeSession);
+  latestRun.current=activeSession;
   const sessionRunning=activeSession&&
     (activeSession.state==='RUNNING'||activeSession.state==='PAUSED');
+  useEffect(()=>()=>{recoveryEpoch.current++;},[]);
+
+  // Refresh deliberately never resumes or queries a session automatically.
+  // An ID is a locator, not a grant: the backend must reauthorize this GET.
+  const recoverApprovedSession=async()=>{
+    if(!runIdSafe||recoverBusy||sessionRunning)return;
+    const requestedId=recoveryId, ticket=++recoveryEpoch.current;
+    setRecoverBusy(true);setRecoverError('');setRecoverNotice('');
+    try{
+      const status=await fetchApprovedSessionStatus(requestedId);
+      const current=latestRun.current;
+      if(ticket!==recoveryEpoch.current||
+         (current&&['RUNNING','PAUSED'].includes(current.state)))return;
+      if((status.state==='RUNNING'||status.state==='PAUSED')&&
+        Date.parse(status.leaseExpiresAt)<=Date.now())
+        setRecoverNotice('The reported lease deadline has passed. Stop remains available until the backend confirms termination.');
+      else if(['EXPIRED','STOPPED','FAILED','COMPLETED'].includes(status.state))
+        setRecoverNotice('The backend reports a finished run. No active delivery is verified; there is no Stop action to issue.');
+      else setRecoverNotice('Owned run verified for this browser session. Real sensor ingestion remains NOT VERIFIED.');
+      setActiveSession(status);
+    }catch{
+      if(ticket===recoveryEpoch.current)
+        setRecoverError('Run lookup denied, expired, or returned untrusted metadata. Ownership was not verified and no session was recovered.');
+    }finally{if(ticket===recoveryEpoch.current)setRecoverBusy(false);}
+  };
+  useEffect(()=>setStopError(''),[activeSession?.runId]);
+
   const stopApprovedSession=async()=>{
     if(!sessionRunning||stopBusy)return;
     const expectedRunId=activeSession.runId;
@@ -79,6 +114,8 @@ export default function App(){
     try{
       const result=await controlApprovedSession(expectedRunId,'stop');
       setActiveSession(prev=>prev?.runId===expectedRunId?result:prev);
+      if(!['RUNNING','PAUSED'].includes(result.state))
+        setRecoverNotice('The backend confirmed a finished session. No active delivery is verified.');
       if(result.state==='RUNNING'||result.state==='PAUSED')
         setStopError('Stop is not yet confirmed by the backend. The session may still be active.');
     }catch{
@@ -126,6 +163,41 @@ export default function App(){
           </button>
         </div>
       </header>
+      <details className="two-path-recovery" aria-label="Authorized Test Lab session recovery">
+        <summary>Recover an approved Test Lab run after refresh</summary>
+        <p>A page reload does not stop an already-authorized backend run.
+          Enter the exact run ID and request an independently owner-authorized,
+          read-only status check. Nothing is looked up automatically.
+          A run ID alone never grants access.</p>
+        <div className="two-path-recovery-controls">
+          <label>Existing authorized Test Lab run ID
+            <input type="text" aria-label="Existing authorized Test Lab run ID"
+              value={recoveryId} maxLength={41} autoComplete="off" spellCheck={false}
+              placeholder="test_run_0123456789abcdef0123456789abcdef"
+              onChange={event=>{
+                recoveryEpoch.current++;setRecoverBusy(false);
+                setRecoveryId(event.target.value);setRecoverError('');setRecoverNotice('');
+              }}/>
+          </label>
+          <button type="button" className="button secondary"
+            disabled={!runIdSafe||recoverBusy||Boolean(sessionRunning)}
+            onClick={()=>{void recoverApprovedSession();}}>
+            {recoverBusy?'Checking Owner Authorization…':'Look Up My Authorized Run'}
+          </button>
+        </div>
+        {sessionRunning&&<p role="status">
+          An active session is already displayed above. Stop it before looking up another run.
+        </p>}
+        {recoverError&&<p role="alert">{recoverError}</p>}
+        {recoverNotice&&<p role="status" aria-label="Recovered Test Lab result">
+          {recoverNotice}
+        </p>}
+        {activeSession&&!sessionRunning&&<p role="status"
+          aria-label="Authorized terminal Test Lab session">
+          Backend status: {activeSession.state} · No verified sensor ingestion.
+          A terminal run cannot be resumed by this screen.
+        </p>}
+      </details>
       {sessionRunning&&<div role="status" className="two-path-session-banner"
         aria-label="Active Test Lab session indicator">
         <div>

@@ -114,7 +114,26 @@ inherits user logs, rejects HTTP 403 and forged raw/verification fields,
 permits only field-limited non-verification evidence, and explicitly stops
 the simulated session. No real sensor or tenant query is sent.
 
-An owner-approved mock session also exposes a persistent, top-level **Stop Server\nSession Now** action when switching from Auto Parser to ChatGPT Assisted.\nThis is not a third creation method, does not create a new session, and still\nrequires independently authorized backend Stop acknowledgement; failure leaves\nthe banner visible and does not claim a successful stop.
+An owner-approved mock session also exposes a persistent, top-level **Stop Server Session Now** action when switching from Auto Parser to ChatGPT Assisted.
+This is not a third creation method, does not create a new session, and still
+requires independently authorized backend Stop acknowledgement; failure leaves
+the banner visible and does not claim a successful stop.
+
+## Recover an authorized Test Lab run after browser refresh
+
+A server-side Test Lab session is not terminated merely because the browser is
+reloaded or the user switches the two supported creation methods. A small
+top-level recovery disclosure accepts an exact run ID, makes **no automatic
+requests or stored run-ID copies**, and uses an explicit same-origin read-only
+session status GET. The backend rechecks owner authorization. Invalid IDs,
+foreign owner 403/404, forged source values, mismatched run IDs, fabricated
+sensor proof and malformed status metadata must never restore a session or
+display raw values. Recovering RUNNING/PAUSED exposes the global Stop action,
+even when a lease deadline has passed and the server's status has not yet
+confirmed termination. A verified terminal EXPIRED/STOPPED run displays
+read-only status, not a Stop/Resume/Start action. Neither recovery nor lookup
+deploys a parser or proves sensor ingestion. Four dedicated Chromium migration tests use fixed public synthetic status
+interceptions and no target network sends.
 
 The remaining archived Wizard and Workbench suites still require feature-by-feature **behavioral** migration;
-migrating seven behavior groups is not completion of all historical coverage.
+migrating individual behavior groups is not completion of all historical coverage.

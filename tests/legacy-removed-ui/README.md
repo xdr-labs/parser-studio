@@ -40,6 +40,14 @@ No sensor packets or tenant read are attempted.
 This is **seven migrated behavior groups**, NOT seven entire retired suites. The
 original archived test files remain unchanged and excluded from CI.
 
+The two-method app also migrates three archived reload/recovery behavior
+groups into the pinned authoring-backend Chromium suite: manual (never
+automatic) authorized run-ID status lookup and Stop after refresh; invalid,
+foreign-owner, forged and mismatched status denial without raw log leakage;
+and EXPIRED terminal state without a false active sender or Stop action.
+Target session/status calls are intercepted by Playwright using public
+synthetic fixtures; backend authoring remains actual SHA-pinned HTTP.
+
 These archived files must not be used in release PASS totals. Do not restore
 old route access solely to make historical tests green. Explicitly migrate the
 functional assertions instead.

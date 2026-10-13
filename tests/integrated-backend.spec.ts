@@ -858,6 +858,185 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
 
 
 
+  test('migrated recovery: reload needs a manual owned run GET, and Stop survives both paths without Start',async({page})=>{
+    const runId='test_run_'+'a'.repeat(32);
+    const status={
+      runId,state:'RUNNING',sentCount:2,nextSequence:2,replayMode:'single',
+      sampleFamilyCount:1,ratePerSecond:1,maxEvents:100,
+      leaseExpiresAt:new Date(Date.now()-60_000).toISOString(),
+      lastSentAt:null,errorCode:null,parserLifecycleNotModified:true,
+      realSensorVerified:false,runtimeParsingVerified:false,sensorIngestVerified:false,
+    };
+    const requests:string[]=[];
+    await page.route('**/api/v1/test-lab/**',route=>{
+      const uri=new URL(route.request().url());
+      requests.push(uri.pathname);
+      if(uri.pathname==='/api/v1/test-lab/sessions/status'){
+        expect(route.request().method()).toBe('GET');
+        expect(uri.searchParams.get('runId')).toBe(runId);
+        expect(route.request().postData()).toBeNull();
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify(status)});
+      }
+      if(uri.pathname==='/api/v1/test-lab/sessions/stop'){
+        expect(route.request().method()).toBe('POST');
+        expect(route.request().postDataJSON()).toEqual({runId});
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({...status,state:'STOPPED'})});
+      }
+      throw Error('No other Test Lab operations are allowed in the recovery test');
+    });
+    await page.goto('/?workspace=chatgpt');
+    await page.reload();
+    await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+    await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
+    expect(requests).toEqual([]);
+    const panel=page.getByLabel('Authorized Test Lab session recovery');
+    await panel.locator('summary').click();
+    const button=panel.getByRole('button',{name:'Look Up My Authorized Run'});
+    await expect(button).toBeDisabled();
+    await panel.getByLabel('Existing authorized Test Lab run ID').fill(runId);
+    await expect(button).toBeEnabled();
+    await button.click();
+    await expect(page.getByLabel('Active Test Lab session indicator')).toContainText('RUNNING');
+    await expect(panel.getByLabel('Recovered Test Lab result'))
+      .toContainText('lease deadline has passed');
+    await expect(page.getByLabel('Active Test Lab session indicator'))
+      .toContainText('Sensor ingest NOT VERIFIED');
+    await expect(button).toBeDisabled();
+    await page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button',{name:'Auto Parser',exact:true}).click();
+    await expect(page.getByLabel('Active Test Lab session indicator')).toBeVisible();
+    await page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
+    await page.getByLabel('Active Test Lab session indicator')
+      .getByRole('button',{name:'Stop Server Session Now'}).click();
+    await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
+    await expect(panel.getByLabel('Authorized terminal Test Lab session')).toContainText('STOPPED');
+    expect(requests).toEqual([
+      '/api/v1/test-lab/sessions/status',
+      '/api/v1/test-lab/sessions/stop',
+    ]);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
+
+  test('migrated owner denial: invalid, foreign, and forged run replies never restore a session or leak raw data',async({page})=>{
+    const runId='test_run_'+'b'.repeat(32);
+    // Exact pinned backend denies an unknown tenant session by default.
+    const original=await page.request.get(
+      '/api/v1/test-lab/sessions/status?runId='+runId);
+    expect(original.status()).toBe(403);
+    const calls:string[]=[];
+    const valid={
+      runId,state:'RUNNING',sentCount:0,nextSequence:0,replayMode:'single',
+      sampleFamilyCount:1,ratePerSecond:1,maxEvents:100,
+      leaseExpiresAt:new Date(Date.now()+900_000).toISOString(),lastSentAt:null,errorCode:null,
+      parserLifecycleNotModified:true,realSensorVerified:false,
+      runtimeParsingVerified:false,sensorIngestVerified:false,
+    };
+    let attempt=0;
+    await page.route('**/api/v1/test-lab/**',route=>{
+      const uri=new URL(route.request().url());
+      calls.push(uri.pathname);
+      if(uri.pathname!=='/api/v1/test-lab/sessions/status')
+        throw Error('Unauthorized recovery attempted a target write');
+      expect(route.request().method()).toBe('GET');
+      expect(uri.searchParams.get('runId')).toBe(runId);
+      if(++attempt===1)return route.fulfill({status:403,contentType:'application/json',
+        body:JSON.stringify({error:'FOREIGN_OWNER',rawLog:'PRIVATE_RUN_VALUE_NEVER_ECHO'})});
+      if(attempt===2)return route.fulfill({status:404,contentType:'application/json',
+        body:JSON.stringify({error:'MISSING_OR_EXPIRED'})});
+      if(attempt===3)return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({...valid,rawLog:'PRIVATE_RUN_VALUE_NEVER_ECHO',
+          sensorIngestVerified:true})});
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({...valid,runId:'test_run_'+'f'.repeat(32)})});
+    });
+    await page.goto('/');
+    const panel=page.getByLabel('Authorized Test Lab session recovery');
+    await panel.locator('summary').click();
+    const input=panel.getByLabel('Existing authorized Test Lab run ID');
+    const recover=panel.getByRole('button',{name:'Look Up My Authorized Run'});
+    await input.fill('test_run_wrong');
+    await expect(recover).toBeDisabled();
+    expect(calls).toEqual([]);
+    await input.fill(runId);
+    for(let i=0;i<4;i++){
+      await recover.click();
+      await expect(panel.getByRole('alert'))
+        .toContainText('Ownership was not verified');
+      await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
+      await expect(panel.getByLabel('Recovered Test Lab result')).toHaveCount(0);
+      expect(await panel.innerText()).not.toContain('PRIVATE_RUN_VALUE_NEVER_ECHO');
+    }
+    expect(calls).toHaveLength(4);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
+
+  test('migrated recovery race: editing a run ID while lookup is pending cannot restore a stale session',async({page})=>{
+    const first='test_run_'+'d'.repeat(32);
+    const second='test_run_'+'e'.repeat(32);
+    const requests:string[]=[];
+    await page.route('**/api/v1/test-lab/**',async route=>{
+      const url=new URL(route.request().url());
+      expect(url.pathname).toBe('/api/v1/test-lab/sessions/status');
+      requests.push(url.searchParams.get('runId')??'');
+      await new Promise(resolve=>setTimeout(resolve,220));
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({
+          runId:first,state:'RUNNING',sentCount:0,nextSequence:0,
+          replayMode:'single',sampleFamilyCount:1,ratePerSecond:1,maxEvents:100,
+          leaseExpiresAt:new Date(Date.now()+900_000).toISOString(),
+          lastSentAt:null,errorCode:null,parserLifecycleNotModified:true,
+          realSensorVerified:false,runtimeParsingVerified:false,sensorIngestVerified:false,
+        })});
+    });
+    await page.goto('/');
+    const panel=page.getByLabel('Authorized Test Lab session recovery');
+    await panel.locator('summary').click();
+    const input=panel.getByLabel('Existing authorized Test Lab run ID');
+    await input.fill(first);
+    await panel.getByRole('button',{name:'Look Up My Authorized Run'}).click();
+    await expect.poll(()=>requests.length).toBe(1);
+    await input.fill(second);
+    await page.waitForTimeout(300);
+    await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
+    await expect(panel.getByLabel('Recovered Test Lab result')).toHaveCount(0);
+    await expect(panel.getByRole('button',{name:'Look Up My Authorized Run'})).toBeEnabled();
+    expect(requests).toEqual([first]);
+  });
+
+  test('migrated expired status: a verified terminal run cannot offer Stop, Resume, or sensor transmission',async({page})=>{
+    const runId='test_run_'+'c'.repeat(32);
+    const calls:string[]=[];
+    await page.route('**/api/v1/test-lab/**',route=>{
+      const path=new URL(route.request().url()).pathname;
+      calls.push(path);
+      expect(path).toBe('/api/v1/test-lab/sessions/status');
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({
+          runId,state:'EXPIRED',sentCount:0,nextSequence:0,replayMode:'single',
+          sampleFamilyCount:1,ratePerSecond:1,maxEvents:100,
+          leaseExpiresAt:new Date(Date.now()-900_000).toISOString(),lastSentAt:null,errorCode:null,
+          parserLifecycleNotModified:true,realSensorVerified:false,
+          runtimeParsingVerified:false,sensorIngestVerified:false,
+        })});
+    });
+    await page.goto('/?workspace=chatgpt');
+    const panel=page.getByLabel('Authorized Test Lab session recovery');
+    await panel.locator('summary').click();
+    await panel.getByLabel('Existing authorized Test Lab run ID').fill(runId);
+    await panel.getByRole('button',{name:'Look Up My Authorized Run'}).click();
+    await expect(panel.getByLabel('Authorized terminal Test Lab session'))
+      .toContainText('EXPIRED');
+    await expect(panel.getByLabel('Recovered Test Lab result')).toContainText('finished run');
+    await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Stop Server Session Now'})).toHaveCount(0);
+    expect(calls).toEqual(['/api/v1/test-lab/sessions/status']);
+  });
+
   test('migrated Test Lab and Interflow: independent authorizations reject forged readback, never send a real packet',async({page})=>{
     const runId='test_run_'+'a'.repeat(32);
     const mockStatus={
