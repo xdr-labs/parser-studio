@@ -1,5 +1,9 @@
 # Parser Studio 2.0 — Two Creation Methods and Unified Roadmap
 
+> **LATEST OWNER P0 PRIORITY — 2026-10-13:** Reconsider grammar learning for heterogeneous real security logs before increasing test counts or DP/Sensor UI controls. New analysis and ordered architecture plan: [Corpus-first Parser Synthesis Research](15_CORPUS_FIRST_PARSER_SYNTHESIS_RESEARCH.md), P0-SYN-0..5. Keep exactly the two creation methods and existing release safety gates. Research evidence is not yet a passed vendor benchmark.
+
+> **LATEST OWNER UX OVERRIDE:** [Explainable Progressive Parsing](16_EXPLAINABLE_PROGRESSIVE_PARSING_UX_RESEARCH.md) requires the current two-path UI to highlight exact captured/unmatched spans, explain all selected rules, accept field-role counterexamples and optionally preserve a verified raw tail as an opaque field, without claiming FULL parsing or native Ruby support until proven. P0-TRACE-0..3 precedes additional parser expansion.
+
 **Priority:** P0, overrides all earlier instructions keeping the six-step Wizard or three-pane Workbench. **Implementer:** CHATGPT_CHAT, one integrated session for Web UI, backend, API contracts, Chromium and roadmap. **Source and interface:** English only.
 
 ## Product-level navigation: only two choices
