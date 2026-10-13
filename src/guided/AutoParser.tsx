@@ -76,6 +76,10 @@ export default function AutoParser({
  const [message,setMessage]=useState('');
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
  const [capability,setCapability]=useState<{source:string;value:BackendCapabilities}|null>(null);
+ const [csvApprovedKey,setCsvApprovedKey]=useState('');
+ // Review is revoked on every input edit, including edit-then-revert.
+ // A prior confirmation must never authorize a newly changed source/schema.
+ useEffect(()=>setCsvApprovedKey(''),[sample,draft.csvColumns,draft.csvDelimiter]);
  const [evidence,setEvidence]=useState<Evidence|null>(null);
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
@@ -148,8 +152,24 @@ export default function AutoParser({
      };
    });
  };
- const assessment=assessEnvelopeCompilation(report,
+ const csvFound=report.families.some(f=>f.envelope==='none'&&f.body==='csv');
+ const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
+ const csvApproved=!csvFound||csvApprovedKey===csvSchemaKey;
+ const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());
+ const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
+   csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
+   new Set(csvColumns).size===csvColumns.length&&
+   [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
+ const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
+ const assessment=csvFound&&csvApproved&&report.families.length===1&&
+   report.families[0]?.body==='csv'&&
+   localAssessment.status==='COLUMNS_REQUIRED'&&
+   capability?.source===sample&&
+   capability.value.authoring.extractionFormats.includes('csv')?{
+     status:'DRAFT_COMPILABLE' as const,format:'csv' as const,bodyFormat:null,
+     nativeVerified:false as const,targetVerified:false as const,
+   }:localAssessment;
  const currentReview=reviewed?.source===sample?reviewed:null;
  const currentPair=pair?.key===identity?pair.value:null;
  const currentEvidence=evidence?.key===identity?evidence:null;
@@ -166,7 +186,7 @@ export default function AutoParser({
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
-   report.complete&&report.sourceCount>0&&!busy;
+   report.complete&&report.sourceCount>0&&!busy&&csvApproved;
  const canGenerate=step===2&&!!currentReview&&!!suite&&!pending&&
    !busy&&assessment.status==='DRAFT_COMPILABLE';
  const confirmed=()=>{
@@ -187,7 +207,12 @@ export default function AutoParser({
      const cap=await fetchBackendCapabilities();
      if(token!==epoch.current||currentRef.current!==expected)return;
      setCapability({source:sample,value:cap});
-     const compiler=assessEnvelopeCompilation(report,cap);
+     const baseline=assessEnvelopeCompilation(report,cap);
+     const compiler=csvFound&&csvApproved&&report.families.length===1&&
+       baseline.status==='COLUMNS_REQUIRED'&&cap.authoring.extractionFormats.includes('csv')?
+       {status:'DRAFT_COMPILABLE' as const,format:'csv' as const,
+        bodyFormat:null,nativeVerified:false as const,targetVerified:false as const}:
+       baseline;
      const next=prepareAutoParserDraft(sample,draft,suite,report,compiler);
      if(!next.ok){setMessage(statusMessage(next.reason));return;}
      setDraft(next.draft);setReviewed({
@@ -484,6 +509,34 @@ export default function AutoParser({
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
        </div>
+       {csvFound&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
+         <strong>CSV rows detected — confirm each column name</strong>
+         <p>CSV rows do not contain field names. Name the columns in the
+           order they appear in a CSV row, and choose its data separator.
+           Parser Studio will test every row before generating files.</p>
+         <label>Column names, separated by commas
+           <input aria-label="Reviewed CSV column names" value={draft.csvColumns}
+             maxLength={4096}
+             onChange={e=>setDraft(old=>({...old,csvColumns:e.target.value}))}/>
+         </label>
+         <label>Separator in your CSV rows
+           <select aria-label="Reviewed CSV data separator"
+             value={draft.csvDelimiter??','}
+             onChange={e=>setDraft(old=>({...old,
+               csvDelimiter:e.target.value as ','|';'|'\t'}))}>
+             <option value=",">Comma (,)</option>
+             <option value=";">Semicolon (;)</option>
+             <option value={'\t'}>Tab</option>
+           </select>
+         </label>
+         <button type="button" disabled={!csvNamesValid||pending}
+           onClick={()=>setCsvApprovedKey(csvSchemaKey)}>
+           I Confirm These CSV Column Names
+         </button>
+         <p role="status">{csvApproved?
+           'CSV field names reviewed. Automatic parser testing is ready.':
+           'Review required: CSV names and separator must be confirmed before analysis.'}</p>
+       </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">
          <strong>Java exception stack traces detected locally</strong>

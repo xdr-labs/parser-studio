@@ -25,8 +25,12 @@ export function detectFormat(raw: string): Detection {
   if (/(?:^|\s)[A-Za-z_][\w.-]*=("[^"]*"|'[^']*'|[^\s]+)/.test(value)) {
     return { format: 'kv', confidence: 0.91, reason: 'Key=value tokens detected' };
   }
-  if ((value.match(/,/g) || []).length >= 2) {
-    return { format: 'csv', confidence: 0.64, reason: 'Multiple comma-separated values' };
+  if ([',',';','\t'].some(delimiter=>{
+    const values=tokenizeCSV(value,delimiter);
+    return values!==null&&values.length>=3;
+  })) {
+    return { format: 'csv', confidence: 0.64,
+      reason: 'Delimited values detected; CSV column names require user review' };
   }
   return { format: 'unknown', confidence: 0, reason: 'No supported format signature' };
 }
@@ -156,7 +160,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
       const selected=draft.mixedFormats??[];
       if(selected.length<2||selected.length>4||
          new Set(selected).size!==selected.length||
-         selected.some(f=>!['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(f)))
+         selected.some(f=>!['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv'].includes(f)))
         return {fields:{},errors:['Select an explicit bounded mixed-family allowlist']};
       // Reuse the reviewed strict RFC5424 header + nested CEF/LEEF parser
       // for exact wrapper routing. A broken header must never fall back to KV.
@@ -193,10 +197,13 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
         raw.startsWith('{')?'json':
         raw.startsWith('CEF:')?'cef':
         raw.startsWith('LEEF:')?'leef':
-        /^[A-Za-z_][A-Za-z0-9_.-]*=/.test(raw)?'kv':null;
+        /^[A-Za-z_][A-Za-z0-9_.-]*=/.test(raw)?'kv':
+        selected.includes('csv')&&raw.includes(draft.csvDelimiter??',')?'csv':null;
       if(!family||!selected.includes(family))
         return {fields:{},errors:['Mixed event is unsupported or excluded by allowlist']};
-      return family==='kv'?strictKeyValues(raw):extractFields(raw,family,draft);
+      return family==='kv'?strictKeyValues(raw):
+        family==='csv'?extractCSV(raw,draft.csvColumns,draft.csvDelimiter??','):
+        extractFields(raw,family,draft);
     }
     case 'syslog': return extractSyslog(raw);
     case 'syslog_rfc3164':

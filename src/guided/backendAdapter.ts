@@ -33,7 +33,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line' | 'blank_line_json' | 'blank_line_java';
   };
-  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' } | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'> } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' } | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -154,7 +154,11 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       tcpFraming: options.receiver.framing==='blank_line_json'?'blank_line_json':options.receiver.framing==='blank_line_java'?'blank_line_java':'line',
     },
     extraction: draft.format === 'mixed'
-      ? {format:'mixed',mixedFormats:[...(draft.mixedFormats??[])]}
+      ? {format:'mixed',mixedFormats:[...(draft.mixedFormats??[])],
+          ...((draft.mixedFormats??[]).includes('csv')?{
+            csvColumns:draft.csvColumns.split(',').map(x=>x.trim()),
+            csvDelimiter:draft.csvDelimiter??',',
+          }:{})}
       : draft.format === 'csv'
       ? { format: 'csv', csvColumns: draft.csvColumns.split(',').map((column) => column.trim()), csvDelimiter: draft.csvDelimiter ?? ',' }
       : (draft.format === 'syslog_rfc3164'||draft.format==='syslog_rfc5424')

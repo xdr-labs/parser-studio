@@ -157,8 +157,16 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       errors.push('Yearless RFC3164 mixed timestamp cannot be cast to a date. Map as text.');
     if(!Array.isArray(list)||list.length<2||list.length>4||
        new Set(list).size!==list.length||
-       !list.every(mode=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(mode)))
-      errors.push('Mixed requires 2–4 explicit one-line JSON/KV/CEF/LEEF, RFC5424 JSON/KV/CEF/LEEF or yearless RFC3164 TAG KV/CEF/LEEF families');
+       !list.every(mode=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv'].includes(mode)))
+      errors.push('Mixed requires 2–4 explicit one-line JSON/KV/CEF/LEEF, RFC5424 JSON/KV/CEF/LEEF or yearless RFC3164 TAG KV/CEF/LEEF families, with CSV only when columns are reviewed');
+    if(list?.includes('csv')){
+      const columns=draft.csvColumns.split(',').map(name=>name.trim());
+      if(columns.length<2||columns.length>100||
+         !columns.every(name=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name))||
+         new Set(columns).size!==columns.length||
+         ![',',';','\t'].includes(draft.csvDelimiter??'INVALID'))
+        errors.push('Mixed CSV requires reviewed column names (2–100) and a selected data delimiter.');
+    }
   }else if(draft.mixedFormats!==undefined){
     errors.push('Mixed family selections are only valid for Mixed format');
   }

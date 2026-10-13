@@ -14,7 +14,7 @@ import {analyzeLogEnvelopes} from './autoParserEnvelope';
 export type ReviewStage=
  | {op:'split_event';boundary:'single-line'|'blank-line'}
  | {op:'unwrap_syslog';version:1|3164;mode:'strict_header'}
- | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;mode:'strict_prefix'}
+ | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;mode:'strict_prefix'}
  | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'}
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
  | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
@@ -70,7 +70,7 @@ function validateStage(input:unknown):input is ReviewStage{
     s.mode==='strict_prefix'&&Array.isArray(s.families)&&
     s.families.length>=2&&s.families.length<=4&&
     new Set(s.families).size===s.families.length&&
-    s.families.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(f));
+    s.families.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv'].includes(f));
   case 'unwrap_syslog':return exact(s,['op','version','mode'])&&
    [1,3164].includes(s.version as number)&&s.mode==='strict_header';
   case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':case 'parse_java_stacktrace':
@@ -196,7 +196,7 @@ export async function buildReviewableRecipe(
    const recorded=new Set<string>();
    if(requested.length<2||requested.length>4||
       new Set(requested).size!==requested.length||
-      !requested.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(f)))
+      !requested.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv'].includes(f)))
      return fail('COMPILER_UNSUPPORTED');
    const families=analyzeLogEnvelopes(source,'single-line');
    if(families.unsupported>0||families.events.length!==records.length)

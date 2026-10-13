@@ -50,7 +50,9 @@ export function prepareAutoParserDraft(
     const approved=compiler.mixedFormats??[];
     // The server's exact-prefix family dispatcher never trims leading blanks.
     if(approved.length<2||approved.length>4||
-       records.some(rec=>!(/^(?:\{|CEF:|LEEF:|<\d{1,3}>1 |<\d{1,3}>[A-Z][a-z]{2} |[A-Za-z_][A-Za-z0-9_.-]*=)/.test(rec.raw))))
+       records.some(rec=>!(
+         /^(?:\{|CEF:|LEEF:|<\d{1,3}>1 |<\d{1,3}>[A-Z][a-z]{2} |[A-Za-z_][A-Za-z0-9_.-]*=)/.test(rec.raw)||
+         (approved.includes('csv')&&rec.raw.includes(draft.csvDelimiter??',')))))
       return failed('MIXED_OR_UNKNOWN');
     const census=[...new Set(ledger.families.map(x=>
       x.envelope==='rfc5424'&&['cef','leef','json','kv'].includes(x.body)?

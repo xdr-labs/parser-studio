@@ -38,7 +38,7 @@ At the Auto Parser result, after a SHA-verified compiler response, provide indiv
 | P0-4 | Bring useful legacy operations to results | Version history already moved; port proposal, simulation, approved replay/Interflow UI must be re-scoped and tested |
 | P0-5 | Existing Chromium tests migrated | 46 obsolete old-workflow spec files preserved under legacy-removed-ui; migrate business/contract assertions to two methods, no false passing counts |
 | P0-6 | Independent exact-head qualification | Vitest, TS/Vite, CI Chromium, pinned real localhost backend, Native Fluentd and SHA parity |
-| P1-1 | Expand safe unsupported formats | Explicit mixed CSV with reviewed column/delimiter schema, reject unknown headers |
+| P1-1 | Explicit-schema mixed CSV | Backend 845d4b1: strict JSON/KV/CSV single-line family selection, 2–100 reviewed columns, fixed comma/semicolon/TAB delimiter, Native synthetic qualification; UI Auto Parser shows one inline CSV column review step, with explicit reapproval on source/schema edits and v0.2 DRAFT SHA evidence. Browser/real backend integration is required before marking complete. |
 | P1-2 | Native multiline | Bounded explicit TCP LF LF framed Java Stack Trace supported in current backend; arbitrary Java/UDP unframed remains unsupported |
 | Gated | Real DP Apply, Sensor send, Interflow, human E2E | Await target credentials/permissions and separately approved test conditions |
 | Gated | PR merge / release | Explicit owner release approval only |
@@ -53,3 +53,11 @@ At the Auto Parser result, after a SHA-verified compiler response, provide indiv
 - ChatGPT result never executes arbitrary code. Changed supported rules require full local sample and independent holdout review; unchanged canonical recipes may pass directly after manual approval. Both output hashes must agree with the pinned backend's v0.1/v0.2 compiler.
 - Browser tests tied to retired UI are archived, not reported as PASS. The new suite must incrementally replace feature requirements and record remaining gaps.
 - No unauthorized real DP/sensor writes, no external AI provider by default, no final merge or release without approval.
+
+## P1-1: Mixed CSV in the existing Auto Parser screen
+
+CSV contains no trustworthy field names. When a mixed sample includes candidate CSV rows, Auto Parser shows one inline Review CSV column names control; users enter each name in order and explicitly choose a comma, semicolon or TAB record delimiter. Preview, type conversion, and v0.1/v0.2 generation use exactly that user-reviewed schema, not inferred names. Each edit to a sample, column name, or data delimiter revokes the approval, including an edit followed by a revert.
+
+The backend emits only a 2–4-family reviewed mixed parser, with CSV opt-in requiring 2–100 unique safe column names and one of the three fixed delimiters. Wrong column counts, invalid quotes, unrecognized families, unreviewed prefix, multiline inputs and source/CONF port mismatch must fail closed; no raw log values are sent to the authoring API. No third UI path or legacy Wizard/Workbench is introduced.
+
+The original UI recovery WIP is preserved; this work is integrated from an independent clean review clone into the existing Draft PR #7. Public-synthetic Native tests/CI do not verify proprietary Stellar DP loading or live sensor/Interflow.

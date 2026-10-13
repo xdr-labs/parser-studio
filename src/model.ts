@@ -23,7 +23,7 @@ export interface ParserDraft {
   /** Only for bounded RFC3164/RFC5424 headers; raw is the backward-compatible default. */
   syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef';
   /** Explicit supported one-line families only; no implicit fallback. */
-  mixedFormats?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
+  mixedFormats?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
   mappings: MappingRule[];
   guided?: GuidedOptions;
 }

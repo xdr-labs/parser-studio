@@ -564,4 +564,83 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       path.includes('/interflow/search')||path.includes('/target/apply'))).toBe(false);
   });
 
+  test('Auto Parser mixed CSV requires reviewed semicolon columns then compiles exact v0.1/v0.2 Ruby CONF without source egress',async({page})=>{
+    const source=[
+      '{"src_ip":"192.0.2.10","action":"deny","dst_port":443}',
+      'src_ip=198.51.100.8 action=allow dst_port=443',
+      '192.0.2.17;deny;22',
+      '"203.0.113.19";allow;8443',
+    ].join('\n');
+    const outgoing:Array<{path:string;body:string}>=[];
+    page.on('request',req=>{
+      const path=new URL(req.url()).pathname;
+      if(req.method()==='POST'&&path.startsWith('/api/v1/parser-pairs/')){
+        const body=req.postData()??'';
+        outgoing.push({path,body});
+        for(const address of ['192.0.2.10','198.51.100.8',
+                              '192.0.2.17','203.0.113.19'])
+          expect(body).not.toContain(address);
+      }
+    });
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(source);
+    await expect(page.getByLabel('Automatic event accounting'))
+      .toContainText('4/4 events analyzed locally');
+    await expect(page.getByLabel('Review CSV column names')).toBeVisible();
+    const review=page.getByRole('button',{name:'Review Detected Results'});
+    await expect(review).toBeDisabled();
+    await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,dst_port');
+    await page.getByLabel('Reviewed CSV data separator').selectOption(';');
+    await expect(review).toBeDisabled();
+    await page.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
+    await expect(review).toBeEnabled();
+    await review.click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await expect(page.getByLabel('Suggested field mappings')).toContainText('src_ip');
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    const pairResponse=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    const generated=await pairResponse;
+    expect(generated.status()).toBe(200);
+    const pair=await generated.json();
+    expect(pair.files).toHaveLength(2);
+    expect(pair.manifest).toMatchObject({
+      status:'DRAFT',engineVerified:false,targetImportVerified:false,
+    });
+    for(const f of pair.files)expect(sha(f.content)).toBe(f.sha256);
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    const projectPayloads=outgoing.filter(x=>x.path.endsWith('/generate'))
+      .map(x=>JSON.parse(x.body) as {
+        extraction?:{format:string;mixedFormats?:string[];
+          csvColumns?:string[];csvDelimiter?:string};
+      }).filter(x=>x.extraction?.format==='mixed');
+    expect(projectPayloads.length).toBeGreaterThanOrEqual(1);
+    expect(projectPayloads[0]!.extraction).toMatchObject({
+      format:'mixed',mixedFormats:['csv','json','kv'],
+      csvColumns:['src_ip','action','dst_port'],csvDelimiter:';',
+    });
+    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByRole('button',{name:'Review Staged Recipe'}).click();
+    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    const stagedResponse=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
+    expect((await stagedResponse).status()).toBe(200);
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('v0.1 pair SHA MATCHED');
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('Native user parser NOT VERIFIED');
+    const requests=outgoing.map(x=>JSON.parse(x.body) as {
+      recipe?:{stages?:Array<{op:string;families?:string[]}>}
+    }).filter(x=>x.recipe?.stages?.length);
+    expect(requests.length).toBeGreaterThanOrEqual(2);
+    expect(requests[0]!.recipe!.stages!.find(s=>s.op==='dispatch_family')?.families)
+      .toEqual(['csv','json','kv']);
+    expect(outgoing.some(x=>x.path.includes('/target/apply')||
+      x.path.includes('/sessions/start')||x.path.includes('/interflow'))).toBe(false);
+  });
+
 });

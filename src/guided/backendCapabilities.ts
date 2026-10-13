@@ -9,7 +9,7 @@ export interface BackendCapabilities {
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
-    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
+    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
     strictMixedRequiresExplicitAllowlist?: true;
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
@@ -150,14 +150,15 @@ export async function fetchBackendCapabilities(
   const nested=['rfc5424_json','rfc5424_kv'];
   if(mixedAdvertised){
     if(a.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(mixed)||![4,6,7,9,11].includes(mixed.length)||
+      !Array.isArray(mixed)||![4,6,7,9,11,12].includes(mixed.length)||
       new Set(mixed).size!==mixed.length||
       !reviewedMixed.every(f=>mixed.includes(f as 'json'))||
       (mixed.length>=6&&!wrapped.every(f=>mixed.includes(f as 'rfc5424_cef')))||
       (mixed.length>=7&&!mixed.includes('rfc3164_kv'))||
       (mixed.length>=9&&!nested.every(f=>mixed.includes(f as 'rfc5424_json')))||
-      (mixed.length===11&&!['rfc3164_cef','rfc3164_leef'].every(f=>
-        mixed.includes(f as 'rfc3164_cef'))))
+      (mixed.length>=11&&!['rfc3164_cef','rfc3164_leef'].every(f=>
+        mixed.includes(f as 'rfc3164_cef')))||
+      (mixed.length===12&&!mixed.includes('csv')))
       throw new Error('Backend mixed routing requires one of the exact reviewed family allowlists.');
   }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
     throw new Error('Unsupported mixed routing capability was advertised.');
@@ -273,6 +274,11 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
   }
   if(project.extraction.format==='mixed'){
     const formats=project.extraction.mixedFormats;
+    if(formats.includes('csv')&&(
+      !Array.isArray(project.extraction.csvColumns)||
+      project.extraction.csvColumns.length<2||
+      ![',',';','\t'].includes(project.extraction.csvDelimiter??'INVALID')))
+      throw new Error('Mixed CSV requires explicit reviewed column names and delimiter.');
     if(formats.some(f=>['rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(f))&&
        project.receiver.port<6800)
       throw new Error('Syslog-wrapped mixed parser sensor/CONF listener port must be >=6800.');

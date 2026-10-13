@@ -32,7 +32,7 @@ export type CompilerAssessment={
     'COLUMNS_REQUIRED'|'BOUNDARY_REVIEW'|'BACKEND_UNAVAILABLE'|
     'BACKEND_UNTRUSTED'|'SOURCE_LIMIT';
   format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|'mixed'|'java_stacktrace'|null;
-  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
+  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
   bodyFormat:'raw'|'json'|'kv'|'cef'|'leef'|null;
   nativeVerified:false;targetVerified:false;
 };
@@ -72,16 +72,20 @@ function jsonValid(input:string):boolean{
   }catch{return false;}
 }
 function csvValid(input:string):boolean{
-  // Lexical candidate only; columns must be explicitly named and reviewed.
-  let quote=false,commas=0;
-  for(let i=0;i<input.length;i++){
-    const c=input[i]!;
-    if(c==='"'){
-      if(quote&&input[i+1]==='"'){i++;continue;}
-      quote=!quote;
-    }else if(c===','&&!quote)commas++;
+  // Lexical candidate only; named columns and a delimiter need user review.
+  // Recognize semicolon, comma, and TAB without guessing column meanings.
+  for(const delimiter of [',',';','\t']){
+    let quote=false,count=0;
+    for(let i=0;i<input.length;i++){
+      const c=input[i]!;
+      if(c==='"'){
+        if(quote&&input[i+1]==='"'){i++;continue;}
+        quote=!quote;
+      }else if(c===delimiter&&!quote)count++;
+    }
+    if(!quote&&count>=2)return true;
   }
-  return !quote&&commas>=2;
+  return false;
 }
 function classifyBody(text:string):{body:Body;status:EntryStatus}{
   const value=text.trim();
@@ -100,7 +104,7 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
   if(value.includes('=')){
     return {body:'kv',status:kvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
   }
-  if(value.includes(',')){
+  if(value.includes(',')||value.includes(';')||value.includes('\t')){
     return {body:'csv',status:csvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
   }
   return {body:'unknown',status:'UNKNOWN'};
@@ -200,7 +204,7 @@ export function assessEnvelopeCompilation(
   if(report.families.length>1){
     // Exactly 2–4 explicitly reviewed fixed families. RFC3164 accepts
     // strict TAG: KV only, with year/zone ALWAYS UNKNOWN; RFC5424 accepts
-    // reviewed CEF/LEEF/JSON/KV wrappers only. Unknown/malformed/CSV never fallback.
+    // reviewed CEF/LEEF/JSON/KV wrappers only. Unknown/malformed never fallback; CSV requires user-reviewed columns.
     const formats=report.families.map(f=>
       f.envelope==='none'?f.body:
       f.envelope==='rfc5424'&&['cef','leef','json','kv'].includes(f.body)?
@@ -211,7 +215,7 @@ export function assessEnvelopeCompilation(
     const wrapped=['rfc5424_cef','rfc5424_leef'];
     const rfc3164=['rfc3164_kv','rfc3164_cef','rfc3164_leef'];
     const nested=['rfc5424_json','rfc5424_kv'];
-    const known=[...basic,...wrapped,...rfc3164,...nested];
+    const known=[...basic,...wrapped,...rfc3164,...nested,'csv'];
     if(formats.some(f=>f===null||!known.includes(f))||
       new Set(formats).size!==formats.length)return no('MIXED_OR_UNKNOWN');
     if(!cap)return no('BACKEND_UNAVAILABLE');
@@ -229,17 +233,18 @@ export function assessEnvelopeCompilation(
       return no('COMPILER_UNSUPPORTED');
     if(!cap.authoring?.extractionFormats?.includes('mixed')||
       cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(advertised)||![4,6,7,9,11].includes(advertised.length)||
+      !Array.isArray(advertised)||![4,6,7,9,11,12].includes(advertised.length)||
       new Set(advertised).size!==advertised.length||
       !basic.every(name=>advertised.includes(name as 'json'))||
       (advertised.length>=6&&!wrapped.every(name=>advertised.includes(name as 'rfc5424_cef')))||
       (advertised.length>=7&&!advertised.includes('rfc3164_kv'))||
-      (advertised.length===11&&!rfc3164.every(name=>advertised.includes(name as 'rfc3164_kv')))||
+      (advertised.length>=11&&!rfc3164.every(name=>advertised.includes(name as 'rfc3164_kv')))||
+      (advertised.length===12&&!advertised.includes('csv'))||
       (advertised.length>=9&&!nested.every(name=>advertised.includes(name as 'rfc5424_json')))||
       !formats.every(name=>advertised.includes(name as 'json')))
       return no('COMPILER_UNSUPPORTED');
     return {status:'DRAFT_COMPILABLE',format:'mixed',
-      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>,
+      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>,
       nativeVerified:false,targetVerified:false};
   }
   if(report.families.length!==1)return no('MIXED_OR_UNKNOWN');
