@@ -752,4 +752,50 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
   });
 
 
+  test('migrated legacy mapping safety: overlapping normalized destinations cannot reach backend until repaired in place',async({page})=>{
+    const outgoing:string[]=[];
+    page.on('request',req=>{
+      if(req.method()==='POST'&&new URL(req.url()).pathname.startsWith('/api/v1/parser-pairs/')){
+        outgoing.push(new URL(req.url()).pathname);
+        const request=req.postData()??'';
+        expect(request).not.toContain('198.51.100.10');
+        expect(request).not.toContain('203.0.113.5');
+      }
+    });
+    await page.goto('/?workspace=expert');
+    await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Adjust detected field mapping').locator('summary').click();
+    const first=await page.getByLabel('Mapping target 0').inputValue();
+    const second=page.getByLabel('Mapping target 1');
+    const original=await second.inputValue();
+    expect(first).toMatch(/^custom\./);
+    expect(original).toMatch(/^custom\./);
+    expect(first).not.toBe(original);
+    await second.fill(first+'.child');
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}))
+      .toBeEnabled();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Auto Parser test evidence'))
+      .toContainText('Generation Not Verified');
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    expect(outgoing).toEqual([]);
+    await page.getByLabel('Test and Generate stage')
+      .getByRole('button',{name:'Review Results'}).click();
+    await page.getByLabel('Adjust detected field mapping').locator('summary').click();
+    await page.getByLabel('Mapping target 1').fill(original);
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    expect(outgoing.filter(path=>path.endsWith('/generate'))).toHaveLength(1);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
+
+
 });

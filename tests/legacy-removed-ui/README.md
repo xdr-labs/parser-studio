@@ -21,8 +21,8 @@ Feature-contract coverage retained outside retired screens:
 Current incremental migration: tests/integrated-backend.spec.ts now
 includes actual Auto Parser/browser/backend ZIP SHA-tamper denial and
 missing-package-capability denial from package-download.spec.ts, plus
-invalid output-mapping / safe correction from field-path-validation.spec.ts.
-This is **three migrated behaviors**, NOT three entire retired suites. The
+invalid output-mapping / safe correction and prefix-overlapping output denial from field-path-validation.spec.ts.
+This is **four migrated behaviors**, NOT four entire retired suites. The
 original archived test files remain unchanged and excluded from CI.
 
 These archived files must not be used in release PASS totals. Do not restore

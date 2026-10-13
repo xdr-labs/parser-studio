@@ -72,7 +72,7 @@ Mixed CSV adds the twelfth explicitly reviewed single-line family ID. Its stage 
 
 The original six-step Wizard and three-pane Workbench remain retired, and
 their historical test files are **not** restored to current CI. Instead,
-three concrete safety contracts have been migrated into the **actual Auto
+four concrete safety contracts have been migrated into the **actual Auto
 Parser result and in-place mapping review** in
 tests/integrated-backend.spec.ts:
 
@@ -85,9 +85,13 @@ tests/integrated-backend.spec.ts:
    parser generation and leave the backend untouched. Restoring the exact
    previous mapping must allow the standard three-stage path to revalidate
    and generate the pair, without reviving a third workflow.
+4. Two independently valid normalized output names that overlap as ancestor
+   and child (for example custom.action and custom.action.child) must be
+   rejected before any backend POST; restoring the mapping must enable normal
+   schema-tested generation without reviving the retired Wizard or Workbench.
 
 These tests use an **exact Git-SHA-pinned backend over real localhost HTTP**.
 They never contact a vendor DP, send sensor packets, invoke an external AI
 provider, or claim full real-user E2E. The remaining archived Wizard and
 Workbench suites still require feature-by-feature **behavioral** migration;
-moving three assertions is not completion of all historical coverage.
+moving four assertions is not completion of all historical coverage.
