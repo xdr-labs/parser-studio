@@ -48,6 +48,13 @@ and EXPIRED terminal state without a false active sender or Stop action.
 Target session/status calls are intercepted by Playwright using public
 synthetic fixtures; backend authoring remains actual SHA-pinned HTTP.
 
+The synthetic Test Lab integration scenario also migrates distinct, per-action
+session rate and renewal approval rules: two independent 403 denials, fresh
+approval references for retry, metadata-only requests, a verified rate change
+that preserves quota/lease, and one verified bounded 60s/20-event extension.
+No rate change, renewal, or sensor traffic occurs without the explicit operator
+action and independent backend authorization.
+
 These archived files must not be used in release PASS totals. Do not restore
 old route access solely to make historical tests green. Explicitly migrate the
 functional assertions instead.

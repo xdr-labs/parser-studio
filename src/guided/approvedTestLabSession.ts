@@ -199,3 +199,47 @@ export async function renewApprovedSession(
     runId,approvalId,leaseMs,additionalEvents,
   },requester);
 }
+
+
+/** A terminal server acknowledgment is monotonic for a single run ID.
+ * Delayed rate/renew replies cannot resurrect a stopped sender in the UI. */
+export function reconcileApprovedSession(
+  previous:ApprovedTestLabStatus|null,next:ApprovedTestLabStatus|null,
+):ApprovedTestLabStatus|null {
+  if(previous&&next&&previous.runId===next.runId&&
+     ['STOPPED','EXPIRED','FAILED','COMPLETED'].includes(previous.state)&&
+     ['RUNNING','PAUSED'].includes(next.state))return previous;
+  return next;
+}
+
+/** One explicitly approved extension only: another 60 seconds and 20 events.
+ * No silent renewal, automatic repeat, new sender, or tenant credential access.
+ * Verify quota/lease/identity against the prior owned session before updating UI. */
+export async function extendApprovedSessionQuota(
+  current:ApprovedTestLabStatus,
+  approvalId:string,
+  requester:typeof fetch=fetch,
+  now:()=>number=()=>Date.now(),
+):Promise<ApprovedTestLabStatus>{
+  const previous=validateApprovedSessionStatus(current);
+  const currentExpiry=Date.parse(previous.leaseExpiresAt);
+  const clock=now();
+  if(!['RUNNING','PAUSED'].includes(previous.state)||
+     !Number.isSafeInteger(clock)||currentExpiry<=clock||
+     previous.maxEvents>299980){
+    throw new Error('Only an active, unexpired owned run can request another approved quota.');
+  }
+  const updated=await renewApprovedSession(
+    previous.runId,approvalId,60000,20,requester);
+  if(updated.state!==previous.state||
+     updated.maxEvents!==previous.maxEvents+20||
+     updated.ratePerSecond!==previous.ratePerSecond||
+     updated.replayMode!==previous.replayMode||
+     updated.sampleFamilyCount!==previous.sampleFamilyCount||
+     updated.sentCount<previous.sentCount||
+     Date.parse(updated.leaseExpiresAt)<=currentExpiry||
+     Date.parse(updated.leaseExpiresAt)<=clock){
+    throw new Error('The approved renewal response did not preserve the run or extend its quota and lease.');
+  }
+  return updated;
+}

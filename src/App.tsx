@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {Bot,FileText,LockKeyhole,Plus,WandSparkles} from 'lucide-react';
 import {createDraft,type ParserDraft,type SuiteResult} from './model';
 import AutoParser from './guided/AutoParser';
-import {controlApprovedSession,fetchApprovedSessionStatus,
+import {controlApprovedSession,fetchApprovedSessionStatus,reconcileApprovedSession,
   type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
 import ChatGPTAssist from './guided/ChatGPTAssist';
 import {MAX_DATASET_BYTES} from './parser';
@@ -68,6 +68,8 @@ export default function App(){
   // Owned run state survives switching either parser authoring method.
   // An active audited backend sender NEVER stops merely by changing screens.
   const [activeSession,setActiveSession]=useState<ApprovedTestLabStatus|null>(null);
+  const updateSessionSafely=(next:ApprovedTestLabStatus|null)=>
+    setActiveSession(previous=>reconcileApprovedSession(previous,next));
   const [stopBusy,setStopBusy]=useState(false);
   const [stopError,setStopError]=useState('');
   const [recoveryId,setRecoveryId]=useState('');
@@ -219,7 +221,7 @@ export default function App(){
         datasetName={datasetName} setDatasetName={setDatasetName}
         suite={live.suite} pending={live.pending}
         runPreview={preview}
-        activeSession={activeSession} onSessionUpdate={setActiveSession}
+        activeSession={activeSession} onSessionUpdate={updateSessionSafely}
         onChatGPT={()=>setWorkspace('chatgpt')}
       />:<ChatGPTAssist
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{

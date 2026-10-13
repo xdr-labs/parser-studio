@@ -1042,7 +1042,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     const mockStatus={
       runId,state:'RUNNING',sentCount:0,nextSequence:0,replayMode:'single',
       sampleFamilyCount:1,ratePerSecond:1,maxEvents:100,
-      leaseExpiresAt:'2026-10-13T12:00:00.000Z',lastSentAt:null,errorCode:null,
+      leaseExpiresAt:new Date(Date.now()+45_000).toISOString(),lastSentAt:null,errorCode:null,
       parserLifecycleNotModified:true,realSensorVerified:false,
       runtimeParsingVerified:false,sensorIngestVerified:false,
     };
@@ -1061,7 +1061,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       interflowRealTargetVerified:false,
     };
     const targetCalls:string[]=[];
-    let syntheticStarts=0,reads=0,stopDenials=0;
+    let syntheticStarts=0,reads=0,stopDenials=0,rateRequests=0,renewRequests=0;
     let responseKind:'denied'|'forged'|'safe'='denied';
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
@@ -1095,6 +1095,40 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
         expect(body).not.toContain('dpUrl');
         return route.fulfill({status:200,contentType:'application/json',
           body:JSON.stringify(mockStatus)});
+      }
+      if(path==='/api/v1/test-lab/sessions/rate'){
+        rateRequests++;
+        expect(route.request().method()).toBe('POST');
+        const submitted=route.request().postDataJSON() as Record<string,unknown>;
+        expect(submitted).toMatchObject({runId,ratePerSecond:2});
+        expect(Object.keys(submitted).sort()).toEqual(['approvalId','ratePerSecond','runId']);
+        const raw=route.request().postData()??'';
+        for(const forbidden of ['198.51.100.10','203.0.113.5','apiKey','sensorIp','dpUrl']){
+          expect(raw).not.toContain(forbidden);
+        }
+        if(rateRequests===1)return route.fulfill({status:403,
+          contentType:'application/json',body:JSON.stringify({error:'RATE_DENIED'})});
+        expect(submitted.approvalId).toBe('independent-rate-2');
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({...mockStatus,ratePerSecond:2})});
+      }
+      if(path==='/api/v1/test-lab/sessions/renew'){
+        renewRequests++;
+        expect(route.request().method()).toBe('POST');
+        const submitted=route.request().postDataJSON() as Record<string,unknown>;
+        expect(Object.keys(submitted).sort()).toEqual([
+          'additionalEvents','approvalId','leaseMs','runId']);
+        expect(submitted).toMatchObject({runId,leaseMs:60000,additionalEvents:20});
+        const raw=route.request().postData()??'';
+        for(const forbidden of ['198.51.100.10','203.0.113.5','apiKey','sensorIp','dpUrl']){
+          expect(raw).not.toContain(forbidden);
+        }
+        if(renewRequests===1)return route.fulfill({status:403,
+          contentType:'application/json',body:JSON.stringify({error:'RENEWAL_DENIED'})});
+        expect(submitted.approvalId).toBe('independent-quota-2');
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({...mockStatus,ratePerSecond:2,maxEvents:120,
+            leaseExpiresAt:new Date(Date.now()+60_000).toISOString()})});
       }
       if(path==='/api/v1/test-lab/interflow/search'){
         reads++;
@@ -1148,6 +1182,39 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(tools.getByLabel('Verified synthetic session status')).toContainText('RUNNING');
     await expect(tools.getByLabel('Verified synthetic session status')).toContainText('Sensor ingest NOT VERIFIED');
     expect(syntheticStarts).toBe(1);
+    const limits=tools.getByLabel('Approved Test Lab quota and rate controls');
+    await limits.locator('summary').click();
+    const updateRate=limits.getByRole('button',{name:'Change Approved Replay Rate'});
+    const extend=limits.getByRole('button',{name:'Request Approved 60s / 20 Events'});
+    await expect(updateRate).toBeDisabled();
+    await expect(extend).toBeDisabled();
+    await limits.getByLabel('Replay rate change approval reference')
+      .fill('independent-rate-denied');
+    await expect(updateRate).toBeEnabled();
+    await updateRate.click();
+    await expect(tools.getByRole('alert')).toContainText('Replay rate adjustment denied');
+    await expect(tools.getByLabel('Verified synthetic session status'))
+      .toContainText('0/100');
+    await limits.getByLabel('Replay rate change approval reference')
+      .fill('independent-rate-2');
+    await updateRate.click();
+    await expect(limits.getByLabel('Verified Test Lab limit change'))
+      .toContainText('Quota and lease remain unchanged');
+    expect(rateRequests).toBe(2);
+    await limits.getByLabel('Quota renewal approval reference')
+      .fill('independent-quota-denied');
+    await extend.click();
+    await expect(tools.getByRole('alert')).toContainText('Quota extension denied');
+    await expect(tools.getByLabel('Verified synthetic session status'))
+      .toContainText('0/100');
+    await limits.getByLabel('Quota renewal approval reference')
+      .fill('independent-quota-2');
+    await extend.click();
+    await expect(limits.getByLabel('Verified Test Lab limit change'))
+      .toContainText('exactly 20 additional events');
+    await expect(tools.getByLabel('Verified synthetic session status'))
+      .toContainText('0/120');
+    expect(renewRequests).toBe(2);
     const comparison=tools.getByLabel('Interflow field comparison after approved replay');
     await comparison.locator('summary').click();
     const read=comparison.getByRole('button',{name:'Read Authorized Interflow Comparison'});
@@ -1184,6 +1251,10 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
     expect(targetCalls).toEqual([
       '/api/v1/test-lab/sessions/start',
+      '/api/v1/test-lab/sessions/rate',
+      '/api/v1/test-lab/sessions/rate',
+      '/api/v1/test-lab/sessions/renew',
+      '/api/v1/test-lab/sessions/renew',
       '/api/v1/test-lab/interflow/search',
       '/api/v1/test-lab/interflow/search',
       '/api/v1/test-lab/interflow/search',

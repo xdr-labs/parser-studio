@@ -135,5 +135,21 @@ read-only status, not a Stop/Resume/Start action. Neither recovery nor lookup
 deploys a parser or proves sensor ingestion. Four dedicated Chromium migration tests use fixed public synthetic status
 interceptions and no target network sends.
 
+## Separately authorized run limits
+
+For an already owner-authorized RUNNING/PAUSED Test Lab session, the Auto Parser
+result can request one fixed additional 60-second/20-event quota or adjust the
+reviewed rate to 0.2, 1, 2 or 5 events/sec. These are result-only actions, not
+new parser creation methods. Each requires an independent, new approval
+reference and a separately verified backend capability; no automatic renewal,
+quota extension, rate update, sample upload or DP/sensor connection is enabled
+by this feature. Renewal responses must preserve run identity, state, source
+family, replay mode and rate, increase the quota by **exactly 20 events**, and
+extend the actual lease; otherwise the original session remains displayed and
+success is not claimed. Rate changes must retain quota and lease unchanged.
+Expired/terminal sessions cannot request either action, while the global Stop
+remains accessible. GitHub synthetic Chromium intercepts test 403 denials,
+per-action approvals and response integrity without real target traffic.
+
 The remaining archived Wizard and Workbench suites still require feature-by-feature **behavioral** migration;
 migrating individual behavior groups is not completion of all historical coverage.

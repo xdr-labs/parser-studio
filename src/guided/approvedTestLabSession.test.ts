@@ -3,7 +3,7 @@ import type { BackendCapabilities } from './backendCapabilities';
 import {
   assertApprovedSessionReady, startApprovedSyntheticSession,
   fetchApprovedSessionStatus, controlApprovedSession, renewApprovedSession,
-  changeApprovedSessionRate,
+  changeApprovedSessionRate,extendApprovedSessionQuota,reconcileApprovedSession,
 } from './approvedTestLabSession';
 
 const testLab = {
@@ -149,6 +149,65 @@ describe('explicit owner-approved Test Lab session UI client, never default sens
       await expect(changeApprovedSessionRate(active,'rate-approved-2026',5,request))
         .rejects.toThrow(String(code));
       expect((request as unknown as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+    }
+  });
+
+  it('never reactivates a server-confirmed terminal run after a delayed older update',()=>{
+    const old=status as import('./approvedTestLabSession').ApprovedTestLabStatus;
+    const stopped={...old,state:'STOPPED' as const};
+    const expired={...old,state:'EXPIRED' as const};
+    const unrelated={...old,runId:'test_run_'+'b'.repeat(32)};
+    expect(reconcileApprovedSession(stopped,old)).toBe(stopped);
+    expect(reconcileApprovedSession(expired,old)).toBe(expired);
+    expect(reconcileApprovedSession(old,stopped)).toBe(stopped);
+    expect(reconcileApprovedSession(stopped,unrelated)).toBe(unrelated);
+  });
+
+  it('extends only a separately approved live owned run by exactly 60 seconds and 20 events',async()=>{
+    const active={...status,state:'RUNNING',
+      leaseExpiresAt:'2099-01-01T00:00:00.000Z'};
+    const expected={...active,maxEvents:120,
+      leaseExpiresAt:'2099-01-01T00:01:00.000Z'};
+    const requester=fake(expected);
+    const done=await extendApprovedSessionQuota(
+      active as import('./approvedTestLabSession').ApprovedTestLabStatus,
+      'new-approval-extension',requester,
+      ()=>Date.parse('2098-01-01T00:00:00.000Z'));
+    expect(done.maxEvents).toBe(120);
+    const [url,options]=(requester as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toBe('/api/v1/test-lab/sessions/renew');
+    expect(JSON.parse(options.body)).toEqual({
+      runId,approvalId:'new-approval-extension',leaseMs:60000,additionalEvents:20,
+    });
+    expect(options.body).not.toContain('rawLog');
+    expect(options.body).not.toContain('sensorIp');
+  });
+
+  it('blocks expired, stopped, quota-exhausted or manipulated renewals before showing quota success',async()=>{
+    const live={...status,state:'RUNNING',leaseExpiresAt:'2099-01-01T00:00:00.000Z'};
+    const now=()=>Date.parse('2098-01-01T00:00:00.000Z');
+    const requester=fake({...live,maxEvents:120,leaseExpiresAt:'2099-01-01T00:01:00.000Z'});
+    for(const value of [
+      {...live,state:'EXPIRED'}, {...live,leaseExpiresAt:'2097-01-01T00:00:00.000Z'},
+      {...live,maxEvents:300000},
+    ]){
+      await expect(extendApprovedSessionQuota(
+        value as import('./approvedTestLabSession').ApprovedTestLabStatus,'fresh-renewal',requester,now)).rejects.toThrow();
+    }
+    expect(requester).not.toHaveBeenCalled();
+    const unsafe=[
+      {...live,maxEvents:119,leaseExpiresAt:'2099-01-01T00:01:00.000Z'},
+      {...live,maxEvents:120,leaseExpiresAt:live.leaseExpiresAt},
+      {...live,maxEvents:120,leaseExpiresAt:'2099-01-01T00:01:00.000Z',
+        ratePerSecond:5},
+      {...live,maxEvents:120,leaseExpiresAt:'2099-01-01T00:01:00.000Z',
+        state:'STOPPED'},
+      {...live,maxEvents:120,leaseExpiresAt:'2099-01-01T00:01:00.000Z',
+        rawLog:'PRIVATE_NOT_ALLOWED'},
+    ];
+    for(const response of unsafe){
+      await expect(extendApprovedSessionQuota(
+        live as import('./approvedTestLabSession').ApprovedTestLabStatus,'fresh-renewal',fake(response),now)).rejects.toThrow();
     }
   });
 

@@ -4,6 +4,7 @@ import type {BackendCapabilities} from './backendCapabilities';
 import {fetchBackendCapabilities} from './backendCapabilities';
 import {fetchParserPortProposal,type ParserPortProposal} from './portProposalClient';
 import {startApprovedSyntheticSession,fetchApprovedSessionStatus,controlApprovedSession,
+  changeApprovedSessionRate,extendApprovedSessionQuota,
   assertApprovedSessionReady,type ApprovedTestLabStatus} from './approvedTestLabSession';
 import {queryApprovedInterflowReadback,assertInterflowReadbackCapability,
   type InterflowReadbackResult,type InterflowIndex} from './approvedInterflowReadback';
@@ -33,12 +34,22 @@ export default function AutoParserResultTools({
   const [cap,setCap]=useState<BackendCapabilities|null>(null);
   const [sessionReady,setSessionReady]=useState<'unchecked'|'available'|'disabled'>('unchecked');
   const session=activeSession;
+  const latestSession=useRef(activeSession);
+  latestSession.current=activeSession;
   const [runId,setRunId]=useState('');
   const [approval,setApproval]=useState('');
   const [approved,setApproved]=useState(false);
   const [rate,setRate]=useState<1|2|5>(1);
   const [sessionBusy,setSessionBusy]=useState(false);
   const [sessionError,setSessionError]=useState('');
+  const [newQuotaApproval,setNewQuotaApproval]=useState('');
+  const [newRateApproval,setNewRateApproval]=useState('');
+  const [requestedRate,setRequestedRate]=useState<0.2|1|2|5>(2);
+  const [limitNotice,setLimitNotice]=useState('');
+  const allowedToAdjust=Boolean(session&&
+    ['RUNNING','PAUSED'].includes(session.state)&&
+    Date.parse(session.leaseExpiresAt)>Date.now()&&
+    cap&&sessionReady==='available'&&!sessionBusy);
   const [readAllowed,setReadAllowed]=useState(false);
   const [readPending,setReadPending]=useState(false);
   const [readError,setReadError]=useState('');
@@ -54,8 +65,13 @@ export default function AutoParserResultTools({
     setPort(null);setPortError('');setCap(null);
     setSessionReady('unchecked');setRunId('');
     setApproval('');setApproved(false);setSessionError('');
+    setNewQuotaApproval('');setNewRateApproval('');setLimitNotice('');
     setReadAllowed(false);setReadError('');setReadResult(null);
   },[projectId,listenerPort,sourceFormat]);
+
+  useEffect(()=>{
+    setNewQuotaApproval('');setNewRateApproval('');setLimitNotice('');
+  },[activeSession?.runId]);
 
   async function checkPort(){
     if(portBusy)return;
@@ -116,6 +132,43 @@ export default function AutoParserResultTools({
       if(current===epoch.current)onSessionUpdate(result);
     }catch{
       if(current===epoch.current)setSessionError('Session request denied or owner verification unavailable.');
+    }finally{if(current===epoch.current)setSessionBusy(false);}
+  }
+  async function extendQuota(){
+    if(!session||!allowedToAdjust||!APPROVAL.test(newQuotaApproval))return;
+    const current=epoch.current,originalId=session.runId;
+    setSessionBusy(true);setSessionError('');setLimitNotice('');
+    try{
+      const updated=await extendApprovedSessionQuota(session,newQuotaApproval);
+      if(current!==epoch.current||updated.runId!==originalId||
+         latestSession.current?.runId!==originalId||
+         !['RUNNING','PAUSED'].includes(latestSession.current.state))return;
+      onSessionUpdate(updated);setNewQuotaApproval('');
+      setLimitNotice('Backend verified exactly 20 additional events and an extended lease. Real sensor ingestion remains NOT VERIFIED.');
+    }catch{
+      if(current===epoch.current){
+        setSessionError('Quota extension denied or unverified. No additional time or events are claimed.');
+        setNewQuotaApproval('');
+      }
+    }finally{if(current===epoch.current)setSessionBusy(false);}
+  }
+  async function adjustRate(){
+    if(!session||!allowedToAdjust||!APPROVAL.test(newRateApproval)||
+       requestedRate===session.ratePerSecond)return;
+    const current=epoch.current,originalId=session.runId;
+    setSessionBusy(true);setSessionError('');setLimitNotice('');
+    try{
+      const updated=await changeApprovedSessionRate(session,newRateApproval,requestedRate);
+      if(current!==epoch.current||updated.runId!==originalId||
+         latestSession.current?.runId!==originalId||
+         !['RUNNING','PAUSED'].includes(latestSession.current.state))return;
+      onSessionUpdate(updated);setNewRateApproval('');
+      setLimitNotice('Backend verified the approved bounded replay rate. Quota and lease remain unchanged.');
+    }catch{
+      if(current===epoch.current){
+        setSessionError('Replay rate adjustment denied or unverified. The previous approved rate is retained.');
+        setNewRateApproval('');
+      }
     }finally{if(current===epoch.current)setSessionBusy(false);}
   }
   async function recover(){
@@ -212,6 +265,53 @@ export default function AutoParserResultTools({
         {['RUNNING','PAUSED'].includes(session.state)&&<button type="button"
           disabled={sessionBusy} onClick={()=>{void sessionAction('stop');}}>Stop</button>}
       </div>}
+      {session&&['RUNNING','PAUSED'].includes(session.state)&&
+      <details aria-label="Approved Test Lab quota and rate controls">
+        <summary>Adjust approved replay rate or request additional quota</summary>
+        <p>Each action needs its own new operator approval reference. The backend
+          checks session ownership, audit policy and limits independently.
+          Nothing renews, sends, or changes rate automatically.</p>
+        {sessionReady!=='available'&&<p role="status">
+          Check Sensor Test Authorization above to verify current management capability
+          before changing an existing run.
+        </p>}
+        {Date.parse(session.leaseExpiresAt)<=Date.now()&&<p role="status">
+          The reported lease deadline has passed. Only Stop or authenticated status
+          refresh is available until the backend reports a new valid state.
+        </p>}
+        <div className="two-path-mapping-editor">
+          <label>New independent quota approval reference
+            <input aria-label="Quota renewal approval reference" autoComplete="off"
+              value={newQuotaApproval} maxLength={96}
+              onChange={e=>setNewQuotaApproval(e.target.value)}/>
+          </label>
+          <button type="button"
+            disabled={!allowedToAdjust||!APPROVAL.test(newQuotaApproval)}
+            onClick={()=>{void extendQuota();}}>
+            Request Approved 60s / 20 Events
+          </button>
+        </div>
+        <div className="two-path-mapping-editor">
+          <label>New independent rate approval reference
+            <input aria-label="Replay rate change approval reference"
+              autoComplete="off" value={newRateApproval} maxLength={96}
+              onChange={e=>setNewRateApproval(e.target.value)}/>
+          </label>
+          <label>Requested approved replay rate
+            <select aria-label="Requested approved replay rate" value={requestedRate}
+              onChange={e=>setRequestedRate(Number(e.target.value) as 0.2|1|2|5)}>
+              {([0.2,1,2,5] as const).map(value=>
+                <option key={value} value={value}>{value} events/sec</option>)}
+            </select>
+          </label>
+          <button type="button" disabled={!allowedToAdjust||
+            requestedRate===session.ratePerSecond||!APPROVAL.test(newRateApproval)}
+            onClick={()=>{void adjustRate();}}>Change Approved Replay Rate</button>
+        </div>
+        {limitNotice&&<p role="status" aria-label="Verified Test Lab limit change">
+          {limitNotice}
+        </p>}
+      </details>}
       {session&&['STOPPED','EXPIRED','FAILED','COMPLETED'].includes(session.state)&&
         <button type="button" onClick={()=>onSessionUpdate(null)}>
           Dismiss Finished Session
