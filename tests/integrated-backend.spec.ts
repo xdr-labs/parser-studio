@@ -363,4 +363,54 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     expect(payloads.length).toBeGreaterThanOrEqual(4);
   });
 
+  test('P0 strict RFC5424 JSON/KV wrapped + standalone JSON/KV mixed compiles exact Native-qualified backend',async({page})=>{
+    const source=[
+      '{"src_ip":"192.0.2.10","action":"deny"}',
+      'src_ip=198.51.100.8 action=allow',
+      '<165>1 2026-10-12T01:02:03Z edge fw 122 ID - {"src_ip":"192.0.2.19","action":"deny"}',
+      '<165>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=203.0.113.4 action=allow',
+    ].join('\n');
+    const payloads:string[]=[];
+    page.on('request',r=>{
+      if(r.method()==='POST'&&new URL(r.url()).pathname.startsWith('/api/v1/parser-pairs/')){
+        const json=r.postData()??'';
+        payloads.push(json);
+        for(const raw of ['192.0.2.10','198.51.100.8','192.0.2.19','203.0.113.4'])
+          expect(json).not.toContain(raw);
+      }
+    });
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(source);
+    await expect(page.getByLabel('Automatic event accounting'))
+      .toContainText('4/4 events analyzed locally');
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await expect(page.getByLabel('Suggested field mappings')).toContainText('body.src_ip');
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    expect((await generated).status()).toBe(200);
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByRole('button',{name:'Review Staged Recipe'}).click();
+    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
+    expect((await staged).status()).toBe(200);
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('v0.1 pair SHA MATCHED');
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('Native user parser NOT VERIFIED');
+    const actual=payloads.map(body=>JSON.parse(body) as {
+      recipe?:{stages?:Array<{op:string;families?:string[]}>}}).filter(x=>x.recipe?.stages?.length);
+    expect(actual.length).toBeGreaterThanOrEqual(2);
+    expect(actual[0]?.recipe?.stages?.find(x=>x.op==='dispatch_family')?.families)
+      .toEqual(['json','kv','rfc5424_json','rfc5424_kv']);
+    expect(payloads.length).toBeGreaterThanOrEqual(4);
+  });
+
 });

@@ -1306,7 +1306,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             {draft.format==='mixed'&&<div className="guided-field" aria-label="Explicit mixed source families">
               <span>Strict Mixed Input · Select 2–4 Detected Families</span>
               <div className="guided-two-fields">
-                {(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv'] as const).map(family=>
+                {(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv'] as const).map(family=>
                   <label key={family}>
                     <input type="checkbox" aria-label={'Include '+family.toUpperCase()+' family'}
                       checked={draft.mixedFormats?.includes(family)??false}
@@ -1319,7 +1319,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                   </label>)}
               </div>
               <small>Select no more than four reviewed single-line JSON/KV/CEF/LEEF,
-                RFC5424-wrapped CEF/LEEF or RFC3164 TAG: KV families.
+                RFC5424-wrapped JSON/KV/CEF/LEEF or RFC3164 TAG: KV families.
                 Any selected Syslog family requires the same sensor/CONF listener port at least 6800.
                 RFC3164 year and timezone stay unknown; CSV, arbitrary Syslog and multiline cannot be silently routed.</small>
             </div>}

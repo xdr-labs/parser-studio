@@ -151,6 +151,25 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
   await expect(checkRecipeV02Compiler(malicious as typeof fetch,undefined,true))
     .rejects.toThrow(/not verified/);
  });
+ it('needs exact 9-family native backend capability before accepting RFC5424 nested JSON and KV',async()=>{
+  const make=(families:string[])=>vi.fn(async()=>response({...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'mixed'],
+    strictMixedSingleLineFamilies:families}));
+  const old=make(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv']);
+  await expect(checkRecipeV02Compiler(old as typeof fetch,undefined,true,false,
+    ['json','kv','rfc5424_json','rfc5424_kv'])).rejects.toThrow(/not verified/);
+  const families=['json','kv','cef','leef','rfc5424_cef','rfc5424_leef',
+    'rfc3164_kv','rfc5424_json','rfc5424_kv'];
+  const supported=make(families);
+  expect(await checkRecipeV02Compiler(supported as typeof fetch,undefined,true,false,
+    ['json','kv','rfc5424_json','rfc5424_kv'])).toBe(true);
+  const missing=make([...families.slice(0,8),'unreviewed']);
+  await expect(checkRecipeV02Compiler(missing as typeof fetch,undefined,true))
+    .rejects.toThrow(/not verified/);
+  const forged=make([...families,'experimental']);
+  await expect(checkRecipeV02Compiler(forged as typeof fetch,undefined,true))
+    .rejects.toThrow(/not verified/);
+ });
  it('gates explicit TCP blank-line JSON by exact backend v0.2 transport claims',async()=>{
   const supported=vi.fn(async()=>response(capability));
   expect(await checkRecipeV02Compiler(supported as typeof fetch,undefined,false,true))

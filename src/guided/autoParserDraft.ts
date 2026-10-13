@@ -51,7 +51,7 @@ export function prepareAutoParserDraft(
        records.some(rec=>!(/^(?:\{|CEF:|LEEF:|<\d{1,3}>1 |<\d{1,3}>[A-Z][a-z]{2} |[A-Za-z_][A-Za-z0-9_.-]*=)/.test(rec.raw))))
       return failed('MIXED_OR_UNKNOWN');
     const census=[...new Set(ledger.families.map(x=>
-      x.envelope==='rfc5424'&&['cef','leef'].includes(x.body)?
+      x.envelope==='rfc5424'&&['cef','leef','json','kv'].includes(x.body)?
         'rfc5424_'+x.body:
       x.envelope==='rfc3164'&&x.body==='kv'?
         'rfc3164_kv':x.envelope==='none'?x.body:'UNSUPPORTED'))].sort();

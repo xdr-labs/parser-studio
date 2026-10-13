@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -67,6 +67,22 @@ describe('safe synthetic no-code starter templates', () => {
     }
   });
 
+  it('offers strict RFC5424-wrapped JSON/KV and standalone JSON/KV synthetic starter',()=>{
+    const template=loadStarterTemplate('mixed_rfc5424_bodies');
+    expect(template.draft.format).toBe('mixed');
+    expect(template.draft.mixedFormats).toEqual(['json','kv','rfc5424_json','rfc5424_kv']);
+    expect(template.draft.guided?.receiver.port).toBeGreaterThanOrEqual(6800);
+    const report=preview(template.sample,template.draft);
+    expect(report.counts).toMatchObject({total:4,matched:4,normalized:4,failures:0});
+    expect(report.events[2]?.fields).toMatchObject({
+      body:{src_ip:'192.0.2.19',action:'deny'},
+      syslog_timestamp:'2026-10-12T01:02:03Z'});
+    const backend=toBackendProject(template.draft);
+    expect(backend.ok).toBe(true);
+    if(backend.ok)expect(backend.project.extraction).toEqual({
+      format:'mixed',mixedFormats:['json','kv','rfc5424_json','rfc5424_kv']});
+    expect(JSON.stringify(backend)).not.toContain('203.0.113.4');
+  });
   it('offers strict yearless RFC3164 TAG KV + JSON/KV synthetic mixed sample',()=>{
     const preset=loadStarterTemplate('mixed_rfc3164');
     expect(preset.draft.format).toBe('mixed');

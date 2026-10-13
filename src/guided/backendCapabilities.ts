@@ -9,7 +9,7 @@ export interface BackendCapabilities {
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
-    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'>;
+    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'>;
     strictMixedRequiresExplicitAllowlist?: true;
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
@@ -143,13 +143,15 @@ export async function fetchBackendCapabilities(
   const mixed=a.strictMixedSingleLineFamilies;
   const reviewedMixed=['json','kv','cef','leef'];
   const wrapped=['rfc5424_cef','rfc5424_leef'];
+  const nested=['rfc5424_json','rfc5424_kv'];
   if(mixedAdvertised){
     if(a.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(mixed)||![4,6,7].includes(mixed.length)||
+      !Array.isArray(mixed)||![4,6,7,9].includes(mixed.length)||
       new Set(mixed).size!==mixed.length||
       !reviewedMixed.every(f=>mixed.includes(f as 'json'))||
       (mixed.length>=6&&!wrapped.every(f=>mixed.includes(f as 'rfc5424_cef')))||
-      (mixed.length===7&&!mixed.includes('rfc3164_kv')))
+      (mixed.length>=7&&!mixed.includes('rfc3164_kv'))||
+      (mixed.length===9&&!nested.every(f=>mixed.includes(f as 'rfc5424_json'))))
       throw new Error('Backend mixed routing requires one of the exact reviewed family allowlists.');
   }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
     throw new Error('Unsupported mixed routing capability was advertised.');
@@ -243,7 +245,7 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
   }
   if(project.extraction.format==='mixed'){
     const formats=project.extraction.mixedFormats;
-    if(formats.some(f=>['rfc5424_cef','rfc5424_leef','rfc3164_kv'].includes(f))&&
+    if(formats.some(f=>['rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv'].includes(f))&&
        project.receiver.port<6800)
       throw new Error('Syslog-wrapped mixed parser sensor/CONF listener port must be >=6800.');
     if(formats.includes('rfc3164_kv')&&(

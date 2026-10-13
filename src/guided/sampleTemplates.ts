@@ -2,7 +2,7 @@ import { createDraft, type MappingRule, type ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 
 export const starterTemplateIds = [
-  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164',
+  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies',
 ] as const;
 export type StarterTemplateId = (typeof starterTemplateIds)[number];
 
@@ -79,6 +79,16 @@ const presets: Record<StarterTemplateId, { label: string; description: string; s
       'CEF:0|Example|Firewall|1|101|Denied|8|action=deny src_ip=203.0.113.11 dst_port=22',
     ],
   },
+  mixed_rfc5424_bodies:{
+    label:'Mixed JSON/KV + RFC5424 JSON/KV · Firewall',
+    description:'One explicitly reviewed listener for standalone and RFC5424-wrapped JSON and KV',
+    samples:[
+      '{"src_ip":"192.0.2.10","action":"deny"}',
+      'src_ip=198.51.100.8 action=allow',
+      '<165>1 2026-10-12T01:02:03Z edge fw 122 ID - {"src_ip":"192.0.2.19","action":"deny"}',
+      '<165>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=203.0.113.4 action=allow',
+    ],
+  },
   mixed_rfc3164:{
     label:'Mixed JSON + KV + RFC3164 TAG KV · Firewall',
     description:'Strict yearless RFC3164 TAG: and standalone JSON/KV on one chosen Syslog port',
@@ -128,13 +138,31 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
   draft.name = 'Synthetic ' + spec.label;
   draft.vendor = 'Synthetic demo (no customer data)';
   draft.format = id === 'rfc5424_cef' || id === 'rfc5424_leef'
-    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':id==='mixed_rfc5424'||id==='mixed_rfc3164'?'mixed':id;
+    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':(id==='mixed_rfc5424'||id==='mixed_rfc3164'||id==='mixed_rfc5424_bodies')?'mixed':id;
   draft.csvColumns = 'action,src_ip,dst_port';
   const guided = defaultGuidedOptions();
   guided.slug = 'example_' + id;
   guided.eventBoundary = 'single-line';
   guided.enrichment = [];
 
+  if(id==='mixed_rfc5424_bodies'){
+    draft.mixedFormats=['json','kv','rfc5424_json','rfc5424_kv'];
+    draft.mappings=[
+      {id:'plain-ip',source:'src_ip',target:'custom.source_ip',type:'ip'},
+      {id:'plain-action',source:'action',target:'custom.action',type:'string'},
+      {id:'wrapped-ip',source:'body.src_ip',target:'custom.wrapped_ip',type:'ip'},
+      {id:'wrapped-action',source:'body.action',target:'custom.wrapped_action',type:'string'},
+      {id:'event-time',source:'syslog_timestamp',target:'custom.timestamp',type:'timestamp'},
+    ];
+    guided.groups={
+      'plain-ip':'top_fields','plain-action':'top_fields',
+      'wrapped-ip':'ns_fields','wrapped-action':'top_fields','event-time':'vendor_fields',
+    };
+    guided.classification={defaultIndex:'Syslog',rules:[
+      {id:'deny-plain',sourceField:'action',equals:'deny',index:'Threat'},
+      {id:'deny-wrapped',sourceField:'body.action',equals:'deny',index:'Threat'},
+    ]};
+  }
   if(id==='mixed_rfc3164'){
     draft.mixedFormats=['json','kv','rfc3164_kv'];
     draft.mappings=[
