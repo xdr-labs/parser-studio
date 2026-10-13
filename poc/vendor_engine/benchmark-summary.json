@@ -236,7 +236,7 @@
     "browser_extracted_events": 80,
     "browser_normalized_events": 59,
     "records": 256,
-    "warning": "Event-count preview with createDraft defaults. NOT mathematically comparable with new PoC field-level gold metrics."
+    "warning": "Event-level default preview counts; not a field-level baseline."
   },
   "existing_ui_same_six_roles": {
     "direct_extracted_role_metrics": {
@@ -282,9 +282,6 @@
       },
       "gold_event_records": 13,
       "id": "fortinet_traffic",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 13
-      },
       "metadata_or_goldless_records": 0
     },
     {
@@ -298,10 +295,6 @@
       },
       "gold_event_records": 28,
       "id": "fortinet_event",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 18,
-        "STRUCTURED_UNMAPPED": 10
-      },
       "metadata_or_goldless_records": 0
     },
     {
@@ -315,9 +308,6 @@
       },
       "gold_event_records": 28,
       "id": "fortinet_utm",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 28
-      },
       "metadata_or_goldless_records": 0
     },
     {
@@ -331,9 +321,6 @@
       },
       "gold_event_records": 100,
       "id": "palo_traffic",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 100
-      },
       "metadata_or_goldless_records": 0
     },
     {
@@ -347,9 +334,6 @@
       },
       "gold_event_records": 76,
       "id": "palo_threat",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 76
-      },
       "metadata_or_goldless_records": 0
     },
     {
@@ -363,9 +347,6 @@
       },
       "gold_event_records": 1,
       "id": "trellix_edr",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 1
-      },
       "metadata_or_goldless_records": 0
     },
     {
@@ -379,10 +360,6 @@
       },
       "gold_event_records": 2,
       "id": "trellix_epo",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 2,
-        "STRUCTURED_UNMAPPED": 1
-      },
       "metadata_or_goldless_records": 1
     },
     {
@@ -396,10 +373,6 @@
       },
       "gold_event_records": 6,
       "id": "trend_vision",
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 5,
-        "STRUCTURED_UNMAPPED": 2
-      },
       "metadata_or_goldless_records": 1
     }
   ],
@@ -407,7 +380,7 @@
   "llm_used": false,
   "native_fluentd_verified": false,
   "new_poc_field_level": {
-    "caveat": "Hand-derived parser profiles from inspected fixtures; same upstream files as evaluation, NOT blind source/version holdout; no automatic grammar-learning improvement claim.",
+    "caveat": "Hand-derived source profiles, not learned or blind generalization.",
     "micro_metrics": {
       "FN": 23,
       "FP": 0,
@@ -477,7 +450,7 @@
   },
   "real_drain3_miner_used": false,
   "sensor_or_network_io": false,
-  "source_authorization": "Read-only publicly available upstream Elastic/x-pack test fixtures; underlying raw and expected files excluded from Git",
+  "source_authorization": "Pinned upstream Elastic/x-pack read-only research; raw and gold never committed.",
   "status": "LOCAL_EXPERIMENT_ONLY_NOT_NATIVE_NOT_TARGET",
   "stellar_dp_verified": false,
   "total_records": 256

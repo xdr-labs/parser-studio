@@ -85,11 +85,64 @@ def render(upper:dict[str,Any],browser:dict[str,Any],
         "llm_used":False,
     }
 
+    # The previous benchmark is an input artifact, not trusted output.
+    # Whitelist its nested aggregate payload as well: an accidentally added
+    # source or secret field must never be propagated by report regeneration.
+    labels=("fortinet_traffic","fortinet_event","fortinet_utm",
+            "palo_traffic","palo_threat","trellix_edr","trellix_epo",
+            "trend_vision")
+    metric_names=("TP","FP","FN","f1","precision","recall")
+    legacy=upper["new_poc_field_level"]
+    def legacy_metric(data:dict[str,Any]) -> dict[str,Any]:
+        return {k:data[k] for k in metric_names}
+    legacy_roles={
+        r:legacy_metric(legacy["roles"][r])
+        for r in ("source.ip","destination.ip","source.port",
+                  "destination.port","event.action","user.name")
+    }
+    previous=upper["fixtures"]
+    if len(previous)!=len(labels) or {f["id"] for f in previous}!=set(labels):
+        raise ValueError("BENCHMARK_FIXTURE_ID_MISMATCH")
+    old_fixtures=[
+        {"id":f["id"],"events":int(f["events"]),
+         "gold_event_records":int(f["gold_event_records"]),
+         "metadata_or_goldless_records":int(f["metadata_or_goldless_records"]),
+         "field_evaluation":{
+             k:f["field_evaluation"][k]
+             for k in ("true_fields","extra_or_wrong","missing_or_wrong",
+                       "precision","recall")
+         }}
+        for f in previous
+    ]
+    old_events=upper["existing_ui_default_preview"]
     summary={
-        **{k:v for k,v in upper.items() if k!="contract"},
         "contract":"parser-studio.poc.benchmark-checkpoint.v0.2",
+        "status":"LOCAL_EXPERIMENT_ONLY_NOT_NATIVE_NOT_TARGET",
+        "total_records":256,
+        "fixture_manifest":"manifest.json",
+        "source_authorization":"Pinned upstream Elastic/x-pack read-only research; raw and gold never committed.",
+        "existing_ui_default_preview":{
+            "browser_extracted_events":int(old_events["browser_extracted_events"]),
+            "browser_normalized_events":int(old_events["browser_normalized_events"]),
+            "records":int(old_events["records"]),
+            "warning":"Event-level default preview counts; not a field-level baseline.",
+        },
+        "new_poc_field_level":{
+            "roles":legacy_roles,
+            "micro_metrics":legacy_metric(legacy["micro_metrics"]),
+            "same_fixture_latter_half_probe":legacy_metric(
+                legacy["same_fixture_latter_half_probe"]),
+            "caveat":"Hand-derived source profiles, not learned or blind generalization.",
+        },
+        "fixtures":old_fixtures,
         "existing_ui_same_six_roles":baseline,
         "auto_learned_blind_holdout":result,
+        "native_fluentd_verified":False,
+        "stellar_dp_verified":False,
+        "sensor_or_network_io":False,
+        "llm_used":False,
+        "real_drain3_miner_used":False,
+        "jsonata_used":False,
     }
     return summary
 

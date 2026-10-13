@@ -15,8 +15,31 @@ class ReportTests(unittest.TestCase):
             value={k:0 for k in keys}
             value.update(kw)
             return value
-        upper={"contract":"parser-studio.poc.benchmark-checkpoint.v0.1",
-               "total_records":256,"sensitive_raw":"DO_NOT_PUBLISH_UPPER"}
+        six_roles=("source.ip","destination.ip","source.port",
+                   "destination.port","event.action","user.name")
+        fixture_names=("fortinet_traffic","fortinet_event","fortinet_utm",
+                       "palo_traffic","palo_threat","trellix_edr",
+                       "trellix_epo","trend_vision")
+        upper={
+            "contract":"parser-studio.poc.benchmark-checkpoint.v0.1",
+            "total_records":256,"sensitive_raw":"DO_NOT_PUBLISH_UPPER",
+            "existing_ui_default_preview":{
+                "browser_extracted_events":80,"browser_normalized_events":59,"records":256
+            },
+            "new_poc_field_level":{
+                "roles":{role:stat() for role in six_roles},
+                "micro_metrics":stat(),"same_fixture_latter_half_probe":stat(),
+                "sensitive_nested":"DO_NOT_PUBLISH_NESTED",
+            },
+            "fixtures":[{
+                "id":name,"events":1,"gold_event_records":1,
+                "metadata_or_goldless_records":0,
+                "field_evaluation":{
+                    "true_fields":0,"extra_or_wrong":0,"missing_or_wrong":0,
+                    "precision":1,"recall":1,"raw":"DO_NOT_PUBLISH_NESTED"
+                },
+            } for name in fixture_names]
+        }
         browser={"contract":"parser-studio.poc.existing-browser-field-baseline.v0.2",
                  "records":256,"six_role_gold_present":1168,
                  "direct_extracted_role_metrics":stat(),
