@@ -310,6 +310,23 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_mixed_csv",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\",\"dst_port\":443}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "dstport": 443,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -925,6 +942,106 @@
       "id": "too_long",
       "slug": "v02_java_blanks",
       "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)"
+    }
+  ],
+  "mixedCsvCases": [
+    {
+      "id": "semicolon-csv-deny",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny;22",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "action": "deny",
+        "dstport": 22,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_csv",
+      "raw": "src_ip=198.51.100.8 action=allow dst_port=443",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "dstport": 443,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "quoted-csv-allow",
+      "slug": "v02_mixed_csv",
+      "raw": "\"203.0.113.19\";allow;8443",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.19",
+        "action": "allow",
+        "dstport": 8443,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedCsvNegative": [
+    {
+      "id": "missing-column",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny"
+    },
+    {
+      "id": "extra-column",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny;22;unexpected"
+    },
+    {
+      "id": "wrong-delimiter",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17,deny,22"
+    },
+    {
+      "id": "broken-quotes",
+      "slug": "v02_mixed_csv",
+      "raw": "\"192.0.2.17;deny;22"
+    },
+    {
+      "id": "unselected-cef",
+      "slug": "v02_mixed_csv",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 act=deny"
+    },
+    {
+      "id": "unselected-syslog",
+      "slug": "v02_mixed_csv",
+      "raw": "<34>Oct 12 02:03:04 edge fw[122]: src_ip=192.0.2.11 action=deny"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny;22\n203.0.113.3;allow;443"
+    },
+    {
+      "id": "duplicate-kv",
+      "slug": "v02_mixed_csv",
+      "raw": "src_ip=192.0.2.17 src_ip=203.0.113.3 action=deny"
+    },
+    {
+      "id": "no-family",
+      "slug": "v02_mixed_csv",
+      "raw": "UNRECOGNIZED_TEXT"
     }
   ]
 }

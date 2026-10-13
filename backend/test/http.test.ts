@@ -117,7 +117,7 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(info.authoring.javaBlankLineOtherTransports,false);
    assert.equal(info.authoring.javaBlankLineDelimiter,'LF_LF');
    assert.equal(info.authoring.javaStackTraceGrammar,'EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1');
-   assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef']);
+   assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv']);
    assert.equal(info.authoring.strictMixedRequiresExplicitAllowlist,true);
    assert.equal(info.authoring.rfc3164StrictTaggedMessageSubset,true);
    assert.equal(info.authoring.rfc3164TimePolicy,"YEAR_AND_ZONE_UNKNOWN");

@@ -150,7 +150,8 @@
                     "rfc5424_json",
                     "rfc5424_kv",
                     "rfc3164_cef",
-                    "rfc3164_leef"
+                    "rfc3164_leef",
+                    "csv"
                   ]
                 }
               },

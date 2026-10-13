@@ -79,7 +79,14 @@ export function validateProject(input: unknown): ValidationResult {
       p.receiver.tcpFraming!=="blank_line_java")
     issue(issues,"java_blank_line_transport","/receiver/tcpFraming",
       "Native Java stack traces require TCP and an explicit LF LF event boundary.");
-  if (extraction.format === "csv") {
+  const mixedCsv=extraction.format==="mixed"&&
+    extraction.mixedFormats?.includes("csv");
+  if (extraction.format === "csv"||mixedCsv) {
+    if(mixedCsv&&(
+      !Array.isArray(extraction.csvColumns)||extraction.csvColumns.length<2||
+      ![",",";","\t"].includes(extraction.csvDelimiter??"INVALID")))
+      issue(issues,"mixed_csv_requires_schema","/extraction",
+        "Mixed CSV requires at least two reviewed named columns and an explicitly selected comma, semicolon or TAB delimiter.");
     if (!extraction.csvColumns?.length) {
       issue(issues, "csv_columns", "/extraction/csvColumns", "CSV requires an explicit field name for each column.");
     } else {
@@ -109,7 +116,7 @@ export function validateProject(input: unknown): ValidationResult {
       }
     }
   }
-  const allowedMix=new Set(["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv","rfc3164_cef","rfc3164_leef"]);
+  const allowedMix=new Set(["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv","rfc3164_cef","rfc3164_leef","csv"]);
   if(extraction.format==="mixed"){
     if(extraction.mixedFormats?.some(f=>f==="rfc5424_cef"||f==="rfc5424_leef"||f==="rfc3164_kv"||f==="rfc5424_json"||f==="rfc5424_kv"||f==="rfc3164_cef"||f==="rfc3164_leef")&&
        p.receiver.port<6800)
@@ -120,7 +127,7 @@ export function validateProject(input: unknown): ValidationResult {
        new Set(extraction.mixedFormats).size!==extraction.mixedFormats.length||
        !extraction.mixedFormats.every(format=>allowedMix.has(format)))
       issue(issues,"mixed_family_allowlist","/extraction/mixedFormats",
-        "Choose two to four distinct reviewed single-line families; RFC3164 KV/CEF/LEEF and RFC5424 JSON/KV/CEF/LEEF require explicit allowlists.");
+        "Choose two to four reviewed families; mixed CSV requires explicit column and delimiter schema.");
   }else if(extraction.mixedFormats!==undefined){
     issue(issues,"format_options","/extraction/mixedFormats",
       "A family allowlist is valid only in strict mixed extraction.");

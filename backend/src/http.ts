@@ -278,7 +278,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           javaBlankLineOtherTransports:false,
           javaBlankLineDelimiter:"LF_LF",
           javaStackTraceGrammar:"EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1",
-          strictMixedSingleLineFamilies:["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv","rfc3164_cef","rfc3164_leef"],
+          strictMixedSingleLineFamilies:["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv","rfc3164_cef","rfc3164_leef","csv"],
           supportedEnvelopeParsers:["none","rfc3164_strict_no_year_or_zone","rfc5424_v1_strict"],
           supportedOperators:["split_event","unwrap_syslog","dispatch_family","parse_json","parse_kv",
             "parse_csv","parse_cef","parse_leef","parse_java_stacktrace","map_field","cast_type",

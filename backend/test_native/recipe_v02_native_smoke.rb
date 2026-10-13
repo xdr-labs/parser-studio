@@ -44,7 +44,7 @@ end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
 allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
-  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424 v02_mixed_rfc3164 v02_mixed_rfc5424_bodies v02_mixed_rfc3164_cefleef v02_java_blanks]
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424 v02_mixed_rfc3164 v02_mixed_rfc5424_bodies v02_mixed_rfc3164_cefleef v02_java_blanks v02_mixed_csv]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -106,7 +106,7 @@ allowed.each do |slug|
       'native TCP blank-line framing must be exactly LF LF and opt-in')
   end
   sources.each do |source|
-    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : slug == 'v02_mixed_rfc5424_bodies' ? '6803' : slug == 'v02_mixed_rfc3164_cefleef' ? '6804' : slug == 'v02_java_blanks' ? '7510' : '7501'
+    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : slug == 'v02_mixed_rfc5424_bodies' ? '6803' : slug == 'v02_mixed_rfc3164_cefleef' ? '6804' : slug == 'v02_java_blanks' ? '7510' : slug == 'v02_mixed_csv' ? '7511' : '7501'
     assert(source['port'] == expected_port && source['tag'] == name &&
       source.elements.size == 1 && source.elements.first['@type'] == name,
       'generated receiver port and parser registration mismatch')
@@ -133,6 +133,8 @@ fixture['profiles'].each do |item|
     ([item['raw']] + fixture.fetch('blankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
   elsif slug == 'v02_java_blanks'
     ([item['raw']] + fixture.fetch('javaBlankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
+  elsif slug == 'v02_mixed_csv'
+    ([item['raw']] + fixture.fetch('mixedCsvCases').map { |row| row.fetch('raw') }).join("\n")
   else
     item['raw']
   end
@@ -155,6 +157,39 @@ fixture['profiles'].each do |item|
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
 end
+# Reviewed CSV is never implicit. Exact columns and one delimiter must be
+# authorized by the schema, and unknown/malformed CSV fails with static errors.
+assert(fixture['mixedCsvCases'].is_a?(Array)&&
+ fixture['mixedCsvCases'].length==3,'missing fixed Native mixed CSV samples')
+fixture['mixedCsvCases'].each do |item|
+  assert(item.keys.sort==%w[expectedRecord expectedTime id raw slug]&&
+    item['slug']=='v02_mixed_csv'&&item['raw'].bytesize<=16384,
+    'unreviewed Native mixed CSV positive fixture')
+  result=[]
+  drivers.fetch('v02_mixed_csv').instance.parse(item['raw']) do |time,record|
+    result << [time,record]
+  end
+  assert(result.length==1 && result[0][0].nil?&&
+    item['expectedTime'].nil?&&result[0][1]==item.fetch('expectedRecord'),
+    "mixed CSV #{item['id']}: normalized expected row mismatch")
+end
+assert(fixture['mixedCsvNegative'].is_a?(Array)&&
+ fixture['mixedCsvNegative'].length==9,'missing fixed malformed mixed CSV rows')
+fixture['mixedCsvNegative'].each do |item|
+  assert(item.keys.sort==%w[id raw slug]&&
+    item['slug']=='v02_mixed_csv'&&item['raw'].bytesize<=16384,
+    'unreviewed Native mixed CSV rejection fixture')
+  result=[]
+  drivers.fetch('v02_mixed_csv').instance.parse(item['raw']) do |time,record|
+    result << [time,record]
+  end
+  error_class=item['id']=='broken-quotes'?'CSV::MalformedCSVError':'ArgumentError'
+  assert(result.length==1&&result[0][0].nil?&&
+    result[0][1]=={'stellar_log_index'=>'syslog',
+      'parser_err_msg'=>error_class,'parser_err_stage'=>'extraction'},
+    "mixed CSV #{item['id']}: unsupported row not rejected")
+end
+
 # Fixed Java stack traces are LF LF framed by the validated Native CONF
 # source, not magically reassembled from generic UDP or raw per-line input.
 assert(fixture['javaBlankLineCases'].is_a?(Array)&&fixture['javaBlankLineCases'].length==1,
@@ -410,4 +445,4 @@ fixture['negative'].each do |item|
       'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
     "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
 end
-puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives + #{fixture['mixedRfc3164Cases'].length} RFC3164 mixed + #{fixture['mixedRfc3164Negative'].length} RFC3164 mixed rejects + #{fixture['mixedRfc5424BodyCases'].length} RFC5424 JSON/KV mixed + #{fixture['mixedRfc5424BodyNegative'].length} rejects + #{fixture['mixedRfc3164WrappedCases'].length} RFC3164 CEF/LEEF mixed + #{fixture['mixedRfc3164WrappedNegative'].length} rejects + two TCP blank-line Java stack traces + 9 Java rejects, and two TCP blank-line JSON fragments PASS (public synthetic only)"
+puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives + #{fixture['mixedRfc3164Cases'].length} RFC3164 mixed + #{fixture['mixedRfc3164Negative'].length} RFC3164 mixed rejects + #{fixture['mixedRfc5424BodyCases'].length} RFC5424 JSON/KV mixed + #{fixture['mixedRfc5424BodyNegative'].length} rejects + #{fixture['mixedRfc3164WrappedCases'].length} RFC3164 CEF/LEEF mixed + #{fixture['mixedRfc3164WrappedNegative'].length} rejects + two TCP blank-line Java stack traces + 9 Java rejects, + 3 reviewed mixed CSV and 9 rejects, and two TCP blank-line JSON fragments PASS (public synthetic only)"

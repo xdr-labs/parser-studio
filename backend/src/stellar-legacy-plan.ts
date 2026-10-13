@@ -19,6 +19,8 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Reviewed fixed mixed CSV schema; synthetic Native only, no vendor E2E.
+  "90c6582bb7bf7d5d18537fc84f517b7b4eb3d81d965c2929227b3f939f1d0664",
   // Bounded Java LF LF native-reviewed parser template SHA; target not verified.
   "597a6c8e47c2958f9fc3e3040a2470a8cea4f87ce863ca10cb98e97551a542a9",
   // Strict RFC3164 CEF/LEEF allowlisted mixed decoder; Native synthetic-only SHA.

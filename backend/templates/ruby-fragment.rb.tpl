@@ -381,6 +381,13 @@ def parserstudio_mixed(text, settings)
       'rfc5424_envelope'
     elsif text.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
       'kv'
+    elsif allowlist.include?('csv') && settings['csvColumns'].is_a?(Array) &&
+          settings['csvColumns'].length >= 2 &&
+          [',',';', "\t"].include?(settings['csvDelimiter']) &&
+          text.include?(settings['csvDelimiter'])
+      # An unframed row never becomes generic CSV automatically. CSV can be
+      # explicitly selected only with a reviewed column and delimiter schema.
+      'csv'
     end
   if family == 'rfc3164_envelope'
     # Reuse the exact yearless RFC3164 TAG: parser, then decode only
@@ -442,6 +449,8 @@ def parserstudio_mixed(text, settings)
     parserstudio_cef(text)
   when 'leef'
     parserstudio_leef(text)
+  when 'csv'
+    parserstudio_csv(text,settings)
   else
     raise ArgumentError, 'Unsupported mixed family'
   end

@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164','v02_mixed_rfc5424_bodies','v02_mixed_rfc3164_cefleef','v02_java_blanks'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164','v02_mixed_rfc5424_bodies','v02_mixed_rfc3164_cefleef','v02_java_blanks','v02_mixed_csv'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -55,11 +55,19 @@ const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
   javaBlankLineCases:Array<{id:string;slug:string;raw:string;
      expectedTime:string|null;expectedRecord:Record<string,unknown>}>;
   javaBlankLineNegative:Array<{id:string;slug:string;raw:string}>;
+  mixedCsvCases:Array<{id:string;slug:string;raw:string}>;
+  mixedCsvNegative:Array<{id:string;slug:string;raw:string}>;
   blankLineCases:Array<{id:string;slug:string;raw:string;
      expectedTime:string|null;expectedRecord:Record<string,unknown>}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==17||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==18||
+ !Array.isArray(samples.mixedCsvCases)||samples.mixedCsvCases.length!==3||
+ samples.mixedCsvCases.some(e=>e.slug!=='v02_mixed_csv'||
+   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
+ !Array.isArray(samples.mixedCsvNegative)||samples.mixedCsvNegative.length!==9||
+ samples.mixedCsvNegative.some(e=>e.slug!=='v02_mixed_csv'||
+   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
  !Array.isArray(samples.javaBlankLineCases)||samples.javaBlankLineCases.length!==1||
  samples.javaBlankLineCases.some(e=>e.slug!=='v02_java_blanks'||e.id!=='second_stacktrace'||
   typeof e.raw!=='string'||e.raw.length>8192)||
@@ -130,7 +138,9 @@ function buildProject(entry:Profile):ParserProject{
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
-  ...(entry.format==='mixed'?{mixedFormats:entry.slug==='v02_mixed_rfc3164_cefleef'?
+  ...(entry.format==='mixed'?{mixedFormats:entry.slug==='v02_mixed_csv'?
+    ['json','kv','csv'] as const:
+    entry.slug==='v02_mixed_rfc3164_cefleef'?
     ['json','kv','rfc3164_cef','rfc3164_leef'] as const:
     entry.slug==='v02_mixed_rfc5424_bodies'?
     ['json','kv','rfc5424_json','rfc5424_kv'] as const:
@@ -139,9 +149,24 @@ function buildProject(entry:Profile):ParserProject{
     entry.slug==='v02_mixed_rfc3164'?
       ['json','kv','rfc3164_kv'] as const:
       ['json','kv','cef','leef'] as const}:{}),
+  ...(entry.slug==='v02_mixed_csv'?{
+    csvColumns:['src_ip','action','dst_port'],csvDelimiter:';' as const,
+  }:{}),
   ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
     {syslogBodyFormat:entry.bodyFormat}:{})};
- if(entry.slug==='v02_java_blanks'){
+ if(entry.slug==='v02_mixed_csv'){
+  p.receiver.port=7511;
+  p.normalization.topFields=Object.fromEntries([
+   field('src_ip','srcip','ip'),
+   field('action','action','string'),
+   field('dst_port','dstport','port'),
+  ]) as FieldMap;
+  p.normalization.nsFields={};p.normalization.vendorFields={};
+  p.classification.rules=[
+   {field:'action',operator:'equals',value:'deny',index:'threat'},
+   {field:'action',operator:'equals',value:'allow',index:'session'},
+  ];
+ }else if(entry.slug==='v02_java_blanks'){
   p.receiver.port=7510;
   p.normalization.topFields={
    'exception_class':{normalized_name:'exception_class',data_type:'string'},
@@ -269,7 +294,9 @@ for(const entry of samples.profiles){
    ...(entry.transport==='blank_line_json'?
     samples.blankLineCases.map(x=>x.raw):[]),
    ...(entry.transport==='blank_line_java'?
-    samples.javaBlankLineCases.map(x=>x.raw):[])];
+    samples.javaBlankLineCases.map(x=>x.raw):[]),
+   ...(entry.slug==='v02_mixed_csv'?
+    samples.mixedCsvCases.map(x=>x.raw):[])];
  const digest=sha(sampleRows.join(
    ['blank_line_json','blank_line_java'].includes(entry.transport??'')?
    '\n\n':'\n'));

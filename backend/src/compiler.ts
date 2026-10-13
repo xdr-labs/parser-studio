@@ -88,6 +88,8 @@ export function compilePair(input: unknown): PairExport {
         "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
         project.receiver.tcpFraming==="blank_line_json"
           ? "Only explicitly TCP blank-line-framed JSON is supported for multiline input; general multiline and mixed Syslog remain unsupported."
+          : project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("csv")
+          ? "Mixed CSV columns and delimiter require explicit user review. Unrecognized rows are not auto-routed and arbitrary schemas remain unsupported."
           : project.receiver.tcpFraming==="blank_line_java"
           ? "Only explicitly TCP LF LF framed bounded Java exception stack traces are supported; arbitrary Java formats, UDP and unframed multiline remain unsupported."
           : project.extraction.format==="mixed"&&
