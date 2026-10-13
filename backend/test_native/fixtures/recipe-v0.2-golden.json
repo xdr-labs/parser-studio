@@ -1,0 +1,133 @@
+{
+  "kind": "parser-studio.recipe-v0.2-native-golden.v0.1",
+  "origin": "independently-authored-public-synthetic",
+  "profiles": [
+    {
+      "slug": "v02_json",
+      "format": "json",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.17\"},\"destination\":{\"ip\":\"198.51.100.81\",\"port\":\"443\"},\"action\":\"deny\",\"event\":{\"id\":\"301\"}}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "dstip": "198.51.100.81",
+        "dstport": 443,
+        "action": "deny",
+        "log": {
+          "event_id": 301
+        },
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_kv",
+      "format": "kv",
+      "raw": "src_ip=192.0.2.11 dst_port=80 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 80,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_csv",
+      "format": "csv",
+      "raw": "192.0.2.6,443,deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.6",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_cef",
+      "format": "cef",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_leef",
+      "format": "leef",
+      "raw": "LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.5\tdstPort=80\tact=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.5",
+        "dstport": 80,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog_cef",
+      "format": "syslog_rfc5424",
+      "bodyFormat": "cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog_leef",
+      "format": "syslog_rfc5424",
+      "bodyFormat": "leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 80,
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ]
+}

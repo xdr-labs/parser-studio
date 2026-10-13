@@ -1,0 +1,120 @@
+/** Fixed offline v0.2 compiler equivalence fixtures for pinned Fluentd smoke.
+ * Never accepts user input or a configurable destination; no network or DP IO.
+ */
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {constants,closeSync,lstatSync,mkdirSync,openSync,
+ realpathSync,readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import type {ParserProject,FieldMap} from '../src/types.js';
+import {sampleProject} from '../test/fixture.js';
+import {recipeFromLegacyProject,compileRecipePair} from '../src/parser-recipe-v02.js';
+import {compilePair} from '../src/compiler.js';
+import {canonicalJson} from '../src/validate.js';
+
+const ROOT=resolve('.tmp/recipe-v02-fixtures');
+const PARENT=resolve('.tmp');
+const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
+const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
+const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
+ 'v02_syslog_cef','v02_syslog_leef'];
+const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
+function directory(path:string){
+ const st=lstatSync(path,{throwIfNoEntry:false});
+ if(st&&(!st.isDirectory()||st.isSymbolicLink()))
+  throw new Error('Unsafe fixed recipe fixture directory');
+ if(!st)mkdirSync(path,{mode:0o700});
+ if(realpathSync(path)!==path)throw new Error('Redirected recipe fixture directory');
+}
+function writeTrusted(path:string,value:string){
+ const st=lstatSync(path,{throwIfNoEntry:false});
+ if(st&&(!st.isFile()||st.isSymbolicLink()||st.nlink!==1))
+  throw new Error('Untrusted native fixture destination');
+ const fd=openSync(path,constants.O_WRONLY|constants.O_CREAT|
+  constants.O_TRUNC|constants.O_NOFOLLOW,0o600);
+ try{writeFileSync(fd,value,{encoding:'utf8'});}finally{closeSync(fd);}
+}
+type Profile={slug:string;format:ParserProject['extraction']['format'];
+ bodyFormat?:'cef'|'leef';raw:string;expectedTime:string|null;
+ expectedRecord:Record<string,unknown>};
+const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
+ {kind:string;origin:string;profiles:Profile[]};
+if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
+ samples.origin!=='independently-authored-public-synthetic'||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==7||
+ samples.profiles.map(x=>x.slug).join(',')!==PROFILE_NAMES.join(','))
+ throw new Error('Untrusted or reordered recipe native fixture');
+directory(PARENT);directory(ROOT);
+const shaList:Record<string,string>={};
+const receipts:Array<{slug:string;recipeSha256:string;sampleSha256:string;
+ pairSha256:string}>=[];
+
+const field=(src:string,dst:string,type:'string'|'ip'|'port'|'date')=>
+ [src,{normalized_name:dst,data_type:type,
+  ...(type==='date'?{time_format:'iso8601' as const,timezone:'UTC' as const}:{})}] as const;
+function buildProject(entry:Profile):ParserProject{
+ const p=sampleProject();
+ p.projectId='draft-'+entry.slug;p.slug=entry.slug;
+ p.receiver.port=7501;
+ p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
+ p.extraction={format:entry.format,
+  ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
+  ...(entry.format==='syslog_rfc5424'?{syslogBodyFormat:entry.bodyFormat}:{})};
+ if(entry.format!=='json'){
+  let source='src_ip',port='dst_port',action='action';
+  if(entry.format==='cef'||entry.format==='leef'){
+   source='src';port=entry.format==='cef'?'dpt':'dstPort';action='act';
+  }
+  if(entry.format==='syslog_rfc5424'){
+   source='body.src';port=entry.bodyFormat==='cef'?'body.dpt':'body.dstPort';
+   action='body.act';
+  }
+  p.normalization.topFields=Object.fromEntries([
+   field(source,'srcip','ip'),field(port,'dstport','port'),
+   field(action,'action','string'),
+   ...(entry.format==='syslog_rfc5424'?
+     [field('syslog_timestamp','timestamp','date')]:[])
+  ]) as FieldMap;
+  p.normalization.nsFields={};
+  p.normalization.vendorFields={};
+ }
+ return p;
+}
+for(const entry of samples.profiles){
+ if(typeof entry.raw!=='string'||Buffer.byteLength(entry.raw)>16384)
+  throw new Error('Source fixture exceeds bound');
+ const p=buildProject(entry);
+ const digest=sha(entry.raw);
+ const recipe=recipeFromLegacyProject(p,digest,1);
+ const compiled=compileRecipePair({recipe,legacyProject:p});
+ const baseline=compilePair(p);
+ if(canonicalJson(compiled.files)!==canonicalJson(baseline.files)||
+   canonicalJson(compiled.manifest)!==canonicalJson(baseline.manifest)||
+   compiled.recipeReceipt.sourceHashVerifiedAgainstEvents!==false||
+   compiled.recipeReceipt.nativeUserParserVerified!==false||
+   compiled.recipeReceipt.targetImportVerified!==false)
+  throw new Error('Recipe staged contract differs from exact v0.1 codegen');
+ for(const output of compiled.files){
+  const expected='customized_'+entry.slug;
+  if(![expected,expected+'.conf'].includes(output.name)||
+    sha(output.content)!==output.sha256)
+   throw new Error('Unsafe generated fixture filename or checksum');
+  writeTrusted(resolve(ROOT,output.name),output.content);
+  shaList[output.name]=output.sha256;
+ }
+ receipts.push({slug:entry.slug,recipeSha256:compiled.recipeReceipt.recipeSha256,
+  sampleSha256:digest,pairSha256:sha(canonicalJson(compiled.manifest.fileHashes))});
+}
+const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+const manifest={
+ kind:'parser-studio.recipe-v0.2-native-fixture-evidence.v0.1',
+ origin:'independently-authored-public-synthetic',
+ backendHead:head,
+ fixtureSha256:sha(readFileSync(FIXTURE)),
+ files:shaList,receipts,nativeUserParserVerified:false,
+ targetImportVerified:false,sensorTrafficSent:false,
+ caveat:'Native verification occurs only in the independently pinned Ruby smoke step.'
+};
+writeTrusted(MANIFEST,JSON.stringify(manifest,null,2)+'\n');
+console.log('ParserRecipe v0.2: '+receipts.length+
+ ' exact deterministic paired profiles generated for isolated Fluentd smoke.');

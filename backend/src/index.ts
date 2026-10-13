@@ -1,5 +1,7 @@
 export { validateProject, canonicalJson, MAX_PROJECT_BYTES } from "./validate.js";
 export { compilePair } from "./compiler.js";
+export {recipeFromLegacyProject,validateRecipePair,compileRecipePair} from "./parser-recipe-v02.js";
+export type {ParserRecipeV02,RecipeStage,RecipePairRequest,RecipeReceipt,RecipePairExport} from "./parser-recipe-v02.js";
 export { BACKEND_CAPABILITIES } from "./capabilities.js";
 export { inspectPair } from "./import.js";
 export type { PairInspection, PairInspectionInput } from "./import.js";

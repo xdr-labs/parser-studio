@@ -10,6 +10,8 @@ npm run check
 npm test
 npm run build
 node dist/scripts/create-synthetic.js
+echo "[1v2/5] Generate exact native-qualified ParserRecipe v0.2 fixtures"
+node dist/scripts/verify-recipe-native.js
 
 echo "[1a/5] Offline DP/Sensor operator profile setup security (synthetic only)"
 python3 -m unittest discover -s scripts -p "test_configure_target.py"
@@ -85,6 +87,16 @@ echo "[4/5] Fluentd native parser API and configuration grammar"
 # No uploaded Ruby is evaluated. A fixed template and synthetics are tested.
 run_bounded_ruby -rbundler/setup test_native/fluentd_plugin_smoke.rb .tmp/native-fixtures
 run_bounded_ruby -rbundler/setup test_native/fluentd_config_smoke.rb .tmp/native-fixtures
+echo "[4v2/5] Strict v0.2 staged compiler equivalence, pinned native Fluentd callback and CONF AST"
+run_bounded_ruby -rbundler/setup test_native/recipe_v02_native_smoke.rb .tmp/recipe-v02-fixtures
+if recipe_guard=$(run_bounded_ruby -rbundler/setup \
+    test_native/recipe_v02_native_smoke.rb /tmp/native-untrusted 2>&1); then
+  echo "ERROR: Recipe native runner accepted untrusted directory." >&2
+  exit 1
+elif [[ "$recipe_guard" != *"Synthetic recipe native boundary"* ]]; then
+  echo "ERROR: Recipe native runner failed without enforcing the fixed boundary." >&2
+  exit 1
+fi
 echo "[4b/5] Immutable synthetic golden expected-record comparison via pinned Fluentd API"
 run_bounded_ruby -rbundler/setup test_native/golden_events_smoke.rb \
   .tmp/native-fixtures test_native/fixtures/synthetic-golden.v0.1.json

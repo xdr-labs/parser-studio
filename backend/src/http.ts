@@ -2,6 +2,8 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { TextDecoder } from "node:util";
 import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
+import {compileRecipePair,validateRecipePair} from "./parser-recipe-v02.js";
+import recipeSchema from "../schema/parser-recipe.v0.2.schema.json" with {type:"json"};
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {listParserTemplates,instantiateParserTemplate,ParserTemplateError} from "./parser-templates.js";
 import {buildImportLossReport} from "./import-loss-report.js";
@@ -143,6 +145,58 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     }
     if (path === "/api/v1/parser-pairs/schema" && req.method === "GET") {
       send(res, 200, projectSchema);
+      return;
+    }
+    // Separate strict staged v0.2 endpoint: v0.1 API contract is unchanged.
+    // Only a completely matching, reviewed legacy v0.1 projection compiles.
+    const recipeBase="/api/v1/parser-pairs/recipe/v0.2";
+    if(path===recipeBase+"/schema"||path===recipeBase+"/capabilities"||
+       path===recipeBase+"/validate"||path===recipeBase+"/generate"){
+      const isGet=path.endsWith("/schema")||path.endsWith("/capabilities");
+      if(req.method!==(isGet?"GET":"POST")){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      if(path.endsWith("/schema")){send(res,200,recipeSchema);return;}
+      if(path.endsWith("/capabilities")){
+        send(res,200,{
+          contract:"parser-studio.recipe.v0.2",schemaRevision:"0.2",
+          compilerMode:"V01_EQUIVALENT_SUBSET",currentOutputProfile:"host-customized-pair.v0.1",
+          inputRequires:["recipe","legacyProject"],
+          supportedBodyParsers:["json","kv","csv","cef","leef"],
+          supportedEnvelopeParsers:["none","rfc5424_v1_strict"],
+          supportedOperators:["split_event","unwrap_syslog","parse_json","parse_kv",
+            "parse_csv","parse_cef","parse_leef","map_field","cast_type",
+            "classify_equals","fallback_unparsed"],
+          unsupported:["rfc3164","mixed_event_families","multiline","arbitrary_regex",
+            "ruby_execution","jsonata","classification_exists","enrichment_unmodeled"],
+          sourceHashVerifiedAgainstEvents:false,nativeUserParserVerified:false,
+          targetImportVerified:false,apiDoesNotDeploy:true,
+        });return;
+      }
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]??0)>MAX_PROJECT_BYTES){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const input=await jsonInput(req,MAX_PROJECT_BYTES);
+        const result=validateRecipePair(input);
+        if(!result.ok){
+          send(res,422,{error:"UNSUPPORTED_RECIPE_V02",issues:result.issues});return;
+        }
+        if(path.endsWith("/validate")){
+          send(res,200,{ok:true,issues:[],compilerMode:"V01_EQUIVALENT_SUBSET",
+            nativeUserParserVerified:false,targetImportVerified:false});return;
+        }
+        send(res,200,compileRecipePair(input));
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else send(res,500,{error:"RECIPE_GENERATION_FAILED"});
+      }
       return;
     }
     if (path === "/api/v1/parser-pairs/capabilities") {
