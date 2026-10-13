@@ -2,7 +2,7 @@ import { createDraft, type MappingRule, type ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 
 export const starterTemplateIds = [
-  'json', 'kv', 'csv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
+  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
 ] as const;
 export type StarterTemplateId = (typeof starterTemplateIds)[number];
 
@@ -37,6 +37,14 @@ const presets: Record<StarterTemplateId, { label: string; description: string; s
     samples: [
       'allow,198.51.100.10,443',
       'deny,203.0.113.11,22',
+    ],
+  },
+  rfc3164_kv: {
+    label: 'RFC3164 + KV · Security Event',
+    description: 'Strict yearless RFC3164 TAG: message carrying key=value fields',
+    samples: [
+      '<34>Oct  9 14:15:16 demo-fw security[122]: src_ip=198.51.100.10 dst_port=443 action=allow',
+      '<34>Oct  9 14:15:17 demo-fw security[122]: src_ip=203.0.113.11 dst_port=22 action=deny',
     ],
   },
   syslog_rfc5424: {
@@ -92,12 +100,27 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
   draft.name = 'Synthetic ' + spec.label;
   draft.vendor = 'Synthetic demo (no customer data)';
   draft.format = id === 'rfc5424_cef' || id === 'rfc5424_leef'
-    ? 'syslog_rfc5424' : id;
+    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':id;
   draft.csvColumns = 'action,src_ip,dst_port';
   const guided = defaultGuidedOptions();
   guided.slug = 'example_' + id;
   guided.eventBoundary = 'single-line';
   guided.enrichment = [];
+
+  if(id==='rfc3164_kv'){
+    draft.syslogBodyFormat='kv';
+    draft.mappings=[
+      {id:'source-ip',source:'body.src_ip',target:'custom.source_ip',type:'ip'},
+      {id:'target-port',source:'body.dst_port',target:'custom.destination_port',type:'port'},
+      {id:'action',source:'body.action',target:'custom.action',type:'string'},
+      {id:'time-policy',source:'syslog_time_policy',target:'custom.timestamp_policy',type:'string'},
+    ];
+    guided.groups={'source-ip':'top_fields','target-port':'ns_fields',
+      action:'top_fields','time-policy':'vendor_fields'};
+    guided.classification.rules=guided.classification.rules.map(rule=>({
+      ...rule,sourceField:'body.action',
+    }));
+  }
 
   if (id === 'rfc5424_cef' || id === 'rfc5424_leef') {
     const isCef = id === 'rfc5424_cef';

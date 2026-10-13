@@ -6,8 +6,12 @@ export interface BackendCapabilities {
   projectSchemaRevision: '0.1';
   authoring: {
     receiverProtocols: Array<'udp' | 'tcp'>;
-    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc5424' | 'cef' | 'leef'>;
+    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef'>;
     formatCoverage: 'reviewed-bounded-subset';
+    rfc3164StrictTaggedMessageSubset?: true;
+    rfc3164TimePolicy?: 'YEAR_AND_ZONE_UNKNOWN';
+    rfc3164NativeTimeReconstruction?: false;
+    rfc3164BodyFormats?: Array<'raw'|'json'|'kv'|'cef'|'leef'>;
     /** Only advertised by backend revisions implementing bounded nested bodies/SD. */
     rfc5424BodyFormats?: Array<'raw' | 'json' | 'kv' | 'cef' | 'leef'>;
     rfc5424AdjacentStructuredDataSubset?: true;
@@ -86,7 +90,7 @@ export interface BackendCapabilities {
 }
 
 const BASE = '/api/v1/parser-pairs';
-const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef']);
+const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef']);
 const KNOWN_PROTOCOLS = new Set(['udp', 'tcp']);
 const KNOWN_RFC_BODIES = new Set(['raw','json','kv','cef','leef']);
 
@@ -129,6 +133,20 @@ export async function fetchBackendCapabilities(
       (l?.maxProjectBodyBytes ?? 0) < 1024 || (l?.maxInspectBodyBytes ?? 0) < 1024) {
     throw new Error('DRAFT generation blocked due to untrusted backend capabilities or verification flags.');
   }
+  const rfc3164Advertised=a.extractionFormats.includes('syslog_rfc3164');
+  if(rfc3164Advertised&&(
+      a.rfc3164StrictTaggedMessageSubset!==true||
+      a.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
+      a.rfc3164NativeTimeReconstruction!==false||
+      !Array.isArray(a.rfc3164BodyFormats)||
+      a.rfc3164BodyFormats.length!==KNOWN_RFC_BODIES.size||
+      new Set(a.rfc3164BodyFormats).size!==KNOWN_RFC_BODIES.size||
+      !a.rfc3164BodyFormats.every(mode=>KNOWN_RFC_BODIES.has(mode))
+  ))throw new Error('Untrusted RFC3164 authoring capability and timestamp policy.');
+  if(!rfc3164Advertised&&(a.rfc3164StrictTaggedMessageSubset!==undefined||
+     a.rfc3164BodyFormats!==undefined||a.rfc3164TimePolicy!==undefined||
+     a.rfc3164NativeTimeReconstruction!==undefined))
+    throw new Error('RFC3164 claims are inconsistent with the available formats.');
   const extended = a.rfc5424BodyFormats !== undefined ||
     a.rfc5424AdjacentStructuredDataSubset !== undefined ||
     a.rfc5424StructuredDataMaxBytes !== undefined ||

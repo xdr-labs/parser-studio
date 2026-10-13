@@ -27,6 +27,7 @@ export interface FingerprintMatchReport{
  nativeVerified:false;
 }
 function signature(id:StarterTemplateId){
+ if(id==='rfc3164_kv')return 'rfc3164/kv';
  if(id==='rfc5424_cef')return 'rfc5424/cef';
  if(id==='rfc5424_leef')return 'rfc5424/leef';
  if(id==='syslog_rfc5424')return 'rfc5424/unknown';

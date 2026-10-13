@@ -46,7 +46,7 @@ export interface PairProjectContract {
     messageLimit: number;
     framing: 'newline';
   };
-  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc5424' | 'cef' | 'leef' | 'regex' | 'syslog' };
+  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'regex' | 'syslog' };
   normalization: Record<FieldGroup, {
     source: string;
     normalized_name: string;
@@ -115,9 +115,9 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if (!Number.isInteger(options.receiver.port) || options.receiver.port < 1024 || options.receiver.port > 65535) errors.push('Receiving port must be an integer in 1024–65535');
   // One shared sensor ingress / generated CONF <source> port. The backend
   // enforces a narrower minimum for RFC5424 Syslog parser pairs.
-  if (draft.format === 'syslog_rfc5424' &&
+  if (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) &&
       Number.isInteger(options.receiver.port) && options.receiver.port<6800) {
-    errors.push('RFC5424 Syslog sensor and CONF listener port must be at least 6800');
+    errors.push('RFC3164/RFC5424 Syslog sensor and CONF listener port must be at least 6800');
   }
   if (!Number.isInteger(options.receiver.messageLimit) || options.receiver.messageLimit < 1024 || options.receiver.messageLimit > 65536) errors.push('Message limit must be an integer in 1024–65536 bytes');
 
@@ -125,12 +125,12 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     errors.push('Blank-line grouping is preview-only until the paired backend compiler declares a supported multiline event breaker');
   }
 
-  if (!(['json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef'] as string[]).includes(draft.format)) {
-    errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
+  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef'] as string[]).includes(draft.format)) {
+    errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC3164/RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
   }
-  if (draft.format === 'syslog_rfc5424' &&
+  if (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) &&
       !['raw', 'json', 'kv', 'cef', 'leef'].includes(draft.syslogBodyFormat ?? 'raw')) {
-    errors.push('Unsupported RFC5424 body format; use raw, JSON object, strict Key/Value, CEF or LEEF');
+    errors.push('Unsupported Syslog body format; use raw, JSON object, strict Key/Value, CEF or LEEF');
   }
   if (draft.format === 'csv') {
     if (![',', ';', '\t'].includes(draft.csvDelimiter ?? ',')) {
@@ -148,6 +148,9 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   const normalization: PairProjectContract['normalization'] = { top_fields: [], ns_fields: [], vendor_fields: [] };
   const supportedTypes: FieldType[] = ['string', 'integer', 'timestamp', 'ip', 'port', 'boolean'];
   for (const mapping of draft.mappings) {
+    if(draft.format==='syslog_rfc3164'&&mapping.source==='syslog_timestamp'&&
+      mapping.type==='timestamp')
+      errors.push('RFC3164 timestamp has no year or timezone; map it as text.');
     if (!safeUiPath(mapping.source)) errors.push('Invalid source field: ' + mapping.source);
     if (!safeUiPath(mapping.target)) errors.push('Invalid destination field: ' + mapping.target);
     if (targets.has(mapping.target)) errors.push('Duplicate normalized destination: ' + mapping.target);
@@ -219,7 +222,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       vendor: draft.vendor,
       product: draft.name,
       receiver: options.receiver,
-      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc5424' | 'cef' | 'leef' },
+      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' },
       normalization,
       classification: {
         rules: options.classification.rules.map(({ sourceField, equals, index }) => ({ sourceField, equals, index })),

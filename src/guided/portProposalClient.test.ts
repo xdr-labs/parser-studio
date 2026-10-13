@@ -76,6 +76,20 @@ describe('backend-authorized, read-only provisional parser listener port proposa
     expect((req as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])
       .toBe('/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424&port=6800');
   });
+  it('RFC3164 candidate must use identical >=6800 sensor and CONF port',async()=>{
+    const forbidden=fake(candidate);
+    await expect(fetchParserPortProposal(6799,forbidden,'syslog_rfc3164'))
+      .rejects.toThrow('6800');
+    expect(forbidden).not.toHaveBeenCalled();
+    const answer={...candidate,recommendedPort:6801,sensorIngestPort:6801,
+      source:'USER_OVERRIDE',occupiedPorts:[514,7501,20001]};
+    const request=fake(answer);
+    const result=await fetchParserPortProposal(6801,request,'syslog_rfc3164');
+    expect(result.sensorIngestPort).toBe(6801);
+    expect((request as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])
+      .toBe('/api/v1/stellar/legacy/port-proposal?format=syslog_rfc3164&port=6801');
+    expect(result.deployableNow).toBe(false);
+  });
   it('rejects invalid manual overrides without a request',async()=>{
     for(const bad of [0,80,65536,1.5,NaN,-3]){
       const request=fake(candidate);

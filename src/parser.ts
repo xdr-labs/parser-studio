@@ -147,7 +147,9 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
     case 'syslog': return extractSyslog(raw);
-    case 'syslog_rfc5424': return extractStructuredFamily(raw, format, draft.syslogBodyFormat ?? 'raw');
+    case 'syslog_rfc3164':
+    case 'syslog_rfc5424': return extractStructuredFamily(raw,format,
+      draft.format==='auto'?'auto':(draft.syslogBodyFormat ?? 'raw'));
     case 'cef':
     case 'leef': return extractStructuredFamily(raw, format);
     case 'regex': return extractRegex(raw, draft.pattern);
@@ -341,6 +343,7 @@ export function preview(input: string, draft: ParserDraft): SuiteResult {
 export function formatLabel(format: Format | 'unknown'): string {
   const labels: Record<Format | 'unknown', string> = {
     auto: 'Auto detect', json: 'JSON', kv: 'Key / Value', csv: 'CSV',
+    syslog_rfc3164: 'RFC3164 (year/zone unknown)',
     syslog_rfc5424: 'RFC5424', cef: 'CEF', leef: 'LEEF',
     syslog: 'Syslog (preview)', regex: 'Regex', unknown: 'Unrecognized',
   };

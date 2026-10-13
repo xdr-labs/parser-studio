@@ -50,7 +50,7 @@ export function prepareAutoParserDraft(
   const opts=draft.guided??defaultGuidedOptions();
   const next:ParserDraft={
     ...draft,format:compiler.format,
-    ...(compiler.format==='syslog_rfc5424'&&compiler.bodyFormat
+    ...(['syslog_rfc3164','syslog_rfc5424'].includes(compiler.format)&&compiler.bodyFormat
       ?{syslogBodyFormat:compiler.bodyFormat}:{}),
   };
   const allFields=new Set<string>();

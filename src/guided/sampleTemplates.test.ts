@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -34,6 +34,18 @@ describe('safe synthetic no-code starter templates', () => {
       expect(template.sample).not.toContain('localhost password');
     },
   );
+  it('provides a strict RFC3164 year/zone-unknown KV starter without date inference',()=>{
+    const preset=loadStarterTemplate('rfc3164_kv');
+    expect(preset.draft.format).toBe('syslog_rfc3164');
+    expect(preset.draft.syslogBodyFormat).toBe('kv');
+    expect(preset.draft.mappings.find(x=>x.source==='syslog_time_policy')?.type).toBe('string');
+    expect(preview(preset.sample,preset.draft).counts)
+      .toMatchObject({total:2,matched:2,normalized:2,failures:0});
+    const mapped=toBackendProject(preset.draft);
+    expect(mapped.ok).toBe(true);
+    if(mapped.ok)expect(mapped.project.extraction)
+      .toEqual({format:'syslog_rfc3164',syslogBodyFormat:'kv'});
+  });
   it.each([
     ['rfc5424_cef','cef'],
     ['rfc5424_leef','leef'],

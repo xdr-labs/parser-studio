@@ -29,18 +29,18 @@ const isPort=(value:unknown):value is number=>
 export async function fetchParserPortProposal(
   requestedPort?:number,
   requester:typeof fetch=fetch,
-  parserFormat?:'syslog_rfc5424',
+  parserFormat?:'syslog_rfc3164'|'syslog_rfc5424',
 ):Promise<ParserPortProposal> {
-  if(parserFormat!==undefined&&parserFormat!=='syslog_rfc5424')
+  if(parserFormat!==undefined&& !['syslog_rfc3164','syslog_rfc5424'].includes(parserFormat))
     throw new Error('Unsupported parser format for port proposal.');
   if(requestedPort!==undefined && (!isPort(requestedPort) || requestedPort<1024)) {
     throw new Error('The shared sensor/CONF port must be an integer from 1024 to 65535.');
   }
-  if(parserFormat==='syslog_rfc5424' &&
+  if(['syslog_rfc3164','syslog_rfc5424'].includes(parserFormat??'') &&
      requestedPort!==undefined && requestedPort<6800)
-    throw new Error('RFC5424 Syslog sensor and CONF listener ports must be at least 6800.');
+    throw new Error('Syslog sensor and CONF listener ports must be at least 6800.');
   const query=new URLSearchParams();
-  if(parserFormat==='syslog_rfc5424') query.set('format',parserFormat);
+  if(parserFormat) query.set('format',parserFormat);
   if(requestedPort!==undefined)query.set('port',String(requestedPort));
   const url=BASE+(query.size?'?'+query.toString():'');
   const res=await requester(url,{
@@ -62,7 +62,7 @@ export async function fetchParserPortProposal(
   if(Object.keys(plan).sort().join(',')!==KEYS ||
      plan.contract!=='stellar-parser-listener-port-proposal.v0.1' ||
      !isPort(plan.recommendedPort) || plan.recommendedPort<1024 ||
-     (parserFormat==='syslog_rfc5424'&&plan.recommendedPort<6800) ||
+     (['syslog_rfc3164','syslog_rfc5424'].includes(parserFormat??'')&&plan.recommendedPort<6800) ||
      plan.source!==(requestedPort===undefined?'SUGGESTED':'USER_OVERRIDE') ||
      (requestedPort!==undefined && plan.recommendedPort!==requestedPort) ||
      plan.candidateOnly!==true || plan.deployableNow!==false ||

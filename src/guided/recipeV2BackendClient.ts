@@ -41,6 +41,7 @@ async function hash(value:string):Promise<string>{
 function fail():never{throw new Error('The reviewed v0.2 compiler contract was not verified.');}
 export async function checkRecipeV02Compiler(
  requester:typeof fetch=fetch,
+ requiredEnvelope?:'rfc3164_strict_no_year_or_zone',
 ):Promise<boolean>{
  const res=await requester(BASE+'/capabilities',{
   method:'GET',cache:'no-store',credentials:'same-origin',
@@ -53,6 +54,7 @@ export async function checkRecipeV02Compiler(
  if(!raw||typeof raw!=='object')fail();
  const cap=raw as Record<string,unknown>;
  const values=cap.supportedBodyParsers,ops=cap.supportedOperators;
+ const envelopes=cap.supportedEnvelopeParsers;
  if(cap.contract!=='parser-studio.recipe.v0.2'||
   cap.schemaRevision!=='0.2'||cap.compilerMode!=='V01_EQUIVALENT_SUBSET'||
   cap.currentOutputProfile!=='host-customized-pair.v0.1'||
@@ -61,6 +63,8 @@ export async function checkRecipeV02Compiler(
   !Array.isArray(values)||!FAMILIES.every(f=>values.includes(f))||
   !Array.isArray(ops)||!['split_event','map_field','cast_type','fallback_unparsed']
     .every(s=>ops.includes(s))||
+  (requiredEnvelope!==undefined&&(
+    !Array.isArray(envelopes)||!envelopes.includes(requiredEnvelope)))||
   cap.nativeUserParserVerified!==false||cap.targetImportVerified!==false||
   cap.sourceHashVerifiedAgainstEvents!==false||cap.apiDoesNotDeploy!==true)
   fail();
@@ -84,7 +88,8 @@ export async function compileReviewedRecipeV02(
  baseline:GeneratedPair|undefined,
  requester:typeof fetch=fetch,
 ):Promise<ReviewedRecipeCompilation>{
- if(!await checkRecipeV02Compiler(requester)) {
+ if(!await checkRecipeV02Compiler(requester,
+   input.recipe.sourceFormat==='syslog_rfc3164'? 'rfc3164_strict_no_year_or_zone':undefined)) {
   throw new Error('The current backend does not advertise v0.2 compilation.');
  }
  const validation=await post('validate',input,requester);

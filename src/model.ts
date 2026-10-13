@@ -1,6 +1,6 @@
 import { defaultGuidedOptions, type GuidedOptions } from './guided/contract';
 
-export const FORMATS = ['auto', 'json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef', 'syslog', 'regex'] as const;
+export const FORMATS = ['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'syslog', 'regex'] as const;
 export type Format = (typeof FORMATS)[number];
 export type ConcreteFormat = Exclude<Format, 'auto'>;
 export type FieldType = 'string' | 'integer' | 'number' | 'boolean' | 'ip' | 'port' | 'timestamp';
@@ -20,7 +20,7 @@ export interface ParserDraft {
   csvColumns: string;
   /** Data-record CSV delimiter; column names always use commas. Older saved drafts default to comma. */
   csvDelimiter?: ',' | ';' | '\t';
-  /** Only for exact bounded RFC5424 headers; raw is the backward-compatible default. */
+  /** Only for bounded RFC3164/RFC5424 headers; raw is the backward-compatible default. */
   syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef';
   mappings: MappingRule[];
   guided?: GuidedOptions;

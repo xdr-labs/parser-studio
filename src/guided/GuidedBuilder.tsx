@@ -535,7 +535,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       const plan = await fetchParserPortProposal(
         override ? options.receiver.port : undefined,
         fetch,
-        draft.format==='syslog_rfc5424'?'syslog_rfc5424':undefined,
+        ['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)?draft.format as 'syslog_rfc3164'|'syslog_rfc5424':undefined,
       );
       if (latestDraftKeyRef.current === key) setPortPlanAttempt({ key, plan });
     } catch (error) {
@@ -1140,7 +1140,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     if (number === 1) return hasLogs && draft.format !== 'auto' ? 'complete' : hasLogs ? 'attention' : 'future';
     if (number === 2) return draft.mappings.length > 0 ? 'complete' : 'attention';
     if (number === 3) return options.receiver.protocols.length && Number.isInteger(options.receiver.port) &&
-      options.receiver.port >= (draft.format==='syslog_rfc5424'?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
+      options.receiver.port >= (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
     if (number === 4) return runState?.suite.counts.total && runState.suite.counts.failures === 0 ? 'complete' : 'attention';
     return 'future';
   };
@@ -1253,7 +1253,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               selectedBody={draft.syslogBodyFormat??'raw'}
               onApply={(format,body)=>setDraft(old=>({
                 ...old,format,
-                ...(format==='syslog_rfc5424'&&body?{syslogBodyFormat:body}:{}),
+                ...(['syslog_rfc3164','syslog_rfc5424'].includes(format)&&body?{syslogBodyFormat:body}:{}),
               }))}/>
             <LocalFormatRecommendationView advice={localFormatAdvice}
               selected={draft.format} pending={pending}
@@ -1279,7 +1279,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           {step === 1 && <>
             <div className="guided-section-title"><span>01</span> Select Log Format <span className="guided-inline-badge">Select the correct format</span></div>
             <div className="guided-format-choices" role="group" aria-label="Guided format">
-              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc5424', 'cef', 'leef', 'syslog', 'regex'] as const).map((format) =>
+              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'syslog', 'regex'] as const).map((format) =>
                 <button type="button" key={format} aria-pressed={draft.format === format} className={'guided-format ' + (draft.format === format ? 'active' : '')} onClick={() => changeDraft('format', format)}>
                   {draft.format === format ? <CheckCircle2 size={17} /> : <FileText size={17} />}
                   <strong>{formatLabel(format)}</strong>
@@ -1294,19 +1294,19 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value={'\t'}>TAB</option>
               </select><small>One record per line. Delimiters inside quoted fields are treated as values.</small></label>
             </div>}
-            {draft.format === 'syslog_rfc5424' && <label className="guided-field">
-              <span>RFC5424 Message Body Format</span>
+            {['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) && <label className="guided-field">
+              <span>{draft.format==='syslog_rfc3164'?'RFC3164':'RFC5424'} Message Body Format</span>
               <select aria-label="RFC5424 message body format" value={draft.syslogBodyFormat ?? 'raw'}
                 onChange={(event) => changeDraft('syslogBodyFormat', event.target.value as 'raw' | 'json' | 'kv' | 'cef' | 'leef')}>
                 <option value="raw">Raw Text (message)</option>
                 <option value="json">JSON Object (body.*)</option>
                 <option value="kv">Key/Value Fields (body.*)</option>
-                <option value="cef">Standalone CEF within RFC5424 (body.*) · Backend support required</option>
-                <option value="leef">Standalone LEEF within RFC5424 (body.*) · Backend support required</option>
+                <option value="cef">CEF within selected Syslog envelope (body.*) · Backend support required</option>
+                <option value="leef">LEEF within selected Syslog envelope (body.*) · Backend support required</option>
               </select>
-              <small>Only RFC5424 headers are supported. RFC3164, compound formats, and multiline require separate parsers; generation compatibility is not guaranteed.</small>
+              <small>RFC3164 strict TAG: messages retain an unknown year and timezone; map header time as text. RFC5424 strict v1 is separately supported. Mixed and multiline still require explicit review.</small>
             </label>}
-            <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, RFC5424, and standalone CEF/LEEF. Generic Syslog, regex, compound, and multiline output are unsupported.</div>
+            <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, bounded RFC3164/RFC5424, and standalone CEF/LEEF. Generic Syslog, regex, compound, and multiline output are unsupported.</div>
             <div className={'guided-family-coverage ' + (familyCoverage.incompatible ? 'attention' : '')}
               aria-label="Sample format distribution">
               <strong>Format Distribution · Browser Estimate</strong>
@@ -1618,13 +1618,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 {options.receiver.protocols.includes(protocol) && <CheckCircle2 size={18} />}
               </label>)}</div>
             <div className="guided-three-fields">
-              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={draft.format==='syslog_rfc5424'?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
+              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
               <label className="guided-field"><span>Bind Policy</span><select aria-label="Bind policy" value={options.receiver.bindPolicy} onChange={(e) => setReceiver('bindPolicy', e.target.value)}><option value="loopback">Loopback test (127.0.0.1)</option><option value="all">All interfaces (0.0.0.0)</option></select></label>
               <label className="guided-field"><span>Maximum Message Size (bytes)</span><input aria-label="Message limit" type="number" min={1024} max={65536} value={options.receiver.messageLimit} onChange={(e) => setReceiver('messageLimit', Number(e.target.value))} /></label>
             </div>
             <div className="guided-note"><ShieldCheck size={15}/> One shared port: the sensor log destination and generated <code>.conf</code> receiver <code>&lt;source&gt;</code> use the same number. It is not a separate transport port. This does not establish listener readiness.</div>
-            {draft.format==='syslog_rfc5424' && options.receiver.port<6800 &&
-              <p role="alert" className="guided-error">RFC5424 Syslog sensor and CONF listener port must be at least 6800.</p>}
+            {['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) && options.receiver.port<6800 &&
+              <p role="alert" className="guided-error">RFC3164/RFC5424 Syslog sensor and CONF listener port must be at least 6800.</p>}
             <div className="guided-port-proposal" aria-label="Parser listener port candidate">
               <strong>Parser Listener Port Candidate · Read-only</strong>
               <p>Only parser inventories and reservations supplied by an authorized local backend are checked. The candidate is the intended SAME port for sensor log receipt and the generated CONF listener, but actual sensor binding and port availability remain unverified. Recheck ownership and conflicts immediately before deployment.</p>

@@ -8,9 +8,9 @@ import {MAX_DATASET_BYTES,MAX_EVENTS,splitEvents} from '../parser';
 import type {EventBoundary} from './contract';
 
 const ALL=new Set<string>([
-  'json','kv','csv','syslog_rfc5424','cef','leef','syslog','regex','unknown',
+  'json','kv','csv','syslog_rfc3164','syslog_rfc5424','cef','leef','syslog','regex','unknown',
 ]);
-const SAFE=new Set<string>(['json','kv','syslog_rfc5424','cef','leef']);
+const SAFE=new Set<string>(['json','kv','syslog_rfc3164','syslog_rfc5424','cef','leef']);
 export type LocalFormatStatus=
   'NO_SAMPLES'|'NO_PREVIEW'|'LIMIT_EXCEEDED'|'MULTILINE_UNVERIFIED'|
   'UNTRUSTED_PREVIEW'|'SOURCE_MISMATCH'|'MIXED_FORMATS'|'UNKNOWN_EVENTS'|

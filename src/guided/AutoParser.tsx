@@ -480,7 +480,7 @@ export default function AutoParser({
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
        </div>
-       <p className="auto-parser-note">Unknown, malformed, RFC3164 and multiline events
+       <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
        <details className="auto-parser-recipe" aria-label="Public synthetic parser fingerprints">
          <summary>Optional · Match familiar log patterns</summary>
@@ -679,7 +679,7 @@ export default function AutoParser({
            validate these allowlisted stages against the unchanged ParserProject
            v0.1 and prove that both generated DRAFT file hashes are identical.
            Native user-parser or Stellar target compatibility is NOT VERIFIED.
-           Unknown operators, RFC3164, mixed formats and multiline remain unsupported.</p>
+           Unknown operators, unsupported RFC3164 variants, mixed formats and multiline remain unsupported.</p>
          <button type="button" disabled={busy||pending||!suite}
            onClick={()=>{void previewRecipe();}}>Review Staged Recipe</button>
          {currentRecipe&&(currentRecipe.ok

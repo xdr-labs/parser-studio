@@ -20,10 +20,14 @@ Status of each generated recipe: **REVIEW_ONLY**. Source of truth: `src/guided/p
 
 ## Backend owner contract handoff (PR #4)
 
-The backend provides a strict JSON Schema, versioned allowlisted capabilities, exact v0.1 metadata equivalence and seven native PUBLIC SYNTHETIC Fluentd/CONF fixtures. This is **not** a general staged engine. Future native backend work must add RFC3164, mixed-family branching, logical multiline support and broaden the independently native-qualified operators before advertising these as supported. Unknown/non-equivalent AI stages must never compile by optimistic coercion.
+The backend provides a strict JSON Schema, versioned allowlisted capabilities, exact v0.1 metadata equivalence and seven native PUBLIC SYNTHETIC Fluentd/CONF fixtures. This is **not** a general staged engine. The pinned backend now supports a strict RFC3164 TAG/body subset with unknown year/zone. Future native backend work must add broader RFC3164 variants, mixed-family branching, logical multiline support and broaden the independently native-qualified operators before advertising these as supported. Unknown/non-equivalent AI stages must never compile by optimistic coercion.
 
 ## Current verification
 
 - Focused source digest, v0.1 preservation, stage order, body-family, native-false, tampered metadata, unsafe field and source-mismatch unit tests: `src/guided/parserRecipeV2.test.ts`, `src/guided/parserRecipeDraft.test.ts`.
 - Real Chromium backed by pinned loopback backend tests the advanced review disclosure, no leaked raw addresses and existing generation/download integrity in `tests/integrated-backend.spec.ts`.
 - `recipeV2BackendClient.test.ts` verifies capability negotiation, exact receipt/source identity/hash, default-false native/target claims and tampered responses. The exact pinned-backend Chromium scenario also validates the real restricted v0.2 route; backend PR #4 owns the **separate** seven-profile pinned native Fluentd synthetic evidence. None is a customer parser or actual DP/Interflow test.
+
+## RFC3164 bounded UI/backend support
+
+The public-synthetic RFC3164+KV beginner path and the strict RFC3164 CEF/LEEF envelopes can now be reviewed with an explicit, verified backend capability; the browser preserves the YEAR_AND_ZONE_UNKNOWN header policy and prohibits treating that header as a timezone-qualified date. User-provided event bodies are not POSTed to the versioned compiler. The same sensor destination and CONF receiver port must be >=6800. UI pinned backend commit: fd1af8010c9611214d69eb58c3b005af2e093cea. Vendor deployment remains NOT VERIFIED.

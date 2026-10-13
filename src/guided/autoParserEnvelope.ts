@@ -30,7 +30,7 @@ export type CompilerAssessment={
   status:'DRAFT_COMPILABLE'|'COMPILER_UNSUPPORTED'|'MIXED_OR_UNKNOWN'|
     'COLUMNS_REQUIRED'|'BOUNDARY_REVIEW'|'BACKEND_UNAVAILABLE'|
     'BACKEND_UNTRUSTED'|'SOURCE_LIMIT';
-  format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc5424'|null;
+  format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|null;
   bodyFormat:'raw'|'json'|'kv'|'cef'|'leef'|null;
   nativeVerified:false;targetVerified:false;
 };
@@ -39,7 +39,7 @@ const EMPTY=(status:EnvelopeLedger['status'],boundary:EventBoundary,sourceCount=
   accounted:0,unsupported:sourceCount,complete:status==='NO_SAMPLES',
   boundary,events:[],families:[],nativeVerified:false,targetVerified:false,
 });
-const MONTHS=new Set(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+const MONTH_DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
 const KV_TOKEN=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'\\]+)(?=\s|$)/;
 function kvValid(input:string):boolean{
   let index=0,count=0;
@@ -121,12 +121,13 @@ function analyzeRecord(text:string,sequence:number,line:number):EnvelopeEntry{
     // RFC3164 has no year or zone. A browser hypothesis MUST NOT fabricate
     // time, a native export adapter, or a vendor-approved parsing status.
     const match=/^<(\d{1,3})>([A-Za-z]{3})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+([^\s]{1,255})\s+(.+)$/.exec(raw);
-    if(!match||Number(match[1])>191||!MONTHS.has(match[2]!)||
-      Number(match[3])<1||Number(match[3])>31||
+    if(!match||Number(match[1])>191||!MONTH_DAYS[match[2]!]||
+      Number(match[3])<1||Number(match[3])>MONTH_DAYS[match[2]!]||
       Number(match[4])>23||Number(match[5])>59||Number(match[6])>59)
       return {...base,envelope:'rfc3164',body:'unknown',status:'HEADER_MALFORMED'};
-    const body=match[8]!.replace(/^[A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?:\s*/, '');
-    return {...base,envelope:'rfc3164',...classifyBody(body),
+    const tag=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?: +(.+)$/.exec(match[8]!);
+    if(!tag)return {...base,envelope:'rfc3164',body:'unknown',status:'HEADER_MALFORMED'};
+    return {...base,envelope:'rfc3164',...classifyBody(tag[3]!),
       timePolicy:'YEAR_AND_ZONE_UNKNOWN'};
   }
   return {...base,envelope:'none',...classifyBody(raw)};
@@ -172,15 +173,26 @@ export function assessEnvelopeCompilation(
     cap.verification?.targetImportVerified!==false||
     !Array.isArray(cap.authoring?.extractionFormats))return no('BACKEND_UNTRUSTED');
   const family=report.families[0]!;
-  if(family.envelope==='rfc3164')return no('COMPILER_UNSUPPORTED');
-  if(family.body==='csv')return no('COLUMNS_REQUIRED');
-  const format=family.envelope==='rfc5424'?'syslog_rfc5424':family.body;
-  if(!['json','kv','cef','leef','syslog_rfc5424'].includes(format)||
+  if(family.envelope==='rfc3164'&&
+      cap.authoring.rfc3164TimePolicy!==undefined&&
+      cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN')
+    return no('BACKEND_UNTRUSTED');
+  if(family.envelope==='rfc3164'&&(
+      cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
+      cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
+      cap.authoring.rfc3164NativeTimeReconstruction!==false||
+      !cap.authoring.rfc3164BodyFormats?.includes(family.body as 'kv')
+   ))return no('COMPILER_UNSUPPORTED');
+  if(family.body==='csv')return no(family.envelope==='none'?'COLUMNS_REQUIRED':'COMPILER_UNSUPPORTED');
+  const format=family.envelope==='rfc5424'?'syslog_rfc5424':
+    family.envelope==='rfc3164'?'syslog_rfc3164':family.body;
+  if(!['json','kv','cef','leef','syslog_rfc3164','syslog_rfc5424'].includes(format)||
      !cap.authoring.extractionFormats.includes(format as 'json')||
      (family.envelope==='rfc5424'&&
        !cap.authoring.rfc5424BodyFormats?.includes(family.body as 'json')))
     return no('COMPILER_UNSUPPORTED');
   return {status:'DRAFT_COMPILABLE',format:format as CompilerAssessment['format'],
-    bodyFormat:family.envelope==='rfc5424'?family.body as CompilerAssessment['bodyFormat']:null,
+    bodyFormat:family.envelope==='rfc5424'||family.envelope==='rfc3164'?
+      family.body as CompilerAssessment['bodyFormat']:null,
     nativeVerified:false,targetVerified:false};
 }

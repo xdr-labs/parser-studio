@@ -1,7 +1,7 @@
 import { parseRfc5424Subset } from './rfc5424Subset';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
-export type StructuredFamily = 'syslog_rfc5424' | 'cef' | 'leef';
+export type StructuredFamily = 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef';
 export interface StructuredExtraction {
   fields: Record<string, unknown>;
   errors: string[];
@@ -12,6 +12,7 @@ export function detectStructuredFamily(input: string): StructuredFamily | null {
   if (/^CEF:\d+\|/.test(input)) return 'cef';
   if (/^LEEF:(?:1\.0|2\.0)\|/.test(input)) return 'leef';
   if (/^<\d{1,3}>[1-9]\d? \S+ \S+ \S+ /.test(input)) return 'syslog_rfc5424';
+  if (/^<\d{1,3}>[A-Z][a-z]{2} +\d{1,2} +\d{2}:\d{2}:\d{2} /.test(input)) return 'syslog_rfc3164';
   return null;
 }
 
@@ -36,7 +37,7 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
 
 function strictKeyValues(input: string): StructuredExtraction {
   const values: Record<string, unknown> = Object.create(null);
-  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s])+))/y;
+  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
   let cursor = 0;
   while (cursor < input.length) {
     if (!input.slice(cursor).trim()) break;
@@ -74,20 +75,64 @@ function boundedJsonObject(text: string): StructuredExtraction {
   }
 }
 
-export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' | 'cef' | 'leef' = 'raw'): StructuredExtraction {
+// A beginner may infer the bounded body dialect from the current sample,
+// but only a subsequent explicit project format is eligible for compilation.
+function deterministicBody(text:string):'raw'|'json'|'kv'|'cef'|'leef'{
+ if(/^CEF:/.test(text))return 'cef';
+ if(/^LEEF:/.test(text))return 'leef';
+ if(text.startsWith('{'))return 'json';
+ if(/^[A-Za-z_][A-Za-z0-9_.-]*=/.test(text))return 'kv';
+ return 'raw';
+}
+function parsedBody(message:string,mode:'raw'|'json'|'kv'|'cef'|'leef'):
+ StructuredExtraction{
+ if(mode==='raw')return {fields:{message},errors:[]};
+ const result=mode==='json'?boundedJsonObject(message):
+  mode==='kv'?strictKeyValues(message):
+  extractStructuredFamily(message,mode);
+ return result.errors.length?result:{fields:{body:result.fields},errors:[]};
+}
+const DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,
+ Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
+function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'auto'):
+ StructuredExtraction{
+ const match=/^<(\d{1,3})>([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}):(\d{2}):(\d{2}) +([!-~]{1,255}) +([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?: +(.+)$/.exec(input);
+ if(!match)return failure('RFC3164 strict PRI, BSD time, hostname and TAG: message required');
+ const [priority,month,day,hour,minute,second]=[
+  Number(match[1]),match[2]!,Number(match[3]),Number(match[4]),
+  Number(match[5]),Number(match[6])];
+ if(priority>191||!DAYS[month]||day<1||day>DAYS[month]||
+   hour>23||minute>59||second>59)
+  return failure('RFC3164 PRI or calendar value is invalid');
+ const unzoned=month+' '+String(day).padStart(2,' ')+
+   ' '+match[4]+':'+match[5]+':'+match[6];
+ const fields:Record<string,unknown>={
+  syslog_pri:priority,syslog_timestamp:unzoned,
+  syslog_time_policy:'YEAR_AND_ZONE_UNKNOWN',
+  syslog_hostname:match[7],syslog_appname:match[8],
+  ...(match[9]?{syslog_procid:match[9]}:{}),
+ };
+ const mode=choice==='auto'?deterministicBody(match[10]!):choice;
+ const body=parsedBody(match[10]!,mode);
+ return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};
+}
+
+export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'auto' = 'raw'): StructuredExtraction {
   if (input.includes('\n') || input.includes('\r')) return failure('Only one logical record per physical line is supported for pairing.');
+  if (format === 'syslog_rfc3164')return parseRfc3164Strict(input,bodyFormat);
   if (format === 'syslog_rfc5424') {
     const scanned=parseRfc5424Subset(input);
     if (!scanned.ok) return failure(scanned.error);
     const body: Record<string, unknown> = {};
     if (scanned.message) {
-      if (bodyFormat === 'raw') body.message = scanned.message;
-      else if (['json','kv','cef','leef'].includes(bodyFormat)) {
-        const nested = bodyFormat === 'json'
+      const mode=bodyFormat==='auto'?deterministicBody(scanned.message):bodyFormat;
+      if (mode === 'raw') body.message = scanned.message;
+      else if (['json','kv','cef','leef'].includes(mode)) {
+        const nested = mode === 'json'
           ? boundedJsonObject(scanned.message)
-          : bodyFormat === 'kv'
+          : mode === 'kv'
             ? strictKeyValues(scanned.message)
-            : extractStructuredFamily(scanned.message, bodyFormat as 'cef' | 'leef');
+            : extractStructuredFamily(scanned.message, mode as 'cef' | 'leef');
         if (nested.errors.length > 0) return nested;
         body.body = nested.fields;
       } else return failure('Unsupported RFC5424 body dialect');

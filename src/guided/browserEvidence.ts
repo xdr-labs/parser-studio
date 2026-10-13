@@ -14,7 +14,7 @@ const KNOWN_DIAGNOSTICS = new Set([
 const STAGES = new Set<Diagnostic['stage']>(['break','detect','extract','normalize','validate']);
 const LEVELS = new Set<Diagnostic['severity']>(['error','warning']);
 const STATUSES = new Set<EventResult['status']>(['pass','fail','warning']);
-const FORMATS = new Set(['auto','json','kv','csv','syslog_rfc5424','cef','leef','syslog','regex','unknown']);
+const FORMATS = new Set(['auto','json','kv','csv','syslog_rfc3164','syslog_rfc5424','cef','leef','syslog','regex','unknown']);
 const MAX_DRAFT_BYTES = 262144;
 
 export interface BrowserTestEvidence {

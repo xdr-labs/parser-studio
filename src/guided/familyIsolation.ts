@@ -13,7 +13,7 @@ import {MAX_DATASET_BYTES, MAX_EVENTS, splitEvents} from '../parser';
  * not assert Fluentd or Stellar Cyber compatibility.
  */
 export const ISOLATABLE_FAMILIES = [
-  'json','kv','csv','syslog_rfc5424','cef','leef',
+  'json','kv','csv','syslog_rfc3164','syslog_rfc5424','cef','leef',
 ] as const satisfies readonly ConcreteFormat[];
 
 export type IsolatableFamily=(typeof ISOLATABLE_FAMILIES)[number];

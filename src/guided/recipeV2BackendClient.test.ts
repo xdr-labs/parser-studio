@@ -24,6 +24,7 @@ const capability={
  compilerMode:'V01_EQUIVALENT_SUBSET',currentOutputProfile:'host-customized-pair.v0.1',
  inputRequires:['recipe','legacyProject'],
  supportedBodyParsers:['json','kv','csv','cef','leef'],
+ supportedEnvelopeParsers:['none','rfc3164_strict_no_year_or_zone','rfc5424_v1_strict'],
  supportedOperators:['split_event','unwrap_syslog','parse_json','parse_kv','parse_csv',
   'parse_cef','parse_leef','map_field','cast_type','classify_equals','fallback_unparsed'],
  nativeUserParserVerified:false,targetImportVerified:false,
@@ -103,6 +104,15 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
   const forged=vi.fn(async()=>response({...capability,nativeUserParserVerified:true}));
   await expect(checkRecipeV02Compiler(forged as typeof fetch))
    .rejects.toThrow(/not verified/);
+ });
+ it('requires explicit RFC3164 restricted capability before posting stages',async()=>{
+  const bad=vi.fn(async()=>response({...capability,
+    supportedEnvelopeParsers:['none','rfc5424_v1_strict']}));
+  await expect(checkRecipeV02Compiler(bad as typeof fetch,
+    'rfc3164_strict_no_year_or_zone')).rejects.toThrow(/not verified/);
+  const safe=vi.fn(async()=>response(capability));
+  expect(await checkRecipeV02Compiler(safe as typeof fetch,
+    'rfc3164_strict_no_year_or_zone')).toBe(true);
  });
  it('refuses altered receipts, files and a mismatched baseline pair',async()=>{
   const {review,pair,receipt}=await setup();
