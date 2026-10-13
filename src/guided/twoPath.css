@@ -30,3 +30,9 @@
   .two-path-nav .rail-link.selected:before{left:0}
   .two-path-nav .rail-footer{display:none}
 }
+
+/* A backend-run Stop remains reachable when the authoring view changes. */
+.two-path-session-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:12px 18px;padding:12px 16px;border:1px solid #b0c7d8;border-radius:10px;background:#f1f8fc;color:#1c374e}
+.two-path-session-banner strong{font-size:13px}
+.two-path-session-banner p{font-size:12px;margin:5px 0;overflow-wrap:anywhere}
+.two-path-session-banner button{min-height:38px}

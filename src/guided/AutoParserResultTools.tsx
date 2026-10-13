@@ -13,6 +13,8 @@ interface Props {
   projectId:string;
   listenerPort:number;
   sourceFormat:string;
+  activeSession:ApprovedTestLabStatus|null;
+  onSessionUpdate:(next:ApprovedTestLabStatus|null)=>void;
   onDownload:(filename:string,content:string)=>void;
 }
 const APPROVAL=/^[A-Za-z0-9_.-]{8,96}$/;
@@ -23,14 +25,14 @@ const RUN=/^test_run_[0-9a-f]{32}$/;
  * Session and Interflow calls are independently authorized by the backend.
  */
 export default function AutoParserResultTools({
-  projectId,listenerPort,sourceFormat,onDownload,
+  projectId,listenerPort,sourceFormat,activeSession,onSessionUpdate,onDownload,
 }:Props){
   const [port,setPort]=useState<ParserPortProposal|null>(null);
   const [portBusy,setPortBusy]=useState(false);
   const [portError,setPortError]=useState('');
   const [cap,setCap]=useState<BackendCapabilities|null>(null);
   const [sessionReady,setSessionReady]=useState<'unchecked'|'available'|'disabled'>('unchecked');
-  const [session,setSession]=useState<ApprovedTestLabStatus|null>(null);
+  const session=activeSession;
   const [runId,setRunId]=useState('');
   const [approval,setApproval]=useState('');
   const [approved,setApproved]=useState(false);
@@ -50,7 +52,7 @@ export default function AutoParserResultTools({
   useEffect(()=>{
     epoch.current++;
     setPort(null);setPortError('');setCap(null);
-    setSessionReady('unchecked');setSession(null);setRunId('');
+    setSessionReady('unchecked');setRunId('');
     setApproval('');setApproved(false);setSessionError('');
     setReadAllowed(false);setReadError('');setReadResult(null);
   },[projectId,listenerPort,sourceFormat]);
@@ -98,7 +100,7 @@ export default function AutoParserResultTools({
       assertApprovedSessionReady(cap);
       const result=await startApprovedSyntheticSession(approval,rate,cap);
       if(current!==epoch.current)return;
-      setSession(result);setRunId(result.runId);setApproved(false);setApproval('');
+      onSessionUpdate(result);setRunId(result.runId);setApproved(false);setApproval('');
     }catch{
       if(current===epoch.current)setSessionError('Backend independently denied the synthetic session or audit/sink policy.');
     }finally{if(current===epoch.current)setSessionBusy(false);}
@@ -111,7 +113,7 @@ export default function AutoParserResultTools({
       const result=action==='status'?
         await fetchApprovedSessionStatus(session.runId):
         await controlApprovedSession(session.runId,action);
-      if(current===epoch.current)setSession(result);
+      if(current===epoch.current)onSessionUpdate(result);
     }catch{
       if(current===epoch.current)setSessionError('Session request denied or owner verification unavailable.');
     }finally{if(current===epoch.current)setSessionBusy(false);}
@@ -122,7 +124,7 @@ export default function AutoParserResultTools({
     setSessionBusy(true);setSessionError('');
     try{
       const result=await fetchApprovedSessionStatus(runId);
-      if(current===epoch.current)setSession(result);
+      if(current===epoch.current)onSessionUpdate(result);
     }catch{
       if(current===epoch.current)setSessionError('No authorized owned session could be found. A run ID does not grant access.');
     }finally{if(current===epoch.current)setSessionBusy(false);}
@@ -210,6 +212,10 @@ export default function AutoParserResultTools({
         {['RUNNING','PAUSED'].includes(session.state)&&<button type="button"
           disabled={sessionBusy} onClick={()=>{void sessionAction('stop');}}>Stop</button>}
       </div>}
+      {session&&['STOPPED','EXPIRED','FAILED','COMPLETED'].includes(session.state)&&
+        <button type="button" onClick={()=>onSessionUpdate(null)}>
+          Dismiss Finished Session
+        </button>}
       {sessionError&&<p role="alert">{sessionError}</p>}
       {session&&<TestLabEvidencePanel runId={session.runId}
         onDownload={(filename,content)=>onDownload(filename,content)}/>}

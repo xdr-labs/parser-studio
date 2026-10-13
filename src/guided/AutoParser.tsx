@@ -25,6 +25,7 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import AutoParserResultTools from './AutoParserResultTools';
+import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
@@ -40,6 +41,8 @@ interface Props {
  datasetName:string;setDatasetName:(name:string)=>void;
  suite?:SuiteResult;pending:boolean;
  runPreview:(candidate:ParserDraft,raw?:string)=>Promise<SuiteResult>;
+ activeSession:ApprovedTestLabStatus|null;
+ onSessionUpdate:(next:ApprovedTestLabStatus|null)=>void;
  onChatGPT:()=>void;
 }
 const MAX_LOCAL_TEXT=64*1024;
@@ -69,7 +72,7 @@ const readable:Record<string,string>={
 function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,onChatGPT,
+ runPreview,activeSession,onSessionUpdate,onChatGPT,
 }:Props){
  const [step,setStep]=useState<0|1|2>(0);
  const [selected,setSelected]=useState(0);
@@ -791,6 +794,7 @@ export default function AutoParser({
          projectId={currentPair.manifest.projectId??''}
          listenerPort={draft.guided?.receiver.port??0}
          sourceFormat={draft.format}
+         activeSession={activeSession} onSessionUpdate={onSessionUpdate}
          onDownload={(filename,content)=>download(filename,content)}
        />}
        <details className="auto-parser-recipe" aria-label="Whole-sample regression and holdout review">

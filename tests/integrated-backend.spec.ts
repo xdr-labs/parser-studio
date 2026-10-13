@@ -882,7 +882,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       interflowRealTargetVerified:false,
     };
     const targetCalls:string[]=[];
-    let syntheticStarts=0,reads=0;
+    let syntheticStarts=0,reads=0,stopDenials=0;
     let responseKind:'denied'|'forged'|'safe'='denied';
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
@@ -946,6 +946,9 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       }
       if(path==='/api/v1/test-lab/sessions/stop'){
         expect(route.request().postDataJSON()).toEqual({runId});
+        if(stopDenials++===0)return route.fulfill({status:403,
+          contentType:'application/json',
+          body:JSON.stringify({error:'STOP_BACKEND_DENIED'})});
         return route.fulfill({status:200,contentType:'application/json',
           body:JSON.stringify({...mockStatus,state:'STOPPED'})});
       }
@@ -984,15 +987,28 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(comparison.getByRole('status')).toContainText('NO_MATCH');
     await expect(comparison.getByRole('status')).toContainText('end-to-end NOT VERIFIED');
     expect(reads).toBe(3);
-    await tools.getByLabel('Verified synthetic session status')
-      .getByRole('button',{name:'Stop'}).click();
-    await expect(tools.getByLabel('Verified synthetic session status'))
-      .toContainText('STOPPED');
+    await expect(page.getByLabel('Active Test Lab session indicator'))
+      .toContainText('Changing screens does not stop server delivery');
+    await page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
+    await expect(page.getByLabel('Authorized test and Interflow verification')).toHaveCount(0);
+    await expect(page.getByLabel('Active Test Lab session indicator'))
+      .toContainText('RUNNING');
+    await page.getByLabel('Active Test Lab session indicator')
+      .getByRole('button',{name:'Stop Server Session Now'}).click();
+    await expect(page.getByLabel('Active Test Lab session indicator'))
+      .toContainText('Backend Stop is unconfirmed');
+    await expect(page.getByLabel('Active Test Lab session indicator'))
+      .toContainText('RUNNING');
+    await page.getByLabel('Active Test Lab session indicator')
+      .getByRole('button',{name:'Stop Server Session Now'}).click();
+    await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
     expect(targetCalls).toEqual([
       '/api/v1/test-lab/sessions/start',
       '/api/v1/test-lab/interflow/search',
       '/api/v1/test-lab/interflow/search',
       '/api/v1/test-lab/interflow/search',
+      '/api/v1/test-lab/sessions/stop',
       '/api/v1/test-lab/sessions/stop',
     ]);
     await expect(page.getByRole('complementary',{name:'Parser creation methods'})

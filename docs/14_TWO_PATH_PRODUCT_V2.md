@@ -114,5 +114,7 @@ inherits user logs, rejects HTTP 403 and forged raw/verification fields,
 permits only field-limited non-verification evidence, and explicitly stops
 the simulated session. No real sensor or tenant query is sent.
 
+An owner-approved mock session also exposes a persistent, top-level **Stop Server\nSession Now** action when switching from Auto Parser to ChatGPT Assisted.\nThis is not a third creation method, does not create a new session, and still\nrequires independently authorized backend Stop acknowledgement; failure leaves\nthe banner visible and does not claim a successful stop.
+
 The remaining archived Wizard and Workbench suites still require feature-by-feature **behavioral** migration;
 migrating seven behavior groups is not completion of all historical coverage.

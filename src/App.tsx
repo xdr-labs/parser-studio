@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Bot,FileText,LockKeyhole,Plus,WandSparkles} from 'lucide-react';
 import {createDraft,type ParserDraft,type SuiteResult} from './model';
 import AutoParser from './guided/AutoParser';
+import {controlApprovedSession,type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
 import ChatGPTAssist from './guided/ChatGPTAssist';
 import {MAX_DATASET_BYTES} from './parser';
 
@@ -63,6 +64,27 @@ export default function App(){
       'chatgpt':'auto');
   const [draft,setDraft]=useState<ParserDraft>(()=>createDraft());
   const [sample,setSample]=useState('');
+  // Owned run state survives switching either parser authoring method.
+  // An active audited backend sender NEVER stops merely by changing screens.
+  const [activeSession,setActiveSession]=useState<ApprovedTestLabStatus|null>(null);
+  const [stopBusy,setStopBusy]=useState(false);
+  const [stopError,setStopError]=useState('');
+  useEffect(()=>setStopError(''),[activeSession?.runId]);
+  const sessionRunning=activeSession&&
+    (activeSession.state==='RUNNING'||activeSession.state==='PAUSED');
+  const stopApprovedSession=async()=>{
+    if(!sessionRunning||stopBusy)return;
+    const expectedRunId=activeSession.runId;
+    setStopBusy(true);setStopError('');
+    try{
+      const result=await controlApprovedSession(expectedRunId,'stop');
+      setActiveSession(prev=>prev?.runId===expectedRunId?result:prev);
+      if(result.state==='RUNNING'||result.state==='PAUSED')
+        setStopError('Stop is not yet confirmed by the backend. The session may still be active.');
+    }catch{
+      setStopError('Backend Stop is unconfirmed. Check session ownership and retry before leaving the test.');
+    }finally{setStopBusy(false);}
+  };
   const [datasetName,setDatasetName]=useState('No sample selected');
   const live=useLivePreview(sample,draft);
   const reset=()=>{
@@ -104,6 +126,19 @@ export default function App(){
           </button>
         </div>
       </header>
+      {sessionRunning&&<div role="status" className="two-path-session-banner"
+        aria-label="Active Test Lab session indicator">
+        <div>
+          <strong>Approved synthetic Test Lab · {activeSession.state}</strong>
+          <p>Changing screens does not stop server delivery.
+            Run {activeSession.runId} · Sensor ingest NOT VERIFIED.</p>
+          {stopError&&<p role="alert">{stopError}</p>}
+        </div>
+        <button type="button" className="button secondary"
+          disabled={stopBusy} onClick={()=>{void stopApprovedSession();}}>
+          {stopBusy?'Confirming Stop…':'Stop Server Session Now'}
+        </button>
+      </div>}
       {live.error&&<p role="alert" className="auto-parser-warning">
         Local preview: {live.error}. Check the sample before generating a parser.
       </p>}
@@ -112,6 +147,7 @@ export default function App(){
         datasetName={datasetName} setDatasetName={setDatasetName}
         suite={live.suite} pending={live.pending}
         runPreview={preview}
+        activeSession={activeSession} onSessionUpdate={setActiveSession}
         onChatGPT={()=>setWorkspace('chatgpt')}
       />:<ChatGPTAssist
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{
