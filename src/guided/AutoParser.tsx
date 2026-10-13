@@ -15,6 +15,7 @@ import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import type {StructuralMiningReport} from './localPatternMining';
+import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
   proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
@@ -76,6 +77,7 @@ export default function AutoParser({
  const [recipeCompilerError,setRecipeCompilerError]=useState('');
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
+ const [logicalReview,setLogicalReview]=useState<{key:string;value:LogicalBoundaryReport}|null>(null);
  const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
  const [aiText,setAIText]=useState('');
  const [boundedPath,setBoundedPath]=useState('');
@@ -99,6 +101,7 @@ export default function AutoParser({
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
    setRecipeCompiled(null);setRecipeCompilerError('');
    setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
+   setLogicalReview(null);
    setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
    setBoundedPath('');
    setSaveAfterApproval(false);
@@ -114,6 +117,7 @@ export default function AutoParser({
  const currentRecipeCompiled=recipeCompiled?.key===identity?recipeCompiled.value:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
+ const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
  const currentAIPrompt=aiPrompt?.key===identity?aiPrompt.value:null;
  const currentAIImport=aiImport?.key===identity?aiImport.value:null;
  const repairKey=JSON.stringify([identity,holdout]);
@@ -482,6 +486,38 @@ export default function AutoParser({
        </div>
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
+       <details className="auto-parser-recipe" aria-label="Local logical boundary review">
+         <summary>Optional · Review multiline log boundaries (browser only)</summary>
+         <p>Preview potential multiline JSON objects and Java stack traces using
+           physical source line numbers. Every nonempty line is accounted for;
+           no observed log values, stack frames or JSON fields are returned.
+           This review does not configure a Fluentd multiline event breaker,
+           change input or enable native parser generation.</p>
+         <button type="button" disabled={!sample.trim()||busy||pending}
+           onClick={()=>setLogicalReview({
+             key:identity,value:reviewLogicalBoundaries(sample)
+           })}>Review Logical Event Boundaries</button>
+         {currentLogicalReview&&<div role="status" aria-label="Reviewed logical boundaries">
+           <strong>{currentLogicalReview.status} ·
+             {currentLogicalReview.accountedNonEmptyLines}/{currentLogicalReview.nonEmptyLines}
+             nonempty physical lines accounted</strong>
+           <span>{currentLogicalReview.multilineEventCount} candidate multiline events ·
+             {currentLogicalReview.ambiguousCount} unresolved boundaries ·
+             Native and DP target NOT VERIFIED</span>
+           {currentLogicalReview.groups.slice(0,12).map((group,i)=><span key={i}>
+             Lines {group.firstLine}–{group.lastLine} ·
+             {group.kind} · {group.status}
+           </span>)}
+           {currentLogicalReview.groups.length>12&&<span>
+             {currentLogicalReview.groups.length-12} further local groups,
+             included in source accounting
+           </span>}
+           {currentLogicalReview.status!=='NO_MULTILINE'&&<span>
+             Do not generate a native multiline parser from this review.
+             Use Edit Details to inspect the boundaries and source format.
+           </span>}
+         </div>}
+       </details>
        <details className="auto-parser-recipe" aria-label="Public synthetic parser fingerprints">
          <summary>Optional · Match familiar log patterns</summary>
          <p>Compare all event field names against reviewed public-synthetic starter shapes.
