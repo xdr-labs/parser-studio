@@ -47,7 +47,7 @@ jobs:
           PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
           PARSER_STUDIO_BACKEND_HEAD: e7ee1d94a0e535af9a2e65bdee76d6e81b95e04b
           PARSER_STUDIO_BACKEND_PORT: '4191'
-        run: npx playwright test tests/integrated-backend.spec.ts --project=chromium --workers=1
+        run: npx playwright test tests/integrated-backend.spec.ts tests/evidence-recovery.spec.ts --project=chromium --workers=1
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

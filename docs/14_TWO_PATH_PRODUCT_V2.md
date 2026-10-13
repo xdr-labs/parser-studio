@@ -143,7 +143,9 @@ workspace. It remains reachable from either parser path and after a manually
 authorized run-ID recovery, even when the original log source and DRAFT parser
 were cleared on reload. A run ID never authorizes reads on its own; summary
 and export are always separate, explicit same-origin GETs requiring backend
-ownership verification. The existing strict metadata/field allowlist,
+ownership verification. The dedicated pinned-backend Chromium CI executes both the main integration suite
+and tests/evidence-recovery.spec.ts; a skipped browser-only test is never
+considered verified evidence. The existing strict metadata/field allowlist,
 redacted event constraints, exact revision identity and SHA-256 attachment
 verification must pass before any JSON file is offered. Untrusted raw records,
 403/404 and tampered bytes fail closed, with no tenant/DP/sensor traffic.

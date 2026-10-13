@@ -55,6 +55,7 @@ test.describe('approved offline evidence after run recovery; no target sender',(
         })});
     });
     await page.goto('/?workspace=chatgpt');
+    await page.reload();
     await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
     await expect(page.getByLabel('Authorized Test Lab offline evidence')).toHaveCount(0);
     const recovery=page.getByLabel('Authorized Test Lab session recovery');
