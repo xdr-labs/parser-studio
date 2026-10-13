@@ -122,12 +122,32 @@ lookup tables. `benchmark-summary.json` contains **only value-free
 aggregates**, while all exact samples, gold and profile data remain local
 and ignored. No browser code or backend product behavior was changed.
 
+## Train-only span-feedback probe (synthetic, not a product UI)
+
+`span_feedback.py` accepts a **source-index-bound training record**, one
+explicit positive source path with exact UTF-8 byte offsets, and every
+competing negative source path with its own byte offsets. It verifies the
+original train-data digest, frozen grammar digest, role allowlist, gold
+agreement on the **training row only**, unique matching grammar, and full
+exclusion of the tied alternatives. A successful operation creates a new
+immutable digest-bound candidate and changes only the corrected role.
+Wrong byte offsets, duplicate/contradictory negatives, unsupported roles,
+non-training record indices, and corrupted frozen rules fail closed.
+Three additional synthetic unit tests prove the intended behavior,
+including Unicode byte-span handling and preservation of the original rule.
+
+This is a **human-feedback contract experiment**. No genuine owner-provided
+span corrections have been collected or applied to the pinned vendor train
+set; the held-out metrics remain unchanged. A synthetic positive/negative
+assertion is NOT evidence that a NAT alias has the real-world correct role.
+
 ## Remaining research-only gaps (in priority order)
 
-1. Improve **strict** accuracy: synthesize bounded positive/negative
-   source-span counterexamples when two train paths are value-equivalent;
-   never treat a raw `<*>` template or inferred positional alias as an
-   identified source/destination role.
+1. Improve **strict** accuracy using separately approved/confirmed real
+   positive and negative source-span corrections when two train paths are
+   value-equivalent. The bounded synthetic feedback mechanism is built,
+   but it cannot invent missing semantic ground truth. Never treat a raw
+   `<*>` template or inferred positional alias as an identified role.
 2. Secure separate, license-reviewed **new upstream fixture revisions** and
    rare subtypes; evaluate entire unseen source versions with frozen grammar
    rules rather than claiming a same-fixture split is universal coverage.
