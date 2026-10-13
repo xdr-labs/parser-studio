@@ -16,6 +16,7 @@ import re
 from typing import Any
 
 from source_parse import parse_source,assert_source_accounting
+from structured_source import extract_plain_bsd,extract_apache_error
 from span_alignment import align_template
 
 HERE=Path(__file__).resolve().parent
@@ -39,7 +40,9 @@ class Residual:
     sha:str
 
 
-def samples()->dict[str,list[Residual]]:
+def samples(mode:str="residual")->dict[str,list[Residual]]:
+    if mode not in {"residual","source_message"}:
+        raise ValueError("UNSUPPORTED_BODY_SELECTION_MODE")
     out={}
     for family,sha in sorted(SAMPLE_SHA.items()):
         content=(ROOT/family).read_bytes()
@@ -51,13 +54,30 @@ def samples()->dict[str,list[Residual]]:
         for line in lines:
             parsed=parse_source(line)
             assert_source_accounting(parsed)
-            spans=[(a,b) for a,b in parsed.unparsed if line[a:b].strip()]
-            if len(spans)!=1:
-                # A partial body must remain partial; never concatenate
-                # disjoint bytes and falsely claim continuous source spans.
-                continue
-            a,b=spans[0]
-            entries.append(Residual(family,line,line[a:b],a,b,
+            if mode=="source_message":
+                # The message body is identified from grammar framing, NEVER
+                # from independent gold. Recovered KV islands may split the
+                # residual into several spans, so training only those spans
+                # loses the context necessary for template mining.
+                envelope=(extract_apache_error(line)
+                          if family.startswith("Apache") else extract_plain_bsd(line))
+                begin=envelope[1] if envelope is not None else 0
+                suffix=line[begin:]
+                leading=len(suffix)-len(suffix.lstrip())
+                body=suffix.strip()
+                if not body:
+                    continue
+                a=begin+leading
+                b=a+len(body)
+            else:
+                spans=[(a,b) for a,b in parsed.unparsed if line[a:b].strip()]
+                if len(spans)!=1:
+                    # Never concatenate disjoint source bytes into invented
+                    # continuous spans.
+                    continue
+                a,b=spans[0]
+                body=line[a:b]
+            entries.append(Residual(family,line,body,a,b,
                                     hashlib.sha256(line.encode("utf8")).hexdigest()))
         out[family]=entries
     return out

@@ -69,5 +69,28 @@ class AnchorAlignmentTests(unittest.TestCase):
         self.assertEqual("Mary Jane",res.captures[0].value)
 
 
+    def test_trusted_train_profile_can_use_long_single_literal_anchor(self):
+        body="workerEnv.init() ok /etc/httpd.conf"
+        template="workerEnv.init() ok <*>"
+        self.assertEqual("ABSTAIN_WEAK_ANCHORS",
+                         align_template(template,body).status)
+        qualified=align_template(template,body,cluster_support=3,
+                                 trusted_profile=True)
+        self.assertEqual("SOURCE_SPAN_CANDIDATE_ONLY",qualified.status)
+        self.assertEqual("/etc/httpd.conf",qualified.captures[0].value)
+        self.assertEqual("ABSTAIN_UNQUALIFIED_CLUSTER",
+                         align_template(template,body,cluster_support=1,
+                                        trusted_profile=True).status)
+
+    def test_trusted_empty_wildcard_not_a_source_value(self):
+        template="authentication failure; logname=<*> uid=0 euid=0 rhost=<*>"
+        body="authentication failure; logname= uid=0 euid=0 rhost=192.0.2.6"
+        result=align_template(template,body,cluster_support=4,
+                              trusted_profile=True)
+        self.assertEqual("SOURCE_SPAN_CANDIDATE_ONLY",result.status)
+        self.assertEqual(["192.0.2.6"],[c.value for c in result.captures])
+        self.assertEqual(["residual.variable_1"],[c.path for c in result.captures])
+
+
 if __name__ == "__main__":
     unittest.main()

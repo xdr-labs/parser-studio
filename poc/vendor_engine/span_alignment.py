@@ -59,8 +59,10 @@ def _parse_template(template: str) -> tuple[list[str], list[str]] | None:
     return literals, masks
 
 
-def _typed_match(mask: str, value: str) -> bool:
-    if not value or len(value) > MAX_VARIABLE_CHARS or not value.strip() or "\x00" in value:
+def _typed_match(mask: str, value: str, *, allow_empty: bool = False) -> bool:
+    if not value:
+        return allow_empty and mask == "*"
+    if len(value) > MAX_VARIABLE_CHARS or not value.strip() or "\x00" in value:
         return False
     if mask == "IP":
         try:
@@ -82,6 +84,7 @@ def align_template(
     raw: str | None = None,
     body_start_char: int = 0,
     cluster_support: int = 2,
+    trusted_profile: bool = False,
 ) -> Alignment:
     """Propose exact byte-offset captures; reject non-unique alignments.
 
@@ -99,11 +102,20 @@ def align_template(
     if parsed is None:
         return Alignment("UNSUPPORTED_TEMPLATE_SYNTAX")
     literals, masks = parsed
-    if not masks or len(masks) > MAX_VARIABLES:
+    max_variables = 24 if trusted_profile else MAX_VARIABLES
+    if not masks or len(masks) > max_variables:
         return Alignment("ABSTAIN_NO_BOUNDED_VARIABLES")
     if any(not literal for literal in literals[1:-1]):
         return Alignment("ABSTAIN_ADJACENT_VARIABLES")
-    if len([s for s in literals if s.strip()]) < 2 or sum(len(s.strip()) for s in literals) < 8:
+    stable_anchors = sum(bool(s.strip()) for s in literals)
+    static_chars = sum(len(s.strip()) for s in literals)
+    # A train-labeled, source-verified template may use one sufficiently
+    # distinctive anchored literal if seen in >= 2 independent train rows.
+    # This relaxation is NEVER used for raw unsupervised Drain3 clusters.
+    if trusted_profile:
+        if stable_anchors < 1 or static_chars < 12:
+            return Alignment("ABSTAIN_WEAK_ANCHORS")
+    elif stable_anchors < 2 or static_chars < 8:
         return Alignment("ABSTAIN_WEAK_ANCHORS")
     if not body.startswith(literals[0]):
         return Alignment("NO_EXACT_ANCHORED_MATCH")
@@ -124,7 +136,7 @@ def align_template(
             if i + 1 != len(masks):
                 return
             end = len(body)
-            if _typed_match(masks[i], body[start:end]):
+            if _typed_match(masks[i], body[start:end], allow_empty=trusted_profile):
                 found.append(spans + [(start, end, masks[i])])
             return
         cursor = start
@@ -137,7 +149,7 @@ def align_template(
                 break
             trials += 1
             value = body[start:next_start]
-            if _typed_match(masks[i], value):
+            if _typed_match(masks[i], value, allow_empty=trusted_profile):
                 next_offset = next_start + len(target_literal)
                 record = spans + [(start, next_start, masks[i])]
                 if i + 1 == len(masks):
@@ -167,5 +179,6 @@ def align_template(
         value = body[start:end]
         if source_bytes[pos_a:pos_b].decode("utf8") != value:
             return Alignment("SOURCE_BYTE_MISMATCH")
-        captures.append(Capture(f"residual.variable_{i}", mask, value, pos_a, pos_b))
+        if pos_a != pos_b:
+            captures.append(Capture(f"residual.variable_{i}", mask, value, pos_a, pos_b))
     return Alignment("SOURCE_SPAN_CANDIDATE_ONLY", tuple(captures))

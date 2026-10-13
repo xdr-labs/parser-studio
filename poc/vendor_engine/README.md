@@ -1,5 +1,12 @@
 # Vendor Adaptive Engine — Standalone Research PoC (NOT a Product Feature)
 
+**Latest extraction-first evaluation and architecture decision:**
+[EXTRACTION_FIRST_DECISION.md](./EXTRACTION_FIRST_DECISION.md). Raw-source
+field extraction is P0; Stellar Cyber Dictionary normalization is optional
+P1. The new Loghub reference-span benchmark distinguishes unsupervised
+Drain3 F1 **37.62%** from train-annotated known-grammar reuse F1 **98.95%**.
+The latter is **NOT** independent new-vendor, no-label learning evidence.
+
 <!-- OWNER_EXTRACTION_FIRST_20261014_BEGIN -->
 ## Authoritative PoC priority — extraction first (owner directive, 2026-10-14)
 
