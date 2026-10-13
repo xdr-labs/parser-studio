@@ -39,6 +39,9 @@ const webServer=liveBackend
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*.spec.ts',
+  // Historical no-longer-exposed Wizard/Workbench tests are retained in Git,
+  // NOT counted as current PASS; see tests/legacy-removed-ui/README.md.
+  testIgnore: '**/tests/legacy-removed-ui/**',
   outputDir: process.env.PARSER_STUDIO_TEST_OUTPUT_DIR || 'test-results',
   retries: 0,
   workers: 2,

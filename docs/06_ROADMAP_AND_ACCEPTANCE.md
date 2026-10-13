@@ -1,3 +1,5 @@
+> **OWNER OVERRIDE — 2026-10-13:** Parser Studio 2.0 exposes ONLY Auto Parser and ChatGPT Assisted Parser. The 6-step Wizard and 3-pane Workbench are retired from the product UI; their previously stated retention/entrypoint requirements are superseded. All useful backend parsing, mapping, testing, versioning and result operations remain available for internal reuse or integration as context-sensitive result tools. The authoritative scope, acceptance and next tasks are [the two-path v2.0 specification](14_TWO_PATH_PRODUCT_V2.md) and [GitHub Issue #1](https://github.com/xdr-labs/parser-studio/issues/1). Legacy sections below are retained as historical implementation context, not current user navigation.
+
 # 06. Roadmap, Gates and Next Action
 
 ## Overall

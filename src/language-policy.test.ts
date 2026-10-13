@@ -51,9 +51,12 @@ describe('English-only product and development content', () => {
     const root=process.cwd();
     const app=readFileSync(path.join(root,'src/App.tsx'),'utf8');
     expect(app).not.toContain("'ko-KR'");
-    expect(app).toContain("toLocaleString('en-US')");
+    expect(app).toContain('ChatGPT Assisted Parser');
+    expect(app).toContain('Auto Parser');
+    expect(app).not.toContain("workspace==='guided'");
+    expect(app).not.toContain("workspace==='expert'");
     const readme=readFileSync(path.join(root,'README.md'),'utf8');
-    expect(readme).toContain('English-only Guided Builder');
+    expect(readme).toContain('English-only Parser Studio');
     expect(readme).not.toContain('Korean-first');
   });
 

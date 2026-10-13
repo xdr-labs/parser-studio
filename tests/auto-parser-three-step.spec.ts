@@ -60,18 +60,18 @@ async function begin(page:Page){
  await page.getByRole('button',{name:'Review Detected Results'}).click();
  await expect(page.getByLabel('Review Results stage')).toBeVisible();
 }
-test('new visitor sees three-step Auto Parser, while six-step Edit Details and Expert remain accessible',async({page})=>{
+test('new visitor sees only the two supported creation methods and a three-step Auto Parser',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'From raw logs to a parser draft in three steps.'})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button')).toHaveCount(3);
+ await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
  await expect(page.getByLabel('Auto Parser raw logs')).toBeEmpty();
  await expect(page.getByRole('button',{name:'Review Detected Results'})).toBeDisabled();
- await page.getByRole('button',{name:'Edit Details · Six-step Builder'}).click();
- await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toBeVisible();
- await expect(page.locator('.guided-step')).toHaveCount(6);
- await page.getByRole('button',{name:'Expert Workbench',exact:true}).click();
- await expect(page.getByRole('region',{name:'Parser pipeline rules'})).toBeVisible();
+ await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'Parser pipeline rules'})).toHaveCount(0);
+ await page.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
+ await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
  await page.getByRole('button',{name:'Auto Parser',exact:true}).click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
 });

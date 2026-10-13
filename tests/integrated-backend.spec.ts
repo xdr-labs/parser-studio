@@ -1,4 +1,4 @@
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect} from '@playwright/test';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createDraft} from '../src/model';
@@ -49,116 +49,61 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     }
   });
 
-  test('same synthetic sample: UI preview → typed project → real validate/generate → Ruby/CONF/ZIP SHA → exact reinspection',async({page,request})=>{
-    const payloads:Record<string,unknown>={};
-    const apiCalls:string[]=[];
+  test('same synthetic sample: Auto Parser -> live backend validate/generate -> ZIP and SHA downloads',async({page})=>{
+    const calls:string[]=[];
     page.on('request',req=>{
       const path=new URL(req.url()).pathname;
-      if(req.method()==='POST'&&['validate','generate','package','inspect'].some(x=>path.endsWith('/'+x))){
-        apiCalls.push(path.split('/').at(-1)!);
-        if(path.endsWith('/validate')||path.endsWith('/generate'))payloads[path.split('/').at(-1)!]=req.postDataJSON();
-        expect(req.url()).toContain('127.0.0.1:');
-        expect(req.headers()['authorization']).toBeUndefined();
+      if(req.method()==='POST'&&path.startsWith('/api/v1/parser-pairs/')){
+        calls.push(path.split('/').at(-1)!);
+        for(const value of ['198.51.100.10','203.0.113.5'])
+          expect(req.postData()??'').not.toContain(value);
       }
     });
-
-    await page.goto('/?workspace=guided');
-    await page.getByLabel('Guided raw sample logs').fill(sample);
-    await page.getByRole('button',{name:/2\. Extract Fields/}).click();
-    await page.getByRole('button',{name:'JSON',exact:true}).click();
-    await page.getByRole('button',{name:/3\. Map Fields/}).click();
-    await page.locator('.guided-schema-guide summary').click();
-    await page.getByRole('button',{name:'Fetch Backend Schema (GET)'}).click();
-    await expect(page.getByLabel('Verified backend schema summary')).toContainText('ParserProject');
-
-    await page.getByRole('button',{name:/5\. Test & Fix/}).click();
-    await page.getByRole('button',{name:'Run Full Browser Test'}).click();
-    await expect(page.locator('.guided-test-metrics')).toContainText('Input Events');
-    await expect(page.locator('.guided-test-metrics')).toContainText('2');
-    await page.getByRole('button',{name:/6\. Generate Files/}).click();
-    await expect(page.getByRole('button',{name:'Generate 2 Parser Files (Backend Required)'})).toBeDisabled();
-    const validResponse=page.waitForResponse(r=>r.url().endsWith('/validate')&&r.request().method()==='POST');
-    await page.getByRole('button',{name:'Validate Backend Input'}).click();
-    expect((await validResponse).status()).toBe(200);
-    await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
-    expect(payloads.validate).toMatchObject({
-      schemaRevision:'0.1',revision:1,extraction:{format:'json'},
-    });
-    const json=JSON.stringify(payloads.validate);
-    expect(json).not.toContain('198.51.100.10');
-    expect(json).not.toContain('203.0.113.5');
-    expect(json).not.toContain('"src_ip":"198.51.100.10"');
-    expect(json).not.toContain('apiKey');
-
-    const generated=page.waitForResponse(r=>r.url().endsWith('/generate')&&r.request().method()==='POST');
-    await page.getByRole('button',{name:'Generate 2 Parser Files (DRAFT)'}).click();
-    const real=await generated;
-    expect(real.status()).toBe(200);
-    const pair=await real.json();
-    expect(payloads.generate).toEqual(payloads.validate);
-    expect(pair.contract).toBe('host-customized-pair.v0.1');
-    expect(pair.files).toHaveLength(2);
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await expect(page.getByLabel('Automatic event accounting'))
+      .toContainText('2/2 events analyzed locally');
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    const generation=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    const raw=await generation;
+    expect(raw.status()).toBe(200);
+    const pair=await raw.json();
     expect(pair.manifest).toMatchObject({
       status:'DRAFT',engineVerified:false,targetImportVerified:false,
       projectId:'draft-demo_firewall',projectRevision:1,
     });
-    expect(pair.files.map((x:{name:string})=>x.name)).toEqual([
-      'customized_demo_firewall.conf','customized_demo_firewall',
-    ]);
-    const byName:Record<string,string>={};
-    for(const file of pair.files){
-      expect(file.sha256).toMatch(SHA);
-      expect(sha(file.content)).toBe(file.sha256);
-      expect(Buffer.byteLength(file.content)).toBe(file.bytes);
-      expect(pair.manifest.fileHashes[file.name]).toBe(file.sha256);
-      byName[file.name]=file.content;
+    expect(pair.files).toHaveLength(2);
+    for(const f of pair.files){
+      expect(f.sha256).toMatch(SHA);
+      expect(sha(f.content)).toBe(f.sha256);
+      expect(pair.manifest.fileHashes[f.name]).toBe(f.sha256);
+      const download=page.waitForEvent('download');
+      await page.getByLabel('Generated Auto Parser DRAFT pair')
+        .getByRole('button',{name:f.name,exact:true}).click();
+      expect(sha(await readFile(await (await download).path()))).toBe(f.sha256);
     }
-    await expect(page.getByLabel('Generated draft parser pair')).toContainText('SHA-256 Verified');
-    for(const file of pair.files){
-      const downloaded=page.waitForEvent('download');
-      await page.getByRole('button',{name:file.name,exact:true}).click();
-      const item=await downloaded;
-      expect(item.suggestedFilename()).toBe(file.name);
-      expect(sha(await readFile(await item.path()))).toBe(file.sha256);
-    }
-    expect(byName['customized_demo_firewall.conf']).toContain('port 7501');
-    expect(byName['customized_demo_firewall']).toContain('STELLAR_PARSE_BEGIN');
-
-    const zipResponse=page.waitForResponse(r=>r.url().endsWith('/package')&&r.request().method()==='POST');
-    const zipDownload=page.waitForEvent('download');
-    await page.getByRole('button',{name:'Download DRAFT ZIP Package'}).click();
-    const archive=await zipResponse;
-    const downloadedZip=await zipDownload;
-    expect(archive.status()).toBe(200);
-    expect(downloadedZip.suggestedFilename()).toBe('customized_demo_firewall-r1.zip');
-    const zipBuffer=await readFile(await downloadedZip.path());
-    expect(zipBuffer.subarray(0,4).toString('hex')).toBe('504b0304');
-    expect(sha(zipBuffer)).toBe(archive.headers()['x-parser-zip-sha256']);
-    expect(archive.headers()['x-parser-listener-port']).toBe('7501');
-    expect(archive.headers()['x-parser-artifact-revision']).toMatch(SHA);
-    await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('SHA-256 Verified');
-    // Reopen via the actual backend API and verify exact compiler reproduction,
-    // not a browser-only mock or a raw Ruby import.
-    await page.locator('.guided-pair-inspect summary').click();
-    await page.getByLabel('Inspect pair CONF').setInputFiles({
-      name:'customized_demo_firewall.conf',mimeType:'text/plain',
-      buffer:Buffer.from(byName['customized_demo_firewall.conf']),
-    });
-    await page.getByLabel('Inspect pair Ruby fragment').setInputFiles({
-      name:'customized_demo_firewall',mimeType:'text/plain',
-      buffer:Buffer.from(byName['customized_demo_firewall']),
-    });
-    const inspectResponse=page.waitForResponse(r=>r.url().endsWith('/inspect')&&r.request().method()==='POST');
-    await page.getByRole('button',{name:'Inspect Selected Pair (Read-only)'}).click();
-    expect((await inspectResponse).status()).toBe(200);
-    await expect(page.getByLabel('Parser pair inspection results')).toContainText('Byte-for-byte Generator Match');
-    expect(apiCalls).toEqual(['validate','generate','package','inspect']);
-
-    await page.getByRole('button',{name:/1\. Import Logs/}).click();
-    await page.getByLabel('Guided raw sample logs').fill(sample+'\n{"action":"allow","src_ip":"192.0.2.7","dst_port":80}');
-    await page.getByRole('button',{name:/6\. Generate Files/}).click();
-    await expect(page.getByLabel('Generated draft parser pair')).toHaveCount(0);
-    await expect(page.getByRole('button',{name:'Generate 2 Parser Files (Backend Required)'})).toBeDisabled();
+    expect(pair.files[0].content).toContain('port 7501');
+    expect(pair.files[1].content).toContain('STELLAR_PARSE_BEGIN');
+    const packageResponse=page.waitForResponse(r=>
+      r.url().endsWith('/parser-pairs/package')&&r.request().method()==='POST');
+    const packageDownload=page.waitForEvent('download');
+    await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
+    const zip=await packageResponse;
+    expect(zip.status()).toBe(200);
+    const bytes=await readFile(await (await packageDownload).path());
+    expect(bytes.subarray(0,4).toString('hex')).toBe('504b0304');
+    expect(sha(bytes)).toBe(zip.headers()['x-parser-zip-sha256']);
+    expect(calls).toEqual(['validate','generate','package']);
+    await page.getByLabel('Test and Generate stage')
+      .getByRole('button',{name:'Review Results'}).click();
+    await page.getByRole('button',{name:'Back to Logs'}).click();
+    await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"deny"}');
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
   });
 
   test('invalid projects, malformed HTTP and foreign owner reads cannot fake an artifact PASS',async({request})=>{
@@ -181,30 +126,28 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     expect(foreign.status()).toBe(403);
   });
 
-  test('tampered REAL backend generated response is refused by the UI, without a file or deployment',async({page})=>{
-    let realCalls=0;
+  test('tampered real backend generated SHA is rejected in Auto Parser without deployment',async({page})=>{
+    let attempts=0;
     await page.route('**/api/v1/parser-pairs/generate',async route=>{
       const original=await route.fetch();
       expect(original.status()).toBe(200);
-      realCalls++;
       const pair=await original.json();
+      attempts++;
       pair.files[0].sha256='0'.repeat(64);
       await route.fulfill({response:original,contentType:'application/json',body:JSON.stringify(pair)});
     });
-    await page.goto('/?workspace=guided');
-    await page.getByLabel('Guided raw sample logs').fill(sample);
-    await page.getByRole('button',{name:/2\. Extract Fields/}).click();
-    await page.getByRole('button',{name:'JSON',exact:true}).click();
-    await page.getByRole('button',{name:/5\. Test & Fix/}).click();
-    await page.getByRole('button',{name:'Run Full Browser Test'}).click();
-    await page.getByRole('button',{name:/6\. Generate Files/}).click();
-    await page.getByRole('button',{name:'Validate Backend Input'}).click();
-    await expect(page.getByText('Schema PASS · Engine Unverified')).toBeVisible();
-    await page.getByRole('button',{name:'Generate 2 Parser Files (DRAFT)'}).click();
-    await expect(page.getByRole('alert').last()).toContainText('SHA-256');
-    await expect(page.getByLabel('Generated draft parser pair')).toHaveCount(0);
-    expect(realCalls).toBe(1);
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Auto Parser test evidence'))
+      .toContainText('Generation Not Verified');
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    expect(attempts).toBe(1);
   });
+
   test('AP2 novice flow compiles a real backend DRAFT pair without choosing parser syntax',async({page})=>{
     const actions:string[]=[];
     const sample=[
@@ -535,6 +478,56 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       .find(x=>x.receiver?.tcpFraming==='blank_line_java');
     expect(authoring?.receiver?.protocols).toEqual(['tcp']);
     expect(bodyLog.length).toBeGreaterThanOrEqual(4);
+  });
+
+  test('ChatGPT Assisted: explicit redaction -> canonical pasted JSON -> actual backend v0.1/v0.2 SHA matched pair',async({page})=>{
+    const masked='{"action":"deny","src_ip":"[REDACTED_IP]"}';
+    const source=[
+      '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
+      '{"action":"deny","src_ip":"203.0.113.5","dst_port":22}',
+    ].join('\n');
+    const posts:string[]=[];
+    page.on('request',req=>{
+      const path=new URL(req.url()).pathname;
+      if(req.method()==='POST'&&path.startsWith('/api/v1/parser-pairs/')){
+        const body=req.postData()??'';
+        posts.push(path);
+        expect(body).not.toContain('198.51.100.10');
+        expect(body).not.toContain('203.0.113.5');
+        expect(body).not.toContain(masked);
+      }
+    });
+    await page.goto('/?workspace=chatgpt');
+    await page.getByLabel('ChatGPT local sample logs').fill(source);
+    await page.getByLabel('ChatGPT redacted examples').fill(masked);
+    await page.getByLabel('Confirm redacted example review').check();
+    await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
+    const textarea=page.getByLabel('ChatGPT copyable prompt');
+    await expect(textarea).toContainText('Use this structurally valid current JSON recipe');
+    const prompt=await textarea.inputValue();
+    expect(prompt).toContain(masked);
+    expect(prompt).not.toContain('198.51.100.10');
+    expect(prompt).not.toContain('203.0.113.5');
+    const prefix='Use this structurally valid current JSON recipe as your baseline.\n';
+    const suffix='\nReturn only your JSON recipe, with nativeVerified and targetVerified false.';
+    const start=prompt.indexOf(prefix),end=prompt.indexOf(suffix,start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const recipe=JSON.parse(prompt.slice(start+prefix.length,end));
+    expect(recipe.compilerMode).toBe('REVIEW_ONLY');
+    expect(recipe.nativeVerified).toBe(false);
+    await page.getByLabel('ChatGPT pasted recipe').fill(JSON.stringify(recipe));
+    await page.getByRole('button',{name:'Validate AI Result'}).click();
+    await expect(page.getByLabel('ChatGPT validated recipe')).toContainText('REVIEW ONLY');
+    const compiled=page.waitForResponse(r=>
+      r.url().includes('/recipe/v0.2/generate')&&r.request().method()==='POST');
+    await page.getByRole('button',{name:'Approve & Generate Ruby + CONF DRAFT Files'}).click();
+    expect((await compiled).status()).toBe(200);
+    await expect(page.getByLabel('ChatGPT generated DRAFT pair'))
+      .toContainText('Two SHA-verified DRAFT files');
+    const files=page.getByLabel('ChatGPT generated DRAFT pair').getByRole('button',{name:/Download/});
+    await expect(files).toHaveCount(2);
+    expect(posts.filter(x=>x.endsWith('/generate')).length).toBeGreaterThanOrEqual(2);
   });
 
 });

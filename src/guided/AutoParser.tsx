@@ -21,13 +21,12 @@ import {splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
-import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
-  proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
-import {probeAIReviewAvailability,requestAIReviewedCandidate,
-  type AIProviderAvailability,type AIReviewedCandidate} from './aiIntegratedClient';
+
+
+import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
-import {prepareBoundedPathCandidate} from './boundedPathReview';
+
 import {proposeReviewableMapping,compareCandidate,
  type CandidateComparison} from './autoParserRegression';
 import type {EventBoundary} from './contract';
@@ -39,7 +38,7 @@ interface Props {
  datasetName:string;setDatasetName:(name:string)=>void;
  suite?:SuiteResult;pending:boolean;
  runPreview:(candidate:ParserDraft,raw?:string)=>Promise<SuiteResult>;
- onEditDetails:()=>void;onExpert:()=>void;
+ onChatGPT:()=>void;
 }
 const MAX_LOCAL_TEXT=64*1024;
 const STEPS=['Add Logs','Review Results','Test & Generate'] as const;
@@ -57,18 +56,18 @@ const readable:Record<string,string>={
  UNTRUSTED_PREVIEW:'The local preview could not be verified; run it again.',
  SOURCE_CHANGED:'The log source changed. Review the current events again.',
  MIXED_OR_UNKNOWN:'The sample contains an unsupported family combination, malformed, or unrecognized events. Only explicitly allowed one-line JSON/KV/CEF/LEEF can share a parser; no log line will be discarded.',
- BOUNDARY_REVIEW:'The record boundaries are ambiguous. Open Edit Details to review multiline messages.',
+ BOUNDARY_REVIEW:'The record boundaries are ambiguous. Review explicit event framing or use ChatGPT Assisted Parser.',
  COMPILER_UNSUPPORTED:'The backend cannot safely compile the detected envelope and body.',
- COLUMNS_REQUIRED:'CSV columns require names before a parser can be generated. Open Edit Details.',
+ COLUMNS_REQUIRED:'CSV requires named columns; use ChatGPT Assisted Parser if the format cannot be recognized.',
  BACKEND_UNAVAILABLE:'The local backend capabilities are unavailable. No parser is generated.',
  BACKEND_UNTRUSTED:'The backend returned an untrusted capability or verification claim.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
- MODEL_REVIEW_REQUIRED:'Some fields or classification rules require review. Open Edit Details to repair the draft.',
+ MODEL_REVIEW_REQUIRED:'Review the detected field mappings on this screen before generating.',
 };
-function statusMessage(reason:string){return readable[reason]??'Review the unsupported candidate in Edit Details.';}
+function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,onEditDetails,onExpert,
+ runPreview,onChatGPT,
 }:Props){
  const [step,setStep]=useState<0|1|2>(0);
  const [selected,setSelected]=useState(0);
@@ -90,17 +89,6 @@ export default function AutoParser({
  const [drainResult,setDrainResult]=useState<{key:string;holdout:string;value:Drain3Report}|null>(null);
  const [drainNotice,setDrainNotice]=useState('');
  const [logicalReview,setLogicalReview]=useState<{key:string;value:LogicalBoundaryReport}|null>(null);
- const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
- const [aiProvider,setAIProvider]=useState<AIProviderAvailability|
-   {status:'UNCHECKED'|'ERROR'}>({status:'UNCHECKED'});
- const [aiExternalConsent,setAIExternalConsent]=useState(false);
- const [aiBudgetConsent,setAIBudgetConsent]=useState(false);
- const [aiReviewed,setAIReviewed]=useState<{key:string;value:AIReviewedCandidate}|null>(null);
- const [aiProviderNotice,setAIProviderNotice]=useState('');
- const [aiText,setAIText]=useState('');
- const [boundedPath,setBoundedPath]=useState('');
- const [aiImport,setAIImport]=useState<{key:string;value:AIImportResult}|null>(null);
- const [aiCopyNotice,setAICopyNotice]=useState('');
  const [approvedPatterns,setApprovedPatterns]=useState<ApprovedPattern[]>(()=>readApprovedPatterns());
  const [selectedPattern,setSelectedPattern]=useState('');
  const [saveAfterApproval,setSaveAfterApproval]=useState(false);
@@ -122,10 +110,6 @@ export default function AutoParser({
    setDrainAvailability('UNCHECKED');setDrainConsent(false);
    setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
-   setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
-   setAIProvider({status:'UNCHECKED'});setAIExternalConsent(false);
-   setAIBudgetConsent(false);setAIReviewed(null);setAIProviderNotice('');
-   setBoundedPath('');
    setSaveAfterApproval(false);
    setBusy(false);setMessage('');
  },[identity]);
@@ -176,9 +160,6 @@ export default function AutoParser({
  const currentDrain=drainResult?.key===identity&&
    drainResult.holdout===drainHoldout?drainResult.value:null;
  const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
- const currentAIPrompt=aiPrompt?.key===identity?aiPrompt.value:null;
- const currentAIReviewed=aiReviewed?.key===identity?aiReviewed.value:null;
- const currentAIImport=aiImport?.key===identity?aiImport.value:null;
  const repairKey=JSON.stringify([identity,holdout]);
  const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
@@ -408,119 +389,6 @@ export default function AutoParser({
        setMessage('Local structural grouping was unavailable; no source was uploaded.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
- async function prepareAIPrompt(){
-   if(!suite||busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setAIPrompt(null);setAICopyNotice('');
-   try{
-     const value=await createPrivacySafeAIPrompt(sample,draft,suite);
-     if(token===epoch.current&&currentRef.current===expected)
-       setAIPrompt({key:expected,value});
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setAIPrompt({key:expected,value:{ok:false,reason:'UNTRUSTED_PREVIEW'}});
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function probeIntegratedAI(){
-   if(!currentAIPrompt?.ok||!currentAIPrompt.currentProjectImportReady||busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setAIProviderNotice('');setAIReviewed(null);
-   setAIExternalConsent(false);setAIBudgetConsent(false);
-   try{
-     const result=await probeAIReviewAvailability();
-     if(token===epoch.current&&currentRef.current===expected)setAIProvider(result);
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected){
-       setAIProvider({status:'ERROR'});
-       setAIProviderNotice('Private AI review availability could not be verified.');
-     }
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function proposeIntegratedAI(){
-   if(aiProvider.status!=='AVAILABLE'||!currentAIPrompt?.ok||
-      !currentAIPrompt.currentProjectImportReady||
-      !aiExternalConsent||!aiBudgetConsent||busy||pending||!suite)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setAIReviewed(null);setAIProviderNotice('');
-   try{
-     const result=await requestAIReviewedCandidate(sample,draft,suite,
-       aiProvider.capability,aiExternalConsent,aiBudgetConsent);
-     if(token===epoch.current&&currentRef.current===expected)
-       setAIReviewed({key:expected,value:result});
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setAIProviderNotice('External AI review was denied, unavailable, or failed strict candidate checks. No draft rules changed.');
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function copyAIPrompt(){
-   if(!currentAIPrompt?.ok)return;
-   try{await navigator.clipboard.writeText(currentAIPrompt.prompt);
-     setAICopyNotice('Privacy-safe prompt copied by explicit user action.');}
-   catch{setAICopyNotice('Clipboard access denied. Select and copy the visible prompt manually.');}
- }
- async function reviewAIImport(){
-   if(!suite||busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setAIImport(null);
-   try{
-     const value=await importReviewOnlyAIRecipe(aiText,sample,draft,suite);
-     if(token===epoch.current&&currentRef.current===expected)
-       setAIImport({key:expected,value});
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setAIImport({key:expected,value:{ok:false,reason:'UNTRUSTED_RECIPE'}});
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function compareSimplePath(){
-   if(!suite||busy||pending)return;
-   const proposed=prepareBoundedPathCandidate(boundedPath,sample,draft,suite);
-   if(!proposed.ok){setRepairNotice('Simple path cannot become a safe parser mapping: '+proposed.reason);return;}
-   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
-   setBusy(true);setRepair(null);setRepairNotice('');
-   try{
-     if(!holdout||new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT)
-       throw new Error('HOLDOUT_REQUIRED');
-     const candidate=await runPreview(proposed.candidate,sample);
-     const held={source:holdout,baseline:await runPreview(draft,holdout),
-       candidate:await runPreview(proposed.candidate,holdout)};
-     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
-     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
-     setRepair({key:JSON.stringify([expected,requestedHoldout]),
-       candidate:proposed.candidate,comparison,
-       source:proposed.source,target:proposed.target});
-     setReviewMetrics(x=>({...x,compared:x.compared+1,
-       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
-     setRepairNotice('Safe path field proposed in Full-sample regression; manual approval is still required.');
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setRepairNotice('Simple path review needs an independent holdout. No rules changed.');
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function compareImportedAIMapping(){
-   if(!currentAIImport||!suite||busy||pending)return;
-   const proposed=proposeV01FieldMappingFromAI(currentAIImport,sample,draft,suite);
-   if(!proposed.ok){setRepairNotice('Imported staged changes cannot be safely mapped to v0.1: '+proposed.reason);return;}
-   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
-   setBusy(true);setRepair(null);setRepairNotice('');
-   try{
-     if(!holdout||new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT)
-       throw new Error('HOLDOUT_REQUIRED');
-     const candidate=await runPreview(proposed.candidate,sample);
-     const held={source:holdout,baseline:await runPreview(draft,holdout),
-       candidate:await runPreview(proposed.candidate,holdout)};
-     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
-     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
-     setRepair({key:JSON.stringify([expected,requestedHoldout]),
-       candidate:proposed.candidate,comparison,
-       source:proposed.source,target:proposed.target});
-     setReviewMetrics(x=>({...x,compared:x.compared+1,
-       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
-     setRepairNotice('AI-proposed field is a reviewed candidate in Full-sample regression; approval remains a separate action.');
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setRepairNotice('AI mapping comparison requires a valid independent holdout. No rules changed.');
-   }finally{if(token===epoch.current)setBusy(false);}
- }
  async function previewRecipe(){
    if(!suite||busy||pending)return;
    const token=++epoch.current,expected=identity;
@@ -577,8 +445,7 @@ export default function AutoParser({
      <p>Paste samples without selecting JSON, CEF, Regex or Ruby. Review every
        recognized event and optional field mapping before creating matched DRAFT files.</p>
      <div className="auto-parser-links">
-       <button type="button" onClick={onEditDetails}>Edit Details · Six-step Builder</button>
-       <button type="button" onClick={onExpert}>Expert Workbench</button>
+       <button type="button" onClick={onChatGPT}>Try ChatGPT Assisted Parser</button>
      </div>
    </header>
    <nav aria-label="Auto Parser steps" className="auto-parser-steps">
@@ -773,8 +640,7 @@ export default function AutoParser({
          {currentReview.mappingCount} conservative custom-field suggestions were prepared
          from safe source names. They are not an official Stellar dictionary.</p>}
        {currentReview?.requiresApproval&&<p className="auto-parser-note">
-         Existing edited mapping rules were preserved. Confirm them in Edit Details
-         before generating files.</p>}
+         Your edited field mappings were preserved. Check them below before generating.</p>}
        <label>Choose a source event
          <select aria-label="Auto Parser review event" value={chosen?.id??''}
            onChange={e=>setSelected(Math.max(0,records.findIndex(x=>x.id===e.target.value)))}>
@@ -792,11 +658,33 @@ export default function AutoParser({
            <span>{rule.target}</span><small>{rule.type} · User-custom field, not official catalog</small>
          </div>)}
        </div>
-       <p className="auto-parser-note">If any names, field meanings or timestamps are
-         uncertain, use Edit Details; your raw samples and accepted rules are preserved.</p>
+       <details className="auto-parser-recipe" aria-label="Adjust detected field mapping">
+         <summary>Need to change a field? Review mappings here</summary>
+         <p>Only supported, reviewable field names and data types can generate parser files.
+           Changing a mapping clears generated evidence until you test again.</p>
+         {draft.mappings.map((mapping,index)=><div className="two-path-mapping-editor" key={mapping.id}>
+           <label>Source field
+             <input aria-label={'Mapping source '+index} value={mapping.source} maxLength={128}
+               onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
+                 {...m,source:e.target.value}:m)}))}/>
+           </label>
+           <label>Output field
+             <input aria-label={'Mapping target '+index} value={mapping.target} maxLength={128}
+               onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
+                 {...m,target:e.target.value}:m)}))}/>
+           </label>
+           <label>Data type
+             <select aria-label={'Mapping type '+index} value={mapping.type}
+               onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
+                 {...m,type:e.target.value as typeof m.type}:m)}))}>
+               {(['string','integer','boolean','ip','port','timestamp'] as const)
+                 .map(type=><option key={type} value={type}>{type}</option>)}
+             </select>
+           </label>
+         </div>)}
+       </details>
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(0)}><ArrowLeft size={15}/> Back to Logs</button>
-         <button type="button" onClick={onEditDetails}>Adjust Mapping in Edit Details</button>
          <button type="button" className="auto-parser-primary" disabled={pending||!suite}
            onClick={()=>setStep(2)}>Test & Generate <ArrowRight size={16}/></button>
        </div>
@@ -813,8 +701,8 @@ export default function AutoParser({
          <span>Errors <strong>{suite?.counts.failures??0}</strong></span>
        </div>
        {!confirmed()&&<p className="auto-parser-warning" role="note">
-         Not all sample events passed the current local preview. Review those events
-         in Edit Details before attempting backend generation.</p>}
+         Not all sample events passed. Review detected fields and mappings above
+         before generating your parser.</p>}
        <button type="button" className="auto-parser-primary" disabled={!canGenerate||!confirmed()}
          onClick={()=>{void generate();}}>
          {busy?'Testing the full sample…':'Run Tests & Generate DRAFT Files'}
@@ -836,6 +724,23 @@ export default function AutoParser({
            onClick={()=>{void zipPair();}}><FileArchive size={16}/> Download Verified DRAFT ZIP</button>
          {currentZip&&<small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>}
        </div>}
+       {currentPair&&<ArtifactRevisionHistoryPanel
+         projectId={currentPair.manifest.projectId}
+         draftKey={identity}
+         pair={currentPair}
+         listenerPort={draft.guided?.receiver.port??null}
+         onDownload={(filename,bytes)=>download(filename,bytes,true)}
+       />}
+       {currentPair&&<details className="auto-parser-recipe"
+          aria-label="Deployment and sensor verification">
+         <summary>Apply to DP &amp; Verify Sensor Logs (separate authorization)</summary>
+         <p>The generated Ruby and CONF are downloadable. A real Stellar Cyber
+           DP Apply, sensor replay or Interflow query requires independent target
+           authorization and a supported backend connection; this development
+           preview has not activated these actions.</p>
+         <p>No real DP configuration, listener binding, network send, or indexed
+           Interflow event has been verified.</p>
+       </details>}
        <details className="auto-parser-recipe" aria-label="Whole-sample regression and holdout review">
          <summary>Review safe repair · Full-sample and holdout regression</summary>
          <p>Compare one suggested missing-field mapping against the entire original sample.
@@ -958,132 +863,9 @@ export default function AutoParser({
          Native Fluentd compatibility and real Stellar Cyber import remain unverified.</p>
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Review Results</button>
-         <button type="button" onClick={onEditDetails}>Edit Details & Advanced Verification</button>
+         <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>
        </div>
      </section>}
-     <details className="auto-parser-recipe" aria-label="Optional privacy-safe AI recipe exchange">
-       <summary>Optional · Copy AI Prompt / Paste Reviewed AI Recipe</summary>
-       <p>Nothing is sent automatically to an LLM or external service. A generated
-         prompt contains only event counts, source digest and detected format families,
-         never raw log lines, addresses, usernames, or observed field values.
-         Copy only if you choose to share this limited metadata externally.
-         AI suggestions are untrusted review candidates, NOT runnable Ruby/Regex/JSONata.</p>
-       <button type="button" disabled={busy||pending||!suite}
-         onClick={()=>{void prepareAIPrompt();}}>Prepare Privacy-Safe AI Prompt</button>
-       {currentAIPrompt&&(currentAIPrompt.ok
-         ? <div aria-label="Privacy-safe AI prompt" role="status">
-           <strong>SCHEMA-ONLY · No raw logs · No automatic upload</strong>
-           {!currentAIPrompt.currentProjectImportReady&&<span>
-             Current parser draft is not backend-compatible. The prompt requests
-             plain-English review rather than a fabricated import-ready recipe.
-           </span>}
-           <textarea aria-label="Copyable AI prompt" readOnly rows={8}
-             value={currentAIPrompt.prompt}/>
-           <button type="button" onClick={()=>{void copyAIPrompt();}}>Copy Prompt Manually</button>
-           {aiCopyNotice&&<span>{aiCopyNotice}</span>}
-         </div>
-         : <p role="status">Prompt unavailable: {currentAIPrompt.reason}</p>)}
-       <details className="auto-parser-recipe" aria-label="Optional integrated AI review">
-         <summary>Optional · Integrated AI (metadata only, explicit opt-in)</summary>
-         <p>This separate optional path requests a conservative REVIEW_ONLY candidate
-           from an administrator-configured external provider. It sends only an exact
-           count, allowed format-family counts, draft identifier and SHA-256 digest.
-           No raw sample events, usernames, addresses or field values are transferred.
-           Output-token reservations are not a dollar-cost estimate. The provider,
-           tenant authorization, durable budget and audit must be configured on the
-           private backend; this feature is disabled by default.</p>
-         <button type="button" disabled={!currentAIPrompt?.ok||
-           !currentAIPrompt.currentProjectImportReady||busy||pending}
-           onClick={()=>{void probeIntegratedAI();}}>
-           Check Configured AI Availability (No Source Transfer)
-         </button>
-         {(!currentAIPrompt?.ok||!currentAIPrompt.currentProjectImportReady)&&
-           <p role="status">First prepare a privacy-safe prompt for a
-             backend-compatible draft. Unknown formats still require manual review.</p>}
-         {aiProvider.status==='DISABLED'&&<p role="status">
-           Integrated AI is disabled or not authorized. Manual Copy AI Prompt
-           and Paste AI Recipe remain available without automatic transfer.
-         </p>}
-         {aiProvider.status==='ERROR'&&<p role="status">
-           AI capability was not verified. No provider request can be sent.
-         </p>}
-         {aiProvider.status==='AVAILABLE'&&<>
-           <p>Configured provider: {aiProvider.capability.providerId}
-             {' · '}Model: {aiProvider.capability.modelId}
-             {' · '}Maximum output token reservation:
-             {' '}{aiProvider.capability.maxOutputTokens} (not a price quote)</p>
-           <label className="auto-parser-persist-label">
-             <input type="checkbox" checked={aiExternalConsent}
-               onChange={e=>{
-                 setAIExternalConsent(e.target.checked);setAIReviewed(null);
-               }}/>
-             I explicitly approve transferring ONLY source digest, project identifier,
-             event counts and format-family metadata to the configured external
-             provider. No raw logs or values.
-           </label>
-           <label className="auto-parser-persist-label">
-             <input type="checkbox" checked={aiBudgetConsent}
-               onChange={e=>{setAIBudgetConsent(e.target.checked);setAIReviewed(null);}}/>
-             I separately accept reserving up to
-             {' '}{aiProvider.capability.maxOutputTokens} output tokens against the
-             server-managed quota. Actual provider cost may differ.
-           </label>
-           <button type="button" disabled={!aiExternalConsent||!aiBudgetConsent||
-             busy||pending||!suite} onClick={()=>{void proposeIntegratedAI();}}>
-             Request Metadata-Only Reviewed AI Candidate
-           </button>
-         </>}
-         {aiProviderNotice&&<p role="status">{aiProviderNotice}</p>}
-         {currentAIReviewed&&<div role="status" aria-label="Reviewed integrated AI candidate">
-           <strong>External metadata-only proposal · REVIEW_ONLY</strong>
-           <span>Provider {currentAIReviewed.providerId}
-             {' · '}Output tokens {currentAIReviewed.usage.outputTokens}/
-             {currentAIReviewed.usage.reservedOutputTokens} reserved</span>
-           <span>Native parser and Stellar target NOT VERIFIED. Nothing was
-             applied to your parser. Inspect and import using the existing
-             local schema/holdout review steps below.</span>
-           <button type="button" onClick={()=>{
-             setAIText(JSON.stringify(currentAIReviewed.recipe,null,2));
-             setAIImport(null);
-             setAIProviderNotice('The candidate is copied into the local Paste AI Recipe field. Run independent validation and holdout review; nothing is applied.');
-           }}>Copy Candidate into Local Recipe Review</button>
-         </div>}
-       </details>
-       <label>Optional simple JSONata-compatible property path only (no functions or expressions)
-         <input type="text" aria-label="Safe JSONata-style field path" maxLength={128}
-           value={boundedPath} placeholder="$.event.user" onChange={e=>setBoundedPath(e.target.value)}/>
-       </label>
-       <button type="button" disabled={!boundedPath.trim()||busy||pending||!suite}
-         onClick={()=>{void compareSimplePath();}}>Compare Safe Field Path with Holdout</button>
-       <p>Only eight or fewer dot-separated property names are supported.
-         No general JSONata, Regex or Ruby is executed. Full-sample comparison,
-         independent holdout and explicit approval are required before use.</p>
-       <label>Paste a v0.2 JSON recipe suggested by an external assistant (maximum 32 KiB)
-         <textarea aria-label="Pasted AI review-only recipe" rows={5} spellCheck={false}
-           maxLength={32768} value={aiText} onChange={e=>{
-             setAIText(e.target.value);setAIImport(null);}}/>
-       </label>
-       <button type="button" disabled={!aiText.trim()||busy||pending||!suite}
-         onClick={()=>{void reviewAIImport();}}>Validate AI Recipe for Review Only</button>
-       {currentAIImport&&(currentAIImport.ok
-         ? <div role="status" aria-label="Validated AI recipe review">
-           <strong>REVIEW_ONLY · Explicit user approval required</strong>
-           <span>{currentAIImport.report.sampleEvents} original events ·
-             {currentAIImport.report.changedStageCount} changed stages ·
-             {currentAIImport.report.addedMappings} new mappings ·
-             {currentAIImport.report.removedMappings} removed mappings</span>
-           <span>v0.2 backend compiler NOT AVAILABLE. No recipe imported into parser
-             rules or sent to the backend. Review unsupported operations in Edit Details.</span>
-           <button type="button" disabled={busy||pending||!suite}
-             onClick={()=>{void compareImportedAIMapping();}}>
-             Compare One Compatible AI Mapping with Holdout
-           </button>
-           <span>Only a single additive, compatible v0.1 field mapping can be
-             considered; the independent holdout and user approval are required in
-             Full-sample regression. Other AI stage changes remain review-only.</span>
-         </div>
-         : <p role="status">AI recipe rejected: {currentAIImport.reason}. No rules changed.</p>)}
-     </details>
      {message&&<p role="alert" className="auto-parser-warning"><ShieldAlert size={16}/> {message}</p>}
    </div>
  </main>;

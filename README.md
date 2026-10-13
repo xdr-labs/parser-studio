@@ -1,60 +1,43 @@
-# Parser Studio
+# Parser Studio 2.0
 
-Independent, version-neutral log parser workbench for Stellar Cyber and Fluentd-compatible pipelines.
+**Status:** English-only Parser Studio with exactly two user-facing creation methods, a strict backend-generated Ruby + CONF draft path, and independent approval gates. No proprietary Stellar target import or real DP/sensor E2E is claimed.
 
-> **Status: R2 no-code Guided Builder (default) and optional Expert Workbench implemented and browser tested. The R1.5 compiler is owned by a separate backend session. Native Fluentd execution, Stellar export and target import remain NOT VERIFIED.**
+## Only two parser creation methods
 
-## Product goal
+**Auto Parser:** Paste or upload representative logs → automatically recognize supported formats → review extracted/normalized fields → optionally adjust the mappings in the same review screen → test the complete sample → generate the extensionless Ruby and CONF DRAFT files with SHA-256 verification.
 
-Replace the frustrating authoring workflow of Stellar Cyber Parser Studio with a practical web workbench:
+**ChatGPT Assisted Parser:** Enter source logs locally and desired fields → manually redact and approve the examples for ChatGPT → copy the privacy-reviewed prompt yourself → paste the suggested ParserRecipe v0.2 JSON back into Parser Studio → validate its source digest, schema and safe operations → compare any single added mapping against independent holdout data → explicitly approve → generate the same SHA-verified Ruby and CONF DRAFT pair.
 
-1. Paste or upload many real raw log events; classify formats and split multi-line events.
-2. Visually extract fields and build ordered parsing / transformation rules.
-3. Map results to a version-neutral Stellar Cyber / Interflow field model.
-4. Compare raw → extracted → normalized events live, explain failures event by event.
-5. Execute reproducible Fluentd-compatible parser tests and regression suites.
-6. Export only formats proven compatible with their intended runtime; retain portable project files and test evidence.
+**The old six-step Wizard, three-pane Workbench, and their entry points are retired from the v2.0 product UI.** Legacy workspace URLs do not reopen them. Their safe extraction, field mapping, browser worker, revision and code-generation libraries can still be reused internally. No Expert Mode or Advanced Wizard is presented as a third authoring path.
 
-**Version-neutral** means the editor, internal model and regression tests do not require selecting a Stellar Cyber release. It **does not** mean a single undocumented config format will load unchanged into every release. Export adapters are capability-tested against actual parser examples and target environments.
+The current ChatGPT path can compile an unchanged canonical supported recipe or **one independently verified additive field mapping**. Arbitrary Ruby, Regex/JSONata execution, unsupported transformations and source formats without a native parser remain rejected rather than misrepresented as deployable outputs. The user sees a review/unsupported message in these cases.
 
-## Canonical documents
+### Data privacy and authorization
 
-- [01 — Product vision & scope](docs/01_PRODUCT_VISION.md)
-- [02 — Web UI/UX specification](docs/02_WEB_UI_SPEC.md)
-- [03 — Functional requirements](docs/03_FUNCTIONAL_REQUIREMENTS.md)
-- [04 — Architecture, compatibility and security](docs/04_ARCHITECTURE.md)
-- [05 — Competitor research and design rationale](docs/05_COMPETITOR_RESEARCH.md)
-- [06 — Roadmap and acceptance criteria](docs/06_ROADMAP_AND_ACCEPTANCE.md)
-- [07 — Competitive product comparison, license survey and gap matrix](docs/07_COMPETITOR_RESEARCH_AND_GAP.md)
-- [08 — Web UI design decisions and acceptance](docs/08_UI_DESIGN_DECISIONS.md)
-- [10 — Guided Builder UI-to-backend integration contract](docs/10_GUIDED_UI_BACKEND_HANDOFF.md)
+Raw source logs stay in the browser during standard analysis. The ChatGPT prompt contains fixed source metadata (event count, source digest and reviewed format labels), an optional declarative schema-owned reference recipe, and **only log examples that the user manually redacted and explicitly approved**. There is no automatic prompt transfer, OpenAI API credential collection, or provider call. Inspect the copyable prompt before sharing it.
 
-## Current scope
+Files are DRAFTs and not evidence of a running parser. Version history, ZIP download and mock-only apply appear after a verified generation, not as separate creation methods. Real DP Apply, Sensor Replay and Interflow verification require independent backend authorization and target evidence and remain NOT VERIFIED. The protected development preview blocks unsafe target-mutating routes.
 
-- This repository belongs to **xdr-labs** and follows [datarelay-labs/engineering-system](https://github.com/datarelay-labs/engineering-system).
-- The default screen is a six-step English-only Guided Builder: samples → visual field creation → typed normalization → receiver and classification → tests → guarded artifact handoff. Expert Workbench remains optional. They share one draft and session-local sample logs.
-- **Export:** only a JSON draft is available. Fluentd `.conf` and Stellar parser export are deliberately disabled until native/target evidence is provided.
-- Original customer logs, exports and credentials must never be committed by default.
-- The separate docs session conducted a read-only inventory of real `.conf` / extensionless Ruby reference pairs. Real fixture behavior, native loader assembly and target import remain unverified. Prior GitHub Chromium browser 9/9 PASS was recorded in [Actions run 38153121808](https://github.com/xdr-labs/parser-studio/actions/runs/38153121808) for commit `d751252`; new Guided Builder tests must also pass on the target PR HEAD before release.
+### Backend and tests
 
-## Non-goals
+The backend owns the validated ParserProject v0.1 compiler, the strict ParserRecipe v0.2 staged equivalence, source-bound SHA receipts, and bounded Ruby3.2/Fluentd1.17.1 public-synthetic Native qualifications, including explicitly TCP-framed Java exception traces. Mixed parser routing is limited to 2–4 chosen reviewed families, and sensor/CONF listener ports are the same. Syslog ports are at least 6800.
 
-No modification of Stellar Cyber production sensors, ingestion rules, tenant settings or deployment without separate owner approval. No claims of 100% vendor-version compatibility without target evidence. No copying competitor-proprietary source code or graphical assets.
+A single ChatGPT Chat session owns Web UI, backend, integration tests, the roadmap and two Draft PRs.
 
+- [Final two-path UI and acceptance](docs/14_TWO_PATH_PRODUCT_V2.md)
+- [Original roadmap and acceptance; overridden for UI by v2.0](docs/06_ROADMAP_AND_ACCEPTANCE.md)
+- [Issue #1 and ACTIVE Work Packet](https://github.com/xdr-labs/parser-studio/issues/1)
+- [Web UI Draft PR #7](https://github.com/xdr-labs/parser-studio/pull/7)
+- [Backend Draft PR #4](https://github.com/xdr-labs/parser-studio/pull/4)
 
-## Local Web Workbench (development)
+Development commands: npm ci; npm run dev; npm test; npm run build; npm run test:browser.
 
-```bash
-npm ci
-npm run dev
-npm test
-npm run build
-npm run test:browser  # Chromium and native libs required
-```
+Historical Chromium suites relying on the retired Wizard/Workbench are preserved under tests/legacy-removed-ui as a migration inventory; **they are not reported as green/current tests**. The updated Chromium suite exercises the two real user methods, and the backend's independent synthetic Native tests protect generation.
 
-To test actual browser flows, install Playwright's Chromium and required system libraries, then use `npm run test:browser`. On a development host with an already installed browser, set `PARSER_STUDIO_BROWSER_EXECUTABLE` to its executable path. **A successful unit test or browser-only preview is not native Fluentd evidence.**
+## English-only Parser Studio
 
-Current browser preview is intentionally limited to 64 KiB and 500 nonblank, single-line events; format recognition/extraction remains a **subset** (JSON, KV, CSV, RFC5424, named-group regex). No real Stellar parser file has yet been imported. The only allowed export is a portable **unverified** draft JSON without customer sample content.
+All UI text, source, documentation, comments and tests must be written in English.
 
-**Source artifact boundary:** `/opt/td-agent/etc/td-agent/customized_parser` on `rickmodular` contains owner parser reference pairs. The separate authorized documentation inventory is described in Draft PR #2. Neither this UI branch nor the separate backend is allowed to modify live `td-agent`, copy proprietary raw sources into Git or assert upload compatibility without native evidence.
-\n## Language\n\nThe application and all project-authored code, UI copy, diagnostics, tests, and documentation are **English only** as directed by the project owner (October 12, 2026). The English-only test prevents new non-English literals from entering tracked source and documentation.\n
+## Release boundary
+
+No actual sensor traffic, production DP change, external AI provider connection, PR merge or release without separate operator authorization and target-specific evidence.
