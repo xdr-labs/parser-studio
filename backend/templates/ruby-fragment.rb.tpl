@@ -324,9 +324,30 @@ def parserstudio_mixed(text, settings)
       'cef'
     elsif text.start_with?('LEEF:')
       'leef'
+    elsif text.start_with?('<')
+      # Reuse the existing strict RFC5424 parser, including PRI/version,
+      # bounded header, RFC3339 time and structured-data grammar. Dispatch
+      # only when the payload starts with an explicitly reviewed family.
+      'rfc5424_envelope'
     elsif text.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
       'kv'
     end
+  if family == 'rfc5424_envelope'
+    # Parsing with the raw body mode is the single authoritative header and
+    # SD validation. Never route malformed Syslog as generic KV/CEF fallback.
+    syslog = parserstudio_syslog_rfc5424(text, {'syslogBodyFormat'=>'raw'})
+    message = syslog.delete('message')
+    branch = if message && message.start_with?('CEF:')
+      'rfc5424_cef'
+    elsif message && message.start_with?('LEEF:')
+      'rfc5424_leef'
+    end
+    raise ArgumentError, 'Unsupported or disallowed wrapped Syslog family' unless
+      branch && allowlist.include?(branch)
+    syslog['body'] = branch == 'rfc5424_cef' ?
+      parserstudio_cef(message) : parserstudio_leef(message)
+    return syslog
+  end
   raise ArgumentError, 'Unknown or disallowed mixed event family' unless
     family && allowlist.include?(family)
   case family

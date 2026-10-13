@@ -44,7 +44,7 @@ end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
 allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
-  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks]
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -106,7 +106,8 @@ allowed.each do |slug|
       'native TCP blank-line framing must be exactly LF LF and opt-in')
   end
   sources.each do |source|
-    assert(source['port'] == '7501' && source['tag'] == name &&
+    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : '7501'
+    assert(source['port'] == expected_port && source['tag'] == name &&
       source.elements.size == 1 && source.elements.first['@type'] == name,
       'generated receiver port and parser registration mismatch')
   end
@@ -120,6 +121,8 @@ fixture['profiles'].each do |item|
   assert(item.fetch('raw').bytesize <= 16384, 'golden event over limit')
   digest_source = if slug == 'v02_mixed'
     ([item['raw']] + fixture.fetch('mixedCases').map { |row| row.fetch('raw') }).join("\n")
+  elsif slug == 'v02_mixed_rfc5424'
+    ([item['raw']] + fixture.fetch('mixedSyslogCases').map { |row| row.fetch('raw') }).join("\n")
   elsif slug == 'v02_json_blanks'
     ([item['raw']] + fixture.fetch('blankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
   else
@@ -143,6 +146,44 @@ fixture['profiles'].each do |item|
   end
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
+end
+# Explicit RFC5424 CEF/LEEF wrapped mixed variant. Native parser callbacks
+# must normalize each distinct family, preserve timestamp and reject every
+# unsupported/invalid wrapper with a STATIC extraction error (no raw echo).
+assert(fixture['mixedSyslogCases'].is_a?(Array) &&
+  fixture['mixedSyslogCases'].length == 3,'missing wrapped mixed golden events')
+fixture['mixedSyslogCases'].each do |item|
+  assert(item.keys.sort == %w[expectedRecord expectedTime id raw slug] &&
+    item['slug'] == 'v02_mixed_rfc5424' && item['raw'].bytesize <= 16384,
+    'untrusted wrapped mixed golden source')
+  output=[]
+  drivers.fetch(item.fetch('slug')).instance.parse(item.fetch('raw')) do |time,record|
+    output << [time,record]
+  end
+  actual_time=if output[0] && output[0][0].respond_to?(:to_time)
+    output[0][0].to_time.utc.iso8601
+  else
+    nil
+  end
+  assert(output.length == 1 && actual_time == item['expectedTime'] &&
+    output[0][1] == item.fetch('expectedRecord'),
+    "Wrapped mixed #{item['id']}: native parser normalized record mismatched")
+end
+assert(fixture['mixedSyslogNegative'].is_a?(Array) &&
+  fixture['mixedSyslogNegative'].length == 8,
+  'expected bounded invalid RFC5424/mixed corpus')
+fixture['mixedSyslogNegative'].each do |item|
+  assert(item.keys.sort == %w[id raw slug] &&
+    item['slug'] == 'v02_mixed_rfc5424' && item['raw'].bytesize <= 16384,
+    'untrusted wrapped mixed negative source')
+  emitted=[]
+  drivers.fetch(item.fetch('slug')).instance.parse(item.fetch('raw')) do |time,record|
+    emitted << [time,record]
+  end
+  assert(emitted.length == 1 && emitted[0][0].nil? &&
+    emitted[0][1] == {'stellar_log_index'=>'syslog',
+      'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
+    "Wrapped mixed #{item['id']}: input must fail closed")
 end
 # Explicitly framed, newline-embedded public-synthetic JSON events. This
 # uses the exact delimiter parsed from the native Fluentd CONF. The suite does
@@ -217,4 +258,4 @@ fixture['negative'].each do |item|
       'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
     "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
 end
-puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives and two TCP blank-line JSON fragments PASS (public synthetic only)"
+puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives and two TCP blank-line JSON fragments PASS (public synthetic only)"

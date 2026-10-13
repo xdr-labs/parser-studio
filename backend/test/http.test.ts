@@ -113,7 +113,7 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(info.authoring.jsonBlankLineTcpFraming,true);
    assert.equal(info.authoring.jsonBlankLineOtherTransports,false);
    assert.equal(info.authoring.jsonBlankLineDelimiter,'LF_LF');
-   assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef']);
+   assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef','rfc5424_cef','rfc5424_leef']);
    assert.equal(info.authoring.strictMixedRequiresExplicitAllowlist,true);
    assert.equal(info.authoring.rfc3164StrictTaggedMessageSubset,true);
    assert.equal(info.authoring.rfc3164TimePolicy,"YEAR_AND_ZONE_UNKNOWN");

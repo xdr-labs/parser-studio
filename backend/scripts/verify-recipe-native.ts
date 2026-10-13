@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -44,11 +44,19 @@ const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
   negative:Array<{id:string;slug:string;raw:string}>;
   mixedCases:Array<{id:string;slug:string;raw:string}>;
   mixedNegative:Array<{id:string;slug:string;raw:string}>;
+  mixedSyslogCases:Array<{id:string;slug:string;raw:string}>;
+  mixedSyslogNegative:Array<{id:string;slug:string;raw:string}>;
   blankLineCases:Array<{id:string;slug:string;raw:string;
      expectedTime:string|null;expectedRecord:Record<string,unknown>}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==12||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==13||
+ !Array.isArray(samples.mixedSyslogCases)||samples.mixedSyslogCases.length!==3||
+ samples.mixedSyslogCases.some(e=>e.slug!=='v02_mixed_rfc5424'||
+   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
+ !Array.isArray(samples.mixedSyslogNegative)||samples.mixedSyslogNegative.length!==8||
+ samples.mixedSyslogNegative.some(e=>e.slug!=='v02_mixed_rfc5424'||
+   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
  !Array.isArray(samples.blankLineCases)||samples.blankLineCases.length!==1||
  samples.blankLineCases.some(x=>x.id!=='second_pretty_json'||
   x.slug!=='v02_json_blanks'||typeof x.raw!=='string'||
@@ -87,10 +95,27 @@ function buildProject(entry:Profile):ParserProject{
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
-  ...(entry.format==='mixed'?{mixedFormats:['json','kv','cef','leef'] as const}:{}),
+  ...(entry.format==='mixed'?{mixedFormats:entry.slug==='v02_mixed_rfc5424'?
+    ['json','kv','rfc5424_cef','rfc5424_leef'] as const:
+    ['json','kv','cef','leef'] as const}:{}),
   ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
     {syslogBodyFormat:entry.bodyFormat}:{})};
- if(entry.format==='mixed'){
+ if(entry.slug==='v02_mixed_rfc5424'){
+  p.receiver.port=6801;
+  p.normalization.topFields=Object.fromEntries([
+   field('src_ip','srcip','ip'),field('dst_port','dstport','port'),
+   field('action','action','string'),field('body.src','wrapped_src','ip'),
+   field('body.dpt','wrapped_cef_port','port'),field('body.dstPort','wrapped_leef_port','port'),
+   field('body.act','wrapped_action','string'),field('syslog_timestamp','timestamp','date'),
+  ]) as FieldMap;
+  p.normalization.nsFields={};p.normalization.vendorFields={};
+  p.classification.rules=[
+   {field:'action',operator:'equals',value:'deny',index:'threat'},
+   {field:'action',operator:'equals',value:'allow',index:'session'},
+   {field:'wrapped_action',operator:'equals',value:'deny',index:'threat'},
+   {field:'wrapped_action',operator:'equals',value:'allow',index:'session'},
+  ];
+ }else if(entry.format==='mixed'){
   p.normalization.topFields=Object.fromEntries([
    field('src_ip','srcip','ip'),field('dst_port','dstport','port'),
    field('action','action','string'),field('src','cef_src','ip'),
@@ -134,8 +159,10 @@ for(const entry of samples.profiles){
  if(typeof entry.raw!=='string'||Buffer.byteLength(entry.raw)>16384)
   throw new Error('Source fixture exceeds bound');
  const p=buildProject(entry);
- const sampleRows=[entry.raw,...(entry.format==='mixed'?
+ const sampleRows=[entry.raw,...(entry.slug==='v02_mixed'?
    samples.mixedCases.map(x=>x.raw):[]),
+   ...(entry.slug==='v02_mixed_rfc5424'?
+    samples.mixedSyslogCases.map(x=>x.raw):[]),
    ...(entry.transport==='blank_line_json'?
     samples.blankLineCases.map(x=>x.raw):[])];
  const digest=sha(sampleRows.join(entry.transport==='blank_line_json'?

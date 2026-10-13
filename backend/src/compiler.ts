@@ -88,6 +88,9 @@ export function compilePair(input: unknown): PairExport {
         "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
         project.receiver.tcpFraming==="blank_line_json"
           ? "Only explicitly TCP blank-line-framed JSON is supported for multiline input; general multiline and mixed Syslog remain unsupported."
+          : project.extraction.format==="mixed"&&
+            project.extraction.mixedFormats?.some(f=>f==="rfc5424_cef"||f==="rfc5424_leef")
+          ? "Only explicitly allowlisted RFC5424-wrapped CEF/LEEF mixed events are supported; RFC3164 mixing, arbitrary Syslog/CSV mixing and unframed multiline remain unsupported."
           : "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
         "No production deployment or live sensor installation has occurred.",
       ],

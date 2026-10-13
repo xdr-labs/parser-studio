@@ -141,7 +141,9 @@
                     "json",
                     "kv",
                     "cef",
-                    "leef"
+                    "leef",
+                    "rfc5424_cef",
+                    "rfc5424_leef"
                   ]
                 }
               },
