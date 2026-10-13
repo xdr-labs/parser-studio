@@ -20,7 +20,7 @@ function emitSource(project: ParserProject, protocol: "udp" | "tcp"): string {
   ];
   if (protocol === "tcp") lines.push("  @include /etc/td-agent/transport_settings.conf");
   lines.push("  <parse>", "    @type " + type, "  </parse>");
-  if(protocol==="tcp"&&project.receiver.tcpFraming==="blank_line_json"){
+  if(protocol==="tcp"&&["blank_line_json","blank_line_java"].includes(project.receiver.tcpFraming)){
     // Fluentd Config.parse decodes the fixed double-quoted LF LF escapes.
     // Never concatenate a caller-specified delimiter here.
     lines.push('  delimiter "\\n\\n"');
@@ -88,6 +88,8 @@ export function compilePair(input: unknown): PairExport {
         "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
         project.receiver.tcpFraming==="blank_line_json"
           ? "Only explicitly TCP blank-line-framed JSON is supported for multiline input; general multiline and mixed Syslog remain unsupported."
+          : project.receiver.tcpFraming==="blank_line_java"
+          ? "Only explicitly TCP LF LF framed bounded Java exception stack traces are supported; arbitrary Java formats, UDP and unframed multiline remain unsupported."
           : project.extraction.format==="mixed"&&
             project.extraction.mixedFormats?.some(f=>f==="rfc3164_cef"||f==="rfc3164_leef")
           ? "Strict RFC3164 CEF/LEEF mixed requires explicit allowlist; year and timezone remain unknown and all unreviewed bodies and multiline remain unsupported."

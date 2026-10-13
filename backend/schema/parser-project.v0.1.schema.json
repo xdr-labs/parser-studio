@@ -99,7 +99,8 @@
           "enum": [
             "line",
             "delimiter",
-            "blank_line_json"
+            "blank_line_json",
+            "blank_line_java"
           ]
         },
         "delimiter": {
@@ -126,7 +127,8 @@
             "syslog_rfc5424",
             "cef",
             "leef",
-            "mixed"
+            "mixed",
+            "java_stacktrace"
           ]
         },
         "maxDepth": {

@@ -101,7 +101,7 @@ test("capabilities API must truthfully advertise only supported and verified bac
    const info=await response.json() as any;
    assert.equal(info.contract,"host-customized-pair.v0.1");
    assert.deepEqual(info.authoring.receiverProtocols,["udp","tcp"]);
-   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc3164","syslog_rfc5424","cef","leef","mixed"]);
+   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc3164","syslog_rfc5424","cef","leef","mixed","java_stacktrace"]);
    assert.equal(info.authoring.httpReceiver,false);
    assert.equal(info.authoring.multipleDistinctReceiverPorts,false);
    assert.equal(info.authoring.formatCoverage,"reviewed-bounded-subset");
@@ -113,6 +113,10 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(info.authoring.jsonBlankLineTcpFraming,true);
    assert.equal(info.authoring.jsonBlankLineOtherTransports,false);
    assert.equal(info.authoring.jsonBlankLineDelimiter,'LF_LF');
+   assert.equal(info.authoring.javaBlankLineTcpFraming,true);
+   assert.equal(info.authoring.javaBlankLineOtherTransports,false);
+   assert.equal(info.authoring.javaBlankLineDelimiter,'LF_LF');
+   assert.equal(info.authoring.javaStackTraceGrammar,'EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1');
    assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef']);
    assert.equal(info.authoring.strictMixedRequiresExplicitAllowlist,true);
    assert.equal(info.authoring.rfc3164StrictTaggedMessageSubset,true);

@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164','v02_mixed_rfc5424_bodies','v02_mixed_rfc3164_cefleef'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164','v02_mixed_rfc5424_bodies','v02_mixed_rfc3164_cefleef','v02_java_blanks'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -36,7 +36,7 @@ function writeTrusted(path:string,value:string){
  try{writeFileSync(fd,value,{encoding:'utf8'});}finally{closeSync(fd);}
 }
 type Profile={slug:string;format:ParserProject['extraction']['format'];
- transport?:'blank_line_json';
+ transport?:'blank_line_json'|'blank_line_java';
  bodyFormat?:'kv'|'cef'|'leef';raw:string;expectedTime:string|null;
  expectedRecord:Record<string,unknown>};
 const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
@@ -52,11 +52,20 @@ const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
   mixedRfc5424BodyNegative:Array<{id:string;slug:string;raw:string}>;
   mixedRfc3164WrappedCases:Array<{id:string;slug:string;raw:string}>;
   mixedRfc3164WrappedNegative:Array<{id:string;slug:string;raw:string}>;
+  javaBlankLineCases:Array<{id:string;slug:string;raw:string;
+     expectedTime:string|null;expectedRecord:Record<string,unknown>}>;
+  javaBlankLineNegative:Array<{id:string;slug:string;raw:string}>;
   blankLineCases:Array<{id:string;slug:string;raw:string;
      expectedTime:string|null;expectedRecord:Record<string,unknown>}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==16||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==17||
+ !Array.isArray(samples.javaBlankLineCases)||samples.javaBlankLineCases.length!==1||
+ samples.javaBlankLineCases.some(e=>e.slug!=='v02_java_blanks'||e.id!=='second_stacktrace'||
+  typeof e.raw!=='string'||e.raw.length>8192)||
+ !Array.isArray(samples.javaBlankLineNegative)||samples.javaBlankLineNegative.length!==9||
+ samples.javaBlankLineNegative.some(e=>e.slug!=='v02_java_blanks'||
+  typeof e.raw!=='string'||e.raw.length>8192||!/^[a-z0-9_]+$/.test(e.id))||
  !Array.isArray(samples.mixedRfc3164WrappedCases)||samples.mixedRfc3164WrappedCases.length!==3||
  samples.mixedRfc3164WrappedCases.some(e=>e.slug!=='v02_mixed_rfc3164_cefleef'||
   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
@@ -109,13 +118,15 @@ function buildProject(entry:Profile):ParserProject{
  const p=sampleProject();
  p.projectId='draft-'+entry.slug;p.slug=entry.slug;
  p.receiver.port=7501;
- if(entry.transport==='blank_line_json'){
-   if(entry.slug!=='v02_json_blanks'||entry.format!=='json')
+ if(entry.transport==='blank_line_json'||entry.transport==='blank_line_java'){
+   if((entry.slug!=='v02_json_blanks'||entry.format!=='json')&&
+      (entry.slug!=='v02_java_blanks'||entry.format!=='java_stacktrace'))
      throw new Error('Native blank-line framing fixture mismatch');
    p.receiver.protocols=['tcp'];
    p.receiver.bindAddress='127.0.0.1';
-   p.receiver.tcpFraming='blank_line_json';
+   p.receiver.tcpFraming=entry.transport;
  }
+ if(entry.slug==='v02_java_blanks')p.receiver.messageLengthLimit=8192;
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
@@ -130,7 +141,18 @@ function buildProject(entry:Profile):ParserProject{
       ['json','kv','cef','leef'] as const}:{}),
   ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
     {syslogBodyFormat:entry.bodyFormat}:{})};
- if(entry.slug==='v02_mixed_rfc3164_cefleef'){
+ if(entry.slug==='v02_java_blanks'){
+  p.receiver.port=7510;
+  p.normalization.topFields={
+   'exception_class':{normalized_name:'exception_class',data_type:'string'},
+   'frame_count':{normalized_name:'frame_count',data_type:'integer'},
+   'cause_class':{normalized_name:'cause_class',data_type:'string'},
+  };
+  p.normalization.nsFields={};p.normalization.vendorFields={};
+  p.classification.rules=[{
+    field:'exception_class',operator:'equals',
+    value:'java.lang.IllegalStateException',index:'threat'}];
+ }else if(entry.slug==='v02_mixed_rfc3164_cefleef'){
   p.receiver.port=6804;
   p.normalization.topFields=Object.fromEntries([
    field('src_ip','srcip','ip'),field('action','action','string'),
@@ -245,8 +267,11 @@ for(const entry of samples.profiles){
    ...(entry.slug==='v02_mixed_rfc3164_cefleef'?
     samples.mixedRfc3164WrappedCases.map(x=>x.raw):[]),
    ...(entry.transport==='blank_line_json'?
-    samples.blankLineCases.map(x=>x.raw):[])];
- const digest=sha(sampleRows.join(entry.transport==='blank_line_json'?
+    samples.blankLineCases.map(x=>x.raw):[]),
+   ...(entry.transport==='blank_line_java'?
+    samples.javaBlankLineCases.map(x=>x.raw):[])];
+ const digest=sha(sampleRows.join(
+   ['blank_line_json','blank_line_java'].includes(entry.transport??'')?
    '\n\n':'\n'));
  const recipe=recipeFromLegacyProject(p,digest,sampleRows.length);
  const compiled=compileRecipePair({recipe,legacyProject:p});

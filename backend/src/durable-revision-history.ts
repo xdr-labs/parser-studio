@@ -70,6 +70,12 @@ const REVIEWED_WARNINGS=[
   "No production deployment or live sensor installation has occurred.",
 ];
 // Exact compiler-owned warning set for explicit TCP blank-line JSON frames.
+const JAVA_LF_LF_REVIEWED_WARNINGS=[
+  "An extensionless Ruby fragment is not a self-registered Fluentd plugin.",
+  "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
+  "Only explicitly TCP LF LF framed bounded Java exception stack traces are supported; arbitrary Java formats, UDP and unframed multiline remain unsupported.",
+  "No production deployment or live sensor installation has occurred.",
+];
 const RFC3164_CEF_LEEF_MIXED_REVIEWED_WARNINGS=[
   "An extensionless Ruby fragment is not a self-registered Fluentd plugin.",
   "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
@@ -112,7 +118,7 @@ function safePair(value:unknown):value is PairExport{
      !exact(value.manifest,["status","contract","projectId","projectRevision",
        "fileHashes","schemaRevision","engineVerified","targetImportVerified","warnings"])||
      !Array.isArray(value.manifest.warnings)||
-     ![REVIEWED_WARNINGS,RFC3164_CEF_LEEF_MIXED_REVIEWED_WARNINGS,RFC5424_JSON_KV_MIXED_REVIEWED_WARNINGS,RFC3164_MIXED_REVIEWED_WARNINGS,RFC5424_MIXED_REVIEWED_WARNINGS,BLANKLINE_JSON_REVIEWED_WARNINGS,RFC3164_REVIEWED_WARNINGS,PREVIOUS_REVIEWED_WARNINGS].some(known=>
+     ![REVIEWED_WARNINGS,JAVA_LF_LF_REVIEWED_WARNINGS,RFC3164_CEF_LEEF_MIXED_REVIEWED_WARNINGS,RFC5424_JSON_KV_MIXED_REVIEWED_WARNINGS,RFC3164_MIXED_REVIEWED_WARNINGS,RFC5424_MIXED_REVIEWED_WARNINGS,BLANKLINE_JSON_REVIEWED_WARNINGS,RFC3164_REVIEWED_WARNINGS,PREVIOUS_REVIEWED_WARNINGS].some(known=>
        JSON.stringify((value.manifest as {warnings:unknown}).warnings)===JSON.stringify(known)))
     return false;
   return true;

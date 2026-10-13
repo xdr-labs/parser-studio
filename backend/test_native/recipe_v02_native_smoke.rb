@@ -44,7 +44,7 @@ end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
 allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
-  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424 v02_mixed_rfc3164 v02_mixed_rfc5424_bodies v02_mixed_rfc3164_cefleef]
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424 v02_mixed_rfc3164 v02_mixed_rfc5424_bodies v02_mixed_rfc3164_cefleef v02_java_blanks]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -95,18 +95,18 @@ allowed.each do |slug|
   conf = original.lines.reject { |line| line.strip == include_line.strip }.join
   parsed = Fluent::Config.parse(conf, File.join(root, conf_name), root, true)
   sources = parsed.elements.select { |x| x.name == 'source' }
-  expected_protocols = slug == 'v02_json_blanks' ? %w[tcp] : %w[tcp udp]
+  expected_protocols = %w[v02_json_blanks v02_java_blanks].include?(slug) ? %w[tcp] : %w[tcp udp]
   assert(sources.length == expected_protocols.length &&
     sources.map { |x| x['@type'] }.sort == expected_protocols,
     'receiver protocol mismatch')
-  if slug == 'v02_json_blanks'
+  if %w[v02_json_blanks v02_java_blanks].include?(slug)
     assert(sources.first['delimiter'] == "\n\n" &&
       sources.first['bind'] == '127.0.0.1' &&
       !conf.include?('is_delimiter_part_of_log'),
       'native TCP blank-line framing must be exactly LF LF and opt-in')
   end
   sources.each do |source|
-    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : slug == 'v02_mixed_rfc5424_bodies' ? '6803' : slug == 'v02_mixed_rfc3164_cefleef' ? '6804' : '7501'
+    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : slug == 'v02_mixed_rfc5424_bodies' ? '6803' : slug == 'v02_mixed_rfc3164_cefleef' ? '6804' : slug == 'v02_java_blanks' ? '7510' : '7501'
     assert(source['port'] == expected_port && source['tag'] == name &&
       source.elements.size == 1 && source.elements.first['@type'] == name,
       'generated receiver port and parser registration mismatch')
@@ -131,6 +131,8 @@ fixture['profiles'].each do |item|
     ([item['raw']] + fixture.fetch('mixedRfc3164WrappedCases').map { |row| row.fetch('raw') }).join("\n")
   elsif slug == 'v02_json_blanks'
     ([item['raw']] + fixture.fetch('blankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
+  elsif slug == 'v02_java_blanks'
+    ([item['raw']] + fixture.fetch('javaBlankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
   else
     item['raw']
   end
@@ -153,6 +155,46 @@ fixture['profiles'].each do |item|
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
 end
+# Fixed Java stack traces are LF LF framed by the validated Native CONF
+# source, not magically reassembled from generic UDP or raw per-line input.
+assert(fixture['javaBlankLineCases'].is_a?(Array)&&fixture['javaBlankLineCases'].length==1,
+ 'missing second fixed Java exception')
+java_first=fixture['profiles'].find { |v| v['slug']=='v02_java_blanks' }
+java_second=fixture['javaBlankLineCases'].first
+assert(java_first && java_first['transport']=='blank_line_java'&&
+  java_first['format']=='java_stacktrace'&&java_first['raw'].include?("\n")&&
+  !java_first['raw'].include?("\n\n"),'invalid primary Java framing fixture')
+assert(java_second['slug']=='v02_java_blanks'&&
+  java_second['raw'].include?("\n")&&!java_second['raw'].include?("\n\n"),
+  'invalid secondary Java framing fixture')
+frames=[java_first['raw'],java_second['raw']].join("\n\n")+"\n\n"
+parts=frames.split("\n\n").reject(&:empty?)
+assert(parts.length==2, 'Native Java fixed LF LF boundary must account for both events')
+parts.each_with_index do |part,i|
+  expected=i==0 ? java_first : java_second
+  result=[]
+  drivers.fetch('v02_java_blanks').instance.parse(part) do |time,record|
+    result<<[time,record]
+  end
+  assert(result.length==1&&result[0][0].nil?&&
+    result[0][1]==expected.fetch('expectedRecord'),
+    'Native Java callback did not normalize a bounded LF LF record')
+end
+assert(fixture['javaBlankLineNegative'].is_a?(Array)&&
+  fixture['javaBlankLineNegative'].length==9,'missing Native Java fail-closed samples')
+fixture['javaBlankLineNegative'].each do |item|
+  assert(item.keys.sort==%w[id raw slug]&&item['slug']=='v02_java_blanks'&&
+    item['raw'].bytesize<=8192,'unreviewed Java error case')
+  out=[]
+  drivers.fetch('v02_java_blanks').instance.parse(item['raw']) do |time,record|
+    out<<[time,record]
+  end
+  assert(out.length==1&&out[0][0].nil?&&
+    out[0][1]=={'stellar_log_index'=>'syslog',
+     'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
+    "Java #{item['id']}: malformed/unframed event must produce static error exactly once")
+end
+
 # Strict RFC3164 CEF/LEEF wrapped in mixed profile; exact callback and
 # strict header time policy: never synthesize year, zone or native event_time.
 assert(fixture['mixedRfc3164WrappedCases'].is_a?(Array)&&
@@ -368,4 +410,4 @@ fixture['negative'].each do |item|
       'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
     "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
 end
-puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives + #{fixture['mixedRfc3164Cases'].length} RFC3164 mixed + #{fixture['mixedRfc3164Negative'].length} RFC3164 mixed rejects + #{fixture['mixedRfc5424BodyCases'].length} RFC5424 JSON/KV mixed + #{fixture['mixedRfc5424BodyNegative'].length} rejects + #{fixture['mixedRfc3164WrappedCases'].length} RFC3164 CEF/LEEF mixed + #{fixture['mixedRfc3164WrappedNegative'].length} rejects and two TCP blank-line JSON fragments PASS (public synthetic only)"
+puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives + #{fixture['mixedRfc3164Cases'].length} RFC3164 mixed + #{fixture['mixedRfc3164Negative'].length} RFC3164 mixed rejects + #{fixture['mixedRfc5424BodyCases'].length} RFC5424 JSON/KV mixed + #{fixture['mixedRfc5424BodyNegative'].length} rejects + #{fixture['mixedRfc3164WrappedCases'].length} RFC3164 CEF/LEEF mixed + #{fixture['mixedRfc3164WrappedNegative'].length} rejects + two TCP blank-line Java stack traces + 9 Java rejects, and two TCP blank-line JSON fragments PASS (public synthetic only)"

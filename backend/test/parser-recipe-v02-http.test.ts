@@ -38,6 +38,12 @@ test('P0-AP3 GET versioned schema/capabilities and POST strict compile over loca
   assert.equal(capability.jsonBlankLineTcpFraming,true);
   assert.equal(capability.jsonBlankLineOtherTransports,false);
   assert.equal(capability.jsonBlankLineDelimiter,'LF_LF');
+  assert.equal(capability.javaBlankLineTcpFraming,true);
+  assert.equal(capability.javaBlankLineOtherTransports,false);
+  assert.equal(capability.javaBlankLineDelimiter,'LF_LF');
+  assert.equal(capability.javaStackTraceGrammar,'EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1');
+  assert.ok(capability.supportedBodyParsers.includes('java_stacktrace'));
+  assert.ok(capability.supportedOperators.includes('parse_java_stacktrace'));
   const req=project();
   const valid=await post(base,'validate',req);
   assert.equal(valid.status,200);

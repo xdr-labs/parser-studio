@@ -9,7 +9,7 @@ import {canonicalJson,validateProject} from "./validate.js";
 import {compilePair} from "./compiler.js";
 import type {ParserProject,PairExport,ValidationIssue,ValidationResult,FieldType,LogIndex} from "./types.js";
 
-export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef"|"mixed";
+export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef"|"mixed"|"java_stacktrace";
 export type RecipeSource=RecipeBody|"syslog_rfc3164"|"syslog_rfc5424";
 type Group="top_fields"|"ns_fields"|"vendor_fields";
 type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group};
@@ -20,7 +20,7 @@ export type RecipeStage=
  | {op:"split_event";boundary:"single-line"|"blank-line"}
  | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
  | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef")[];mode:"strict_prefix"}
- | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"}
+ | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
  | MapStage | CastStage | ClassifyStage
  | {op:"fallback_unparsed";mode:"retain_unparsed"};
@@ -49,8 +49,8 @@ const UNSAFE=new Set(["__proto__","constructor","prototype"]);
 const TYPES=new Set<FieldType>(["string","integer","ip","port","boolean","date"]);
 const GROUPS=[["top_fields","topFields"],["ns_fields","nsFields"],
  ["vendor_fields","vendorFields"]] as const;
-const PARSERS=new Set(["parse_json","parse_kv","parse_csv","parse_cef","parse_leef"]);
-const BODY=new Set<RecipeBody>(["json","kv","csv","cef","leef","mixed"]);
+const PARSERS=new Set(["parse_json","parse_kv","parse_csv","parse_cef","parse_leef","parse_java_stacktrace"]);
+const BODY=new Set<RecipeBody>(["json","kv","csv","cef","leef","mixed","java_stacktrace"]);
 const rootKeys=["legacyProject","recipe"];
 const error=(code:string,path:string):ValidationIssue=>({
  code,path,message:"Reviewed recipe is unsupported or mismatched: "+code});
@@ -78,10 +78,12 @@ function sourceBody(project:ParserProject):{source:RecipeSource;body:RecipeBody}
 function legacyAllowed(project:ParserProject):boolean {
  return !project.enrichment?.length&&!project.unsupportedOpaqueBlocks?.length&&
   (project.receiver.tcpFraming==="line"||
-    (project.receiver.tcpFraming==="blank_line_json"&&
+    ((project.receiver.tcpFraming==="blank_line_json"||
+      project.receiver.tcpFraming==="blank_line_java")&&
       project.receiver.protocols.length===1&&
       project.receiver.protocols[0]==="tcp"&&
-      project.extraction.format==="json"))&&
+      project.extraction.format===(project.receiver.tcpFraming==="blank_line_java"?
+        "java_stacktrace":"json")))&&
   project.receiver.delimiter===undefined&&
   (project.extraction.maxDepth===undefined||project.extraction.maxDepth===8)&&
   project.classification.rules.length<=24&&
@@ -119,7 +121,7 @@ export function recipeFromLegacyProject(
   throw new Error("UNSUPPORTED_RECIPE_PROJECTION");
  const fmt=sourceBody(project)!;
  const stages:RecipeStage[]=[{op:"split_event",
-  boundary:project.receiver.tcpFraming==="blank_line_json"?
+  boundary:["blank_line_json","blank_line_java"].includes(project.receiver.tcpFraming)?
     "blank-line":"single-line"}];
  if(fmt.source==="syslog_rfc5424"||fmt.source==="syslog_rfc3164")
   stages.push({op:"unwrap_syslog",
@@ -131,7 +133,7 @@ export function recipeFromLegacyProject(
   stages.push({op:"parse_csv",columns:project.extraction.csvColumns??[],
    delimiter:project.extraction.csvDelimiter??","});
  }else stages.push({op:("parse_"+fmt.body) as
-  "parse_json"|"parse_kv"|"parse_cef"|"parse_leef"});
+  "parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"});
  for(const stage of expectedMappings(project)){
   stages.push(stage);
   if(stage.data_type!=="string"){
@@ -171,7 +173,7 @@ export function validateRecipePair(input:unknown):ValidationResult{
   const split=stages[i];
   if(!exact(split,["op","boundary"])||
       split?.op!=="split_event"||
-      split.boundary!==(project.receiver.tcpFraming==="blank_line_json"?
+      split.boundary!==((["blank_line_json","blank_line_java"].includes(project.receiver.tcpFraming))?
         "blank-line":"single-line"))
    return fail("BOUNDARY_UNSUPPORTED");
   i++;

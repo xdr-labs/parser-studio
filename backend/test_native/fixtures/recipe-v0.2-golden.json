@@ -292,6 +292,24 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_java_blanks",
+      "format": "java_stacktrace",
+      "transport": "blank_line_java",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat com.example.Service.run(Service.java:42)\n\tat com.example.App.main(App.java:5)\nCaused by: java.io.IOException: simulated\n\tat com.example.Store.read(Store.java:12)\n\t... 2 more",
+      "expectedTime": null,
+      "expectedRecord": {
+        "exception_class": "java.lang.IllegalStateException",
+        "frame_count": 3,
+        "cause_class": "java.io.IOException",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -842,6 +860,71 @@
       "id": "physical-multiline",
       "slug": "v02_mixed_rfc3164_cefleef",
       "raw": "{\"src_ip\":\"192.0.2.11\"}\n{\"src_ip\":\"192.0.2.12\"}"
+    }
+  ],
+  "javaBlankLineCases": [
+    {
+      "id": "second_stacktrace",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.RuntimeException: another failure\n\tat demo.Worker.go(Worker.java:9)",
+      "expectedTime": null,
+      "expectedRecord": {
+        "exception_class": "java.lang.RuntimeException",
+        "frame_count": 1,
+        "stellar_log_index": "syslog",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "javaBlankLineNegative": [
+    {
+      "id": "orphan_frame",
+      "slug": "v02_java_blanks",
+      "raw": "\tat demo.Worker.go(Worker.java:9)"
+    },
+    {
+      "id": "missing_frames",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure"
+    },
+    {
+      "id": "bad_followup",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\nrandom unframed line"
+    },
+    {
+      "id": "orphan_cause",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\nCaused by: java.io.IOException: boom"
+    },
+    {
+      "id": "bad_frame",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(bad format)"
+    },
+    {
+      "id": "physical_blank",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(Worker.java:9)\n\n\tat demo.More.go(More.java:10)"
+    },
+    {
+      "id": "bad_crlf",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\r\n\tat demo.Worker.go(Worker.java:9)"
+    },
+    {
+      "id": "unframed_json",
+      "slug": "v02_java_blanks",
+      "raw": "{\n  \"action\":\"deny\"\n}"
+    },
+    {
+      "id": "too_long",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)"
     }
   ]
 }

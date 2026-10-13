@@ -57,14 +57,20 @@ end
 def parserstudio_extract(text)
   raise ArgumentError, 'Record is longer than the configured message limit' if text.bytesize > @parser_rule_set['receiver']['messageLengthLimit']
   settings = @parser_rule_set['extraction']
-  # The generated receiver has no multiline event-breaker. Reject additional
-  # physical lines for non-JSON logs instead of parsing an incomplete event.
-  if settings['format'] != 'json' && (text.include?("\n") || text.include?("\r"))
-    raise ArgumentError, 'Multiline non-JSON event is unsupported'
+  # Only bounded TCP LF LF framed Java and JSON source modes can contain LF.
+  # Every other source is strictly one line, never implicit reconstruction.
+  framing = @parser_rule_set['receiver']['tcpFraming']
+  if settings['format'] == 'java_stacktrace'
+    raise ArgumentError, 'Java stack trace requires explicit LF LF TCP framing' unless
+      framing == 'blank_line_java'
+  elsif settings['format'] != 'json' && (text.include?("\n") || text.include?("\r"))
+    raise ArgumentError, 'Multiline unframed event is unsupported'
   end
   case settings['format']
   when 'json'
     parserstudio_json_object(text)
+  when 'java_stacktrace'
+    parserstudio_java_stacktrace(text)
   when 'kv'
     parserstudio_key_values(text)
   when 'csv'
@@ -82,6 +88,46 @@ def parserstudio_extract(text)
   else
     raise ArgumentError, 'Unsupported extraction format'
   end
+end
+
+# Strict Java exception/stack-frame grammar; not Java code execution.
+# Each complete event MUST be supplied by TCP with the fixed LF LF delimiter.
+# No arbitrary regex, multiline UDP, unbounded buffers or fallback text parsing.
+def parserstudio_java_stacktrace(text)
+  raise ArgumentError, 'Unframed or excessive stack trace' if text.bytesize > 8192 ||
+    text.include?("\r") || text.include?("\n\n") || !text.include?("\n")
+  lines = text.split("\n", -1)
+  raise ArgumentError, 'Invalid Java stack physical boundaries' unless
+    lines.length.between?(2, 64) && lines.all? { |line| !line.empty? && line.bytesize <= 512 }
+  qualified = /(?:[A-Za-z_$][A-Za-z0-9_$]*\.)+[A-Za-z_$][A-Za-z0-9_$]*(?:Exception|Error)/
+  header = /\A(#{qualified.source})(?:: [^\n]{1,256})?\z/.match(lines[0])
+  raise ArgumentError, 'Unsupported Java exception header' unless header
+  frame = /\A[ \t]+at [A-Za-z_$][A-Za-z0-9_.$\/]*\((?:[A-Za-z0-9_.$\/-]+\.java:\d{1,5}|Unknown Source|Native Method)\)\z/
+  cause = /\ACaused by: (#{qualified.source})(?:: [^\n]{1,256})?\z/
+  more = /\A[ \t]*\.\.\. (?:[1-9]\d{0,2}) more\z/
+  frames = 0
+  causes = 0
+  cause_class = nil
+  last = :header
+  lines.drop(1).each do |line|
+    if frame.match?(line)
+      frames += 1
+      last = :frame
+    elsif (match = cause.match(line))
+      causes += 1
+      raise ArgumentError, 'Too many Java causes' if causes > 4
+      cause_class = match[1]
+      last = :cause
+    elsif more.match?(line) && causes > 0 && last == :frame
+      last = :more
+    else
+      raise ArgumentError, 'Unsupported or orphaned Java stack line'
+    end
+  end
+  raise ArgumentError, 'Missing Java stack frame' if frames < 1 || last == :cause
+  result = {'exception_class' => header[1], 'frame_count' => frames}
+  result['cause_class'] = cause_class if cause_class
+  result
 end
 
 def parserstudio_json_object(text)

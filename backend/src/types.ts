@@ -20,11 +20,11 @@ export interface ParserProject {
     port: number;
     bindAddress: "0.0.0.0" | "127.0.0.1";
     messageLengthLimit: number;
-    tcpFraming: "line" | "delimiter" | "blank_line_json";
+    tcpFraming: "line" | "delimiter" | "blank_line_json" | "blank_line_java";
     delimiter?: string;
   };
   extraction: {
-    format: "json" | "kv" | "csv" | "syslog_rfc3164" | "syslog_rfc5424" | "cef" | "leef" | "mixed";
+    format: "json" | "kv" | "csv" | "syslog_rfc3164" | "syslog_rfc5424" | "cef" | "leef" | "mixed" | "java_stacktrace";
     mixedFormats?: ("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef")[];
     csvColumns?: string[];
     csvDelimiter?: "," | ";" | "\t";

@@ -39,7 +39,8 @@
         "leef",
         "syslog_rfc3164",
         "syslog_rfc5424",
-        "mixed"
+        "mixed",
+        "java_stacktrace"
       ]
     },
     "bodyFormat": {
@@ -49,7 +50,8 @@
         "csv",
         "cef",
         "leef",
-        "mixed"
+        "mixed",
+        "java_stacktrace"
       ]
     },
     "sample": {
@@ -202,6 +204,18 @@
             "properties": {
               "op": {
                 "const": "parse_leef"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_java_stacktrace"
               }
             }
           },
