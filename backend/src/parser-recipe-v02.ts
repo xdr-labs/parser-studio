@@ -17,7 +17,7 @@ type CastStage={op:"cast_type";target:string;data_type:Exclude<FieldType,"string
 type ClassifyStage={op:"classify";defaultIndex:LogIndex;rules:Array<{
  field:string;operator:"equals";value:string;index:LogIndex}>};
 export type RecipeStage=
- | {op:"split_event";boundary:"single-line"}
+ | {op:"split_event";boundary:"single-line"|"blank-line"}
  | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
  | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef")[];mode:"strict_prefix"}
  | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"}
@@ -77,7 +77,12 @@ function sourceBody(project:ParserProject):{source:RecipeSource;body:RecipeBody}
 }
 function legacyAllowed(project:ParserProject):boolean {
  return !project.enrichment?.length&&!project.unsupportedOpaqueBlocks?.length&&
-  project.receiver.tcpFraming==="line"&&project.receiver.delimiter===undefined&&
+  (project.receiver.tcpFraming==="line"||
+    (project.receiver.tcpFraming==="blank_line_json"&&
+      project.receiver.protocols.length===1&&
+      project.receiver.protocols[0]==="tcp"&&
+      project.extraction.format==="json"))&&
+  project.receiver.delimiter===undefined&&
   (project.extraction.maxDepth===undefined||project.extraction.maxDepth===8)&&
   project.classification.rules.length<=24&&
   project.classification.rules.every(r=>r.operator==="equals"&&
@@ -113,7 +118,9 @@ export function recipeFromLegacyProject(
   sampleEvents<1||sampleEvents>500)
   throw new Error("UNSUPPORTED_RECIPE_PROJECTION");
  const fmt=sourceBody(project)!;
- const stages:RecipeStage[]=[{op:"split_event",boundary:"single-line"}];
+ const stages:RecipeStage[]=[{op:"split_event",
+  boundary:project.receiver.tcpFraming==="blank_line_json"?
+    "blank-line":"single-line"}];
  if(fmt.source==="syslog_rfc5424"||fmt.source==="syslog_rfc3164")
   stages.push({op:"unwrap_syslog",
     version:fmt.source==="syslog_rfc3164"?3164:1,mode:"strict_header"});
@@ -163,7 +170,9 @@ export function validateRecipePair(input:unknown):ValidationResult{
   let i=0;
   const split=stages[i];
   if(!exact(split,["op","boundary"])||
-      split?.op!=="split_event"||split.boundary!=="single-line")
+      split?.op!=="split_event"||
+      split.boundary!==(project.receiver.tcpFraming==="blank_line_json"?
+        "blank-line":"single-line"))
    return fail("BOUNDARY_UNSUPPORTED");
   i++;
   if(fmt.source==="syslog_rfc5424"||fmt.source==="syslog_rfc3164"){

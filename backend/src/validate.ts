@@ -55,7 +55,16 @@ export function validateProject(input: unknown): ValidationResult {
   }
 
   const p = input as unknown as ParserProject;
-  if (p.receiver.tcpFraming === "delimiter") {
+  if(p.receiver.tcpFraming==="blank_line_json"){
+    // Framing is a *source transport contract*: literal LF LF between JSON
+    // objects, not arbitrary multiline reassembly or a TCP/UDP guess.
+    if(p.extraction.format!=="json"||
+       p.receiver.protocols.length!==1||
+       p.receiver.protocols[0]!=="tcp"||
+       p.receiver.delimiter!==undefined)
+      issue(issues,"json_blank_line_transport","/receiver/tcpFraming",
+        "Blank-line JSON framing requires explicitly selected TCP-only JSON and no custom delimiter.");
+  }else if (p.receiver.tcpFraming === "delimiter") {
     if (!p.receiver.protocols.includes("tcp") || !p.receiver.delimiter)
       issue(issues, "framing", "/receiver", "Delimiter framing requires TCP and a nonempty delimiter.");
   } else if (p.receiver.delimiter !== undefined) {

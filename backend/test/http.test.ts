@@ -110,6 +110,9 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.deepEqual(info.authoring.rfc5424BodyFormats,["raw","json","kv","cef","leef"]);
    assert.equal(info.authoring.leefHexSeparatorSubset,true);
    assert.equal(info.authoring.multiline,false);
+   assert.equal(info.authoring.jsonBlankLineTcpFraming,true);
+   assert.equal(info.authoring.jsonBlankLineOtherTransports,false);
+   assert.equal(info.authoring.jsonBlankLineDelimiter,'LF_LF');
    assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef']);
    assert.equal(info.authoring.strictMixedRequiresExplicitAllowlist,true);
    assert.equal(info.authoring.rfc3164StrictTaggedMessageSubset,true);

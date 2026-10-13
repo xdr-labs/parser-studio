@@ -20,6 +20,11 @@ function emitSource(project: ParserProject, protocol: "udp" | "tcp"): string {
   ];
   if (protocol === "tcp") lines.push("  @include /etc/td-agent/transport_settings.conf");
   lines.push("  <parse>", "    @type " + type, "  </parse>");
+  if(protocol==="tcp"&&project.receiver.tcpFraming==="blank_line_json"){
+    // Fluentd Config.parse decodes the fixed double-quoted LF LF escapes.
+    // Never concatenate a caller-specified delimiter here.
+    lines.push('  delimiter "\\n\\n"');
+  }
   if (protocol === "tcp" && project.receiver.tcpFraming === "delimiter") {
     lines.push("  delimiter " + project.receiver.delimiter, "  is_delimiter_part_of_log -1");
   }
@@ -81,7 +86,9 @@ export function compilePair(input: unknown): PairExport {
       warnings: [
         "An extensionless Ruby fragment is not a self-registered Fluentd plugin.",
         "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
-        "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
+        project.receiver.tcpFraming==="blank_line_json"
+          ? "Only explicitly TCP blank-line-framed JSON is supported for multiline input; general multiline and mixed Syslog remain unsupported."
+          : "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
         "No production deployment or live sensor installation has occurred.",
       ],
     },

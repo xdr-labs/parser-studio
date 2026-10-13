@@ -98,7 +98,8 @@
         "tcpFraming": {
           "enum": [
             "line",
-            "delimiter"
+            "delimiter",
+            "blank_line_json"
           ]
         },
         "delimiter": {

@@ -50,6 +50,26 @@ test("durable offline owner revisions reopen byte-identically and retain only ve
       second.artifactRevisionId).appliesToDp,false);
   });
 });
+test("only the fixed compiler-owned TCP blank-line JSON warning enters durable offline revisions",()=>{
+  use(file=>{
+    const p=sampleProject();
+    p.projectId="draft-synthetic_blankline";
+    p.receiver.protocols=["tcp"];
+    p.receiver.tcpFraming="blank_line_json";
+    p.extraction.format="json";
+    const generated=compilePair(p);
+    const h=store(file);
+    const item=h.register(alice,generated,"1.2.3");
+    const restarted=store(file);
+    const saved=restarted.resolveOwnedRevision(alice,item.artifactRevisionId);
+    assert.deepEqual(saved.pair.manifest.warnings,generated.manifest.warnings);
+    p.revision=2;
+    const forged=compilePair(p);
+    forged.manifest.warnings[2]="PRIVATE_LOG_INJECTED";
+    assert.throws(()=>restarted.register(alice,forged,"1.2.4"),
+      /REVISION_STORE_INPUT_UNSAFE/);
+  });
+});
 test("tenant and actor isolation persists through restart; metadata-only mock Apply audit",()=>{
   use(file=>{
     const h=store(file);

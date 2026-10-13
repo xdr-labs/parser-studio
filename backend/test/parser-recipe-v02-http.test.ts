@@ -35,6 +35,9 @@ test('P0-AP3 GET versioned schema/capabilities and POST strict compile over loca
   assert.ok(capability.unsupported.includes('mixed_syslog_envelopes'));
   assert.deepEqual(capability.strictMixedSingleLineFamilies,['json','kv','cef','leef']);
   assert.ok(capability.supportedOperators.includes('dispatch_family'));
+  assert.equal(capability.jsonBlankLineTcpFraming,true);
+  assert.equal(capability.jsonBlankLineOtherTransports,false);
+  assert.equal(capability.jsonBlankLineDelimiter,'LF_LF');
   const req=project();
   const valid=await post(base,'validate',req);
   assert.equal(valid.status,200);

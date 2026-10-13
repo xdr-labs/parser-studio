@@ -44,7 +44,7 @@ end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
 allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
-  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed]
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -95,8 +95,16 @@ allowed.each do |slug|
   conf = original.lines.reject { |line| line.strip == include_line.strip }.join
   parsed = Fluent::Config.parse(conf, File.join(root, conf_name), root, true)
   sources = parsed.elements.select { |x| x.name == 'source' }
-  assert(sources.length == 2 &&
-    sources.map { |x| x['@type'] }.sort == %w[tcp udp], 'receiver protocol mismatch')
+  expected_protocols = slug == 'v02_json_blanks' ? %w[tcp] : %w[tcp udp]
+  assert(sources.length == expected_protocols.length &&
+    sources.map { |x| x['@type'] }.sort == expected_protocols,
+    'receiver protocol mismatch')
+  if slug == 'v02_json_blanks'
+    assert(sources.first['delimiter'] == "\n\n" &&
+      sources.first['bind'] == '127.0.0.1' &&
+      !conf.include?('is_delimiter_part_of_log'),
+      'native TCP blank-line framing must be exactly LF LF and opt-in')
+  end
   sources.each do |source|
     assert(source['port'] == '7501' && source['tag'] == name &&
       source.elements.size == 1 && source.elements.first['@type'] == name,
@@ -112,6 +120,8 @@ fixture['profiles'].each do |item|
   assert(item.fetch('raw').bytesize <= 16384, 'golden event over limit')
   digest_source = if slug == 'v02_mixed'
     ([item['raw']] + fixture.fetch('mixedCases').map { |row| row.fetch('raw') }).join("\n")
+  elsif slug == 'v02_json_blanks'
+    ([item['raw']] + fixture.fetch('blankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
   else
     item['raw']
   end
@@ -133,6 +143,35 @@ fixture['profiles'].each do |item|
   end
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
+end
+# Explicitly framed, newline-embedded public-synthetic JSON events. This
+# uses the exact delimiter parsed from the native Fluentd CONF. The suite does
+# not open a real TCP listener, send sensor logs, or claim live receiver E2E.
+assert(fixture['blankLineCases'].is_a?(Array) && fixture['blankLineCases'].length == 1,
+  'expected exactly one additional framed multiline JSON event')
+pretty = fixture['profiles'].find { |p| p['slug'] == 'v02_json_blanks' }
+assert(pretty && pretty['transport'] == 'blank_line_json' &&
+  pretty['raw'].include?("\n") && !pretty['raw'].include?("\n\n"),
+  'first JSON candidate must contain physical newlines but no blank separator')
+extra = fixture['blankLineCases'].first
+assert(extra.keys.sort == %w[expectedRecord expectedTime id raw slug] &&
+  extra['slug'] == 'v02_json_blanks' && extra['id'] == 'second_pretty_json' &&
+  extra['raw'].include?("\n") && !extra['raw'].include?("\n\n"),
+  'reviewed framed JSON golden record is missing')
+# Transport config AST already proved literal LF LF; parse the frames passed
+# to the actual pinned native Fluentd parser callback.
+framed_stream = [pretty['raw'],extra['raw']].join("\n\n") + "\n\n"
+frames=framed_stream.split("\n\n").reject(&:empty?)
+assert(frames.length == 2, 'blank-line JSON transport separator must produce two records')
+frames.each_with_index do |frame,index|
+  current = index == 0 ? pretty : extra
+  output=[]
+  drivers.fetch('v02_json_blanks').instance.parse(frame) do |time,record|
+    output << [time,record]
+  end
+  assert(output.length == 1 && output[0][0].nil? &&
+    output[0][1] == current.fetch('expectedRecord'),
+    'native UTF-8 multiline JSON fragment did not preserve normalized fields')
 end
 # Explicit bounded mixed-family dataset; no record may silently disappear.
 assert(fixture['mixedCases'].is_a?(Array) && fixture['mixedCases'].length == 3,
@@ -178,4 +217,4 @@ fixture['negative'].each do |item|
       'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
     "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
 end
-puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives PASS (public synthetic only)"
+puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives and two TCP blank-line JSON fragments PASS (public synthetic only)"

@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -36,16 +36,23 @@ function writeTrusted(path:string,value:string){
  try{writeFileSync(fd,value,{encoding:'utf8'});}finally{closeSync(fd);}
 }
 type Profile={slug:string;format:ParserProject['extraction']['format'];
+ transport?:'blank_line_json';
  bodyFormat?:'kv'|'cef'|'leef';raw:string;expectedTime:string|null;
  expectedRecord:Record<string,unknown>};
 const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
  {kind:string;origin:string;profiles:Profile[];
   negative:Array<{id:string;slug:string;raw:string}>;
   mixedCases:Array<{id:string;slug:string;raw:string}>;
-  mixedNegative:Array<{id:string;slug:string;raw:string}>};
+  mixedNegative:Array<{id:string;slug:string;raw:string}>;
+  blankLineCases:Array<{id:string;slug:string;raw:string;
+     expectedTime:string|null;expectedRecord:Record<string,unknown>}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==11||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==12||
+ !Array.isArray(samples.blankLineCases)||samples.blankLineCases.length!==1||
+ samples.blankLineCases.some(x=>x.id!=='second_pretty_json'||
+  x.slug!=='v02_json_blanks'||typeof x.raw!=='string'||
+  Buffer.byteLength(x.raw)>16384)||
  !Array.isArray(samples.negative)||samples.negative.length!==9||
  !Array.isArray(samples.mixedCases)||samples.mixedCases.length!==3||
  samples.mixedCases.some(e=>e.slug!=='v02_mixed'||typeof e.raw!=='string'||
@@ -70,6 +77,13 @@ function buildProject(entry:Profile):ParserProject{
  const p=sampleProject();
  p.projectId='draft-'+entry.slug;p.slug=entry.slug;
  p.receiver.port=7501;
+ if(entry.transport==='blank_line_json'){
+   if(entry.slug!=='v02_json_blanks'||entry.format!=='json')
+     throw new Error('Native blank-line framing fixture mismatch');
+   p.receiver.protocols=['tcp'];
+   p.receiver.bindAddress='127.0.0.1';
+   p.receiver.tcpFraming='blank_line_json';
+ }
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
@@ -121,8 +135,11 @@ for(const entry of samples.profiles){
   throw new Error('Source fixture exceeds bound');
  const p=buildProject(entry);
  const sampleRows=[entry.raw,...(entry.format==='mixed'?
-   samples.mixedCases.map(x=>x.raw):[])];
- const digest=sha(sampleRows.join('\n'));
+   samples.mixedCases.map(x=>x.raw):[]),
+   ...(entry.transport==='blank_line_json'?
+    samples.blankLineCases.map(x=>x.raw):[])];
+ const digest=sha(sampleRows.join(entry.transport==='blank_line_json'?
+   '\n\n':'\n'));
  const recipe=recipeFromLegacyProject(p,digest,sampleRows.length);
  const compiled=compileRecipePair({recipe,legacyProject:p});
  const baseline=compilePair(p);

@@ -205,6 +205,28 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_json_blanks",
+      "format": "json",
+      "transport": "blank_line_json",
+      "raw": "{\n  \"source\": {\n    \"ip\": \"192.0.2.17\"\n  },\n  \"destination\": {\n    \"ip\": \"198.51.100.81\",\n    \"port\": \"443\"\n  },\n  \"action\": \"deny\",\n  \"event\": {\n    \"id\": \"301\"\n  }\n}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "dstip": "198.51.100.81",
+        "dstport": 443,
+        "action": "deny",
+        "log": {
+          "event_id": 301
+        },
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -332,6 +354,29 @@
       "id": "syslog-unallowed",
       "slug": "v02_mixed",
       "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.10 dst_port=443 action=deny"
+    }
+  ],
+  "blankLineCases": [
+    {
+      "id": "second_pretty_json",
+      "slug": "v02_json_blanks",
+      "raw": "{\n  \"source\": {\n    \"ip\": \"203.0.113.21\"\n  },\n  \"destination\": {\n    \"ip\": \"198.51.100.82\",\n    \"port\": \"22\"\n  },\n  \"action\": \"allow\",\n  \"event\": {\n    \"id\": \"302\"\n  }\n}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.21",
+        "dstip": "198.51.100.82",
+        "dstport": 22,
+        "action": "allow",
+        "log": {
+          "event_id": 302
+        },
+        "stellar_log_index": "syslog",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ]
 }

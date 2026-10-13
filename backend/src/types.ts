@@ -20,7 +20,7 @@ export interface ParserProject {
     port: number;
     bindAddress: "0.0.0.0" | "127.0.0.1";
     messageLengthLimit: number;
-    tcpFraming: "line" | "delimiter";
+    tcpFraming: "line" | "delimiter" | "blank_line_json";
     delimiter?: string;
   };
   extraction: {
