@@ -193,6 +193,28 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
       'rfc3164_strict_no_year_or_zone',true)).rejects.toThrow(/not verified/);
   }
  });
+ it('qualifies 12 exact reviewed mixed families including CSV and rejects unreviewed substitutions',async()=>{
+  const make=(families:string[])=>vi.fn(async()=>response({...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'mixed'],
+    strictMixedSingleLineFamilies:families}));
+  const base=['json','kv','cef','leef','rfc5424_cef','rfc5424_leef',
+    'rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'];
+  const old=make(base);
+  await expect(checkRecipeV02Compiler(old as typeof fetch,
+    undefined,true,false,['csv','json','kv'])).rejects.toThrow(/not verified/);
+  const current=make([...base,'csv']);
+  expect(await checkRecipeV02Compiler(current as typeof fetch,
+    undefined,true,false,['csv','json','kv'])).toBe(true);
+  expect(await checkRecipeV02Compiler(current as typeof fetch,
+    'rfc3164_strict_no_year_or_zone',true,false,
+    ['json','kv','rfc3164_cef','rfc3164_leef'])).toBe(true);
+  const incorrect=make([...base,'unreviewed']);
+  await expect(checkRecipeV02Compiler(incorrect as typeof fetch,
+    undefined,true,false,['csv','json','kv'])).rejects.toThrow(/not verified/);
+  const oversized=make([...base,'csv','unreviewed']);
+  await expect(checkRecipeV02Compiler(oversized as typeof fetch,
+    undefined,true)).rejects.toThrow(/not verified/);
+ });
  it('requires Java-specific TCP LF LF capability and parse stage; JSON framing alone is insufficient',async()=>{
   const source=['java.lang.IllegalStateException: Synthetic failure',
     '    at com.example.Service.run(Service.java:42)',
