@@ -798,4 +798,54 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
   });
 
 
+  test('migrated owner-scoped history: real backend 403 and forged foreign revision metadata never leak into Auto result',async({page})=>{
+    const unsafe:string[]=[];
+    page.on('request',req=>{
+      const path=new URL(req.url()).pathname;
+      if(req.method()==='POST'&&
+         (path.includes('/target/apply')||path.includes('/sessions/start')||
+          path.includes('/interflow/')||path.includes('/revisions/register')))
+        unsafe.push(path);
+    });
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    const history=page.getByLabel('Offline parser revision history');
+    await history.locator('summary').click();
+    await expect(history.getByRole('button',{name:'Load My Revision List'}))
+      .toBeVisible();
+    await history.getByRole('button',{name:'Load My Revision List'}).click();
+    await expect(history.getByRole('alert'))
+      .toContainText('access denied or unavailable (HTTP 403)');
+    await expect(history.getByLabel('Verified offline revision list')).toHaveCount(0);
+    const secret='PRIVATE_LEGACY_REVISION_LOG_NEVER_ECHO';
+    let foreignResponses=0;
+    await page.route(/\/api\/v1\/parser-pairs\/revisions\/list\?/,route=>{
+      foreignResponses++;
+      const requested=new URL(route.request().url());
+      expect(requested.searchParams.get('projectId')).toBe('draft-demo_firewall');
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({contract:'offline-revision-history.v0.1',
+          persistent:false,deploymentPerformed:false,
+          revisions:[{projectId:'unrelated-owner',rawLog:secret}]})});
+    });
+    await history.getByRole('button',{name:'Load My Revision List'}).click();
+    await expect(history.getByRole('alert'))
+      .toContainText('Unexpected offline revision response fields.');
+    await expect(history.getByLabel('Verified offline revision list')).toHaveCount(0);
+    await expect(history.getByRole('button',{name:'Re-download Verified ZIP'}))
+      .toHaveCount(0);
+    expect(await history.innerText()).not.toContain(secret);
+    expect(foreignResponses).toBe(1);
+    expect(unsafe).toEqual([]);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
+
+
 });

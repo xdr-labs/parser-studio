@@ -72,7 +72,7 @@ Mixed CSV adds the twelfth explicitly reviewed single-line family ID. Its stage 
 
 The original six-step Wizard and three-pane Workbench remain retired, and
 their historical test files are **not** restored to current CI. Instead,
-four concrete safety contracts have been migrated into the **actual Auto
+five concrete safety contracts have been migrated into the **actual Auto
 Parser result and in-place mapping review** in
 tests/integrated-backend.spec.ts:
 
@@ -89,9 +89,13 @@ tests/integrated-backend.spec.ts:
    and child (for example custom.action and custom.action.child) must be
    rejected before any backend POST; restoring the mapping must enable normal
    schema-tested generation without reviving the retired Wizard or Workbench.
+5. The real backend default-deny 403 for revision history must display a
+   friendly owner-access denial and no revision data. A forged foreign history
+   response containing a raw source value must never be rendered as a
+   verified revision, enable ZIP access or initiate target actions.
 
 These tests use an **exact Git-SHA-pinned backend over real localhost HTTP**.
 They never contact a vendor DP, send sensor packets, invoke an external AI
 provider, or claim full real-user E2E. The remaining archived Wizard and
 Workbench suites still require feature-by-feature **behavioral** migration;
-moving four assertions is not completion of all historical coverage.
+moving five assertions is not completion of all historical coverage.
