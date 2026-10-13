@@ -78,6 +78,8 @@ Before importing into CI: verify exact file license, redact private identifiers,
 
 Example: FortiGate TRAFFIC and UTM should share one quote-aware KV lexer and two subtype-specific semantic mappings. PAN-OS TRAFFIC and THREAT should share an envelope decoder but use **different positional CSV grammars**. Trellix and Trend Micro must navigate nested arrays/objects without regex over JSON.
 
+**Owner latest explicit UX input:** Begin synthesis from a user-dragged original-text span and its typed/semantic meaning, not one whole-log regex. See [Selection-first parsing](16_EXPLAINABLE_PROGRESSIVE_PARSING_UX_RESEARCH.md#4a-selection-first-parsing--the-user-reduces-the-problem). Local rule synthesis must be visually distinct from manual external ChatGPT/Claude/Gemini consultation and any future directly connected LLM.
+
 ## 5. User workflow: two paths only
 
 **Auto Parser:** Paste logs -> show recognized manufacturer/type variants and field coverage -> user clicks and labels ambiguous values -> system creates candidate grammars and shows unknown cases -> full positive/negative/holdout validation -> native-verified Ruby and CONF if grammar supported. Never ask beginners to select CEF/KV/regex.

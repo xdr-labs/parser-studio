@@ -21,6 +21,8 @@
 | [RegExr](https://github.com/gskinner/regexr/) and [regex101 capture docs](https://docs.regex101.com/editor/groups/) | Real-time match highlighting and capture explanations | UI reference; RegExr is GPL-3.0, and JS/PCRE preview cannot prove Ruby target parity |
 | [GrokConstructor](https://github.com/stoerr/GrokConstructor) | Incremental Grok pattern construction over multiple samples | Design inspiration; source GPL-3.0, no copying |
 | [Google RE2](https://github.com/google/re2) | Resource-bounded, linear-time untrusted regex subset | Candidate sandbox inspiration only; native Ruby/Fluentd dialect can differ |
+| [grex](https://github.com/pemistahl/grex) | Generates regex candidates from user-provided positive string examples | Apache-2.0. Good local candidate engine input, but selected strings alone cannot establish surrounding anchors or source/destination semantics; add contextual negatives. |
+| [REGEL](https://github.com/utopia-group/regel) | Synthesizes regex candidates from natural language and examples with interactive positive/negative refinements | MIT. Research implementation, not immediately a Ruby-compatible native parser; explore algorithmic approach behind limited sandbox. |
 | [Vector VRL](https://vector.dev/docs/reference/configuration/transforms/remap/) | Fallible parsing and explicit error/abort policy | Fail closed on target export and retain originals in preview |
 
 **REA availability:** No connected REA-specific tool/plugin or REA executable was exposed in this session or on dev-atlas. Direct REA UI inspection was not performed. Instead, actual open-source modules and public interaction documentation were compared; later use REA only on authorized screens when it is connected.
@@ -76,6 +78,90 @@ All ranges are half-open [start,end). Keep UTF-8-byte offsets and browser UTF-16
 
 Never confuse **byte accounting** or "regex matched" with **correct semantic field extraction**. A single catch-all group might account for every byte while extracting none of the important fields. Show separate event accounting, mandatory field semantic coverage, optional capture coverage, and native-qualified variant count. Users must see that FULL is a semantic+runtime status, not simply a whole-line regex match.
 
+## 4A. Selection-first parsing — the user reduces the problem
+
+**New explicit owner clarification (2026-10-13):** Long and unfamiliar log records may be too ambiguous for a single parser or regex to infer. Let the human **drag/select a meaningful subspan**, tell Parser Studio what it means or where a sub-parser should work, and apply search/grammar synthesis only inside that scope. This is **programming by example** with human-provided boundaries, not merely an expert regex editor.
+
+### One selection, four context-sensitive intentions
+
+1. **Extract selected value as a field:** user highlights just an IPv4 address, URL, username, timestamp, status or arbitrary text and assigns the intended semantic field. The selected range is one positive example, *not* automatically a general-purpose regex.
+2. **Parse inside this block:** user highlights a larger quoted message, JSON fragment or vendor extension and declares it a nested sub-parser input. The engine preserves already-approved surrounding fields and proposes a quote-aware KV, JSON-path, delimiter/Dissect or bounded regex subrule only for that exact region.
+3. **Use this as a boundary/anchor:** user selects stable text such as a field prefix, separator or vendor subtype discriminator. The system infers where a substring starts/stops before matching its variable value. Disambiguate repeated copies of the same text by their precise original byte ranges, not substring searching.
+4. **Keep the whole selection as a single opaque field:** user prefers source preservation over unreliable detailed extraction. This is PARTIAL or RAW_ONLY until true required fields and native support are independently verified; the complete original event remains retained.
+
+On desktop: mouse drag in a read-only, copyable text view. On mobile: native text selection plus a visible contextual toolbar. Never block normal copy/paste or require a fixed-length selection. UTF-8/UTF-16 source offsets, empty/all-whitespace spans, overlap with prior fields, repeated identical values, overlong selections and line-framing boundaries require explicit validation.
+
+### Concrete interaction example
+
+Original event (documentation-only fictional address):
+
+~~~text
+<189>date=2026-10-13 action=deny srcip=192.0.2.10 dstip=198.51.100.20 msg="Rule blocked GET /a?token=REDACTED"
+~~~
+
+The user drags only the first IP string and labels it Source IP. The system records:
+- exact selected source range, current envelope/body variant and adjacent literal context such as srcip=;
+- a positive assertion that this *specific* source span belongs to Source IP;
+- a negative assertion that the destination IP and other IP-shaped values must NOT map to Source IP;
+- a **ranked rule candidate**, first prefer the existing typed KV lexer + source key, not a regex merely matching any IP address;
+- an equivalent scoped regex/Grok/Dissect explanation in an optional Rule Inspector **only when one can be represented safely**, labeled Browser Preview or Native Compilable honestly.
+
+When the user highlights the quoted msg value and chooses **Parse inside**, the system proposes a nested rule applying only to msg. If that grammar cannot be proven across other events, Keep as one field retains it under a target-supported vendor field without losing the already extracted action and IP fields. This does NOT mark the entire log FULL.
+
+### Proposed UI disclosure inside Auto Parser
+
+After source paste, present a variant summary and the intact source, colored by extraction role and opaque/unmatched spans. A drag selection opens a **small inline toolbar**, not a third authoring method:
+
+~~~text
+[Selected text: "192.0.2.10"]
+[Extract as field] [Parse this part] [Use as boundary] [Keep as one field]
+             [Suggest rule locally] [Ask ChatGPT / Claude / Gemini]
+
+Candidate 1: quoted-KV key "srcip" -> typed IPv4 -> source.ip
+Candidate 2: bounded anchored rule -> named capture source.ip (browser only)
+Coverage: 9/10 records for same vendor subtype; 1 excluded/unknown
+Negative examples: destination.ip unchanged; no wrong-role matching
+Native compiler: check / NOT VERIFIED; target: NOT VERIFIED
+[Compare original vs candidate] [Approve rule] [Cancel]
+~~~
+
+The numbers above are illustrative placeholders, **not benchmark results**. The exact true coverage must be computed from selected positive, negative, sibling subtype and holdout samples before presenting an acceptance button.
+
+### Candidate generation strategy, local first
+
+- Detect the selected value's plausible types but do not choose its security meaning from appearance alone (two IPs may have different roles).
+- Identify stable **prefix/suffix boundaries**, quote/escape context and existing typed tokens; infer simplest deterministic rules first.
+- Propose a scoped candidate AST with operator, anchor, source span, field role, source subtype and matching dialect.
+- Evaluate up to three alternatives on all current variants, held-out unseen events and explicit wrong-match counterexamples; measure true field values, not just regex matched/not-matched.
+- Prefer a simple key-based or positional parser to a regex if it is more stable. Use a bounded regex only for genuinely variable free text.
+- Show the actual candidate rule and capture-highlight spans for *every* matching event and mark wrong/overlapping matches visibly.
+- Require user approval and native Ruby/CONF lowering and parity before production-ready export; if operator unsupported, retain a REVIEW_ONLY suggestion rather than fabricating success.
+
+A single dragged value often has many compatible expressions. **At least one additional variation or user-marked negative** should be sought for meaningful generalization. If the user supplies only one example, show Low Evidence, not a false accuracy percentage.
+
+With several selected chunks, build a small **hierarchical parse plan** (stable prefix -> variant discriminator -> bounded sub-parser for the selected message), rather than concatenating every learned capture into one enormous regex. Each sub-parser has its own input span, fallback and evidence; reusing the same successful prefix rule across variants cannot silently reuse incompatible subtype positional CSV schemas.
+
+### What "Improve with AI" really means
+
+The design must label three distinct operations honestly:
+- **Suggest rule locally:** deterministic grammar inference in Parser Studio, no real LLM or third-party request.
+- **Ask an AI model (manual copy/paste):** generate a user-reviewed, redacted provider-neutral prompt, the user opens their chosen ChatGPT/Claude/Gemini and pastes back its proposed structured grammar. This uses a **real external LLM only when the user intentionally sends that prompt**; Parser Studio itself does not invoke it.
+- **Connected LLM (future opt-in):** directly call a real model only after separate provider connection, explicit approval of each transmitted sample, backend-held credentials, egress audit, tenant security and strict response validation. This is NOT implemented today and must not share the local button's label or appear as already connected.
+
+The suggested grammar is **untrusted output regardless of provider**. Never execute copied Ruby, shell commands or arbitrary regex in the native target simply because ChatGPT proposed them. Report regex dialect limitations (JavaScript/RE2/Oniguruma/Fluentd) alongside evidence and compiler reachability.
+
+### First acceptance tests for selection-driven synthesis
+
+- Selecting identical IP text twice in one event identifies the correct occurrence by offset; wrong-role captures become negatives.
+- Selecting a quoted message containing spaces, escaped delimiters or equal signs does not corrupt previously accepted header/field spans.
+- One user selection must not silently apply to unrelated vendor subtypes; preview displays explicit no-match/unknown cases.
+- User selection plus an independent negative changes candidate ranking; field-role false positives must remain zero on curated examples.
+- Partial opaque retention cannot overwrite approved fields, must maintain exact original bytes, and cannot claim FULL/native if unsupported.
+- Prompt generation exports only user-reviewed redacted span/context and never automatically sends customer raw logs.
+- Native export from a new syntax is blocked until backend actually implements and validates that operator.
+
+**Priority decision:** Treat the drag-to-teach selector as part of P0-TRACE-1 and P0-TRACE-2, immediately after P0-TRACE-0 source-range provenance. Do not create a third "AI mode" or a separate regex-heavy wizard.
+
 ## 5. Opaque fallback instead of all-or-nothing
 
 Propose a declarative operation capture_opaque(field, exact_source_range, origin_rule), NOT unbounded dot-star regex. Preserve complete immutable original event and a separate validated opaque tail. A chunk may be kept as a single vendor/custom field if:
@@ -109,8 +195,8 @@ AI prompts remain **manual provider-neutral copy/paste**, containing only user-a
 | Order | Task | Acceptance |
 |---|---|---|
 | P0-TRACE-0 FIRST | ParseTrace contract with exact original spans, rule provenance and status taxonomy | Every input record accounted; Unicode/multiple-identical-token range tests; no silent omissions |
-| P0-TRACE-1 | Original-log overlay, rule-click inspector and stage-specific guidance inside Auto Parser | User sees exactly which substring matched and why; no regular expression knowledge needed |
-| P0-TRACE-2 | Correct labeled fields and preserve explicit opaque unmatched ranges | Wrong capture feedback repairs locally; PARTIAL vs FULL distinction; native capability guard |
+| P0-TRACE-1 | Original-log overlay, mouse/touch drag-to-teach selector, context toolbar, rule-click inspector and stage-specific guidance inside Auto Parser | User sees original matched/unmatched substrings and selected candidate regex/typed rule with capture spans; no regex knowledge required |
+| P0-TRACE-2 | User-selected positive/negative assertions, subtype-scoped candidate ranking and explicit opaque unmatched ranges | Wrong capture feedback changes tested rules; selected multi-chunk parse plan stays scoped; PARTIAL vs FULL and native capability guard |
 | P0-SYN-1/2 | Vendor/subtype envelope/typed grammar and candidate ranking | Fortinet/PAN-OS/Trellix/Trend Micro with negative source/destination cases |
 | P0-TRACE-3 / P0-SYN-3 | ChatGPT/Claude/Gemini structured candidate rule/regex review | Up to three bounded hypotheses, new positive/negative checks, zero raw external transfer |
 | P0-SYN-4 | Actual native Ruby/CONF lowering for selected safe v0.3 operators | Same sample and holdout native Fluentd parity, SHA check, no unapproved operator |
