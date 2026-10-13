@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections import Counter
 import csv
 import json
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,25 @@ def _independent_value_check(raw:str,event:SourceEvent)->bool|None:
     are the evidence; no independent universal KV spec is assumed.
     """
     try:
+        if event.syntax in ("KV","SYSLOG_PRI_KV","SYSLOG_BSD_KV"):
+            from engine import BSD,PRI
+            offset=0
+            if event.syntax=="SYSLOG_PRI_KV":
+                match=PRI.match(raw)
+                if match is None:return False
+                offset=match.end()
+            elif event.syntax=="SYSLOG_BSD_KV":
+                match=BSD.match(raw)
+                if match is None:return False
+                offset=match.end()
+            tokens=shlex.split(raw[offset:],posix=True)
+            if not all("=" in token for token in tokens):
+                return False
+            entries=[token.split("=",1) for token in tokens]
+            if len({key for key,_value in entries})!=len(entries):
+                return False
+            return dict(entries)==event.vendor_fields and (
+                len(entries)==event.primitive_fields)
         if event.syntax=="JSON":
             obj=json.loads(raw)
             if isinstance(obj,dict):
@@ -122,6 +142,7 @@ def evaluate_source()->dict[str,Any]:
             total["syntax_covered_bytes"]/total["raw_bytes"],4),
         "independent_decoder_agreement_events":total["reference_agreement_events"],
         "independent_decoder_checked_events":total["reference_check_events"],
+        "reference_algorithms":["stdlib json.loads","stdlib csv.reader","stdlib shlex.split"],
         "fixtures":matrix,
         "all_original_records_preserved":True,
         "normalization_attempted":False,
@@ -130,7 +151,7 @@ def evaluate_source()->dict[str,Any]:
         "limitations":[
             "Structural success is NOT independently gold-labeled source-field precision/recall.",
             "Retaining original raw bytes is not equivalent to parsing them.",
-            "Reference cross-decoder applies only to JSON and CSV, not KV.",
+            "Reference cross-decoder compares JSON, CSV and KV via independent stdlib primitives; it is not separately labeled source-field gold.",
             "Licensed upstream raw/gold fixtures remain ignored under .cache/.",
         ],
     }
