@@ -135,6 +135,19 @@ read-only status, not a Stop/Resume/Start action. Neither recovery nor lookup
 deploys a parser or proves sensor ingestion. Four dedicated Chromium migration tests use fixed public synthetic status
 interceptions and no target network sends.
 
+## Owner-scoped evidence after browser refresh
+
+The owner-scoped Test Lab evidence review is now a single contextual control
+in the top-level session status area, not a duplicated parser-creation
+workspace. It remains reachable from either parser path and after a manually
+authorized run-ID recovery, even when the original log source and DRAFT parser
+were cleared on reload. A run ID never authorizes reads on its own; summary
+and export are always separate, explicit same-origin GETs requiring backend
+ownership verification. The existing strict metadata/field allowlist,
+redacted event constraints, exact revision identity and SHA-256 attachment
+verification must pass before any JSON file is offered. Untrusted raw records,
+403/404 and tampered bytes fail closed, with no tenant/DP/sensor traffic.
+
 ## Separately authorized run limits
 
 For an already owner-authorized RUNNING/PAUSED Test Lab session, the Auto Parser

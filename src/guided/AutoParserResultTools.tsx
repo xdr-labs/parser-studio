@@ -8,7 +8,6 @@ import {startApprovedSyntheticSession,fetchApprovedSessionStatus,controlApproved
   assertApprovedSessionReady,type ApprovedTestLabStatus} from './approvedTestLabSession';
 import {queryApprovedInterflowReadback,assertInterflowReadbackCapability,
   type InterflowReadbackResult,type InterflowIndex} from './approvedInterflowReadback';
-import TestLabEvidencePanel from './TestLabEvidencePanel';
 
 interface Props {
   projectId:string;
@@ -16,7 +15,6 @@ interface Props {
   sourceFormat:string;
   activeSession:ApprovedTestLabStatus|null;
   onSessionUpdate:(next:ApprovedTestLabStatus|null)=>void;
-  onDownload:(filename:string,content:string)=>void;
 }
 const APPROVAL=/^[A-Za-z0-9_.-]{8,96}$/;
 const RUN=/^test_run_[0-9a-f]{32}$/;
@@ -26,7 +24,7 @@ const RUN=/^test_run_[0-9a-f]{32}$/;
  * Session and Interflow calls are independently authorized by the backend.
  */
 export default function AutoParserResultTools({
-  projectId,listenerPort,sourceFormat,activeSession,onSessionUpdate,onDownload,
+  projectId,listenerPort,sourceFormat,activeSession,onSessionUpdate,
 }:Props){
   const [port,setPort]=useState<ParserPortProposal|null>(null);
   const [portBusy,setPortBusy]=useState(false);
@@ -317,8 +315,9 @@ export default function AutoParserResultTools({
           Dismiss Finished Session
         </button>}
       {sessionError&&<p role="alert">{sessionError}</p>}
-      {session&&<TestLabEvidencePanel runId={session.runId}
-        onDownload={(filename,content)=>onDownload(filename,content)}/>}
+      {session&&<p>Authorized offline evidence can be reviewed from the
+        session status area above, including after navigating away or reloading.
+        A run ID alone never provides evidence access.</p>}
     </div>
     {session&&<details aria-label="Interflow field comparison after approved replay">
       <summary>Interflow · Read-only Field Check (Independent Authorization)</summary>

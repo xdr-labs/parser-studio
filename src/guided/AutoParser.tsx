@@ -795,7 +795,6 @@ export default function AutoParser({
          listenerPort={draft.guided?.receiver.port??0}
          sourceFormat={draft.format}
          activeSession={activeSession} onSessionUpdate={onSessionUpdate}
-         onDownload={(filename,content)=>download(filename,content)}
        />}
        <details className="auto-parser-recipe" aria-label="Whole-sample regression and holdout review">
          <summary>Review safe repair · Full-sample and holdout regression</summary>

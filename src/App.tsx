@@ -5,6 +5,7 @@ import AutoParser from './guided/AutoParser';
 import {controlApprovedSession,fetchApprovedSessionStatus,reconcileApprovedSession,
   type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
 import ChatGPTAssist from './guided/ChatGPTAssist';
+import TestLabEvidencePanel from './guided/TestLabEvidencePanel';
 import {MAX_DATASET_BYTES} from './parser';
 
 type Workspace='auto'|'chatgpt';
@@ -132,6 +133,18 @@ export default function App(){
     setWorkspace('auto');
   };
   const preview=(candidate:ParserDraft,source?:string)=>runInWorker(source??sample,candidate);
+  const downloadSafeEvidence=(filename:string,content:string,mediaType:string)=>{
+    if(!/^testlab-evidence-test_run_[0-9a-f]{32}\.json$/.test(filename)||
+       mediaType!=='application/json;charset=utf-8'||
+       new TextEncoder().encode(content).byteLength>1024*1024)
+      throw new Error('The approved evidence download contract is invalid.');
+    const blob=new Blob([content],{type:mediaType});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;link.download=filename;document.body.append(link);
+    link.click();link.remove();
+    window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
   return <div className="app-shell two-path-shell">
     <aside className="nav-rail two-path-nav" aria-label="Parser creation methods">
       <div className="brand-symbol" aria-label="Parser Studio"><FileText size={23}/></div>
@@ -213,6 +226,11 @@ export default function App(){
           {stopBusy?'Confirming Stop…':'Stop Server Session Now'}
         </button>
       </div>}
+      {activeSession&&<section className="two-path-session-evidence"
+        aria-label="Authorized Test Lab offline evidence">
+        <TestLabEvidencePanel runId={activeSession.runId}
+          onDownload={downloadSafeEvidence}/>
+      </section>}
       {live.error&&<p role="alert" className="auto-parser-warning">
         Local preview: {live.error}. Check the sample before generating a parser.
       </p>}

@@ -45,3 +45,8 @@
 .two-path-recovery-controls label{display:flex;flex-direction:column;gap:5px;flex:1 1 275px;font-size:12px}
 .two-path-recovery-controls input{width:100%;min-width:0;border:1px solid #ccd7e3;border-radius:7px;padding:10px;font-family:monospace;color:#22344a}
 .two-path-recovery-controls button{min-height:39px}
+
+/* Global, explicitly requested owner-only evidence remains a result action. */
+.two-path-session-evidence{margin:10px 18px}
+.two-path-session-evidence>details{padding:10px 14px;border:1px solid #d2dfe6;border-radius:9px;background:#fff}
+.two-path-session-evidence summary{cursor:pointer}
