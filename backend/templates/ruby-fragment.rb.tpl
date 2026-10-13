@@ -337,11 +337,27 @@ def parserstudio_mixed(text, settings)
       'kv'
     end
   if family == 'rfc3164_envelope'
-    # Do not reconstruct year/timezone from a yearless RFC3164 header.
-    # Parse TAG: and strict KV through the existing native RFC3164 parser.
-    raise ArgumentError, 'Disallowed RFC3164 KV family' unless
-      allowlist.include?('rfc3164_kv')
-    return parserstudio_syslog_rfc3164(text, {'syslogBodyFormat'=>'kv'})
+    # Reuse the exact yearless RFC3164 TAG: parser, then decode only
+    # explicitly allowlisted CEF/LEEF/KV bodies. No body-to-KV fallback.
+    syslog = parserstudio_syslog_rfc3164(text, {'syslogBodyFormat'=>'raw'})
+    message = syslog.delete('message')
+    branch = if message && message.start_with?('CEF:')
+      'rfc3164_cef'
+    elsif message && message.start_with?('LEEF:')
+      'rfc3164_leef'
+    elsif message && message.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
+      'rfc3164_kv'
+    end
+    raise ArgumentError, 'Unsupported or disallowed RFC3164 body' unless
+      branch && allowlist.include?(branch)
+    syslog['body'] =
+      case branch
+      when 'rfc3164_cef' then parserstudio_cef(message)
+      when 'rfc3164_leef' then parserstudio_leef(message)
+      when 'rfc3164_kv' then parserstudio_key_values(message)
+      else raise ArgumentError, 'Unsupported RFC3164 body'
+      end
+    return syslog
   end
   if family == 'rfc5424_envelope'
     # Parsing with the raw body mode is the single authoritative header and

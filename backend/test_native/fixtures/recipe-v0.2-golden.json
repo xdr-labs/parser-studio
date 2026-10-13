@@ -276,6 +276,22 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -723,6 +739,109 @@
       "id": "physical-multiline",
       "slug": "v02_mixed_rfc5424_bodies",
       "raw": "{\"src_ip\":\"192.0.2.19\"}\n{\"src_ip\":\"192.0.2.20\"}"
+    }
+  ],
+  "mixedRfc3164WrappedCases": [
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "src_ip=198.51.100.8 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-cef-deny",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "192.0.2.11",
+        "wrapped_action": "deny",
+        "cef_port": 443,
+        "yearless_header": "Oct 12 02:03:04",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-leef-allow",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Nov 12 02:03:04 edge fw[122]: LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.8\tdstPort=80\tact=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "203.0.113.8",
+        "wrapped_action": "allow",
+        "leef_port": 80,
+        "yearless_header": "Nov 12 02:03:04",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedRfc3164WrappedNegative": [
+    {
+      "id": "rfc5424-disallowed",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "bad-month",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Bad 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "bad-priority",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<999>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "bad-day",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Feb 30 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "missing-tag",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "unsupported-cef-version",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: CEF:2|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "unsupported-leef-version",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Nov 12 02:03:04 edge fw[122]: LEEF:3.0|Synthetic|FW|1|501|src=203.0.113.8\tact=deny"
+    },
+    {
+      "id": "unselected-rfc3164-kv",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: src_ip=192.0.2.11 action=deny"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "{\"src_ip\":\"192.0.2.11\"}\n{\"src_ip\":\"192.0.2.12\"}"
     }
   ]
 }

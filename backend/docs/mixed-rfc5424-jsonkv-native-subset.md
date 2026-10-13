@@ -12,4 +12,4 @@ The 15th fixed, public-synthetic Native Ruby 3.2 / Fluentd 1.17.1 qualification 
 
 These fixtures **do not** validate a user-submitted parser on a real target. `engineVerified`, `targetImportVerified` and all actual DP/sensor/Interflow readiness flags remain false in the DRAFT API. The external AI provider and any target write/sensor sending are disabled or independently approved.
 
-Remaining unsupported: arbitrary RFC3164 mixed body extensions beyond explicit strict TAG KV, CSV within mixed routing, unframed Java stack traces, arbitrary per-vendor Ruby, dynamic regex dispatch and unsupported RFC5424 variants outside the reviewed subset.
+Remaining unsupported: arbitrary RFC3164 mixed body extensions beyond explicit strict TAG KV or separately allowlisted RFC3164 CEF/LEEF, CSV within mixed routing, unframed Java stack traces, arbitrary per-vendor Ruby, dynamic regex dispatch and unsupported RFC5424 variants outside the reviewed subset.

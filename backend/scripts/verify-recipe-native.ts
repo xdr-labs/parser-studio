@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164','v02_mixed_rfc5424_bodies'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164','v02_mixed_rfc5424_bodies','v02_mixed_rfc3164_cefleef'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -50,11 +50,19 @@ const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
   mixedRfc3164Negative:Array<{id:string;slug:string;raw:string}>;
   mixedRfc5424BodyCases:Array<{id:string;slug:string;raw:string}>;
   mixedRfc5424BodyNegative:Array<{id:string;slug:string;raw:string}>;
+  mixedRfc3164WrappedCases:Array<{id:string;slug:string;raw:string}>;
+  mixedRfc3164WrappedNegative:Array<{id:string;slug:string;raw:string}>;
   blankLineCases:Array<{id:string;slug:string;raw:string;
      expectedTime:string|null;expectedRecord:Record<string,unknown>}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==15||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==16||
+ !Array.isArray(samples.mixedRfc3164WrappedCases)||samples.mixedRfc3164WrappedCases.length!==3||
+ samples.mixedRfc3164WrappedCases.some(e=>e.slug!=='v02_mixed_rfc3164_cefleef'||
+  typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
+ !Array.isArray(samples.mixedRfc3164WrappedNegative)||samples.mixedRfc3164WrappedNegative.length!==9||
+ samples.mixedRfc3164WrappedNegative.some(e=>e.slug!=='v02_mixed_rfc3164_cefleef'||
+  typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
  !Array.isArray(samples.mixedRfc5424BodyCases)||samples.mixedRfc5424BodyCases.length!==3||
  samples.mixedRfc5424BodyCases.some(e=>e.slug!=='v02_mixed_rfc5424_bodies'||
    typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
@@ -111,7 +119,9 @@ function buildProject(entry:Profile):ParserProject{
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
-  ...(entry.format==='mixed'?{mixedFormats:entry.slug==='v02_mixed_rfc5424_bodies'?
+  ...(entry.format==='mixed'?{mixedFormats:entry.slug==='v02_mixed_rfc3164_cefleef'?
+    ['json','kv','rfc3164_cef','rfc3164_leef'] as const:
+    entry.slug==='v02_mixed_rfc5424_bodies'?
     ['json','kv','rfc5424_json','rfc5424_kv'] as const:
     entry.slug==='v02_mixed_rfc5424'?
     ['json','kv','rfc5424_cef','rfc5424_leef'] as const:
@@ -120,7 +130,23 @@ function buildProject(entry:Profile):ParserProject{
       ['json','kv','cef','leef'] as const}:{}),
   ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
     {syslogBodyFormat:entry.bodyFormat}:{})};
- if(entry.slug==='v02_mixed_rfc5424_bodies'){
+ if(entry.slug==='v02_mixed_rfc3164_cefleef'){
+  p.receiver.port=6804;
+  p.normalization.topFields=Object.fromEntries([
+   field('src_ip','srcip','ip'),field('action','action','string'),
+   field('body.src','wrapped_srcip','ip'),field('body.act','wrapped_action','string'),
+   field('body.dpt','cef_port','port'),field('body.dstPort','leef_port','port'),
+   field('syslog_timestamp','yearless_header','string'),
+   field('syslog_time_policy','time_policy','string'),
+  ]) as FieldMap;
+  p.normalization.nsFields={};p.normalization.vendorFields={};
+  p.classification.rules=[
+   {field:'action',operator:'equals',value:'deny',index:'threat'},
+   {field:'action',operator:'equals',value:'allow',index:'session'},
+   {field:'wrapped_action',operator:'equals',value:'deny',index:'threat'},
+   {field:'wrapped_action',operator:'equals',value:'allow',index:'session'},
+  ];
+ }else if(entry.slug==='v02_mixed_rfc5424_bodies'){
   p.receiver.port=6803;
   p.normalization.topFields=Object.fromEntries([
    field('src_ip','srcip','ip'),field('action','action','string'),
@@ -216,6 +242,8 @@ for(const entry of samples.profiles){
     samples.mixedRfc3164Cases.map(x=>x.raw):[]),
    ...(entry.slug==='v02_mixed_rfc5424_bodies'?
     samples.mixedRfc5424BodyCases.map(x=>x.raw):[]),
+   ...(entry.slug==='v02_mixed_rfc3164_cefleef'?
+    samples.mixedRfc3164WrappedCases.map(x=>x.raw):[]),
    ...(entry.transport==='blank_line_json'?
     samples.blankLineCases.map(x=>x.raw):[])];
  const digest=sha(sampleRows.join(entry.transport==='blank_line_json'?

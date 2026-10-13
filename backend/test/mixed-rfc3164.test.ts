@@ -52,7 +52,7 @@ test('mixed RFC3164 never invents year or timezone and enforces same sensor CONF
  const unsafe:Array<(p:any)=>void>=[
   x=>{x.receiver.port=6799;},
   x=>{x.normalization.topFields.syslog_timestamp={normalized_name:'timestamp',data_type:'date',time_format:'iso8601',timezone:'UTC'};},
-  x=>{x.extraction.mixedFormats=['json','rfc3164_cef'];},
+  x=>{x.extraction.mixedFormats=['json','rfc3164_raw'];},
   x=>{x.extraction.mixedFormats=['json','rfc3164_json'];},
   x=>{x.extraction.mixedFormats=['json','rfc3164_kv','rfc3164_kv'];},
   x=>{x.extraction.mixedFormats=['json','rfc3164_kv','rfc5424_auto'];},

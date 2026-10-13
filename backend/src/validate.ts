@@ -92,7 +92,7 @@ export function validateProject(input: unknown): ValidationResult {
   // RFC3164 omits the year and timezone. A date cast or generated event
   // timestamp would silently invent a value, so forbid it at authoring time.
   if(extraction.format==="syslog_rfc3164"||
-     (extraction.format==="mixed"&&extraction.mixedFormats?.includes("rfc3164_kv"))){
+     (extraction.format==="mixed"&&extraction.mixedFormats?.some(f=>f==="rfc3164_kv"||f==="rfc3164_cef"||f==="rfc3164_leef"))){
     for(const section of ["topFields","nsFields","vendorFields"] as const){
       const timeField=p.normalization[section]["syslog_timestamp"];
       if(timeField?.data_type==="date"){
@@ -102,9 +102,9 @@ export function validateProject(input: unknown): ValidationResult {
       }
     }
   }
-  const allowedMix=new Set(["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv"]);
+  const allowedMix=new Set(["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv","rfc3164_cef","rfc3164_leef"]);
   if(extraction.format==="mixed"){
-    if(extraction.mixedFormats?.some(f=>f==="rfc5424_cef"||f==="rfc5424_leef"||f==="rfc3164_kv"||f==="rfc5424_json"||f==="rfc5424_kv")&&
+    if(extraction.mixedFormats?.some(f=>f==="rfc5424_cef"||f==="rfc5424_leef"||f==="rfc3164_kv"||f==="rfc5424_json"||f==="rfc5424_kv"||f==="rfc3164_cef"||f==="rfc3164_leef")&&
        p.receiver.port<6800)
       issue(issues,"syslog_port_minimum","/receiver/port",
        "Mixed Syslog listener and .conf port must be at least 6800.");
@@ -113,7 +113,7 @@ export function validateProject(input: unknown): ValidationResult {
        new Set(extraction.mixedFormats).size!==extraction.mixedFormats.length||
        !extraction.mixedFormats.every(format=>allowedMix.has(format)))
       issue(issues,"mixed_family_allowlist","/extraction/mixedFormats",
-        "Choose two to four distinct reviewed single-line families; RFC3164 KV and RFC5424 JSON/KV/CEF/LEEF require explicit allowlists.");
+        "Choose two to four distinct reviewed single-line families; RFC3164 KV/CEF/LEEF and RFC5424 JSON/KV/CEF/LEEF require explicit allowlists.");
   }else if(extraction.mixedFormats!==undefined){
     issue(issues,"format_options","/extraction/mixedFormats",
       "A family allowlist is valid only in strict mixed extraction.");

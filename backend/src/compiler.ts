@@ -89,6 +89,9 @@ export function compilePair(input: unknown): PairExport {
         project.receiver.tcpFraming==="blank_line_json"
           ? "Only explicitly TCP blank-line-framed JSON is supported for multiline input; general multiline and mixed Syslog remain unsupported."
           : project.extraction.format==="mixed"&&
+            project.extraction.mixedFormats?.some(f=>f==="rfc3164_cef"||f==="rfc3164_leef")
+          ? "Strict RFC3164 CEF/LEEF mixed requires explicit allowlist; year and timezone remain unknown and all unreviewed bodies and multiline remain unsupported."
+          : project.extraction.format==="mixed"&&
             project.extraction.mixedFormats?.some(f=>f==="rfc5424_json"||f==="rfc5424_kv")
           ? "Strict RFC5424-wrapped JSON/KV in mixed parsers requires an explicit allowlist; unreviewed Syslog bodies, CSV and multiline remain unsupported."
           : project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("rfc3164_kv")

@@ -58,7 +58,7 @@ test('P0 mixed RFC5424 needs Syslog port >=6800 and rejects unsupported envelope
  const p=mixedSyslogProject();
  const mutations:Array<(p:any)=>void>=[
   x=>{x.receiver.port=6799;},
-  x=>{x.extraction.mixedFormats=['json','kv','rfc3164_cef'];},
+  x=>{x.extraction.mixedFormats=['json','kv','rfc3164_raw'];},
   x=>{x.extraction.mixedFormats=['json','kv','rfc5424'];},
   x=>{x.extraction.mixedFormats=['json','kv','rfc5424_csv'];},
   x=>{x.extraction.mixedFormats=['json','kv','rfc5424_cef','rfc5424_cef'];},
