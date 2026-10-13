@@ -33,6 +33,10 @@ test('P0-AP3 GET versioned schema/capabilities and POST strict compile over loca
   assert.ok(capability.supportedEnvelopeParsers.includes('rfc3164_strict_no_year_or_zone'));
   assert.ok(capability.unsupported.includes('rfc3164_timestamp_inference'));
   assert.ok(capability.unsupported.includes('mixed_rfc3164_unreviewed_bodies'));
+  assert.ok(!capability.unsupported.includes('mixed_csv'));
+  assert.ok(capability.unsupported.includes('mixed_csv_unreviewed_schema'));
+  assert.ok(!capability.unsupported.includes('multiline'));
+  assert.ok(capability.unsupported.includes('multiline_unframed_generic'));
   assert.deepEqual(capability.strictMixedSingleLineFamilies,['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv']);
   assert.ok(capability.supportedOperators.includes('dispatch_family'));
   assert.equal(capability.jsonBlankLineTcpFraming,true);

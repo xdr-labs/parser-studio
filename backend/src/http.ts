@@ -284,7 +284,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             "parse_csv","parse_cef","parse_leef","parse_java_stacktrace","map_field","cast_type",
             "classify_equals","fallback_unparsed"],
           unsupported:["rfc3164_timestamp_inference","mixed_rfc3164_unreviewed_bodies","mixed_other_syslog_envelopes",
-            "mixed_csv","multiline","arbitrary_regex",
+            "mixed_csv_unreviewed_schema","multiline_unframed_generic","arbitrary_regex",
             "ruby_execution","jsonata","classification_exists","enrichment_unmodeled"],
           sourceHashVerifiedAgainstEvents:false,nativeUserParserVerified:false,
           targetImportVerified:false,apiDoesNotDeploy:true,
