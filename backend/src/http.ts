@@ -4,6 +4,7 @@ import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import {compileRecipePair,validateRecipePair} from "./parser-recipe-v02.js";
 import {mineDrain3,Drain3WorkerError} from "./drain3-worker.js";
+import {AIReviewGateway,AIReviewGatewayError} from "./ai-review-gateway.js";
 import recipeSchema from "../schema/parser-recipe.v0.2.schema.json" with {type:"json"};
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {listParserTemplates,instantiateParserTemplate,ParserTemplateError} from "./parser-templates.js";
@@ -93,6 +94,9 @@ export interface BackendServerOptions {
     pythonExecutable:string;
     authorize:(request:IncomingMessage)=>Promise<boolean>;
   };
+  /** Disabled by default: externally configured provider, durable token ledger,
+   * independent identity authorization and pre-egress audit are mandatory. */
+  aiReviewGateway?:AIReviewGateway;
   legacyClient?:LegacyPocClient;
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
@@ -153,6 +157,44 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     }
     if (path === "/api/v1/parser-pairs/schema" && req.method === "GET") {
       send(res, 200, projectSchema);
+      return;
+    }
+    // All AI endpoints disabled by default; GET is data-free and auth-gated,
+    // POST sends strict enumerated metadata only (never browser raw events).
+    const aiBase="/api/v1/parser-pairs/ai/v0.1";
+    if(path===aiBase+"/capabilities"||path===aiBase+"/review"){
+      const isGet=path.endsWith("/capabilities");
+      if(req.method!==(isGet?"GET":"POST")){
+        send(res,405,{error:"METHOD_NOT_ALLOWED"});return;
+      }
+      const gateway=options.aiReviewGateway;
+      if(!gateway){send(res,403,{error:"AI_REVIEW_DISABLED"});return;}
+      const actor=await gateway.authorize(req);
+      if(!actor){send(res,403,{error:"AI_REVIEW_DENIED"});return;}
+      if(isGet){send(res,200,gateway.capabilities());return;}
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]??0)>3072){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const input=await jsonInput(req,3072);
+        send(res,200,await gateway.run(input,actor));
+      }catch(error){
+        if((error as {code?:string})?.code==="LIMIT")
+          send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if((error as {code?:string})?.code==="JSON")
+          send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof AIReviewGatewayError){
+          const code=error.code;
+          const status=code==="AI_REVIEW_BUSY"||code==="AI_BUDGET_DENIED"?429:
+            code==="AI_METADATA_UNSUPPORTED"||code==="AI_EXPLICIT_CONSENT_REQUIRED"||
+            code==="AI_CANDIDATE_UNTRUSTED"?422:503;
+          send(res,status,{error:code});
+        }else send(res,503,{error:"AI_REVIEW_UNAVAILABLE"});
+      }
       return;
     }
     // Public data-free capability probe is still owner-authorized.
