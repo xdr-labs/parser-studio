@@ -1,16 +1,421 @@
 {
-  "contract": "parser-studio.poc.benchmark-checkpoint.v0.1",
-  "status": "LOCAL_EXPERIMENT_ONLY_NOT_NATIVE_NOT_TARGET",
-  "source_authorization": "Read-only publicly available upstream Elastic/x-pack test fixtures; underlying raw and expected files excluded from Git",
-  "fixture_manifest": "manifest.json",
-  "total_records": 256,
+  "auto_learned_blind_holdout": {
+    "constraints": [
+      "Frozen train-only rules evaluated on disjoint examples from the SAME upstream source fixtures; NOT independent vendor releases.",
+      "Split labels for strata come from manual upper-control recognizer; NEVER passed to fit/inference.",
+      "Single-example EDR does not provide independent test evidence.",
+      "Action translation learned only from >=2 labeled train examples; unseen categories abstain.",
+      "All metrics local Python only; no native Ruby/CONF, Stellar target, or LLM evidence."
+    ],
+    "exploratory_value_agreement_metrics": {
+      "FN": 13,
+      "FP": 0,
+      "TP": 433,
+      "f1": 0.9852,
+      "gold_present": 446,
+      "precision": 1.0,
+      "recall": 0.9709
+    },
+    "fixtures": [
+      {
+        "field_metrics": {
+          "FN": 2,
+          "FP": 0,
+          "TP": 23,
+          "f1": 0.9583,
+          "gold_present": 25,
+          "precision": 1.0,
+          "recall": 0.92
+        },
+        "heldout": 5,
+        "id": "fortinet_traffic",
+        "train": 8,
+        "zero_shot_subtype_records": 0
+      },
+      {
+        "field_metrics": {
+          "FN": 7,
+          "FP": 0,
+          "TP": 18,
+          "f1": 0.8372,
+          "gold_present": 25,
+          "precision": 1.0,
+          "recall": 0.72
+        },
+        "heldout": 13,
+        "id": "fortinet_event",
+        "train": 15,
+        "zero_shot_subtype_records": 1
+      },
+      {
+        "field_metrics": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 77,
+          "f1": 1.0,
+          "gold_present": 77,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "heldout": 15,
+        "id": "fortinet_utm",
+        "train": 13,
+        "zero_shot_subtype_records": 4
+      },
+      {
+        "field_metrics": {
+          "FN": 1,
+          "FP": 0,
+          "TP": 174,
+          "f1": 0.9971,
+          "gold_present": 175,
+          "precision": 1.0,
+          "recall": 0.9943
+        },
+        "heldout": 35,
+        "id": "palo_traffic",
+        "train": 65,
+        "zero_shot_subtype_records": 1
+      },
+      {
+        "field_metrics": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 135,
+          "f1": 1.0,
+          "gold_present": 135,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "heldout": 27,
+        "id": "palo_threat",
+        "train": 49,
+        "zero_shot_subtype_records": 0
+      },
+      {
+        "field_metrics": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 0,
+          "f1": null,
+          "gold_present": 0,
+          "precision": null,
+          "recall": null
+        },
+        "heldout": 0,
+        "id": "trellix_edr",
+        "train": 1,
+        "zero_shot_subtype_records": 0
+      },
+      {
+        "field_metrics": {
+          "FN": 2,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "gold_present": 2,
+          "precision": null,
+          "recall": 0.0
+        },
+        "heldout": 1,
+        "id": "trellix_epo",
+        "train": 2,
+        "zero_shot_subtype_records": 0
+      },
+      {
+        "field_metrics": {
+          "FN": 1,
+          "FP": 0,
+          "TP": 6,
+          "f1": 0.9231,
+          "gold_present": 7,
+          "precision": 1.0,
+          "recall": 0.8571
+        },
+        "heldout": 4,
+        "id": "trend_vision",
+        "train": 3,
+        "zero_shot_subtype_records": 1
+      }
+    ],
+    "generated_grammar_profiles": 8,
+    "grammar_sha256": "f2847b6b47f4ec88b2a526955767342a9d32fe3bc56afdee621de01f64b728ed",
+    "hand_profile_upper_control_same_holdout": {
+      "FN": 10,
+      "FP": 0,
+      "TP": 436,
+      "f1": 0.9887,
+      "gold_present": 446,
+      "precision": 1.0,
+      "recall": 0.9776
+    },
+    "holdout_metadata_or_goldless": 1,
+    "holdout_records": 100,
+    "llm_used": false,
+    "multiple_grammars_matched_records": 0,
+    "native_verified": false,
+    "no_grammar_match_records": 2,
+    "own_grammar_matched_records": 98,
+    "seed": "parser-studio-independent-split-v1",
+    "split_sha256": "2977ec4ca0911d37d6d3b9d2666fa7fbddb0bdabb35e3c20ca567a591efca307",
+    "stage": "ISOLATED_TRAIN_ONLY_BLIND_SAME_SOURCE_FIXTURE_HOLDOUT",
+    "strict_unambiguous_only_metrics": {
+      "FN": 147,
+      "FP": 0,
+      "TP": 299,
+      "f1": 0.8027,
+      "gold_present": 446,
+      "precision": 1.0,
+      "recall": 0.6704
+    },
+    "target_verified": false,
+    "tentative_semantic_role_observations": 134,
+    "train_equivalent_mapping_ambiguities": [
+      {
+        "grammar": "fortinet_event:PRI_KV",
+        "possible_source_paths": 2,
+        "role": "destination.port"
+      },
+      {
+        "grammar": "fortinet_event:PRI_KV",
+        "possible_source_paths": 2,
+        "role": "source.ip"
+      },
+      {
+        "grammar": "fortinet_event:PRI_KV",
+        "possible_source_paths": 2,
+        "role": "source.port"
+      },
+      {
+        "grammar": "palo_threat:BSD_CSV",
+        "possible_source_paths": 2,
+        "role": "destination.ip"
+      },
+      {
+        "grammar": "palo_threat:BSD_CSV",
+        "possible_source_paths": 2,
+        "role": "destination.port"
+      },
+      {
+        "grammar": "palo_traffic:BSD_CSV",
+        "possible_source_paths": 2,
+        "role": "destination.ip"
+      },
+      {
+        "grammar": "palo_traffic:BSD_CSV",
+        "possible_source_paths": 2,
+        "role": "destination.port"
+      },
+      {
+        "grammar": "trend_vision:JSON",
+        "possible_source_paths": 2,
+        "role": "destination.ip"
+      },
+      {
+        "grammar": "trend_vision:JSON",
+        "possible_source_paths": 2,
+        "role": "source.ip"
+      }
+    ],
+    "train_records": 156,
+    "unqualified_single_example_profiles": 2,
+    "wrong_vendor_grammar_activations": 0,
+    "wrong_vendor_rule_matches": 0,
+    "zero_shot_subtype_metrics": {
+      "FN": 1,
+      "FP": 0,
+      "TP": 22,
+      "f1": 0.9778,
+      "gold_present": 23,
+      "precision": 1.0,
+      "recall": 0.9565
+    }
+  },
+  "contract": "parser-studio.poc.benchmark-checkpoint.v0.2",
   "existing_ui_default_preview": {
     "browser_extracted_events": 80,
     "browser_normalized_events": 59,
     "records": 256,
     "warning": "Event-count preview with createDraft defaults. NOT mathematically comparable with new PoC field-level gold metrics."
   },
+  "existing_ui_same_six_roles": {
+    "direct_extracted_role_metrics": {
+      "FN": 1168,
+      "FP": 0,
+      "TP": 0,
+      "f1": 0,
+      "gold_present": 1168,
+      "precision": null,
+      "recall": 0
+    },
+    "normalized_role_metrics": {
+      "FN": 1168,
+      "FP": 0,
+      "TP": 0,
+      "f1": 0,
+      "gold_present": 1168,
+      "precision": null,
+      "recall": 0
+    },
+    "raw_extracted_value_presence_without_semantic_assertion": {
+      "destination.ip": 55,
+      "destination.port": 46,
+      "event.action": 60,
+      "source.ip": 56,
+      "source.port": 46,
+      "user.name": 19
+    },
+    "records": 256,
+    "six_role_gold_present": 1168,
+    "warning": "Default product mappings are custom.*. Extracted value equality does not establish correct ECS role. No vendor-specific configuration."
+  },
+  "fixture_manifest": "manifest.json",
+  "fixtures": [
+    {
+      "events": 13,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_fields": 63
+      },
+      "gold_event_records": 13,
+      "id": "fortinet_traffic",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 13
+      },
+      "metadata_or_goldless_records": 0
+    },
+    {
+      "events": 28,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 22,
+        "precision": 1.0,
+        "recall": 0.6071,
+        "true_fields": 34
+      },
+      "gold_event_records": 28,
+      "id": "fortinet_event",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 18,
+        "STRUCTURED_UNMAPPED": 10
+      },
+      "metadata_or_goldless_records": 0
+    },
+    {
+      "events": 28,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_fields": 143
+      },
+      "gold_event_records": 28,
+      "id": "fortinet_utm",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 28
+      },
+      "metadata_or_goldless_records": 0
+    },
+    {
+      "events": 100,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_fields": 498
+      },
+      "gold_event_records": 100,
+      "id": "palo_traffic",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 100
+      },
+      "metadata_or_goldless_records": 0
+    },
+    {
+      "events": 76,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_fields": 380
+      },
+      "gold_event_records": 76,
+      "id": "palo_threat",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 76
+      },
+      "metadata_or_goldless_records": 0
+    },
+    {
+      "events": 1,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_fields": 6
+      },
+      "gold_event_records": 1,
+      "id": "trellix_edr",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 1
+      },
+      "metadata_or_goldless_records": 0
+    },
+    {
+      "events": 3,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "true_fields": 4
+      },
+      "gold_event_records": 2,
+      "id": "trellix_epo",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 2,
+        "STRUCTURED_UNMAPPED": 1
+      },
+      "metadata_or_goldless_records": 1
+    },
+    {
+      "events": 7,
+      "field_evaluation": {
+        "extra_or_wrong": 0,
+        "missing_or_wrong": 1,
+        "precision": 1.0,
+        "recall": 0.9444,
+        "true_fields": 17
+      },
+      "gold_event_records": 6,
+      "id": "trend_vision",
+      "local_syntax_status": {
+        "LOCAL_EXTRACTED": 5,
+        "STRUCTURED_UNMAPPED": 2
+      },
+      "metadata_or_goldless_records": 1
+    }
+  ],
+  "jsonata_used": false,
+  "llm_used": false,
+  "native_fluentd_verified": false,
   "new_poc_field_level": {
+    "caveat": "Hand-derived parser profiles from inspected fixtures; same upstream files as evaluation, NOT blind source/version holdout; no automatic grammar-learning improvement claim.",
+    "micro_metrics": {
+      "FN": 23,
+      "FP": 0,
+      "TP": 1145,
+      "f1": 0.9901,
+      "precision": 1.0,
+      "recall": 0.9803
+    },
     "roles": {
       "destination.ip": {
         "FN": 7,
@@ -61,14 +466,6 @@
         "recall": 0.9474
       }
     },
-    "micro_metrics": {
-      "FN": 23,
-      "FP": 0,
-      "TP": 1145,
-      "f1": 0.9901,
-      "precision": 1.0,
-      "recall": 0.9803
-    },
     "same_fixture_latter_half_probe": {
       "FN": 5,
       "FP": 0,
@@ -76,146 +473,12 @@
       "f1": 0.9956,
       "precision": 1.0,
       "recall": 0.9913
-    },
-    "caveat": "Hand-derived parser profiles from inspected fixtures; same upstream files as evaluation, NOT blind source/version holdout; no automatic grammar-learning improvement claim."
-  },
-  "fixtures": [
-    {
-      "id": "fortinet_traffic",
-      "events": 13,
-      "gold_event_records": 13,
-      "metadata_or_goldless_records": 0,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 13
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "true_fields": 63
-      }
-    },
-    {
-      "id": "fortinet_event",
-      "events": 28,
-      "gold_event_records": 28,
-      "metadata_or_goldless_records": 0,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 18,
-        "STRUCTURED_UNMAPPED": 10
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 22,
-        "precision": 1.0,
-        "recall": 0.6071,
-        "true_fields": 34
-      }
-    },
-    {
-      "id": "fortinet_utm",
-      "events": 28,
-      "gold_event_records": 28,
-      "metadata_or_goldless_records": 0,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 28
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "true_fields": 143
-      }
-    },
-    {
-      "id": "palo_traffic",
-      "events": 100,
-      "gold_event_records": 100,
-      "metadata_or_goldless_records": 0,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 100
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "true_fields": 498
-      }
-    },
-    {
-      "id": "palo_threat",
-      "events": 76,
-      "gold_event_records": 76,
-      "metadata_or_goldless_records": 0,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 76
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "true_fields": 380
-      }
-    },
-    {
-      "id": "trellix_edr",
-      "events": 1,
-      "gold_event_records": 1,
-      "metadata_or_goldless_records": 0,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 1
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "true_fields": 6
-      }
-    },
-    {
-      "id": "trellix_epo",
-      "events": 3,
-      "gold_event_records": 2,
-      "metadata_or_goldless_records": 1,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 2,
-        "STRUCTURED_UNMAPPED": 1
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "true_fields": 4
-      }
-    },
-    {
-      "id": "trend_vision",
-      "events": 7,
-      "gold_event_records": 6,
-      "metadata_or_goldless_records": 1,
-      "local_syntax_status": {
-        "LOCAL_EXTRACTED": 5,
-        "STRUCTURED_UNMAPPED": 2
-      },
-      "field_evaluation": {
-        "extra_or_wrong": 0,
-        "missing_or_wrong": 1,
-        "precision": 1.0,
-        "recall": 0.9444,
-        "true_fields": 17
-      }
     }
-  ],
-  "native_fluentd_verified": false,
-  "stellar_dp_verified": false,
-  "sensor_or_network_io": false,
-  "llm_used": false,
+  },
   "real_drain3_miner_used": false,
-  "jsonata_used": false
+  "sensor_or_network_io": false,
+  "source_authorization": "Read-only publicly available upstream Elastic/x-pack test fixtures; underlying raw and expected files excluded from Git",
+  "status": "LOCAL_EXPERIMENT_ONLY_NOT_NATIVE_NOT_TARGET",
+  "stellar_dp_verified": false,
+  "total_records": 256
 }

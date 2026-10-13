@@ -15,7 +15,7 @@
 - Profile recognizer and type-aware parsing: Fortinet PRI+quoted KV, PAN-OS Syslog BSD+subtype positional CSV, nested strict JSON for Trellix EDR/ePO and Trend Vision One.
 - Typed semantic mapping of source/destination IP and port; some user, URL and event.action fields; missing/unknown values are not treated as verified.
 - Exact source byte-span provenance, unparsed-range accounting, fail-closed duplicate/unsafe JSON keys and malformed KV/CSV; API metadata/pagination records retained as STRUCTURED_UNMAPPED instead of silently dropped.
-- Very simple residual fingerprint grouping is included as an exploratory baseline; **it is NOT actual Drain3, LLM grammar synthesis, JSONata mapping, learned vendor fingerprints, or a Stellar Ruby/CONF compiler**.
+- Very simple residual fingerprint grouping is included as an exploratory baseline; **it is NOT actual Drain3, LLM grammar synthesis, JSONata mapping, or a Stellar Ruby/CONF compiler**. A separate train-only experimental supervised grammar learner is implemented in `learn.py`, below.
 
 ## Commands — run immediately on dev-atlas
 
@@ -25,7 +25,7 @@ cd /home/aella/parser-studio-engine-poc-20261013
 # Verify exact local source/gold SHA256 and 256 input row alignment.
 python3 poc/vendor_engine/corpus.py
 
-# Run 13 independent Python tests, including source/negative/CSV/Unicode
+# Run 24 independent Python tests, including source/negative/CSV/Unicode
 # and public gold comparison tests when the local .cache is available.
 python3 -m unittest discover -s poc/vendor_engine -p 'test_*.py' -v
 
@@ -49,15 +49,97 @@ If node_modules is not present on a fresh checkout, install the repo's pinned np
 - No Ruby/Fluentd native verification, actual Stellar parser import, DP write, sensor IO, external AI, real Drain3 clustering, or JSONata execution in this PoC.
 - Non-security response metadata is counted separately; `LOCAL_EXTRACTED` is browser/PoC-level typed extraction, not a claim of deployed semantics or a complete parser.
 
-Aggregate **value-free** per-fixture and per-field checkpoint: `benchmark-summary.json`. Full local-only details, no original logs in Git: ignored `poc/vendor_engine/.cache/engine_result.json` and `current_baseline.json`.
+Aggregate **value-free** per-fixture and per-field checkpoint: `benchmark-summary.json`. Full local-only details, no original logs in Git: ignored `poc/vendor_engine/.cache/engine_result.json`, `current_baseline.json`, `isolated_train.json`, `split_index.json`, `frozen_grammar.json`, and `learned_result.json`.
 
-## NEXT CHAT — FIRST UNFINISHED WORK (P0 ENGINE POC ONLY)
+## P0 experimental comparison — implemented, isolated PoC only
 
-1. In the first tool action, inspect **this branch's exact HEAD**, `git status -sb`, the POC README, `manifest.json`, `engine.py`, `evaluate.py`, benchmark summary, and the latest Issue #1 PoC NEXT_CHAT_START. Preserve the protected dirty UI worktrees and Draft backend PR #4. Do NOT start an unrelated UI project or repeat broad GitHub research.
-2. Build a **fair apples-to-apples field-level baseline** for existing Auto Parser, recording which six gold roles it finds and which it normalizes; keep separate from the unconfigured `80/256` extract-events metric. Avoid inventing a percent-improvement number.
-3. **Critical experiment:** build a true *train/holdout-separated* syntax/field inference sublayer. First train on a limited, explicitly specified subset of public examples, then test unseen subtype/source variants, including negative cross-vendor cases, WITHOUT looking up gold during candidate generation. Record the exact train/test split and rule provenance. Existing hand-coded profiles must remain an explicit upper-control baseline.
-4. Add a deterministic quote-aware/residual learner (e.g., string alignment and optional Drain3 after legal dependency review). Probe PBE rule synthesis on one wrong-span counterexample; preserve original bytes and never mark a raw catchall as fully parsed. Avoid pretending the current residual mask is Drain3.
-5. Check discovery/qualification paths for more actual vendor families (e.g. Cisco ASA, Check Point, SentinelOne, CrowdStrike) **after** the rigorous initial 4-manufacturer evaluation. Respect fixture copyright/redistribution and gold alignment.
-6. Finish with isolated RED→GREEN tests, exact pinned fixture digest checks, report aggregate precision/recall/false-positive/unknown, and commit/push the *PoC branch*. Update Issue #1 and its Draft PR with measured limitations. Keep all actual target/LLM/production/merge/release gates intact.
+`compare-current.test.ts` invokes the **actual unmodified** `src/parser.ts`
+`preview(createDraft())` against all 256 identical pinned source records and reads
+the same six upstream gold roles used by `evaluate.py`. The 1,168 gold-role
+occurrences are scored separately for (a) exact ECS-role extraction directly
+in browser source fields and (b) normalization to those roles. Both are 0 TP /
+0 FP / 1,168 FN with the default `custom.*` mappings. A third diagnostic
+finds 282 occurrences of matching **unassigned raw values**; these are **not**
+proof of correct source/destination semantics. The older `80/256` extracted
+and `59/256` normalized *event* counts are NOT field-level metrics or an
+apples-to-apples tuned-parser comparison.
 
-**This PoC is an exploration, not a requirement to replace the existing supported Ruby/CONF compiler.** The long-term typed IR v0.3 and JSONata mapping remain proposed design until independently verified.
+`learn.py` uses three explicit, separate stages:
+
+```bash
+# Run from repo root. Raw/gold .cache files must first pass corpus.py.
+python3 poc/vendor_engine/corpus.py
+python3 poc/vendor_engine/learn.py prepare  # indexed split; train labels ONLY
+python3 poc/vendor_engine/learn.py fit      # cannot read upstream gold
+python3 poc/vendor_engine/learn.py evaluate # verify frozen SHA, THEN read holdout gold
+python3 poc/vendor_engine/report.py         # publish COUNTERS ONLY
+python3 -m unittest discover -s poc/vendor_engine -p 'test_*.py' -v
+./node_modules/.bin/vitest run --config poc/vendor_engine/vitest.config.ts --reporter=verbose
+```
+
+`prepare` deterministically partitions fixtures by a SHA256 sort within
+vendor/subtype strata. The existing hand-written recognizer is used only to
+form split strata, **never to train** the grammar. Rare singleton subtypes
+are sometimes entirely withheld. `fit` receives only the isolated
+`.cache/isolated_train.json` with train labels, infers syntax-sensitive
+guard features, source paths, transformations, categorical action translation,
+and source spans; it writes a digest-frozen grammar. `evaluate` checks the
+candidate/split/train digests before loading any holdout reference outputs.
+No external AI service, Drain3, dependency installation, native export,
+deployment, or network traffic is involved. All interim raw/learned rules
+remain ignored under `.cache/`.
+
+### Measured reproducible results — same upstream files, NOT new releases
+
+| Six-role comparison | Records | Gold-role values | TP / FP / FN | F1 |
+| --- | ---: | ---: | --- | ---: |
+| Current browser default, ECS normalized | 256 | 1,168 | 0 / 0 / 1,168 | 0.00% |
+| **Auto-learned, exploratory value agreement, frozen holdout** | **100** | **446** | **433 / 0 / 13** | **98.52%** |
+| Auto-learned, **strict unique-path + supported-role gate** | 100 | 446 | 299 / 0 / 147 | 80.27% |
+| Manual fixture-profile upper-control, **same holdout** | 100 | 446 | 436 / 0 / 10 | 98.87% |
+
+Training: **156** rows, holdout: **100** rows, eight syntax/role grammar profiles.
+On the holdout, 98 records routed to their own learned grammar; 2
+abstained, 0 cross-fixture/other-vendor grammar activations, 0 ambiguous
+simultaneous routes. Zero-shot subtype field checks remain part of the
+holdout, not evidence of new product/version generalization. The Trellix
+EDR set has **one record**, so it provides NO independent holdout evidence.
+
+**Critical ambiguity:** 134 tentative field observations agree by VALUE with
+holdout gold but have indistinguishable training source aliases (e.g.
+original vs translated/NAT destination IP). They are never certified in
+strict mode. Exact match on a particular holdout is not semantic proof.
+The strict gate also suppresses source-role rules supported by only one
+training example. Prior manually profiled 1,145 / 0 / 23 across all 256
+remains an in-sample upper-control, NOT learned performance.
+
+`test_learn.py` covers train-only fitting, signed rule integrity, real
+disjoint splitting, wrong-vendor negatives, unseen subtype action abstention,
+synthetic PBE disambiguation of a NAT decoy, invalid IP/port, malformed
+quotes, and precise source accounting. `test_report.py` verifies aggregate
+allowlisting without redistributing licensed raw logs or learned literal
+lookup tables. `benchmark-summary.json` contains **only value-free
+aggregates**, while all exact samples, gold and profile data remain local
+and ignored. No browser code or backend product behavior was changed.
+
+## Remaining research-only gaps (in priority order)
+
+1. Improve **strict** accuracy: synthesize bounded positive/negative
+   source-span counterexamples when two train paths are value-equivalent;
+   never treat a raw `<*>` template or inferred positional alias as an
+   identified source/destination role.
+2. Secure separate, license-reviewed **new upstream fixture revisions** and
+   rare subtypes; evaluate entire unseen source versions with frozen grammar
+   rules rather than claiming a same-fixture split is universal coverage.
+3. Only if a residual text cluster demonstrably benefits, add a deterministic
+   token-alignment/span grammar learner with held-out counterexamples.
+   Residual template grouping remains just a grouping, **not Drain3**.
+4. Profile latency, memory and malicious-input limits, then separately
+   assess supported export/compiler feasibility. Native Ruby/CONF or Stellar
+   DP/sensor testing remains out of scope and unverified.
+
+**Preservation:** Stay on isolated PoC branch and worktree. Do not overwrite
+UI/backend worktrees, redistribute copyrighted fixtures, activate external
+providers, merge PRs, upload to DP, transmit to sensors, or release.
+This exploratory engine is not a production replacement for the existing
+Ruby/CONF compiler.
