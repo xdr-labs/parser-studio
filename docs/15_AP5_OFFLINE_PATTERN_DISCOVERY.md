@@ -18,3 +18,9 @@ P0-AP4 whole-event and holdout regressions remain mandatory before any suggested
 ## Tests
 
 `knownParserFingerprints.test.ts` and `localPatternMining.test.ts` check public-only hints, all-event coverage, missing field confidence, rejection of mixed/unknown/forged suites, strict limits, bounded clusters, and absence of raw customer strings in returned reports. TypeScript/Vite build verifies the isolated Worker bundle.
+
+## Optional real Drain3 0.9.11 — separately authorized backend
+
+The existing browser-only structural grouping above remains a deliberately limited fallback. The private backend now has an actual, one-shot MIT-licensed Drain3 0.9.11 miner and an independent training/holdout evaluator, with Python CPU/memory/time/file/network restrictions, SHA-pinned dependencies, no persistence and fixed token-class redaction. It is **disabled by default** and requires trusted interpreter provisioning and separate backend authorization. GET /api/v1/parser-pairs/patterns/drain3/capabilities is a data-free authorization probe. Only after this returns an exact reviewed capability does the UI expose its separate, unchecked consent to submit the current raw sample and optional holdout to the **same-origin private backend**. No raw data is sent merely by opening the panel or checking availability.
+
+The optional results identify only sanitized shapes, counts and training line numbers, never raw values, credentials or a runnable parser. The server has no general persistence or third-party/LLM connection. This genuine Drain3 worker does **not** automatically promote an inferred template to Stellar-native mapping. Backend implementation/test/provenance: backend/docs/drain3-offline-worker.md, backend PR #4 at 5ae5e88d171d8bbb0e6640e0301c01f5e3befa74. UI strict data-free capabilities/consent tests: src/guided/drain3OfflineClient.test.ts and tests/private-drain3.spec.ts. This is not a user/DP/sensor E2E.

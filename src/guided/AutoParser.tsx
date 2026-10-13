@@ -15,6 +15,9 @@ import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import type {StructuralMiningReport} from './localPatternMining';
+import {checkPrivateDrain3Availability,runPrivateDrain3Review,
+  type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
+import {splitEvents,MAX_EVENTS} from '../parser';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
   proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
@@ -77,6 +80,11 @@ export default function AutoParser({
  const [recipeCompilerError,setRecipeCompilerError]=useState('');
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
+ const [drainAvailability,setDrainAvailability]=useState<'UNCHECKED'|'ERROR'|Drain3Availability>('UNCHECKED');
+ const [drainConsent,setDrainConsent]=useState(false);
+ const [drainHoldout,setDrainHoldout]=useState('');
+ const [drainResult,setDrainResult]=useState<{key:string;holdout:string;value:Drain3Report}|null>(null);
+ const [drainNotice,setDrainNotice]=useState('');
  const [logicalReview,setLogicalReview]=useState<{key:string;value:LogicalBoundaryReport}|null>(null);
  const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
  const [aiText,setAIText]=useState('');
@@ -101,6 +109,8 @@ export default function AutoParser({
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
    setRecipeCompiled(null);setRecipeCompilerError('');
    setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
+   setDrainAvailability('UNCHECKED');setDrainConsent(false);
+   setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
    setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
    setBoundedPath('');
@@ -117,6 +127,8 @@ export default function AutoParser({
  const currentRecipeCompiled=recipeCompiled?.key===identity?recipeCompiled.value:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
+ const currentDrain=drainResult?.key===identity&&
+   drainResult.holdout===drainHoldout?drainResult.value:null;
  const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
  const currentAIPrompt=aiPrompt?.key===identity?aiPrompt.value:null;
  const currentAIImport=aiImport?.key===identity?aiImport.value:null;
@@ -282,6 +294,47 @@ export default function AutoParser({
    if(!suite||busy||pending)return;
    try{setFingerprints({key:identity,value:matchKnownParserFingerprints(sample,suite)});}
    catch{setFingerprints(null);setMessage('The local template review could not verify this exact source.');}
+ }
+ async function probeDrain3(){
+   if(busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setDrainNotice('');setDrainResult(null);
+   try{
+     const availability=await checkPrivateDrain3Availability();
+     if(token===epoch.current&&currentRef.current===expected){
+       setDrainAvailability(availability);setDrainConsent(false);
+     }
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected){
+       setDrainAvailability('ERROR');
+       setDrainNotice('The private offline miner capability could not be verified.');
+     }
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function runApprovedDrain3(){
+   if(drainAvailability!=='AVAILABLE'||!drainConsent||busy||pending||!suite)return;
+   const expected=identity,requestedHoldout=drainHoldout;
+   const records=splitEvents(sample,'single-line',MAX_EVENTS+1);
+   const hold=drainHoldout.trim()?splitEvents(drainHoldout,'single-line',MAX_EVENTS+1):[];
+   if(!records.length||records.length>MAX_EVENTS||hold.length>MAX_EVENTS||
+     records.some((entry,i)=>entry.raw!==suite.events[i]?.raw||
+       entry.line!==suite.events[i]?.line)||
+     suite.counts.total!==records.length){
+     setDrainNotice('Original browser source accounting is not current; run local review again.');
+     return;
+   }
+   const token=++epoch.current;
+   setBusy(true);setDrainResult(null);setDrainNotice('');
+   try{
+     const result=await runPrivateDrain3Review(
+       records.map(item=>item.raw),hold.map(item=>item.raw),true);
+     if(token===epoch.current&&currentRef.current===expected&&
+       drainHoldout===requestedHoldout)
+       setDrainResult({key:expected,holdout:requestedHoldout,value:result});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setDrainNotice('Private Drain3 request rejected or unavailable. No mapping changed.');
+   }finally{if(token===epoch.current)setBusy(false);}
  }
  async function mineUnknownShapes(){
    if(!suite||busy||pending)return;
@@ -516,6 +569,64 @@ export default function AutoParser({
              Do not generate a native multiline parser from this review.
              Use Edit Details to inspect the boundaries and source format.
            </span>}
+         </div>}
+       </details>
+       <details className="auto-parser-recipe" aria-label="Optional isolated Drain3 mining">
+         <summary>Optional · Real Drain3 pattern mining (private backend)</summary>
+         <p>Unlike the browser-only structural hints, this optional feature transfers
+           your selected raw training and holdout records to a separately authenticated,
+           same-origin private Parser Studio backend. No external LLM, vendor service,
+           automatic parser edit, storage or DP deployment is involved.
+           You must separately confirm consent. Review the source before sending.</p>
+         <button type="button" disabled={busy||pending}
+           onClick={()=>{void probeDrain3();}}>
+           Check Private Drain3 Availability (No Sample Transfer)
+         </button>
+         {drainAvailability==='DISABLED'&&<p role="status">
+           Private Drain3 is disabled or not authorized. Browser-only structural hints
+           remain available without raw log transfer.
+         </p>}
+         {drainAvailability==='ERROR'&&<p role="status">
+           The private backend returned an unverified Drain3 capability.
+         </p>}
+         {drainAvailability==='AVAILABLE'&&<>
+           <label className="auto-parser-persist-label">
+             <input type="checkbox" checked={drainConsent}
+               onChange={e=>{
+                 setDrainConsent(e.target.checked);
+                 setDrainResult(null);setDrainNotice('');
+               }}/>
+             I explicitly approve sending my current raw log sample and optional
+             holdout to this private same-origin backend for one-time Drain3 analysis.
+           </label>
+           <label>Optional independent holdout log lines (not used for training)
+             <textarea aria-label="Drain3 independent holdout logs" rows={3}
+               spellCheck={false} maxLength={MAX_LOCAL_TEXT}
+               value={drainHoldout}
+               onChange={e=>{
+                 setDrainHoldout(e.target.value);setDrainResult(null);
+                 setDrainNotice('');
+               }}/>
+           </label>
+           <button type="button" disabled={!drainConsent||busy||pending||
+             !sample.trim()||!suite}
+             onClick={()=>{void runApprovedDrain3();}}>
+             Analyze with Approved Private Drain3
+           </button>
+         </>}
+         {drainNotice&&<p role="status">{drainNotice}</p>}
+         {currentDrain&&<div role="status" aria-label="Verified private Drain3 review">
+           <strong>{currentDrain.engine} · REVIEW ONLY ·
+             {currentDrain.accounted}/{currentDrain.sourceCount} events accounted</strong>
+           <span>{currentDrain.groupCount} clusters ·
+             {currentDrain.holdoutMatched}/{currentDrain.holdoutCount} independent
+             holdout records matched (user-selected, independence not verified)</span>
+           {currentDrain.groups.map(group=><span key={group.clusterId}>
+             {group.clusterId}: {group.shape} ·
+             {group.trainingCount} training records ·
+             {group.holdoutMatches} holdout matches
+           </span>)}
+           <span>No raw fields returned · No native parser or DP target verification</span>
          </div>}
        </details>
        <details className="auto-parser-recipe" aria-label="Public synthetic parser fingerprints">
