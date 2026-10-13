@@ -542,7 +542,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
         fetch,
         ['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)?
           draft.format as 'syslog_rfc3164'|'syslog_rfc5424':
-          draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_'))?
+          draft.format==='mixed'&&draft.mixedFormats?.includes('rfc3164_kv')?
+            'syslog_rfc3164':
+          draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f==='rfc3164_kv')?
             'syslog_rfc5424':undefined,
       );
       if (latestDraftKeyRef.current === key) setPortPlanAttempt({ key, plan });
@@ -1148,7 +1150,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     if (number === 1) return hasLogs && draft.format !== 'auto' ? 'complete' : hasLogs ? 'attention' : 'future';
     if (number === 2) return draft.mappings.length > 0 ? 'complete' : 'attention';
     if (number === 3) return options.receiver.protocols.length && Number.isInteger(options.receiver.port) &&
-      options.receiver.port >= (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_'))?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
+      options.receiver.port >= (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f==='rfc3164_kv')?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
     if (number === 4) return runState?.suite.counts.total && runState.suite.counts.failures === 0 ? 'complete' : 'attention';
     return 'future';
   };
@@ -1304,7 +1306,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             {draft.format==='mixed'&&<div className="guided-field" aria-label="Explicit mixed source families">
               <span>Strict Mixed Input · Select 2–4 Detected Families</span>
               <div className="guided-two-fields">
-                {(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'] as const).map(family=>
+                {(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv'] as const).map(family=>
                   <label key={family}>
                     <input type="checkbox" aria-label={'Include '+family.toUpperCase()+' family'}
                       checked={draft.mixedFormats?.includes(family)??false}
@@ -1316,10 +1318,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                     {family.toUpperCase()}
                   </label>)}
               </div>
-              <small>The backend accepts only explicitly selected single-line JSON, KV, CEF, LEEF
-                and strict RFC5424-wrapped CEF/LEEF. Select no more than four families.
-                Wrapped RFC5424 requires the same sensor/CONF listener port at least 6800.
-                RFC3164, CSV, arbitrary Syslog and multiline cannot be silently routed.</small>
+              <small>Select no more than four reviewed single-line JSON/KV/CEF/LEEF,
+                RFC5424-wrapped CEF/LEEF or RFC3164 TAG: KV families.
+                Any selected Syslog family requires the same sensor/CONF listener port at least 6800.
+                RFC3164 year and timezone stay unknown; CSV, arbitrary Syslog and multiline cannot be silently routed.</small>
             </div>}
             {draft.format === 'csv' && <div className="guided-two-fields">
               <label className="guided-field"><span>CSV Column Names <small>(Always comma-separated · 1–100 columns)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>Columns are assigned in the order provided.</small></label>
@@ -1337,9 +1339,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <option value="cef">CEF within selected Syslog envelope (body.*) · Backend support required</option>
                 <option value="leef">LEEF within selected Syslog envelope (body.*) · Backend support required</option>
               </select>
-              <small>RFC3164 strict TAG: messages retain an unknown year and timezone; map header time as text. RFC5424 strict v1 is separately supported. Only explicitly allowed JSON/KV/CEF/LEEF and RFC5424-wrapped CEF/LEEF mixed inputs are supported; other mixed and multiline inputs require separate review.</small>
+              <small>RFC3164 strict TAG: messages retain an unknown year and timezone; map header time as text. RFC5424 strict v1 is separately supported. Mixed inputs require an explicit JSON/KV/CEF/LEEF, RFC5424-wrapped CEF/LEEF or RFC3164 TAG: KV allowlist; unknown and multiline inputs require separate review.</small>
             </label>}
-            <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, bounded RFC3164/RFC5424, standalone CEF/LEEF, and explicitly allowlisted mixed JSON/KV/CEF/LEEF or RFC5424-wrapped CEF/LEEF. Generic Syslog, regex, and unframed multiline remain unsupported.</div>
+            <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, bounded RFC3164/RFC5424, standalone CEF/LEEF, and explicit mixed JSON/KV/CEF/LEEF, RFC5424 CEF/LEEF or RFC3164 TAG KV. Generic Syslog, regex and unframed multiline remain unsupported.</div>
             <div className={'guided-family-coverage ' + (familyCoverage.incompatible ? 'attention' : '')}
               aria-label="Sample format distribution">
               <strong>Format Distribution · Browser Estimate</strong>
@@ -1665,13 +1667,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 stack-trace reassembly or live target verification.</small>
             </label>}
             <div className="guided-three-fields">
-              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_'))?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
+              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f==='rfc3164_kv')?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
               <label className="guided-field"><span>Bind Policy</span><select aria-label="Bind policy" value={options.receiver.bindPolicy} onChange={(e) => setReceiver('bindPolicy', e.target.value)}><option value="loopback">Loopback test (127.0.0.1)</option><option value="all">All interfaces (0.0.0.0)</option></select></label>
               <label className="guided-field"><span>Maximum Message Size (bytes)</span><input aria-label="Message limit" type="number" min={1024} max={65536} value={options.receiver.messageLimit} onChange={(e) => setReceiver('messageLimit', Number(e.target.value))} /></label>
             </div>
             <div className="guided-note"><ShieldCheck size={15}/> One shared port: the sensor log destination and generated <code>.conf</code> receiver <code>&lt;source&gt;</code> use the same number. It is not a separate transport port. This does not establish listener readiness.</div>
-            {(['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_'))) && options.receiver.port<6800 &&
-              <p role="alert" className="guided-error">Syslog and RFC5424-wrapped mixed sensor and CONF listener port must be at least 6800.</p>}
+            {(['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f==='rfc3164_kv')) && options.receiver.port<6800 &&
+              <p role="alert" className="guided-error">Syslog and RFC3164/RFC5424 mixed sensor and CONF listener port must be at least 6800.</p>}
             <div className="guided-port-proposal" aria-label="Parser listener port candidate">
               <strong>Parser Listener Port Candidate · Read-only</strong>
               <p>Only parser inventories and reservations supplied by an authorized local backend are checked. The candidate is the intended SAME port for sensor log receipt and the generated CONF listener, but actual sensor binding and port availability remain unverified. Recheck ownership and conflicts immediately before deployment.</p>

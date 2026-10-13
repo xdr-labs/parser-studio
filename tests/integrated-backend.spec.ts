@@ -312,4 +312,49 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     expect(actualBodies.length).toBeGreaterThanOrEqual(4);
   });
 
+  test('P0 strict mixed RFC3164 TAG KV plus standalone JSON/KV compiles exact pinned backend without timestamp guessing',async({page})=>{
+    const source=[
+      '{"src_ip":"192.0.2.10","action":"deny"}',
+      'src_ip=198.51.100.8 action=allow',
+      '<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny',
+    ].join('\n');
+    const payloads:string[]=[];
+    page.on('request',r=>{
+      if(r.method()==='POST'&&new URL(r.url()).pathname.startsWith('/api/v1/parser-pairs/')){
+        const payload=r.postData()??'';
+        payloads.push(payload);
+        for(const sensitive of ['192.0.2.10','198.51.100.8','192.0.2.17'])
+          expect(payload).not.toContain(sensitive);
+      }
+    });
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(source);
+    await expect(page.getByLabel('Automatic event accounting'))
+      .toContainText('3/3 events analyzed locally');
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await expect(page.getByLabel('Suggested field mappings')).toContainText('body.src_ip');
+    await expect(page.getByLabel('Review Results stage')).toContainText('RFC3164 header has no year or timezone');
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    expect((await generated).status()).toBe(200);
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByRole('button',{name:'Review Staged Recipe'}).click();
+    await expect(page.getByLabel('Review-only staged recipe')).toContainText('rfc3164_kv');
+    const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
+    expect((await staged).status()).toBe(200);
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('v0.1 pair SHA MATCHED');
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('Native user parser NOT VERIFIED');
+    expect(payloads.length).toBeGreaterThanOrEqual(4);
+  });
+
 });

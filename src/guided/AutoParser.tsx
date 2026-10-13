@@ -712,6 +712,12 @@ export default function AutoParser({
          <span>Need review <strong>{report.unsupported}</strong></span>
          <span>Mapping rules <strong>{draft.mappings.length}</strong></span>
        </div>
+       {report.events.some(event=>event.timePolicy==='YEAR_AND_ZONE_UNKNOWN')&&
+         <p className="auto-parser-warning" role="note">
+           RFC3164 header has no year or timezone. It is preserved as text;
+           no event timestamp is inferred. Review the actual source time
+           before mapping any event-time field.
+         </p>}
        {!!currentReview?.mappingCount&&<p className="auto-parser-note">
          {currentReview.mappingCount} conservative custom-field suggestions were prepared
          from safe source names. They are not an official Stellar dictionary.</p>}

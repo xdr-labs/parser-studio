@@ -140,13 +140,16 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   }
   if(draft.format==='mixed'){
     const list=draft.mixedFormats;
-    if(list?.some(f=>f==='rfc5424_cef'||f==='rfc5424_leef')&&
+    if(list?.some(f=>f==='rfc5424_cef'||f==='rfc5424_leef'||f==='rfc3164_kv')&&
       options.receiver.port<6800)
-      errors.push('RFC5424-wrapped mixed sensor and CONF listener port must be at least 6800');
+      errors.push('Syslog mixed sensor and CONF listener port must be at least 6800');
+    if(list?.includes('rfc3164_kv')&&draft.mappings.some(m=>
+      m.source==='syslog_timestamp'&&m.type==='timestamp'))
+      errors.push('Yearless RFC3164 mixed timestamp cannot be cast to a date. Map as text.');
     if(!Array.isArray(list)||list.length<2||list.length>4||
        new Set(list).size!==list.length||
-       !list.every(mode=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'].includes(mode)))
-      errors.push('Mixed requires 2–4 explicitly selected one-line JSON/KV/CEF/LEEF or strict RFC5424-wrapped CEF/LEEF families');
+       !list.every(mode=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv'].includes(mode)))
+      errors.push('Mixed requires 2–4 explicit one-line JSON/KV/CEF/LEEF, RFC5424 CEF/LEEF or yearless RFC3164 TAG KV families');
   }else if(draft.mixedFormats!==undefined){
     errors.push('Mixed family selections are only valid for Mixed format');
   }

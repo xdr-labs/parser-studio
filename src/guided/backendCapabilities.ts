@@ -9,7 +9,7 @@ export interface BackendCapabilities {
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
-    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'>;
+    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'>;
     strictMixedRequiresExplicitAllowlist?: true;
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
@@ -145,10 +145,11 @@ export async function fetchBackendCapabilities(
   const wrapped=['rfc5424_cef','rfc5424_leef'];
   if(mixedAdvertised){
     if(a.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(mixed)||![4,6].includes(mixed.length)||
+      !Array.isArray(mixed)||![4,6,7].includes(mixed.length)||
       new Set(mixed).size!==mixed.length||
       !reviewedMixed.every(f=>mixed.includes(f as 'json'))||
-      (mixed.length===6&&!wrapped.every(f=>mixed.includes(f as 'rfc5424_cef'))))
+      (mixed.length>=6&&!wrapped.every(f=>mixed.includes(f as 'rfc5424_cef')))||
+      (mixed.length===7&&!mixed.includes('rfc3164_kv')))
       throw new Error('Backend mixed routing requires one of the exact reviewed family allowlists.');
   }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
     throw new Error('Unsupported mixed routing capability was advertised.');
@@ -242,9 +243,15 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
   }
   if(project.extraction.format==='mixed'){
     const formats=project.extraction.mixedFormats;
-    if(formats.some(f=>['rfc5424_cef','rfc5424_leef'].includes(f))&&
+    if(formats.some(f=>['rfc5424_cef','rfc5424_leef','rfc3164_kv'].includes(f))&&
        project.receiver.port<6800)
       throw new Error('Syslog-wrapped mixed parser sensor/CONF listener port must be >=6800.');
+    if(formats.includes('rfc3164_kv')&&(
+      cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
+      cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
+      cap.authoring.rfc3164NativeTimeReconstruction!==false||
+      !cap.authoring.rfc3164BodyFormats?.includes('kv')))
+      throw new Error('Backend must explicitly support yearless RFC3164 mixed TAG KV.');
     if(cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
       !Array.isArray(formats)||formats.length<2||formats.length>4||
       new Set(formats).size!==formats.length||

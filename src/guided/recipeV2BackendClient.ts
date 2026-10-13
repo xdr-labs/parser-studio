@@ -71,13 +71,15 @@ export async function checkRecipeV02Compiler(
   (requireMixed&&(
     !values.includes('mixed')||!ops.includes('dispatch_family')||
     !Array.isArray(cap.strictMixedSingleLineFamilies)||
-    ![4,6].includes(cap.strictMixedSingleLineFamilies.length)||
+    ![4,6,7].includes(cap.strictMixedSingleLineFamilies.length)||
     new Set(cap.strictMixedSingleLineFamilies).size!==cap.strictMixedSingleLineFamilies.length||
     !['json','kv','cef','leef'].every(f=>
       (cap.strictMixedSingleLineFamilies as unknown[]).includes(f))||
-    (cap.strictMixedSingleLineFamilies.length===6&&
+    (cap.strictMixedSingleLineFamilies.length>=6&&
       !['rfc5424_cef','rfc5424_leef'].every(f=>
         (cap.strictMixedSingleLineFamilies as unknown[]).includes(f)))||
+    (cap.strictMixedSingleLineFamilies.length===7&&
+      !(cap.strictMixedSingleLineFamilies as unknown[]).includes('rfc3164_kv'))||
     !requiredMixedFamilies.every(f=>
       (cap.strictMixedSingleLineFamilies as unknown[]).includes(f))
   ))||

@@ -135,6 +135,22 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
      expect(wrong).toHaveBeenCalledTimes(1);
    }
  });
+ it('explicit RFC3164 TAG KV mixed route requires exact 7-family backend and yearless envelope',async()=>{
+  const make=(families:string[])=>vi.fn(async()=>response({...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'mixed'],
+    strictMixedSingleLineFamilies:families}));
+  const old=make(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef']);
+  await expect(checkRecipeV02Compiler(old as typeof fetch,
+    'rfc3164_strict_no_year_or_zone',true,false,
+    ['json','kv','rfc3164_kv'])).rejects.toThrow(/not verified/);
+  const supported=make(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv']);
+  expect(await checkRecipeV02Compiler(supported as typeof fetch,
+    'rfc3164_strict_no_year_or_zone',true,false,
+    ['json','kv','rfc3164_kv'])).toBe(true);
+  const malicious=make(['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','unreviewed']);
+  await expect(checkRecipeV02Compiler(malicious as typeof fetch,undefined,true))
+    .rejects.toThrow(/not verified/);
+ });
  it('gates explicit TCP blank-line JSON by exact backend v0.2 transport claims',async()=>{
   const supported=vi.fn(async()=>response(capability));
   expect(await checkRecipeV02Compiler(supported as typeof fetch,undefined,false,true))

@@ -150,11 +150,17 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
       const selected=draft.mixedFormats??[];
       if(selected.length<2||selected.length>4||
          new Set(selected).size!==selected.length||
-         selected.some(f=>!['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'].includes(f)))
+         selected.some(f=>!['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv'].includes(f)))
         return {fields:{},errors:['Select an explicit bounded mixed-family allowlist']};
       // Reuse the reviewed strict RFC5424 header + nested CEF/LEEF parser
       // for exact wrapper routing. A broken header must never fall back to KV.
       if(raw.startsWith('<')){
+        if(/^<\d{1,3}>[A-Z][a-z]{2} /.test(raw)){
+          if(!selected.includes('rfc3164_kv'))
+            return {fields:{},errors:['RFC3164 TAG KV is not allowlisted']};
+          // Reuse exact browser RFC3164 strict parser; no guessed year/zone.
+          return extractStructuredFamily(raw,'syslog_rfc3164','kv');
+        }
         const cef=extractStructuredFamily(raw,'syslog_rfc5424','cef');
         const leef=extractStructuredFamily(raw,'syslog_rfc5424','leef');
         const mode=!cef.errors.length?'rfc5424_cef':

@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -67,6 +67,24 @@ describe('safe synthetic no-code starter templates', () => {
     }
   });
 
+  it('offers strict yearless RFC3164 TAG KV + JSON/KV synthetic mixed sample',()=>{
+    const preset=loadStarterTemplate('mixed_rfc3164');
+    expect(preset.draft.format).toBe('mixed');
+    expect(preset.draft.mixedFormats).toEqual(['json','kv','rfc3164_kv']);
+    expect(preset.draft.guided?.receiver.port).toBeGreaterThanOrEqual(6800);
+    expect(preset.draft.mappings.some(m=>m.source==='syslog_timestamp'&&m.type==='timestamp')).toBe(false);
+    const suite=preview(preset.sample,preset.draft);
+    expect(suite.counts).toMatchObject({total:3,matched:3,normalized:3,failures:0});
+    expect(suite.events[2]?.fields).toMatchObject({
+      syslog_time_policy:'YEAR_AND_ZONE_UNKNOWN'});
+    const result=toBackendProject(preset.draft);
+    expect(result.ok).toBe(true);
+    if(result.ok){
+      expect(result.project.extraction).toEqual({
+        format:'mixed',mixedFormats:['json','kv','rfc3164_kv']});
+      expect(result.project.receiver.port).toBe(preset.draft.guided?.receiver.port);
+    }
+  });
   it('offers a reviewed synthetic mixed RFC5424 CEF/LEEF starter with the same sensor/CONF port',()=>{
     const template=loadStarterTemplate('mixed_rfc5424');
     expect(template.draft.format).toBe('mixed');
