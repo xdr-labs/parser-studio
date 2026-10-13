@@ -643,4 +643,113 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       x.path.includes('/sessions/start')||x.path.includes('/interflow'))).toBe(false);
   });
 
+  test('migrated legacy ZIP: a tampered real backend SHA blocks Auto Parser ZIP download without losing DRAFT pair',async({page})=>{
+    let archiveRequests=0;
+    const downloaded:string[]=[];
+    page.on('download',entry=>downloaded.push(entry.suggestedFilename()));
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await page.route('**/api/v1/parser-pairs/package',async route=>{
+      archiveRequests++;
+      const requestBody=route.request().postData()??'';
+      expect(requestBody).not.toContain('198.51.100.10');
+      expect(requestBody).not.toContain('203.0.113.5');
+      expect(requestBody).not.toContain('apiKey');
+      const real=await route.fetch();
+      expect(real.status()).toBe(200);
+      const original=real.headers();
+      expect(original['x-parser-zip-sha256']).toMatch(SHA);
+      await route.fulfill({response:real,headers:{
+        ...original,'x-parser-zip-sha256':'0'.repeat(64),
+      }});
+    });
+    await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
+    await expect(page.getByRole('alert')).toContainText('ZIP verification failed');
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .not.toContainText('ZIP SHA-256:');
+    expect(downloaded).toEqual([]);
+    expect(archiveRequests).toBe(1);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
+
+  test('migrated legacy ZIP: missing package capability fails closed before any backend ZIP POST',async({page})=>{
+    let archiveRequests=0;
+    await page.route('**/api/v1/parser-pairs/package',route=>{
+      archiveRequests++;return route.abort();
+    });
+    await page.route('**/api/v1/parser-pairs/capabilities',async route=>{
+      const original=await route.fetch();
+      expect(original.status()).toBe(200);
+      const capabilities=await original.json() as Record<string,unknown>;
+      expect(capabilities.downloads).toBeDefined();
+      delete capabilities.downloads;
+      await route.fulfill({response:original,contentType:'application/json',
+        body:JSON.stringify(capabilities)});
+    });
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
+    await expect(page.getByRole('alert')).toContainText('ZIP verification failed');
+    expect(archiveRequests).toBe(0);
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+  });
+
+
+  test('migrated legacy field safety: invalid in-place Auto mapping disables generation and can be repaired without Wizard',async({page})=>{
+    const operations:string[]=[];
+    page.on('request',req=>{
+      if(req.method()==='POST'&&new URL(req.url()).pathname.startsWith('/api/v1/parser-pairs/'))
+        operations.push(new URL(req.url()).pathname);
+    });
+    await page.goto('/?workspace=guided');
+    await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
+    await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toHaveCount(0);
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await page.getByLabel('Adjust detected field mapping').locator('summary').click();
+    const target=page.getByLabel('Mapping target 0');
+    const original=await target.inputValue();
+    expect(original).toMatch(/^custom\./);
+    await target.fill('custom..invalid');
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await expect(page.getByLabel('Test and Generate stage')).toBeVisible();
+    await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}))
+      .toBeDisabled();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    expect(operations).toEqual([]);
+    await page.getByLabel('Test and Generate stage')
+      .getByRole('button',{name:'Review Results'}).click();
+    await page.getByLabel('Adjust detected field mapping').locator('summary').click();
+    await page.getByLabel('Mapping target 0').fill(original);
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}))
+      .toBeEnabled();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    expect(operations.filter(path=>path.endsWith('/generate')).length).toBe(1);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
+
+
 });

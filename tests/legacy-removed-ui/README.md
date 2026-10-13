@@ -18,6 +18,13 @@ Feature-contract coverage retained outside retired screens:
   replace applicable sections of these old suites as those tools are
   separately integrated without adding additional creation menus.
 
+Current incremental migration: tests/integrated-backend.spec.ts now
+includes actual Auto Parser/browser/backend ZIP SHA-tamper denial and
+missing-package-capability denial from package-download.spec.ts, plus
+invalid output-mapping / safe correction from field-path-validation.spec.ts.
+This is **three migrated behaviors**, NOT three entire retired suites. The
+original archived test files remain unchanged and excluded from CI.
+
 These archived files must not be used in release PASS totals. Do not restore
 old route access solely to make historical tests green. Explicitly migrate the
 functional assertions instead.

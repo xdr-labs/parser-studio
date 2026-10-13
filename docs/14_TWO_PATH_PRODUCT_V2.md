@@ -66,3 +66,28 @@ The original UI recovery WIP is preserved; this work is integrated from an indep
 ### Exact reviewed ParserRecipe v0.2 capability compatibility
 
 Mixed CSV adds the twelfth explicitly reviewed single-line family ID. Its stage review must allow exactly the 12-entry server-owned vocabulary while still accepting previous 4, 6, 7, 9 and 11-entry capability vocabularies only for their own earlier families. The UI blocks any unknown, duplicate or forged entries and validates all selected families before sending source-free v0.1/v0.2 metadata to the backend. The v0.2 backend now advertises the truly unsupported unreviewed mixed CSV schema and unframed generic multiline, not the reviewed CSV / explicitly TCP-framed Java capabilities.
+
+
+## Browser regression migration: retired ZIP and field-path safety
+
+The original six-step Wizard and three-pane Workbench remain retired, and
+their historical test files are **not** restored to current CI. Instead,
+three concrete safety contracts have been migrated into the **actual Auto
+Parser result and in-place mapping review** in
+tests/integrated-backend.spec.ts:
+
+1. A real localhost backend ZIP whose returned SHA-256 has been deliberately
+   corrupted must **never** trigger a browser download or claim verification;
+   the two independently verified DRAFT source files remain available.
+2. A backend whose package capability is omitted must cause the ZIP action to
+   **fail before any ZIP POST**, without suppressing prior DRAFT files.
+3. A malformed in-place mapping destination (custom..invalid) must prevent
+   parser generation and leave the backend untouched. Restoring the exact
+   previous mapping must allow the standard three-stage path to revalidate
+   and generate the pair, without reviving a third workflow.
+
+These tests use an **exact Git-SHA-pinned backend over real localhost HTTP**.
+They never contact a vendor DP, send sensor packets, invoke an external AI
+provider, or claim full real-user E2E. The remaining archived Wizard and
+Workbench suites still require feature-by-feature **behavioral** migration;
+moving three assertions is not completion of all historical coverage.
