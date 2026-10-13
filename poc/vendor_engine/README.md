@@ -1,5 +1,77 @@
 # Vendor Adaptive Engine — Standalone Research PoC (NOT a Product Feature)
 
+<!-- OWNER_EXTRACTION_FIRST_20261014_BEGIN -->
+## Authoritative PoC priority — extraction first (owner directive, 2026-10-14)
+
+**P0: Parse data before interpreting its meaning.** On any supported structured,
+semi-structured, or unstructured log, first identify event boundaries and
+extract the fullest possible set of actual source key/value or positional
+fields. Preserve native vendor keys, unknown/custom fields, nested JSON types,
+empty values, timestamp/header parts, and the immutable raw event. Report
+source byte spans, partial data and exact parsing failures honestly. A field
+whose meaning is unknown must remain a **vendor field**, not a dropped field
+or a failed normalized record.
+
+**P1: Stellar Cyber Dictionary normalization is a separate optional pass.**
+Map only proven source fields to verified Dictionary entries. Retain all
+unmapped vendor fields without coercion or loss. Never make normalization a
+prerequisite for successful source parsing, and never substitute guessed
+ECS mappings for source extraction. Dictionary compatibility will be verified
+against supplied Stellar documentation and target capability evidence later.
+
+**P2: Repair only extraction gaps.** Reuse deterministic JSON/KV/CSV/CEF/LEEF/
+Syslog parsers, then safe source-aligned field captures for residual text.
+Learn bounded residual grammar on train-only samples, reject ambiguous spans,
+test on unseen inputs and negative cross-vendor routes. Drain3 clusters alone
+are not proof of correct parameter extraction. Ask a user or use a manually
+approved AI candidate only for what the deterministic parser cannot extract.
+
+### Primary measurement gates (not semantic-mapping F1)
+
+1. **No event loss:** source record count, raw SHA, byte preservation, unknown
+   fragments and handling of malformed/metadata-only records.
+2. **Extraction accuracy:** exact vendor key/position and value agreement
+   against independently labeled source fields, false positive captures,
+   overcapture, number of extracted fields and false-success statuses.
+3. **Independent coverage:** per family and per subtype full/partial/unparsed
+   event counts; train/heldout split; exact UTF-8 capture provenance; unseen
+   source revisions and adversarial negative examples.
+4. **Secondary:** only AFTER extraction, verified Dictionary mapping coverage
+   and semantic correctness. Native Ruby/CONF and Stellar target execution are
+   separate qualification gates and are not inferred from local Python PASS.
+
+### Research checkpoint, scope, and limitations
+
+Previously measured local PoC: 256 pinned 4-vendor records, 14,645 syntactic
+source values, 256 fully parsed records and 187/187 independent JSON/CSV
+decoder agreements. A separate CC0 Log Zoo 4-record sample was syntactically
+parsed. Neither result has comprehensive gold-labeled field extraction F1
+or new-version product qualification. Independent Loghub Apache/Linux 4,000
+plain-text records exposed the real gap: mostly partial message bodies.
+
+Drain3 0.9.11 was installed only under ignored local .cache for a bounded
+research experiment: 2,418 train residuals, 1,581 held out; 1,540 template
+matches but only 346 provisional source-span candidates, 113 ambiguous spans.
+Do not call these 1,540 successful extractions or generalization proof.
+Latest standalone, zero-network `span_alignment.py` adds anchored, bounded
+UTF-8 byte-accurate capture proposals and 11 synthetic unit tests; it is
+not yet integrated into the residual miner or scored on that holdout.
+
+**Current integration preservation:** The extraction-first source parser,
+CEF/LEEF/Syslog adapter, independent corpus probes, and residual-miner WIP
+were last observed as *uncommitted on dev-atlas* and are not claimed to be
+pushed merely because this README is updated. Preserve them without reset.
+On reconnect: inspect status, finish safe-red/green extraction tests, integrate
+anchor alignment into the isolated residual miner, measure blind extraction
+quality and field coverage, commit/push only verified PoC files to Draft PR
+#13, then choose the product parser implementation from those results.
+
+No production, native Fluentd/Stellar DP, sensor sending, UI creation,
+external LLM call, fixture redistribution or PR merge is authorized by this
+PoC.
+<!-- OWNER_EXTRACTION_FIRST_20261014_END -->
+
+
 **Owner-requested scope:** Engine and evaluation only, with NO Web UI changes, backend REST deployment, live DP/sensor operations, production release, or Ruby/CONF grammar compilation. This standalone Python script is **not** wired into the app.
 
 ## Source and reproducibility
