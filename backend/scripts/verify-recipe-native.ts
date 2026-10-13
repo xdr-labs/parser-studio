@@ -17,7 +17,8 @@ const PARENT=resolve('.tmp');
 const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
- 'v02_syslog_cef','v02_syslog_leef'];
+ 'v02_syslog_cef','v02_syslog_leef',
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -35,13 +36,17 @@ function writeTrusted(path:string,value:string){
  try{writeFileSync(fd,value,{encoding:'utf8'});}finally{closeSync(fd);}
 }
 type Profile={slug:string;format:ParserProject['extraction']['format'];
- bodyFormat?:'cef'|'leef';raw:string;expectedTime:string|null;
+ bodyFormat?:'kv'|'cef'|'leef';raw:string;expectedTime:string|null;
  expectedRecord:Record<string,unknown>};
 const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
- {kind:string;origin:string;profiles:Profile[]};
+ {kind:string;origin:string;profiles:Profile[];negative:Array<{id:string;slug:string;raw:string}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==7||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==10||
+ !Array.isArray(samples.negative)||samples.negative.length!==9||
+ samples.negative.some(e=>typeof e.raw!=="string"||
+   e.raw.length>16384||!PROFILE_NAMES.includes(e.slug)||
+   !/^[a-z_]+$/.test(e.id))||
  samples.profiles.map(x=>x.slug).join(',')!==PROFILE_NAMES.join(','))
  throw new Error('Untrusted or reordered recipe native fixture');
 directory(PARENT);directory(ROOT);
@@ -59,21 +64,27 @@ function buildProject(entry:Profile):ParserProject{
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
-  ...(entry.format==='syslog_rfc5424'?{syslogBodyFormat:entry.bodyFormat}:{})};
+  ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
+    {syslogBodyFormat:entry.bodyFormat}:{})};
  if(entry.format!=='json'){
   let source='src_ip',port='dst_port',action='action';
   if(entry.format==='cef'||entry.format==='leef'){
    source='src';port=entry.format==='cef'?'dpt':'dstPort';action='act';
   }
-  if(entry.format==='syslog_rfc5424'){
-   source='body.src';port=entry.bodyFormat==='cef'?'body.dpt':'body.dstPort';
-   action='body.act';
+  if(entry.format==='syslog_rfc5424'||entry.format==='syslog_rfc3164'){
+   source=entry.bodyFormat==='kv'?'body.src_ip':'body.src';
+   port=entry.bodyFormat==='kv'?'body.dst_port':
+     entry.bodyFormat==='cef'?'body.dpt':'body.dstPort';
+   action=entry.bodyFormat==='kv'?'body.action':'body.act';
   }
   p.normalization.topFields=Object.fromEntries([
    field(source,'srcip','ip'),field(port,'dstport','port'),
    field(action,'action','string'),
    ...(entry.format==='syslog_rfc5424'?
-     [field('syslog_timestamp','timestamp','date')]:[])
+     [field('syslog_timestamp','timestamp','date')]:[]),
+   ...(entry.format==='syslog_rfc3164'?
+     [field('syslog_timestamp','syslog_header_time','string'),
+      field('syslog_time_policy','syslog_time_policy','string')]:[])
   ]) as FieldMap;
   p.normalization.nsFields={};
   p.normalization.vendorFields={};

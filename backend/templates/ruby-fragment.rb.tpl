@@ -69,6 +69,8 @@ def parserstudio_extract(text)
     parserstudio_key_values(text)
   when 'csv'
     parserstudio_csv(text, settings)
+  when 'syslog_rfc3164'
+    parserstudio_syslog_rfc3164(text, settings)
   when 'syslog_rfc5424'
     parserstudio_syslog_rfc5424(text, settings)
   when 'cef'
@@ -104,7 +106,7 @@ end
 # A strict small-subset token parser. No unmatched suffix can be silently lost.
 def parserstudio_key_values(text)
   record = {}
-  pattern = /\G[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s])+))/
+  pattern = /\G[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/
   position = 0
   while position < text.length
     tail = text[position..-1]
@@ -203,7 +205,7 @@ def parserstudio_rfc5424_sd(rest)
   [structured, trailing.byteslice(1..-1)]
 end
 
-# RFC3164, multiline, and arbitrary/oversized SD remain unsupported.
+# RFC5424 strict profile; multiline and arbitrary/oversized SD remain unsupported.
 def parserstudio_syslog_rfc5424(text, settings)
   pattern = /\A<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)\z/
   match = pattern.match(text)
@@ -254,6 +256,55 @@ def parserstudio_syslog_rfc5424(text, settings)
     else
       raise ArgumentError, 'Unsupported syslog body format'
     end
+  end
+  record
+end
+
+# Strict single-line RFC3164 PRI + BSD HEADER + TAG: MSG subset.
+# Unlike RFC5424, RFC3164's month/day/time has NO year or timezone.
+# Never synthesize either, even when the host clock happens to be available.
+def parserstudio_syslog_rfc3164(text, settings)
+  pattern = /\A<(\d{1,3})>([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?:[ ]+(.+)\z/
+  match = pattern.match(text)
+  raise ArgumentError, 'Unsupported RFC3164 header' unless match
+  priority = Integer(match[1], 10)
+  raise ArgumentError, 'RFC3164 PRI out of range' unless priority.between?(0, 191)
+  months = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
+    'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
+  days = months[match[2]]
+  day = Integer(match[3], 10)
+  hour = Integer(match[4], 10)
+  minute = Integer(match[5], 10)
+  second = Integer(match[6], 10)
+  raise ArgumentError, 'RFC3164 calendar value is invalid' unless days &&
+    day.between?(1, days) && hour.between?(0, 23) &&
+    minute.between?(0, 59) && second.between?(0, 59)
+  # The year may be leap-year or non-leap-year: Feb 29 is not fabricated.
+  # An operator must supply a separate explicit timestamp policy to resolve it.
+  timestamp = "#{match[2]} #{day.to_s.rjust(2, ' ')} #{match[4]}:#{match[5]}:#{match[6]}"
+  record = {
+    'syslog_pri' => priority,
+    'syslog_timestamp' => timestamp,
+    'syslog_time_policy' => 'YEAR_AND_ZONE_UNKNOWN',
+    'syslog_hostname' => match[7],
+    'syslog_appname' => match[8]
+  }
+  record['syslog_procid'] = match[9] if match[9]
+  message = match[10]
+  format = settings['syslogBodyFormat'] || 'raw'
+  case format
+  when 'raw'
+    record['message'] = message
+  when 'json'
+    record['body'] = parserstudio_json_object(message)
+  when 'kv'
+    record['body'] = parserstudio_key_values(message)
+  when 'cef'
+    record['body'] = parserstudio_cef(message)
+  when 'leef'
+    record['body'] = parserstudio_leef(message)
+  else
+    raise ArgumentError, 'Unsupported RFC3164 message body format'
   end
   record
 end

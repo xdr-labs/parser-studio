@@ -21,6 +21,10 @@ const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
   "e56812e5efd75ddc255e0813ecbd02f675bfb7b85928b35ff0db6b472791044e",
   "e941f631da790103cc4c53a89e2eebca2b5df470300935690ebd3450d2e4e911",
+  // Reviewed RFC3164-only addition; exact template SHA, still recompiled and byte-compared.
+  "50273e4385909eaf41c52057477e739de3e38ea36377b346fed7ce0471cda923",
+  // Reviewed RFC3164 + strict quote-safe KV parsing; exact hash, no dynamic trust.
+  "6f7c53255f431b7f51ab09cb66a32750b43cd9d881335d1e3d4251b563058676",
 ]);
 
 export const LEGACY_POC_CAPABILITIES=Object.freeze({

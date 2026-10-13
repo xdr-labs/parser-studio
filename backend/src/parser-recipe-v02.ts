@@ -10,7 +10,7 @@ import {compilePair} from "./compiler.js";
 import type {ParserProject,PairExport,ValidationIssue,ValidationResult,FieldType,LogIndex} from "./types.js";
 
 export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef";
-export type RecipeSource=RecipeBody|"syslog_rfc5424";
+export type RecipeSource=RecipeBody|"syslog_rfc3164"|"syslog_rfc5424";
 type Group="top_fields"|"ns_fields"|"vendor_fields";
 type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group};
 type CastStage={op:"cast_type";target:string;data_type:Exclude<FieldType,"string">;timezone?:"UTC"};
@@ -18,7 +18,7 @@ type ClassifyStage={op:"classify";defaultIndex:LogIndex;rules:Array<{
  field:string;operator:"equals";value:string;index:LogIndex}>};
 export type RecipeStage=
  | {op:"split_event";boundary:"single-line"}
- | {op:"unwrap_syslog";version:1;mode:"strict_header"}
+ | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
  | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
  | MapStage | CastStage | ClassifyStage
@@ -68,9 +68,10 @@ function pathOK(v:string):boolean{
 }
 function sourceBody(project:ParserProject):{source:RecipeSource;body:RecipeBody}|null {
  const source=project.extraction.format;
- const body=source==="syslog_rfc5424"?project.extraction.syslogBodyFormat:source;
+ const body=["syslog_rfc3164","syslog_rfc5424"].includes(source)?
+  project.extraction.syslogBodyFormat:source;
  if(!body||!BODY.has(body as RecipeBody)||
-   (source==="syslog_rfc5424"&&body==="csv"))return null;
+   (["syslog_rfc3164","syslog_rfc5424"].includes(source)&&body==="csv"))return null;
  return {source,body:body as RecipeBody};
 }
 function legacyAllowed(project:ParserProject):boolean {
@@ -112,7 +113,9 @@ export function recipeFromLegacyProject(
   throw new Error("UNSUPPORTED_RECIPE_PROJECTION");
  const fmt=sourceBody(project)!;
  const stages:RecipeStage[]=[{op:"split_event",boundary:"single-line"}];
- if(fmt.source==="syslog_rfc5424")stages.push({op:"unwrap_syslog",version:1,mode:"strict_header"});
+ if(fmt.source==="syslog_rfc5424"||fmt.source==="syslog_rfc3164")
+  stages.push({op:"unwrap_syslog",
+    version:fmt.source==="syslog_rfc3164"?3164:1,mode:"strict_header"});
  if(fmt.body==="csv"){
   stages.push({op:"parse_csv",columns:project.extraction.csvColumns??[],
    delimiter:project.extraction.csvDelimiter??","});
@@ -159,10 +162,11 @@ export function validateRecipePair(input:unknown):ValidationResult{
       split?.op!=="split_event"||split.boundary!=="single-line")
    return fail("BOUNDARY_UNSUPPORTED");
   i++;
-  if(fmt.source==="syslog_rfc5424"){
+  if(fmt.source==="syslog_rfc5424"||fmt.source==="syslog_rfc3164"){
    const unwrap=stages[i++];
    if(!exact(unwrap,["op","version","mode"])||
-     unwrap?.op!=="unwrap_syslog"||unwrap.version!==1||unwrap.mode!=="strict_header")
+     unwrap?.op!=="unwrap_syslog"||unwrap.version!==(fmt.source==="syslog_rfc3164"?3164:1)||
+     unwrap.mode!=="strict_header")
     return fail("ENVELOPE_UNSUPPORTED");
   }
   const parsed=stages[i++];

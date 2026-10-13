@@ -42,10 +42,11 @@ export function validateProject(input: unknown): ValidationResult {
     for (const error of validateSchema.errors ?? []) {
       const path = error.instancePath || (error.params as { additionalProperty?: string }).additionalProperty || "/";
       if (error.keyword === "minimum" && error.instancePath === "/receiver/port" &&
-          (input as ParserProject | null)?.extraction?.format === "syslog_rfc5424" &&
+          ["syslog_rfc3164","syslog_rfc5424"].includes(
+            (input as ParserProject | null)?.extraction?.format ?? "") &&
           (error.params as { limit?: number }).limit === 6800) {
         issue(issues, "syslog_port_minimum", "/receiver/port",
-          "RFC5424 Syslog parser listener port must be at least 6800.");
+          "Syslog parser listener port must be at least 6800.");
         continue;
       }
       issue(issues, "schema", path, `Schema validation: ${error.keyword}`);
@@ -75,10 +76,22 @@ export function validateProject(input: unknown): ValidationResult {
   } else if (extraction.csvColumns !== undefined || extraction.csvDelimiter !== undefined) {
     issue(issues, "format_options", "/extraction", "CSV options are allowed only with CSV format.");
   }
-  if (extraction.format !== "syslog_rfc5424" && extraction.syslogBodyFormat !== undefined) {
-    issue(issues, "format_options", "/extraction/syslogBodyFormat", "Syslog body format is only supported for RFC5424.");
+  if (!["syslog_rfc3164","syslog_rfc5424"].includes(extraction.format) && extraction.syslogBodyFormat !== undefined) {
+    issue(issues, "format_options", "/extraction/syslogBodyFormat", "Syslog body format is only supported for RFC3164/RFC5424.");
   }
 
+  // RFC3164 omits the year and timezone. A date cast or generated event
+  // timestamp would silently invent a value, so forbid it at authoring time.
+  if(extraction.format==="syslog_rfc3164"){
+    for(const section of ["topFields","nsFields","vendorFields"] as const){
+      const timeField=p.normalization[section]["syslog_timestamp"];
+      if(timeField?.data_type==="date"){
+        issue(issues,"rfc3164_unzoned_timestamp",
+          `/normalization/${section}/syslog_timestamp`,
+          "RFC3164 timestamp has no year or timezone; map it only as text.");
+      }
+    }
+  }
   if (p.unsupportedOpaqueBlocks?.length) {
     issue(issues, "opaque_unsupported", "/unsupportedOpaqueBlocks", "Opaque imported Ruby cannot be safely compiled from the no-code model.");
   }

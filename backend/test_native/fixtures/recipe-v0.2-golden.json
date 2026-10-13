@@ -128,6 +128,113 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_syslog3164_kv",
+      "format": "syslog_rfc3164",
+      "bodyFormat": "kv",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=198.51.100.14 dst_port=443 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.14",
+        "dstport": 443,
+        "action": "deny",
+        "syslog_header_time": "Oct  9 14:15:16",
+        "syslog_time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog3164_cef",
+      "format": "syslog_rfc3164",
+      "bodyFormat": "cef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "syslog_header_time": "Oct 12 02:03:04",
+        "syslog_time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog3164_leef",
+      "format": "syslog_rfc3164",
+      "bodyFormat": "leef",
+      "raw": "<165>Nov 12 02:03:04 edge fw[122]: LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.8\tdstPort=80\tact=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 80,
+        "action": "deny",
+        "syslog_header_time": "Nov 12 02:03:04",
+        "syslog_time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "negative": [
+    {
+      "id": "month",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Bad  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "day",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Apr 31 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "february",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Feb 30 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "hour",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 24:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "second",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:60 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "priority",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<192>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "application",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:16 edge noapp src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "malformed_kv",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=\"unterminated"
+    },
+    {
+      "id": "newline",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1\ndst_port=443 action=deny"
     }
   ]
 }

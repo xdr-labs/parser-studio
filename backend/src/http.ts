@@ -163,11 +163,11 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           compilerMode:"V01_EQUIVALENT_SUBSET",currentOutputProfile:"host-customized-pair.v0.1",
           inputRequires:["recipe","legacyProject"],
           supportedBodyParsers:["json","kv","csv","cef","leef"],
-          supportedEnvelopeParsers:["none","rfc5424_v1_strict"],
+          supportedEnvelopeParsers:["none","rfc3164_strict_no_year_or_zone","rfc5424_v1_strict"],
           supportedOperators:["split_event","unwrap_syslog","parse_json","parse_kv",
             "parse_csv","parse_cef","parse_leef","map_field","cast_type",
             "classify_equals","fallback_unparsed"],
-          unsupported:["rfc3164","mixed_event_families","multiline","arbitrary_regex",
+          unsupported:["rfc3164_timestamp_inference","mixed_event_families","multiline","arbitrary_regex",
             "ruby_execution","jsonata","classification_exists","enrichment_unmodeled"],
           sourceHashVerifiedAgainstEvents:false,nativeUserParserVerified:false,
           targetImportVerified:false,apiDoesNotDeploy:true,
@@ -881,7 +881,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             const rawPort=url.searchParams.get("port");
             const rawFormat=url.searchParams.get("format");
             if((rawPort!==null&&!/^[0-9]{1,5}$/.test(rawPort)) ||
-               (rawFormat!==null&&rawFormat!=="syslog_rfc5424")){
+               (rawFormat!==null&&!["syslog_rfc3164","syslog_rfc5424"].includes(rawFormat))){
               send(res,422,{error:"PORT_QUERY_INVALID"});return;
             }
             const [catalogue,parsers]=await Promise.all([
@@ -902,7 +902,8 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
               },
             },{
               ...(rawPort===null?{}:{requestedPort:Number(rawPort)}),
-              ...(rawFormat===null?{}:{parserFormat:rawFormat}),
+              ...(rawFormat===null?{}:{parserFormat:rawFormat as
+                "syslog_rfc3164"|"syslog_rfc5424"}),
               ...(trusted?.rangeStart===undefined?{}:{rangeStart:trusted.rangeStart}),
               ...(trusted?.rangeEnd===undefined?{}:{rangeEnd:trusted.rangeEnd}),
             });

@@ -37,6 +37,7 @@
         "csv",
         "cef",
         "leef",
+        "syslog_rfc3164",
         "syslog_rfc5424"
       ]
     },
@@ -103,7 +104,10 @@
                 "const": "unwrap_syslog"
               },
               "version": {
-                "const": 1
+                "enum": [
+                  1,
+                  3164
+                ]
               },
               "mode": {
                 "const": "strict_header"

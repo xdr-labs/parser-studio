@@ -78,3 +78,13 @@ test("Syslog user overrides and lower custom ranges cannot break 6800 minimum",(
   assert.equal(proposeParserPort(inventory(),{
     parserFormat:"syslog_rfc5424",requestedPort:6810}).recommendedPort,6810);
 });
+
+test("RFC3164 listener and sensor destination always share a permitted Syslog port",()=>{
+  const evidence=inventory();
+  assert.throws(()=>proposeParserPort(evidence,{parserFormat:"syslog_rfc3164",
+    requestedPort:6799}),/PORT_SYSLOG_MINIMUM/);
+  const suggestion=proposeParserPort(evidence,{parserFormat:"syslog_rfc3164"});
+  assert.ok(suggestion.recommendedPort>=6800);
+  assert.equal(suggestion.sensorIngestPort,suggestion.recommendedPort);
+  assert.equal(suggestion.deployableNow,false);
+});

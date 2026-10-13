@@ -121,6 +121,7 @@
             "json",
             "kv",
             "csv",
+            "syslog_rfc3164",
             "syslog_rfc5424",
             "cef",
             "leef"
@@ -454,7 +455,10 @@
           "extraction": {
             "properties": {
               "format": {
-                "const": "syslog_rfc5424"
+                "enum": [
+                  "syslog_rfc3164",
+                  "syslog_rfc5424"
+                ]
               }
             },
             "required": [

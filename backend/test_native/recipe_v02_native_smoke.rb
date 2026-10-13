@@ -43,7 +43,8 @@ end
 end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
-allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef]
+allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -128,4 +129,19 @@ fixture['profiles'].each do |item|
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
 end
-puts "ParserRecipe v0.2 exact native Fluentd callback/CONF AST: #{allowed.length} profiles PASS (public synthetic only)"
+assert(fixture['negative'].is_a?(Array) && fixture['negative'].length == 9,
+  'missing reviewed RFC3164 failure corpus')
+fixture['negative'].each do |item|
+  assert(item.keys.sort == %w[id raw slug] && item['slug'] == 'v02_syslog3164_kv' &&
+    item['id'].match?(/\A[a-z_]+\z/) && item['raw'].bytesize <= 16384,
+    'invalid native RFC3164 negative fixture')
+  emitted = []
+  drivers.fetch(item.fetch('slug')).instance.parse(item.fetch('raw')) do |time, record|
+    emitted << [time, record]
+  end
+  assert(emitted.length == 1 && emitted[0][0].nil? &&
+    emitted[0][1] == {'stellar_log_index'=>'syslog',
+      'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
+    "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
+end
+puts "ParserRecipe v0.2 exact native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} negative cases PASS (public synthetic only)"

@@ -33,8 +33,8 @@ export type PortPlanOptions={
   rangeStart?:number;
   rangeEnd?:number;
   requestedPort?:number;
-  /** Syslog RFC5424 enforces the 6800 listener minimum; others unaffected. */
-  parserFormat?:"syslog_rfc5424";
+  /** RFC3164/RFC5424 Syslog enforce the same 6800 listener minimum. */
+  parserFormat?:"syslog_rfc3164"|"syslog_rfc5424";
 };
 export type PortProposal={
   contract:"stellar-parser-listener-port-proposal.v0.1";
@@ -71,10 +71,10 @@ function knownOccupancy(data:PortInventory):Set<number>{
 
 /** Browser override changes compiled Ruby+CONF before either download/apply. */
 export function validatePortOverride(port:unknown,data:PortInventory,
-  parserFormat?:"syslog_rfc5424"):number{
+  parserFormat?:"syslog_rfc3164"|"syslog_rfc5424"):number{
   const occupied=knownOccupancy(data);
   if(!validPort(port))reject("PORT_INVALID");
-  if(parserFormat==="syslog_rfc5424"&&port<6800)
+  if(["syslog_rfc3164","syslog_rfc5424"].includes(parserFormat??"")&&port<6800)
     reject("PORT_SYSLOG_MINIMUM");
   if(port<1024)reject("PORT_PRIVILEGED");
   if(occupied.has(port))reject("PORT_ALREADY_OCCUPIED");
@@ -84,11 +84,12 @@ export function validatePortOverride(port:unknown,data:PortInventory,
 export function proposeParserPort(data:PortInventory,
   options:PortPlanOptions={}):PortProposal{
   const occupied=knownOccupancy(data);
-  if(options.parserFormat!==undefined&&options.parserFormat!=="syslog_rfc5424")
+  if(options.parserFormat!==undefined&&
+    !["syslog_rfc3164","syslog_rfc5424"].includes(options.parserFormat))
     reject("PORT_FORMAT_INVALID");
-  const start=options.rangeStart??(options.parserFormat==="syslog_rfc5424"?6800:20000);
+  const start=options.rangeStart??(["syslog_rfc3164","syslog_rfc5424"].includes(options.parserFormat??"")?6800:20000);
   const end=options.rangeEnd??30000;
-  if(options.parserFormat==="syslog_rfc5424"&&start<6800)
+  if(["syslog_rfc3164","syslog_rfc5424"].includes(options.parserFormat??"")&&start<6800)
     reject("PORT_SYSLOG_MINIMUM");
   if(!validPort(start)||!validPort(end)||start<1024||start>end||
     end-start>30000)reject("PORT_RANGE_INVALID");
