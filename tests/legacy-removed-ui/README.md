@@ -76,3 +76,10 @@ Additional retired AI creation UI regression:
   copy/paste as the only AI creation method, so that extra public entry has
   been retired. Backend metadata-only provider safety logic and its Vitest
   contracts remain preserved as internal code, disabled by default.
+
+Additional legacy E2E:
+- e2e-workbench.spec.ts (original: e2e/workbench.spec.ts), 4 historical
+  three-pane/regex/Run Suite/Local Library/mobile tests. Its old route and
+  assumptions are no longer user-visible; this exact file remains unchanged.
+  The mobile responsive and source accounting assertions are explicitly
+  migrated to tests/two-path.spec.ts, and type/privacy tests stay in Vitest.

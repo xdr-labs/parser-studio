@@ -24,6 +24,7 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
+import AutoParserResultTools from './AutoParserResultTools';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 
@@ -731,16 +732,12 @@ export default function AutoParser({
          listenerPort={draft.guided?.receiver.port??null}
          onDownload={(filename,bytes)=>download(filename,bytes,true)}
        />}
-       {currentPair&&<details className="auto-parser-recipe"
-          aria-label="Deployment and sensor verification">
-         <summary>Apply to DP &amp; Verify Sensor Logs (separate authorization)</summary>
-         <p>The generated Ruby and CONF are downloadable. A real Stellar Cyber
-           DP Apply, sensor replay or Interflow query requires independent target
-           authorization and a supported backend connection; this development
-           preview has not activated these actions.</p>
-         <p>No real DP configuration, listener binding, network send, or indexed
-           Interflow event has been verified.</p>
-       </details>}
+       {currentPair&&<AutoParserResultTools
+         projectId={currentPair.manifest.projectId??''}
+         listenerPort={draft.guided?.receiver.port??0}
+         sourceFormat={draft.format}
+         onDownload={(filename,content)=>download(filename,content)}
+       />}
        <details className="auto-parser-recipe" aria-label="Whole-sample regression and holdout review">
          <summary>Review safe repair · Full-sample and holdout regression</summary>
          <p>Compare one suggested missing-field mapping against the entire original sample.

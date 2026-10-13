@@ -73,3 +73,21 @@ test('ChatGPT redaction approval resets when the reviewed masked example changes
   await expect(page.getByLabel('Confirm redacted example review')).not.toBeChecked();
   await expect(page.getByRole('button',{name:'Prepare ChatGPT Prompt'})).toBeDisabled();
 });
+
+test('mobile viewport preserves both creation paths and has no horizontal overflow',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/');
+  const nav=page.getByRole('complementary',{name:'Parser creation methods'});
+  await expect(nav.getByRole('button')).toHaveCount(2);
+  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
+  const initial=await page.evaluate(()=>({
+    viewport:innerWidth,width:document.documentElement.scrollWidth,
+  }));
+  expect(initial.width).toBeLessThanOrEqual(initial.viewport+1);
+  await nav.getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
+  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+  const next=await page.evaluate(()=>({
+    viewport:innerWidth,width:document.documentElement.scrollWidth,
+  }));
+  expect(next.width).toBeLessThanOrEqual(next.viewport+1);
+});

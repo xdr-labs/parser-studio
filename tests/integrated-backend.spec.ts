@@ -530,4 +530,38 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     expect(posts.filter(x=>x.endsWith('/generate')).length).toBeGreaterThanOrEqual(2);
   });
 
+  test('generated Auto Parser results expose port review, immutable history, approved test gates and Interflow only in context',async({page})=>{
+    const source=[
+      '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
+      '{"action":"deny","src_ip":"203.0.113.5","dst_port":22}',
+    ].join('\n');
+    const writes:string[]=[];
+    page.on('request',req=>{
+      if(req.method()==='POST')writes.push(new URL(req.url()).pathname);
+    });
+    await page.goto('/');
+    await expect(page.getByLabel('Authorized test and Interflow verification')).toHaveCount(0);
+    await page.getByLabel('Auto Parser raw logs').fill(source);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await expect(page.getByLabel('Offline parser revision history')).toHaveCount(1);
+    const tools=page.getByLabel('Authorized test and Interflow verification');
+    await tools.locator('summary').first().click();
+    await expect(tools).toContainText('same sensor destination'.replace('same ',''));
+    await expect(tools.getByLabel('Approved synthetic Sensor Replay')).toBeVisible();
+    await expect(tools.getByRole('button',{name:'Start Approved Synthetic Session'})).toHaveCount(0);
+    await tools.getByRole('button',{name:'Check Sensor Test Authorization'}).click();
+    await expect(tools).toContainText('DISABLED · Missing independent operator/sink/audit authorization.');
+    await expect(tools.getByRole('button',{name:'Start Approved Synthetic Session'})).toHaveCount(0);
+    await expect(tools.getByLabel('Interflow field comparison after approved replay')).toHaveCount(0);
+    await tools.getByRole('button',{name:'Check Receiving Port Inventory (Read-only)'}).click();
+    await expect(tools.getByLabel('Read-only parser port review')).toContainText('NOT VERIFIED');
+    expect(writes.some(path=>path.includes('/sessions/start')||
+      path.includes('/interflow/search')||path.includes('/target/apply'))).toBe(false);
+  });
+
 });
