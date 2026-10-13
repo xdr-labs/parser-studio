@@ -64,6 +64,14 @@
     "unparsed_bytes": 0
   },
   "unknown_unstructured_without_training_labels": {
+    "corrected_typed_masks_strict_anchor_span": {
+      "FN": 2317,
+      "FP": 31,
+      "TP": 821,
+      "f1": 0.4115,
+      "precision": 0.9636,
+      "recall": 0.2616
+    },
     "heldout_events": 1581,
     "previous_drain3_span": {
       "FN": 2620,
@@ -82,6 +90,7 @@
       "f1": 0.3762,
       "precision": 0.9106,
       "recall": 0.2371
-    }
+    },
+    "typed_mask_caveat": "Exploratory correction on previously inspected same-source holdout; a fresh independent test is required."
   }
 }

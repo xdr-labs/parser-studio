@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from ipaddress import ip_address
 import re
 
-TOKEN = re.compile(r"<(\*|:[A-Za-z][A-Za-z0-9_]{0,19}:)>")
+# Drain3 0.9.11 emits mask labels as <IP>/<NUMBER>, not <:IP:>.
+# Recognize only allowlisted tags; reject all other angle-bracket syntax.
+TOKEN = re.compile(r"<(\*|[A-Za-z][A-Za-z0-9_]{0,19}|:[A-Za-z][A-Za-z0-9_]{0,19}:)>")
 MAX_VARIABLES = 16
 MAX_BODY_BYTES = 8192
 MAX_VARIABLE_CHARS = 256

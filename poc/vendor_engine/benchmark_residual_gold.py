@@ -32,14 +32,14 @@ MAX_VARIABLES=24
 MAX_MESSAGE=8192
 
 
-def frozen_miners(mode:str="residual")->tuple[dict,dict[str,str]]:
+def frozen_miners(mode:str="residual",masking_variant:str="legacy")->tuple[dict,dict[str,str]]:
     """Only raw training messages; no reference-label file access."""
     pools=samples(mode)
     states={}
     fingerprints={}
     for family,rows in sorted(pools.items()):
         train,holdout=train_holdout(rows)
-        model=miner()
+        model=miner(masking_variant)
         for item in train:
             model.add_log_message(item.body)
         states[family]={"model":model,"train":train,"holdout":holdout}
@@ -132,9 +132,9 @@ def _metric(counts:Counter)->dict[str,Any]:
     }
 
 
-def evaluate(mode:str="residual")->dict[str,Any]:
+def evaluate(mode:str="residual",masking_variant:str="legacy")->dict[str,Any]:
     # Train and hash the grammar BEFORE references enter the process.
-    frozen,profile_hashes=frozen_miners(mode)
+    frozen,profile_hashes=frozen_miners(mode,masking_variant)
     totals=Counter()
     old_stats=Counter()
     new_stats=Counter()
@@ -201,6 +201,7 @@ def evaluate(mode:str="residual")->dict[str,Any]:
     return {
         "contract":"parser-studio.poc.loghub-reference-span-v0.1",
         "body_strategy":mode,
+        "masking_variant":masking_variant,
         "fixture_repo":"logpai/loghub",
         "pinned_reference_revision":LABEL_COMMIT,
         "source_sha256":SAMPLE_SHA,

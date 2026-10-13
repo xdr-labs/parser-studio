@@ -23,7 +23,8 @@ def _measured(values:dict[str,Any])->dict[str,Any]:
 def render(source:dict[str,Any],
            unsupervised:dict[str,Any],
            trained:dict[str,Any],
-           spell:dict[str,Any]|None=None)->dict[str,Any]:
+           spell:dict[str,Any]|None=None,
+           typed:dict[str,Any]|None=None)->dict[str,Any]:
     if (source.get("contract")!="parser-studio.poc.pinned-source-field-gold-v0.1"
         or unsupervised.get("contract")!="parser-studio.poc.loghub-reference-span-v0.1"
         or trained.get("contract")!="parser-studio.poc.retrieval-first-source-span-v0.1"):
@@ -52,6 +53,22 @@ def render(source:dict[str,Any],
     if (b["f1"] is None or a["f1"] is None or c["f1"] is None
         or b["f1"]<=a["f1"]):
         raise ValueError("EXTRACTION_REPORT_UNVERIFIED_IMPROVEMENT")
+    typed_metric=None
+    if typed is not None:
+        if (typed.get("contract")!="parser-studio.poc.loghub-reference-span-v0.1"
+            or typed.get("body_strategy")!="residual"
+            or typed.get("masking_variant")!="typed"
+            or typed.get("raw_event_count")!=unsupervised["raw_event_count"]
+            or typed.get("reference_nonempty_variable_spans")!=
+               unsupervised["reference_nonempty_variable_spans"]):
+            raise ValueError("TYPED_MASK_REFERENCE_CONTRACT_MISMATCH")
+        typed_metric=_measured(typed["anchored_exact_reference_parameter"])
+        if (typed_metric["TP"]+typed_metric["FN"]!=
+            unsupervised["reference_nonempty_variable_spans"]):
+            raise ValueError("TYPED_MASK_REFERENCE_DENOMINATOR_INVALID")
+        if (typed_metric["f1"] is None or typed_metric["f1"]<=b["f1"]
+            or typed_metric["FP"]>=b["FP"]):
+            raise ValueError("TYPED_MASK_NO_VERIFIED_EXTRACTION_GAIN")
     if spell is not None:
         if (spell.get("contract")!="parser-studio.poc.spell-reference-negative.v0.1"
             or spell.get("adoption")!="REJECTED_FOR_UNLABELED_SOURCE_VARIABLE_EXTRACTION"
@@ -88,6 +105,8 @@ def render(source:dict[str,Any],
                 "reference_nonempty_variable_spans"]),
             "previous_drain3_span":a,
             "strict_anchor_span":b,
+            "corrected_typed_masks_strict_anchor_span":typed_metric,
+            "typed_mask_caveat":"Exploratory correction on previously inspected same-source holdout; a fresh independent test is required.",
             "qualification":"DISJOINT_RAW_SHA_SAME_SOURCE_REVISION",
         },
         "already_annotated_training_template_reuse":{
@@ -124,12 +143,13 @@ def main()->None:
         write_training_snapshot,fit_train_only,evaluate_heldout,
     )
     source=source_eval()
-    residual=residual_eval("residual")
+    residual=residual_eval("residual","legacy")
+    typed=residual_eval("residual","typed")
     write_training_snapshot()
     trained=evaluate_heldout(fit_train_only())
     spell_path=CACHE/"spell_comparison_result.json"
     spell=json.loads(spell_path.read_text("utf8")) if spell_path.is_file() else None
-    result=render(source,residual,trained,spell)
+    result=render(source,residual,trained,spell,typed)
     path=ROOT/"extraction-summary.json"
     path.write_text(json.dumps(result,indent=2,sort_keys=True,
                                ensure_ascii=True)+"\n","utf8")

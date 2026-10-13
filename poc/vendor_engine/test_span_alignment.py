@@ -92,5 +92,20 @@ class AnchorAlignmentTests(unittest.TestCase):
         self.assertEqual(["residual.variable_1"],[c.path for c in result.captures])
 
 
+    def test_actual_drain3_mask_tags_have_typed_byte_captures(self):
+        body="source 192.0.2.21 has count 42 after audit completed"
+        pattern="source <IP> has count <NUMBER> after audit completed"
+        result=align_template(pattern,body)
+        self.assertEqual("SOURCE_SPAN_CANDIDATE_ONLY",result.status)
+        self.assertEqual(["192.0.2.21","42"],[c.value for c in result.captures])
+        self.assertEqual(["IP","NUMBER"],[c.mask for c in result.captures])
+
+    def test_only_allowlisted_mask_names_accepted(self):
+        body="source 192.0.2.21 has count 42 after audit completed"
+        pattern="source <UNTRUSTED> has count <NUMBER> after audit completed"
+        self.assertEqual("UNSUPPORTED_TEMPLATE_SYNTAX",
+                         align_template(pattern,body).status)
+
+
 if __name__ == "__main__":
     unittest.main()

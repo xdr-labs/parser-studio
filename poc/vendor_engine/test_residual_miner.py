@@ -56,5 +56,41 @@ class ResidualMinerTests(unittest.TestCase):
         self.assertFalse(result["runtime_native_verified"])
 
 
+    def test_corrected_masks_actually_recognize_ip_number(self):
+        import re
+        from residual_miner import miner
+        current=miner("legacy")
+        typed=miner("typed")
+        sample="source 192.0.2.9 has count 42"
+        self.assertFalse(any(re.search(mask.pattern,sample)
+                             for mask in current.config.masking_instructions))
+        self.assertTrue(any(re.search(mask.pattern,sample)
+                            for mask in typed.config.masking_instructions))
+        self.assertEqual("<IP>",typed.config.mask_prefix+"IP"+typed.config.mask_suffix)
+        self.assertEqual("<NUMBER>",typed.config.mask_prefix+"NUMBER"+typed.config.mask_suffix)
+        with self.assertRaisesRegex(ValueError,"UNSUPPORTED_MASKING_VARIANT"):
+            miner("untrusted")
+
+    @unittest.skipUnless(all((ROOT/name).is_file() for name in SAMPLE_SHA),
+                         "Pinned external Loghub source cache missing")
+    def test_typed_mask_fixed_source_span_improves_precision_recall(self):
+        from benchmark_residual_gold import evaluate
+        try:
+            from drain3 import TemplateMiner
+        except ImportError:
+            self.skipTest("Optional research-only Drain3 unavailable")
+        before=evaluate("residual","legacy")
+        after=evaluate("residual","typed")
+        self.assertEqual(before["reference_nonempty_variable_spans"],
+                         after["reference_nonempty_variable_spans"])
+        self.assertEqual(before["raw_event_count"],after["raw_event_count"])
+        self.assertGreater(after["anchored_exact_reference_parameter"]["TP"],
+                           before["anchored_exact_reference_parameter"]["TP"])
+        self.assertLess(after["anchored_exact_reference_parameter"]["FP"],
+                        before["anchored_exact_reference_parameter"]["FP"])
+        self.assertFalse(after["native_verified"])
+        self.assertEqual("typed",after["masking_variant"])
+
+
 if __name__=="__main__":
     unittest.main()

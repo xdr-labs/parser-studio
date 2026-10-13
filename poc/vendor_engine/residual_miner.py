@@ -97,7 +97,15 @@ def train_holdout(lines:list[Residual])->tuple[list[Residual],list[Residual]]:
     return train,heldout
 
 
-def miner():
+def miner(masking_variant:str="legacy"):
+    """Keep the legacy unmasked baseline for fair exact-head comparisons.
+
+    The original patterns were accidentally double-escaped and did not
+    match IP/number tokens. Typed mode uses correctly scoped masks and is
+    separately reported, never silently replacing the historical baseline.
+    """
+    if masking_variant not in {"legacy","typed"}:
+        raise ValueError("UNSUPPORTED_MASKING_VARIANT")
     try:
         from drain3 import TemplateMiner
         from drain3.template_miner_config import TemplateMinerConfig
@@ -111,10 +119,17 @@ def miner():
     config.drain_depth=4
     config.drain_max_children=100
     config.drain_max_clusters=MAX_CLUSTER
-    config.masking_instructions=[
-        MaskingInstruction(r"\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b","IP"),
-        MaskingInstruction(r"\\b\\d+(?:\\.\\d+)?\\b","NUMBER"),
-    ]
+    if masking_variant=="legacy":
+        config.masking_instructions=[
+            MaskingInstruction(r"\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b","IP"),
+            MaskingInstruction(r"\\b\\d+(?:\\.\\d+)?\\b","NUMBER"),
+        ]
+    else:
+        # Real Drain3 emits these labels as <IP> and <NUMBER>, not <:IP:>.
+        config.masking_instructions=[
+            MaskingInstruction(r"\b(?:\d{1,3}\.){3}\d{1,3}\b","IP"),
+            MaskingInstruction(r"\b\d+(?:\.\d+)?\b","NUMBER"),
+        ]
     return TemplateMiner(config=config)
 
 
@@ -162,12 +177,12 @@ def aligned_candidate(template:str,body:str,start:int,raw:str,
                         for x in result.captures]}
 
 
-def run()->dict[str,Any]:
+def run(masking_variant:str="legacy")->dict[str,Any]:
     sources=samples()
     rows={}
     for family,events in sources.items():
         train,hold=train_holdout(events)
-        m=miner()
+        m=miner(masking_variant)
         for row in train:
             m.add_log_message(row.body)
         rows[family]={"miner":m,"train":train,"holdout":hold}
@@ -215,6 +230,7 @@ def run()->dict[str,Any]:
     return {
         "contract":"parser-studio.poc.residual-drain3-holdout.v0.1",
         "dependency":"Drain3 pinned MIT 0.9.11 local optional prototype only",
+        "masking_variant":masking_variant,
         "seed":SEED,
         "same_revision_disjoint_source_hash_holdout":True,
         "families":per_family,

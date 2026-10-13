@@ -94,6 +94,28 @@ class PublishTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"RESEARCH_ALTERNATIVE_CONTRACT"):
             render(src,res,train,bad)
 
+    def test_typed_mask_source_span_isolated_from_semantic_claims(self):
+        src,res,train=fixtures()
+        typed={
+            "contract":"parser-studio.poc.loghub-reference-span-v0.1",
+            "body_strategy":"residual",
+            "masking_variant":"typed",
+            "raw_event_count":1581,
+            "reference_nonempty_variable_spans":3138,
+            "anchored_exact_reference_parameter":metrics(821,31,2317),
+            "sensitive_template":"NEVER_PUBLISH_THIS",
+        }
+        summary=render(src,res,train,typed=typed)
+        isolated=summary["unknown_unstructured_without_training_labels"]
+        self.assertEqual(821,isolated["corrected_typed_masks_strict_anchor_span"]["TP"])
+        self.assertEqual(31,isolated["corrected_typed_masks_strict_anchor_span"]["FP"])
+        self.assertEqual(744,isolated["strict_anchor_span"]["TP"])
+        self.assertNotIn("NEVER_PUBLISH_THIS",json.dumps(summary))
+        self.assertFalse(summary["research_decision"]["native_ruby_conf"]=="VERIFIED")
+        changed=dict(typed,reference_nonempty_variable_spans=999)
+        with self.assertRaisesRegex(ValueError,"TYPED_MASK_REFERENCE_CONTRACT"):
+            render(src,res,train,typed=changed)
+
     def test_existing_report_is_value_only(self):
         file=ROOT/"extraction-summary.json"
         if not file.exists():

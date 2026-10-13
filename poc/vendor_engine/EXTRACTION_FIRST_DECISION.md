@@ -59,7 +59,8 @@ Empty annotated wildcards are not countable source-value spans.
 | Algorithm / matched reference variable spans | Holdout | TP | FP | FN | Precision | Recall | F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Unsupervised Drain3 raw residual candidate | 1,581 | 518 | 73 | 2,620 | 87.65% | 16.51% | 27.78% |
-| Drain3 + strict source-byte anchor alignment | 1,581 | 744 | 73 | 2,394 | 91.06% | 23.71% | 37.62% |
+| Drain3 + strict source-byte anchor alignment (historical unmasked) | 1,581 | 744 | 73 | 2,394 | 91.06% | 23.71% | 37.62% |
+| **Drain3 corrected IP/NUMBER mask + typed byte alignment** | **1,581** | **821** | **31** | **2,317** | **96.36%** | **26.16%** | **41.15%** |
 | LogPai Spell (unlabeled train-only token alignment) | 1,581 | 572 | 1,227 | 2,566 | 31.80% | 18.23% | 23.17% |
 | Drain3 + *entire* unlabelled message context | 1,581 | 1,110 | 1,615 | 2,028 | 40.73% | 35.37% | 37.86% |
 | **Pre-labeled, verified grammar retrieval** | **1,581** | **3,073** | **0** | **65** | **100%** | **97.93%** | **98.95%** |
@@ -77,6 +78,17 @@ Empty annotated wildcards are not countable source-value spans.
   **REJECT** Spell for this source-field extraction use case. Its published
   clustering/FTA benchmark scores measure a different outcome and are not
   comparable with our original-byte extraction F1.
+- In the original Drain3 research prototype, the IP/number `MaskingInstruction`
+  regexes were **doubly escaped and matched no actual IPv4/numeric tokens**.
+  We preserved the prior broken configuration as an explicit historical baseline,
+  corrected regexes in a separate `typed` mode and taught the source-byte
+  aligner the actual Drain3 0.9.11 mask labels `<IP>`/`<NUMBER>`.
+  Independently bounded/malformed/type test coverage PASS. On the *same
+  previously examined* Loghub holdout, the corrected mode increased F1
+  **37.62% → 41.15%** while reducing FP **73 → 31**; no cross-family
+  template match in the sample. Multiple mask variants were inspected on
+  this holdout, so this result is **exploratory, not new untouched
+  validation**. The 41.15% F1 is still far below a cold-start product gate.
 - A train-only varying-KV-island probe on full Linux message bodies identified
   179 gold-template variable spans and 179 additional non-template spans.
   Joining those with raw Drain3 proposals raised recall but also false
@@ -101,6 +113,8 @@ python3 poc/vendor_engine/corpus.py
 python3 poc/vendor_engine/evaluate_source.py
 python3 poc/vendor_engine/benchmark_source_field_gold.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/benchmark_residual_gold.py
+# Corrected typed-mask experiment is published only as exploratory evidence
+PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/publish_extraction_summary.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/trusted_template_reuse.py
 # Optional licensed-research comparison; requires local ignored logparser
 # Apache-2.0 Spell checkout and isolated optional dependencies.
@@ -132,8 +146,9 @@ preferred architecture, conditional on independent evidence**:
    authorized Stellar target qualification.
 
 **Highest unfinished engineering problem:** genuinely *unlabeled*, previously
-unknown unstructured logs still show **37.62% annotated-variable F1** with
-conservative automatic source-aligned Drain3 capture. Do not advertise the
+unknown unstructured logs still show **41.15% exploratory annotated-variable
+F1** with corrected typed-mask + conservative automatic source-aligned Drain3
+capture (historical original 37.62%). Do not advertise the
 trained 98.95% as the solution to that open-world problem. Continue exploring
 deterministic variable-boundary induction, conservative repair and richer
 copyright-cleared independent data without misleading performance claims.
