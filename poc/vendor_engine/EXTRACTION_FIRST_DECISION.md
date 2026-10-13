@@ -20,10 +20,13 @@ or external LLM is part of this research.
   Trend Micro: 256 events, 14,645 syntactically extracted source values.
 - Every source event preserved, 256/256 with full local structural parsing;
   zero residual bytes on this limited, known-format corpus.
-- Independent standard-library JSON/CSV/KV decoding agrees on 256/256 events
-  after incorporating `shlex` for quote-aware Fortinet KV. **This is a
-  cross-implementation check, not ground-truth precision/recall for every
-  individual vendor field.**
+- Independent standard-library JSON/CSV/KV decoding agrees on 256/256 events.
+  **The new exact source-field benchmark also compares every original field
+  path, type, and value against these independent stdlib source decoders:
+  14,645 TP / 0 FP / 0 FN, Precision/Recall/F1 100% on this corpus.**
+  This is ground truth for the *supported syntax in these eight familiar
+  source fixtures*, NOT an unseen vendor/version generalization test or a
+  semantic ECS/Stellar field-mapping qualification.
 - Four distinct research-only CC0 Log Zoo real-source sample events parsed
   structurally. They remain in ignored local `.cache`, never redistributed.
 - Original product `createDraft()+preview()` unconfigured event extraction
@@ -64,7 +67,13 @@ Empty annotated wildcards are not countable source-value spans.
   the shared residual holdout. Merely matching a Drain3 template on 1,540
   messages was NEVER counted as successful variable extraction.
 - Full-message Drain3 mining improves recall but generates **1,615 false
-  source-template spans** and is NOT an acceptable replacement.
+  reference-template spans** and is NOT an acceptable replacement.
+- A train-only varying-KV-island probe on full Linux message bodies identified
+  179 gold-template variable spans and 179 additional non-template spans.
+  Joining those with raw Drain3 proposals raised recall but also false
+  captures; **do not ship this unqualified union**. Static `key=value` values
+  are still legitimately parsed original vendor fields even when Loghub's
+  template benchmark does not label them as variable slots.
 - The marked retrieval result uses **24 reusable grammar profiles created
   from Loghub's *training-set EventTemplate annotations*** (minimum two
   distinct train samples, exact provenance, stable literal anchors). It routes
@@ -81,6 +90,7 @@ present; none sends events to a DP/sensor or calls a hosted LLM):
 ```bash
 python3 poc/vendor_engine/corpus.py
 python3 poc/vendor_engine/evaluate_source.py
+python3 poc/vendor_engine/benchmark_source_field_gold.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/benchmark_residual_gold.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/trusted_template_reuse.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 -m unittest discover -s poc/vendor_engine -p 'test_*.py' -q

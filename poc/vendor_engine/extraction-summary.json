@@ -1,0 +1,73 @@
+{
+  "already_annotated_training_template_reuse": {
+    "exact_reference_span": {
+      "FN": 65,
+      "FP": 0,
+      "TP": 3073,
+      "f1": 0.9895,
+      "precision": 1.0,
+      "recall": 0.9793
+    },
+    "heldout_events": 1581,
+    "independent_reference_nonempty_parameters": 3138,
+    "matched_profile_events": 1523,
+    "qualification": "TRAIN_ANNOTATED_GRAMMAR_RETRIEVAL_NOT_UNSUPERVISED",
+    "trained_qualified_profiles": 24
+  },
+  "contract": "parser-studio.poc.extraction-first-summary.v0.1",
+  "critical_caveats": [
+    "The 98.95 percent retrieval result depends on annotated training templates.",
+    "The 37.62 percent unsupervised result is reference template-span F1, not all original vendor fields.",
+    "The 100 percent structured source-field result is restricted to eight known-format pinned fixture sets.",
+    "No original values, labels, or licensed profile literals are committed."
+  ],
+  "priority": [
+    "SOURCE_FIELD_EXTRACTION",
+    "UNSUPPORTED_RESIDUAL_EXTRACTION",
+    "OPTIONAL_STELLAR_DICTIONARY_NORMALIZATION"
+  ],
+  "research_decision": {
+    "commercial_template_distribution": "LICENSE_REVIEW_REQUIRED",
+    "native_ruby_conf": "NOT_VERIFIED",
+    "novel_unstructured_auto_parsing": "NOT_YET_QUALIFIED",
+    "profile_retrieval": "PROMISING_WHEN_RIGHTS_CLEARED_AND_LABELED",
+    "stellar_target": "NOT_VERIFIED",
+    "structured_parsing": "SUPPORTED_WITHIN_PINNED_FIXTURE_SCOPE"
+  },
+  "scope": "ISOLATED_RESEARCH_ONLY_NOT_PRODUCT_OR_NATIVE",
+  "structured_and_semistructured": {
+    "events_accounted": 256,
+    "exact_source_field": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 14645,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "independently_reference_scored_vendor_fields": 14645,
+    "qualification": "ONLY_8_PINNED_KNOWN_FORMAT_SOURCE_FIXTURES",
+    "unparsed_bytes": 0
+  },
+  "unknown_unstructured_without_training_labels": {
+    "heldout_events": 1581,
+    "previous_drain3_span": {
+      "FN": 2620,
+      "FP": 73,
+      "TP": 518,
+      "f1": 0.2778,
+      "precision": 0.8765,
+      "recall": 0.1651
+    },
+    "qualification": "DISJOINT_RAW_SHA_SAME_SOURCE_REVISION",
+    "reference_nonempty_parameters": 3138,
+    "strict_anchor_span": {
+      "FN": 2394,
+      "FP": 73,
+      "TP": 744,
+      "f1": 0.3762,
+      "precision": 0.9106,
+      "recall": 0.2371
+    }
+  }
+}
