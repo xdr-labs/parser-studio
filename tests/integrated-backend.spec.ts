@@ -345,7 +345,7 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       .toContainText('Two DRAFT files verified');
     await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('rfc3164_kv');
+    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
     const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
@@ -354,6 +354,12 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       .toContainText('v0.1 pair SHA MATCHED');
     await expect(page.getByLabel('v0.2 exact compiler evidence'))
       .toContainText('Native user parser NOT VERIFIED');
+    const reviewedRequests=payloads
+      .map(body=>JSON.parse(body) as {recipe?:{stages?:Array<{op:string;families?:string[]}>}})
+      .filter(body=>body.recipe?.stages?.length);
+    expect(reviewedRequests.length).toBeGreaterThanOrEqual(2);
+    expect(reviewedRequests[0]?.recipe?.stages?.find(stage=>
+      stage.op==='dispatch_family')?.families).toEqual(['json','kv','rfc3164_kv']);
     expect(payloads.length).toBeGreaterThanOrEqual(4);
   });
 
