@@ -848,4 +848,50 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
   });
 
 
+
+
+  test('migrated legacy replay: reviewed Auto Parser result rotates local-only synthetic events and stops on navigation',async({page})=>{
+   const replaySource=sample.replace('198.51.100.10','10.0.0.10')
+     .replace('203.0.113.5','10.0.0.11');
+   const calls:string[]=[];
+   page.on('request',request=>{
+     const path=new URL(request.url()).pathname;
+     if(path.startsWith('/api/v1/')&&request.method()==='POST')calls.push(path);
+   });
+   await page.goto('/');
+   await page.getByLabel('Auto Parser raw logs').fill(replaySource);
+   await page.getByRole('button',{name:'Review Detected Results'}).click();
+   await expect(page.getByLabel('Review Results stage')).toBeVisible();
+   await page.getByLabel('Review Results stage').getByRole('button',{name:/Test & Generate/}).click();
+   await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+   await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
+   const sentBefore=calls.length;
+   const panel=page.getByLabel('Local synthetic replay preview');
+   await panel.locator('summary').click();
+   await panel.getByLabel('Replay preview rate').selectOption('10');
+   await panel.getByRole('button',{name:'Start Local Replay'}).click();
+   await expect(panel.getByRole('status')).toContainText('Running locally');
+   const output=panel.getByLabel('Local synthetic replay output');
+   await expect(output).toContainText('action');
+   await expect(output).toContainText(/192\.0\.2\.|198\.51\.100\.|203\.0\.113\./);
+   await expect(output).not.toContainText('10.0.0.10');
+   await expect(output).not.toContainText('10.0.0.11');
+   await expect.poll(async()=>Number(/Locally generated (\d+) events/.exec(
+     await panel.getByRole('status').innerText())?.[1]??0)).toBeGreaterThan(1);
+   await expect(panel.getByRole('status')).toContainText('Sensor deliveries 0 events');
+   await panel.getByRole('button',{name:'Stop Local Replay'}).click();
+   const count=Number(/Locally generated (\d+) events/.exec(
+     await panel.getByRole('status').innerText())?.[1]??0);
+   await page.waitForTimeout(350);
+   expect(Number(/Locally generated (\d+) events/.exec(
+     await panel.getByRole('status').innerText())?.[1]??0)).toBe(count);
+   expect(calls.length).toBe(sentBefore);
+   await page.getByLabel('Test and Generate stage').getByRole('button',{name:'Review Results'}).click();
+   await expect(page.getByLabel('Local synthetic replay preview')).toHaveCount(0);
+   await page.getByRole('button',{name:'Back to Logs'}).click();
+   await page.getByLabel('Auto Parser raw logs').fill(replaySource+'\n{"action":"allow"}');
+   await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+   await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
+  });
+
 });
