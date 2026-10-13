@@ -12,6 +12,7 @@ import {verifyGeneratedPair,packageGeneratedPair} from './artifactPackageClient'
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
+import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import type {StructuralMiningReport} from './localPatternMining';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
@@ -71,6 +72,8 @@ export default function AutoParser({
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
  const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
+ const [recipeCompiled,setRecipeCompiled]=useState<{key:string;value:ReviewedRecipeCompilation}|null>(null);
+ const [recipeCompilerError,setRecipeCompilerError]=useState('');
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
@@ -94,6 +97,7 @@ export default function AutoParser({
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
+   setRecipeCompiled(null);setRecipeCompilerError('');
    setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
    setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
    setBoundedPath('');
@@ -107,6 +111,7 @@ export default function AutoParser({
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
  const currentRecipe=recipe?.key===identity?recipe.value:null;
+ const currentRecipeCompiled=recipeCompiled?.key===identity?recipeCompiled.value:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
  const currentAIPrompt=aiPrompt?.key===identity?aiPrompt.value:null;
@@ -384,7 +389,7 @@ export default function AutoParser({
  async function previewRecipe(){
    if(!suite||busy||pending)return;
    const token=++epoch.current,expected=identity;
-   setBusy(true);setRecipe(null);
+   setBusy(true);setRecipe(null);setRecipeCompiled(null);setRecipeCompilerError('');
    try{
      const result=await buildReviewableRecipe(sample,draft,suite);
      if(token===epoch.current&&currentRef.current===expected)
@@ -392,6 +397,21 @@ export default function AutoParser({
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setRecipe({key:expected,value:{ok:false,reason:'UNTRUSTED_PREVIEW'}});
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function compileReviewedRecipe(){
+   if(!currentRecipe||!currentRecipe.ok||!currentPair||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setRecipeCompiled(null);setRecipeCompilerError('');
+   try{
+     const result=await compileReviewedRecipeV02({
+       recipe:currentRecipe.recipe,legacyProject:currentRecipe.legacyProject,
+     },currentPair);
+     if(token===epoch.current&&currentRef.current===expected)
+       setRecipeCompiled({key:expected,value:result});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRecipeCompilerError('The backend could not verify the strict v0.2 stages against the current DRAFT pair. The original v0.1 files remain available.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function zipPair(){
@@ -654,10 +674,12 @@ export default function AutoParser({
          Not a measured human usability study; no telemetry or raw samples are sent.
        </div>
        <details className="auto-parser-recipe" aria-label="ParserRecipe v0.2 review">
-         <summary>Advanced · Review ParserRecipe v0.2 (not compilable)</summary>
-         <p>This is a local-only staged review, not a native compiler or a deployment.
-           The current backend accepts ParserProject v0.1 only; the original v0.1
-           contract is preserved independently and no recipe is sent to the backend.</p>
+         <summary>Advanced · Review and validate ParserRecipe v0.2 stages</summary>
+         <p>Review is local-only. On explicit request, a supporting backend can
+           validate these allowlisted stages against the unchanged ParserProject
+           v0.1 and prove that both generated DRAFT file hashes are identical.
+           Native user-parser or Stellar target compatibility is NOT VERIFIED.
+           Unknown operators, RFC3164, mixed formats and multiline remain unsupported.</p>
          <button type="button" disabled={busy||pending||!suite}
            onClick={()=>{void previewRecipe();}}>Review Staged Recipe</button>
          {currentRecipe&&(currentRecipe.ok
@@ -667,10 +689,24 @@ export default function AutoParser({
                {currentRecipe.recipe.sample.events} events ·
                Source SHA-256 {currentRecipe.recipe.sample.sha256.slice(0,12)}…</span>
              <span>v0.1 snapshot: {currentRecipe.lossReport.status} ·
-               v0.2 compiler NOT AVAILABLE</span>
+               v0.2 restricted compilation needs backend capability verification</span>
              <p>{currentRecipe.recipe.stages.map(stage=>stage.op).join(' → ')}</p>
+             <button type="button" disabled={!currentPair||busy||pending}
+               onClick={()=>{void compileReviewedRecipe();}}>
+               Validate and Compile Strict v0.2 DRAFT Pair
+             </button>
+             {!currentPair&&<span>First generate the v0.1 DRAFT pair to compare exact hashes.</span>}
            </div>
            : <p role="status">Review cannot be generated safely: {statusMessage(currentRecipe.reason)}</p>)}
+         {recipeCompilerError&&<p role="status">{recipeCompilerError}</p>}
+         {currentRecipeCompiled&&<div role="status" aria-label="v0.2 exact compiler evidence">
+           <strong>v0.2 STRICT COMPILER PASS · v0.1 pair SHA MATCHED</strong>
+           <span>Stages: {currentRecipeCompiled.receipt.stageCount} ·
+             Events claimed: {currentRecipeCompiled.receipt.sampleEventCount} ·
+             Recipe SHA-256 {currentRecipeCompiled.receipt.recipeSha256.slice(0,16)}…</span>
+           <span>Native user parser NOT VERIFIED · Source hash is not independently
+             checked by the backend · Stellar DP import NOT VERIFIED</span>
+         </div>}
        </details>
        <p className="auto-parser-note"><LockKeyhole size={14}/> No API key, DP install or sensor send.
          Native Fluentd compatibility and real Stellar Cyber import remain unverified.</p>

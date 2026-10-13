@@ -238,7 +238,15 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
     const reviewed=page.getByLabel('Review-only staged recipe');
     await expect(reviewed).toContainText('REVIEW_ONLY');
-    await expect(reviewed).toContainText('v0.2 compiler NOT AVAILABLE');
+    await expect(reviewed).toContainText('v0.2 restricted compilation needs backend capability verification');
+    const recipeGenerated=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
+      r.request().method()==='POST');
+    await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
+    expect((await recipeGenerated).status()).toBe(200);
+    const nativeBounded=page.getByLabel('v0.2 exact compiler evidence');
+    await expect(nativeBounded).toContainText('v0.1 pair SHA MATCHED');
+    await expect(nativeBounded).toContainText('Native user parser NOT VERIFIED');
+    await expect(nativeBounded).not.toContainText('198.51.100.10');
     await expect(reviewed).toContainText('parse_json');
     await expect(reviewed).not.toContainText('198.51.100.10');
     await expect(reviewed).not.toContainText('203.0.113.5');
@@ -250,7 +258,7 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
       const bytes=await readFile(await result.path());
       expect(bytes.byteLength).toBeGreaterThan(0);
     }
-    expect(actions).toEqual(['validate','generate']);
+    expect(actions).toEqual(['validate','generate','validate','generate']);
     await page.getByLabel('Test and Generate stage').getByRole('button',{name:'Review Results'}).click();
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(sample);
