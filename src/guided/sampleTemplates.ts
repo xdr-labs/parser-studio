@@ -2,7 +2,7 @@ import { createDraft, type MappingRule, type ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 
 export const starterTemplateIds = [
-  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
+  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed',
 ] as const;
 export type StarterTemplateId = (typeof starterTemplateIds)[number];
 
@@ -79,6 +79,16 @@ const presets: Record<StarterTemplateId, { label: string; description: string; s
       'CEF:0|Example|Firewall|1|101|Denied|8|action=deny src_ip=203.0.113.11 dst_port=22',
     ],
   },
+  mixed: {
+    label:'Mixed JSON + KV + CEF + LEEF · Security',
+    description:'Explicit four-family single-line dispatcher; no generic fallback',
+    samples:[
+      '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
+      'src_ip=203.0.113.11 dst_port=22 action=deny',
+      'CEF:0|Synthetic|Firewall|1|101|Denied|8|src=192.0.2.11 dpt=443 act=deny',
+      'LEEF:1.0|Synthetic|Firewall|1|501|src=192.0.2.18\tdstPort=80\tact=allow',
+    ],
+  },
   leef: {
     label: 'LEEF · Security Event',
     description: 'LEEF 1.0 with tab-delimited fields',
@@ -107,6 +117,28 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
   guided.eventBoundary = 'single-line';
   guided.enrichment = [];
 
+  if(id==='mixed'){
+    draft.mixedFormats=['json','kv','cef','leef'];
+    draft.mappings=[
+      {id:'source-ip',source:'src_ip',target:'custom.source_ip',type:'ip'},
+      {id:'target-port',source:'dst_port',target:'custom.destination_port',type:'port'},
+      {id:'action',source:'action',target:'custom.action',type:'string'},
+      {id:'mixed-source',source:'src',target:'custom.mixed_source_ip',type:'ip'},
+      {id:'mixed-port-cef',source:'dpt',target:'custom.mixed_cef_port',type:'port'},
+      {id:'mixed-port-leef',source:'dstPort',target:'custom.mixed_leef_port',type:'port'},
+      {id:'mixed-action',source:'act',target:'custom.mixed_action',type:'string'},
+    ];
+    guided.groups={
+      'source-ip':'top_fields','target-port':'ns_fields',
+      action:'top_fields','mixed-source':'top_fields',
+      'mixed-port-cef':'ns_fields','mixed-port-leef':'ns_fields',
+      'mixed-action':'top_fields',
+    };
+    guided.classification.rules=[
+      {id:'deny',sourceField:'action',equals:'deny',index:'Threat'},
+      {id:'deny-cef',sourceField:'act',equals:'deny',index:'Threat'},
+    ];
+  }
   if(id==='rfc3164_kv'){
     draft.syslogBodyFormat='kv';
     draft.mappings=[

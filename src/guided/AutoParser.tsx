@@ -48,7 +48,7 @@ function download(filename:string,content:string|ArrayBuffer,binary=false){
 const readable:Record<string,string>={
  UNTRUSTED_PREVIEW:'The local preview could not be verified; run it again.',
  SOURCE_CHANGED:'The log source changed. Review the current events again.',
- MIXED_OR_UNKNOWN:'The sample has mixed, malformed, or unrecognized events. Separate families in Edit Details; no log line will be discarded.',
+ MIXED_OR_UNKNOWN:'The sample contains an unsupported family combination, malformed, or unrecognized events. Only explicitly allowed one-line JSON/KV/CEF/LEEF can share a parser; no log line will be discarded.',
  BOUNDARY_REVIEW:'The record boundaries are ambiguous. Open Edit Details to review multiline messages.',
  COMPILER_UNSUPPORTED:'The backend cannot safely compile the detected envelope and body.',
  COLUMNS_REQUIRED:'CSV columns require names before a parser can be generated. Open Edit Details.',

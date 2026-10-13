@@ -42,6 +42,7 @@ function fail():never{throw new Error('The reviewed v0.2 compiler contract was n
 export async function checkRecipeV02Compiler(
  requester:typeof fetch=fetch,
  requiredEnvelope?:'rfc3164_strict_no_year_or_zone',
+ requireMixed=false,
 ):Promise<boolean>{
  const res=await requester(BASE+'/capabilities',{
   method:'GET',cache:'no-store',credentials:'same-origin',
@@ -65,6 +66,14 @@ export async function checkRecipeV02Compiler(
     .every(s=>ops.includes(s))||
   (requiredEnvelope!==undefined&&(
     !Array.isArray(envelopes)||!envelopes.includes(requiredEnvelope)))||
+  (requireMixed&&(
+    !values.includes('mixed')||!ops.includes('dispatch_family')||
+    !Array.isArray(cap.strictMixedSingleLineFamilies)||
+    cap.strictMixedSingleLineFamilies.length!==4||
+    new Set(cap.strictMixedSingleLineFamilies).size!==4||
+    !['json','kv','cef','leef'].every(f=>
+      (cap.strictMixedSingleLineFamilies as unknown[]).includes(f))
+  ))||
   cap.nativeUserParserVerified!==false||cap.targetImportVerified!==false||
   cap.sourceHashVerifiedAgainstEvents!==false||cap.apiDoesNotDeploy!==true)
   fail();
@@ -89,7 +98,8 @@ export async function compileReviewedRecipeV02(
  requester:typeof fetch=fetch,
 ):Promise<ReviewedRecipeCompilation>{
  if(!await checkRecipeV02Compiler(requester,
-   input.recipe.sourceFormat==='syslog_rfc3164'? 'rfc3164_strict_no_year_or_zone':undefined)) {
+   input.recipe.sourceFormat==='syslog_rfc3164'? 'rfc3164_strict_no_year_or_zone':undefined,
+   input.recipe.sourceFormat==='mixed')) {
   throw new Error('The current backend does not advertise v0.2 compilation.');
  }
  const validation=await post('validate',input,requester);

@@ -6,8 +6,11 @@ export interface BackendCapabilities {
   projectSchemaRevision: '0.1';
   authoring: {
     receiverProtocols: Array<'udp' | 'tcp'>;
-    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef'>;
+    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed'>;
     formatCoverage: 'reviewed-bounded-subset';
+    /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
+    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'>;
+    strictMixedRequiresExplicitAllowlist?: true;
     rfc3164StrictTaggedMessageSubset?: true;
     rfc3164TimePolicy?: 'YEAR_AND_ZONE_UNKNOWN';
     rfc3164NativeTimeReconstruction?: false;
@@ -90,7 +93,7 @@ export interface BackendCapabilities {
 }
 
 const BASE = '/api/v1/parser-pairs';
-const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef']);
+const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed']);
 const KNOWN_PROTOCOLS = new Set(['udp', 'tcp']);
 const KNOWN_RFC_BODIES = new Set(['raw','json','kv','cef','leef']);
 
@@ -133,6 +136,17 @@ export async function fetchBackendCapabilities(
       (l?.maxProjectBodyBytes ?? 0) < 1024 || (l?.maxInspectBodyBytes ?? 0) < 1024) {
     throw new Error('DRAFT generation blocked due to untrusted backend capabilities or verification flags.');
   }
+  const mixedAdvertised=a.extractionFormats.includes('mixed');
+  const mixed=a.strictMixedSingleLineFamilies;
+  const reviewedMixed=['json','kv','cef','leef'];
+  if(mixedAdvertised){
+    if(a.strictMixedRequiresExplicitAllowlist!==true||
+      !Array.isArray(mixed)||mixed.length!==4||
+      new Set(mixed).size!==4||
+      !reviewedMixed.every(f=>mixed.includes(f as 'json')))
+      throw new Error('Backend mixed routing requires the exact fixed one-line format allowlist.');
+  }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
+    throw new Error('Unsupported mixed routing capability was advertised.');
   const rfc3164Advertised=a.extractionFormats.includes('syslog_rfc3164');
   if(rfc3164Advertised&&(
       a.rfc3164StrictTaggedMessageSubset!==true||
@@ -205,6 +219,14 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
           !cap.authoring.rfc5424BodyFormats?.includes(mode as 'cef' | 'leef'))) {
       throw new Error('Backend does not explicitly support RFC5424-embedded ' + mode.toUpperCase() + ' extraction.');
     }
+  }
+  if(project.extraction.format==='mixed'){
+    const formats=project.extraction.mixedFormats;
+    if(cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
+      !Array.isArray(formats)||formats.length<2||formats.length>4||
+      new Set(formats).size!==formats.length||
+      !formats.every(f=>cap.authoring.strictMixedSingleLineFamilies?.includes(f)))
+      throw new Error('Backend does not support the explicitly reviewed mixed-format allowlist.');
   }
   if (!cap.authoring.extractionFormats.includes(project.extraction.format)) {
     throw new Error('Backend did not confirm support for ' + project.extraction.format.toUpperCase() + ' format.');

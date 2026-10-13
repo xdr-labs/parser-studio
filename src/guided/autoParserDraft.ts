@@ -42,14 +42,24 @@ export function prepareAutoParserDraft(
   if(compiler.status!=='DRAFT_COMPILABLE'||!compiler.format){
     return failed(compiler.status==='DRAFT_COMPILABLE'?'COMPILER_UNSUPPORTED':compiler.status);
   }
-  if(ledger.unsupported!==0||ledger.families.length!==1)
+  if(ledger.unsupported!==0||(!compiler.mixedFormats&&ledger.families.length!==1))
     return failed('MIXED_OR_UNKNOWN');
+  if(compiler.format==='mixed'){
+    const approved=compiler.mixedFormats??[];
+    // The server's exact-prefix family dispatcher never trims leading blanks.
+    if(approved.length<2||approved.length>4||
+       records.some(rec=>!(/^(?:\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]*=)/.test(rec.raw))))
+      return failed('MIXED_OR_UNKNOWN');
+    const census=[...new Set(ledger.families.map(x=>x.body))].sort();
+    if(!same(census,approved))return failed('MIXED_OR_UNKNOWN');
+  }
   const relevant=ledger.events.every(entry=>entry.status==='RECOGNIZED');
   if(!relevant)return failed('MIXED_OR_UNKNOWN');
 
   const opts=draft.guided??defaultGuidedOptions();
   const next:ParserDraft={
     ...draft,format:compiler.format,
+    ...(compiler.format==='mixed'?{mixedFormats:[...(compiler.mixedFormats??[])]}:{}),
     ...(['syslog_rfc3164','syslog_rfc5424'].includes(compiler.format)&&compiler.bodyFormat
       ?{syslogBodyFormat:compiler.bodyFormat}:{}),
   };
@@ -66,7 +76,8 @@ export function prepareAutoParserDraft(
     same(opts.classification,defaultGuidedOptions().classification);
   const mappingsCoverSource=next.mappings.every(m=>allFields.has(m.source));
   // Do not override any modified or user-accepted rules.
-  const replaceDefaults=unchangedDefaults&&!mappingsCoverSource;
+  const replaceDefaults=unchangedDefaults&&
+    (next.format==='mixed'||!mappingsCoverSource);
   if(replaceDefaults){
     const blank:ParserDraft={
       ...next,mappings:[],

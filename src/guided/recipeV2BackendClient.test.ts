@@ -25,7 +25,8 @@ const capability={
  inputRequires:['recipe','legacyProject'],
  supportedBodyParsers:['json','kv','csv','cef','leef'],
  supportedEnvelopeParsers:['none','rfc3164_strict_no_year_or_zone','rfc5424_v1_strict'],
- supportedOperators:['split_event','unwrap_syslog','parse_json','parse_kv','parse_csv',
+ strictMixedSingleLineFamilies:['json','kv','cef','leef'],
+ supportedOperators:['split_event','unwrap_syslog','dispatch_family','parse_json','parse_kv','parse_csv',
   'parse_cef','parse_leef','map_field','cast_type','classify_equals','fallback_unparsed'],
  nativeUserParserVerified:false,targetImportVerified:false,
  sourceHashVerifiedAgainstEvents:false,apiDoesNotDeploy:true,
@@ -113,6 +114,24 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
   const safe=vi.fn(async()=>response(capability));
   expect(await checkRecipeV02Compiler(safe as typeof fetch,
     'rfc3164_strict_no_year_or_zone')).toBe(true);
+ });
+ it('refuses forged or missing mixed compiler dispatch capabilities without POST',async()=>{
+   const backend=vi.fn(async()=>response({...capability,
+     supportedBodyParsers:[...capability.supportedBodyParsers,'mixed']}));
+   expect(await checkRecipeV02Compiler(backend as typeof fetch,undefined,true)).toBe(true);
+   expect(backend).toHaveBeenCalledTimes(1);
+   for(const bad of [
+     {...capability,supportedOperators:capability.supportedOperators.filter(x=>x!=='dispatch_family'),
+       supportedBodyParsers:[...capability.supportedBodyParsers,'mixed']},
+     {...capability,strictMixedSingleLineFamilies:['json','kv','cef','other'],
+       supportedBodyParsers:[...capability.supportedBodyParsers,'mixed']},
+     capability,
+   ]){
+     const wrong=vi.fn(async()=>response(bad));
+     await expect(checkRecipeV02Compiler(wrong as typeof fetch,undefined,true))
+       .rejects.toThrow(/not verified/);
+     expect(wrong).toHaveBeenCalledTimes(1);
+   }
  });
  it('refuses altered receipts, files and a mismatched baseline pair',async()=>{
   const {review,pair,receipt}=await setup();

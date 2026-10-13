@@ -35,7 +35,7 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
   return output.length === splits + 1 ? output : null;
 }
 
-function strictKeyValues(input: string): StructuredExtraction {
+export function strictKeyValues(input: string): StructuredExtraction {
   const values: Record<string, unknown> = Object.create(null);
   const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
   let cursor = 0;

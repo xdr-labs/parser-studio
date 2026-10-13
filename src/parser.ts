@@ -1,5 +1,5 @@
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
-import { detectStructuredFamily, extractStructuredFamily } from './structuredFamilies';
+import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { lookupFieldValue } from './fieldPaths';
 import { validatePreviewRegexPattern } from './regexSafety';
 import type { EventBoundary } from './guided/contract';
@@ -146,6 +146,23 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'json': return extractJSON(raw);
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
+    case 'mixed': {
+      const selected=draft.mixedFormats??[];
+      if(selected.length<2||selected.length>4||
+         new Set(selected).size!==selected.length||
+         selected.some(f=>!['json','kv','cef','leef'].includes(f)))
+        return {fields:{},errors:['Select an explicit bounded mixed-family allowlist']};
+      // The backend router tests exact prefixes; do not silently trim or
+      // accept a partial KV match elsewhere in the record.
+      const family:typeof selected[number]|null=
+        raw.startsWith('{')?'json':
+        raw.startsWith('CEF:')?'cef':
+        raw.startsWith('LEEF:')?'leef':
+        /^[A-Za-z_][A-Za-z0-9_.-]*=/.test(raw)?'kv':null;
+      if(!family||!selected.includes(family))
+        return {fields:{},errors:['Mixed event is unsupported or excluded by allowlist']};
+      return family==='kv'?strictKeyValues(raw):extractFields(raw,family,draft);
+    }
     case 'syslog': return extractSyslog(raw);
     case 'syslog_rfc3164':
     case 'syslog_rfc5424': return extractStructuredFamily(raw,format,
@@ -343,6 +360,7 @@ export function preview(input: string, draft: ParserDraft): SuiteResult {
 export function formatLabel(format: Format | 'unknown'): string {
   const labels: Record<Format | 'unknown', string> = {
     auto: 'Auto detect', json: 'JSON', kv: 'Key / Value', csv: 'CSV',
+    mixed:'Mixed JSON / KV / CEF / LEEF (strict)',
     syslog_rfc3164: 'RFC3164 (year/zone unknown)',
     syslog_rfc5424: 'RFC5424', cef: 'CEF', leef: 'LEEF',
     syslog: 'Syslog (preview)', regex: 'Regex', unknown: 'Unrecognized',

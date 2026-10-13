@@ -30,7 +30,8 @@ export type CompilerAssessment={
   status:'DRAFT_COMPILABLE'|'COMPILER_UNSUPPORTED'|'MIXED_OR_UNKNOWN'|
     'COLUMNS_REQUIRED'|'BOUNDARY_REVIEW'|'BACKEND_UNAVAILABLE'|
     'BACKEND_UNTRUSTED'|'SOURCE_LIMIT';
-  format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|null;
+  format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|'mixed'|null;
+  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'>;
   bodyFormat:'raw'|'json'|'kv'|'cef'|'leef'|null;
   nativeVerified:false;targetVerified:false;
 };
@@ -167,7 +168,31 @@ export function assessEnvelopeCompilation(
     report.events.some(e=>e.status==='BOUNDARY_AMBIGUOUS'))
     return no('BOUNDARY_REVIEW');
   if(report.unsupported>0||report.accounted!==report.sourceCount||
-    report.families.length!==1)return no('MIXED_OR_UNKNOWN');
+    report.families.length>4)return no('MIXED_OR_UNKNOWN');
+  if(report.families.length>1){
+    // Exactly 2–4 explicitly allowlisted families without any Syslog
+    // envelope, CSV, unknown, or malformed event. Nothing is dropped.
+    const formats=report.families.map(f=>f.body);
+    const known=['json','kv','cef','leef'] as const;
+    if(formats.some(f=>!known.includes(f as typeof known[number]))||
+      report.families.some(f=>f.envelope!=='none')||
+      new Set(formats).size!==formats.length)return no('MIXED_OR_UNKNOWN');
+    if(!cap)return no('BACKEND_UNAVAILABLE');
+    if(cap.verification?.engineVerified!==false||
+      cap.verification?.targetImportVerified!==false)return no('BACKEND_UNTRUSTED');
+    const mixedClaim:unknown=cap.authoring?.strictMixedRequiresExplicitAllowlist;
+    if(mixedClaim===false)return no('BACKEND_UNTRUSTED');
+    const advertised=cap.authoring?.strictMixedSingleLineFamilies;
+    if(!cap.authoring?.extractionFormats?.includes('mixed')||
+      cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
+      !Array.isArray(advertised)||advertised.length!==4||
+      new Set(advertised).size!==4||
+      !known.every(name=>advertised.includes(name)))return no('COMPILER_UNSUPPORTED');
+    return {status:'DRAFT_COMPILABLE',format:'mixed',
+      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'>,
+      nativeVerified:false,targetVerified:false};
+  }
+  if(report.families.length!==1)return no('MIXED_OR_UNKNOWN');
   if(!cap)return no('BACKEND_UNAVAILABLE');
   if(cap.verification?.engineVerified!==false||
     cap.verification?.targetImportVerified!==false||

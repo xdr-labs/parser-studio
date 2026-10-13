@@ -432,7 +432,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     setMessage('');
   };
   const changeDraft = <K extends keyof ParserDraft>(field: K, value: ParserDraft[K]) =>
-    setDraft((old) => ({ ...old, [field]: value }));
+    setDraft(old=>{
+      const next={...old,[field]:value};
+      // Never carry a prior mixed dispatcher list into a single-format draft.
+      if(field==='format'&&value!=='mixed')delete next.mixedFormats;
+      return next;
+    });
   const notify = (text: string) => setMessage(text);
 
   const runLegacyDryRun = async () => {
@@ -1252,7 +1257,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               selectedFormat={draft.format}
               selectedBody={draft.syslogBodyFormat??'raw'}
               onApply={(format,body)=>setDraft(old=>({
-                ...old,format,
+                ...old,format,mixedFormats:undefined,
                 ...(['syslog_rfc3164','syslog_rfc5424'].includes(format)&&body?{syslogBodyFormat:body}:{}),
               }))}/>
             <LocalFormatRecommendationView advice={localFormatAdvice}
@@ -1279,7 +1284,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           {step === 1 && <>
             <div className="guided-section-title"><span>01</span> Select Log Format <span className="guided-inline-badge">Select the correct format</span></div>
             <div className="guided-format-choices" role="group" aria-label="Guided format">
-              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'syslog', 'regex'] as const).map((format) =>
+              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'syslog', 'regex'] as const).map((format) =>
                 <button type="button" key={format} aria-pressed={draft.format === format} className={'guided-format ' + (draft.format === format ? 'active' : '')} onClick={() => changeDraft('format', format)}>
                   {draft.format === format ? <CheckCircle2 size={17} /> : <FileText size={17} />}
                   <strong>{formatLabel(format)}</strong>
@@ -1288,6 +1293,25 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <LocalFormatRecommendationView advice={localFormatAdvice}
               selected={draft.format} pending={pending}
               onApply={(format)=>changeDraft('format',format)}/>
+            {draft.format==='mixed'&&<div className="guided-field" aria-label="Explicit mixed source families">
+              <span>Strict Mixed Input · Select 2–4 Detected Families</span>
+              <div className="guided-two-fields">
+                {(['json','kv','cef','leef'] as const).map(family=>
+                  <label key={family}>
+                    <input type="checkbox" aria-label={'Include '+family.toUpperCase()+' family'}
+                      checked={draft.mixedFormats?.includes(family)??false}
+                      onChange={event=>setDraft(old=>{
+                        const formats=(old.mixedFormats??[]).filter(x=>x!==family);
+                        return {...old,mixedFormats:event.target.checked?
+                          [...formats,family]:formats};
+                      })}/>
+                    {family.toUpperCase()}
+                  </label>)}
+              </div>
+              <small>The backend accepts only explicitly selected single-line JSON, KV, CEF and LEEF.
+                CSV, Syslog, unknown and multiline are not silently routed.
+                Use Auto Parser for detection and review every original event.</small>
+            </div>}
             {draft.format === 'csv' && <div className="guided-two-fields">
               <label className="guided-field"><span>CSV Column Names <small>(Always comma-separated · 1–100 columns)</small></span><input aria-label="Guided CSV columns" value={draft.csvColumns} onChange={(event) => changeDraft('csvColumns', event.target.value)} placeholder="action,src_ip,dst_port" /><small>Columns are assigned in the order provided.</small></label>
               <label className="guided-field"><span>CSV Data Delimiter</span><select aria-label="Guided CSV data delimiter" value={draft.csvDelimiter ?? ','} onChange={(event) => changeDraft('csvDelimiter', event.target.value as ',' | ';' | '\t')}>
@@ -1304,9 +1328,9 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 <option value="cef">CEF within selected Syslog envelope (body.*) · Backend support required</option>
                 <option value="leef">LEEF within selected Syslog envelope (body.*) · Backend support required</option>
               </select>
-              <small>RFC3164 strict TAG: messages retain an unknown year and timezone; map header time as text. RFC5424 strict v1 is separately supported. Mixed and multiline still require explicit review.</small>
+              <small>RFC3164 strict TAG: messages retain an unknown year and timezone; map header time as text. RFC5424 strict v1 is separately supported. Only a strict JSON/KV/CEF/LEEF mix is supported; other mixed and multiline inputs require separate review.</small>
             </label>}
-            <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, bounded RFC3164/RFC5424, and standalone CEF/LEEF. Generic Syslog, regex, compound, and multiline output are unsupported.</div>
+            <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, bounded RFC3164/RFC5424, standalone CEF/LEEF, and explicitly allowlisted mixed JSON/KV/CEF/LEEF. Generic Syslog, regex, compound, and multiline output are unsupported.</div>
             <div className={'guided-family-coverage ' + (familyCoverage.incompatible ? 'attention' : '')}
               aria-label="Sample format distribution">
               <strong>Format Distribution · Browser Estimate</strong>

@@ -58,9 +58,9 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(r.requiresApproval).toBe(true);
    expect(JSON.stringify(r)).not.toContain('SECRET_ONE');
  });
- it('rejects mixed RFC3164+JSON, unknown, multiline and partial extracts with stable reasons',()=>{
+ it('blocks recognized mixed samples on older backends, plus malformed/unknown and multiline',()=>{
    const inputs=[
-     [json+'\naction=deny src_ip=198.51.100.10','MIXED_OR_UNKNOWN'],
+     [json+'\naction=deny src_ip=198.51.100.10','COMPILER_UNSUPPORTED'],
      ['<34>Oct 12 13:14:15 fw app: action=allow','COMPILER_UNSUPPORTED'],
      [json+'\nCUSTOMER_UNKNOWN_PRIVATE','MIXED_OR_UNKNOWN'],
      ['{"broken":','MIXED_OR_UNKNOWN'],

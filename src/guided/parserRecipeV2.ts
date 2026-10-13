@@ -13,6 +13,7 @@ import {defaultGuidedOptions} from './contract';
 export type ReviewStage=
  | {op:'split_event';boundary:'single-line'}
  | {op:'unwrap_syslog';version:1|3164;mode:'strict_header'}
+ | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'>;mode:'strict_prefix'}
  | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'}
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
  | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
@@ -24,8 +25,8 @@ export interface ParserRecipeV2{
   schemaRevision:'0.2';
   compilerMode:'REVIEW_ONLY';
   projectId:string;
-  sourceFormat:'json'|'kv'|'csv'|'syslog_rfc3164'|'syslog_rfc5424'|'cef'|'leef';
-  bodyFormat:'json'|'kv'|'csv'|'cef'|'leef';
+  sourceFormat:'json'|'kv'|'csv'|'syslog_rfc3164'|'syslog_rfc5424'|'cef'|'leef'|'mixed';
+  bodyFormat:'json'|'kv'|'csv'|'cef'|'leef'|'mixed';
   sample:{sha256:string;events:number};
   stages:ReviewStage[];
   nativeVerified:false;
@@ -64,6 +65,11 @@ function validateStage(input:unknown):input is ReviewStage{
  const s=input as Record<string,unknown>;
  switch(s.op){
   case 'split_event':return exact(s,['op','boundary'])&&s.boundary==='single-line';
+  case 'dispatch_family':return exact(s,['op','families','mode'])&&
+    s.mode==='strict_prefix'&&Array.isArray(s.families)&&
+    s.families.length>=2&&s.families.length<=4&&
+    new Set(s.families).size===s.families.length&&
+    s.families.every(f=>['json','kv','cef','leef'].includes(f));
   case 'unwrap_syslog':return exact(s,['op','version','mode'])&&
    [1,3164].includes(s.version as number)&&s.mode==='strict_header';
   case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':
@@ -99,9 +105,10 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
     r.compilerMode!=='REVIEW_ONLY'||r.nativeVerified!==false||
     r.targetVerified!==false||
     typeof r.projectId!=='string'||!/^draft-[a-z][a-z0-9_]{2,47}$/.test(r.projectId)||
-    !['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424'].includes(r.sourceFormat)||
-    !['json','kv','csv','cef','leef'].includes(r.bodyFormat)||
+    !['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed'].includes(r.sourceFormat)||
+    !['json','kv','csv','cef','leef','mixed'].includes(r.bodyFormat)||
     (!['syslog_rfc3164','syslog_rfc5424'].includes(r.sourceFormat)&&r.sourceFormat!==r.bodyFormat)||
+    (r.sourceFormat==='mixed'&&r.bodyFormat!=='mixed')||
     (['syslog_rfc3164','syslog_rfc5424'].includes(r.sourceFormat)&&r.bodyFormat==='csv')||
     !exact(r.sample,['sha256','events'])||!SHA.test(r.sample.sha256)||
     !Number.isSafeInteger(r.sample.events)||r.sample.events<1||r.sample.events>MAX_EVENTS||
@@ -118,8 +125,13 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
      unwrapped.mode!=='strict_header')return false;
  }else if(stages[i]?.op==='unwrap_syslog')return false;
  const parse=stages[i++];
- const expected='parse_'+r.bodyFormat;
- if(!parse||!PARSERS.includes(parse.op)||parse.op!==expected)return false;
+ if(r.sourceFormat==='mixed'){
+   if(!parse||parse.op!=='dispatch_family'||parse.mode!=='strict_prefix'||
+      parse.families.length<2||parse.families.length>4)return false;
+ }else{
+   const expected='parse_'+r.bodyFormat;
+   if(!parse||!PARSERS.includes(parse.op)||parse.op!==expected)return false;
+ }
  const targets=new Set<string>();
  let mapCount=0;
  while(stages[i]?.op==='map_field'){
@@ -162,11 +174,29 @@ export async function buildReviewableRecipe(
     suite.counts.matched!==records.length||
     suite.counts.normalized!==records.length||
     suite.counts.failures>0)return fail('SAMPLE_PREVIEW_INCOMPLETE');
- if(!['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424'].includes(draft.format))
+ if(!['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed'].includes(draft.format))
    return fail('COMPILER_UNSUPPORTED');
  const project=toBackendProject(draft);
  if(!project.ok)return fail('MODEL_REVIEW_REQUIRED');
  const sourceFormat=draft.format as ParserRecipeV2['sourceFormat'];
+ if(sourceFormat==='mixed'){
+   const requested=draft.mixedFormats??[];
+   const recorded=new Set<string>();
+   if(requested.length<2||requested.length>4||
+      new Set(requested).size!==requested.length||
+      !requested.every(f=>['json','kv','cef','leef'].includes(f)))
+     return fail('COMPILER_UNSUPPORTED');
+   for(const row of records){
+     // Independently enforce the exact server dispatch signature.
+     const kind=row.raw.startsWith('{')?'json':
+       row.raw.startsWith('CEF:')?'cef':
+       row.raw.startsWith('LEEF:')?'leef':
+       /^[A-Za-z_][A-Za-z0-9_.-]*=/.test(row.raw)?'kv':null;
+     if(!kind||!requested.includes(kind))return fail('SAMPLE_MISMATCH');
+     recorded.add(kind);
+   }
+   if(recorded.size!==requested.length)return fail('MODEL_REVIEW_REQUIRED');
+ }
  if(['syslog_rfc3164','syslog_rfc5424'].includes(sourceFormat)&&
     (draft.syslogBodyFormat??'raw')==='raw')
    return fail('COMPILER_UNSUPPORTED');
@@ -174,9 +204,13 @@ export async function buildReviewableRecipe(
  if(['syslog_rfc3164','syslog_rfc5424'].includes(sourceFormat))
    stages.push({op:'unwrap_syslog',
      version:sourceFormat==='syslog_rfc3164'?3164:1,mode:'strict_header'});
- const body=['syslog_rfc3164','syslog_rfc5424'].includes(sourceFormat)?
+ const body=sourceFormat==='mixed'?'mixed':
+   ['syslog_rfc3164','syslog_rfc5424'].includes(sourceFormat)?
    draft.syslogBodyFormat!:sourceFormat;
- if(body==='csv'){
+ if(body==='mixed'){
+   stages.push({op:'dispatch_family',families:[...(draft.mixedFormats??[])],
+     mode:'strict_prefix'});
+ }else if(body==='csv'){
    stages.push({op:'parse_csv',columns:project.project.extraction.format==='csv'
      ?project.project.extraction.csvColumns:[],delimiter:project.project.extraction.format==='csv'
        ?project.project.extraction.csvDelimiter:','});

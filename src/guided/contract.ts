@@ -46,7 +46,7 @@ export interface PairProjectContract {
     messageLimit: number;
     framing: 'newline';
   };
-  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'regex' | 'syslog' };
+  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'regex' | 'syslog' };
   normalization: Record<FieldGroup, {
     source: string;
     normalized_name: string;
@@ -125,12 +125,21 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     errors.push('Blank-line grouping is preview-only until the paired backend compiler declares a supported multiline event breaker');
   }
 
-  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef'] as string[]).includes(draft.format)) {
+  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed'] as string[]).includes(draft.format)) {
     errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC3164/RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
   }
   if (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) &&
       !['raw', 'json', 'kv', 'cef', 'leef'].includes(draft.syslogBodyFormat ?? 'raw')) {
     errors.push('Unsupported Syslog body format; use raw, JSON object, strict Key/Value, CEF or LEEF');
+  }
+  if(draft.format==='mixed'){
+    const list=draft.mixedFormats;
+    if(!Array.isArray(list)||list.length<2||list.length>4||
+       new Set(list).size!==list.length||
+       !list.every(mode=>['json','kv','cef','leef'].includes(mode)))
+      errors.push('Mixed requires 2–4 explicitly selected one-line JSON, KV, CEF or LEEF families');
+  }else if(draft.mixedFormats!==undefined){
+    errors.push('Mixed family selections are only valid for Mixed format');
   }
   if (draft.format === 'csv') {
     if (![',', ';', '\t'].includes(draft.csvDelimiter ?? ',')) {
@@ -222,7 +231,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       vendor: draft.vendor,
       product: draft.name,
       receiver: options.receiver,
-      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' },
+      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' },
       normalization,
       classification: {
         rules: options.classification.rules.map(({ sourceField, equals, index }) => ({ sourceField, equals, index })),

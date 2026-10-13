@@ -33,7 +33,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line';
   };
-  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'> } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -153,7 +153,9 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       messageLengthLimit: options.receiver.messageLimit,
       tcpFraming: 'line',
     },
-    extraction: draft.format === 'csv'
+    extraction: draft.format === 'mixed'
+      ? {format:'mixed',mixedFormats:[...(draft.mixedFormats??[])]}
+      : draft.format === 'csv'
       ? { format: 'csv', csvColumns: draft.csvColumns.split(',').map((column) => column.trim()), csvDelimiter: draft.csvDelimiter ?? ',' }
       : (draft.format === 'syslog_rfc3164'||draft.format==='syslog_rfc5424')
         ? { format: draft.format,

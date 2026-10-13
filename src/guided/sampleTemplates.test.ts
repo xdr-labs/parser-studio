@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -67,6 +67,19 @@ describe('safe synthetic no-code starter templates', () => {
     }
   });
 
+  it('offers a fully explicit four-format synthetic mix without silent fallback',()=>{
+    const preset=loadStarterTemplate('mixed');
+    expect(preset.draft.mixedFormats).toEqual(['json','kv','cef','leef']);
+    expect(preset.draft.format).toBe('mixed');
+    expect(preview(preset.sample,preset.draft).counts)
+      .toMatchObject({total:4,matched:4,normalized:4,failures:0});
+    const adapted=toBackendProject(preset.draft);
+    expect(adapted.ok).toBe(true);
+    if(adapted.ok)expect(adapted.project.extraction).toEqual({
+      format:'mixed',mixedFormats:['json','kv','cef','leef']
+    });
+    expect(JSON.stringify(adapted)).not.toContain('203.0.113.11');
+  });
   it('constructs a fresh, mutable draft for each selection rather than reusing shared project rules', () => {
     const first = loadStarterTemplate('cef');
     const again = loadStarterTemplate('cef');
