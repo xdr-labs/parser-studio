@@ -31,7 +31,7 @@ export type CompilerAssessment={
     'COLUMNS_REQUIRED'|'BOUNDARY_REVIEW'|'BACKEND_UNAVAILABLE'|
     'BACKEND_UNTRUSTED'|'SOURCE_LIMIT';
   format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|'mixed'|null;
-  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'>;
+  mixedFormats?:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'>;
   bodyFormat:'raw'|'json'|'kv'|'cef'|'leef'|null;
   nativeVerified:false;targetVerified:false;
 };
@@ -170,12 +170,17 @@ export function assessEnvelopeCompilation(
   if(report.unsupported>0||report.accounted!==report.sourceCount||
     report.families.length>4)return no('MIXED_OR_UNKNOWN');
   if(report.families.length>1){
-    // Exactly 2–4 explicitly allowlisted families without any Syslog
-    // envelope, CSV, unknown, or malformed event. Nothing is dropped.
-    const formats=report.families.map(f=>f.body);
-    const known=['json','kv','cef','leef'] as const;
-    if(formats.some(f=>!known.includes(f as typeof known[number]))||
-      report.families.some(f=>f.envelope!=='none')||
+    // Exactly 2–4 explicit families. RFC5424 wrappers are only supported
+    // with strict CEF or LEEF body and no guessed timestamp. Never coerce
+    // malformed / RFC3164 / CSV records into a permissive mixed family.
+    const formats=report.families.map(f=>
+      f.envelope==='none'?f.body:
+      f.envelope==='rfc5424'&&['cef','leef'].includes(f.body)?
+        'rfc5424_'+f.body:null);
+    const basic=['json','kv','cef','leef'];
+    const wrapped=['rfc5424_cef','rfc5424_leef'];
+    const known=[...basic,...wrapped];
+    if(formats.some(f=>f===null||!known.includes(f))||
       new Set(formats).size!==formats.length)return no('MIXED_OR_UNKNOWN');
     if(!cap)return no('BACKEND_UNAVAILABLE');
     if(cap.verification?.engineVerified!==false||
@@ -185,11 +190,14 @@ export function assessEnvelopeCompilation(
     const advertised=cap.authoring?.strictMixedSingleLineFamilies;
     if(!cap.authoring?.extractionFormats?.includes('mixed')||
       cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(advertised)||advertised.length!==4||
-      new Set(advertised).size!==4||
-      !known.every(name=>advertised.includes(name)))return no('COMPILER_UNSUPPORTED');
+      !Array.isArray(advertised)||![4,6].includes(advertised.length)||
+      new Set(advertised).size!==advertised.length||
+      !basic.every(name=>advertised.includes(name as 'json'))||
+      (advertised.length===6&&!wrapped.every(name=>advertised.includes(name as 'rfc5424_cef')))||
+      !formats.every(name=>advertised.includes(name as 'json')))
+      return no('COMPILER_UNSUPPORTED');
     return {status:'DRAFT_COMPILABLE',format:'mixed',
-      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'>,
+      bodyFormat:null,mixedFormats:formats.slice().sort() as Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'>,
       nativeVerified:false,targetVerified:false};
   }
   if(report.families.length!==1)return no('MIXED_OR_UNKNOWN');

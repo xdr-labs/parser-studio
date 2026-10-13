@@ -9,11 +9,12 @@ import type {ParserDraft,SuiteResult} from '../model';
 import {MAX_DATASET_BYTES,MAX_EVENTS,splitEvents} from '../parser';
 import {toBackendProject,type BackendParserProject} from './backendAdapter';
 import {defaultGuidedOptions} from './contract';
+import {analyzeLogEnvelopes} from './autoParserEnvelope';
 
 export type ReviewStage=
  | {op:'split_event';boundary:'single-line'|'blank-line'}
  | {op:'unwrap_syslog';version:1|3164;mode:'strict_header'}
- | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'>;mode:'strict_prefix'}
+ | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'>;mode:'strict_prefix'}
  | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'}
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
  | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
@@ -69,7 +70,7 @@ function validateStage(input:unknown):input is ReviewStage{
     s.mode==='strict_prefix'&&Array.isArray(s.families)&&
     s.families.length>=2&&s.families.length<=4&&
     new Set(s.families).size===s.families.length&&
-    s.families.every(f=>['json','kv','cef','leef'].includes(f));
+    s.families.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'].includes(f));
   case 'unwrap_syslog':return exact(s,['op','version','mode'])&&
    [1,3164].includes(s.version as number)&&s.mode==='strict_header';
   case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':
@@ -191,15 +192,21 @@ export async function buildReviewableRecipe(
    const recorded=new Set<string>();
    if(requested.length<2||requested.length>4||
       new Set(requested).size!==requested.length||
-      !requested.every(f=>['json','kv','cef','leef'].includes(f)))
+      !requested.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'].includes(f)))
      return fail('COMPILER_UNSUPPORTED');
-   for(const row of records){
-     // Independently enforce the exact server dispatch signature.
-     const kind=row.raw.startsWith('{')?'json':
-       row.raw.startsWith('CEF:')?'cef':
-       row.raw.startsWith('LEEF:')?'leef':
-       /^[A-Za-z_][A-Za-z0-9_.-]*=/.test(row.raw)?'kv':null;
-     if(!kind||!requested.includes(kind))return fail('SAMPLE_MISMATCH');
+   const families=analyzeLogEnvelopes(source,'single-line');
+   if(families.unsupported>0||families.events.length!==records.length)
+     return fail('SAMPLE_MISMATCH');
+   for(const [index,row] of records.entries()){
+     // Recheck independent strict browser envelope/body detection per event.
+     const family=families.events[index];
+     const kind=family?.status==='RECOGNIZED'&&
+       family.envelope==='rfc5424'&&['cef','leef'].includes(family.body)?
+         'rfc5424_'+family.body:
+       family?.status==='RECOGNIZED'&&family.envelope==='none'?family.body:null;
+     if(!kind||!requested.includes(kind as typeof requested[number])||
+       (kind.startsWith('rfc5424_')&&!/^<\d{1,3}>1 /.test(row.raw)))
+       return fail('SAMPLE_MISMATCH');
      recorded.add(kind);
    }
    if(recorded.size!==requested.length)return fail('MODEL_REVIEW_REQUIRED');

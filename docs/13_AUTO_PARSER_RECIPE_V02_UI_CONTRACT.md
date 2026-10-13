@@ -40,3 +40,10 @@ The browser checks both ordinary capabilities and the versioned v0.2 dispatch_fa
 ## Explicit TCP LF LF JSON boundary stage
 
 When a user selects JSON + TCP only + blank-line grouping + TCP JSON Event Framing in Edit Details, the UI may review split_event(boundary=blank-line) and the independently matching ParserProject v0.1 receiver tcpFraming=blank_line_json. This requires the exact reviewed jsonBlankLineTcpFraming/jsonBlankLineOtherTransports/jsonBlankLineDelimiter capability tuple and never enables arbitrary multiline or unknown-source auto generation. See docs/19_EXPLICIT_TCP_JSON_FRAMING.md; user parser and Stellar DP import remain NOT VERIFIED.
+
+
+## New fixed wrapped RFC5424 mixed family subset
+
+The exact-pinned backend 3ddbdd10e0218156c01d0aa48f3b27e3d686c0b5 adds two explicitly allowlisted single-line mixed format IDs: rfc5424_cef and rfc5424_leef. The browser maps RFC5424 v1 header + strict nested CEF/LEEF only after source accounting and independently checked envelope/body detection, while preserving standalone JSON/KV/CEF/LEEF compatibility and a 2–4-family cap. The same sensor/CONF port must be at least 6800 if any wrapped Syslog family is used.
+
+Auto Parser detects all original events without requiring the user to name the protocol. Edit Details supports manual family checkboxes, and the public-synthetic Mixed JSON + RFC5424 CEF/LEEF starter is provided. No RFC3164 mixed variant, mixed CSV, arbitrary Syslog, multiline or target-deployed compatibility is assumed. Old backend 4-family capabilities fail closed rather than generating an unsupported pair. A new same-head Chromium localhost case validates the real backend Ruby+CONF and v0.2 recipe SHA match with no raw log event values in API requests. Native Fluentd synthetic evidence remains separate and does not imply DP import.

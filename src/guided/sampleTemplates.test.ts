@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -67,6 +67,24 @@ describe('safe synthetic no-code starter templates', () => {
     }
   });
 
+  it('offers a reviewed synthetic mixed RFC5424 CEF/LEEF starter with the same sensor/CONF port',()=>{
+    const template=loadStarterTemplate('mixed_rfc5424');
+    expect(template.draft.format).toBe('mixed');
+    expect(template.draft.mixedFormats).toEqual(['json','rfc5424_cef','rfc5424_leef']);
+    expect(template.draft.guided?.receiver.port).toBeGreaterThanOrEqual(6800);
+    expect(preview(template.sample,template.draft).counts).toMatchObject({
+      total:3,matched:3,normalized:3,failures:0,
+    });
+    const result=toBackendProject(template.draft);
+    expect(result.ok).toBe(true);
+    if(result.ok){
+      expect(result.project.extraction).toEqual({
+        format:'mixed',mixedFormats:['json','rfc5424_cef','rfc5424_leef'],
+      });
+      expect(result.project.receiver.port).toBe(template.draft.guided?.receiver.port);
+      expect(JSON.stringify(result)).not.toContain('203.0.113.8');
+    }
+  });
   it('offers a fully explicit four-format synthetic mix without silent fallback',()=>{
     const preset=loadStarterTemplate('mixed');
     expect(preset.draft.mixedFormats).toEqual(['json','kv','cef','leef']);

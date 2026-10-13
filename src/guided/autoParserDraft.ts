@@ -48,9 +48,11 @@ export function prepareAutoParserDraft(
     const approved=compiler.mixedFormats??[];
     // The server's exact-prefix family dispatcher never trims leading blanks.
     if(approved.length<2||approved.length>4||
-       records.some(rec=>!(/^(?:\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]*=)/.test(rec.raw))))
+       records.some(rec=>!(/^(?:\{|CEF:|LEEF:|<\d{1,3}>1 |[A-Za-z_][A-Za-z0-9_.-]*=)/.test(rec.raw))))
       return failed('MIXED_OR_UNKNOWN');
-    const census=[...new Set(ledger.families.map(x=>x.body))].sort();
+    const census=[...new Set(ledger.families.map(x=>
+      x.envelope==='rfc5424'&&['cef','leef'].includes(x.body)?
+        'rfc5424_'+x.body:x.envelope==='none'?x.body:'UNSUPPORTED'))].sort();
     if(!same(census,approved))return failed('MIXED_OR_UNKNOWN');
   }
   const relevant=ledger.events.every(entry=>entry.status==='RECOGNIZED');

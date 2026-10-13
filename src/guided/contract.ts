@@ -140,10 +140,13 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   }
   if(draft.format==='mixed'){
     const list=draft.mixedFormats;
+    if(list?.some(f=>f==='rfc5424_cef'||f==='rfc5424_leef')&&
+      options.receiver.port<6800)
+      errors.push('RFC5424-wrapped mixed sensor and CONF listener port must be at least 6800');
     if(!Array.isArray(list)||list.length<2||list.length>4||
        new Set(list).size!==list.length||
-       !list.every(mode=>['json','kv','cef','leef'].includes(mode)))
-      errors.push('Mixed requires 2–4 explicitly selected one-line JSON, KV, CEF or LEEF families');
+       !list.every(mode=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'].includes(mode)))
+      errors.push('Mixed requires 2–4 explicitly selected one-line JSON/KV/CEF/LEEF or strict RFC5424-wrapped CEF/LEEF families');
   }else if(draft.mixedFormats!==undefined){
     errors.push('Mixed family selections are only valid for Mixed format');
   }

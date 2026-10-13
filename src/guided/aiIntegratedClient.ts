@@ -90,6 +90,10 @@ export async function deriveAIMetadata(
  const bodyFormat=sourceFormat==='mixed'?'mixed':
   sourceFormat==='syslog_rfc3164'||sourceFormat==='syslog_rfc5424'?
    converted.project.extraction.syslogBodyFormat:sourceFormat;
+ // The integrated metadata-only AI gateway intentionally does not guess
+ // mixed Syslog semantics. Keep wrapped Syslog in deterministic compiler
+ // review until the provider schema explicitly defines that safer transfer.
+ if(sourceFormat==='mixed'&&census.families.some(x=>x.envelope!=='none'))deny();
  if(bodyFormat===undefined||bodyFormat==='raw')deny();
  // Census is strictly stable enum identifiers and counts, never event text.
  const allowed=['json','kv','csv','cef','leef','mixed'];

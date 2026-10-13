@@ -9,7 +9,7 @@ export interface BackendCapabilities {
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
-    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'>;
+    strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'>;
     strictMixedRequiresExplicitAllowlist?: true;
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
@@ -142,12 +142,14 @@ export async function fetchBackendCapabilities(
   const mixedAdvertised=a.extractionFormats.includes('mixed');
   const mixed=a.strictMixedSingleLineFamilies;
   const reviewedMixed=['json','kv','cef','leef'];
+  const wrapped=['rfc5424_cef','rfc5424_leef'];
   if(mixedAdvertised){
     if(a.strictMixedRequiresExplicitAllowlist!==true||
-      !Array.isArray(mixed)||mixed.length!==4||
-      new Set(mixed).size!==4||
-      !reviewedMixed.every(f=>mixed.includes(f as 'json')))
-      throw new Error('Backend mixed routing requires the exact fixed one-line format allowlist.');
+      !Array.isArray(mixed)||![4,6].includes(mixed.length)||
+      new Set(mixed).size!==mixed.length||
+      !reviewedMixed.every(f=>mixed.includes(f as 'json'))||
+      (mixed.length===6&&!wrapped.every(f=>mixed.includes(f as 'rfc5424_cef'))))
+      throw new Error('Backend mixed routing requires one of the exact reviewed family allowlists.');
   }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
     throw new Error('Unsupported mixed routing capability was advertised.');
   if((a.jsonBlankLineTcpFraming!==undefined||
@@ -240,6 +242,9 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
   }
   if(project.extraction.format==='mixed'){
     const formats=project.extraction.mixedFormats;
+    if(formats.some(f=>['rfc5424_cef','rfc5424_leef'].includes(f))&&
+       project.receiver.port<6800)
+      throw new Error('Syslog-wrapped mixed parser sensor/CONF listener port must be >=6800.');
     if(cap.authoring.strictMixedRequiresExplicitAllowlist!==true||
       !Array.isArray(formats)||formats.length<2||formats.length>4||
       new Set(formats).size!==formats.length||

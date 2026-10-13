@@ -146,6 +146,19 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
   ])await expect(checkRecipeV02Compiler(vi.fn(async()=>response(body)) as typeof fetch,
       undefined,false,true)).rejects.toThrow('not verified');
  });
+ it('explicit wrapped RFC5424 mixed families need all native-qualified capability names',async()=>{
+  const old=vi.fn(async()=>response({...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'mixed'],
+    strictMixedSingleLineFamilies:['json','kv','cef','leef']}));
+  await expect(checkRecipeV02Compiler(old as typeof fetch,undefined,true,false,
+    ['json','rfc5424_cef','rfc5424_leef'])).rejects.toThrow(/not verified/);
+  expect(old).toHaveBeenCalledTimes(1);
+  const modern=vi.fn(async()=>response({...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'mixed'],
+    strictMixedSingleLineFamilies:['json','kv','cef','leef','rfc5424_cef','rfc5424_leef']}));
+  expect(await checkRecipeV02Compiler(modern as typeof fetch,undefined,true,false,
+    ['json','rfc5424_cef','rfc5424_leef'])).toBe(true);
+ });
  it('refuses altered receipts, files and a mismatched baseline pair',async()=>{
   const {review,pair,receipt}=await setup();
   for(const altered of [

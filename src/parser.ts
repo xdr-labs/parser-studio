@@ -150,8 +150,19 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
       const selected=draft.mixedFormats??[];
       if(selected.length<2||selected.length>4||
          new Set(selected).size!==selected.length||
-         selected.some(f=>!['json','kv','cef','leef'].includes(f)))
+         selected.some(f=>!['json','kv','cef','leef','rfc5424_cef','rfc5424_leef'].includes(f)))
         return {fields:{},errors:['Select an explicit bounded mixed-family allowlist']};
+      // Reuse the reviewed strict RFC5424 header + nested CEF/LEEF parser
+      // for exact wrapper routing. A broken header must never fall back to KV.
+      if(raw.startsWith('<')){
+        const cef=extractStructuredFamily(raw,'syslog_rfc5424','cef');
+        const leef=extractStructuredFamily(raw,'syslog_rfc5424','leef');
+        const mode=!cef.errors.length?'rfc5424_cef':
+          !leef.errors.length?'rfc5424_leef':null;
+        if(!mode||!selected.includes(mode))
+          return {fields:{},errors:['Wrapped Syslog is malformed or not in mixed allowlist']};
+        return mode==='rfc5424_cef'?cef:leef;
+      }
       // The backend router tests exact prefixes; do not silently trim or
       // accept a partial KV match elsewhere in the record.
       const family:typeof selected[number]|null=
