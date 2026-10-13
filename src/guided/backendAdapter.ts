@@ -31,7 +31,7 @@ export interface BackendParserProject {
     port: number;
     bindAddress: '127.0.0.1' | '0.0.0.0';
     messageLengthLimit: number;
-    tcpFraming: 'line';
+    tcpFraming: 'line' | 'blank_line_json';
   };
   extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'> } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
@@ -151,7 +151,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       port: options.receiver.port,
       bindAddress: options.receiver.bindPolicy === 'all' ? '0.0.0.0' : '127.0.0.1',
       messageLengthLimit: options.receiver.messageLimit,
-      tcpFraming: 'line',
+      tcpFraming: options.receiver.framing==='blank_line_json'?'blank_line_json':'line',
     },
     extraction: draft.format === 'mixed'
       ? {format:'mixed',mixedFormats:[...(draft.mixedFormats??[])]}

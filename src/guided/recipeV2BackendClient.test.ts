@@ -26,6 +26,8 @@ const capability={
  supportedBodyParsers:['json','kv','csv','cef','leef'],
  supportedEnvelopeParsers:['none','rfc3164_strict_no_year_or_zone','rfc5424_v1_strict'],
  strictMixedSingleLineFamilies:['json','kv','cef','leef'],
+ jsonBlankLineTcpFraming:true,jsonBlankLineOtherTransports:false,
+ jsonBlankLineDelimiter:'LF_LF',
  supportedOperators:['split_event','unwrap_syslog','dispatch_family','parse_json','parse_kv','parse_csv',
   'parse_cef','parse_leef','map_field','cast_type','classify_equals','fallback_unparsed'],
  nativeUserParserVerified:false,targetImportVerified:false,
@@ -132,6 +134,17 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
        .rejects.toThrow(/not verified/);
      expect(wrong).toHaveBeenCalledTimes(1);
    }
+ });
+ it('gates explicit TCP blank-line JSON by exact backend v0.2 transport claims',async()=>{
+  const supported=vi.fn(async()=>response(capability));
+  expect(await checkRecipeV02Compiler(supported as typeof fetch,undefined,false,true))
+    .toBe(true);
+  for(const body of [
+    {...capability,jsonBlankLineTcpFraming:false},
+    {...capability,jsonBlankLineOtherTransports:true},
+    {...capability,jsonBlankLineDelimiter:'AUTO'},
+  ])await expect(checkRecipeV02Compiler(vi.fn(async()=>response(body)) as typeof fetch,
+      undefined,false,true)).rejects.toThrow('not verified');
  });
  it('refuses altered receipts, files and a mismatched baseline pair',async()=>{
   const {review,pair,receipt}=await setup();

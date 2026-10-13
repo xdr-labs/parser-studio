@@ -234,17 +234,69 @@ test('nondeveloper can group pretty JSON samples by blank lines without leaking 
   await page.getByRole('button', { name: /Separate events using blank lines/ }).click();
   await expect(page.locator('.guided-boundary-count')).toContainText('Logical events 2');
   await expect(page.locator('.guided-boundary-count')).toContainText('Nonempty source lines 6');
-  await expect(page.getByText(/Blank-line grouping applies to browser preview only/)).toBeVisible();
+  await expect(page.getByText(/Blank-line grouping is preview-only unless/)).toBeVisible();
   await page.getByRole('button', { name: 'Next Step' }).click();
   await page.getByRole('button', { name: 'JSON', exact: true }).click();
   await expect(page.locator('.guided-event-option')).toHaveCount(2);
   await expect(page.getByLabel('Guided selectable raw event')).toContainText('"src_ip":"198.51.100.25"');
   await page.getByRole('button', { name: /6\. Generate Files/ }).click();
-  await expect(page.locator('.guided-contract-errors').first()).toContainText('Blank-line grouping is preview-only');
+  await expect(page.locator('.guided-contract-errors').first()).toContainText('Blank-line grouping is browser-only');
   await expect(page.getByRole('button', { name: 'Generate 2 Parser Files (Backend Required)' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Download Project JSON for Backend' })).toBeDisabled();
 });
 
+test('only explicitly selected TCP LF LF JSON framing enables a reviewed DRAFT contract',async({page})=>{
+  const pretty=[
+    '{',
+    '  "action":"allow",',
+    '  "src_ip":"192.0.2.14",',
+    '  "dst_port":443',
+    '}',
+    '',
+    '{',
+    '  "action":"deny",',
+    '  "src_ip":"198.51.100.17",',
+    '  "dst_port":22',
+    '}',
+    '',
+  ].join('\n');
+  await page.goto('/?workspace=guided');
+  await page.getByLabel('Guided raw sample logs').fill(pretty);
+  await page.getByRole('button',{name:/Separate events using blank lines/}).click();
+  await page.getByRole('button',{name:/2\. Extract Fields/}).click();
+  await page.getByRole('button',{name:'JSON',exact:true}).click();
+  await page.getByRole('button',{name:/6\. Generate Files/}).click();
+  await expect(page.locator('.guided-contract-errors').first())
+    .toContainText('Blank-line grouping is browser-only');
+  await expect(page.getByRole('button',{name:'Download Project JSON for Backend'}))
+    .toBeDisabled();
+  await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
+  const transport=page.getByLabel('TCP JSON event framing');
+  await expect(transport).toHaveValue('newline');
+  await transport.selectOption('blank_line_json');
+  await expect(page.getByText(/Requires JSON, only TCP enabled/)).toBeVisible();
+  await page.getByRole('button',{name:/6\. Generate Files/}).click();
+  await expect(page.locator('.guided-contract-errors').first()).toContainText(
+    'requires explicit JSON format, one TCP protocol only');
+  await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
+  await page.getByLabel('UDP receiver').uncheck();
+  await page.getByRole('button',{name:/6\. Generate Files/}).click();
+  await expect(page.getByText('UI input checks passed.')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Download Project JSON for Backend'}))
+    .toBeEnabled();
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download Project JSON for Backend'}).click();
+  const artifact=await download;
+  const exported=JSON.parse(await readFile(await artifact.path(),'utf8'));
+  expect(exported.receiver).toMatchObject({
+    protocols:['tcp'],tcpFraming:'blank_line_json',
+    port:7501,
+  });
+  expect(exported.receiver).not.toHaveProperty('delimiter');
+  expect(exported.extraction).toEqual({format:'json'});
+  expect(JSON.stringify(exported)).not.toContain('192.0.2.14');
+  expect(JSON.stringify(exported)).not.toContain('198.51.100.17');
+});
 test('changing back to single-line mode restores original per-line preview and survives local revision save', async ({ page }) => {
   await page.goto('/?workspace=guided');
   await page.getByLabel('Guided raw sample logs').fill('{"action":"allow"}\ncontinuation text\n\n{"action":"deny"}');

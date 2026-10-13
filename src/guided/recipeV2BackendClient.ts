@@ -43,6 +43,7 @@ export async function checkRecipeV02Compiler(
  requester:typeof fetch=fetch,
  requiredEnvelope?:'rfc3164_strict_no_year_or_zone',
  requireMixed=false,
+ requireJsonBlankLineTcp=false,
 ):Promise<boolean>{
  const res=await requester(BASE+'/capabilities',{
   method:'GET',cache:'no-store',credentials:'same-origin',
@@ -74,6 +75,10 @@ export async function checkRecipeV02Compiler(
     !['json','kv','cef','leef'].every(f=>
       (cap.strictMixedSingleLineFamilies as unknown[]).includes(f))
   ))||
+  (requireJsonBlankLineTcp&&(
+    cap.jsonBlankLineTcpFraming!==true||
+    cap.jsonBlankLineOtherTransports!==false||
+    cap.jsonBlankLineDelimiter!=='LF_LF'))||
   cap.nativeUserParserVerified!==false||cap.targetImportVerified!==false||
   cap.sourceHashVerifiedAgainstEvents!==false||cap.apiDoesNotDeploy!==true)
   fail();
@@ -99,7 +104,8 @@ export async function compileReviewedRecipeV02(
 ):Promise<ReviewedRecipeCompilation>{
  if(!await checkRecipeV02Compiler(requester,
    input.recipe.sourceFormat==='syslog_rfc3164'? 'rfc3164_strict_no_year_or_zone':undefined,
-   input.recipe.sourceFormat==='mixed')) {
+   input.recipe.sourceFormat==='mixed',
+   input.recipe.stages[0]?.op==='split_event'&&input.recipe.stages[0].boundary==='blank-line')) {
   throw new Error('The current backend does not advertise v0.2 compilation.');
  }
  const validation=await post('validate',input,requester);

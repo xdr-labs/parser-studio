@@ -26,7 +26,7 @@ export interface GuidedOptions {
     port: number;
     bindPolicy: 'loopback' | 'all';
     messageLimit: number;
-    framing: 'newline';
+    framing: 'newline' | 'blank_line_json';
   };
   classification: {
     defaultIndex: EventClass;
@@ -44,7 +44,7 @@ export interface PairProjectContract {
     port: number;
     bindPolicy: 'loopback' | 'all';
     messageLimit: number;
-    framing: 'newline';
+    framing: 'newline' | 'blank_line_json';
   };
   input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'regex' | 'syslog' };
   normalization: Record<FieldGroup, {
@@ -121,8 +121,14 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   }
   if (!Number.isInteger(options.receiver.messageLimit) || options.receiver.messageLimit < 1024 || options.receiver.messageLimit > 65536) errors.push('Message limit must be an integer in 1024–65536 bytes');
 
-  if (options.eventBoundary && options.eventBoundary !== 'single-line') {
-    errors.push('Blank-line grouping is preview-only until the paired backend compiler declares a supported multiline event breaker');
+  const framedJson=options.receiver.framing==='blank_line_json';
+  if(framedJson&&(
+    draft.format!=='json'||options.eventBoundary!=='blank-line'||
+    options.receiver.protocols.length!==1||
+    options.receiver.protocols[0]!=='tcp')){
+    errors.push('TCP blank-line JSON framing requires explicit JSON format, one TCP protocol only, and blank-line event boundaries. Senders must separate complete JSON objects with LF LF.');
+  }else if(options.eventBoundary!=='single-line'&&!framedJson){
+    errors.push('Blank-line grouping is browser-only unless explicit TCP-only blank-line JSON framing is selected and verified.');
   }
 
   if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed'] as string[]).includes(draft.format)) {

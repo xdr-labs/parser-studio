@@ -100,7 +100,7 @@ describe('multiline preview cannot produce untested native pair', () => {
     draft.guided = { ...defaultGuidedOptions(), eventBoundary: 'blank-line' };
     const result = compilerDraftContract(draft);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors.join(' ')).toContain('Blank-line grouping is preview-only');
+    if (!result.ok) expect(result.errors.join(' ')).toContain('Blank-line grouping is browser-only');
   });
 
   it('keeps the currently supported single-line JSON interchange contract available', () => {

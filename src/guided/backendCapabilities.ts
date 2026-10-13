@@ -11,6 +11,9 @@ export interface BackendCapabilities {
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'>;
     strictMixedRequiresExplicitAllowlist?: true;
+    jsonBlankLineTcpFraming?: true;
+    jsonBlankLineOtherTransports?: false;
+    jsonBlankLineDelimiter?: 'LF_LF';
     rfc3164StrictTaggedMessageSubset?: true;
     rfc3164TimePolicy?: 'YEAR_AND_ZONE_UNKNOWN';
     rfc3164NativeTimeReconstruction?: false;
@@ -147,6 +150,13 @@ export async function fetchBackendCapabilities(
       throw new Error('Backend mixed routing requires the exact fixed one-line format allowlist.');
   }else if(mixed!==undefined||a.strictMixedRequiresExplicitAllowlist!==undefined)
     throw new Error('Unsupported mixed routing capability was advertised.');
+  if((a.jsonBlankLineTcpFraming!==undefined||
+      a.jsonBlankLineOtherTransports!==undefined||
+      a.jsonBlankLineDelimiter!==undefined)&&
+    (a.jsonBlankLineTcpFraming!==true||
+     a.jsonBlankLineOtherTransports!==false||
+     a.jsonBlankLineDelimiter!=='LF_LF'))
+    throw new Error('Untrusted explicit TCP blank-line JSON framing contract.');
   const rfc3164Advertised=a.extractionFormats.includes('syslog_rfc3164');
   if(rfc3164Advertised&&(
       a.rfc3164StrictTaggedMessageSubset!==true||
@@ -212,6 +222,14 @@ export async function fetchBackendCapabilities(
 }
 
 export function assertBackendProjectSupported(project: BackendParserProject, cap: BackendCapabilities): void {
+  if(project.receiver.tcpFraming==='blank_line_json'&&(
+    cap.authoring.jsonBlankLineTcpFraming!==true||
+    cap.authoring.jsonBlankLineOtherTransports!==false||
+    cap.authoring.jsonBlankLineDelimiter!=='LF_LF'||
+    project.extraction.format!=='json'||
+    project.receiver.protocols.length!==1||
+    project.receiver.protocols[0]!=='tcp'))
+    throw new Error('Backend did not explicitly verify TCP-only blank-line JSON framing.');
   if (project.extraction.format === 'syslog_rfc5424') {
     const mode = project.extraction.syslogBodyFormat ?? 'raw';
     if ((cap.authoring.rfc5424BodyFormats && !cap.authoring.rfc5424BodyFormats.includes(mode)) ||

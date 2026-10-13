@@ -11,7 +11,7 @@ import {toBackendProject,type BackendParserProject} from './backendAdapter';
 import {defaultGuidedOptions} from './contract';
 
 export type ReviewStage=
- | {op:'split_event';boundary:'single-line'}
+ | {op:'split_event';boundary:'single-line'|'blank-line'}
  | {op:'unwrap_syslog';version:1|3164;mode:'strict_header'}
  | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'>;mode:'strict_prefix'}
  | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'}
@@ -64,7 +64,7 @@ function validateStage(input:unknown):input is ReviewStage{
  if(!input||typeof input!=='object'||Array.isArray(input))return false;
  const s=input as Record<string,unknown>;
  switch(s.op){
-  case 'split_event':return exact(s,['op','boundary'])&&s.boundary==='single-line';
+  case 'split_event':return exact(s,['op','boundary'])&&['single-line','blank-line'].includes(s.boundary as string);
   case 'dispatch_family':return exact(s,['op','families','mode'])&&
     s.mode==='strict_prefix'&&Array.isArray(s.families)&&
     s.families.length>=2&&s.families.length<=4&&
@@ -115,6 +115,8 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
     !Array.isArray(r.stages)||r.stages.length<4||r.stages.length>125||
     !r.stages.every(validateStage)||
     r.stages[0]?.op!=='split_event'||
+    (r.stages[0].boundary==='blank-line'&&
+      (r.sourceFormat!=='json'||r.bodyFormat!=='json'))||
     r.stages.at(-1)?.op!=='fallback_unparsed')return false;
  const stages=r.stages;
  let i=1;
@@ -160,10 +162,15 @@ export async function buildReviewableRecipe(
 ):Promise<RecipeReview>{
  const fail=(reason:Extract<RecipeReview,{ok:false}>['reason']):RecipeReview=>
   ({ok:false,reason});
+ const boundary=draft.guided?.eventBoundary??'single-line';
+ const framed=boundary==='blank-line'&&
+   draft.guided?.receiver.framing==='blank_line_json'&&
+   draft.guided?.receiver.protocols.length===1&&
+   draft.guided?.receiver.protocols[0]==='tcp'&&draft.format==='json';
  if(typeof source!=='string'||!source.trim()||
    new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES||
-   draft.guided?.eventBoundary==='blank-line')return fail('SOURCE_LIMIT');
- const records=splitEvents(source,'single-line',MAX_EVENTS+1);
+   (boundary!=='single-line'&&!framed))return fail('SOURCE_LIMIT');
+ const records=splitEvents(source,boundary,MAX_EVENTS+1);
  if(!records.length||records.length>MAX_EVENTS)return fail('SOURCE_LIMIT');
  if(!suite||suite.engine!=='browser-preview'||suite.nativeFluentdVerified!==false||
    suite.stellarExportVerified!==false||!Array.isArray(suite.events))return fail('UNTRUSTED_PREVIEW');
@@ -200,7 +207,7 @@ export async function buildReviewableRecipe(
  if(['syslog_rfc3164','syslog_rfc5424'].includes(sourceFormat)&&
     (draft.syslogBodyFormat??'raw')==='raw')
    return fail('COMPILER_UNSUPPORTED');
- const stages:ReviewStage[]=[{op:'split_event',boundary:'single-line'}];
+ const stages:ReviewStage[]=[{op:'split_event',boundary}];
  if(['syslog_rfc3164','syslog_rfc5424'].includes(sourceFormat))
    stages.push({op:'unwrap_syslog',
      version:sourceFormat==='syslog_rfc3164'?3164:1,mode:'strict_header'});

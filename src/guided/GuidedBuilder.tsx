@@ -1276,7 +1276,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               <span>Nonempty source lines <strong>{sample.replace(/\r\n?/g, '\n').split('\n').filter((line) => line.trim()).length}</strong></span>
               <span>Logical events <strong>{pending ? 'Calculating…' : (suite?.counts.total ?? 0)}</strong></span>
             </div>
-            {options.eventBoundary === 'blank-line' && <div className="guided-hint"><AlertTriangle size={16} /> Blank-line grouping applies to browser preview only. Parser output remains blocked until multiline engine support is verified.</div>}
+            {options.eventBoundary === 'blank-line' && <div className="guided-hint"><AlertTriangle size={16} />
+              Blank-line grouping is preview-only unless you explicitly select JSON,
+              TCP-only receiving, and TCP blank-line JSON framing under Receive & Classify.
+              The sender must separate complete JSON events with LF LF. Other multiline
+              formats have no verified compiler.
+            </div>}
             <div className="guided-inline-actions"><button className="guided-link" type="button" onClick={() => { setSample(DEMO_SAMPLES); setDatasetName('Synthetic demo events'); }}><RotateCcw size={14} /> Restore Demo Logs</button><button type="button" className="guided-link" onClick={() => { setSample(''); setDatasetName('Empty'); }}><Trash2 size={14} /> Clear Sample</button></div>
             <div className="guided-note"><ShieldCheck size={16} /> {hasLogs ? `Found ${suite?.counts.total} events. Check their format in the next step.` : 'No events yet. Add a real or synthetic sample.'}</div>
           </>}
@@ -1638,9 +1643,23 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-transport-grid">{(['udp', 'tcp'] as const).map((protocol) =>
               <label className={'guided-transport ' + (options.receiver.protocols.includes(protocol) ? 'active' : '')} key={protocol}>
                 <input type="checkbox" aria-label={protocol.toUpperCase() + ' receiver'} checked={options.receiver.protocols.includes(protocol)} onChange={(e) => chooseProtocol(protocol, e.target.checked)} />
-                <span><strong>{protocol.toUpperCase()}</strong><small>{protocol === 'udp' ? 'Datagram transport' : 'Connection-oriented · newline-framed'}</small></span>
+                <span><strong>{protocol.toUpperCase()}</strong><small>{protocol === 'udp' ? 'Datagram transport' : 'Connection-oriented · explicit framing configuration'}</small></span>
                 {options.receiver.protocols.includes(protocol) && <CheckCircle2 size={18} />}
               </label>)}</div>
+            {draft.format==='json'&&<label className="guided-field">
+              <span>TCP JSON Event Framing (Explicit)</span>
+              <select aria-label="TCP JSON event framing"
+                value={options.receiver.framing??'newline'}
+                onChange={e=>setReceiver('framing',
+                  e.target.value as 'newline'|'blank_line_json')}>
+                <option value="newline">Default · One line per event</option>
+                <option value="blank_line_json">TCP-only · Pretty JSON separated by an empty line (LF LF)</option>
+              </select>
+              <small>Not automatic multiline inference. Requires JSON, only TCP
+                enabled, blank-line event boundaries selected earlier, and confirmed
+                source sending each JSON object followed by LF LF. No UDP, Java
+                stack-trace reassembly or live target verification.</small>
+            </label>}
             <div className="guided-three-fields">
               <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
               <label className="guided-field"><span>Bind Policy</span><select aria-label="Bind policy" value={options.receiver.bindPolicy} onChange={(e) => setReceiver('bindPolicy', e.target.value)}><option value="loopback">Loopback test (127.0.0.1)</option><option value="all">All interfaces (0.0.0.0)</option></select></label>

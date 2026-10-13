@@ -22,3 +22,7 @@ For ambiguous JSON or stack traces, the display recommends Edit Details and labe
 - src/guided/logicalBoundaryReview.test.ts: two consecutive multiline JSON objects with nested braces in string values, bounded Java stack traces, malformed/truncated JSON, orphan frame/unrecognized data, regular JSON Lines, empty input, oversized datasets, excess events and excessive nesting. It requires full physical-line accounting and no raw event values in report JSON.
 - The UI binds this explicit review to current source/draft identity so changes invalidate previous reports.
 - This is browser-only evidence. No full user E2E, proprietary Stellar import, actual sensor or DP tests are claimed.
+
+## Relationship to later explicitly framed TCP JSON
+
+The optional browser review in this document remains non-mutating and unverified. Separately, the Edit Details path can now author an explicit TCP-only JSON blank-line framing contract when a real log sender is known to delimit whole JSON objects with LF LF. This is not a result of the browser guessing multiline boundaries. The Native Parser Plugin and CONF AST synthetic evidence and limits are described in docs/19_EXPLICIT_TCP_JSON_FRAMING.md.
