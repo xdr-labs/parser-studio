@@ -60,6 +60,7 @@ Empty annotated wildcards are not countable source-value spans.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Unsupervised Drain3 raw residual candidate | 1,581 | 518 | 73 | 2,620 | 87.65% | 16.51% | 27.78% |
 | Drain3 + strict source-byte anchor alignment | 1,581 | 744 | 73 | 2,394 | 91.06% | 23.71% | 37.62% |
+| LogPai Spell (unlabeled train-only token alignment) | 1,581 | 572 | 1,227 | 2,566 | 31.80% | 18.23% | 23.17% |
 | Drain3 + *entire* unlabelled message context | 1,581 | 1,110 | 1,615 | 2,028 | 40.73% | 35.37% | 37.86% |
 | **Pre-labeled, verified grammar retrieval** | **1,581** | **3,073** | **0** | **65** | **100%** | **97.93%** | **98.95%** |
 
@@ -68,6 +69,14 @@ Empty annotated wildcards are not countable source-value spans.
   messages was NEVER counted as successful variable extraction.
 - Full-message Drain3 mining improves recall but generates **1,615 false
   reference-template spans** and is NOT an acceptable replacement.
+- **Spell (LogPai, pinned `d9d4180784cde9afef990eeeb458591011933f9b`)**
+  was run with the same raw-SHA train/holdout split and source byte scoring,
+  isolated Apache-2.0 algorithm implementation and optional research-only
+  pandas/regex dependencies. Its token-normalized templates score **F1 23.17%**
+  (1,227 false variable spans), worse than conservative Drain3 anchoring.
+  **REJECT** Spell for this source-field extraction use case. Its published
+  clustering/FTA benchmark scores measure a different outcome and are not
+  comparable with our original-byte extraction F1.
 - A train-only varying-KV-island probe on full Linux message bodies identified
   179 gold-template variable spans and 179 additional non-template spans.
   Joining those with raw Drain3 proposals raised recall but also false
@@ -93,6 +102,9 @@ python3 poc/vendor_engine/evaluate_source.py
 python3 poc/vendor_engine/benchmark_source_field_gold.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/benchmark_residual_gold.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/trusted_template_reuse.py
+# Optional licensed-research comparison; requires local ignored logparser
+# Apache-2.0 Spell checkout and isolated optional dependencies.
+PYTHONPATH=poc/vendor_engine/.cache/logparser:poc/vendor_engine/.cache/logparser_deps python3 poc/vendor_engine/benchmark_spell_source.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 -m unittest discover -s poc/vendor_engine -p 'test_*.py' -q
 ```
 

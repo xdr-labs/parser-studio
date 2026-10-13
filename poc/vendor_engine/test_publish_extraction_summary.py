@@ -75,6 +75,25 @@ class PublishTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"UNVERIFIED_IMPROVEMENT"):
             render(src,res,train)
 
+    def test_optional_spell_negative_result_is_allowlisted(self):
+        src,res,train=fixtures()
+        spell={
+            "contract":"parser-studio.poc.spell-reference-negative.v0.1",
+            "adoption":"REJECTED_FOR_UNLABELED_SOURCE_VARIABLE_EXTRACTION",
+            "holdout_records":1581,
+            "exact_variable_span":metrics(572,1227,2566),
+            "secret_training_corpus":"NEVER_PUBLISH_THIS",
+        }
+        summary=render(src,res,train,spell)
+        output=json.dumps(summary)
+        self.assertNotIn("NEVER_PUBLISH_THIS",output)
+        self.assertEqual(1,len(summary["alternative_open_source_evaluations"]))
+        self.assertEqual("REJECT_FOR_AUTOMATIC_SOURCE_CAPTURE",
+                         summary["alternative_open_source_evaluations"][0]["decision"])
+        bad=dict(spell,holdout_records=800)
+        with self.assertRaisesRegex(ValueError,"RESEARCH_ALTERNATIVE_CONTRACT"):
+            render(src,res,train,bad)
+
     def test_existing_report_is_value_only(self):
         file=ROOT/"extraction-summary.json"
         if not file.exists():

@@ -22,7 +22,8 @@ def _measured(values:dict[str,Any])->dict[str,Any]:
 
 def render(source:dict[str,Any],
            unsupervised:dict[str,Any],
-           trained:dict[str,Any])->dict[str,Any]:
+           trained:dict[str,Any],
+           spell:dict[str,Any]|None=None)->dict[str,Any]:
     if (source.get("contract")!="parser-studio.poc.pinned-source-field-gold-v0.1"
         or unsupervised.get("contract")!="parser-studio.poc.loghub-reference-span-v0.1"
         or trained.get("contract")!="parser-studio.poc.retrieval-first-source-span-v0.1"):
@@ -51,8 +52,24 @@ def render(source:dict[str,Any],
     if (b["f1"] is None or a["f1"] is None or c["f1"] is None
         or b["f1"]<=a["f1"]):
         raise ValueError("EXTRACTION_REPORT_UNVERIFIED_IMPROVEMENT")
+    if spell is not None:
+        if (spell.get("contract")!="parser-studio.poc.spell-reference-negative.v0.1"
+            or spell.get("adoption")!="REJECTED_FOR_UNLABELED_SOURCE_VARIABLE_EXTRACTION"
+            or spell.get("holdout_records")!=unsupervised["raw_event_count"]):
+            raise ValueError("RESEARCH_ALTERNATIVE_CONTRACT_MISMATCH")
+        m=_measured(spell["exact_variable_span"])
+        if m["TP"]+m["FN"]!=unsupervised["reference_nonempty_variable_spans"]:
+            raise ValueError("RESEARCH_ALTERNATIVE_DENOMINATOR_INVALID")
+        comparison=[{
+            "algorithm":"LogPai_Spell_Apache_2_0_unlabeled_research",
+            "exact_reference_variable_span":m,
+            "decision":"REJECT_FOR_AUTOMATIC_SOURCE_CAPTURE",
+        }]
+    else:
+        comparison=[]
     return {
         "contract":"parser-studio.poc.extraction-first-summary.v0.1",
+        "alternative_open_source_evaluations":comparison,
         "scope":"ISOLATED_RESEARCH_ONLY_NOT_PRODUCT_OR_NATIVE",
         "priority":["SOURCE_FIELD_EXTRACTION",
                     "UNSUPPORTED_RESIDUAL_EXTRACTION",
@@ -110,7 +127,9 @@ def main()->None:
     residual=residual_eval("residual")
     write_training_snapshot()
     trained=evaluate_heldout(fit_train_only())
-    result=render(source,residual,trained)
+    spell_path=CACHE/"spell_comparison_result.json"
+    spell=json.loads(spell_path.read_text("utf8")) if spell_path.is_file() else None
+    result=render(source,residual,trained,spell)
     path=ROOT/"extraction-summary.json"
     path.write_text(json.dumps(result,indent=2,sort_keys=True,
                                ensure_ascii=True)+"\n","utf8")

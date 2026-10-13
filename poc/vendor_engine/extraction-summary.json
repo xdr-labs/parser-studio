@@ -14,6 +14,20 @@
     "qualification": "TRAIN_ANNOTATED_GRAMMAR_RETRIEVAL_NOT_UNSUPERVISED",
     "trained_qualified_profiles": 24
   },
+  "alternative_open_source_evaluations": [
+    {
+      "algorithm": "LogPai_Spell_Apache_2_0_unlabeled_research",
+      "decision": "REJECT_FOR_AUTOMATIC_SOURCE_CAPTURE",
+      "exact_reference_variable_span": {
+        "FN": 2566,
+        "FP": 1227,
+        "TP": 572,
+        "f1": 0.2317,
+        "precision": 0.318,
+        "recall": 0.1823
+      }
+    }
+  ],
   "contract": "parser-studio.poc.extraction-first-summary.v0.1",
   "critical_caveats": [
     "The 98.95 percent retrieval result depends on annotated training templates.",
