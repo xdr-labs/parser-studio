@@ -102,7 +102,17 @@ The optional Auto Parser result also exposes a **browser-only synthetic replay**
 action after a SHA-checked DRAFT pair is present. It reuses the bounded legacy
 single-format synthesizer without network delivery, validates every source event
 before emitting any result, and stops on explicit Stop, source edit or result
-navigation. Unsupported mixed-family or multiline recipes clearly disable local\nreplay before Start, without losing the generated DRAFT files. Unchanged unknown\nfields may be visible locally; this is not a sensor sender, native parser\nqualification or Interflow E2E assertion.
+navigation. Unsupported mixed-family or multiline recipes clearly disable local
+replay before Start, without losing the generated DRAFT files. Unchanged unknown
+fields may be visible locally; this is not a sensor sender, native parser
+qualification or Interflow E2E assertion.
+
+A distinct legacy authorization regression uses **Playwright-only synthetic Test Lab
+and Interflow intercepts after genuine pinned-backend pair generation**. It
+requires independent approvals, verifies that the fixed public sample never
+inherits user logs, rejects HTTP 403 and forged raw/verification fields,
+permits only field-limited non-verification evidence, and explicitly stops
+the simulated session. No real sensor or tenant query is sent.
 
 The remaining archived Wizard and Workbench suites still require feature-by-feature **behavioral** migration;
-moving five assertions is not completion of all historical coverage.
+migrating seven behavior groups is not completion of all historical coverage.

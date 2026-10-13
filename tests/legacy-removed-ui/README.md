@@ -30,7 +30,14 @@ mutation, ordered source replay, explicit stop, and source/navigation teardown;
 no backend/sensor send. The unchanged archived replay test still contains
 unmigrated unsupported-input and source-safety scenarios.
 
-This is **five migrated behaviors**, NOT five entire retired suites. The
+The actual backend Chromium suite also includes an independently gated
+**simulated** Test Lab + Interflow scenario: fixed public source only, separate
+operator and tenant approvals, denied/forged readback rejected, bounded
+non-E2E evidence accepted and explicit Stop. All /test-lab HTTP requests are
+intercepted by Playwright; the authoring backend remains real and exact-SHA pinned.
+No sensor packets or tenant read are attempted.
+
+This is **seven migrated behavior groups**, NOT seven entire retired suites. The
 original archived test files remain unchanged and excluded from CI.
 
 These archived files must not be used in release PASS totals. Do not restore

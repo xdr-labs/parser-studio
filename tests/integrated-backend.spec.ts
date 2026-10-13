@@ -11,7 +11,7 @@ const sample=[
   '{"action":"deny","src_ip":"203.0.113.5","dst_port":22}',
 ].join('\n');
 
-test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked API',()=>{
+test.describe('actual Chromium UI ↔ exact pinned authoring backend; target APIs isolated',()=>{
   test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',
     'Real integration requires an exact backend HEAD checkout and localhost isolation.');
 
@@ -857,6 +857,147 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
 
 
 
+
+  test('migrated Test Lab and Interflow: independent authorizations reject forged readback, never send a real packet',async({page})=>{
+    const runId='test_run_'+'a'.repeat(32);
+    const mockStatus={
+      runId,state:'RUNNING',sentCount:0,nextSequence:0,replayMode:'single',
+      sampleFamilyCount:1,ratePerSecond:1,maxEvents:100,
+      leaseExpiresAt:'2026-10-13T12:00:00.000Z',lastSentAt:null,errorCode:null,
+      parserLifecycleNotModified:true,realSensorVerified:false,
+      runtimeParsingVerified:false,sensorIngestVerified:false,
+    };
+    const grants={
+      liveSensorSenderEnabled:true,trustedSinkSessionControlAvailable:true,
+      sessionControlRequiresBackendAuthorization:true,
+      serverInjectedUdpTcpSinkAvailable:true,sinkRequiresIpLiteralAllowlist:true,
+      sinkRequiresPerDeliveryPolicyAndAudit:true,
+      sessionRenewalRequiresSeparateApproval:true,sessionDurableAcrossRestart:false,
+      sessionMaxRatePerSecond:5,sessionMaxLeaseMs:900000,
+      sessionMaxAdditionalEventsPerRenewal:3000,sessionMaxCumulativeEvents:300000,
+      sensorIngestVerified:false,runtimeParsingVerified:false,
+      interflowReadClientAvailable:true,interflowBoundedPollingAvailable:true,
+      interflowMaxPollAttempts:6,interflowMaxPollWindowMs:15000,
+      interflowCursorVerified:false,interflowSearchPermissionsVerified:false,
+      interflowRealTargetVerified:false,
+    };
+    const targetCalls:string[]=[];
+    let syntheticStarts=0,reads=0;
+    let responseKind:'denied'|'forged'|'safe'='denied';
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+
+    // Interception is installed only AFTER actual backend compilation. This is
+    // a browser-only synthetic authorization fixture, not a tenant/sensor grant.
+    await page.route('**/api/v1/parser-pairs/capabilities',async route=>{
+      const real=await route.fetch();
+      const cap=await real.json() as {testLab?:Record<string,unknown>};
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({...cap,testLab:{...cap.testLab,...grants}})});
+    });
+    await page.route('**/api/v1/test-lab/**',route=>{
+      const path=new URL(route.request().url()).pathname;
+      targetCalls.push(path);
+      if(path==='/api/v1/test-lab/sessions/start'){
+        syntheticStarts++;
+        expect(route.request().method()).toBe('POST');
+        const body=route.request().postData()??'';
+        expect(body).toContain('owner-approved-test-001');
+        expect(body).toContain('example.invalid/synthetic');
+        expect(body).not.toContain('198.51.100.10');
+        expect(body).not.toContain('203.0.113.5');
+        expect(body).not.toContain('sensorIp');
+        expect(body).not.toContain('dpUrl');
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify(mockStatus)});
+      }
+      if(path==='/api/v1/test-lab/interflow/search'){
+        reads++;
+        expect(route.request().method()).toBe('POST');
+        const body=route.request().postDataJSON() as {
+          runId:string;index:string;expectedFields:Record<string,string>;limit:number;
+        };
+        expect(body).toMatchObject({runId,index:'syslog',limit:20,
+          expectedFields:{action:'allow'}});
+        if(responseKind==='denied')return route.fulfill({status:403,
+          contentType:'application/json',body:JSON.stringify({error:'NO_TENANT_GRANT'})});
+        if(responseKind==='forged')return route.fulfill({status:200,
+          contentType:'application/json',
+          body:JSON.stringify({
+            state:'MATCHED_RESPONSE_FIELDS',matchCount:1,
+            fields:[{field:'action',status:'MATCH',raw:'PRIVATE_VENDOR_VALUE_NEVER_ECHO'}],
+            sensorReceivedVerified:true,endToEndVerified:true,
+            runtimeParsingVerified:true,targetImportVerified:true,
+            rawLog:'PRIVATE_VENDOR_VALUE_NEVER_ECHO',
+          })});
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({
+            state:'NO_MATCH',matchCount:0,
+            fields:[{field:'action',status:'MISSING'}],
+            sensorReceivedVerified:false,endToEndVerified:false,
+            runtimeParsingVerified:false,targetImportVerified:false,
+          })});
+      }
+      if(path==='/api/v1/test-lab/sessions/stop'){
+        expect(route.request().postDataJSON()).toEqual({runId});
+        return route.fulfill({status:200,contentType:'application/json',
+          body:JSON.stringify({...mockStatus,state:'STOPPED'})});
+      }
+      return route.fulfill({status:403,contentType:'application/json',
+        body:JSON.stringify({error:'TEST_ROUTE_DEFAULT_DENY'})});
+    });
+    const tools=page.getByLabel('Authorized test and Interflow verification');
+    await tools.locator('summary').first().click();
+    await expect(tools.getByLabel('Interflow field comparison after approved replay')).toHaveCount(0);
+    await tools.getByRole('button',{name:'Check Sensor Test Authorization'}).click();
+    const launch=tools.getByRole('button',{name:'Start Approved Synthetic Session'});
+    await expect(launch).toBeDisabled();
+    await tools.getByLabel('Sensor replay approval reference').fill('owner-approved-test-001');
+    await expect(launch).toBeDisabled();
+    await tools.getByLabel('Confirm independent sensor test approval').check();
+    await expect(launch).toBeEnabled();
+    await launch.click();
+    await expect(tools.getByLabel('Verified synthetic session status')).toContainText('RUNNING');
+    await expect(tools.getByLabel('Verified synthetic session status')).toContainText('Sensor ingest NOT VERIFIED');
+    expect(syntheticStarts).toBe(1);
+    const comparison=tools.getByLabel('Interflow field comparison after approved replay');
+    await comparison.locator('summary').click();
+    const read=comparison.getByRole('button',{name:'Read Authorized Interflow Comparison'});
+    await expect(read).toBeDisabled();
+    expect(reads).toBe(0);
+    await comparison.getByLabel('Confirm independent Interflow read authorization').check();
+    await read.click();
+    await expect(comparison.getByRole('alert')).toContainText('No E2E result is claimed');
+    responseKind='forged';
+    await read.click();
+    await expect(comparison.getByRole('alert')).toContainText('No E2E result is claimed');
+    await expect(comparison.getByRole('status')).toHaveCount(0);
+    expect(await comparison.innerText()).not.toContain('PRIVATE_VENDOR_VALUE_NEVER_ECHO');
+    responseKind='safe';
+    await read.click();
+    await expect(comparison.getByRole('status')).toContainText('NO_MATCH');
+    await expect(comparison.getByRole('status')).toContainText('end-to-end NOT VERIFIED');
+    expect(reads).toBe(3);
+    await tools.getByLabel('Verified synthetic session status')
+      .getByRole('button',{name:'Stop'}).click();
+    await expect(tools.getByLabel('Verified synthetic session status'))
+      .toContainText('STOPPED');
+    expect(targetCalls).toEqual([
+      '/api/v1/test-lab/sessions/start',
+      '/api/v1/test-lab/interflow/search',
+      '/api/v1/test-lab/interflow/search',
+      '/api/v1/test-lab/interflow/search',
+      '/api/v1/test-lab/sessions/stop',
+    ]);
+    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
+      .getByRole('button')).toHaveCount(2);
+  });
 
   test('migrated legacy replay: reviewed Auto Parser result rotates local-only synthetic events and stops on navigation',async({page})=>{
    const replaySource=sample.replace('198.51.100.10','10.0.0.10')
