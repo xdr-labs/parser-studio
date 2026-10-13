@@ -3,6 +3,7 @@ import { TextDecoder } from "node:util";
 import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import {compileRecipePair,validateRecipePair} from "./parser-recipe-v02.js";
+import {mineDrain3,Drain3WorkerError} from "./drain3-worker.js";
 import recipeSchema from "../schema/parser-recipe.v0.2.schema.json" with {type:"json"};
 import { BACKEND_CAPABILITIES } from "./capabilities.js";
 import {listParserTemplates,instantiateParserTemplate,ParserTemplateError} from "./parser-templates.js";
@@ -85,6 +86,13 @@ export interface BackendServerOptions {
     expectedHead:string;
     authorize:(request:IncomingMessage)=>Promise<boolean>;
   };
+  /** Opt-in private offline miner; no external AI, no default network egress.
+   * Both trusted interpreter path and authorization are server-owned.
+   * This feature is disabled and must not accept raw input by default. */
+  drain3Worker?:{
+    pythonExecutable:string;
+    authorize:(request:IncomingMessage)=>Promise<boolean>;
+  };
   legacyClient?:LegacyPocClient;
   authorizeLegacyRead?:(request:IncomingMessage)=>Promise<boolean>;
   legacyTestWritesEnabled?:boolean;
@@ -145,6 +153,64 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     }
     if (path === "/api/v1/parser-pairs/schema" && req.method === "GET") {
       send(res, 200, projectSchema);
+      return;
+    }
+    // Public data-free capability probe is still owner-authorized.
+    if(path==="/api/v1/parser-pairs/patterns/drain3/capabilities"){
+      if(req.method!=="GET"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      const provider=options.drain3Worker;
+      if(!provider){send(res,403,{error:"DRAIN3_DISABLED"});return;}
+      let authorized=false;
+      try{authorized=await provider.authorize(req);}catch{authorized=false;}
+      if(!authorized){send(res,403,{error:"DRAIN3_DENIED"});return;}
+      send(res,200,{contract:"parser-studio.drain3-capabilities.v0.1",
+        available:true,requiresExplicitConfirmation:true,
+        engine:"Drain3 0.9.11",sameOriginRawSourceTransfer:true,
+        noPersistence:true,maxTrainingEvents:500,maxHoldoutEvents:500,
+        nativeParserVerified:false,targetImportVerified:false,
+        noExternalLlmCalls:true});
+      return;
+    }
+    // Explicit consent + independent backend authentication + trusted interpreter.
+    // No raw samples enter this route without an authenticated enabled injector.
+    if(path==="/api/v1/parser-pairs/patterns/drain3"){
+      if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      const provider=options.drain3Worker;
+      if(!provider){send(res,403,{error:"DRAIN3_DISABLED"});return;}
+      let authorized=false;
+      try{authorized=await provider.authorize(req);}
+      catch{authorized=false;}
+      if(!authorized){send(res,403,{error:"DRAIN3_DENIED"});return;}
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|\\"utf-8\\"))?$/i.test(
+        req.headers["content-type"]??"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      if(Number(req.headers["content-length"]??0)>65536){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      try{
+        const body=await jsonInput(req,65536);
+        if(!body||typeof body!=="object"||Array.isArray(body)||
+           Object.keys(body).sort().join(",")!=="confirmed,contract,holdout,training"||
+           (body as Record<string,unknown>).confirmed!==true){
+          send(res,422,{error:"DRAIN3_EXPLICIT_CONFIRMATION_REQUIRED"});return;
+        }
+        const raw=body as Record<string,unknown>;
+        const report=await mineDrain3({
+          contract:raw.contract,training:raw.training,holdout:raw.holdout
+        },provider.pythonExecutable);
+        send(res,200,report);
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT"||code==="INPUT_TOO_LARGE")
+          send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof Drain3WorkerError){
+          const bad=error.code==="DRAIN3_INPUT_UNSUPPORTED"||
+            error.code==="DRAIN3_OUTPUT_UNTRUSTED";
+          send(res,bad?422:503,{error:error.code});
+        }else send(res,503,{error:"DRAIN3_WORKER_UNAVAILABLE"});
+      }
       return;
     }
     // Separate strict staged v0.2 endpoint: v0.1 API contract is unchanged.

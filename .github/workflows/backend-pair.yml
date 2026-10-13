@@ -27,6 +27,15 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install hash-pinned optional offline Drain3 worker
+        working-directory: backend
+        run: |
+          python -m pip install --disable-pip-version-check --require-hashes --no-cache-dir -r scripts/drain3-requirements.txt
+          echo "DRAIN3_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+
       - name: Install pinned Ruby and Node dependencies
         working-directory: backend
         run: |
