@@ -16,4 +16,4 @@ This is **not** a real Stellar loader import, DP Apply or sensor/Interflow E2E. 
 
 ## Remaining unsupported cases
 
-RFC3164 mixed events (year/zone unknown), RFC5424-wrapped JSON/KV, mixed CSV, arbitrary unlabeled Syslog, Java stacktrace/multiline, proprietary headers/escaping and customer-specific Ruby remain unsupported. Unsupported events must never be automatically reassigned to KV or marked as native/target successful.
+RFC3164 mixed events except separately reviewed strict TAG: KV (year/zone still unknown), RFC5424-wrapped JSON/KV, mixed CSV, arbitrary unlabeled Syslog, Java stacktrace/multiline, proprietary headers/escaping and customer-specific Ruby remain unsupported. Unsupported events must never be automatically reassigned to KV or marked as native/target successful.

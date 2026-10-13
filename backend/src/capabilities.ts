@@ -25,7 +25,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     rfc5424AdjacentStructuredDataSubset: true,
     rfc5424StructuredDataMaxBytes: 1024,
     syslogMinimumReceiverPort: 6800,
-    strictMixedSingleLineFamilies: ["json","kv","cef","leef","rfc5424_cef","rfc5424_leef"] as const,
+    strictMixedSingleLineFamilies: ["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv"] as const,
     strictMixedRequiresExplicitAllowlist: true,
     jsonBlankLineTcpFraming: true,
     jsonBlankLineOtherTransports: false,

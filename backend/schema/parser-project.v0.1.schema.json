@@ -172,7 +172,8 @@
               "cef",
               "leef",
               "rfc5424_cef",
-              "rfc5424_leef"
+              "rfc5424_leef",
+              "rfc3164_kv"
             ]
           }
         }

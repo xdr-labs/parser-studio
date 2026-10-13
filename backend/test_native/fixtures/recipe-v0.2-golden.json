@@ -244,6 +244,22 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_mixed_rfc3164",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -491,6 +507,107 @@
       "id": "multiline-unsupported",
       "slug": "v02_mixed_rfc5424",
       "raw": "{\"src_ip\":\"192.0.2.1\"}\n{\"src_ip\":\"192.0.2.2\"}"
+    }
+  ],
+  "mixedRfc3164Cases": [
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "src_ip=198.51.100.8 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-kv-deny",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "192.0.2.17",
+        "wrapped_action": "deny",
+        "yearless_header": "Oct  9 14:15:16",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-kv-allow",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<191>Dec 31 23:59:59 other security: action=allow src_ip=203.0.113.4",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "203.0.113.4",
+        "wrapped_action": "allow",
+        "yearless_header": "Dec 31 23:59:59",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedRfc3164Negative": [
+    {
+      "id": "rfc5424-disallowed",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>1 2026-10-12T01:02:03Z edge fw 122 ID - action=allow src_ip=198.51.100.4"
+    },
+    {
+      "id": "bad-month",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Bad  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "bad-priority",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<192>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "bad-date",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Feb 30 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "missing-tag",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "disallowed-cef-body",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.17 act=deny"
+    },
+    {
+      "id": "invalid-quoted-kv",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=\"192.0.2.17 action=deny"
+    },
+    {
+      "id": "unknown-csv",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "192.0.2.17,deny,80"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "src_ip=198.51.100.3 action=allow\nsrc_ip=198.51.100.4 action=deny"
     }
   ]
 }

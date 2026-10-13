@@ -44,7 +44,7 @@ end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
 allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
-  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424]
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed v02_json_blanks v02_mixed_rfc5424 v02_mixed_rfc3164]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -106,7 +106,7 @@ allowed.each do |slug|
       'native TCP blank-line framing must be exactly LF LF and opt-in')
   end
   sources.each do |source|
-    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : '7501'
+    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : '7501'
     assert(source['port'] == expected_port && source['tag'] == name &&
       source.elements.size == 1 && source.elements.first['@type'] == name,
       'generated receiver port and parser registration mismatch')
@@ -123,6 +123,8 @@ fixture['profiles'].each do |item|
     ([item['raw']] + fixture.fetch('mixedCases').map { |row| row.fetch('raw') }).join("\n")
   elsif slug == 'v02_mixed_rfc5424'
     ([item['raw']] + fixture.fetch('mixedSyslogCases').map { |row| row.fetch('raw') }).join("\n")
+  elsif slug == 'v02_mixed_rfc3164'
+    ([item['raw']] + fixture.fetch('mixedRfc3164Cases').map { |row| row.fetch('raw') }).join("\n")
   elsif slug == 'v02_json_blanks'
     ([item['raw']] + fixture.fetch('blankLineCases').map { |row| row.fetch('raw') }).join("\n\n")
   else
@@ -146,6 +148,39 @@ fixture['profiles'].each do |item|
   end
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
+end
+# Independently authored RFC3164 + KV mixed Native callbacks. This profile
+# can never infer a UTC event_time/year or return raw log values on failure.
+assert(fixture['mixedRfc3164Cases'].is_a?(Array) &&
+  fixture['mixedRfc3164Cases'].length == 3,'missing RFC3164 mixed golden events')
+fixture['mixedRfc3164Cases'].each do |item|
+  assert(item.keys.sort == %w[expectedRecord expectedTime id raw slug] &&
+    item['slug'] == 'v02_mixed_rfc3164' && item['raw'].bytesize <= 16384,
+    'unreviewed RFC3164 mixed golden input')
+  output=[]
+  drivers.fetch(item.fetch('slug')).instance.parse(item.fetch('raw')) do |time,record|
+    output << [time,record]
+  end
+  assert(output.length == 1 && output[0][0].nil? &&
+    output[0][1] == item.fetch('expectedRecord') &&
+    item['expectedTime'].nil?,
+    "RFC3164 mixed #{item['id']}: callbacks must preserve year/zone UNKNOWN")
+end
+assert(fixture['mixedRfc3164Negative'].is_a?(Array) &&
+  fixture['mixedRfc3164Negative'].length == 9,
+  'missing RFC3164 mixed malformed corpus')
+fixture['mixedRfc3164Negative'].each do |item|
+  assert(item.keys.sort == %w[id raw slug] &&
+    item['slug'] == 'v02_mixed_rfc3164' && item['raw'].bytesize <= 16384,
+    'unreviewed RFC3164 mixed negative input')
+  output=[]
+  drivers.fetch(item.fetch('slug')).instance.parse(item.fetch('raw')) do |time,record|
+    output << [time,record]
+  end
+  assert(output.length == 1 && output[0][0].nil? &&
+    output[0][1] == {'stellar_log_index'=>'syslog',
+      'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
+    "RFC3164 mixed #{item['id']}: unsupported input must fail closed")
 end
 # Explicit RFC5424 CEF/LEEF wrapped mixed variant. Native parser callbacks
 # must normalize each distinct family, preserve timestamp and reject every
@@ -258,4 +293,4 @@ fixture['negative'].each do |item|
       'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
     "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
 end
-puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives and two TCP blank-line JSON fragments PASS (public synthetic only)"
+puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives + #{fixture['mixedSyslogCases'].length} wrapped RFC5424 variants + #{fixture['mixedSyslogNegative'].length} wrapped negatives + #{fixture['mixedRfc3164Cases'].length} RFC3164 mixed + #{fixture['mixedRfc3164Negative'].length} RFC3164 mixed rejects and two TCP blank-line JSON fragments PASS (public synthetic only)"

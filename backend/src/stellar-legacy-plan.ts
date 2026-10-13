@@ -19,6 +19,8 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // RFC3164 TAG: KV allowlisted mixed grammar native-qualified public-synthetic only.
+  "5fa3104a85a040bfe25e07170f835b3e335c9e99922624e9228b1844ded3f4a6",
   // Reviewed RFC5424-CEF/LEEF strict mixed dispatch template (native-qualified synthetic only).
   "92375061dca52ae232177a20fd7f5cb007a262ccdcac938d7225d1bb96618a2f",
   "e56812e5efd75ddc255e0813ecbd02f675bfb7b85928b35ff0db6b472791044e",

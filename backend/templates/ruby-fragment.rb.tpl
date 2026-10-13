@@ -324,6 +324,10 @@ def parserstudio_mixed(text, settings)
       'cef'
     elsif text.start_with?('LEEF:')
       'leef'
+    elsif text.match?(/\A<\d{1,3}>[A-Z][a-z]{2} /)
+      # Strict RFC3164 tag/body grammar is validated below; year and zone
+      # are intentionally never inferred. All other malformed envelopes fail.
+      'rfc3164_envelope'
     elsif text.start_with?('<')
       # Reuse the existing strict RFC5424 parser, including PRI/version,
       # bounded header, RFC3339 time and structured-data grammar. Dispatch
@@ -332,6 +336,13 @@ def parserstudio_mixed(text, settings)
     elsif text.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
       'kv'
     end
+  if family == 'rfc3164_envelope'
+    # Do not reconstruct year/timezone from a yearless RFC3164 header.
+    # Parse TAG: and strict KV through the existing native RFC3164 parser.
+    raise ArgumentError, 'Disallowed RFC3164 KV family' unless
+      allowlist.include?('rfc3164_kv')
+    return parserstudio_syslog_rfc3164(text, {'syslogBodyFormat'=>'kv'})
+  end
   if family == 'rfc5424_envelope'
     # Parsing with the raw body mode is the single authoritative header and
     # SD validation. Never route malformed Syslog as generic KV/CEF fallback.

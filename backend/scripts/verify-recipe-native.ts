@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed','v02_json_blanks','v02_mixed_rfc5424','v02_mixed_rfc3164'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -46,11 +46,19 @@ const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
   mixedNegative:Array<{id:string;slug:string;raw:string}>;
   mixedSyslogCases:Array<{id:string;slug:string;raw:string}>;
   mixedSyslogNegative:Array<{id:string;slug:string;raw:string}>;
+  mixedRfc3164Cases:Array<{id:string;slug:string;raw:string}>;
+  mixedRfc3164Negative:Array<{id:string;slug:string;raw:string}>;
   blankLineCases:Array<{id:string;slug:string;raw:string;
      expectedTime:string|null;expectedRecord:Record<string,unknown>}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==13||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==14||
+ !Array.isArray(samples.mixedRfc3164Cases)||samples.mixedRfc3164Cases.length!==3||
+ samples.mixedRfc3164Cases.some(e=>e.slug!=='v02_mixed_rfc3164'||
+   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
+ !Array.isArray(samples.mixedRfc3164Negative)||samples.mixedRfc3164Negative.length!==9||
+ samples.mixedRfc3164Negative.some(e=>e.slug!=='v02_mixed_rfc3164'||
+   typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
  !Array.isArray(samples.mixedSyslogCases)||samples.mixedSyslogCases.length!==3||
  samples.mixedSyslogCases.some(e=>e.slug!=='v02_mixed_rfc5424'||
    typeof e.raw!=='string'||e.raw.length>16384||!/^[a-z0-9-]+$/.test(e.id))||
@@ -97,10 +105,27 @@ function buildProject(entry:Profile):ParserProject{
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
   ...(entry.format==='mixed'?{mixedFormats:entry.slug==='v02_mixed_rfc5424'?
     ['json','kv','rfc5424_cef','rfc5424_leef'] as const:
-    ['json','kv','cef','leef'] as const}:{}),
+    entry.slug==='v02_mixed_rfc3164'?
+      ['json','kv','rfc3164_kv'] as const:
+      ['json','kv','cef','leef'] as const}:{}),
   ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
     {syslogBodyFormat:entry.bodyFormat}:{})};
- if(entry.slug==='v02_mixed_rfc5424'){
+ if(entry.slug==='v02_mixed_rfc3164'){
+  p.receiver.port=6802;
+  p.normalization.topFields=Object.fromEntries([
+   field('src_ip','srcip','ip'),field('action','action','string'),
+   field('body.src_ip','wrapped_srcip','ip'),field('body.action','wrapped_action','string'),
+   field('syslog_timestamp','yearless_header','string'),
+   field('syslog_time_policy','time_policy','string'),
+  ]) as FieldMap;
+  p.normalization.nsFields={};p.normalization.vendorFields={};
+  p.classification.rules=[
+   {field:'action',operator:'equals',value:'deny',index:'threat'},
+   {field:'action',operator:'equals',value:'allow',index:'session'},
+   {field:'wrapped_action',operator:'equals',value:'deny',index:'threat'},
+   {field:'wrapped_action',operator:'equals',value:'allow',index:'session'},
+  ];
+ }else if(entry.slug==='v02_mixed_rfc5424'){
   p.receiver.port=6801;
   p.normalization.topFields=Object.fromEntries([
    field('src_ip','srcip','ip'),field('dst_port','dstport','port'),
@@ -163,6 +188,8 @@ for(const entry of samples.profiles){
    samples.mixedCases.map(x=>x.raw):[]),
    ...(entry.slug==='v02_mixed_rfc5424'?
     samples.mixedSyslogCases.map(x=>x.raw):[]),
+   ...(entry.slug==='v02_mixed_rfc3164'?
+    samples.mixedRfc3164Cases.map(x=>x.raw):[]),
    ...(entry.transport==='blank_line_json'?
     samples.blankLineCases.map(x=>x.raw):[])];
  const digest=sha(sampleRows.join(entry.transport==='blank_line_json'?
