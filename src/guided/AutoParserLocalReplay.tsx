@@ -23,6 +23,9 @@ export default function AutoParserLocalReplay({sample,draft}:Props){
   const plan=useRef<LocalReplayPlan|null>(null);
   const cursor=useRef(0);
 
+  const supported=['json','kv','csv','cef','leef','syslog_rfc5424'].includes(draft.format)&&
+    (!draft.guided?.eventBoundary||draft.guided.eventBoundary==='single-line');
+
   function stopTimer(){
     if(timer.current!==null){window.clearInterval(timer.current);timer.current=null;}
     plan.current=null;
@@ -39,6 +42,7 @@ export default function AutoParserLocalReplay({sample,draft}:Props){
     setRunning(false);
   }
   function start(){
+    if(!supported)return;
     stopTimer();
     setRunning(false);setCount(0);setOutput(null);setError('');
     try{
@@ -73,18 +77,22 @@ export default function AutoParserLocalReplay({sample,draft}:Props){
       Nothing is uploaded, stored or delivered to a sensor.</p>
     <div className="two-path-mapping-editor">
       <label>Preview rate
-        <select aria-label="Replay preview rate" value={rate} disabled={running}
+        <select aria-label="Replay preview rate" value={rate} disabled={running||!supported}
           onChange={event=>setRate(Number(event.target.value) as Rate)}>
           {([1,2,5,10] as const).map(value=>
             <option key={value} value={value}>{value} events/sec</option>)}
         </select>
       </label>
       <div>
-        <button type="button" onClick={running?stop:start}>
+        <button type="button" disabled={!running&&!supported} onClick={running?stop:start}>
           {running?'Stop Local Replay':'Start Local Replay'}
         </button>
       </div>
     </div>
+    {!supported&&<p role="status" aria-label="Local replay unsupported format notice">
+      Browser-only replay is unavailable for this compiled mixed or multiline format.
+      The verified DRAFT parser remains available; no events have been sent.
+    </p>}
     <p role="status" aria-label="Local synthetic replay status">
       Locally generated {count} events · Sensor deliveries 0 events ·
       {running?' Running locally':' Stopped'}

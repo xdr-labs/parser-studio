@@ -43,6 +43,19 @@ describe('Auto Parser local-only synthetic replay result',()=>{
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('clearly disables local replay of mixed CSV families without falsely starting a sender',()=>{
+    const draft=createDraft();draft.format='mixed';
+    const {getByRole,getByLabelText,queryByLabelText}=render(
+      <AutoParserLocalReplay sample={'action=deny\\nsrc_ip,action'} draft={draft}/>);
+    expect((getByRole('button',{name:'Start Local Replay'}) as HTMLButtonElement).disabled).toBe(true);
+    expect((getByLabelText('Replay preview rate') as HTMLSelectElement).disabled).toBe(true);
+    expect(getByLabelText('Local replay unsupported format notice').textContent)
+      .toContain('unavailable for this compiled mixed or multiline format');
+    expect(getByLabelText('Local synthetic replay status').textContent)
+      .toContain('Sensor deliveries 0 events');
+    expect(queryByLabelText('Local synthetic replay output')).toBeNull();
+  });
+
   it('fails closed on malformed later records with no partial output or backend request',()=>{
     vi.useFakeTimers();
     const draft=createDraft();draft.format='json';

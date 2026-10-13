@@ -612,6 +612,14 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     for(const f of pair.files)expect(sha(f.content)).toBe(f.sha256);
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
+    const preview=page.getByLabel('Local synthetic replay preview');
+    await preview.locator('summary').click();
+    await expect(preview.getByRole('button',{name:'Start Local Replay'})).toBeDisabled();
+    await expect(preview.getByLabel('Local replay unsupported format notice'))
+      .toContainText('unavailable for this compiled mixed or multiline format');
+    await expect(preview.getByLabel('Local synthetic replay output')).toHaveCount(0);
+    await expect(preview.getByLabel('Local synthetic replay status'))
+      .toContainText('Sensor deliveries 0 events');
     const projectPayloads=outgoing.filter(x=>x.path.endsWith('/generate'))
       .map(x=>JSON.parse(x.body) as {
         extraction?:{format:string;mixedFormats?:string[];
