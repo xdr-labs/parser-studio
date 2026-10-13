@@ -24,7 +24,7 @@ const result={
 };
 test('P1 user explicitly probes auth-only availability then consents before private Drain3 raw POST',async({page})=>{
  let probes=0,posts=0;
- await page.route('**/api/v1/parser-pairs/patterns/drain3*',route=>{
+ await page.route(/\/api\/v1\/parser-pairs\/patterns\/drain3(?:\/capabilities)?(?:\?.*)?$/,route=>{
    const req=route.request(),url=new URL(req.url());
    expect(url.origin).toBe('http://127.0.0.1:5180');
    if(req.method()==='GET'){
@@ -76,7 +76,7 @@ test('P1 user explicitly probes auth-only availability then consents before priv
 });
 test('P1 disabled private Drain3 never presents consent or posts a source; browser-only fallback remains',async({page})=>{
  let probes=0,posts=0;
- await page.route('**/api/v1/parser-pairs/patterns/drain3*',route=>{
+ await page.route(/\/api\/v1\/parser-pairs\/patterns\/drain3(?:\/capabilities)?(?:\?.*)?$/,route=>{
    if(route.request().method()==='POST')posts++;
    else probes++;
    return route.fulfill({status:403,contentType:'application/json',
