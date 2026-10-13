@@ -23,6 +23,13 @@ includes actual Auto Parser/browser/backend ZIP SHA-tamper denial and
 missing-package-capability denial from package-download.spec.ts, plus
 invalid output-mapping / safe correction and prefix-overlapping output denial from field-path-validation.spec.ts; and default-denied/foreign-owner
 revision history responses from artifact-revision-history.spec.ts.
+
+New tests/auto-parser-three-step.spec.ts additionally migrates one supported
+local synthetic replay contract from replay-preview.spec.ts: bounded local
+mutation, ordered source replay, explicit stop, and source/navigation teardown;
+no backend/sensor send. The unchanged archived replay test still contains
+unmigrated unsupported-input and source-safety scenarios.
+
 This is **five migrated behaviors**, NOT five entire retired suites. The
 original archived test files remain unchanged and excluded from CI.
 

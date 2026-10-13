@@ -128,3 +128,51 @@ test('narrow viewport allows keyboard controls, avoids horizontal overflow, and 
  await page.keyboard.press('Enter');
  await expect(page.getByLabel('Review Results stage')).toBeVisible();
 });
+
+test('migrated legacy replay: reviewed Auto Parser result rotates local-only synthetic events and stops on navigation',async({page})=>{
+ const calls:string[]=[];
+ await mockBackend(page);
+ page.on('request',request=>{
+   const path=new URL(request.url()).pathname;
+   if(path.startsWith('/api/v1/')&&request.method()==='POST')calls.push(path);
+ });
+ const sample=[
+   '{"action":"allow","timestamp":"2020-01-02T03:04:05Z","src_ip":"10.0.0.1","username":"internal.user","url":"https://private.internal.example/a"}',
+   '{"action":"deny","timestamp":"2020-01-02T03:04:06Z","src_ip":"10.0.0.2","username":"another.user","url":"https://private.internal.example/b"}',
+ ].join('\n');
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(sample);
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+ await expect(page.getByLabel('Review Results stage')).toBeVisible();
+ await page.getByLabel('Review Results stage').getByRole('button',{name:/Test & Generate/}).click();
+ await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+ await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
+ const sentBefore=calls.length;
+ const panel=page.getByLabel('Local synthetic replay preview');
+ await panel.locator('summary').click();
+ await panel.getByLabel('Replay preview rate').selectOption('10');
+ await panel.getByRole('button',{name:'Start Local Replay'}).click();
+ await expect(panel.getByRole('status')).toContainText('Running locally');
+ const output=panel.getByLabel('Local synthetic replay output');
+ await expect(output).toContainText('example.test/replay/');
+ await expect(output).toContainText('demo_user_');
+ await expect(output).not.toContainText('10.0.0.1');
+ await expect(output).not.toContainText('internal.user');
+ await expect(output).not.toContainText('private.internal.example');
+ await expect.poll(async()=>Number(/Locally generated (\d+) events/.exec(
+   await panel.getByRole('status').innerText())?.[1]??0)).toBeGreaterThan(1);
+ await expect(panel.getByRole('status')).toContainText('Sensor deliveries 0 events');
+ await panel.getByRole('button',{name:'Stop Local Replay'}).click();
+ const count=Number(/Locally generated (\d+) events/.exec(
+   await panel.getByRole('status').innerText())?.[1]??0);
+ await page.waitForTimeout(350);
+ expect(Number(/Locally generated (\d+) events/.exec(
+   await panel.getByRole('status').innerText())?.[1]??0)).toBe(count);
+ expect(calls.length).toBe(sentBefore);
+ await page.getByLabel('Test and Generate stage').getByRole('button',{name:'Review Results'}).click();
+ await expect(page.getByLabel('Local synthetic replay preview')).toHaveCount(0);
+ await page.getByRole('button',{name:'Back to Logs'}).click();
+ await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"allow"}');
+ await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+ await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
+});

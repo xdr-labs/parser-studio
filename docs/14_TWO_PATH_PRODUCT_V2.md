@@ -96,6 +96,14 @@ tests/integrated-backend.spec.ts:
 
 These tests use an **exact Git-SHA-pinned backend over real localhost HTTP**.
 They never contact a vendor DP, send sensor packets, invoke an external AI
-provider, or claim full real-user E2E. The remaining archived Wizard and
-Workbench suites still require feature-by-feature **behavioral** migration;
+provider, or claim full real-user E2E.
+
+The optional Auto Parser result also exposes a **browser-only synthetic replay**
+action after a SHA-checked DRAFT pair is present. It reuses the bounded legacy
+single-format synthesizer without network delivery, validates every source event
+before emitting any result, and stops on explicit Stop, source edit or result
+navigation. Unchanged unknown fields may be visible locally; this is not a
+sensor sender, native parser qualification or Interflow E2E assertion.
+
+The remaining archived Wizard and Workbench suites still require feature-by-feature **behavioral** migration;
 moving five assertions is not completion of all historical coverage.

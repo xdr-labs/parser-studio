@@ -25,6 +25,7 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import AutoParserResultTools from './AutoParserResultTools';
+import AutoParserLocalReplay from './AutoParserLocalReplay';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 
@@ -785,6 +786,7 @@ export default function AutoParser({
          listenerPort={draft.guided?.receiver.port??null}
          onDownload={(filename,bytes)=>download(filename,bytes,true)}
        />}
+       {currentPair&&<AutoParserLocalReplay sample={sample} draft={draft}/>}
        {currentPair&&<AutoParserResultTools
          projectId={currentPair.manifest.projectId??''}
          listenerPort={draft.guided?.receiver.port??0}
