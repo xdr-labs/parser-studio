@@ -89,6 +89,20 @@ Empty annotated wildcards are not countable source-value spans.
   template match in the sample. Multiple mask variants were inspected on
   this holdout, so this result is **exploratory, not new untouched
   validation**. The 41.15% F1 is still far below a cold-start product gate.
+- **Separate, previously unused source families (first prospective comparison):**
+  pinned Loghub **OpenSSH + Proxifier**, 4,000 original source records with
+  associated reference templates kept ignored. Each family was trained
+  using raw-only content hash-disjoint samples, and labels were first read
+  AFTER fitting. On **1,578** held-out events and **5,882** independently
+  annotated nonempty variable spans: legacy Drain3/alignment **1,852 TP /
+  2,322 FP / 4,030 FN (P44.37%, R31.49%, F1 36.83%)**; corrected typed
+  mask/alignment **2,608 TP / 3,441 FP / 3,274 FN (P43.11%, R44.34%, F1
+  43.72%)**. Crucially, OpenSSH improved F1 **45.61% → 71.30%** while
+  unframed Proxifier **degraded 31.94% → 26.75%**. Therefore the typed
+  setting is **NOT qualified as a globally safe default**; frame/grammar
+  admission and false capture safeguards must be validated *prospectively
+  again* on other unexposed source families. Same vendor source revision
+  train/test, not a new software-version holdout.
 - A train-only varying-KV-island probe on full Linux message bodies identified
   179 gold-template variable spans and 179 additional non-template spans.
   Joining those with raw Drain3 proposals raised recall but also false

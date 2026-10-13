@@ -1,0 +1,94 @@
+{
+  "contract": "parser-studio.poc.new-families-blind-source-span.v0.1",
+  "corrected_typed_source_metrics": {
+    "FN": 3274,
+    "FP": 3441,
+    "TP": 2608,
+    "f1": 0.4372,
+    "precision": 0.4311,
+    "recall": 0.4434
+  },
+  "dictionary_attempted": false,
+  "excluded_reference_events": 0,
+  "families": [
+    {
+      "family": "OpenSSH",
+      "gold_exclusions": 0,
+      "gold_rows_scored": 800,
+      "holdout_rows": 800,
+      "legacy_source_metrics": {
+        "FN": 1189,
+        "FP": 769,
+        "TP": 821,
+        "f1": 0.4561,
+        "precision": 0.5164,
+        "recall": 0.4085
+      },
+      "reference_nonempty_spans": 2010,
+      "train_rows": 1200,
+      "typed_source_metrics": {
+        "FN": 390,
+        "FP": 914,
+        "TP": 1620,
+        "f1": 0.713,
+        "precision": 0.6393,
+        "recall": 0.806
+      }
+    },
+    {
+      "family": "Proxifier",
+      "gold_exclusions": 0,
+      "gold_rows_scored": 778,
+      "holdout_rows": 778,
+      "legacy_source_metrics": {
+        "FN": 2841,
+        "FP": 1553,
+        "TP": 1031,
+        "f1": 0.3194,
+        "precision": 0.399,
+        "recall": 0.2663
+      },
+      "reference_nonempty_spans": 3872,
+      "train_rows": 1222,
+      "typed_source_metrics": {
+        "FN": 2884,
+        "FP": 2527,
+        "TP": 988,
+        "f1": 0.2675,
+        "precision": 0.2811,
+        "recall": 0.2552
+      }
+    }
+  ],
+  "gold_scored_events": 1578,
+  "heldout_events": 1578,
+  "labels_sha256": {
+    "OpenSSH_2k.log": "c0996a11545f4b94b435993760afa441a9e373f7bfc9e787afdb8e62f65acb4f",
+    "Proxifier_2k.log": "5aa88821bb217d82c3a964cbe9fdb0d67f235b0538ac164ef0a87e0ced4f2715"
+  },
+  "legacy_source_metrics": {
+    "FN": 4030,
+    "FP": 2322,
+    "TP": 1852,
+    "f1": 0.3683,
+    "precision": 0.4437,
+    "recall": 0.3149
+  },
+  "license_policy": "Research-only Loghub raw, gold and derived profiles remain in ignored .cache",
+  "limitations": [
+    "Both families have same pinned upstream source revision in train/test, not independent future software versions.",
+    "Loghub EventTemplate annotations are variable-span ground truth, NOT vendor field names or Stellar Dictionary schema.",
+    "Missing/ambiguous gold spans are explicitly excluded from scoring and counted.",
+    "Corrected mask behavior was developed on Apache/Linux and fixed BEFORE this family evaluation."
+  ],
+  "measurement": "untouched OpenSSH/Proxifier families, 60% raw-only training / 40% disjoint raw SHA holdout; labels loaded post-fit",
+  "native_or_stellar_verified": false,
+  "nonempty_gold_variable_spans": 5882,
+  "pinned_commit": "dd61d0952749ee7963bde24220d1be5ede023033",
+  "raw_sha256": {
+    "OpenSSH_2k.log": "1e4912727fa88245113d41b16a0cd25ceadba7f931e1c406542885b91254264f",
+    "Proxifier_2k.log": "94b6a9d98d76e7ad7841ed10caa463cd4e638a229b92a220a2bf1707552adbb9"
+  },
+  "source_repo": "logpai/loghub",
+  "split_seed": "extraction-first-residual-sha-split-20261014-v1"
+}
