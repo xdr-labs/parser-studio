@@ -103,8 +103,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         'Never return Ruby, executable Regex, JSONata, external calls or unverifiable operations.',
         ...(baseline.ok?[
           'Use this structurally valid current JSON recipe as your baseline.',
-          'Preserve its projectId, sample SHA, event count, family and stage order:',
+          'Preserve its projectId, sample SHA, event count, family and stage order.',
+          '----- BEGIN CANONICAL PARSER RECIPE JSON -----',
           JSON.stringify(baseline.recipe,null,2),
+          '----- END CANONICAL PARSER RECIPE JSON -----',
         ]:[
           'The current log grammar is outside the reviewed native compiler subset.',
           'Explain which format support is missing; do not invent a compilable parser.',

@@ -508,8 +508,8 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     expect(prompt).toContain(masked);
     expect(prompt).not.toContain('198.51.100.10');
     expect(prompt).not.toContain('203.0.113.5');
-    const prefix='Use this structurally valid current JSON recipe as your baseline.\n';
-    const suffix='\nReturn only your JSON recipe, with nativeVerified and targetVerified false.';
+    const prefix='----- BEGIN CANONICAL PARSER RECIPE JSON -----\n';
+    const suffix='\n----- END CANONICAL PARSER RECIPE JSON -----';
     const start=prompt.indexOf(prefix),end=prompt.indexOf(suffix,start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
