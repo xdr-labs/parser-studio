@@ -26,7 +26,7 @@ export interface GuidedOptions {
     port: number;
     bindPolicy: 'loopback' | 'all';
     messageLimit: number;
-    framing: 'newline' | 'blank_line_json';
+    framing: 'newline' | 'blank_line_json' | 'blank_line_java';
   };
   classification: {
     defaultIndex: EventClass;
@@ -44,9 +44,9 @@ export interface PairProjectContract {
     port: number;
     bindPolicy: 'loopback' | 'all';
     messageLimit: number;
-    framing: 'newline' | 'blank_line_json';
+    framing: 'newline' | 'blank_line_json' | 'blank_line_java';
   };
-  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'regex' | 'syslog' };
+  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'regex' | 'syslog' };
   normalization: Record<FieldGroup, {
     source: string;
     normalized_name: string;
@@ -122,16 +122,25 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if (!Number.isInteger(options.receiver.messageLimit) || options.receiver.messageLimit < 1024 || options.receiver.messageLimit > 65536) errors.push('Message limit must be an integer in 1024–65536 bytes');
 
   const framedJson=options.receiver.framing==='blank_line_json';
+  const framedJava=options.receiver.framing==='blank_line_java';
   if(framedJson&&(
     draft.format!=='json'||options.eventBoundary!=='blank-line'||
     options.receiver.protocols.length!==1||
     options.receiver.protocols[0]!=='tcp')){
     errors.push('TCP blank-line JSON framing requires explicit JSON format, one TCP protocol only, and blank-line event boundaries. Senders must separate complete JSON objects with LF LF.');
-  }else if(options.eventBoundary!=='single-line'&&!framedJson){
-    errors.push('Blank-line grouping is browser-only unless explicit TCP-only blank-line JSON framing is selected and verified.');
   }
+  if(framedJava&&(
+    draft.format!=='java_stacktrace'||options.eventBoundary!=='blank-line'||
+    options.receiver.protocols.length!==1||
+    options.receiver.protocols[0]!=='tcp')){
+    errors.push('Native Java stack traces require explicitly TCP-only LF LF framing, verified source event separators, and the Java format.');
+  }
+  if(draft.format==='java_stacktrace'&&!framedJava)
+    errors.push('Java Stack Trace can only be generated with explicit TCP LF LF framing.');
+  if(options.eventBoundary!=='single-line'&&!framedJson&&!framedJava)
+    errors.push('Blank-line grouping is browser-only without a strictly selected TCP JSON or Java LF LF framing.');
 
-  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed'] as string[]).includes(draft.format)) {
+  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed','java_stacktrace'] as string[]).includes(draft.format)) {
     errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC3164/RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
   }
   if (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) &&
@@ -243,7 +252,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       vendor: draft.vendor,
       product: draft.name,
       receiver: options.receiver,
-      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' },
+      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' },
       normalization,
       classification: {
         rules: options.classification.rules.map(({ sourceField, equals, index }) => ({ sourceField, equals, index })),

@@ -15,7 +15,7 @@ export type ReviewStage=
  | {op:'split_event';boundary:'single-line'|'blank-line'}
  | {op:'unwrap_syslog';version:1|3164;mode:'strict_header'}
  | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;mode:'strict_prefix'}
- | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'}
+ | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'}
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
  | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
  | {op:'cast_type';target:string;data_type:'integer'|'ip'|'port'|'boolean'|'date';timezone?:'UTC'}
@@ -26,8 +26,8 @@ export interface ParserRecipeV2{
   schemaRevision:'0.2';
   compilerMode:'REVIEW_ONLY';
   projectId:string;
-  sourceFormat:'json'|'kv'|'csv'|'syslog_rfc3164'|'syslog_rfc5424'|'cef'|'leef'|'mixed';
-  bodyFormat:'json'|'kv'|'csv'|'cef'|'leef'|'mixed';
+  sourceFormat:'json'|'kv'|'csv'|'syslog_rfc3164'|'syslog_rfc5424'|'cef'|'leef'|'mixed'|'java_stacktrace';
+  bodyFormat:'json'|'kv'|'csv'|'cef'|'leef'|'mixed'|'java_stacktrace';
   sample:{sha256:string;events:number};
   stages:ReviewStage[];
   nativeVerified:false;
@@ -50,7 +50,7 @@ const UNSAFE=new Set(['constructor','prototype','__proto__']);
 const INDICES=['session','threat','syslog','winlogevent'];
 const TYPES=['string','integer','ip','port','boolean','date'];
 const GROUPS=['top_fields','ns_fields','vendor_fields'];
-const PARSERS=['parse_json','parse_kv','parse_cef','parse_leef','parse_csv'];
+const PARSERS=['parse_json','parse_kv','parse_cef','parse_leef','parse_csv','parse_java_stacktrace'];
 const exact=(value:unknown,keys:string[])=>{
  if(!value||typeof value!=='object'||Array.isArray(value))return false;
  const actual=Object.keys(value as object).sort();
@@ -73,7 +73,7 @@ function validateStage(input:unknown):input is ReviewStage{
     s.families.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef'].includes(f));
   case 'unwrap_syslog':return exact(s,['op','version','mode'])&&
    [1,3164].includes(s.version as number)&&s.mode==='strict_header';
-  case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':
+  case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':case 'parse_java_stacktrace':
    return exact(s,['op']);
   case 'parse_csv':return exact(s,['op','columns','delimiter'])&&
    Array.isArray(s.columns)&&s.columns.length>=1&&s.columns.length<=100&&
@@ -106,8 +106,8 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
     r.compilerMode!=='REVIEW_ONLY'||r.nativeVerified!==false||
     r.targetVerified!==false||
     typeof r.projectId!=='string'||!/^draft-[a-z][a-z0-9_]{2,47}$/.test(r.projectId)||
-    !['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed'].includes(r.sourceFormat)||
-    !['json','kv','csv','cef','leef','mixed'].includes(r.bodyFormat)||
+    !['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed','java_stacktrace'].includes(r.sourceFormat)||
+    !['json','kv','csv','cef','leef','mixed','java_stacktrace'].includes(r.bodyFormat)||
     (!['syslog_rfc3164','syslog_rfc5424'].includes(r.sourceFormat)&&r.sourceFormat!==r.bodyFormat)||
     (r.sourceFormat==='mixed'&&r.bodyFormat!=='mixed')||
     (['syslog_rfc3164','syslog_rfc5424'].includes(r.sourceFormat)&&r.bodyFormat==='csv')||
@@ -117,7 +117,7 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
     !r.stages.every(validateStage)||
     r.stages[0]?.op!=='split_event'||
     (r.stages[0].boundary==='blank-line'&&
-      (r.sourceFormat!=='json'||r.bodyFormat!=='json'))||
+      !(['json','java_stacktrace'].includes(r.sourceFormat)&&r.bodyFormat===r.sourceFormat))||
     r.stages.at(-1)?.op!=='fallback_unparsed')return false;
  const stages=r.stages;
  let i=1;
@@ -165,12 +165,16 @@ export async function buildReviewableRecipe(
   ({ok:false,reason});
  const boundary=draft.guided?.eventBoundary??'single-line';
  const framed=boundary==='blank-line'&&
-   draft.guided?.receiver.framing==='blank_line_json'&&
    draft.guided?.receiver.protocols.length===1&&
-   draft.guided?.receiver.protocols[0]==='tcp'&&draft.format==='json';
+   draft.guided?.receiver.protocols[0]==='tcp'&&(
+     (draft.format==='json'&&draft.guided.receiver.framing==='blank_line_json')||
+     (draft.format==='java_stacktrace'&&draft.guided.receiver.framing==='blank_line_java')
+   );
  if(typeof source!=='string'||!source.trim()||
    new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES||
    (boundary!=='single-line'&&!framed))return fail('SOURCE_LIMIT');
+ if(draft.format==='java_stacktrace'&&source.includes('\r'))
+   return fail('SOURCE_LIMIT');
  const records=splitEvents(source,boundary,MAX_EVENTS+1);
  if(!records.length||records.length>MAX_EVENTS)return fail('SOURCE_LIMIT');
  if(!suite||suite.engine!=='browser-preview'||suite.nativeFluentdVerified!==false||
@@ -182,7 +186,7 @@ export async function buildReviewableRecipe(
     suite.counts.matched!==records.length||
     suite.counts.normalized!==records.length||
     suite.counts.failures>0)return fail('SAMPLE_PREVIEW_INCOMPLETE');
- if(!['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed'].includes(draft.format))
+ if(!['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed','java_stacktrace'].includes(draft.format))
    return fail('COMPILER_UNSUPPORTED');
  const project=toBackendProject(draft);
  if(!project.ok)return fail('MODEL_REVIEW_REQUIRED');
@@ -231,8 +235,8 @@ export async function buildReviewableRecipe(
    stages.push({op:'parse_csv',columns:project.project.extraction.format==='csv'
      ?project.project.extraction.csvColumns:[],delimiter:project.project.extraction.format==='csv'
        ?project.project.extraction.csvDelimiter:','});
- }else if(['json','kv','cef','leef'].includes(body)){
-   stages.push({op:('parse_'+body) as 'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'});
+ }else if(['json','kv','cef','leef','java_stacktrace'].includes(body)){
+   stages.push({op:('parse_'+body) as 'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'});
  }else return fail('COMPILER_UNSUPPORTED');
  const groups=(draft.guided??defaultGuidedOptions()).groups;
  for(const mapping of draft.mappings){

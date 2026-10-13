@@ -465,4 +465,76 @@ test.describe('actual Chromium UI ↔ exact pinned loopback backend, no mocked A
     expect(bodies.length).toBeGreaterThanOrEqual(4);
   });
 
+  test('P0 novice confirms strict LF LF framed TCP Java exceptions and generates exact backend DRAFT files',async({page,request})=>{
+    const sample=[
+      'java.lang.IllegalStateException: Synthetic failure',
+      '\tat com.example.Service.run(Service.java:42)',
+      '\tat com.example.App.main(App.java:5)',
+      'Caused by: java.io.IOException: simulated',
+      '\tat com.example.Store.read(Store.java:12)',
+      '\t... 2 more',
+      '',
+      'java.lang.RuntimeException: another failure',
+      '\tat demo.Worker.go(Worker.java:9)',
+    ].join('\n');
+    const bodyLog:string[]=[];
+    page.on('request',req=>{
+      if(req.method()==='POST'&&new URL(req.url()).pathname.startsWith('/api/v1/parser-pairs/')){
+        const body=req.postData()??'';
+        bodyLog.push(body);
+        for(const secret of ['Synthetic failure','Service.java:42','Store.java:12','another failure'])
+          expect(body).not.toContain(secret);
+      }
+    });
+    const unsupported=await request.get('/api/v1/parser-pairs/capabilities');
+    expect(unsupported.status()).toBe(200);
+    const server=await unsupported.json();
+    expect(server.authoring.javaBlankLineTcpFraming).toBe(true);
+    expect(server.authoring.javaStackTraceGrammar).toBe('EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1');
+    expect(server.authoring.multiline).toBe(false);
+    await page.goto('/');
+    await page.getByLabel('Auto Parser raw logs').fill(sample);
+    await expect(page.getByLabel('Explicit Java TCP framing confirmation')).toBeVisible();
+    await page.getByRole('button',{name:'I Confirm TCP Java Events Are Separated by LF LF'}).click();
+    await expect(page.getByLabel('Automatic event accounting'))
+      .toContainText('2/2 events analyzed locally');
+    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await expect(page.getByLabel('Suggested field mappings'))
+      .toContainText('exception_class');
+    await expect(page.getByLabel('Suggested field mappings'))
+      .toContainText('frame_count');
+    await page.getByLabel('Review Results stage')
+      .getByRole('button',{name:/Test & Generate/}).click();
+    const generated=page.waitForResponse(r=>
+      r.url().endsWith('/parser-pairs/generate')&&r.request().method()==='POST');
+    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+    expect((await generated).status()).toBe(200);
+    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+      .toContainText('Two DRAFT files verified');
+    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByRole('button',{name:'Review Staged Recipe'}).click();
+    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    const staged=page.waitForResponse(r=>
+      r.url().includes('/recipe/v0.2/generate')&&r.request().method()==='POST');
+    await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
+    expect((await staged).status()).toBe(200);
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('v0.1 pair SHA MATCHED');
+    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+      .toContainText('Native user parser NOT VERIFIED');
+    const req=bodyLog.map(x=>JSON.parse(x) as {recipe?:{
+      sourceFormat:string;stages:Array<{op:string;boundary?:string}>};
+      receiver?:{tcpFraming:string;protocols:string[]}}).filter(x=>x.recipe?.stages?.length);
+    expect(req.length).toBeGreaterThanOrEqual(2);
+    expect(req[0]?.recipe?.sourceFormat).toBe('java_stacktrace');
+    expect(req[0]?.recipe?.stages.slice(0,2)).toEqual([
+      {op:'split_event',boundary:'blank-line'},{op:'parse_java_stacktrace'}]);
+    const authoring=bodyLog.map(x=>JSON.parse(x) as {
+      receiver?:{tcpFraming:string;protocols:string[]}})
+      .find(x=>x.receiver?.tcpFraming==='blank_line_java');
+    expect(authoring?.receiver?.protocols).toEqual(['tcp']);
+    expect(bodyLog.length).toBeGreaterThanOrEqual(4);
+  });
+
 });

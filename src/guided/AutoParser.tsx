@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowLeft,ArrowRight,CheckCircle2,Download,FileArchive,FileText,
   LockKeyhole,ShieldAlert} from 'lucide-react';
-import type {ParserDraft,SuiteResult} from '../model';
+import {createDraft,type ParserDraft,type SuiteResult} from '../model';
 import {toBackendProject} from './backendAdapter';
 import {fetchBackendCapabilities,assertBackendProjectSupported,
   type BackendCapabilities} from './backendCapabilities';
@@ -18,6 +18,8 @@ import type {StructuralMiningReport} from './localPatternMining';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {splitEvents,MAX_EVENTS} from '../parser';
+import {parseJavaStacktrace} from '../javaStacktrace';
+import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
   proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
@@ -127,6 +129,40 @@ export default function AutoParser({
    setSaveAfterApproval(false);
    setBusy(false);setMessage('');
  },[identity]);
+ // A local suggestion only: explicit source-framing confirmation is required.
+ // Never promote arbitrary newline grouping or silently rewrite edited mappings.
+ const javaFramedCandidate=useMemo(()=>{
+   if(draft.format!=='auto'||!sample.includes('\n\n')||
+      sample.includes('\r')||
+      new TextEncoder().encode(sample).byteLength>MAX_LOCAL_TEXT||
+      JSON.stringify(draft.mappings)!==JSON.stringify(createDraft().mappings)||
+      draft.guided?.receiver.framing!=='newline'||
+      (draft.guided?.eventBoundary??'single-line')!=='single-line')
+     return false;
+   const records=splitEvents(sample,'blank-line',MAX_EVENTS+1);
+   return records.length>=2&&records.length<=MAX_EVENTS&&
+     records.every(r=>parseJavaStacktrace(r.raw).errors.length===0);
+ },[sample,draft]);
+ const adoptFramedJava=()=>{
+   if(!javaFramedCandidate)return;
+   setDraft(old=>{
+     if(old.format!=='auto'||!javaFramedCandidate)return old;
+     const opts=old.guided??defaultGuidedOptions();
+     return {...old,format:'java_stacktrace',
+       mappings:[
+         {id:'java-class',source:'exception_class',target:'custom.exception_class',type:'string'},
+         {id:'java-count',source:'frame_count',target:'custom.frame_count',type:'integer'},
+         {id:'java-cause',source:'cause_class',target:'custom.cause_class',type:'string'},
+       ],
+       guided:{...opts,eventBoundary:'blank-line',enrichment:[],
+         groups:{'java-class':'top_fields','java-count':'top_fields',
+           'java-cause':'ns_fields'},
+         classification:{defaultIndex:'Syslog',rules:[]},
+         receiver:{...opts.receiver,protocols:['tcp'],framing:'blank_line_java'}
+       }
+     };
+   });
+ };
  const assessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
  const currentReview=reviewed?.source===sample?reviewed:null;
@@ -557,8 +593,9 @@ export default function AutoParser({
    <div className="auto-parser-body">
      {step===0&&<section aria-label="Add Logs stage">
        <h2>Add Logs</h2>
-       <p>Paste or upload one event per line. Sample data stays inside this browser.
-         Choose at least two representative events to improve coverage.</p>
+       <p>Paste or upload representative events. Most sources use one line
+         per event; strictly framed Java exceptions can be reviewed as complete
+         multiline records. Your sample stays in this browser.</p>
        <div className="auto-parser-source-toolbar">
          <label>Local UTF-8 file
            <input type="file" aria-label="Auto Parser file upload"
@@ -579,6 +616,17 @@ export default function AutoParser({
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
        </div>
+       {javaFramedCandidate&&<div className="auto-parser-warning"
+         aria-label="Explicit Java TCP framing confirmation">
+         <strong>Java exception stack traces detected locally</strong>
+         <p>Only supported when the sender transmits complete bounded Java
+           exceptions via TCP, each followed by LF LF (an empty line).
+           This is not automatic stream reassembly. Confirm the transport
+           contract before generating a DRAFT parser.</p>
+         <button type="button" onClick={adoptFramedJava}>
+           I Confirm TCP Java Events Are Separated by LF LF
+         </button>
+       </div>}
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
        <details className="auto-parser-recipe" aria-label="Local logical boundary review">
@@ -586,8 +634,10 @@ export default function AutoParser({
          <p>Preview potential multiline JSON objects and Java stack traces using
            physical source line numbers. Every nonempty line is accounted for;
            no observed log values, stack frames or JSON fields are returned.
-           This review does not configure a Fluentd multiline event breaker,
-           change input or enable native parser generation.</p>
+           This review alone does not configure a Fluentd multiline event
+           breaker, change input or enable native parser generation.
+           Only the separate explicitly confirmed TCP LF LF Java subset can
+           create a reviewed Native-capable DRAFT parser.</p>
          <button type="button" disabled={!sample.trim()||busy||pending}
            onClick={()=>setLogicalReview({
              key:identity,value:reviewLogicalBoundaries(sample)
@@ -608,8 +658,9 @@ export default function AutoParser({
              included in source accounting
            </span>}
            {currentLogicalReview.status!=='NO_MULTILINE'&&<span>
-             Do not generate a native multiline parser from this review.
-             Use Edit Details to inspect the boundaries and source format.
+             Logical boundary analysis alone cannot qualify a native parser.
+             Only separately reviewed TCP LF LF Java or JSON source framing
+             can be compiled into a DRAFT parser.
            </span>}
          </div>}
        </details>

@@ -5,11 +5,12 @@
 import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents} from '../parser';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
+import {parseJavaStacktrace} from '../javaStacktrace';
 import type {BackendCapabilities} from './backendCapabilities';
 import type {EventBoundary} from './contract';
 
 export type Envelope='none'|'rfc3164'|'rfc5424';
-export type Body='json'|'kv'|'cef'|'leef'|'csv'|'unknown';
+export type Body='json'|'kv'|'cef'|'leef'|'csv'|'java_stacktrace'|'unknown';
 export type EntryStatus='RECOGNIZED'|'HEADER_MALFORMED'|'BODY_MALFORMED'|
   'BOUNDARY_AMBIGUOUS'|'TOO_LONG'|'UNKNOWN';
 export interface EnvelopeEntry{
@@ -30,7 +31,7 @@ export type CompilerAssessment={
   status:'DRAFT_COMPILABLE'|'COMPILER_UNSUPPORTED'|'MIXED_OR_UNKNOWN'|
     'COLUMNS_REQUIRED'|'BOUNDARY_REVIEW'|'BACKEND_UNAVAILABLE'|
     'BACKEND_UNTRUSTED'|'SOURCE_LIMIT';
-  format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|'mixed'|null;
+  format:'json'|'kv'|'csv'|'cef'|'leef'|'syslog_rfc3164'|'syslog_rfc5424'|'mixed'|'java_stacktrace'|null;
   mixedFormats?:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
   bodyFormat:'raw'|'json'|'kv'|'cef'|'leef'|null;
   nativeVerified:false;targetVerified:false;
@@ -104,13 +105,16 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
   }
   return {body:'unknown',status:'UNKNOWN'};
 }
-function analyzeRecord(text:string,sequence:number,line:number):EnvelopeEntry{
+function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBoundary):EnvelopeEntry{
   const raw=text.trim();
   const base={sequence,line,timePolicy:'NO_TIMESTAMP' as EnvelopeEntry['timePolicy']};
   if(text.length>MAX_LINE_CHARS)
     return {...base,envelope:'none',body:'unknown',status:'TOO_LONG'};
-  if(text.includes('\n')||text.includes('\r'))
+  if(text.includes('\n')||text.includes('\r')){
+    if(boundary==='blank-line'&&parseJavaStacktrace(text).errors.length===0)
+      return {...base,envelope:'none',body:'java_stacktrace',status:'RECOGNIZED'};
     return {...base,envelope:'none',body:'unknown',status:'BOUNDARY_AMBIGUOUS'};
+  }
   if(raw.startsWith('<')){
     if(/^<\d{1,3}>1\s/.test(raw)){
       const scanned=parseRfc5424Subset(raw);
@@ -138,10 +142,14 @@ export function analyzeLogEnvelopes(source:string,boundary:EventBoundary):Envelo
     return EMPTY('SOURCE_LIMIT','single-line');
   if(new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES)
     return EMPTY('SOURCE_LIMIT',boundary);
+  // Native Java strict LF LF grammar rejects CR. Do not normalize raw CRLF
+  // into a false browser/native DRAFT equivalence.
+  if(boundary==='blank-line'&&source.includes('\r'))
+    return EMPTY('SOURCE_LIMIT',boundary);
   if(!source.trim())return EMPTY('NO_SAMPLES',boundary);
   const records=splitEvents(source,boundary,MAX_EVENTS+1);
   if(records.length>MAX_EVENTS)return EMPTY('SOURCE_LIMIT',boundary,records.length);
-  const events=records.map((item,index)=>analyzeRecord(item.raw,index+1,item.line));
+  const events=records.map((item,index)=>analyzeRecord(item.raw,index+1,item.line,boundary));
   const groups=new Map<string,{envelope:Envelope;body:Body;count:number}>();
   for(const event of events){
     const id=event.envelope+'/'+event.body;
@@ -164,6 +172,26 @@ export function assessEnvelopeCompilation(
     ({status,format:null,bodyFormat:null,nativeVerified:false,targetVerified:false});
   if(!report.complete||report.status!=='READY'||report.sourceCount===0)
     return no('SOURCE_LIMIT');
+  if(report.boundary==='blank-line'){
+    if(report.families.length!==1||
+       report.families[0]?.envelope!=='none'||
+       report.families[0]?.body!=='java_stacktrace'||
+       report.unsupported!==0||report.accounted!==report.sourceCount||
+       report.events.some(e=>e.status!=='RECOGNIZED'))
+      return no('BOUNDARY_REVIEW');
+    if(!cap)return no('BACKEND_UNAVAILABLE');
+    if(cap.verification?.engineVerified!==false||
+       cap.verification?.targetImportVerified!==false)
+      return no('BACKEND_UNTRUSTED');
+    if(!cap.authoring?.extractionFormats?.includes('java_stacktrace')||
+       cap.authoring.javaBlankLineTcpFraming!==true||
+       cap.authoring.javaBlankLineOtherTransports!==false||
+       cap.authoring.javaBlankLineDelimiter!=='LF_LF'||
+       cap.authoring.javaStackTraceGrammar!=='EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1')
+      return no('COMPILER_UNSUPPORTED');
+    return {status:'DRAFT_COMPILABLE',format:'java_stacktrace',bodyFormat:null,
+      nativeVerified:false,targetVerified:false};
+  }
   if(report.boundary!=='single-line'||
     report.events.some(e=>e.status==='BOUNDARY_AMBIGUOUS'))
     return no('BOUNDARY_REVIEW');

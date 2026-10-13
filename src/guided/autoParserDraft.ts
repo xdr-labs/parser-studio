@@ -27,8 +27,10 @@ export function prepareAutoParserDraft(
     suite.nativeFluentdVerified!==false||suite.stellarExportVerified!==false||
     !Array.isArray(suite.events))return failed('UNTRUSTED_PREVIEW');
   if(typeof source!=='string'||new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES||
-    ledger.boundary!=='single-line'||ledger.sourceCount>MAX_EVENTS)return failed('SOURCE_LIMIT');
-  const records=splitEvents(source,'single-line',MAX_EVENTS+1);
+    (ledger.boundary!=='single-line'&&
+      !(ledger.boundary==='blank-line'&&compiler.format==='java_stacktrace'))||
+    ledger.sourceCount>MAX_EVENTS)return failed('SOURCE_LIMIT');
+  const records=splitEvents(source,ledger.boundary,MAX_EVENTS+1);
   if(!ledger.complete||ledger.accounted!==records.length||
     records.length!==ledger.sourceCount||
     suite.events.length!==records.length||
@@ -38,7 +40,7 @@ export function prepareAutoParserDraft(
     return failed('SOURCE_CHANGED');
   }
   // Recompute *only the value-free census* to block stale/forged summaries.
-  if(!same(analyzeLogEnvelopes(source,'single-line'),ledger))return failed('SOURCE_CHANGED');
+  if(!same(analyzeLogEnvelopes(source,ledger.boundary),ledger))return failed('SOURCE_CHANGED');
   if(compiler.status!=='DRAFT_COMPILABLE'||!compiler.format){
     return failed(compiler.status==='DRAFT_COMPILABLE'?'COMPILER_UNSUPPORTED':compiler.status);
   }

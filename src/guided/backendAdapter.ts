@@ -31,9 +31,9 @@ export interface BackendParserProject {
     port: number;
     bindAddress: '127.0.0.1' | '0.0.0.0';
     messageLengthLimit: number;
-    tcpFraming: 'line' | 'blank_line_json';
+    tcpFraming: 'line' | 'blank_line_json' | 'blank_line_java';
   };
-  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' } | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'> } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' } | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'> } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -151,7 +151,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       port: options.receiver.port,
       bindAddress: options.receiver.bindPolicy === 'all' ? '0.0.0.0' : '127.0.0.1',
       messageLengthLimit: options.receiver.messageLimit,
-      tcpFraming: options.receiver.framing==='blank_line_json'?'blank_line_json':'line',
+      tcpFraming: options.receiver.framing==='blank_line_json'?'blank_line_json':options.receiver.framing==='blank_line_java'?'blank_line_java':'line',
     },
     extraction: draft.format === 'mixed'
       ? {format:'mixed',mixedFormats:[...(draft.mixedFormats??[])]}
@@ -161,7 +161,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
         ? { format: draft.format,
             ...(draft.syslogBodyFormat && draft.syslogBodyFormat !== 'raw'
               ? { syslogBodyFormat: draft.syslogBodyFormat } : {}) }
-        : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' },
+        : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' },
     normalization: {
       msgOriginSource: options.slug,
       msgClass: options.slug,

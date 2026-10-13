@@ -87,6 +87,9 @@ export async function deriveAIMetadata(
   census.accounted!==prompt.sourceCount||
   census.families.length<1||census.families.length>4)deny();
  const sourceFormat=converted.project.extraction.format;
+ // The optional metadata-only LLM contract does not include Java Stack Trace:
+ // no provider egress even if source timestamps and framing are recognized.
+ if(sourceFormat==='java_stacktrace')deny();
  const bodyFormat=sourceFormat==='mixed'?'mixed':
   sourceFormat==='syslog_rfc3164'||sourceFormat==='syslog_rfc5424'?
    converted.project.extraction.syslogBodyFormat:sourceFormat;

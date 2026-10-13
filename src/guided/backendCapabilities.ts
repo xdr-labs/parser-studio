@@ -6,7 +6,7 @@ export interface BackendCapabilities {
   projectSchemaRevision: '0.1';
   authoring: {
     receiverProtocols: Array<'udp' | 'tcp'>;
-    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed'>;
+    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'>;
@@ -14,6 +14,10 @@ export interface BackendCapabilities {
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
     jsonBlankLineDelimiter?: 'LF_LF';
+    javaBlankLineTcpFraming?: true;
+    javaBlankLineOtherTransports?: false;
+    javaBlankLineDelimiter?: 'LF_LF';
+    javaStackTraceGrammar?: 'EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1';
     rfc3164StrictTaggedMessageSubset?: true;
     rfc3164TimePolicy?: 'YEAR_AND_ZONE_UNKNOWN';
     rfc3164NativeTimeReconstruction?: false;
@@ -96,7 +100,7 @@ export interface BackendCapabilities {
 }
 
 const BASE = '/api/v1/parser-pairs';
-const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed']);
+const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace']);
 const KNOWN_PROTOCOLS = new Set(['udp', 'tcp']);
 const KNOWN_RFC_BODIES = new Set(['raw','json','kv','cef','leef']);
 
@@ -164,6 +168,19 @@ export async function fetchBackendCapabilities(
      a.jsonBlankLineOtherTransports!==false||
      a.jsonBlankLineDelimiter!=='LF_LF'))
     throw new Error('Untrusted explicit TCP blank-line JSON framing contract.');
+  const javaAdvertised=a.extractionFormats.includes('java_stacktrace');
+  const javaClaims=[
+    a.javaBlankLineTcpFraming,a.javaBlankLineOtherTransports,
+    a.javaBlankLineDelimiter,a.javaStackTraceGrammar,
+  ];
+  if(javaAdvertised&&(
+    a.javaBlankLineTcpFraming!==true||
+    a.javaBlankLineOtherTransports!==false||
+    a.javaBlankLineDelimiter!=='LF_LF'||
+    a.javaStackTraceGrammar!=='EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1'))
+    throw new Error('Java Stack Trace requires the exact bounded TCP LF LF native framing contract.');
+  if(!javaAdvertised&&javaClaims.some(x=>x!==undefined))
+    throw new Error('Untrusted Java frame capability without parser support.');
   const rfc3164Advertised=a.extractionFormats.includes('syslog_rfc3164');
   if(rfc3164Advertised&&(
       a.rfc3164StrictTaggedMessageSubset!==true||
@@ -237,6 +254,15 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     project.receiver.protocols.length!==1||
     project.receiver.protocols[0]!=='tcp'))
     throw new Error('Backend did not explicitly verify TCP-only blank-line JSON framing.');
+  if(project.extraction.format==='java_stacktrace'&&(
+    project.receiver.tcpFraming!=='blank_line_java'||
+    project.receiver.protocols.length!==1||
+    project.receiver.protocols[0]!=='tcp'||
+    cap.authoring.javaBlankLineTcpFraming!==true||
+    cap.authoring.javaBlankLineOtherTransports!==false||
+    cap.authoring.javaBlankLineDelimiter!=='LF_LF'||
+    cap.authoring.javaStackTraceGrammar!=='EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1'))
+    throw new Error('Java DRAFT requires explicit bounded TCP-only LF LF framing.');
   if (project.extraction.format === 'syslog_rfc5424') {
     const mode = project.extraction.syslogBodyFormat ?? 'raw';
     if ((cap.authoring.rfc5424BodyFormats && !cap.authoring.rfc5424BodyFormats.includes(mode)) ||

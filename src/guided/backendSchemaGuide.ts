@@ -17,7 +17,7 @@ export interface BackendSchemaGuide {
 
 const BASE = '/api/v1/parser-pairs/schema';
 const FIELD_PATH_PATTERN = String.raw`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*$`;
-const ALLOWED_FORMATS = ['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed'];
+const ALLOWED_FORMATS = ['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace'];
 const ALLOWED_TYPES = ['string', 'integer', 'ip', 'port', 'boolean', 'date'];
 const ALLOWED_CATEGORIES = ['network', 'endpoint', 'cloud', 'application', 'other'];
 const ALLOWED_PROTOCOLS = ['udp', 'tcp'];

@@ -19,13 +19,13 @@ const LABELS:Record<CompilerAssessment['status'],string>={
   COMPILER_UNSUPPORTED:'The backend has not qualified this envelope and body combination. No Ruby/CONF pair can be generated from this candidate.',
   MIXED_OR_UNKNOWN:'Different, malformed or unknown source events require separate review. A single-parser compilation cannot silently ignore them.',
   COLUMNS_REQUIRED:'CSV column names must be explicitly reviewed before any DRAFT compiler handoff.',
-  BOUNDARY_REVIEW:'Multiline event boundaries require review; native event breaking is not supported.',
+  BOUNDARY_REVIEW:'Multiline boundaries need review; only explicitly framed TCP Java/JSON subsets may be compiled.',
   BACKEND_UNAVAILABLE:'Local analysis is available, but backend compiler compatibility could not be checked.',
   BACKEND_UNTRUSTED:'The backend returned unsupported verification flags or an incompatible capability contract.',
   SOURCE_LIMIT:'The source is empty, truncated or over the bounded local analysis budget.',
 };
 const ENVELOPES={none:'Standalone',rfc3164:'RFC3164 Syslog',rfc5424:'RFC5424 Syslog'} as const;
-const BODIES={json:'JSON',kv:'Key / Value',cef:'CEF',leef:'LEEF',csv:'CSV',unknown:'Unknown'} as const;
+const BODIES={json:'JSON',kv:'Key / Value',cef:'CEF',leef:'LEEF',csv:'CSV',java_stacktrace:'Java Stack Trace',unknown:'Unknown'} as const;
 const STATUS={
   RECOGNIZED:'Candidate identified',
   HEADER_MALFORMED:'Malformed header',
@@ -127,9 +127,8 @@ export default function AutoParserAnalyzePanel({
           </button>
         </div>}
     </div>}
-    <small>RFC3164 has no year or timezone in its header and cannot be compiled
-      by the currently reviewed backend. Mixed, multiline and unknown records
-      remain visible, not silently dropped. This analysis does not send a log,
+    <small>RFC3164 has no year or timezone in its header. Arbitrary mixed, unframed
+      multiline and unknown records remain visible, not silently dropped. This analysis does not send a log,
       run Ruby, contact a DP or install a parser.</small>
   </section>;
 }

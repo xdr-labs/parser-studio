@@ -2,7 +2,7 @@ import { createDraft, type MappingRule, type ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 
 export const starterTemplateIds = [
-  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef',
+  'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef', 'java_blanks',
 ] as const;
 export type StarterTemplateId = (typeof starterTemplateIds)[number];
 
@@ -15,6 +15,14 @@ export interface StarterTemplate {
 }
 
 const presets: Record<StarterTemplateId, { label: string; description: string; samples: string[] }> = {
+  java_blanks:{
+    label:'Java Exception Stack Trace · TCP LF LF',
+    description:'Two synthetic Java exceptions framed with one empty line between events',
+    samples:[
+      'java.lang.IllegalStateException: Synthetic failure\n\tat com.example.Service.run(Service.java:42)\n\tat com.example.App.main(App.java:5)\nCaused by: java.io.IOException: simulated\n\tat com.example.Store.read(Store.java:12)\n\t... 2 more',
+      'java.lang.RuntimeException: another failure\n\tat demo.Worker.go(Worker.java:9)',
+    ],
+  },
   json: {
     label: 'JSON · Firewall',
     description: 'One JSON object per line',
@@ -148,13 +156,29 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
   draft.name = 'Synthetic ' + spec.label;
   draft.vendor = 'Synthetic demo (no customer data)';
   draft.format = id === 'rfc5424_cef' || id === 'rfc5424_leef'
-    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':(id==='mixed_rfc5424'||id==='mixed_rfc3164'||id==='mixed_rfc5424_bodies'||id==='mixed_rfc3164_cefleef')?'mixed':id;
+    ? 'syslog_rfc5424' : id==='rfc3164_kv'?'syslog_rfc3164':(id==='mixed_rfc5424'||id==='mixed_rfc3164'||id==='mixed_rfc5424_bodies'||id==='mixed_rfc3164_cefleef')?'mixed':id==='java_blanks'?'java_stacktrace':id;
   draft.csvColumns = 'action,src_ip,dst_port';
   const guided = defaultGuidedOptions();
   guided.slug = 'example_' + id;
   guided.eventBoundary = 'single-line';
   guided.enrichment = [];
 
+  if(id==='java_blanks'){
+    guided.eventBoundary='blank-line';
+    guided.receiver.protocols=['tcp'];
+    guided.receiver.framing='blank_line_java';
+    guided.receiver.bindPolicy='loopback';
+    guided.receiver.messageLimit=8192;
+    draft.mappings=[
+      {id:'java-class',source:'exception_class',target:'custom.exception_class',type:'string'},
+      {id:'java-frames',source:'frame_count',target:'custom.frame_count',type:'integer'},
+      {id:'java-cause',source:'cause_class',target:'custom.cause_class',type:'string'},
+    ];
+    guided.groups={
+      'java-class':'top_fields','java-frames':'top_fields','java-cause':'ns_fields',
+    };
+    guided.classification={defaultIndex:'Syslog',rules:[]};
+  }
   if(id==='mixed_rfc3164_cefleef'){
     draft.mixedFormats=['json','kv','rfc3164_cef','rfc3164_leef'];
     draft.mappings=[
@@ -304,5 +328,5 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
     guided.classification = { defaultIndex: 'Syslog', rules: [] };
   }
   draft.guided = guided;
-  return { id, label: spec.label, description: spec.description, sample: spec.samples.join('\n'), draft };
+  return { id, label: spec.label, description: spec.description, sample: spec.samples.join(id==='java_blanks'?'\n\n':'\n'), draft };
 }

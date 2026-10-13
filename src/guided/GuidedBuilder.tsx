@@ -1294,7 +1294,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           {step === 1 && <>
             <div className="guided-section-title"><span>01</span> Select Log Format <span className="guided-inline-badge">Select the correct format</span></div>
             <div className="guided-format-choices" role="group" aria-label="Guided format">
-              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'syslog', 'regex'] as const).map((format) =>
+              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace', 'syslog', 'regex'] as const).map((format) =>
                 <button type="button" key={format} aria-pressed={draft.format === format} className={'guided-format ' + (draft.format === format ? 'active' : '')} onClick={() => changeDraft('format', format)}>
                   {draft.format === format ? <CheckCircle2 size={17} /> : <FileText size={17} />}
                   <strong>{formatLabel(format)}</strong>
@@ -1665,6 +1665,20 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 enabled, blank-line event boundaries selected earlier, and confirmed
                 source sending each JSON object followed by LF LF. No UDP, Java
                 stack-trace reassembly or live target verification.</small>
+            </label>}
+            {draft.format==='java_stacktrace'&&<label className="guided-field">
+              <span>Native Java Stack Trace Event Framing (Explicit)</span>
+              <select aria-label="TCP Java event framing"
+                value={options.receiver.framing==='blank_line_java'?'blank_line_java':'newline'}
+                onChange={e=>setReceiver('framing',
+                  e.target.value as 'newline'|'blank_line_java')}>
+                <option value="newline">Not configured · Generation blocked</option>
+                <option value="blank_line_java">TCP only · Each full Java exception ends with LF LF</option>
+              </select>
+              <small>Supported only when your sender separates complete bounded Java
+                exception stack traces with LF LF. Enable TCP only and select
+                blank-line event boundaries in Add Samples. No automatic UDP
+                reassembly, generic Java syntax, or target verification.</small>
             </label>}
             <div className="guided-three-fields">
               <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>

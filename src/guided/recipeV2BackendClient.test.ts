@@ -193,6 +193,44 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
       'rfc3164_strict_no_year_or_zone',true)).rejects.toThrow(/not verified/);
   }
  });
+ it('requires Java-specific TCP LF LF capability and parse stage; JSON framing alone is insufficient',async()=>{
+  const source=['java.lang.IllegalStateException: Synthetic failure',
+    '    at com.example.Service.run(Service.java:42)',
+    '',
+    'java.lang.RuntimeException: another',
+    '    at com.example.App.main(App.java:5)'].join('\n');
+  const draft=createDraft();
+  draft.format='java_stacktrace';
+  draft.guided={...draft.guided!,eventBoundary:'blank-line',
+    receiver:{...draft.guided!.receiver,protocols:['tcp'],framing:'blank_line_java'},
+    groups:{'java-class':'top_fields','java-frames':'top_fields'},
+    classification:{defaultIndex:'Syslog',rules:[]}};
+  draft.mappings=[
+    {id:'java-class',source:'exception_class',target:'custom.exception_class',type:'string'},
+    {id:'java-frames',source:'frame_count',target:'custom.frames',type:'integer'},
+  ];
+  const reviewed=await buildReviewableRecipe(source,draft,preview(source,draft));
+  expect(reviewed.ok).toBe(true);
+  if(!reviewed.ok)return;
+  const good={...capability,
+    supportedBodyParsers:[...capability.supportedBodyParsers,'java_stacktrace'],
+    supportedOperators:[...capability.supportedOperators,'parse_java_stacktrace'],
+    javaBlankLineTcpFraming:true,javaBlankLineOtherTransports:false,
+    javaBlankLineDelimiter:'LF_LF',javaStackTraceGrammar:'EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1'};
+  const accepted=vi.fn(async()=>response(good));
+  expect(await checkRecipeV02Compiler(accepted as typeof fetch,undefined,false,false,[],true)).toBe(true);
+  for(const forged of [
+    {...good,javaBlankLineTcpFraming:false},
+    {...good,javaBlankLineOtherTransports:true},
+    {...good,javaBlankLineDelimiter:'AUTO'},
+    {...good,javaStackTraceGrammar:'BEST_EFFORT'},
+    {...good,supportedBodyParsers:capability.supportedBodyParsers},
+    {...good,supportedOperators:capability.supportedOperators},
+  ]){
+    await expect(checkRecipeV02Compiler(vi.fn(async()=>response(forged)) as typeof fetch,
+      undefined,false,false,[],true)).rejects.toThrow(/not verified/);
+  }
+ });
  it('gates explicit TCP blank-line JSON by exact backend v0.2 transport claims',async()=>{
   const supported=vi.fn(async()=>response(capability));
   expect(await checkRecipeV02Compiler(supported as typeof fetch,undefined,false,true))

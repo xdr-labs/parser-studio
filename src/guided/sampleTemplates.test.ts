@@ -6,7 +6,7 @@ import { toBackendProject } from './backendAdapter';
 describe('safe synthetic no-code starter templates', () => {
   it('provides six base formats and two explicit RFC5424 envelope variants', () => {
     expect(starterTemplateIds).toEqual([
-      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef',
+      'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef', 'java_blanks',
     ]);
   });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
@@ -67,6 +67,23 @@ describe('safe synthetic no-code starter templates', () => {
     }
   });
 
+  it('offers strictly TCP LF LF framed public-synthetic Java exceptions',()=>{
+    const t=loadStarterTemplate('java_blanks');
+    expect(t.draft.format).toBe('java_stacktrace');
+    expect(t.draft.guided?.eventBoundary).toBe('blank-line');
+    expect(t.draft.guided?.receiver).toMatchObject({
+      protocols:['tcp'],framing:'blank_line_java'});
+    expect(t.sample.includes('\n\n')).toBe(true);
+    expect(preview(t.sample,t.draft).counts).toMatchObject({
+      total:2,matched:2,normalized:2,failures:0,
+    });
+    const backend=toBackendProject(t.draft);
+    expect(backend).toMatchObject({
+      ok:true,project:{extraction:{format:'java_stacktrace'},
+        receiver:{protocols:['tcp'],tcpFraming:'blank_line_java'}},
+    });
+    expect(JSON.stringify(backend)).not.toContain('Synthetic failure');
+  });
   it('offers strict yearless RFC3164 CEF/LEEF and standalone JSON/KV synthetic starter',()=>{
     const template=loadStarterTemplate('mixed_rfc3164_cefleef');
     expect(template.draft.format).toBe('mixed');

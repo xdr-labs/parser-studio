@@ -45,6 +45,7 @@ export async function checkRecipeV02Compiler(
  requireMixed=false,
  requireJsonBlankLineTcp=false,
  requiredMixedFamilies:readonly string[]=[],
+ requireJavaBlankLineTcp=false,
 ):Promise<boolean>{
  const res=await requester(BASE+'/capabilities',{
   method:'GET',cache:'no-store',credentials:'same-origin',
@@ -93,6 +94,13 @@ export async function checkRecipeV02Compiler(
     cap.jsonBlankLineTcpFraming!==true||
     cap.jsonBlankLineOtherTransports!==false||
     cap.jsonBlankLineDelimiter!=='LF_LF'))||
+  (requireJavaBlankLineTcp&&(
+    !values.includes('java_stacktrace')||
+    !ops.includes('parse_java_stacktrace')||
+    cap.javaBlankLineTcpFraming!==true||
+    cap.javaBlankLineOtherTransports!==false||
+    cap.javaBlankLineDelimiter!=='LF_LF'||
+    cap.javaStackTraceGrammar!=='EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1'))||
   cap.nativeUserParserVerified!==false||cap.targetImportVerified!==false||
   cap.sourceHashVerifiedAgainstEvents!==false||cap.apiDoesNotDeploy!==true)
   fail();
@@ -119,10 +127,12 @@ export async function compileReviewedRecipeV02(
  if(!await checkRecipeV02Compiler(requester,
    input.recipe.sourceFormat==='syslog_rfc3164'? 'rfc3164_strict_no_year_or_zone':undefined,
    input.recipe.sourceFormat==='mixed',
-   input.recipe.stages[0]?.op==='split_event'&&input.recipe.stages[0].boundary==='blank-line',
+   input.recipe.sourceFormat==='json'&&
+     input.recipe.stages[0]?.op==='split_event'&&input.recipe.stages[0].boundary==='blank-line',
    input.recipe.stages.find(s=>s.op==='dispatch_family')?.op==='dispatch_family'
      ?(input.recipe.stages.find(s=>s.op==='dispatch_family') as
-       Extract<typeof input.recipe.stages[number],{op:'dispatch_family'}>).families:[])) {
+       Extract<typeof input.recipe.stages[number],{op:'dispatch_family'}>).families:[],
+   input.recipe.sourceFormat==='java_stacktrace')) {
   throw new Error('The current backend does not advertise v0.2 compilation.');
  }
  const validation=await post('validate',input,requester);
