@@ -98,7 +98,7 @@ test('mixed families and unknown logs are not dropped or transmitted to validati
  await expect(page.getByLabel('Automatic event accounting')).toContainText('4/4 events analyzed locally');
  await page.getByRole('button',{name:'Review Detected Results'}).click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
- await expect(page.getByRole('alert')).toContainText('mixed, malformed, or unrecognized');
+ await expect(page.getByRole('alert')).toContainText('unsupported family combination, malformed, or unrecognized');
  await expect(page.getByRole('navigation',{name:'Auto Parser steps'})
    .getByRole('button',{name:/Test & Generate/})).toBeDisabled();
  expect(posts()).toBe(0);
