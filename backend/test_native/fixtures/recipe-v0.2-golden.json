@@ -188,6 +188,23 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_mixed",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"dst_port\":443,\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -235,6 +252,86 @@
       "id": "newline",
       "slug": "v02_syslog3164_kv",
       "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1\ndst_port=443 action=deny"
+    }
+  ],
+  "mixedCases": [
+    {
+      "id": "kv-allow",
+      "slug": "v02_mixed",
+      "raw": "src_ip=198.51.100.8 dst_port=53 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "dstport": 53,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "cef-deny",
+      "slug": "v02_mixed",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "cef_src": "192.0.2.11",
+        "cef_port": 443,
+        "cef_action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "leef-allow",
+      "slug": "v02_mixed",
+      "raw": "LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.5\tdstPort=80\tact=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "cef_src": "203.0.113.5",
+        "leef_port": 80,
+        "cef_action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedNegative": [
+    {
+      "id": "unknown",
+      "slug": "v02_mixed",
+      "raw": "PRIVATE_SYNTHETIC_RAW no format"
+    },
+    {
+      "id": "csv-unknown",
+      "slug": "v02_mixed",
+      "raw": "allow,192.0.2.10,443"
+    },
+    {
+      "id": "cef-version",
+      "slug": "v02_mixed",
+      "raw": "CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "kv-quote",
+      "slug": "v02_mixed",
+      "raw": "src_ip=192.0.2.10 dst_port=443 action=\"unterminated"
+    },
+    {
+      "id": "syslog-unallowed",
+      "slug": "v02_mixed",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.10 dst_port=443 action=deny"
     }
   ]
 }

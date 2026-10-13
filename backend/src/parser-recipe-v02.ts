@@ -9,7 +9,7 @@ import {canonicalJson,validateProject} from "./validate.js";
 import {compilePair} from "./compiler.js";
 import type {ParserProject,PairExport,ValidationIssue,ValidationResult,FieldType,LogIndex} from "./types.js";
 
-export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef";
+export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef"|"mixed";
 export type RecipeSource=RecipeBody|"syslog_rfc3164"|"syslog_rfc5424";
 type Group="top_fields"|"ns_fields"|"vendor_fields";
 type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group};
@@ -19,6 +19,7 @@ type ClassifyStage={op:"classify";defaultIndex:LogIndex;rules:Array<{
 export type RecipeStage=
  | {op:"split_event";boundary:"single-line"}
  | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
+ | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef")[];mode:"strict_prefix"}
  | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
  | MapStage | CastStage | ClassifyStage
@@ -49,7 +50,7 @@ const TYPES=new Set<FieldType>(["string","integer","ip","port","boolean","date"]
 const GROUPS=[["top_fields","topFields"],["ns_fields","nsFields"],
  ["vendor_fields","vendorFields"]] as const;
 const PARSERS=new Set(["parse_json","parse_kv","parse_csv","parse_cef","parse_leef"]);
-const BODY=new Set<RecipeBody>(["json","kv","csv","cef","leef"]);
+const BODY=new Set<RecipeBody>(["json","kv","csv","cef","leef","mixed"]);
 const rootKeys=["legacyProject","recipe"];
 const error=(code:string,path:string):ValidationIssue=>({
  code,path,message:"Reviewed recipe is unsupported or mismatched: "+code});
@@ -116,7 +117,10 @@ export function recipeFromLegacyProject(
  if(fmt.source==="syslog_rfc5424"||fmt.source==="syslog_rfc3164")
   stages.push({op:"unwrap_syslog",
     version:fmt.source==="syslog_rfc3164"?3164:1,mode:"strict_header"});
- if(fmt.body==="csv"){
+ if(fmt.body==="mixed"){
+  stages.push({op:"dispatch_family",
+    families:[...(project.extraction.mixedFormats??[])],mode:"strict_prefix"});
+ }else if(fmt.body==="csv"){
   stages.push({op:"parse_csv",columns:project.extraction.csvColumns??[],
    delimiter:project.extraction.csvDelimiter??","});
  }else stages.push({op:("parse_"+fmt.body) as
@@ -170,7 +174,13 @@ export function validateRecipePair(input:unknown):ValidationResult{
     return fail("ENVELOPE_UNSUPPORTED");
   }
   const parsed=stages[i++];
-  if(fmt.body==="csv"){
+  if(fmt.body==="mixed"){
+   if(!parsed||parsed.op!=="dispatch_family"||
+     !exact(parsed,["op","families","mode"])||
+     parsed.mode!=="strict_prefix"||
+     canonicalJson(parsed.families)!==canonicalJson(project.extraction.mixedFormats??[]))
+     return fail("MIXED_DISPATCH_MISMATCH");
+  }else if(fmt.body==="csv"){
    if(!parsed||parsed.op!=="parse_csv"||
       !exact(parsed,["op","columns","delimiter"])||
       canonicalJson(parsed.columns)!==canonicalJson(project.extraction.csvColumns??[])||

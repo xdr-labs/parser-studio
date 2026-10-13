@@ -81,7 +81,7 @@ export function compilePair(input: unknown): PairExport {
       warnings: [
         "An extensionless Ruby fragment is not a self-registered Fluentd plugin.",
         "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
-        "Supported bounded subset: JSON, KV, CSV, RFC3164/RFC5424 with explicit body, standalone CEF/LEEF; RFC3164 time lacks year/zone; mixed and non-JSON physical multiline remain unsupported.",
+        "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
         "No production deployment or live sensor installation has occurred.",
       ],
     },

@@ -44,7 +44,7 @@ end
 manifest = JSON.parse(regular_source(manifest_path, 16384))
 fixture = JSON.parse(regular_source(golden_path, 65536))
 allowed = %w[v02_json v02_kv v02_csv v02_cef v02_leef v02_syslog_cef v02_syslog_leef
-  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef]
+  v02_syslog3164_kv v02_syslog3164_cef v02_syslog3164_leef v02_mixed]
 filenames = allowed.flat_map { |slug| ["customized_#{slug}", "customized_#{slug}.conf"] }
 head, status = Open3.capture2('git', 'rev-parse', 'HEAD')
 assert(status.success? && manifest['backendHead'] == head.strip, 'exact HEAD mismatch')
@@ -110,7 +110,12 @@ end
 fixture['profiles'].each do |item|
   slug = item.fetch('slug')
   assert(item.fetch('raw').bytesize <= 16384, 'golden event over limit')
-  assert(Digest::SHA256.hexdigest(item['raw']) ==
+  digest_source = if slug == 'v02_mixed'
+    ([item['raw']] + fixture.fetch('mixedCases').map { |row| row.fetch('raw') }).join("\n")
+  else
+    item['raw']
+  end
+  assert(Digest::SHA256.hexdigest(digest_source) ==
     manifest.fetch('receipts').find { |r| r['slug'] == slug }.fetch('sampleSha256'),
     'fixed sample hash mismatch')
   output = []
@@ -129,6 +134,35 @@ fixture['profiles'].each do |item|
   assert(actual_time == item['expectedTime'], 'native event time mismatch')
   assert(record == item.fetch('expectedRecord'), 'native normalized fields mismatch')
 end
+# Explicit bounded mixed-family dataset; no record may silently disappear.
+assert(fixture['mixedCases'].is_a?(Array) && fixture['mixedCases'].length == 3,
+  'mixed corpus must have 3 additional independently authored events')
+fixture['mixedCases'].each do |item|
+  assert(item.keys.sort == %w[expectedRecord expectedTime id raw slug] &&
+    item['slug'] == 'v02_mixed' && item['raw'].bytesize <= 16384,
+    'untrusted mixed positive source')
+  output = []
+  drivers.fetch('v02_mixed').instance.parse(item['raw']) do |time, record|
+    output << [time, record]
+  end
+  assert(output.length == 1 && output[0][0].nil? &&
+    output[0][1] == item.fetch('expectedRecord'),
+    "Mixed native profile #{item['id']} lost or changed an expected record")
+end
+assert(fixture['mixedNegative'].is_a?(Array) && fixture['mixedNegative'].length == 5,
+  'mixed corpus needs fixed unknown, malformed and disallowed inputs')
+fixture['mixedNegative'].each do |item|
+  assert(item.keys.sort == %w[id raw slug] && item['slug'] == 'v02_mixed' &&
+    item['raw'].bytesize <= 16384, 'unreviewed mixed negative source')
+  output = []
+  drivers.fetch('v02_mixed').instance.parse(item['raw']) do |time, record|
+    output << [time, record]
+  end
+  assert(output.length == 1 && output[0][0].nil? &&
+    output[0][1] == {'stellar_log_index'=>'syslog',
+      'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
+    "Mixed #{item['id']}: unexpected source matched instead of failing closed")
+end
 assert(fixture['negative'].is_a?(Array) && fixture['negative'].length == 9,
   'missing reviewed RFC3164 failure corpus')
 fixture['negative'].each do |item|
@@ -144,4 +178,4 @@ fixture['negative'].each do |item|
       'parser_err_msg'=>'ArgumentError','parser_err_stage'=>'extraction'},
     "RFC3164 negative #{item['id']}: callback must fail closed with static extraction diagnostic")
 end
-puts "ParserRecipe v0.2 exact native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} negative cases PASS (public synthetic only)"
+puts "ParserRecipe v0.2 strict native Fluentd callback/CONF AST: #{allowed.length} profiles + #{fixture['negative'].length} RFC3164 negatives + #{fixture['mixedCases'].length} mixed variants + #{fixture['mixedNegative'].length} mixed negatives PASS (public synthetic only)"

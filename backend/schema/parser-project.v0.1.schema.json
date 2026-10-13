@@ -124,7 +124,8 @@
             "syslog_rfc3164",
             "syslog_rfc5424",
             "cef",
-            "leef"
+            "leef",
+            "mixed"
           ]
         },
         "maxDepth": {
@@ -157,6 +158,20 @@
             "cef",
             "leef"
           ]
+        },
+        "mixedFormats": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "json",
+              "kv",
+              "cef",
+              "leef"
+            ]
+          }
         }
       }
     },

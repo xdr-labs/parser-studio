@@ -25,6 +25,8 @@ const KNOWN_TEMPLATES=new Set([
   "50273e4385909eaf41c52057477e739de3e38ea36377b346fed7ce0471cda923",
   // Reviewed RFC3164 + strict quote-safe KV parsing; exact hash, no dynamic trust.
   "6f7c53255f431b7f51ab09cb66a32750b43cd9d881335d1e3d4251b563058676",
+  // Reviewed strict mixed family dispatcher, exact template bytes only.
+  "032a6b92c962cc0e9ad70f9c91e545b967d299c83036170eb3ac63950001db02",
 ]);
 
 export const LEGACY_POC_CAPABILITIES=Object.freeze({

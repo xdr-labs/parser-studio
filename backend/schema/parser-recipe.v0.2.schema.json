@@ -38,7 +38,8 @@
         "cef",
         "leef",
         "syslog_rfc3164",
-        "syslog_rfc5424"
+        "syslog_rfc5424",
+        "mixed"
       ]
     },
     "bodyFormat": {
@@ -47,7 +48,8 @@
         "kv",
         "csv",
         "cef",
-        "leef"
+        "leef",
+        "mixed"
       ]
     },
     "sample": {
@@ -111,6 +113,37 @@
               },
               "mode": {
                 "const": "strict_header"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "families",
+              "mode"
+            ],
+            "properties": {
+              "op": {
+                "const": "dispatch_family"
+              },
+              "families": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 4,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "json",
+                    "kv",
+                    "cef",
+                    "leef"
+                  ]
+                }
+              },
+              "mode": {
+                "const": "strict_prefix"
               }
             }
           },

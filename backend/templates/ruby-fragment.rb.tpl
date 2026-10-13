@@ -69,6 +69,8 @@ def parserstudio_extract(text)
     parserstudio_key_values(text)
   when 'csv'
     parserstudio_csv(text, settings)
+  when 'mixed'
+    parserstudio_mixed(text,settings)
   when 'syslog_rfc3164'
     parserstudio_syslog_rfc3164(text, settings)
   when 'syslog_rfc5424'
@@ -307,6 +309,38 @@ def parserstudio_syslog_rfc3164(text, settings)
     raise ArgumentError, 'Unsupported RFC3164 message body format'
   end
   record
+end
+
+# Explicit one-line, four-family router. Dispatch uses only fixed signatures.
+# Unknown and malformed inputs fail closed with static codes, NEVER fall
+# through to a permissive KV/Ruby/regex fallback.
+def parserstudio_mixed(text, settings)
+  allowlist = settings['mixedFormats']
+  raise ArgumentError, 'Mixed family allowlist required' unless allowlist.is_a?(Array)
+  family =
+    if text.start_with?('{')
+      'json'
+    elsif text.start_with?('CEF:')
+      'cef'
+    elsif text.start_with?('LEEF:')
+      'leef'
+    elsif text.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
+      'kv'
+    end
+  raise ArgumentError, 'Unknown or disallowed mixed event family' unless
+    family && allowlist.include?(family)
+  case family
+  when 'json'
+    parserstudio_json_object(text)
+  when 'kv'
+    parserstudio_key_values(text)
+  when 'cef'
+    parserstudio_cef(text)
+  when 'leef'
+    parserstudio_leef(text)
+  else
+    raise ArgumentError, 'Unsupported mixed family'
+  end
 end
 
 def parserstudio_split_escaped(text, delimiter, maximum_splits)

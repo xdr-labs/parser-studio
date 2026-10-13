@@ -92,6 +92,19 @@ export function validateProject(input: unknown): ValidationResult {
       }
     }
   }
+  const allowedMix=new Set(["json","kv","cef","leef"]);
+  if(extraction.format==="mixed"){
+    if(!Array.isArray(extraction.mixedFormats)||
+       extraction.mixedFormats.length<2||extraction.mixedFormats.length>4||
+       new Set(extraction.mixedFormats).size!==extraction.mixedFormats.length||
+       !extraction.mixedFormats.every(format=>allowedMix.has(format)))
+      issue(issues,"mixed_family_allowlist","/extraction/mixedFormats",
+        "Choose two to four distinct reviewed mixed families, never arbitrary syntax.");
+  }else if(extraction.mixedFormats!==undefined){
+    issue(issues,"format_options","/extraction/mixedFormats",
+      "A family allowlist is valid only in strict mixed extraction.");
+  }
+
   if (p.unsupportedOpaqueBlocks?.length) {
     issue(issues, "opaque_unsupported", "/unsupportedOpaqueBlocks", "Opaque imported Ruby cannot be safely compiled from the no-code model.");
   }

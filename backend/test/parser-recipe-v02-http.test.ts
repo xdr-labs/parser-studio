@@ -32,7 +32,9 @@ test('P0-AP3 GET versioned schema/capabilities and POST strict compile over loca
   assert.equal(capability.targetImportVerified,false);
   assert.ok(capability.supportedEnvelopeParsers.includes('rfc3164_strict_no_year_or_zone'));
   assert.ok(capability.unsupported.includes('rfc3164_timestamp_inference'));
-  assert.ok(capability.unsupported.includes('mixed_event_families'));
+  assert.ok(capability.unsupported.includes('mixed_syslog_envelopes'));
+  assert.deepEqual(capability.strictMixedSingleLineFamilies,['json','kv','cef','leef']);
+  assert.ok(capability.supportedOperators.includes('dispatch_family'));
   const req=project();
   const valid=await post(base,'validate',req);
   assert.equal(valid.status,200);

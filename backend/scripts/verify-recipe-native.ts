@@ -18,7 +18,7 @@ const MANIFEST=resolve('.tmp/recipe-v02-native-manifest.json');
 const FIXTURE=resolve('test_native/fixtures/recipe-v0.2-golden.json');
 const PROFILE_NAMES=['v02_json','v02_kv','v02_csv','v02_cef','v02_leef',
  'v02_syslog_cef','v02_syslog_leef',
- 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef'];
+ 'v02_syslog3164_kv','v02_syslog3164_cef','v02_syslog3164_leef','v02_mixed'];
 const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
 function directory(path:string){
  const st=lstatSync(path,{throwIfNoEntry:false});
@@ -39,11 +39,20 @@ type Profile={slug:string;format:ParserProject['extraction']['format'];
  bodyFormat?:'kv'|'cef'|'leef';raw:string;expectedTime:string|null;
  expectedRecord:Record<string,unknown>};
 const samples=JSON.parse(readFileSync(FIXTURE,'utf8')) as
- {kind:string;origin:string;profiles:Profile[];negative:Array<{id:string;slug:string;raw:string}>};
+ {kind:string;origin:string;profiles:Profile[];
+  negative:Array<{id:string;slug:string;raw:string}>;
+  mixedCases:Array<{id:string;slug:string;raw:string}>;
+  mixedNegative:Array<{id:string;slug:string;raw:string}>};
 if(samples.kind!=='parser-studio.recipe-v0.2-native-golden.v0.1'||
  samples.origin!=='independently-authored-public-synthetic'||
- !Array.isArray(samples.profiles)||samples.profiles.length!==10||
+ !Array.isArray(samples.profiles)||samples.profiles.length!==11||
  !Array.isArray(samples.negative)||samples.negative.length!==9||
+ !Array.isArray(samples.mixedCases)||samples.mixedCases.length!==3||
+ samples.mixedCases.some(e=>e.slug!=='v02_mixed'||typeof e.raw!=='string'||
+   e.raw.length>16384||!/^[a-z-]+$/.test(e.id))||
+ !Array.isArray(samples.mixedNegative)||samples.mixedNegative.length!==5||
+ samples.mixedNegative.some(e=>e.slug!=='v02_mixed'||typeof e.raw!=='string'||
+   e.raw.length>16384||!/^[a-z-]+$/.test(e.id))||
  samples.negative.some(e=>typeof e.raw!=="string"||
    e.raw.length>16384||!PROFILE_NAMES.includes(e.slug)||
    !/^[a-z_]+$/.test(e.id))||
@@ -64,9 +73,25 @@ function buildProject(entry:Profile):ParserProject{
  p.classification.rules=[{field:'action',operator:'equals',value:'deny',index:'threat'}];
  p.extraction={format:entry.format,
   ...(entry.format==='csv'?{csvColumns:['src_ip','dst_port','action'],csvDelimiter:',' as const}:{}),
+  ...(entry.format==='mixed'?{mixedFormats:['json','kv','cef','leef'] as const}:{}),
   ...(['syslog_rfc5424','syslog_rfc3164'].includes(entry.format)?
     {syslogBodyFormat:entry.bodyFormat}:{})};
- if(entry.format!=='json'){
+ if(entry.format==='mixed'){
+  p.normalization.topFields=Object.fromEntries([
+   field('src_ip','srcip','ip'),field('dst_port','dstport','port'),
+   field('action','action','string'),field('src','cef_src','ip'),
+   field('dpt','cef_port','port'),field('act','cef_action','string'),
+   field('dstPort','leef_port','port'),
+  ]) as FieldMap;
+  p.normalization.nsFields={};
+  p.normalization.vendorFields={};
+  p.classification.rules=[
+   {field:'action',operator:'equals',value:'deny',index:'threat'},
+   {field:'action',operator:'equals',value:'allow',index:'session'},
+   {field:'cef_action',operator:'equals',value:'deny',index:'threat'},
+   {field:'cef_action',operator:'equals',value:'allow',index:'session'},
+  ];
+ }else if(entry.format!=='json'){
   let source='src_ip',port='dst_port',action='action';
   if(entry.format==='cef'||entry.format==='leef'){
    source='src';port=entry.format==='cef'?'dpt':'dstPort';action='act';
@@ -95,8 +120,10 @@ for(const entry of samples.profiles){
  if(typeof entry.raw!=='string'||Buffer.byteLength(entry.raw)>16384)
   throw new Error('Source fixture exceeds bound');
  const p=buildProject(entry);
- const digest=sha(entry.raw);
- const recipe=recipeFromLegacyProject(p,digest,1);
+ const sampleRows=[entry.raw,...(entry.format==='mixed'?
+   samples.mixedCases.map(x=>x.raw):[])];
+ const digest=sha(sampleRows.join('\n'));
+ const recipe=recipeFromLegacyProject(p,digest,sampleRows.length);
  const compiled=compileRecipePair({recipe,legacyProject:p});
  const baseline=compilePair(p);
  if(canonicalJson(compiled.files)!==canonicalJson(baseline.files)||

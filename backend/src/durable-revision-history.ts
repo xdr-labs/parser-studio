@@ -56,10 +56,17 @@ const PREVIOUS_REVIEWED_WARNINGS=[
   "Supported bounded subset: JSON, KV, CSV, RFC5424, standalone CEF/LEEF; non-JSON physical multiline is unsupported, with typed mapping, limited routing and UDP/TCP.",
   "No production deployment or live sensor installation has occurred.",
 ];
-const REVIEWED_WARNINGS=[
+// Historical static compiler-warning profiles remain safe to read verbatim.
+const RFC3164_REVIEWED_WARNINGS=[
   "An extensionless Ruby fragment is not a self-registered Fluentd plugin.",
   "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
   "Supported bounded subset: JSON, KV, CSV, RFC3164/RFC5424 with explicit body, standalone CEF/LEEF; RFC3164 time lacks year/zone; mixed and non-JSON physical multiline remain unsupported.",
+  "No production deployment or live sensor installation has occurred.",
+];
+const REVIEWED_WARNINGS=[
+  "An extensionless Ruby fragment is not a self-registered Fluentd plugin.",
+  "Native Fluentd/Ruby engine tests and Stellar Cyber target import are NOT verified.",
+  "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
   "No production deployment or live sensor installation has occurred.",
 ];
 const auditKeys=["actorId","tenant","phase","status","artifactRevisionId","at"];
@@ -74,7 +81,7 @@ function safePair(value:unknown):value is PairExport{
      !exact(value.manifest,["status","contract","projectId","projectRevision",
        "fileHashes","schemaRevision","engineVerified","targetImportVerified","warnings"])||
      !Array.isArray(value.manifest.warnings)||
-     ![REVIEWED_WARNINGS,PREVIOUS_REVIEWED_WARNINGS].some(known=>
+     ![REVIEWED_WARNINGS,RFC3164_REVIEWED_WARNINGS,PREVIOUS_REVIEWED_WARNINGS].some(known=>
        JSON.stringify((value.manifest as {warnings:unknown}).warnings)===JSON.stringify(known)))
     return false;
   return true;

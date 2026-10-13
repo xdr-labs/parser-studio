@@ -101,7 +101,7 @@ test("capabilities API must truthfully advertise only supported and verified bac
    const info=await response.json() as any;
    assert.equal(info.contract,"host-customized-pair.v0.1");
    assert.deepEqual(info.authoring.receiverProtocols,["udp","tcp"]);
-   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc3164","syslog_rfc5424","cef","leef"]);
+   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc3164","syslog_rfc5424","cef","leef","mixed"]);
    assert.equal(info.authoring.httpReceiver,false);
    assert.equal(info.authoring.multipleDistinctReceiverPorts,false);
    assert.equal(info.authoring.formatCoverage,"reviewed-bounded-subset");
@@ -110,6 +110,8 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.deepEqual(info.authoring.rfc5424BodyFormats,["raw","json","kv","cef","leef"]);
    assert.equal(info.authoring.leefHexSeparatorSubset,true);
    assert.equal(info.authoring.multiline,false);
+   assert.deepEqual(info.authoring.strictMixedSingleLineFamilies,['json','kv','cef','leef']);
+   assert.equal(info.authoring.strictMixedRequiresExplicitAllowlist,true);
    assert.equal(info.authoring.rfc3164StrictTaggedMessageSubset,true);
    assert.equal(info.authoring.rfc3164TimePolicy,"YEAR_AND_ZONE_UNKNOWN");
    assert.equal(info.authoring.rfc3164NativeTimeReconstruction,false);
