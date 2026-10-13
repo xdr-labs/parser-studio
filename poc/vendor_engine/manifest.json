@@ -1,0 +1,94 @@
+{
+  "contract": "parser-studio.poc.vendor-corpus.v0.1",
+  "license_notice": "Public Elastic/Beats x-pack test sources are for local research read-only use. NOT copied into the repository, NOT redistribution-approved. Inspect per-file rights before reuse.",
+  "fixtures": [
+    {
+      "id": "fortinet_traffic",
+      "upstream_repository": "elastic/beats",
+      "upstream_commit": "f2e95a6718c92f4bc2475a4a7e4d7975042f4db8",
+      "raw_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/fortinet/firewall/test/traffic.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/fortinet/firewall/test/traffic.log-expected.json",
+      "raw_sha256": "dbcfa9f0d25bee660fd7a494e34899c4e02da93e8e6a7f19cca8eb56b9458b63",
+      "gold_sha256": "19f7fe75501108d2af676c2e9347689f2e52e0fa6b076c455bef48c5d1ea0b84",
+      "expected_raw_lines": 13,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "fortinet_event",
+      "upstream_repository": "elastic/beats",
+      "upstream_commit": "f2e95a6718c92f4bc2475a4a7e4d7975042f4db8",
+      "raw_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/fortinet/firewall/test/event.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/fortinet/firewall/test/event.log-expected.json",
+      "raw_sha256": "d1e7336b5dbfc92801abc29ae0ec44b00fb4fdbd90f7de012f30031f246a5a80",
+      "gold_sha256": "adc622934fab074a40632bcbd2e3213d84a7a1ac5b5668be2d55a5a9011243ef",
+      "expected_raw_lines": 28,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "fortinet_utm",
+      "upstream_repository": "elastic/beats",
+      "upstream_commit": "f2e95a6718c92f4bc2475a4a7e4d7975042f4db8",
+      "raw_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/fortinet/firewall/test/utm.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/fortinet/firewall/test/utm.log-expected.json",
+      "raw_sha256": "a550487ebc553cb1270a287ce8fdea232cd7de6dcc79e0451216058598095632",
+      "gold_sha256": "61bba4c3681c53e5017737901f6f0843279a4a4bfe123fce89ef09dc7dcd32c9",
+      "expected_raw_lines": 28,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "palo_traffic",
+      "upstream_repository": "elastic/beats",
+      "upstream_commit": "f2e95a6718c92f4bc2475a4a7e4d7975042f4db8",
+      "raw_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/panw/panos/test/traffic.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/panw/panos/test/traffic.log-expected.json",
+      "raw_sha256": "409e0406a48ed70ef486d9f9afa7863bbefb23a4b9710d7df7fb578f852b47bd",
+      "gold_sha256": "5a1a76177cb87c52d8f4ecb3a7d987ddd634b1729f088c0b06b9c1965aa61259",
+      "expected_raw_lines": 100,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "palo_threat",
+      "upstream_repository": "elastic/beats",
+      "upstream_commit": "f2e95a6718c92f4bc2475a4a7e4d7975042f4db8",
+      "raw_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/panw/panos/test/threat.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/beats/f2e95a6718c92f4bc2475a4a7e4d7975042f4db8/x-pack/filebeat/module/panw/panos/test/threat.log-expected.json",
+      "raw_sha256": "bd887e7dc52ae644f43d83947cacc570d46a912d5fd66bf212d586d363933396",
+      "gold_sha256": "09aa9751941439cd4d73f34b50a0cf7c1ee76e1706db8f403db60906713b41f2",
+      "expected_raw_lines": 76,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "trellix_edr",
+      "upstream_repository": "elastic/integrations",
+      "upstream_commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "raw_url": "https://raw.githubusercontent.com/elastic/integrations/99b5848f5863e395dc61f2ce227efd3969af826b/packages/trellix_edr_cloud/data_stream/event/_dev/test/pipeline/test-event.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/integrations/99b5848f5863e395dc61f2ce227efd3969af826b/packages/trellix_edr_cloud/data_stream/event/_dev/test/pipeline/test-event.log-expected.json",
+      "raw_sha256": "f02556977dff694ecd9aabcd82f1fb61612d36d0e4970f3739f80c4c81eca731",
+      "gold_sha256": "d0fa5af153baa697bb078fb1cf307e30ab6316bd10904a3d4faafc004796e38f",
+      "expected_raw_lines": 1,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "trellix_epo",
+      "upstream_repository": "elastic/integrations",
+      "upstream_commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "raw_url": "https://raw.githubusercontent.com/elastic/integrations/99b5848f5863e395dc61f2ce227efd3969af826b/packages/trellix_epo_cloud/data_stream/event/_dev/test/pipeline/test-pipeline-event.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/integrations/99b5848f5863e395dc61f2ce227efd3969af826b/packages/trellix_epo_cloud/data_stream/event/_dev/test/pipeline/test-pipeline-event.log-expected.json",
+      "raw_sha256": "cec3bfde03aeb58f8399b79733d590be1eca10da8680488753b9f543a0c199ec",
+      "gold_sha256": "695f63333a62a774149c20fd7cb041450538f0e19f114ffd8af4f8e2a3e99c8e",
+      "expected_raw_lines": 3,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    },
+    {
+      "id": "trend_vision",
+      "upstream_repository": "elastic/integrations",
+      "upstream_commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "raw_url": "https://raw.githubusercontent.com/elastic/integrations/99b5848f5863e395dc61f2ce227efd3969af826b/packages/trend_micro_vision_one/data_stream/detection/_dev/test/pipeline/test-pipeline-detection.log",
+      "expected_url": "https://raw.githubusercontent.com/elastic/integrations/99b5848f5863e395dc61f2ce227efd3969af826b/packages/trend_micro_vision_one/data_stream/detection/_dev/test/pipeline/test-pipeline-detection.log-expected.json",
+      "raw_sha256": "3680aa765e169404d639c854b8dcdeca556b4977daeb04d323e806e118c3831c",
+      "gold_sha256": "0e903af9700e36bd4d663dd52e65f4434c51cdc53243db6327738131f794d1c1",
+      "expected_raw_lines": 7,
+      "licenses": "REVIEW_ONLY_ELASTIC_LICENSE_OR_SUBTREE_OVERRIDE"
+    }
+  ]
+}
