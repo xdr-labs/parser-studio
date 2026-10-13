@@ -55,7 +55,7 @@ test('mixed RFC3164 never invents year or timezone and enforces same sensor CONF
   x=>{x.extraction.mixedFormats=['json','rfc3164_cef'];},
   x=>{x.extraction.mixedFormats=['json','rfc3164_json'];},
   x=>{x.extraction.mixedFormats=['json','rfc3164_kv','rfc3164_kv'];},
-  x=>{x.extraction.mixedFormats=['json','rfc3164_kv','rfc5424_kv'];},
+  x=>{x.extraction.mixedFormats=['json','rfc3164_kv','rfc5424_auto'];},
   x=>{x.extraction.mixedFormats=['json','rfc3164_kv','csv'];},
  ];
  for(const change of unsafe){

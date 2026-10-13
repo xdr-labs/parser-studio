@@ -19,6 +19,8 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Strict reviewed RFC5424 JSON/KV mixed decoder; Native synthetic-only SHA.
+  "d77bdde4fe8c2a1bba4fc149f58ab5b2514f60047251c5389d074fc43ae6fc79",
   // RFC3164 TAG: KV allowlisted mixed grammar native-qualified public-synthetic only.
   "5fa3104a85a040bfe25e07170f835b3e335c9e99922624e9228b1844ded3f4a6",
   // Reviewed RFC5424-CEF/LEEF strict mixed dispatch template (native-qualified synthetic only).

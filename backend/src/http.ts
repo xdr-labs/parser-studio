@@ -274,7 +274,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           jsonBlankLineTcpFraming:true,
           jsonBlankLineOtherTransports:false,
           jsonBlankLineDelimiter:"LF_LF",
-          strictMixedSingleLineFamilies:["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv"],
+          strictMixedSingleLineFamilies:["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv"],
           supportedEnvelopeParsers:["none","rfc3164_strict_no_year_or_zone","rfc5424_v1_strict"],
           supportedOperators:["split_event","unwrap_syslog","dispatch_family","parse_json","parse_kv",
             "parse_csv","parse_cef","parse_leef","map_field","cast_type",

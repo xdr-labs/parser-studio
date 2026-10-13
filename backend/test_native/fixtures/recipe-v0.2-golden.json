@@ -260,6 +260,22 @@
           "class": "sample_firewall"
         }
       }
+    },
+    {
+      "slug": "v02_mixed_rfc5424_bodies",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
     }
   ],
   "negative": [
@@ -608,6 +624,105 @@
       "id": "physical-multiline",
       "slug": "v02_mixed_rfc3164",
       "raw": "src_ip=198.51.100.3 action=allow\nsrc_ip=198.51.100.4 action=deny"
+    }
+  ],
+  "mixedRfc5424BodyCases": [
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "src_ip=198.51.100.8 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc5424-json-deny",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\"}",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "wrapped_srcip": "192.0.2.19",
+        "wrapped_action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc5424-kv-allow",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=203.0.113.4 action=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "wrapped_srcip": "203.0.113.4",
+        "wrapped_action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedRfc5424BodyNegative": [
+    {
+      "id": "wrong-version",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>2 2026-10-12T01:02:03Z edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\"}"
+    },
+    {
+      "id": "no-timezone",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03 edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\"}"
+    },
+    {
+      "id": "invalid-json-object",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\""
+    },
+    {
+      "id": "malformed-kv",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=\"203.0.113.4 action=allow"
+    },
+    {
+      "id": "unallowlisted-cef",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.19 act=deny"
+    },
+    {
+      "id": "unallowlisted-leef",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:1.0|Synthetic|FW|1|501|src=192.0.2.19\tact=deny"
+    },
+    {
+      "id": "invalid-header-priority",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<999>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=203.0.113.4 action=allow"
+    },
+    {
+      "id": "unsupported-csv",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "192.0.2.19,deny,80"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "{\"src_ip\":\"192.0.2.19\"}\n{\"src_ip\":\"192.0.2.20\"}"
     }
   ]
 }

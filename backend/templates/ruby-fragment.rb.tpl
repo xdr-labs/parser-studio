@@ -352,11 +352,21 @@ def parserstudio_mixed(text, settings)
       'rfc5424_cef'
     elsif message && message.start_with?('LEEF:')
       'rfc5424_leef'
+    elsif message && message.start_with?('{')
+      'rfc5424_json'
+    elsif message && message.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
+      'rfc5424_kv'
     end
     raise ArgumentError, 'Unsupported or disallowed wrapped Syslog family' unless
       branch && allowlist.include?(branch)
-    syslog['body'] = branch == 'rfc5424_cef' ?
-      parserstudio_cef(message) : parserstudio_leef(message)
+    syslog['body'] =
+      case branch
+      when 'rfc5424_cef' then parserstudio_cef(message)
+      when 'rfc5424_leef' then parserstudio_leef(message)
+      when 'rfc5424_json' then parserstudio_json_object(message)
+      when 'rfc5424_kv' then parserstudio_key_values(message)
+      else raise ArgumentError, 'Unsupported Syslog body family'
+      end
     return syslog
   end
   raise ArgumentError, 'Unknown or disallowed mixed event family' unless
