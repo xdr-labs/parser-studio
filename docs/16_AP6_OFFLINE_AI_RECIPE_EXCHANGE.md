@@ -18,3 +18,14 @@ An integrated LLM provider, token/cost controls, default redaction/consent previ
 ## Tests
 
 `aiRecipeExchange.test.ts` validates strict source identity, private value exclusion, fixed success gates and rejection of unknown operators, extra keys, forged verification and oversized inputs. No E2E acceptance is claimed by these unit tests.
+
+
+## Optional integrated provider interface (P1-AP6)
+
+Manual Copy AI Prompt / Paste AI Recipe remains the default and is never disabled. A separate integrated provider path now exists as an optional, **server-authorized metadata-only candidate generator**, not a customer log upload or arbitrary provider proxy. It requires a privacy-safe prompt for a currently backend-compatible draft and begins with a data-free capability GET. Only after a successful strict response does the UI expose two separately unchecked approvals: metadata-only external provider transfer and the server-advertised output-token reservation (32–1024 tokens). Browser source/draft edits invalidate approvals.
+
+On explicit action the UI recomputes the current browser source SHA-256 and event-family/count census. It posts ONLY enumerated project ID, SHA-256, count, format/census and both approvals to the same-origin private backend. Raw event bytes, IP addresses, usernames, field values, customer API keys, custom prompts and dynamic provider URLs never enter the request. The server rebuilds a fixed prompt and requires a trusted provider adapter, durable/atomic per-actor budget reservation and metadata-only BEFORE/AFTER audit. No provider is installed, configured or contacted in normal backend startup; both endpoints are disabled by default. Token count is a cap/reservation, **not a price quote**.
+
+A provider candidate must pass the v0.2 REVIEW_ONLY schema, source digest/count/project identity, allowed format, capped token usage and native/target false flags before the UI displays it. A separate button copies the candidate into the local paste field; the user must separately validate, compare full sample and independent holdout, and approve at most one safe mapping as before. There is no auto-install, arbitrary Ruby/Regex execution, actual DP Apply or sensor delivery. Source-independent provider claims are never accepted as native/target verification.
+
+Backend exact-head implementation: f865f724703aaa309a81e2cb7c0e35e41cf7d8c8, backend/docs/ai-review-gateway.md. UI client: src/guided/aiIntegratedClient.ts. Tests: src/guided/aiIntegratedClient.test.ts and tests/ai-integrated-review.spec.ts. Real provider activation, tenant access and cumulative cross-restart billing require separate operator approval/provisioning. This synthetic integration does not claim any real provider call or human usability benefit.

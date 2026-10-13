@@ -21,6 +21,8 @@ import {splitEvents,MAX_EVENTS} from '../parser';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
   proposeV01FieldMappingFromAI,type AIPromptResult,type AIImportResult} from './aiRecipeExchange';
+import {probeAIReviewAvailability,requestAIReviewedCandidate,
+  type AIProviderAvailability,type AIReviewedCandidate} from './aiIntegratedClient';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 import {prepareBoundedPathCandidate} from './boundedPathReview';
@@ -87,6 +89,12 @@ export default function AutoParser({
  const [drainNotice,setDrainNotice]=useState('');
  const [logicalReview,setLogicalReview]=useState<{key:string;value:LogicalBoundaryReport}|null>(null);
  const [aiPrompt,setAIPrompt]=useState<{key:string;value:AIPromptResult}|null>(null);
+ const [aiProvider,setAIProvider]=useState<AIProviderAvailability|
+   {status:'UNCHECKED'|'ERROR'}>({status:'UNCHECKED'});
+ const [aiExternalConsent,setAIExternalConsent]=useState(false);
+ const [aiBudgetConsent,setAIBudgetConsent]=useState(false);
+ const [aiReviewed,setAIReviewed]=useState<{key:string;value:AIReviewedCandidate}|null>(null);
+ const [aiProviderNotice,setAIProviderNotice]=useState('');
  const [aiText,setAIText]=useState('');
  const [boundedPath,setBoundedPath]=useState('');
  const [aiImport,setAIImport]=useState<{key:string;value:AIImportResult}|null>(null);
@@ -113,6 +121,8 @@ export default function AutoParser({
    setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
    setAIPrompt(null);setAIText('');setAIImport(null);setAICopyNotice('');
+   setAIProvider({status:'UNCHECKED'});setAIExternalConsent(false);
+   setAIBudgetConsent(false);setAIReviewed(null);setAIProviderNotice('');
    setBoundedPath('');
    setSaveAfterApproval(false);
    setBusy(false);setMessage('');
@@ -131,6 +141,7 @@ export default function AutoParser({
    drainResult.holdout===drainHoldout?drainResult.value:null;
  const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
  const currentAIPrompt=aiPrompt?.key===identity?aiPrompt.value:null;
+ const currentAIReviewed=aiReviewed?.key===identity?aiReviewed.value:null;
  const currentAIImport=aiImport?.key===identity?aiImport.value:null;
  const repairKey=JSON.stringify([identity,holdout]);
  const currentRepair=repair?.key===repairKey?repair:null;
@@ -372,6 +383,37 @@ export default function AutoParser({
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setAIPrompt({key:expected,value:{ok:false,reason:'UNTRUSTED_PREVIEW'}});
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function probeIntegratedAI(){
+   if(!currentAIPrompt?.ok||!currentAIPrompt.currentProjectImportReady||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setAIProviderNotice('');setAIReviewed(null);
+   setAIExternalConsent(false);setAIBudgetConsent(false);
+   try{
+     const result=await probeAIReviewAvailability();
+     if(token===epoch.current&&currentRef.current===expected)setAIProvider(result);
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected){
+       setAIProvider({status:'ERROR'});
+       setAIProviderNotice('Private AI review availability could not be verified.');
+     }
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function proposeIntegratedAI(){
+   if(aiProvider.status!=='AVAILABLE'||!currentAIPrompt?.ok||
+      !currentAIPrompt.currentProjectImportReady||
+      !aiExternalConsent||!aiBudgetConsent||busy||pending||!suite)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setAIReviewed(null);setAIProviderNotice('');
+   try{
+     const result=await requestAIReviewedCandidate(sample,draft,suite,
+       aiProvider.capability,aiExternalConsent,aiBudgetConsent);
+     if(token===epoch.current&&currentRef.current===expected)
+       setAIReviewed({key:expected,value:result});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setAIProviderNotice('External AI review was denied, unavailable, or failed strict candidate checks. No draft rules changed.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function copyAIPrompt(){
@@ -884,6 +926,72 @@ export default function AutoParser({
            {aiCopyNotice&&<span>{aiCopyNotice}</span>}
          </div>
          : <p role="status">Prompt unavailable: {currentAIPrompt.reason}</p>)}
+       <details className="auto-parser-recipe" aria-label="Optional integrated AI review">
+         <summary>Optional · Integrated AI (metadata only, explicit opt-in)</summary>
+         <p>This separate optional path requests a conservative REVIEW_ONLY candidate
+           from an administrator-configured external provider. It sends only an exact
+           count, allowed format-family counts, draft identifier and SHA-256 digest.
+           No raw sample events, usernames, addresses or field values are transferred.
+           Output-token reservations are not a dollar-cost estimate. The provider,
+           tenant authorization, durable budget and audit must be configured on the
+           private backend; this feature is disabled by default.</p>
+         <button type="button" disabled={!currentAIPrompt?.ok||
+           !currentAIPrompt.currentProjectImportReady||busy||pending}
+           onClick={()=>{void probeIntegratedAI();}}>
+           Check Configured AI Availability (No Source Transfer)
+         </button>
+         {(!currentAIPrompt?.ok||!currentAIPrompt.currentProjectImportReady)&&
+           <p role="status">First prepare a privacy-safe prompt for a
+             backend-compatible draft. Unknown formats still require manual review.</p>}
+         {aiProvider.status==='DISABLED'&&<p role="status">
+           Integrated AI is disabled or not authorized. Manual Copy AI Prompt
+           and Paste AI Recipe remain available without automatic transfer.
+         </p>}
+         {aiProvider.status==='ERROR'&&<p role="status">
+           AI capability was not verified. No provider request can be sent.
+         </p>}
+         {aiProvider.status==='AVAILABLE'&&<>
+           <p>Configured provider: {aiProvider.capability.providerId}
+             {' · '}Model: {aiProvider.capability.modelId}
+             {' · '}Maximum output token reservation:
+             {' '}{aiProvider.capability.maxOutputTokens} (not a price quote)</p>
+           <label className="auto-parser-persist-label">
+             <input type="checkbox" checked={aiExternalConsent}
+               onChange={e=>{
+                 setAIExternalConsent(e.target.checked);setAIReviewed(null);
+               }}/>
+             I explicitly approve transferring ONLY source digest, project identifier,
+             event counts and format-family metadata to the configured external
+             provider. No raw logs or values.
+           </label>
+           <label className="auto-parser-persist-label">
+             <input type="checkbox" checked={aiBudgetConsent}
+               onChange={e=>{setAIBudgetConsent(e.target.checked);setAIReviewed(null);}}/>
+             I separately accept reserving up to
+             {' '}{aiProvider.capability.maxOutputTokens} output tokens against the
+             server-managed quota. Actual provider cost may differ.
+           </label>
+           <button type="button" disabled={!aiExternalConsent||!aiBudgetConsent||
+             busy||pending||!suite} onClick={()=>{void proposeIntegratedAI();}}>
+             Request Metadata-Only Reviewed AI Candidate
+           </button>
+         </>}
+         {aiProviderNotice&&<p role="status">{aiProviderNotice}</p>}
+         {currentAIReviewed&&<div role="status" aria-label="Reviewed integrated AI candidate">
+           <strong>External metadata-only proposal · REVIEW_ONLY</strong>
+           <span>Provider {currentAIReviewed.providerId}
+             {' · '}Output tokens {currentAIReviewed.usage.outputTokens}/
+             {currentAIReviewed.usage.reservedOutputTokens} reserved</span>
+           <span>Native parser and Stellar target NOT VERIFIED. Nothing was
+             applied to your parser. Inspect and import using the existing
+             local schema/holdout review steps below.</span>
+           <button type="button" onClick={()=>{
+             setAIText(JSON.stringify(currentAIReviewed.recipe,null,2));
+             setAIImport(null);
+             setAIProviderNotice('The candidate is copied into the local Paste AI Recipe field. Run independent validation and holdout review; nothing is applied.');
+           }}>Copy Candidate into Local Recipe Review</button>
+         </div>}
+       </details>
        <label>Optional simple JSONata-compatible property path only (no functions or expressions)
          <input type="text" aria-label="Safe JSONata-style field path" maxLength={128}
            value={boundedPath} placeholder="$.event.user" onChange={e=>setBoundedPath(e.target.value)}/>
