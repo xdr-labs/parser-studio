@@ -3,7 +3,7 @@ import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
 import {importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01FieldMappingFromAI,
  proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
-import {compareCandidate} from './autoParserRegression';
+import {compareCandidate,compareMappingCorrectionCandidate} from './autoParserRegression';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
 import {defaultGuidedOptions} from './contract';
@@ -23,7 +23,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [importBusy,setImportBusy]=useState(false);
  const [holdout,setHoldout]=useState('');
  const [holdoutAttested,setHoldoutAttested]=useState(false);
- const [approvedCandidate,setApprovedCandidate]=useState<{draft:ParserDraft;mode:'mapping'|'correction'|'recovery'}|null>(null);
+ const [approvedCandidate,setApprovedCandidate]=useState<{draft:ParserDraft;mode:'mapping'|'correction'|'recovery';scope?:{oldTarget:string;newTarget:string}}|null>(null);
  const [approval,setApproval]=useState(false);
  const [validatedEvidence,setValidatedEvidence]=useState('');
  const evidenceFingerprint=()=>JSON.stringify([source??'',draft??null,holdout,recipeText]);
@@ -82,12 +82,17 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    if(!result.ok){setImportResult(`Rejected AI proposal: ${result.reason}. No rules were applied.`);return;}
    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
    let candidateMode:'mapping'|'correction'|'recovery';
+   let correctionScope:{oldTarget:string;newTarget:string}|undefined;
    if(result.report.mode==='FULL_RECOVERY'){
     proposal=proposeV01RecoveryParserFromAI(result,draft);candidateMode='recovery';
    }else{
     const additive=proposeV01FieldMappingFromAI(result,source,draft,suite);
     if(additive.ok){proposal=additive;candidateMode='mapping';}
-    else{proposal=proposeV01MappingCorrectionFromAI(result,source,draft,suite);candidateMode='correction';}
+    else{
+     const correction=proposeV01MappingCorrectionFromAI(result,source,draft,suite);
+     proposal=correction;candidateMode='correction';
+     if(correction.ok)correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};
+    }
    }
    if(!proposal.ok){setImportResult(`REVIEW ONLY: ${result.report.changedStageCount} changes. No safely compilable parser candidate: ${proposal.reason}.`);return;}
    if(!holdout.trim()){setImportResult('Independent holdout sample required before approval. No rules were applied.');return;}
@@ -96,8 +101,10 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    let candidateSuite:SuiteResult,candidateHoldout:SuiteResult;
    try{
     candidateSuite=preview(source,proposal.candidate);candidateHoldout=preview(holdout,proposal.candidate);
-    report=compareCandidate({source,baseline:suite,candidate:candidateSuite,
-     holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}});
+    const comparisonInput={source,baseline:suite,candidate:candidateSuite,
+     holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
+    report=candidateMode==='correction'&&correctionScope?
+     compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
    }catch{
     setImportResult('Candidate rejected: training or holdout evidence is stale, reordered, or mutated. Re-run validation from the current sample.');return;
    }
@@ -111,7 +118,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
     setImportResult('Candidate rejected: full training/holdout parsing or regression verification failed. No rules were applied.');return;
    }
-   setApprovedCandidate({draft:proposal.candidate,mode:candidateMode});setValidatedEvidence(evidenceFingerprint());
+   setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope});setValidatedEvidence(evidenceFingerprint());
    const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':'one added mapping';
    setImportResult(`Ready for explicit approval: ${description}, 0 training/holdout regressions; ${report.holdout?.sourceCount??0} independent holdout events tested. Browser-only; native verification pending.`);
   }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
@@ -165,6 +172,10 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       {approvedCandidate.mode==='recovery'?'I approve replacing the current unverified parser draft with this verified recovery parser.':
        approvedCandidate.mode==='correction'?'I approve this one verified mapping correction. All unrelated rules must remain unchanged.':
        'I approve the one verified additive mapping. Existing rules must remain unchanged.'}</label>
+    <button type="button" onClick={()=>{
+     setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+     setImportResult('AI candidate rejected by the user. Existing parser rules remain unchanged.');
+    }}>Reject Candidate</button>
     <button type="button" disabled={!approval||!onApplyCandidate} onClick={()=>{
      if(!approval||!approvedCandidate||!onApplyCandidate||!source||!draft||!suite)return;
      if(!holdoutAttested||validatedEvidence!==evidenceFingerprint()){
@@ -173,8 +184,10 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      }
      try{
       const candidateSuite=preview(source,approvedCandidate.draft),candidateHoldout=preview(holdout,approvedCandidate.draft);
-      const recheck=compareCandidate({source,baseline:suite,candidate:candidateSuite,
-       holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}});
+      const recheckInput={source,baseline:suite,candidate:candidateSuite,
+       holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
+      const recheck=approvedCandidate.mode==='correction'&&approvedCandidate.scope?
+       compareMappingCorrectionCandidate(recheckInput,approvedCandidate.scope):compareCandidate(recheckInput);
       if(!recheck.acceptedWithoutRegression||recheck.holdoutStatus!=='TESTED'||
          !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');

@@ -56,6 +56,10 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
    {...built.recipe,script:'eval("unsafe")'},
    {...built.recipe,stages:[...built.recipe.stages.slice(0,-1),
      {op:'eval_ruby',code:'system("curl")'},built.recipe.stages.at(-1)]},
+   {...built.recipe,stages:[...built.recipe.stages.slice(0,-1),
+     {op:'split_field',source:'src_ip',delimiter:':',targets:['custom.ip','custom.port']},built.recipe.stages.at(-1)]},
+   {...built.recipe,stages:[...built.recipe.stages.slice(0,-1),
+     {op:'merge_fields',sources:['src_ip','dst_port'],delimiter:':',target:'custom.endpoint'},built.recipe.stages.at(-1)]},
   ])expect(await importReviewOnlyAIRecipe(JSON.stringify(changed),source,draft,suite()))
    .toMatchObject({ok:false,reason:'UNTRUSTED_RECIPE'});
  });

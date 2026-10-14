@@ -770,7 +770,10 @@ export default function AutoParser({
          <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
-       <AutoParserAIReview raw={chosen?.raw??sample} status={chosen?.status??'unsupported'} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>
+       {chosen&&suite&&!pending?<AutoParserAIReview raw={chosen.raw} status={chosen.status} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>:
+        <div className="stellar-ai-review" role="status" aria-label="Improve with AI preview status">
+          <h3>Improve with AI</h3><p>Refreshing the current browser preview before AI correction can be reviewed.</p>
+        </div>}
        </div>
        <div className="auto-parser-map-list" aria-label="Suggested field mappings">
          {draft.mappings.map((rule)=><div key={rule.id}>

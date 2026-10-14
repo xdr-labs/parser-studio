@@ -112,8 +112,10 @@ function reasonFor(event:EventResult,envelope:EnvelopeEntry):RepairReason{
  if(!event.normalizedOk||event.status!=='pass')return 'MAPPING_REVIEW';
  return 'NATIVE_PENDING';
 }
+interface ScopedReplacement {oldTarget:string;newTarget:string}
 /** Exact source identity, all-event accounting, no field names or values in output. */
-export function compareBrowserSuites(source:string,before:SuiteResult,after:SuiteResult):BoundedRegressionReport{
+function compareBrowserSuitesInternal(source:string,before:SuiteResult,after:SuiteResult,
+ scope?:ScopedReplacement):BoundedRegressionReport{
  audited(source,before);audited(source,after);
  const ledger=analyzeLogEnvelopes(source,'single-line');
  if(ledger.status!=='READY'||ledger.accounted!==ledger.sourceCount||
@@ -126,9 +128,22 @@ export function compareBrowserSuites(source:string,before:SuiteResult,after:Suit
    const b=before.events[i]!,a=after.events[i]!,entry=ledger.events[i]!;
    const prev=shapes(b.normalized),next=shapes(a.normalized);
    let added=0,removed=0,changed=0;
-   for(const [key,value] of prev){if(!next.has(key))removed++;else if(next.get(key)!==value)changed++;}
-   for(const key of next.keys())if(!prev.has(key))added++;
-   const regression=positive(b)&&(!positive(a)||removed>0||changed>0);
+   const scopedOk=!scope||(
+     prev.has(scope.oldTarget)&&next.has(scope.newTarget)&&
+     (scope.oldTarget===scope.newTarget||!next.has(scope.oldTarget))
+   );
+   for(const [key,value] of prev){
+     if(scope&&key===scope.oldTarget){
+       if(scope.oldTarget===scope.newTarget&&!next.has(key))removed++;
+       continue;
+     }
+     if(!next.has(key))removed++;else if(next.get(key)!==value)changed++;
+   }
+   for(const key of next.keys()){
+     if(scope&&scope.oldTarget!==scope.newTarget&&key===scope.newTarget)continue;
+     if(!prev.has(key))added++;
+   }
+   const regression=positive(b)&&(!positive(a)||!scopedOk||removed>0||changed>0);
    if(regression)regressions++;
    const family=familyName(entry);
    const f=families.get(family)??{family,count:0,beforePassed:0,afterPassed:0};
@@ -146,6 +161,9 @@ export function compareBrowserSuites(source:string,before:SuiteResult,after:Suit
    fieldRemovals,typeChanges,issues:[...issues].map(([reason,count])=>({reason,count})),
    families:[...families.values()],events:eventChanges,browserOnly:true,
    nativeVerified:false,targetVerified:false};
+}
+export function compareBrowserSuites(source:string,before:SuiteResult,after:SuiteResult):BoundedRegressionReport{
+ return compareBrowserSuitesInternal(source,before,after);
 }
 function recordIdentity(raw:string):string{return raw.trim();}
 export function assessHoldoutIndependence(trainingSource:string,holdoutSource:string):HoldoutIndependence{
@@ -166,9 +184,10 @@ export function assessHoldoutIndependence(trainingSource:string,holdoutSource:st
    requiredUnique,overlapCount:0};
  return {ok:true,trainingUnique,holdoutUnique,requiredUnique,overlapCount:0};
 }
-export function compareCandidate(input:{source:string;baseline:SuiteResult;candidate:SuiteResult;
- holdout?:{source:string;baseline:SuiteResult;candidate:SuiteResult}}):CandidateComparison{
- const baseline=compareBrowserSuites(input.source,input.baseline,input.candidate);
+type CandidateInput={source:string;baseline:SuiteResult;candidate:SuiteResult;
+ holdout?:{source:string;baseline:SuiteResult;candidate:SuiteResult}};
+function compareCandidateInternal(input:CandidateInput,scope?:ScopedReplacement):CandidateComparison{
+ const baseline=compareBrowserSuitesInternal(input.source,input.baseline,input.candidate,scope);
  const holdoutIndependence=input.holdout?
    assessHoldoutIndependence(input.source,input.holdout.source):null;
  if(holdoutIndependence&&!holdoutIndependence.ok){
@@ -176,14 +195,23 @@ export function compareCandidate(input:{source:string;baseline:SuiteResult;candi
      holdoutStatus:'REJECTED',holdoutIndependence,acceptedWithoutRegression:false,
      approvalRequired:true,nativeVerified:false,targetVerified:false};
  }
- const holdout=input.holdout?compareBrowserSuites(input.holdout.source,
-   input.holdout.baseline,input.holdout.candidate):null;
+ const holdout=input.holdout?compareBrowserSuitesInternal(input.holdout.source,
+   input.holdout.baseline,input.holdout.candidate,scope):null;
  return {contract:'auto-parser.candidate-comparison.v0.1',baseline,holdout,
    holdoutStatus:holdout?'TESTED':'NOT_SUPPLIED',holdoutIndependence,
    acceptedWithoutRegression:baseline.regressions===0&&baseline.fieldRemovals===0&&
     baseline.typeChanges===0&&(!holdout||holdout.regressions===0&&
       holdout.fieldRemovals===0&&holdout.typeChanges===0),
    approvalRequired:true,nativeVerified:false,targetVerified:false};
+}
+export function compareCandidate(input:CandidateInput):CandidateComparison{
+ return compareCandidateInternal(input);
+}
+export function compareMappingCorrectionCandidate(input:CandidateInput,
+ scope:ScopedReplacement):CandidateComparison{
+ if(!scope.oldTarget||!scope.newTarget||scope.oldTarget.length>128||scope.newTarget.length>128)
+  fail('invalid scoped mapping replacement');
+ return compareCandidateInternal(input,scope);
 }
 /** A single conservative field suggestion; no candidate is ever auto-applied. */
 export function proposeReviewableMapping(source:string,draft:ParserDraft,suite:SuiteResult):RepairProposal{

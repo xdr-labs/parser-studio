@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {createDraft,type ParserDraft} from '../model';
 import {preview} from '../parser';
-import {assessHoldoutIndependence,compareBrowserSuites,compareCandidate,proposeReviewableMapping} from './autoParserRegression';
+import {assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,proposeReviewableMapping} from './autoParserRegression';
 
 const train=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"user":"PRIVATE_A"}',
@@ -81,6 +81,23 @@ describe('P0-AP4 exact source, full coverage and holdout candidate regression',(
      holdout:{source:train,baseline:preview(train,draft),candidate:preview(train,draft)}});
    expect(rejected).toMatchObject({holdout:null,holdoutStatus:'REJECTED',acceptedWithoutRegression:false,
      holdoutIndependence:{ok:false,reason:'IDENTICAL_TO_TRAINING'}});
+ });
+ it('permits exactly one explicitly scoped mapping replacement while protecting every unrelated field',()=>{
+   const draft=fixture(),corrected=structuredClone(draft);
+   corrected.mappings[0]={...corrected.mappings[0]!,target:'custom.source_address'};
+   const generic=compareCandidate({source:train,baseline:preview(train,draft),candidate:preview(train,corrected),
+     holdout:{source:holdout,baseline:preview(holdout,draft),candidate:preview(holdout,corrected)}});
+   expect(generic.acceptedWithoutRegression).toBe(false);
+   const scoped=compareMappingCorrectionCandidate({source:train,baseline:preview(train,draft),candidate:preview(train,corrected),
+     holdout:{source:holdout,baseline:preview(holdout,draft),candidate:preview(holdout,corrected)}},
+     {oldTarget:'custom.source_ip',newTarget:'custom.source_address'});
+   expect(scoped).toMatchObject({acceptedWithoutRegression:true,holdoutStatus:'TESTED',
+     baseline:{regressions:0,fieldRemovals:0,typeChanges:0},holdout:{regressions:0,fieldRemovals:0,typeChanges:0}});
+   const damaged=structuredClone(corrected);damaged.mappings[1]={...damaged.mappings[1]!,source:'missing_field'};
+   const blocked=compareMappingCorrectionCandidate({source:train,baseline:preview(train,draft),candidate:preview(train,damaged)},
+     {oldTarget:'custom.source_ip',newTarget:'custom.source_address'});
+   expect(blocked.acceptedWithoutRegression).toBe(false);
+   expect(blocked.baseline.fieldRemovals).toBeGreaterThan(0);
  });
  it('detects a newly broken known-good mapping and disallows approval',()=>{
    const draft=fixture(),broken=fixture();

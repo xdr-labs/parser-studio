@@ -262,7 +262,8 @@ export function proposeV01FieldMappingFromAI(
 }
 
 export type AIMappingCorrectionProposal=
- | {ok:true;candidate:ParserDraft;mappingId:string;approvalRequired:true;backendCompilerVerified:false;replacement:'ONE_MAPPING'}
+ | {ok:true;candidate:ParserDraft;mappingId:string;oldTarget:string;newTarget:string;
+     approvalRequired:true;backendCompilerVerified:false;replacement:'ONE_MAPPING'}
  | {ok:false;reason:'UNSUPPORTED_OPERATOR_CHANGE'|'NO_SINGLE_MAPPING_CHANGE'|'SOURCE_NOT_PRESENT'|'BACKEND_UNSUPPORTED'};
 /** Replace exactly one existing mapping while preserving parser grammar and all unrelated mappings. */
 export function proposeV01MappingCorrectionFromAI(
@@ -301,6 +302,6 @@ export function proposeV01MappingCorrectionFromAI(
  if(!stagedClass||JSON.stringify(stagedClass.rules)!==JSON.stringify(adapted.project.classification.rules)||
     stagedClass.defaultIndex!==adapted.project.classification.defaultIndex)
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
- return {ok:true,candidate,mappingId:prior.id,approvalRequired:true,
-   backendCompilerVerified:false,replacement:'ONE_MAPPING'};
+ return {ok:true,candidate,mappingId:prior.id,oldTarget:prior.target,newTarget:next.target,
+   approvalRequired:true,backendCompilerVerified:false,replacement:'ONE_MAPPING'};
 }

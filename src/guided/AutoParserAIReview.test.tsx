@@ -83,6 +83,56 @@ describe('AI recovery review safety',()=>{
   await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
   expect(apply.mock.calls[0]![0]).toMatchObject({format:'csv',csvColumns:'action,src_ip'});
  });
+ it('supports explicit rejection and later approval of one verified mapping correction',async()=>{
+  vi.stubGlobal('crypto',webcrypto);
+  const source=[
+   '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
+   '{"action":"deny","src_ip":"203.0.113.5","dst_port":22}',
+  ].join('\n');
+  const holdout=[
+   '{"action":"allow","src_ip":"192.0.2.10","dst_port":8443}',
+   '{"action":"deny","src_ip":"192.0.2.11","dst_port":2222}',
+  ].join('\n');
+  const draft={...createDraft(),format:'json' as const},apply=vi.fn();
+  const recipe={
+   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+   projectId:'draft-demo_firewall',sourceFormat:'json',bodyFormat:'json',
+   sample:{sha256:createHash('sha256').update(source).digest('hex'),events:2},
+   stages:[
+    {op:'split_event',boundary:'single-line'},{op:'parse_json'},
+    {op:'map_field',source:'src_ip',target:'custom.source_address',data_type:'ip',group:'top_fields'},
+    {op:'cast_type',target:'custom.source_address',data_type:'ip'},
+    {op:'map_field',source:'dst_port',target:'custom.destination_port',data_type:'port',group:'ns_fields'},
+    {op:'cast_type',target:'custom.destination_port',data_type:'port'},
+    {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+    {op:'classify',defaultIndex:'syslog',rules:[
+     {field:'custom.action',operator:'equals',value:'deny',index:'threat'},
+     {field:'custom.action',operator:'equals',value:'allow',index:'session'},
+    ]},{op:'fallback_unparsed',mode:'retain_unparsed'},
+   ],nativeVerified:false,targetVerified:false,
+  };
+  render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
+   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}/>);
+  const validate=async()=>{
+   fireEvent.change(screen.getByRole('textbox',{name:'AI Recipe JSON'}),{target:{value:JSON.stringify(recipe)}});
+   fireEvent.change(screen.getByRole('textbox',{name:'AI candidate holdout logs'}),{target:{value:holdout}});
+   const attestation=screen.getByRole('checkbox',{name:'Confirm independent AI holdout provenance'}) as HTMLInputElement;
+   if(!attestation.checked)fireEvent.click(attestation);
+   fireEvent.click(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}));
+   expect(await screen.findByText(/Ready for explicit approval: one corrected mapping/)).toBeTruthy();
+  };
+  await validate();
+  fireEvent.click(screen.getByRole('button',{name:'Reject Candidate'}));
+  expect(await screen.findByText(/AI candidate rejected by the user/)).toBeTruthy();
+  expect(apply).not.toHaveBeenCalled();
+  await validate();
+  fireEvent.click(screen.getByRole('checkbox',{name:'Approve verified inline AI candidate'}));
+  fireEvent.click(screen.getByRole('button',{name:'Apply Approved Mapping Correction'}));
+  await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
+  expect(apply.mock.calls[0]![0].mappings[0].target).toBe('custom.source_address');
+  expect(apply.mock.calls[0]![0].mappings[1]).toEqual(draft.mappings[1]);
+  expect(apply.mock.calls[0]![0].mappings[2]).toEqual(draft.mappings[2]);
+ });
  it('rejects unverified AI recipe and never applies changes',()=>{
   render(<AutoParserAIReview raw="RAW" status="unsupported" onChatGPT={vi.fn()}/>);
   fireEvent.click(screen.getByText('Paste AI Recipe for strict review'));
