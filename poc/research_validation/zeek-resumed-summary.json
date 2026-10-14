@@ -1,0 +1,1052 @@
+{
+  "baseline_import_path": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+  "candidate_sha256": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
+  "commit": "a7e71a217b670e09e43b75fccfc3a96f04cbec2a",
+  "comparison_base": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "evaluation_class": "RESUMED_PREVIOUSLY_ACQUIRED_SOURCE_NOT_NEW_UNTOUCHED_VALIDATION",
+  "excluded_data_records": 0,
+  "groups": {
+    "testing/btest/Baseline/core.ipv6-frag/dns.log": {
+      "all_physical_records_preserved": true,
+      "baseline": {
+        "events": 3,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 78,
+        "statuses": {
+          "RAW_ONLY": 3
+        }
+      },
+      "candidate_data_event_records": 4,
+      "candidate_metadata_records": 9,
+      "combined": {
+        "events": 3,
+        "exact_field_events": 3,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 78,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 78,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 3,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 78,
+        "statuses": {
+          "SOURCE_PARSED": 3
+        }
+      },
+      "data_records": 3,
+      "dialect_admitted": false,
+      "dialect_only": {
+        "events": 3,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 78,
+        "statuses": {
+          "RAW_ONLY": 3
+        }
+      },
+      "holdout_records": 3,
+      "lexical_only": {
+        "events": 3,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 78,
+        "statuses": {
+          "RAW_ONLY": 3
+        }
+      },
+      "metadata_only": {
+        "events": 3,
+        "exact_field_events": 3,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 78,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 78,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 3,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 78,
+        "statuses": {
+          "SOURCE_PARSED": 3
+        }
+      },
+      "metadata_records": 10,
+      "physical_records": 13,
+      "raw_hash_train_holdout_disjoint": true,
+      "reference_metadata_retained_as_raw": 1,
+      "train_records": 0,
+      "unique_raw_records": 3
+    },
+    "testing/btest/Baseline/opt.basic/conn.log": {
+      "all_physical_records_preserved": true,
+      "baseline": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 462,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 462,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 462,
+        "statuses": {
+          "RAW_ONLY": 21
+        }
+      },
+      "candidate_data_event_records": 35,
+      "candidate_metadata_records": 9,
+      "combined": {
+        "events": 21,
+        "exact_field_events": 21,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 462,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 462,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 462,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "data_records": 34,
+      "dialect_admitted": true,
+      "dialect_only": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 462,
+          "FP": 462,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 462,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 21,
+        "parser_exceptions": 0,
+        "reference_fields": 462,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "holdout_records": 21,
+      "lexical_only": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 462,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 462,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 462,
+        "statuses": {
+          "RAW_ONLY": 21
+        }
+      },
+      "metadata_only": {
+        "events": 21,
+        "exact_field_events": 21,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 462,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 462,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 462,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "metadata_records": 10,
+      "physical_records": 44,
+      "raw_hash_train_holdout_disjoint": true,
+      "reference_metadata_retained_as_raw": 1,
+      "train_records": 13,
+      "unique_raw_records": 34
+    },
+    "testing/btest/Baseline/opt.basic/dns.log": {
+      "all_physical_records_preserved": true,
+      "baseline": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 546,
+          "FP": 14,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 546,
+          "FP": 14,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 546,
+        "statuses": {
+          "PARTIAL": 4,
+          "RAW_ONLY": 17
+        }
+      },
+      "candidate_data_event_records": 35,
+      "candidate_metadata_records": 9,
+      "combined": {
+        "events": 21,
+        "exact_field_events": 21,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 546,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 546,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 546,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "data_records": 34,
+      "dialect_admitted": true,
+      "dialect_only": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 546,
+          "FP": 546,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 546,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 21,
+        "parser_exceptions": 0,
+        "reference_fields": 546,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "holdout_records": 21,
+      "lexical_only": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 546,
+          "FP": 14,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 546,
+          "FP": 14,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 546,
+        "statuses": {
+          "PARTIAL": 4,
+          "RAW_ONLY": 17
+        }
+      },
+      "metadata_only": {
+        "events": 21,
+        "exact_field_events": 21,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 546,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 546,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 546,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "metadata_records": 10,
+      "physical_records": 44,
+      "raw_hash_train_holdout_disjoint": true,
+      "reference_metadata_retained_as_raw": 1,
+      "train_records": 13,
+      "unique_raw_records": 26
+    },
+    "testing/btest/Baseline/opt.basic/http.log": {
+      "all_physical_records_preserved": true,
+      "baseline": {
+        "events": 9,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 270,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 270,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 270,
+        "statuses": {
+          "RAW_ONLY": 9
+        }
+      },
+      "candidate_data_event_records": 15,
+      "candidate_metadata_records": 9,
+      "combined": {
+        "events": 9,
+        "exact_field_events": 9,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 270,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 270,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 9,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 270,
+        "statuses": {
+          "SOURCE_PARSED": 9
+        }
+      },
+      "data_records": 14,
+      "dialect_admitted": true,
+      "dialect_only": {
+        "events": 9,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 270,
+          "FP": 270,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 270,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 9,
+        "falsely_complete_events": 9,
+        "parser_exceptions": 0,
+        "reference_fields": 270,
+        "statuses": {
+          "SOURCE_PARSED": 9
+        }
+      },
+      "holdout_records": 9,
+      "lexical_only": {
+        "events": 9,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 270,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 270,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 270,
+        "statuses": {
+          "RAW_ONLY": 9
+        }
+      },
+      "metadata_only": {
+        "events": 9,
+        "exact_field_events": 9,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 270,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 270,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 9,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 270,
+        "statuses": {
+          "SOURCE_PARSED": 9
+        }
+      },
+      "metadata_records": 10,
+      "physical_records": 24,
+      "raw_hash_train_holdout_disjoint": true,
+      "reference_metadata_retained_as_raw": 1,
+      "train_records": 5,
+      "unique_raw_records": 14
+    },
+    "testing/btest/Baseline/scripts.base.files.x509.disable-certificate-events-known-certs/ssl.log": {
+      "all_physical_records_preserved": true,
+      "baseline": {
+        "events": 5,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 95,
+          "FP": 15,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 95,
+          "FP": 15,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 95,
+        "statuses": {
+          "PARTIAL": 5
+        }
+      },
+      "candidate_data_event_records": 9,
+      "candidate_metadata_records": 9,
+      "combined": {
+        "events": 5,
+        "exact_field_events": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 95,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 95,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 5,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 95,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      },
+      "data_records": 8,
+      "dialect_admitted": true,
+      "dialect_only": {
+        "events": 5,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 95,
+          "FP": 95,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 95,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 5,
+        "falsely_complete_events": 5,
+        "parser_exceptions": 0,
+        "reference_fields": 95,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      },
+      "holdout_records": 5,
+      "lexical_only": {
+        "events": 5,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 95,
+          "FP": 15,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 95,
+          "FP": 15,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 95,
+        "statuses": {
+          "PARTIAL": 5
+        }
+      },
+      "metadata_only": {
+        "events": 5,
+        "exact_field_events": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 95,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 95,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 5,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 95,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      },
+      "metadata_records": 10,
+      "physical_records": 18,
+      "raw_hash_train_holdout_disjoint": true,
+      "reference_metadata_retained_as_raw": 1,
+      "train_records": 3,
+      "unique_raw_records": 8
+    },
+    "testing/btest/Baseline/scripts.base.frameworks.logging.field-extension/conn.log": {
+      "all_physical_records_preserved": true,
+      "baseline": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 525,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 525,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 525,
+        "statuses": {
+          "RAW_ONLY": 21
+        }
+      },
+      "candidate_data_event_records": 35,
+      "candidate_metadata_records": 9,
+      "combined": {
+        "events": 21,
+        "exact_field_events": 21,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 525,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 525,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 525,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "data_records": 34,
+      "dialect_admitted": true,
+      "dialect_only": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 525,
+          "FP": 525,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 525,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 21,
+        "parser_exceptions": 0,
+        "reference_fields": 525,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "holdout_records": 21,
+      "lexical_only": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 525,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 525,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_value_span_events": 0,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 525,
+        "statuses": {
+          "RAW_ONLY": 21
+        }
+      },
+      "metadata_only": {
+        "events": 21,
+        "exact_field_events": 21,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 525,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_byte_span_without_field_name": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 525,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_value_span_events": 21,
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "reference_fields": 525,
+        "statuses": {
+          "SOURCE_PARSED": 21
+        }
+      },
+      "metadata_records": 10,
+      "physical_records": 44,
+      "raw_hash_train_holdout_disjoint": true,
+      "reference_metadata_retained_as_raw": 1,
+      "train_records": 13,
+      "unique_raw_records": 34
+    }
+  },
+  "note": "Metadata native-name metrics and unnamed value/span metrics are both retained; no conflation.",
+  "overall": {
+    "baseline": {
+      "events": 80,
+      "exact_field_events": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 1976,
+        "FP": 29,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_value_byte_span_without_field_name": {
+        "FN": 1976,
+        "FP": 29,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_value_span_events": 0,
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "reference_fields": 1976,
+      "statuses": {
+        "PARTIAL": 9,
+        "RAW_ONLY": 71
+      }
+    },
+    "combined": {
+      "events": 80,
+      "exact_field_events": 80,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1976,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_value_byte_span_without_field_name": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1976,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_value_span_events": 80,
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "reference_fields": 1976,
+      "statuses": {
+        "SOURCE_PARSED": 80
+      }
+    },
+    "dialect_only": {
+      "events": 80,
+      "exact_field_events": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 1976,
+        "FP": 1898,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_value_byte_span_without_field_name": {
+        "FN": 78,
+        "FP": 0,
+        "TP": 1898,
+        "f1": 0.9798657718120806,
+        "precision": 1.0,
+        "recall": 0.9605263157894737
+      },
+      "exact_value_span_events": 77,
+      "falsely_complete_events": 77,
+      "parser_exceptions": 0,
+      "reference_fields": 1976,
+      "statuses": {
+        "RAW_ONLY": 3,
+        "SOURCE_PARSED": 77
+      }
+    },
+    "lexical_only": {
+      "events": 80,
+      "exact_field_events": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 1976,
+        "FP": 29,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_value_byte_span_without_field_name": {
+        "FN": 1976,
+        "FP": 29,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_value_span_events": 0,
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "reference_fields": 1976,
+      "statuses": {
+        "PARTIAL": 9,
+        "RAW_ONLY": 71
+      }
+    },
+    "metadata_only": {
+      "events": 80,
+      "exact_field_events": 80,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1976,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_value_byte_span_without_field_name": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1976,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_value_span_events": 80,
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "reference_fields": 1976,
+      "statuses": {
+        "SOURCE_PARSED": 80
+      }
+    }
+  },
+  "redaction_status": "UNASSESSED_NOT_UNMASKED_ONLY",
+  "repository": "zeek/zeek",
+  "source": "First-party Zeek regression-output log files, not customer production logs",
+  "source_scalar_contract": "Serialized source scalar cells; no decoding of sets, escapes, unset/empty sentinels or semantic type conversion",
+  "status": "EXECUTED"
+}

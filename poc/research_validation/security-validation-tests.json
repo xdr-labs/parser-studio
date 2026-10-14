@@ -1,0 +1,19 @@
+{
+  "authored_envelope_baseline_red": {
+    "errors": 1,
+    "failures": 3,
+    "passes": 4,
+    "tests": 8
+  },
+  "baseline_assertion_update": "One historical duplicate-KV assertion now accepts both the frozen acc3a90 and current 2fee28f baseline controls; candidate expected output is unchanged.",
+  "baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "baseline_import_path": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+  "candidate_sha256": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a",
+  "contract": "security-poc-test-evidence.v1",
+  "errors": 0,
+  "failures": 0,
+  "python": "3.12.3",
+  "skips": 0,
+  "success": true,
+  "tests": 54
+}

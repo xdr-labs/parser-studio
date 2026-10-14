@@ -1,0 +1,2453 @@
+{
+  "all_source_records": {
+    "current_plus_h2r": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    },
+    "current_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    }
+  },
+  "baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "by_family": {
+    "aws_waf": {
+      "current_plus_h2r": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 156,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 5,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 5,
+        "input_records": 5,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 5,
+        "reference_complete_records": 5,
+        "reference_field_occurrences": 156,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 5,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      },
+      "current_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 156,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 5,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 5,
+        "input_records": 5,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 5,
+        "reference_complete_records": 5,
+        "reference_field_occurrences": 156,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 5,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      }
+    },
+    "fortigate": {
+      "current_plus_h2r": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 5715,
+        "envelope_fields_outside_body_oracle": 8,
+        "exact_field_set_records": 208,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 5715,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 208,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 205,
+        "input_records": 213,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 213,
+        "reference_complete_records": 207,
+        "reference_field_occurrences": 5715,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 208,
+        "statuses": {
+          "PARTIAL": 3,
+          "SOURCE_PARSED": 205
+        }
+      },
+      "current_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 5715,
+        "envelope_fields_outside_body_oracle": 8,
+        "exact_field_set_records": 208,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 5715,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 208,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 205,
+        "input_records": 213,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 213,
+        "reference_complete_records": 207,
+        "reference_field_occurrences": 5715,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 208,
+        "statuses": {
+          "PARTIAL": 3,
+          "SOURCE_PARSED": 205
+        }
+      }
+    },
+    "suricata": {
+      "current_plus_h2r": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      }
+    }
+  },
+  "candidate_parent": "054612ce51a85aad7590e2a2ce1dabe77789a1e0",
+  "contract": "parser-studio.security-source-comparison.v1",
+  "dictionary_attempted": false,
+  "groups": {
+    "aws_waf--test-waf.log": {
+      "all_records": 5,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 5,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 156,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 5,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 5,
+          "input_records": 5,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 5,
+          "reference_complete_records": 5,
+          "reference_field_occurrences": 156,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 5,
+          "statuses": {
+            "SOURCE_PARSED": 5
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 5,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 156,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 5,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 5,
+          "input_records": 5,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 5,
+          "reference_complete_records": 5,
+          "reference_field_occurrences": 156,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 5,
+          "statuses": {
+            "SOURCE_PARSED": 5
+          }
+        }
+      },
+      "family": "aws_waf",
+      "heldout_records": 4,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 125,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 4,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 125,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 4,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 4,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_complete_records": 4,
+          "reference_field_occurrences": 125,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 4,
+          "statuses": {
+            "SOURCE_PARSED": 4
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 125,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 4,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 125,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 4,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 4,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_complete_records": 4,
+          "reference_field_occurrences": 125,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 4,
+          "statuses": {
+            "SOURCE_PARSED": 4
+          }
+        }
+      },
+      "train_records": 1
+    },
+    "fortigate--test-fortinet-6-2.log": {
+      "all_records": 57,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1568,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 57,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1568,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 57,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 57,
+          "input_records": 57,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 57,
+          "reference_complete_records": 57,
+          "reference_field_occurrences": 1568,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 57,
+          "statuses": {
+            "SOURCE_PARSED": 57
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1568,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 57,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1568,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 57,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 57,
+          "input_records": 57,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 57,
+          "reference_complete_records": 57,
+          "reference_field_occurrences": 1568,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 57,
+          "statuses": {
+            "SOURCE_PARSED": 57
+          }
+        }
+      },
+      "family": "fortigate",
+      "heldout_records": 42,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1168,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 42,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1168,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 42,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 42,
+          "input_records": 42,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 42,
+          "reference_complete_records": 42,
+          "reference_field_occurrences": 1168,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 42,
+          "statuses": {
+            "SOURCE_PARSED": 42
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1168,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 42,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1168,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 42,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 42,
+          "input_records": 42,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 42,
+          "reference_complete_records": 42,
+          "reference_field_occurrences": 1168,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 42,
+          "statuses": {
+            "SOURCE_PARSED": 42
+          }
+        }
+      },
+      "train_records": 15
+    },
+    "fortigate--test-fortinet-7-2.log": {
+      "all_records": 7,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 291,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 7,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 291,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 7,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 7,
+          "input_records": 7,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 7,
+          "reference_complete_records": 7,
+          "reference_field_occurrences": 291,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 7,
+          "statuses": {
+            "SOURCE_PARSED": 7
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 291,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 7,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 291,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 7,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 7,
+          "input_records": 7,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 7,
+          "reference_complete_records": 7,
+          "reference_field_occurrences": 291,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 7,
+          "statuses": {
+            "SOURCE_PARSED": 7
+          }
+        }
+      },
+      "family": "fortigate",
+      "heldout_records": 6,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 249,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 6,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 249,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 6,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 6,
+          "input_records": 6,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_complete_records": 6,
+          "reference_field_occurrences": 249,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 6,
+          "statuses": {
+            "SOURCE_PARSED": 6
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 249,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 6,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 249,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 6,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 6,
+          "input_records": 6,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_complete_records": 6,
+          "reference_field_occurrences": 249,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 6,
+          "statuses": {
+            "SOURCE_PARSED": 6
+          }
+        }
+      },
+      "train_records": 1
+    },
+    "fortigate--test-fortinet-7-4.log": {
+      "all_records": 82,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 2144,
+          "envelope_fields_outside_body_oracle": 8,
+          "exact_field_set_records": 82,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 2144,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 82,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 81,
+          "input_records": 82,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 82,
+          "reference_complete_records": 81,
+          "reference_field_occurrences": 2144,
+          "reference_issues": {
+            "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1
+          },
+          "reference_partial_records": 1,
+          "reference_scored_records": 82,
+          "statuses": {
+            "PARTIAL": 1,
+            "SOURCE_PARSED": 81
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 2144,
+          "envelope_fields_outside_body_oracle": 8,
+          "exact_field_set_records": 82,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 2144,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 82,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 81,
+          "input_records": 82,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 82,
+          "reference_complete_records": 81,
+          "reference_field_occurrences": 2144,
+          "reference_issues": {
+            "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1
+          },
+          "reference_partial_records": 1,
+          "reference_scored_records": 82,
+          "statuses": {
+            "PARTIAL": 1,
+            "SOURCE_PARSED": 81
+          }
+        }
+      },
+      "family": "fortigate",
+      "heldout_records": 65,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1675,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 65,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1675,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 65,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 65,
+          "input_records": 65,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 65,
+          "reference_complete_records": 65,
+          "reference_field_occurrences": 1675,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 65,
+          "statuses": {
+            "SOURCE_PARSED": 65
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1675,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 65,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1675,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 65,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 65,
+          "input_records": 65,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 65,
+          "reference_complete_records": 65,
+          "reference_field_occurrences": 1675,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 65,
+          "statuses": {
+            "SOURCE_PARSED": 65
+          }
+        }
+      },
+      "train_records": 17
+    },
+    "fortigate--test-fortinet-fix.log": {
+      "all_records": 4,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 145,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 4,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 145,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 4,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 4,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_complete_records": 4,
+          "reference_field_occurrences": 145,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 4,
+          "statuses": {
+            "SOURCE_PARSED": 4
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 145,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 4,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 145,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 4,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 4,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_complete_records": 4,
+          "reference_field_occurrences": 145,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 4,
+          "statuses": {
+            "SOURCE_PARSED": 4
+          }
+        }
+      },
+      "family": "fortigate",
+      "heldout_records": 2,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 81,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 2,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 81,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 2,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 2,
+          "input_records": 2,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 2,
+          "reference_complete_records": 2,
+          "reference_field_occurrences": 81,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 2,
+          "statuses": {
+            "SOURCE_PARSED": 2
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 81,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 2,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 81,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 2,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 2,
+          "input_records": 2,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 2,
+          "reference_complete_records": 2,
+          "reference_field_occurrences": 81,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 2,
+          "statuses": {
+            "SOURCE_PARSED": 2
+          }
+        }
+      },
+      "train_records": 2
+    },
+    "fortigate--test-fortinet-unsanitized.log": {
+      "all_records": 4,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 4,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 4
+          },
+          "reference_partial_records": 0,
+          "statuses": {}
+        },
+        "current_poc": {
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 4,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 4
+          },
+          "reference_partial_records": 0,
+          "statuses": {}
+        }
+      },
+      "family": "fortigate",
+      "heldout_records": 4,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 4,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 4
+          },
+          "reference_partial_records": 0,
+          "statuses": {}
+        },
+        "current_poc": {
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "input_records": 4,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 4,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 4
+          },
+          "reference_partial_records": 0,
+          "statuses": {}
+        }
+      },
+      "train_records": 0
+    },
+    "fortigate--test-fortinet.log": {
+      "all_records": 59,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1567,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 58,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1567,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 58,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 56,
+          "input_records": 59,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 1,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 59,
+          "reference_complete_records": 58,
+          "reference_field_occurrences": 1567,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 1
+          },
+          "reference_partial_records": 0,
+          "reference_scored_records": 58,
+          "statuses": {
+            "PARTIAL": 2,
+            "SOURCE_PARSED": 56
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1567,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 58,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1567,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 58,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 56,
+          "input_records": 59,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 1,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 59,
+          "reference_complete_records": 58,
+          "reference_field_occurrences": 1567,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 1
+          },
+          "reference_partial_records": 0,
+          "reference_scored_records": 58,
+          "statuses": {
+            "PARTIAL": 2,
+            "SOURCE_PARSED": 56
+          }
+        }
+      },
+      "family": "fortigate",
+      "heldout_records": 48,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1289,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 47,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1289,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 47,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 47,
+          "input_records": 48,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 1,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 48,
+          "reference_complete_records": 47,
+          "reference_field_occurrences": 1289,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 1
+          },
+          "reference_partial_records": 0,
+          "reference_scored_records": 47,
+          "statuses": {
+            "SOURCE_PARSED": 47
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1289,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 47,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 1289,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 47,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 47,
+          "input_records": 48,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 1,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 48,
+          "reference_complete_records": 47,
+          "reference_field_occurrences": 1289,
+          "reference_issues": {
+            "NUL_CORRUPTED_INPUT": 1
+          },
+          "reference_partial_records": 0,
+          "reference_scored_records": 47,
+          "statuses": {
+            "SOURCE_PARSED": 47
+          }
+        }
+      },
+      "train_records": 11
+    },
+    "suricata--test-eve-6-0.log": {
+      "all_records": 3,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 91,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 3,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 91,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 3,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 3,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 91,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "SOURCE_PARSED": 3
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 91,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 3,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 91,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 3,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 3,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 91,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "SOURCE_PARSED": 3
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 3,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 91,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 3,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 91,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 3,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 3,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 91,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "SOURCE_PARSED": 3
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 91,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 3,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 91,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 3,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 3,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 91,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "SOURCE_PARSED": 3
+          }
+        }
+      },
+      "train_records": 0
+    },
+    "suricata--test-eve-alerts.log": {
+      "all_records": 22,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 659,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 22,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 659,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 22,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 22,
+          "input_records": 22,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 22,
+          "reference_complete_records": 22,
+          "reference_field_occurrences": 659,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 22,
+          "statuses": {
+            "SOURCE_PARSED": 22
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 659,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 22,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 659,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 22,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 22,
+          "input_records": 22,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 22,
+          "reference_complete_records": 22,
+          "reference_field_occurrences": 659,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 22,
+          "statuses": {
+            "SOURCE_PARSED": 22
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 18,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 547,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 18,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 547,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 18,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 18,
+          "input_records": 18,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 18,
+          "reference_complete_records": 18,
+          "reference_field_occurrences": 547,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 18,
+          "statuses": {
+            "SOURCE_PARSED": 18
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 547,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 18,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 547,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 18,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 18,
+          "input_records": 18,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 18,
+          "reference_complete_records": 18,
+          "reference_field_occurrences": 547,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 18,
+          "statuses": {
+            "SOURCE_PARSED": 18
+          }
+        }
+      },
+      "train_records": 4
+    },
+    "suricata--test-eve-dns-4-1-4.log": {
+      "all_records": 24,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 526,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 24,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 526,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 24,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 24,
+          "input_records": 24,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 24,
+          "reference_complete_records": 24,
+          "reference_field_occurrences": 526,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 24,
+          "statuses": {
+            "SOURCE_PARSED": 24
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 526,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 24,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 526,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 24,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 24,
+          "input_records": 24,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 24,
+          "reference_complete_records": 24,
+          "reference_field_occurrences": 526,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 24,
+          "statuses": {
+            "SOURCE_PARSED": 24
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 23,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 512,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 23,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 512,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 23,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 23,
+          "input_records": 23,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 23,
+          "reference_complete_records": 23,
+          "reference_field_occurrences": 512,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 23,
+          "statuses": {
+            "SOURCE_PARSED": 23
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 512,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 23,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 512,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 23,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 23,
+          "input_records": 23,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 23,
+          "reference_complete_records": 23,
+          "reference_field_occurrences": 512,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 23,
+          "statuses": {
+            "SOURCE_PARSED": 23
+          }
+        }
+      },
+      "train_records": 1
+    },
+    "suricata--test-eve-metadata.log": {
+      "all_records": 1,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 50,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 50,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 50,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 50,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 50,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 50,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 1,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 50,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 50,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 50,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 50,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 50,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 50,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        }
+      },
+      "train_records": 0
+    },
+    "suricata--test-eve-small.log": {
+      "all_records": 14,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 349,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 14,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 349,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 14,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 14,
+          "input_records": 14,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 14,
+          "reference_complete_records": 14,
+          "reference_field_occurrences": 349,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 14,
+          "statuses": {
+            "SOURCE_PARSED": 14
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 349,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 14,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 349,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 14,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 14,
+          "input_records": 14,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 14,
+          "reference_complete_records": 14,
+          "reference_field_occurrences": 349,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 14,
+          "statuses": {
+            "SOURCE_PARSED": 14
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 10,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 273,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 10,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 273,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 10,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 10,
+          "input_records": 10,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 10,
+          "reference_complete_records": 10,
+          "reference_field_occurrences": 273,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 10,
+          "statuses": {
+            "SOURCE_PARSED": 10
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 273,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 10,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 273,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 10,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 10,
+          "input_records": 10,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 10,
+          "reference_complete_records": 10,
+          "reference_field_occurrences": 273,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 10,
+          "statuses": {
+            "SOURCE_PARSED": 10
+          }
+        }
+      },
+      "train_records": 4
+    },
+    "suricata--test-eve-tls-empty-issuerdn.log": {
+      "all_records": 1,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 16,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 16,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 16,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 16,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 16,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 16,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 1,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 16,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 16,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 16,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 16,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 16,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 16,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        }
+      },
+      "train_records": 0
+    },
+    "suricata--test-eve-tls-empty-subject.log": {
+      "all_records": 1,
+      "all_records_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 18,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 18,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 18,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 18,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 18,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 18,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        }
+      },
+      "family": "suricata",
+      "heldout_records": 1,
+      "heldout_scores": {
+        "current_plus_h2r": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 18,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 18,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 18,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        },
+        "current_poc": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 18,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 1,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 18,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 1,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 1,
+          "input_records": 1,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_complete_records": 1,
+          "reference_field_occurrences": 18,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 1,
+          "statuses": {
+            "SOURCE_PARSED": 1
+          }
+        }
+      },
+      "train_records": 0
+    }
+  },
+  "hash_disjoint_holdout": {
+    "current_plus_h2r": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 6094,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 223,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 6094,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 223,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 223,
+      "input_records": 228,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 228,
+      "reference_complete_records": 223,
+      "reference_field_occurrences": 6094,
+      "reference_issues": {
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 223,
+      "statuses": {
+        "SOURCE_PARSED": 223
+      }
+    },
+    "current_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 6094,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 223,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 6094,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 223,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 223,
+      "input_records": 228,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 228,
+      "reference_complete_records": 223,
+      "reference_field_occurrences": 6094,
+      "reference_issues": {
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 223,
+      "statuses": {
+        "SOURCE_PARSED": 223
+      }
+    }
+  },
+  "limitations": [
+    "Public upstream regression fixtures, not independently verified production captures.",
+    "JSON full typed source tree and independent leaf positions; KV oracle scores vendor body, not syslog envelope.",
+    "NUL-corrupted records retained and separately counted, not counted as successful field extraction.",
+    "Malformed KV tail retains independently referenceable prefix, with incomplete status; no invented tail values.",
+    "Raw source fitting is hash-disjoint from heldout; families are supplied, not automatic mixed-vendor clustering.",
+    "New-source acquisition was after candidate freeze, but format implementations are pre-existing; not unknown-format learning."
+  ],
+  "models": {
+    "current_plus_h2r": {
+      "aws_waf--test-waf.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-6-2.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-7-2.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-7-4.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-fix.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-unsanitized.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-6-0.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-alerts.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-dns-4-1-4.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-metadata.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-small.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-tls-empty-issuerdn.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-tls-empty-subject.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      }
+    },
+    "current_poc": {
+      "aws_waf--test-waf.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-6-2.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-7-2.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-7-4.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-fix.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet-unsanitized.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "fortigate--test-fortinet.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-6-0.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-alerts.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-dns-4-1-4.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-metadata.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-small.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-tls-empty-issuerdn.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      },
+      "suricata--test-eve-tls-empty-subject.log": {
+        "count": 0,
+        "frozen_sha256": "2e38e77b22c314a449e91fafed92a43826ac6aa403ae6a8acb6cf58239fbaf5d",
+        "unchanged_after_prediction": true
+      }
+    }
+  },
+  "module_provenance": {
+    "current_plus_h2r": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    },
+    "current_poc": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    }
+  },
+  "native_verified": false,
+  "pre_acquisition_code_freeze_verified": true,
+  "prediction_sha256": "13b050f6ef105a1c0f482b8b3f0dd51174fe6ea0783078cc33ffbd7d44d1359b",
+  "redaction_status": "UNASSESSED_NOT_UNMASKED_ONLY",
+  "scope": "Ordinary security-system logs only; no free-form prose in primary KPI",
+  "source_commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+  "source_files": 14,
+  "source_kind": "Upstream public security-parser regression fixtures, not verified production captures",
+  "specific_security_subtypes": {
+    "fortigate_ips": 7,
+    "suricata_alert": 24
+  },
+  "target_verified": false
+}

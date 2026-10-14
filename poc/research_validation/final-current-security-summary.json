@@ -1,0 +1,2303 @@
+{
+  "by_family": {
+    "aws_waf": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 156,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 5,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 5,
+        "input_records": 5,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 5,
+        "reference_complete_records": 5,
+        "reference_field_occurrences": 156,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 5,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 156,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 5,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 5,
+        "input_records": 5,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 5,
+        "reference_complete_records": 5,
+        "reference_field_occurrences": 156,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 5,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 156,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 5,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 5,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 5,
+        "input_records": 5,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 5,
+        "reference_complete_records": 5,
+        "reference_field_occurrences": 156,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 5,
+        "statuses": {
+          "SOURCE_PARSED": 5
+        }
+      }
+    },
+    "fortigate": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 5715,
+        "envelope_fields_outside_body_oracle": 8,
+        "exact_field_set_records": 208,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 5715,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 208,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 205,
+        "input_records": 213,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 213,
+        "reference_complete_records": 207,
+        "reference_field_occurrences": 5715,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 208,
+        "statuses": {
+          "PARTIAL": 3,
+          "SOURCE_PARSED": 205
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 5715,
+        "envelope_fields_outside_body_oracle": 8,
+        "exact_field_set_records": 208,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 5715,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 208,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 205,
+        "input_records": 213,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 213,
+        "reference_complete_records": 207,
+        "reference_field_occurrences": 5715,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 208,
+        "statuses": {
+          "PARTIAL": 3,
+          "SOURCE_PARSED": 205
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 5715,
+        "envelope_fields_outside_body_oracle": 8,
+        "exact_field_set_records": 208,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 5715,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 208,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 205,
+        "input_records": 213,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 213,
+        "reference_complete_records": 207,
+        "reference_field_occurrences": 5715,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 208,
+        "statuses": {
+          "PARTIAL": 3,
+          "SOURCE_PARSED": 205
+        }
+      }
+    },
+    "suricata": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      }
+    }
+  },
+  "by_security_subtype": {
+    "fortigate_ips": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 292,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 7,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 292,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 7,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 7,
+        "input_records": 7,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 7,
+        "reference_complete_records": 7,
+        "reference_field_occurrences": 292,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 7,
+        "statuses": {
+          "SOURCE_PARSED": 7
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 292,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 7,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 292,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 7,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 7,
+        "input_records": 7,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 7,
+        "reference_complete_records": 7,
+        "reference_field_occurrences": 292,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 7,
+        "statuses": {
+          "SOURCE_PARSED": 7
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 292,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 7,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 292,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 7,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 7,
+        "input_records": 7,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 7,
+        "reference_complete_records": 7,
+        "reference_field_occurrences": 292,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 7,
+        "statuses": {
+          "SOURCE_PARSED": 7
+        }
+      }
+    },
+    "suricata_alert": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 748,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 748,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 24,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 24,
+        "input_records": 24,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_complete_records": 24,
+        "reference_field_occurrences": 748,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 24,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 748,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 748,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 24,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 24,
+        "input_records": 24,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_complete_records": 24,
+        "reference_field_occurrences": 748,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 24,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 748,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 748,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 24,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 24,
+        "input_records": 24,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_complete_records": 24,
+        "reference_field_occurrences": 748,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 24,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    }
+  },
+  "candidate_module_hashes": {
+    "candidate.py": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
+    "security_document.py": "579ca6dfe5ef14140c55ebe57b9a117380d8e269cb124453e18682060bf42197",
+    "security_envelopes.py": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a"
+  },
+  "comparison_correction": "Main lane added CEE support concurrently; original 0-to-100 CEE gain against old parse_source is superseded for current comparisons.",
+  "contract": "parser-studio.final-current-security-validation.v1",
+  "current_baseline_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "current_baseline_entrypoint": "security_source.parse_security_source",
+  "decision": "KEEP current security adapter. SELECTIVELY evaluate declared-metadata document composition. REJECT whole independent CEE replacement; it regresses plain BSD framing.",
+  "derived_by_form": {
+    "cee_direct": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      }
+    },
+    "plain_bsd_cee": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 1709,
+        "FP": 0,
+        "TP": 0,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 1709,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_vendor_tree_records": 0,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 0,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "PARTIAL": 66
+        }
+      }
+    },
+    "rfc3164_cee": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      }
+    },
+    "rfc5424_cee": {
+      "current_plus_declared_metadata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_security_poc": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "independent_cee_replacement": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      }
+    }
+  },
+  "derived_security_envelopes": {
+    "current_plus_declared_metadata": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 6836,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 264,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 6836,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 264,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 264,
+      "input_records": 264,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_complete_records": 264,
+      "reference_field_occurrences": 6836,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 264,
+      "statuses": {
+        "SOURCE_PARSED": 264
+      }
+    },
+    "current_security_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 6836,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 264,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 6836,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 264,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 264,
+      "input_records": 264,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_complete_records": 264,
+      "reference_field_occurrences": 6836,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 264,
+      "statuses": {
+        "SOURCE_PARSED": 264
+      }
+    },
+    "independent_cee_replacement": {
+      "FN": 1709,
+      "FP": 0,
+      "TP": 5127,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 198,
+      "exact_native_key_value_byte_span": {
+        "FN": 1709,
+        "FP": 0,
+        "TP": 5127,
+        "f1": 0.8571428571428571,
+        "precision": 1.0,
+        "recall": 0.75
+      },
+      "exact_vendor_tree_records": 198,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 198,
+      "input_records": 264,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_complete_records": 264,
+      "reference_field_occurrences": 6836,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 264,
+      "statuses": {
+        "PARTIAL": 66,
+        "SOURCE_PARSED": 198
+      }
+    }
+  },
+  "dictionary_attempted": false,
+  "input_ledgers": {
+    "current_plus_declared_metadata": {
+      "cee_direct": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "official_waf": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 10,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 10
+      },
+      "original_security": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 284,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 284
+      },
+      "plain_bsd_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "rfc3164_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "rfc5424_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "zeek:0.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 35,
+        "metadata_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          43
+        ],
+        "metadata_records": 9,
+        "physical_records": 44
+      },
+      "zeek:1.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 35,
+        "metadata_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          43
+        ],
+        "metadata_records": 9,
+        "physical_records": 44
+      },
+      "zeek:2.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 15,
+        "metadata_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          23
+        ],
+        "metadata_records": 9,
+        "physical_records": 24
+      },
+      "zeek:3.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 35,
+        "metadata_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          43
+        ],
+        "metadata_records": 9,
+        "physical_records": 44
+      },
+      "zeek:4.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 9,
+        "metadata_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          17
+        ],
+        "metadata_records": 9,
+        "physical_records": 18
+      },
+      "zeek:5.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 4,
+        "metadata_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          12
+        ],
+        "metadata_records": 9,
+        "physical_records": 13
+      }
+    },
+    "current_security_poc": {
+      "cee_direct": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "official_waf": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 10,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 10
+      },
+      "original_security": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 284,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 284
+      },
+      "plain_bsd_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "rfc3164_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "rfc5424_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "zeek:0.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 44,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 44
+      },
+      "zeek:1.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 44,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 44
+      },
+      "zeek:2.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 24,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 24
+      },
+      "zeek:3.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 44,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 44
+      },
+      "zeek:4.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 18,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 18
+      },
+      "zeek:5.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 13,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 13
+      }
+    },
+    "independent_cee_replacement": {
+      "cee_direct": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "official_waf": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 10,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 10
+      },
+      "original_security": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 284,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 284
+      },
+      "plain_bsd_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "rfc3164_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "rfc5424_cee": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 66,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 66
+      },
+      "zeek:0.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 44,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 44
+      },
+      "zeek:1.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 44,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 44
+      },
+      "zeek:2.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 24,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 24
+      },
+      "zeek:3.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 44,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 44
+      },
+      "zeek:4.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 18,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 18
+      },
+      "zeek:5.log": {
+        "all_records_preserved": true,
+        "data_or_raw_records": 13,
+        "metadata_indices": [],
+        "metadata_records": 0,
+        "physical_records": 13
+      }
+    }
+  },
+  "learning_performed": false,
+  "limitations": [
+    "Upstream source fixtures and official examples, not verified production traffic; redaction is unassessed or documentation placeholders.",
+    "Original security inputs284: five NUL-corrupted records are raw-only controls and not field-scored; one malformed KV tail is prefix-scored as PARTIAL.",
+    "Official WAF snippets10: eight valid JSON objects scored, two non-parseable snippets retained separately.",
+    "CEE cases264 are four transformations of66 already seen Suricata bodies; no new-source claim.",
+    "Zeek187 physical lines include60 metadata/preamble and127 data rows. Native scalar names come from source headers; no labels or automatic semantic inference.",
+    "Current commit did not exist at initial acquisition, so this is a latest-capability regression comparison, not untouched prospective validation."
+  ],
+  "module_provenance": {
+    "current_plus_declared_metadata": {
+      "entry_point": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/current-c2f4644/poc/vendor_engine/security_source.py::parse_security_source",
+      "entry_point_sha256": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+      "source_parse_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    },
+    "current_security_poc": {
+      "entry_point": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/current-c2f4644/poc/vendor_engine/security_source.py::parse_security_source",
+      "entry_point_sha256": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+      "source_parse_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    },
+    "independent_cee_replacement": {
+      "entry_point": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/current-c2f4644/poc/vendor_engine/security_source.py::parse_security_source",
+      "entry_point_sha256": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+      "source_parse_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    }
+  },
+  "native_verified": false,
+  "official_waf": {
+    "current_plus_declared_metadata": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 268,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 8,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 268,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 8,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 8,
+      "input_records": 10,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 2,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 10,
+      "reference_complete_records": 8,
+      "reference_field_occurrences": 268,
+      "reference_issues": {
+        "UNSCORABLE_DOCUMENTATION_SNIPPET": 2
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 8,
+      "statuses": {
+        "SOURCE_PARSED": 8
+      }
+    },
+    "current_security_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 268,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 8,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 268,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 8,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 8,
+      "input_records": 10,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 2,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 10,
+      "reference_complete_records": 8,
+      "reference_field_occurrences": 268,
+      "reference_issues": {
+        "UNSCORABLE_DOCUMENTATION_SNIPPET": 2
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 8,
+      "statuses": {
+        "SOURCE_PARSED": 8
+      }
+    },
+    "independent_cee_replacement": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 268,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 8,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 268,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 8,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 8,
+      "input_records": 10,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 2,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 10,
+      "reference_complete_records": 8,
+      "reference_field_occurrences": 268,
+      "reference_issues": {
+        "UNSCORABLE_DOCUMENTATION_SNIPPET": 2
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 8,
+      "statuses": {
+        "SOURCE_PARSED": 8
+      }
+    }
+  },
+  "original_output_invariance": {
+    "exactly_unchanged": 284,
+    "records": 284
+  },
+  "original_security": {
+    "current_plus_declared_metadata": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    },
+    "current_security_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    },
+    "independent_cee_replacement": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    }
+  },
+  "prediction_sha256": "1cbff4ceedcaa1016112d314d4dc040ee93c8c1022eb7d64a10007b35acf4184",
+  "prior_baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "product_integrated": false,
+  "scope": "Ordinary security-product logs; no prose examples in primary metrics",
+  "zeek_declared_metadata": {
+    "current_plus_declared_metadata": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 3132,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 127,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 3132,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 127,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 127,
+      "input_records": 127,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 127,
+      "reference_complete_records": 127,
+      "reference_field_occurrences": 3132,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 127,
+      "statuses": {
+        "SOURCE_PARSED": 127
+      }
+    },
+    "current_security_poc": {
+      "FN": 3132,
+      "FP": 44,
+      "TP": 0,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 3132,
+        "FP": 44,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_vendor_tree_records": 0,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 0,
+      "input_records": 127,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 127,
+      "reference_complete_records": 127,
+      "reference_field_occurrences": 3132,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 127,
+      "statuses": {
+        "PARTIAL": 14,
+        "RAW_ONLY": 113
+      }
+    },
+    "independent_cee_replacement": {
+      "FN": 3132,
+      "FP": 44,
+      "TP": 0,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 3132,
+        "FP": 44,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "exact_vendor_tree_records": 0,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 0,
+      "input_records": 127,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 127,
+      "reference_complete_records": 127,
+      "reference_field_occurrences": 3132,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 127,
+      "statuses": {
+        "PARTIAL": 14,
+        "RAW_ONLY": 113
+      }
+    }
+  },
+  "zeek_groups": {
+    "zeek:0.log": {
+      "data_records": 34,
+      "modes": {
+        "current_plus_declared_metadata": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 748,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 34,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 748,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 34,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 34,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 748,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "SOURCE_PARSED": 34
+          }
+        },
+        "current_security_poc": {
+          "FN": 748,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 748,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 748,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "RAW_ONLY": 34
+          }
+        },
+        "independent_cee_replacement": {
+          "FN": 748,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 748,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 748,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "RAW_ONLY": 34
+          }
+        }
+      },
+      "physical_records": 44,
+      "reference_metadata_records": 10
+    },
+    "zeek:1.log": {
+      "data_records": 34,
+      "modes": {
+        "current_plus_declared_metadata": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 884,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 34,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 884,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 34,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 34,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 884,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "SOURCE_PARSED": 34
+          }
+        },
+        "current_security_poc": {
+          "FN": 884,
+          "FP": 20,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 884,
+            "FP": 20,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 884,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "PARTIAL": 6,
+            "RAW_ONLY": 28
+          }
+        },
+        "independent_cee_replacement": {
+          "FN": 884,
+          "FP": 20,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 884,
+            "FP": 20,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 884,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "PARTIAL": 6,
+            "RAW_ONLY": 28
+          }
+        }
+      },
+      "physical_records": 44,
+      "reference_metadata_records": 10
+    },
+    "zeek:2.log": {
+      "data_records": 14,
+      "modes": {
+        "current_plus_declared_metadata": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 420,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 14,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 420,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 14,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 14,
+          "input_records": 14,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 14,
+          "reference_complete_records": 14,
+          "reference_field_occurrences": 420,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 14,
+          "statuses": {
+            "SOURCE_PARSED": 14
+          }
+        },
+        "current_security_poc": {
+          "FN": 420,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 420,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 14,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 14,
+          "reference_complete_records": 14,
+          "reference_field_occurrences": 420,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 14,
+          "statuses": {
+            "RAW_ONLY": 14
+          }
+        },
+        "independent_cee_replacement": {
+          "FN": 420,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 420,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 14,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 14,
+          "reference_complete_records": 14,
+          "reference_field_occurrences": 420,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 14,
+          "statuses": {
+            "RAW_ONLY": 14
+          }
+        }
+      },
+      "physical_records": 24,
+      "reference_metadata_records": 10
+    },
+    "zeek:3.log": {
+      "data_records": 34,
+      "modes": {
+        "current_plus_declared_metadata": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 850,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 34,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 850,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 34,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 34,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 850,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "SOURCE_PARSED": 34
+          }
+        },
+        "current_security_poc": {
+          "FN": 850,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 850,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 850,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "RAW_ONLY": 34
+          }
+        },
+        "independent_cee_replacement": {
+          "FN": 850,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 850,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 34,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 34,
+          "reference_complete_records": 34,
+          "reference_field_occurrences": 850,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 34,
+          "statuses": {
+            "RAW_ONLY": 34
+          }
+        }
+      },
+      "physical_records": 44,
+      "reference_metadata_records": 10
+    },
+    "zeek:4.log": {
+      "data_records": 8,
+      "modes": {
+        "current_plus_declared_metadata": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 152,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 8,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 152,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 8,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 8,
+          "input_records": 8,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 8,
+          "reference_complete_records": 8,
+          "reference_field_occurrences": 152,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 8,
+          "statuses": {
+            "SOURCE_PARSED": 8
+          }
+        },
+        "current_security_poc": {
+          "FN": 152,
+          "FP": 24,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 152,
+            "FP": 24,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 8,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 8,
+          "reference_complete_records": 8,
+          "reference_field_occurrences": 152,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 8,
+          "statuses": {
+            "PARTIAL": 8
+          }
+        },
+        "independent_cee_replacement": {
+          "FN": 152,
+          "FP": 24,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 152,
+            "FP": 24,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 8,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 8,
+          "reference_complete_records": 8,
+          "reference_field_occurrences": 152,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 8,
+          "statuses": {
+            "PARTIAL": 8
+          }
+        }
+      },
+      "physical_records": 18,
+      "reference_metadata_records": 10
+    },
+    "zeek:5.log": {
+      "data_records": 3,
+      "modes": {
+        "current_plus_declared_metadata": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 78,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 3,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 78,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "exact_vendor_tree_records": 3,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 3,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 78,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "SOURCE_PARSED": 3
+          }
+        },
+        "current_security_poc": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 78,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 78,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "RAW_ONLY": 3
+          }
+        },
+        "independent_cee_replacement": {
+          "FN": 78,
+          "FP": 0,
+          "TP": 0,
+          "envelope_fields_outside_body_oracle": 0,
+          "exact_field_set_records": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 78,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "exact_vendor_tree_records": 0,
+          "falsely_complete_records": 0,
+          "fully_correct_and_complete_records": 0,
+          "input_records": 3,
+          "invalid_input_exceptions": 0,
+          "invalid_inputs_falsely_complete": 0,
+          "invalid_inputs_not_field_scored": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_complete_records": 3,
+          "reference_field_occurrences": 78,
+          "reference_issues": {},
+          "reference_partial_records": 0,
+          "reference_scored_records": 3,
+          "statuses": {
+            "RAW_ONLY": 3
+          }
+        }
+      },
+      "physical_records": 13,
+      "reference_metadata_records": 10
+    }
+  }
+}

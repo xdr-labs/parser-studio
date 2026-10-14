@@ -1,13 +1,15 @@
 {
-  "candidate_sha256": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
-  "candidate_unit_status": "12 PASS / 1 ERROR",
+  "all_data_result": "3132 TP / 0 FP / 0 FN for current plus declared metadata",
+  "authoritative_report": "SECURITY_VALIDATION_RESULT.md",
+  "candidate_unit_error_resolved": true,
+  "contract": "independent-external-status.v2",
+  "current_comparison": "c2f464444a7aa899bd8b251507234720e4cbdde2::security_source.parse_security_source",
   "data_records": 127,
-  "excluded_or_claimed_successful_data_records": 0,
-  "failure": "Metadata equality assertion in external_benchmark; accounting patch denied twice including normal retry",
-  "metadata_and_preamble_records": 60,
-  "no_product_promotion": true,
+  "metadata_preamble_records": 60,
+  "native_verified": false,
   "physical_records": 187,
-  "preamble_classification_differences": 6,
-  "source_files": 6,
-  "status": "ACQUIRED_NOT_REFERENCE_SCORED"
+  "previous_tool_denials_currently_blocking": false,
+  "prior_heldout_result": "80 records / 1976 TP / 0 FP / 0 FN",
+  "raw_preambles_retained": 6,
+  "status": "EXECUTED_RESOLVED"
 }

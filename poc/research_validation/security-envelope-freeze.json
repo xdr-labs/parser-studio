@@ -1,0 +1,8 @@
+{
+  "baseline": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "candidate_module": "security_envelopes.py",
+  "candidate_sha256": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a",
+  "contract": "security-envelope-extension-freeze.v1",
+  "known_sources": "Existing 284 upstream security fixtures already inspected; no new-vendor claim on transformations of them.",
+  "state": "After authored RED/GREEN tests; before deployment-form corpus comparison and additional first-party WAF example acquisition"
+}

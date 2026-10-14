@@ -1,0 +1,162 @@
+{
+  "commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+  "files": [
+    {
+      "bytes": 4638,
+      "family": "aws_waf",
+      "git_blob": "2fb2b9f6396525d93c4a29893900b7b251c80391",
+      "local_name": "aws_waf--test-waf.log",
+      "path": "packages/aws/data_stream/waf/_dev/test/pipeline/test-waf.log",
+      "physical_lines": 5,
+      "sha256": "8852f05a2e00c1e03ed698e5a292dc13c03cb7464e7408cd3eb8c6065ce9dbf4",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/waf/_dev/test/pipeline/test-waf.log"
+    },
+    {
+      "bytes": 2046,
+      "family": "suricata",
+      "git_blob": "d3e84d479157d796f2d9072bce776e8a713ea473",
+      "local_name": "suricata--test-eve-6-0.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-6-0.log",
+      "physical_lines": 3,
+      "sha256": "632b6be798370bb1d2a311ca2714e25f3abda89072c8458e303a9dba47e0eb0e",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-6-0.log"
+    },
+    {
+      "bytes": 18716,
+      "family": "suricata",
+      "git_blob": "0527d42397a6f081db0bf961cd1b5fb0828ba3bc",
+      "local_name": "suricata--test-eve-alerts.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-alerts.log",
+      "physical_lines": 22,
+      "sha256": "9b85e83c8db440cad6811ba77faf2b2081cf514568eba1ddb0869028a334377d",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-alerts.log"
+    },
+    {
+      "bytes": 11240,
+      "family": "suricata",
+      "git_blob": "3aebd4412d208650d204e41c214899168506a41f",
+      "local_name": "suricata--test-eve-dns-4-1-4.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-dns-4-1-4.log",
+      "physical_lines": 24,
+      "sha256": "976c8df46922da787acecfd9b13ec62aa5dc9eebc62ef0faf234a0830c5cc7a1",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-dns-4-1-4.log"
+    },
+    {
+      "bytes": 1222,
+      "family": "suricata",
+      "git_blob": "d900dbcd4a0dcdcdd3f9bfcfa327e16f10b0eefc",
+      "local_name": "suricata--test-eve-metadata.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-metadata.log",
+      "physical_lines": 1,
+      "sha256": "6077f80532b0c9e3cec3ccae1ae94e32b80f70257ae746d41596c6b9944a961f",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-metadata.log"
+    },
+    {
+      "bytes": 9253,
+      "family": "suricata",
+      "git_blob": "00671e799b967eacc4cb05f4814bb211685164c1",
+      "local_name": "suricata--test-eve-small.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-small.log",
+      "physical_lines": 14,
+      "sha256": "8e414e50831f96340502f0cf52d2983dfe0fd64f87db2377c5c10126b38cec15",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-small.log"
+    },
+    {
+      "bytes": 511,
+      "family": "suricata",
+      "git_blob": "1e83a52175828fc32b0e5fd045d5257d4540bef9",
+      "local_name": "suricata--test-eve-tls-empty-issuerdn.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-issuerdn.log",
+      "physical_lines": 1,
+      "sha256": "af0a6b6938c4329ac2932d198926713d2320a1d9e5e42b38bcbca9bd15b4d395",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-issuerdn.log"
+    },
+    {
+      "bytes": 663,
+      "family": "suricata",
+      "git_blob": "78254cc91d14ccdff9897ebf04ede76032764eb5",
+      "local_name": "suricata--test-eve-tls-empty-subject.log",
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-subject.log",
+      "physical_lines": 1,
+      "sha256": "ec390fe1a57e386804f8df361893574b3481464183994fff8e32ba60580058ec",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-subject.log"
+    },
+    {
+      "bytes": 29506,
+      "family": "fortigate",
+      "git_blob": "fd47324b818256b5b1bd917ac0ce2ffd6d9a3a03",
+      "local_name": "fortigate--test-fortinet-6-2.log",
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-6-2.log",
+      "physical_lines": 57,
+      "sha256": "6bc2d9721c7b386ce2c499ab3bb50e08845625b78ae0076730a02ca6929ed8e6",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-6-2.log"
+    },
+    {
+      "bytes": 7672,
+      "family": "fortigate",
+      "git_blob": "5a7b7f1f7c70cbf474c1cc0005fc20e743d3581c",
+      "local_name": "fortigate--test-fortinet-7-2.log",
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-2.log",
+      "physical_lines": 7,
+      "sha256": "f70ceda157b17dc9151dc7bc58eccff13a197b0356fbde356947dfad13c6774f",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-2.log"
+    },
+    {
+      "bytes": 41372,
+      "family": "fortigate",
+      "git_blob": "353c85a339e92bd3ad3d98be8ff9229d6eebef84",
+      "local_name": "fortigate--test-fortinet-7-4.log",
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-4.log",
+      "physical_lines": 82,
+      "sha256": "ef04aa4d229c924ee2a0fd44923cbe412392ea40a37b083ba756857d7a671d97",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-4.log"
+    },
+    {
+      "bytes": 2886,
+      "family": "fortigate",
+      "git_blob": "94c4d6604fd7ef22f915d7307b454aa7fd4d0bc6",
+      "local_name": "fortigate--test-fortinet-fix.log",
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-fix.log",
+      "physical_lines": 4,
+      "sha256": "4194fdcd7d83df764eadb04e436c3a23247405c8a5995a473f9a57290cb31cef",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-fix.log"
+    },
+    {
+      "bytes": 1638,
+      "family": "fortigate",
+      "git_blob": "93ddb4826ff5d457b34586954bb39c7da153a33b",
+      "local_name": "fortigate--test-fortinet-unsanitized.log",
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-unsanitized.log",
+      "physical_lines": 4,
+      "sha256": "9d7aad944899837bd88872f8a7449d44c3b2816e4f7c0a1fc7900bca863a2108",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-unsanitized.log"
+    },
+    {
+      "bytes": 31772,
+      "family": "fortigate",
+      "git_blob": "201edeeed301a9ec15bf3add4b51aada82133cf5",
+      "local_name": "fortigate--test-fortinet.log",
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet.log",
+      "physical_lines": 59,
+      "sha256": "f917d0dc7e7a959d34ac86311276a3f9a1951e9e9de47695934a017bbaf14de5",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet.log"
+    }
+  ],
+  "freeze": {
+    "baseline": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+    "candidate_parent": "054612ce51a85aad7590e2a2ce1dabe77789a1e0",
+    "contract": "security-source-candidate-freeze.v1",
+    "module_hashes": {
+      "candidate.py": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
+      "dialect_adapter.py": "28616b885d25b010f6100cc63b723740d3fc8fa58cac8cef27a6175575666fe2",
+      "layout_inference.py": "ad7ffe8275b0f9feb7911e51a95efc22d984afb9e1a06ee55384b03afc921caf"
+    },
+    "scope": "Ordinary security-system logs first: AWS WAF, IDS/IPS, firewall; prose only negative guards",
+    "source_commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+    "source_status": "Before first acquisition of these source bodies; no new fitted rules"
+  },
+  "license": "Elastic License 2.0 default; already reviewed upstream license; local research only; no source redistribution",
+  "redaction_status": "UNASSESSED_NOT_UNMASKED_ONLY",
+  "repository": "elastic/integrations",
+  "source_kind": "Upstream public security-parser regression fixtures, not verified production captures"
+}

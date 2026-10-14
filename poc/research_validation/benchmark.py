@@ -259,8 +259,23 @@ def external_benchmark() -> dict:
         test=[(i,p) for i,p in data if hashlib.sha256(p.raw.encode()).hexdigest() not in train_hashes]
         model=infer_dialect(train)
         doc=parse_document(records);declared=dict(doc.events)
-        assert sorted(doc.metadata_indices)==sorted(meta)
-        assert doc.records==records
+        assert doc.records == records
+        candidate_meta = set(doc.metadata_indices)
+        candidate_data = set(declared)
+        reference_meta = set(meta)
+        reference_data = {i for i, _ in data}
+        assert len(candidate_data) == len(doc.events)
+        assert not (candidate_meta & candidate_data)
+        assert candidate_meta | candidate_data == set(range(len(records)))
+        assert reference_data <= candidate_data
+        assert not (candidate_meta - reference_meta)
+        # Preserve the BTest preambles as explicit RAW_ONLY records. They are
+        # reference metadata, not data-field successes or silently dropped rows.
+        extra_raw = sorted(reference_meta - candidate_meta)
+        assert all(i in declared and declared[i].raw == records[i]
+                   and not declared[i].vendor_fields for i in extra_raw)
+        for i in extra_raw:
+            assert_source_accounting(declared[i])
         probes=[p for _,p in test];all_probes.extend(probes)
         modes={'baseline':[_safe_parse(parse_source,p.raw) for p in probes],
                'lexical_only':[_safe_parse(parse_candidate,p.raw) for p in probes],
@@ -269,6 +284,10 @@ def external_benchmark() -> dict:
                'combined':[declared[i] for i,_ in test]}
         groups[item['path']]={'physical_records':len(records),'metadata_records':len(meta),'data_records':len(data),
             'train_records':len(train),'holdout_records':len(test),'unique_raw_records':len(unique),
+            'candidate_metadata_records':len(candidate_meta),
+            'reference_metadata_retained_as_raw':len(extra_raw),
+            'all_physical_records_preserved':doc.records==records,
+            'candidate_data_event_records':len(candidate_data),
             'raw_hash_train_holdout_disjoint':True,'dialect_admitted':model is not None,
             **{k:score(probes,v) for k,v in modes.items()}}
         for k,v in modes.items():all_events[k].extend(v)

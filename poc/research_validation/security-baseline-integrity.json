@@ -1,0 +1,12 @@
+{
+  "all_runtime_modules_match_exact_commit": true,
+  "baseline": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "module_hashes": {
+    "engine.py": "e654e7236123db68019f6929cdb61c87ad11d4a7a61ef5e1748e68ef156cb1de",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "34de798678e81642f8719f04d62524118eae937c86b9ef6c617089f1bfdffbe1"
+  }
+}

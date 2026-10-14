@@ -1,0 +1,89 @@
+{
+  "all_pre_blocks": 10,
+  "candidate_freeze": {
+    "baseline": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+    "candidate_module": "security_envelopes.py",
+    "candidate_sha256": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a",
+    "contract": "security-envelope-extension-freeze.v1",
+    "known_sources": "Existing 284 upstream security fixtures already inspected; no new-vendor claim on transformations of them.",
+    "state": "After authored RED/GREEN tests; before deployment-form corpus comparison and additional first-party WAF example acquisition"
+  },
+  "contract": "aws-waf-first-party-example-corpus.v1",
+  "files": [
+    {
+      "block_index": 0,
+      "bytes": 715,
+      "local_name": "example-0.json",
+      "reference_json_valid": true,
+      "sha256": "3c701b52c1ffffb46c641f6dd6693beae99ac569c77a9c10efa8d3e7a0566592"
+    },
+    {
+      "block_index": 1,
+      "bytes": 1888,
+      "local_name": "example-1.json",
+      "reference_json_valid": false,
+      "sha256": "d1de345405c52d101e6cc4ed6ea740bc288dc3b986289e782fa1ec34070d14f3"
+    },
+    {
+      "block_index": 2,
+      "bytes": 990,
+      "local_name": "example-2.json",
+      "reference_json_valid": true,
+      "sha256": "8be189edfc9421e9c07cec29bed6272e45a505c0bc160770101c4929dd5e2133"
+    },
+    {
+      "block_index": 3,
+      "bytes": 2101,
+      "local_name": "example-3.json",
+      "reference_json_valid": false,
+      "sha256": "ff2b768544ae721c97f75fddb7f8b93d4cc313f8bd11f0123464df4b7ca3bfef"
+    },
+    {
+      "block_index": 4,
+      "bytes": 1454,
+      "local_name": "example-4.json",
+      "reference_json_valid": true,
+      "sha256": "491eeaadebcc5219c7bc3809be69bbd1c227867eced22924ac3e250ba61cfdd0"
+    },
+    {
+      "block_index": 5,
+      "bytes": 1318,
+      "local_name": "example-5.json",
+      "reference_json_valid": true,
+      "sha256": "08ef7e7982247d4962e8405609fef71a4b45c5c4abd04b1237f12a25acd117ac"
+    },
+    {
+      "block_index": 6,
+      "bytes": 1904,
+      "local_name": "example-6.json",
+      "reference_json_valid": true,
+      "sha256": "97cd3c7371d36889b769c9feaaaa8c69e28a6123eddbfa7e238f3b4ddd84c72f"
+    },
+    {
+      "block_index": 7,
+      "bytes": 1065,
+      "local_name": "example-7.json",
+      "reference_json_valid": true,
+      "sha256": "b4cf782a275b9450ff602c2cd485493e0d7a881c4eaeb11c759a6f85423d4692"
+    },
+    {
+      "block_index": 8,
+      "bytes": 3322,
+      "local_name": "example-8.json",
+      "reference_json_valid": true,
+      "sha256": "e9bfe3e51b0b6aa66e091bc718f0972c1d0d11884312ce48b44895749ac27f59"
+    },
+    {
+      "block_index": 9,
+      "bytes": 2611,
+      "local_name": "example-9.json",
+      "reference_json_valid": true,
+      "sha256": "7df7140ba957df3971e8e37903b6439f596ab208e3bfa8bd399409c6e2a13f7d"
+    }
+  ],
+  "license": "Reference evaluation only; source text and examples remain local and ignored, not redistributed",
+  "redaction_status": "DOCUMENTATION_PLACEHOLDERS_PRESENT_OR_POSSIBLE_NOT_UNMASKED_ONLY",
+  "source_kind": "First-party AWS documentation examples, not production captures",
+  "source_page_sha256": "e66f8faaf6629272007eb778cb481f212f64c616c86a249955a950755de407ba",
+  "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+}

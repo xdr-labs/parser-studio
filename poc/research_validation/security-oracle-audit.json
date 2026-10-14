@@ -1,0 +1,13 @@
+{
+  "affected_family": "fortigate",
+  "affected_fields": 1,
+  "candidate_changed": false,
+  "cause": "POSIX shlex removed interior quote characters from one unquoted vendor scalar. The existing parser correctly preserved them.",
+  "contract": "security-reference-oracle-audit.v1",
+  "correction": "Only leading-quoted values use shell quote decoding; unquoted values preserve literal interior quotes and unknown escapes.",
+  "discarded_false_negative_count": 1,
+  "discarded_false_positive_count": 1,
+  "guard": "Independent authored oracle tests precede final rescoring; no source values included.",
+  "initial_predictions_sha256": "13b050f6ef105a1c0f482b8b3f0dd51174fe6ea0783078cc33ffbd7d44d1359b",
+  "invalid_initial_comparison": true
+}

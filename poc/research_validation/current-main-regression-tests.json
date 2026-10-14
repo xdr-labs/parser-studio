@@ -1,0 +1,19 @@
+{
+  "baseline_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "contract": "current-main-scope-regression.v1",
+  "errors": 0,
+  "failures": 0,
+  "fixtures": "Existing authorized local caches copied into isolated snapshot only; source worktree unchanged.",
+  "modules": [
+    "test_source_parse",
+    "test_source_kv",
+    "test_source_json_paths",
+    "test_structured_source",
+    "test_security_source",
+    "test_benchmark_security_sources"
+  ],
+  "skip_reasons": [],
+  "skips": 0,
+  "success": true,
+  "tests": 58
+}

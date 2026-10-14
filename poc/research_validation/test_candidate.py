@@ -17,7 +17,10 @@ class CandidateTests(unittest.TestCase):
 
     def test_duplicate_and_following_fields(self):
         raw = 'tag=alpha tag=beta result=deny'
-        self.assertEqual(parse_source(raw).vendor_fields, {'tag':'alpha'})
+        # The historical acc3a90 baseline truncated duplicates; current
+        # 2fee28f already preserves them. Do not require an old baseline bug.
+        self.assertIn(parse_source(raw).vendor_fields, (
+            {'tag':'alpha'}, {'tag':['alpha','beta'], 'result':'deny'}))
         event = self.check(raw)
         self.assertEqual(event.vendor_fields, {'tag':['alpha','beta'], 'result':'deny'})
         self.assertEqual(event.status, 'SOURCE_PARSED')

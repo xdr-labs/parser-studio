@@ -1,0 +1,381 @@
+{
+  "all_derived_records": {
+    "current_plus_security_envelope": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 5127,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 198,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 5127,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 198,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 198,
+      "input_records": 198,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 198,
+      "reference_complete_records": 198,
+      "reference_field_occurrences": 5127,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 198,
+      "statuses": {
+        "SOURCE_PARSED": 198
+      }
+    },
+    "current_poc": {
+      "FN": 5127,
+      "FP": 0,
+      "TP": 0,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 5127,
+        "FP": 0,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": null,
+        "recall": 0.0
+      },
+      "exact_vendor_tree_records": 0,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 0,
+      "input_records": 198,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 198,
+      "reference_complete_records": 198,
+      "reference_field_occurrences": 5127,
+      "reference_issues": {},
+      "reference_partial_records": 0,
+      "reference_scored_records": 198,
+      "statuses": {
+        "PARTIAL": 132,
+        "RAW_ONLY": 66
+      }
+    }
+  },
+  "baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "candidate_sha256": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a",
+  "contract": "parser-studio.security-envelope-validation.v1",
+  "derived_records": 198,
+  "dictionary_attempted": false,
+  "first_party_waf": {
+    "current_plus_security_envelope": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 268,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 8,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 268,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 8,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 8,
+      "input_records": 10,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 2,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 10,
+      "reference_complete_records": 8,
+      "reference_field_occurrences": 268,
+      "reference_issues": {
+        "UNSCORABLE_DOCUMENTATION_SNIPPET": 2
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 8,
+      "statuses": {
+        "SOURCE_PARSED": 8
+      }
+    },
+    "current_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 268,
+      "envelope_fields_outside_body_oracle": 0,
+      "exact_field_set_records": 8,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 268,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 8,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 8,
+      "input_records": 10,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 2,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 10,
+      "reference_complete_records": 8,
+      "reference_field_occurrences": 268,
+      "reference_issues": {
+        "UNSCORABLE_DOCUMENTATION_SNIPPET": 2
+      },
+      "reference_partial_records": 0,
+      "reference_scored_records": 8,
+      "statuses": {
+        "SOURCE_PARSED": 8
+      }
+    }
+  },
+  "first_party_waf_source_sha256": "e66f8faaf6629272007eb778cb481f212f64c616c86a249955a950755de407ba",
+  "forms": [
+    "cee_direct",
+    "rfc3164_cee",
+    "rfc5424_cee"
+  ],
+  "freeze_verified": true,
+  "groups": {
+    "cee_direct": {
+      "current_plus_security_envelope": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_poc": {
+        "FN": 1709,
+        "FP": 0,
+        "TP": 0,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 1709,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_vendor_tree_records": 0,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 0,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "RAW_ONLY": 66
+        }
+      }
+    },
+    "rfc3164_cee": {
+      "current_plus_security_envelope": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_poc": {
+        "FN": 1709,
+        "FP": 0,
+        "TP": 0,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 1709,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_vendor_tree_records": 0,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 0,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "PARTIAL": 66
+        }
+      }
+    },
+    "rfc5424_cee": {
+      "current_plus_security_envelope": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1709,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 66,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 1709,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 66,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 66,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "SOURCE_PARSED": 66
+        }
+      },
+      "current_poc": {
+        "FN": 1709,
+        "FP": 0,
+        "TP": 0,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 1709,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_vendor_tree_records": 0,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 0,
+        "input_records": 66,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 66,
+        "reference_complete_records": 66,
+        "reference_field_occurrences": 1709,
+        "reference_issues": {},
+        "reference_partial_records": 0,
+        "reference_scored_records": 66,
+        "statuses": {
+          "PARTIAL": 66
+        }
+      }
+    }
+  },
+  "learning_performed": false,
+  "limitations": [
+    "Wrapper transformations are authored from documented deployment conventions, not downloaded end-to-end captures.",
+    "The same 66 source bodies occur in three wrapper forms; they are not 198 statistically independent records.",
+    "Original 284 source outputs must remain exactly unchanged; plain structured logs do not gain extraction accuracy.",
+    "First-party WAF examples include placeholders and two non-parseable snippets; all snippets are accounted, only valid JSON is field-scored."
+  ],
+  "module_provenance": {
+    "current_plus_security_envelope": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    },
+    "current_poc": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    }
+  },
+  "native_verified": false,
+  "prediction_sha256": "063ad5cc436fb6dbf3e81b28e16fa9db00474abf8022b7a848b3c9bfa4df1af1",
+  "reference_contract": "Complete typed JSON vendor body and exact original byte spans. Generated syslog envelope metadata excluded from field KPI.",
+  "scope": "Source-derived security deployment-form conformance; not unseen production logs",
+  "source_commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+  "source_redaction_status": "UNASSESSED_NOT_UNMASKED_ONLY",
+  "target_verified": false,
+  "unmodified_source_output_invariance": {
+    "all_original_records_preserved": true,
+    "exactly_unchanged": 284,
+    "records": 284
+  },
+  "upstream_source_bodies": 66
+}

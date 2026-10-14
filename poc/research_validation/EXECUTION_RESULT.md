@@ -1,3 +1,5 @@
+> Historical checkpoint. The authoritative current security-only comparison is `SECURITY_VALIDATION_RESULT.md` and `final-current-security-summary.json` against `c2f4644` using `security_source.parse_security_source`. Earlier blocked H3 edits are now resolved; earlier CEE gains against `2fee28f` are not current-main gains.
+
 # Independent Parser Extraction Validation — Executed Results
 
 > Follow-on checkpoint: see NEXT_POC_RESULT.md for H2r and the newly completed AWS-format source evaluation. The original Zeek/H3 evaluation below remains specifically incomplete. Historical results below are preserved.

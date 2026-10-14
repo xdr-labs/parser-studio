@@ -1,28 +1,55 @@
-# Independent extraction validation PoC
+# ACTIVE Independent Security-Source Validation PoC
 
-Status: ACTIVE. Owner explicitly requested a separate verification PoC and an apples-to-apples comparison with the current engine on 2026-10-14.
+Status: ACTIVE / CHATGPT_CHAT / Chat mode / dev-atlas / engine research only.
+Owner scope: ordinary security-system logs, including complex AWS WAF, IPS/IDS,
+NGFW and network-security source formats. Sentence-style prose is not primary
+scope. Dictionary mapping is later; masking recognition is lowest priority.
 
-Implementer: CHATGPT_CHAT, Chat mode, dev-atlas.
-Baseline: acc3a903e19597af44635b243fa4be3b4949e35f, the actual local/remote PR13 head at start. Main PoC and its untracked test_source_kv.py are not edited. Only poc/research_validation/ may change. No production, UI, Dictionary work, hosted AI, credential changes, merges or releases.
+## Isolation and current comparison
+- Repository: xdr-labs/parser-studio; issue14; draft PR15, unmerged.
+- Worktree: /home/aella/parser-studio-validation-poc-20261014
+- Branch: poc/research-validation-20261014. Only poc/research_validation/ changes.
+- Actual main comparison: c2f464444a7aa899bd8b251507234720e4cbdde2,
+  security_source.parse_security_source, not the historical parse_source API.
+- Main worktree and its generic-body WIP remain untouched. No reset/clean/stash,
+  main packet replacement, production, auth change, merge or release.
 
-## Bounded experiment order
-1. Freeze baseline and create independent exact field/value/byte-span scoring.
-2. Compare occurrence-preserving lexical KV, raw-only multi-sample dialect inference, and explicit source-metadata import. These are research-inspired prototypes, not reproductions of every cited paper.
-3. Run independent generated conformance cases and already pinned actual-source compatibility corpus separately. Freeze candidate before first external source read; evaluate additional upstream logs independently. Preserve negative results, unknown source-redaction status and all denominators.
-4. Run safety/negative/metamorphic regressions, ablations and timing; publish aggregate-only evidence.
-5. Commit/push separate draft PR, verify remote and CI, append comparison to Issue1 without replacing its ongoing ACTIVE packet.
+## Completed security checkpoint
+- Main added CEE support concurrently; final comparison was refreshed using an
+  isolated exact-current snapshot. Do not reuse obsolete CEE gains.
+- Unmodified security284:279 field-scored /7580 fields, zero FP/FN in current
+  and selected composition. Five NUL-corrupted records separately retained;
+  one malformed KV tail prefix-scored as PARTIAL. Full complete276/284.
+- Official AWS WAF10 code blocks:8 JSON examples/268 fields exact;2 non-parseable
+  snippets retained outside field scoring. FortiGate IPS7/292 and Suricata
+  alert24/748 are explicit subsets of the original corpus.
+- CEE forms264 derived from66 bodies: current and composed6836/6836 fields;
+  whole independent CEE replacement loses1709 fields. REJECT replacement.
+- Zeek187 physical=127 data+60 metadata/preamble. Current0 TP/44 FP/3132 FN;
+  current+declared-metadata3132 TP/0 FP/FN. The6 provenance preambles remain raw.
+- Selected security_document.py uses the current security API for every ordinary
+  event. Original284 output structures are unchanged. No H1 KV replacement.
+- Prior malformed-metadata guard and preamble accounting WIP finalized; prior
+  denials are not current blockers. Independent57/57 and main-scope58/58 PASS,
+  no skips. Generic repository CI is recorded on the actual research commit.
 
-## Acceptance
-No baseline source edits; raw records retained; source fields include constant values; false-positive fields and falsely complete records are counted. No universal accuracy or new-vendor generalization claim from synthetic or familiar corpus scores. No raw fixtures, learned customer templates or credentials committed. Only proposed adoption if measured evidence supports it.
+## Authoritative evidence
+SECURITY_VALIDATION_RESULT.md; final-current-security-summary.json;
+security-current-tests.json; current-main-regression-tests.json. Original logs,
+reference examples and private predictions remain ignored. Earlier reports are
+historical; source-derived transport forms are not new production captures.
 
-## Latest executed checkpoint — H2r follow-on
+## First remaining executable work
+Extend independently sourced commercial IPS/NGFW CEF/LEEF and rare version
+subtypes; freeze the candidate before new source acquisition and compare the
+actual current security entry point. Preserve existing negative results. Then
+qualify source-schema rotation/mixed-source admission and only additive fixes.
+No generic prose mining, repeated broad research, main-engine integration,
+Dictionary, UI, native/DP/sensor or release work in this lane without scope change.
 
-Main comparison remains exact 2fee28f; the main worktree now has 14 untracked body-alignment experiments, preserved and NOT included. H2r is independently implemented in layout_inference.py and tested; no main engine files changed. Authoritative current evidence: NEXT_POC_RESULT.md, layout-comparison-summary.json, flow-source-manifest.json and layout-baseline-integrity.json.
-
-New-source AWS-format upstream fixtures: 33 physical = 11 train + 21 heldout + 1 JSON control; zero exclusions. Current and previous H2 have 0/638 correct fields on the 21 space records; H2r has TP506/FP0/FN132, F1 88.46%, exact16/21. Candidate frozen before new source acquisition. These are Elastic regression fixtures, not verified production data or unmasked-only evidence. Five rare/untrained cases remain RAW_ONLY and count as misses.
-
-New authored conformance240: main F1 14.81%, previousH2 39.02%, H2r93.88%. PreviousH2 false COMPLETE72 -> H2r0, but H2r still emits72 false positional proposals on source-switch prose; that is24 more FP than main. Do not present this as globally safe or hide partial predictions. Prior264 remains main67.47% / H2,H2r93.20%; known256/14645 and mainKV128/352, JSON128/512 plus64 routing probes remain unchanged.
-
-H2r focused15/15 PASS; complete independent suite32 PASS/1 ERROR. H3 malformed-metadata error remains. Same candidate.py guard and benchmark.py Zeek-accounting edits were blocked again on two normal same-tool/dev-atlas/path attempts; unchanged hashes prove no edits. No bypass. A distinct H2r implementation retry succeeded normally and does not call or replace H3/Zeek. Do not re-label old Zeek data as scored.
-
-Next: normally retry the same H3 operations under permitted current conditions; otherwise continue the separate ambiguity/rare-source validation without bypass. Preserve frozen first-pass negatives; no broad research repeat, no H1 replacement, no production, integration, merge or release. User configuration action: none identified.
+## Resume discipline
+Read this packet plus issue14's latest checkpoint and actual Git/PR/CI state.
+If the main lane advanced, use its latest committed security API rather than an
+old core API or dirty source files. Preserve all worktrees and licensed caches.
+Retry old restrictions only if an actual remaining operation is still blocked;
+none is presently outstanding. User configuration action: none.

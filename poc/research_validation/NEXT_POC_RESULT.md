@@ -1,3 +1,5 @@
+> Historical checkpoint. The authoritative current security-only comparison is `SECURITY_VALIDATION_RESULT.md` and `final-current-security-summary.json` against `c2f4644` using `security_source.parse_security_source`. Earlier blocked H3 edits are now resolved; earlier CEE gains against `2fee28f` are not current-main gains.
+
 # Independent PoC follow-on: H2r layout inference
 
 Status: EXPERIMENTAL SLICE VERIFIED; full H1/H2/H3 prototype still RED.

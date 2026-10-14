@@ -1,0 +1,32 @@
+{
+  "baseline_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "baseline_entrypoint": "security_source.parse_security_source",
+  "baseline_integrity": {
+    "engine.py": "e654e7236123db68019f6929cdb61c87ad11d4a7a61ef5e1748e68ef156cb1de",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "security_source.py": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "34de798678e81642f8719f04d62524118eae937c86b9ef6c617089f1bfdffbe1"
+  },
+  "candidate_module_hashes": {
+    "candidate.py": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
+    "security_document.py": "579ca6dfe5ef14140c55ebe57b9a117380d8e269cb124453e18682060bf42197",
+    "security_envelopes.py": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a"
+  },
+  "caveat": "RED control predates current main CEE implementation; it is not a current-main accuracy gain.",
+  "contract": "security-poc-current-test-evidence.v1",
+  "envelope_red_against_historical_2fee28f": {
+    "errors": 1,
+    "failures": 3,
+    "passes": 4,
+    "tests": 8
+  },
+  "errors": 0,
+  "failures": 0,
+  "python": "3.12.3",
+  "skips": 0,
+  "success": true,
+  "tests": 57
+}

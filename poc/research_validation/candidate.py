@@ -318,13 +318,17 @@ def parse_document(records: list[str], *, metadata: bool = True, kv: bool = True
                 event = parse_source(raw)
             else:
                 # Zeek ASCII has no CSV quote escaping; literal quotes stay literal.
-                cells = delimited_cells(raw, delimiter, '')
-                if len(cells) != len(names):
-                    event = _event(raw, 'DECLARED_DELIMITED', [], [], ['DECLARED_SCHEMA_WIDTH_MISMATCH'])
+                try:
+                    cells = delimited_cells(raw, delimiter, '')
+                except ValueError as exc:
+                    event = _event(raw, 'DECLARED_DELIMITED', [], [], [str(exc)])
                 else:
-                    event = _event(raw, 'DECLARED_DELIMITED',
-                                   [(name, v, a, b) for name, (v, a, b) in zip(names, cells)],
-                                   [(0, len(raw))], [])
+                    if len(cells) != len(names):
+                        event = _event(raw, 'DECLARED_DELIMITED', [], [], ['DECLARED_SCHEMA_WIDTH_MISMATCH'])
+                    else:
+                        event = _event(raw, 'DECLARED_DELIMITED',
+                                       [(name, v, a, b) for name, (v, a, b) in zip(names, cells)],
+                                       [(0, len(raw))], [])
             result.events.append((index, event))
         else:
             result.events.append((index, parse_candidate(raw, kv=kv, dialect=dialect)))
