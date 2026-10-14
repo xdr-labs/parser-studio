@@ -3,10 +3,12 @@
 Never claim native Fluentd or target verification. Do not log source values.
 """
 from __future__ import annotations
+import hashlib
 import json
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlsplit
 from multipass_adjudicator import parse_security_multipass
+from security_framing import parse_security_batch
 from stellar_dictionary import (CEF_DICTIONARY_URL,DICTIONARY_REVISION,OFFICIAL_DICTIONARY_URL_65,
                                 OFFICIAL_DICTIONARY_URL_70,normalize_stellar_dictionary)
 from source_parse import assert_source_accounting
@@ -14,10 +16,7 @@ from visible_redaction import CONTRACT as REDACTION_CONTRACT,assess_visible_reda
 
 MAX_BYTES=65536
 
-def preview(raw:str)->dict:
-    if not isinstance(raw,str) or not raw or len(raw.encode('utf8'))>MAX_BYTES:
-        raise ValueError('SOURCE_LIMIT')
-    event=parse_security_multipass(raw)
+def _preview_event(raw:str,event)->dict:
     assert_source_accounting(event)
     def region(a:int,b:int)->dict:
         return {'startByte':len(raw[:a].encode('utf8')),'endByte':len(raw[:b].encode('utf8'))}
@@ -63,6 +62,38 @@ def preview(raw:str)->dict:
             'redaction':redaction_view,
             'nativeVerified':False,'targetVerified':False}
 
+
+def preview(raw:str)->dict:
+    if not isinstance(raw,str) or not raw or len(raw.encode('utf8'))>MAX_BYTES:
+        raise ValueError('SOURCE_LIMIT')
+    return _preview_event(raw,parse_security_multipass(raw))
+
+
+def preview_batch(raw:str)->dict:
+    if not isinstance(raw,str) or not raw or len(raw.encode('utf8'))>MAX_BYTES:
+        raise ValueError('SOURCE_LIMIT')
+    batch=parse_security_batch(raw,max_events=500,max_bytes=MAX_BYTES,
+                               parser=parse_security_multipass)
+    return {
+        'contract':'parser-studio.multipass-source-batch-preview.v0.1',
+        'sourceSha256':hashlib.sha256(raw.encode('utf8')).hexdigest(),
+        'sourceBytes':len(raw.encode('utf8')),
+        'eventCount':len(batch.frames),
+        'events':[{
+            'index':index,
+            'startByte':frame.start_byte,
+            'endByte':frame.end_byte,
+            'preview':_preview_event(frame.raw,frame.event),
+        } for index,frame in enumerate(batch.frames)],
+        'separators':[{
+            'startByte':separator.start_byte,
+            'endByte':separator.end_byte,
+            'kind':separator.kind,
+        } for separator in batch.separators],
+        'nativeVerified':False,
+        'targetVerified':False,
+    }
+
 def allowed_origin(origin:str|None)->bool:
     if origin is None:return True
     try:
@@ -77,7 +108,8 @@ def allowed_origin(origin:str|None)->bool:
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,format,*args):pass
     def do_POST(self):
-        if self.path!='/api/v1/multipass/preview':self.send_error(404);return
+        if self.path not in ('/api/v1/multipass/preview','/api/v1/multipass/preview-batch'):
+            self.send_error(404);return
         if not allowed_origin(self.headers.get('Origin')):
             self.send_error(403);return
         try:
@@ -85,7 +117,8 @@ class Handler(BaseHTTPRequestHandler):
             if not 1<=length<=MAX_BYTES+1024:raise ValueError('SOURCE_LIMIT')
             body=json.loads(self.rfile.read(length).decode('utf8','strict'))
             if not isinstance(body,dict) or set(body)!={'raw'}:raise ValueError('INVALID_REQUEST')
-            result=preview(body['raw']);status=200
+            result=(preview_batch(body['raw']) if self.path.endswith('preview-batch')
+                    else preview(body['raw']));status=200
         except (ValueError,UnicodeError,TypeError,json.JSONDecodeError):
             result={'error':'INVALID_OR_OVERSIZED_SOURCE'};status=422
         except Exception:

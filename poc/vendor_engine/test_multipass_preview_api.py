@@ -1,6 +1,6 @@
 import json
 import unittest
-from multipass_preview_api import allowed_origin,preview
+from multipass_preview_api import allowed_origin,preview,preview_batch
 
 class PreviewContract(unittest.TestCase):
     def test_source_spans_and_residual_are_exact(self):
@@ -74,6 +74,38 @@ class PreviewContract(unittest.TestCase):
         excluded=preview('unsupported sentence only')['redaction']
         self.assertEqual('EXCLUDED_NO_SOURCE_OCCURRENCES',excluded['assessment'])
         self.assertTrue(excluded['excludedEvent'])
+
+    def test_batch_preview_frames_ndjson_and_preserves_source_accounting(self):
+        raw='{"action":"BLOCK","srcip":"192.0.2.1"}\n{"action":"ALLOW","srcip":"192.0.2.2"}'
+        result=preview_batch(raw)
+        self.assertEqual('parser-studio.multipass-source-batch-preview.v0.1',result['contract'])
+        self.assertEqual(2,result['eventCount'])
+        self.assertEqual(['SOURCE_PARSED','SOURCE_PARSED'],
+                         [item['preview']['status'] for item in result['events']])
+        encoded=raw.encode()
+        for item in result['events']:
+            frame=encoded[item['startByte']:item['endByte']].decode()
+            self.assertEqual(item['preview']['sourceBytes'],len(frame.encode()))
+            self.assertEqual(item['preview']['sourceSha256'],
+                             __import__('hashlib').sha256(frame.encode()).hexdigest())
+        partitions=[(x['startByte'],x['endByte']) for x in result['events']]
+        partitions += [(x['startByte'],x['endByte']) for x in result['separators']]
+        position=0
+        for start,end in sorted(partitions):
+            self.assertEqual(position,start);self.assertGreater(end,start);position=end
+        self.assertEqual(len(encoded),position)
+        self.assertFalse(result['nativeVerified']);self.assertFalse(result['targetVerified'])
+
+    def test_batch_preview_uses_security_stream_framing_for_mixed_records(self):
+        raw=('date=2026-10-14 type="utm" subtype="webfilter" srcip=192.0.2.10 action="blocked"\n'
+             'CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.20 act=deny')
+        result=preview_batch(raw)
+        self.assertEqual(2,result['eventCount'])
+        self.assertEqual(['SOURCE_PARSED','SOURCE_PARSED'],
+                         [item['preview']['status'] for item in result['events']])
+        self.assertEqual('192.0.2.10',result['events'][0]['preview']['fields']['srcip'])
+        self.assertEqual('192.0.2.20',
+                         result['events'][1]['preview']['fields']['cef_extension']['src'])
 
     def test_source_limits(self):
         with self.assertRaises(ValueError):preview('')

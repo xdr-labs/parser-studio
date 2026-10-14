@@ -24,14 +24,29 @@ class CiscoAsaConservativeTests(unittest.TestCase):
         self.assertNotIn('connection_id',parse_asa_message('%FTD-6-302020: Built inbound ICMP connection for faddr 192.0.2.1/0').vendor_fields['asa'])
         assert_source_accounting(event)
 
-    def test_deny_protocol_remains_partial_with_exact_spans(self):
+    def test_deny_protocol_full_known_message_is_source_parsed_with_exact_spans(self):
         raw='%ASA-4-106023: Deny udp src outside:192.0.2.1/53 dst inside:198.51.100.1/53'
         event=parse_security_multipass(raw)
         self.assertEqual('Deny',event.vendor_fields['asa']['action'])
         self.assertEqual('udp',event.vendor_fields['asa']['protocol'])
-        self.assertEqual('PARTIAL',event.status)
+        self.assertEqual('192.0.2.1',event.vendor_fields['asa']['src_ip'])
+        self.assertEqual('198.51.100.1',event.vendor_fields['asa']['dst_ip'])
+        self.assertEqual('SOURCE_PARSED',event.status)
         for span in event.value_spans:
             self.assertEqual(event.vendor_fields['asa'][span.source_segments[-1]],raw.encode()[span.start_byte:span.end_byte].decode())
+        assert_source_accounting(event)
+
+    def test_wrapped_full_connection_merges_syslog_envelope_and_cisco_body(self):
+        raw=('May  5 17:51:17 dev01: %FTD-6-302013: Built inbound TCP connection 111111111 '
+             'for net:10.10.10.10/53500 (81.2.69.144/53500) to '
+             'fw111:192.168.2.2/53500 (81.2.69.144/53500)')
+        event=parse_security_multipass(raw)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertEqual('111111111',event.vendor_fields['asa']['connection_id'])
+        self.assertEqual('10.10.10.10',event.vendor_fields['asa']['src_ip'])
+        self.assertEqual('192.168.2.2',event.vendor_fields['asa']['dst_ip'])
+        self.assertIn('syslog',event.vendor_fields)
+        self.assertEqual([],event.unparsed)
         assert_source_accounting(event)
 
     def test_no_inference_from_json_or_ambiguous_multiple_ids(self):

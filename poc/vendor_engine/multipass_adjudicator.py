@@ -177,11 +177,20 @@ def parse_security_once(raw:str)->SourceEvent:
         from security_sonicwall import parse_sonicwall_host_kv
         sonicwall=parse_sonicwall_host_kv(raw)
         if sonicwall is not None and sonicwall.status=='SOURCE_PARSED':return sonicwall
-    # ASA is a conservative fallback only: preserve any already accepted base fields.
-    if not base.vendor_fields:
-        from security_asa import parse_asa_message
-        asa=parse_asa_message(raw)
-        if asa is not None:return asa
+    # Cisco ASA/FTD can appear inside a BSD/Syslog envelope. A fully
+    # delimited known message body is merged with the already accepted envelope;
+    # partial/unknown ASA prose remains a conservative fallback only.
+    from security_asa import parse_asa_message
+    asa=parse_asa_message(raw)
+    if asa is not None and asa.syntax=='CISCO_ASA_FTD_MESSAGE_ID_FULL':
+        if base.vendor_fields:
+            merged=merge_source_events(raw,{'security.base':base,'cisco.asa':asa},
+                                       ('security.base','cisco.asa'))
+            merged.issues=[issue for issue in merged.issues
+                           if issue not in ('NO_SUPPORTED_GRAMMAR','UNSUPPORTED_BSD_BODY','UNSUPPORTED_PRI_BODY')]
+            return merged
+        return asa
+    if not base.vendor_fields and asa is not None:return asa
     cef=parse_security_cef(raw,base_parser=parse_security_source)
     if 'CEF_STANDARD' in cef.syntax:
         events['cef.standard']=cef;contracts.append(candidate_from_event(cef,CEF_EVIDENCE))
