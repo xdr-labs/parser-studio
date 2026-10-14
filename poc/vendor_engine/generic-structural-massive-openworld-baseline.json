@@ -1,0 +1,1866 @@
+{
+  "contract": "parser-studio.poc.generic-structural-massive-openworld-baseline.v1",
+  "corpus_contract": "parser-studio.poc.generic-structural-massive-openworld-corpus.v2",
+  "corpus_event_sha256_set_digest": "85bc3baed89435360157b73a3bc6c0b10348e65afc1f401b42d99f98515c703f",
+  "exceptions": {},
+  "families": {
+    "abnormal_security": {
+      "complete_rate_ppm": 1000000,
+      "events": 29,
+      "issues": 0,
+      "raw_preserved": 29,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 16257,
+      "source_fields": 441,
+      "source_spans": 441,
+      "status_SOURCE_PARSED": 29,
+      "zero_residual": 29,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "arista_ngfw": {
+      "complete_rate_ppm": 0,
+      "events": 141,
+      "issues": 141,
+      "raw_preserved": 141,
+      "residual_byte_rate_ppm": 991081,
+      "residual_bytes": 78341,
+      "source_bytes": 79046,
+      "source_fields": 0,
+      "source_spans": 0,
+      "status_RAW_ONLY": 141,
+      "zero_residual": 0,
+      "zero_residual_rate_ppm": 0
+    },
+    "barracuda": {
+      "complete_rate_ppm": 0,
+      "events": 49,
+      "issues": 50,
+      "raw_preserved": 49,
+      "residual_byte_rate_ppm": 973328,
+      "residual_bytes": 14159,
+      "source_bytes": 14547,
+      "source_fields": 4,
+      "source_spans": 4,
+      "status_PARTIAL": 2,
+      "status_RAW_ONLY": 47,
+      "zero_residual": 0,
+      "zero_residual_rate_ppm": 0
+    },
+    "barracuda_cloudgen_firewall": {
+      "complete_rate_ppm": 1000000,
+      "events": 6,
+      "issues": 0,
+      "raw_preserved": 6,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 2763,
+      "source_fields": 112,
+      "source_spans": 112,
+      "status_SOURCE_PARSED": 6,
+      "zero_residual": 6,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "beyondtrust_epm": {
+      "complete_rate_ppm": 923077,
+      "events": 13,
+      "issues": 1,
+      "raw_preserved": 13,
+      "residual_byte_rate_ppm": 317413,
+      "residual_bytes": 35628,
+      "source_bytes": 112245,
+      "source_fields": 2007,
+      "source_spans": 2007,
+      "status_RAW_ONLY": 1,
+      "status_SOURCE_PARSED": 12,
+      "zero_residual": 12,
+      "zero_residual_rate_ppm": 923077
+    },
+    "checkpoint_email": {
+      "complete_rate_ppm": 1000000,
+      "events": 18,
+      "issues": 0,
+      "raw_preserved": 18,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 23084,
+      "source_fields": 315,
+      "source_spans": 315,
+      "status_SOURCE_PARSED": 18,
+      "zero_residual": 18,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "checkpoint_harmony_endpoint": {
+      "complete_rate_ppm": 1000000,
+      "events": 19,
+      "issues": 0,
+      "raw_preserved": 19,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 32039,
+      "source_fields": 715,
+      "source_spans": 715,
+      "status_SOURCE_PARSED": 19,
+      "zero_residual": 19,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "cisco_duo": {
+      "complete_rate_ppm": 1000000,
+      "events": 61,
+      "issues": 0,
+      "raw_preserved": 61,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 37986,
+      "source_fields": 1133,
+      "source_spans": 1133,
+      "status_SOURCE_PARSED": 61,
+      "zero_residual": 61,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "cisco_ftd": {
+      "complete_rate_ppm": 175725,
+      "events": 552,
+      "issues": 455,
+      "raw_preserved": 552,
+      "residual_byte_rate_ppm": 481355,
+      "residual_bytes": 72532,
+      "source_bytes": 150683,
+      "source_fields": 4101,
+      "source_spans": 4101,
+      "status_PARTIAL": 407,
+      "status_RAW_ONLY": 48,
+      "status_SOURCE_PARSED": 97,
+      "zero_residual": 106,
+      "zero_residual_rate_ppm": 192029
+    },
+    "cisco_meraki": {
+      "complete_rate_ppm": 871795,
+      "events": 273,
+      "issues": 35,
+      "raw_preserved": 273,
+      "residual_byte_rate_ppm": 78907,
+      "residual_bytes": 4878,
+      "source_bytes": 61820,
+      "source_fields": 3672,
+      "source_spans": 3672,
+      "status_RAW_ONLY": 35,
+      "status_SOURCE_PARSED": 238,
+      "zero_residual": 238,
+      "zero_residual_rate_ppm": 871795
+    },
+    "cisco_secure_email_gateway": {
+      "complete_rate_ppm": 138554,
+      "events": 166,
+      "issues": 144,
+      "raw_preserved": 166,
+      "residual_byte_rate_ppm": 255731,
+      "residual_bytes": 15250,
+      "source_bytes": 59633,
+      "source_fields": 2192,
+      "source_spans": 2192,
+      "status_PARTIAL": 143,
+      "status_SOURCE_PARSED": 23,
+      "zero_residual": 41,
+      "zero_residual_rate_ppm": 246988
+    },
+    "cisco_secure_endpoint": {
+      "complete_rate_ppm": 1000000,
+      "events": 404,
+      "issues": 0,
+      "raw_preserved": 404,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 574013,
+      "source_fields": 13309,
+      "source_spans": 13309,
+      "status_SOURCE_PARSED": 404,
+      "zero_residual": 404,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "cisco_umbrella": {
+      "complete_rate_ppm": 488372,
+      "events": 43,
+      "issues": 22,
+      "raw_preserved": 43,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 15959,
+      "source_fields": 857,
+      "source_spans": 857,
+      "status_PARTIAL": 22,
+      "status_SOURCE_PARSED": 21,
+      "zero_residual": 43,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "citrix_waf": {
+      "complete_rate_ppm": 500000,
+      "events": 22,
+      "issues": 11,
+      "raw_preserved": 22,
+      "residual_byte_rate_ppm": 383065,
+      "residual_bytes": 2850,
+      "source_bytes": 7440,
+      "source_fields": 279,
+      "source_spans": 279,
+      "status_PARTIAL": 1,
+      "status_RAW_ONLY": 10,
+      "status_SOURCE_PARSED": 11,
+      "zero_residual": 11,
+      "zero_residual_rate_ppm": 500000
+    },
+    "cloudflare_logpush": {
+      "complete_rate_ppm": 1000000,
+      "events": 81,
+      "issues": 0,
+      "raw_preserved": 81,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 97554,
+      "source_fields": 2939,
+      "source_spans": 2939,
+      "status_SOURCE_PARSED": 81,
+      "zero_residual": 81,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "crowdsec": {
+      "complete_rate_ppm": 1000000,
+      "events": 19,
+      "issues": 0,
+      "raw_preserved": 19,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 45888,
+      "source_fields": 1636,
+      "source_spans": 1636,
+      "status_SOURCE_PARSED": 19,
+      "zero_residual": 19,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "cyberark_epm": {
+      "complete_rate_ppm": 1000000,
+      "events": 31,
+      "issues": 0,
+      "raw_preserved": 31,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 39364,
+      "source_fields": 1320,
+      "source_spans": 1320,
+      "status_SOURCE_PARSED": 31,
+      "zero_residual": 31,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "darktrace": {
+      "complete_rate_ppm": 866667,
+      "events": 15,
+      "issues": 3,
+      "raw_preserved": 15,
+      "residual_byte_rate_ppm": 217322,
+      "residual_bytes": 9071,
+      "source_bytes": 41740,
+      "source_fields": 1270,
+      "source_spans": 1270,
+      "status_RAW_ONLY": 2,
+      "status_SOURCE_PARSED": 13,
+      "zero_residual": 13,
+      "zero_residual_rate_ppm": 866667
+    },
+    "eset_protect": {
+      "complete_rate_ppm": 900000,
+      "events": 50,
+      "issues": 7,
+      "raw_preserved": 50,
+      "residual_byte_rate_ppm": 56322,
+      "residual_bytes": 1850,
+      "source_bytes": 32847,
+      "source_fields": 857,
+      "source_spans": 857,
+      "status_RAW_ONLY": 5,
+      "status_SOURCE_PARSED": 45,
+      "zero_residual": 45,
+      "zero_residual_rate_ppm": 900000
+    },
+    "forescout": {
+      "complete_rate_ppm": 200000,
+      "events": 15,
+      "issues": 12,
+      "raw_preserved": 15,
+      "residual_byte_rate_ppm": 246241,
+      "residual_bytes": 655,
+      "source_bytes": 2660,
+      "source_fields": 80,
+      "source_spans": 80,
+      "status_PARTIAL": 5,
+      "status_RAW_ONLY": 7,
+      "status_SOURCE_PARSED": 3,
+      "zero_residual": 3,
+      "zero_residual_rate_ppm": 200000
+    },
+    "fortinet_forticlient": {
+      "complete_rate_ppm": 1000000,
+      "events": 100,
+      "issues": 0,
+      "raw_preserved": 100,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 27256,
+      "source_fields": 1800,
+      "source_spans": 1800,
+      "status_SOURCE_PARSED": 100,
+      "zero_residual": 100,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "fortinet_fortiedr": {
+      "complete_rate_ppm": 0,
+      "events": 2,
+      "issues": 2,
+      "raw_preserved": 2,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 1351,
+      "source_fields": 22,
+      "source_spans": 22,
+      "status_PARTIAL": 2,
+      "zero_residual": 2,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "fortinet_fortimail": {
+      "complete_rate_ppm": 0,
+      "events": 34,
+      "issues": 34,
+      "raw_preserved": 34,
+      "residual_byte_rate_ppm": 316680,
+      "residual_bytes": 3277,
+      "source_bytes": 10348,
+      "source_fields": 92,
+      "source_spans": 92,
+      "status_PARTIAL": 34,
+      "zero_residual": 0,
+      "zero_residual_rate_ppm": 0
+    },
+    "jamf_protect": {
+      "complete_rate_ppm": 1000000,
+      "events": 73,
+      "issues": 0,
+      "raw_preserved": 73,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 182601,
+      "source_fields": 6674,
+      "source_spans": 6674,
+      "status_SOURCE_PARSED": 73,
+      "zero_residual": 73,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "juniper_netscreen": {
+      "complete_rate_ppm": 0,
+      "events": 100,
+      "issues": 100,
+      "raw_preserved": 100,
+      "residual_byte_rate_ppm": 958607,
+      "residual_bytes": 13409,
+      "source_bytes": 13988,
+      "source_fields": 14,
+      "source_spans": 14,
+      "status_PARTIAL": 5,
+      "status_RAW_ONLY": 95,
+      "zero_residual": 2,
+      "zero_residual_rate_ppm": 20000
+    },
+    "m365_defender": {
+      "complete_rate_ppm": 1000000,
+      "events": 108,
+      "issues": 0,
+      "raw_preserved": 108,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 230676,
+      "source_fields": 5355,
+      "source_spans": 5355,
+      "status_SOURCE_PARSED": 108,
+      "zero_residual": 108,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "microsoft_defender_endpoint": {
+      "complete_rate_ppm": 1000000,
+      "events": 26,
+      "issues": 0,
+      "raw_preserved": 26,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 24719,
+      "source_fields": 672,
+      "source_spans": 672,
+      "status_SOURCE_PARSED": 26,
+      "zero_residual": 26,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "netskope": {
+      "complete_rate_ppm": 1000000,
+      "events": 57,
+      "issues": 0,
+      "raw_preserved": 57,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 118220,
+      "source_fields": 3936,
+      "source_spans": 3936,
+      "status_SOURCE_PARSED": 57,
+      "zero_residual": 57,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "okta": {
+      "complete_rate_ppm": 1000000,
+      "events": 24,
+      "issues": 0,
+      "raw_preserved": 24,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 45704,
+      "source_fields": 1516,
+      "source_spans": 1516,
+      "status_SOURCE_PARSED": 24,
+      "zero_residual": 24,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "panw_cortex_xdr": {
+      "complete_rate_ppm": 1000000,
+      "events": 23,
+      "issues": 0,
+      "raw_preserved": 23,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 100190,
+      "source_fields": 2998,
+      "source_spans": 2998,
+      "status_SOURCE_PARSED": 23,
+      "zero_residual": 23,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "proofpoint_on_demand": {
+      "complete_rate_ppm": 1000000,
+      "events": 55,
+      "issues": 0,
+      "raw_preserved": 55,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 88359,
+      "source_fields": 2625,
+      "source_spans": 2625,
+      "status_SOURCE_PARSED": 55,
+      "zero_residual": 55,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "proofpoint_tap": {
+      "complete_rate_ppm": 1000000,
+      "events": 27,
+      "issues": 0,
+      "raw_preserved": 27,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 31246,
+      "source_fields": 842,
+      "source_spans": 842,
+      "status_SOURCE_PARSED": 27,
+      "zero_residual": 27,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "qualys_vmdr": {
+      "complete_rate_ppm": 1000000,
+      "events": 25,
+      "issues": 0,
+      "raw_preserved": 25,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 157890,
+      "source_fields": 1643,
+      "source_spans": 1643,
+      "status_SOURCE_PARSED": 25,
+      "zero_residual": 25,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "rapid7_insightvm": {
+      "complete_rate_ppm": 1000000,
+      "events": 31,
+      "issues": 0,
+      "raw_preserved": 31,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 128710,
+      "source_fields": 3080,
+      "source_spans": 3080,
+      "status_SOURCE_PARSED": 31,
+      "zero_residual": 31,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "sophos_central": {
+      "complete_rate_ppm": 1000000,
+      "events": 6,
+      "issues": 0,
+      "raw_preserved": 6,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 13745,
+      "source_fields": 333,
+      "source_spans": 333,
+      "status_SOURCE_PARSED": 6,
+      "zero_residual": 6,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "symantec_endpoint_security": {
+      "complete_rate_ppm": 533333,
+      "events": 60,
+      "issues": 28,
+      "raw_preserved": 60,
+      "residual_byte_rate_ppm": 757371,
+      "residual_bytes": 1341583,
+      "source_bytes": 1771369,
+      "source_fields": 15522,
+      "source_spans": 15522,
+      "status_RAW_ONLY": 28,
+      "status_SOURCE_PARSED": 32,
+      "zero_residual": 32,
+      "zero_residual_rate_ppm": 533333
+    },
+    "tenable_io": {
+      "complete_rate_ppm": 1000000,
+      "events": 32,
+      "issues": 0,
+      "raw_preserved": 32,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 60098,
+      "source_fields": 1491,
+      "source_spans": 1491,
+      "status_SOURCE_PARSED": 32,
+      "zero_residual": 32,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "trend_micro_vision_one": {
+      "complete_rate_ppm": 1000000,
+      "events": 46,
+      "issues": 0,
+      "raw_preserved": 46,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 95076,
+      "source_fields": 2636,
+      "source_spans": 2636,
+      "status_SOURCE_PARSED": 46,
+      "zero_residual": 46,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "watchguard_firebox": {
+      "complete_rate_ppm": 407705,
+      "events": 623,
+      "issues": 369,
+      "raw_preserved": 623,
+      "residual_byte_rate_ppm": 439077,
+      "residual_bytes": 66348,
+      "source_bytes": 151108,
+      "source_fields": 6074,
+      "source_spans": 6074,
+      "status_PARTIAL": 48,
+      "status_RAW_ONLY": 321,
+      "status_SOURCE_PARSED": 254,
+      "zero_residual": 254,
+      "zero_residual_rate_ppm": 407705
+    },
+    "zeek": {
+      "complete_rate_ppm": 1000000,
+      "events": 135,
+      "issues": 0,
+      "raw_preserved": 135,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 50254,
+      "source_fields": 1913,
+      "source_spans": 1913,
+      "status_SOURCE_PARSED": 135,
+      "zero_residual": 135,
+      "zero_residual_rate_ppm": 1000000
+    },
+    "zscaler_zpa": {
+      "complete_rate_ppm": 1000000,
+      "events": 13,
+      "issues": 0,
+      "raw_preserved": 13,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 14183,
+      "source_fields": 443,
+      "source_spans": 443,
+      "status_SOURCE_PARSED": 13,
+      "zero_residual": 13,
+      "zero_residual_rate_ppm": 1000000
+    }
+  },
+  "field_semantics_scored": false,
+  "largest_residual_events": [
+    {
+      "event_sha256": "7894f7a3cc20a377509a59eaafee36b2845e213dd463fc7f6b2eee389ef7f8ce",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 64745,
+      "source_bytes": 64745,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "2ee13780ab0ba22463a52ee9dcbe8f0e7d13c150b704fd702053235455e94784",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 57905,
+      "source_bytes": 57905,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "f2640858125f8444865182a0add54c1882d4cb012c716bf9abd326256dd8b7c7",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 57571,
+      "source_bytes": 57571,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "025342718b5faf4f786f1271e0173e6caaa819cd508389cb788d290b88c26ed0",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 55297,
+      "source_bytes": 55297,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "46044bd728644d1da558013e4e6b675465bc3f4cb5f7164e2be0d046abd4d418",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 54858,
+      "source_bytes": 54858,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "3c5c973e1b5b17b378e593c5ceb30408d336657e68588db42e63566aebd01817",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 53519,
+      "source_bytes": 53519,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "23b62cc1cd48788951138863837fd18d93d7ce6e14550251e5ed3a22afad1fb0",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 52465,
+      "source_bytes": 52465,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "025d60b36579e6b97b42dc3355c61bcc8ce65fac9f81a93e34e3e903746d40ec",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 52460,
+      "source_bytes": 52460,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "2c4364efba0141403cd260bb7a313cbeec488820d7f8a032f3d95cbe00e46050",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 51998,
+      "source_bytes": 51998,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "7edda1cf650147d10660c1b677de05f3511ba77b69ad146a94acee6ff474a947",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 49889,
+      "source_bytes": 49889,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "75bb31720fcc7b00f20e4d67400046408084532e13b6bbd9f02b0cc822c5f324",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 49416,
+      "source_bytes": 49416,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "2d78fa356b68474388a3481e3161e1085228f52b063694939a54f74603255fc6",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 48590,
+      "source_bytes": 48590,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "fa68f24801cf70e8b22e76b60b0e2ec832cb34cfd046cdbbb781539aa3d4b817",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 48297,
+      "source_bytes": 48297,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "b4012a5fd347a715ffc349a371eef4de4ea3ac52da26ac5f2d6000d62f2285f7",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 46934,
+      "source_bytes": 46934,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "6d22408b975a5622b48402f10ac1c56db3f4cf9b5949bfcddfba5e14ef0eb75a",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 46820,
+      "source_bytes": 46820,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "af2825a4985584216291001f5c0c29e043f9d9d3894c34e2a4383bb0459e63fb",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 45668,
+      "source_bytes": 45668,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "f6ee240a4e556f32c798558151dc5fe5837a6346882a87413bade22ad6377e32",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 45620,
+      "source_bytes": 45620,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "265eef038e9cc73d654427d8e1877fcb941a50629e473f147ebf369f56c9c0ea",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 45324,
+      "source_bytes": 45324,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "e0a736086d63209a6092e40d011e147db849473db807dcba26e1c807d9640b51",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44845,
+      "source_bytes": 44845,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "4f67ccbb732d90525577326b26b6ff7921e8615bba12a686d1c0335129132c63",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44820,
+      "source_bytes": 44820,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "32bf6b7dd9b0f51db67ded53d0fcd1ee411cb3d372dafd30d72c36205f16cfdc",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44523,
+      "source_bytes": 44523,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "88f1b3b0c7cce710c0fbe0bdcc3192e69411eb62143f8ade77cd2e37f0498cf8",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44475,
+      "source_bytes": 44475,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "c566b19d79530641bfd2702b269c1271829a956df805ec454b6203afdd91bb5e",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44455,
+      "source_bytes": 44455,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "4b68d9a76516e4e5a7d23a7e3834c1376e23995e124e73091fca375c13642d06",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44346,
+      "source_bytes": 44346,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "0d9181fbc3f46d198706cd1ae15f1449ee8543cec4914e130b2c2b4a32e8a947",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 44213,
+      "source_bytes": 44213,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "41b61fcdc5092df596ef8dfdaf811daf47304521bf97e39936ff469c1aa06489",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 39514,
+      "source_bytes": 39514,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "a3192db494c030abf9aed45d7df0f5b4b3fbf0cc18fe355fe3b12cd962351393",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 37258,
+      "source_bytes": 37258,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "4a32e959a481fd1f6d596b47f02d7937763aaefe113cdc60bfd406a5198d088e",
+      "family": "beyondtrust_epm",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 35628,
+      "source_bytes": 35628,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "e6cb029e0b7ac57e4dcd9db1f8887c19c07353f06bf5364bd7e96bb9b78d5eae",
+      "family": "symantec_endpoint_security",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT"
+      ],
+      "residual_bytes": 25758,
+      "source_bytes": 25758,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "38dc7e74ff1ba63f381dee39ff527c8e04754528b9bec2c24bf3f5aa1e0f677b",
+      "family": "darktrace",
+      "issues": [
+        "SOURCE_SYNTAX_ERROR:JSON_DEPTH_OR_FIELD_LIMIT"
+      ],
+      "residual_bytes": 8449,
+      "source_bytes": 8449,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "03cc01ccfcfa25ad8b0dde9904241464d3220e9fd501d386394a5c56b0562ceb",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1569,
+      "source_bytes": 1574,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "36d3837a7a58f570768f26109082b23008f4e3e00fa255260800537efbd26e1f",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1567,
+      "source_bytes": 1572,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "663df4e0d9b13fb29de0c1f77c00dd81f4c11f1fa9b31846f97a5953851b38c5",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1260,
+      "source_bytes": 1265,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "18ae2b9ed05b23b83a105a110bad9fae21cef10ddbb0ae09a02da249618293ff",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1259,
+      "source_bytes": 1264,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "6d3e9e3eb07f3757c9a2efe6452a21ae49f1084e8af10d749307d6c9eb4c4da4",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1201,
+      "source_bytes": 1206,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "45338bce7797d15cf56965bc5cbcc3d59bbef1f1f2452379ef8e978c6ce0a8ea",
+      "family": "cisco_ftd",
+      "issues": [
+        "ASA_MESSAGE_BODY_UNPARSED"
+      ],
+      "residual_bytes": 1124,
+      "source_bytes": 1139,
+      "source_spans": 3,
+      "syntax": "CISCO_ASA_FTD_MESSAGE_ID"
+    },
+    {
+      "event_sha256": "9934beb542799a9d91b36e4b5782d1f97f466ace85ee80b99d6fe66a0cf9bcd3",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1068,
+      "source_bytes": 1073,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "de086f3f4ae9b23d0229c803fdc0a7e02eb286e98ecd1d7e35373f2afb0c54a8",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1050,
+      "source_bytes": 1055,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "7ffbb19b745c58771438aa0c0ee8dddea0329bade80103fc767529ba3718fced",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1043,
+      "source_bytes": 1048,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "e6f0a752cfc78a0c016ddd7aa454a987660d867e21b847fe7fca15e929f2bd6a",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1030,
+      "source_bytes": 1035,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "8fe2cc702ea7956f43757fedcc300d9036622fcc032c7db3a096763e49a2d4fb",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 1019,
+      "source_bytes": 1024,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "e2a83aa272e03ec2f81d23a70c219bdb8fed8ede347f377dfa3de72ead45b069",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 937,
+      "source_bytes": 942,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "820ada2dd36c6fe44ebe0e38facec092b5ee62d6cabc7dd6555886e4c3139af6",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 926,
+      "source_bytes": 931,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "5ecc3578fd99122bc5b56446da28b61e57cc32f283470108033dda6e31686fcd",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 924,
+      "source_bytes": 929,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d797f991a828f2a9a795d4c8994c5c3aeae24831e654a909f2da6c03d6385361",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 905,
+      "source_bytes": 910,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "8059e9babe5114be748e20134b8f973916277b24e5a67ab8c158602a7d5332d1",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 904,
+      "source_bytes": 909,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "622ea98ec90060f57db0326cd649a79801b3d5e3cdec7e100b7510e68a02ba2f",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 900,
+      "source_bytes": 905,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "6a565e190f5f7013b09f10497a9870a436aa80c807fe4911a79c3f5a17fdd39a",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 899,
+      "source_bytes": 904,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "4ec60e6ba2568b695273250b40fa04122c1817a23a03e31d97bd07b278894688",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 887,
+      "source_bytes": 892,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "2c0fc3fbae8cd05f0b802cf7671dfbefc55570da17396de4c6b3205c6f738dce",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 887,
+      "source_bytes": 892,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "f588b06bf8174f02cab6302c9ecae32934a2677872eece0867b0cec2a7355fbc",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 886,
+      "source_bytes": 891,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "53ceb00ef46b2439dfbf51eeea57f39504e65c143bc0802932203feacbd16a18",
+      "family": "cisco_ftd",
+      "issues": [
+        "ASA_MESSAGE_BODY_UNPARSED"
+      ],
+      "residual_bytes": 875,
+      "source_bytes": 890,
+      "source_spans": 3,
+      "syntax": "CISCO_ASA_FTD_MESSAGE_ID"
+    },
+    {
+      "event_sha256": "c5e50decaffd7c1a6e2f1c762565681124a891f83b5a51e07609c5b1f9caebfe",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 864,
+      "source_bytes": 869,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "1a69e4b6bec35a9a5cd79636622fa9df12870eb34b73b1c892035e088475c415",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 863,
+      "source_bytes": 868,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "4996a23ffb3da620b8204a1f9df468681dac421b4c7dfa8d30d39fa005d43731",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 861,
+      "source_bytes": 866,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "c1c05fdc06384a9b536e5bfb1eab4394cff61e96f6b3c7dd587b076d0e9ebc44",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 857,
+      "source_bytes": 862,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "21a58ed2d426d475fd443955b8704894945022c26b619adc5b13c2ff48ef5091",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 854,
+      "source_bytes": 859,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "b5a6f9a5dc7d25727094b959113cccdd654a9f7c77e04465b9e03d6401598ea4",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 853,
+      "source_bytes": 858,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "50a2b86ee74f3e8243fb6e75af1a9dbec5747f42bb4dfb79937ba176455ca6f2",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 851,
+      "source_bytes": 856,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "ab7657f40ab608d132343a985234eb4b57ad5a7c8b50463eaeba1bd6895c9c45",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 843,
+      "source_bytes": 848,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "0509fa7f04a2f2c4f75dbed71e6faea429d67514417c6fe8a73c29e27336a879",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 841,
+      "source_bytes": 846,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "17797ac63f9f7709fbdae7c3155f116aa71c0e8070f4e914c4af2ac214f8f1eb",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 836,
+      "source_bytes": 841,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "ea52f7a4505d823982d66037fff739f03fe15e1e0460ae04e94cd1288e8efe0e",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 822,
+      "source_bytes": 827,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "46fdc608ade23881315de50b9a881e8fe40bbee0f92089e63daa6053e9c5ded3",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 822,
+      "source_bytes": 827,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "e6ff8454b1a4b1aada3fe99da85f2db65b6b02175aec7999d7def02721794028",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 821,
+      "source_bytes": 826,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "fc2a4a0ae74c8065275d0a0e51f54438405152e6eb0b1502378d31c0b1254dc4",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 816,
+      "source_bytes": 821,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "ff9583c682676adc86da5b3268a4353e5ded034db734ecd271f8f65ed4d970bf",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 815,
+      "source_bytes": 820,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "1ff1465cae3d5425813e750004767b161de0e0528c713adccb5332c0ebd8fd81",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 815,
+      "source_bytes": 820,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "71eb6d4fdf1e123aa777506d9bc9cb49b697c93831524fd04f65e23119f0f1a1",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 811,
+      "source_bytes": 816,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "4a9e50e96db35267491ef3139d3cb7af83356aa5b38fcead57f505b96d03484e",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 811,
+      "source_bytes": 816,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "3973af209687ca610bd4ab633c7c87dd56072aa2894347f6b4c28bc96b038745",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 811,
+      "source_bytes": 816,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "e69c58208d26e64c0deee4cb6f15ffcedb1dfab128eac6a63a3c26dc3cf3725d",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 791,
+      "source_bytes": 796,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "fd9a5b124e5057881f8d656082d8850d221b1182d54abeecc37aeaedd1b3bf03",
+      "family": "cisco_ftd",
+      "issues": [
+        "ASA_MESSAGE_BODY_UNPARSED"
+      ],
+      "residual_bytes": 752,
+      "source_bytes": 767,
+      "source_spans": 3,
+      "syntax": "CISCO_ASA_FTD_MESSAGE_ID"
+    },
+    {
+      "event_sha256": "dd003dc99deffce6a669d753c66ce5ba004c46df8ec299d1f145d9df402bcc50",
+      "family": "cisco_ftd",
+      "issues": [
+        "ASA_MESSAGE_BODY_UNPARSED"
+      ],
+      "residual_bytes": 752,
+      "source_bytes": 767,
+      "source_spans": 3,
+      "syntax": "CISCO_ASA_FTD_MESSAGE_ID"
+    },
+    {
+      "event_sha256": "0e16d54f0fd2a4a328b55bc4017457cf8d1e3998e15bb9a42bb0ccd2e2f00030",
+      "family": "eset_protect",
+      "issues": [
+        "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION",
+        "SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID"
+      ],
+      "residual_bytes": 752,
+      "source_bytes": 752,
+      "source_spans": 0,
+      "syntax": "CSV_UNLABELED_CANDIDATE"
+    },
+    {
+      "event_sha256": "64cc9aee8d439e519c625353079f95ed3c1e05a02beba1f834d3ee327f97b6ec",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 667,
+      "source_bytes": 672,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "0087d54a62ef341c6f2c15bde9eeae526bfc8c2374a4298231104fd05cc4d0e2",
+      "family": "cisco_secure_email_gateway",
+      "issues": [
+        "NO_SUPPORTED_GRAMMAR"
+      ],
+      "residual_bytes": 662,
+      "source_bytes": 697,
+      "source_spans": 6,
+      "syntax": "SYSLOG_RFC3164+UNKNOWN"
+    },
+    {
+      "event_sha256": "d1202628195a2a90097b9cf7fd5883f02ff225be609cb7c66c7de37411bdf246",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 661,
+      "source_bytes": 666,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "f512caa185b49e2efdfeec4dba99c17eb49495dcbe393a16233c1a066f413f9c",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 653,
+      "source_bytes": 658,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "4b388ff9135c1ebb2ca1a9e28726046943007917fe1356bff880cc437068c32c",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 653,
+      "source_bytes": 658,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "574d11f96df7219c308368dd2e9413537f9631fd794b565dc33f8ab43ef296a7",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 647,
+      "source_bytes": 652,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "738ee6d6980d7941755b0aa14ab159bc2d8c8452df5fca692ddd6add730c7f3f",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 643,
+      "source_bytes": 648,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "f7cb16743fcddfeeeb236d0de461dc14823c10f00dcafa008eae1a51e0896cdf",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d6edcff5c2654766283b9f66241ea81fa2d4bed0428dd623e3e32d256a0e1f8c",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "9a2da3413c07a9a031bb37c96952bd9a5264a0830d108143fd2e0cd7c3f7fbdf",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "95f01fd1515b299a2d1e6d675575425e9426f28b687c80b0c04bc22c20bc0e6f",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "92d96562943fb701d019f259feffba2dc4b442fc00b17cc691a97a73ba037f08",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "7c51e89277f3ca2aa4c43198a7178442b8786d9cb72b8df5b0056b4b75535f59",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "78a3428279190cada1393115ea8c894974d4ad5568e9fdc2731b213d1f209d87",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "473050f4ab2bbc9964126cc4f762c0556c1d1c8e89f8842fc7ea6e0618e4520a",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "36d38213464e093676dfcee388ecf6350d311645ed03ba33bfeec41f755cdb52",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 640,
+      "source_bytes": 645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "63845a9cae23c011a79507651a74025f8193a79209ed68b2970b48808b4b3682",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 639,
+      "source_bytes": 644,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "a25516cc7cde5dfccbf8ffeef9b0e9c623f53715d426f6b83f8235d49b3c3263",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 635,
+      "source_bytes": 640,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "3e9c3fc496066d832632e5c6b654a4817fcc3cfed9b6943d9482e8bca5661d1d",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 635,
+      "source_bytes": 640,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "aa9a944719a58453d8ab010872d155b7b45fd5bf26a77dc90c941c10fd075307",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 634,
+      "source_bytes": 639,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "40918515cfeda3dec89e14b73f2e8de0f8afbd1f3e8c96d18fb1032cc17552ce",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 633,
+      "source_bytes": 638,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d4458880ad41de99c0af939bb75d33c4cd0b610fd0ddf4124eee9883cdcce4cd",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 632,
+      "source_bytes": 637,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "bde2a80ff0558411a2c7efc225a647dac8bb939e0997d2e7e34cbaab9d79ba19",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 632,
+      "source_bytes": 637,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "678a5cabae406a17e2d3ecd310aec9a03101f49f3c6de4a78ee4e8cfcc0854c0",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 632,
+      "source_bytes": 637,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "6739c5360b2b3c61d0581c7238d0837635457b13f0bb34c6615dbf0c7b671673",
+      "family": "arista_ngfw",
+      "issues": [
+        "UNSUPPORTED_PRI_BODY"
+      ],
+      "residual_bytes": 632,
+      "source_bytes": 637,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    }
+  ],
+  "parser_head": "be48f13dd2956bcaf57096ee36e50cc43cd7af9d",
+  "raw_published": false,
+  "top_issues": [
+    [
+      "UNSUPPORTED_PRI_BODY",
+      580
+    ],
+    [
+      "ASA_MESSAGE_BODY_UNPARSED",
+      386
+    ],
+    [
+      "NO_SUPPORTED_GRAMMAR",
+      249
+    ],
+    [
+      "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION",
+      55
+    ],
+    [
+      "RFC5424_TIMESTAMP_INVALID",
+      35
+    ],
+    [
+      "SOURCE_SIZE_OR_NUL_INVALID",
+      33
+    ],
+    [
+      "KV_TOKEN_UNRECOGNIZED",
+      33
+    ],
+    [
+      "SOURCE_SYNTAX_ERROR:JSON_FIELD_LIMIT",
+      29
+    ],
+    [
+      "UNSUPPORTED_BSD_BODY",
+      6
+    ],
+    [
+      "SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID",
+      3
+    ],
+    [
+      "CEF_NONSTANDARD_ESCAPE_RETAINED",
+      2
+    ],
+    [
+      "ISLAND_DUPLICATE_VENDOR_FIELD",
+      1
+    ],
+    [
+      "SOURCE_SYNTAX_ERROR:JSON_DEPTH_OR_FIELD_LIMIT",
+      1
+    ],
+    [
+      "KV_AFTER_QUOTE_INVALID",
+      1
+    ]
+  ],
+  "top_syntaxes": [
+    [
+      "JSON",
+      1484
+    ],
+    [
+      "UNKNOWN",
+      737
+    ],
+    [
+      "CISCO_ASA_FTD_MESSAGE_ID",
+      386
+    ],
+    [
+      "GENERIC_STRUCTURAL+MIXED",
+      366
+    ],
+    [
+      "WATCHGUARD_FIREBOX_TRAFFIC_PROFILE",
+      211
+    ],
+    [
+      "SYSLOG_RFC3164+UNKNOWN",
+      125
+    ],
+    [
+      "GENERIC_POSITIONAL_CSV",
+      118
+    ],
+    [
+      "SECURITY_SYSLOG_ENVELOPE+KV",
+      42
+    ],
+    [
+      "CSV_UNLABELED_CANDIDATE",
+      36
+    ],
+    [
+      "SYSLOG_RFC5424",
+      35
+    ],
+    [
+      "SECURITY_SYSLOG_ENVELOPE+CEF_STANDARD",
+      19
+    ],
+    [
+      "MERAKI_PROFILE",
+      17
+    ],
+    [
+      "SYSLOG_RFC3164+CSV_UNLABELED_CANDIDATE",
+      17
+    ],
+    [
+      "BSD_SYSLOG+UNKNOWN",
+      5
+    ],
+    [
+      "GENERIC_STRUCTURAL+COMMA_KV",
+      2
+    ],
+    [
+      "SYSLOG_RFC3164+CEF_STANDARD",
+      2
+    ],
+    [
+      "SYSLOG_RFC5424+CSV_UNLABELED_CANDIDATE",
+      2
+    ],
+    [
+      "BSD_SYSLOG+CEF_STANDARD",
+      1
+    ],
+    [
+      "SYSLOG_RFC5424+UNKNOWN",
+      1
+    ],
+    [
+      "MULTIPASS_MERGE[security.base+cef.standard]",
+      1
+    ]
+  ],
+  "total": {
+    "complete_rate_ppm": 609371,
+    "events": 3607,
+    "issues": 1414,
+    "raw_preserved": 3607,
+    "residual_byte_rate_ppm": 348363,
+    "residual_bytes": 1659831,
+    "residual_max": 64745,
+    "residual_p50": 0,
+    "residual_p90": 197,
+    "residual_p95": 274,
+    "residual_p99": 1068,
+    "source_bytes": 4764659,
+    "source_fields": 96920,
+    "source_spans": 96920,
+    "status_PARTIAL": 669,
+    "status_RAW_ONLY": 740,
+    "status_SOURCE_PARSED": 2198,
+    "zero_residual": 2251,
+    "zero_residual_rate_ppm": 624064
+  }
+}
