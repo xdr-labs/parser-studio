@@ -534,6 +534,15 @@ export default function AutoParser({
            <strong>{currentMultiPass.status} · {currentMultiPass.syntax}</strong>
            <p>Extracted fields and source byte spans are shown below. Residuals remain available for AI correction.</p>
            <pre>{JSON.stringify(currentMultiPass.fields,null,2)}</pre>
+           {currentMultiPass.dictionary&&<div className="stellar-dictionary-review" aria-label="Stellar Dictionary normalization suggestions">
+             <strong>Stellar Dictionary review · {currentMultiPass.dictionary.mapped.length} mapped · {currentMultiPass.dictionary.unmappedCount} preserved unmapped</strong>
+             <p>Authoritative exact-name or standardized CEF guidance only. No source values are copied into this metadata, no generic aliases are inferred, and unmapped vendor fields remain unchanged.</p>
+             <div className="stellar-dictionary-grid">{currentMultiPass.dictionary.mapped.map((item,i)=><span key={i}>
+               <b>{item.sourcePath}</b> → {item.targetField} <small>{item.documentedType} · {item.mappingClass==='CEF_STANDARD_ALIAS'?'CEF standard alias':'Exact Dictionary name'} · bytes {item.startByte}–{item.endByte}</small>
+             </span>)}</div>
+             {!!currentMultiPass.dictionary.issues.length&&<small>{currentMultiPass.dictionary.issues.join(' · ')}</small>}
+             <small>Evidence {currentMultiPass.dictionary.dictionaryRevision} · Review only · Source extraction preserved · Native parser and Stellar target NOT VERIFIED</small>
+           </div>}
            {currentMultiPassHighlights?.ok&&<div className="stellar-source-map" aria-label="Multi-Pass source highlights">
              {currentMultiPassHighlights.segments.map((segment,i)=>segment.kind==='plain'?
                <span key={i}>{segment.text}</span>:

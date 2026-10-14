@@ -94,3 +94,9 @@ body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
 .stellar-span-chip,.stellar-residual-chip{display:inline-block;padding:4px 7px;margin:3px;border:1px solid transparent;border-radius:6px;font-size:11px;cursor:pointer}
 .stellar-span-chip{background:#e4f5ee;color:#096443}.stellar-residual-chip{background:#fff0d2;color:#865600}
 .stellar-selected-source{margin:8px 0;padding:8px 10px;border-left:3px solid var(--stellar-orange);background:#fff8f3;font-size:12px}
+.stellar-dictionary-review{margin:10px 0;padding:12px;border:1px solid #c9d8d0;border-radius:9px;background:#f5fbf8}
+.stellar-dictionary-review>strong{display:block;color:#0d684b;font-size:13px;margin-bottom:4px}
+.stellar-dictionary-review>p,.stellar-dictionary-review>small{display:block;color:#5e6863;font-size:11px;line-height:1.5}
+.stellar-dictionary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:5px;margin:8px 0}
+.stellar-dictionary-grid>span{padding:7px 8px;border-radius:6px;background:#fff;border:1px solid #dce7e1;font-size:11px;color:#3b4641}
+.stellar-dictionary-grid small{display:block;color:#707873;margin-top:2px}
