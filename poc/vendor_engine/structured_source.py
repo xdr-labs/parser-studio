@@ -265,9 +265,15 @@ RFC5424_HEAD=re.compile(
     r"(?P<timestamp>\S+) (?P<hostname>\S+) (?P<appname>\S+) "
     r"(?P<procid>\S+) (?P<msgid>\S+) "
 )
+RFC5424_HEAD_ADJACENT_SD=re.compile(
+    r"^<(?P<pri>\d{1,3})>(?P<version>\d{1,2}) "
+    r"(?P<timestamp>\S+) (?P<hostname>\S+) (?P<appname>\S+) "
+    r"(?P<procid>\S+) (?P<msgid>[!-~]{1,32}?)(?=\[)"
+)
 
 
-def extract_rfc5424(raw:str,*,source_preserving:bool=False)->tuple[Fragment,int|None]|None:
+def extract_rfc5424(raw:str,*,source_preserving:bool=False,
+                    allow_adjacent_sd:bool=False)->tuple[Fragment,int|None]|None:
     """RFC5424 v1 bounded header and SD attributes, with optional body.
 
     The default remains strict. source_preserving retains invalid timestamp,
@@ -275,7 +281,10 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False)->tuple[Fragment,int|
     not certify RFC conformance. Copies the *constraints*, not implementation, of our qualified local TS
     scanner. All SD fields are vendor source fields, never ECS mappings.
     """
-    match=RFC5424_HEAD.match(raw)
+    if allow_adjacent_sd:
+        match=RFC5424_HEAD_ADJACENT_SD.match(raw) or RFC5424_HEAD.match(raw)
+    else:
+        match=RFC5424_HEAD.match(raw)
     if not match:
         return None
     result=Fragment()

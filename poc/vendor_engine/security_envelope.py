@@ -53,6 +53,21 @@ def extract_security_envelope(raw:str)->tuple[Fragment,int]|None:
     start=match.end()
     nil_tag=raw.startswith('- ',start) and CSV_START.match(raw,start+2) is not None
     if nil_tag:start+=2
+    # Some security appliances emit RFC3164-style TAG:CEF without an
+    # optional space after the tag colon. Accept that boundary only when the
+    # following byte begins a known structured payload.
+    tag_match=None
+    if not nil_tag and not _structured_payload(raw,start):
+        tag_match=re.match(
+            r'(?P<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?):',
+            raw[start:],
+        )
+        if tag_match is not None:
+            candidate=start+tag_match.end()
+            if _structured_payload(raw,candidate):
+                start=candidate
+            else:
+                tag_match=None
     if not _structured_payload(raw,start):return None
     fields={key:value for key,value in values.items() if value is not None}
     result=Fragment(fields={'syslog':fields},
@@ -60,5 +75,11 @@ def extract_security_envelope(raw:str)->tuple[Fragment,int]|None:
         covered=[(0,match.end())],primitive_fields=len(fields))
     if nil_tag:
         fields['tag']='-';result.spans.append(('syslog.tag',match.end(),match.end()+1))
+        result.primitive_fields+=1;result.covered=[(0,start)]
+    elif tag_match is not None:
+        tag_start=match.end()+tag_match.start('tag')
+        tag_end=match.end()+tag_match.end('tag')
+        fields['tag']=tag_match['tag']
+        result.spans.append(('syslog.tag',tag_start,tag_end))
         result.primitive_fields+=1;result.covered=[(0,start)]
     return result,start
