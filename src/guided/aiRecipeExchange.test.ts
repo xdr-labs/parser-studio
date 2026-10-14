@@ -3,6 +3,7 @@ import {webcrypto} from 'node:crypto';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import {buildReviewableRecipe} from './parserRecipeV2';
+import {toBackendProject} from './backendAdapter';
 import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
  proposeV01FieldMappingFromAI} from './aiRecipeExchange';
 
@@ -74,6 +75,10 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
   expect(draft.mappings).toHaveLength(3);
   if(!proposal.ok)return;
   expect(proposal.candidate.mappings).toHaveLength(4);
+  const translated=toBackendProject(proposal.candidate);
+  expect(translated.ok).toBe(true);
+  if(translated.ok)expect(translated.project.normalization.vendorFields.name)
+   .toEqual({normalized_name:'custom.account_label',data_type:'string'});
   const unavailable={...original.recipe,stages:stages.map(s=>
    s.op==='map_field'&&s.source==='name'?{...s,source:'missing_field'}:s)};
   const unsupported=await importReviewOnlyAIRecipe(JSON.stringify(unavailable),source,draft,suite());

@@ -835,7 +835,7 @@ export default function AutoParser({
          {currentEvidence.issues.map((issue,i)=><span key={i}>{issue}</span>)}
        </div>}
        {currentPair&&<div className="auto-parser-download" aria-label="Generated Auto Parser DRAFT pair">
-         <strong><CheckCircle2 size={17}/> Two DRAFT files verified</strong>
+         <strong><CheckCircle2 size={17}/> Two DRAFT files verified for SHA-256 integrity · Native NOT VERIFIED</strong>
          {currentPair.files.map(file=><button key={file.name} type="button"
            onClick={()=>download(file.name,file.content)}>
            <FileText size={15}/>{file.name} <Download size={15}/>
