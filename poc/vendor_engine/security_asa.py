@@ -4,6 +4,7 @@ import re
 from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting
 
 ASA_ID=re.compile(r'%(ASA|FTD)-(\d)-(\d{6}):[ \t]*')
+ASA_CONNECTION=re.compile(r'\b(?P<action>Built|Teardown) (?P<direction>inbound|outbound) (?P<protocol>TCP|UDP|ICMP) connection\b')
 
 def parse_asa_message(raw:str)->SourceEvent|None:
     if not isinstance(raw,str):return None
@@ -18,6 +19,15 @@ def parse_asa_message(raw:str)->SourceEvent|None:
         value=match.group(index);a,b=match.span(index)
         tree[name]=value
         spans.append(ValueSpan('asa.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('asa',name)))
+    # Independently visible ASA connection grammar; message text remains residual.
+    body=raw[match.end():]
+    conn=ASA_CONNECTION.match(body)
+    if conn is not None:
+        for name in ('action','direction','protocol'):
+            value=conn.group(name)
+            a,b=conn.span(name);a+=match.end();b+=match.end()
+            tree[name]=value
+            spans.append(ValueSpan('asa.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('asa',name)))
     event.vendor_fields={'asa':tree}
     event.value_spans=spans
     event.primitive_fields=len(spans)
