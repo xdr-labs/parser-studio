@@ -1,0 +1,322 @@
+{
+  "contract": "parser-studio.poc.generic-structural-large-qualification-corpus.v1",
+  "corpus_event_sha256_set_digest": "29b7cf0b2f290236e814803420c04319a43cbf0c8a82f493c21e78ad7bcd463a",
+  "families": {
+    "aws_waf": 11,
+    "checkpoint": 23,
+    "cisco_asa": 261,
+    "crowdstrike": 15,
+    "fortinet_fortigate": 118,
+    "panw": 223,
+    "sentinel_one": 8,
+    "sonicwall_firewall": 220,
+    "suricata": 60,
+    "zscaler_zia": 9
+  },
+  "family_count": 10,
+  "files": [
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "cisco_asa",
+      "id": 0,
+      "selected_unique_events": 200,
+      "sha256": "53305e49e53576c319e9d13de41139120442bf8ba02ecbd8c86e020d590eb397",
+      "source_path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-additional-messages.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "cisco_asa",
+      "id": 1,
+      "selected_unique_events": 16,
+      "sha256": "71acc080bcebdf7172ab0f5552067e574cbb56756d13630fb591cb36ece8186a",
+      "source_path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-anyconnect-messages.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "zscaler_zia",
+      "id": 2,
+      "selected_unique_events": 5,
+      "sha256": "841521b04b6c059d6f81a58567e29a58a196687786186195c70747350a446181",
+      "source_path": "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-firewall.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "zscaler_zia",
+      "id": 3,
+      "selected_unique_events": 4,
+      "sha256": "49326df25eec7eb45f8f5509fe4b67e57dfc086d880ce40ffac7f10cf9f8e671",
+      "source_path": "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-firewall-http-endpoint.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "sentinel_one",
+      "id": 4,
+      "selected_unique_events": 8,
+      "sha256": "f5fdd8eac662dd4eda40b044207633574b5cef5f82df3eefdcc80bbf4c8f8d3a",
+      "source_path": "packages/sentinel_one/data_stream/threat/_dev/test/pipeline/test-pipeline-threat.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "crowdstrike",
+      "id": 5,
+      "selected_unique_events": 11,
+      "sha256": "90d362fe5621c5d1cabf8a4b20725a0123531d039c744e1e7f78ec96e81baaf5",
+      "source_path": "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-alert.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "crowdstrike",
+      "id": 6,
+      "selected_unique_events": 2,
+      "sha256": "a466a1125d3c8737b1af92fbea681634b14e3d08c89e49998ce8d572dbbb46b7",
+      "source_path": "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-automated-lead.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "sonicwall_firewall",
+      "id": 7,
+      "selected_unique_events": 38,
+      "sha256": "9a5aae68071b97e10e0f4fa694cf36c76ca84a3204b017ab98c88174899eae71",
+      "source_path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-general.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "sonicwall_firewall",
+      "id": 8,
+      "selected_unique_events": 146,
+      "sha256": "7bf2450fb105f4181374a7875cec4c6eaf9322479c0147643064ff017a169ef4",
+      "source_path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-sonicos70-aws.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "sonicwall_firewall",
+      "id": 9,
+      "selected_unique_events": 32,
+      "sha256": "237b3459f461b97466fda48264b6b388ced8d37073188279cb900f695ba539c8",
+      "source_path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-drizzthacker.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "cisco_asa",
+      "id": 10,
+      "selected_unique_events": 24,
+      "sha256": "0e5e2534d34ab90f25b86002a27dd40dbfa89786eca11cb1d0edd799d5e8ca95",
+      "source_path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-asa-fix.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "sonicwall_firewall",
+      "id": 11,
+      "selected_unique_events": 4,
+      "sha256": "0fc130e10dc7b30531f90433f5229e9b94875cd5afeda80881f87d1ec0f927cc",
+      "source_path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-nat.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "crowdstrike",
+      "id": 12,
+      "selected_unique_events": 2,
+      "sha256": "b61a2abea64ae9938e7cd494c719807be9ed75d78d2bbd3dc7c23a8876082b12",
+      "source_path": "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-correlation-detection.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "cisco_asa",
+      "id": 13,
+      "selected_unique_events": 6,
+      "sha256": "89ab18b241aed911717cc8128b64a7b67257e45c26831c8cd155ab7fd97abc3e",
+      "source_path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-751025-vpn-session.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "cisco_asa",
+      "id": 14,
+      "selected_unique_events": 5,
+      "sha256": "61fa006c0baec1500c0c4a796b573109fc40768a16d6707e723601e69a99e198",
+      "source_path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-302020-direction.log"
+    },
+    {
+      "dataset": "independent_vendor_holdout",
+      "family": "cisco_asa",
+      "id": 15,
+      "selected_unique_events": 10,
+      "sha256": "f7b07468fe99a16c725148d39a6bc1518d91123060de602ccdd90dfeba11a213",
+      "source_path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-106023-iface-with-prefix.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "fortinet_fortigate",
+      "id": "fortigate_62",
+      "selected_unique_events": 57,
+      "sha256": "6bc2d9721c7b386ce2c499ab3bb50e08845625b78ae0076730a02ca6929ed8e6",
+      "source_path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-6-2.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "fortinet_fortigate",
+      "id": "fortigate_72",
+      "selected_unique_events": 7,
+      "sha256": "f70ceda157b17dc9151dc7bc58eccff13a197b0356fbde356947dfad13c6774f",
+      "source_path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-2.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "fortinet_fortigate",
+      "id": "fortigate_74",
+      "selected_unique_events": 54,
+      "sha256": "ef04aa4d229c924ee2a0fd44923cbe412392ea40a37b083ba756857d7a671d97",
+      "source_path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-4.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "checkpoint",
+      "id": "checkpoint_80",
+      "selected_unique_events": 2,
+      "sha256": "5f6e7c985cd4387f45a758300ea0277e55df205790587379f8b7f42dbd807aaf",
+      "source_path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-r80x.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "checkpoint",
+      "id": "checkpoint_81",
+      "selected_unique_events": 21,
+      "sha256": "8a4496f0ba850d2d85dc8434bf3fe0266b98829cfc1c0d56a14603caf5856ad4",
+      "source_path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-r81x.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "panw",
+      "id": "panos_threat",
+      "selected_unique_events": 219,
+      "sha256": "b697b9a427b9d5b248d68d35eaa1713cf93c8f578a948d55c352d9119c38c7fe",
+      "source_path": "packages/panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-threat-sample.log"
+    },
+    {
+      "dataset": "commercial_security_20261014",
+      "family": "panw",
+      "id": "panos_decryption",
+      "selected_unique_events": 4,
+      "sha256": "c35174f784b4f71913c6985768b069469ff5d9258df56d5037f39ef996f77433",
+      "source_path": "packages/panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-decryption-sample.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf",
+      "selected_unique_events": 5,
+      "sha256": "8852f05a2e00c1e03ed698e5a292dc13c03cb7464e7408cd3eb8c6065ce9dbf4",
+      "source_path": "packages/aws/data_stream/waf/_dev/test/pipeline/test-waf.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_alert",
+      "selected_unique_events": 22,
+      "sha256": "9b85e83c8db440cad6811ba77faf2b2081cf514568eba1ddb0869028a334377d",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-alerts.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_v6",
+      "selected_unique_events": 3,
+      "sha256": "632b6be798370bb1d2a311ca2714e25f3abda89072c8458e303a9dba47e0eb0e",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-6-0.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_metadata",
+      "selected_unique_events": 1,
+      "sha256": "6077f80532b0c9e3cec3ccae1ae94e32b80f70257ae746d41596c6b9944a961f",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-metadata.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_dns",
+      "selected_unique_events": 18,
+      "sha256": "976c8df46922da787acecfd9b13ec62aa5dc9eebc62ef0faf234a0830c5cc7a1",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-dns-4-1-4.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_mixed",
+      "selected_unique_events": 14,
+      "sha256": "8e414e50831f96340502f0cf52d2983dfe0fd64f87db2377c5c10126b38cec15",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-small.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_tls_empty_issuer",
+      "selected_unique_events": 1,
+      "sha256": "af0a6b6938c4329ac2932d198926713d2320a1d9e5e42b38bcbca9bd15b4d395",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-issuerdn.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "suricata",
+      "id": "suricata_tls_empty_subject",
+      "selected_unique_events": 1,
+      "sha256": "ec390fe1a57e386804f8df361893574b3481464183994fff8e32ba60580058ec",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-subject.log"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf_official_01",
+      "selected_unique_events": 1,
+      "sha256": "491eeaadebcc5219c7bc3809be69bbd1c227867eced22924ac3e250ba61cfdd0",
+      "source_path": "logging-examples.html / JSON preformatted example"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf_official_02",
+      "selected_unique_events": 1,
+      "sha256": "08ef7e7982247d4962e8405609fef71a4b45c5c4abd04b1237f12a25acd117ac",
+      "source_path": "logging-examples.html / JSON preformatted example"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf_official_03",
+      "selected_unique_events": 1,
+      "sha256": "97cd3c7371d36889b769c9feaaaa8c69e28a6123eddbfa7e238f3b4ddd84c72f",
+      "source_path": "logging-examples.html / JSON preformatted example"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf_official_04",
+      "selected_unique_events": 1,
+      "sha256": "b4cf782a275b9450ff602c2cd485493e0d7a881c4eaeb11c759a6f85423d4692",
+      "source_path": "logging-examples.html / JSON preformatted example"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf_official_05",
+      "selected_unique_events": 1,
+      "sha256": "e9bfe3e51b0b6aa66e091bc718f0972c1d0d11884312ce48b44895749ac27f59",
+      "source_path": "logging-examples.html / JSON preformatted example"
+    },
+    {
+      "dataset": "security-source-manifest",
+      "family": "aws_waf",
+      "id": "aws_waf_official_06",
+      "selected_unique_events": 1,
+      "sha256": "7df7140ba957df3971e8e37903b6439f596ab208e3bfa8bd399409c6e2a13f7d",
+      "source_path": "logging-examples.html / JSON preformatted example"
+    }
+  ],
+  "freeze_parent_head": "07cc6ef87992735216beaea27d05567c169ea9e8",
+  "frozen_before_v2_parser_changes": true,
+  "license_policy": "Raw upstream fixtures remain in ignored local research caches; only provenance, counts and digests are committed.",
+  "raw_published": false,
+  "scope": "SECURITY_PRODUCT_SOURCE_EXTRACTION_ONLY_FIELD_SEMANTICS_EXCLUDED",
+  "selection_rule": "All globally unique nonblank events from the pinned files below; fixtures marked SINGLE_MULTILINE_JSON_OBJECT count as one event.",
+  "unique_event_count": 948
+}
