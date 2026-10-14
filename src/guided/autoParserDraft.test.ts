@@ -48,6 +48,21 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(toBackendProject(result.draft).ok).toBe(true);
    expect(JSON.stringify(result)).not.toContain('SECRET_ONE');
  });
+ it('does not auto-map observed empty values that would make an otherwise valid sample fail normalization',()=>{
+   const source=[
+    '{"event":"allow","httpRequest":{"args":"","clientIp":"192.0.2.10"}}',
+    '{"event":"deny","httpRequest":{"args":"","clientIp":"192.0.2.11"}}',
+   ].join('\n');
+   const result=prepare(source);
+   expect(result.ok).toBe(true);
+   if(!result.ok)return;
+   expect(result.draft.mappings.map(m=>m.source)).toContain('event');
+   expect(result.draft.mappings.map(m=>m.source)).toContain('httpRequest.clientIp');
+   expect(result.draft.mappings.map(m=>m.source)).not.toContain('httpRequest.args');
+   expect(preview(source,result.draft).counts).toMatchObject({
+    total:2,matched:2,extracted:2,normalized:2,failures:0,
+   });
+ });
  it('never overwrites customized approved mapping when the user has already edited it',()=>{
    const draft=createDraft();draft.mappings[0]!.target='custom.owner_choice';
    const r=prepare(sample2,draft);

@@ -1,4 +1,5 @@
 import type { BackendParserProject } from './backendAdapter';
+import {validatePreviewRegexPattern} from '../regexSafety';
 
 /** A private loopback API advertises supported authoring features, not deployment approval. */
 export interface BackendCapabilities {
@@ -6,7 +7,7 @@ export interface BackendCapabilities {
   projectSchemaRevision: '0.1';
   authoring: {
     receiverProtocols: Array<'udp' | 'tcp'>;
-    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace'>;
+    extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'regex'>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
@@ -18,12 +19,16 @@ export interface BackendCapabilities {
     javaBlankLineOtherTransports?: false;
     javaBlankLineDelimiter?: 'LF_LF';
     javaStackTraceGrammar?: 'EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1';
+    boundedRegexNamedCaptureSubset?: true;
+    boundedRegexMaxPatternChars?: 256;
+    boundedRegexRuntimeTimeoutMs?: 50;
     rfc3164StrictTaggedMessageSubset?: true;
+    rfc3164TaglessStructuredSecuritySubset?: true;
     rfc3164TimePolicy?: 'YEAR_AND_ZONE_UNKNOWN';
     rfc3164NativeTimeReconstruction?: false;
-    rfc3164BodyFormats?: Array<'raw'|'json'|'kv'|'cef'|'leef'>;
+    rfc3164BodyFormats?: Array<'raw'|'json'|'kv'|'cef'|'leef'|'regex'>;
     /** Only advertised by backend revisions implementing bounded nested bodies/SD. */
-    rfc5424BodyFormats?: Array<'raw' | 'json' | 'kv' | 'cef' | 'leef'>;
+    rfc5424BodyFormats?: Array<'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex'>;
     rfc5424AdjacentStructuredDataSubset?: true;
     rfc5424StructuredDataMaxBytes?: 1024;
     leefHexSeparatorSubset?: true;
@@ -100,9 +105,9 @@ export interface BackendCapabilities {
 }
 
 const BASE = '/api/v1/parser-pairs';
-const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace']);
+const KNOWN_FORMATS = new Set(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace','regex']);
 const KNOWN_PROTOCOLS = new Set(['udp', 'tcp']);
-const KNOWN_RFC_BODIES = new Set(['raw','json','kv','cef','leef']);
+const KNOWN_RFC_BODIES = new Set(['raw','json','kv','cef','leef','regex']);
 
 export async function fetchBackendCapabilities(
   requester: typeof fetch = fetch,
@@ -182,6 +187,16 @@ export async function fetchBackendCapabilities(
     throw new Error('Java Stack Trace requires the exact bounded TCP LF LF native framing contract.');
   if(!javaAdvertised&&javaClaims.some(x=>x!==undefined))
     throw new Error('Untrusted Java frame capability without parser support.');
+  const regexAdvertised=a.extractionFormats.includes('regex');
+  const regexClaims=[a.boundedRegexNamedCaptureSubset,a.boundedRegexMaxPatternChars,
+    a.boundedRegexRuntimeTimeoutMs];
+  if(regexAdvertised&&(
+    a.boundedRegexNamedCaptureSubset!==true||
+    a.boundedRegexMaxPatternChars!==256||
+    a.boundedRegexRuntimeTimeoutMs!==50))
+    throw new Error('Regex authoring requires the exact bounded named-capture contract.');
+  if(!regexAdvertised&&regexClaims.some(x=>x!==undefined))
+    throw new Error('Untrusted Regex capability without parser support.');
   const rfc3164Advertised=a.extractionFormats.includes('syslog_rfc3164');
   if(rfc3164Advertised&&(
       a.rfc3164StrictTaggedMessageSubset!==true||
@@ -255,6 +270,19 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     project.receiver.protocols.length!==1||
     project.receiver.protocols[0]!=='tcp'))
     throw new Error('Backend did not explicitly verify TCP-only blank-line JSON framing.');
+  let regexPattern:string|undefined;
+  const extraction=project.extraction;
+  if(extraction.format==='regex')regexPattern=extraction.pattern;
+  else if('syslogBodyFormat' in extraction&&
+    (extraction.format==='syslog_rfc3164'||extraction.format==='syslog_rfc5424')&&
+    extraction.syslogBodyFormat==='regex'&&'pattern' in extraction)
+    regexPattern=extraction.pattern;
+  if(regexPattern!==undefined&&(
+    cap.authoring.boundedRegexNamedCaptureSubset!==true||
+    cap.authoring.boundedRegexMaxPatternChars!==256||
+    cap.authoring.boundedRegexRuntimeTimeoutMs!==50||
+    validatePreviewRegexPattern(regexPattern)!==null))
+    throw new Error('Regex DRAFT requires the exact bounded named-capture safety contract.');
   if(project.extraction.format==='java_stacktrace'&&(
     project.receiver.tcpFraming!=='blank_line_java'||
     project.receiver.protocols.length!==1||
@@ -266,11 +294,17 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     throw new Error('Java DRAFT requires explicit bounded TCP-only LF LF framing.');
   if (project.extraction.format === 'syslog_rfc5424') {
     const mode = project.extraction.syslogBodyFormat ?? 'raw';
-    if ((cap.authoring.rfc5424BodyFormats && !cap.authoring.rfc5424BodyFormats.includes(mode)) ||
-        (['cef', 'leef'].includes(mode) &&
-          !cap.authoring.rfc5424BodyFormats?.includes(mode as 'cef' | 'leef'))) {
+    if (!cap.authoring.rfc5424BodyFormats?.includes(mode)) {
       throw new Error('Backend does not explicitly support RFC5424-embedded ' + mode.toUpperCase() + ' extraction.');
     }
+  }
+  if(project.extraction.format==='syslog_rfc3164'){
+    const mode=project.extraction.syslogBodyFormat??'raw';
+    if(cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
+      cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
+      cap.authoring.rfc3164NativeTimeReconstruction!==false||
+      !cap.authoring.rfc3164BodyFormats?.includes(mode))
+      throw new Error('Backend does not explicitly support reviewed RFC3164 '+mode.toUpperCase()+' extraction.');
   }
   if(project.extraction.format==='mixed'){
     const formats=project.extraction.mixedFormats;

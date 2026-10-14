@@ -34,6 +34,18 @@ describe('reviewed standalone structured log families in local no-code preview',
     });
   });
 
+  it('keeps spaces inside CEF extension values until the next explicit key boundary',()=>{
+    const draft=createDraft();draft.format='cef';
+    const raw='CEF:0|Trend Micro|Vision One|1|100|Detection|7|src=192.0.2.10 msg=Malware detected on endpoint act=blocked cs1=a\\=b';
+    const parsed=extractFields(raw,'cef',draft);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.fields).toMatchObject({
+      src:'192.0.2.10',msg:'Malware detected on endpoint',act:'blocked',cs1:'a=b',
+    });
+    const result=preview(raw,draft);
+    expect(result.counts).toMatchObject({total:1,matched:1,extracted:1,failures:0});
+  });
+
 
   it.each([
     ['json', '{"action":"deny","src_ip":"198.51.100.10"}', {action:'deny',src_ip:'198.51.100.10'}],
@@ -72,4 +84,40 @@ describe('reviewed standalone structured log families in local no-code preview',
     expect(extractFields('LEEF:9.9|a|b|c|d|x=1', 'leef', draft).errors.length).toBeGreaterThan(0);
     expect(extractFields('LEEF:1.0|a|b|c|d|broken', 'leef', draft).errors.length).toBeGreaterThan(0);
   });
+  it('preserves the RFC3164 envelope while applying only an explicitly reviewed bounded Regex to the message body', () => {
+    const raw='<134>May 5 17:51:17 dev01 %FTD-6-302013: Built inbound TCP connection 111 for net:10.10.10.10/53500 to fw:192.168.2.2/443';
+    const pattern='^%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+) to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+)$';
+    const draft=createDraft();
+    draft.format='syslog_rfc3164';draft.syslogBodyFormat='regex';draft.pattern=pattern;
+    draft.mappings=[
+      {id:'cid',source:'body.connection_id',target:'custom.connection_id',type:'integer'},
+      {id:'src',source:'body.src_ip',target:'custom.source_ip',type:'ip'},
+      {id:'spt',source:'body.src_port',target:'custom.source_port',type:'port'},
+      {id:'dst',source:'body.dst_ip',target:'custom.destination_ip',type:'ip'},
+      {id:'dpt',source:'body.dst_port',target:'custom.destination_port',type:'port'},
+    ];
+    draft.guided={...draft.guided!,groups:{cid:'top_fields',src:'top_fields',spt:'top_fields',dst:'top_fields',dpt:'top_fields'},
+      classification:{defaultIndex:'Syslog',rules:[]}};
+    const parsed=extractFields(raw,'syslog_rfc3164',draft);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.fields).toMatchObject({
+      syslog_pri:134,syslog_hostname:'dev01',
+      body:{connection_id:'111',src_ip:'10.10.10.10',src_port:'53500',dst_ip:'192.168.2.2',dst_port:'443'},
+    });
+    const result=preview(raw,draft);
+    expect(result.counts).toMatchObject({total:1,matched:1,extracted:1,normalized:1,failures:0});
+    expect(result.events[0].normalized).toMatchObject({
+      'custom.connection_id':111,'custom.source_ip':'10.10.10.10','custom.source_port':53500,
+      'custom.destination_ip':'192.168.2.2','custom.destination_port':443,
+    });
+    const converted=toBackendProject(draft);
+    expect(converted.ok).toBe(true);
+    if(converted.ok)expect(converted.project.extraction).toEqual({
+      format:'syslog_rfc3164',syslogBodyFormat:'regex',pattern,
+    });
+    draft.pattern='(?<x>.*)+';
+    expect(extractFields(raw,'syslog_rfc3164',draft).errors.length).toBeGreaterThan(0);
+    expect(toBackendProject(draft).ok).toBe(false);
+  });
+
 });

@@ -22,6 +22,22 @@ describe('Multi-Pass exact source highlight map',()=>{
    {kind:'residual',startByte:14,endByte:20,text:'tail=?'},
   ]);
  });
+ it('preserves empty extracted values but does not expose zero-byte correction controls',()=>{
+  const raw='user="" action=allow';
+  const emptyAt=new TextEncoder().encode('user="').byteLength;
+  const result=buildMultiPassSourceHighlights(raw,preview({
+   spans:[
+    {path:'user',startByte:emptyAt,endByte:emptyAt},
+    {path:'action',startByte:new TextEncoder().encode('user="" action=').byteLength,
+     endByte:new TextEncoder().encode(raw).byteLength},
+   ],
+  }));
+  expect(result.ok).toBe(true);
+  if(!result.ok)return;
+  expect(result.segments.map(item=>item.text).join('')).toBe(raw);
+  expect(result.selectable.some(item=>item.path==='user')).toBe(false);
+  expect(result.selectable.some(item=>item.path==='action'&&item.text==='allow')).toBe(true);
+ });
  it('uses UTF-8 byte offsets without splitting multibyte source text',()=>{
   const raw='user=José action=allow';
   const bytes=new TextEncoder();

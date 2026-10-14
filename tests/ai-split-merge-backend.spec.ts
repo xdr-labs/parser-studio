@@ -59,14 +59,16 @@ test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1','Requires the exact pinne
 test('selected-area AI approves one bounded split then merge and compiles exact v0.1/v0.2 DRAFT pair',async({page})=>{
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(source);
+ if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Review Results stage')).toBeVisible();
+ await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
 
  await qualifyAndApply(page,recipe(true,false),'Apply Approved Split/Merge Rule','Split #1');
  await qualifyAndApply(page,recipe(true,true),'Apply Approved Split/Merge Rule','Merge #2');
 
- await page.getByLabel('Review Results stage').getByRole('button',{name:/Test & Generate/}).click();
- await expect(page.getByLabel('Test and Generate stage')).toBeVisible();
+ await page.getByLabel('Fix Problems stage').getByRole('button',{name:/Test & Create/}).click();
+ await expect(page.getByLabel('Test and Create stage')).toBeVisible();
  const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
  expect((await generatedResponse).status()).toBe(200);

@@ -7,7 +7,8 @@ const DICTIONARY_URLS=[
  'https://community.opentext.com/cfs-filesystemfile/__key/communityserver-discussions-components-files/224/3731.CommonEventFormatV25.pdf',
 ] as const;
 const DICTIONARY_TYPES=new Set(['string','integer','ip']);
-const SAFE_PATH=/^[A-Za-z_][A-Za-z0-9_.\-[\]]{0,255}$/;
+const SOURCE_PATH=/^[A-Za-z_][A-Za-z0-9_.@:\-[\]]{0,255}$/;
+const TARGET_PATH=/^[A-Za-z_][A-Za-z0-9_.\-[\]]{0,255}$/;
 const CEF_ALIASES:Record<string,string>={src:'srcip',dst:'dstip',spt:'srcport',dpt:'dstport',act:'action'};
 
 export interface MultiPassRedactionProjection {
@@ -45,6 +46,14 @@ export interface MultiPassSourcePreview {
  redaction?:MultiPassRedactionProjection;
  nativeVerified:false;targetVerified:false;
 }
+
+export interface MultiPassBatchPreview {
+ contract:'parser-studio.multipass-source-batch-preview.v0.1';
+ sourceSha256:string;sourceBytes:number;eventCount:number;
+ events:Array<{index:number;startByte:number;endByte:number;preview:MultiPassSourcePreview}>;
+ separators:Array<{startByte:number;endByte:number;kind:'WHITESPACE'|'UTF8_BOM'}>;
+ nativeVerified:false;targetVerified:false;
+}
 function mappingMatchesContract(sourcePath:string,targetField:string,mappingClass:string):boolean{
  if(mappingClass==='EXACT_DICTIONARY_NAME')
   return sourcePath===targetField||sourcePath===`body.${targetField}`;
@@ -76,20 +85,20 @@ function verifyDictionary(raw:unknown,spans:MultiPassSourcePreview['spans'],size
  for(const item of value.mapped){
   if(!item||typeof item!=='object'||Array.isArray(item)||
    Object.prototype.hasOwnProperty.call(item,'value')||
-   typeof item.sourcePath!=='string'||!SAFE_PATH.test(item.sourcePath)||
-   typeof item.targetField!=='string'||!SAFE_PATH.test(item.targetField)||
+   typeof item.sourcePath!=='string'||!SOURCE_PATH.test(item.sourcePath)||
+   typeof item.targetField!=='string'||!TARGET_PATH.test(item.targetField)||
    !DICTIONARY_TYPES.has(item.documentedType)||
    !['EXACT_DICTIONARY_NAME','CEF_STANDARD_ALIAS'].includes(item.mappingClass)||
    !mappingMatchesContract(item.sourcePath,item.targetField,item.mappingClass)||
    !Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
-   item.startByte<0||item.endByte>size||item.startByte>=item.endByte||
+   item.startByte<0||item.endByte>size||item.startByte>item.endByte||
    !spanKeys.has(item.sourcePath+'\0'+item.startByte+'\0'+item.endByte)||
    targets.has(item.targetField))
    throw new Error('Untrusted Stellar Dictionary projection.');
   targets.add(item.targetField);
  }
  if(value.issues.some(x=>typeof x!=='string'||x.length>160||
-   !/^[A-Z0-9_.:-]+$/.test(x)))
+   !/^[A-Za-z0-9_.:-]+$/.test(x)))
   throw new Error('Untrusted Stellar Dictionary projection.');
  return value as MultiPassDictionaryProjection;
 }
@@ -136,7 +145,7 @@ function verifyRedaction(raw:unknown,source:string,spans:MultiPassSourcePreview[
  for(const item of value.occurrences){
   if(!item||typeof item!=='object'||Array.isArray(item)||
    Object.prototype.hasOwnProperty.call(item,'value')||
-   typeof item.sourcePath!=='string'||!SAFE_PATH.test(item.sourcePath)||
+   typeof item.sourcePath!=='string'||!SOURCE_PATH.test(item.sourcePath)||
    !Number.isSafeInteger(item.occurrence)||item.occurrence!<0||
    !['REDACTED_KEYWORD','MASKED_KEYWORD','ASTERISK_RUN'].includes(item.markerClass)||
    !Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
@@ -155,14 +164,8 @@ function verifyRedaction(raw:unknown,source:string,spans:MultiPassSourcePreview[
  }
  return value as MultiPassRedactionProjection;
 }
-export async function requestMultiPassPreview(raw:string,requester:typeof fetch=fetch):Promise<MultiPassSourcePreview>{
+async function verifySourcePreview(raw:string,value:Partial<MultiPassSourcePreview>):Promise<MultiPassSourcePreview>{
  const size=new TextEncoder().encode(raw).byteLength;
- if(!size||size>65536)throw new Error('Source must be between 1 and 65536 UTF-8 bytes.');
- const response=await requester('/api/v1/multipass/preview',{method:'POST',
-  headers:{'Content-Type':'application/json'},cache:'no-store',credentials:'same-origin',
-  body:JSON.stringify({raw})});
- if(!response.ok)throw new Error('Multi-Pass preview is unavailable. No engine result was accepted.');
- const value=await response.json() as Partial<MultiPassSourcePreview>;
  if(value.contract!=='parser-studio.multipass-source-preview.v0.1'||
   !['SOURCE_PARSED','PARTIAL','RAW_ONLY','STRUCTURED_EMPTY'].includes(value.status??'')||
   value.nativeVerified!==false||value.targetVerified!==false||
@@ -173,14 +176,88 @@ export async function requestMultiPassPreview(raw:string,requester:typeof fetch=
   throw new Error('Unverified source identity.');
  const expected=await sha256Utf8Hex(raw);
  if(value.sourceSha256!==expected)throw new Error('Multi-Pass response source mismatch.');
- for(const item of [...value.spans,...value.residuals]){
+ for(const item of value.spans){
+  if(!Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
+    item.startByte<0||item.endByte>size||item.startByte>item.endByte)
+    throw new Error('Invalid Multi-Pass byte span.');
+ }
+ for(const item of value.residuals){
   if(!Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
     item.startByte<0||item.endByte>size||item.startByte>=item.endByte)
-    throw new Error('Invalid Multi-Pass byte span.');
+    throw new Error('Invalid Multi-Pass residual span.');
  }
  if(value.dictionary!==undefined)
   value.dictionary=verifyDictionary(value.dictionary,value.spans,size);
  if(value.redaction!==undefined)
   value.redaction=verifyRedaction(value.redaction,raw,value.spans,size);
  return value as MultiPassSourcePreview;
+}
+function utf8Slice(raw:string,startByte:number,endByte:number):string{
+ const data=new TextEncoder().encode(raw);
+ try{return new TextDecoder('utf-8',{fatal:true}).decode(data.slice(startByte,endByte));}
+ catch{throw new Error('Invalid Multi-Pass event byte range.');}
+}
+export async function requestMultiPassPreview(raw:string,requester:typeof fetch=fetch):Promise<MultiPassSourcePreview>{
+ const size=new TextEncoder().encode(raw).byteLength;
+ if(!size||size>65536)throw new Error('Source must be between 1 and 65536 UTF-8 bytes.');
+ const response=await requester('/api/v1/multipass/preview',{method:'POST',
+  headers:{'Content-Type':'application/json'},cache:'no-store',credentials:'same-origin',
+  body:JSON.stringify({raw})});
+ if(!response.ok)throw new Error('Multi-Pass preview is unavailable. No engine result was accepted.');
+ return verifySourcePreview(raw,await response.json() as Partial<MultiPassSourcePreview>);
+}
+export async function requestMultiPassBatchPreview(raw:string,requester:typeof fetch=fetch):Promise<MultiPassBatchPreview>{
+ const size=new TextEncoder().encode(raw).byteLength;
+ if(!size||size>65536)throw new Error('Source must be between 1 and 65536 UTF-8 bytes.');
+ const response=await requester('/api/v1/multipass/preview-batch',{method:'POST',
+  headers:{'Content-Type':'application/json'},cache:'no-store',credentials:'same-origin',
+  body:JSON.stringify({raw})});
+ if(!response.ok)throw new Error('Multi-Pass batch preview is unavailable. No engine result was accepted.');
+ const value=await response.json() as Partial<MultiPassBatchPreview>;
+ if(value.contract!=='parser-studio.multipass-source-batch-preview.v0.1'||
+  value.nativeVerified!==false||value.targetVerified!==false||
+  value.sourceBytes!==size||!Number.isSafeInteger(value.eventCount)||value.eventCount!<1||
+  value.eventCount!>500||!Array.isArray(value.events)||value.events.length!==value.eventCount||
+  !Array.isArray(value.separators))
+  throw new Error('Untrusted Multi-Pass batch response.');
+ if(!/^[a-f0-9]{64}$/.test(value.sourceSha256??'')||
+  value.sourceSha256!==await sha256Utf8Hex(raw))
+  throw new Error('Multi-Pass batch response source mismatch.');
+ const partitions:Array<{startByte:number;endByte:number}>=[];
+ const sourceBytes=new TextEncoder().encode(raw);
+ for(const [position,item] of value.events.entries()){
+  if(!item||typeof item!=='object'||Array.isArray(item)||
+    item.index!==position||!Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
+    item.startByte<0||item.endByte>size||item.startByte>=item.endByte||
+    !item.preview||typeof item.preview!=='object'||Array.isArray(item.preview))
+    throw new Error('Invalid Multi-Pass batch event.');
+  const eventRaw=utf8Slice(raw,item.startByte,item.endByte);
+  item.preview=await verifySourcePreview(eventRaw,item.preview);
+  partitions.push({startByte:item.startByte,endByte:item.endByte});
+ }
+ for(const item of value.separators){
+  if(!item||typeof item!=='object'||Array.isArray(item)||
+    !Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
+    item.startByte<0||item.endByte>size||item.startByte>=item.endByte||
+    !['WHITESPACE','UTF8_BOM'].includes(item.kind))
+    throw new Error('Invalid Multi-Pass batch separator.');
+  const bytes=sourceBytes.slice(item.startByte,item.endByte);
+  if(item.kind==='UTF8_BOM'){
+   if(item.startByte!==0||bytes.length!==3||bytes[0]!==0xef||bytes[1]!==0xbb||bytes[2]!==0xbf)
+    throw new Error('Invalid Multi-Pass batch separator.');
+  }else{
+   let text:string;
+   try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}
+   catch{throw new Error('Invalid Multi-Pass batch separator.');}
+   if(!/^[ \t\r\n]+$/.test(text))throw new Error('Invalid Multi-Pass batch separator.');
+  }
+  partitions.push({startByte:item.startByte,endByte:item.endByte});
+ }
+ let cursor=0;
+ for(const item of partitions.sort((a,b)=>a.startByte-b.startByte)){
+  if(item.startByte!==cursor)throw new Error('Multi-Pass batch source accounting mismatch.');
+  cursor=item.endByte;
+ }
+ if(cursor!==size)throw new Error('Multi-Pass batch source accounting mismatch.');
+ return value as MultiPassBatchPreview;
 }

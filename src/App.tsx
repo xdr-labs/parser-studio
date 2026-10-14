@@ -66,6 +66,7 @@ export default function App(){
       'chatgpt':'auto');
   const [draft,setDraft]=useState<ParserDraft>(()=>createDraft());
   const [sample,setSample]=useState('');
+  const [advanced,setAdvanced]=useState(false);
   // Owned run state survives switching either parser authoring method.
   // An active audited backend sender NEVER stops merely by changing screens.
   const [activeSession,setActiveSession]=useState<ApprovedTestLabStatus|null>(null);
@@ -130,7 +131,7 @@ export default function App(){
   const reset=()=>{
     if(sample.trim()&&!window.confirm('Clear the current sample and create a new parser?'))return;
     setDraft(createDraft());setSample('');setDatasetName('No sample selected');
-    setWorkspace('auto');
+    setWorkspace('auto');setAdvanced(false);
   };
   const preview=(candidate:ParserDraft,source?:string)=>runInWorker(source??sample,candidate);
   const downloadSafeEvidence=(filename:string,content:string,mediaType:string)=>{
@@ -178,7 +179,7 @@ export default function App(){
           </button>
         </div>
       </header>
-      <details className="two-path-recovery" aria-label="Authorized Test Lab session recovery">
+      {advanced&&<details className="two-path-recovery" aria-label="Authorized Test Lab session recovery">
         <summary>Recover an approved Test Lab run after refresh</summary>
         <p>A page reload does not stop an already-authorized backend run.
           Enter the exact run ID and request an independently owner-authorized,
@@ -212,7 +213,7 @@ export default function App(){
           Backend status: {activeSession.state} · No verified sensor ingestion.
           A terminal run cannot be resumed by this screen.
         </p>}
-      </details>
+      </details>}
       {sessionRunning&&<div role="status" className="two-path-session-banner"
         aria-label="Active Test Lab session indicator">
         <div>
@@ -241,6 +242,7 @@ export default function App(){
         runPreview={preview}
         activeSession={activeSession} onSessionUpdate={updateSessionSafely}
         onChatGPT={()=>setWorkspace('chatgpt')}
+        advanced={advanced} onAdvancedChange={setAdvanced}
       />:<ChatGPTAssist
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{
           setSample(value);setDatasetName('ChatGPT local samples');

@@ -9,10 +9,10 @@ import {MAX_EVENTS,preview,splitEvents} from '../parser';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void}
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void;importOnly?:boolean}
 const completeSuite=(value:SuiteResult)=>value.counts.total>0&&value.counts.matched===value.counts.total&&
  value.counts.extracted===value.counts.total&&value.counts.normalized===value.counts.total&&value.counts.failures===0;
-export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate}:Props){
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate,importOnly=false}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
@@ -39,7 +39,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  async function prompt(){
   const lines=[
    'Parser Studio — source extraction assistance (review-only).',
-   'Return a proposed ParserRecipe v0.2 JSON object; do not return executable Ruby, arbitrary Regex or code.',
+   'Return a proposed ParserRecipe v0.2 JSON object. A parse_regex stage is allowed only for a bounded named-capture pattern; do not return executable Ruby, Grok, scripting or arbitrary/unbounded Regex.',
    'Do not invent missing values, do not overwrite correct fields, and preserve the original event.',
    `Scope: ${mode==='entire'?'entire unsupported event':'only the selected source range'}.`,
    `Selection context: ${mode==='entire'?'full-log fallback':selectionContext?.kind==='field'?`currently extracted field ${selectionContext.path??'UNKNOWN'}`:selectionContext?.kind==='residual'?'unparsed residual region':'manual source selection'}.`,
@@ -58,8 +58,8 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     const opts=draft.guided??defaultGuidedOptions();
     lines.push('No compiler-ready baseline exists. A FULL_RECOVERY recipe is allowed only for a supported declarative grammar.',
      `Recovery identity: projectId=draft-${opts.slug}; sourceSha256=${hash}; events=${records.length}.`,
-     'Supported recovery grammars are JSON, strict key/value, explicit-column CSV, CEF, LEEF, bounded RFC3164/RFC5424 bodies, allowlisted mixed families, and bounded Java stack traces.',
-     'If arbitrary Regex, Grok, scripting, or guessed semantics are required, explain that it is unsupported instead of inventing a recipe.');
+     'Supported recovery grammars are JSON, strict key/value, explicit-column CSV, CEF, LEEF, bounded RFC3164/RFC5424 bodies, allowlisted mixed families, bounded Java stack traces, and bounded named-capture Regex for otherwise unresolved one-line text.',
+     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, and no backreferences/lookbehind/unsafe nested repetition. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
    }
   }
   lines.push('User-reviewed excerpt follows (may contain sensitive source values):',
@@ -125,36 +125,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
   finally{setImportBusy(false);}
  }
- return <aside className="stellar-ai-review" aria-label="Improve with AI">
-  <h3>Improve with AI</h3>
-  <p>Use AI only where the automatic parser needs help. No log data is sent automatically.</p>
-  <div className="stellar-ai-tabs" role="group" aria-label="AI recovery scope">
-   <button type="button" aria-pressed={mode==='entire'} onClick={()=>{setMode('entire');setReviewedExcerpt('');setApproved(false);}}>Entire Log</button>
-   <button type="button" aria-pressed={mode==='selection'} onClick={()=>{setMode('selection');setReviewedExcerpt('');setApproved(false);}}>Selected Area</button>
-  </div>
-  <label className="stellar-ai-label">{mode==='entire'?'Review the entire log before copying':'Select exact source text below'}</label>
-  {mode==='selection'&&<textarea aria-label="Select source text for AI correction" readOnly spellCheck={false} rows={5} value={raw}
-   onSelect={e=>{const el=e.currentTarget;setRange([el.selectionStart,el.selectionEnd]);setReviewedExcerpt('');setApproved(false);}}/>}
-  {mode==='selection'&&sourceRange&&<p role="status">UTF-8 bytes {sourceRange.startByte}–{sourceRange.endByte}</p>}
-  {mode==='selection'&&selectionContext&&<p className="stellar-selected-source">
-    {selectionContext.kind==='field'?`Editing extracted field: ${selectionContext.path??'Unknown field'}. Accepted fields outside this exact range are preserved.`:'Editing an unparsed source region. Accepted fields outside this exact range are preserved.'}
-  </p>}
-  <div className="stellar-ai-excerpt" aria-live="polite">{excerpt||'Select a portion of the source log to repair.'}</div>
-  <label className="stellar-ai-label" htmlFor="stellar-ai-reviewed">Redact the excerpt before sharing with AI</label>
-  <textarea id="stellar-ai-reviewed" aria-label="Reviewed and redacted AI excerpt" rows={4} maxLength={65536}
-   value={reviewedExcerpt} onChange={e=>{setReviewedExcerpt(e.target.value);setApproved(false);}}
-   placeholder="Paste only reviewed, redacted source text here. Nothing is sent automatically."/>
-  <label className="stellar-ai-label" htmlFor="stellar-ai-goal">What should be extracted or corrected?</label>
-  <textarea id="stellar-ai-goal" aria-label="AI correction request" rows={3} maxLength={500} value={goal}
-   onChange={e=>{setGoal(e.target.value);setApproved(false);}} placeholder="For example: split the selected source address into IP and port."/>
-  <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm reviewed AI excerpt" checked={approved} onChange={e=>setApproved(e.target.checked)}/>
-   I reviewed the editable excerpt and removed sensitive information before copying.</label>
-  <div className="stellar-ai-actions">
-   <button type="button" className="stellar-ai-primary" disabled={!canCopy} onClick={()=>void copyPrompt()}>Copy AI Prompt</button>
-   <button type="button" onClick={onChatGPT}>Open Assisted Parser</button>
-  </div>
-  {notice&&<p role="status">{notice}</p>}
-  <details className="stellar-ai-import">
+ const importPanel=<><details className="stellar-ai-import" open={importOnly}>
    <summary>Paste AI Recipe for strict review</summary>
    <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ParserRecipe v0.2 JSON proposal</label>
    <textarea id="stellar-ai-recipe" aria-label="AI Recipe JSON" rows={5} maxLength={32768}
@@ -206,7 +177,43 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       'Approved mapping added to draft. Native parser testing and export verification remain required.');
     }}>{approvedCandidate.mode==='recovery'?'Apply Approved Recovery Parser to Draft':approvedCandidate.mode==='correction'?'Apply Approved Mapping Correction':approvedCandidate.mode==='enrichment'?'Apply Approved Split/Merge Rule':'Apply Approved Mapping to Draft'}</button>
    </div>}
-  </details>
+  </details></>;
+ if(importOnly)return <aside className="stellar-ai-review beginner-ai-result-review" aria-label="AI result verification">
+  <h3>Paste ChatGPT Result</h3>
+  <p>Paste the ParserRecipe v0.2 returned by ChatGPT. Parser Studio will reject it unless the current source and an independent holdout both pass.</p>
+  {importPanel}
+  <small>No rule changes until validation passes and you explicitly approve the candidate.</small>
+ </aside>;
+ return <aside className="stellar-ai-review" aria-label="Improve with AI">
+  <h3>Improve with AI</h3>
+  <p>Use AI only where the automatic parser needs help. No log data is sent automatically.</p>
+  <div className="stellar-ai-tabs" role="group" aria-label="AI recovery scope">
+   <button type="button" aria-pressed={mode==='entire'} onClick={()=>{setMode('entire');setReviewedExcerpt('');setApproved(false);}}>Entire Log</button>
+   <button type="button" aria-pressed={mode==='selection'} onClick={()=>{setMode('selection');setReviewedExcerpt('');setApproved(false);}}>Selected Area</button>
+  </div>
+  <label className="stellar-ai-label">{mode==='entire'?'Review the entire log before copying':'Select exact source text below'}</label>
+  {mode==='selection'&&<textarea aria-label="Select source text for AI correction" readOnly spellCheck={false} rows={5} value={raw}
+   onSelect={e=>{const el=e.currentTarget;setRange([el.selectionStart,el.selectionEnd]);setReviewedExcerpt('');setApproved(false);}}/>}
+  {mode==='selection'&&sourceRange&&<p role="status">UTF-8 bytes {sourceRange.startByte}–{sourceRange.endByte}</p>}
+  {mode==='selection'&&selectionContext&&<p className="stellar-selected-source">
+    {selectionContext.kind==='field'?`Editing extracted field: ${selectionContext.path??'Unknown field'}. Accepted fields outside this exact range are preserved.`:'Editing an unparsed source region. Accepted fields outside this exact range are preserved.'}
+  </p>}
+  <div className="stellar-ai-excerpt" aria-live="polite">{excerpt||'Select a portion of the source log to repair.'}</div>
+  <label className="stellar-ai-label" htmlFor="stellar-ai-reviewed">Redact the excerpt before sharing with AI</label>
+  <textarea id="stellar-ai-reviewed" aria-label="Reviewed and redacted AI excerpt" rows={4} maxLength={65536}
+   value={reviewedExcerpt} onChange={e=>{setReviewedExcerpt(e.target.value);setApproved(false);}}
+   placeholder="Paste only reviewed, redacted source text here. Nothing is sent automatically."/>
+  <label className="stellar-ai-label" htmlFor="stellar-ai-goal">What should be extracted or corrected?</label>
+  <textarea id="stellar-ai-goal" aria-label="AI correction request" rows={3} maxLength={500} value={goal}
+   onChange={e=>{setGoal(e.target.value);setApproved(false);}} placeholder="For example: split the selected source address into IP and port."/>
+  <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm reviewed AI excerpt" checked={approved} onChange={e=>setApproved(e.target.checked)}/>
+   I reviewed the editable excerpt and removed sensitive information before copying.</label>
+  <div className="stellar-ai-actions">
+   <button type="button" className="stellar-ai-primary" disabled={!canCopy} onClick={()=>void copyPrompt()}>Copy AI Prompt</button>
+   <button type="button" onClick={onChatGPT}>Open Assisted Parser</button>
+  </div>
+  {notice&&<p role="status">{notice}</p>}
+  {importPanel}
   <small>AI output is a proposal only. Import, independent validation and user approval are required before changing parser rules.</small>
  </aside>;
 }

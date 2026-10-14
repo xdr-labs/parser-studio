@@ -7,7 +7,9 @@ import type { EventBoundary } from './guided/contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
-export const MAX_LINE_CHARS = 4096;
+// Security products such as EDR/XDR can emit valid single-line JSON records well above 4 KiB.
+// The dataset is already hard-bounded to 64 KiB, so do not reject one valid record earlier.
+export const MAX_LINE_CHARS = MAX_DATASET_BYTES;
 const VALID_TARGET = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
 
 export function detectFormat(raw: string): Detection {
@@ -100,6 +102,23 @@ function tokenizeCSV(raw: string, delimiter: string): string[] | null {
   if (state === 'quoted') return null;
   out.push(state === 'afterQuote' ? token : token.trim());
   return out;
+}
+
+/** Infer only the number of columns in a homogeneous one-line CSV sample.
+ * No vendor meaning or header semantics are inferred. */
+export function inferConsistentCsvColumnCount(
+  input:string,delimiter:','|';'|'\t',limit=MAX_EVENTS,
+):number|null{
+  const records=splitEvents(input,'single-line',Math.min(limit,MAX_EVENTS)+1);
+  if(!records.length||records.length>Math.min(limit,MAX_EVENTS))return null;
+  let expected:number|null=null;
+  for(const record of records){
+    const values=tokenizeCSV(record.raw,delimiter);
+    if(!values||values.length<2||values.length>100)return null;
+    if(expected===null)expected=values.length;
+    else if(values.length!==expected)return null;
+  }
+  return expected;
 }
 
 function extractCSV(raw: string, columns: string, delimiter: string): Extraction {
@@ -208,7 +227,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'syslog': return extractSyslog(raw);
     case 'syslog_rfc3164':
     case 'syslog_rfc5424': return extractStructuredFamily(raw,format,
-      draft.format==='auto'?'auto':(draft.syslogBodyFormat ?? 'raw'));
+      draft.format==='auto'?'auto':(draft.syslogBodyFormat ?? 'raw'),draft.pattern);
     case 'cef':
     case 'leef': return extractStructuredFamily(raw, format);
     case 'regex': return extractRegex(raw, draft.pattern);

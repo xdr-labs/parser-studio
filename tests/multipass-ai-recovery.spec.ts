@@ -25,7 +25,8 @@ test('touch selection opens exact extracted-field and residual AI correction sco
  }
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(raw);
- await page.getByRole('button',{name:'Run Local Multi-Pass Source Preview'}).tap();
+ await page.getByRole('button',{name:'Analyze Logs'}).tap();
+ await page.getByRole('button',{name:'Advanced'}).tap();
  const engine=page.getByLabel('Local Multi-Pass source engine');
  await expect(engine).toContainText('PARTIAL · CISCO_ASA_FTD_MESSAGE_ID');
  const field=page.getByRole('button',{name:'Correct extracted field asa.action bytes 15-19'});

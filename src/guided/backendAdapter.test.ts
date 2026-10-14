@@ -95,11 +95,20 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     expect(result.issues[0].message).toContain('Invalid source field');
   });
 
-  it('fails closed on mismatched transport, format and expired UI draft requirements', () => {
+  it('supports only bounded named-capture Regex and still fails closed on invalid transport', () => {
     const draft = createDraft();
     expect(toBackendProject(draft).ok).toBe(false);
+
     draft.format = 'regex';
+    const regex = toBackendProject(draft);
+    expect(regex.ok).toBe(true);
+    if (regex.ok) expect(regex.project.extraction).toEqual({
+      format: 'regex', pattern: draft.pattern,
+    });
+
+    draft.pattern = '(a+)+$';
     expect(toBackendProject(draft).ok).toBe(false);
+
     draft.format = 'json';
     draft.guided = { ...defaultGuidedOptions(), receiver: { ...defaultGuidedOptions().receiver, protocols: [], port: 22 } };
     expect(toBackendProject(draft).ok).toBe(false);

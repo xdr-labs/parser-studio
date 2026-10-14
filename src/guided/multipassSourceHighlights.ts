@@ -20,6 +20,9 @@ export type MultiPassSourceHighlightResult=
 export function buildMultiPassSourceHighlights(raw:string,preview:MultiPassSourcePreview):MultiPassSourceHighlightResult{
  const selections:MultiPassSourceSelection[]=[];
  for(const span of preview.spans){
+  // Empty source values (for example RFC5424 user="" or an empty CSV cell)
+  // are legitimate evidence but have no selectable source bytes.
+  if(span.startByte===span.endByte)continue;
   const chars=fromSourceByteRange(raw,span.startByte,span.endByte);
   if(!chars)return {ok:false,reason:'INVALID_RANGE'};
   selections.push({kind:'field',path:span.path,startByte:span.startByte,endByte:span.endByte,

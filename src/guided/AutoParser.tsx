@@ -20,7 +20,7 @@ import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownP
 import type {StructuralMiningReport} from './localPatternMining';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
-import {splitEvents,MAX_EVENTS} from '../parser';
+import {inferConsistentCsvColumnCount,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
@@ -28,12 +28,13 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import AutoParserAIReview from './AutoParserAIReview';
-import {requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
+import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserResultTools from './AutoParserResultTools';
 import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
+import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 
@@ -51,14 +52,20 @@ interface Props {
  activeSession:ApprovedTestLabStatus|null;
  onSessionUpdate:(next:ApprovedTestLabStatus|null)=>void;
  onChatGPT:()=>void;
+ advanced:boolean;onAdvancedChange:(value:boolean)=>void;
 }
 const MAX_LOCAL_TEXT=64*1024;
-const STEPS=['Add Logs','Review Results','Test & Generate'] as const;
+const STEPS=['Add Logs','Fix Problems','Test & Create'] as const;
 type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
 type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
  report?:NativeProjectVerificationReport;message:string};
+type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>};
+function utf8Slice(source:string,startByte:number,endByte:number):string{
+ const bytes=new TextEncoder().encode(source);
+ return new TextDecoder('utf-8',{fatal:true}).decode(bytes.slice(startByte,endByte));
+}
 function download(filename:string,content:string|ArrayBuffer,binary=false){
  const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
  const url=URL.createObjectURL(object);
@@ -81,22 +88,31 @@ const readable:Record<string,string>={
 function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,activeSession,onSessionUpdate,onChatGPT,
+ runPreview,activeSession,onSessionUpdate,onChatGPT,advanced,onAdvancedChange,
 }:Props){
  const [step,setStep]=useState<0|1|2>(0);
  const [selected,setSelected]=useState(0);
- const [multiPass,setMultiPass]=useState<{raw:string;result:MultiPassSourcePreview}|null>(null);
+ const [multiPass,setMultiPass]=useState<MultiPassReview|null>(null);
  const [multiPassNotice,setMultiPassNotice]=useState('');
  const [multiPassBusy,setMultiPassBusy]=useState(false);
+ const [multiPassEvent,setMultiPassEvent]=useState(0);
  const [selectedMultiPass,setSelectedMultiPass]=useState<MultiPassSourceSelection|null>(null);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
  const [capability,setCapability]=useState<{source:string;value:BackendCapabilities}|null>(null);
  const [csvApprovedKey,setCsvApprovedKey]=useState('');
- // Review is revoked on every input edit, including edit-then-revert.
- // A prior confirmation must never authorize a newly changed source/schema.
- useEffect(()=>setCsvApprovedKey(''),[sample,draft.csvColumns,draft.csvDelimiter]);
+ const pendingNeutralCsvApproval=useRef('');
+ // Review is revoked on every manual input edit, including edit-then-revert.
+ // The one exception is the explicit beginner action that fills neutral
+ // field_### names and approves exactly that generated schema in one action.
+ useEffect(()=>{
+   const key=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
+   if(pendingNeutralCsvApproval.current===key){
+     pendingNeutralCsvApproval.current='';
+     setCsvApprovedKey(key);
+   }else setCsvApprovedKey('');
+ },[sample,draft.csvColumns,draft.csvDelimiter]);
  const [evidence,setEvidence]=useState<Evidence|null>(null);
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
@@ -179,6 +195,18 @@ export default function AutoParser({
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
    [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
+ const neutralCsvColumnCount=csvFound?
+   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
+ const suggestNeutralCsvColumns=()=>{
+   if(!neutralCsvColumnCount)return;
+   const names=Array.from({length:neutralCsvColumnCount},
+     (_,index)=>'field_'+String(index+1).padStart(3,'0')).join(',');
+   const delimiter=draft.csvDelimiter??',';
+   const key=JSON.stringify([sample,names,delimiter]);
+   pendingNeutralCsvApproval.current=key;
+   setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter}));
+   setCsvApprovedKey(key);
+ };
  const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
  const assessment=csvFound&&csvApproved&&report.families.length===1&&
@@ -205,10 +233,30 @@ export default function AutoParser({
  const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
+ const beginnerAuthoritativeComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
+   multiPass.events.every(event=>event.preview.status==='SOURCE_PARSED');
+ const browserSuiteComplete=!!suite&&suite.engine==='browser-preview'&&
+   suite.nativeFluentdVerified===false&&suite.stellarExportVerified===false&&
+   suite.counts.total>0&&suite.counts.matched===suite.counts.total&&
+   suite.counts.extracted===suite.counts.total&&suite.counts.normalized===suite.counts.total&&
+   suite.counts.failures===0;
+ const reviewedCandidateComplete=draft.format!=='auto'&&browserSuiteComplete;
+ const browserExtractionComplete=!!suite&&suite.engine==='browser-preview'&&
+   suite.counts.total>0&&suite.counts.matched===suite.counts.total&&
+   suite.counts.extracted===suite.counts.total&&suite.counts.failures===0;
+ const neutralCsvComplete=csvFound&&csvApproved&&csvNamesValid&&browserExtractionComplete;
+ const beginnerResolved=beginnerAuthoritativeComplete||reviewedCandidateComplete||neutralCsvComplete;
+ const explicitBackendProject=useMemo(()=>draft.format==='auto'?null:toBackendProject(draft),[draft]);
+ const explicitDraftCompilable=useMemo(()=>{
+   if(!browserSuiteComplete||!explicitBackendProject?.ok||capability?.source!==sample)return false;
+   try{assertBackendProjectSupported(explicitBackendProject.project,capability.value);return true;}
+   catch{return false;}
+ },[browserSuiteComplete,explicitBackendProject,capability,sample]);
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
-   report.complete&&report.sourceCount>0&&!busy&&csvApproved;
+   report.complete&&report.sourceCount>0&&!busy&&csvApproved&&
+   (advanced||beginnerResolved);
  const canGenerate=step===2&&!!currentReview&&!!suite&&!pending&&
-   !busy&&assessment.status==='DRAFT_COMPILABLE';
+   !busy&&(assessment.status==='DRAFT_COMPILABLE'||explicitDraftCompilable);
  const confirmed=()=>{
    const record=suite;
    return !!record && record.engine==='browser-preview'&&
@@ -227,6 +275,16 @@ export default function AutoParser({
      const cap=await fetchBackendCapabilities();
      if(token!==epoch.current||currentRef.current!==expected)return;
      setCapability({source:sample,value:cap});
+     if(draft.format!=='auto'&&browserSuiteComplete){
+       const translated=toBackendProject(draft);
+       if(!translated.ok){
+         setMessage('The reviewed parser contains an unsupported field or classification setting.');
+         return;
+       }
+       assertBackendProjectSupported(translated.project,cap);
+       setReviewed({source:sample,mappingCount:draft.mappings.length,requiresApproval:false});
+       setStep(1);setSelected(0);return;
+     }
      const baseline=assessEnvelopeCompilation(report,cap);
      const compiler=csvFound&&csvApproved&&report.families.length===1&&
        baseline.status==='COLUMNS_REQUIRED'&&cap.authoring.extractionFormats.includes('csv')?
@@ -518,23 +576,44 @@ export default function AutoParser({
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
-  const original=sample;setMultiPass(null);setSelectedMultiPass(null);setMultiPassNotice('');setMultiPassBusy(true);
+  const original=sample;setMultiPass(null);setMultiPassEvent(0);setSelectedMultiPass(null);
+  setMultiPassNotice('');setMultiPassBusy(true);
   try{
-   const result=await requestMultiPassPreview(original);
-   setMultiPass({raw:original,result});
+   if(original.includes('\n')||original.includes('\r')){
+    const result=await requestMultiPassBatchPreview(original);
+    setMultiPass({raw:original,events:result.events.map(item=>({
+     startByte:item.startByte,endByte:item.endByte,preview:item.preview,
+    }))});
+   }else{
+    const result=await requestMultiPassPreview(original);
+    setMultiPass({raw:original,events:[{
+     startByte:0,endByte:new TextEncoder().encode(original).byteLength,preview:result,
+    }]});
+   }
   }catch{setMultiPassNotice('Local Multi-Pass service unavailable or untrusted. Browser preview remains separate.');}
   finally{setMultiPassBusy(false);}
  }
- const currentMultiPass=multiPass?.raw===sample?multiPass.result:null;
- const currentMultiPassHighlights=currentMultiPass?buildMultiPassSourceHighlights(sample,currentMultiPass):null;
- return <main className="auto-parser-workspace" aria-label="Auto Parser v2">
+ const currentMultiPassReview=multiPass?.raw===sample?multiPass:null;
+ const currentMultiPassFrame=currentMultiPassReview?.events[multiPassEvent]??currentMultiPassReview?.events[0]??null;
+ const currentMultiPass=currentMultiPassFrame?.preview??null;
+ const currentMultiPassRaw=currentMultiPassFrame?
+  utf8Slice(sample,currentMultiPassFrame.startByte,currentMultiPassFrame.endByte):'';
+ const currentMultiPassHighlights=currentMultiPass?
+  buildMultiPassSourceHighlights(currentMultiPassRaw,currentMultiPass):null;
+ const currentMultiPassCounts=currentMultiPassReview?.events.reduce((counts,event)=>{
+  counts[event.preview.status]=(counts[event.preview.status]??0)+1;return counts;
+ },{} as Record<string,number>)??{};
+ return <main className={'auto-parser-workspace '+(advanced?'advanced-mode':'beginner-mode')} aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
-     <span className="pane-index">AUTO PARSER 2.0 · LOCAL FIRST</span>
-     <h1>From raw logs to a parser draft in three steps.</h1>
-     <p>Paste samples without selecting JSON, CEF, Regex or Ruby. Review every
-       recognized event and optional field mapping before creating matched DRAFT files.</p>
+     <span className="pane-index">AUTO PARSER · BEGINNER MODE</span>
+     <h1>Paste security logs. Parser Studio will show what works and what needs fixing.</h1>
+     <p>You do not need to know JSON, CEF, Regex, Grok or Ruby. Start with representative
+       logs, run one analysis, then follow the fix shown beside any unresolved event.</p>
      <div className="auto-parser-links">
-       <button type="button" onClick={onChatGPT}>Try ChatGPT Assisted Parser</button>
+       <button type="button" aria-pressed={advanced} onClick={()=>onAdvancedChange(!advanced)}>
+         {advanced?'Return to Beginner Mode':'Advanced'}
+       </button>
+       <button type="button" onClick={onChatGPT}>Ask ChatGPT for Help</button>
      </div>
    </header>
    <nav aria-label="Auto Parser steps" className="auto-parser-steps">
@@ -549,9 +628,8 @@ export default function AutoParser({
    <div className="auto-parser-body">
      {step===0&&<section aria-label="Add Logs stage">
        <h2>Add Logs</h2>
-       <p>Paste or upload representative events. Most sources use one line
-         per event; strictly framed Java exceptions can be reviewed as complete
-         multiline records. Your sample stays in this browser.</p>
+       <p>Paste or upload a few representative security events. You do not need to identify
+         the format first. Analysis starts only when you press <b>Analyze Logs</b>.</p>
        <div className="auto-parser-source-toolbar">
          <label>Local UTF-8 file
            <input type="file" aria-label="Auto Parser file upload"
@@ -562,15 +640,45 @@ export default function AutoParser({
          <small>{datasetName} · Maximum 64 KiB / 500 events</small>
        </div>
        <textarea spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
-         placeholder="Paste representative raw log events here. No format selection needed."
+         placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
          value={sample} onChange={e=>{setSample(e.target.value);
            setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
+       <div className="beginner-analyze-action">
+         <button type="button" className="auto-parser-primary" disabled={!sample.trim()||multiPassBusy}
+           onClick={()=>void previewMultiPass()}>
+           {multiPassBusy?'Analyzing Logs…':'Analyze Logs'}
+         </button>
+         <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
+       </div>
+       {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
+         Parser Studio could not complete local analysis. Your source was preserved. Open Advanced only if you need diagnostic details.
+       </p>}
+       {currentMultiPassReview&&<BeginnerAnalysisPanel source={sample}
+         events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
+         draft={draft} suite={suite} onApplyCandidate={setDraft}
+         resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
+         neutralCsvColumnCount={neutralCsvColumnCount??undefined}
+         onUseNeutralCsvColumns={suggestNeutralCsvColumns}/>}
        <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
          </button>
          <small>Explicit local request only · Source extraction, not native Ruby/CONF verification</small>
          {multiPassNotice&&<p role="status">{multiPassNotice}</p>}
+         {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Multi-Pass event accounting">
+           <strong>{currentMultiPassReview.events.length} event{currentMultiPassReview.events.length===1?'':'s'} framed losslessly</strong>
+           <span>{currentMultiPassCounts.SOURCE_PARSED??0} source parsed · {currentMultiPassCounts.PARTIAL??0} partial · {currentMultiPassCounts.RAW_ONLY??0} raw only · {currentMultiPassCounts.STRUCTURED_EMPTY??0} structured empty</span>
+           <span>Source extraction only · Native parser and Stellar target NOT VERIFIED</span>
+           {currentMultiPassReview.events.length>1&&<label>Review a framed event
+             <select aria-label="Multi-Pass review event" value={multiPassEvent}
+               onChange={e=>{setMultiPassEvent(Number(e.target.value));setSelectedMultiPass(null);}}>
+               {currentMultiPassReview.events.map((event,index)=><option key={index} value={index}>
+                 Event {index+1} · {event.preview.status} · {event.preview.syntax}
+               </option>)}
+             </select>
+           </label>}
+           {currentMultiPassFrame&&<small>Selected source bytes {currentMultiPassFrame.startByte}–{currentMultiPassFrame.endByte} · correction chips below use event-local UTF-8 byte offsets.</small>}
+         </div>}
          {currentMultiPass&&<div role="status">
            <strong>{currentMultiPass.status} · {currentMultiPass.syntax}</strong>
            <p>Extracted fields and source byte spans are shown below. Residuals remain available for AI correction.</p>
@@ -608,7 +716,7 @@ export default function AutoParser({
                  onClick={()=>setSelectedMultiPass(segment.selection)}>{segment.text}</button>)}</div>}
            {currentMultiPassHighlights&&!currentMultiPassHighlights.ok&&<p className="auto-parser-warning">
              Exact source highlighting is unavailable because the engine returned ambiguous byte ranges. No source selection was accepted.</p>}
-           <div className="stellar-span-actions">{currentMultiPass.spans.map((span,i)=><button type="button" key={'f'+i} className="stellar-span-chip"
+           <div className="stellar-span-actions">{currentMultiPass.spans.filter(span=>span.endByte>span.startByte).map((span,i)=><button type="button" key={'f'+i} className="stellar-span-chip"
              onClick={()=>{const item=currentMultiPassHighlights?.ok?currentMultiPassHighlights.selectable.find(x=>x.kind==='field'&&x.path===span.path&&x.startByte===span.startByte&&x.endByte===span.endByte):undefined;if(item)setSelectedMultiPass(item);}}>
              Correct {span.path} [{span.startByte}–{span.endByte}]</button>)}</div>
            <div className="stellar-span-actions">{currentMultiPass.residuals.map((span,i)=><button type="button" key={'r'+i}
@@ -617,10 +725,10 @@ export default function AutoParser({
            {selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<div className="stellar-selected-source" role="status">
              {selectedMultiPass.kind==='field'?`Selected extracted field: ${selectedMultiPass.path}`:'Selected unparsed source region'} · UTF-8 bytes {selectedMultiPass.startByte}–{selectedMultiPass.endByte}
            </div>}
-           {selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<AutoParserAIReview raw={sample} status="partial" onChatGPT={onChatGPT}
+           {advanced&&selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="partial" onChatGPT={onChatGPT}
              initialByteRange={selectedMultiPass} selectionContext={{kind:selectedMultiPass.kind,path:selectedMultiPass.path}}
              source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
-           {currentMultiPass.status==='RAW_ONLY'&&<AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT}
+           {advanced&&currentMultiPass.status==='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="unsupported" onChatGPT={onChatGPT}
              source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
 
          </div>}
@@ -642,6 +750,15 @@ export default function AutoParser({
              maxLength={4096}
              onChange={e=>setDraft(old=>({...old,csvColumns:e.target.value}))}/>
          </label>
+         {neutralCsvColumnCount&&<div className="auto-parser-note" aria-label="Neutral CSV column suggestion">
+           <strong>{neutralCsvColumnCount} consistent columns detected</strong>
+           <p>Parser Studio can fill neutral names such as field_001 and field_002
+             without guessing vendor semantics. Original values remain unchanged;
+             you can rename or map fields later.</p>
+           <button type="button" onClick={suggestNeutralCsvColumns}>
+             Fill {neutralCsvColumnCount} Neutral Column Names
+           </button>
+         </div>}
          <label>Separator in your CSV rows
            <select aria-label="Reviewed CSV data separator"
              value={draft.csvDelimiter??','}
@@ -671,7 +788,7 @@ export default function AutoParser({
            I Confirm TCP Java Events Are Separated by LF LF
          </button>
        </div>}
-       {sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
+       {advanced&&sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
          <strong>Some source events need assistance</strong>
          <p>{report.unsupported} of {report.sourceCount} events were not fully recognized. The original input is preserved; unsupported events are not silently discarded or marked parser-ready.</p>
          <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}/>
@@ -799,13 +916,17 @@ export default function AutoParser({
            </span>)}
          </div>}
        </details>
+       {!advanced&&sample.trim()&&!currentMultiPassReview&&
+         <p className="beginner-next-step" role="status">Analyze the logs first. Parser Studio will not create a parser from an unreviewed sample.</p>}
+       {!advanced&&currentMultiPassReview&&!beginnerResolved&&
+         <p className="beginner-next-step needs-fix" role="status">Resolve the events marked above before continuing. Already-correct fields remain preserved.</p>}
        <button type="button" className="auto-parser-primary"
          disabled={!canReview} onClick={()=>{void review();}}>
-         {busy?'Checking the backend…':'Review Detected Results'} <ArrowRight size={16}/>
+         {busy?'Checking the parser…':advanced?'Review Detected Results':'Review Parsed Fields'} <ArrowRight size={16}/>
        </button>
      </section>}
-     {step===1&&<section aria-label="Review Results stage">
-       <h2>Review Results</h2>
+     {step===1&&<section aria-label="Fix Problems stage">
+       <h2>Fix Problems</h2>
        <p>The original sample remains unchanged. Source values appear only in your local
          event inspector; extracted/normalized values are never sent as raw logs.</p>
        <div className="auto-parser-summary">
@@ -884,10 +1005,10 @@ export default function AutoParser({
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(0)}><ArrowLeft size={15}/> Back to Logs</button>
          <button type="button" className="auto-parser-primary" disabled={pending||!suite}
-           onClick={()=>setStep(2)}>Test & Generate <ArrowRight size={16}/></button>
+           onClick={()=>setStep(2)}>Test & Create <ArrowRight size={16}/></button>
        </div>
      </section>}
-     {step===2&&<section aria-label="Test and Generate stage">
+     {step===2&&<section aria-label="Test and Create stage">
        <h2>Test &amp; Generate</h2>
        <p>Run every sample through the local Web Worker, then validate the typed
          authoring contract with the real backend and verify both DRAFT file SHA-256 hashes.
@@ -1090,7 +1211,7 @@ export default function AutoParser({
            ?' Current source-bound Ruby/CONF passed the pinned Native Fluentd runtime; real Stellar Cyber import remains unverified.'
            :' Native Fluentd compatibility and real Stellar Cyber import remain unverified.'}</p>
        <div className="auto-parser-actions">
-         <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Review Results</button>
+         <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Fix Problems</button>
          <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>
        </div>
      </section>}

@@ -15,8 +15,10 @@ const conf='<source>\n  @type udp\n  port 7501\n  tag customized_demo_firewall\n
 test('Advanced local Project JSON review restores exact draft and clears raw samples without network',async({page})=>{
  let requests=0;page.on('request',r=>{if(r.url().includes('/api/v1/parser-pairs/inspect'))requests++;});
  await page.goto('/');
+ await page.getByRole('button',{name:'Advanced'}).click();
+ await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill('{"action":"deny"}');
- const panel=page.getByLabel('Existing parser review and import');await panel.locator('summary').click();
+ const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
  await page.getByLabel('Existing Parser Project JSON').setInputFiles({
   name:'parser-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project())),
  });
@@ -44,7 +46,7 @@ test('opaque Ruby CONF pair stays read-only and never echoes source code',async(
    diagnostics:[{code:'PAIR_NOT_REPRODUCIBLE',severity:'warning',message:'PRIVATE_BACKEND_TEXT'}],warnings:[],
   })});
  });
- await page.goto('/');const panel=page.getByLabel('Existing parser review and import');await panel.locator('summary').click();
+ await page.goto('/');await page.getByRole('button',{name:'Advanced'}).click();await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
  await page.getByLabel('Existing Parser Ruby fragment').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
  await page.getByLabel('Existing Parser CONF file').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
  expect(posts).toBe(0);
@@ -69,8 +71,8 @@ test('exact inspected pair requires explicit restore and clears current sample',
    importStatus:'EDITABLE_EXACT',roundTripVerified:true,portableProject:portable,diagnostics:[],warnings:[],
   })});
  });
- await page.goto('/');await page.getByLabel('Auto Parser raw logs').fill('{"private":"sample"}');
- const panel=page.getByLabel('Existing parser review and import');await panel.locator('summary').click();
+ await page.goto('/');await page.getByRole('button',{name:'Advanced'}).click();await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();await page.getByLabel('Auto Parser raw logs').fill('{"private":"sample"}');
+ const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
  await page.getByLabel('Existing Parser Ruby fragment').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
  await page.getByLabel('Existing Parser CONF file').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
  await page.getByRole('button',{name:'Inspect Pair Read-only'}).click();

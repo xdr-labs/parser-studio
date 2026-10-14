@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDraft, DEMO_SAMPLES } from './model';
-import { convertValue, detectFormat, extractFields, preview, splitEvents } from './parser';
+import { convertValue, detectFormat, extractFields, inferConsistentCsvColumnCount, preview, splitEvents } from './parser';
 
 describe('safe, version-neutral browser preview', () => {
   it('detects known sample formats and declines unknowns', () => {
@@ -42,6 +42,13 @@ describe('safe, version-neutral browser preview', () => {
     const draft = { ...createDraft(), csvColumns: 'action,src_ip,dst_port', csvDelimiter: '\t' as const };
     expect(extractFields('deny\t198.51.100.10\t443', 'csv', draft).fields)
       .toEqual({ action: 'deny', src_ip: '198.51.100.10', dst_port: '443' });
+  });
+
+  it('infers only a consistent CSV column count without inventing field semantics', () => {
+    expect(inferConsistentCsvColumnCount('a,b,,d\n1,2,,4', ',')).toBe(4);
+    expect(inferConsistentCsvColumnCount('a,b\n1,2,3', ',')).toBeNull();
+    expect(inferConsistentCsvColumnCount('a,"unterminated\n1,2', ',')).toBeNull();
+    expect(inferConsistentCsvColumnCount('single\nvalue', ',')).toBeNull();
   });
 
   it('fails closed on unsupported CSV delimiters or malformed quoted cells', () => {
@@ -149,13 +156,18 @@ describe('logical event boundary modes', () => {
     expect(limited.events.at(-1)?.status).toBe('warning');
   });
 
-  it('preserves safe logical-event size limits after grouping', () => {
+  it('accepts realistic long security events while preserving the 64 KiB dataset limit', () => {
     const draft = createDraft();
     draft.format = 'json';
     draft.guided = { ...draft.guided!, eventBoundary: 'blank-line' };
-    const hugeLogical = ['{', ' '.repeat(4100) + '"action":"allow"', '}'].join('\n');
-    const result = preview(hugeLogical, draft);
-    expect(result.counts.failures).toBe(1);
-    expect(result.events[0].diagnostics.some((x) => x.code === 'LINE_TOO_LONG')).toBe(true);
+    const realisticEdR = ['{', ' '.repeat(10_000) + '"action":"allow"', '}'].join('\n');
+    const accepted = preview(realisticEdR, draft);
+    expect(accepted.counts.failures).toBe(0);
+    expect(accepted.events[0].diagnostics.some((x) => x.code === 'LINE_TOO_LONG')).toBe(false);
+
+    const overDatasetLimit = '{"payload":"' + 'x'.repeat(65_536) + '"}';
+    const rejected = preview(overDatasetLimit, draft);
+    expect(rejected.counts.failures).toBe(1);
+    expect(rejected.events[0].diagnostics.some((x) => x.code === 'DATASET_TOO_LARGE')).toBe(true);
   });
 });

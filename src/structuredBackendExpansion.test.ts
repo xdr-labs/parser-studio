@@ -74,7 +74,7 @@ describe('new backend RFC5424/CEF/LEEF reviewed subset browser parity', () => {
 
   it('rejects malformed RFC5424 envelopes wrapping CEF/LEEF rather than silently extracting partial data',()=>{
     const draft=createDraft();draft.format='syslog_rfc5424';draft.syslogBodyFormat='cef';
-    expect(extractFields(head+'- CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 extra','syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
+    expect(extractFields(head+'- CEF:0|Synthetic|FW|1|42|Blocked|8|broken extension','syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
     draft.syslogBodyFormat='leef';
     expect(extractFields(head+'- LEEF:2.0|Synthetic|FW|1|501|::|src=192.0.2.10','syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
   });

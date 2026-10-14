@@ -63,10 +63,12 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByLabel('Auto Parser raw logs').fill(sample);
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('2/2 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const generation=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -99,8 +101,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect(bytes.subarray(0,4).toString('hex')).toBe('504b0304');
     expect(sha(bytes)).toBe(zip.headers()['x-parser-zip-sha256']);
     expect(calls).toEqual(['validate','generate','package']);
-    await page.getByLabel('Test and Generate stage')
-      .getByRole('button',{name:'Review Results'}).click();
+    await page.getByLabel('Test and Create stage')
+      .getByRole('button',{name:'Fix Problems'}).click();
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"deny"}');
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
@@ -138,9 +140,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     });
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Auto Parser test evidence'))
       .toContainText('Generation Not Verified');
@@ -168,11 +172,13 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
     await page.getByLabel('Auto Parser raw logs').fill(sample);
     await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings')).toContainText('src_ip');
-    await page.getByLabel('Review Results stage').getByRole('button',{name:/Test & Generate/}).click();
-    await expect(page.getByLabel('Test and Generate stage')).toBeVisible();
+    await page.getByLabel('Fix Problems stage').getByRole('button',{name:/Test & Create/}).click();
+    await expect(page.getByLabel('Test and Create stage')).toBeVisible();
     const generated=page.waitForResponse(r=>r.url().endsWith('/generate')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     expect((await generated).status()).toBe(200);
@@ -204,11 +210,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       expect(bytes.byteLength).toBeGreaterThan(0);
     }
     expect(actions).toEqual(['validate','generate','validate','generate']);
-    await page.getByLabel('Test and Generate stage').getByRole('button',{name:'Review Results'}).click();
+    await page.getByLabel('Test and Create stage').getByRole('button',{name:'Fix Problems'}).click();
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(sample);
     await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"allow","src_ip":"192.0.2.8","dst_port":80}');
-    await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button',{name:/Test & Generate/})).toBeDisabled();
+    await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button',{name:/Test & Create/})).toBeDisabled();
   });
 
 
@@ -232,11 +238,13 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByLabel('Auto Parser raw logs').fill(sample);
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('3/3 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings')).toContainText('body.src');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -276,12 +284,14 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByLabel('Auto Parser raw logs').fill(source);
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('3/3 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings')).toContainText('body.src_ip');
-    await expect(page.getByLabel('Review Results stage')).toContainText('RFC3164 header has no year or timezone');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toContainText('RFC3164 header has no year or timezone');
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -328,11 +338,13 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByLabel('Auto Parser raw logs').fill(source);
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('4/4 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings')).toContainText('body.src_ip');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -378,13 +390,15 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByLabel('Auto Parser raw logs').fill(source);
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('4/4 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings')).toContainText('body.src');
-    await expect(page.getByLabel('Review Results stage'))
+    await expect(page.getByLabel('Fix Problems stage'))
       .toContainText('RFC3164 header has no year or timezone');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const generated=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -443,14 +457,16 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByRole('button',{name:'I Confirm TCP Java Events Are Separated by LF LF'}).click();
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('2/2 events analyzed locally');
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings'))
       .toContainText('exception_class');
     await expect(page.getByLabel('Suggested field mappings'))
       .toContainText('frame_count');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const generated=page.waitForResponse(r=>
       r.url().endsWith('/parser-pairs/generate')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -544,9 +560,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.goto('/');
     await expect(page.getByLabel('Authorized test and Interflow verification')).toHaveCount(0);
     await page.getByLabel('Auto Parser raw logs').fill(source);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -589,7 +607,9 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByLabel('Automatic event accounting'))
       .toContainText('4/4 events analyzed locally');
     await expect(page.getByLabel('Review CSV column names')).toBeVisible();
-    const review=page.getByRole('button',{name:'Review Detected Results'});
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ const review=page.getByRole('button',{name:'Review Detected Results'});
     await expect(review).toBeDisabled();
     await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,dst_port');
     await page.getByLabel('Reviewed CSV data separator').selectOption(';');
@@ -597,10 +617,10 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
     await expect(review).toBeEnabled();
     await review.click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await expect(page.getByLabel('Suggested field mappings')).toContainText('src_ip');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     const pairResponse=page.waitForResponse(r=>r.url().endsWith('/parser-pairs/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -659,9 +679,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     page.on('download',entry=>downloaded.push(entry.suggestedFilename()));
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -707,9 +729,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     });
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -731,26 +755,28 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
     await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toHaveCount(0);
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await expect(page.getByLabel('Review Results stage')).toBeVisible();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
     await page.getByLabel('Adjust detected field mapping').locator('summary').click();
     const target=page.getByLabel('Mapping target 0');
     const original=await target.inputValue();
     expect(original).toMatch(/^custom\./);
     await target.fill('custom..invalid');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
-    await expect(page.getByLabel('Test and Generate stage')).toBeVisible();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
+    await expect(page.getByLabel('Test and Create stage')).toBeVisible();
     await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}))
       .toBeDisabled();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
     expect(operations).toEqual([]);
-    await page.getByLabel('Test and Generate stage')
-      .getByRole('button',{name:'Review Results'}).click();
+    await page.getByLabel('Test and Create stage')
+      .getByRole('button',{name:'Fix Problems'}).click();
     await page.getByLabel('Adjust detected field mapping').locator('summary').click();
     await page.getByLabel('Mapping target 0').fill(original);
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}))
       .toBeEnabled();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -775,7 +801,9 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.goto('/?workspace=expert');
     await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
     await page.getByLabel('Adjust detected field mapping').locator('summary').click();
     const first=await page.getByLabel('Mapping target 0').inputValue();
     const second=page.getByLabel('Mapping target 1');
@@ -784,8 +812,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect(original).toMatch(/^custom\./);
     expect(first).not.toBe(original);
     await second.fill(first+'.child');
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}))
       .toBeEnabled();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
@@ -793,12 +821,12 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       .toContainText('Generation Not Verified');
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
     expect(outgoing).toEqual([]);
-    await page.getByLabel('Test and Generate stage')
-      .getByRole('button',{name:'Review Results'}).click();
+    await page.getByLabel('Test and Create stage')
+      .getByRole('button',{name:'Fix Problems'}).click();
     await page.getByLabel('Adjust detected field mapping').locator('summary').click();
     await page.getByLabel('Mapping target 1').fill(original);
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -819,9 +847,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     });
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -1067,9 +1097,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     let responseKind:'denied'|'forged'|'safe'='denied';
     await page.goto('/');
     await page.getByLabel('Auto Parser raw logs').fill(sample);
-    await page.getByRole('button',{name:'Review Detected Results'}).click();
-    await page.getByLabel('Review Results stage')
-      .getByRole('button',{name:/Test & Generate/}).click();
+    if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+    await page.getByLabel('Fix Problems stage')
+      .getByRole('button',{name:/Test & Create/}).click();
     await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -1277,9 +1309,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
    });
    await page.goto('/');
    await page.getByLabel('Auto Parser raw logs').fill(replaySource);
-   await page.getByRole('button',{name:'Review Detected Results'}).click();
-   await expect(page.getByLabel('Review Results stage')).toBeVisible();
-   await page.getByLabel('Review Results stage').getByRole('button',{name:/Test & Generate/}).click();
+   if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByRole('button',{name:'Review Detected Results'}).click();
+   await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
+   await page.getByLabel('Fix Problems stage').getByRole('button',{name:/Test & Create/}).click();
    await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
    const sentBefore=calls.length;
@@ -1303,7 +1337,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
    expect(Number(/Locally generated (\d+) events/.exec(
      await panel.getByRole('status').innerText())?.[1]??0)).toBe(count);
    expect(calls.length).toBe(sentBefore);
-   await page.getByLabel('Test and Generate stage').getByRole('button',{name:'Review Results'}).click();
+   await page.getByLabel('Test and Create stage').getByRole('button',{name:'Fix Problems'}).click();
    await expect(page.getByLabel('Local synthetic replay preview')).toHaveCount(0);
    await page.getByRole('button',{name:'Back to Logs'}).click();
    await page.getByLabel('Auto Parser raw logs').fill(replaySource+'\n{"action":"allow"}');

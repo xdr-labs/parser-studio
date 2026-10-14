@@ -1,6 +1,6 @@
 import {afterEach,describe,it,expect,vi} from 'vitest';
 import {createHash} from 'node:crypto';
-import {requestMultiPassPreview} from './multipassPreviewClient';
+import {requestMultiPassBatchPreview,requestMultiPassPreview} from './multipassPreviewClient';
 
 describe('opt-in Multi-Pass preview contract',()=>{
  afterEach(()=>vi.unstubAllGlobals());
@@ -99,5 +99,29 @@ describe('opt-in Multi-Pass preview contract',()=>{
   const requester=vi.fn().mockResolvedValue({ok:true,json:async()=>value});
   await expect(requestMultiPassPreview(raw,requester as typeof fetch)).resolves.toMatchObject({
    status:'SOURCE_PARSED',syntax:'KV',fields:{srcip:'192.0.2.10',action:'close'}});
+ });
+ it('verifies lossless multi-event batch framing and every event source identity',async()=>{
+  const first='{"action":"BLOCK","srcip":"192.0.2.1"}';
+  const second='{"action":"ALLOW","srcip":"198.51.100.2"}';
+  const raw=first+'\n'+second;
+  const preview=(source:string,action:string,ip:string)=>({
+   contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',syntax:'JSON',
+   sourceSha256:createHash('sha256').update(source).digest('hex'),sourceBytes:Buffer.byteLength(source),
+   fields:{action,srcip:ip},spans:[],residuals:[],issues:[],nativeVerified:false,targetVerified:false,
+  });
+  const value={contract:'parser-studio.multipass-source-batch-preview.v0.1',
+   sourceSha256:createHash('sha256').update(raw).digest('hex'),sourceBytes:Buffer.byteLength(raw),
+   eventCount:2,events:[
+    {index:0,startByte:0,endByte:Buffer.byteLength(first),preview:preview(first,'BLOCK','192.0.2.1')},
+    {index:1,startByte:Buffer.byteLength(first)+1,endByte:Buffer.byteLength(raw),preview:preview(second,'ALLOW','198.51.100.2')},
+   ],separators:[{startByte:Buffer.byteLength(first),endByte:Buffer.byteLength(first)+1,kind:'WHITESPACE'}],
+   nativeVerified:false,targetVerified:false};
+  const requester=vi.fn().mockResolvedValue({ok:true,json:async()=>value});
+  await expect(requestMultiPassBatchPreview(raw,requester as typeof fetch)).resolves.toMatchObject({
+   eventCount:2,events:[{preview:{fields:{action:'BLOCK'}}},{preview:{fields:{action:'ALLOW'}}}]});
+  expect(requester.mock.calls[0]?.[0]).toBe('/api/v1/multipass/preview-batch');
+  const forged=structuredClone(value);forged.events[1].startByte--;
+  const bad=vi.fn().mockResolvedValue({ok:true,json:async()=>forged});
+  await expect(requestMultiPassBatchPreview(raw,bad as typeof fetch)).rejects.toThrow();
  });
 });

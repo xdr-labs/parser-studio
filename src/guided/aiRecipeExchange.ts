@@ -1,5 +1,6 @@
 /** P1-AP6 offline, user-directed AI prompt and strict REVIEW_ONLY import.
- * No provider calls, raw sample export, Ruby, Regex or JSONata execution.
+ * No provider calls, automatic raw sample export, Ruby/Grok/JSONata execution.
+ * A bounded named-capture parse_regex stage may be reviewed under the same explicit approval gates.
  */
 import type {ParserDraft,SuiteResult} from '../model';
 import {MAX_DATASET_BYTES,MAX_EVENTS,splitEvents} from '../parser';
@@ -62,8 +63,9 @@ export async function createPrivacySafeAIPrompt(
   'If projectId is present, it must match the metadata below; sample must be {sha256: sourceHash, events: sourceCount}.',
   'If projectId is null, the current draft is not backend-compatible: provide a plain-English diagnostic and request reviewed redacted examples instead of inventing a valid recipe.',
   'Allow only stages: split_event(single-line), optional unwrap_syslog(version 1, strict_header),',
-  'one parse_json/parse_kv/parse_cef/parse_leef/parse_csv, map_field, adjacent cast_type, bounded split_field/merge_fields, classify, fallback_unparsed.',
-  'Never provide Ruby, executable code, Regex, JSONata, credentials, API requests or deployment instructions.',
+  'one parse_json/parse_kv/parse_cef/parse_leef/parse_csv or bounded parse_regex, map_field, adjacent cast_type, bounded split_field/merge_fields, classify, fallback_unparsed.',
+  'parse_regex is allowed only for a <=256-character named-capture pattern without backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
+  'Never provide Ruby, Grok, JSONata execution, arbitrary code, credentials, API requests or deployment instructions.',
   'Refuse to assert a supported grammar when family metadata is insufficient or mixed.',
   'All rules require local user review. Native Fluentd and Stellar target import are NOT VERIFIED.',
   'Only count, family and digest metadata follow. No raw logs or field values have been included:',
@@ -190,12 +192,14 @@ export function proposeV01RecoveryParserFromAI(imported:AIImportResult,draft:Par
      framing:split.boundary==='blank-line'?(recipe.sourceFormat==='java_stacktrace'?'blank_line_java' as const:'blank_line_json' as const):'newline' as const},
    classification:{defaultIndex:INDEX_TO_UI[classify.defaultIndex],rules}};
  const parseCsv=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_csv'}>=>s.op==='parse_csv');
+ const parseRegex=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_regex'}>=>s.op==='parse_regex');
  const dispatch=recipe.stages.find((s):s is Extract<ReviewStage,{op:'dispatch_family'}>=>s.op==='dispatch_family');
  const candidate:ParserDraft={...draft,format:recipe.sourceFormat,mappings,guided:nextOpts,
    ...(recipe.sourceFormat==='csv'&&parseCsv?{csvColumns:parseCsv.columns.join(','),csvDelimiter:parseCsv.delimiter}:{}),
+   ...(recipe.sourceFormat==='regex'&&parseRegex?{pattern:parseRegex.pattern}:{}),
    ...(recipe.sourceFormat==='mixed'&&dispatch?{mixedFormats:[...dispatch.families]}:{}),
    ...(['syslog_rfc3164','syslog_rfc5424'].includes(recipe.sourceFormat)?
-     {syslogBodyFormat:recipe.bodyFormat as 'json'|'kv'|'cef'|'leef'}:{})};
+     {syslogBodyFormat:recipe.bodyFormat as 'json'|'kv'|'cef'|'leef'|'regex',...(recipe.bodyFormat==='regex'&&parseRegex?{pattern:parseRegex.pattern}:{})}:{})};
  if(!toBackendProject(candidate).ok)return deny('BACKEND_UNSUPPORTED');
  return {ok:true,candidate,approvalRequired:true,backendCompilerVerified:false,replacement:'FULL_PARSER'};
 }

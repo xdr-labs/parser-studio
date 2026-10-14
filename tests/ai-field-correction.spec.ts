@@ -47,8 +47,10 @@ async function reachReview(page:import('@playwright/test').Page){
   route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(source);
+ if(await page.getByRole('button',{name:'Advanced'}).count())
+  await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Review Results stage')).toBeVisible();
+ await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
 }
 test('already parsed field correction can be rejected or explicitly applied without changing unrelated mappings',async({page})=>{
  await reachReview(page);

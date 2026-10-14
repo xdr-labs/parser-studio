@@ -1,4 +1,5 @@
 import type { FieldType, ParserDraft } from '../model';
+import {validatePreviewRegexPattern} from '../regexSafety';
 
 export type EventClass = 'Session' | 'Threat' | 'Syslog' | 'Winlogevent';
 export type FieldGroup = 'top_fields' | 'ns_fields' | 'vendor_fields';
@@ -144,12 +145,18 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if(options.eventBoundary!=='single-line'&&!framedJson&&!framedJava)
     errors.push('Blank-line grouping is browser-only without a strictly selected TCP JSON or Java LF LF framing.');
 
-  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed','java_stacktrace'] as string[]).includes(draft.format)) {
-    errors.push('This compiler subset requires explicit JSON, Key / Value, comma CSV, RFC3164/RFC5424, standalone CEF or LEEF; Auto, generic Syslog and Regex are preview-only');
+  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed','java_stacktrace','regex'] as string[]).includes(draft.format)) {
+    errors.push('This compiler subset requires explicit JSON, Key / Value, CSV, RFC3164/RFC5424, standalone CEF/LEEF, Java stack trace or bounded Regex; Auto and generic Syslog are preview-only');
+  }
+  const regexSelected=draft.format==='regex'||
+    (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)&&draft.syslogBodyFormat==='regex');
+  if(regexSelected){
+    const regexIssue=validatePreviewRegexPattern(draft.pattern);
+    if(regexIssue)errors.push('Regex parser: '+regexIssue);
   }
   if (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) &&
-      !['raw', 'json', 'kv', 'cef', 'leef'].includes(draft.syslogBodyFormat ?? 'raw')) {
-    errors.push('Unsupported Syslog body format; use raw, JSON object, strict Key/Value, CEF or LEEF');
+      !['raw', 'json', 'kv', 'cef', 'leef', 'regex'].includes(draft.syslogBodyFormat ?? 'raw')) {
+    errors.push('Unsupported Syslog body format; use raw, JSON object, strict Key/Value, CEF, LEEF or bounded Regex');
   }
   if(draft.format==='mixed'){
     const list=draft.mixedFormats;

@@ -17,6 +17,7 @@ export interface EnvelopeEntry{
   sequence:number;line:number;envelope:Envelope;body:Body;
   status:EntryStatus;
   timePolicy:'EXPLICIT_TIME'|'YEAR_AND_ZONE_UNKNOWN'|'NO_TIMESTAMP';
+  rfc3164Profile?:'strict_tagged'|'tagless_structured_security';
 }
 export interface EnvelopeLedger{
   contract:'auto-parser.envelopes.v0.1';
@@ -119,6 +120,19 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
       return {...base,envelope:'none',body:'java_stacktrace',status:'RECOGNIZED'};
     return {...base,envelope:'none',body:'unknown',status:'BOUNDARY_AMBIGUOUS'};
   }
+  // Bounded tagless BSD security envelope, including an optional PRI.
+  // It is accepted only when the body begins with an explicit structured
+  // signature; arbitrary prose remains unknown and cannot become DRAFT-ready.
+  const tagless=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+([!-~]{1,255})\s+((?:\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]{0,95}=).+)$/.exec(raw);
+  if(tagless){
+    const pri=tagless[1]===undefined?undefined:Number(tagless[1]);
+    const classified=classifyBody(tagless[8]!);
+    if((pri===undefined||pri<=191)&&MONTH_DAYS[tagless[2]!]&&
+      Number(tagless[3])>=1&&Number(tagless[3])<=MONTH_DAYS[tagless[2]!]&&
+      Number(tagless[4])<=23&&Number(tagless[5])<=59&&Number(tagless[6])<=59)
+      return {...base,envelope:'rfc3164',...classified,
+        timePolicy:'YEAR_AND_ZONE_UNKNOWN',rfc3164Profile:'tagless_structured_security'};
+  }
   if(raw.startsWith('<')){
     if(/^<\d{1,3}>1\s/.test(raw)){
       const scanned=parseRfc5424Subset(raw);
@@ -137,7 +151,7 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
     const tag=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?: +(.+)$/.exec(match[8]!);
     if(!tag)return {...base,envelope:'rfc3164',body:'unknown',status:'HEADER_MALFORMED'};
     return {...base,envelope:'rfc3164',...classifyBody(tag[3]!),
-      timePolicy:'YEAR_AND_ZONE_UNKNOWN'};
+      timePolicy:'YEAR_AND_ZONE_UNKNOWN',rfc3164Profile:'strict_tagged'};
   }
   return {...base,envelope:'none',...classifyBody(raw)};
 }
@@ -199,6 +213,8 @@ export function assessEnvelopeCompilation(
   if(report.boundary!=='single-line'||
     report.events.some(e=>e.status==='BOUNDARY_AMBIGUOUS'))
     return no('BOUNDARY_REVIEW');
+  const hasTaglessRfc3164=report.events.some(
+    e=>e.rfc3164Profile==='tagless_structured_security');
   if(report.unsupported>0||report.accounted!==report.sourceCount||
     report.families.length>4)return no('MIXED_OR_UNKNOWN');
   if(report.families.length>1){
@@ -226,6 +242,7 @@ export function assessEnvelopeCompilation(
     const advertised=cap.authoring?.strictMixedSingleLineFamilies;
     if(formats.some(name=>name?.startsWith('rfc3164_'))&&(
       cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
+      (hasTaglessRfc3164&&cap.authoring.rfc3164TaglessStructuredSecuritySubset!==true)||
       cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
       cap.authoring.rfc3164NativeTimeReconstruction!==false||
       !formats.filter(name=>name?.startsWith('rfc3164_')).every(name=>
@@ -259,6 +276,7 @@ export function assessEnvelopeCompilation(
     return no('BACKEND_UNTRUSTED');
   if(family.envelope==='rfc3164'&&(
       cap.authoring.rfc3164StrictTaggedMessageSubset!==true||
+      (hasTaglessRfc3164&&cap.authoring.rfc3164TaglessStructuredSecuritySubset!==true)||
       cap.authoring.rfc3164TimePolicy!=='YEAR_AND_ZONE_UNKNOWN'||
       cap.authoring.rfc3164NativeTimeReconstruction!==false||
       !cap.authoring.rfc3164BodyFormats?.includes(family.body as 'kv')

@@ -3,7 +3,7 @@
  */
 import {createDraft,type ParserDraft,type MappingRule,type SuiteResult} from '../model';
 import {splitEvents,MAX_DATASET_BYTES,MAX_EVENTS} from '../parser';
-import {listSafeLeafPaths} from '../fieldPaths';
+import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {suggestUnmappedFields} from './fieldMappingSuggestions';
 import {suggestMappingType} from './typeSuggestions';
 import {defaultGuidedOptions} from './contract';
@@ -92,7 +92,14 @@ export function prepareAutoParserDraft(
       guided:{...opts,classification:{defaultIndex:'Syslog',rules:[]},groups:{}},
     };
     const suggestions=suggestUnmappedFields(
-      suite.events.map(event=>event.fields),blank);
+      suite.events.map(event=>event.fields),blank).filter(suggestion=>
+        suite.events.every(event=>{
+          const found=lookupFieldValue(event.fields,suggestion.source);
+          if(!found.found)return true;
+          const value=found.value;
+          return value!==undefined&&value!==null&&
+            !(typeof value==='string'&&value.trim()==='');
+        }));
     if(suggestions.length===0)return failed('MODEL_REVIEW_REQUIRED');
     const mappings:MappingRule[]=suggestions.map((suggestion,i)=>{
       const rule:MappingRule={id:'auto-'+String(i+1),source:suggestion.source,

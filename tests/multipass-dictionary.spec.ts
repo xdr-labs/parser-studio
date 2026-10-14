@@ -37,7 +37,8 @@ test('Multi-Pass shows value-free exact Dictionary guidance without auto-applyin
  }));
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(raw);
- await page.getByRole('button',{name:'Run Local Multi-Pass Source Preview'}).click();
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ await page.getByRole('button',{name:'Advanced'}).click();
  const review=page.getByLabel('Stellar Dictionary normalization suggestions');
  await expect(review).toContainText('3 mapped · 1 preserved unmapped');
  await expect(review).toContainText('srcip → srcip');

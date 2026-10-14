@@ -131,4 +131,30 @@ describe('P0-AP3 target-independent ParserRecipe v0.2 review-only contract',()=>
     expect(await buildReviewableRecipe('',draft,undefined)).toMatchObject({
       ok:false,reason:'SOURCE_LIMIT'});
   });
+  it('builds a review-only RFC3164 + bounded Regex body recipe without replacing the Syslog envelope',async()=>{
+    const raw=[
+      '<134>May 5 17:51:17 dev01 %FTD-6-302013: Built inbound TCP connection 111 for net:10.10.10.10/53500 to fw:192.168.2.2/443',
+      '<134>May 5 17:51:18 dev01 %FTD-6-302013: Built outbound TCP connection 112 for net:10.10.10.11/53501 to fw:192.168.2.3/8443',
+    ].join('\n');
+    const pattern='^%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+) to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+)$';
+    const draft=createDraft();draft.format='syslog_rfc3164';draft.syslogBodyFormat='regex';draft.pattern=pattern;
+    draft.mappings=[
+      {id:'src',source:'body.src_ip',target:'custom.source_ip',type:'ip'},
+      {id:'dpt',source:'body.dst_port',target:'custom.destination_port',type:'port'},
+    ];
+    draft.guided={...draft.guided!,groups:{src:'top_fields',dpt:'top_fields'},classification:{defaultIndex:'Syslog',rules:[]}};
+    const result=await buildReviewableRecipe(raw,draft,preview(raw,draft));
+    expect(result.ok).toBe(true);
+    if(!result.ok)return;
+    expect(result.recipe.sourceFormat).toBe('syslog_rfc3164');
+    expect(result.recipe.bodyFormat).toBe('regex');
+    expect(result.recipe.stages.slice(0,3)).toEqual([
+      {op:'split_event',boundary:'single-line'},
+      {op:'unwrap_syslog',version:3164,mode:'strict_header'},
+      {op:'parse_regex',pattern},
+    ]);
+    expect(result.legacyProject.extraction).toEqual({format:'syslog_rfc3164',syslogBodyFormat:'regex',pattern});
+    expect(validateReviewableRecipe(result.recipe)).toBe(true);
+  });
+
 });

@@ -43,7 +43,7 @@ At the Auto Parser result, after a SHA-verified compiler response, provide indiv
 | Gated | Real DP Apply, Sensor send, Interflow, human E2E | Await target credentials/permissions and separately approved test conditions |
 | Gated | PR merge / release | Explicit owner release approval only |
 
-**Current integration provenance (2026-10-14):** active UI Draft PR #17 is feat/stellar-export-visual-parity-20261014; active backend Draft PR #4 is feat/r15-parser-pair-backend; active source-engine Draft PR #16 is poc/security-stream-framing-20261014. Preserve historical recovery worktrees and unrelated dirty state. UI quality CI must pin exact backend candidate e3f45651554eafc598a79ed7a61eed55b1b65ea9; Native/target claims are never inferred from browser-only evidence.
+**Current integration provenance (2026-10-14):** active UI Draft PR #17 is feat/stellar-export-visual-parity-20261014; active backend Draft PR #4 is feat/r15-parser-pair-backend; active source-engine Draft PR #16 is poc/security-stream-framing-20261014. Preserve historical recovery worktrees and unrelated dirty state. UI quality CI must pin exact backend candidate 10a58c12cd0de5fe0579c14d3943ddf1ba928406; Native/target claims are never inferred from browser-only evidence.
 
 ## Internal qualification snapshot — 2026-10-14
 
@@ -180,3 +180,29 @@ All archived Wizard/Workbench suites now have a machine-checked behavioral dispo
 `tests/legacy-removed-ui/migration-manifest.json`. Archived tests still never count as current
 PASS. No archived legacy behavior remains undispositioned; exact Project JSON/Ruby/CONF review is
 migrated under Auto Parser Advanced tools, and real target operations remain separately gated.
+
+
+## Beginner-first parsing UX — 2026-10-15
+
+The default Auto Parser path is now **Add Logs → Fix Problems → Test & Create**. A first-time user sees one primary **Analyze Logs** action; Multi-Pass diagnostics, byte-span details, Dictionary evidence, Drain3, Existing Parser tools and Native evidence are moved behind **Advanced**.
+
+The authoritative analysis is event-framed Multi-Pass rather than competing browser/Multi-Pass status labels. Each unresolved event shows the original source with the unresolved region highlighted, a plain-language explanation and a structure-aware recommendation:
+- JSON → direct JSON field paths first; no arbitrary JSONata execution.
+- CEF/LEEF/KV → keep the structured parser and repair only the unresolved extension/body.
+- positional CSV such as PAN-OS → reviewed or neutral column schema without guessing semantics.
+- unresolved text/Syslog message bodies → bounded named-capture parse_regex only after safety checks.
+
+**Ask ChatGPT** builds a copyable, user-reviewed prompt containing the problem event, already-extracted fields, unresolved spans, current parser identity/recipe context, and the strict ParserRecipe v0.2 output contract. No source is sent automatically. A pasted AI recipe must pass current-source parsing plus an independent holdout and explicit approval before it can replace a draft.
+
+Bounded parse_regex is a reviewed compiler subset, not arbitrary Regex: maximum 256 visible characters, named captures required, and backreferences/lookbehind/unsafe nested repetition are rejected. An approved Cisco FTD-style recovery has browser evidence through holdout approval and exact backend Ruby/CONF DRAFT generation.
+
+Current internal evidence after this UX increment:
+- UI unit: **601/601 PASS**.
+- Current Chromium: **28 PASS / 28 integration-gated SKIP**.
+- Beginner core regression: Analyze → problem inspector → ChatGPT prompt/import → holdout → approval PASS.
+- Cisco FTD exact-backend recovery: full browser journey through verified Ruby/CONF DRAFT generation PASS.
+- Product corpus: AWS WAF, Suricata, FortiGate, SonicWall, Zscaler ZIA, SentinelOne, CrowdStrike, CEF and LEEF complete on the tested samples; Check Point source anomalies remain explicit review; PAN-OS uses positional-column review; Cisco ASA/FTD uses bounded message-body recovery.
+- Source engine candidate: 193a4ec74ca1189208814dab410ea5c83f69ced6.
+- Backend candidate: 10a58c12cd0de5fe0579c14d3943ddf1ba928406.
+
+Real Stellar DP/sensor/Interflow proof, proprietary parser-loader compatibility, owner human acceptance, merge and release remain separately gated.

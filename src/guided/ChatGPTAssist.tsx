@@ -104,7 +104,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         redacted.trim(),
         '----- END REVIEWED REDACTED LOG EXAMPLES -----',
         'Return exactly one JSON ParserRecipe v0.2 when the reviewed examples are representable by the supported declarative grammar.',
-        'Never return Ruby, executable Regex, JSONata, external calls or unverifiable operations.',
+        'Never return Ruby, Grok, JSONata execution, external calls or unverifiable operations. A parse_regex stage is allowed only for the bounded named-capture subset.',
         ...(baseline.ok?[
           'Use this structurally valid current JSON recipe as your baseline.',
           'Preserve its projectId, sample SHA, event count, family and stage order.',
@@ -114,9 +114,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           '----- END CANONICAL PARSER RECIPE JSON -----',
         ]:[
           'No compiler-ready baseline exists. You may propose a FULL_RECOVERY recipe only when the reviewed examples fit one supported grammar:',
-          'JSON, strict key/value, CSV with explicit columns, CEF, LEEF, bounded RFC3164/RFC5424 with a supported body, mixed allowlisted families, or bounded Java stack traces.',
+          'JSON, strict key/value, CSV with explicit columns, CEF, LEEF, bounded RFC3164/RFC5424 with a supported body, mixed allowlisted families, bounded Java stack traces, or bounded named-capture Regex for otherwise unresolved one-line text.',
           `Use projectId draft-${(next.guided??draft.guided)?.slug??'demo_firewall'} and preserve the exact source SHA and event count from the metadata above.`,
-          'Use only declarative stages accepted by ParserRecipe v0.2. If the format requires arbitrary Regex, Grok, scripting, or guessed semantics, explain that it is unsupported instead of inventing a recipe.',
+          'Use only declarative stages accepted by ParserRecipe v0.2. If Regex is needed, use parse_regex with <=256 visible characters, named captures, no backreferences/lookbehind/unsafe nested repetition. Grok, scripting and guessed semantics remain unsupported.',
         ]),
         'Return only your JSON recipe, with nativeVerified and targetVerified false.',
       ].join('\n');
@@ -285,8 +285,8 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       </section>
       <section aria-label="ChatGPT recipe validation">
         <h2>3. Paste AI result</h2>
-        <p>Paste the JSON recipe from ChatGPT. Raw Ruby, Regex and arbitrary executable
-          code are not accepted. Unsupported operations remain review-only.</p>
+        <p>Paste the JSON recipe from ChatGPT. Ruby, Grok and arbitrary executable
+          code are not accepted. Bounded named-capture Regex is accepted only through the reviewed parse_regex contract.</p>
         <textarea aria-label="ChatGPT pasted recipe" rows={8} maxLength={MAX_RECIPE}
           spellCheck={false} value={response} onChange={e=>{
             setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setNotice('');setHoldoutAttested(false);setCandidateApproval(false);

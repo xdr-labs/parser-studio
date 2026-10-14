@@ -47,8 +47,11 @@ test('P1 user explicitly probes auth-only availability then consents before priv
      body:JSON.stringify(result)});
  });
  await page.goto('/');
+ await page.getByRole('button',{name:'Advanced'}).click();
+ await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(logs);
  const block=page.getByLabel('Optional isolated Drain3 mining');
+ await expect(block).toBeVisible();
  await block.locator('summary').click();
  await expect(block.getByRole('checkbox')).toHaveCount(0);
  expect(probes).toBe(0);expect(posts).toBe(0);
@@ -83,8 +86,11 @@ test('P1 disabled private Drain3 never presents consent or posts a source; brows
      body:JSON.stringify({error:'DRAIN3_DISABLED'})});
  });
  await page.goto('/');
+ await page.getByRole('button',{name:'Advanced'}).click();
+ await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(logs);
  const block=page.getByLabel('Optional isolated Drain3 mining');
+ await expect(block).toBeVisible();
  await block.locator('summary').click();
  await block.getByRole('button',{name:/Check Private Drain3 Availability/}).click();
  await expect(block).toContainText('disabled or not authorized');

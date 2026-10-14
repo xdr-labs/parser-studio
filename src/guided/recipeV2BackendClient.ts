@@ -47,6 +47,7 @@ export async function checkRecipeV02Compiler(
  requiredMixedFamilies:readonly string[]=[],
  requireJavaBlankLineTcp=false,
  requiredOperators:readonly string[]=[],
+ requireBoundedRegex=false,
 ):Promise<boolean>{
  const res=await requester(BASE+'/capabilities',{
   method:'GET',cache:'no-store',credentials:'same-origin',
@@ -104,6 +105,12 @@ export async function checkRecipeV02Compiler(
     cap.javaBlankLineOtherTransports!==false||
     cap.javaBlankLineDelimiter!=='LF_LF'||
     cap.javaStackTraceGrammar!=='EXCEPTION_HEADER_FRAMES_CAUSED_BY_V1'))||
+  (requireBoundedRegex&&(
+    !values.includes('regex')||
+    !ops.includes('parse_regex')||
+    cap.boundedRegexNamedCaptureSubset!==true||
+    cap.boundedRegexMaxPatternChars!==256||
+    cap.boundedRegexRuntimeTimeoutMs!==50))||
   cap.nativeUserParserVerified!==false||cap.targetImportVerified!==false||
   cap.sourceHashVerifiedAgainstEvents!==false||cap.apiDoesNotDeploy!==true)
   fail();
@@ -136,7 +143,8 @@ export async function compileReviewedRecipeV02(
      ?(input.recipe.stages.find(s=>s.op==='dispatch_family') as
        Extract<typeof input.recipe.stages[number],{op:'dispatch_family'}>).families:[],
    input.recipe.sourceFormat==='java_stacktrace',
-   [...new Set(input.recipe.stages.filter(s=>s.op==='split_field'||s.op==='merge_fields').map(s=>s.op))])) {
+   [...new Set(input.recipe.stages.filter(s=>s.op==='split_field'||s.op==='merge_fields').map(s=>s.op))],
+   input.recipe.sourceFormat==='regex')) {
   throw new Error('The current backend does not advertise v0.2 compilation.');
  }
  const validation=await post('validate',input,requester);
