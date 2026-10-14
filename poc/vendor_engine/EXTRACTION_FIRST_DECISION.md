@@ -361,3 +361,29 @@ vendor or future-version generalization, and not an unmasked-only corpus claim.
 Synthetic tests also cover malformed/oversized/nested contexts, Unicode byte
 spans, retained leading zeros, opaque contexts and negative layout admission.
 No Dictionary or masking-specific work was added.
+
+## H. Occurrence-preserving ordinary source KV extraction
+
+The legacy semantic-role parser remains unchanged. A separate bounded source-only
+KV scanner fixes eight reproduced failure cases: repeated native keys no longer
+stop subsequent extraction; repeated equal/empty occurrences retain ordered values
+and separate original byte spans; single-quoted strings, escaped quotes/Unicode,
+leading whitespace, underscore keys and escaped bare spaces are supported without
+Dictionary inference. Unknown bare escapes remain literal. Malformed quoted tails
+and unsafe object keys are kept raw rather than scavenged for apparent fields.
+Unquoted empty values remain explicitly PARTIAL; quoted empty values are valid.
+
+A separately executed baseline at `acc3a903e19597af44635b243fa4be3b4949e35f` and
+current candidate received the same **128 deliberately unmasked synthetic inputs /
+352 source-field occurrences**. Native-path/exact-byte-span baseline: TP112 / FP128 /
+FN240 (F1 37.8378%); candidate TP352 / FP0 / FN0. Exact decoded field-tree AND all-span
+equality improved 32/128 ->128/128. Both versions preserve 128/128 original records;
+no masked, unassessed or excluded records. These deliberately selected bug cases
+are not an unseen-vendor or universal parsing benchmark.
+
+The existing real known-format corpus was separately rechecked: 256 original
+records /14,645 independently decoded original fields, TP14,645 /FP0 /FN0, zero
+unparsed bytes. This confirms no regression on those eight familiar fixtures,
+not universal source extraction. New tests also cover bounded field count/input,
+malformed-tail preservation, literal single-letter keys and wrapped Syslog spans.
+No masking optimization, semantic mapping, UI or native compatibility work.

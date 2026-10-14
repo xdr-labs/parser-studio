@@ -16,16 +16,17 @@ from typing import Any
 
 from engine import (
     BSD, PRI, MAX_RAW_BYTES, ParseResult, SpanJsonDecoder,
-    parse_quoted_kv, parse_csv_spans,
+    parse_csv_spans,
 )
 from structured_source import (
     decode_cef_or_leef,extract_rfc3164,extract_rfc5424,
     extract_plain_bsd,extract_apache_error,
 )
 from residual_kv import recover_kv_islands
+from source_kv import decode_source_kv
 from java_source import extract_java_envelope
 
-KV_AT_START=re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,127}=")
+KV_AT_START=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}=")
 JSON_ARRAY_START=re.compile(r'^\[\s*(?:[\[{}\]"0-9-]|true\b|false\b|null\b)')
 CSV_AT_START=re.compile(r'^(?:[^,\r\n]*,){2}[^\r\n]*$')
 
@@ -191,7 +192,7 @@ def parse_source(raw:str)->SourceEvent:
     if pri is not None and int(pri.group("priority"))<=191:
         offset=pri.end()
         parsed.covered.append((0,offset))
-        if KV_AT_START.match(raw[offset:]):
+        if KV_AT_START.match(raw[offset:].lstrip(" \t")):
             mode="KV"
             event.syntax="SYSLOG_PRI_KV"
         else:
@@ -202,7 +203,7 @@ def parse_source(raw:str)->SourceEvent:
         if re.match(r"\d+,",raw[offset:]):
             mode="CSV"
             event.syntax="SYSLOG_BSD_CSV"
-        elif KV_AT_START.match(raw[offset:]):
+        elif KV_AT_START.match(raw[offset:].lstrip(" \t")):
             mode="KV"
             event.syntax="SYSLOG_BSD_KV"
         else:
@@ -210,7 +211,7 @@ def parse_source(raw:str)->SourceEvent:
     elif raw.lstrip().startswith("{") or JSON_ARRAY_START.match(raw.lstrip()):
         mode="JSON"
         event.syntax="JSON"
-    elif KV_AT_START.match(raw):
+    elif KV_AT_START.match(raw.lstrip(" \t")):
         mode="KV"
         event.syntax="KV"
     elif CSV_AT_START.fullmatch(raw) is not None:
@@ -224,23 +225,14 @@ def parse_source(raw:str)->SourceEvent:
 
     try:
         if mode=="KV":
-            cells=parse_quoted_kv(parsed,offset)
-            # A properly quoted empty value is valid source data, not a
-            # syntax failure. Bare key= remains explicitly flagged.
-            parsed.issues=[
-                issue for issue in parsed.issues
-                if not (issue.startswith("KV_EMPTY_VALUE:")
-                        and issue.removeprefix("KV_EMPTY_VALUE:") in cells
-                        and raw[cells[issue.removeprefix("KV_EMPTY_VALUE:")][1]-2:
-                                cells[issue.removeprefix("KV_EMPTY_VALUE:")][2]+1].endswith('=""'))
-            ]
-            event.vendor_fields={key:value for key,(value,_,_) in cells.items()}
-            event.value_spans=[
-                _span(raw,key,start,end) for key,(_,start,end) in cells.items()
-            ]
-            event.primitive_fields=len(cells)
-            if not cells:
-                event.issues.append("NO_SOURCE_KV_FIELDS")
+            component=decode_source_kv(raw,offset)
+            event.vendor_fields=component.fields
+            event.value_spans=[_span(raw,key,a,b) for key,a,b in component.spans]
+            event.primitive_fields=component.primitive_fields
+            event.covered=list(parsed.covered)+component.covered
+            event.issues.extend(component.issues)
+            if not component.fields:event.issues.append("NO_SOURCE_KV_FIELDS")
+            return _close(event)
         elif mode=="CSV":
             cells=parse_csv_spans(parsed,offset)
             # Indexes are syntactic column positions, NOT inferred meanings.
