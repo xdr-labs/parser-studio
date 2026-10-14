@@ -8,16 +8,16 @@ describe('AI recovery review safety',()=>{
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
   fireEvent.change(screen.getByRole('textbox',{name:'AI correction request'}),{target:{value:'Extract source IP'}});
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
-  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm reviewed AI excerpt'}));
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
   fireEvent.change(screen.getByRole('textbox',{name:'Reviewed and redacted AI excerpt'}),{target:{value:'REDACTED event'}});
-  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm reviewed AI excerpt'}));
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(false);
  });
  it('does not authorize selected-area copy without exact selection',()=>{
   render(<AutoParserAIReview raw="src=192.0.2.1" status="partial" onChatGPT={vi.fn()}/>);
   fireEvent.change(screen.getByRole('textbox',{name:'AI correction request'}),{target:{value:'Extract IP'}});
-  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm reviewed AI excerpt'}));
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
  });
  it('rejects unverified AI recipe and never applies changes',()=>{

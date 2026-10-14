@@ -17,11 +17,14 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [importResult,setImportResult]=useState('');
  const [importBusy,setImportBusy]=useState(false);
  const [holdout,setHoldout]=useState('');
+ const [holdoutAttested,setHoldoutAttested]=useState(false);
  const [approvedCandidate,setApprovedCandidate]=useState<ParserDraft|null>(null);
  const [approval,setApproval]=useState(false);
+ const [validatedEvidence,setValidatedEvidence]=useState('');
+ const evidenceFingerprint=()=>JSON.stringify([source??'',draft??null,holdout,recipeText]);
  useEffect(()=>{
   const initial=initialByteRange?fromSourceByteRange(raw,initialByteRange.startByte,initialByteRange.endByte):null;
-  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');setApprovedCandidate(null);setApproval(false);
+  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');
   setMode(initial?'selection':status==='unsupported'?'entire':'selection');
  },[raw,status,initialByteRange?.startByte,initialByteRange?.endByte]);
  const sourceRange=toSourceByteRange(raw,range[0],range[1]);
@@ -52,13 +55,25 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    const proposal=proposeV01FieldMappingFromAI(result,source,draft,suite);
    if(!proposal.ok){setImportResult(`REVIEW ONLY: ${result.report.changedStageCount} changes. No safely compilable additive mapping: ${proposal.reason}.`);return;}
    if(!holdout.trim()){setImportResult('Independent holdout sample required before approval. No rules were applied.');return;}
-   const report=compareCandidate({source,baseline:suite,candidate:preview(source,proposal.candidate),
-    holdout:{source:holdout,baseline:preview(holdout,draft),candidate:preview(holdout,proposal.candidate)}});
+   if(!holdoutAttested){setImportResult('Confirm that the holdout events were not used to create or tune this AI proposal. No rules were applied.');return;}
+   let report;
+   try{
+    report=compareCandidate({source,baseline:suite,candidate:preview(source,proposal.candidate),
+     holdout:{source:holdout,baseline:preview(holdout,draft),candidate:preview(holdout,proposal.candidate)}});
+   }catch{
+    setImportResult('Candidate rejected: training or holdout evidence is stale, reordered, or mutated. Re-run validation from the current sample.');return;
+   }
+   if(report.holdoutStatus==='REJECTED'){
+    const reason=report.holdoutIndependence?.ok===false?report.holdoutIndependence.reason:'TOO_SMALL';
+    const detail=reason==='IDENTICAL_TO_TRAINING'?'holdout is identical to the training sample':
+      reason==='TRAINING_OVERLAP'?'holdout contains training events':'holdout has too few unique independent events';
+    setImportResult(`Candidate rejected: ${detail}. No rules were applied.`);return;
+   }
    if(!report.acceptedWithoutRegression||report.holdoutStatus!=='TESTED'){
     setImportResult('Candidate rejected: training or holdout regression. No rules were applied.');return;
    }
-   setApprovedCandidate(proposal.candidate);
-   setImportResult(`Ready for explicit approval: 1 added mapping, 0 training/holdout regressions; ${report.holdout?.sourceCount??0} holdout events tested. Browser-only; native verification pending.`);
+   setApprovedCandidate(proposal.candidate);setValidatedEvidence(evidenceFingerprint());
+   setImportResult(`Ready for explicit approval: 1 added mapping, 0 training/holdout regressions; ${report.holdout?.sourceCount??0} independent holdout events tested. Browser-only; native verification pending.`);
   }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
   finally{setImportBusy(false);}
  }
@@ -81,7 +96,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   <label className="stellar-ai-label" htmlFor="stellar-ai-goal">What should be extracted or corrected?</label>
   <textarea id="stellar-ai-goal" aria-label="AI correction request" rows={3} maxLength={500} value={goal}
    onChange={e=>{setGoal(e.target.value);setApproved(false);}} placeholder="For example: split the selected source address into IP and port."/>
-  <label className="stellar-ai-consent"><input type="checkbox" checked={approved} onChange={e=>setApproved(e.target.checked)}/>
+  <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm reviewed AI excerpt" checked={approved} onChange={e=>setApproved(e.target.checked)}/>
    I reviewed the editable excerpt and removed sensitive information before copying.</label>
   <div className="stellar-ai-actions">
    <button type="button" className="stellar-ai-primary" disabled={!canCopy} onClick={()=>void copyPrompt()}>Copy AI Prompt</button>
@@ -92,10 +107,13 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    <summary>Paste AI Recipe for strict review</summary>
    <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ParserRecipe v0.2 JSON proposal</label>
    <textarea id="stellar-ai-recipe" aria-label="AI Recipe JSON" rows={5} maxLength={32768}
-    value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');setApprovedCandidate(null);setApproval(false);}}/>
+    value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');}}/>
    <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Independent holdout logs (required)</label>
    <textarea id="stellar-ai-holdout" aria-label="AI candidate holdout logs" rows={3} maxLength={65536}
-    value={holdout} onChange={e=>{setHoldout(e.target.value);setApprovedCandidate(null);setApproval(false);setImportResult('');}}/>
+    value={holdout} onChange={e=>{setHoldout(e.target.value);setHoldoutAttested(false);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');setImportResult('');}}/>
+   <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm independent AI holdout provenance"
+    checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');}}/>
+    I confirm these holdout events were not used to create, tune, or select this AI proposal.</label>
    <button type="button" disabled={!source||!draft||!suite||!recipeText.trim()||importBusy}
     onClick={()=>void reviewImport()}>Validate Proposal (Review Only)</button>
    {importResult&&<p role="status">{importResult}</p>}
@@ -103,8 +121,23 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     <label><input type="checkbox" checked={approval} onChange={e=>setApproval(e.target.checked)}/>
       I approve the one verified additive mapping. Existing rules must remain unchanged.</label>
     <button type="button" disabled={!approval||!onApplyCandidate} onClick={()=>{
-     if(!approval||!approvedCandidate||!onApplyCandidate)return;
-     onApplyCandidate(approvedCandidate);setApprovedCandidate(null);setApproval(false);
+     if(!approval||!approvedCandidate||!onApplyCandidate||!source||!draft||!suite)return;
+     if(!holdoutAttested||validatedEvidence!==evidenceFingerprint()){
+      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+      setImportResult('Candidate rejected: approval evidence is stale. Re-run holdout validation against the current sample and proposal.');return;
+     }
+     try{
+      const recheck=compareCandidate({source,baseline:suite,candidate:preview(source,approvedCandidate),
+       holdout:{source:holdout,baseline:preview(holdout,draft),candidate:preview(holdout,approvedCandidate)}});
+      if(!recheck.acceptedWithoutRegression||recheck.holdoutStatus!=='TESTED'){
+       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+       setImportResult('Candidate rejected during final holdout recheck. No rules were applied.');return;
+      }
+     }catch{
+      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+      setImportResult('Candidate rejected: final training or holdout evidence is stale, reordered, or mutated.');return;
+     }
+     onApplyCandidate(approvedCandidate);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
      setImportResult('Approved mapping added to draft. Native parser testing and export verification remain required.');
     }}>Apply Approved Mapping to Draft</button>
    </div>}

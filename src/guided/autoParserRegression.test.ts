@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {createDraft,type ParserDraft} from '../model';
 import {preview} from '../parser';
-import {compareBrowserSuites,compareCandidate,proposeReviewableMapping} from './autoParserRegression';
+import {assessHoldoutIndependence,compareBrowserSuites,compareCandidate,proposeReviewableMapping} from './autoParserRegression';
 
 const train=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"user":"PRIVATE_A"}',
@@ -66,7 +66,21 @@ describe('P0-AP4 exact source, full coverage and holdout candidate regression',(
    const result=compareCandidate({source:train,baseline,candidate:baseline});
    expect(result.holdout).toBeNull();
    expect(result.holdoutStatus).toBe('NOT_SUPPLIED');
+   expect(result.holdoutIndependence).toBeNull();
    expect(result.approvalRequired).toBe(true);
+ });
+ it('rejects identical, overlapping and undersized holdouts before candidate approval',()=>{
+   expect(assessHoldoutIndependence(train,train)).toMatchObject({ok:false,reason:'IDENTICAL_TO_TRAINING'});
+   expect(assessHoldoutIndependence(train,train.split('\n')[0]+'\n'+holdout.split('\n')[0]))
+     .toMatchObject({ok:false,reason:'TRAINING_OVERLAP',overlapCount:1});
+   expect(assessHoldoutIndependence(train,holdout.split('\n')[0]!))
+     .toMatchObject({ok:false,reason:'TOO_SMALL',holdoutUnique:1,requiredUnique:2});
+   expect(assessHoldoutIndependence(train,holdout)).toMatchObject({ok:true,holdoutUnique:2,requiredUnique:2});
+   const draft=fixture(),baseline=preview(train,draft);
+   const rejected=compareCandidate({source:train,baseline,candidate:baseline,
+     holdout:{source:train,baseline:preview(train,draft),candidate:preview(train,draft)}});
+   expect(rejected).toMatchObject({holdout:null,holdoutStatus:'REJECTED',acceptedWithoutRegression:false,
+     holdoutIndependence:{ok:false,reason:'IDENTICAL_TO_TRAINING'}});
  });
  it('detects a newly broken known-good mapping and disallows approval',()=>{
    const draft=fixture(),broken=fixture();

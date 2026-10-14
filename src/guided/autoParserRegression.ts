@@ -35,11 +35,17 @@ export interface BoundedRegressionReport {
   events:SafeEventDelta[];
   browserOnly:true;nativeVerified:false;targetVerified:false;
 }
+export type HoldoutRejectionReason='TOO_SMALL'|'TRAINING_OVERLAP'|'IDENTICAL_TO_TRAINING';
+export type HoldoutIndependence=
+ | {ok:true;trainingUnique:number;holdoutUnique:number;requiredUnique:number;overlapCount:0}
+ | {ok:false;reason:HoldoutRejectionReason;trainingUnique:number;holdoutUnique:number;
+     requiredUnique:number;overlapCount:number};
 export interface CandidateComparison {
   contract:'auto-parser.candidate-comparison.v0.1';
   baseline:BoundedRegressionReport;
   holdout:BoundedRegressionReport|null;
-  holdoutStatus:'NOT_SUPPLIED'|'TESTED';
+  holdoutStatus:'NOT_SUPPLIED'|'REJECTED'|'TESTED';
+  holdoutIndependence:HoldoutIndependence|null;
   acceptedWithoutRegression:boolean;
   approvalRequired:true;
   nativeVerified:false;targetVerified:false;
@@ -141,13 +147,39 @@ export function compareBrowserSuites(source:string,before:SuiteResult,after:Suit
    families:[...families.values()],events:eventChanges,browserOnly:true,
    nativeVerified:false,targetVerified:false};
 }
+function recordIdentity(raw:string):string{return raw.trim();}
+export function assessHoldoutIndependence(trainingSource:string,holdoutSource:string):HoldoutIndependence{
+ const trainingRecords=splitEvents(trainingSource,'single-line',MAX_EVENTS+1);
+ const holdoutRecords=splitEvents(holdoutSource,'single-line',MAX_EVENTS+1);
+ const trainingSet=new Set(trainingRecords.map(item=>recordIdentity(item.raw)));
+ const holdoutSet=new Set(holdoutRecords.map(item=>recordIdentity(item.raw)));
+ const trainingUnique=trainingSet.size,holdoutUnique=holdoutSet.size;
+ const requiredUnique=Math.max(2,Math.min(5,Math.ceil(trainingUnique/4)));
+ const overlapCount=[...holdoutSet].filter(item=>trainingSet.has(item)).length;
+ const identical=trainingUnique===holdoutUnique&&trainingUnique>0&&
+   [...trainingSet].every(item=>holdoutSet.has(item));
+ if(identical)return {ok:false,reason:'IDENTICAL_TO_TRAINING',trainingUnique,holdoutUnique,
+   requiredUnique,overlapCount};
+ if(overlapCount>0)return {ok:false,reason:'TRAINING_OVERLAP',trainingUnique,holdoutUnique,
+   requiredUnique,overlapCount};
+ if(holdoutUnique<requiredUnique)return {ok:false,reason:'TOO_SMALL',trainingUnique,holdoutUnique,
+   requiredUnique,overlapCount:0};
+ return {ok:true,trainingUnique,holdoutUnique,requiredUnique,overlapCount:0};
+}
 export function compareCandidate(input:{source:string;baseline:SuiteResult;candidate:SuiteResult;
  holdout?:{source:string;baseline:SuiteResult;candidate:SuiteResult}}):CandidateComparison{
  const baseline=compareBrowserSuites(input.source,input.baseline,input.candidate);
+ const holdoutIndependence=input.holdout?
+   assessHoldoutIndependence(input.source,input.holdout.source):null;
+ if(holdoutIndependence&&!holdoutIndependence.ok){
+   return {contract:'auto-parser.candidate-comparison.v0.1',baseline,holdout:null,
+     holdoutStatus:'REJECTED',holdoutIndependence,acceptedWithoutRegression:false,
+     approvalRequired:true,nativeVerified:false,targetVerified:false};
+ }
  const holdout=input.holdout?compareBrowserSuites(input.holdout.source,
    input.holdout.baseline,input.holdout.candidate):null;
  return {contract:'auto-parser.candidate-comparison.v0.1',baseline,holdout,
-   holdoutStatus:holdout?'TESTED':'NOT_SUPPLIED',
+   holdoutStatus:holdout?'TESTED':'NOT_SUPPLIED',holdoutIndependence,
    acceptedWithoutRegression:baseline.regressions===0&&baseline.fieldRemovals===0&&
     baseline.typeChanges===0&&(!holdout||holdout.regressions===0&&
       holdout.fieldRemovals===0&&holdout.typeChanges===0),
