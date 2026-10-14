@@ -1,55 +1,60 @@
 # ACTIVE Independent Security-Source Validation PoC
 
-Status: ACTIVE / CHATGPT_CHAT / Chat mode / dev-atlas / engine research only.
-Owner scope: ordinary security-system logs, including complex AWS WAF, IPS/IDS,
-NGFW and network-security source formats. Sentence-style prose is not primary
-scope. Dictionary mapping is later; masking recognition is lowest priority.
+ACTIVE / CHATGPT_CHAT / Chat mode / dev-atlas / engine research only.
+Owner scope: ordinary security-system logs including AWS WAF, IPS/IDS, NGFW,
+CEF/LEEF and network-security formats. No prose-primary KPI. Dictionary later;
+masked-token recognition lowest priority. No UI, DP/sensor, hosted LLM,
+production/auth changes, merge or release.
 
-## Isolation and current comparison
-- Repository: xdr-labs/parser-studio; issue14; draft PR15, unmerged.
-- Worktree: /home/aella/parser-studio-validation-poc-20261014
-- Branch: poc/research-validation-20261014. Only poc/research_validation/ changes.
-- Actual main comparison: c2f464444a7aa899bd8b251507234720e4cbdde2,
-  security_source.parse_security_source, not the historical parse_source API.
-- Main worktree and its generic-body WIP remain untouched. No reset/clean/stash,
-  main packet replacement, production, auth change, merge or release.
+## Isolation
+- Repository xdr-labs/parser-studio; issue14; draft PR15, unmerged.
+- Worktree /home/aella/parser-studio-validation-poc-20261014
+- Branch poc/research-validation-20261014; only poc/research_validation/ changes.
+- Actual main baseline c2f464444a7aa899bd8b251507234720e4cbdde2,
+  security_source.parse_security_source. Main dirty WIP was not used or changed.
+- Previous research comparison d318ca4b9dc99040e90bdc1e48d4eeb791ef958f.
+  Latest research commit/CI are recorded in issue14's latest verified checkpoint.
 
-## Completed security checkpoint
-- Main added CEE support concurrently; final comparison was refreshed using an
-  isolated exact-current snapshot. Do not reuse obsolete CEE gains.
-- Unmodified security284:279 field-scored /7580 fields, zero FP/FN in current
-  and selected composition. Five NUL-corrupted records separately retained;
-  one malformed KV tail prefix-scored as PARTIAL. Full complete276/284.
-- Official AWS WAF10 code blocks:8 JSON examples/268 fields exact;2 non-parseable
-  snippets retained outside field scoring. FortiGate IPS7/292 and Suricata
-  alert24/748 are explicit subsets of the original corpus.
-- CEE forms264 derived from66 bodies: current and composed6836/6836 fields;
-  whole independent CEE replacement loses1709 fields. REJECT replacement.
-- Zeek187 physical=127 data+60 metadata/preamble. Current0 TP/44 FP/3132 FN;
-  current+declared-metadata3132 TP/0 FP/FN. The6 provenance preambles remain raw.
-- Selected security_document.py uses the current security API for every ordinary
-  event. Original284 output structures are unchanged. No H1 KV replacement.
-- Prior malformed-metadata guard and preamble accounting WIP finalized; prior
-  denials are not current blockers. Independent57/57 and main-scope58/58 PASS,
-  no skips. Generic repository CI is recorded on the actual research commit.
+## Completed follow-on
+- LEEF xHH additive adapter:192 authored security conformance events,3552 native
+  field/value/byte spans. Main0 TP/0 FP/3552 FN; addon3552/0/0,192 exact records.
+  144 SOURCE_PARSED,48 PARTIAL duplicate warnings; do not claim192 complete.
+- Mixed security-source regression: prior composer captured JSON/CEF/LEEF under
+  stale table schema; #close failed to release state; unknown # records became
+  metadata. RED3/6, fixed. Existing284 source records arranged in293-record
+  mixed stream: old0/0/7580, fixed7580/0/0;284 outputs identical to main.
+  This fixes document composition, NOT a core-engine accuracy increase.
+- Fresh upstream LEEF8 records after candidate freeze:4 valid/25 native fields
+  exact in BOTH;4 malformed missing-delimiter templates preserved. No extra gain.
+- Existing WAF/IPS284, official WAF8/268, CEE264/6836 and Zeek127/3132 regressions
+  retained. Source284 includes5 NUL controls,279 field-scored,276 fully complete.
+- Independent75/75 PASS, no skips. Main modules exact-commit hash verified.
+- No global KV/CEE replacement; earlier negative comparisons retained.
 
-## Authoritative evidence
-SECURITY_VALIDATION_RESULT.md; final-current-security-summary.json;
-security-current-tests.json; current-main-regression-tests.json. Original logs,
-reference examples and private predictions remain ignored. Earlier reports are
-historical; source-derived transport forms are not new production captures.
+## First remaining operation / narrow blocker
+Complete commercial CEF independent native-field oracle/scoring. Four pinned
+Elastic input collections are already in .cache/cef-leef/: Check Point,
+Cisco ASA, Forcepoint NGFW/SMC, Trend Micro;22 originals are event.original.
+Do not use predecoded message prose as raw input. Correct frozen predictions:
+.cache/cef-leef/frozen-source-predictions.json. Field accuracy is NOT SCORED.
 
-## First remaining executable work
-Extend independently sourced commercial IPS/NGFW CEF/LEEF and rare version
-subtypes; freeze the candidate before new source acquisition and compare the
-actual current security entry point. Preserve existing negative results. Then
-qualify source-schema rotation/mixed-source admission and only additive fixes.
-No generic prose mining, repeated broad research, main-engine integration,
-Dictionary, UI, native/DP/sensor or release work in this lane without scope change.
+The create/run request for poc/research_validation/cef_reference.py and
+poc/research_validation/test_cef_reference.py was denied twice by OpenAI's
+security-state determination, with a normal same-tool/device/path retry after
+successful access verification. Both files remain absent. On resume reassess
+conditions and normally retry Remote_Desktop_Commander.start_process on
+**dev-atlas d39830c5-a953-43f2-b9cf-5f8d87ad832e**, same worktree/target files.
+Do not bypass a repeated denial. No owner setting change is currently indicated.
+The CEF oracle must independently score native header/extension names, decoded
+values, repeat occurrences and UTF-8 byte spans; no ECS/Dictionary gold aliases.
 
-## Resume discipline
-Read this packet plus issue14's latest checkpoint and actual Git/PR/CI state.
-If the main lane advanced, use its latest committed security API rather than an
-old core API or dirty source files. Preserve all worktrees and licensed caches.
-Retry old restrictions only if an actual remaining operation is still blocked;
-none is presently outstanding. User configuration action: none.
+## Evidence / next order
+SECURITY_FOLLOWON_RESULT.md; security-followon-summary.json;
+leef-upstream-summary.json; security-current-tests.json;
+final-current-security-summary.json; CEF/LEEF source and freeze manifests.
+Raw sources/predictions remain ignored; no redistribution.
+
+Finish CEF scoring -> independent valid commercial xHH LEEF and rare subtypes ->
+only then additive integration feasibility. No repeated broad research, prose
+mining, completed fixture reacquisition or main-worktree edits. If main advances,
+compare its latest committed security API, not dirty files or old parse_source.

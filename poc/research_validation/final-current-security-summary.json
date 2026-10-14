@@ -507,7 +507,7 @@
   },
   "candidate_module_hashes": {
     "candidate.py": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
-    "security_document.py": "579ca6dfe5ef14140c55ebe57b9a117380d8e269cb124453e18682060bf42197",
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
     "security_envelopes.py": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a"
   },
   "comparison_correction": "Main lane added CEE support concurrently; original 0-to-100 CEE gain against old parse_source is superseded for current comparisons.",
@@ -1055,104 +1055,92 @@
       },
       "zeek:0.log": {
         "all_records_preserved": true,
-        "data_or_raw_records": 35,
+        "data_or_raw_records": 37,
         "metadata_indices": [
           1,
           2,
           3,
           4,
           5,
-          6,
           7,
-          8,
-          43
+          8
         ],
-        "metadata_records": 9,
+        "metadata_records": 7,
         "physical_records": 44
       },
       "zeek:1.log": {
         "all_records_preserved": true,
-        "data_or_raw_records": 35,
+        "data_or_raw_records": 37,
         "metadata_indices": [
           1,
           2,
           3,
           4,
           5,
-          6,
           7,
-          8,
-          43
+          8
         ],
-        "metadata_records": 9,
+        "metadata_records": 7,
         "physical_records": 44
       },
       "zeek:2.log": {
         "all_records_preserved": true,
-        "data_or_raw_records": 15,
+        "data_or_raw_records": 17,
         "metadata_indices": [
           1,
           2,
           3,
           4,
           5,
-          6,
           7,
-          8,
-          23
+          8
         ],
-        "metadata_records": 9,
+        "metadata_records": 7,
         "physical_records": 24
       },
       "zeek:3.log": {
         "all_records_preserved": true,
-        "data_or_raw_records": 35,
+        "data_or_raw_records": 37,
         "metadata_indices": [
           1,
           2,
           3,
           4,
           5,
-          6,
           7,
-          8,
-          43
+          8
         ],
-        "metadata_records": 9,
+        "metadata_records": 7,
         "physical_records": 44
       },
       "zeek:4.log": {
         "all_records_preserved": true,
-        "data_or_raw_records": 9,
+        "data_or_raw_records": 11,
         "metadata_indices": [
           1,
           2,
           3,
           4,
           5,
-          6,
           7,
-          8,
-          17
+          8
         ],
-        "metadata_records": 9,
+        "metadata_records": 7,
         "physical_records": 18
       },
       "zeek:5.log": {
         "all_records_preserved": true,
-        "data_or_raw_records": 4,
+        "data_or_raw_records": 6,
         "metadata_indices": [
           1,
           2,
           3,
           4,
           5,
-          6,
           7,
-          8,
-          12
+          8
         ],
-        "metadata_records": 9,
+        "metadata_records": 7,
         "physical_records": 13
       }
     },
@@ -1574,7 +1562,7 @@
       }
     }
   },
-  "prediction_sha256": "1cbff4ceedcaa1016112d314d4dc040ee93c8c1022eb7d64a10007b35acf4184",
+  "prediction_sha256": "0f3c6541a072ee07a59963aa18e0d8ffef0bfbf96d8aea92dbdac27360cdf3ec",
   "prior_baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
   "product_integrated": false,
   "scope": "Ordinary security-product logs; no prose examples in primary metrics",

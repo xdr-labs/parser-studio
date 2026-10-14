@@ -1,0 +1,46 @@
+{
+  "files": [
+    {
+      "bytes": 8242,
+      "git_blob": "a5ddf5c7f4e54d851d42076a6ef2177a999dc8e0",
+      "name": "test-checkpoint.json",
+      "path": "packages/cef/data_stream/log/_dev/test/pipeline/test-checkpoint.json",
+      "records": 3,
+      "sha256": "5c68c5714491c491d08fba2e6954011ad49dbfe976ea4af2a4c8b356f2fa5261",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/cef/data_stream/log/_dev/test/pipeline/test-checkpoint.json"
+    },
+    {
+      "bytes": 7363,
+      "git_blob": "0153a76bc560eb6fc41c9393dfdb04bca1ffc7f3",
+      "name": "test-cisco-asa.json",
+      "path": "packages/cef/data_stream/log/_dev/test/pipeline/test-cisco-asa.json",
+      "records": 1,
+      "sha256": "c340e98ffca0ceba2672cc8f94d0d6b5f6106f40db1a89580c50bd5e922af9a2",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/cef/data_stream/log/_dev/test/pipeline/test-cisco-asa.json"
+    },
+    {
+      "bytes": 18418,
+      "git_blob": "56647866c36f0e4c95b722132694a88925e03a85",
+      "name": "test-fp-ngfw-smc.json",
+      "path": "packages/cef/data_stream/log/_dev/test/pipeline/test-fp-ngfw-smc.json",
+      "records": 10,
+      "sha256": "de6e20533209fda63d9dabc202a38a334aced91de0f7ad91173a4a5d67147469",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/cef/data_stream/log/_dev/test/pipeline/test-fp-ngfw-smc.json"
+    },
+    {
+      "bytes": 18142,
+      "git_blob": "a360f22157252984e12761d344f882a998219c40",
+      "name": "test-trend-micro.json",
+      "path": "packages/cef/data_stream/log/_dev/test/pipeline/test-trend-micro.json",
+      "records": 8,
+      "sha256": "583290c0ecad072d6750d23a17f1f081df40e6bc3e98f90f4b21eebee49bded8",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/cef/data_stream/log/_dev/test/pipeline/test-trend-micro.json"
+    }
+  ],
+  "license": "Existing reviewed Elastic license; local research only; no redistribution",
+  "raw_field": "event.original (message is decoded prose and is NOT a test event)",
+  "redaction": "UNASSESSED",
+  "repository": "elastic/integrations",
+  "revision": "47a6f483b1e7337854f7b5140a98397cba744702",
+  "source_kind": "Upstream regression source objects; not production captures"
+}

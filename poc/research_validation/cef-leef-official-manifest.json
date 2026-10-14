@@ -1,0 +1,176 @@
+{
+  "extraction": "p/pre HTML text after explicit CEF:/LEEF:; whitespace and tab values preserved; no separator repair",
+  "files": [
+    {
+      "format": "CEF",
+      "name": "trend-example-0.txt",
+      "section": "CEF syslog message format",
+      "sha256": "797771179e63c68bb404ac27218396a2c0d957dbf7aab5a8b8235cca2e17c3be",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-1.txt",
+      "section": "CEF syslog message format",
+      "sha256": "82aaf2d215c2b19eee8c5e7a25bf11f788cda0bb8f9a71fd23f5ba5ce9aefed4",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-2.txt",
+      "section": "LEEF 2.0 syslog message format",
+      "sha256": "98011c107ed667057cc56d536d871c65027a95afdda8130ffba77edf43c2fbb7",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-3.txt",
+      "section": "System event log format",
+      "sha256": "2b9a9ce50e387b80f09741dceeba84725b015cceb9a4a6bf68dae053a9e752df",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-4.txt",
+      "section": "System event log format",
+      "sha256": "f02aeb50203bfbb1b06eec7e2c48107f24c9fbf33ce05a3ea0077457e357af3f",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-5.txt",
+      "section": "Anti-Malware event format",
+      "sha256": "22fb28738819a1a651b4fc999e78ed16853aec080dfe08d4d2b8442485f9fdae",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-6.txt",
+      "section": "Anti-Malware event format",
+      "sha256": "ae58b2aa6e8e4cb41003625ee8348fdce0eff2f4e1e0fcd929748dc1d1dc7092",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-7.txt",
+      "section": "Application Control event format",
+      "sha256": "e34d88fed199999f12d8a67eedc6572f03e1e9e381fcdf51a17367af16938dc6",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-8.txt",
+      "section": "Application Control event format",
+      "sha256": "fa137d0e39022bacd5046354264f66d4a22a92b213a66876180c16dbff2929de",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-9.txt",
+      "section": "Firewall event log format",
+      "sha256": "f5c6a5bf60ef4612fee49faa828478775607d810d2c0a032bab97ce1e38800c8",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-10.txt",
+      "section": "Firewall event log format",
+      "sha256": "452637a6c27813a0a744e5e4b8ebcae56d3b04f15362887a623b3cc2ef888b5b",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-11.txt",
+      "section": "Integrity Monitoring log event format",
+      "sha256": "5d8426c6924eda9a71419c495b0a1b94d8a01ccde5d22e2f3a67bf3c6f3ee5b6",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-12.txt",
+      "section": "Integrity Monitoring log event format",
+      "sha256": "f0ab052c4832e1f69d2fc3f25d6cf4c7a8649bbd7e1643e6b47abd04eb5c6a35",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-13.txt",
+      "section": "Intrusion Prevention event log format",
+      "sha256": "84a1f0057b6820424503b1cae74b806c29fdcdcf40e32a9f621220c1b299342e",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-14.txt",
+      "section": "Intrusion Prevention event log format",
+      "sha256": "2f34fa82e0672776efb8578d95970450fc6dd83d321ee4a25bc277cc6d0f8b0d",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-15.txt",
+      "section": "Log Inspection event format",
+      "sha256": "d5c1dcefe047cebb190e9fb253df8049a73f4035a664d11291ec7166bb5af4f7",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-16.txt",
+      "section": "Log Inspection event format",
+      "sha256": "1d39678e6d5c4aa37d114dd2faffb770a1c0d00294ab2f77c14cc24ced6f34da",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-17.txt",
+      "section": "Web Reputation event format",
+      "sha256": "1294bd29c0243604739a4a9070fec3f7fc75ba7783a9c960189778103632c9bb",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-18.txt",
+      "section": "Web Reputation event format",
+      "sha256": "cdfd2cd1ea09cbeaedb30c8792452667d3d95a40b9ebec091c91171ab9523616",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "CEF",
+      "name": "trend-example-19.txt",
+      "section": "Device Control event format",
+      "sha256": "8fbcbaeab5ca7bd64579186cb954fe88346736ec7a999b37c253eb3f96f40c9e",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    },
+    {
+      "format": "LEEF",
+      "name": "trend-example-20.txt",
+      "section": "Device Control event format",
+      "sha256": "ffa1ec197e713a735086e44176119b4120d97239cf3cc32733ac5250f9c1e0c1",
+      "tab_count": 0,
+      "url": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+    }
+  ],
+  "page_sha256": "1a60e30d4e333255145696856e026c138665f4c6220d6ea680cffd3cd6063c67",
+  "source_kind": "Official documentation examples, not captured events",
+  "source_page": "https://help.deepsecurity.trendmicro.com/20_0/on-premise/event-syslog-message-formats.html"
+}

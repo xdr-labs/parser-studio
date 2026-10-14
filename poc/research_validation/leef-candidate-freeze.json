@@ -1,0 +1,11 @@
+{
+  "contract": "parser-studio.leef-additive-preacquisition.v1",
+  "created_utc": "2026-10-14T03:01:37.021407+00:00",
+  "external_leef_source_acquired": false,
+  "main_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "module_sha256": {
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
+    "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
+  },
+  "scope": "New public LEEF upstream regression examples; separate from blocked CEF reference work"
+}

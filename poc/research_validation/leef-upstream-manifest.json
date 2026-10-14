@@ -1,0 +1,48 @@
+{
+  "candidate_frozen_sha256": {
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
+    "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
+  },
+  "files": [
+    {
+      "bytes": 492,
+      "name": "leef1.log",
+      "path": "test/inputs/leef/leef1.log",
+      "physical_records": 3,
+      "sha256": "ac5053239364d7c656822bbcd8caf05045c8f6698415ae344374cbf880a65e7f",
+      "tab_count": 0,
+      "url": "https://raw.githubusercontent.com/tenzir/tenzir/ebce5bdaecc463d7b2fa3e107d22682da489bd49/test/inputs/leef/leef1.log"
+    },
+    {
+      "bytes": 1450,
+      "name": "leef2.log",
+      "path": "test/inputs/leef/leef2.log",
+      "physical_records": 3,
+      "sha256": "2f54f22fabf091f9f5df215f38362ceea14d07c18dc3bdf3bf5fd19232fb5198",
+      "tab_count": 0,
+      "url": "https://raw.githubusercontent.com/tenzir/tenzir/ebce5bdaecc463d7b2fa3e107d22682da489bd49/test/inputs/leef/leef2.log"
+    },
+    {
+      "bytes": 434,
+      "name": "leef-over-syslog.log",
+      "path": "test/inputs/syslog/leef-over-syslog.log",
+      "physical_records": 2,
+      "sha256": "ab5a489cd4d14ebe331444161f3d9d27b1a6e711517d780a278b2c241b349b4d",
+      "tab_count": 0,
+      "url": "https://raw.githubusercontent.com/tenzir/tenzir/ebce5bdaecc463d7b2fa3e107d22682da489bd49/test/inputs/syslog/leef-over-syslog.log"
+    },
+    {
+      "bytes": 1529,
+      "name": "LICENSE",
+      "path": "LICENSE",
+      "sha256": "a156cfef2bb325f505e477ba336beca83da1a45374ac2ec0d0a282733189c5de",
+      "url": "https://raw.githubusercontent.com/tenzir/tenzir/ebce5bdaecc463d7b2fa3e107d22682da489bd49/LICENSE"
+    }
+  ],
+  "prediction_sha256": "efc726a97ffbafb0ed415ec5cc24fed20648896781114b9707e4165381e103b4",
+  "redaction": "UNASSESSED",
+  "repository": "tenzir/tenzir",
+  "revision": "ebce5bdaecc463d7b2fa3e107d22682da489bd49",
+  "source_data_rights": "Local research only; no raw redistribution",
+  "source_kind": "New upstream LEEF parser fixtures; not independently verified production captures"
+}

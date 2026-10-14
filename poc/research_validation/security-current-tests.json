@@ -12,8 +12,9 @@
   },
   "candidate_module_hashes": {
     "candidate.py": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
-    "security_document.py": "579ca6dfe5ef14140c55ebe57b9a117380d8e269cb124453e18682060bf42197",
-    "security_envelopes.py": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a"
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
+    "security_envelopes.py": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a",
+    "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
   },
   "caveat": "RED control predates current main CEE implementation; it is not a current-main accuracy gain.",
   "contract": "security-poc-current-test-evidence.v1",
@@ -25,8 +26,25 @@
   },
   "errors": 0,
   "failures": 0,
+  "followon_red_controls": {
+    "leef_oracle": {
+      "errors": 0,
+      "failures": 1,
+      "tests": 6
+    },
+    "leef_xhh": {
+      "errors": 1,
+      "failures": 3,
+      "tests": 6
+    },
+    "mixed_document": {
+      "errors": 0,
+      "failures": 3,
+      "tests": 6
+    }
+  },
   "python": "3.12.3",
   "skips": 0,
   "success": true,
-  "tests": 57
+  "tests": 75
 }

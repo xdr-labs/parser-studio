@@ -1,0 +1,77 @@
+{
+  "contract": "parser-studio.fresh-upstream-leef-native-token.v1",
+  "current_main": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 25,
+    "exact_records": 4,
+    "f1": 1.0,
+    "falsely_complete": 0,
+    "raw_preserved": 4,
+    "records": 4,
+    "reference_fields": 25,
+    "statuses": {
+      "SOURCE_PARSED": 4
+    }
+  },
+  "decision": "NO ADDITIONAL GAIN on this new source set; xHH cases are absent. Preserve malformed template negatives.",
+  "freeze_verified": true,
+  "frozen_candidate": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 25,
+    "exact_records": 4,
+    "f1": 1.0,
+    "falsely_complete": 0,
+    "raw_preserved": 4,
+    "records": 4,
+    "reference_fields": 25,
+    "statuses": {
+      "SOURCE_PARSED": 4
+    }
+  },
+  "groups": {
+    "leef-over-syslog.log": {
+      "input_records": 2,
+      "invalid_records": 1,
+      "reference_scored_records": 1
+    },
+    "leef1.log": {
+      "input_records": 3,
+      "invalid_records": 0,
+      "reference_scored_records": 3
+    },
+    "leef2.log": {
+      "input_records": 3,
+      "invalid_records": 3,
+      "reference_scored_records": 0
+    }
+  },
+  "input_records": 8,
+  "invalid_accounting": {
+    "current_main": {
+      "falsely_complete": 0,
+      "raw_preserved": 4,
+      "records": 4
+    },
+    "frozen_candidate": {
+      "falsely_complete": 0,
+      "raw_preserved": 4,
+      "records": 4
+    }
+  },
+  "invalid_reasons": {
+    "MISSING_REQUIRED_HEADER_DELIMITER": 4
+  },
+  "invalid_records": 4,
+  "limitations": [
+    "Upstream regression data, not independently verified production logs. Redaction unassessed.",
+    "Native scalar token spelling and source byte spans, not Tenzir semantic type coercion or string escape interpretation.",
+    "Literal backslash-t does not create additional source fields; actual header separators govern this reference.",
+    "Four malformed header/template inputs retained, not counted as correct field extraction.",
+    "Syslog envelope fields are outside this native LEEF body oracle."
+  ],
+  "main_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "reference_scored_records": 4,
+  "upstream_commit": "ebce5bdaecc463d7b2fa3e107d22682da489bd49"
+}

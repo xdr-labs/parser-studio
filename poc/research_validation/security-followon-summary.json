@@ -1,0 +1,221 @@
+{
+  "contract": "parser-studio.security-followon-validation.v1",
+  "leef_conformance": {
+    "current_main": {
+      "FN": 3552,
+      "FP": 0,
+      "TP": 0,
+      "exact_records": 0,
+      "f1": 0.0,
+      "falsely_complete": 0,
+      "raw_preserved": 192,
+      "records": 192,
+      "reference_fields": 3552,
+      "statuses": {
+        "PARTIAL": 144,
+        "RAW_ONLY": 48
+      }
+    },
+    "evidence": "AUTHOR_CONSTRUCTED_SECURITY_CONFORMANCE_NOT_VENDOR_CAPTURE",
+    "selected_addon": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 3552,
+      "exact_records": 192,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "raw_preserved": 192,
+      "records": 192,
+      "reference_fields": 3552,
+      "statuses": {
+        "PARTIAL": 48,
+        "SOURCE_PARSED": 144
+      }
+    }
+  },
+  "leef_corpus_sha256": "53adc699d14ada85faa4d0618c8779c2f3a2cced1bd2aab9df73f1c743b88036",
+  "limitations": [
+    "LEEF192 cases are authored syntactic conformance, not new-vendor accuracy.",
+    "Mixed ordinary284 are previously seen source fixtures, not284 new acquisitions.",
+    "Five invalid NUL records are separately counted, not field successes.",
+    "Framed LEEF envelope fields are outside the body-span oracle.",
+    "Identically shaped unframed interleaved table sources still require source identity; no open-world mixed-source inference claim.",
+    "New commercial CEF source-field oracle remains unexecuted after two tool security-state denials."
+  ],
+  "main_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "main_entrypoint_sha256": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+  "mixed_security": {
+    "evidence": "DERIVED_MIXED_STREAM_OF_EXISTING284_INPUTS_PLUS_EXPLICIT_TABLE_AND_METADATA_CONTROLS",
+    "fixed_composition": {
+      "all_records_preserved": true,
+      "metadata_records": 6,
+      "ordinary_output_unchanged": 284,
+      "ordinary_security_metrics": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "envelope_fields_outside_body_oracle": 8,
+        "exact_field_set_records": 279,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 7580,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "exact_vendor_tree_records": 279,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 276,
+        "input_records": 284,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 284,
+        "reference_complete_records": 278,
+        "reference_field_occurrences": 7580,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 279,
+        "statuses": {
+          "PARTIAL": 3,
+          "SOURCE_PARSED": 276
+        }
+      },
+      "ordinary_security_records": 284,
+      "physical_records": 293,
+      "synthetic_table_records": 2
+    },
+    "prior_composition": {
+      "all_records_preserved": true,
+      "metadata_records": 7,
+      "ordinary_output_unchanged": 5,
+      "ordinary_security_metrics": {
+        "FN": 7580,
+        "FP": 0,
+        "TP": 0,
+        "envelope_fields_outside_body_oracle": 0,
+        "exact_field_set_records": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 7580,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "exact_vendor_tree_records": 0,
+        "falsely_complete_records": 0,
+        "fully_correct_and_complete_records": 0,
+        "input_records": 284,
+        "invalid_input_exceptions": 0,
+        "invalid_inputs_falsely_complete": 0,
+        "invalid_inputs_not_field_scored": 5,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 284,
+        "reference_complete_records": 278,
+        "reference_field_occurrences": 7580,
+        "reference_issues": {
+          "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+          "NUL_CORRUPTED_INPUT": 5
+        },
+        "reference_partial_records": 1,
+        "reference_scored_records": 279,
+        "statuses": {
+          "RAW_ONLY": 279
+        }
+      },
+      "ordinary_security_records": 284,
+      "physical_records": 293,
+      "synthetic_table_records": 2
+    }
+  },
+  "module_sha256": {
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
+    "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
+  },
+  "native_verified": false,
+  "no_dictionary": true,
+  "no_product_integration": true,
+  "old_document_sha256": "579ca6dfe5ef14140c55ebe57b9a117380d8e269cb124453e18682060bf42197",
+  "original_security_nonregression": {
+    "current_main": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    },
+    "exact_output_unchanged": 284,
+    "selected_addon": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7580,
+      "envelope_fields_outside_body_oracle": 8,
+      "exact_field_set_records": 279,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 7580,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_vendor_tree_records": 279,
+      "falsely_complete_records": 0,
+      "fully_correct_and_complete_records": 276,
+      "input_records": 284,
+      "invalid_input_exceptions": 0,
+      "invalid_inputs_falsely_complete": 0,
+      "invalid_inputs_not_field_scored": 5,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 284,
+      "reference_complete_records": 278,
+      "reference_field_occurrences": 7580,
+      "reference_issues": {
+        "MALFORMED_OR_UNSUPPORTED_KV_TAIL": 1,
+        "NUL_CORRUPTED_INPUT": 5
+      },
+      "reference_partial_records": 1,
+      "reference_scored_records": 279,
+      "statuses": {
+        "PARTIAL": 3,
+        "SOURCE_PARSED": 276
+      }
+    }
+  },
+  "research_prior": "d318ca4b9dc99040e90bdc1e48d4eeb791ef958f"
+}
