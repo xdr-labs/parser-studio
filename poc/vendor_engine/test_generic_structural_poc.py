@@ -73,11 +73,37 @@ class GenericStructuralPoCTests(unittest.TestCase):
             2,result['baseline_incomplete_promoted_with_source_backing']
         )
 
+    def test_generic_event_code_tokens_are_additive_not_complete(self):
+        raw='prefix %EDGE-6-302013: unstructured body'
+        event=parse_generic_structural(raw)
+        self.assertEqual('PARTIAL',event.status)
+        self.assertEqual(
+            {'part_0':'EDGE','part_1':'6','part_2':'302013'},
+            event.vendor_fields['generic']['event_code'],
+        )
+        self.assertEqual(
+            ['EDGE','6','302013'],
+            [
+                raw.encode()[span.start_byte:span.end_byte].decode()
+                for span in event.value_spans
+                if span.path.startswith('generic.event_code.')
+            ],
+        )
+        quoted=(
+            'note="literal %EDGE-6-302013: text" other=ok third=yes '
+            'fourth=yes fifth=yes'
+        )
+        quoted_event=parse_generic_structural(quoted)
+        self.assertEqual('SOURCE_PARSED',quoted_event.status)
+        self.assertNotIn('generic',quoted_event.vendor_fields)
+        multiple='%EDGE-6-302013: first %ALT-4-106023: second'
+        self.assertNotEqual('SOURCE_PARSED',parse_generic_structural(multiple).status)
+
     def test_residual_template_is_candidate_only_when_dependency_present(self):
         result=residual_template_eval()
         if not result.get('available'):
             self.skipTest(result.get('reason','optional Drain3 unavailable'))
-        self.assertEqual('RAW_ONLY',result['generic_status'])
+        self.assertEqual('PARTIAL',result['generic_status'])
         self.assertTrue(result['template_match'])
         self.assertEqual('SOURCE_SPAN_CANDIDATE_ONLY',result['alignment_status'])
         self.assertTrue(result['exact_variable_spans'])
