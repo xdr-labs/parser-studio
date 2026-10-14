@@ -12,6 +12,7 @@ from array import array
 import re
 from source_parse import SourceEvent,assert_source_accounting
 from security_source import parse_security_source
+from security_envelope import extract_security_envelope
 from engine import MAX_RAW_BYTES
 from structured_source import extract_rfc3164,extract_rfc5424,extract_plain_bsd
 
@@ -94,6 +95,11 @@ def _json_body_start(raw:str,start:int)->int|None:
                 while pos<len(raw) and raw[pos] in ' \t':pos+=1
                 return _direct_json_start(raw,pos)
             return None
+    # Share the exact tagless header gate with the security-source adapter.
+    # Inspect a bounded header prefix; JSON contents are scanned separately.
+    tagless=extract_security_envelope(raw[start:start+2048])
+    if tagless is not None:
+        return _direct_json_start(raw,start+tagless[1])
     # Devices can emit PRI followed immediately by a JSON collection.
     matched=re.match(r'<([0-9]{1,3})>[ \t]*',line)
     if matched and int(matched[1])<=191:

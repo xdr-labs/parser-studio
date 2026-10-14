@@ -7,6 +7,7 @@ Existing parse_source behavior is unchanged for reproducible prior evidence.
 """
 from __future__ import annotations
 from engine import MAX_RAW_BYTES
+from security_envelope import extract_security_envelope
 from source_parse import SourceEvent,ValueSpan,parse_source,_span,_close
 from structured_source import extract_rfc3164,extract_rfc5424,extract_plain_bsd
 
@@ -49,6 +50,19 @@ def parse_security_source(raw:str)->SourceEvent:
         return parse_source(raw)
     if raw.startswith('@cee:'):
         return _cee(raw)
+    tagless=extract_security_envelope(raw)
+    if tagless is not None:
+        outer,start=tagless
+        body_raw=raw[start:]
+        body=_cee(body_raw) if body_raw.startswith('@cee:') else parse_source(body_raw)
+        result=SourceEvent(raw,syntax='SECURITY_SYSLOG_ENVELOPE+'+body.syntax)
+        result.vendor_fields={**outer.fields,'body':body.vendor_fields}
+        result.primitive_fields=outer.primitive_fields+body.primitive_fields
+        result.value_spans=[_span(raw,path,a,b) for path,a,b in outer.spans]
+        result.value_spans.extend(_shift(body.value_spans,len(raw[:start].encode('utf8')),'body.'))
+        result.covered=list(outer.covered)+[(start+a,start+b) for a,b in body.covered]
+        result.issues=list(outer.issues)+list(body.issues)
+        return _close(result)
     for family,extractor in (('SYSLOG_RFC5424',extract_rfc5424),
                              ('SYSLOG_RFC3164',extract_rfc3164),
                              ('BSD_SYSLOG',extract_plain_bsd)):

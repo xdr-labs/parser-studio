@@ -1,0 +1,72 @@
+{
+  "all_physical_records": 392,
+  "baseline_commit": "201fa18e923688f7c265f8684d65e834a370632f",
+  "candidate_commercial_metrics": null,
+  "contract": "parser-studio.poc.commercial-source-discovery.v1",
+  "dictionary_attempted": false,
+  "evidence_class": "BASELINE_PARSER_STATUS_NOT_FIELD_ACCURACY",
+  "fixtures": [
+    {
+      "PARTIAL": 0,
+      "RAW_ONLY": 0,
+      "SOURCE_PARSED": 57,
+      "id": "fortigate_62",
+      "records": 57
+    },
+    {
+      "PARTIAL": 0,
+      "RAW_ONLY": 0,
+      "SOURCE_PARSED": 7,
+      "id": "fortigate_72",
+      "records": 7
+    },
+    {
+      "PARTIAL": 1,
+      "RAW_ONLY": 0,
+      "SOURCE_PARSED": 81,
+      "id": "fortigate_74",
+      "records": 82
+    },
+    {
+      "PARTIAL": 0,
+      "RAW_ONLY": 2,
+      "SOURCE_PARSED": 0,
+      "id": "checkpoint_80",
+      "records": 2
+    },
+    {
+      "PARTIAL": 0,
+      "RAW_ONLY": 21,
+      "SOURCE_PARSED": 0,
+      "id": "checkpoint_81",
+      "records": 21
+    },
+    {
+      "PARTIAL": 113,
+      "RAW_ONLY": 8,
+      "SOURCE_PARSED": 98,
+      "id": "panos_threat",
+      "records": 219
+    },
+    {
+      "PARTIAL": 0,
+      "RAW_ONLY": 4,
+      "SOURCE_PARSED": 0,
+      "id": "panos_decryption",
+      "records": 4
+    }
+  ],
+  "independent_source_field_metrics": null,
+  "limitations": [
+    "Status is not independent correctness.",
+    "Fixture file version labels are not proof of complete vendor/version coverage.",
+    "New commercial candidate comparison is unfinished; no all-field accuracy claimed."
+  ],
+  "masking_optimization": false,
+  "raw_preserved": 392,
+  "raw_redistributed": false,
+  "source_commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+  "source_manifest_private_path": ".cache/commercial_security_20261014/manifest.json",
+  "source_repository": "elastic/integrations",
+  "status": "DETAILED_DIAGNOSTIC_BLOCKED_AFTER_TWO_SAME_OPERATION_ATTEMPTS"
+}

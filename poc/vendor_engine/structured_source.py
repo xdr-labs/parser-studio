@@ -135,7 +135,12 @@ def _cef_extension(raw:str,begin:int)->Fragment:
         ext.covered.append((whitespace,cursor))
         pos=cursor
         if ext.primitive_fields>=1024:
-            ext.issues.append("CEF_EXTENSION_LIMIT")
+            # Exactly at the limit is complete when only syntax remains.
+            # An additional field stays in the raw residual, never truncated.
+            if raw[pos:].strip(" \t"):
+                ext.issues.append("CEF_EXTENSION_LIMIT")
+            elif pos<n:
+                ext.covered.append((pos,n))
             break
     return ext
 
@@ -162,7 +167,10 @@ def _leef_extension(raw:str,begin:int,delimiter:str)->Fragment:
         if end==n:break
         i=end+1
         if ext.primitive_fields>=1024:
-            ext.issues.append("LEEF_EXTENSION_LIMIT")
+            if raw[i:].strip(delimiter):
+                ext.issues.append("LEEF_EXTENSION_LIMIT")
+            elif i<n:
+                ext.covered.append((i,n))
             break
     return ext
 

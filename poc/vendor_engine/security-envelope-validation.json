@@ -1,0 +1,33 @@
+{
+  "candidate_sha256": {
+    "engine.py": "7a9e924f92d956bb9d7fd2b3a7064b2c4eea4cd8791c8ca16268afa5e6d27427",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "security_envelope.py": "1447f9384068b09fd6eff2149db5b5d9f2778827ee4deb76ad46fc207f10d781",
+    "security_framing.py": "ae63b948e165b595f9c7eb0699b7f90a1517a815c8a177939e5661ebcd733482",
+    "security_source.py": "b55b0155506573be0a1cb50a11aeb7e924bee231d61734829c2a0b8224b49d2b",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "e56f61347bc57799fc28fe1528b654f38076d1923537e98d4b48df43889c3258"
+  },
+  "contract": "parser-studio.poc.security-envelope-validation.v1",
+  "derived_cases": 462,
+  "dictionary_attempted": false,
+  "exact_fields": 14200,
+  "field_false_negatives": 0,
+  "field_false_positives": 0,
+  "full_suite": {
+    "discovered": 215,
+    "errors": 0,
+    "failures": 0,
+    "log_sha256": "40fa157e00db1dd9315f0e574b294c4beecc24b66b91e8b87ae5e43e3221e129",
+    "passed": 215,
+    "skipped": 0
+  },
+  "masking_optimization": false,
+  "native_verified": false,
+  "new_commercial_diagnostic_complete": false,
+  "parent_commit": "201fa18e923688f7c265f8684d65e834a370632f",
+  "prior_waf_suricata_skip_requalified": true,
+  "raw_source_redistributed": false
+}
