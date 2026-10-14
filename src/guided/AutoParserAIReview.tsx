@@ -5,8 +5,8 @@ import {importReviewOnlyAIRecipe,proposeV01FieldMappingFromAI} from './aiRecipeE
 import {compareCandidate} from './autoParserRegression';
 import {preview} from '../parser';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;onApplyCandidate?:(draft:ParserDraft)=>void}
-export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,onApplyCandidate}:Props){
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void}
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
@@ -26,7 +26,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   const initial=initialByteRange?fromSourceByteRange(raw,initialByteRange.startByte,initialByteRange.endByte):null;
   setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');
   setMode(initial?'selection':status==='unsupported'?'entire':'selection');
- },[raw,status,initialByteRange?.startByte,initialByteRange?.endByte]);
+ },[raw,status,initialByteRange?.startByte,initialByteRange?.endByte,selectionContext?.kind,selectionContext?.path]);
  const sourceRange=toSourceByteRange(raw,range[0],range[1]);
  const excerpt=mode==='entire'?raw:(sourceRange?.text??'');
  const canCopy=approved&&!!reviewedExcerpt.trim()&&!!goal.trim()&&!!excerpt.trim();
@@ -35,6 +35,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   'Return a proposed ParserRecipe v0.2 JSON object; do not return executable Ruby, arbitrary Regex or code.',
   'Do not invent missing values, do not overwrite correct fields, and preserve the original event.',
   `Scope: ${mode==='entire'?'entire unsupported event':'only the selected source range'}.`,
+  `Selection context: ${mode==='entire'?'full-log fallback':selectionContext?.kind==='field'?`currently extracted field ${selectionContext.path??'UNKNOWN'}`:selectionContext?.kind==='residual'?'unparsed residual region':'manual source selection'}.`,
   `Source UTF-8 byte range: ${mode==='entire'?`0–${new TextEncoder().encode(raw).byteLength}`:`${sourceRange?.startByte??'UNSELECTED'}–${sourceRange?.endByte??'UNSELECTED'}`}.`,
   `Requested correction: ${goal.trim()}`,
   'User-reviewed excerpt follows (may contain sensitive source values):',
@@ -88,6 +89,9 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   {mode==='selection'&&<textarea aria-label="Select source text for AI correction" readOnly spellCheck={false} rows={5} value={raw}
    onSelect={e=>{const el=e.currentTarget;setRange([el.selectionStart,el.selectionEnd]);setReviewedExcerpt('');setApproved(false);}}/>}
   {mode==='selection'&&sourceRange&&<p role="status">UTF-8 bytes {sourceRange.startByte}–{sourceRange.endByte}</p>}
+  {mode==='selection'&&selectionContext&&<p className="stellar-selected-source">
+    {selectionContext.kind==='field'?`Editing extracted field: ${selectionContext.path??'Unknown field'}. Accepted fields outside this exact range are preserved.`:'Editing an unparsed source region. Accepted fields outside this exact range are preserved.'}
+  </p>}
   <div className="stellar-ai-excerpt" aria-live="polite">{excerpt||'Select a portion of the source log to repair.'}</div>
   <label className="stellar-ai-label" htmlFor="stellar-ai-reviewed">Redact the excerpt before sharing with AI</label>
   <textarea id="stellar-ai-reviewed" aria-label="Reviewed and redacted AI excerpt" rows={4} maxLength={65536}

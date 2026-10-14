@@ -26,6 +26,7 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import AutoParserAIReview from './AutoParserAIReview';
 import {requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
+import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserResultTools from './AutoParserResultTools';
 import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
@@ -81,7 +82,7 @@ export default function AutoParser({
  const [multiPass,setMultiPass]=useState<{raw:string;result:MultiPassSourcePreview}|null>(null);
  const [multiPassNotice,setMultiPassNotice]=useState('');
  const [multiPassBusy,setMultiPassBusy]=useState(false);
- const [selectedResidual,setSelectedResidual]=useState<{startByte:number;endByte:number}|null>(null);
+ const [selectedMultiPass,setSelectedMultiPass]=useState<MultiPassSourceSelection|null>(null);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
@@ -476,7 +477,7 @@ export default function AutoParser({
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
-  const original=sample;setMultiPass(null);setSelectedResidual(null);setMultiPassNotice('');setMultiPassBusy(true);
+  const original=sample;setMultiPass(null);setSelectedMultiPass(null);setMultiPassNotice('');setMultiPassBusy(true);
   try{
    const result=await requestMultiPassPreview(original);
    setMultiPass({raw:original,result});
@@ -484,6 +485,7 @@ export default function AutoParser({
   finally{setMultiPassBusy(false);}
  }
  const currentMultiPass=multiPass?.raw===sample?multiPass.result:null;
+ const currentMultiPassHighlights=currentMultiPass?buildMultiPassSourceHighlights(sample,currentMultiPass):null;
  return <main className="auto-parser-workspace" aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
      <span className="pane-index">AUTO PARSER 2.0 · LOCAL FIRST</span>
@@ -532,13 +534,29 @@ export default function AutoParser({
            <strong>{currentMultiPass.status} · {currentMultiPass.syntax}</strong>
            <p>Extracted fields and source byte spans are shown below. Residuals remain available for AI correction.</p>
            <pre>{JSON.stringify(currentMultiPass.fields,null,2)}</pre>
-           <div>{currentMultiPass.spans.map((span,i)=><span key={i} className="stellar-span-chip">
-             {span.path} [{span.startByte}–{span.endByte}]</span>)}</div>
-           <div>{currentMultiPass.residuals.map((span,i)=><button type="button" key={i}
-             className="stellar-residual-chip" onClick={()=>setSelectedResidual(span)}>
+           {currentMultiPassHighlights?.ok&&<div className="stellar-source-map" aria-label="Multi-Pass source highlights">
+             {currentMultiPassHighlights.segments.map((segment,i)=>segment.kind==='plain'?
+               <span key={i}>{segment.text}</span>:
+               <button type="button" key={i}
+                 className={'stellar-source-segment '+segment.kind+(selectedMultiPass?.startByte===segment.selection.startByte&&selectedMultiPass.endByte===segment.selection.endByte?' selected':'')}
+                 aria-label={segment.kind==='field'?`Correct extracted field ${segment.selection.path} bytes ${segment.selection.startByte}-${segment.selection.endByte}`:`Improve unparsed bytes ${segment.selection.startByte}-${segment.selection.endByte}`}
+                 onClick={()=>setSelectedMultiPass(segment.selection)}>{segment.text}</button>)}</div>}
+           {currentMultiPassHighlights&&!currentMultiPassHighlights.ok&&<p className="auto-parser-warning">
+             Exact source highlighting is unavailable because the engine returned ambiguous byte ranges. No source selection was accepted.</p>}
+           <div className="stellar-span-actions">{currentMultiPass.spans.map((span,i)=><button type="button" key={'f'+i} className="stellar-span-chip"
+             onClick={()=>{const item=currentMultiPassHighlights?.ok?currentMultiPassHighlights.selectable.find(x=>x.kind==='field'&&x.path===span.path&&x.startByte===span.startByte&&x.endByte===span.endByte):undefined;if(item)setSelectedMultiPass(item);}}>
+             Correct {span.path} [{span.startByte}–{span.endByte}]</button>)}</div>
+           <div className="stellar-span-actions">{currentMultiPass.residuals.map((span,i)=><button type="button" key={'r'+i}
+             className="stellar-residual-chip" onClick={()=>{const item=currentMultiPassHighlights?.ok?currentMultiPassHighlights.selectable.find(x=>x.kind==='residual'&&x.startByte===span.startByte&&x.endByte===span.endByte):undefined;if(item)setSelectedMultiPass(item);}}>
              Improve Unparsed [{span.startByte}–{span.endByte}]</button>)}</div>
-           {selectedResidual&&<AutoParserAIReview raw={sample} status="partial" onChatGPT={onChatGPT}
-             initialByteRange={selectedResidual} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
+           {selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<div className="stellar-selected-source" role="status">
+             {selectedMultiPass.kind==='field'?`Selected extracted field: ${selectedMultiPass.path}`:'Selected unparsed source region'} · UTF-8 bytes {selectedMultiPass.startByte}–{selectedMultiPass.endByte}
+           </div>}
+           {selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<AutoParserAIReview raw={sample} status="partial" onChatGPT={onChatGPT}
+             initialByteRange={selectedMultiPass} selectionContext={{kind:selectedMultiPass.kind,path:selectedMultiPass.path}}
+             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
+           {currentMultiPass.status==='RAW_ONLY'&&<AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT}
+             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
 
          </div>}
        </div>

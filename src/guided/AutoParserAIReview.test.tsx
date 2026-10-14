@@ -20,6 +20,13 @@ describe('AI recovery review safety',()=>{
   fireEvent.click(screen.getByRole('checkbox',{name:'Confirm reviewed AI excerpt'}));
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
  });
+ it('shows exact field or residual correction scope while preserving accepted fields',()=>{
+  render(<AutoParserAIReview raw="src=192.0.2.1 tail=?" status="partial" onChatGPT={vi.fn()}
+   initialByteRange={{startByte:4,endByte:13}} selectionContext={{kind:'field',path:'src'}}/>);
+  expect(screen.getByText(/Editing extracted field: src/)).toBeTruthy();
+  expect(screen.getByText(/Accepted fields outside this exact range are preserved/)).toBeTruthy();
+  expect(screen.getByText('192.0.2.1')).toBeTruthy();
+ });
  it('rejects unverified AI recipe and never applies changes',()=>{
   render(<AutoParserAIReview raw="RAW" status="unsupported" onChatGPT={vi.fn()}/>);
   fireEvent.click(screen.getByText('Paste AI Recipe for strict review'));
