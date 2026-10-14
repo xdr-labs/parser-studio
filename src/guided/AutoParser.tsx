@@ -538,7 +538,7 @@ export default function AutoParser({
              className="stellar-residual-chip" onClick={()=>setSelectedResidual(span)}>
              Improve Unparsed [{span.startByte}–{span.endByte}]</button>)}</div>
            {selectedResidual&&<AutoParserAIReview raw={sample} status="partial" onChatGPT={onChatGPT}
-             initialByteRange={selectedResidual} source={sample} draft={draft} suite={suite}/>}
+             initialByteRange={selectedResidual} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
 
          </div>}
        </div>
@@ -752,7 +752,7 @@ export default function AutoParser({
          <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
-       <AutoParserAIReview raw={chosen?.raw??sample} status={chosen?.status??'unsupported'} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}/>
+       <AutoParserAIReview raw={chosen?.raw??sample} status={chosen?.status??'unsupported'} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>
        </div>
        <div className="auto-parser-map-list" aria-label="Suggested field mappings">
          {draft.mappings.map((rule)=><div key={rule.id}>

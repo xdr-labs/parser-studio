@@ -1,10 +1,12 @@
 import {useEffect,useState} from 'react';
 import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
-import {importReviewOnlyAIRecipe} from './aiRecipeExchange';
+import {importReviewOnlyAIRecipe,proposeV01FieldMappingFromAI} from './aiRecipeExchange';
+import {compareCandidate} from './autoParserRegression';
+import {preview} from '../parser';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null}
-export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange}:Props){
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;onApplyCandidate?:(draft:ParserDraft)=>void}
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,onApplyCandidate}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
@@ -14,9 +16,12 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [recipeText,setRecipeText]=useState('');
  const [importResult,setImportResult]=useState('');
  const [importBusy,setImportBusy]=useState(false);
+ const [holdout,setHoldout]=useState('');
+ const [approvedCandidate,setApprovedCandidate]=useState<ParserDraft|null>(null);
+ const [approval,setApproval]=useState(false);
  useEffect(()=>{
   const initial=initialByteRange?fromSourceByteRange(raw,initialByteRange.startByte,initialByteRange.endByte):null;
-  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');
+  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');setApprovedCandidate(null);setApproval(false);
   setMode(initial?'selection':status==='unsupported'?'entire':'selection');
  },[raw,status,initialByteRange?.startByte,initialByteRange?.endByte]);
  const sourceRange=toSourceByteRange(raw,range[0],range[1]);
@@ -40,12 +45,20 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  }
  async function reviewImport(){
   if(!source||!draft||!suite||!recipeText.trim()||importBusy)return;
-  setImportBusy(true);setImportResult('');
+  setImportBusy(true);setImportResult('');setApprovedCandidate(null);setApproval(false);
   try{
    const result=await importReviewOnlyAIRecipe(recipeText,source,draft,suite);
-   setImportResult(result.ok?
-    `REVIEW ONLY: ${result.report.changedStageCount} stage changes, ${result.report.addedMappings} added mappings, ${result.report.removedMappings} removed mappings. No rules were applied. Native compiler NOT VERIFIED.`:
-    `Rejected AI proposal: ${result.reason}. No rules were applied.`);
+   if(!result.ok){setImportResult(`Rejected AI proposal: ${result.reason}. No rules were applied.`);return;}
+   const proposal=proposeV01FieldMappingFromAI(result,source,draft,suite);
+   if(!proposal.ok){setImportResult(`REVIEW ONLY: ${result.report.changedStageCount} changes. No safely compilable additive mapping: ${proposal.reason}.`);return;}
+   if(!holdout.trim()){setImportResult('Independent holdout sample required before approval. No rules were applied.');return;}
+   const report=compareCandidate({source,baseline:suite,candidate:preview(source,proposal.candidate),
+    holdout:{source:holdout,baseline:preview(holdout,draft),candidate:preview(holdout,proposal.candidate)}});
+   if(!report.acceptedWithoutRegression||report.holdoutStatus!=='TESTED'){
+    setImportResult('Candidate rejected: training or holdout regression. No rules were applied.');return;
+   }
+   setApprovedCandidate(proposal.candidate);
+   setImportResult(`Ready for explicit approval: 1 added mapping, 0 training/holdout regressions; ${report.holdout?.sourceCount??0} holdout events tested. Browser-only; native verification pending.`);
   }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
   finally{setImportBusy(false);}
  }
@@ -79,10 +92,22 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    <summary>Paste AI Recipe for strict review</summary>
    <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ParserRecipe v0.2 JSON proposal</label>
    <textarea id="stellar-ai-recipe" aria-label="AI Recipe JSON" rows={5} maxLength={32768}
-    value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');}}/>
+    value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');setApprovedCandidate(null);setApproval(false);}}/>
+   <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Independent holdout logs (required)</label>
+   <textarea id="stellar-ai-holdout" aria-label="AI candidate holdout logs" rows={3} maxLength={65536}
+    value={holdout} onChange={e=>{setHoldout(e.target.value);setApprovedCandidate(null);setApproval(false);setImportResult('');}}/>
    <button type="button" disabled={!source||!draft||!suite||!recipeText.trim()||importBusy}
     onClick={()=>void reviewImport()}>Validate Proposal (Review Only)</button>
    {importResult&&<p role="status">{importResult}</p>}
+   {approvedCandidate&&<div className="stellar-ai-approval">
+    <label><input type="checkbox" checked={approval} onChange={e=>setApproval(e.target.checked)}/>
+      I approve the one verified additive mapping. Existing rules must remain unchanged.</label>
+    <button type="button" disabled={!approval||!onApplyCandidate} onClick={()=>{
+     if(!approval||!approvedCandidate||!onApplyCandidate)return;
+     onApplyCandidate(approvedCandidate);setApprovedCandidate(null);setApproval(false);
+     setImportResult('Approved mapping added to draft. Native parser testing and export verification remain required.');
+    }}>Apply Approved Mapping to Draft</button>
+   </div>}
   </details>
   <small>AI output is a proposal only. Import, independent validation and user approval are required before changing parser rules.</small>
  </aside>;
