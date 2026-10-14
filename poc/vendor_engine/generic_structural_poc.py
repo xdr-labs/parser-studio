@@ -26,6 +26,9 @@ IP_PORT=re.compile(
 )
 MAC=re.compile(r'(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\Z')
 URL=re.compile(r'https?://\S+\Z')
+EVENT_CODE=re.compile(
+    r'(?<![A-Za-z0-9_])%([A-Z][A-Z0-9_-]{1,31})-(\d{1,2})-(\d{3,8}):'
+)
 MAX_FIELDS=1024
 
 
@@ -78,23 +81,27 @@ def _adaptive_comma_kv(raw:str,start:int)->tuple[dict[str,Any],list[ValueSpan],i
     parts=_split_escaped_commas(raw,start)
     if parts is None:return None
     parsed=[]
-    for a,b in parts:
+    for part_index,(a,b) in enumerate(parts):
         while a<b and raw[a].isspace():a+=1
         while b>a and raw[b-1].isspace():b-=1
         if a==b:continue
         eq=raw.find('=',a,b)
         if eq<=a:continue
         key=raw[a:eq].strip()
-        if not SAFE_COMMA_KEY.fullmatch(key):continue
+        if ':' in key or not SAFE_COMMA_KEY.fullmatch(key):continue
         va=eq+1
         while va<b and raw[va].isspace():va+=1
         vb=b
         while vb>va and raw[vb-1].isspace():vb-=1
-        parsed.append((key,va,vb,a,b))
+        parsed.append((part_index,key,va,vb,a,b))
     if len(parsed)<5:return None
+    # A comma-KV body may have one non-KV summary segment before the first
+    # field. More than one prefix segment is too ambiguous: certificate DNs
+    # and prose commonly contain nested comma-separated key=value fragments.
+    if min(p[0] for p in parsed)>1:return None
     # Require the KV run to cover every non-empty comma segment from its first
     # field onward; otherwise keep it residual rather than silently skipping.
-    first=min(p[3] for p in parsed)
+    first=min(p[4] for p in parsed)
     for a,b in parts:
         aa=a
         while aa<b and raw[aa].isspace():aa+=1
@@ -102,10 +109,10 @@ def _adaptive_comma_kv(raw:str,start:int)->tuple[dict[str,Any],list[ValueSpan],i
         while bb>aa and raw[bb-1].isspace():bb-=1
         if bb<=first:continue
         if aa==bb:continue
-        if not any(p[3]==aa and p[4]==bb for p in parsed):
+        if not any(p[4]==aa and p[5]==bb for p in parsed):
             return None
     fields={};spans=[]
-    for key,va,vb,a,b in parsed:
+    for _part_index,key,va,vb,a,b in parsed:
         value=raw[va:vb];_append(fields,key,value)
         spans.append(_span('generic.kv.'+key,raw,va,vb))
     return fields,spans,first
@@ -190,6 +197,47 @@ def _mixed_tokens(raw:str,start:int)->tuple[dict[str,Any],list[ValueSpan]]|None:
     return {'tokens':tokens,'kv':kv,'groups':groups},spans
 
 
+def _add_event_code_tokens(event:SourceEvent)->SourceEvent:
+    """Add exact generic event-code tokens without claiming body completeness."""
+    matches=list(EVENT_CODE.finditer(event.raw))
+    if len(matches)!=1:
+        return event
+    match=matches[0]
+    marker_a=_b(event.raw,match.start())
+    marker_b=_b(event.raw,match.end())
+    # Never mine a marker that is already inside a claimed source value.
+    if any(
+        max(marker_a,span.start_byte)<min(marker_b,span.end_byte)
+        for span in event.value_spans
+    ):
+        return event
+    out=deepcopy(event)
+    generic=out.vendor_fields.setdefault('generic',{})
+    if not isinstance(generic,dict) or 'event_code' in generic:
+        return event
+    parts={}
+    new_spans=[]
+    for index in (1,2,3):
+        value=match.group(index)
+        a,b=match.span(index)
+        key=f'part_{index-1}'
+        parts[key]=value
+        new_spans.append(_span(
+            f'generic.event_code.{key}',event.raw,a,b,
+            ('generic','event_code',key),
+        ))
+    generic['event_code']=parts
+    out.value_spans.extend(new_spans)
+    out.value_spans.sort(key=lambda s:(s.start_byte,s.end_byte,s.path))
+    out.primitive_fields=len(out.value_spans)
+    out.covered.append((match.start(),match.end()))
+    out.unparsed=[]
+    out.syntax=out.syntax+'+GENERIC_EVENT_CODE'
+    out=_close(out)
+    assert_source_accounting(out)
+    return out
+
+
 def _standard_candidate(raw:str)->SourceEvent:
     base=parse_security_source(raw)
     cef=parse_security_cef(raw,base_parser=parse_security_source)
@@ -199,16 +247,20 @@ def _standard_candidate(raw:str)->SourceEvent:
     if leef.status=='SOURCE_PARSED' and len(leef.value_spans)>=len(base.value_spans):
         base=leef
     # Positional CSV already has exact source columns. For extraction-only
-    # mode, a sufficiently wide, fully consumed CSV body may be promoted
-    # without knowing vendor column meanings.
+    # mode, a sufficiently wide, fully consumed CSV may be promoted without
+    # knowing vendor column meanings, with or without a Syslog wrapper.
+    csv_fields=(
+        base.vendor_fields.get('body')
+        if isinstance(base.vendor_fields.get('body'),dict)
+        else base.vendor_fields
+    )
     if (
         base.status=='PARTIAL'
         and base.issues==['UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION']
         and base.residual_bytes==0
-        and isinstance(base.vendor_fields.get('syslog'),dict)
-        and isinstance(base.vendor_fields.get('body'),dict)
-        and len(base.vendor_fields['body'])>=8
-        and all(str(k).startswith('column_') for k in base.vendor_fields['body'])
+        and isinstance(csv_fields,dict)
+        and len(csv_fields)>=16
+        and all(str(k).startswith('column_') for k in csv_fields)
     ):
         promoted=deepcopy(base)
         promoted.syntax=promoted.syntax.replace(
@@ -223,6 +275,15 @@ def _generic_event(raw:str,start:int,outer:SourceEvent|None,syntax:str,
                    *,force_mode:str|None=None)->SourceEvent|None:
     comma=None if force_mode=='mixed' else _adaptive_comma_kv(raw,start)
     mixed=None if force_mode=='comma_kv' else _mixed_tokens(raw,start)
+    # If a record contains a strong comma-separated KV signature but the
+    # adaptive comma grammar rejected it, do not let the looser mixed scanner
+    # reinterpret nested DN/prose fragments as top-level fields.
+    comma_kv_fragments=len(re.findall(
+        r',\s*[A-Za-z_][A-Za-z0-9_.:/#-]{0,127}=',
+        raw[start:],
+    ))
+    if comma is None and comma_kv_fragments>=3:
+        mixed=None
     if comma is not None:
         fields,body_spans,first=comma
         prefix_tokens,prefix_spans=_positional_range(raw,start,first)
@@ -261,7 +322,13 @@ def _generic_event(raw:str,start:int,outer:SourceEvent|None,syntax:str,
             and token_count>=4
             and network_evidence>=2
         )
-        rich_kv=(kv_count>=5 and token_count>=2)
+        single_network_prefix=(
+            token_count==1 and _networkish(str(body['tokens'][0]))
+        )
+        rich_kv=(
+            kv_count>=5
+            and (token_count>=2 or single_network_prefix)
+        )
         structural_ok=(
             rich_kv
             or network_mixed
@@ -294,6 +361,15 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
     standard=_standard_candidate(raw)
     if standard.status=='SOURCE_PARSED':
         return standard
+    # If the standards parser already accounts for the complete source and
+    # only carries a validation warning, do not reinterpret the record into a
+    # different grammar merely to turn PARTIAL into SOURCE_PARSED.
+    if (
+        standard.status=='PARTIAL'
+        and standard.residual_bytes==0
+        and standard.issues!=['UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION']
+    ):
+        return _add_event_code_tokens(standard)
 
     # Reuse only generic envelope codecs. No vendor/product identifiers.
     framed=extract_plain_bsd(raw)
@@ -330,7 +406,7 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         ),
     )
     if candidate is not None:return candidate
-    return standard
+    return _add_event_code_tokens(standard)
 
 
 def synthesize_recipe(samples:list[str])->StructuralRecipe:
