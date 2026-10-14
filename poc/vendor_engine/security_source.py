@@ -79,6 +79,24 @@ def parse_security_source(raw:str)->SourceEvent:
             return _join_source(raw,outer,start,body,'SYSLOG_SOURCE_ANOMALIES_PRESERVED')
     if raw.startswith('@cee:'):
         return _cee(raw)
+    # Some security emitters place RFC5424 structured data immediately after
+    # MSGID without the normative separating SP. Keep the generic parser
+    # strict and accept this only in the security adapter when the complete
+    # adjacent-SD grammar validates.
+    strict_rfc=extract_rfc5424(raw)
+    strict_header_invalid=(
+        strict_rfc is not None
+        and strict_rfc[0].issues==['RFC5424_HEADER_TOKEN_INVALID']
+    )
+    if strict_rfc is None or strict_header_invalid:
+        adjacent_rfc=extract_rfc5424(raw,allow_adjacent_sd=True)
+        if adjacent_rfc is not None:
+            outer,start=adjacent_rfc
+            if not outer.issues:
+                body=parse_source(raw[start:]) if start is not None else None
+                return _join_source(
+                    raw,outer,start,body,'SYSLOG_RFC5424_ADJACENT_SD'
+                )
     tagless=extract_security_envelope(raw)
     if tagless is not None:
         outer,start=tagless

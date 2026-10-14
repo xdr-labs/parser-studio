@@ -172,8 +172,21 @@ LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',(
 def parse_security_once(raw:str)->SourceEvent:
     """Run qualified whole-record candidates once, without residual recursion."""
     base=parse_security_source(raw);events={'security.base':base};contracts=[candidate_from_event(base,BASE_EVIDENCE)]
-    # Recognize explicit SonicWall host + id=firewall KV only when base is incomplete.
+    # Explicit public product profiles are source-only fallbacks. They run
+    # only when the generic base is incomplete and must fully account for the
+    # original event before they can replace it.
     if base.status!='SOURCE_PARSED':
+        from security_meraki import parse_meraki_profile
+        from security_watchguard import parse_watchguard_profile
+        from security_juniper import parse_juniper_rtflow_profile
+        for parser in (
+            parse_meraki_profile,
+            parse_watchguard_profile,
+            parse_juniper_rtflow_profile,
+        ):
+            profile=parser(raw)
+            if profile is not None and profile.status=='SOURCE_PARSED':
+                return profile
         from security_sonicwall import parse_sonicwall_host_kv
         sonicwall=parse_sonicwall_host_kv(raw)
         if sonicwall is not None and sonicwall.status=='SOURCE_PARSED':return sonicwall
@@ -186,6 +199,10 @@ def parse_security_once(raw:str)->SourceEvent:
     if 'CEF_STANDARD' in cef.syntax:
         events['cef.standard']=cef;contracts.append(candidate_from_event(cef,CEF_EVIDENCE))
     leef=parse_security_leef(raw,base_parser=parse_security_source)
+    if 'LEEF_2_IMPLICIT_TAB' in leef.syntax and leef.status=='SOURCE_PARSED':
+        # Public in-the-wild compatibility evidence, not an independently
+        # qualified standard. Promote only a bounded full-source parse.
+        return leef
     if 'LEEF_XHH' in leef.syntax:
         events['leef.xhh']=leef;contracts.append(candidate_from_event(leef,LEEF_EVIDENCE))
     decision=adjudicate_candidates(tuple(contracts))
