@@ -332,3 +332,32 @@ claimed. The reference-acquisition blocker is resolved, not a remaining gate.
 Next: repair actual unsupported Java envelope boundaries and validate atomic
 context fields, labeled exploratory after source/reference exposure. Preserve
 this frozen result and independently audit any composite context outputs.
+
+## G. Conservative Java source-envelope boundary repair
+
+The timestamp/level dash is now admitted only for the qualified bracketed-context
+layout. A bounded balanced-bracket scanner preserves nested context such as IPv6
+thread text. Context remains visible as a complete original value. Atomic thread,
+logger and line number are emitted only at qualified boundaries; multiple colons
+retain the complete context plus the unambiguous numeric suffix without guessing
+which colon separates thread from logger.
+
+The first experimental last-colon split disagreed with reference Node/Component
+positions in 1,930 records: 3,860 FP and 3,860 FN. That rejected intermediate result
+is retained in `java-header-unqualified-context-summary.json`, not relabeled as
+successful extraction. Header references and a published configuration need not
+resolve the same atomic meaning; the engine must not guess merely to score well.
+
+**Final exploratory result on the same exposed 4,000 source records / 20,000
+atomic header fields:** TP 16,140 / FP 0 / FN 3,860, precision 100%, recall 80.7%,
+F1 89.3193% (frozen first-pass F1 57.1429%). Spark remains 8,000/8,000 correct;
+ZooKeeper now supplies 8,140 exact atomic fields plus 2,000 independently checked
+composite contexts. Composite contexts are separately counted and do NOT replace
+or erase 3,860 omitted atomic reference fields. All raw records remain intact,
+zero reference exclusions, all 4,000 records still PARTIAL because header parsing
+is not body parsing. This is an exposed-source engineering regression, not unseen
+vendor or future-version generalization, and not an unmasked-only corpus claim.
+
+Synthetic tests also cover malformed/oversized/nested contexts, Unicode byte
+spans, retained leading zeros, opaque contexts and negative layout admission.
+No Dictionary or masking-specific work was added.

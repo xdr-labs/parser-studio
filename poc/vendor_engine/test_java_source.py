@@ -59,4 +59,58 @@ class JavaSourceTests(unittest.TestCase):
         self.assertFalse(out.target_verified)
 
 
+class JavaContextBoundaryTests(unittest.TestCase):
+    def test_dash_envelope_and_atomic_source_context(self):
+        raw='2026-11-14 10:11:12,123 - INFO  [worker-7:example.Server@42] - user=alice action=allow'
+        event=parse_source(raw)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertEqual({'date':'2026-11-14','time':'10:11:12,123','level':'INFO',
+            'context':'worker-7:example.Server@42','thread':'worker-7',
+            'logger':'example.Server','line_number':'42'},event.vendor_fields['java'])
+        self.assertEqual({'user':'alice','action':'allow'},event.vendor_fields['body'])
+        assert_source_accounting(event)
+
+    def test_multicolon_context_preserved_without_ambiguous_atoms(self):
+        for separator in (' ', ' - '):
+            raw='2026-11-14 10:11:12,123'+separator+'ERROR [listener:[::1]:2181:Example$Worker@7] - plain text'
+            event=parse_source(raw)
+            self.assertEqual('listener:[::1]:2181:Example$Worker@7',event.vendor_fields['java']['context'])
+            self.assertNotIn('thread',event.vendor_fields['java'])
+            self.assertNotIn('logger',event.vendor_fields['java'])
+            self.assertEqual('7',event.vendor_fields['java']['line_number'])
+            self.assertEqual('PARTIAL',event.status)
+            assert_source_accounting(event)
+
+    def test_unicode_atomic_fields_have_original_utf8_spans(self):
+        raw='2026-11-14 10:11:12,123 - WARN  [worker-Ž:Example@0042] - unchanged message'
+        event=parse_source(raw)
+        self.assertEqual('worker-Ž',event.vendor_fields['java']['thread'])
+        self.assertEqual('0042',event.vendor_fields['java']['line_number'])
+        for span in event.value_spans:
+            if span.path.startswith('java.'):
+                self.assertEqual(event.vendor_fields['java'][span.path[5:]],raw.encode()[span.start_byte:span.end_byte].decode())
+
+    def test_opaque_context_is_preserved_without_fabricated_atoms(self):
+        for context in ('unclassified context','worker:Example@not-a-number','worker:Example@1234567890'):
+            raw='2026-11-14 10:11:12,123 - WARN  ['+context+'] - opaque message'
+            event=parse_source(raw)
+            self.assertEqual(context,event.vendor_fields['java']['context'])
+            self.assertNotIn('thread',event.vendor_fields['java'])
+            self.assertNotIn('line_number',event.vendor_fields['java'])
+            self.assertEqual('PARTIAL',event.status)
+            self.assertEqual(raw,event.raw)
+
+    def test_dash_does_not_admit_unqualified_plain_logger_layout(self):
+        for body in ('Worker: user=alice action=allow','[thread] Worker: user=alice action=allow'):
+            raw='2026-11-14 10:11:12,123 - INFO '+body
+            self.assertNotIn('java',parse_source(raw).vendor_fields)
+
+    def test_context_scan_is_bounded_and_requires_balanced_brackets(self):
+        from java_source import extract_java_envelope
+        for context in ('x'*514,'['*9+'x'+']'*9,'worker[missing:Example@7'):
+            raw='2026-11-14 10:11:12,123 - INFO ['+context+'] - plain text'
+            self.assertIsNone(extract_java_envelope(raw))
+            self.assertEqual(raw,parse_source(raw).raw)
+
+
 if __name__=="__main__":unittest.main()

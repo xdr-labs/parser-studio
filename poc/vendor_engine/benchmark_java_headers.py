@@ -151,6 +151,7 @@ def evaluate(*,current:bool=False)->dict[str,Any]:
         'source_repository':'logpai/loghub','source_commit':COMMIT,
         'source_sha256':RAW_PINS,'reference_sha256':REFERENCE_PINS,
         'frozen_predictions_sha256':FROZEN_SHA,'families':reports,'total':metrics(total),
+        'candidate_module_sha256':{name:hashlib.sha256((HERE/name).read_bytes()).hexdigest() for name in ('java_source.py','source_parse.py')} if current else None,
         'exclusion_reasons':dict(exclusions),
         'measurement':'Header-only field path + exact visible value + UTF-8 byte spans; composite context audited separately',
         'redaction_assessment':'NOT_ASSESSED; real-source result is not an unmasked-only KPI',

@@ -1,0 +1,89 @@
+{
+  "body_accuracy_verified": false,
+  "candidate_module_sha256": {
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "source_parse.py": "c487b70418d4f6222a8009502f77992ee3c3001c9a3f902fcfbfd5a68b6e8705"
+  },
+  "contract": "parser-studio.poc.java-header-independent-reference-v0.1",
+  "dictionary_attempted": false,
+  "evidence_class": "EXPLORATORY_AFTER_EXPOSURE",
+  "exclusion_reasons": {},
+  "families": [
+    {
+      "FN": 0,
+      "FP": 0,
+      "TP": 8000,
+      "all_events": 2000,
+      "exact_header_events": 2000,
+      "excluded_reference_events": 0,
+      "exclusion_reasons": {},
+      "f1": 1.0,
+      "family": "Spark",
+      "original_records_preserved": 2000,
+      "precision": 1.0,
+      "recall": 1.0,
+      "reference_header_fields": 8000,
+      "reference_scored_events": 2000,
+      "reference_unannotated_trailing_whitespace_bytes": 0,
+      "reference_unannotated_trailing_whitespace_events": 0,
+      "status_PARTIAL": 2000
+    },
+    {
+      "FN": 3860,
+      "FP": 0,
+      "TP": 8140,
+      "all_events": 2000,
+      "auxiliary_context_exact": 2000,
+      "auxiliary_context_fields": 2000,
+      "exact_header_events": 70,
+      "excluded_reference_events": 0,
+      "exclusion_reasons": {},
+      "f1": 0.808342,
+      "family": "Zookeeper",
+      "original_records_preserved": 2000,
+      "precision": 1.0,
+      "recall": 0.678333,
+      "reference_header_fields": 12000,
+      "reference_scored_events": 2000,
+      "reference_unannotated_trailing_whitespace_bytes": 292,
+      "reference_unannotated_trailing_whitespace_events": 292,
+      "status_PARTIAL": 2000
+    }
+  ],
+  "frozen_predictions_sha256": "2f55d12c5965990cc662b41bea332ee37c7c86b1a2dcc5eefd84f7fe0e43b11c",
+  "license_policy": "Local research only; no dataset or derived template distribution",
+  "measurement": "Header-only field path + exact visible value + UTF-8 byte spans; composite context audited separately",
+  "native_verified": false,
+  "raw_gold_and_record_predictions_published": false,
+  "redaction_assessment": "NOT_ASSESSED; real-source result is not an unmasked-only KPI",
+  "reference_sha256": {
+    "Spark": "d7df75f6839b6bcf98ff020b6b0b6e2ee89d8cc53ee3d08d441bd42fd84a2cb5",
+    "Zookeeper": "e4a450c67595828103cfab049d971f54eee778fdded061222ba6581bed2a210a"
+  },
+  "reference_templates_used_for_training": false,
+  "source_commit": "dd61d0952749ee7963bde24220d1be5ede023033",
+  "source_repository": "logpai/loghub",
+  "source_sha256": {
+    "Spark": "2e8b9a37fc5c238253e0b8e18a8bd5e489671def91767ae1192d28c8e1f95901",
+    "Zookeeper": "e40e0af5ef9eb6e4097200f260b9d1f626b3676f861a432e87977242e75543d8"
+  },
+  "total": {
+    "FN": 3860,
+    "FP": 0,
+    "TP": 16140,
+    "all_events": 4000,
+    "auxiliary_context_exact": 2000,
+    "auxiliary_context_fields": 2000,
+    "exact_header_events": 2070,
+    "excluded_reference_events": 0,
+    "f1": 0.893193,
+    "original_records_preserved": 4000,
+    "precision": 1.0,
+    "recall": 0.807,
+    "reference_header_fields": 20000,
+    "reference_scored_events": 4000,
+    "reference_unannotated_trailing_whitespace_bytes": 292,
+    "reference_unannotated_trailing_whitespace_events": 292,
+    "status_PARTIAL": 4000
+  }
+}

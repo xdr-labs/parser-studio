@@ -38,4 +38,17 @@ class JavaHeaderReferenceTests(unittest.TestCase):
         self.assertFalse(report['body_accuracy_verified'])
         self.assertFalse(report['reference_templates_used_for_training'])
 
+    @unittest.skipUnless((ROOT/'java-envelope-frozen-predictions.json').is_file() and
+        all((ROOT/'loghub'/f'{name}_2k.log_structured.csv').is_file() for name in RAW_PINS),
+        'Optional licensed local Java references unavailable')
+    def test_current_conservative_context_has_no_false_reference_fields(self):
+        report=evaluate(current=True);total=report['total']
+        self.assertEqual(4000,total['reference_scored_events'])
+        self.assertEqual((16140,0,3860),(total['TP'],total['FP'],total['FN']))
+        self.assertEqual(2000,total['auxiliary_context_exact'])
+        self.assertEqual(2000,total['auxiliary_context_fields'])
+        self.assertEqual('EXPLORATORY_AFTER_EXPOSURE',report['evidence_class'])
+        self.assertEqual(4000,total['original_records_preserved'])
+        self.assertFalse(report['body_accuracy_verified'])
+
 if __name__=='__main__':unittest.main()
