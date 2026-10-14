@@ -143,8 +143,9 @@ def recover_residual_regions(
             piece=event.raw[window_start:window_end]
             # A fresh line-start Syslog header is a separate physical event,
             # never a child of the preceding envelope's residual body.
-            if (local_start>0 and segment[local_start-1] in '\r\n'
-                and piece.startswith('<') and PRI_START.match(piece)):
+            preceding=segment[:local_start]
+            if (piece.startswith('<') and PRI_START.match(piece)
+                and re.search(r'[\r\n][ \t]*\Z',preceding)):
                 cursor=local_end
                 continue
             absolute_start=_origin_char+window_start

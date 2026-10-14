@@ -46,6 +46,13 @@ class SecurityGeneralizationEdges(unittest.TestCase):
         self.assertEqual({'x':1},event.vendor_fields['body'])
         self.assertNotEqual('SOURCE_PARSED',event.status)
 
+    def test_indented_new_syslog_header_is_not_merged(self):
+        raw=('<134>Oct 14 12:00:00 sensor ips: collector: '
+             '{"x":1}\n  <134>Oct 14 12:00:01 sensor ips: {"y":2}')
+        event=parse_security_multipass(raw)
+        assert_source_accounting(event)
+        self.assertEqual({'x':1},event.vendor_fields['body'])
+
     def test_unknown_security_text_does_not_become_false_complete(self):
         for raw in ('<134>Oct 14 12:00:00 sensor ips: collector: {not-json}',
                     '<134>Oct 14 12:00:00 sensor ips: collector: {"x":',
