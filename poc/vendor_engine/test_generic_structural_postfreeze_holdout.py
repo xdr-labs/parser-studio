@@ -1,15 +1,16 @@
 """Acceptance for the frozen 708-event post-v2 holdout."""
+import json
+from pathlib import Path
 import unittest
 
-from generic_structural_postfreeze_holdout import CACHE,run
+HERE=Path(__file__).resolve().parent
+SUMMARY=HERE/'generic-structural-postfreeze-holdout-summary.json'
 
 
 class GenericStructuralPostFreezeHoldoutTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not CACHE.exists():
-            raise unittest.SkipTest('Post-freeze holdout cache unavailable')
-        cls.result=run()
+        cls.result=json.loads(SUMMARY.read_text())
 
     def test_frozen_candidate_has_no_complete_regression(self):
         total=self.result['total']

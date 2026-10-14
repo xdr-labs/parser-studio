@@ -1,0 +1,394 @@
+{
+  "baseline_ledger_contract": "parser-studio.integration.pre-generic-baseline-ledger.v1",
+  "contract": "parser-studio.integration.generic-structural.v1",
+  "field_semantics_scored": false,
+  "independent_commercial_gold": {
+    "exclusion_reasons": {
+      "REFERENCE_KV_QUOTE_UNCLOSED": 1
+    },
+    "families": [
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 57,
+        "TP": 1568,
+        "all_events": 57,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 57,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 57,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "fortigate_62",
+        "gold_fields": 1568,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 57,
+        "recall": 1.0,
+        "reference_scored_events": 57
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 7,
+        "TP": 298,
+        "all_events": 7,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 7,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 7,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "fortigate_72",
+        "gold_fields": 298,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 7,
+        "recall": 1.0,
+        "reference_scored_events": 7
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "PARTIAL": 1,
+        "SOURCE_PARSED": 81,
+        "TP": 2135,
+        "all_events": 82,
+        "composite_source_fields": 1,
+        "exact_all_field_events": 81,
+        "exact_composite_fields": 1,
+        "exact_tree_events": 81,
+        "excluded_event_not_false_green": 1,
+        "exclusion_reasons": {
+          "REFERENCE_KV_QUOTE_UNCLOSED": 1
+        },
+        "f1": 1.0,
+        "family": "fortigate_74",
+        "gold_fields": 2135,
+        "issues": {
+          "KV_QUOTE_UNCLOSED": 1
+        },
+        "precision": 1.0,
+        "raw_preserved": 82,
+        "recall": 1.0,
+        "reference_excluded_events": 1,
+        "reference_scored_events": 81
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 2,
+        "TP": 50,
+        "all_events": 2,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 2,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 2,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "checkpoint_80",
+        "gold_fields": 50,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 2,
+        "recall": 1.0,
+        "reference_scored_events": 2
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "PARTIAL": 2,
+        "SOURCE_PARSED": 19,
+        "TP": 686,
+        "all_events": 21,
+        "composite_source_fields": 2,
+        "exact_all_field_events": 21,
+        "exact_composite_fields": 2,
+        "exact_tree_events": 21,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "checkpoint_81",
+        "gold_fields": 686,
+        "issues": {
+          "RFC5424_DUPLICATE_SD_KEY": 2,
+          "RFC5424_SD_TRAILING_SPACE_NONSTANDARD": 2,
+          "RFC5424_TIMESTAMP_INVALID": 2
+        },
+        "precision": 1.0,
+        "raw_preserved": 21,
+        "recall": 1.0,
+        "reference_scored_events": 21
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 219,
+        "TP": 22782,
+        "all_events": 219,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 219,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 219,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "panos_threat",
+        "gold_fields": 22782,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 219,
+        "recall": 1.0,
+        "reference_scored_events": 219
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 4,
+        "TP": 449,
+        "all_events": 4,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 4,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 4,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "panos_decryption",
+        "gold_fields": 449,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 4,
+        "recall": 1.0,
+        "reference_scored_events": 4
+      }
+    ],
+    "total": {
+      "FN": 0,
+      "FP": 0,
+      "PARTIAL": 3,
+      "SOURCE_PARSED": 389,
+      "TP": 27968,
+      "all_events": 392,
+      "composite_source_fields": 3,
+      "exact_all_field_events": 391,
+      "exact_composite_fields": 3,
+      "exact_tree_events": 391,
+      "excluded_event_not_false_green": 1,
+      "f1": 1.0,
+      "gold_fields": 27968,
+      "precision": 1.0,
+      "raw_preserved": 392,
+      "recall": 1.0,
+      "reference_excluded_events": 1,
+      "reference_scored_events": 391
+    }
+  },
+  "independent_json_gold": {
+    "families": {
+      "aws_waf": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 401,
+        "events": 11,
+        "exact": 11,
+        "false_complete": 0,
+        "fields": 401
+      },
+      "crowdstrike": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1306,
+        "events": 15,
+        "exact": 15,
+        "false_complete": 0,
+        "fields": 1306
+      },
+      "sentinel_one": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1305,
+        "events": 8,
+        "exact": 8,
+        "false_complete": 0,
+        "fields": 1305
+      },
+      "suricata": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 1589,
+        "events": 60,
+        "exact": 60,
+        "false_complete": 0,
+        "fields": 1589
+      }
+    },
+    "total": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 4601,
+      "events": 94,
+      "exact": 94,
+      "f1": 1.0,
+      "false_complete": 0,
+      "fields": 4601
+    }
+  },
+  "large": {
+    "families": {
+      "aws_waf": {
+        "current_SOURCE_PARSED": 11,
+        "events": 11,
+        "old_complete": 11,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 11,
+        "raw_preserved": 11
+      },
+      "checkpoint": {
+        "current_PARTIAL": 2,
+        "current_SOURCE_PARSED": 21,
+        "events": 23,
+        "old_complete": 21,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 21,
+        "raw_preserved": 23
+      },
+      "cisco_asa": {
+        "current_PARTIAL": 256,
+        "current_RAW_ONLY": 5,
+        "events": 261,
+        "raw_preserved": 261
+      },
+      "crowdstrike": {
+        "current_SOURCE_PARSED": 15,
+        "events": 15,
+        "old_complete": 15,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 15,
+        "raw_preserved": 15
+      },
+      "fortinet_fortigate": {
+        "current_PARTIAL": 1,
+        "current_SOURCE_PARSED": 117,
+        "events": 118,
+        "old_complete": 117,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 117,
+        "raw_preserved": 118
+      },
+      "panw": {
+        "current_SOURCE_PARSED": 223,
+        "events": 223,
+        "promoted": 223,
+        "raw_preserved": 223
+      },
+      "sentinel_one": {
+        "current_SOURCE_PARSED": 8,
+        "events": 8,
+        "old_complete": 8,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 8,
+        "raw_preserved": 8
+      },
+      "sonicwall_firewall": {
+        "current_SOURCE_PARSED": 220,
+        "events": 220,
+        "old_complete": 220,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 220,
+        "raw_preserved": 220
+      },
+      "suricata": {
+        "current_SOURCE_PARSED": 60,
+        "events": 60,
+        "old_complete": 60,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 60,
+        "raw_preserved": 60
+      },
+      "zscaler_zia": {
+        "current_SOURCE_PARSED": 9,
+        "events": 9,
+        "old_complete": 9,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 9,
+        "raw_preserved": 9
+      }
+    },
+    "total": {
+      "current_PARTIAL": 259,
+      "current_RAW_ONLY": 5,
+      "current_SOURCE_PARSED": 684,
+      "events": 948,
+      "old_complete": 461,
+      "old_complete_divergence": 0,
+      "old_complete_exact": 461,
+      "promoted": 223,
+      "raw_preserved": 948
+    }
+  },
+  "postfreeze": {
+    "families": {
+      "cisco_ise": {
+        "current_PARTIAL": 65,
+        "current_RAW_ONLY": 18,
+        "current_SOURCE_PARSED": 192,
+        "events": 275,
+        "promoted": 192,
+        "raw_preserved": 275
+      },
+      "f5_bigip": {
+        "current_RAW_ONLY": 2,
+        "current_SOURCE_PARSED": 34,
+        "events": 36,
+        "old_complete": 32,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 32,
+        "promoted": 2,
+        "raw_preserved": 36
+      },
+      "juniper_srx": {
+        "current_PARTIAL": 46,
+        "current_RAW_ONLY": 1,
+        "current_SOURCE_PARSED": 58,
+        "events": 105,
+        "old_complete": 53,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 53,
+        "old_exception": 7,
+        "old_exception_repaired": 7,
+        "promoted": 5,
+        "raw_preserved": 105
+      },
+      "sophos_utm": {
+        "current_RAW_ONLY": 9,
+        "current_SOURCE_PARSED": 13,
+        "events": 22,
+        "promoted": 13,
+        "raw_preserved": 22
+      },
+      "sophos_xg": {
+        "current_PARTIAL": 71,
+        "current_SOURCE_PARSED": 199,
+        "events": 270,
+        "old_complete": 198,
+        "old_complete_divergence": 0,
+        "old_complete_exact": 198,
+        "promoted": 1,
+        "raw_preserved": 270
+      }
+    },
+    "total": {
+      "current_PARTIAL": 182,
+      "current_RAW_ONLY": 30,
+      "current_SOURCE_PARSED": 496,
+      "events": 708,
+      "old_complete": 283,
+      "old_complete_divergence": 0,
+      "old_complete_exact": 283,
+      "old_exception": 7,
+      "old_exception_repaired": 7,
+      "promoted": 213,
+      "raw_preserved": 708
+    }
+  },
+  "product_integrated": true,
+  "raw_published": false
+}
