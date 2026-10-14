@@ -84,11 +84,14 @@ leef.normalization.nsFields = {};
 
 const enriched = sampleProject();
 enriched.slug = "sample_enriched";
+enriched.normalization.topFields.endpoint = { normalized_name: "endpoint", data_type: "string" };
 enriched.enrichment = [
   { operator: "set_const", target: "log.source_label", value: "synthetic" },
   { operator: "lowercase", source: "action", target: "log.action_lower" },
   { operator: "copy", source: "srcip", target: "log.original_srcip" },
   { operator: "uppercase", source: "log.action_lower", target: "log.action_upper" },
+  { operator: "split_field", source: "endpoint", delimiter: ":", targets: ["log.endpoint_host", "log.endpoint_port"] },
+  { operator: "merge_fields", sources: ["log.endpoint_host", "log.endpoint_port"], delimiter: ":", target: "log.endpoint_joined" },
 ];
 enriched.classification.rules[0]!.field = "log.action_lower";
 for (const project of [json,kv,extended,csv,syslog,syslogCef,syslogLeef,cef,leef,enriched]) {

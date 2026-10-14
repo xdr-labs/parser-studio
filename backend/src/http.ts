@@ -282,7 +282,7 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
           supportedEnvelopeParsers:["none","rfc3164_strict_no_year_or_zone","rfc5424_v1_strict"],
           supportedOperators:["split_event","unwrap_syslog","dispatch_family","parse_json","parse_kv",
             "parse_csv","parse_cef","parse_leef","parse_java_stacktrace","map_field","cast_type",
-            "classify_equals","fallback_unparsed"],
+            "split_field","merge_fields","classify_equals","fallback_unparsed"],
           unsupported:["rfc3164_timestamp_inference","mixed_rfc3164_unreviewed_bodies","mixed_other_syslog_envelopes",
             "mixed_csv_unreviewed_schema","multiline_unframed_generic","arbitrary_regex",
             "ruby_execution","jsonata","classification_exists","enrichment_unmodeled"],

@@ -15,6 +15,30 @@ test("allowlisted no-code enrichments are accepted without any Ruby source input
   assert.equal(compilePair(p).files.length, 2);
 });
 
+test("bounded split and merge enrichments are declarative, ordered and compiler-safe", () => {
+  const p = sampleProject();
+  p.normalization.topFields.endpoint = { normalized_name: "endpoint", data_type: "string" };
+  p.enrichment = [
+    { operator: "split_field", source: "endpoint", delimiter: ":", targets: ["log.endpoint_host", "log.endpoint_port"] },
+    { operator: "merge_fields", sources: ["log.endpoint_host", "log.endpoint_port"], delimiter: ":", target: "log.endpoint_joined" },
+  ];
+  assert.deepEqual(validateProject(p).issues, []);
+  assert.equal(compilePair(p).files.length, 2);
+  const invalid: any[] = [
+    { operator: "split_field", source: "endpoint", delimiter: "", targets: ["log.a", "log.b"] },
+    { operator: "split_field", source: "dstport", delimiter: ":", targets: ["log.a", "log.b"] },
+    { operator: "split_field", source: "endpoint", delimiter: ":", targets: ["log.same", "log.same"] },
+    { operator: "merge_fields", sources: ["endpoint", "missing"], delimiter: ":", target: "log.joined" },
+    { operator: "merge_fields", sources: ["endpoint", "action"], delimiter: "\n", target: "log.joined" },
+  ];
+  for (const rule of invalid) {
+    const broken: any = sampleProject();
+    broken.normalization.topFields.endpoint = { normalized_name: "endpoint", data_type: "string" };
+    broken.enrichment = [rule];
+    assert.equal(validateProject(broken).ok, false, JSON.stringify(rule));
+  }
+});
+
 test("reject source-code injection, invalid destination, missing source, collision and unsupported operator", () => {
   const patterns: Array<(p: any) => void> = [
     p => { p.enrichment = [{ operator: "ruby_eval", target: "x", value: "Kernel.exit" }]; },

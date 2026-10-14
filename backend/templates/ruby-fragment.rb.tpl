@@ -634,6 +634,28 @@ def parserstudio_enrich(normalized)
           raise ArgumentError, 'Text enrichment requires string input' unless value.is_a?(String)
           value = operation == 'lowercase' ? value.downcase : value.upcase
         end
+      when 'split_field'
+        value = parserstudio_lookup(normalized, rule['source'])
+        delimiter = rule['delimiter']
+        targets = rule['targets']
+        raise ArgumentError, 'Split enrichment requires string input' unless value.is_a?(String)
+        raise ArgumentError, 'Split enrichment delimiter invalid' unless delimiter.is_a?(String) && delimiter.length.between?(1, 8)
+        raise ArgumentError, 'Split enrichment targets invalid' unless targets.is_a?(Array) && targets.length.between?(2, 8)
+        parts = value.split(delimiter, -1)
+        raise ArgumentError, 'Split enrichment field count mismatch' unless parts.length == targets.length
+        targets.each_with_index { |target, index| parserstudio_assign(normalized, target, parts[index]) }
+        next
+      when 'merge_fields'
+        delimiter = rule['delimiter']
+        sources = rule['sources']
+        raise ArgumentError, 'Merge enrichment delimiter invalid' unless delimiter.is_a?(String) && delimiter.length.between?(1, 8)
+        raise ArgumentError, 'Merge enrichment sources invalid' unless sources.is_a?(Array) && sources.length.between?(2, 8)
+        values = sources.map do |source|
+          item = parserstudio_lookup(normalized, source)
+          raise ArgumentError, 'Merge enrichment source absent' unless item.is_a?(String)
+          item
+        end
+        value = values.join(delimiter)
       else
         raise ArgumentError, 'Unknown enrichment operator'
       end

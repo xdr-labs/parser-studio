@@ -157,19 +157,23 @@
     {
       "id": "enriched-threat",
       "slug": "sample_enriched",
-      "raw": "{\"source\":{\"ip\":\"192.0.2.15\"},\"destination\":{\"ip\":\"198.51.100.55\",\"port\":443},\"action\":\"DeNy\",\"event\":{\"id\":\"789\"}}",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.15\"},\"destination\":{\"ip\":\"198.51.100.55\",\"port\":443},\"action\":\"DeNy\",\"endpoint\":\"192.0.2.15:443\",\"event\":{\"id\":\"789\"}}",
       "expectedTime": null,
       "expectedRecord": {
         "srcip": "192.0.2.15",
         "dstip": "198.51.100.55",
         "dstport": 443,
         "action": "DeNy",
+        "endpoint": "192.0.2.15:443",
         "log": {
           "event_id": 789,
           "source_label": "synthetic",
           "action_lower": "deny",
           "original_srcip": "192.0.2.15",
-          "action_upper": "DENY"
+          "action_upper": "DENY",
+          "endpoint_host": "192.0.2.15",
+          "endpoint_port": "443",
+          "endpoint_joined": "192.0.2.15:443"
         },
         "stellar_log_index": "threat",
         "msg_origin": {

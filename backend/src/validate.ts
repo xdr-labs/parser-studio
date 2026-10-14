@@ -169,28 +169,52 @@ export function validateProject(input: unknown): ValidationResult {
     issue(issues, "no_fields", "/normalization", "Map at least one source field before compiling.");
   for (const [index, entry] of (p.enrichment ?? []).entries()) {
     const path = `/enrichment/${index}`;
-    if (entry.operator !== "set_const" && !normalizedNames.has(entry.source)) {
-      issue(issues, "unmapped_enrichment_source", path, "Enrichment source must already exist in the normalized output.");
-    }
-    if ((entry.operator === "lowercase" || entry.operator === "uppercase") &&
-        normalizedTypes.has(entry.source) && normalizedTypes.get(entry.source) !== "string") {
-      issue(issues, "enrichment_type", path, "Text case transforms require a string source field.");
-    }
-    for (const segment of entry.target.split(".")) {
-      if (UNSAFE_PARTS.has(segment)) {
-        issue(issues, "unsafe_field", path, "Prototype/constructor destination segments are forbidden.");
+    const safeDelimiter = (value: string) => value.length >= 1 && value.length <= 8 && !/[\x00-\x1f\x7f]/.test(value);
+    const addTarget = (target: string, type: string) => {
+      for (const segment of target.split(".")) {
+        if (UNSAFE_PARTS.has(segment))
+          issue(issues, "unsafe_field", path, "Prototype/constructor destination segments are forbidden.");
       }
+      if (RESERVED.has(target.split(".")[0]!))
+        issue(issues, "reserved_field", path, "System-managed output field is reserved.");
+      const duplicate = destinations.find(candidate => conflicts(candidate.output, target));
+      if (duplicate) issue(issues, "destination_collision", path, `Enrichment target collides with ${duplicate.path}.`);
+      destinations.push({path, output: target});
+      normalizedNames.add(target);
+      normalizedTypes.set(target, type);
+    };
+    if (entry.operator === "split_field") {
+      if (!normalizedNames.has(entry.source))
+        issue(issues, "unmapped_enrichment_source", path, "Split source must already exist in the normalized output.");
+      if (normalizedTypes.has(entry.source) && normalizedTypes.get(entry.source) !== "string")
+        issue(issues, "enrichment_type", path, "Split source must be a string field.");
+      if (!safeDelimiter(entry.delimiter))
+        issue(issues, "enrichment_delimiter", path, "Split delimiter must be 1-8 visible characters.");
+      if (entry.targets.length < 2 || entry.targets.length > 8 || new Set(entry.targets).size !== entry.targets.length)
+        issue(issues, "enrichment_targets", path, "Split requires 2-8 unique output targets.");
+      for (const target of entry.targets) addTarget(target, "string");
+      continue;
     }
-    if (RESERVED.has(entry.target.split(".")[0]!)) {
-      issue(issues, "reserved_field", path, "System-managed output field is reserved.");
+    if (entry.operator === "merge_fields") {
+      if (entry.sources.length < 2 || entry.sources.length > 8 || new Set(entry.sources).size !== entry.sources.length)
+        issue(issues, "enrichment_sources", path, "Merge requires 2-8 unique source fields.");
+      for (const source of entry.sources) {
+        if (!normalizedNames.has(source))
+          issue(issues, "unmapped_enrichment_source", path, "Every merge source must already exist in the normalized output.");
+        if (normalizedTypes.has(source) && normalizedTypes.get(source) !== "string")
+          issue(issues, "enrichment_type", path, "Merge sources must be string fields.");
+      }
+      if (!safeDelimiter(entry.delimiter))
+        issue(issues, "enrichment_delimiter", path, "Merge delimiter must be 1-8 visible characters.");
+      addTarget(entry.target, "string");
+      continue;
     }
-    const duplicate = destinations.find(candidate => conflicts(candidate.output, entry.target));
-    if (duplicate) {
-      issue(issues, "destination_collision", path, `Enrichment target collides with ${duplicate.path}.`);
-    }
-    destinations.push({path, output: entry.target});
-    normalizedNames.add(entry.target);
-    normalizedTypes.set(entry.target, entry.operator === "set_const" ? typeof entry.value : (normalizedTypes.get(entry.source) ?? "unknown"));
+    if (entry.operator !== "set_const" && !normalizedNames.has(entry.source))
+      issue(issues, "unmapped_enrichment_source", path, "Enrichment source must already exist in the normalized output.");
+    if ((entry.operator === "lowercase" || entry.operator === "uppercase") &&
+        normalizedTypes.has(entry.source) && normalizedTypes.get(entry.source) !== "string")
+      issue(issues, "enrichment_type", path, "Text case transforms require a string source field.");
+    addTarget(entry.target, entry.operator === "set_const" ? typeof entry.value : (normalizedTypes.get(entry.source) ?? "unknown"));
   }
 
   for (const rule of p.classification.rules) {

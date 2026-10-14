@@ -56,6 +56,26 @@ test('P0-AP3 v0.2 compiles same native-qualified Ruby + CONF bytes for allowed f
  }
 });
 
+test('P0-AI2 split and merge stages preserve exact v0.1 Ruby + CONF bytes',()=>{
+ const input=candidate();
+ input.legacyProject.normalization.topFields.endpoint={normalized_name:'endpoint',data_type:'string'};
+ input.legacyProject.enrichment=[
+  {operator:'split_field',source:'endpoint',delimiter:':',targets:['log.endpoint_host','log.endpoint_port']},
+  {operator:'merge_fields',sources:['log.endpoint_host','log.endpoint_port'],delimiter:':',target:'log.endpoint_joined'},
+ ];
+ input.recipe=recipeFromLegacyProject(input.legacyProject,'a'.repeat(64),2);
+ assert.deepEqual(input.recipe.stages.filter(x=>x.op==='split_field'||x.op==='merge_fields'),[
+  {op:'split_field',source:'endpoint',delimiter:':',targets:['log.endpoint_host','log.endpoint_port']},
+  {op:'merge_fields',sources:['log.endpoint_host','log.endpoint_port'],delimiter:':',target:'log.endpoint_joined'},
+ ]);
+ assert.equal(validateRecipePair(input).ok,true);
+ assert.deepEqual(compileRecipePair(input).files,compilePair(input.legacyProject).files);
+ const changed:any=structuredClone(input);
+ changed.recipe.stages.find((x:any)=>x.op==='split_field').delimiter='|';
+ assert.equal(validateRecipePair(changed).ok,false);
+ assert.throws(()=>compileRecipePair(changed),/Invalid ParserRecipe/);
+});
+
 test('P0-AP3 reject forged native, unknown operators, stale/project mismatch and unsafe mapping',()=>{
  const base=candidate();
  const mutate:Array<(value:any)=>void>=[

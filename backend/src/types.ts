@@ -43,6 +43,8 @@ export interface ParserProject {
   enrichment?: Array<
     | { operator: "set_const"; target: string; value: string | number | boolean }
     | { operator: "copy" | "lowercase" | "uppercase"; source: string; target: string }
+    | { operator: "split_field"; source: string; delimiter: string; targets: string[] }
+    | { operator: "merge_fields"; sources: string[]; delimiter: string; target: string }
   >;
   classification: {
     defaultIndex: LogIndex;

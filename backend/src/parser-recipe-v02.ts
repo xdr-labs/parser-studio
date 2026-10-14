@@ -14,6 +14,9 @@ export type RecipeSource=RecipeBody|"syslog_rfc3164"|"syslog_rfc5424";
 type Group="top_fields"|"ns_fields"|"vendor_fields";
 type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group};
 type CastStage={op:"cast_type";target:string;data_type:Exclude<FieldType,"string">;timezone?:"UTC"};
+type SplitFieldStage={op:"split_field";source:string;delimiter:string;targets:string[]};
+type MergeFieldsStage={op:"merge_fields";sources:string[];delimiter:string;target:string};
+type EnrichmentStage=SplitFieldStage|MergeFieldsStage;
 type ClassifyStage={op:"classify";defaultIndex:LogIndex;rules:Array<{
  field:string;operator:"equals";value:string;index:LogIndex}>};
 export type RecipeStage=
@@ -22,7 +25,7 @@ export type RecipeStage=
  | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef"|"csv")[];mode:"strict_prefix"}
  | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
- | MapStage | CastStage | ClassifyStage
+ | MapStage | CastStage | SplitFieldStage | MergeFieldsStage | ClassifyStage
  | {op:"fallback_unparsed";mode:"retain_unparsed"};
 export interface ParserRecipeV02 {
  contract:"parser-studio.recipe.v0.2";
@@ -76,7 +79,9 @@ function sourceBody(project:ParserProject):{source:RecipeSource;body:RecipeBody}
  return {source,body:body as RecipeBody};
 }
 function legacyAllowed(project:ParserProject):boolean {
- return !project.enrichment?.length&&!project.unsupportedOpaqueBlocks?.length&&
+ const enrichmentOk=(project.enrichment??[]).every(rule=>
+  rule.operator==="split_field"||rule.operator==="merge_fields");
+ return enrichmentOk&&!project.unsupportedOpaqueBlocks?.length&&
   (project.receiver.tcpFraming==="line"||
     ((project.receiver.tcpFraming==="blank_line_json"||
       project.receiver.tcpFraming==="blank_line_java")&&
@@ -103,6 +108,15 @@ function expectedMappings(project:ParserProject):MapStage[]{
  }
  if(items.length<1||items.length>50)throw new Error("UNSUPPORTED_MAPPING_COUNT");
  return items;
+}
+function expectedEnrichment(project:ParserProject):EnrichmentStage[]{
+ return (project.enrichment??[]).map(rule=>{
+  if(rule.operator==="split_field")return {op:"split_field",source:rule.source,
+   delimiter:rule.delimiter,targets:[...rule.targets]};
+  if(rule.operator==="merge_fields")return {op:"merge_fields",sources:[...rule.sources],
+   delimiter:rule.delimiter,target:rule.target};
+  throw new Error("UNSUPPORTED_ENRICHMENT");
+ });
 }
 function expectedClassify(project:ParserProject):ClassifyStage{
  return {op:"classify",defaultIndex:project.classification.defaultIndex,
@@ -141,6 +155,7 @@ export function recipeFromLegacyProject(
     ...(stage.data_type==="date"?{timezone:"UTC" as const}:{})});
   }
  }
+ stages.push(...expectedEnrichment(project));
  stages.push(expectedClassify(project),{op:"fallback_unparsed",mode:"retain_unparsed"});
  const recipe:ParserRecipeV02={contract:"parser-studio.recipe.v0.2",
   schemaRevision:"0.2",compilerMode:"REVIEW_ONLY",projectId:project.projectId,
@@ -223,6 +238,11 @@ export function validateRecipePair(input:unknown):ValidationResult{
   const signatures=(items:MapStage[])=>items.map(x=>canonicalJson(x)).sort();
   if(canonicalJson(signatures(actual))!==canonicalJson(signatures(expected)))
    return fail("MAPPING_STAGE_MISMATCH");
+  for(const enrichment of expectedEnrichment(project)){
+   const stage=stages[i++];
+   if(canonicalJson(stage)!==canonicalJson(enrichment))
+    return fail("ENRICHMENT_STAGE_MISMATCH");
+  }
   const classify=stages[i++];
   if(!classify||classify.op!=="classify"||
     canonicalJson(classify)!==canonicalJson(expectedClassify(project)))

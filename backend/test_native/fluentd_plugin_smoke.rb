@@ -104,9 +104,12 @@ assert(nested_hex['srcip'] == '203.0.113.24', 'native nested LEEF hex delimiter'
 _, enriched = parse_once(drivers['sample_enriched'], JSON.generate({
   'source' => {'ip' => '192.0.2.17'},
   'destination' => {'ip' => '198.51.100.77', 'port' => '443'},
-  'action' => 'DENY', 'event' => {'id' => '7'}
+  'action' => 'DENY', 'endpoint' => '192.0.2.17:443', 'event' => {'id' => '7'}
 }))
 assert(enriched.dig('log', 'action_lower') == 'deny', 'native enrichment')
+assert(enriched.dig('log', 'endpoint_host') == '192.0.2.17' &&
+       enriched.dig('log', 'endpoint_port') == '443' &&
+       enriched.dig('log', 'endpoint_joined') == '192.0.2.17:443', 'native split and merge enrichment')
 assert(enriched['stellar_log_index'] == 'threat', 'native enriched classification')
 
 _, bad = parse_once(drivers['sample_cef'], 'CEF:0|Acme|FW|1|100|Blocked|8|garbage')
