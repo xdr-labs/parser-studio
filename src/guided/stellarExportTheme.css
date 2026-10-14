@@ -1,0 +1,42 @@
+/* Visual parity with xdr-labs/stellar-data-exporter app/static/styles.css (origin/main).
+ * Color and component tokens are sourced from that product; no runtime assets copied.
+ * Keep parsing status colors semantic and preserve the two authoring routes.
+ */
+:root {
+  --bg:#f5f5f6;--panel:#fff;--text:#231f20;--muted:#706d72;--line:#dfdddf;
+  --stellar-orange:#f05b29;--stellar-gold:#f8ae41;--charcoal:#231f20;--navy:#11131a;
+  --blue:#3549a5;--blue2:#273b90;--green:#138a63;--red:#c83f4d;
+  --shadow:0 10px 28px rgba(35,31,32,.07);
+  --nav:var(--navy);--nav-muted:#b4adb0;--ink:var(--charcoal);
+  --aqua:var(--stellar-orange);--aqua-2:#d94316;
+  --good:var(--green);--warn:#8a5a00;--bad:var(--red);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--text);background:var(--bg);
+}
+body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
+.two-path-shell .nav-rail{background:var(--navy);border-right:1px solid #343136}
+.two-path-shell .brand-symbol{background:#30231d;border:1px solid #9b472a;color:var(--stellar-gold)}
+.two-path-shell .rail-link{color:#c9c5c7}
+.two-path-shell .rail-link:hover{background:#30231d;color:#fff}
+.two-path-shell .rail-link.selected{background:#3a2923;border-color:#a64c2a;color:#fff}
+.two-path-shell .rail-link.selected:before{background:var(--stellar-orange)}
+.two-path-shell .topbar{background:#fff;color:var(--charcoal);border-top:4px solid var(--stellar-orange);border-bottom:1px solid #e7e4e5;box-shadow:0 4px 18px rgba(35,31,32,.05)}
+.two-path-shell .topbar .header-title{color:var(--charcoal)}
+.two-path-shell .topbar .header-title span,.two-path-shell .context-flag{color:var(--muted)}
+.two-path-shell .topbar .eyebrow,.two-path-shell .topbar .crumb-icon{color:var(--stellar-orange)}
+.two-path-shell .topbar .crumb-icon{background:#fff0ea}
+.two-path-shell .status-dot{background:var(--green)}
+.two-path-shell .button.primary{background:linear-gradient(135deg,var(--stellar-orange),#df4618);border-color:var(--stellar-orange);color:#fff;box-shadow:0 6px 14px rgba(240,91,41,.18)}
+.two-path-shell .button.primary:not(:disabled):hover{background:#d94316}
+.two-path-shell .button.secondary{background:#f4f2f2;color:#3c383a;border:1px solid #d9d4d6}
+.two-path-shell .button.secondary:hover{background:#ece9ea}
+.two-path-shell .button.subtle{color:#5b5559;background:#fff;border-color:#d9d4d6}
+.two-path-shell :is(input,select,textarea):focus-visible{outline:2px solid var(--stellar-orange);outline-offset:2px}
+.two-path-shell :is(button,a,summary):focus-visible{outline:3px solid var(--stellar-orange);outline-offset:2px}
+.two-path-shell .two-path-complex-recovery{background:#fff8f5;border-color:#f2c5b5}
+.two-path-shell .two-path-complex-recovery-heading span{color:#9b4a29}
+.two-path-shell .two-path-recovery{border-color:var(--line);background:#fff;color:var(--charcoal)}
+.two-path-shell .two-path-session-banner{background:#fff8f5;border-color:#f2c5b5;color:var(--charcoal)}
+.two-path-shell .two-path-mapping-editor label{color:#494448}
+.two-path-shell .two-path-mapping-editor input,.two-path-shell .two-path-mapping-editor select{border-color:#d2cdcf;color:var(--charcoal)}
+@media(max-width:650px){.two-path-shell .topbar{padding-inline:12px}.two-path-shell .button{min-height:40px}}

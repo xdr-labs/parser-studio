@@ -5,6 +5,7 @@ import './styles.css';
 import './guided/guided.css';
 import './guided/auto.css';
 import './guided/twoPath.css';
+import './guided/stellarExportTheme.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
