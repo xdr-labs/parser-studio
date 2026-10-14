@@ -32,6 +32,16 @@ class GenericStructuralPostFreezeHoldoutTests(unittest.TestCase):
     def test_promotions_are_not_published_as_independent_gold(self):
         total=self.result['total']
         self.assertEqual(213,total['incomplete_promoted'])
+        self.assertEqual(557,total['promoted_missing_occurrences'])
+        self.assertEqual(0,total['promoted_missing_stable_source_segments'])
+        self.assertEqual(551,total['promoted_missing_nonempty'])
+        self.assertEqual(
+            551,total['promoted_missing_nonempty_overlap_candidate']
+        )
+        self.assertEqual(
+            0,total['promoted_missing_nonempty_disjoint_candidate']
+        )
+        self.assertEqual(6,total['promoted_missing_zero_length'])
         self.assertFalse(self.result['promotion_accuracy_independently_certified'])
         self.assertFalse(self.result['field_semantics_scored'])
 
