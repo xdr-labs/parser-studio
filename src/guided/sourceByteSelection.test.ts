@@ -19,3 +19,17 @@ describe('UTF-8 source byte selection',()=>{
   expect(toSourceByteRange('x',0,0)).toBeNull();
  });
 });
+
+import {fromSourceByteRange} from './sourceByteSelection';
+describe('engine byte span to browser selection',()=>{
+ it('converts multibyte source boundaries',()=>{
+  const raw='\uD55C\uAE00\uD83D\uDE00 src=192.0.2.1';
+  const start=raw.indexOf('192.0.2.1');
+  const bytes=new TextEncoder().encode(raw.slice(0,start)).length;
+  expect(fromSourceByteRange(raw,bytes,bytes+9)).toEqual([start,start+9]);
+ });
+ it('rejects partial UTF-8 codepoint and invalid ranges',()=>{
+  expect(fromSourceByteRange('😀',1,4)).toBeNull();
+  expect(fromSourceByteRange('abc',2,2)).toBeNull();
+ });
+});

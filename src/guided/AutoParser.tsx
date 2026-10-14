@@ -81,6 +81,7 @@ export default function AutoParser({
  const [multiPass,setMultiPass]=useState<{raw:string;result:MultiPassSourcePreview}|null>(null);
  const [multiPassNotice,setMultiPassNotice]=useState('');
  const [multiPassBusy,setMultiPassBusy]=useState(false);
+ const [selectedResidual,setSelectedResidual]=useState<{startByte:number;endByte:number}|null>(null);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
@@ -475,7 +476,7 @@ export default function AutoParser({
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
-  const original=sample;setMultiPass(null);setMultiPassNotice('');setMultiPassBusy(true);
+  const original=sample;setMultiPass(null);setSelectedResidual(null);setMultiPassNotice('');setMultiPassBusy(true);
   try{
    const result=await requestMultiPassPreview(original);
    setMultiPass({raw:original,result});
@@ -533,8 +534,12 @@ export default function AutoParser({
            <pre>{JSON.stringify(currentMultiPass.fields,null,2)}</pre>
            <div>{currentMultiPass.spans.map((span,i)=><span key={i} className="stellar-span-chip">
              {span.path} [{span.startByte}–{span.endByte}]</span>)}</div>
-           <div>{currentMultiPass.residuals.map((span,i)=><span key={i} className="stellar-residual-chip">
-             Unparsed [{span.startByte}–{span.endByte}]</span>)}</div>
+           <div>{currentMultiPass.residuals.map((span,i)=><button type="button" key={i}
+             className="stellar-residual-chip" onClick={()=>setSelectedResidual(span)}>
+             Improve Unparsed [{span.startByte}–{span.endByte}]</button>)}</div>
+           {selectedResidual&&<AutoParserAIReview raw={sample} status="partial" onChatGPT={onChatGPT}
+             initialByteRange={selectedResidual} source={sample} draft={draft} suite={suite}/>}
+
          </div>}
        </div>
        <div className="auto-parser-ledger" aria-label="Automatic event accounting">

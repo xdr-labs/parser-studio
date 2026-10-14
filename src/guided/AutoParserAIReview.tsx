@@ -1,10 +1,10 @@
 import {useEffect,useState} from 'react';
-import {toSourceByteRange} from './sourceByteSelection';
+import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
 import {importReviewOnlyAIRecipe} from './aiRecipeExchange';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult}
-export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite}:Props){
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null}
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
@@ -14,7 +14,11 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [recipeText,setRecipeText]=useState('');
  const [importResult,setImportResult]=useState('');
  const [importBusy,setImportBusy]=useState(false);
- useEffect(()=>{setRange([0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');setMode(status==='unsupported'?'entire':'selection');},[raw,status]);
+ useEffect(()=>{
+  const initial=initialByteRange?fromSourceByteRange(raw,initialByteRange.startByte,initialByteRange.endByte):null;
+  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');
+  setMode(initial?'selection':status==='unsupported'?'entire':'selection');
+ },[raw,status,initialByteRange?.startByte,initialByteRange?.endByte]);
  const sourceRange=toSourceByteRange(raw,range[0],range[1]);
  const excerpt=mode==='entire'?raw:(sourceRange?.text??'');
  const canCopy=approved&&!!reviewedExcerpt.trim()&&!!goal.trim()&&!!excerpt.trim();
