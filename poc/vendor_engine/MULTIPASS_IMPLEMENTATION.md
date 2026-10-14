@@ -25,3 +25,7 @@ No broad prose/template-mining work, Dictionary mapping, masking optimization, U
 ### MP-3 LEEF xHH additive pass
 
 `security_leef.py` runs only when the base explicitly reports an unsupported LEEF delimiter. It adds exact `xHH` recognition while existing literal and `0xHH` paths remain unchanged. Authored xHH conformance is 192 records / 3,552 exact fields at 3,552 TP / 0 FP / 0 FN; the frozen documentation `xa6` example improves 0/19 to 19/19. Malformed/incomplete xHH remains non-complete.
+
+### MP-4 declared schema/document state isolation
+
+`security_document.py` scopes explicit `#separator/#fields/#types` state to declared table rows. `#close`, separator rotation and field rotation destroy stale state; new fields require new types. Unknown `#...` records remain ordinary visible records. Active table state never captures JSON/WAF, CEF, LEEF, CEE/Syslog or native KV records. A deterministic 240-physical-record ledger has zero loss/duplication, 32/32 declared rows with exact trees/spans, 16/16 stale-type rows fail closed, and 96/96 interleaved security records remain byte/output-identical to the current parser.

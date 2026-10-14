@@ -1,0 +1,19 @@
+{
+  "contract": "parser-studio.poc.multipass-document-state.v1",
+  "counts": {
+    "declared_exact_spans": 32,
+    "declared_exact_tree": 32,
+    "declared_rows": 32,
+    "event_records": 144,
+    "metadata_records": 96,
+    "ordinary_records": 96,
+    "ordinary_unchanged": 96,
+    "physical_record_ledger_exact": 1,
+    "physical_records": 240,
+    "rotated_without_types": 16,
+    "rotated_without_types_not_complete": 16
+  },
+  "dictionary_attempted": false,
+  "masking_optimization": false,
+  "native_verified": false
+}
