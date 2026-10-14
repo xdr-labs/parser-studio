@@ -304,3 +304,31 @@ capture (historical original 37.62%). Do not advertise the
 trained 98.95% as the solution to that open-world problem. Continue exploring
 deterministic variable-boundary induction, conservative repair and richer
 copyright-cleared independent data without misleading performance claims.
+
+## F. Frozen Java candidate independently reference-scored (2026-10-14)
+
+The previously blocked reference acquisition succeeded on normal same-tool,
+same-device, same-worktree retry. Both pinned upstream CSVs are now preserved
+in ignored `.cache/loghub`; no credentials, permissions or alternative download
+route were used. The historical raw-only probe remains unchanged.
+
+`benchmark_java_headers.py` reconstructs header fields and exact UTF-8 spans
+from independent reference columns, never EventTemplate inference or parser
+regex reuse. Every annotated header and Content byte must match the source.
+The ZooKeeper CSV omits one terminal space in 292 source records: these bytes
+are explicitly counted, the raw is unchanged, and no valid header is excluded.
+Changed non-whitespace content remains a hard reference mismatch.
+
+**Frozen first-pass results:** all 4,000 records / 4,000 reference-scored /
+zero excluded; 20,000 atomic header fields. Spark: 8,000 TP / 0 FP / 0 FN;
+ZooKeeper: 0 TP / 0 FP / 12,000 FN. Combined header-only F1 57.1429%.
+This validates Spark header positions, not its unstructured body; the original
+zero-ZooKeeper result remains a recorded failure. All 4,000 original records
+remain accounted. Source redaction is NOT_ASSESSED, so this mixed real-source
+benchmark is not presented as an unmasked-only KPI. No masking optimization,
+Dictionary mapping, commercial template rights or native/DP qualification is
+claimed. The reference-acquisition blocker is resolved, not a remaining gate.
+
+Next: repair actual unsupported Java envelope boundaries and validate atomic
+context fields, labeled exploratory after source/reference exposure. Preserve
+this frozen result and independently audit any composite context outputs.
