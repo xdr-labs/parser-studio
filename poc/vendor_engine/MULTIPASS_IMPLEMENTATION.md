@@ -17,3 +17,7 @@ Keep the current PR #16 security-source engine as the base. Integrate only indep
 MP-0 baseline freeze -> MP-1 candidate/evidence contract -> MP-2 CEF additive pass -> MP-3 LEEF xHH pass -> MP-4 declared-schema state isolation -> MP-5 deterministic adjudicator -> MP-6 bounded residual recursion -> MP-7 security regression gate -> MP-8 engine decision.
 
 No broad prose/template-mining work, Dictionary mapping, masking optimization, UI, native target writes, production, merge or release is part of these MP stages.
+
+### MP-2 CEF additive pass
+
+`security_cef.py` is a qualified CEF-standard candidate, not a global replacement. Local exact-source evidence: commercial CEF 22/482 remains 482 TP / 0 FP / 0 FN in base and candidate; authored CEF 96/900 improves 840/36/60 to 900/0/0, exact records 48→96 and false-complete 36→0. Malformed controls remain raw/incomplete and never become complete. Private source files remain ignored.

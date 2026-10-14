@@ -1,0 +1,226 @@
+{
+  "authored": {
+    "baseline": {
+      "FN": 60,
+      "FP": 36,
+      "TP": 840,
+      "exact_records": 48,
+      "f1": 0.9459459459459459,
+      "falsely_complete": 36,
+      "precision": 0.958904109589041,
+      "raw_preserved": 96,
+      "recall": 0.9333333333333333,
+      "records": 96,
+      "reference_fields": 900,
+      "statuses": {
+        "PARTIAL": 24,
+        "SOURCE_PARSED": 72
+      }
+    },
+    "candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 900,
+      "exact_records": 96,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "precision": 1.0,
+      "raw_preserved": 96,
+      "recall": 1.0,
+      "records": 96,
+      "reference_fields": 900,
+      "statuses": {
+        "PARTIAL": 12,
+        "SOURCE_PARSED": 84
+      }
+    }
+  },
+  "commercial": {
+    "baseline": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 482,
+      "exact_records": 22,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "precision": 1.0,
+      "raw_preserved": 22,
+      "recall": 1.0,
+      "records": 22,
+      "reference_fields": 482,
+      "statuses": {
+        "SOURCE_PARSED": 22
+      }
+    },
+    "candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 482,
+      "exact_records": 22,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "precision": 1.0,
+      "raw_preserved": 22,
+      "recall": 1.0,
+      "records": 22,
+      "reference_fields": 482,
+      "statuses": {
+        "SOURCE_PARSED": 22
+      }
+    }
+  },
+  "commercial_groups": {
+    "test-checkpoint.json": {
+      "baseline": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 83,
+        "exact_records": 3,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 3,
+        "recall": 1.0,
+        "records": 3,
+        "reference_fields": 83,
+        "statuses": {
+          "SOURCE_PARSED": 3
+        }
+      },
+      "candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 83,
+        "exact_records": 3,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 3,
+        "recall": 1.0,
+        "records": 3,
+        "reference_fields": 83,
+        "statuses": {
+          "SOURCE_PARSED": 3
+        }
+      }
+    },
+    "test-cisco-asa.json": {
+      "baseline": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 75,
+        "exact_records": 1,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 1,
+        "recall": 1.0,
+        "records": 1,
+        "reference_fields": 75,
+        "statuses": {
+          "SOURCE_PARSED": 1
+        }
+      },
+      "candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 75,
+        "exact_records": 1,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 1,
+        "recall": 1.0,
+        "records": 1,
+        "reference_fields": 75,
+        "statuses": {
+          "SOURCE_PARSED": 1
+        }
+      }
+    },
+    "test-fp-ngfw-smc.json": {
+      "baseline": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 10,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 10,
+        "recall": 1.0,
+        "records": 10,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 10
+        }
+      },
+      "candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 10,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 10,
+        "recall": 1.0,
+        "records": 10,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 10
+        }
+      }
+    },
+    "test-trend-micro.json": {
+      "baseline": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 8,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 8,
+        "recall": 1.0,
+        "records": 8,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 8
+        }
+      },
+      "candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 8,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 8,
+        "recall": 1.0,
+        "records": 8,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 8
+        }
+      }
+    }
+  },
+  "contract": "parser-studio.poc.multipass-cef.v1",
+  "dictionary_attempted": false,
+  "malformed": {
+    "baseline": {
+      "falsely_complete": 18,
+      "raw_preserved": 24,
+      "records": 24
+    },
+    "candidate": {
+      "falsely_complete": 0,
+      "raw_preserved": 24,
+      "records": 24
+    }
+  },
+  "masking_optimization": false,
+  "native_verified": false
+}

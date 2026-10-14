@@ -1,0 +1,15 @@
+{
+  "contract": "parser-studio.poc.multipass-cef-source-manifest.v1",
+  "repository": "elastic/integrations",
+  "revision": "47a6f483b1e7337854f7b5140a98397cba744702",
+  "source_kind": "Upstream regression source objects; not production captures",
+  "raw_field": "event.original",
+  "redaction": "UNASSESSED",
+  "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+  "files": [
+    {"name":"test-checkpoint.json","records":3,"sha256":"5c68c5714491c491d08fba2e6954011ad49dbfe976ea4af2a4c8b356f2fa5261"},
+    {"name":"test-cisco-asa.json","records":1,"sha256":"c340e98ffca0ceba2672cc8f94d0d6b5f6106f40db1a89580c50bd5e922af9a2"},
+    {"name":"test-fp-ngfw-smc.json","records":10,"sha256":"de6e20533209fda63d9dabc202a38a334aced91de0f7ad91173a4a5d67147469"},
+    {"name":"test-trend-micro.json","records":8,"sha256":"583290c0ecad072d6750d23a17f1f081df40e6bc3e98f90f4b21eebee49bded8"}
+  ]
+}
