@@ -47,6 +47,27 @@ describe('backend-exact, byte-verified portable parser project reconstruction',(
     expect(check.ok).toBe(true);
     if(check.ok)expect(check.project).toEqual(value);
   });
+  it('round-trips bounded split and merge enrichment without dropping operator metadata',()=>{
+    const value=clone(project());
+    value.normalization.topFields.endpoint={normalized_name:'custom.endpoint',data_type:'string'};
+    value.enrichment=[
+      {operator:'split_field',source:'custom.endpoint',delimiter:':',
+        targets:['custom.endpoint_host','custom.endpoint_port_text']},
+      {operator:'merge_fields',sources:['custom.endpoint_host','custom.endpoint_port_text'],
+        delimiter:':',target:'custom.endpoint_joined'},
+    ];
+    const reconstructed=reconstructExactBackendDraft(value,'customized_demo_firewall');
+    expect(reconstructed).not.toBeNull();
+    expect(reconstructed?.guided?.enrichment).toEqual([
+      {id:'imported-enrichment-1',operator:'split_field',source:'custom.endpoint',target:'',value:'',
+        delimiter:':',targets:['custom.endpoint_host','custom.endpoint_port_text']},
+      {id:'imported-enrichment-2',operator:'merge_fields',source:'',target:'custom.endpoint_joined',value:'',
+        delimiter:':',sources:['custom.endpoint_host','custom.endpoint_port_text']},
+    ]);
+    const check=toBackendProject(reconstructed!);
+    expect(check.ok).toBe(true);
+    if(check.ok)expect(check.project).toEqual(value);
+  });
   it('rejects unknown project IDs, extra properties and ambiguous normalization without a lossy import',()=>{
     const original=project();
     for(const invalid of [
