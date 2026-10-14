@@ -172,6 +172,11 @@ LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',(
 def parse_security_once(raw:str)->SourceEvent:
     """Run qualified whole-record candidates once, without residual recursion."""
     base=parse_security_source(raw);events={'security.base':base};contracts=[candidate_from_event(base,BASE_EVIDENCE)]
+    # ASA is a conservative fallback only: preserve any already accepted base fields.
+    if not base.vendor_fields:
+        from security_asa import parse_asa_message
+        asa=parse_asa_message(raw)
+        if asa is not None:return asa
     cef=parse_security_cef(raw,base_parser=parse_security_source)
     if 'CEF_STANDARD' in cef.syntax:
         events['cef.standard']=cef;contracts.append(candidate_from_event(cef,CEF_EVIDENCE))
