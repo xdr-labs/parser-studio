@@ -24,6 +24,7 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
+import AutoParserAIReview from './AutoParserAIReview';
 import AutoParserResultTools from './AutoParserResultTools';
 import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
@@ -705,11 +706,14 @@ export default function AutoParser({
            {records.map((entry)=><option key={entry.id} value={entry.id}>
              Event {entry.line} · {entry.status.toUpperCase()}</option>)}
          </select></label>
+       <div className="stellar-review-columns">
        {chosen&&<div className="auto-parser-preview" aria-label="Browser-only event inspector">
          <div><h3>Original · Browser only</h3><pre>{chosen.raw}</pre></div>
          <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
+       <AutoParserAIReview raw={chosen?.raw??sample} status={chosen?.status??'unsupported'} onChatGPT={onChatGPT}/>
+       </div>
        <div className="auto-parser-map-list" aria-label="Suggested field mappings">
          {draft.mappings.map((rule)=><div key={rule.id}>
            <strong>{rule.source}</strong> <ArrowRight size={13}/>
