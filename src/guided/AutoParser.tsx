@@ -553,6 +553,11 @@ export default function AutoParser({
            I Confirm TCP Java Events Are Separated by LF LF
          </button>
        </div>}
+       {sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
+         <strong>Some source events need assistance</strong>
+         <p>{report.unsupported} of {report.sourceCount} events were not fully recognized. The original input is preserved; unsupported events are not silently discarded or marked parser-ready.</p>
+         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT}/>
+       </div>}
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
        <details className="auto-parser-recipe" aria-label="Local logical boundary review">
