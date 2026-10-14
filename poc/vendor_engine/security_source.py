@@ -77,6 +77,14 @@ def parse_security_source(raw:str)->SourceEvent:
         if outer.fields and outer.issues and set(outer.issues)<={'RFC5424_TIMESTAMP_INVALID','RFC5424_DUPLICATE_SD_KEY','RFC5424_SD_TRAILING_SPACE_NONSTANDARD'}:
             body=parse_source(raw[start:]) if start is not None else None
             return _join_source(raw,outer,start,body,'SYSLOG_SOURCE_ANOMALIES_PRESERVED')
+        # A malformed structured-data section must not crash candidate
+        # conversion or erase the independently validated RFC5424 header.
+        # The source-preserving codec deliberately rolls back every partial SD
+        # claim before returning this header-only tree.
+        if outer.fields and outer.issues and start is None:
+            return _join_source(
+                raw,outer,None,None,'SYSLOG_RFC5424_HEADER_PRESERVED',
+            )
     if raw.startswith('@cee:'):
         return _cee(raw)
     # Some security emitters place RFC5424 structured data immediately after

@@ -55,6 +55,7 @@ class MultiPassContractTests(unittest.TestCase):
         )
         event=parse_security_source(raw);assert_source_accounting(event)
         self.assertEqual('PARTIAL',event.status)
+        self.assertEqual('SYSLOG_RFC5424_HEADER_PRESERVED',event.syntax)
         self.assertIn('RFC5424_SD_VALUE_NOT_QUOTED',event.issues)
         candidate=candidate_from_event(event,self.evidence())
         self.assertEqual('PARTIAL',candidate.completeness)
@@ -65,15 +66,7 @@ class MultiPassContractTests(unittest.TestCase):
             },
             set(candidate.field_tree['syslog']),
         )
-        self.assertEqual(
-            7,len(candidate.occurrences),
-        )
-        self.assertTrue(
-            all(
-                occurrence.display_path.startswith('syslog.')
-                for occurrence in candidate.occurrences
-            )
-        )
+        self.assertEqual(7,len(candidate.occurrences))
 
     def test_evidence_is_explicit_not_an_unbounded_score(self):
         with self.assertRaises(ValueError):

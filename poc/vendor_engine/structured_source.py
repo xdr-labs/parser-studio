@@ -314,11 +314,9 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
             ("pri","version","timestamp","hostname","appname","procid","msgid")}
     result.spans.extend(("syslog."+k,*match.span(k)) for k in syslog)
     result.primitive_fields=len(syslog)
-    # Header fields are independently valid once the RFC5424 head is
-    # validated. If structured-data parsing later fails, keep only these
-    # resolvable claims rather than returning orphan SD/header spans without
-    # a matching field tree.
-    result.fields["syslog"]=dict(syslog)
+    # If structured-data parsing later fails, strict RFC parsing remains
+    # fail-closed. Source-preserving callers may retain the independently
+    # validated header, but strict callers must not expose orphan spans.
     header_span_count=len(result.spans)
     header_primitive_fields=result.primitive_fields
     sd_start=pos
@@ -386,10 +384,16 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
                     raise ValueError("RFC5424_SD_BYTE_LIMIT")
             except ValueError as exc:
                 result.issues.append(str(exc))
-                result.spans=result.spans[:header_span_count]
-                result.primitive_fields=header_primitive_fields
-                result.fields["syslog"]=dict(syslog)
-                result.covered=[(0,match.end())]
+                if source_preserving:
+                    result.spans=result.spans[:header_span_count]
+                    result.primitive_fields=header_primitive_fields
+                    result.fields["syslog"]=dict(syslog)
+                    result.covered=[(0,match.end())]
+                else:
+                    result.spans=[]
+                    result.primitive_fields=0
+                    result.fields={}
+                    result.covered=[]
                 return result,None
     else:
         result.issues.append("RFC5424_STRUCTURED_DATA_MISSING")
