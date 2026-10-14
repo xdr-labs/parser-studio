@@ -7,17 +7,11 @@ import json
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlsplit
 from multipass_adjudicator import parse_security_multipass
-from multipass_contract import CandidateEvidence,candidate_from_event
-from stellar_dictionary import (OFFICIAL_DICTIONARY_URL_65,OFFICIAL_DICTIONARY_URL_70,
-                                project_stellar_dictionary)
+from stellar_dictionary import (CEF_DICTIONARY_URL,DICTIONARY_REVISION,OFFICIAL_DICTIONARY_URL_65,
+                                OFFICIAL_DICTIONARY_URL_70,normalize_stellar_dictionary)
 from source_parse import assert_source_accounting
 
 MAX_BYTES=65536
-PREVIEW_EVIDENCE=CandidateEvidence(
-    parser_id='multipass.preview-final',profile_id='accuracy-first-mp',grammar_id=None,
-    evidence_tier='QUALIFIED_BASE',independently_qualified=False,
-    source_revision='OWNER_ACCURACY_FIRST_MULTIPASS_20261014',
-    confidence_evidence=('dictionary-carrier-only',))
 
 def preview(raw:str)->dict:
     if not isinstance(raw,str) or not raw or len(raw.encode('utf8'))>MAX_BYTES:
@@ -26,17 +20,20 @@ def preview(raw:str)->dict:
     assert_source_accounting(event)
     def region(a:int,b:int)->dict:
         return {'startByte':len(raw[:a].encode('utf8')),'endByte':len(raw[:b].encode('utf8'))}
-    dictionary=project_stellar_dictionary(candidate_from_event(event,PREVIEW_EVIDENCE))
+    dictionary=normalize_stellar_dictionary(event)
     dictionary_view={
         'contract':'parser-studio.stellar-dictionary-projection.v0.1',
-        'sourceUrls':[OFFICIAL_DICTIONARY_URL_65,OFFICIAL_DICTIONARY_URL_70],
-        'mapped':[{'sourcePath':item.source_path,'targetField':item.target_field,
-                   'documentedType':item.documented_type,
-                   'startByte':item.start_byte,'endByte':item.end_byte}
-                  for item in dictionary.mapped],
-        'unmappedCount':dictionary.unmapped_count,
+        'dictionaryRevision':DICTIONARY_REVISION,
+        'sourceUrls':[OFFICIAL_DICTIONARY_URL_65,OFFICIAL_DICTIONARY_URL_70,CEF_DICTIONARY_URL],
+        'mapped':[{'sourcePath':item.source.path,'targetField':item.dictionary_field,
+                   'documentedType':item.dictionary_type,
+                   'mappingClass':'CEF_STANDARD_ALIAS' if item.rule_id.startswith('cef:') else 'EXACT_DICTIONARY_NAME',
+                   'startByte':item.source.start_byte,'endByte':item.source.end_byte}
+                  for item in dictionary.mappings],
+        'unmappedCount':len(dictionary.unmapped_occurrences),
         'issues':list(dictionary.issues),
-        'automaticAliasInference':False,'sourceExtractionPreserved':True,
+        'automaticAliasInference':False,'standardizedAliasMapping':True,
+        'sourceExtractionPreserved':True,
         'nativeVerified':False,'targetVerified':False,
     }
     return {'contract':'parser-studio.multipass-source-preview.v0.1',

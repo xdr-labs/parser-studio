@@ -20,6 +20,7 @@ class PreviewContract(unittest.TestCase):
         self.assertEqual(['srcip','dstport','action'],[item['targetField'] for item in dictionary['mapped']])
         self.assertEqual(1,dictionary['unmappedCount'])
         self.assertFalse(dictionary['automaticAliasInference'])
+        self.assertTrue(dictionary['standardizedAliasMapping'])
         self.assertTrue(dictionary['sourceExtractionPreserved'])
         self.assertFalse(dictionary['nativeVerified']);self.assertFalse(dictionary['targetVerified'])
         source_token=raw.encode()[result['spans'][0]['startByte']:result['spans'][0]['endByte']].decode()
@@ -27,6 +28,20 @@ class PreviewContract(unittest.TestCase):
         self.assertEqual((result['spans'][0]['startByte'],result['spans'][0]['endByte']),
                          (dictionary['mapped'][0]['startByte'],dictionary['mapped'][0]['endByte']))
         self.assertNotIn('value',dictionary['mapped'][0])
+    def test_dictionary_projection_exposes_only_standardized_cef_alias_metadata(self):
+        raw='CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.10 dpt=443 act=deny cs1=private'
+        dictionary=preview(raw)['dictionary']
+        mapped={item['sourcePath']:(item['targetField'],item['mappingClass'])
+                for item in dictionary['mapped']}
+        self.assertEqual(('srcip','CEF_STANDARD_ALIAS'),mapped['cef_extension.src'])
+        self.assertEqual(('dstport','CEF_STANDARD_ALIAS'),mapped['cef_extension.dpt'])
+        self.assertEqual(('action','CEF_STANDARD_ALIAS'),mapped['cef_extension.act'])
+        self.assertNotIn('cef_extension.cs1',mapped)
+        self.assertEqual(8,dictionary['unmappedCount'])
+        self.assertFalse(dictionary['automaticAliasInference'])
+        self.assertTrue(dictionary['standardizedAliasMapping'])
+        self.assertNotIn('192.0.2.10',json.dumps(dictionary))
+        self.assertNotIn('private',json.dumps(dictionary))
     def test_source_limits(self):
         with self.assertRaises(ValueError):preview('')
         with self.assertRaises(ValueError):preview('a'*65537)
