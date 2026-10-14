@@ -5,7 +5,9 @@ three-pane Workbench, and navigation destinations removed by the Parser Studio
 2.0 two-method UI decision on October 13, 2026. They are archived in Git,
 not deleted or falsely reported as current passing tests.
 
-Original suites: 46 files; approximate historical test declarations: 138.
+Original archived suites currently present: **48 files**. Their behavioral disposition is enforced by `migration-manifest.json` and `src/guided/legacyMigrationManifest.test.ts`; archived suites themselves never count as current PASS.
+
+The manifest has no undispositioned P0 behavior. Three P1 import/inspection suites remain explicitly open (`exact-parser-import`, `offline-project-json-import`, `pair-inspection`); legacy target preflight stays a separately authorized external gate.
 
 Feature-contract coverage retained outside retired screens:
 - Existing Vitest source/algorithm tests still run without modification.
