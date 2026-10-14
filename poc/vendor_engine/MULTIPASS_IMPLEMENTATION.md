@@ -33,3 +33,24 @@ No broad prose/template-mining work, Dictionary mapping, masking optimization, U
 ### MP-5 deterministic candidate adjudication
 
 `multipass_adjudicator.py` runs the qualified base, CEF-standard and LEEF-xHH candidates and compares exact source claims. Extraction-identical candidates preserve the base. Overlapping field/span or container ownership conflicts require a strictly higher independently-qualified evidence tier; equal-tier conflicts become explicit `MULTIPASS_AMBIGUOUS_CONFLICT`. Non-overlapping tree-compatible candidates may merge; incompatible tree ownership raises instead of unioning. Current commercial 27,968 fields remain exact, all 77 WAF/Suricata records are base-identical, while CEF900 and LEEF3,552/xa6-19 use their qualified candidates exactly.
+
+### MP-6 bounded residual recursive parsing
+
+`multipass_residual.py` runs only after MP-5 whole-record adjudication. It never
+re-parses accepted spans. Residual recovery is restricted to explicit structured
+sub-records owned by an already-recognized security envelope `body`; small
+opaque wrapper labels remain residual and therefore keep the event PARTIAL.
+Compatible child trees/spans are merged under the existing body container.
+Conflicting ownership or overlap is rejected with an explicit residual conflict.
+
+Recursion is bounded to depth 4 and 64 residual windows with cycle identity based
+on absolute source range plus raw digest. Direct CEF/LEEF field limits cannot be
+bypassed by later passes. Complete JSON/CEF/LEEF records are byte-for-byte result
+identical with residual parsing enabled or disabled.
+
+Self-authored security residual differential: 72 wrapped/nested WAF/IPS-shaped
+records / 2,160 independently encoded target fields. MP-5 whole-record baseline
+0 TP / 0 FP / 2,160 FN; MP-6 candidate 2,160 TP / 0 FP / 0 FN, 72/72 exact target
+ledgers, raw 72/72, false-complete 0 in both. This is structural residual evidence,
+not new vendor traffic or open-world accuracy. Full regression after MP-6:
+279/279 PASS, zero skips/errors/failures.

@@ -169,8 +169,8 @@ CEF_EVIDENCE=_evidence('cef.standard','QUALIFIED_STANDARD','cef-0-1-standard-bou
 LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',('authored-leef-3552-exact','external-xa6-19-exact'))
 
 
-def parse_security_multipass(raw:str)->SourceEvent:
-    """Run qualified source candidates, then deterministically adjudicate."""
+def parse_security_once(raw:str)->SourceEvent:
+    """Run qualified whole-record candidates once, without residual recursion."""
     base=parse_security_source(raw);events={'security.base':base};contracts=[candidate_from_event(base,BASE_EVIDENCE)]
     cef=parse_security_cef(raw,base_parser=parse_security_source)
     if 'CEF_STANDARD' in cef.syntax:
@@ -185,3 +185,13 @@ def parse_security_multipass(raw:str)->SourceEvent:
         return result
     if len(decision.accepted_parser_ids)==1:return deepcopy(events[decision.accepted_parser_ids[0]])
     return merge_source_events(raw,events,decision.accepted_parser_ids)
+
+
+def parse_security_multipass(raw:str,*,max_residual_depth:int=3)->SourceEvent:
+    """Adjudicate qualified parsers, then re-parse only compatible residual body regions."""
+    first=parse_security_once(raw)
+    if max_residual_depth==0:return first
+    from multipass_residual import recover_residual_regions
+    return recover_residual_regions(
+        first,parse_once=parse_security_once,max_depth=max_residual_depth,
+    )

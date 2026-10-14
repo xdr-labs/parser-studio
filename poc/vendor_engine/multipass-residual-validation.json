@@ -1,0 +1,51 @@
+{
+  "accepted_scope": "unparsed regions owned by recognized security envelope body only",
+  "baseline": {
+    "FN": 2160,
+    "FP": 0,
+    "TP": 0,
+    "events": 72,
+    "exact_events": 0,
+    "f1": 0.0,
+    "false_complete": 0,
+    "gold_fields": 2160,
+    "precision": null,
+    "raw_preserved": 72,
+    "recall": 0.0
+  },
+  "candidate": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 2160,
+    "events": 72,
+    "exact_events": 72,
+    "f1": 1.0,
+    "false_complete": 0,
+    "gold_fields": 2160,
+    "precision": 1.0,
+    "raw_preserved": 72,
+    "recall": 1.0
+  },
+  "candidate_sha256": {
+    "benchmark_multipass_residual.py": "6cfccfc17b1fe52012e0680e61a25773427b8e3a1a9d0bcdc9d383a3377726ab",
+    "multipass_adjudicator.py": "843480d3853b20be37c85c2368e8161d029408e4678a0b4693266aa9e734270d",
+    "multipass_residual.py": "7548c521bee3e55c68daf190d3b78ac34fa57727dbc42f81e5857c246b77199e",
+    "test_multipass_residual.py": "405d024a9674abbd7f9d6deadf6220986f0f037f7df4c9b50403ffe716d9bf62",
+    "test_multipass_residual_benchmark.py": "8678a3f1331bf42ece95f9725335b6a0c789d95dd2935f1b916120b1200067f6"
+  },
+  "contract": "parser-studio.poc.multipass-residual-validation.v1",
+  "dictionary_attempted": false,
+  "full_suite": {
+    "discovered": 279,
+    "errors": 0,
+    "failures": 0,
+    "passed": 279,
+    "skipped": 0
+  },
+  "masking_optimization": false,
+  "max_residual_depth": 3,
+  "max_residual_windows": 64,
+  "parent_commit": "34ebad62d4cff605f1ec6f7b32baa59430cf2d3a",
+  "production_changed": false,
+  "runtime_is_acceptance_gate": false
+}

@@ -1,0 +1,123 @@
+{
+  "all_events": 72,
+  "baseline": {
+    "FN": 2160,
+    "FP": 0,
+    "TP": 0,
+    "events": 72,
+    "exact_events": 0,
+    "f1": 0.0,
+    "false_complete": 0,
+    "gold_fields": 2160,
+    "precision": null,
+    "raw_preserved": 72,
+    "recall": 0.0
+  },
+  "baseline_families": {
+    "nested_rfc5424_wrapper": {
+      "FN": 720,
+      "FP": 0,
+      "TP": 0,
+      "events": 24,
+      "exact_events": 0,
+      "f1": 0.0,
+      "false_complete": 0,
+      "gold_fields": 720,
+      "precision": null,
+      "raw_preserved": 24,
+      "recall": 0.0
+    },
+    "rfc3164_wrapper": {
+      "FN": 720,
+      "FP": 0,
+      "TP": 0,
+      "events": 24,
+      "exact_events": 0,
+      "f1": 0.0,
+      "false_complete": 0,
+      "gold_fields": 720,
+      "precision": null,
+      "raw_preserved": 24,
+      "recall": 0.0
+    },
+    "rfc5424_cee_wrapper": {
+      "FN": 720,
+      "FP": 0,
+      "TP": 0,
+      "events": 24,
+      "exact_events": 0,
+      "f1": 0.0,
+      "false_complete": 0,
+      "gold_fields": 720,
+      "precision": null,
+      "raw_preserved": 24,
+      "recall": 0.0
+    }
+  },
+  "candidate": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 2160,
+    "events": 72,
+    "exact_events": 72,
+    "f1": 1.0,
+    "false_complete": 0,
+    "gold_fields": 2160,
+    "precision": 1.0,
+    "raw_preserved": 72,
+    "recall": 1.0
+  },
+  "candidate_families": {
+    "nested_rfc5424_wrapper": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 720,
+      "events": 24,
+      "exact_events": 24,
+      "f1": 1.0,
+      "false_complete": 0,
+      "gold_fields": 720,
+      "precision": 1.0,
+      "raw_preserved": 24,
+      "recall": 1.0
+    },
+    "rfc3164_wrapper": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 720,
+      "events": 24,
+      "exact_events": 24,
+      "f1": 1.0,
+      "false_complete": 0,
+      "gold_fields": 720,
+      "precision": 1.0,
+      "raw_preserved": 24,
+      "recall": 1.0
+    },
+    "rfc5424_cee_wrapper": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 720,
+      "events": 24,
+      "exact_events": 24,
+      "f1": 1.0,
+      "false_complete": 0,
+      "gold_fields": 720,
+      "precision": 1.0,
+      "raw_preserved": 24,
+      "recall": 1.0
+    }
+  },
+  "contract": "parser-studio.poc.multipass-residual.v1",
+  "dictionary_attempted": false,
+  "evidence_class": "SELF_AUTHORED_SECURITY_RESIDUALS_NOT_VENDOR_ACCURACY",
+  "limitations": [
+    "Wrappers are self-authored security-envelope controls, not production captures.",
+    "Only independently encoded nested JSON body fields are scored.",
+    "Unknown wrapper text intentionally remains residual and PARTIAL."
+  ],
+  "masking_optimization": false,
+  "max_residual_depth": 3,
+  "native_verified": false,
+  "runtime_is_acceptance_gate": false
+}
