@@ -1,0 +1,357 @@
+{
+  "baseline_commit": "dc73fc83854383de89656f10e3bbb477769a9747",
+  "cisco_ise_comma_kv": {
+    "baseline_fields": 16,
+    "baseline_status": "PARTIAL",
+    "candidate_fields": 34,
+    "candidate_residual_bytes": 0,
+    "candidate_status": "SOURCE_PARSED",
+    "expected_kv_exact": true,
+    "kv_source_slices_exact": true,
+    "repeated_cisco_av_pair_occurrences": 2
+  },
+  "contract": "parser-studio.poc.generic-structural.v0.1",
+  "field_semantics_scored": false,
+  "frozen_oracle": {
+    "cases": [
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SECURITY_SYSLOG_ENVELOPE+CEF",
+        "case": "f5",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 24
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SYSLOG_RFC5424_ADJACENT_SD",
+        "case": "juniper_rfc5424",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 16
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SYSLOG_RFC5424+LEEF_2_IMPLICIT_TAB",
+        "case": "zscaler_leef",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 17
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SECURITY_SYSLOG_ENVELOPE+KV",
+        "case": "sophos_xg",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 14
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SECURITY_SYSLOG_ENVELOPE+CEF",
+        "case": "netskope_cef",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 18
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_STRUCTURAL+MIXED",
+        "case": "meraki_flow",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 12
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_BSD+MIXED",
+        "case": "watchguard_basic",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 25
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_BSD+MIXED",
+        "case": "juniper_legacy",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 20
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_STRUCTURAL+MIXED",
+        "case": "meraki_ids",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 16
+      },
+      {
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_STRUCTURAL+MIXED",
+        "case": "watchguard_proxy",
+        "exact": true,
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "oracle_status": "SOURCE_PARSED",
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 24
+      }
+    ],
+    "events": 10,
+    "exact_events": 10,
+    "span_metrics": {
+      "f1": 1.0,
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 186
+    }
+  },
+  "negative_controls": {
+    "controls": 7,
+    "false_complete": 0,
+    "rows": [
+      {
+        "false_complete": false,
+        "status": "RAW_ONLY",
+        "syntax": "UNKNOWN"
+      },
+      {
+        "false_complete": false,
+        "status": "RAW_ONLY",
+        "syntax": "UNKNOWN"
+      },
+      {
+        "false_complete": false,
+        "status": "RAW_ONLY",
+        "syntax": "LEEF"
+      },
+      {
+        "false_complete": false,
+        "status": "RAW_ONLY",
+        "syntax": "SYSLOG_RFC5424"
+      },
+      {
+        "false_complete": false,
+        "status": "PARTIAL",
+        "syntax": "BSD_SYSLOG+KV"
+      },
+      {
+        "false_complete": false,
+        "status": "PARTIAL",
+        "syntax": "BSD_SYSLOG+UNKNOWN"
+      },
+      {
+        "false_complete": false,
+        "status": "RAW_ONLY",
+        "syntax": "UNKNOWN"
+      }
+    ]
+  },
+  "pfsense_positional_csv": {
+    "baseline_status": "PARTIAL",
+    "candidate_fields": 35,
+    "candidate_residual_bytes": 0,
+    "candidate_status": "SOURCE_PARSED",
+    "candidate_syntax": "SYSLOG_RFC3164+GENERIC_POSITIONAL_CSV",
+    "span_sets_equal": true
+  },
+  "post_tuning_fresh_holdout": {
+    "baseline_incomplete_events": 2,
+    "baseline_incomplete_promoted_with_source_backing": 2,
+    "events": 6,
+    "qualified_complete_oracle_events": 4,
+    "qualified_exact_events": 4,
+    "rows": [
+      {
+        "all_extra_spans_nonempty_source_slices": true,
+        "baseline_incomplete_extra_spans": 4,
+        "baseline_status": "PARTIAL",
+        "candidate_improved_complete": true,
+        "candidate_residual_bytes": 0,
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_STRUCTURAL+MIXED",
+        "case": "meraki_vpnfirewall",
+        "f1": 0.714286,
+        "fn": 0,
+        "fp": 4,
+        "precision": 0.555556,
+        "recall": 1.0,
+        "tp": 5
+      },
+      {
+        "all_extra_spans_nonempty_source_slices": true,
+        "baseline_incomplete_extra_spans": 4,
+        "baseline_status": "PARTIAL",
+        "candidate_improved_complete": true,
+        "candidate_residual_bytes": 0,
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_STRUCTURAL+MIXED",
+        "case": "meraki_ipflow",
+        "f1": 0.777778,
+        "fn": 0,
+        "fp": 4,
+        "precision": 0.636364,
+        "recall": 1.0,
+        "tp": 7
+      },
+      {
+        "baseline_status": "SOURCE_PARSED",
+        "candidate_residual_bytes": 0,
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "GENERIC_STRUCTURAL+MIXED",
+        "case": "watchguard_noserial",
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "qualified_oracle_exact": true,
+        "recall": 1.0,
+        "tp": 23
+      },
+      {
+        "baseline_status": "SOURCE_PARSED",
+        "candidate_residual_bytes": 0,
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "KV",
+        "case": "sophos_modern",
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "qualified_oracle_exact": true,
+        "recall": 1.0,
+        "tp": 14
+      },
+      {
+        "baseline_status": "SOURCE_PARSED",
+        "candidate_residual_bytes": 0,
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SECURITY_SYSLOG_BRACKET_COLON_KV",
+        "case": "checkpoint_bracket",
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "qualified_oracle_exact": true,
+        "recall": 1.0,
+        "tp": 13
+      },
+      {
+        "baseline_status": "SOURCE_PARSED",
+        "candidate_residual_bytes": 0,
+        "candidate_status": "SOURCE_PARSED",
+        "candidate_syntax": "SECURITY_SYSLOG_ENVELOPE+KV",
+        "case": "fortigate_kv",
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "qualified_oracle_exact": true,
+        "recall": 1.0,
+        "tp": 4
+      }
+    ]
+  },
+  "recipe_synthesis": {
+    "exact_holdouts": 3,
+    "holdouts": 3,
+    "rows": [
+      {
+        "family": "meraki",
+        "holdout_exact": true,
+        "holdout_status": "SOURCE_PARSED",
+        "recipe": {
+          "envelope": "none",
+          "minimum_kv": 6,
+          "mode": "mixed",
+          "positional_allowed": true
+        }
+      },
+      {
+        "family": "watchguard",
+        "holdout_exact": true,
+        "holdout_status": "SOURCE_PARSED",
+        "recipe": {
+          "envelope": "bsd",
+          "minimum_kv": 2,
+          "mode": "mixed",
+          "positional_allowed": true
+        }
+      },
+      {
+        "family": "cisco_ise",
+        "holdout_exact": true,
+        "holdout_status": "SOURCE_PARSED",
+        "recipe": {
+          "envelope": "none",
+          "minimum_kv": 15,
+          "mode": "comma_kv",
+          "positional_allowed": true
+        }
+      }
+    ]
+  },
+  "residual_template": {
+    "alignment_status": "SOURCE_SPAN_CANDIDATE_ONLY",
+    "automatic_apply_allowed": false,
+    "available": true,
+    "candidate_variable_spans": 6,
+    "exact_variable_spans": true,
+    "expected_variable_spans": 6,
+    "generic_status": "RAW_ONLY",
+    "semantic_names_inferred": false,
+    "template": "%ASA-<NUMBER>-<NUMBER>: Deny udp src outside:<IP>/<NUMBER> dst inside:<IP>/<NUMBER>",
+    "template_match": true
+  },
+  "vendor_specific_modules_imported_by_candidate": false
+}
