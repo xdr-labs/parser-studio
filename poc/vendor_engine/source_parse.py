@@ -36,6 +36,9 @@ class ValueSpan:
     path:str
     start_byte:int
     end_byte:int
+    # Exact source JSON identity: string keys and integer array indices stay
+    # distinct even when their backward-compatible display paths collide.
+    source_segments:tuple[str|int,...]|None=None
 
 
 @dataclass
@@ -160,7 +163,8 @@ def parse_source(raw:str)->SourceEvent:
             base_bytes=len(raw[:body_start].encode("utf8"))
             event.value_spans.extend(
                 ValueSpan("body."+item.path,base_bytes+item.start_byte,
-                          base_bytes+item.end_byte)
+                          base_bytes+item.end_byte,
+                          ("body",)+item.source_segments if item.source_segments is not None else None)
                 for item in body.value_spans
             )
             event.covered.extend(
@@ -256,9 +260,12 @@ def parse_source(raw:str)->SourceEvent:
             # Every null, empty container and array remains in the tree.
             parsed.covered.append((0,len(raw)))
             event.primitive_fields=_leaf_count(root)
-            for path,(value,start,end) in decoder.nodes.items():
-                if path and not isinstance(value,(dict,list)):
-                    event.value_spans.append(_span(raw,path,start,end))
+            for segments,path,value,start,end in decoder.source_leaves:
+                # Keep the original typed tree and display aliases, but never
+                # use a flattened alias dictionary as a source-value ledger.
+                identity=segments if isinstance(root,dict) else ("$array",)+segments
+                span=_span(raw,path,start,end)
+                event.value_spans.append(ValueSpan(span.path,span.start_byte,span.end_byte,identity))
             if event.primitive_fields>len(event.value_spans):
                 event.issues.append("JSON_PATH_SPAN_COLLISION_OR_MISSING")
         elif mode:

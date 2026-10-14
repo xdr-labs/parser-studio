@@ -387,3 +387,28 @@ unparsed bytes. This confirms no regression on those eight familiar fixtures,
 not universal source extraction. New tests also cover bounded field count/input,
 malformed-tail preservation, literal single-letter keys and wrapped Syslog spans.
 No masking optimization, semantic mapping, UI or native compatibility work.
+
+
+## I. Lossless JSON source-path identities
+
+A flattened display path cannot distinguish literal `a.b` from nested `a/b`,
+literal `a[0]` from an array element, or an empty object key from the root. The
+JSON visitor now retains a separate ordered source-leaf ledger and exact typed
+path segments (string object keys versus integer array indices). The source
+adapter consumes this ledger instead of the colliding legacy alias dictionary.
+Original vendor trees and ordinary display paths are unchanged. Wrapped JSON
+prefixes preserve the logical segments and correctly shifted UTF-8 byte spans.
+
+Six new regression tests first failed, then passed after repair. On 128 deliberately
+unmasked synthetic JSON records /512 scalar leaves, the independently assembled
+byte-span reference reports 416 ->512 exact spans, zero false spans and 96 ->0
+missing spans. Complete-span records improve 32/128 ->128/128; original typed
+source trees and raw records remain exact in both versions. The new implementation
+also verifies all512 logical source identities; legacy identity availability is
+reported separately, not silently treated as equivalent. `source_segments` is the
+collision-free source identity; the display `path` remains an alias for compatibility.
+
+Duplicate JSON keys, malformed input and unsafe object-key protections remain in
+place. This is original source extraction, not a change to existing semantic-role
+alias behavior, Dictionary mapping, masking policy or native compiler qualification.
+These are purpose-built regressions rather than independent real-vendor accuracy.

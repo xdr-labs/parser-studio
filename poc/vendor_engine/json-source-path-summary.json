@@ -1,0 +1,51 @@
+{
+  "all_events": 128,
+  "baseline": {
+    "complete_span_events": 32,
+    "events": 128,
+    "exact_source_tree_events": 128,
+    "exact_span_FN": 96,
+    "exact_span_FP": 0,
+    "exact_span_TP": 416,
+    "expected_leaf_fields": 512,
+    "logical_identity_available_fields": 0,
+    "original_records_preserved": 128
+  },
+  "baseline_revision": "a5adbea429dd13f3a12e02143606b56235873fd7",
+  "candidate": {
+    "complete_span_events": 128,
+    "events": 128,
+    "exact_source_tree_events": 128,
+    "exact_span_FN": 0,
+    "exact_span_FP": 0,
+    "exact_span_TP": 512,
+    "expected_leaf_fields": 512,
+    "logical_identity_available_fields": 512,
+    "logical_identity_exact_fields": 512,
+    "original_records_preserved": 128
+  },
+  "candidate_module_sha256": {
+    "engine.py": "e654e7236123db68019f6929cdb61c87ad11d4a7a61ef5e1748e68ef156cb1de",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "34de798678e81642f8719f04d62524118eae937c86b9ef6c617089f1bfdffbe1"
+  },
+  "contract": "parser-studio.poc.json-source-identity-v0.1",
+  "corpus_sha256": "d9eb11e8630e902507b0554b76ae07e8fbdb8e8cf76d59dbd6ad2fe8890d1b5a",
+  "dictionary_attempted": false,
+  "evidence_class": "SYNTHETIC_UNMASKED_REGRESSION_NOT_REAL_VENDOR_HOLDOUT",
+  "excluded_events": 0,
+  "limitations": [
+    "Purpose-built key-collision cases, not unseen-vendor generalization.",
+    "Legacy display aliases remain compatible; only source_segments is collision-free identity.",
+    "Semantic role aliases and Dictionary mapping are not qualified by this change."
+  ],
+  "masked_events": 0,
+  "masking_optimized": false,
+  "measurement": "Source leaf byte-span coverage; exact logical source identities counted separately",
+  "native_verified": false,
+  "unassessed_events": 0,
+  "unmasked_events": 128
+}

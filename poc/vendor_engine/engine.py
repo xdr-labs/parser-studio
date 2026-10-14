@@ -104,7 +104,7 @@ class ParseResult:
 
 
 class SpanJsonDecoder:
-    """Bounded strict JSON visitor with exact original UTF-16-index spans.
+    """Bounded strict JSON visitor with exact original character-index spans.
 
     Python character offsets are converted to UTF-8 byte offsets in summary.
     Duplicate object keys are rejected. Strings and arrays are not regex-parsed.
@@ -113,6 +113,8 @@ class SpanJsonDecoder:
         self.raw=raw
         self.i=0
         self.nodes:dict[str,tuple[Any,int,int]]={}
+        # Lossless source identities coexist with legacy semantic aliases.
+        self.source_leaves:list[tuple[tuple[str|int,...],str,Any,int,int]]=[]
         self.count=0
 
     def whitespace(self) -> None:
@@ -120,7 +122,7 @@ class SpanJsonDecoder:
         while self.i<n and self.raw[self.i] in " \n\t\r":
             self.i+=1
 
-    def read(self, path: str="", depth:int=0) -> Any:
+    def read(self, path: str="", depth:int=0, source_segments:tuple[str|int,...]=()) -> Any:
         if depth>MAX_JSON_DEPTH or self.count>MAX_CAPTURED_FIELDS:
             raise ValueError("JSON_DEPTH_OR_FIELD_LIMIT")
         self.whitespace()
@@ -145,7 +147,7 @@ class SpanJsonDecoder:
                         raise ValueError("JSON_COLON_MISSING")
                     self.i+=1
                     sub=path+"."+key if path else key
-                    out[key]=self.read(sub,depth+1)
+                    out[key]=self.read(sub,depth+1,source_segments+(key,))
                     self.whitespace()
                     nxt=self.raw[self.i:self.i+1]
                     if nxt=="}":
@@ -163,7 +165,7 @@ class SpanJsonDecoder:
                 while True:
                     if len(out)>=MAX_CAPTURED_FIELDS:raise ValueError("JSON_ARRAY_LIMIT")
                     sub=f"{path}[{len(out)}]"
-                    out.append(self.read(sub,depth+1))
+                    out.append(self.read(sub,depth+1,source_segments+(len(out),)))
                     self.whitespace()
                     nxt=self.raw[self.i:self.i+1]
                     if nxt=="]":
@@ -177,6 +179,7 @@ class SpanJsonDecoder:
         self.i=end
         self.count+=1
         self.nodes[path]=(value,start,end)
+        self.source_leaves.append((source_segments,path,value,start,end))
         return value
 
     def parse(self) -> Any:

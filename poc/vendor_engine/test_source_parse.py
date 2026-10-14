@@ -74,12 +74,14 @@ class SourceSyntaxTests(unittest.TestCase):
         self.assertEqual(0,event.residual_bytes)
         assert_source_accounting(event)
 
-    def test_json_ambiguous_dotted_path_retains_tree_and_flags_missing_span(self):
+    def test_json_ambiguous_dotted_path_retains_tree_and_all_source_identities(self):
         raw='{"a.b":1,"a":{"b":2},"vendor":true}'
         event=parse_source(raw)
         self.assertEqual(json.loads(raw),event.vendor_fields)
-        self.assertIn("JSON_PATH_SPAN_COLLISION_OR_MISSING",event.issues)
-        self.assertEqual("PARTIAL",event.status)
+        self.assertNotIn("JSON_PATH_SPAN_COLLISION_OR_MISSING",event.issues)
+        self.assertEqual("SOURCE_PARSED",event.status)
+        self.assertEqual({("a.b",),("a","b"),("vendor",)},
+                         {x.source_segments for x in event.value_spans})
         self.assertEqual(0,event.residual_bytes)
         assert_source_accounting(event)
 
