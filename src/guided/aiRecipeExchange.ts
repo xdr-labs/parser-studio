@@ -20,9 +20,9 @@ export type AIPromptResult=
      currentProjectImportReady:boolean;rawLogsIncluded:false;automaticUpload:false}
  | {ok:false;reason:AIExchangeReason};
 export type AIImportResult=
- | {ok:true;candidate:ParserRecipeV2;
+ | {ok:true;candidate:ParserRecipeV2;baseline:ParserRecipeV2|null;
      report:{contract:'auto-parser.ai-import-review.v0.1';
-       status:'REVIEW_ONLY';changedStageCount:number;addedMappings:number;
+       status:'REVIEW_ONLY';mode:'BASELINE_EDIT'|'FULL_RECOVERY';changedStageCount:number;addedMappings:number;
        removedMappings:number;sampleEvents:number;backendCompilerAvailable:false;
        userApprovalRequired:true;rawLogsIncluded:false}}
  | {ok:false;reason:AIExchangeReason};
@@ -78,6 +78,8 @@ export async function createPrivacySafeAIPrompt(
 }
 const mapping=(stages:ReviewStage[])=>stages.filter(
  (x):x is Extract<ReviewStage,{op:'map_field'}>=>x.op==='map_field');
+const structuralStages=(stages:ReviewStage[])=>stages.filter(stage=>
+ stage.op!=='map_field'&&stage.op!=='cast_type');
 /** Import never applies changes. Exact source hash and current reviewed format are required. */
 export async function importReviewOnlyAIRecipe(
  text:string,source:string,draft:ParserDraft,suite:SuiteResult,
@@ -109,12 +111,89 @@ export async function importReviewOnlyAIRecipe(
  const length=Math.max(prior.length,proposed.length);
  let changed=0;
  for(let i=0;i<length;i++)if(JSON.stringify(prior[i])!==JSON.stringify(proposed[i]))changed++;
- return {ok:true,candidate:imported,report:{
-   contract:'auto-parser.ai-import-review.v0.1',status:'REVIEW_ONLY',
+ return {ok:true,candidate:imported,baseline:current.recipe,report:{
+   contract:'auto-parser.ai-import-review.v0.1',status:'REVIEW_ONLY',mode:'BASELINE_EDIT',
    changedStageCount:changed,addedMappings:added,removedMappings:removed,
    sampleEvents:imported.sample.events,backendCompilerAvailable:false,
    userApprovalRequired:true,rawLogsIncluded:false,
  }};
+}
+
+/** Import a full declarative recovery recipe when no compiler-ready baseline exists.
+ * Exact source identity, project identity and strict v0.2 stage validation are required.
+ */
+export async function importRecoveryAIRecipe(
+ text:string,source:string,draft:ParserDraft,suite:SuiteResult,
+):Promise<AIImportResult>{
+ if(typeof text!=='string'||new TextEncoder().encode(text).byteLength>MAX_RECIPE_BYTES)
+  return {ok:false,reason:'INPUT_TOO_LARGE'};
+ if(!verified(source,suite))return {ok:false,reason:'UNTRUSTED_PREVIEW'};
+ let value:unknown;
+ try{value=JSON.parse(text) as unknown;}catch{return {ok:false,reason:'INVALID_JSON'};}
+ if(!validateReviewableRecipe(value))return {ok:false,reason:'UNTRUSTED_RECIPE'};
+ const imported=value as ParserRecipeV2;
+ const opts=draft.guided??defaultGuidedOptions();
+ const expectedProject='draft-'+opts.slug;
+ const boundary=imported.stages[0]?.op==='split_event'?imported.stages[0].boundary:'single-line';
+ const records=splitEvents(source,boundary,MAX_EVENTS+1);
+ if(!records.length||records.length>MAX_EVENTS)return {ok:false,reason:'SOURCE_LIMIT'};
+ let sourceHash:string;
+ try{sourceHash=await digest(source);}catch{return {ok:false,reason:'UNTRUSTED_PREVIEW'};}
+ if(imported.projectId!==expectedProject||imported.sample.sha256!==sourceHash||
+    imported.sample.events!==records.length)
+  return {ok:false,reason:'SOURCE_IDENTITY_MISMATCH'};
+ const maps=mapping(imported.stages);
+ return {ok:true,candidate:imported,baseline:null,report:{
+   contract:'auto-parser.ai-import-review.v0.1',status:'REVIEW_ONLY',mode:'FULL_RECOVERY',
+   changedStageCount:imported.stages.length,addedMappings:maps.length,removedMappings:draft.mappings.length,
+   sampleEvents:records.length,backendCompilerAvailable:false,
+   userApprovalRequired:true,rawLogsIncluded:false,
+ }};
+}
+
+export type AIRecoveryProposal=
+ | {ok:true;candidate:ParserDraft;approvalRequired:true;backendCompilerVerified:false;replacement:'FULL_PARSER'}
+ | {ok:false;reason:'UNSUPPORTED_RECIPE'|'BACKEND_UNSUPPORTED'|'CLASSIFICATION_UNSUPPORTED'};
+const INDEX_TO_UI={session:'Session',threat:'Threat',syslog:'Syslog',winlogevent:'Winlogevent'} as const;
+/** Translate only the reviewed v0.2 operations that the current v0.1 backend can compile. */
+export function proposeV01RecoveryParserFromAI(imported:AIImportResult,draft:ParserDraft):AIRecoveryProposal{
+ const deny=(reason:Extract<AIRecoveryProposal,{ok:false}>['reason']):AIRecoveryProposal=>({ok:false,reason});
+ if(!imported.ok||imported.report.mode!=='FULL_RECOVERY')return deny('UNSUPPORTED_RECIPE');
+ const recipe=imported.candidate,opts=draft.guided??defaultGuidedOptions();
+ if(recipe.projectId!=='draft-'+opts.slug)return deny('UNSUPPORTED_RECIPE');
+ const maps=mapping(recipe.stages);
+ if(!maps.length)return deny('UNSUPPORTED_RECIPE');
+ const groups:Record<string,'top_fields'|'ns_fields'|'vendor_fields'>={};
+ const mappings=maps.map((item,index)=>{
+   const id='ai-recovery-'+String(index+1);groups[id]=item.group;
+   return {id,source:item.source,target:item.target,
+     type:(item.data_type==='date'?'timestamp':item.data_type) as ParserDraft['mappings'][number]['type']};
+ });
+ const classify=recipe.stages.find((s):s is Extract<ReviewStage,{op:'classify'}>=>s.op==='classify');
+ if(!classify)return deny('UNSUPPORTED_RECIPE');
+ const rules=[] as NonNullable<ParserDraft['guided']>['classification']['rules'];
+ for(const [index,rule] of classify.rules.entries()){
+   const mapped=maps.find(item=>item.target===rule.field&&item.group!=='vendor_fields');
+   if(!mapped)return deny('CLASSIFICATION_UNSUPPORTED');
+   rules.push({id:'ai-class-'+String(index+1),sourceField:mapped.source,equals:rule.value,
+     index:INDEX_TO_UI[rule.index]});
+ }
+ const split=recipe.stages[0];
+ if(split?.op!=='split_event')return deny('UNSUPPORTED_RECIPE');
+ const nextOpts={...opts,enrichment:undefined,eventBoundary:split.boundary,groups,
+   receiver:{...opts.receiver,
+     protocols:split.boundary==='blank-line'?['tcp' as const]:opts.receiver.protocols,
+     framing:split.boundary==='blank-line'?(recipe.sourceFormat==='java_stacktrace'?'blank_line_java' as const:'blank_line_json' as const):'newline' as const},
+   classification:{defaultIndex:INDEX_TO_UI[classify.defaultIndex],rules}};
+ const parseCsv=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_csv'}>=>s.op==='parse_csv');
+ const dispatch=recipe.stages.find((s):s is Extract<ReviewStage,{op:'dispatch_family'}>=>s.op==='dispatch_family');
+ const candidate:ParserDraft={...draft,format:recipe.sourceFormat,mappings,guided:nextOpts,
+   ...(recipe.sourceFormat==='csv'&&parseCsv?{csvColumns:parseCsv.columns.join(','),csvDelimiter:parseCsv.delimiter}:{}),
+   ...(recipe.sourceFormat==='mixed'&&dispatch?{mixedFormats:[...dispatch.families]}:{}),
+   ...(['syslog_rfc3164','syslog_rfc5424'].includes(recipe.sourceFormat)?
+     {syslogBodyFormat:recipe.bodyFormat as 'json'|'kv'|'cef'|'leef'}:{})};
+ if(!toBackendProject(candidate).ok)return deny('BACKEND_UNSUPPORTED');
+ return {ok:true,candidate,approvalRequired:true,backendCompilerVerified:false,replacement:'FULL_PARSER'};
 }
 
 /** Conservatively translate only ONE additive AI map_field to current v0.1.
@@ -130,8 +209,11 @@ export function proposeV01FieldMappingFromAI(
  imported:AIImportResult,source:string,draft:ParserDraft,suite:SuiteResult,
 ):AIFieldProposal{
  const deny=(reason:Extract<AIFieldProposal,{ok:false}>['reason']):AIFieldProposal=>({ok:false,reason});
- if(!imported.ok||!verified(source,suite))return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ if(!imported.ok||imported.report.mode!=='BASELINE_EDIT'||!imported.baseline||!verified(source,suite))
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const proposed=imported.candidate;
+ if(JSON.stringify(structuralStages(proposed.stages))!==JSON.stringify(structuralStages(imported.baseline.stages)))
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const old=toBackendProject(draft);
  if(!old.ok||old.project.projectId!==proposed.projectId)return deny('BACKEND_UNSUPPORTED');
  const oldMappings=draft.mappings;
@@ -177,4 +259,48 @@ export function proposeV01FieldMappingFromAI(
  if(!toBackendProject(result).ok)return deny('BACKEND_UNSUPPORTED');
  return {ok:true,candidate:result,source:candidateMap.source,
   target:candidateMap.target,approvalRequired:true,backendCompilerVerified:false};
+}
+
+export type AIMappingCorrectionProposal=
+ | {ok:true;candidate:ParserDraft;mappingId:string;approvalRequired:true;backendCompilerVerified:false;replacement:'ONE_MAPPING'}
+ | {ok:false;reason:'UNSUPPORTED_OPERATOR_CHANGE'|'NO_SINGLE_MAPPING_CHANGE'|'SOURCE_NOT_PRESENT'|'BACKEND_UNSUPPORTED'};
+/** Replace exactly one existing mapping while preserving parser grammar and all unrelated mappings. */
+export function proposeV01MappingCorrectionFromAI(
+ imported:AIImportResult,source:string,draft:ParserDraft,suite:SuiteResult,
+):AIMappingCorrectionProposal{
+ const deny=(reason:Extract<AIMappingCorrectionProposal,{ok:false}>['reason']):AIMappingCorrectionProposal=>({ok:false,reason});
+ if(!imported.ok||imported.report.mode!=='BASELINE_EDIT'||!imported.baseline||!verified(source,suite))
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ const shell=(stages:ReviewStage[])=>stages.filter(stage=>
+  stage.op!=='map_field'&&stage.op!=='cast_type'&&stage.op!=='classify');
+ if(JSON.stringify(shell(imported.candidate.stages))!==JSON.stringify(shell(imported.baseline.stages)))
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ const oldProject=toBackendProject(draft);
+ if(!oldProject.ok||oldProject.project.projectId!==imported.candidate.projectId)
+  return deny('BACKEND_UNSUPPORTED');
+ const before=mapping(imported.baseline.stages),after=mapping(imported.candidate.stages);
+ if(before.length!==draft.mappings.length||after.length!==before.length)return deny('NO_SINGLE_MAPPING_CHANGE');
+ const changed=after.map((item,index)=>JSON.stringify(item)!==JSON.stringify(before[index])?index:-1)
+  .filter(index=>index>=0);
+ if(changed.length!==1)return deny('NO_SINGLE_MAPPING_CHANGE');
+ const index=changed[0]!,next=after[index]!,prior=draft.mappings[index];
+ if(!prior)return deny('NO_SINGLE_MAPPING_CHANGE');
+ if(!suite.events.every(event=>{
+  if(!event.extracted)return false;
+  const item=lookupFieldValue(event.fields,next.source);
+  return item.found&&item.value!==undefined&&item.value!==null&&typeof item.value!=='object';
+ }))return deny('SOURCE_NOT_PRESENT');
+ const opts=draft.guided??defaultGuidedOptions();
+ const candidate:ParserDraft={...draft,mappings:draft.mappings.map((rule,i)=>i===index?{
+   ...rule,source:next.source,target:next.target,
+   type:(next.data_type==='date'?'timestamp':next.data_type) as typeof rule.type}:rule),
+  guided:{...opts,groups:{...opts.groups,[prior.id]:next.group}}};
+ const adapted=toBackendProject(candidate);
+ if(!adapted.ok)return deny('BACKEND_UNSUPPORTED');
+ const stagedClass=imported.candidate.stages.find((stage):stage is Extract<ReviewStage,{op:'classify'}>=>stage.op==='classify');
+ if(!stagedClass||JSON.stringify(stagedClass.rules)!==JSON.stringify(adapted.project.classification.rules)||
+    stagedClass.defaultIndex!==adapted.project.classification.defaultIndex)
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ return {ok:true,candidate,mappingId:prior.id,approvalRequired:true,
+   backendCompilerVerified:false,replacement:'ONE_MAPPING'};
 }

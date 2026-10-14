@@ -2,8 +2,8 @@ import {useEffect,useMemo,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowRight,ClipboardCopy,FileText,ShieldAlert} from 'lucide-react';
 import type {ParserDraft,SuiteResult} from '../model';
-import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
-  proposeV01FieldMappingFromAI,type AIImportResult} from './aiRecipeExchange';
+import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
+  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
 import {compareCandidate,type CandidateComparison} from './autoParserRegression';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
@@ -28,6 +28,9 @@ interface Props {
 const MAX_SAMPLE=64*1024;
 const MAX_REDACTED=4096;
 const MAX_RECIPE=32768;
+const completeSuite=(value:SuiteResult)=>value.counts.total>0&&
+  value.counts.matched===value.counts.total&&value.counts.extracted===value.counts.total&&
+  value.counts.normalized===value.counts.total&&value.counts.failures===0;
 
 /** The redacted example is typed and explicitly approved by the user.
  * Never insert raw logs from the Auto Parser source into the prompt.
@@ -43,21 +46,24 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   const [response,setResponse]=useState('');
   const [review,setReview]=useState<AIImportResult|null>(null);
   const [holdout,setHoldout]=useState('');
-  const [comparison,setComparison]=useState<{candidate:ParserDraft;value:CandidateComparison}|null>(null);
+  const [holdoutAttested,setHoldoutAttested]=useState(false);
+  const [candidateApproval,setCandidateApproval]=useState(false);
+  const [comparison,setComparison]=useState<{candidate:ParserDraft;value:CandidateComparison;qualified:boolean}|null>(null);
   const [notice,setNotice]=useState('');
   const [busy,setBusy]=useState(false);
   const [context,setContext]=useState<{
     sample:string;draft:ParserDraft;suite:SuiteResult;
   }|null>(null);
-  const [generated,setGenerated]=useState<GeneratedPair|null>(null);
+  const [generated,setGenerated]=useState<{pair:GeneratedPair;draft:ParserDraft}|null>(null);
   const sourceKey=useMemo(()=>JSON.stringify([sample,draft]),[sample,draft]);
   useEffect(()=>{
     setPrompt('');setPromptError('');setCopied(false);setReview(null);
     setComparison(null);setNotice('');setContext(null);setGenerated(null);
+    setHoldoutAttested(false);setCandidateApproval(false);
   },[sourceKey]);
   useEffect(()=>{
     setPrompt('');setCopied(false);setReview(null);setComparison(null);
-    setNotice('');setContext(null);setGenerated(null);
+    setNotice('');setContext(null);setGenerated(null);setHoldoutAttested(false);setCandidateApproval(false);
   },[goal,redacted,consent]);
 
   async function prepare(){
@@ -96,20 +102,20 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         '----- BEGIN REVIEWED REDACTED LOG EXAMPLES -----',
         redacted.trim(),
         '----- END REVIEWED REDACTED LOG EXAMPLES -----',
-        'Return exactly one JSON ParserRecipe v0.2 matching the validated baseline',
-        'or clearly explain if the grammar is not representable.',
-        'Only one additional safe field mapping is compilable in this path;',
-        'otherwise keep the unchanged baseline recipe for verification.',
+        'Return exactly one JSON ParserRecipe v0.2 when the reviewed examples are representable by the supported declarative grammar.',
         'Never return Ruby, executable Regex, JSONata, external calls or unverifiable operations.',
         ...(baseline.ok?[
           'Use this structurally valid current JSON recipe as your baseline.',
           'Preserve its projectId, sample SHA, event count, family and stage order.',
+          'Only one additional safe field mapping may change this established parser; otherwise keep the baseline unchanged.',
           '----- BEGIN CANONICAL PARSER RECIPE JSON -----',
           JSON.stringify(baseline.recipe,null,2),
           '----- END CANONICAL PARSER RECIPE JSON -----',
         ]:[
-          'The current log grammar is outside the reviewed native compiler subset.',
-          'Explain which format support is missing; do not invent a compilable parser.',
+          'No compiler-ready baseline exists. You may propose a FULL_RECOVERY recipe only when the reviewed examples fit one supported grammar:',
+          'JSON, strict key/value, CSV with explicit columns, CEF, LEEF, bounded RFC3164/RFC5424 with a supported body, mixed allowlisted families, or bounded Java stack traces.',
+          `Use projectId draft-${(next.guided??draft.guided)?.slug??'demo_firewall'} and preserve the exact source SHA and event count from the metadata above.`,
+          'Use only declarative stages accepted by ParserRecipe v0.2. If the format requires arbitrary Regex, Grok, scripting, or guessed semantics, explain that it is unsupported instead of inventing a recipe.',
         ]),
         'Return only your JSON recipe, with nativeVerified and targetVerified false.',
       ].join('\n');
@@ -127,23 +133,35 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     if(!context||context.sample!==sample||pending||busy||!response.trim())return;
     setBusy(true);setReview(null);setComparison(null);setGenerated(null);setNotice('');
     try{
-      const result=await importReviewOnlyAIRecipe(response,sample,context.draft,context.suite);
-      setReview(result);
+      let result=await importReviewOnlyAIRecipe(response,sample,context.draft,context.suite);
+      if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
+        result=await importRecoveryAIRecipe(response,sample,context.draft,context.suite);
+      setReview(result);setHoldoutAttested(false);setCandidateApproval(false);
       if(!result.ok)setNotice('AI response rejected: '+result.reason+'. No parser rules changed.');
+      else if(result.report.mode==='FULL_RECOVERY')
+        setNotice('Full recovery candidate accepted for local verification only. The current parser has not changed.');
     }catch{setNotice('The AI response could not be validated. No rules changed.');}
     finally{setBusy(false);}
   }
   async function compareMapping(){
     if(!context||context.sample!==sample||!review||!review.ok||!holdout.trim()||busy||pending)return;
+    if(!holdoutAttested){
+      setNotice('Confirm that the holdout events were not used to create, tune, or select this AI proposal.');return;
+    }
     if(new TextEncoder().encode(holdout).byteLength>MAX_SAMPLE){
       setNotice('Holdout input exceeds the local 64 KiB limit.');return;
     }
-    const proposal=proposeV01FieldMappingFromAI(review,sample,context.draft,context.suite);
+    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
+    if(review.report.mode==='FULL_RECOVERY')proposal=proposeV01RecoveryParserFromAI(review,context.draft);
+    else{
+      const additive=proposeV01FieldMappingFromAI(review,sample,context.draft,context.suite);
+      proposal=additive.ok?additive:proposeV01MappingCorrectionFromAI(review,sample,context.draft,context.suite);
+    }
     if(!proposal.ok){
       setNotice('The proposed grammar cannot be translated into a supported parser: '+proposal.reason);
       return;
     }
-    setBusy(true);setComparison(null);setNotice('');
+    setBusy(true);setComparison(null);setCandidateApproval(false);setNotice('');
     try{
       const [candidate,baselineHoldout,candidateHoldout]=await Promise.all([
         runPreview(proposal.candidate,sample),
@@ -152,30 +170,34 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       ]);
       const result=compareCandidate({source:sample,baseline:context.suite,candidate,
         holdout:{source:holdout,baseline:baselineHoldout,candidate:candidateHoldout}});
-      setComparison({candidate:proposal.candidate,value:result});
-      if(!result.acceptedWithoutRegression)setNotice('The proposed mapping failed regression. Existing rules are unchanged.');
+      const qualified=result.acceptedWithoutRegression&&result.holdoutStatus==='TESTED'&&
+        completeSuite(candidate)&&completeSuite(candidateHoldout);
+      setComparison({candidate:proposal.candidate,value:result,qualified});
+      if(!qualified)setNotice('The AI candidate failed full-sample, independent holdout, or regression verification. Existing rules are unchanged.');
+      else setNotice(review.report.mode==='FULL_RECOVERY'?
+        'Full recovery candidate passed local source, independent holdout, and no-regression checks. Explicit approval is still required.':
+        'Suggested mapping passed local source, independent holdout, and no-regression checks. Explicit approval is still required.');
     }catch{setNotice('Holdout regression could not be verified; existing parser rules remain unchanged.');}
     finally{setBusy(false);}
   }
   async function generateVerifiedDraft(){
     if(!context||context.sample!==sample||!review?.ok||pending||busy)return;
-    const baseline=await buildReviewableRecipe(sample,context.draft,context.suite);
-    if(!baseline.ok){setNotice('No validated baseline is available. No files generated.');return;}
-    const unchanged=JSON.stringify(baseline.recipe)===JSON.stringify(review.candidate);
-    if(!unchanged&&(!comparison?.value.acceptedWithoutRegression||
-       comparison.value.holdoutStatus!=='TESTED')){
-      setNotice('Changed rules require an independent holdout with zero regressions and your explicit approval.');
+    const recovery=review.report.mode==='FULL_RECOVERY';
+    const baseline=recovery?null:await buildReviewableRecipe(sample,context.draft,context.suite);
+    if(!recovery&&(!baseline||!baseline.ok)){setNotice('No validated baseline is available. No files generated.');return;}
+    const unchanged=!recovery&&baseline?.ok&&JSON.stringify(baseline.recipe)===JSON.stringify(review.candidate);
+    if(!unchanged&&(!comparison?.qualified||comparison.value.holdoutStatus!=='TESTED'||!candidateApproval)){
+      setNotice('Changed or recovered rules require an independent holdout with zero regressions and your explicit approval.');
       return;
     }
     const candidate=unchanged?context.draft:comparison!.candidate;
     setBusy(true);setGenerated(null);setNotice('');
     try{
       const local=await runPreview(candidate,sample);
-      if(local.counts.total===0||local.counts.normalized!==local.counts.total||
-        local.counts.extracted!==local.counts.total||local.counts.failures!==0)
+      if(!completeSuite(local))
         throw new Error('The complete sample did not pass local parsing and normalization.');
       const adapted=toBackendProject(candidate);
-      if(!adapted.ok)throw new Error('The proposed mapping cannot be represented by the current backend.');
+      if(!adapted.ok)throw new Error('The proposed parser cannot be represented by the current backend.');
       const cap=await fetchBackendCapabilities();
       assertBackendProjectSupported(adapted.project,cap);
       const validated=await validateBackendProject(adapted.project);
@@ -188,7 +210,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       await compileReviewedRecipeV02({
         recipe:review.candidate,legacyProject:adapted.project,
       },pair);
-      setGenerated(pair);
+      setGenerated({pair,draft:candidate});
       setNotice('DRAFT Ruby and CONF files verified against the real backend and exact v0.2 SHA receipts. No target changed.');
     }catch{
       setNotice('The AI proposal did not pass supported generation, schema or SHA verification. No files were released.');
@@ -258,45 +280,56 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           code are not accepted. Unsupported operations remain review-only.</p>
         <textarea aria-label="ChatGPT pasted recipe" rows={8} maxLength={MAX_RECIPE}
           spellCheck={false} value={response} onChange={e=>{
-            setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setNotice('');
+            setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setNotice('');setHoldoutAttested(false);setCandidateApproval(false);
           }} placeholder="Paste the ParserRecipe v0.2 JSON response here."/>
         <button type="button" disabled={!response.trim()||!context||pending||busy}
           onClick={()=>{void validate();}}>Validate AI Result</button>
         {notice&&<p role="status" className="auto-parser-note">{notice}</p>}
         {review?.ok&&<div aria-label="ChatGPT validated recipe" className="auto-parser-result">
-          <strong>REVIEW ONLY · {review.report.sampleEvents} events linked to source</strong>
+          <strong>REVIEW ONLY · {review.report.sampleEvents} events linked to source · {review.report.mode==='FULL_RECOVERY'?'Full parser recovery':'Baseline-safe edit'}</strong>
           <span>{review.report.addedMappings} suggested mappings ·
             {review.report.changedStageCount} changed stages</span>
           <span>AI does not prove Fluentd or Stellar Cyber compatibility.
-            Unchanged reviewed recipes can be generated directly. Exactly one additive
-            compatible mapping requires an independent holdout and your approval.</span>
+            Unchanged reviewed recipes can be generated directly. Any changed mapping or full recovery
+            requires an independent holdout, full local parsing, and explicit approval.</span>
           <label>Independent holdout log events (not used for the AI proposal)
             <textarea aria-label="ChatGPT independent holdout logs" rows={4}
               maxLength={MAX_SAMPLE} value={holdout} onChange={e=>{
-                setHoldout(e.target.value);setComparison(null);setGenerated(null);
+                setHoldout(e.target.value);setHoldoutAttested(false);setCandidateApproval(false);setComparison(null);setGenerated(null);
               }}/>
           </label>
-          {!baselineUnchanged&&<button type="button" disabled={!holdout.trim()||busy||pending}
-            onClick={()=>{void compareMapping();}}>Test Suggested Mapping</button>}
+          {!baselineUnchanged&&<label className="auto-parser-persist-label">
+            <input type="checkbox" aria-label="Confirm ChatGPT holdout independence"
+              checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setCandidateApproval(false);setComparison(null);}}/>
+            I confirm these holdout events were not used to create, tune, or select this AI proposal.
+          </label>}
+          {!baselineUnchanged&&<button type="button" disabled={!holdout.trim()||!holdoutAttested||busy||pending}
+            onClick={()=>{void compareMapping();}}>{review.report.mode==='FULL_RECOVERY'?'Test Full Recovery Candidate':'Test Suggested Mapping'}</button>}
           {comparison&&<div role="status">
             <span>Prior positives protected: {comparison.value.acceptedWithoutRegression?'YES':'NO'}</span>
             <span>Holdout tested: {comparison.value.holdoutStatus}</span>
-            <span>Regressions must be zero before files are generated.</span>
+            <span>Full source + holdout qualification: {comparison.qualified?'PASS':'FAILED'}</span>
           </div>}
+          {!baselineUnchanged&&comparison?.qualified&&<label className="auto-parser-persist-label">
+            <input type="checkbox" aria-label="Approve verified ChatGPT parser candidate"
+              checked={candidateApproval} onChange={e=>setCandidateApproval(e.target.checked)}/>
+            {review.report.mode==='FULL_RECOVERY'?
+              'I approve replacing the current unverified parser draft with this fully checked recovery candidate.':
+              'I approve applying this verified parser change. Existing unrelated rules remain unchanged.'}
+          </label>}
           <button type="button" className="auto-parser-primary"
-            disabled={busy||pending||(!baselineUnchanged&&
-              (!comparison?.value.acceptedWithoutRegression||comparison.value.holdoutStatus!=='TESTED'))}
+            disabled={busy||pending||(!baselineUnchanged&&(!comparison?.qualified||!candidateApproval))}
             onClick={()=>{void generateVerifiedDraft();}}>
             {busy?'Validating…':'Approve & Generate Ruby + CONF DRAFT Files'} <ArrowRight size={15}/>
           </button>
           {generated&&<div className="auto-parser-download"
              aria-label="ChatGPT generated DRAFT pair">
             <strong>Two SHA-verified DRAFT files · Native and target NOT VERIFIED</strong>
-            {generated.files.map(file=><button type="button" key={file.name}
+            {generated.pair.files.map(file=><button type="button" key={file.name}
               onClick={()=>download(file.name,file.content)}>
               <FileText size={15}/> Download {file.name}</button>)}
             <button type="button" onClick={()=>{
-              if(context)setDraft(context.draft);
+              setDraft(generated.draft);
               onAutoParser();
             }}>Review in Auto Parser</button>
           </div>}

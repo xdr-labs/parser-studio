@@ -1,11 +1,11 @@
 import {describe,it,expect,beforeEach,afterEach,vi} from 'vitest';
-import {webcrypto} from 'node:crypto';
+import {createHash,webcrypto} from 'node:crypto';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {toBackendProject} from './backendAdapter';
-import {createPrivacySafeAIPrompt,importReviewOnlyAIRecipe,
- proposeV01FieldMappingFromAI} from './aiRecipeExchange';
+import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
+ proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
 
 const source=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"name":"PRIVATE_ACCOUNT"}',
@@ -89,6 +89,63 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
    stages:changedClass}),source,draft,suite());
   expect(proposeV01FieldMappingFromAI(other,source,draft,suite()))
    .toMatchObject({ok:false,reason:'UNSUPPORTED_OPERATOR_CHANGE'});
+ });
+ it('corrects exactly one existing mapping while preserving parser grammar and unrelated rules',async()=>{
+  const original=await buildReviewableRecipe(source,draft,suite());
+  if(!original.ok)throw new Error('Expected supported original');
+  const stages=original.recipe.stages.map(stage=>{
+   if(stage.op==='map_field'&&stage.source==='src_ip')return {...stage,target:'custom.source_address'};
+   if(stage.op==='cast_type'&&stage.target==='custom.source_ip')return {...stage,target:'custom.source_address'};
+   return stage;
+  });
+  const imported=await importReviewOnlyAIRecipe(JSON.stringify({...original.recipe,stages}),source,draft,suite());
+  expect(imported).toMatchObject({ok:true,report:{mode:'BASELINE_EDIT',addedMappings:1,removedMappings:1}});
+  expect(proposeV01FieldMappingFromAI(imported,source,draft,suite()))
+   .toMatchObject({ok:false,reason:'NO_SINGLE_SAFE_MAPPING'});
+  const corrected=proposeV01MappingCorrectionFromAI(imported,source,draft,suite());
+  expect(corrected).toMatchObject({ok:true,mappingId:'source-ip',replacement:'ONE_MAPPING'});
+  if(!corrected.ok)return;
+  expect(corrected.candidate.mappings).toEqual([
+   {...draft.mappings[0]!,target:'custom.source_address'},draft.mappings[1],draft.mappings[2],
+  ]);
+  const local=preview(source,corrected.candidate);
+  expect(local.counts).toMatchObject({total:2,matched:2,extracted:2,normalized:2,failures:0});
+  const exact=await buildReviewableRecipe(source,corrected.candidate,local);
+  expect(exact.ok).toBe(true);
+  if(exact.ok)expect(exact.recipe).toEqual({...original.recipe,stages});
+ });
+ it('recovers an auto-RAW two-column CSV into a fully reviewable compiler-supported parser',async()=>{
+  const raw='allow,198.51.100.10\ndeny,203.0.113.4';
+  const auto=createDraft(),baseline=preview(raw,auto);
+  expect(baseline.counts.extracted).toBe(0);
+  const hash=createHash('sha256').update(raw).digest('hex');
+  const recovery={
+   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+   projectId:'draft-demo_firewall',sourceFormat:'csv',bodyFormat:'csv',
+   sample:{sha256:hash,events:2},nativeVerified:false,targetVerified:false,
+   stages:[
+    {op:'split_event',boundary:'single-line'},
+    {op:'parse_csv',columns:['action','src_ip'],delimiter:','},
+    {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+    {op:'map_field',source:'src_ip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
+    {op:'cast_type',target:'custom.source_ip',data_type:'ip'},
+    {op:'classify',defaultIndex:'syslog',rules:[]},
+    {op:'fallback_unparsed',mode:'retain_unparsed'},
+   ],
+  };
+  expect(await importReviewOnlyAIRecipe(JSON.stringify(recovery),raw,auto,baseline))
+   .toMatchObject({ok:false,reason:'CURRENT_RECIPE_UNAVAILABLE'});
+  const imported=await importRecoveryAIRecipe(JSON.stringify(recovery),raw,auto,baseline);
+  expect(imported).toMatchObject({ok:true,report:{mode:'FULL_RECOVERY',addedMappings:2}});
+  const proposal=proposeV01RecoveryParserFromAI(imported,auto);
+  expect(proposal).toMatchObject({ok:true,replacement:'FULL_PARSER',approvalRequired:true});
+  if(!proposal.ok)return;
+  expect(proposal.candidate).toMatchObject({format:'csv',csvColumns:'action,src_ip'});
+  const recovered=preview(raw,proposal.candidate);
+  expect(recovered.counts).toMatchObject({total:2,matched:2,extracted:2,normalized:2,failures:0});
+  const rebuilt=await buildReviewableRecipe(raw,proposal.candidate,recovered);
+  expect(rebuilt.ok).toBe(true);
+  if(rebuilt.ok)expect(rebuilt.recipe).toEqual(recovery);
  });
  it('enforces the exact source identity, sample count, valid format, and user-edited draft',async()=>{
   const built=await buildReviewableRecipe(source,draft,suite());
