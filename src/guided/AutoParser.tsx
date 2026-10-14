@@ -33,6 +33,7 @@ import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './mu
 import AutoParserResultTools from './AutoParserResultTools';
 import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
+import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 
@@ -512,6 +513,9 @@ export default function AutoParser({
      setSample(value);setDatasetName(file.name);setSelected(0);setStep(0);
    }catch{setMessage('Only bounded, valid UTF-8 text files can be opened locally.');}
  }
+ function restoreExistingProject(next:ParserDraft,label:string){
+   setDraft(next);setSample('');setDatasetName(label);setSelected(0);setStep(0);
+ }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
   const original=sample;setMultiPass(null);setSelectedMultiPass(null);setMultiPassNotice('');setMultiPassBusy(true);
@@ -674,6 +678,7 @@ export default function AutoParser({
        </div>}
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
+       <ExistingParserReviewPanel onRestore={restoreExistingProject}/>
        <details className="auto-parser-recipe" aria-label="Local logical boundary review">
          <summary>Optional · Review multiline log boundaries (browser only)</summary>
          <p>Preview potential multiline JSON objects and Java stack traces using
