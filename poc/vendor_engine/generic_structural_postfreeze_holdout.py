@@ -122,6 +122,34 @@ def run()->dict:
                 subset=baseline_spans<=candidate_spans
                 stats['promoted_baseline_span_subset']+=subset
                 total['promoted_baseline_span_subset']+=subset
+                candidate_nonempty=[
+                    (span.start_byte,span.end_byte)
+                    for span in candidate.value_spans
+                    if span.start_byte<span.end_byte
+                ]
+                for span in baseline.value_spans:
+                    key=(span.start_byte,span.end_byte)
+                    if key in candidate_spans:
+                        continue
+                    stats['promoted_missing_occurrences']+=1
+                    total['promoted_missing_occurrences']+=1
+                    stable=span.source_segments is not None
+                    stats['promoted_missing_stable_source_segments']+=stable
+                    total['promoted_missing_stable_source_segments']+=stable
+                    if span.start_byte==span.end_byte:
+                        stats['promoted_missing_zero_length']+=1
+                        total['promoted_missing_zero_length']+=1
+                        continue
+                    stats['promoted_missing_nonempty']+=1
+                    total['promoted_missing_nonempty']+=1
+                    overlaps=any(
+                        max(span.start_byte,a)<min(span.end_byte,b)
+                        for a,b in candidate_nonempty
+                    )
+                    stats['promoted_missing_nonempty_overlap_candidate']+=overlaps
+                    total['promoted_missing_nonempty_overlap_candidate']+=overlaps
+                    stats['promoted_missing_nonempty_disjoint_candidate']+=not overlaps
+                    total['promoted_missing_nonempty_disjoint_candidate']+=not overlaps
     total['candidate_complete_rate_ppm']=round(
         1_000_000*total['candidate_SOURCE_PARSED']/total['events']
     )

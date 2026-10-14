@@ -119,6 +119,15 @@ Descriptively, the two non-overlapping corpora contain **1,656 events across
 15 product-family labels**. The post-freeze set is the stronger evidence
 because the parser was frozen before its selection.
 
+## Regression gate
+
+- Dedicated post-freeze holdout acceptance: **3 / 3 PASS**.
+- Full `vendor_engine` discovery including the large and post-freeze
+  qualification tests: **348 tests OK**.
+- Failures: **0**.
+- Errors: **0**.
+- Skips: **1**, the pre-existing optional Spell dependency check.
+
 ## Decision
 
 The post-freeze holdout strengthens the architecture decision:
