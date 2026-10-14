@@ -58,6 +58,7 @@ test.describe('approved offline evidence after run recovery; no target sender',(
     await page.reload();
     await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
     await expect(page.getByLabel('Authorized Test Lab offline evidence')).toHaveCount(0);
+    await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
     const recovery=page.getByLabel('Authorized Test Lab session recovery');
     await recovery.locator('summary').click();
     await recovery.getByLabel('Existing authorized Test Lab run ID').fill(runId);

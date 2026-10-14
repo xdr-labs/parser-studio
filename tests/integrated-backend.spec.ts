@@ -923,6 +923,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
     await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
     expect(requests).toEqual([]);
+    await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
     const panel=page.getByLabel('Authorized Test Lab session recovery');
     await panel.locator('summary').click();
     const button=panel.getByRole('button',{name:'Look Up My Authorized Run'});
@@ -986,6 +987,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
         body:JSON.stringify({...valid,runId:'test_run_'+'f'.repeat(32)})});
     });
     await page.goto('/');
+    await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
     const panel=page.getByLabel('Authorized Test Lab session recovery');
     await panel.locator('summary').click();
     const input=panel.getByLabel('Existing authorized Test Lab run ID');
@@ -1026,6 +1028,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
         })});
     });
     await page.goto('/');
+    await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
     const panel=page.getByLabel('Authorized Test Lab session recovery');
     await panel.locator('summary').click();
     const input=panel.getByLabel('Existing authorized Test Lab run ID');
@@ -1057,6 +1060,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
         })});
     });
     await page.goto('/?workspace=chatgpt');
+    await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
     const panel=page.getByLabel('Authorized Test Lab session recovery');
     await panel.locator('summary').click();
     await panel.getByLabel('Existing authorized Test Lab run ID').fill(runId);

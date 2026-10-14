@@ -174,6 +174,10 @@ export default function App(){
         </div>
         <div className="topbar-actions">
           <span className="context-flag"><span className="status-dot"/> Browser-private samples</span>
+          <button type="button" className="button secondary" aria-pressed={advanced}
+            onClick={()=>setAdvanced(value=>!value)}>
+            {advanced?'Hide Tools':'Tools & Diagnostics'}
+          </button>
           <button type="button" className="button secondary" onClick={reset}>
             <Plus size={16}/> New Parser
           </button>
