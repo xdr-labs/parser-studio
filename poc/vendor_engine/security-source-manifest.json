@@ -1,0 +1,202 @@
+{
+  "contract": "parser-studio.poc.security-source-corpus.v1",
+  "fixtures": [
+    {
+      "bytes": 4638,
+      "cache_path": "security_sources/aws_waf.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 5,
+      "id": "aws_waf",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "8852f05a2e00c1e03ed698e5a292dc13c03cb7464e7408cd3eb8c6065ce9dbf4",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/aws/data_stream/waf/_dev/test/pipeline/test-waf.log"
+    },
+    {
+      "bytes": 18716,
+      "cache_path": "security_sources/suricata_alert.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 22,
+      "id": "suricata_alert",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "9b85e83c8db440cad6811ba77faf2b2081cf514568eba1ddb0869028a334377d",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-alerts.log"
+    },
+    {
+      "bytes": 2046,
+      "cache_path": "security_sources/suricata_v6.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 3,
+      "id": "suricata_v6",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "632b6be798370bb1d2a311ca2714e25f3abda89072c8458e303a9dba47e0eb0e",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-6-0.log"
+    },
+    {
+      "bytes": 1222,
+      "cache_path": "security_sources/suricata_metadata.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 1,
+      "id": "suricata_metadata",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "6077f80532b0c9e3cec3ccae1ae94e32b80f70257ae746d41596c6b9944a961f",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-metadata.log"
+    },
+    {
+      "bytes": 11240,
+      "cache_path": "security_scope/suricata_dns.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 24,
+      "id": "suricata_dns",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "976c8df46922da787acecfd9b13ec62aa5dc9eebc62ef0faf234a0830c5cc7a1",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-dns-4-1-4.log"
+    },
+    {
+      "bytes": 9253,
+      "cache_path": "security_scope/suricata_mixed.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 14,
+      "id": "suricata_mixed",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "8e414e50831f96340502f0cf52d2983dfe0fd64f87db2377c5c10126b38cec15",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-small.log"
+    },
+    {
+      "bytes": 511,
+      "cache_path": "security_scope/suricata_tls_empty_issuer.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 1,
+      "id": "suricata_tls_empty_issuer",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "af0a6b6938c4329ac2932d198926713d2320a1d9e5e42b38bcbca9bd15b4d395",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-issuerdn.log"
+    },
+    {
+      "bytes": 663,
+      "cache_path": "security_scope/suricata_tls_empty_subject.raw",
+      "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+      "expected_physical_lines": 1,
+      "id": "suricata_tls_empty_subject",
+      "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+      "repository": "elastic/integrations",
+      "sha256": "ec390fe1a57e386804f8df361893574b3481464183994fff8e32ba60580058ec",
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION",
+      "source_path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-tls-empty-subject.log"
+    },
+    {
+      "bytes": 1454,
+      "cache_path": "security_scope/aws_waf_official_01.raw",
+      "commit": null,
+      "expected_physical_lines": 57,
+      "framing": "SINGLE_MULTILINE_JSON_OBJECT",
+      "id": "aws_waf_official_01",
+      "license_status": "LOCAL_DOCUMENTATION_REVIEW_ONLY_NO_RAW_REDISTRIBUTION",
+      "repository": null,
+      "sha256": "491eeaadebcc5219c7bc3809be69bbd1c227867eced22924ac3e250ba61cfdd0",
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC",
+      "source_path": "logging-examples.html / JSON preformatted example",
+      "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+    },
+    {
+      "bytes": 1318,
+      "cache_path": "security_scope/aws_waf_official_02.raw",
+      "commit": null,
+      "expected_physical_lines": 47,
+      "framing": "SINGLE_MULTILINE_JSON_OBJECT",
+      "id": "aws_waf_official_02",
+      "license_status": "LOCAL_DOCUMENTATION_REVIEW_ONLY_NO_RAW_REDISTRIBUTION",
+      "repository": null,
+      "sha256": "08ef7e7982247d4962e8405609fef71a4b45c5c4abd04b1237f12a25acd117ac",
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC",
+      "source_path": "logging-examples.html / JSON preformatted example",
+      "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+    },
+    {
+      "bytes": 1904,
+      "cache_path": "security_scope/aws_waf_official_03.raw",
+      "commit": null,
+      "expected_physical_lines": 65,
+      "framing": "SINGLE_MULTILINE_JSON_OBJECT",
+      "id": "aws_waf_official_03",
+      "license_status": "LOCAL_DOCUMENTATION_REVIEW_ONLY_NO_RAW_REDISTRIBUTION",
+      "repository": null,
+      "sha256": "97cd3c7371d36889b769c9feaaaa8c69e28a6123eddbfa7e238f3b4ddd84c72f",
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC",
+      "source_path": "logging-examples.html / JSON preformatted example",
+      "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+    },
+    {
+      "bytes": 1065,
+      "cache_path": "security_scope/aws_waf_official_04.raw",
+      "commit": null,
+      "expected_physical_lines": 42,
+      "framing": "SINGLE_MULTILINE_JSON_OBJECT",
+      "id": "aws_waf_official_04",
+      "license_status": "LOCAL_DOCUMENTATION_REVIEW_ONLY_NO_RAW_REDISTRIBUTION",
+      "repository": null,
+      "sha256": "b4cf782a275b9450ff602c2cd485493e0d7a881c4eaeb11c759a6f85423d4692",
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC",
+      "source_path": "logging-examples.html / JSON preformatted example",
+      "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+    },
+    {
+      "bytes": 3322,
+      "cache_path": "security_scope/aws_waf_official_05.raw",
+      "commit": null,
+      "expected_physical_lines": 122,
+      "framing": "SINGLE_MULTILINE_JSON_OBJECT",
+      "id": "aws_waf_official_05",
+      "license_status": "LOCAL_DOCUMENTATION_REVIEW_ONLY_NO_RAW_REDISTRIBUTION",
+      "repository": null,
+      "sha256": "e9bfe3e51b0b6aa66e091bc718f0972c1d0d11884312ce48b44895749ac27f59",
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC",
+      "source_path": "logging-examples.html / JSON preformatted example",
+      "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+    },
+    {
+      "bytes": 2611,
+      "cache_path": "security_scope/aws_waf_official_06.raw",
+      "commit": null,
+      "expected_physical_lines": 100,
+      "framing": "SINGLE_MULTILINE_JSON_OBJECT",
+      "id": "aws_waf_official_06",
+      "license_status": "LOCAL_DOCUMENTATION_REVIEW_ONLY_NO_RAW_REDISTRIBUTION",
+      "repository": null,
+      "sha256": "7df7140ba957df3971e8e37903b6439f596ab208e3bfa8bd399409c6e2a13f7d",
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC",
+      "source_path": "logging-examples.html / JSON preformatted example",
+      "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+    }
+  ],
+  "license_notice_path": "security_sources/LICENSE.txt",
+  "license_notice_sha256": "1ab1ac1cf67b4360986b5cd0448bfa320f9b34cacf46abce32b36b0c7fc71ed6",
+  "masking_priority": "LOWEST_RECOGNITION_ONLY",
+  "normalization_required": false,
+  "not_in_scope": [
+    "sentence-template mining",
+    "Hadoop/Spark/OS prose datasets"
+  ],
+  "official_aws_page": {
+    "examples": 6,
+    "page_sha256": "e66f8faaf6629272007eb778cb481f212f64c616c86a249955a950755de407ba",
+    "url": "https://docs.aws.amazon.com/waf/latest/developerguide/logging-examples.html"
+  },
+  "primary_scope": [
+    "AWS WAF",
+    "IPS/IDS alert and protocol security events"
+  ]
+}

@@ -1,0 +1,641 @@
+{
+  "baseline_revision": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "candidate_sha256": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+  "contract": "parser-studio.poc.security-source-benchmark.v1",
+  "corpus_manifest_sha256": "6ad4c65940884b8e7930f9bf97b09a6f468964a11ec782d96bc49165fb563673",
+  "dictionary_attempted": false,
+  "direct_original_security_events": {
+    "baseline": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 2110,
+      "events": 77,
+      "exact_original_tree_events": 77,
+      "exact_span_FN": 0,
+      "exact_span_FP": 0,
+      "exact_span_TP": 2110,
+      "f1": 1.0,
+      "gold_fields": 2110,
+      "original_records_preserved": 77,
+      "precision": 1.0,
+      "recall": 1.0,
+      "source_parsed_events": 77
+    },
+    "candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 2110,
+      "events": 77,
+      "exact_original_tree_events": 77,
+      "exact_span_FN": 0,
+      "exact_span_FP": 0,
+      "exact_span_TP": 2110,
+      "f1": 1.0,
+      "gold_fields": 2110,
+      "original_records_preserved": 77,
+      "precision": 1.0,
+      "recall": 1.0,
+      "source_parsed_events": 77
+    }
+  },
+  "documented_cee_transport_variants": {
+    "baseline": {
+      "FN": 5127,
+      "FP": 0,
+      "TP": 0,
+      "events": 198,
+      "exact_original_tree_events": 0,
+      "exact_span_FN": 5127,
+      "exact_span_FP": 0,
+      "exact_span_TP": 0,
+      "f1": 0.0,
+      "gold_fields": 5127,
+      "original_records_preserved": 198,
+      "precision": null,
+      "recall": 0.0,
+      "source_parsed_events": 0
+    },
+    "candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 5127,
+      "events": 198,
+      "exact_original_tree_events": 198,
+      "exact_span_FN": 0,
+      "exact_span_FP": 0,
+      "exact_span_TP": 5127,
+      "f1": 1.0,
+      "gold_fields": 5127,
+      "original_records_preserved": 198,
+      "precision": 1.0,
+      "recall": 1.0,
+      "source_parsed_events": 198
+    }
+  },
+  "excluded_events": 0,
+  "fixtures": [
+    {
+      "events": 5,
+      "fixture_id": "aws_waf",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "events": 5,
+          "exact_original_tree_events": 5,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 156,
+          "f1": 1.0,
+          "gold_fields": 156,
+          "original_records_preserved": 5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 5
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 156,
+          "events": 5,
+          "exact_original_tree_events": 5,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 156,
+          "f1": 1.0,
+          "gold_fields": 156,
+          "original_records_preserved": 5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 5
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 22,
+      "fixture_id": "suricata_alert",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 659,
+          "events": 22,
+          "exact_original_tree_events": 22,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 659,
+          "f1": 1.0,
+          "gold_fields": 659,
+          "original_records_preserved": 22,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 22
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 659,
+          "events": 22,
+          "exact_original_tree_events": 22,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 659,
+          "f1": 1.0,
+          "gold_fields": 659,
+          "original_records_preserved": 22,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 22
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 3,
+      "fixture_id": "suricata_v6",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 91,
+          "events": 3,
+          "exact_original_tree_events": 3,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 91,
+          "f1": 1.0,
+          "gold_fields": 91,
+          "original_records_preserved": 3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 3
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 91,
+          "events": 3,
+          "exact_original_tree_events": 3,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 91,
+          "f1": 1.0,
+          "gold_fields": 91,
+          "original_records_preserved": 3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 3
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 1,
+      "fixture_id": "suricata_metadata",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 50,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 50,
+          "f1": 1.0,
+          "gold_fields": 50,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 50,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 50,
+          "f1": 1.0,
+          "gold_fields": 50,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 24,
+      "fixture_id": "suricata_dns",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 526,
+          "events": 24,
+          "exact_original_tree_events": 24,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 526,
+          "f1": 1.0,
+          "gold_fields": 526,
+          "original_records_preserved": 24,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 24
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 526,
+          "events": 24,
+          "exact_original_tree_events": 24,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 526,
+          "f1": 1.0,
+          "gold_fields": 526,
+          "original_records_preserved": 24,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 24
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 14,
+      "fixture_id": "suricata_mixed",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 349,
+          "events": 14,
+          "exact_original_tree_events": 14,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 349,
+          "f1": 1.0,
+          "gold_fields": 349,
+          "original_records_preserved": 14,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 14
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 349,
+          "events": 14,
+          "exact_original_tree_events": 14,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 349,
+          "f1": 1.0,
+          "gold_fields": 349,
+          "original_records_preserved": 14,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 14
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 1,
+      "fixture_id": "suricata_tls_empty_issuer",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 16,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 16,
+          "f1": 1.0,
+          "gold_fields": 16,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 16,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 16,
+          "f1": 1.0,
+          "gold_fields": 16,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 1,
+      "fixture_id": "suricata_tls_empty_subject",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 18,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 18,
+          "f1": 1.0,
+          "gold_fields": 18,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 18,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 18,
+          "f1": 1.0,
+          "gold_fields": 18,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "UPSTREAM_TEST_FIXTURE_NOT_CUSTOMER_PRODUCTION"
+    },
+    {
+      "events": 1,
+      "fixture_id": "aws_waf_official_01",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 30,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 30,
+          "f1": 1.0,
+          "gold_fields": 30,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 30,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 30,
+          "f1": 1.0,
+          "gold_fields": 30,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC"
+    },
+    {
+      "events": 1,
+      "fixture_id": "aws_waf_official_02",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 32,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 32,
+          "f1": 1.0,
+          "gold_fields": 32,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 32,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 32,
+          "f1": 1.0,
+          "gold_fields": 32,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC"
+    },
+    {
+      "events": 1,
+      "fixture_id": "aws_waf_official_03",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 43,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 43,
+          "f1": 1.0,
+          "gold_fields": 43,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 43,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 43,
+          "f1": 1.0,
+          "gold_fields": 43,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC"
+    },
+    {
+      "events": 1,
+      "fixture_id": "aws_waf_official_04",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 24,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 24,
+          "f1": 1.0,
+          "gold_fields": 24,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 24,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 24,
+          "f1": 1.0,
+          "gold_fields": 24,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC"
+    },
+    {
+      "events": 1,
+      "fixture_id": "aws_waf_official_05",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 62,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 62,
+          "f1": 1.0,
+          "gold_fields": 62,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 62,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 62,
+          "f1": 1.0,
+          "gold_fields": 62,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC"
+    },
+    {
+      "events": 1,
+      "fixture_id": "aws_waf_official_06",
+      "results": {
+        "baseline": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 54,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 54,
+          "f1": 1.0,
+          "gold_fields": 54,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        },
+        "candidate": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 54,
+          "events": 1,
+          "exact_original_tree_events": 1,
+          "exact_span_FN": 0,
+          "exact_span_FP": 0,
+          "exact_span_TP": 54,
+          "f1": 1.0,
+          "gold_fields": 54,
+          "original_records_preserved": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "source_parsed_events": 1
+        }
+      },
+      "source_class": "OFFICIAL_VENDOR_DOCUMENTATION_EXAMPLE_NOT_PRODUCTION_TRAFFIC"
+    }
+  ],
+  "limitations": [
+    "Upstream integration fixtures and official AWS examples are not customer-production or universal accuracy.",
+    "Absence of a literal masking marker does not prove a fixture was never anonymized upstream.",
+    "Every source field, including payload and message, is preserved; no security role is guessed.",
+    "Raw logs remain in ignored research caches; only counters and provenance are published."
+  ],
+  "masking_optimization": false,
+  "native_verified": false,
+  "product_integration": false,
+  "scope": "SECURITY_SYSTEM_SOURCE_FIELDS_ONLY_NOT_SENTENCE_MINING",
+  "source_marker_accounting": {
+    "all_direct_events": 77,
+    "explicit_mask_markers": 0,
+    "with_explicit_mask_marker_events": 0,
+    "without_explicit_mask_marker_events": 77
+  },
+  "transport_evidence_class": "DERIVED_FRAMING_VARIANTS_NOT_ADDITIONAL_ORIGINAL_TRAFFIC"
+}
