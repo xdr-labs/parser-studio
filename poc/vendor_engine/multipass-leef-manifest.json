@@ -1,0 +1,9 @@
+{
+  "contract":"parser-studio.poc.multipass-leef-source-manifest.v1",
+  "source_kind":"First-party parser vendor documentation example of ExtraHop Reveal(x); NOT ExtraHop-produced or customer production capture",
+  "url":"https://vdocs.virtualmetric.com/content-management/pipelines/processors/leef-to-csl/",
+  "input_field":"documented full LEEF source",
+  "redaction_status":"DOCUMENTATION_VALUES_UNASSESSED_NOT_UNMASKED_ONLY",
+  "license_status":"LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED",
+  "files":[{"name":"example-0.leef","records":1,"sha256":"5f8c57ff520a1311e5f6a5bd5dc064018dbdbe02f9edfb3d34cfd2502302d6e3"}]
+}

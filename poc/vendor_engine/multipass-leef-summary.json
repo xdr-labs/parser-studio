@@ -1,0 +1,76 @@
+{
+  "authored": {
+    "baseline": {
+      "FN": 3552,
+      "FP": 0,
+      "TP": 0,
+      "exact_records": 0,
+      "f1": 0.0,
+      "falsely_complete": 0,
+      "precision": null,
+      "raw_preserved": 192,
+      "recall": 0.0,
+      "records": 192,
+      "reference_fields": 3552,
+      "statuses": {
+        "PARTIAL": 144,
+        "RAW_ONLY": 48
+      }
+    },
+    "candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 3552,
+      "exact_records": 192,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "precision": 1.0,
+      "raw_preserved": 192,
+      "recall": 1.0,
+      "records": 192,
+      "reference_fields": 3552,
+      "statuses": {
+        "PARTIAL": 48,
+        "SOURCE_PARSED": 144
+      }
+    }
+  },
+  "contract": "parser-studio.poc.multipass-leef.v1",
+  "dictionary_attempted": false,
+  "external_xa6": {
+    "baseline": {
+      "FN": 19,
+      "FP": 0,
+      "TP": 0,
+      "exact_records": 0,
+      "f1": 0.0,
+      "falsely_complete": 0,
+      "precision": null,
+      "raw_preserved": 1,
+      "recall": 0.0,
+      "records": 1,
+      "reference_fields": 19,
+      "statuses": {
+        "RAW_ONLY": 1
+      }
+    },
+    "candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 19,
+      "exact_records": 1,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "precision": 1.0,
+      "raw_preserved": 1,
+      "recall": 1.0,
+      "records": 1,
+      "reference_fields": 19,
+      "statuses": {
+        "SOURCE_PARSED": 1
+      }
+    }
+  },
+  "masking_optimization": false,
+  "native_verified": false
+}

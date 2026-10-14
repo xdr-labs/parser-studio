@@ -21,3 +21,7 @@ No broad prose/template-mining work, Dictionary mapping, masking optimization, U
 ### MP-2 CEF additive pass
 
 `security_cef.py` is a qualified CEF-standard candidate, not a global replacement. Local exact-source evidence: commercial CEF 22/482 remains 482 TP / 0 FP / 0 FN in base and candidate; authored CEF 96/900 improves 840/36/60 to 900/0/0, exact records 48→96 and false-complete 36→0. Malformed controls remain raw/incomplete and never become complete. Private source files remain ignored.
+
+### MP-3 LEEF xHH additive pass
+
+`security_leef.py` runs only when the base explicitly reports an unsupported LEEF delimiter. It adds exact `xHH` recognition while existing literal and `0xHH` paths remain unchanged. Authored xHH conformance is 192 records / 3,552 exact fields at 3,552 TP / 0 FP / 0 FN; the frozen documentation `xa6` example improves 0/19 to 19/19. Malformed/incomplete xHH remains non-complete.
