@@ -967,12 +967,16 @@ export default function AutoParser({
           <h3>Improve with AI</h3><p>Refreshing the current browser preview before AI correction can be reviewed.</p>
         </div>}
        </div>
-       <div className="auto-parser-map-list" aria-label="Suggested field mappings">
-         {draft.mappings.map((rule)=><div key={rule.id}>
-           <strong>{rule.source}</strong> <ArrowRight size={13}/>
-           <span>{rule.target}</span><small>{rule.type} · User-custom field, not official catalog</small>
-         </div>)}
-       </div>
+       <details className="auto-parser-recipe beginner-field-summary" open={advanced}
+         aria-label="Suggested field mappings">
+         <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} detected · Open only if you want to inspect names and types</summary>
+         <div className="auto-parser-map-list">
+           {draft.mappings.map((rule)=><div key={rule.id}>
+             <strong>{rule.source}</strong> <ArrowRight size={13}/>
+             <span>{rule.target}</span><small>{rule.type} · User-custom field, not official catalog</small>
+           </div>)}
+         </div>
+       </details>
        {!!draft.guided?.enrichment?.length&&<div className="auto-parser-map-list" aria-label="Applied normalization refinements">
          {draft.guided.enrichment.map((rule,index)=><div key={rule.id}>
            <strong>{rule.operator==='split_field'?'Split':'Merge'} #{index+1}</strong>
@@ -1007,10 +1011,15 @@ export default function AutoParser({
            </label>
          </div>)}
        </details>
+       {pending&&<p className="beginner-next-step" role="status">
+         Parsed fields are ready. Parser Studio is refreshing the local preview before the final test.
+       </p>}
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(0)}><ArrowLeft size={15}/> Back to Logs</button>
          <button type="button" className="auto-parser-primary" disabled={pending||!suite}
-           onClick={()=>setStep(2)}>Test & Create <ArrowRight size={16}/></button>
+           onClick={()=>setStep(2)}>
+           {pending?'Preparing Test…':'Test & Create'} <ArrowRight size={16}/>
+         </button>
        </div>
      </section>}
      {step===2&&<section aria-label="Test and Create stage">

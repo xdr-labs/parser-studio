@@ -216,3 +216,27 @@ test('metadata-only source anomaly explains that no bytes were dropped and does 
  await expect(prompt).toContainText('Do not propose a Regex merely to hide malformed source metadata.');
  await expect(page.getByLabel('AI result verification')).toHaveCount(0);
 });
+
+
+test('unknown non-Syslog text recommends a bounded text pattern without inventing Syslog context',async({page})=>{
+ const raw='ALERT#A17#192.0.2.5#198.51.100.4#udp#53#deny';
+ const response={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'RAW_ONLY',syntax:'UNKNOWN',
+  sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),fields:{},spans:[],
+  residuals:[{startByte:0,endByte:Buffer.byteLength(raw)}],issues:['NO_SUPPORTED_GRAMMAR'],
+  nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const problem=page.getByLabel('Parse problem inspector');
+ await expect(problem).toContainText('Recommended fix · Text extraction pattern');
+ await expect(problem).toContainText('Do not assume Syslog');
+ await expect(problem).not.toContainText('Keep the detected Syslog context');
+ await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ const prompt=page.getByLabel('Generated ChatGPT repair prompt');
+ await expect(prompt).toContainText('Recommended repair method: Text extraction pattern');
+ await expect(prompt).toContainText('Do not assume Syslog');
+});

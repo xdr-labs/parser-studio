@@ -85,9 +85,13 @@ function recommendation(preview:MultiPassSourcePreview):{label:string;text:strin
     label:'Key/value rule',
     text:'Keep key=value parsing and add a bounded rule only for the quoted or delimited section that remains unresolved.',
   };
-  if(syntax.includes('SYSLOG')||syntax.includes('ASA')||syntax.includes('FTD')||syntax.includes('UNKNOWN'))return {
+  if(syntax.includes('SYSLOG')||syntax.includes('ASA')||syntax.includes('FTD'))return {
     label:'Message-body pattern',
     text:'Keep the detected Syslog context and target only the unresolved message body. Parser Studio accepts a bounded named-capture Regex only after safety checks, independent holdout validation and the normal DRAFT/Native verification gates.',
+  };
+  if(syntax.includes('UNKNOWN'))return {
+    label:'Text extraction pattern',
+    text:'Parser Studio could not identify a standard envelope. Use the repeated delimiters or text structure only for the unresolved event, with bounded named captures and independent holdout validation. Do not assume Syslog or discard unmatched events.',
   };
   return {
     label:'Assisted recovery',
