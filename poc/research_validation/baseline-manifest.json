@@ -1,0 +1,9 @@
+{
+  "baseline_commit": "acc3a903e19597af44635b243fa4be3b4949e35f",
+  "source_worktree": "/home/aella/parser-studio-engine-poc-20261013",
+  "validation_worktree": "/home/aella/parser-studio-validation-poc-20261014",
+  "source_status_at_start": "?? poc/vendor_engine/test_source_kv.py\n",
+  "source_untracked_fingerprints": {
+    "poc/vendor_engine/test_source_kv.py": "a19bebe11e19aa83adba82075495a69b77069b45e894a07c21f51393e975c4f5"
+  }
+}

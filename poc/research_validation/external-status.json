@@ -1,0 +1,13 @@
+{
+  "candidate_sha256": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
+  "candidate_unit_status": "12 PASS / 1 ERROR",
+  "data_records": 127,
+  "excluded_or_claimed_successful_data_records": 0,
+  "failure": "Metadata equality assertion in external_benchmark; accounting patch denied twice including normal retry",
+  "metadata_and_preamble_records": 60,
+  "no_product_promotion": true,
+  "physical_records": 187,
+  "preamble_classification_differences": 6,
+  "source_files": 6,
+  "status": "ACQUIRED_NOT_REFERENCE_SCORED"
+}

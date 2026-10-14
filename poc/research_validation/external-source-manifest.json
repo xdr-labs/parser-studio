@@ -1,0 +1,58 @@
+{
+  "acquisition_utc": "2026-10-14T01:27:23.153097+00:00",
+  "candidate_sha256_before_read": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
+  "commit": "a7e71a217b670e09e43b75fccfc3a96f04cbec2a",
+  "files": [
+    {
+      "bytes": 4904,
+      "local_name": "0.log",
+      "path": "testing/btest/Baseline/opt.basic/conn.log",
+      "sha256": "ef8a120837353df085c41045653a3563a96fbff2575a0bad7dd492d73d6a360a",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/testing/btest/Baseline/opt.basic/conn.log"
+    },
+    {
+      "bytes": 6536,
+      "local_name": "1.log",
+      "path": "testing/btest/Baseline/opt.basic/dns.log",
+      "sha256": "b57b82692341c26b2a3a13ef8a4f844655cf29bc6762a7ff7cc67be2b4cf98c8",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/testing/btest/Baseline/opt.basic/dns.log"
+    },
+    {
+      "bytes": 5807,
+      "local_name": "2.log",
+      "path": "testing/btest/Baseline/opt.basic/http.log",
+      "sha256": "4a59f9670f35a7da1fb4ef3f731233a3a835c230394266279f36b6d707367a66",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/testing/btest/Baseline/opt.basic/http.log"
+    },
+    {
+      "bytes": 5833,
+      "local_name": "3.log",
+      "path": "testing/btest/Baseline/scripts.base.frameworks.logging.field-extension/conn.log",
+      "sha256": "36246d3c2a46de74e672fffd553d739303e8d295ab0d5a9e72c00431c7a72384",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/testing/btest/Baseline/scripts.base.frameworks.logging.field-extension/conn.log"
+    },
+    {
+      "bytes": 3565,
+      "local_name": "4.log",
+      "path": "testing/btest/Baseline/scripts.base.files.x509.disable-certificate-events-known-certs/ssl.log",
+      "sha256": "2a0727667b91c876779027e8baa82334fa3b6e04355f95296c3f307419e4a414",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/testing/btest/Baseline/scripts.base.files.x509.disable-certificate-events-known-certs/ssl.log"
+    },
+    {
+      "bytes": 4723,
+      "local_name": "5.log",
+      "path": "testing/btest/Baseline/core.ipv6-frag/dns.log",
+      "sha256": "ef642b24807a5967b8862047aa3e9bfb6ff07fcbfe7d22bf7d77cdadd05582bd",
+      "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/testing/btest/Baseline/core.ipv6-frag/dns.log"
+    }
+  ],
+  "license": {
+    "bytes": 1838,
+    "local_name": "COPYING",
+    "path": "COPYING",
+    "sha256": "1f984adb6b5cd93d5035c2a87c2df5f38922649fbea90c7bd79ff321d17333aa",
+    "url": "https://raw.githubusercontent.com/zeek/zeek/a7e71a217b670e09e43b75fccfc3a96f04cbec2a/COPYING"
+  },
+  "repository": "zeek/zeek",
+  "scope": "First-party regression outputs, private local verification only; no raw redistribution"
+}

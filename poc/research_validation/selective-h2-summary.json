@@ -1,0 +1,323 @@
+{
+  "adapter_sha256": "28616b885d25b010f6100cc63b723740d3fc8fa58cac8cef27a6175575666fe2",
+  "candidate_sha256": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
+  "contract": "parser-studio.selective-h2-validation.v1",
+  "current_baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "dictionary_attempted": false,
+  "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+  "engine_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+  "external_zeek": "NOT_SCORED; no change to blocked external metadata accounting",
+  "families": {
+    "container_kv": {
+      "events": 24,
+      "exact_field_events": 0,
+      "exact_native_key_value_byte_span": {
+        "FN": 72,
+        "FP": 24,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 72,
+      "statuses": {
+        "PARTIAL": 24
+      }
+    },
+    "csv_comma": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 120,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 120,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    },
+    "csv_pipe": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 120,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 120,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    },
+    "csv_semicolon": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 120,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 120,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    },
+    "csv_tab": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 120,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 120,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    },
+    "duplicate_kv": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 96,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 96,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    },
+    "empty_kv": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 72,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 72,
+      "statuses": {
+        "PARTIAL": 24
+      }
+    },
+    "malformed_tail": {
+      "events": 24,
+      "exact_field_events": 18,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 6,
+        "TP": 24,
+        "f1": 0.8888888888888888,
+        "precision": 0.8,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 24,
+      "statuses": {
+        "PARTIAL": 24
+      }
+    },
+    "nonfield_prose": {
+      "events": 24,
+      "exact_field_events": 16,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 24,
+        "TP": 0,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": null
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 0,
+      "statuses": {
+        "PARTIAL": 8,
+        "RAW_ONLY": 16
+      }
+    },
+    "ordinary_kv": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 96,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 96,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    },
+    "quoted_kv": {
+      "events": 24,
+      "exact_field_events": 24,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 96,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 24,
+      "reference_fields": 96,
+      "statuses": {
+        "SOURCE_PARSED": 24
+      }
+    }
+  },
+  "known_source": {
+    "contract": "parser-studio.poc.source-field-metrics.v1",
+    "exact_source_field": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 14645,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "fully_parsed_records": 256,
+    "gold_source_field_occurrences": 14645,
+    "observed_source_field_occurrences": 14645,
+    "partial_records": 0,
+    "raw_only_records": 0,
+    "raw_records_accounted": 256,
+    "scope": "RAW_VENDOR_SOURCE_FIELDS_ONLY_NO_DICTIONARY",
+    "semantic_mapping_attempted": false,
+    "source_bytes": 141877,
+    "source_coverage_rate": 1.0,
+    "stellar_native_verified": false,
+    "structured_empty_records": 0,
+    "unparsed_bytes": 0,
+    "warning": "Gold source-field labels must be independently produced; template match and raw byte retention do not create them."
+  },
+  "limitations": [
+    "Homogeneous-batch raw training, not arbitrary mixed-format clustering.",
+    "Synthetic improvements are not a new-vendor field-accuracy claim.",
+    "Current known-source field gold lacks an independent byte-span oracle.",
+    "Full H1/H2/H3 prototype is not qualified; only selective H2 is recommended for further validation."
+  ],
+  "main_json": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 512,
+    "complete_span_events": 128,
+    "events": 128,
+    "exact_leaf_byte_span": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "exact_source_tree_events": 128,
+    "expected_leaf_fields": 512,
+    "logical_identity_available_fields": 512,
+    "logical_identity_exact_fields": 512,
+    "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+    "raw_records_preserved": 128
+  },
+  "main_kv": {
+    "events": 128,
+    "exact_field_events": 128,
+    "exact_native_key_value_byte_span": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 352,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "falsely_complete_events": 0,
+    "parser_exceptions": 0,
+    "raw_records_preserved": 128,
+    "reference_fields": 352,
+    "statuses": {
+      "PARTIAL": 16,
+      "SOURCE_PARSED": 112
+    }
+  },
+  "native_verified": false,
+  "routing_invariance": {
+    "cases": 64,
+    "guarded_equal_to_current": 64,
+    "guarded_raw_preserved": 64,
+    "unguarded_different_from_current": 64
+  },
+  "synthetic_overall": {
+    "events": 264,
+    "exact_field_events": 226,
+    "exact_native_key_value_byte_span": {
+      "FN": 72,
+      "FP": 54,
+      "TP": 864,
+      "f1": 0.9320388349514563,
+      "precision": 0.9411764705882353,
+      "recall": 0.9230769230769231
+    },
+    "falsely_complete_events": 0,
+    "parser_exceptions": 0,
+    "raw_records_preserved": 264,
+    "reference_fields": 936,
+    "statuses": {
+      "PARTIAL": 80,
+      "RAW_ONLY": 16,
+      "SOURCE_PARSED": 168
+    }
+  },
+  "target_verified": false
+}

@@ -1,0 +1,1158 @@
+{
+  "candidate_sha256": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
+  "composition_scope": "current_plus_dialect = current parser + H2 raw-only inference; current_plus_lexical_and_dialect additionally replaces KV with H1. H3 metadata is not included.",
+  "contract": "parser-studio.current-head-independent-comparison.v1",
+  "current_baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "dictionary_attempted": false,
+  "execution_provenance": {
+    "current_baseline": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+      "mode": "current_baseline"
+    },
+    "current_plus_dialect": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+      "mode": "current_plus_dialect"
+    },
+    "current_plus_lexical_and_dialect": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+      "mode": "current_plus_lexical_and_dialect"
+    },
+    "frozen_candidate": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/vendor_engine/source_parse.py",
+      "engine_source_sha256": "c487b70418d4f6222a8009502f77992ee3c3001c9a3f902fcfbfd5a68b6e8705",
+      "mode": "frozen_candidate"
+    }
+  },
+  "external_status": "NOT_SCORED; independent external metadata assertion remains unresolved after blocked patch/retry. This script does not modify or execute that path.",
+  "initial_baseline_commit": "acc3a903e19597af44635b243fa4be3b4949e35f",
+  "known_candidate_safety_failure": "Uncaught malformed metadata record exception remains; no promotion of full candidate.",
+  "limitations": [
+    "All three corpora here are authored synthetic regressions, not real-vendor holdouts.",
+    "Current baseline advanced during execution; both source snapshots are preserved independently.",
+    "H2 learns only the separate 32 raw training records. The other modules perform no fitting.",
+    "Official main-PoC KV/JSON corpora were not authored by this validation lane, but remain targeted regressions."
+  ],
+  "main_poc_json_regressions": {
+    "current_baseline": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "complete_span_events": 128,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 512,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 512,
+      "logical_identity_exact_fields": 512,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    },
+    "current_plus_dialect": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "complete_span_events": 128,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 512,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 512,
+      "logical_identity_exact_fields": 512,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    },
+    "current_plus_lexical_and_dialect": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "complete_span_events": 128,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 512,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 512,
+      "logical_identity_exact_fields": 512,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    },
+    "frozen_candidate": {
+      "FN": 96,
+      "FP": 0,
+      "TP": 416,
+      "complete_span_events": 32,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 96,
+        "FP": 0,
+        "TP": 416,
+        "f1": 0.896551724137931,
+        "precision": 1.0,
+        "recall": 0.8125
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 0,
+      "logical_identity_exact_fields": 0,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    }
+  },
+  "main_poc_kv_regressions": {
+    "current_baseline": {
+      "events": 128,
+      "exact_field_events": 128,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 352,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 16,
+        "SOURCE_PARSED": 112
+      }
+    },
+    "current_plus_dialect": {
+      "events": 128,
+      "exact_field_events": 128,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 352,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 16,
+        "SOURCE_PARSED": 112
+      }
+    },
+    "current_plus_lexical_and_dialect": {
+      "events": 128,
+      "exact_field_events": 112,
+      "exact_native_key_value_byte_span": {
+        "FN": 32,
+        "FP": 16,
+        "TP": 320,
+        "f1": 0.9302325581395349,
+        "precision": 0.9523809523809523,
+        "recall": 0.9090909090909091
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 32,
+        "SOURCE_PARSED": 96
+      }
+    },
+    "frozen_candidate": {
+      "events": 128,
+      "exact_field_events": 112,
+      "exact_native_key_value_byte_span": {
+        "FN": 32,
+        "FP": 16,
+        "TP": 320,
+        "f1": 0.9302325581395349,
+        "precision": 0.9523809523809523,
+        "recall": 0.9090909090909091
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 32,
+        "SOURCE_PARSED": 96
+      }
+    }
+  },
+  "native_verified": false,
+  "synthetic_families": {
+    "container_kv": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 24,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 24,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "csv_comma": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "csv_pipe": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 120,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "csv_semicolon": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 120,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "csv_tab": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 120,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "duplicate_kv": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "empty_kv": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "malformed_tail": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 18,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 6,
+          "TP": 24,
+          "f1": 0.8888888888888888,
+          "precision": 0.8,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 24,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 18,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 6,
+          "TP": 24,
+          "f1": 0.8888888888888888,
+          "precision": 0.8,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 24,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 24,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 24,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 24,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 24,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      }
+    },
+    "nonfield_prose": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 16,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 24,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "PARTIAL": 8,
+          "RAW_ONLY": 16
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 16,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 24,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "PARTIAL": 8,
+          "RAW_ONLY": 16
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 16,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 24,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "PARTIAL": 8,
+          "RAW_ONLY": 16
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 16,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 24,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "PARTIAL": 8,
+          "RAW_ONLY": 16
+        }
+      }
+    },
+    "ordinary_kv": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "quoted_kv": {
+      "current_baseline": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "current_plus_lexical_and_dialect": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "frozen_candidate": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 96,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 96,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    }
+  },
+  "synthetic_overall": {
+    "current_baseline": {
+      "events": 264,
+      "exact_field_events": 154,
+      "exact_native_key_value_byte_span": {
+        "FN": 432,
+        "FP": 54,
+        "TP": 504,
+        "f1": 0.6746987951807228,
+        "precision": 0.9032258064516129,
+        "recall": 0.5384615384615384
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 104,
+        "RAW_ONLY": 88,
+        "SOURCE_PARSED": 72
+      }
+    },
+    "current_plus_dialect": {
+      "events": 264,
+      "exact_field_events": 226,
+      "exact_native_key_value_byte_span": {
+        "FN": 72,
+        "FP": 54,
+        "TP": 864,
+        "f1": 0.9320388349514563,
+        "precision": 0.9411764705882353,
+        "recall": 0.9230769230769231
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 80,
+        "RAW_ONLY": 16,
+        "SOURCE_PARSED": 168
+      }
+    },
+    "current_plus_lexical_and_dialect": {
+      "events": 264,
+      "exact_field_events": 256,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 24,
+        "TP": 936,
+        "f1": 0.9873417721518988,
+        "precision": 0.975,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 32,
+        "RAW_ONLY": 16,
+        "SOURCE_PARSED": 216
+      }
+    },
+    "frozen_candidate": {
+      "events": 264,
+      "exact_field_events": 256,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 24,
+        "TP": 936,
+        "f1": 0.9873417721518988,
+        "precision": 0.975,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 32,
+        "RAW_ONLY": 16,
+        "SOURCE_PARSED": 216
+      }
+    }
+  },
+  "target_verified": false
+}
