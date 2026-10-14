@@ -195,6 +195,18 @@ justify integration complexity.
 Drain/template output therefore remains candidate-only and automatic apply
 remains disabled.
 
+## Regression gate
+
+The final v2 candidate was run in the same ignored fixture/dependency
+environment used by the qualified source-engine work.
+
+- Full `vendor_engine` discovery: **345 tests OK**.
+- Failures: **0**.
+- Errors: **0**.
+- Skips: **1**, the pre-existing optional Spell dependency check.
+- Dedicated Generic Structural small + large qualification tests: **13 / 13
+  PASS**.
+
 ## Decision
 
 The expanded PoC strengthens the original architecture decision:
