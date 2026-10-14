@@ -42,6 +42,39 @@ class PreviewContract(unittest.TestCase):
         self.assertTrue(dictionary['standardizedAliasMapping'])
         self.assertNotIn('192.0.2.10',json.dumps(dictionary))
         self.assertNotIn('private',json.dumps(dictionary))
+
+    def test_redaction_projection_recognizes_only_visible_markers_and_never_reconstructs(self):
+        raw='{"src":"REDACTED","payload":"***","note":"visible","similar":"redacted-user"}'
+        result=preview(raw)
+        redaction=result['redaction']
+        self.assertEqual('parser-studio.visible-redaction-assessment.v0.1',redaction['contract'])
+        self.assertEqual('EXPLICIT_VISIBLE_MASKS',redaction['assessment'])
+        self.assertEqual(4,redaction['sourceOccurrences'])
+        self.assertEqual(2,redaction['explicitMaskOccurrences'])
+        self.assertEqual(2,redaction['unassessedVisibleOccurrences'])
+        self.assertFalse(redaction['excludedEvent'])
+        self.assertTrue(redaction['sourceExtractionPreserved'])
+        self.assertFalse(redaction['hiddenValueReconstruction'])
+        self.assertEqual(
+            [('src','REDACTED_KEYWORD','REDACTED'),('payload','ASTERISK_RUN','***')],
+            [(item['sourcePath'],item['markerClass'],
+              raw.encode()[item['startByte']:item['endByte']].decode())
+             for item in redaction['occurrences']],
+        )
+        self.assertNotIn('value',json.dumps(redaction))
+        self.assertEqual('REDACTED',result['fields']['src'])
+        self.assertEqual('***',result['fields']['payload'])
+        self.assertEqual('redacted-user',result['fields']['similar'])
+
+    def test_redaction_projection_never_calls_absence_of_marker_unmasked(self):
+        redaction=preview('srcip=192.0.2.1 action=allow')['redaction']
+        self.assertEqual('NOT_ASSESSED_NO_LITERAL_MARKER',redaction['assessment'])
+        self.assertEqual(0,redaction['explicitMaskOccurrences'])
+        self.assertGreater(redaction['unassessedVisibleOccurrences'],0)
+        excluded=preview('unsupported sentence only')['redaction']
+        self.assertEqual('EXCLUDED_NO_SOURCE_OCCURRENCES',excluded['assessment'])
+        self.assertTrue(excluded['excludedEvent'])
+
     def test_source_limits(self):
         with self.assertRaises(ValueError):preview('')
         with self.assertRaises(ValueError):preview('a'*65537)

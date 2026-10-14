@@ -10,6 +10,7 @@ from multipass_adjudicator import parse_security_multipass
 from stellar_dictionary import (CEF_DICTIONARY_URL,DICTIONARY_REVISION,OFFICIAL_DICTIONARY_URL_65,
                                 OFFICIAL_DICTIONARY_URL_70,normalize_stellar_dictionary)
 from source_parse import assert_source_accounting
+from visible_redaction import CONTRACT as REDACTION_CONTRACT,assess_visible_redaction
 
 MAX_BYTES=65536
 
@@ -21,6 +22,22 @@ def preview(raw:str)->dict:
     def region(a:int,b:int)->dict:
         return {'startByte':len(raw[:a].encode('utf8')),'endByte':len(raw[:b].encode('utf8'))}
     dictionary=normalize_stellar_dictionary(event)
+    redaction=assess_visible_redaction(event)
+    redaction_view={
+        'contract':REDACTION_CONTRACT,
+        'assessment':redaction.assessment,
+        'sourceOccurrences':redaction.source_occurrences,
+        'explicitMaskOccurrences':redaction.explicit_mask_occurrences,
+        'unassessedVisibleOccurrences':redaction.unassessed_visible_occurrences,
+        'excludedEvent':redaction.assessment=='EXCLUDED_NO_SOURCE_OCCURRENCES',
+        'occurrences':[{
+            'sourcePath':item.source_path,'occurrence':item.occurrence,
+            'markerClass':item.marker_class,
+            'startByte':item.start_byte,'endByte':item.end_byte,
+        } for item in redaction.occurrences],
+        'sourceExtractionPreserved':True,
+        'hiddenValueReconstruction':False,
+    }
     dictionary_view={
         'contract':'parser-studio.stellar-dictionary-projection.v0.1',
         'dictionaryRevision':DICTIONARY_REVISION,
@@ -43,6 +60,7 @@ def preview(raw:str)->dict:
                      for s in event.value_spans],
             'residuals':[region(a,b) for a,b in event.unparsed],
             'issues':event.issues[:32],'dictionary':dictionary_view,
+            'redaction':redaction_view,
             'nativeVerified':False,'targetVerified':False}
 
 def allowed_origin(origin:str|None)->bool:
