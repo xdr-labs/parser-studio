@@ -1,141 +1,147 @@
 # Generic Structural Parser — Post-Freeze Holdout (2026-10-15)
 
-## Purpose
+## Why this holdout exists
 
-This holdout tests the already-frozen Generic Structural v2 candidate on
-security logs collected only after parser head
-`074b90e35de04c65fc7c5bec11d42a198d12130c` was fixed.
+The 948-event large corpus was used to develop the v2 Generic Structural
+candidate, so it is not sufficient as final unseen evidence. The parser was
+therefore frozen at `074b90e35de04c65fc7c5bec11d42a198d12130c` before a
+second corpus was selected or downloaded.
 
-No parser tuning was performed before the measurements in this document.
+No parser code was changed after this holdout was selected.
 
-## Corpus
+## Frozen source
 
-The committed manifest
-`GENERIC_STRUCTURAL_POSTFREEZE_HOLDOUT_20261015.json` pins:
+Upstream: `elastic/integrations` at commit
+`49057c708569a51a9f87d2b45ef286812b093d2d`.
 
-- 708 globally unique physical-line events.
-- 56 upstream fixture files.
+Selection was mechanical: every `.log` file from five pipeline-test
+directories, then every globally unique nonblank physical line.
+
+- 56 upstream files.
+- 708 unique events.
 - 5 product families.
-- Cisco ISE: 275 events.
-- F5 BIG-IP: 36 events.
-- Juniper SRX: 105 events.
-- Sophos UTM: 22 events.
-- Sophos XG: 270 events.
-- Upstream: `elastic/integrations` commit
-  `49057c708569a51a9f87d2b45ef286812b093d2d`.
-- Event overlap with the prior frozen 948-event corpus: **0**.
+- Cisco ISE: 275.
+- Sophos XG: 270.
+- Sophos UTM: 22.
+- F5 BIG-IP: 36.
+- Juniper SRX: 105.
+- Event overlap with the earlier 948-event corpus: **0**.
 
-Raw fixtures remain only in ignored local research cache. The committed
-manifest contains provenance, file hashes, counts, and an event-set digest.
+Raw logs remain in ignored local cache. Only provenance, hashes and aggregate
+results are committed.
 
-## Frozen v2 result
+## Result
 
-Generic Structural v2, without post-holdout tuning:
+Across all 708 events:
 
-- 496 / 708 SOURCE_PARSED = **70.1%**.
-- 175 PARTIAL.
-- 37 RAW_ONLY.
-- 708 / 708 raw records preserved.
-- Generic candidate exceptions: **0**.
+- Existing qualified Multi-Pass: 283 SOURCE_PARSED.
+- Frozen Generic Structural: **496 SOURCE_PARSED**.
+- Absolute gain: **213 events**.
+- Complete-event rate: 40.0% -> **70.1%**, about **+30.1 percentage points**.
+- Raw preserved: **708 / 708**.
+- Generic exceptions: **0**.
 
-The current Multi-Pass baseline on the same holdout:
+Most importantly, all 283 events that the existing engine already considered
+complete remained exact by source-span set:
 
-- 283 / 708 SOURCE_PARSED = **40.0%**.
-- 384 PARTIAL.
-- 34 RAW_ONLY.
-- **7 parser exceptions**.
+- 283 / 283 exact.
+- 0 complete-event divergences.
 
-All seven baseline exceptions are
-`ValueError:CANDIDATE_DISPLAY_PATH_MISMATCH` on Juniper SRX RFC5424-like
-records.
+Family-level new structural completions:
 
-## Non-regression evidence
+- Cisco ISE: +192.
+- Sophos UTM: +13.
+- Juniper SRX: +5.
+- F5 BIG-IP: +2.
+- Sophos XG: +1.
 
-Among the 283 events the current baseline already classified SOURCE_PARSED:
+## Interpreting baseline-span differences
 
-- **283 / 283** have exact source-span equivalence under Generic Structural.
-- Complete-event divergences: **0**.
+A naïve comparison says promoted Generic events omit 557 spans emitted by the
+existing incomplete parser. Those spans were audited before drawing a
+conclusion.
 
-Family breakdown of baseline-complete preservation:
+- **0 / 557** had a stable `source_segments` identity.
+- **551 / 557** non-empty spans overlap Generic source-value spans and are
+  therefore boundary/re-segmentation differences, not disjoint value loss.
+- The remaining **6 / 557** were zero-length empty heuristic spans.
+- Non-empty, disjoint baseline spans lost by Generic: **0**.
 
-- F5 BIG-IP: 32 / 32 exact.
-- Juniper SRX: 53 / 53 exact.
-- Sophos XG: 198 / 198 exact.
+Representative failure modes in the old incomplete parser included:
 
-Cisco ISE and Sophos UTM had no SOURCE_PARSED baseline events in this holdout.
+- taking only the first word of a multi-word Cisco ISE value;
+- consuming a long semicolon-delimited F5 record as one `action` value;
+- splitting Sophos UTM quoted text into very large false CSV columns.
 
-## New complete classifications
+The six zero-length ISE spans came from an empty-value interpretation of a
+field whose Generic parse continues into a visible non-empty source value.
 
-Generic Structural classifies 213 baseline-incomplete, non-exception events as
-SOURCE_PARSED.
+This does **not** make the 213 promotions independent gold. It shows that the
+apparent baseline-span losses are weak heuristic claims rather than identified
+source fields.
 
-These promotions are **not independently certified as 213 exact events** in
-this holdout. The baseline itself has known boundary errors on several of these
-formats, so treating its partial spans as gold would be invalid.
+## New baseline defect found by the expanded corpus
 
-Observed examples explain why raw span-subset comparison is insufficient:
+Seven Juniper SRX records cause the current qualified Multi-Pass baseline to
+raise `CANDIDATE_DISPLAY_PATH_MISMATCH`.
 
-- Cisco ISE baseline extraction can truncate a multi-word comma-KV value to
-  its first word while Generic Structural preserves the full comma-bounded
-  value.
-- Sophos UTM baseline parsing can mistake commas inside quoted KV values for
-  CSV separators, while Generic Structural recovers the actual quoted KV
-  structure.
-- F5 semicolon-delimited KV with unquoted multi-word values exposes a remaining
-  Generic Structural boundary weakness; it should not be used as evidence for
-  perfect field/value grouping.
+The underlying RFC5424 source decoder encounters malformed structured-data
+quoting after it has already accumulated exact header/SD value spans, but the
+failed record has no matching field tree. `candidate_from_event` then attempts
+to resolve those orphan display paths and raises the exception. This is a
+source-event/candidate-contract consistency defect, not a Generic Structural
+failure.
 
-Therefore the post-freeze holdout proves open-world structural coverage and
-non-regression, but does not upgrade all 213 promotions to independently
-verified field/value truth.
+The frozen Generic candidate raises no exception on any of the 708 records.
+For those seven records it remains conservative rather than claiming
+completeness.
 
-## New defect discovered in the current baseline
+This is a separate baseline/adjudicator defect discovered by the larger
+corpus; it is not counted as Generic accuracy improvement.
 
-Seven Juniper SRX records crash the Multi-Pass candidate conversion.
+## Combined PoC evidence
 
-The underlying source parser returns a RAW_ONLY RFC5424 event after malformed
-structured-data quoting, but the partial RFC decoder has already accumulated
-header/SD value spans without a matching field tree. `candidate_from_event`
-then attempts to resolve those display paths and raises
-`CANDIDATE_DISPLAY_PATH_MISMATCH`.
+Development/qualification corpus:
 
-This is a fail-closed contract bug in the current baseline, not a Generic
-Structural exception. It requires a separate repair before product integration.
+- 948 events / 10 product families.
+- 461 -> 684 structurally complete.
+- 461 / 461 existing complete events preserved exactly.
+- Independent gold: 485 events / 32,569 source fields / 0 FP / 0 FN.
 
-## Product-family result
+Post-freeze holdout:
 
-Frozen Generic v2 complete rates:
+- 708 events / 5 additional product families.
+- 283 -> 496 structurally complete.
+- 283 / 283 existing complete events preserved exactly.
+- 0 Generic exceptions.
 
-- Cisco ISE: 192 / 275.
-- F5 BIG-IP: 34 / 36.
-- Juniper SRX: 58 / 105.
-- Sophos UTM: 13 / 22.
-- Sophos XG: 199 / 270.
-
-The lower Juniper result is deliberately conservative; all seven baseline-crash
-records remain RAW_ONLY under Generic Structural rather than being guessed into
-complete events.
+Descriptively, the two non-overlapping corpora contain **1,656 events across
+15 product-family labels**. The post-freeze set is the stronger evidence
+because the parser was frozen before its selection.
 
 ## Decision
 
-The post-freeze holdout strengthens the large-qualification conclusion:
+The post-freeze holdout strengthens the architecture decision:
 
-1. Generic Structural generalizes beyond the 948-event tuning corpus.
-2. Existing complete parsing is preserved exactly on all 283 qualified
-   holdout events.
-3. The candidate does not introduce parser crashes on the 708-event holdout.
-4. The current baseline has a newly exposed Juniper candidate-contract crash.
-5. Generic delimiter inference still needs work for semicolon-delimited KV with
-   unquoted multi-word values.
-6. The 213 newly complete records need syntax-specific or independent
-   references before they are all called exact field/value parses.
-7. Vendor fallbacks remain necessary while the long tail is qualified.
+1. Generic Structural should be integrated as a bounded Multi-Pass candidate,
+   not as a wholesale replacement.
+2. Existing complete results must remain protected from reinterpretation.
+3. PARTIAL results may be structurally re-segmented when evidence is stronger;
+   weak heuristic composite spans must not automatically veto better
+   structure.
+4. Field semantics remain downstream. A positional field can be valid source
+   extraction without knowing its security meaning.
+5. Cisco ASA and residual prose remain conservative; Drain/template mining is
+   not promoted to the primary parser.
+6. The newly exposed Juniper `CANDIDATE_DISPLAY_PATH_MISMATCH` should be
+   fixed independently in the existing Multi-Pass contract/adjudicator.
 
 ## Limits
 
-- This holdout intentionally has no semantic-field scoring.
-- The 213 promotions are not independent-gold events.
-- Physical lines are treated as events because that is the upstream pipeline
-  fixture representation.
-- No Ruby/CONF, native Fluentd, Stellar target, DP/sensor, merge, release, or
-  production validation is claimed.
+- The 213 post-freeze promotions do not all have independent field-level gold.
+- F5 semicolon-delimited KV with unquoted multi-word values still exposes a
+  boundary-grouping weakness; its promoted records must not be described as
+  independently exact field/value parses.
+- Upstream integration fixtures are test data, not customer-production logs.
+- Field semantics, Dictionary mapping, Ruby/CONF, native Fluentd, DP/sensor and
+  release validation remain out of scope.
