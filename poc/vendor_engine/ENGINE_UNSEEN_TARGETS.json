@@ -1,9 +1,9 @@
 {
-  "contract":"parser-studio.poc.unseen-target-freeze.v1",
-  "source_repository":"elastic/integrations",
-  "source_ref":"99b5848f5863e395dc61f2ce227efd3969af826b",
-  "evidence":"FIRST_PASS_NEW_PRODUCT_FIXTURES_UNREAD_AT_FREEZE",
-  "files":[
+  "contract": "parser-studio.poc.unseen-target-freeze.v1",
+  "source_repository": "elastic/integrations",
+  "source_ref": "99b5848f5863e395dc61f2ce227efd3969af826b",
+  "evidence": "FIRST_PASS_NEW_PRODUCT_FIXTURES_UNREAD_AT_FREEZE",
+  "files": [
     "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-additional-messages.log",
     "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-anyconnect-messages.log",
     "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-firewall.log",
@@ -13,8 +13,11 @@
     "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-automated-lead.log",
     "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-general.log",
     "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-sonicos70-aws.log",
-    "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-drizzthacker.log"
+    "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-drizzthacker.log",
+    "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-asa-fix.log",
+    "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-nat.log",
+    "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-correlation-detection.log"
   ],
-  "raw_redistribution":false,
-  "target_acceptance":"ENGINE_POC_ACCEPTANCE.md"
+  "raw_redistribution": false,
+  "target_acceptance": "ENGINE_POC_ACCEPTANCE.md"
 }
