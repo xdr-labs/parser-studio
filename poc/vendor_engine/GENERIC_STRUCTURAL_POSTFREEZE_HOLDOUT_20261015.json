@@ -1,0 +1,528 @@
+{
+  "contract": "parser-studio.poc.generic-structural-postfreeze-holdout.v1",
+  "duplicate_event_occurrences": 1,
+  "event_overlap_with_frozen_948_corpus_occurrences": 0,
+  "event_sha256_set_digest": "8e9162fcfb5769d8322856577c3d8f61891541aa51d69a4e613e6facfd8b9fde",
+  "families": {
+    "cisco_ise": 275,
+    "f5_bigip": 36,
+    "juniper_srx": 105,
+    "sophos_utm": 22,
+    "sophos_xg": 270
+  },
+  "family_count": 5,
+  "file_count": 56,
+  "files": [
+    {
+      "bytes": 3752,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-ad-connector.log",
+      "nonblank_records": 13,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-ad-connector.log",
+      "physical_lines": 13,
+      "sha256": "da2a963dd4bdd5fbb91ea0c7506eabea40129ec14e3734d887e0962a94078989"
+    },
+    {
+      "bytes": 25439,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-administrative-and-operational-audit.log",
+      "nonblank_records": 60,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-administrative-and-operational-audit.log",
+      "physical_lines": 60,
+      "sha256": "55a2ff4e9ec2bb89767b2fdaafc071d0cc21b8670e1102fe00b07684c23d0a2c"
+    },
+    {
+      "bytes": 6489,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-authentication-flow-diagnostics.log",
+      "nonblank_records": 11,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-authentication-flow-diagnostics.log",
+      "physical_lines": 11,
+      "sha256": "e4c2a8b7dc482c5a1eb9258f72e8eb1b4d3af98777fe0740b40f8c6e0939e0b1"
+    },
+    {
+      "bytes": 5060,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-cise-alarm.log",
+      "nonblank_records": 24,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-cise-alarm.log",
+      "physical_lines": 24,
+      "sha256": "db3e3fceaf0867ffa813fe592212deab77e19d5095a34d152b993d5159ee007c"
+    },
+    {
+      "bytes": 214,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-device-sensor-fragments.log",
+      "nonblank_records": 1,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-device-sensor-fragments.log",
+      "physical_lines": 1,
+      "sha256": "fd6b77413fb7337c37e7f82ae67f4dcb05ce480cd02c9dc917c1aae14f9e6b64"
+    },
+    {
+      "bytes": 34595,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-failed-attempts.log",
+      "nonblank_records": 40,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-failed-attempts.log",
+      "physical_lines": 40,
+      "sha256": "b5e16646bf4f5e18fa28a74097a0ab1e408fda84bbaad2ad55ce9d96f3d50952"
+    },
+    {
+      "bytes": 1561,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-guest.log",
+      "nonblank_records": 7,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-guest.log",
+      "physical_lines": 7,
+      "sha256": "711ffa0134220c75af23a4fc7134bcda11c4ca91ad92eab42d3ba9e2fd837ed5"
+    },
+    {
+      "bytes": 6819,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-identity-stores-diagnostics.log",
+      "nonblank_records": 17,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-identity-stores-diagnostics.log",
+      "physical_lines": 17,
+      "sha256": "d263031dd48b8795e2b8b195d925c2436df609e225c8de3b399654586efa31ce"
+    },
+    {
+      "bytes": 1445,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-internal-operations-diagnostics.log",
+      "nonblank_records": 6,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-internal-operations-diagnostics.log",
+      "physical_lines": 6,
+      "sha256": "919e69f2c91103df931e153d6bcdf5e477da036d101bd6bce34f77f4f5ab07be"
+    },
+    {
+      "bytes": 423,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-monitoring-data-purge-audit.log",
+      "nonblank_records": 2,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-monitoring-data-purge-audit.log",
+      "physical_lines": 2,
+      "sha256": "bc74876b783d72d78f92011bd6e94c0081aa377daae104bd529fc5a309adaba8"
+    },
+    {
+      "bytes": 3376,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-my-devices.log",
+      "nonblank_records": 8,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-my-devices.log",
+      "physical_lines": 8,
+      "sha256": "4d8a0852653b96a1a170b8f43a63dc5eff33f6e1053fea449b1a38746008326a"
+    },
+    {
+      "bytes": 26709,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-passed-authentications.log",
+      "nonblank_records": 22,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-passed-authentications.log",
+      "physical_lines": 22,
+      "sha256": "03db2b7ac3b5d78b21ecc448f36f3a7241feccbb3509c2b66c602c8a07fed614"
+    },
+    {
+      "bytes": 3760,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-policy-diagnostics.log",
+      "nonblank_records": 8,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-policy-diagnostics.log",
+      "physical_lines": 8,
+      "sha256": "4d44d8f40759ef7e9f93cda6e56babc5cac5fcd41fb73d0e39501034641874fd"
+    },
+    {
+      "bytes": 625,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-posture-client-provisioning-audit.log",
+      "nonblank_records": 2,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-posture-client-provisioning-audit.log",
+      "physical_lines": 2,
+      "sha256": "0f6b2334ca1846891d5571fa8e7834c97047b5e31f91e390880b30698198c0b7"
+    },
+    {
+      "bytes": 4145,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-radius-accounting.log",
+      "nonblank_records": 6,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-radius-accounting.log",
+      "physical_lines": 6,
+      "sha256": "d920589df27735280fc1b44b67221b7ecda5936bea8335714d835c38f3c2ca19"
+    },
+    {
+      "bytes": 21186,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-radius-diagnostics.log",
+      "nonblank_records": 27,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-radius-diagnostics.log",
+      "physical_lines": 27,
+      "sha256": "44c8639de63704e3c3a05640bddf66b4402c8f92f517ceb066451fa5c62072e4"
+    },
+    {
+      "bytes": 6326,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-system-statistics.log",
+      "nonblank_records": 7,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-system-statistics.log",
+      "physical_lines": 7,
+      "sha256": "eecc44a5d9c1102b2b121d4eeebdb1b96aac82bf95133702c9408905ee20def0"
+    },
+    {
+      "bytes": 11769,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-tacacs-accounting.log",
+      "nonblank_records": 10,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-tacacs-accounting.log",
+      "physical_lines": 10,
+      "sha256": "3dcd4613cf4d686fd386feaa7d375064caab97e53490fb6d557346fc0a0a9ba3"
+    },
+    {
+      "bytes": 1048,
+      "family": "cisco_ise",
+      "file": "cisco_ise/test-pipeline-threat-centric-nac.log",
+      "nonblank_records": 4,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-threat-centric-nac.log",
+      "physical_lines": 4,
+      "sha256": "87d452c9600b5690fb0061f2a35d783721f6b632bc735a33f2317c1ef611eddc"
+    },
+    {
+      "bytes": 13684,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-anti-spam.log",
+      "nonblank_records": 19,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-spam.log",
+      "physical_lines": 19,
+      "sha256": "81036ed0708c315e1b23af59e43fef25043378091d485e9cfc1169b88664d588"
+    },
+    {
+      "bytes": 1282,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-anti-virus-ftp.log",
+      "nonblank_records": 2,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-virus-ftp.log",
+      "physical_lines": 2,
+      "sha256": "c8a37525b81838f55a74097973c3c3cf5d7307ea1c572751cc3818beb88c33fa"
+    },
+    {
+      "bytes": 2135,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-anti-virus-smtp.log",
+      "nonblank_records": 3,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-virus-smtp.log",
+      "physical_lines": 3,
+      "sha256": "b4714eec4df003c2f7abed24c04602c0107c4462c7750c3fbcec82c2b0d1b29e"
+    },
+    {
+      "bytes": 984,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-anti-virus-web.log",
+      "nonblank_records": 2,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-virus-web.log",
+      "physical_lines": 2,
+      "sha256": "f4c83355c7b25507dfbeedf90580528c08731a913342accb51fecb26acc8a4f4"
+    },
+    {
+      "bytes": 948,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-atp-firewall.log",
+      "nonblank_records": 2,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-atp-firewall.log",
+      "physical_lines": 2,
+      "sha256": "46f2ff4fdac4a0ead7f0debd304bd84f1c3fb226c7fa235e1702eecddec31674"
+    },
+    {
+      "bytes": 1506,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-authentication.log",
+      "nonblank_records": 3,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-authentication.log",
+      "physical_lines": 3,
+      "sha256": "d37c56478c39510b3cad66dcf18621580ecc632bbe2df58b587675225bfa49f5"
+    },
+    {
+      "bytes": 5338,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-content-filtering-http.log",
+      "nonblank_records": 8,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-content-filtering-http.log",
+      "physical_lines": 8,
+      "sha256": "5ceb7a440f36bff5db39456f21b8fc4cf18b059de5145ad665b558439df1ddb4"
+    },
+    {
+      "bytes": 495,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-content-filtering-web-content-policy.log",
+      "nonblank_records": 1,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-content-filtering-web-content-policy.log",
+      "physical_lines": 1,
+      "sha256": "0ee72a99c11019d676791aa8d04bee8e3fc511f4bc66bbd09e0754480918eb7c"
+    },
+    {
+      "bytes": 13791,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-firewall.log",
+      "nonblank_records": 16,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-firewall.log",
+      "physical_lines": 16,
+      "sha256": "0f2c1e1bbeabee2996e9b7b4ae4c3238b21607a23c7771b030df5d2a624c04fc"
+    },
+    {
+      "bytes": 2340,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-idp.log",
+      "nonblank_records": 4,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-idp.log",
+      "physical_lines": 4,
+      "sha256": "18c2e63198d89e8d11821bc27c3aa039bea2db69183850d08b28486deb9677da"
+    },
+    {
+      "bytes": 2134,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-sandstorm.log",
+      "nonblank_records": 5,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-sandstorm.log",
+      "physical_lines": 5,
+      "sha256": "03a19155b5c3f2ee293b9c5b9d76be59e6fd1dadb6929ff467ac28bc13192095"
+    },
+    {
+      "bytes": 1395,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-systemhealth.log",
+      "nonblank_records": 5,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-systemhealth.log",
+      "physical_lines": 5,
+      "sha256": "04dfafb13af7690383487e8c80c27277114c2388317ba2cba0c2111d33c6d615"
+    },
+    {
+      "bytes": 587,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-18-5-wireless.log",
+      "nonblank_records": 2,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-wireless.log",
+      "physical_lines": 2,
+      "sha256": "9df2440747b8059c77bad0939985ed37ca3ae293515197ef48718d8aadfc676e"
+    },
+    {
+      "bytes": 63284,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-sophos-xg.log",
+      "nonblank_records": 95,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-xg.log",
+      "physical_lines": 95,
+      "sha256": "2fa4c23733b2a24ed4af32fbcaf89c69774483152d307dd9bc110c095114a33a"
+    },
+    {
+      "bytes": 38485,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-xg-cfilter-new.log",
+      "nonblank_records": 51,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-xg-cfilter-new.log",
+      "physical_lines": 51,
+      "sha256": "7e57987b3a5db0b51104891c9a3193aaf291151c8fa8d6c91d1b79ba9c7259e7"
+    },
+    {
+      "bytes": 1374,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-xg-event-new.log",
+      "nonblank_records": 3,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-xg-event-new.log",
+      "physical_lines": 3,
+      "sha256": "eca399bfcbaae7c85a1dcb7bd508a5c7441c0fe315d68fa8a59b3b6442b9fdc2"
+    },
+    {
+      "bytes": 45876,
+      "family": "sophos_xg",
+      "file": "sophos_xg/test-xg-firewall-new.log",
+      "nonblank_records": 50,
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-xg-firewall-new.log",
+      "physical_lines": 50,
+      "sha256": "d45c19ac090e93c845a8edac5b2b570e16bc2dc935606bced72fee20623f09c1"
+    },
+    {
+      "bytes": 410,
+      "family": "sophos_utm",
+      "file": "sophos_utm/test-sophos-utm-dhcp.log",
+      "nonblank_records": 4,
+      "path": "packages/sophos/data_stream/utm/_dev/test/pipeline/test-sophos-utm-dhcp.log",
+      "physical_lines": 4,
+      "sha256": "ea61476c35d45569c438d04c3c276f2850aa217a9943800ba65747c8e9cf476e"
+    },
+    {
+      "bytes": 459,
+      "family": "sophos_utm",
+      "file": "sophos_utm/test-sophos-utm-dns.log",
+      "nonblank_records": 5,
+      "path": "packages/sophos/data_stream/utm/_dev/test/pipeline/test-sophos-utm-dns.log",
+      "physical_lines": 5,
+      "sha256": "8ee65cf0e47d258030951873f2e2481377817f87feacf2882cfda8eb7a230499"
+    },
+    {
+      "bytes": 6602,
+      "family": "sophos_utm",
+      "file": "sophos_utm/test-sophos-utm-http.log",
+      "nonblank_records": 10,
+      "path": "packages/sophos/data_stream/utm/_dev/test/pipeline/test-sophos-utm-http.log",
+      "physical_lines": 10,
+      "sha256": "f017064ec8148009949f99b01be1c5e8256ef867c6fa623a28ac56011ca37807"
+    },
+    {
+      "bytes": 1128,
+      "family": "sophos_utm",
+      "file": "sophos_utm/test-sophos-utm-packetfilter.log",
+      "nonblank_records": 3,
+      "path": "packages/sophos/data_stream/utm/_dev/test/pipeline/test-sophos-utm-packetfilter.log",
+      "physical_lines": 3,
+      "sha256": "7defc13c5a7c7568837bbde3099f75c1e3b0d090add76f0c5bce515979dace81"
+    },
+    {
+      "bytes": 2591,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-afm.log",
+      "nonblank_records": 2,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-afm.log",
+      "physical_lines": 2,
+      "sha256": "28206d4e38683307b8393a0481b1366f45fb1621d2a188c589412090e6db5af6"
+    },
+    {
+      "bytes": 1400,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-apm.log",
+      "nonblank_records": 4,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-apm.log",
+      "physical_lines": 4,
+      "sha256": "f96e749ff95f184d341f928bf41489651b52514cad3b6fc59d5ffb7d99de54e8"
+    },
+    {
+      "bytes": 3691,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-asm-untrusted-input.log",
+      "nonblank_records": 9,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-asm-untrusted-input.log",
+      "physical_lines": 9,
+      "sha256": "c3611d9d728b801a4f4d71fcf1e8c6e6f8ca85b1dcc96afc65810477e157e083"
+    },
+    {
+      "bytes": 12023,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-asm.log",
+      "nonblank_records": 7,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-asm.log",
+      "physical_lines": 7,
+      "sha256": "5fbfb18c9cd3ed1bbac7ffadf2b020120d7e27089d84480adfffd477f0cd5f89"
+    },
+    {
+      "bytes": 5039,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-avr.log",
+      "nonblank_records": 6,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-avr.log",
+      "physical_lines": 6,
+      "sha256": "b393c0af3d3eb6a0800bb33848a850cfbabc79fb7c66b294b14f090f17459a98"
+    },
+    {
+      "bytes": 6450,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-dos-and-bot.log",
+      "nonblank_records": 3,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-dos-and-bot.log",
+      "physical_lines": 3,
+      "sha256": "1bb4e4d747ddf5233d8ebe48de8977c0aa2e54aa508c94d39e82b4755acb80f8"
+    },
+    {
+      "bytes": 20915,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-ihealth.log",
+      "nonblank_records": 1,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-ihealth.log",
+      "physical_lines": 1,
+      "sha256": "136f1d9ac20ce3abe9b893b1e16327e3d8c210f3a4359910fc598b96e6b81447"
+    },
+    {
+      "bytes": 1278,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-ltm.log",
+      "nonblank_records": 3,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-ltm.log",
+      "physical_lines": 3,
+      "sha256": "378760d10f361ce5785c12986177d88aaa7e5909401c1751ce6cf80842ee4f90"
+    },
+    {
+      "bytes": 35298,
+      "family": "f5_bigip",
+      "file": "f5_bigip/test-pipeline-bigip-system.log",
+      "nonblank_records": 1,
+      "path": "packages/f5_bigip/data_stream/log/_dev/test/pipeline/test-pipeline-bigip-system.log",
+      "physical_lines": 1,
+      "sha256": "334ee54a6cff3a47e47bebea24551d7e5a3bdc48cec67b7f3bf290778e9ca54e"
+    },
+    {
+      "bytes": 2946,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-atp.log",
+      "nonblank_records": 6,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-atp.log",
+      "physical_lines": 6,
+      "sha256": "030650c611387aceab426ff7a4167edea3b8538d24a4a5e3be8643b141e28e15"
+    },
+    {
+      "bytes": 25996,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-flow.log",
+      "nonblank_records": 31,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-flow.log",
+      "physical_lines": 31,
+      "sha256": "44681891ec7aaa2ac122ba8cc39b2b79b3ad34d2bace307b7988ce5857174085"
+    },
+    {
+      "bytes": 7248,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-idp.log",
+      "nonblank_records": 9,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-idp.log",
+      "physical_lines": 9,
+      "sha256": "f80d55018a4003718d54f7a4060f7e83200ccd165e10209e8ba2db9b8411e9e6"
+    },
+    {
+      "bytes": 3903,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-ids.log",
+      "nonblank_records": 14,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-ids.log",
+      "physical_lines": 14,
+      "sha256": "06832f891eabea3b99b927a8e35c0951ff863d477b50ff67aec63dbdbefbc877"
+    },
+    {
+      "bytes": 1734,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-secintel.log",
+      "nonblank_records": 3,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-secintel.log",
+      "physical_lines": 3,
+      "sha256": "4ffcbcd9ead6f532bce9a0220a688e1a8c5408a82dcabedd045b42dedcfacf74"
+    },
+    {
+      "bytes": 7282,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-system.log",
+      "nonblank_records": 29,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-system.log",
+      "physical_lines": 29,
+      "sha256": "824899cdba53292e9788ba89a47e4bcb44fa6b7908f37056b3c758e3cec4847e"
+    },
+    {
+      "bytes": 5034,
+      "family": "juniper_srx",
+      "file": "juniper_srx/test-utm.log",
+      "nonblank_records": 13,
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-utm.log",
+      "physical_lines": 13,
+      "sha256": "fbb52595fc5a63584585a32be372075af688564873ee71800bfbfcee6e9ce98c"
+    }
+  ],
+  "license_policy": "Raw upstream fixtures remain only in ignored local research cache; committed evidence contains provenance, counts and digests only.",
+  "parser_freeze_head": "074b90e35de04c65fc7c5bec11d42a198d12130c",
+  "raw_published": false,
+  "selection_rule": "All .log files in the five pinned upstream pipeline-test directories; all globally unique nonblank physical lines are events.",
+  "unique_event_count": 708,
+  "upstream_commit": "49057c708569a51a9f87d2b45ef286812b093d2d",
+  "upstream_repository": "elastic/integrations"
+}
