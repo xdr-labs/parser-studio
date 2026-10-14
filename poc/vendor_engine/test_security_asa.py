@@ -14,6 +14,16 @@ class CiscoAsaConservativeTests(unittest.TestCase):
             self.assertEqual(event.vendor_fields['asa'][key],raw.encode()[span.start_byte:span.end_byte].decode())
         assert_source_accounting(event)
 
+    def test_connection_id_only_when_explicit_and_exact(self):
+        raw='%FTD-6-302013: Built inbound TCP connection 123456789 for outside:192.0.2.10/443'
+        event=parse_security_multipass(raw)
+        self.assertEqual('123456789',event.vendor_fields['asa']['connection_id'])
+        self.assertEqual('PARTIAL',event.status)
+        span=next(x for x in event.value_spans if x.source_segments==('asa','connection_id'))
+        self.assertEqual('123456789',raw.encode()[span.start_byte:span.end_byte].decode())
+        self.assertNotIn('connection_id',parse_asa_message('%FTD-6-302020: Built inbound ICMP connection for faddr 192.0.2.1/0').vendor_fields['asa'])
+        assert_source_accounting(event)
+
     def test_deny_protocol_remains_partial_with_exact_spans(self):
         raw='%ASA-4-106023: Deny udp src outside:192.0.2.1/53 dst inside:198.51.100.1/53'
         event=parse_security_multipass(raw)

@@ -6,6 +6,7 @@ from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting
 ASA_ID=re.compile(r'%(ASA|FTD)-(\d)-(\d{6}):[ \t]*')
 ASA_CONNECTION=re.compile(r'\b(?P<action>Built|Teardown) (?P<direction>inbound|outbound) (?P<protocol>TCP|UDP|ICMP) connection\b')
 ASA_DENY=re.compile(r'(?P<action>Deny) (?P<protocol>tcp|udp|icmp) src\b')
+ASA_CONNECTION_ID=re.compile(r'[ \t]+(?P<connection_id>[0-9]{1,20})(?=[ \t]|$)')
 
 def parse_asa_message(raw:str)->SourceEvent|None:
     if not isinstance(raw,str):return None
@@ -29,6 +30,12 @@ def parse_asa_message(raw:str)->SourceEvent|None:
             a,b=conn.span(name);a+=match.end();b+=match.end()
             tree[name]=value
             spans.append(ValueSpan('asa.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('asa',name)))
+        # Only an explicit numeric token immediately following 'connection' is an ID.
+        identifier=ASA_CONNECTION_ID.match(body,conn.end())
+        if identifier is not None:
+            a,b=identifier.span('connection_id');a+=match.end();b+=match.end()
+            tree['connection_id']=identifier['connection_id']
+            spans.append(ValueSpan('asa.connection_id',len(raw[:a].encode()),len(raw[:b].encode()),('asa','connection_id')))
     deny=ASA_DENY.match(body) if conn is None else None
     if deny is not None:
         for name in ('action','protocol'):
