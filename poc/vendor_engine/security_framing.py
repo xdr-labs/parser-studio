@@ -133,7 +133,8 @@ def _opaque(raw:str,issue:str)->SourceEvent:
 
 
 def parse_security_batch(raw:str,*,max_events:int=1000,
-                         max_bytes:int=DEFAULT_BATCH_BYTES)->SecurityBatch:
+                         max_bytes:int=DEFAULT_BATCH_BYTES,
+                         parser=parse_security_source)->SecurityBatch:
     """Frame once, then run the existing source parser on unchanged slices.
 
     Byte offsets cover the original stream exactly once, including whitespace
@@ -141,6 +142,7 @@ def parse_security_batch(raw:str,*,max_events:int=1000,
     JSON is not split speculatively at lines that might be nested values.
     """
     if not isinstance(raw,str):raise TypeError('SECURITY_BATCH_NOT_TEXT')
+    if not callable(parser):raise TypeError('SECURITY_BATCH_PARSER_NOT_CALLABLE')
     if (type(max_events) is not int or not 1<=max_events<=MAX_EVENTS or
         type(max_bytes) is not int or not 1<=max_bytes<=MAX_BATCH_BYTES):
         raise ValueError('SECURITY_BATCH_BOUND_INVALID')
@@ -175,7 +177,7 @@ def parse_security_batch(raw:str,*,max_events:int=1000,
             end=len(raw);issue='FRAMING_EVENT_LIMIT'
         piece=raw[start:end]
         if offsets[end]-offsets[start]>MAX_RAW_BYTES:issue='FRAMING_RECORD_SIZE_LIMIT'
-        event=_opaque(piece,issue) if issue else parse_security_source(piece)
+        event=_opaque(piece,issue) if issue else parser(piece)
         result.frames.append(SecurityFrame(piece,offsets[start],offsets[end],event))
         pos=end
     assert_batch_accounting(result)
