@@ -17,6 +17,12 @@ describe('AI recovery review safety',()=>{
   fireEvent.click(screen.getByRole('checkbox'));
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
  });
+ it('rejects unverified AI recipe and never applies changes',()=>{
+  render(<AutoParserAIReview raw="RAW" status="unsupported" onChatGPT={vi.fn()}/>);
+  fireEvent.click(screen.getByText('Paste AI Recipe for strict review'));
+  fireEvent.change(screen.getByRole('textbox',{name:'AI Recipe JSON'}),{target:{value:'{"code":"unsafe"}'}});
+  expect(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}).hasAttribute('disabled')).toBe(true);
+ });
  it('opens the existing assisted parser path',()=>{
   const onChatGPT=vi.fn();
   render(<AutoParserAIReview raw="RAW" status="unsupported" onChatGPT={onChatGPT}/>);

@@ -1,14 +1,19 @@
 import {useEffect,useState} from 'react';
 import {toSourceByteRange} from './sourceByteSelection';
+import type {ParserDraft,SuiteResult} from '../model';
+import {importReviewOnlyAIRecipe} from './aiRecipeExchange';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void}
-export default function AutoParserAIReview({raw,status,onChatGPT}:Props){
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult}
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
  const [approved,setApproved]=useState(false);
  const [notice,setNotice]=useState('');
- useEffect(()=>{setRange([0,0]);setApproved(false);setNotice('');setMode(status==='unsupported'?'entire':'selection');},[raw,status]);
+ const [recipeText,setRecipeText]=useState('');
+ const [importResult,setImportResult]=useState('');
+ const [importBusy,setImportBusy]=useState(false);
+ useEffect(()=>{setRange([0,0]);setApproved(false);setNotice('');setRecipeText('');setImportResult('');setMode(status==='unsupported'?'entire':'selection');},[raw,status]);
  const sourceRange=toSourceByteRange(raw,range[0],range[1]);
  const excerpt=mode==='entire'?raw:(sourceRange?.text??'');
  const canCopy=approved&&!!excerpt.trim()&&!!goal.trim();
@@ -27,6 +32,17 @@ export default function AutoParserAIReview({raw,status,onChatGPT}:Props){
   if(!canCopy)return;
   try{await navigator.clipboard.writeText(prompt());setNotice('Reviewed prompt copied. Paste it into ChatGPT manually.');}
   catch{setNotice('Clipboard unavailable. No log data was transferred.');}
+ }
+ async function reviewImport(){
+  if(!source||!draft||!suite||!recipeText.trim()||importBusy)return;
+  setImportBusy(true);setImportResult('');
+  try{
+   const result=await importReviewOnlyAIRecipe(recipeText,source,draft,suite);
+   setImportResult(result.ok?
+    `REVIEW ONLY: ${result.report.changedStageCount} stage changes, ${result.report.addedMappings} added mappings, ${result.report.removedMappings} removed mappings. No rules were applied. Native compiler NOT VERIFIED.`:
+    `Rejected AI proposal: ${result.reason}. No rules were applied.`);
+  }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
+  finally{setImportBusy(false);}
  }
  return <aside className="stellar-ai-review" aria-label="Improve with AI">
   <h3>Improve with AI</h3>
@@ -50,6 +66,15 @@ export default function AutoParserAIReview({raw,status,onChatGPT}:Props){
    <button type="button" onClick={onChatGPT}>Open Assisted Parser</button>
   </div>
   {notice&&<p role="status">{notice}</p>}
+  <details className="stellar-ai-import">
+   <summary>Paste AI Recipe for strict review</summary>
+   <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ParserRecipe v0.2 JSON proposal</label>
+   <textarea id="stellar-ai-recipe" aria-label="AI Recipe JSON" rows={5} maxLength={32768}
+    value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');}}/>
+   <button type="button" disabled={!source||!draft||!suite||!recipeText.trim()||importBusy}
+    onClick={()=>void reviewImport()}>Validate Proposal (Review Only)</button>
+   {importResult&&<p role="status">{importResult}</p>}
+  </details>
   <small>AI output is a proposal only. Import, independent validation and user approval are required before changing parser rules.</small>
  </aside>;
 }

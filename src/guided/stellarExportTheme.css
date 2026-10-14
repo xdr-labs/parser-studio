@@ -77,3 +77,7 @@ body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
 .stellar-ai-unrecognized>strong{display:block;color:#9b3e1e;font-size:14px}
 .stellar-ai-unrecognized>p{font-size:12px;color:#625b5e;line-height:1.6}
 .stellar-ai-unrecognized>.stellar-ai-review{box-shadow:none}
+.stellar-ai-import{margin-top:15px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#faf9f9}
+.stellar-ai-import summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--charcoal)}
+.stellar-ai-import button{padding:9px 12px;border-radius:8px;background:var(--stellar-orange);color:#fff;border:0;font-weight:700}
+.stellar-ai-import button:disabled{opacity:.5}

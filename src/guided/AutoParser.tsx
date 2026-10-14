@@ -556,7 +556,7 @@ export default function AutoParser({
        {sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
          <strong>Some source events need assistance</strong>
          <p>{report.unsupported} of {report.sourceCount} events were not fully recognized. The original input is preserved; unsupported events are not silently discarded or marked parser-ready.</p>
-         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT}/>
+         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}/>
        </div>}
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
@@ -717,7 +717,7 @@ export default function AutoParser({
          <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
-       <AutoParserAIReview raw={chosen?.raw??sample} status={chosen?.status??'unsupported'} onChatGPT={onChatGPT}/>
+       <AutoParserAIReview raw={chosen?.raw??sample} status={chosen?.status??'unsupported'} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}/>
        </div>
        <div className="auto-parser-map-list" aria-label="Suggested field mappings">
          {draft.mappings.map((rule)=><div key={rule.id}>
