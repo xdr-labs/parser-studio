@@ -10,6 +10,17 @@ const DICTIONARY_TYPES=new Set(['string','integer','ip']);
 const SAFE_PATH=/^[A-Za-z_][A-Za-z0-9_.\-[\]]{0,255}$/;
 const CEF_ALIASES:Record<string,string>={src:'srcip',dst:'dstip',spt:'srcport',dpt:'dstport',act:'action'};
 
+export interface MultiPassRedactionProjection {
+ contract:'parser-studio.visible-redaction-assessment.v0.1';
+ assessment:'EXPLICIT_VISIBLE_MASKS'|'NOT_ASSESSED_NO_LITERAL_MARKER'|'EXCLUDED_NO_SOURCE_OCCURRENCES';
+ sourceOccurrences:number;explicitMaskOccurrences:number;unassessedVisibleOccurrences:number;
+ excludedEvent:boolean;
+ occurrences:Array<{sourcePath:string;occurrence:number;
+  markerClass:'REDACTED_KEYWORD'|'MASKED_KEYWORD'|'ASTERISK_RUN';
+  startByte:number;endByte:number}>;
+ sourceExtractionPreserved:true;hiddenValueReconstruction:false;
+}
+
 export interface MultiPassDictionaryProjection {
  contract:'parser-studio.stellar-dictionary-projection.v0.1';
  dictionaryRevision:string;
@@ -31,6 +42,7 @@ export interface MultiPassSourcePreview {
  residuals:Array<{startByte:number;endByte:number}>;
  issues:string[];
  dictionary?:MultiPassDictionaryProjection;
+ redaction?:MultiPassRedactionProjection;
  nativeVerified:false;targetVerified:false;
 }
 function mappingMatchesContract(sourcePath:string,targetField:string,mappingClass:string):boolean{
@@ -81,6 +93,68 @@ function verifyDictionary(raw:unknown,spans:MultiPassSourcePreview['spans'],size
   throw new Error('Untrusted Stellar Dictionary projection.');
  return value as MultiPassDictionaryProjection;
 }
+function visibleMarkerMatches(markerClass:string,token:string):boolean{
+ const lower=token.toLocaleLowerCase('en-US');
+ if(markerClass==='REDACTED_KEYWORD')
+  return ['redacted','<redacted>','[redacted]'].includes(lower);
+ if(markerClass==='MASKED_KEYWORD')
+  return ['masked','<masked>','[masked]'].includes(lower);
+ if(markerClass==='ASTERISK_RUN')return /^\*{3,64}$/.test(token);
+ return false;
+}
+function verifyRedaction(raw:unknown,source:string,spans:MultiPassSourcePreview['spans'],size:number):
+ MultiPassRedactionProjection{
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))
+  throw new Error('Untrusted visible redaction projection.');
+ const value=raw as Partial<MultiPassRedactionProjection>;
+ const assessments=['EXPLICIT_VISIBLE_MASKS','NOT_ASSESSED_NO_LITERAL_MARKER','EXCLUDED_NO_SOURCE_OCCURRENCES'];
+ if(value.contract!=='parser-studio.visible-redaction-assessment.v0.1'||
+  !assessments.includes(value.assessment??'')||
+  !Number.isSafeInteger(value.sourceOccurrences)||value.sourceOccurrences!<0||
+  !Number.isSafeInteger(value.explicitMaskOccurrences)||value.explicitMaskOccurrences!<0||
+  !Number.isSafeInteger(value.unassessedVisibleOccurrences)||value.unassessedVisibleOccurrences!<0||
+  value.sourceOccurrences!==spans.length||
+  (value.explicitMaskOccurrences!+value.unassessedVisibleOccurrences!)!==value.sourceOccurrences||
+  !Array.isArray(value.occurrences)||value.occurrences.length!==value.explicitMaskOccurrences||
+  value.sourceExtractionPreserved!==true||value.hiddenValueReconstruction!==false||
+  typeof value.excludedEvent!=='boolean')
+  throw new Error('Untrusted visible redaction projection.');
+ const excluded=value.assessment==='EXCLUDED_NO_SOURCE_OCCURRENCES';
+ if(value.excludedEvent!==excluded||
+  (value.assessment==='EXPLICIT_VISIBLE_MASKS'&&value.explicitMaskOccurrences===0)||
+  (value.assessment==='NOT_ASSESSED_NO_LITERAL_MARKER'&&
+    (value.explicitMaskOccurrences!==0||value.sourceOccurrences===0))||
+  (excluded&&(value.sourceOccurrences!==0||value.explicitMaskOccurrences!==0)))
+  throw new Error('Untrusted visible redaction projection.');
+ const grouped=new Map<string,Array<{path:string;startByte:number;endByte:number}>>();
+ for(const span of spans){
+  const items=grouped.get(span.path)??[];items.push(span);grouped.set(span.path,items);
+ }
+ const sourceBytes=new TextEncoder().encode(source);
+ const decoder=new TextDecoder('utf-8',{fatal:true});
+ const seen=new Set<string>();
+ for(const item of value.occurrences){
+  if(!item||typeof item!=='object'||Array.isArray(item)||
+   Object.prototype.hasOwnProperty.call(item,'value')||
+   typeof item.sourcePath!=='string'||!SAFE_PATH.test(item.sourcePath)||
+   !Number.isSafeInteger(item.occurrence)||item.occurrence!<0||
+   !['REDACTED_KEYWORD','MASKED_KEYWORD','ASTERISK_RUN'].includes(item.markerClass)||
+   !Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
+   item.startByte<0||item.endByte>size||item.startByte>=item.endByte)
+   throw new Error('Untrusted visible redaction projection.');
+  const span=grouped.get(item.sourcePath)?.[item.occurrence!];
+  const key=item.sourcePath+'\0'+item.occurrence;
+  if(!span||item.startByte<span.startByte||item.endByte>span.endByte||seen.has(key))
+   throw new Error('Untrusted visible redaction projection.');
+  let token:string;
+  try{token=decoder.decode(sourceBytes.slice(item.startByte,item.endByte));}
+  catch{throw new Error('Untrusted visible redaction projection.');}
+  if(!visibleMarkerMatches(item.markerClass!,token))
+   throw new Error('Untrusted visible redaction projection.');
+  seen.add(key);
+ }
+ return value as MultiPassRedactionProjection;
+}
 export async function requestMultiPassPreview(raw:string,requester:typeof fetch=fetch):Promise<MultiPassSourcePreview>{
  const size=new TextEncoder().encode(raw).byteLength;
  if(!size||size>65536)throw new Error('Source must be between 1 and 65536 UTF-8 bytes.');
@@ -106,5 +180,7 @@ export async function requestMultiPassPreview(raw:string,requester:typeof fetch=
  }
  if(value.dictionary!==undefined)
   value.dictionary=verifyDictionary(value.dictionary,value.spans,size);
+ if(value.redaction!==undefined)
+  value.redaction=verifyRedaction(value.redaction,raw,value.spans,size);
  return value as MultiPassSourcePreview;
 }

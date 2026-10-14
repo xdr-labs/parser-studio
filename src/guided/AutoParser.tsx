@@ -571,6 +571,21 @@ export default function AutoParser({
            <strong>{currentMultiPass.status} · {currentMultiPass.syntax}</strong>
            <p>Extracted fields and source byte spans are shown below. Residuals remain available for AI correction.</p>
            <pre>{JSON.stringify(currentMultiPass.fields,null,2)}</pre>
+           {currentMultiPass.redaction&&<div className="stellar-redaction-review" aria-label="Visible masking and redaction assessment">
+             <strong>Visible redaction review · {currentMultiPass.redaction.explicitMaskOccurrences} explicit marker{currentMultiPass.redaction.explicitMaskOccurrences===1?'':'s'}</strong>
+             <p>{currentMultiPass.redaction.assessment==='EXPLICIT_VISIBLE_MASKS'
+               ?'Exact visible masking markers were recognized in extracted source values. The visible token is preserved exactly; hidden content is never reconstructed.'
+               :currentMultiPass.redaction.assessment==='NOT_ASSESSED_NO_LITERAL_MARKER'
+               ?'No exact literal masking marker was recognized. This does not prove the source was never masked or anonymized.'
+               :'No extracted source occurrence is available for masking assessment; the event remains excluded from this assessment.'}</p>
+             {!!currentMultiPass.redaction.occurrences.length&&<div className="stellar-redaction-grid">
+               {currentMultiPass.redaction.occurrences.map((item,i)=><span key={i}>
+                 <b>{item.sourcePath}{item.occurrence?` #${item.occurrence+1}`:''}</b>
+                 <small>{item.markerClass.replaceAll('_',' ')} · bytes {item.startByte}–{item.endByte}</small>
+               </span>)}
+             </div>}
+             <small>{currentMultiPass.redaction.unassessedVisibleOccurrences} other visible source occurrence{currentMultiPass.redaction.unassessedVisibleOccurrences===1?'':'s'} remain unassessed · Source extraction preserved · Hidden-value reconstruction OFF</small>
+           </div>}
            {currentMultiPass.dictionary&&<div className="stellar-dictionary-review" aria-label="Stellar Dictionary normalization suggestions">
              <strong>Stellar Dictionary review · {currentMultiPass.dictionary.mapped.length} mapped · {currentMultiPass.dictionary.unmappedCount} preserved unmapped</strong>
              <p>Authoritative exact-name or standardized CEF guidance only. No source values are copied into this metadata, no generic aliases are inferred, and unmapped vendor fields remain unchanged.</p>

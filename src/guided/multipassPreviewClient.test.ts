@@ -53,6 +53,41 @@ describe('opt-in Multi-Pass preview contract',()=>{
    await expect(requestMultiPassPreview(raw,bad as typeof fetch)).rejects.toThrow('Dictionary');
   }
  });
+ it('accepts only value-free visible-redaction metadata bound to exact source occurrence spans',async()=>{
+  const raw='src=REDACTED secret=*** custom=PRIVATE_VISIBLE';
+  const bytes=new TextEncoder();
+  const at=(token:string)=>bytes.encode(raw.slice(0,raw.indexOf(token))).length;
+  const spans=[
+   {path:'src',startByte:at('REDACTED'),endByte:at('REDACTED')+8},
+   {path:'secret',startByte:at('***'),endByte:at('***')+3},
+   {path:'custom',startByte:at('PRIVATE_VISIBLE'),endByte:at('PRIVATE_VISIBLE')+15},
+  ];
+  const redaction={contract:'parser-studio.visible-redaction-assessment.v0.1',
+   assessment:'EXPLICIT_VISIBLE_MASKS',sourceOccurrences:3,explicitMaskOccurrences:2,
+   unassessedVisibleOccurrences:1,excludedEvent:false,occurrences:[
+    {sourcePath:'src',occurrence:0,markerClass:'REDACTED_KEYWORD',startByte:spans[0].startByte,endByte:spans[0].endByte},
+    {sourcePath:'secret',occurrence:0,markerClass:'ASTERISK_RUN',startByte:spans[1].startByte,endByte:spans[1].endByte},
+   ],sourceExtractionPreserved:true,hiddenValueReconstruction:false};
+  const base={contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+   syntax:'KV',sourceSha256:createHash('sha256').update(raw).digest('hex'),
+   sourceBytes:bytes.encode(raw).length,fields:{src:'REDACTED',secret:'***',custom:'PRIVATE_VISIBLE'},
+   spans,residuals:[],issues:[],redaction,nativeVerified:false,targetVerified:false};
+  const requester=vi.fn().mockResolvedValue({ok:true,json:async()=>base});
+  const result=await requestMultiPassPreview(raw,requester as typeof fetch);
+  expect(result.redaction?.explicitMaskOccurrences).toBe(2);
+  expect(JSON.stringify(result.redaction)).not.toContain('PRIVATE_VISIBLE');
+  for(const altered of [
+   {...redaction,hiddenValueReconstruction:true},
+   {...redaction,sourceOccurrences:2},
+   {...redaction,assessment:'NOT_ASSESSED_NO_LITERAL_MARKER'},
+   {...redaction,occurrences:[{...redaction.occurrences[0],startByte:redaction.occurrences[0].startByte+1},redaction.occurrences[1]]},
+   {...redaction,occurrences:[{...redaction.occurrences[0],markerClass:'MASKED_KEYWORD'},redaction.occurrences[1]]},
+   {...redaction,occurrences:[{...redaction.occurrences[0],value:'REDACTED'},redaction.occurrences[1]]},
+  ]){
+   const bad=vi.fn().mockResolvedValue({ok:true,json:async()=>({...base,redaction:altered})});
+   await expect(requestMultiPassPreview(raw,bad as typeof fetch)).rejects.toThrow('redaction');
+  }
+ });
  it('verifies a FortiGate-style KV response even when Web Crypto is unavailable on an HTTP IP preview',async()=>{
   vi.stubGlobal('crypto',{});
   const raw='date=2019-05-10 time=11:37:47 type="traffic" srcip=192.0.2.10 dstip=198.51.100.20 action="close"';

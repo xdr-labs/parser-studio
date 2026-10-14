@@ -100,3 +100,9 @@ body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
 .stellar-dictionary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:5px;margin:8px 0}
 .stellar-dictionary-grid>span{padding:7px 8px;border-radius:6px;background:#fff;border:1px solid #dce7e1;font-size:11px;color:#3b4641}
 .stellar-dictionary-grid small{display:block;color:#707873;margin-top:2px}
+.stellar-redaction-review{margin:10px 0;padding:12px;border:1px solid #ecd7aa;border-radius:9px;background:#fffaf0}
+.stellar-redaction-review>strong{display:block;color:#7b5311;font-size:13px;margin-bottom:4px}
+.stellar-redaction-review>p,.stellar-redaction-review>small{display:block;color:#6d6252;font-size:11px;line-height:1.5}
+.stellar-redaction-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:5px;margin:8px 0}
+.stellar-redaction-grid>span{padding:7px 8px;border-radius:6px;background:#fff;border:1px solid #eee0c2;font-size:11px;color:#4c4539}
+.stellar-redaction-grid small{display:block;color:#766d5e;margin-top:2px}
