@@ -189,3 +189,30 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Review Parsed Fields'})).toBeEnabled();
 });
+
+
+test('metadata-only source anomaly explains that no bytes were dropped and does not invent an extraction fix',async({page})=>{
+ const raw='<85>1 2023-01-13T10:10:16--5:00 gw CP-GW - Log [Fields@1 src="192.0.2.1" src="192.0.2.2" ]';
+ const response={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',
+  syntax:'SYSLOG_SOURCE_ANOMALIES_PRESERVED',sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),
+  fields:{syslog:{structured_data:{src:['192.0.2.1','192.0.2.2']}}},spans:[],residuals:[],
+  issues:['RFC5424_TIMESTAMP_INVALID','RFC5424_DUPLICATE_SD_KEY','RFC5424_SD_TRAILING_SPACE_NONSTANDARD'],
+  nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const problem=page.getByLabel('Parse problem inspector');
+ await expect(problem).toContainText('Fields were extracted, but source metadata needs review');
+ await expect(problem).toContainText('source metadata warning · no source bytes dropped');
+ await expect(problem).toContainText('Recommended fix · Review source metadata');
+ await expect(problem.locator('mark')).toHaveCount(0);
+ await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ const prompt=page.getByLabel('Generated ChatGPT repair prompt');
+ await expect(prompt).toContainText('parser-studio.source-metadata-review.v0.1');
+ await expect(prompt).toContainText('Do not propose a Regex merely to hide malformed source metadata.');
+ await expect(page.getByLabel('AI result verification')).toHaveCount(0);
+});

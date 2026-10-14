@@ -189,7 +189,11 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         ?<>Parser Studio extracted this <b>{friendlySyntax(current.event.preview)}</b> event, but the current DRAFT compiler cannot yet reproduce the source shape safely. Review a bounded rule before continuing.</>
         :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview)}</b>, but it will not mark this event parser-ready until the remaining review is resolved.</>}</p>
       <div className="beginner-problem-source">
-        <span>Original event {current.index+1} · {parserRuleReviewRequired?'parser rule needs review':'highlighted text needs attention'}</span>
+        <span>Original event {current.index+1} · {parserRuleReviewRequired
+          ?'parser rule needs review'
+          :metadataOnlyReview(current.event.preview)
+            ?'source metadata warning · no source bytes dropped'
+            :'highlighted text needs attention'}</span>
         <pre>{sourceSegments(raw,current.event.preview).map((segment,index)=>
           segment.kind==='problem'?<mark key={index}>{segment.text}</mark>:<span key={index}>{segment.text}</span>)}</pre>
       </div>
