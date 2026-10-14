@@ -194,14 +194,14 @@ The authoritative analysis is event-framed Multi-Pass rather than competing brow
 
 **Ask ChatGPT** builds a copyable, user-reviewed prompt containing the problem event, already-extracted fields, unresolved spans, current parser identity/recipe context, and the strict ParserRecipe v0.2 output contract. No source is sent automatically. A pasted AI recipe must pass current-source parsing plus an independent holdout and explicit approval before it can replace a draft.
 
-Bounded parse_regex is a reviewed compiler subset, not arbitrary Regex: maximum 256 visible characters, named captures required, and backreferences/lookbehind/unsafe nested repetition are rejected. An approved Cisco FTD-style recovery has browser evidence through holdout approval and exact backend Ruby/CONF DRAFT generation.
+Bounded parse_regex is a reviewed compiler subset, not arbitrary Regex: maximum 256 visible characters, named captures required, and backreferences/lookbehind/unsafe nested repetition are rejected. A controlled Cisco FTD-style fallback recovery has browser evidence through holdout approval and exact backend Ruby/CONF DRAFT generation, while the current tested Cisco ASA/FTD fixtures are now automatically source-parsed by the improved engine.
 
 Current internal evidence after this UX increment:
 - UI unit: **601/601 PASS**.
 - Current Chromium: **28 PASS / 28 integration-gated SKIP**.
 - Beginner core regression: Analyze → problem inspector → ChatGPT prompt/import → holdout → approval PASS.
 - Cisco FTD exact-backend recovery: full browser journey through verified Ruby/CONF DRAFT generation PASS.
-- Product corpus: AWS WAF, Suricata, FortiGate, SonicWall, Zscaler ZIA, SentinelOne, CrowdStrike, CEF and LEEF complete on the tested samples; Check Point source anomalies remain explicit review; PAN-OS uses positional-column review; Cisco ASA/FTD uses bounded message-body recovery.
+- Product corpus: AWS WAF, Suricata, FortiGate, Cisco ASA/FTD, SonicWall, Zscaler ZIA, SentinelOne, CrowdStrike, CEF and LEEF complete on the tested samples; Check Point is 1/2 complete with one explicit source-metadata review; PAN-OS is 0/2 semantically named because positional values require reviewed/neutral column schema rather than guessed meanings.
 - Source engine candidate: 193a4ec74ca1189208814dab410ea5c83f69ced6.
 - Backend candidate: 10a58c12cd0de5fe0579c14d3943ddf1ba928406.
 
