@@ -21,9 +21,10 @@ EVIDENCE_RANK={
     'FALLBACK':0,
     'HEURISTIC_RESIDUAL':1,
     'QUALIFIED_BASE':2,
-    'DECLARED_SCHEMA':3,
-    'QUALIFIED_STANDARD':4,
-    'VERIFIED_PROFILE':5,
+    'QUALIFIED_STRUCTURAL':3,
+    'DECLARED_SCHEMA':4,
+    'QUALIFIED_STANDARD':5,
+    'VERIFIED_PROFILE':6,
 }
 
 
@@ -165,16 +166,141 @@ def _evidence(parser_id,tier,grammar,proofs):
         confidence_evidence=tuple(proofs))
 
 BASE_EVIDENCE=_evidence('security.base','QUALIFIED_BASE','security-source-pr16',('commercial-27968-exact','framing-6048-exact'))
+GENERIC_EVIDENCE=_evidence(
+    'generic.structural','QUALIFIED_STRUCTURAL','generic-structural-v2',
+    ('948-frozen-zero-complete-regression','485-independent-gold-f1-1',
+     '708-postfreeze-zero-complete-regression'),
+)
 CEF_EVIDENCE=_evidence('cef.standard','QUALIFIED_STANDARD','cef-0-1-standard-boundaries',('commercial-cef-482-exact','authored-cef-900-exact','false-complete-zero'))
 LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',('authored-leef-3552-exact','external-xa6-19-exact'))
 
 
+def _qualified_generic_event(event:SourceEvent)->SourceEvent:
+    """Attach exact tree identities at the integration boundary only."""
+    out=deepcopy(event)
+    generic=out.vendor_fields.get('generic')
+    if not isinstance(generic,dict):
+        return out
+    repeated={}
+    spans=[]
+    for span in out.value_spans:
+        if span.source_segments is not None or not span.path.startswith('generic.'):
+            spans.append(span)
+            continue
+        segments=None
+        for prefix,tree_key in (
+            ('generic.prefix.','prefix_tokens'),
+            ('generic.tokens.','tokens'),
+            ('generic.groups.','groups'),
+        ):
+            if span.path.startswith(prefix):
+                index_text=span.path[len(prefix):]
+                if not index_text.isdigit():
+                    raise ValueError('GENERIC_SOURCE_IDENTITY_INVALID_INDEX')
+                segments=('generic',tree_key,int(index_text))
+                break
+        if segments is None and span.path.startswith('generic.kv.'):
+            key=span.path[len('generic.kv.'):]
+            container=(
+                'fields'
+                if isinstance(generic.get('fields'),dict) and key in generic['fields']
+                else 'kv'
+                if isinstance(generic.get('kv'),dict) and key in generic['kv']
+                else None
+            )
+            if container is None:
+                raise ValueError('GENERIC_SOURCE_IDENTITY_MISSING_KEY')
+            value=generic[container][key]
+            occurrence=repeated.get((container,key),0)
+            repeated[(container,key)]=occurrence+1
+            segments=(
+                ('generic',container,key,occurrence)
+                if isinstance(value,list)
+                else ('generic',container,key)
+            )
+        if segments is None:
+            raise ValueError('GENERIC_SOURCE_IDENTITY_UNSUPPORTED_PATH')
+        spans.append(ValueSpan(
+            span.path,span.start_byte,span.end_byte,segments,
+        ))
+    out.value_spans=spans
+    return out
+
+
+def _generic_preserves_incomplete_base(
+    base:CandidateResult,generic:CandidateResult,
+)->bool:
+    """Permit stronger structure only when no stable base claim is lost."""
+    if base.completeness=='SOURCE_PARSED':
+        return False
+    if generic.completeness!='SOURCE_PARSED':
+        return False
+    generic_spans={
+        (occurrence.start_byte,occurrence.end_byte)
+        for occurrence in generic.occurrences
+    }
+    generic_nonempty=[
+        occurrence for occurrence in generic.occurrences
+        if occurrence.start_byte<occurrence.end_byte
+    ]
+    for occurrence in base.occurrences:
+        key=(occurrence.start_byte,occurrence.end_byte)
+        if key in generic_spans:
+            continue
+        # Native source identities are strong claims. Generic structure may
+        # not discard them merely because its grouping looks cleaner.
+        if occurrence.source_segments is not None:
+            return False
+        # Zero-length values from an incomplete heuristic parser are not
+        # enough to veto a complete, source-accounted structural candidate.
+        if occurrence.start_byte==occurrence.end_byte:
+            continue
+        # A weak/composite base span may be re-segmented only when Generic
+        # still claims source values inside the same byte region. Fully
+        # disjoint non-empty base claims are protected.
+        if not any(
+            _overlap(occurrence,other)
+            for other in generic_nonempty
+        ):
+            return False
+    return True
+
+
+def _generic_upgrade(
+    raw:str,base:SourceEvent,base_contract:CandidateResult,
+)->SourceEvent|None:
+    if base.status=='SOURCE_PARSED':
+        return None
+    from generic_structural_poc import parse_generic_structural
+    generic=parse_generic_structural(raw)
+    if generic.status!='SOURCE_PARSED':
+        return None
+    try:
+        qualified=_qualified_generic_event(generic)
+        generic_contract=candidate_from_event(qualified,GENERIC_EVIDENCE)
+    except ValueError:
+        return None
+    if not _generic_preserves_incomplete_base(base_contract,generic_contract):
+        return None
+    # Put the qualified structural candidate first so extraction-equivalent
+    # candidates preserve the stronger completeness decision. Conflicting
+    # claims still go through the normal evidence-aware adjudicator.
+    decision=adjudicate_candidates((generic_contract,base_contract))
+    if decision.ambiguous:
+        return None
+    if GENERIC_EVIDENCE.parser_id not in decision.accepted_parser_ids:
+        return None
+    return qualified
+
+
 def parse_security_once(raw:str)->SourceEvent:
     """Run qualified whole-record candidates once, without residual recursion."""
-    base=parse_security_source(raw);events={'security.base':base};contracts=[candidate_from_event(base,BASE_EVIDENCE)]
-    # Explicit public product profiles are source-only fallbacks. They run
-    # only when the generic base is incomplete and must fully account for the
-    # original event before they can replace it.
+    base=parse_security_source(raw)
+    base_contract=candidate_from_event(base,BASE_EVIDENCE)
+    events={'security.base':base};contracts=[base_contract]
+    # Explicit public product profiles retain priority over inferred
+    # structure. Generic Structural is a long-tail candidate, not a reason to
+    # replace an already verified source profile.
     if base.status!='SOURCE_PARSED':
         from security_meraki import parse_meraki_profile
         from security_watchguard import parse_watchguard_profile
@@ -208,10 +334,24 @@ def parse_security_once(raw:str)->SourceEvent:
     decision=adjudicate_candidates(tuple(contracts))
     if decision.ambiguous:
         result=deepcopy(base)
-        if 'MULTIPASS_AMBIGUOUS_CONFLICT' not in result.issues:result.issues.append('MULTIPASS_AMBIGUOUS_CONFLICT')
+        if 'MULTIPASS_AMBIGUOUS_CONFLICT' not in result.issues:
+            result.issues.append('MULTIPASS_AMBIGUOUS_CONFLICT')
         return result
-    if len(decision.accepted_parser_ids)==1:return deepcopy(events[decision.accepted_parser_ids[0]])
-    return merge_source_events(raw,events,decision.accepted_parser_ids)
+    if len(decision.accepted_parser_ids)==1:
+        result=deepcopy(events[decision.accepted_parser_ids[0]])
+    else:
+        result=merge_source_events(raw,events,decision.accepted_parser_ids)
+    # Standards and verified profiles have already had the first opportunity.
+    # Generic Structural is considered only when the ordinary qualified base
+    # remains the sole incomplete result.
+    if (
+        decision.accepted_parser_ids==('security.base',)
+        and result.status!='SOURCE_PARSED'
+    ):
+        generic=_generic_upgrade(raw,result,base_contract)
+        if generic is not None:
+            return generic
+    return result
 
 
 def parse_security_multipass(raw:str,*,max_residual_depth:int=3)->SourceEvent:

@@ -16,6 +16,7 @@ from source_parse import SourceEvent,assert_source_accounting
 
 EVIDENCE_TIERS={
     'QUALIFIED_BASE',       # Current PR16 source engine with exact regressions.
+    'QUALIFIED_STRUCTURAL', # Independently qualified inferred source structure.
     'QUALIFIED_STANDARD',   # Independently qualified standards grammar.
     'VERIFIED_PROFILE',     # Explicit vendor/profile evidence.
     'DECLARED_SCHEMA',      # Source-declared table/document schema.
