@@ -1,0 +1,70 @@
+{
+  "baseline_tests": {
+    "discovered": 233,
+    "errors": 0,
+    "failed": 0,
+    "passed": 233,
+    "skipped": 0
+  },
+  "commercial_source": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 27968,
+    "exact_tree_events": 391,
+    "raw_preserved": 392,
+    "reference_excluded_events": 1,
+    "reference_scored_events": 391
+  },
+  "contract": "parser-studio.poc.accuracy-first-multipass-baseline.v1",
+  "dictionary_attempted": false,
+  "masking_optimization": false,
+  "notes": [
+    "Current PR16 security-source engine remains the base.",
+    "PR15 remains evidence only and is not merged.",
+    "Runtime is measured but not a quality gate; safety/resource bounds remain mandatory."
+  ],
+  "owner_roadmap": "OWNER_ACCURACY_FIRST_MULTIPASS_20261014",
+  "pr15_evidence": {
+    "cef_authored_baseline_fn": 60,
+    "cef_authored_baseline_fp": 36,
+    "cef_authored_baseline_tp": 840,
+    "cef_authored_candidate_fn": 0,
+    "cef_authored_candidate_fp": 0,
+    "cef_authored_candidate_tp": 900,
+    "cef_authored_fields": 900,
+    "cef_authored_records": 96,
+    "cef_commercial_fields": 482,
+    "cef_commercial_records": 22,
+    "cef_false_complete_baseline": 36,
+    "cef_false_complete_candidate": 0,
+    "cef_native_result_sha256": "7e5814c403ee98602caa1e7f287a2b2acc1b122995236dcb09e7b9129121b855",
+    "leef_external_baseline_tp": 0,
+    "leef_external_candidate_tp": 19,
+    "leef_external_xa6_fields": 19,
+    "leef_external_xa6_records": 1,
+    "leef_xhh_authored_fields": 3552,
+    "leef_xhh_authored_records": 192,
+    "leef_xhh_candidate_fn": 0,
+    "leef_xhh_candidate_fp": 0,
+    "leef_xhh_candidate_tp": 3552,
+    "mixed_security_candidate_tp": 7580,
+    "mixed_security_existing_records": 284,
+    "mixed_security_fields": 7580,
+    "security_followon_result_sha256": "489df43f274ded9b687ba04ae28ac5f0b70dc96f31d245a924c4a2462c32325d",
+    "zeek_data_records": 127,
+    "zeek_fields": 3132
+  },
+  "pr15_evidence_head": "872e3a583844bbbc0aa56f9d185936273c5baa33",
+  "pr16_head": "9d3f1ff57f53aba8268b2ad216eecc67421dfa2a",
+  "runtime_is_acceptance_gate": false,
+  "safety_bounds_required": true,
+  "security_framing": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 6048,
+    "exact_record_boundaries": 216,
+    "exact_record_trees": 216,
+    "expected_records": 216,
+    "observed_records": 216
+  }
+}
