@@ -48,6 +48,33 @@ class MultiPassContractTests(unittest.TestCase):
             self.assertLess(region.start_byte,region.end_byte)
         self.assertGreater(len(candidate.residual_regions),0)
 
+    def test_malformed_rfc5424_sd_never_exposes_orphan_candidate_spans(self):
+        raw=(
+            '<14>1 2026-10-15T00:00:00Z host RT_FLOW 1 MSG '
+            '[junos@2636.1 reason=unset source-address="10.0.0.1"]'
+        )
+        event=parse_security_source(raw);assert_source_accounting(event)
+        self.assertEqual('PARTIAL',event.status)
+        self.assertIn('RFC5424_SD_VALUE_NOT_QUOTED',event.issues)
+        candidate=candidate_from_event(event,self.evidence())
+        self.assertEqual('PARTIAL',candidate.completeness)
+        self.assertEqual(
+            {
+                'pri','version','timestamp','hostname',
+                'appname','procid','msgid',
+            },
+            set(candidate.field_tree['syslog']),
+        )
+        self.assertEqual(
+            7,len(candidate.occurrences),
+        )
+        self.assertTrue(
+            all(
+                occurrence.display_path.startswith('syslog.')
+                for occurrence in candidate.occurrences
+            )
+        )
+
     def test_evidence_is_explicit_not_an_unbounded_score(self):
         with self.assertRaises(ValueError):
             CandidateEvidence(parser_id='',profile_id=None,grammar_id=None,evidence_tier='QUALIFIED_BASE',
