@@ -1,0 +1,599 @@
+{
+  "authored_groups": {
+    "encoded_payload": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      }
+    },
+    "leading_spaces": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      }
+    },
+    "literal_double_quotes": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 12,
+        "FP": 12,
+        "TP": 96,
+        "exact_records": 0,
+        "exceptions": 0,
+        "f1": 0.8888888888888888,
+        "falsely_complete": 12,
+        "precision": 0.8888888888888888,
+        "raw_preserved": 12,
+        "recall": 0.8888888888888888,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      }
+    },
+    "literal_quote_suffix": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 24,
+        "FP": 0,
+        "TP": 84,
+        "exact_records": 0,
+        "exceptions": 0,
+        "f1": 0.875,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 0.7777777777777778,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "PARTIAL": 12
+        }
+      }
+    },
+    "literal_single_quotes": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 12,
+        "FP": 12,
+        "TP": 96,
+        "exact_records": 0,
+        "exceptions": 0,
+        "f1": 0.8888888888888888,
+        "falsely_complete": 12,
+        "precision": 0.8888888888888888,
+        "raw_preserved": 12,
+        "recall": 0.8888888888888888,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      }
+    },
+    "ordinary_control": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 120,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 120,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      }
+    },
+    "repeated_empty": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 132,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 132,
+        "statuses": {
+          "PARTIAL": 12
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 132,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 132,
+        "statuses": {
+          "PARTIAL": 12
+        }
+      }
+    },
+    "trailing_spaces": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 108,
+        "exact_records": 12,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      },
+      "current_main": {
+        "FN": 12,
+        "FP": 12,
+        "TP": 96,
+        "exact_records": 0,
+        "exceptions": 0,
+        "f1": 0.8888888888888888,
+        "falsely_complete": 12,
+        "precision": 0.8888888888888888,
+        "raw_preserved": 12,
+        "recall": 0.8888888888888888,
+        "records": 12,
+        "reference_fields": 108,
+        "statuses": {
+          "SOURCE_PARSED": 12
+        }
+      }
+    }
+  },
+  "baseline_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "baseline_integrity": {
+    "engine.py": "e654e7236123db68019f6929cdb61c87ad11d4a7a61ef5e1748e68ef156cb1de",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "security_source.py": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "34de798678e81642f8719f04d62524118eae937c86b9ef6c617089f1bfdffbe1"
+  },
+  "commercial_groups": {
+    "test-checkpoint.json": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 83,
+        "exact_records": 3,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 3,
+        "recall": 1.0,
+        "records": 3,
+        "reference_fields": 83,
+        "statuses": {
+          "SOURCE_PARSED": 3
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 83,
+        "exact_records": 3,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 3,
+        "recall": 1.0,
+        "records": 3,
+        "reference_fields": 83,
+        "statuses": {
+          "SOURCE_PARSED": 3
+        }
+      }
+    },
+    "test-cisco-asa.json": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 75,
+        "exact_records": 1,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 1,
+        "recall": 1.0,
+        "records": 1,
+        "reference_fields": 75,
+        "statuses": {
+          "SOURCE_PARSED": 1
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 75,
+        "exact_records": 1,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 1,
+        "recall": 1.0,
+        "records": 1,
+        "reference_fields": 75,
+        "statuses": {
+          "SOURCE_PARSED": 1
+        }
+      }
+    },
+    "test-fp-ngfw-smc.json": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 10,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 10,
+        "recall": 1.0,
+        "records": 10,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 10
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 10,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 10,
+        "recall": 1.0,
+        "records": 10,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 10
+        }
+      }
+    },
+    "test-trend-micro.json": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 8,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 8,
+        "recall": 1.0,
+        "records": 8,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 8
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 162,
+        "exact_records": 8,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 8,
+        "recall": 1.0,
+        "records": 8,
+        "reference_fields": 162,
+        "statuses": {
+          "SOURCE_PARSED": 8
+        }
+      }
+    }
+  },
+  "contract": "parser-studio.cef-native-comparison.v1",
+  "dictionary_attempted": false,
+  "entrypoint": "security_source.parse_security_source",
+  "existing_security_invariance": {
+    "records": 284,
+    "unchanged": 284
+  },
+  "frozen_original_predictions_identical": true,
+  "limitations": [
+    "22 upstream commercial source records are regression fixtures, not verified production captures; redaction unassessed.",
+    "Authored96 and derived288 measure CEF-standard conformance, not blind vendor generalization.",
+    "Derived syslog scores cover CEF bodies; envelope fields are outside that oracle.",
+    "Quoted-KV dialects may differ; this strict CEF candidate is not approved as a universal product default.",
+    "24 malformed controls are separately accounted and not successful extraction."
+  ],
+  "module_hashes": {
+    "benchmark_cef_native.py": "335f3f932bc89ed165e7c7a228bae370857661003b09af3bd67eb1e3edc98895",
+    "cef_reference.py": "7be0371e28b3d42bca7d3e7aed9fb430e41c17f35862cd0a318860914173eb99",
+    "security_cef.py": "c771bcd2e5514798c30c406773c6c9de6ce91fa1ffac2ca5d1e1bccf6765f185"
+  },
+  "native_verified": false,
+  "prediction_sha256": "13d967a14e192a9626a7c09c08fa3fe557e7d098a5a8d94196d99605d577d5dd",
+  "product_integrated": false,
+  "results": {
+    "authored_conformance": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 900,
+        "exact_records": 96,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 96,
+        "recall": 1.0,
+        "records": 96,
+        "reference_fields": 900,
+        "statuses": {
+          "PARTIAL": 12,
+          "SOURCE_PARSED": 84
+        }
+      },
+      "current_main": {
+        "FN": 60,
+        "FP": 36,
+        "TP": 840,
+        "exact_records": 48,
+        "exceptions": 0,
+        "f1": 0.9459459459459459,
+        "falsely_complete": 36,
+        "precision": 0.958904109589041,
+        "raw_preserved": 96,
+        "recall": 0.9333333333333333,
+        "records": 96,
+        "reference_fields": 900,
+        "statuses": {
+          "PARTIAL": 24,
+          "SOURCE_PARSED": 72
+        }
+      }
+    },
+    "commercial_originals": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 482,
+        "exact_records": 22,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 22,
+        "recall": 1.0,
+        "records": 22,
+        "reference_fields": 482,
+        "statuses": {
+          "SOURCE_PARSED": 22
+        }
+      },
+      "current_main": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 482,
+        "exact_records": 22,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 22,
+        "recall": 1.0,
+        "records": 22,
+        "reference_fields": 482,
+        "statuses": {
+          "SOURCE_PARSED": 22
+        }
+      }
+    },
+    "derived_syslog_bodies": {
+      "cef_standard_candidate": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 2700,
+        "exact_records": 288,
+        "exceptions": 0,
+        "f1": 1.0,
+        "falsely_complete": 0,
+        "precision": 1.0,
+        "raw_preserved": 288,
+        "recall": 1.0,
+        "records": 288,
+        "reference_fields": 2700,
+        "statuses": {
+          "PARTIAL": 36,
+          "SOURCE_PARSED": 252
+        }
+      },
+      "current_main": {
+        "FN": 180,
+        "FP": 108,
+        "TP": 2520,
+        "exact_records": 144,
+        "exceptions": 0,
+        "f1": 0.9459459459459459,
+        "falsely_complete": 108,
+        "precision": 0.958904109589041,
+        "raw_preserved": 288,
+        "recall": 0.9333333333333333,
+        "records": 288,
+        "reference_fields": 2700,
+        "statuses": {
+          "PARTIAL": 72,
+          "SOURCE_PARSED": 216
+        }
+      }
+    },
+    "malformed_controls": {
+      "cef_standard_candidate": {
+        "exceptions": 0,
+        "falsely_complete": 0,
+        "raw_preserved": 24,
+        "records": 24
+      },
+      "current_main": {
+        "exceptions": 0,
+        "falsely_complete": 18,
+        "raw_preserved": 24,
+        "records": 24
+      }
+    }
+  }
+}

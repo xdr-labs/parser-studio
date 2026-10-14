@@ -1,0 +1,13 @@
+{
+  "contract": "parser-studio.cef-leef-next-source-freeze.v1",
+  "main_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "module_hashes": {
+    "cef_reference.py": "7be0371e28b3d42bca7d3e7aed9fb430e41c17f35862cd0a318860914173eb99",
+    "security_cef.py": "c771bcd2e5514798c30c406773c6c9de6ce91fa1ffac2ca5d1e1bccf6765f185",
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
+    "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
+  },
+  "research_parent": "bb42d010f2ea2b8a3938b0b05d0525fcce7b0f45",
+  "scope": "Freeze before further acquisition; existing original CEF22 and conformance96 are already exposed.",
+  "time_utc": "2026-10-14T03:24:08.353001+00:00"
+}

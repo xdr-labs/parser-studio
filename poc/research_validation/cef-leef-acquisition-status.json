@@ -1,8 +1,10 @@
 {
   "bypass_performed": false,
   "contract": "parser-studio.commercial-cef-acquisition-status.v1",
+  "current_blocker": null,
   "documentation_examples": 21,
-  "field_accuracy": "NOT_SCORED",
+  "field_accuracy": "SCORED_482_TP_0_FP_0_FN_22_RECORDS",
+  "historical_security_state_denials": 2,
   "input_field": "event.original",
   "limitations": [
     "SOURCE_PARSED proposals are not independent CEF accuracy.",
@@ -13,8 +15,9 @@
   "main_dirty_files_preserved": 30,
   "original_event_records": 22,
   "original_predictions": ".cache/cef-leef/frozen-source-predictions.json",
-  "reference_operation": "CREATE_AND_RUN_CEF_NATIVE_ORACLE",
+  "reference_operation": "COMPLETED_SAME_TOOL_DEVICE_PATH",
   "same_tool_device_path_retry": true,
+  "score_artifact": "cef-native-summary.json",
   "security_state_denials": 2,
   "source_collections": 4,
   "user_configuration_action": null

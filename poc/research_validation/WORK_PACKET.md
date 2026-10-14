@@ -1,60 +1,52 @@
 # ACTIVE Independent Security-Source Validation PoC
 
 ACTIVE / CHATGPT_CHAT / Chat mode / dev-atlas / engine research only.
-Owner scope: ordinary security-system logs including AWS WAF, IPS/IDS, NGFW,
-CEF/LEEF and network-security formats. No prose-primary KPI. Dictionary later;
-masked-token recognition lowest priority. No UI, DP/sensor, hosted LLM,
-production/auth changes, merge or release.
+Scope: ordinary security-system logs including AWS WAF, IPS/IDS, NGFW, NDR,
+CEF/LEEF. No prose-primary KPI. Dictionary later; masking recognition last.
+No UI, native/DP/sensor, hosted LLM, production/auth changes, merge or release.
 
-## Isolation
+## Isolation and exact comparison
 - Repository xdr-labs/parser-studio; issue14; draft PR15, unmerged.
 - Worktree /home/aella/parser-studio-validation-poc-20261014
 - Branch poc/research-validation-20261014; only poc/research_validation/ changes.
-- Actual main baseline c2f464444a7aa899bd8b251507234720e4cbdde2,
-  security_source.parse_security_source. Main dirty WIP was not used or changed.
-- Previous research comparison d318ca4b9dc99040e90bdc1e48d4eeb791ef958f.
-  Latest research commit/CI are recorded in issue14's latest verified checkpoint.
+- Current main baseline c2f464444a7aa899bd8b251507234720e4cbdde2,
+  security_source.parse_security_source. Never use dirty main files.
+- Research parent bb42d010f2ea2b8a3938b0b05d0525fcce7b0f45.
+  Exact latest research HEAD and CI are in issue14's verified checkpoint.
 
-## Completed follow-on
-- LEEF xHH additive adapter:192 authored security conformance events,3552 native
-  field/value/byte spans. Main0 TP/0 FP/3552 FN; addon3552/0/0,192 exact records.
-  144 SOURCE_PARSED,48 PARTIAL duplicate warnings; do not claim192 complete.
-- Mixed security-source regression: prior composer captured JSON/CEF/LEEF under
-  stale table schema; #close failed to release state; unknown # records became
-  metadata. RED3/6, fixed. Existing284 source records arranged in293-record
-  mixed stream: old0/0/7580, fixed7580/0/0;284 outputs identical to main.
-  This fixes document composition, NOT a core-engine accuracy increase.
-- Fresh upstream LEEF8 records after candidate freeze:4 valid/25 native fields
-  exact in BOTH;4 malformed missing-delimiter templates preserved. No extra gain.
-- Existing WAF/IPS284, official WAF8/268, CEE264/6836 and Zeek127/3132 regressions
-  retained. Source284 includes5 NUL controls,279 field-scored,276 fully complete.
-- Independent75/75 PASS, no skips. Main modules exact-commit hash verified.
-- No global KV/CEE replacement; earlier negative comparisons retained.
+## Completed current checkpoint
+- Prior blocked CEF oracle creation/run RESOLVED normally on the same device,
+  Remote Desktop Commander tool and target files. No current blocker.
+- Commercial CEF22 /482 native key/value/byte fields exact in current main and
+  new candidate. All22 complete. event.original only, not decoded prose.
+- CEF-standard boundaries: RED4/8 then GREEN8/8. Authored96 /900 fields:
+  current840 TP/36 FP/60 FN,F194.5946%; candidate900/0/0,F1100%; exact48->96,
+  falsely complete36->0. Candidate84 complete+12 PARTIAL duplicate warnings.
+- Syslog-derived288 /2700 body fields: candidate2700/0/0; not extra captures.
+  Malformed24 controls: falsely complete18->0, all raw retained.
+- Frozen-before-acquisition external ExtraHop-format LEEF documentation:
+  one unique record (two occurrences),19 fields; main0/0/19, old LEEF addon19/0/0.
+  Source is VirtualMetric's parser documentation, NOT customer or ExtraHop
+  manufacturer production evidence. No new LEEF code/tuning for that result.
+- Current security284 outputs remain exactly unchanged under composition.
+- Independent91/91 PASS, no skips; current-main module hashes verified.
+- Historical negative whole-KV/CEE replacement findings remain in prior reports.
 
-## First remaining operation / narrow blocker
-Complete commercial CEF independent native-field oracle/scoring. Four pinned
-Elastic input collections are already in .cache/cef-leef/: Check Point,
-Cisco ASA, Forcepoint NGFW/SMC, Trend Micro;22 originals are event.original.
-Do not use predecoded message prose as raw input. Correct frozen predictions:
-.cache/cef-leef/frozen-source-predictions.json. Field accuracy is NOT SCORED.
+## Evidence and reproduction
+CEF_NATIVE_RESULT.md; cef-native-summary.json; leef-commercial-summary.json;
+leef-commercial-source-manifest.json; cef-leef-next-source-freeze.json;
+security-current-tests.json. Original logs/HTML/predictions remain ignored.
+Run run_security_tests.py, benchmark_cef_native.py, benchmark_leef_commercial.py
+from this research directory's parent repository with existing caches.
 
-The create/run request for poc/research_validation/cef_reference.py and
-poc/research_validation/test_cef_reference.py was denied twice by OpenAI's
-security-state determination, with a normal same-tool/device/path retry after
-successful access verification. Both files remain absent. On resume reassess
-conditions and normally retry Remote_Desktop_Commander.start_process on
-**dev-atlas d39830c5-a953-43f2-b9cf-5f8d87ad832e**, same worktree/target files.
-Do not bypass a repeated denial. No owner setting change is currently indicated.
-The CEF oracle must independently score native header/extension names, decoded
-values, repeat occurrences and UTF-8 byte spans; no ECS/Dictionary gold aliases.
-
-## Evidence / next order
-SECURITY_FOLLOWON_RESULT.md; security-followon-summary.json;
-leef-upstream-summary.json; security-current-tests.json;
-final-current-security-summary.json; CEF/LEEF source and freeze manifests.
-Raw sources/predictions remain ignored; no redistribution.
-
-Finish CEF scoring -> independent valid commercial xHH LEEF and rare subtypes ->
-only then additive integration feasibility. No repeated broad research, prose
-mining, completed fixture reacquisition or main-worktree edits. If main advances,
-compare its latest committed security API, not dirty files or old parse_source.
+## Next evidence priorities
+1. Broaden genuine CEF/LEEF vendor/version coverage without cloning already
+   tested samples; freeze candidates first. Retain the small external-sample
+   limitation and separate document examples from production captures.
+2. Validate CEF-standard vs vendor quoted-KV dialect admission with explicit
+   positive/negative cases; do not globally replace the core engine.
+3. Keep additive feasibility separate from product integration/target approval.
+No completed CEF22 acquisition/scoring or broad research repetition. No
+Dictionary, prose mining, masking tuning or main-worktree edits as next work.
+If the main lane advances, compare its latest committed security entry point.
+User configuration action: none identified.

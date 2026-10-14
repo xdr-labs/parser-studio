@@ -12,11 +12,18 @@
   },
   "candidate_module_hashes": {
     "candidate.py": "bd24f8b3008b86dd3683ff3561a5354ba3dc2518cf9b4aaa65f55b638a045a73",
+    "cef_reference.py": "7be0371e28b3d42bca7d3e7aed9fb430e41c17f35862cd0a318860914173eb99",
+    "security_cef.py": "c771bcd2e5514798c30c406773c6c9de6ce91fa1ffac2ca5d1e1bccf6765f185",
     "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
     "security_envelopes.py": "f5fc82e583e611fa87089b05f5b2a092af8d402e2a263a72db039b0c3285cd2a",
     "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
   },
   "caveat": "RED control predates current main CEE implementation; it is not a current-main accuracy gain.",
+  "cef_boundary_red_control": {
+    "errors": 0,
+    "failures": 4,
+    "tests": 8
+  },
   "contract": "security-poc-current-test-evidence.v1",
   "envelope_red_against_historical_2fee28f": {
     "errors": 1,
@@ -46,5 +53,5 @@
   "python": "3.12.3",
   "skips": 0,
   "success": true,
-  "tests": 75
+  "tests": 91
 }

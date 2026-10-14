@@ -1,0 +1,61 @@
+{
+  "candidate_frozen_before_source_acquisition": true,
+  "candidate_module_hashes": {
+    "cef_reference.py": "7be0371e28b3d42bca7d3e7aed9fb430e41c17f35862cd0a318860914173eb99",
+    "security_cef.py": "c771bcd2e5514798c30c406773c6c9de6ce91fa1ffac2ca5d1e1bccf6765f185",
+    "security_document.py": "c219f57305d18d76000b84ac816ca4bf3cc99d7a303a2162cee02428bd45d70d",
+    "security_leef.py": "26552db46d4b629675ba0f40c91272865c4e31189f66e4cbcb5453fee6650efa"
+  },
+  "contract": "parser-studio.external-commercial-leef-score.v1",
+  "duplicates": 1,
+  "frozen_predictions_reproduced": true,
+  "limitations": [
+    "One unique documentation example, not independently verified production traffic.",
+    "Duplicate examples count once.",
+    "No normalization, recovered values or literal separator substitution.",
+    "Not evidence for all vendor versions or other event types."
+  ],
+  "main_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "modes": {
+    "current_main": {
+      "FN": 19,
+      "FP": 0,
+      "TP": 0,
+      "exact_records": 0,
+      "exceptions": 0,
+      "f1": 0.0,
+      "falsely_complete": 0,
+      "precision": null,
+      "raw_preserved": 1,
+      "recall": 0.0,
+      "records": 1,
+      "reference_fields": 19,
+      "statuses": {
+        "RAW_ONLY": 1
+      }
+    },
+    "frozen_leef_candidate": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 19,
+      "exact_records": 1,
+      "exceptions": 0,
+      "f1": 1.0,
+      "falsely_complete": 0,
+      "precision": 1.0,
+      "raw_preserved": 1,
+      "recall": 1.0,
+      "records": 1,
+      "reference_fields": 19,
+      "statuses": {
+        "SOURCE_PARSED": 1
+      }
+    }
+  },
+  "occurrences": 2,
+  "oracle_sha256": "aeef5c95ba1915c92700083e577d33588753d91daec075a2fe97ce1454cb5b35",
+  "prediction_sha256": "065dfb8d1b0a4f10556f4a938d9f9cf323e4ffdbbaf0e6e825afe215a82d6b05",
+  "source_kind": "First-party parser vendor documentation example of ExtraHop Reveal(x); NOT ExtraHop-produced or customer production capture",
+  "source_records": 1,
+  "source_url": "https://vdocs.virtualmetric.com/content-management/pipelines/processors/leef-to-csl/"
+}

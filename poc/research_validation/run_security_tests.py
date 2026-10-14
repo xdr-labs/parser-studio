@@ -25,7 +25,8 @@ if __name__=='__main__':
       'baseline_commit':CURRENT,'baseline_entrypoint':'security_source.parse_security_source',
       'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skips':len(result.skipped),
       'success':result.wasSuccessful(),'baseline_integrity':hashes,
-      'candidate_module_hashes':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ('candidate.py','security_document.py','security_envelopes.py','security_leef.py')},
+      'candidate_module_hashes':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ('candidate.py','security_document.py','security_envelopes.py','security_leef.py','security_cef.py','cef_reference.py')},
+      'cef_boundary_red_control':{'tests':8,'failures':4,'errors':0},
       'followon_red_controls':{'mixed_document':{'tests':6,'failures':3,'errors':0},'leef_xhh':{'tests':6,'failures':3,'errors':1},'leef_oracle':{'tests':6,'failures':1,'errors':0}},
       'envelope_red_against_historical_2fee28f':{'tests':8,'passes':4,'failures':3,'errors':1},
       'caveat':'RED control predates current main CEE implementation; it is not a current-main accuracy gain.'}
