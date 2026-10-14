@@ -20,6 +20,24 @@ class SecurityGeneralizationEdges(unittest.TestCase):
             self.assertEqual('PARTIAL',final.status)
             self.assertEqual(2,len([s for s in final.value_spans if s.source_segments in [('body','src'),('body','dest')]]))
 
+    def test_residual_adjacent_json_with_line_break_stays_single_partial_event(self):
+        raw=('<134>Oct 14 12:00:00 sensor ips: collector: '
+             '{"x":1}\n{"y":2}')
+        event=parse_security_multipass(raw)
+        assert_source_accounting(event)
+        self.assertEqual({'x':1,'y':2},event.vendor_fields['body'])
+        self.assertEqual('PARTIAL',event.status)
+        self.assertEqual(raw,event.raw)
+        self.assertEqual(2,len([s for s in event.value_spans if s.source_segments in [('body','x'),('body','y')]]))
+
+    def test_residual_unknown_prose_must_not_be_skipped_to_find_later_json(self):
+        raw=('<134>Oct 14 12:00:00 sensor ips: collector: '
+             '{"x":1} garbage {"y":2}')
+        event=parse_security_multipass(raw)
+        assert_source_accounting(event)
+        self.assertEqual({'x':1},event.vendor_fields['body'])
+        self.assertNotEqual('SOURCE_PARSED',event.status)
+
     def test_unknown_security_text_does_not_become_false_complete(self):
         for raw in ('<134>Oct 14 12:00:00 sensor ips: collector: {not-json}',
                     '<134>Oct 14 12:00:00 sensor ips: collector: {"x":',

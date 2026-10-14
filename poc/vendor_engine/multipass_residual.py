@@ -28,12 +28,12 @@ STALE_BODY_ISSUES={
 
 
 def _wrapper_ok(text:str)->bool:
-    stripped=text.strip(' \t')
+    stripped=text.strip(' \t\r\n')
     if not stripped:
         return True
     if len(stripped)>MAX_WRAPPER_CHARS or stripped[-1] not in ':=|;':
         return False
-    core=stripped[:-1].strip(' \t')
+    core=stripped[:-1].strip(' \t\r\n')
     return bool(core and WRAPPER_CORE.fullmatch(core))
 
 
