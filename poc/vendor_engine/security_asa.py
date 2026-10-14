@@ -5,6 +5,7 @@ from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting
 
 ASA_ID=re.compile(r'%(ASA|FTD)-(\d)-(\d{6}):[ \t]*')
 ASA_CONNECTION=re.compile(r'\b(?P<action>Built|Teardown) (?P<direction>inbound|outbound) (?P<protocol>TCP|UDP|ICMP) connection\b')
+ASA_DENY=re.compile(r'(?P<action>Deny) (?P<protocol>tcp|udp|icmp) src\b')
 
 def parse_asa_message(raw:str)->SourceEvent|None:
     if not isinstance(raw,str):return None
@@ -27,6 +28,12 @@ def parse_asa_message(raw:str)->SourceEvent|None:
             value=conn.group(name)
             a,b=conn.span(name);a+=match.end();b+=match.end()
             tree[name]=value
+            spans.append(ValueSpan('asa.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('asa',name)))
+    deny=ASA_DENY.match(body) if conn is None else None
+    if deny is not None:
+        for name in ('action','protocol'):
+            a,b=deny.span(name);a+=match.end();b+=match.end()
+            tree[name]=deny.group(name)
             spans.append(ValueSpan('asa.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('asa',name)))
     event.vendor_fields={'asa':tree}
     event.value_spans=spans
