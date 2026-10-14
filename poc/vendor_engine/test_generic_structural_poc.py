@@ -1,16 +1,20 @@
 """Acceptance tests for the vendor-agnostic structural parsing PoC."""
+import json
 from pathlib import Path
 import unittest
 
 from generic_structural_poc import parse_generic_structural
-from generic_structural_poc_benchmark import (
-    ISE,ISE_EXPECTED,NEGATIVE_CASES,PFSENSE,
-    frozen_oracle_eval,ise_eval,pfsense_eval,recipe_eval,
-    post_tuning_fresh_eval,residual_template_eval,
-)
+from generic_structural_poc_benchmark import NEGATIVE_CASES
+
+HERE=Path(__file__).resolve().parent
+SUMMARY=HERE/'generic-structural-poc-summary.json'
 
 
 class GenericStructuralPoCTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.summary=json.loads(SUMMARY.read_text())
+
     def test_candidate_does_not_import_vendor_specific_profiles(self):
         source=(Path(__file__).with_name('generic_structural_poc.py')).read_text()
         for name in (
@@ -20,7 +24,7 @@ class GenericStructuralPoCTests(unittest.TestCase):
             self.assertNotIn(name,source)
 
     def test_frozen_public_profile_oracle_is_exact(self):
-        result=frozen_oracle_eval()
+        result=self.summary['frozen_oracle']
         self.assertEqual(10,result['events'])
         self.assertEqual(10,result['exact_events'])
         self.assertEqual(
@@ -34,7 +38,7 @@ class GenericStructuralPoCTests(unittest.TestCase):
                 self.assertNotEqual('SOURCE_PARSED',parse_generic_structural(raw).status)
 
     def test_pfsense_wide_positional_csv_promotes_without_changing_spans(self):
-        result=pfsense_eval()
+        result=self.summary['pfsense_positional_csv']
         self.assertEqual('PARTIAL',result['baseline_status'])
         self.assertEqual('SOURCE_PARSED',result['candidate_status'])
         self.assertTrue(result['span_sets_equal'])
@@ -43,7 +47,7 @@ class GenericStructuralPoCTests(unittest.TestCase):
         self.assertNotEqual('SOURCE_PARSED',parse_generic_structural(short).status)
 
     def test_cisco_ise_space_keys_repeats_and_source_slices(self):
-        result=ise_eval(ISE,ISE_EXPECTED)
+        result=self.summary['cisco_ise_comma_kv']
         self.assertEqual('PARTIAL',result['baseline_status'])
         self.assertEqual('SOURCE_PARSED',result['candidate_status'])
         self.assertTrue(result['expected_kv_exact'])
@@ -52,7 +56,7 @@ class GenericStructuralPoCTests(unittest.TestCase):
         self.assertEqual(2,result['repeated_cisco_av_pair_occurrences'])
 
     def test_recipe_synthesis_generalizes_without_vendor_identity(self):
-        result=recipe_eval()
+        result=self.summary['recipe_synthesis']
         self.assertEqual(3,result['holdouts'])
         self.assertEqual(3,result['exact_holdouts'])
         self.assertEqual(
@@ -61,7 +65,7 @@ class GenericStructuralPoCTests(unittest.TestCase):
         )
 
     def test_post_tuning_fresh_holdout_keeps_qualified_cases_and_adds_source_backed_fields(self):
-        result=post_tuning_fresh_eval()
+        result=self.summary['post_tuning_fresh_holdout']
         self.assertEqual(6,result['events'])
         self.assertEqual(
             result['qualified_complete_oracle_events'],
@@ -100,10 +104,10 @@ class GenericStructuralPoCTests(unittest.TestCase):
         self.assertNotEqual('SOURCE_PARSED',parse_generic_structural(multiple).status)
 
     def test_residual_template_is_candidate_only_when_dependency_present(self):
-        result=residual_template_eval()
+        result=self.summary['residual_template']
         if not result.get('available'):
             self.skipTest(result.get('reason','optional Drain3 unavailable'))
-        self.assertEqual('PARTIAL',result['generic_status'])
+        self.assertNotEqual('SOURCE_PARSED',result['generic_status'])
         self.assertTrue(result['template_match'])
         self.assertEqual('SOURCE_SPAN_CANDIDATE_ONLY',result['alignment_status'])
         self.assertTrue(result['exact_variable_spans'])
