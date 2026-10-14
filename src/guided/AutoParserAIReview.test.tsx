@@ -9,6 +9,9 @@ describe('AI recovery review safety',()=>{
   fireEvent.change(screen.getByRole('textbox',{name:'AI correction request'}),{target:{value:'Extract source IP'}});
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
   fireEvent.click(screen.getByRole('checkbox'));
+  expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(true);
+  fireEvent.change(screen.getByRole('textbox',{name:'Reviewed and redacted AI excerpt'}),{target:{value:'REDACTED event'}});
+  fireEvent.click(screen.getByRole('checkbox'));
   expect(screen.getByRole('button',{name:'Copy AI Prompt'}).hasAttribute('disabled')).toBe(false);
  });
  it('does not authorize selected-area copy without exact selection',()=>{
