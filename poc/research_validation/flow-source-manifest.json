@@ -1,0 +1,83 @@
+{
+  "commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+  "files": [
+    {
+      "bytes": 5058,
+      "git_blob": "8eef5c2e1bd0a8dc32a5b580e03803eca575b429",
+      "local_name": "test-ecs-samples.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-ecs-samples.log",
+      "physical_records": 10,
+      "sha256": "cdf8f07058adaeb87c18155164996a150001c6b4c21290eb3c5c35cbeb2246f3",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-ecs-samples.log"
+    },
+    {
+      "bytes": 789,
+      "git_blob": "808ade66dcb4635a98369b237fdd8a7007c56e49",
+      "local_name": "test-extra-samples.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-extra-samples.log",
+      "physical_records": 7,
+      "sha256": "5e41bf64a2fb42a8cb4b73558595db60e3bfeb8a0d96303800c4e2be0b594f8f",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-extra-samples.log"
+    },
+    {
+      "bytes": 525,
+      "git_blob": "94b874fa6a8d551255b46647bcf8182168f8f238",
+      "local_name": "test-tcp-flag-sequence.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-tcp-flag-sequence.log",
+      "physical_records": 3,
+      "sha256": "62cc12dde9d1d0c27d206c706325656802c7f0344745fc046e49dd79d399fe6d",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-tcp-flag-sequence.log"
+    },
+    {
+      "bytes": 2429,
+      "git_blob": "e733d6055ebfaf48eee770bb87ea9c29116aacac",
+      "local_name": "test-tgw-samples.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-tgw-samples.log",
+      "physical_records": 10,
+      "sha256": "2a1fa1acf7c3ffd14ad16409b3de865f973a023777fcc33884aef8b2ace50d6d",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-tgw-samples.log"
+    },
+    {
+      "bytes": 255,
+      "git_blob": "ef2b28bcc0600b166b1070f06f45682fe4971173",
+      "local_name": "test-v5-all-fields.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-v5-all-fields.log",
+      "physical_records": 1,
+      "sha256": "f90b7d39638b47c1ff1da4a39066cdee24107bdc5e2ad65561ca9a3dcd9114a5",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-v5-all-fields.log"
+    },
+    {
+      "bytes": 507,
+      "git_blob": "ab4c15625d1a2700991fa48a3419572a3fb944e7",
+      "local_name": "test-v8-samples.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-v8-samples.log",
+      "physical_records": 1,
+      "sha256": "73e85545993fea65fd8530299448d84157c9c020f4b4eb7ce7b1e8e5555aa874",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-v8-samples.log"
+    },
+    {
+      "bytes": 96,
+      "git_blob": "452ce725fa9504fb46dd897602095d224b1b18ff",
+      "local_name": "test-with-message-field.log",
+      "path": "packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-with-message-field.log",
+      "physical_records": 1,
+      "sha256": "a8adad07872e13d44a540e003ad4d98727108040d6f385835cea340cf3eb224a",
+      "url": "https://raw.githubusercontent.com/elastic/integrations/47a6f483b1e7337854f7b5140a98397cba744702/packages/aws/data_stream/vpcflow/_dev/test/pipeline/test-with-message-field.log"
+    }
+  ],
+  "freeze": {
+    "adapter_sha256": "28616b885d25b010f6100cc63b723740d3fc8fa58cac8cef27a6175575666fe2",
+    "baseline": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+    "candidate_sha256": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
+    "fit_contract": "raw training only, no semantic labels; per-source raw-SHA split; unlabeled width grouping",
+    "layout_sha256": "ad7ffe8275b0f9feb7911e51a95efc22d984afb9e1a06ee55384b03afc921caf",
+    "source_commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+    "source_repository": "elastic/integrations",
+    "status": "FROZEN_BEFORE_NEW_FLOW_SOURCE_BODY_ACQUISITION"
+  },
+  "license": "Elastic License 2.0 default; local research only, raw redistribution not authorized",
+  "license_sha256": "48255018b41fc0e965b1115af7e6779bc218bb8a6747d561da800d5022622aa2",
+  "redaction_status": "UNASSESSED_NOT_UNMASKED_ONLY",
+  "repository": "elastic/integrations",
+  "source_kind": "Upstream regression fixtures, not verified production capture; not AWS-authored"
+}

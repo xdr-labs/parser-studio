@@ -1,5 +1,7 @@
 # Independent Parser Extraction Validation — Executed Results
 
+> Follow-on checkpoint: see NEXT_POC_RESULT.md for H2r and the newly completed AWS-format source evaluation. The original Zeek/H3 evaluation below remains specifically incomplete. Historical results below are preserved.
+
 ## Decision
 
 **Keep the current PoC. Selectively advance H2 (raw-only multi-sample delimiter inference), not a wholesale replacement with the new prototype.** On the authored boundary/delimiter suite, the current engine plus guarded H2 improves exact native-key/value/byte-span F1 from **67.47% to 93.20% (+25.73 percentage points)**. Existing main-PoC KV and JSON regressions and the known 256-record source corpus remain intact.

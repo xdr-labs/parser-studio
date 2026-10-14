@@ -1,0 +1,1792 @@
+{
+  "added_conformance": {
+    "current_poc": {
+      "events": 240,
+      "exact_field_events": 72,
+      "exact_native_key_value_byte_span": {
+        "FN": 504,
+        "FP": 48,
+        "TP": 48,
+        "f1": 0.14814814814814814,
+        "precision": 0.5,
+        "recall": 0.08695652173913043
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 240,
+      "reference_fields": 552,
+      "statuses": {
+        "PARTIAL": 24,
+        "RAW_ONLY": 216
+      }
+    },
+    "new_h2r": {
+      "events": 240,
+      "exact_field_events": 216,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 72,
+        "TP": 552,
+        "f1": 0.9387755102040817,
+        "precision": 0.8846153846153846,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 240,
+      "reference_fields": 552,
+      "statuses": {
+        "PARTIAL": 48,
+        "RAW_ONLY": 48,
+        "SOURCE_PARSED": 144
+      }
+    },
+    "previous_h2": {
+      "events": 240,
+      "exact_field_events": 48,
+      "exact_native_key_value_byte_span": {
+        "FN": 360,
+        "FP": 240,
+        "TP": 192,
+        "f1": 0.3902439024390244,
+        "precision": 0.4444444444444444,
+        "recall": 0.34782608695652173
+      },
+      "falsely_complete_events": 72,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 240,
+      "reference_fields": 552,
+      "statuses": {
+        "PARTIAL": 24,
+        "RAW_ONLY": 96,
+        "SOURCE_PARSED": 120
+      }
+    }
+  },
+  "added_families": {
+    "ambiguous_quote": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 0,
+          "f1": null,
+          "precision": null,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 0,
+          "f1": null,
+          "precision": null,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 72,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 24,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "legitimate_shape_drift": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "malformed_quote_training": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 0,
+          "f1": null,
+          "precision": null,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 0,
+          "f1": null,
+          "precision": null,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 48,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 24,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "multiline": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "new_quote_comma": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 24,
+          "FP": 48,
+          "TP": 48,
+          "f1": 0.5714285714285714,
+          "precision": 0.5,
+          "recall": 0.6666666666666666
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 24,
+          "FP": 48,
+          "TP": 48,
+          "f1": 0.5714285714285714,
+          "precision": 0.5,
+          "recall": 0.6666666666666666
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      }
+    },
+    "new_quote_pipe": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      }
+    },
+    "new_quote_semicolon": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      }
+    },
+    "new_quote_tab": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 72,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 72,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 72,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      }
+    },
+    "source_switch_prose": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 0,
+          "f1": null,
+          "precision": null,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 72,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "PARTIAL": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 72,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": null
+        },
+        "falsely_complete_events": 24,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 0,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      }
+    },
+    "space_layout": {
+      "current_poc": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 120,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      },
+      "new_h2r": {
+        "events": 24,
+        "exact_field_events": 24,
+        "exact_native_key_value_byte_span": {
+          "FN": 0,
+          "FP": 0,
+          "TP": 120,
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "SOURCE_PARSED": 24
+        }
+      },
+      "previous_h2": {
+        "events": 24,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 120,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 24,
+        "reference_fields": 120,
+        "statuses": {
+          "RAW_ONLY": 24
+        }
+      }
+    }
+  },
+  "blocked_h3_status": "UNCHANGED: two normal same-tool retries denied; H3 exception and Zeek accounting NOT fixed or bypassed",
+  "candidate_legacy_sha256": "cd4691e09c3ba26f000fc4d685e1e43706f035bff8bf866e5d7bad4f8b5c72a6",
+  "contract": "parser-studio.h2r-next-poc.v1",
+  "current_baseline_commit": "2fee28f6770262e6a1cdf95fb52cb0ce73f6ce03",
+  "dictionary_attempted": false,
+  "execution_provenance": {
+    "current_poc": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    },
+    "new_h2r": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    },
+    "previous_h2": {
+      "engine_file": "/home/aella/parser-studio-validation-poc-20261014/poc/research_validation/.cache/latest-baseline/poc/vendor_engine/source_parse.py",
+      "engine_sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+    }
+  },
+  "external_flow": {
+    "all_physical_records": 33,
+    "candidate_frozen_before_source_acquisition": true,
+    "excluded_records": 0,
+    "global_train_holdout_hash_disjoint": true,
+    "groups": {
+      "test-ecs-samples.log": {
+        "all_physical_records_accounted": 10,
+        "current_poc": {
+          "events": 6,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 234,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_fields": 234,
+          "statuses": {
+            "RAW_ONLY": 6
+          }
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "c8808574c05401c72c760c0041194f875b68d8e5dc5f80ae7b0ee9c8240ff927",
+            "model": [
+              {
+                "column_shapes": [
+                  "number",
+                  "number",
+                  null,
+                  "address",
+                  "address",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null
+                ],
+                "delimiter": " ",
+                "quotes": [
+                  "\"",
+                  "'"
+                ],
+                "train_sha256": [
+                  "012e2697e74d9b50b01ad9f35344670b891c6353b9afa7c2fc104b9ea6b6df2a",
+                  "01844703884505d4099fd6df48ebfa3c0c0e3fd6aa7cc49c29213cdccc0feddc",
+                  "0d93fe3327442f9ede318d7f2f44bc4de4ac47f45e9be8ba03c9eaf334bc4330",
+                  "0e2b4e35fff96ade2c32bbe157d0b995df38890e52d1a134eb55e0158d9a2e6f"
+                ],
+                "width": 39
+              }
+            ],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 6,
+        "json_controls": 0,
+        "new_h2r": {
+          "events": 6,
+          "exact_field_events": 6,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 234,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_fields": 234,
+          "statuses": {
+            "SOURCE_PARSED": 6
+          }
+        },
+        "physical_records": 10,
+        "previous_h2": {
+          "events": 6,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 234,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_fields": 234,
+          "statuses": {
+            "RAW_ONLY": 6
+          }
+        },
+        "space_records": 10,
+        "train_unique_records": 4,
+        "training_records": 4
+      },
+      "test-extra-samples.log": {
+        "all_physical_records_accounted": 7,
+        "current_poc": {
+          "events": 4,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 56,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_fields": 56,
+          "statuses": {
+            "RAW_ONLY": 4
+          }
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "9400fedb67cda532e0cc4d35fb4b05833265c4e99ae9aaced3608b3b30f70ce1",
+            "model": [
+              {
+                "column_shapes": [
+                  "number",
+                  "number",
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  "number",
+                  "number",
+                  null,
+                  null
+                ],
+                "delimiter": " ",
+                "quotes": [
+                  "\"",
+                  "'"
+                ],
+                "train_sha256": [
+                  "1a01a5a72e6350cd6db0f9d2f14c54d035a6188cfc0a0feef45048a099ac7b1a",
+                  "247829e53c62752077a787462ee6b4af892c0fd374a819465c995cd6c6e3e6fe",
+                  "6914321060c27bd7f8bf1bd653d03d7bc448e31f2a9d873acbbeed70c602a60e"
+                ],
+                "width": 14
+              }
+            ],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 4,
+        "json_controls": 0,
+        "new_h2r": {
+          "events": 4,
+          "exact_field_events": 4,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 56,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_fields": 56,
+          "statuses": {
+            "SOURCE_PARSED": 4
+          }
+        },
+        "physical_records": 7,
+        "previous_h2": {
+          "events": 4,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 56,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 4,
+          "reference_fields": 56,
+          "statuses": {
+            "RAW_ONLY": 4
+          }
+        },
+        "space_records": 7,
+        "train_unique_records": 3,
+        "training_records": 3
+      },
+      "test-tcp-flag-sequence.log": {
+        "all_physical_records_accounted": 3,
+        "current_poc": {
+          "events": 3,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 63,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_fields": 63,
+          "statuses": {
+            "RAW_ONLY": 3
+          }
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "model": [],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 3,
+        "json_controls": 0,
+        "new_h2r": {
+          "events": 3,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 63,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_fields": 63,
+          "statuses": {
+            "RAW_ONLY": 3
+          }
+        },
+        "physical_records": 3,
+        "previous_h2": {
+          "events": 3,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 63,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 3,
+          "reference_fields": 63,
+          "statuses": {
+            "RAW_ONLY": 3
+          }
+        },
+        "space_records": 3,
+        "train_unique_records": 0,
+        "training_records": 0
+      },
+      "test-tgw-samples.log": {
+        "all_physical_records_accounted": 10,
+        "current_poc": {
+          "events": 6,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 216,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_fields": 216,
+          "statuses": {
+            "RAW_ONLY": 6
+          }
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "ad5bc768eaf72a8d9f347bdcc382f18863c562d0653177b4393b91406f1885d3",
+            "model": [
+              {
+                "column_shapes": [
+                  "number",
+                  null,
+                  "number",
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  "address",
+                  "address",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  "number",
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null
+                ],
+                "delimiter": " ",
+                "quotes": [
+                  "\"",
+                  "'"
+                ],
+                "train_sha256": [
+                  "0b1295c0208ee7e82469450008bb793d9b171a18d6440a8a3da4462a4530ea4f",
+                  "450ea8098d9693375b13afc82bded17951fc6771e8eaf8e974df95fd4d04e4c8",
+                  "4b2cf90605a55ef547ed90c37ab12c390d39ad3fa4f354dae0af0152763092a2",
+                  "6714e6bdb19a53e5f7e243a6d9507e7724137ae9322e59122332fc2c99dea9b7"
+                ],
+                "width": 36
+              }
+            ],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 6,
+        "json_controls": 0,
+        "new_h2r": {
+          "events": 6,
+          "exact_field_events": 6,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 216,
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_fields": 216,
+          "statuses": {
+            "SOURCE_PARSED": 6
+          }
+        },
+        "physical_records": 10,
+        "previous_h2": {
+          "events": 6,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 216,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 6,
+          "reference_fields": 216,
+          "statuses": {
+            "RAW_ONLY": 6
+          }
+        },
+        "space_records": 10,
+        "train_unique_records": 4,
+        "training_records": 4
+      },
+      "test-v5-all-fields.log": {
+        "all_physical_records_accounted": 1,
+        "current_poc": {
+          "events": 1,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 29,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_fields": 29,
+          "statuses": {
+            "RAW_ONLY": 1
+          }
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "model": [],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 1,
+        "json_controls": 0,
+        "new_h2r": {
+          "events": 1,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 29,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_fields": 29,
+          "statuses": {
+            "RAW_ONLY": 1
+          }
+        },
+        "physical_records": 1,
+        "previous_h2": {
+          "events": 1,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 29,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_fields": 29,
+          "statuses": {
+            "RAW_ONLY": 1
+          }
+        },
+        "space_records": 1,
+        "train_unique_records": 0,
+        "training_records": 0
+      },
+      "test-v8-samples.log": {
+        "all_physical_records_accounted": 1,
+        "current_poc": {
+          "events": 1,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 40,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_fields": 40,
+          "statuses": {
+            "RAW_ONLY": 1
+          }
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "model": [],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 1,
+        "json_controls": 0,
+        "new_h2r": {
+          "events": 1,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 40,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_fields": 40,
+          "statuses": {
+            "RAW_ONLY": 1
+          }
+        },
+        "physical_records": 1,
+        "previous_h2": {
+          "events": 1,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 40,
+            "FP": 0,
+            "TP": 0,
+            "f1": 0.0,
+            "precision": null,
+            "recall": 0.0
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 1,
+          "reference_fields": 40,
+          "statuses": {
+            "RAW_ONLY": 1
+          }
+        },
+        "space_records": 1,
+        "train_unique_records": 0,
+        "training_records": 0
+      },
+      "test-with-message-field.log": {
+        "all_physical_records_accounted": 1,
+        "current_poc": {
+          "events": 0,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 0,
+          "reference_fields": 0,
+          "statuses": {}
+        },
+        "frozen_models": {
+          "current_poc": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          },
+          "new_h2r": {
+            "frozen_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "model": [],
+            "unchanged_after_predictions": true
+          },
+          "previous_h2": {
+            "frozen_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "model": null,
+            "unchanged_after_predictions": true
+          }
+        },
+        "heldout_records": 0,
+        "json_controls": 1,
+        "new_h2r": {
+          "events": 0,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 0,
+          "reference_fields": 0,
+          "statuses": {}
+        },
+        "physical_records": 1,
+        "previous_h2": {
+          "events": 0,
+          "exact_field_events": 0,
+          "exact_native_key_value_byte_span": {
+            "FN": 0,
+            "FP": 0,
+            "TP": 0,
+            "f1": null,
+            "precision": null,
+            "recall": null
+          },
+          "falsely_complete_events": 0,
+          "parser_exceptions": 0,
+          "raw_records_preserved": 0,
+          "reference_fields": 0,
+          "statuses": {}
+        },
+        "space_records": 0,
+        "train_unique_records": 0,
+        "training_records": 0
+      }
+    },
+    "heldout_records": 21,
+    "json_control_records": 1,
+    "json_controls": {
+      "test-with-message-field.log": {
+        "current_poc": {
+          "exact_tree_records": 1,
+          "independent_byte_spans": "NOT_SCORED",
+          "raw_records_preserved": 1,
+          "records": 1,
+          "source_fields": 1
+        },
+        "new_h2r": {
+          "exact_tree_records": 1,
+          "independent_byte_spans": "NOT_SCORED",
+          "raw_records_preserved": 1,
+          "records": 1,
+          "source_fields": 1
+        },
+        "previous_h2": {
+          "exact_tree_records": 1,
+          "independent_byte_spans": "NOT_SCORED",
+          "raw_records_preserved": 1,
+          "records": 1,
+          "source_fields": 1
+        }
+      }
+    },
+    "overall": {
+      "current_poc": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 638,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 21,
+        "reference_fields": 638,
+        "statuses": {
+          "RAW_ONLY": 21
+        }
+      },
+      "new_h2r": {
+        "events": 21,
+        "exact_field_events": 16,
+        "exact_native_key_value_byte_span": {
+          "FN": 132,
+          "FP": 0,
+          "TP": 506,
+          "f1": 0.8846153846153846,
+          "precision": 1.0,
+          "recall": 0.7931034482758621
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 21,
+        "reference_fields": 638,
+        "statuses": {
+          "RAW_ONLY": 5,
+          "SOURCE_PARSED": 16
+        }
+      },
+      "previous_h2": {
+        "events": 21,
+        "exact_field_events": 0,
+        "exact_native_key_value_byte_span": {
+          "FN": 638,
+          "FP": 0,
+          "TP": 0,
+          "f1": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        "falsely_complete_events": 0,
+        "parser_exceptions": 0,
+        "raw_records_preserved": 21,
+        "reference_fields": 638,
+        "statuses": {
+          "RAW_ONLY": 21
+        }
+      }
+    },
+    "redaction_status": "UNASSESSED_NOT_UNMASKED_ONLY",
+    "reference": "Independent csv.reader(delimiter=space, QUOTE_NONE) and constructed original-byte offsets; no semantic labels",
+    "reference_constructed_after_predictions": true,
+    "repository": "elastic/integrations",
+    "scalar_contract": "Original serialized cells preserved as strings; positional columns, no IP meaning/field-name/type conversion",
+    "source_commit": "47a6f483b1e7337854f7b5140a98397cba744702",
+    "source_kind": "Upstream regression fixtures, not verified production capture; not AWS-authored",
+    "training_records": 11
+  },
+  "known_source": {
+    "current_poc": {
+      "contract": "parser-studio.poc.source-field-metrics.v1",
+      "exact_source_field": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 14645,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "fully_parsed_records": 256,
+      "gold_source_field_occurrences": 14645,
+      "observed_source_field_occurrences": 14645,
+      "partial_records": 0,
+      "raw_only_records": 0,
+      "raw_records_accounted": 256,
+      "scope": "RAW_VENDOR_SOURCE_FIELDS_ONLY_NO_DICTIONARY",
+      "semantic_mapping_attempted": false,
+      "source_bytes": 141877,
+      "source_coverage_rate": 1.0,
+      "stellar_native_verified": false,
+      "structured_empty_records": 0,
+      "unparsed_bytes": 0,
+      "warning": "Gold source-field labels must be independently produced; template match and raw byte retention do not create them."
+    },
+    "new_h2r": {
+      "contract": "parser-studio.poc.source-field-metrics.v1",
+      "exact_source_field": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 14645,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "fully_parsed_records": 256,
+      "gold_source_field_occurrences": 14645,
+      "observed_source_field_occurrences": 14645,
+      "partial_records": 0,
+      "raw_only_records": 0,
+      "raw_records_accounted": 256,
+      "scope": "RAW_VENDOR_SOURCE_FIELDS_ONLY_NO_DICTIONARY",
+      "semantic_mapping_attempted": false,
+      "source_bytes": 141877,
+      "source_coverage_rate": 1.0,
+      "stellar_native_verified": false,
+      "structured_empty_records": 0,
+      "unparsed_bytes": 0,
+      "warning": "Gold source-field labels must be independently produced; template match and raw byte retention do not create them."
+    },
+    "previous_h2": {
+      "contract": "parser-studio.poc.source-field-metrics.v1",
+      "exact_source_field": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 14645,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "fully_parsed_records": 256,
+      "gold_source_field_occurrences": 14645,
+      "observed_source_field_occurrences": 14645,
+      "partial_records": 0,
+      "raw_only_records": 0,
+      "raw_records_accounted": 256,
+      "scope": "RAW_VENDOR_SOURCE_FIELDS_ONLY_NO_DICTIONARY",
+      "semantic_mapping_attempted": false,
+      "source_bytes": 141877,
+      "source_coverage_rate": 1.0,
+      "stellar_native_verified": false,
+      "structured_empty_records": 0,
+      "unparsed_bytes": 0,
+      "warning": "Gold source-field labels must be independently produced; template match and raw byte retention do not create them."
+    }
+  },
+  "layout_sha256": "ad7ffe8275b0f9feb7911e51a95efc22d984afb9e1a06ee55384b03afc921caf",
+  "limitations": [
+    "H2r is an independently tested slice, not approval of the still failing H3 prototype.",
+    "New-source files are upstream test fixtures, not verified real production data and not unmasked-only evidence.",
+    "Mixed-version width grouping uses only raw training; rare groups without three distinct training examples abstain.",
+    "Shape drift retains syntactic candidate fields but marks PARTIAL; it does not infer meanings or suppress all false fields.",
+    "Identical delimiter/width/type patterns across unrelated sources remain ambiguous; not a universal source classifier.",
+    "Existing known-source corpus measures field/value parity, not independently labeled source-byte spans.",
+    "No AWS semantic normalization, decoded sentinels, hosted AI, production operations or native compiler qualification."
+  ],
+  "main_json": {
+    "current_poc": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "complete_span_events": 128,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 512,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 512,
+      "logical_identity_exact_fields": 512,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    },
+    "new_h2r": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "complete_span_events": 128,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 512,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 512,
+      "logical_identity_exact_fields": 512,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    },
+    "previous_h2": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 512,
+      "complete_span_events": 128,
+      "events": 128,
+      "exact_leaf_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 512,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "exact_source_tree_events": 128,
+      "expected_leaf_fields": 512,
+      "logical_identity_available_fields": 512,
+      "logical_identity_exact_fields": 512,
+      "measurement": "Source leaf spans and independently serialized source tree. Logical identities reported separately, not required retroactively for the span score.",
+      "raw_records_preserved": 128
+    }
+  },
+  "main_kv": {
+    "current_poc": {
+      "events": 128,
+      "exact_field_events": 128,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 352,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 16,
+        "SOURCE_PARSED": 112
+      }
+    },
+    "new_h2r": {
+      "events": 128,
+      "exact_field_events": 128,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 352,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 16,
+        "SOURCE_PARSED": 112
+      }
+    },
+    "previous_h2": {
+      "events": 128,
+      "exact_field_events": 128,
+      "exact_native_key_value_byte_span": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 352,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 128,
+      "reference_fields": 352,
+      "statuses": {
+        "PARTIAL": 16,
+        "SOURCE_PARSED": 112
+      }
+    }
+  },
+  "native_verified": false,
+  "predictions_frozen_sha256": "0e600b988733d7459f58c3c9fcf086c625955b19e2600e93db2738a9d66b5535",
+  "prior_conformance": {
+    "current_poc": {
+      "events": 264,
+      "exact_field_events": 154,
+      "exact_native_key_value_byte_span": {
+        "FN": 432,
+        "FP": 54,
+        "TP": 504,
+        "f1": 0.6746987951807228,
+        "precision": 0.9032258064516129,
+        "recall": 0.5384615384615384
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 104,
+        "RAW_ONLY": 88,
+        "SOURCE_PARSED": 72
+      }
+    },
+    "new_h2r": {
+      "events": 264,
+      "exact_field_events": 226,
+      "exact_native_key_value_byte_span": {
+        "FN": 72,
+        "FP": 54,
+        "TP": 864,
+        "f1": 0.9320388349514563,
+        "precision": 0.9411764705882353,
+        "recall": 0.9230769230769231
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 80,
+        "RAW_ONLY": 16,
+        "SOURCE_PARSED": 168
+      }
+    },
+    "previous_h2": {
+      "events": 264,
+      "exact_field_events": 226,
+      "exact_native_key_value_byte_span": {
+        "FN": 72,
+        "FP": 54,
+        "TP": 864,
+        "f1": 0.9320388349514563,
+        "precision": 0.9411764705882353,
+        "recall": 0.9230769230769231
+      },
+      "falsely_complete_events": 0,
+      "parser_exceptions": 0,
+      "raw_records_preserved": 264,
+      "reference_fields": 936,
+      "statuses": {
+        "PARTIAL": 80,
+        "RAW_ONLY": 16,
+        "SOURCE_PARSED": 168
+      }
+    }
+  },
+  "producer_sha256": "82fdc7a2a739cc227df59d61b638a869dfd71adf27c6d8704086b62a0dbecda3",
+  "routing_invariance": {
+    "current_poc": {
+      "identical_to_current": 64,
+      "records": 64
+    },
+    "new_h2r": {
+      "identical_to_current": 64,
+      "records": 64
+    },
+    "previous_h2": {
+      "identical_to_current": 64,
+      "records": 64
+    }
+  },
+  "target_verified": false,
+  "training_contract": "raw-only source batches; globally raw-hash disjoint external train/holdout; at most 64 unique train rows/model bank"
+}
