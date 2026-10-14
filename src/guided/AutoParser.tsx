@@ -13,6 +13,8 @@ import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelop
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
+import {verifyNativeProject,NativeProjectVerificationUnavailable,
+  type NativeProjectVerificationReport} from './nativeProjectVerificationClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import type {StructuralMiningReport} from './localPatternMining';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
@@ -53,6 +55,8 @@ const STEPS=['Add Logs','Review Results','Test & Generate'] as const;
 type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
+type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
+ report?:NativeProjectVerificationReport;message:string};
 function download(filename:string,content:string|ArrayBuffer,binary=false){
  const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
  const url=URL.createObjectURL(object);
@@ -97,6 +101,7 @@ export default function AutoParser({
  const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
  const [recipeCompiled,setRecipeCompiled]=useState<{key:string;value:ReviewedRecipeCompilation}|null>(null);
  const [recipeCompilerError,setRecipeCompilerError]=useState('');
+ const [nativeEvidence,setNativeEvidence]=useState<NativeEvidence|null>(null);
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [drainAvailability,setDrainAvailability]=useState<'UNCHECKED'|'ERROR'|Drain3Availability>('UNCHECKED');
@@ -121,7 +126,7 @@ export default function AutoParser({
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
-   setRecipeCompiled(null);setRecipeCompilerError('');
+   setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);
    setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
    setDrainAvailability('UNCHECKED');setDrainConsent(false);
    setDrainResult(null);setDrainNotice('');
@@ -187,6 +192,7 @@ export default function AutoParser({
  const currentZip=zip?.key===identity?zip:null;
  const currentRecipe=recipe?.key===identity?recipe.value:null;
  const currentRecipeCompiled=recipeCompiled?.key===identity?recipeCompiled.value:null;
+ const currentNativeEvidence=nativeEvidence?.key===identity?nativeEvidence:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
  const currentDrain=drainResult?.key===identity&&
@@ -238,7 +244,7 @@ export default function AutoParser({
  async function generate(){
    if(!canGenerate||!confirmed()||!suite)return;
    const token=++epoch.current, expected=identity;
-   setBusy(true);setMessage('');setPair(null);setZip(null);
+   setBusy(true);setMessage('');setPair(null);setZip(null);setNativeEvidence(null);
    try{
      const local=await runPreview(draft,sample);
      if(token!==epoch.current||currentRef.current!==expected)return;
@@ -429,7 +435,7 @@ export default function AutoParser({
  async function previewRecipe(){
    if(!suite||busy||pending)return;
    const token=++epoch.current,expected=identity;
-   setBusy(true);setRecipe(null);setRecipeCompiled(null);setRecipeCompilerError('');
+   setBusy(true);setRecipe(null);setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);
    try{
      const result=await buildReviewableRecipe(sample,draft,suite);
      if(token===epoch.current&&currentRef.current===expected)
@@ -442,7 +448,7 @@ export default function AutoParser({
  async function compileReviewedRecipe(){
    if(!currentRecipe||!currentRecipe.ok||!currentPair||busy||pending)return;
    const token=++epoch.current,expected=identity;
-   setBusy(true);setRecipeCompiled(null);setRecipeCompilerError('');
+   setBusy(true);setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);
    try{
      const result=await compileReviewedRecipeV02({
        recipe:currentRecipe.recipe,legacyProject:currentRecipe.legacyProject,
@@ -452,6 +458,27 @@ export default function AutoParser({
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setRecipeCompilerError('The backend could not verify the strict v0.2 stages against the current DRAFT pair. The original v0.1 files remain available.');
+   }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function verifyCurrentNativeProject(){
+   if(!currentRecipe||!currentRecipe.ok||!currentRecipeCompiled||!suite||busy||pending)return;
+   const token=++epoch.current,expected=identity;
+   setBusy(true);setNativeEvidence(null);
+   try{
+     const result=await verifyNativeProject({
+       source:sample,suite,recipe:currentRecipe.recipe,
+       legacyProject:currentRecipe.legacyProject,compiled:currentRecipeCompiled,
+     });
+     if(token===epoch.current&&currentRef.current===expected)
+       setNativeEvidence({key:expected,status:'PASS',report:result,
+         message:'Current source-bound Ruby/CONF passed the pinned Native parser runtime.'});
+   }catch(error){
+     if(token!==epoch.current||currentRef.current!==expected)return;
+     if(error instanceof NativeProjectVerificationUnavailable)
+       setNativeEvidence({key:expected,status:'UNAVAILABLE',
+         message:'Private Native verification is not configured or access was denied. DRAFT remains Native NOT VERIFIED.'});
+     else setNativeEvidence({key:expected,status:'FAILED',
+       message:'Native Ruby/CONF verification did not pass. No target or sensor claim was made.'});
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function zipPair(){
@@ -849,14 +876,16 @@ export default function AutoParser({
          {busy?'Testing the full sample…':'Run Tests & Generate DRAFT Files'}
        </button>
        {currentEvidence&&<div className="auto-parser-result" aria-label="Auto Parser test evidence">
-         <strong>{currentEvidence.status==='PASS'?'Schema/Hashes PASS · Native Unverified':
+         <strong>{currentEvidence.status==='PASS'?
+           'Schema/Hashes PASS · '+(currentNativeEvidence?.status==='PASS'?'Native Verified':'Native Unverified'):
            'Generation Not Verified'}</strong>
          <span>{currentEvidence.total} browser events reviewed ·
            Stellar DP target import NOT VERIFIED</span>
          {currentEvidence.issues.map((issue,i)=><span key={i}>{issue}</span>)}
        </div>}
        {currentPair&&<div className="auto-parser-download" aria-label="Generated Auto Parser DRAFT pair">
-         <strong><CheckCircle2 size={17}/> Two DRAFT files verified for SHA-256 integrity · Native NOT VERIFIED</strong>
+         <strong><CheckCircle2 size={17}/> Two DRAFT files verified for SHA-256 integrity ·
+           {currentNativeEvidence?.status==='PASS'?' Native VERIFIED':' Native NOT VERIFIED'}</strong>
          {currentPair.files.map(file=><button key={file.name} type="button"
            onClick={()=>download(file.name,file.content)}>
            <FileText size={15}/>{file.name} <Download size={15}/>
@@ -993,12 +1022,37 @@ export default function AutoParser({
            <span>Stages: {currentRecipeCompiled.receipt.stageCount} ·
              Events claimed: {currentRecipeCompiled.receipt.sampleEventCount} ·
              Recipe SHA-256 {currentRecipeCompiled.receipt.recipeSha256.slice(0,16)}…</span>
-           <span>Native user parser NOT VERIFIED · Source hash is not independently
-             checked by the backend · Stellar DP import NOT VERIFIED</span>
+           <span>Native user parser NOT VERIFIED by compiler receipt ·
+             Stellar DP import NOT VERIFIED</span>
+           <p>Optional Native verification is a separate explicit action. It sends this
+             bounded current sample to the configured same-origin private backend only;
+             no LLM, DP install or sensor send occurs.</p>
+           <button type="button" disabled={busy||pending||!suite}
+             onClick={()=>{void verifyCurrentNativeProject();}}>
+             {busy?'Verifying…':'Run Private Native Ruby/CONF Verification'}
+           </button>
+           {currentNativeEvidence&&<div className="auto-parser-result"
+             aria-label="Native Ruby and CONF verification evidence">
+             <strong>{currentNativeEvidence.status==='PASS'?
+               'NATIVE RUBY/CONF VERIFIED · TARGET NOT VERIFIED':
+               currentNativeEvidence.status==='UNAVAILABLE'?'NATIVE VERIFIER UNAVAILABLE':
+               'NATIVE VERIFICATION FAILED'}</strong>
+             <span>{currentNativeEvidence.message}</span>
+             {currentNativeEvidence.report&&<>
+               <span>{currentNativeEvidence.report.eventsPassed}/
+                 {currentNativeEvidence.report.eventCount} events exact ·
+                 Ruby {currentNativeEvidence.report.ruby} ·
+                 Fluentd {currentNativeEvidence.report.fluentd}</span>
+               <span>Source/event hashes verified · CONF AST verified · Parser callback verified ·
+                 Stellar DP target import NOT VERIFIED</span>
+             </>}
+           </div>}
          </div>}
        </details>
        <p className="auto-parser-note"><LockKeyhole size={14}/> No API key, DP install or sensor send.
-         Native Fluentd compatibility and real Stellar Cyber import remain unverified.</p>
+         {currentNativeEvidence?.status==='PASS'
+           ?' Current source-bound Ruby/CONF passed the pinned Native Fluentd runtime; real Stellar Cyber import remains unverified.'
+           :' Native Fluentd compatibility and real Stellar Cyber import remain unverified.'}</p>
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Review Results</button>
          <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>
