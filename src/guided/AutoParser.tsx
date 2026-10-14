@@ -233,8 +233,10 @@ export default function AutoParser({
  const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
- const beginnerAuthoritativeComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
+ const multiPassSourceComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
    multiPass.events.every(event=>event.preview.status==='SOURCE_PARSED');
+ const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&report.unsupported>0);
+ const beginnerAuthoritativeComplete=Boolean(multiPassSourceComplete&&!parserRuleReviewRequired);
  const browserSuiteComplete=!!suite&&suite.engine==='browser-preview'&&
    suite.nativeFluentdVerified===false&&suite.stellarExportVerified===false&&
    suite.counts.total>0&&suite.counts.matched===suite.counts.total&&
@@ -657,6 +659,7 @@ export default function AutoParser({
          events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
          draft={draft} suite={suite} onApplyCandidate={setDraft}
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
+         parserRuleReviewRequired={parserRuleReviewRequired}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}/>}
        <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">

@@ -49,6 +49,13 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     lines.push('', 'No trustworthy smaller residual range is available; review the whole problem event.');
   }
 
+  lines.push('',
+    'ParserRecipe safety contract:',
+    'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
+    'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
+    'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
+    'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');
+
   if(draft&&suite){
     const baseline=await buildReviewableRecipe(fullSource,draft,suite);
     if(baseline.ok){
@@ -66,11 +73,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
         'No compiler-ready baseline recipe exists.',
         `Recovery identity: projectId=draft-${opts.slug}`,
         `sourceSha256=${await sha256Utf8Hex(fullSource)}`,
-        `events=${records.length}`,
-        'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
-        'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
-        'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
-        'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');
+        `events=${records.length}`);
     }
   }
 

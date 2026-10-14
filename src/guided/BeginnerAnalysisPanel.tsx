@@ -19,6 +19,7 @@ interface Props {
   suite?:SuiteResult;
   onApplyCandidate?:(draft:ParserDraft)=>void;
   resolvedByReviewedCandidate?:boolean;
+  parserRuleReviewRequired?:boolean;
   neutralCsvColumnCount?:number;
   onUseNeutralCsvColumns?:()=>void;
 }
@@ -122,14 +123,18 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 }
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
-  resolvedByReviewedCandidate=false,neutralCsvColumnCount,onUseNeutralCsvColumns}:Props){
+  resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,
+  neutralCsvColumnCount,onUseNeutralCsvColumns}:Props){
   const [selected,setSelected]=useState(0);
   const [promptOpen,setPromptOpen]=useState(false);
   const [promptText,setPromptText]=useState('');
   const [promptBusy,setPromptBusy]=useState(false);
   const [copyStatus,setCopyStatus]=useState('');
-  const parsed=resolvedByReviewedCandidate?events.length:events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
-  const problems=resolvedByReviewedCandidate?[]:events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
+  const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
+  const parsed=resolvedByReviewedCandidate?events.length:parserRuleReviewRequired?0:sourceParsed;
+  const problems=resolvedByReviewedCandidate?[]:parserRuleReviewRequired&&events.length
+    ?[{event:events[0]!,index:0}]
+    :events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
   const rec=current?recommendation(current.event.preview):null;
@@ -159,9 +164,13 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     <div className={"beginner-analysis-head "+(problems.length?'needs-attention':'complete')}>
       {problems.length?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
       <div>
-        <strong>{parsed} of {events.length} log event{events.length===1?'':'s'} parsed completely</strong>
+        <strong>{parserRuleReviewRequired
+          ?`${sourceParsed} of ${events.length} source event${events.length===1?'':'s'} extracted`
+          :`${parsed} of ${events.length} log event${events.length===1?'':'s'} parsed completely`}</strong>
         <p>{resolvedByReviewedCandidate
           ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
+          :parserRuleReviewRequired
+          ?'Source extraction succeeded, but Parser Studio still needs a compiler-safe parser rule for this source shape. No extracted fields are discarded.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
           :'No unresolved source region was found. Continue to review field meanings and create the parser draft.'}</p>
@@ -173,25 +182,33 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {problemTitle(item.event.preview)}</option>)}
         </select>
       </label>}
-      <h3>{problemTitle(current.event.preview)}</h3>
-      <p>Parser Studio recognized <b>{friendlySyntax(current.event.preview)}</b>, but it will not mark this event parser-ready until the remaining review is resolved.</p>
+      <h3>{parserRuleReviewRequired
+        ?'Source fields were extracted, but parser generation needs one more rule'
+        :problemTitle(current.event.preview)}</h3>
+      <p>{parserRuleReviewRequired
+        ?<>Parser Studio extracted this <b>{friendlySyntax(current.event.preview)}</b> event, but the current DRAFT compiler cannot yet reproduce the source shape safely. Review a bounded rule before continuing.</>
+        :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview)}</b>, but it will not mark this event parser-ready until the remaining review is resolved.</>}</p>
       <div className="beginner-problem-source">
-        <span>Original event {current.index+1} · highlighted text needs attention</span>
+        <span>Original event {current.index+1} · {parserRuleReviewRequired?'parser rule needs review':'highlighted text needs attention'}</span>
         <pre>{sourceSegments(raw,current.event.preview).map((segment,index)=>
           segment.kind==='problem'?<mark key={index}>{segment.text}</mark>:<span key={index}>{segment.text}</span>)}</pre>
       </div>
       <div className="beginner-problem-details">
         <div><strong>What needs attention</strong>
-          {current.event.preview.issues.length
-            ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code)}</li>)}</ul>
-            :<p>The engine could not produce a complete trustworthy field set for this event.</p>}
+          {parserRuleReviewRequired
+            ?<p>Source fields were extracted, but the current parser draft has no compiler-safe rule that reproduces this exact structure yet.</p>
+            :current.event.preview.issues.length
+              ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code)}</li>)}</ul>
+              :<p>The engine could not produce a complete trustworthy field set for this event.</p>}
         </div>
-        <div><strong>{metadataOnlyReview(current.event.preview)?'Source metadata review':'Unparsed source'}</strong>
-          {current.event.preview.residuals.length
-            ?current.event.preview.residuals.map((region,i)=><code key={i}>{utf8Slice(raw,region.startByte,region.endByte)}</code>)
-            :metadataOnlyReview(current.event.preview)
-              ?<p>No source bytes were dropped. Extracted fields are retained; review only the timestamp or structured-data anomaly listed here.</p>
-              :<p>No trustworthy smaller range is available, so the whole event should be reviewed.</p>}
+        <div><strong>{parserRuleReviewRequired?'Parser rule gap':metadataOnlyReview(current.event.preview)?'Source metadata review':'Unparsed source'}</strong>
+          {parserRuleReviewRequired
+            ?<p>No source bytes are missing. The next step is to create and validate a bounded parser rule that reproduces the already-extracted structure.</p>
+            :current.event.preview.residuals.length
+              ?current.event.preview.residuals.map((region,i)=><code key={i}>{utf8Slice(raw,region.startByte,region.endByte)}</code>)
+              :metadataOnlyReview(current.event.preview)
+                ?<p>No source bytes were dropped. Extracted fields are retained; review only the timestamp or structured-data anomaly listed here.</p>
+                :<p>No trustworthy smaller range is available, so the whole event should be reviewed.</p>}
         </div>
       </div>
       {rec&&<div className="beginner-fix">
