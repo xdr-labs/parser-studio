@@ -50,7 +50,7 @@ Main fields: `schemaRevision`, `projectId`, `revision`, `slug`, `vendor`, `produ
 
 **Normalization:** `topFields`, `nsFields`, `vendorFields` maps with `normalized_name`, `data_type` (`string|integer|ip|port|boolean|date`), date `time_format:"iso8601"` plus explicit source timezone; `timezone:"UTC"` is available. Invalid ports, IP and unzoned timestamps fail. Names cannot collide with system fields or other outputs.
 
-**Enrichment (ordered, optional):** `set_const`, `copy`, `lowercase`, `uppercase` with `source` (when applicable) and `target`. Duplicate/colliding output targets and nontext case conversions are rejected.
+**Enrichment (ordered, optional):** `set_const`, `copy`, `lowercase`, `uppercase`, bounded `split_field` and bounded `merge_fields`. Split/merge use an exact visible 1–8 character delimiter, require 2–8 reviewed sources/targets, operate only on normalized string fields and never execute Regex/Grok/code. Duplicate/colliding output targets, missing inputs, split-count mismatch at runtime and nontext transforms fail closed.
 
 **Classification:** ordered `rules` of `field + operator (equals|exists) + index (session|threat|syslog|winlogevent)`; one `defaultIndex` required. Classifiers may reference available normalized/enriched fields; unmatched types produce transparent diagnostic states.
 
