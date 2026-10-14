@@ -1,0 +1,95 @@
+{
+  "cef_authored": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 900,
+    "exact_records": 96,
+    "f1": 1.0,
+    "falsely_complete": 0,
+    "precision": 1.0,
+    "raw_preserved": 96,
+    "recall": 1.0,
+    "records": 96,
+    "reference_fields": 900,
+    "statuses": {
+      "PARTIAL": 12,
+      "SOURCE_PARSED": 84
+    }
+  },
+  "cef_commercial": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 482,
+    "exact_records": 22,
+    "f1": 1.0,
+    "falsely_complete": 0,
+    "precision": 1.0,
+    "raw_preserved": 22,
+    "recall": 1.0,
+    "records": 22,
+    "reference_fields": 482,
+    "statuses": {
+      "SOURCE_PARSED": 22
+    }
+  },
+  "commercial_source": {
+    "FN": 0,
+    "FP": 0,
+    "PARTIAL": 226,
+    "SOURCE_PARSED": 166,
+    "TP": 27968,
+    "all_events": 392,
+    "composite_source_fields": 3,
+    "exact_all_field_events": 391,
+    "exact_composite_fields": 3,
+    "exact_tree_events": 391,
+    "excluded_event_not_false_green": 1,
+    "f1": 1.0,
+    "gold_fields": 27968,
+    "precision": 1.0,
+    "raw_preserved": 392,
+    "recall": 1.0,
+    "reference_excluded_events": 1,
+    "reference_scored_events": 391
+  },
+  "contract": "parser-studio.poc.multipass-adjudication.v1",
+  "dictionary_attempted": false,
+  "leef_authored": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 3552,
+    "exact_records": 192,
+    "f1": 1.0,
+    "falsely_complete": 0,
+    "precision": 1.0,
+    "raw_preserved": 192,
+    "recall": 1.0,
+    "records": 192,
+    "reference_fields": 3552,
+    "statuses": {
+      "PARTIAL": 48,
+      "SOURCE_PARSED": 144
+    }
+  },
+  "leef_external_xa6": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 19,
+    "exact_records": 1,
+    "f1": 1.0,
+    "falsely_complete": 0,
+    "precision": 1.0,
+    "raw_preserved": 1,
+    "recall": 1.0,
+    "records": 1,
+    "reference_fields": 19,
+    "statuses": {
+      "SOURCE_PARSED": 1
+    }
+  },
+  "masking_optimization": false,
+  "native_verified": false,
+  "runtime_is_acceptance_gate": false,
+  "waf_suricata_base_identical": 77,
+  "waf_suricata_records": 77
+}
