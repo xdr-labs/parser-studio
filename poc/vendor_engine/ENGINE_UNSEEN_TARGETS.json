@@ -16,7 +16,10 @@
     "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-drizzthacker.log",
     "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-asa-fix.log",
     "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-nat.log",
-    "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-correlation-detection.log"
+    "packages/crowdstrike/data_stream/alert/_dev/test/pipeline/test-correlation-detection.log",
+    "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-751025-vpn-session.log",
+    "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-302020-direction.log",
+    "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-106023-iface-with-prefix.log"
   ],
   "raw_redistribution": false,
   "target_acceptance": "ENGINE_POC_ACCEPTANCE.md"
