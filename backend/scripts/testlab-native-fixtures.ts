@@ -30,7 +30,7 @@ const csv=createSyntheticPreview({
 },now);
 const cef=createSyntheticPreview({
   format:"cef",
-  source:"CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|src=192.0.2.10 dpt=443 act=deny rt=2025-01-01T01:02:03Z",
+  source:"CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|src=192.0.2.10 dpt=443 act=deny msg=Malware detected on endpoint cs1=a\\=b rt=2025-01-01T01:02:03Z",
   seed:2718,sequence:13,timestampField:"rt",
   variableFields:[{path:"src",kind:"ipv4"}],
 },now);

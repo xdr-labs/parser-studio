@@ -40,7 +40,8 @@
         "syslog_rfc3164",
         "syslog_rfc5424",
         "mixed",
-        "java_stacktrace"
+        "java_stacktrace",
+        "regex"
       ]
     },
     "bodyFormat": {
@@ -51,7 +52,8 @@
         "cef",
         "leef",
         "mixed",
-        "java_stacktrace"
+        "java_stacktrace",
+        "regex"
       ]
     },
     "sample": {
@@ -217,6 +219,25 @@
             "properties": {
               "op": {
                 "const": "parse_java_stacktrace"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "pattern"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_regex"
+              },
+              "pattern": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]{1,256}$"
               }
             }
           },

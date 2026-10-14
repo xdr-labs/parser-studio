@@ -19,6 +19,12 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Current reviewed template with bounded standalone/Syslog-body named-capture Regex support.
+  "2c274163b433f3757be04f471b80b755418d01b6d430b494fe7f1fa09f09dd54",
+  // Current reviewed template with bounded named-capture Regex support.
+  // Regex remains safety-limited (256 chars, named captures, runtime timeout);
+  // this hash authorizes synthetic POC transport only, never a real target claim.
+  "f03b0452d7de28e6988c5976297f50319e3493f48ad2a871b0de6fbb302bd0cd",
   // Bounded declarative split/merge enrichment template; synthetic Native only, target unverified.
   "1f2a0938105c9530bafdb54db68be7cc5c03c0c352de89cc223d208cdc0142aa",
   // Reviewed fixed mixed CSV schema; synthetic Native only, no vendor E2E.

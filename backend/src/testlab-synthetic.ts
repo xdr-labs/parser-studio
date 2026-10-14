@@ -149,7 +149,7 @@ function leefEnvelope(source:string):{
     fail("TESTLAB_LEEF_SEPARATOR_INVALID");
   return {prefix:p.prefix,body:p.body,separator};
 }
-function parseSimpleKv(source:string,label:"KV"|"CEF"):Record<string,unknown>{
+function parseSimpleKv(source:string,label:"KV"):Record<string,unknown>{
   if(/[\r\n]/.test(source))fail("TESTLAB_"+label+"_UNSUPPORTED");
   const parts=source.trim().split(/[ \t]+/);
   if(!parts.length||parts.length>80)fail("TESTLAB_"+label+"_UNSUPPORTED");
@@ -161,6 +161,66 @@ function parseSimpleKv(source:string,label:"KV"|"CEF"):Record<string,unknown>{
     map[m[1]!]=m[2]!;
   }
   return map;
+}
+
+/** CEF extension values may contain spaces. Match the same bounded structural
+ * rule as the generated Ruby parser: whitespace belongs to the current value
+ * until the final whitespace byte immediately preceding another safe key=.
+ * CEF escapes are decoded only for the reviewed n/r/= and backslash subset.
+ */
+function parseCefFields(source:string):Record<string,unknown>{
+  if(!source||/[\r\n\u0000]/.test(source))fail("TESTLAB_CEF_UNSUPPORTED");
+  const result:Record<string,unknown>=Object.create(null);
+  const key=/([A-Za-z_][A-Za-z0-9_.-]{0,127})=/y;
+  let position=0,count=0;
+  while(position<source.length){
+    while(position<source.length&&(source[position]===" "||source[position]==="\t"))position++;
+    if(position>=source.length)break;
+    if(count>=80)fail("TESTLAB_CEF_UNSUPPORTED");
+    key.lastIndex=position;
+    const match=key.exec(source);
+    if(!match||match.index!==position||prohibited.has(match[1]!)||
+      Object.hasOwn(result,match[1]!))fail("TESTLAB_CEF_UNSUPPORTED");
+    const field=match[1]!;
+    let cursor=key.lastIndex,value="",boundary=-1;
+    while(cursor<source.length){
+      const character=source[cursor]!;
+      if(character==="\\"){
+        if(cursor+1>=source.length)fail("TESTLAB_CEF_UNSUPPORTED");
+        const following=source[cursor+1]!;
+        value+=following==="n"?"\n":following==="r"?"\r":
+          following==="="?"=":following==="\\"?"\\":"\\"+following;
+        cursor+=2;continue;
+      }
+      if(character===" "||character==="\t"){
+        let runEnd=cursor;
+        while(runEnd<source.length&&
+          (source[runEnd]===" "||source[runEnd]==="\t"))runEnd++;
+        key.lastIndex=runEnd;
+        const next=key.exec(source);
+        if(next&&next.index===runEnd){
+          if(runEnd-cursor>1)value+=source.slice(cursor,runEnd-1);
+          boundary=runEnd-1;break;
+        }
+      }
+      value+=character;cursor++;
+    }
+    if(boundary<0)value=value.replace(/[ \t]+$/,"");
+    if(/[\r\n\u0000]/.test(value))fail("TESTLAB_CEF_UNSUPPORTED");
+    result[field]=value;
+    count++;
+    position=boundary<0?source.length:boundary+1;
+  }
+  if(!Object.keys(result).length)fail("TESTLAB_CEF_UNSUPPORTED");
+  return result;
+}
+function serializeCefFields(root:Record<string,unknown>):string{
+  return Object.entries(root).map(([key,value])=>{
+    if(typeof value!=="string"||/[\r\n\u0000\t]/.test(value))
+      fail("TESTLAB_CEF_UNSUPPORTED");
+    const escaped=value.replace(/\\/g,"\\\\").replace(/=/g,"\\=");
+    return key+"="+escaped;
+  }).join(" ");
 }
 function parseLeefFields(text:string,separator:string):Record<string,unknown>{
   if(!text)fail("TESTLAB_LEEF_EXTENSION_INVALID");
@@ -238,7 +298,7 @@ function strictSource(input:SyntheticPreviewRequest):Record<string,unknown>{
   }
   if(input.format==="kv")return parseSimpleKv(input.source,"KV");
   if(input.format==="cef")
-    return parseSimpleKv(cefEnvelope(input.source).body,"CEF");
+    return parseCefFields(cefEnvelope(input.source).body);
   if(input.format==="leef"){
     const envelope=leefEnvelope(input.source);
     return parseLeefFields(envelope.body,envelope.separator);
@@ -279,6 +339,9 @@ function dynamicValue(kind:SyntheticVariableKind,
   seed:number,sequence:number,ordinal:number,old:string):string{
   const token=nextValue(seed,sequence,ordinal);
   if(kind==="ipv4"){
+    const octets=old.split(".");
+    if(octets.length!==4||octets.some(part=>!/^(?:0|[1-9]\d{0,2})$/.test(part)||
+      Number(part)>255))fail("TESTLAB_VARIABLE_SOURCE_INVALID");
     const prefix=["192.0.2","198.51.100","203.0.113"][token%3]!;
     return prefix+"."+((token>>>8)%254+1);
   }
@@ -368,7 +431,7 @@ export function createSyntheticPreview(input:SyntheticPreviewRequest,
   else if(input.format==="csv")syntheticEvent=serializeCsvLine(
     csvDefinition(input).columns,roots,csvDefinition(input).separator);
   else if(input.format==="cef")
-    syntheticEvent=cefEnvelope(input.source).prefix+kvLine(roots);
+    syntheticEvent=cefEnvelope(input.source).prefix+serializeCefFields(roots);
   else if(input.format==="leef"){
     const envelope=leefEnvelope(input.source);
     syntheticEvent=envelope.prefix+serializeLeefFields(roots,envelope.separator);

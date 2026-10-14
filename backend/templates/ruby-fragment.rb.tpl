@@ -301,6 +301,8 @@ def parserstudio_syslog_rfc5424(text, settings)
       record['body'] = parserstudio_cef(message)
     when 'leef'
       record['body'] = parserstudio_leef(message)
+    when 'regex'
+      record['body'] = parserstudio_regex(message, settings)
     else
       raise ArgumentError, 'Unsupported syslog body format'
     end
@@ -312,11 +314,15 @@ end
 # Unlike RFC5424, RFC3164's month/day/time has NO year or timezone.
 # Never synthesize either, even when the host clock happens to be available.
 def parserstudio_syslog_rfc3164(text, settings)
-  pattern = /\A<(\d{1,3})>([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?:[ ]+(.+)\z/
-  match = pattern.match(text)
+  tagged = /\A<(\d{1,3})>([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?:[ ]+(.+)\z/.match(text)
+  # Some security appliances emit the BSD timestamp + host header without PRI
+  # and TAG, followed immediately by an explicit structured body. This remains
+  # a bounded grammar: raw/prose bodies are never accepted by the tagless path.
+  tagless = tagged.nil? ? /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+(.+)\z/.match(text) : nil
+  match = tagged || tagless
   raise ArgumentError, 'Unsupported RFC3164 header' unless match
-  priority = Integer(match[1], 10)
-  raise ArgumentError, 'RFC3164 PRI out of range' unless priority.between?(0, 191)
+  priority = match[1] ? Integer(match[1], 10) : nil
+  raise ArgumentError, 'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)
   months = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
     'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
   days = months[match[2]]
@@ -331,15 +337,21 @@ def parserstudio_syslog_rfc3164(text, settings)
   # An operator must supply a separate explicit timestamp policy to resolve it.
   timestamp = "#{match[2]} #{day.to_s.rjust(2, ' ')} #{match[4]}:#{match[5]}:#{match[6]}"
   record = {
-    'syslog_pri' => priority,
     'syslog_timestamp' => timestamp,
     'syslog_time_policy' => 'YEAR_AND_ZONE_UNKNOWN',
-    'syslog_hostname' => match[7],
-    'syslog_appname' => match[8]
+    'syslog_hostname' => match[7]
   }
-  record['syslog_procid'] = match[9] if match[9]
-  message = match[10]
+  record['syslog_pri'] = priority if priority
+  if tagged
+    record['syslog_appname'] = match[8]
+    record['syslog_procid'] = match[9] if match[9]
+    message = match[10]
+  else
+    message = match[8]
+  end
   format = settings['syslogBodyFormat'] || 'raw'
+  raise ArgumentError, 'Tagless RFC3164 requires an explicit structured body' if
+    tagless && !%w[json kv cef leef regex].include?(format)
   case format
   when 'raw'
     record['message'] = message
@@ -351,6 +363,8 @@ def parserstudio_syslog_rfc3164(text, settings)
     record['body'] = parserstudio_cef(message)
   when 'leef'
     record['body'] = parserstudio_leef(message)
+  when 'regex'
+    record['body'] = parserstudio_regex(message, settings)
   else
     raise ArgumentError, 'Unsupported RFC3164 message body format'
   end
@@ -483,8 +497,66 @@ def parserstudio_split_escaped(text, delimiter, maximum_splits)
   parts
 end
 
+# CEF extension values may contain spaces. The last whitespace byte before
+# a following explicit key= token is structural; preceding whitespace belongs
+# to the current value. Generic KV behavior stays strict and unchanged.
+def parserstudio_cef_extensions(text)
+  record = {}
+  position = 0
+  count = 0
+  key_pattern = /\G([A-Za-z_][A-Za-z0-9_.-]{0,127})=/
+  while position < text.length
+    position += 1 while position < text.length && [' ', "\t"].include?(text[position])
+    break if position >= text.length
+    raise ArgumentError, 'CEF extension field limit exceeded' if count >= 1024
+    match = key_pattern.match(text, position)
+    raise ArgumentError, 'Unsupported CEF extension key boundary' if match.nil? || match.begin(0) != position
+    key = match[1]
+    raise ArgumentError, 'Unsafe CEF extension key' if ['__proto__','constructor','prototype'].include?(key)
+    raise ArgumentError, 'Duplicate CEF extension field' if record.key?(key)
+    cursor = match.end(0)
+    value = +''
+    boundary = nil
+    while cursor < text.length
+      char = text[cursor]
+      if char == '\\'
+        raise ArgumentError, 'Truncated CEF escape' if cursor + 1 >= text.length
+        following = text[cursor + 1]
+        value << case following
+                 when 'n' then "\n"
+                 when 'r' then "\r"
+                 when '=' then '='
+                 when '\\' then '\\'
+                 else "\\" + following
+                 end
+        cursor += 2
+        next
+      end
+      if char == ' ' || char == "\t"
+        run_end = cursor
+        run_end += 1 while run_end < text.length && [' ', "\t"].include?(text[run_end])
+        next_key = key_pattern.match(text, run_end)
+        if next_key && next_key.begin(0) == run_end
+          value << text[cursor...(run_end - 1)] if run_end - cursor > 1
+          boundary = run_end - 1
+          break
+        end
+      end
+      value << char
+      cursor += 1
+    end
+    value = value.sub(/[ \t]+\z/, '') if boundary.nil?
+    record[key] = value
+    count += 1
+    position = boundary.nil? ? text.length : boundary + 1
+  end
+  raise ArgumentError, 'No CEF extension fields parsed' if record.empty?
+  record
+end
+
 # CEF:0|vendor|product|version|signature|name|severity|key=value ...
-# Delimited header escape rules are supported. Extensions are a strict KV subset.
+# Delimited header escape rules are supported. CEF extensions use their
+# standard whitespace-aware key boundary semantics, not generic KV tokenization.
 def parserstudio_cef(text)
   match = /\ACEF:(\d+)\|(.*)\z/m.match(text)
   raise ArgumentError, 'Invalid CEF preamble' unless match
@@ -501,7 +573,12 @@ def parserstudio_cef(text)
     'cef_severity' => fields[5]
   }
   extension = fields[6]
-  record.merge!(parserstudio_key_values(extension)) unless extension.nil? || extension.strip.empty?
+  unless extension.nil? || extension.strip.empty?
+    extension_fields = parserstudio_cef_extensions(extension)
+    raise ArgumentError, 'CEF extension overrides reserved header field' unless
+      (record.keys & extension_fields.keys).empty?
+    record.merge!(extension_fields)
+  end
   record
 end
 

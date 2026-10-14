@@ -8,6 +8,29 @@ const validateSchema = ajv.compile(projectSchema);
 const RESERVED = new Set(["stellar_log_index", "parser_err_msg", "msg_origin"]);
 const UNSAFE_PARTS = new Set(["__proto__", "constructor", "prototype"]);
 
+export function validateBoundedRegexPattern(pattern: unknown): string | null {
+  if (typeof pattern !== "string" || !pattern.trim()) return "regex_pattern_required";
+  if (pattern.length > 256 || /[\x00-\x1f\x7f]/.test(pattern)) return "regex_pattern_limit";
+  if (!pattern.includes("(?<")) return "regex_named_capture_required";
+  const unsupported = "regex_unsafe_construct";
+  if (/\\[1-9]|\\k<|\(\?<[=!]/.test(pattern)) return unsupported;
+  if (/\((?:[^()]|\\.)*[+*?](?:[^()]|\\.)*\)(?:[+*]|\{\d+(?:,\d*)?\})/.test(pattern))
+    return unsupported;
+  if (/\((?:\?:)?[^()]*\|[^()]*\)(?:[+*]|\{\d+(?:,\d*)?\})/.test(pattern))
+    return unsupported;
+  if (/([A-Za-z0-9])(?:[*+])\1(?:[*+])/.test(pattern)) return unsupported;
+  for (const match of pattern.matchAll(/\{(\d{1,8})(?:,(\d{0,8}))?\}/g)) {
+    const low=Number(match[1]);
+    const high=match[2]===undefined||match[2]===""?low:Number(match[2]);
+    if(low>128||high>128)return unsupported;
+  }
+  const names=[...pattern.matchAll(/\(\?<([A-Za-z_][A-Za-z0-9_]*)>/g)].map(x=>x[1]!);
+  if(!names.length||new Set(names).size!==names.length||names.some(x=>UNSAFE_PARTS.has(x)))
+    return "regex_named_capture_invalid";
+  try { new RegExp(pattern); } catch { return "regex_syntax_invalid"; }
+  return null;
+}
+
 export function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return "[" + value.map(canonicalJson).join(",") + "]";
   if (value !== null && typeof value === "object") {
@@ -98,6 +121,16 @@ export function validateProject(input: unknown): ValidationResult {
     }
   } else if (extraction.csvColumns !== undefined || extraction.csvDelimiter !== undefined) {
     issue(issues, "format_options", "/extraction", "CSV options are allowed only with CSV format.");
+  }
+  const regexSelected=extraction.format==="regex"||
+    (["syslog_rfc3164","syslog_rfc5424"].includes(extraction.format)&&extraction.syslogBodyFormat==="regex");
+  if(regexSelected){
+    const regexIssue=validateBoundedRegexPattern(extraction.pattern);
+    if(regexIssue)issue(issues,regexIssue,"/extraction/pattern",
+      "Regex requires one bounded, safe named-capture pattern of at most 256 visible characters.");
+  }else if(extraction.pattern!==undefined){
+    issue(issues,"format_options","/extraction/pattern",
+      "Regex pattern is allowed only with Regex extraction or a reviewed Syslog Regex body.");
   }
   if (!["syslog_rfc3164","syslog_rfc5424"].includes(extraction.format) && extraction.syslogBodyFormat !== undefined) {
     issue(issues, "format_options", "/extraction/syslogBodyFormat", "Syslog body format is only supported for RFC3164/RFC5424.");

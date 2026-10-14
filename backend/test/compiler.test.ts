@@ -60,3 +60,25 @@ test("compiler refuses invalid project; canonical map key order doesn't change a
  b.normalization.topFields=Object.fromEntries(Object.entries(b.normalization.topFields).reverse());
  assert.deepEqual(compilePair(a),compilePair(b));
 });
+
+
+test("bounded Syslog Regex body validates only with safe named captures and compiles deterministically",()=>{
+ const p=sampleProject();p.receiver.port=7123;
+ p.extraction={format:"syslog_rfc3164",syslogBodyFormat:"regex",
+  pattern:"^%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+) to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+)$"};
+ p.normalization.topFields={
+  "body.src_ip":{normalized_name:"srcip",data_type:"ip"},
+  "body.src_port":{normalized_name:"srcport",data_type:"port"},
+  "body.dst_ip":{normalized_name:"dstip",data_type:"ip"},
+  "body.dst_port":{normalized_name:"dstport",data_type:"port"},
+ };
+ p.normalization.nsFields={};p.normalization.vendorFields={};
+ p.classification.rules=[];
+ assert.equal(validateProject(p).ok,true,JSON.stringify(validateProject(p)));
+ const a=compilePair(p),b=compilePair(structuredClone(p));
+ assert.deepEqual(a,b);
+ const unsafe=structuredClone(p);
+ unsafe.extraction.pattern="(?<x>.*)+";
+ assert.equal(validateProject(unsafe).ok,false);
+ assert.ok(validateProject(unsafe).issues.some(x=>x.code.startsWith("regex_")));
+});

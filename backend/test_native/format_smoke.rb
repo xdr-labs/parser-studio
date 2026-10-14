@@ -120,7 +120,11 @@ assert(parsed_leef['stellar_log_index'] == 'session', "RFC5424 nested LEEF class
 assert(time_leef.utc.iso8601 == "2026-10-12T01:02:03Z", "RFC5424 nested LEEF event time")
 _, bad_nested_cef = execute_parser(folder, "sample_syslog_cef",
   '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 extra')
-assert(bad_nested_cef['parser_err_stage'] == 'extraction' && !bad_nested_cef.key?('srcip'), "Malformed nested CEF fails closed")
+# CEF string values may legally contain spaces, so this can survive lexical
+# extraction as the exact source value. The reviewed src -> IP mapping must
+# still fail closed during normalization; no partially trusted srcip may emit.
+assert(['extraction', 'normalization'].include?(bad_nested_cef['parser_err_stage']) &&
+       !bad_nested_cef.key?('srcip'), "Malformed nested CEF fails closed")
 _, bad_nested_leef = execute_parser(folder, "sample_syslog_leef",
   '<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|::|src=203.0.113.8')
 assert(bad_nested_leef['parser_err_stage'] == 'extraction' && !bad_nested_leef.key?('srcip'), "Malformed nested LEEF fails closed")

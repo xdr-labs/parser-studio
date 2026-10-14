@@ -128,7 +128,8 @@
             "cef",
             "leef",
             "mixed",
-            "java_stacktrace"
+            "java_stacktrace",
+            "regex"
           ]
         },
         "maxDepth": {
@@ -159,7 +160,8 @@
             "json",
             "kv",
             "cef",
-            "leef"
+            "leef",
+            "regex"
           ]
         },
         "mixedFormats": {
@@ -183,6 +185,12 @@
               "csv"
             ]
           }
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]{1,256}$"
         }
       }
     },

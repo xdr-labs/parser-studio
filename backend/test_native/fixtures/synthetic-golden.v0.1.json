@@ -226,8 +226,9 @@
       "expectedTime": null,
       "expectedRecord": {
         "stellar_log_index": "syslog",
-        "parser_err_msg": "ArgumentError",
-        "parser_err_stage": "extraction"
+        "parser_err_msg": "MappedFieldError",
+        "parser_err_stage": "normalization",
+        "parser_err_field": "body.src"
       }
     },
     {

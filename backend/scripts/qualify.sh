@@ -92,6 +92,10 @@ run_bounded_ruby -rbundler/setup test_native/recipe_v02_native_smoke.rb .tmp/rec
 echo "[4v3/5] Source-bound per-project Native proof through compiler-generated Ruby/CONF only"
 export PARSER_NATIVE_RUBY="$(command -v "$RUBY_COMMAND")"
 node dist/scripts/verify-native-project-local.js
+echo "[4v4/5] Reviewed RFC3164 + bounded Regex body through compiler-generated Ruby/CONF"
+node dist/scripts/verify-syslog-regex-native.js
+echo "[4v5/5] Standalone bounded Regex through compiler-generated Ruby/CONF"
+node dist/scripts/verify-native-regex-local.js
 if recipe_guard=$(run_bounded_ruby -rbundler/setup \
     test_native/recipe_v02_native_smoke.rb /tmp/native-untrusted 2>&1); then
   echo "ERROR: Recipe native runner accepted untrusted directory." >&2

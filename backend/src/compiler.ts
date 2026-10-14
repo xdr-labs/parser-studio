@@ -5,6 +5,36 @@ import { canonicalJson, validateProject } from "./validate.js";
 
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
+const REGEX_EXTRACTOR_NEEDLE = "  when 'leef'\n    parserstudio_leef(text)\n  else";
+const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'regex'\n    parserstudio_regex(text, settings)\n  else";
+const REGEX_RUBY_HELPER = String.raw`
+# Parser Studio bounded named-capture Regex helper. This fixed helper is
+# emitted only for a Regex project; existing parser artifact bytes stay unchanged.
+def parserstudio_regex(text, settings)
+  pattern = settings['pattern']
+  raise ArgumentError, 'Invalid Regex parser pattern' unless pattern.is_a?(String) &&
+    pattern.bytesize.between?(1, 256) && !pattern.match?(/[\x00-\x1f\x7f]/) &&
+    pattern.include?('(?<')
+  begin
+    expression = Regexp.new(pattern, timeout: 0.05)
+  rescue RegexpError, ArgumentError
+    raise ArgumentError, 'Invalid Regex parser pattern'
+  end
+  begin
+    match = expression.match(text)
+  rescue Regexp::TimeoutError
+    raise ArgumentError, 'Regex parser timed out'
+  end
+  raise ArgumentError, 'Regex parser did not match event' unless match
+  result = {}
+  match.names.each do |name|
+    value = match[name]
+    result[name] = value unless value.nil?
+  end
+  raise ArgumentError, 'Regex parser returned no named fields' if result.empty?
+  result
+end
+`;
 
 function checksum(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -52,7 +82,16 @@ function emitConfiguration(project: ParserProject): string {
 function emitRubyFragment(project: ParserProject): string {
   const base64 = Buffer.from(canonicalJson(project), "utf8").toString("base64");
   if (!RUBY_TEMPLATE.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
-  return RUBY_TEMPLATE.replace("__PARSER_PROJECT_B64__", base64);
+  let fragment=RUBY_TEMPLATE.replace("__PARSER_PROJECT_B64__", base64);
+  const regexBody=(project.extraction.format==="syslog_rfc3164"||
+    project.extraction.format==="syslog_rfc5424")&&
+    project.extraction.syslogBodyFormat==="regex";
+  if(project.extraction.format==="regex"){
+    if(!fragment.includes(REGEX_EXTRACTOR_NEEDLE))throw new Error("Regex template marker missing");
+    fragment=fragment.replace(REGEX_EXTRACTOR_NEEDLE,REGEX_EXTRACTOR_BRANCH);
+  }
+  if(project.extraction.format==="regex"||regexBody)fragment+=REGEX_RUBY_HELPER;
+  return fragment;
 }
 
 function exportFile(name: string, content: string): ExportFile {

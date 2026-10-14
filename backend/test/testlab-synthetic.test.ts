@@ -140,8 +140,8 @@ test("malformed CSV, duplicate schema, unsupported delimiter and multiline fail 
   }
 });
 
-test("CEF 0 synthetic header remains stable and selected KV body fields rotate safely",()=>{
-  const source="CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|src=192.0.2.10 dpt=443 act=deny rt=2025-01-01T01:02:03Z user=old run_id=old";
+test("CEF 0 synthetic header preserves space-bearing values and rotates selected fields safely",()=>{
+  const source="CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|src=192.0.2.10 dpt=443 act=deny msg=Malware detected on endpoint cs1=a\\=b rt=2025-01-01T01:02:03Z user=old run_id=old";
   const value=createSyntheticPreview({
     format:"cef",source,seed:10,sequence:4,timestampField:"rt",
     variableFields:[{path:"src",kind:"ipv4"},{path:"user",kind:"username"}],
@@ -150,7 +150,8 @@ test("CEF 0 synthetic header remains stable and selected KV body fields rotate s
   assert.equal(value.format,"cef");
   assert.ok(value.syntheticEvent.startsWith("CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|"));
   assert.match(value.syntheticEvent,/src=(?:192\.0\.2|198\.51\.100|203\.0\.113)\.\d+ /);
-  assert.ok(value.syntheticEvent.includes(" dpt=443 act=deny rt=2026-10-12T01:02:03Z "));
+  assert.ok(value.syntheticEvent.includes(" dpt=443 act=deny msg=Malware detected on endpoint "));
+  assert.ok(value.syntheticEvent.includes("cs1=a\\=b rt=2026-10-12T01:02:03Z "));
   assert.ok(value.syntheticEvent.includes("user=synthetic_user_"));
   assert.ok(value.syntheticEvent.endsWith("run_id=test_run_0123456789abcdef0123456789abcdef"));
   assert.equal(value.runtimeParsingVerified,false);
@@ -193,7 +194,7 @@ test("unsupported CEF/LEEF versions, delimiters and malformed extensions reject 
         seed:5,sequence:0,variableFields:change.variableFields??[{path:"src",kind:"ipv4"}]},
         now);
     }catch(error){message=(error as Error).message;}
-    assert.match(message,/^TESTLAB_(CEF|LEEF)_/);
+    assert.match(message,/^(?:TESTLAB_(?:CEF|LEEF)_|TESTLAB_VARIABLE_SOURCE_INVALID$)/);
     assert.equal(message.includes("PRIVATE_SECRET"),false);
   }
 });

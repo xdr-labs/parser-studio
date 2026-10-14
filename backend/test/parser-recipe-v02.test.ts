@@ -144,3 +144,32 @@ test('P0-AP3 rejects all lossy v0.1 projections before generating a reviewed v0.
   assert.throws(()=>recipeFromLegacyProject(project,'a'.repeat(64),2),/UNSUPPORTED_RECIPE_PROJECTION/);
  }
 });
+
+
+test("reviewed RFC3164 + bounded Regex body projects to exact v0.2 stages and v0.1 artifacts",()=>{
+ const project=sampleProject();
+ project.projectId="draft-syslog_regex";
+ project.receiver.port=7123;
+ project.extraction={format:"syslog_rfc3164",syslogBodyFormat:"regex",
+  pattern:"^%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+) to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+)$"};
+ project.normalization.topFields={
+  "body.src_ip":{normalized_name:"srcip",data_type:"ip"},
+  "body.dst_port":{normalized_name:"dstport",data_type:"port"},
+ };
+ project.normalization.nsFields={};project.normalization.vendorFields={};
+ project.classification.rules=[];
+ const recipe=recipeFromLegacyProject(project,"b".repeat(64),2);
+ assert.equal(recipe.sourceFormat,"syslog_rfc3164");
+ assert.equal(recipe.bodyFormat,"regex");
+ assert.deepEqual(recipe.stages.slice(0,3),[
+  {op:"split_event",boundary:"single-line"},
+  {op:"unwrap_syslog",version:3164,mode:"strict_header"},
+  {op:"parse_regex",pattern:project.extraction.pattern},
+ ]);
+ const input={recipe,legacyProject:project};
+ assert.equal(validateRecipePair(input).ok,true,JSON.stringify(validateRecipePair(input)));
+ assert.deepEqual(compileRecipePair(input).files,compilePair(project).files);
+ const forged:any=structuredClone(input);
+ forged.recipe.stages[2].pattern="(?<x>.*)+";
+ assert.equal(validateRecipePair(forged).ok,false);
+});
