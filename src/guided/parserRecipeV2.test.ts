@@ -52,6 +52,34 @@ describe('P0-AP3 target-independent ParserRecipe v0.2 review-only contract',()=>
       op:'classify',defaultIndex:'syslog',rules:[{operator:'equals'},{operator:'equals'}],
     });
   });
+  it('round-trips bounded split and merge stages before classification',async()=>{
+    const draft=createDraft();draft.format='json';
+    draft.mappings=[...draft.mappings,{id:'endpoint',source:'endpoint',target:'custom.endpoint',type:'string'}];
+    const opts=draft.guided!;
+    draft.guided={...opts,groups:{...opts.groups,endpoint:'top_fields'},enrichment:[
+      {id:'split',operator:'split_field',source:'custom.endpoint',target:'',value:'',delimiter:':',
+        targets:['custom.endpoint_host','custom.endpoint_port_text']},
+      {id:'merge',operator:'merge_fields',source:'',target:'custom.endpoint_joined',value:'',delimiter:':',
+        sources:['custom.endpoint_host','custom.endpoint_port_text']},
+    ]};
+    const text=[
+      '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"endpoint":"192.0.2.10:8443"}',
+      '{"action":"deny","src_ip":"203.0.113.4","dst_port":22,"endpoint":"192.0.2.11:2222"}',
+    ].join('\n');
+    const result=await build(text,draft);expect(result.ok).toBe(true);
+    if(!result.ok)return;
+    const ops=result.recipe.stages.map(x=>x.op);
+    expect(ops.indexOf('split_field')).toBeGreaterThan(ops.lastIndexOf('map_field'));
+    expect(ops.indexOf('merge_fields')).toBe(ops.indexOf('split_field')+1);
+    expect(ops.indexOf('classify')).toBe(ops.indexOf('merge_fields')+1);
+    expect(validateReviewableRecipe(result.recipe)).toBe(true);
+    const split=result.recipe.stages.find(x=>x.op==='split_field');
+    expect(split).toEqual({op:'split_field',source:'custom.endpoint',delimiter:':',
+      targets:['custom.endpoint_host','custom.endpoint_port_text']});
+    const bad={...result.recipe,stages:result.recipe.stages.map(x=>x.op==='split_field'?{...x,delimiter:'\n'}:x)};
+    expect(validateReviewableRecipe(bad)).toBe(false);
+  });
+
   it('adds explicit RFC5424 unwrap before CEF body parsing only when native scope is unverified',async()=>{
     const fixture=loadStarterTemplate('rfc5424_cef');
     const result=await build(fixture.sample,fixture.draft);

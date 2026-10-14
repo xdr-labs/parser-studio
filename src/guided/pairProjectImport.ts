@@ -1,5 +1,5 @@
 import type { ParserDraft, MappingRule } from '../model';
-import { defaultGuidedOptions, type EventClass, type FieldGroup } from './contract';
+import { defaultGuidedOptions, type EventClass, type FieldGroup, type GuidedEnrichmentRule } from './contract';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 
 /**
@@ -16,7 +16,7 @@ const INDEX: Record<string,EventClass>={
   session:'Session',threat:'Threat',syslog:'Syslog',winlogevent:'Winlogevent',
 };
 const SOURCE_TYPES=new Set(['string','integer','ip','port','boolean','date']);
-const ENRICHMENT_TYPES=new Set(['set_const','copy','lowercase','uppercase']);
+const ENRICHMENT_TYPES=new Set(['set_const','copy','lowercase','uppercase','split_field','merge_fields']);
 const isObject=(value:unknown):value is Record<string,unknown> =>
   value!==null && typeof value==='object' && !Array.isArray(value);
 
@@ -83,21 +83,30 @@ export function reconstructExactBackendDraft(
       rules.push({id:'imported-rule-'+(i+1),
         sourceField:source,equals:rule.value,index:INDEX[rule.index]});
     }
-    const enrichment=[];
+    const enrichment:GuidedEnrichmentRule[]=[];
     if(p.enrichment!==undefined){
       if(!Array.isArray(p.enrichment)||p.enrichment.length>64)return null;
       for(const [i,rule] of p.enrichment.entries()){
-        if(!isObject(rule)||!ENRICHMENT_TYPES.has(String(rule.operator)) ||
-          typeof rule.target!=='string')return null;
+        if(!isObject(rule)||!ENRICHMENT_TYPES.has(String(rule.operator)))return null;
+        const id='imported-enrichment-'+(i+1);
         if(rule.operator==='set_const'){
-          if(typeof rule.value!=='string')return null;
-          enrichment.push({id:'imported-enrichment-'+(i+1),
-            operator:'set_const' as const,source:'',target:rule.target,value:rule.value});
+          if(typeof rule.target!=='string'||typeof rule.value!=='string')return null;
+          enrichment.push({id,operator:'set_const',source:'',target:rule.target,value:rule.value});
+        }else if(rule.operator==='split_field'){
+          if(typeof rule.source!=='string'||typeof rule.delimiter!=='string'||
+            !Array.isArray(rule.targets)||rule.targets.length<2||rule.targets.length>8||
+            !rule.targets.every(target=>typeof target==='string'))return null;
+          enrichment.push({id,operator:'split_field',source:rule.source,target:'',value:'',
+            delimiter:rule.delimiter,targets:[...rule.targets]});
+        }else if(rule.operator==='merge_fields'){
+          if(!Array.isArray(rule.sources)||rule.sources.length<2||rule.sources.length>8||
+            !rule.sources.every(source=>typeof source==='string')||
+            typeof rule.delimiter!=='string'||typeof rule.target!=='string')return null;
+          enrichment.push({id,operator:'merge_fields',source:'',target:rule.target,value:'',
+            delimiter:rule.delimiter,sources:[...rule.sources]});
         }else{
-          if(typeof rule.source!=='string')return null;
-          enrichment.push({id:'imported-enrichment-'+(i+1),
-            operator:rule.operator as 'copy'|'lowercase'|'uppercase',
-            source:rule.source,target:rule.target,value:''});
+          if(typeof rule.source!=='string'||typeof rule.target!=='string')return null;
+          enrichment.push({id,operator:rule.operator,source:rule.source,target:rule.target,value:''});
         }
       }
     }

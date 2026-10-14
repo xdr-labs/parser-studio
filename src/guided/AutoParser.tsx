@@ -781,6 +781,15 @@ export default function AutoParser({
            <span>{rule.target}</span><small>{rule.type} · User-custom field, not official catalog</small>
          </div>)}
        </div>
+       {!!draft.guided?.enrichment?.length&&<div className="auto-parser-map-list" aria-label="Applied normalization refinements">
+         {draft.guided.enrichment.map((rule,index)=><div key={rule.id}>
+           <strong>{rule.operator==='split_field'?'Split':'Merge'} #{index+1}</strong>
+           <span>{rule.operator==='split_field'
+             ?`${rule.source} by ${JSON.stringify(rule.delimiter)} → ${(rule.targets??[]).join(', ')}`
+             :`${(rule.sources??[]).join(' + ')} with ${JSON.stringify(rule.delimiter)} → ${rule.target}`}</span>
+           <small>Bounded declarative refinement · No Regex or code</small>
+         </div>)}
+       </div>}
        <details className="auto-parser-recipe" aria-label="Adjust detected field mapping">
          <summary>Need to change a field? Review mappings here</summary>
          <p>Only supported, reviewable field names and data types can generate parser files.

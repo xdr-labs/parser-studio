@@ -16,7 +16,9 @@ export interface BackendField {
 
 export type BackendEnrichmentRule =
   | { operator: 'set_const'; target: string; value: string }
-  | { operator: 'copy' | 'lowercase' | 'uppercase'; source: string; target: string };
+  | { operator: 'copy' | 'lowercase' | 'uppercase'; source: string; target: string }
+  | { operator: 'split_field'; source: string; delimiter: string; targets: string[] }
+  | { operator: 'merge_fields'; sources: string[]; delimiter: string; target: string };
 
 export interface BackendParserProject {
   schemaRevision: '0.1';
@@ -174,10 +176,14 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       topFields, nsFields, vendorFields,
     },
     ...(options.enrichment?.length ? {
-      enrichment: options.enrichment.map((rule): BackendEnrichmentRule =>
-        rule.operator === 'set_const'
-          ? { operator: 'set_const', target: rule.target, value: rule.value }
-          : { operator: rule.operator, source: rule.source, target: rule.target }),
+      enrichment: options.enrichment.map((rule): BackendEnrichmentRule => {
+        if(rule.operator==='set_const')return {operator:'set_const',target:rule.target,value:rule.value};
+        if(rule.operator==='split_field')return {operator:'split_field',source:rule.source,
+          delimiter:rule.delimiter!,targets:[...(rule.targets??[])]};
+        if(rule.operator==='merge_fields')return {operator:'merge_fields',sources:[...(rule.sources??[])],
+          delimiter:rule.delimiter!,target:rule.target};
+        return {operator:rule.operator,source:rule.source,target:rule.target};
+      }),
     } : {}),
     classification: {
       defaultIndex: indexMap[options.classification.defaultIndex],

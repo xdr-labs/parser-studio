@@ -319,10 +319,42 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   }
   // Preview the reviewed declarative enrichment steps in order, never Ruby.
   for (const [index, rule] of (draft.guided?.enrichment ?? []).entries()) {
+    const step=index+1;
+    const safeOutput=(target:string)=>VALID_TARGET.test(target)&&
+      !Object.prototype.hasOwnProperty.call(normalized,target)&&
+      !target.split('.').some((part)=>['__proto__','constructor','prototype'].includes(part));
+    const validDelimiter=(value:string|undefined)=>typeof value==='string'&&value.length>=1&&value.length<=8&&
+      !/[\u0000-\u001f\u007f]/.test(value);
+    if(rule.operator==='split_field'){
+      const source=normalized[rule.source],targets=rule.targets??[];
+      if(typeof source!=='string'){
+        error('normalize','ENRICHMENT_SOURCE','Split source must be an existing string field at step '+step);continue;
+      }
+      if(!validDelimiter(rule.delimiter)||targets.length<2||targets.length>8||
+         new Set(targets).size!==targets.length||targets.some(target=>!safeOutput(target))){
+        error('normalize','ENRICHMENT_TARGET','Unsafe split rule at step '+step);continue;
+      }
+      const parts=source.split(rule.delimiter!);
+      if(parts.length!==targets.length){
+        error('normalize','ENRICHMENT_TYPE','Split field count mismatch at step '+step);continue;
+      }
+      targets.forEach((target,i)=>{normalized[target]=parts[i]!;});continue;
+    }
+    if(rule.operator==='merge_fields'){
+      const sources=rule.sources??[],target=rule.target.trim();
+      if(!validDelimiter(rule.delimiter)||sources.length<2||sources.length>8||
+         new Set(sources).size!==sources.length||!safeOutput(target)){
+        error('normalize','ENRICHMENT_TARGET','Unsafe merge rule at step '+step);continue;
+      }
+      const values=sources.map(source=>normalized[source]);
+      if(values.some(value=>typeof value!=='string')){
+        error('normalize','ENRICHMENT_SOURCE','Merge sources must be existing string fields at step '+step);continue;
+      }
+      normalized[target]=(values as string[]).join(rule.delimiter!);continue;
+    }
     const target = rule.target.trim();
-    if (!VALID_TARGET.test(target) || Object.prototype.hasOwnProperty.call(normalized, target) ||
-        target.split('.').some((part) => ['__proto__', 'constructor', 'prototype'].includes(part))) {
-      error('normalize', 'ENRICHMENT_TARGET', 'Unsafe or duplicate enrichment output at step ' + (index + 1));
+    if (!safeOutput(target)) {
+      error('normalize', 'ENRICHMENT_TARGET', 'Unsafe or duplicate enrichment output at step ' + step);
       continue;
     }
     if (rule.operator === 'set_const') {
@@ -330,7 +362,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       continue;
     }
     if (!Object.prototype.hasOwnProperty.call(normalized, rule.source)) {
-      error('normalize', 'ENRICHMENT_SOURCE', 'Source field unavailable at step ' + (index + 1));
+      error('normalize', 'ENRICHMENT_SOURCE', 'Source field unavailable at step ' + step);
       continue;
     }
     const source = normalized[rule.source];

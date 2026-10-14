@@ -3,8 +3,9 @@ import type {Dispatch,SetStateAction} from 'react';
 import {ArrowRight,ClipboardCopy,FileText,ShieldAlert} from 'lucide-react';
 import type {ParserDraft,SuiteResult} from '../model';
 import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
-  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
-import {compareCandidate,type CandidateComparison} from './autoParserRegression';
+  proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
+  proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
+import {compareCandidate,compareMappingCorrectionCandidate,type CandidateComparison} from './autoParserRegression';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -107,7 +108,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         ...(baseline.ok?[
           'Use this structurally valid current JSON recipe as your baseline.',
           'Preserve its projectId, sample SHA, event count, family and stage order.',
-          'Only one additional safe field mapping may change this established parser; otherwise keep the baseline unchanged.',
+          'Allow only one bounded parser change at a time: one safe mapping add/correction or one split_field/merge_fields enrichment; otherwise keep the baseline unchanged.',
           '----- BEGIN CANONICAL PARSER RECIPE JSON -----',
           JSON.stringify(baseline.recipe,null,2),
           '----- END CANONICAL PARSER RECIPE JSON -----',
@@ -152,10 +153,16 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       setNotice('Holdout input exceeds the local 64 KiB limit.');return;
     }
     let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
+    let correctionScope:{oldTarget:string;newTarget:string}|undefined;
     if(review.report.mode==='FULL_RECOVERY')proposal=proposeV01RecoveryParserFromAI(review,context.draft);
     else{
       const additive=proposeV01FieldMappingFromAI(review,sample,context.draft,context.suite);
-      proposal=additive.ok?additive:proposeV01MappingCorrectionFromAI(review,sample,context.draft,context.suite);
+      if(additive.ok)proposal=additive;
+      else{
+        const correction=proposeV01MappingCorrectionFromAI(review,sample,context.draft,context.suite);
+        if(correction.ok){proposal=correction;correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};}
+        else proposal=proposeV01EnrichmentFromAI(review,sample,context.draft,context.suite);
+      }
     }
     if(!proposal.ok){
       setNotice('The proposed grammar cannot be translated into a supported parser: '+proposal.reason);
@@ -168,8 +175,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         runPreview(context.draft,holdout),
         runPreview(proposal.candidate,holdout),
       ]);
-      const result=compareCandidate({source:sample,baseline:context.suite,candidate,
-        holdout:{source:holdout,baseline:baselineHoldout,candidate:candidateHoldout}});
+      const comparisonInput={source:sample,baseline:context.suite,candidate,
+        holdout:{source:holdout,baseline:baselineHoldout,candidate:candidateHoldout}};
+      const result=correctionScope?
+        compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
       const qualified=result.acceptedWithoutRegression&&result.holdoutStatus==='TESTED'&&
         completeSuite(candidate)&&completeSuite(candidateHoldout);
       setComparison({candidate:proposal.candidate,value:result,qualified});

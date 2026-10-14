@@ -1,12 +1,13 @@
 import {useEffect,useState} from 'react';
 import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
-import {importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01FieldMappingFromAI,
- proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
+import {importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
+ proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
 import {compareCandidate,compareMappingCorrectionCandidate} from './autoParserRegression';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
 import {defaultGuidedOptions} from './contract';
+import {sha256Utf8Hex} from '../sha256';
 
 interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void}
 const completeSuite=(value:SuiteResult)=>value.counts.total>0&&value.counts.matched===value.counts.total&&
@@ -23,7 +24,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [importBusy,setImportBusy]=useState(false);
  const [holdout,setHoldout]=useState('');
  const [holdoutAttested,setHoldoutAttested]=useState(false);
- const [approvedCandidate,setApprovedCandidate]=useState<{draft:ParserDraft;mode:'mapping'|'correction'|'recovery';scope?:{oldTarget:string;newTarget:string}}|null>(null);
+ const [approvedCandidate,setApprovedCandidate]=useState<{draft:ParserDraft;mode:'mapping'|'correction'|'enrichment'|'recovery';scope?:{oldTarget:string;newTarget:string}}|null>(null);
  const [approval,setApproval]=useState(false);
  const [validatedEvidence,setValidatedEvidence]=useState('');
  const evidenceFingerprint=()=>JSON.stringify([source??'',draft??null,holdout,recipeText]);
@@ -50,9 +51,8 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    if(baseline.ok){
     lines.push('Preserve every unrelated stage and mapping in this canonical current recipe. Change only what the requested correction requires.',
      'BEGIN CANONICAL PARSER RECIPE',JSON.stringify(baseline.recipe,null,2),'END CANONICAL PARSER RECIPE');
-   }else if(globalThis.crypto?.subtle){
-    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source));
-    const hash=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+   }else{
+    const hash=await sha256Utf8Hex(source);
     const boundary=draft.guided?.eventBoundary??'single-line';
     const records=splitEvents(source,boundary,MAX_EVENTS+1);
     const opts=draft.guided??defaultGuidedOptions();
@@ -81,7 +81,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     result=await importRecoveryAIRecipe(recipeText,source,draft,suite);
    if(!result.ok){setImportResult(`Rejected AI proposal: ${result.reason}. No rules were applied.`);return;}
    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
-   let candidateMode:'mapping'|'correction'|'recovery';
+   let candidateMode:'mapping'|'correction'|'enrichment'|'recovery';
    let correctionScope:{oldTarget:string;newTarget:string}|undefined;
    if(result.report.mode==='FULL_RECOVERY'){
     proposal=proposeV01RecoveryParserFromAI(result,draft);candidateMode='recovery';
@@ -90,8 +90,9 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     if(additive.ok){proposal=additive;candidateMode='mapping';}
     else{
      const correction=proposeV01MappingCorrectionFromAI(result,source,draft,suite);
-     proposal=correction;candidateMode='correction';
-     if(correction.ok)correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};
+     if(correction.ok){proposal=correction;candidateMode='correction';
+      correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};}
+     else{proposal=proposeV01EnrichmentFromAI(result,source,draft,suite);candidateMode='enrichment';}
     }
    }
    if(!proposal.ok){setImportResult(`REVIEW ONLY: ${result.report.changedStageCount} changes. No safely compilable parser candidate: ${proposal.reason}.`);return;}
@@ -119,7 +120,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     setImportResult('Candidate rejected: full training/holdout parsing or regression verification failed. No rules were applied.');return;
    }
    setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope});setValidatedEvidence(evidenceFingerprint());
-   const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':'one added mapping';
+   const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':candidateMode==='enrichment'?'one bounded split/merge rule':'one added mapping';
    setImportResult(`Ready for explicit approval: ${description}, 0 training/holdout regressions; ${report.holdout?.sourceCount??0} independent holdout events tested. Browser-only; native verification pending.`);
   }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
   finally{setImportBusy(false);}
@@ -171,6 +172,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     <label><input type="checkbox" aria-label="Approve verified inline AI candidate" checked={approval} onChange={e=>setApproval(e.target.checked)}/>
       {approvedCandidate.mode==='recovery'?'I approve replacing the current unverified parser draft with this verified recovery parser.':
        approvedCandidate.mode==='correction'?'I approve this one verified mapping correction. All unrelated rules must remain unchanged.':
+       approvedCandidate.mode==='enrichment'?'I approve this one bounded split/merge rule. All existing mappings and unrelated rules must remain unchanged.':
        'I approve the one verified additive mapping. Existing rules must remain unchanged.'}</label>
     <button type="button" onClick={()=>{
      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
@@ -200,8 +202,9 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      const appliedMode=approvedCandidate.mode;onApplyCandidate(approvedCandidate.draft);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
      setImportResult(appliedMode==='recovery'?'Approved recovery parser added to draft. Native parser testing and export verification remain required.':
       appliedMode==='correction'?'Approved mapping correction added to draft. Native parser testing and export verification remain required.':
+      appliedMode==='enrichment'?'Approved split/merge rule added to draft. Native parser testing and export verification remain required.':
       'Approved mapping added to draft. Native parser testing and export verification remain required.');
-    }}>{approvedCandidate.mode==='recovery'?'Apply Approved Recovery Parser to Draft':approvedCandidate.mode==='correction'?'Apply Approved Mapping Correction':'Apply Approved Mapping to Draft'}</button>
+    }}>{approvedCandidate.mode==='recovery'?'Apply Approved Recovery Parser to Draft':approvedCandidate.mode==='correction'?'Apply Approved Mapping Correction':approvedCandidate.mode==='enrichment'?'Apply Approved Split/Merge Rule':'Apply Approved Mapping to Draft'}</button>
    </div>}
   </details>
   <small>AI output is a proposal only. Import, independent validation and user approval are required before changing parser rules.</small>

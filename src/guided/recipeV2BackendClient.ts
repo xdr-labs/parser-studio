@@ -46,6 +46,7 @@ export async function checkRecipeV02Compiler(
  requireJsonBlankLineTcp=false,
  requiredMixedFamilies:readonly string[]=[],
  requireJavaBlankLineTcp=false,
+ requiredOperators:readonly string[]=[],
 ):Promise<boolean>{
  const res=await requester(BASE+'/capabilities',{
   method:'GET',cache:'no-store',credentials:'same-origin',
@@ -66,7 +67,7 @@ export async function checkRecipeV02Compiler(
   JSON.stringify(cap.inputRequires)!==JSON.stringify(['recipe','legacyProject'])||
   !Array.isArray(values)||!FAMILIES.every(f=>values.includes(f))||
   !Array.isArray(ops)||!['split_event','map_field','cast_type','fallback_unparsed']
-    .every(s=>ops.includes(s))||
+    .every(s=>ops.includes(s))||!requiredOperators.every(s=>ops.includes(s))||
   (requiredEnvelope!==undefined&&(
     !Array.isArray(envelopes)||!envelopes.includes(requiredEnvelope)))||
   (requireMixed&&(
@@ -134,7 +135,8 @@ export async function compileReviewedRecipeV02(
    input.recipe.stages.find(s=>s.op==='dispatch_family')?.op==='dispatch_family'
      ?(input.recipe.stages.find(s=>s.op==='dispatch_family') as
        Extract<typeof input.recipe.stages[number],{op:'dispatch_family'}>).families:[],
-   input.recipe.sourceFormat==='java_stacktrace')) {
+   input.recipe.sourceFormat==='java_stacktrace',
+   [...new Set(input.recipe.stages.filter(s=>s.op==='split_field'||s.op==='merge_fields').map(s=>s.op))])) {
   throw new Error('The current backend does not advertise v0.2 compilation.');
  }
  const validation=await post('validate',input,requester);

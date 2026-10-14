@@ -28,6 +28,34 @@ describe('no-code safe normalization enrichment', () => {
     if (result.ok) expect(JSON.stringify(result.project)).not.toContain('198.51.100.10');
   });
 
+  it('previews and exports bounded split and merge enrichment with exact field counts', () => {
+    const draft=createDraft();draft.format='json';
+    draft.mappings=[...draft.mappings,{id:'endpoint',source:'endpoint',target:'custom.endpoint',type:'string'}];
+    const base=defaultGuidedOptions();
+    draft.guided={...base,groups:{...base.groups,endpoint:'top_fields'},enrichment:[
+      {id:'split',operator:'split_field',source:'custom.endpoint',target:'',value:'',delimiter:':',
+        targets:['custom.endpoint_host','custom.endpoint_port_text']},
+      {id:'merge',operator:'merge_fields',source:'',target:'custom.endpoint_joined',value:'',delimiter:':',
+        sources:['custom.endpoint_host','custom.endpoint_port_text']},
+    ]};
+    const result=toBackendProject(draft);expect(result.ok).toBe(true);
+    if(result.ok)expect(result.project.enrichment).toEqual([
+      {operator:'split_field',source:'custom.endpoint',delimiter:':',
+        targets:['custom.endpoint_host','custom.endpoint_port_text']},
+      {operator:'merge_fields',sources:['custom.endpoint_host','custom.endpoint_port_text'],
+        delimiter:':',target:'custom.endpoint_joined'},
+    ]);
+    const parsed=preview('{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"endpoint":"192.0.2.10:8443"}',draft);
+    expect(parsed.counts).toMatchObject({total:1,matched:1,extracted:1,normalized:1,failures:0});
+    expect(parsed.events[0]?.normalized).toMatchObject({
+      'custom.endpoint':'192.0.2.10:8443','custom.endpoint_host':'192.0.2.10',
+      'custom.endpoint_port_text':'8443','custom.endpoint_joined':'192.0.2.10:8443',
+    });
+    const mismatch=preview('{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"endpoint":"no-delimiter"}',draft);
+    expect(mismatch.counts.failures).toBe(1);
+    expect(mismatch.events[0]?.diagnostics.some(x=>x.code==='ENRICHMENT_TYPE')).toBe(true);
+  });
+
   it('refuses destination collision, missing source, prototype segment or case-cast of nontext', () => {
     for (const rule of [
       { id:'a',operator:'set_const',source:'',target:'custom.action',value:'override' },

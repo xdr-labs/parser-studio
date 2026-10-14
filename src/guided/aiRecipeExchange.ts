@@ -9,6 +9,7 @@ import {buildReviewableRecipe,validateReviewableRecipe,
 import {toBackendProject} from './backendAdapter';
 import {lookupFieldValue} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
+import {sha256Utf8Hex} from '../sha256';
 
 const MAX_RECIPE_BYTES=32*1024;
 export type AIExchangeReason='SOURCE_LIMIT'|'UNTRUSTED_PREVIEW'|
@@ -27,11 +28,7 @@ export type AIImportResult=
        userApprovalRequired:true;rawLogsIncluded:false}}
  | {ok:false;reason:AIExchangeReason};
 
-async function digest(text:string):Promise<string>{
- if(!globalThis.crypto?.subtle)throw new Error('SECURE_DIGEST_REQUIRED');
- const raw=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
- return [...new Uint8Array(raw)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
+async function digest(text:string):Promise<string>{return sha256Utf8Hex(text);}
 function verified(source:string,suite:SuiteResult):boolean{
  if(typeof source!=='string'||!source.trim()||
   new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES||
@@ -65,7 +62,7 @@ export async function createPrivacySafeAIPrompt(
   'If projectId is present, it must match the metadata below; sample must be {sha256: sourceHash, events: sourceCount}.',
   'If projectId is null, the current draft is not backend-compatible: provide a plain-English diagnostic and request reviewed redacted examples instead of inventing a valid recipe.',
   'Allow only stages: split_event(single-line), optional unwrap_syslog(version 1, strict_header),',
-  'one parse_json/parse_kv/parse_cef/parse_leef/parse_csv, map_field, adjacent cast_type, classify, fallback_unparsed.',
+  'one parse_json/parse_kv/parse_cef/parse_leef/parse_csv, map_field, adjacent cast_type, bounded split_field/merge_fields, classify, fallback_unparsed.',
   'Never provide Ruby, executable code, Regex, JSONata, credentials, API requests or deployment instructions.',
   'Refuse to assert a supported grammar when family metadata is insufficient or mixed.',
   'All rules require local user review. Native Fluentd and Stellar target import are NOT VERIFIED.',
@@ -78,6 +75,8 @@ export async function createPrivacySafeAIPrompt(
 }
 const mapping=(stages:ReviewStage[])=>stages.filter(
  (x):x is Extract<ReviewStage,{op:'map_field'}>=>x.op==='map_field');
+const enrichment=(stages:ReviewStage[])=>stages.filter(
+ (x):x is Extract<ReviewStage,{op:'split_field'|'merge_fields'}>=>x.op==='split_field'||x.op==='merge_fields');
 const structuralStages=(stages:ReviewStage[])=>stages.filter(stage=>
  stage.op!=='map_field'&&stage.op!=='cast_type');
 /** Import never applies changes. Exact source hash and current reviewed format are required. */
@@ -180,7 +179,12 @@ export function proposeV01RecoveryParserFromAI(imported:AIImportResult,draft:Par
  }
  const split=recipe.stages[0];
  if(split?.op!=='split_event')return deny('UNSUPPORTED_RECIPE');
- const nextOpts={...opts,enrichment:undefined,eventBoundary:split.boundary,groups,
+ const recipeEnrichment=enrichment(recipe.stages).map((stage,index)=>stage.op==='split_field'?{
+   id:'ai-enrich-'+String(index+1),operator:'split_field' as const,source:stage.source,target:'',value:'',
+   delimiter:stage.delimiter,targets:[...stage.targets]}:{
+   id:'ai-enrich-'+String(index+1),operator:'merge_fields' as const,source:'',target:stage.target,value:'',
+   delimiter:stage.delimiter,sources:[...stage.sources]});
+ const nextOpts={...opts,enrichment:recipeEnrichment,eventBoundary:split.boundary,groups,
    receiver:{...opts.receiver,
      protocols:split.boundary==='blank-line'?['tcp' as const]:opts.receiver.protocols,
      framing:split.boundary==='blank-line'?(recipe.sourceFormat==='java_stacktrace'?'blank_line_java' as const:'blank_line_json' as const):'newline' as const},
@@ -259,6 +263,41 @@ export function proposeV01FieldMappingFromAI(
  if(!toBackendProject(result).ok)return deny('BACKEND_UNSUPPORTED');
  return {ok:true,candidate:result,source:candidateMap.source,
   target:candidateMap.target,approvalRequired:true,backendCompilerVerified:false};
+}
+
+export type AIEnrichmentProposal=
+ | {ok:true;candidate:ParserDraft;operator:'split_field'|'merge_fields';approvalRequired:true;
+     backendCompilerVerified:false;replacement:'ONE_ENRICHMENT'}
+ | {ok:false;reason:'UNSUPPORTED_OPERATOR_CHANGE'|'NO_SINGLE_ENRICHMENT_CHANGE'|'BACKEND_UNSUPPORTED'};
+/** Add exactly one bounded declarative split/merge step while preserving every existing parser rule. */
+export function proposeV01EnrichmentFromAI(
+ imported:AIImportResult,source:string,draft:ParserDraft,suite:SuiteResult,
+):AIEnrichmentProposal{
+ const deny=(reason:Extract<AIEnrichmentProposal,{ok:false}>['reason']):AIEnrichmentProposal=>({ok:false,reason});
+ if(!imported.ok||imported.report.mode!=='BASELINE_EDIT'||!imported.baseline||!verified(source,suite))
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ const strip=(stages:ReviewStage[])=>stages.filter(stage=>stage.op!=='split_field'&&stage.op!=='merge_fields');
+ if(JSON.stringify(strip(imported.candidate.stages))!==JSON.stringify(strip(imported.baseline.stages)))
+  return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ const before=enrichment(imported.baseline.stages),after=enrichment(imported.candidate.stages);
+ if(after.length!==before.length+1||JSON.stringify(after.slice(0,-1))!==JSON.stringify(before))
+  return deny('NO_SINGLE_ENRICHMENT_CHANGE');
+ const stage=after.at(-1)!;
+ const opts=draft.guided??defaultGuidedOptions();
+ const existing=opts.enrichment??[];
+ if(existing.length!==before.length)return deny('UNSUPPORTED_OPERATOR_CHANGE');
+ const id='ai-enrichment-'+String(existing.length+1);
+ const rule=stage.op==='split_field'?{
+   id,operator:'split_field' as const,source:stage.source,target:'',value:'',
+   delimiter:stage.delimiter,targets:[...stage.targets]
+ }:{
+   id,operator:'merge_fields' as const,source:'',target:stage.target,value:'',
+   delimiter:stage.delimiter,sources:[...stage.sources]
+ };
+ const candidate:ParserDraft={...draft,guided:{...opts,enrichment:[...existing,rule]}};
+ if(!toBackendProject(candidate).ok)return deny('BACKEND_UNSUPPORTED');
+ return {ok:true,candidate,operator:stage.op,approvalRequired:true,
+   backendCompilerVerified:false,replacement:'ONE_ENRICHMENT'};
 }
 
 export type AIMappingCorrectionProposal=

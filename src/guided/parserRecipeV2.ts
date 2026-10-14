@@ -10,6 +10,7 @@ import {MAX_DATASET_BYTES,MAX_EVENTS,splitEvents} from '../parser';
 import {toBackendProject,type BackendParserProject} from './backendAdapter';
 import {defaultGuidedOptions} from './contract';
 import {analyzeLogEnvelopes} from './autoParserEnvelope';
+import {sha256Utf8Hex} from '../sha256';
 
 export type ReviewStage=
  | {op:'split_event';boundary:'single-line'|'blank-line'}
@@ -19,6 +20,8 @@ export type ReviewStage=
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
  | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
  | {op:'cast_type';target:string;data_type:'integer'|'ip'|'port'|'boolean'|'date';timezone?:'UTC'}
+ | {op:'split_field';source:string;delimiter:string;targets:string[]}
+ | {op:'merge_fields';sources:string[];delimiter:string;target:string}
  | {op:'classify';defaultIndex:'session'|'threat'|'syslog'|'winlogevent';rules:Array<{field:string;operator:'equals';value:string;index:'session'|'threat'|'syslog'|'winlogevent'}>}
  | {op:'fallback_unparsed';mode:'retain_unparsed'};
 export interface ParserRecipeV2{
@@ -61,6 +64,9 @@ const safePath=(v:unknown)=>typeof v==='string'&&v.length>=1&&v.length<=128&&
  PATH.test(v)&&v.split('.').every(x=>!UNSAFE.has(x));
 const safeValue=(v:unknown)=>typeof v==='string'&&v.length<=128&&
  !/[\r\n\u0000-\u001f\u007f]/.test(v);
+const safeDelimiter=(v:unknown)=>typeof v==='string'&&v.length>=1&&v.length<=8&&
+ !/[\u0000-\u001f\u007f]/.test(v);
+const overlaps=(a:string,b:string)=>a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
 function validateStage(input:unknown):input is ReviewStage{
  if(!input||typeof input!=='object'||Array.isArray(input))return false;
  const s=input as Record<string,unknown>;
@@ -86,6 +92,12 @@ function validateStage(input:unknown):input is ReviewStage{
     exact(s,['op','target','data_type'])||exact(s,['op','target','data_type','timezone'])
    )&&safePath(s.target)&&TYPES.slice(1).includes(String(s.data_type))&&
    (s.data_type==='date'?s.timezone==='UTC':s.timezone===undefined);
+  case 'split_field':return exact(s,['op','source','delimiter','targets'])&&safePath(s.source)&&
+   safeDelimiter(s.delimiter)&&Array.isArray(s.targets)&&s.targets.length>=2&&s.targets.length<=8&&
+   new Set(s.targets).size===s.targets.length&&s.targets.every(safePath);
+  case 'merge_fields':return exact(s,['op','sources','delimiter','target'])&&Array.isArray(s.sources)&&
+   s.sources.length>=2&&s.sources.length<=8&&new Set(s.sources).size===s.sources.length&&
+   s.sources.every(safePath)&&safeDelimiter(s.delimiter)&&safePath(s.target);
   case 'classify':return exact(s,['op','defaultIndex','rules'])&&
    INDICES.includes(String(s.defaultIndex))&&Array.isArray(s.rules)&&
    s.rules.length<=24&&s.rules.every(x=>{
@@ -136,11 +148,12 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
    if(!parse||!PARSERS.includes(parse.op)||parse.op!==expected)return false;
  }
  const targets=new Set<string>();
+ const normalizedTypes=new Map<string,string>();
  let mapCount=0;
  while(stages[i]?.op==='map_field'){
    const m=stages[i] as Extract<ReviewStage,{op:'map_field'}>;
-   if(targets.has(m.target))return false;
-   targets.add(m.target);mapCount++;i++;
+   if([...targets].some(target=>overlaps(target,m.target)))return false;
+   targets.add(m.target);normalizedTypes.set(m.target,m.data_type);mapCount++;i++;
    if(m.data_type!=='string'){
      const cast=stages[i] as ReviewStage|undefined;
      if(!cast||cast.op!=='cast_type'||cast.target!==m.target||
@@ -149,15 +162,28 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
    }
  }
  if(mapCount>50)return false;
- if(stages[i++]?.op!=='classify')return false;
+ let enrichmentCount=0;
+ while(true){
+   const stage=stages[i];
+   if(!stage||(stage.op!=='split_field'&&stage.op!=='merge_fields'))break;
+   if(++enrichmentCount>64)return false;
+   if(stage.op==='split_field'){
+     if(normalizedTypes.get(stage.source)!=='string'||
+        stage.targets.some(target=>[...targets].some(existing=>overlaps(existing,target))))return false;
+     for(const target of stage.targets){targets.add(target);normalizedTypes.set(target,'string');}
+   }else{
+     if(stage.sources.some(source=>normalizedTypes.get(source)!=='string')||
+        [...targets].some(existing=>overlaps(existing,stage.target)))return false;
+     targets.add(stage.target);normalizedTypes.set(stage.target,'string');
+   }
+   i++;
+ }
+ const classify=stages[i++];
+ if(classify?.op!=='classify'||classify.rules.some(rule=>!normalizedTypes.has(rule.field)))return false;
  if(i!==stages.length-1||stages[i]?.op!=='fallback_unparsed')return false;
  return true;
 }
-async function sha256(source:string):Promise<string>{
- if(!globalThis.crypto?.subtle)throw new Error('Secure browser SHA-256 is required.');
- const raw=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source));
- return [...new Uint8Array(raw)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
+async function sha256(source:string):Promise<string>{return sha256Utf8Hex(source);}
 export async function buildReviewableRecipe(
  source:string,draft:ParserDraft,suite:SuiteResult|undefined,
 ):Promise<RecipeReview>{
@@ -250,6 +276,13 @@ export async function buildReviewableRecipe(
        data_type:data_type as Extract<ReviewStage,{op:'cast_type'}>['data_type'],
        ...(data_type==='date'?{timezone:'UTC' as const}:{})});
    }
+ }
+ for(const enrichment of project.project.enrichment??[]){
+   if(enrichment.operator==='split_field')stages.push({op:'split_field',source:enrichment.source,
+     delimiter:enrichment.delimiter,targets:[...enrichment.targets]});
+   else if(enrichment.operator==='merge_fields')stages.push({op:'merge_fields',sources:[...enrichment.sources],
+     delimiter:enrichment.delimiter,target:enrichment.target});
+   else return fail('MODEL_REVIEW_REQUIRED');
  }
  stages.push({op:'classify',
    defaultIndex:project.project.classification.defaultIndex,

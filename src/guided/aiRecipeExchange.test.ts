@@ -5,7 +5,8 @@ import {preview} from '../parser';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {toBackendProject} from './backendAdapter';
 import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
- proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
+ proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
+ proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
 
 const source=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"name":"PRIVATE_ACCOUNT"}',
@@ -56,10 +57,10 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
    {...built.recipe,script:'eval("unsafe")'},
    {...built.recipe,stages:[...built.recipe.stages.slice(0,-1),
      {op:'eval_ruby',code:'system("curl")'},built.recipe.stages.at(-1)]},
-   {...built.recipe,stages:[...built.recipe.stages.slice(0,-1),
-     {op:'split_field',source:'src_ip',delimiter:':',targets:['custom.ip','custom.port']},built.recipe.stages.at(-1)]},
-   {...built.recipe,stages:[...built.recipe.stages.slice(0,-1),
-     {op:'merge_fields',sources:['src_ip','dst_port'],delimiter:':',target:'custom.endpoint'},built.recipe.stages.at(-1)]},
+   {...built.recipe,stages:[...built.recipe.stages.slice(0,-2),
+     {op:'split_field',source:'custom.action',delimiter:'\n',targets:['custom.kind','custom.detail']},...built.recipe.stages.slice(-2)]},
+   {...built.recipe,stages:[...built.recipe.stages.slice(0,-2),
+     {op:'merge_fields',sources:['custom.action','custom.action'],delimiter:':',target:'custom.endpoint'},...built.recipe.stages.slice(-2)]},
   ])expect(await importReviewOnlyAIRecipe(JSON.stringify(changed),source,draft,suite()))
    .toMatchObject({ok:false,reason:'UNTRUSTED_RECIPE'});
  });
@@ -118,6 +119,44 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
   expect(exact.ok).toBe(true);
   if(exact.ok)expect(exact.recipe).toEqual({...original.recipe,stages});
  });
+ it('adds one bounded split then one bounded merge enrichment without changing existing mappings',async()=>{
+  const raw=[
+   '{"action":"allow:http","src_ip":"198.51.100.10","dst_port":443}',
+   '{"action":"deny:ssh","src_ip":"203.0.113.4","dst_port":22}',
+  ].join('\n');
+  const base={...createDraft(),format:'json' as const},baseSuite=preview(raw,base);
+  const original=await buildReviewableRecipe(raw,base,baseSuite);
+  if(!original.ok)throw new Error('Expected split baseline');
+  const classifyAt=original.recipe.stages.findIndex(s=>s.op==='classify');
+  const splitStages=[...original.recipe.stages];
+  splitStages.splice(classifyAt,0,{op:'split_field',source:'custom.action',delimiter:':',
+    targets:['custom.action_kind','custom.action_detail']});
+  const splitImport=await importReviewOnlyAIRecipe(JSON.stringify({...original.recipe,stages:splitStages}),raw,base,baseSuite);
+  expect(splitImport).toMatchObject({ok:true,report:{mode:'BASELINE_EDIT'}});
+  const split=proposeV01EnrichmentFromAI(splitImport,raw,base,baseSuite);
+  expect(split).toMatchObject({ok:true,operator:'split_field',replacement:'ONE_ENRICHMENT'});
+  if(!split.ok)return;
+  const splitSuite=preview(raw,split.candidate);
+  expect(splitSuite.events[0]?.normalized).toMatchObject({
+   'custom.action_kind':'allow','custom.action_detail':'http',
+  });
+  const splitRecipe=await buildReviewableRecipe(raw,split.candidate,splitSuite);
+  expect(splitRecipe.ok).toBe(true);if(!splitRecipe.ok)return;
+  expect(splitRecipe.recipe).toEqual({...original.recipe,stages:splitStages});
+  const mergeStages=[...splitRecipe.recipe.stages];
+  mergeStages.splice(mergeStages.findIndex(s=>s.op==='classify'),0,
+   {op:'merge_fields',sources:['custom.action_kind','custom.action_detail'],delimiter:'/',target:'custom.action_joined'});
+  const mergeImport=await importReviewOnlyAIRecipe(JSON.stringify({...splitRecipe.recipe,stages:mergeStages}),raw,split.candidate,splitSuite);
+  const merge=proposeV01EnrichmentFromAI(mergeImport,raw,split.candidate,splitSuite);
+  expect(merge).toMatchObject({ok:true,operator:'merge_fields',replacement:'ONE_ENRICHMENT'});
+  if(!merge.ok)return;
+  const final=preview(raw,merge.candidate);
+  expect(final.events[0]?.normalized['custom.action_joined']).toBe('allow/http');
+  expect(toBackendProject(merge.candidate)).toMatchObject({ok:true,project:{enrichment:[
+   {operator:'split_field'},{operator:'merge_fields'},
+  ]}});
+ });
+
  it('recovers an auto-RAW two-column CSV into a fully reviewable compiler-supported parser',async()=>{
   const raw='allow,198.51.100.10\ndeny,203.0.113.4';
   const auto=createDraft(),baseline=preview(raw,auto);

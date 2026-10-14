@@ -5,13 +5,17 @@ export type FieldGroup = 'top_fields' | 'ns_fields' | 'vendor_fields';
 export type Transport = 'udp' | 'tcp';
 export type SourceCategory = 'network' | 'endpoint' | 'cloud' | 'application' | 'other';
 export type EventBoundary = 'single-line' | 'blank-line';
-export type EnrichmentOperator = 'set_const' | 'copy' | 'lowercase' | 'uppercase';
+export type EnrichmentOperator = 'set_const' | 'copy' | 'lowercase' | 'uppercase' | 'split_field' | 'merge_fields';
 export interface GuidedEnrichmentRule {
   id: string;
   operator: EnrichmentOperator;
   source: string;
   target: string;
   value: string;
+  /** Bounded declarative split/merge only; never Regex or executable syntax. */
+  delimiter?: string;
+  targets?: string[];
+  sources?: string[];
 }
 
 export interface GuidedOptions {
@@ -219,30 +223,51 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   }
   const enrich = options.enrichment ?? [];
   if (enrich.length > 64) errors.push('At most 64 ordered enrichment steps are supported');
+  const validDelimiter=(value:string|undefined)=>typeof value==='string'&&value.length>=1&&value.length<=8&&
+    !/[\u0000-\u001f\u007f]/.test(value);
+  const addEnrichmentTarget=(target:string,step:number,type='string')=>{
+    if (!safeUiPath(target) || RESERVED_OUTPUT_ROOTS.has(target.split('.')[0]))
+      errors.push('Unsafe enrichment output at step ' + step);
+    if (destinations.some((value) => value === target ||
+        value.startsWith(target + '.') || target.startsWith(value + '.')))
+      errors.push('Enrichment destination collision at step ' + step);
+    destinations.push(target);available.set(target,type);
+  };
   for (const [i, rule] of enrich.entries()) {
-    if (!['set_const', 'copy', 'lowercase', 'uppercase'].includes(rule.operator)) {
-      errors.push('Unsupported enrichment operation at step ' + (i + 1));
+    const step=i+1;
+    if(rule.operator==='split_field'){
+      const targets=rule.targets??[];
+      if(!available.has(rule.source)||available.get(rule.source)!=='string')
+        errors.push('Split source must be an existing text normalized field at step '+step);
+      if(!validDelimiter(rule.delimiter))errors.push('Split delimiter must be 1–8 visible characters at step '+step);
+      if(targets.length<2||targets.length>8||new Set(targets).size!==targets.length)
+        errors.push('Split requires 2–8 unique output fields at step '+step);
+      for(const target of targets)addEnrichmentTarget(target,step);
       continue;
     }
-    if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/.test(rule.target) ||
-        rule.target.split('.').some((part) => ['__proto__', 'constructor', 'prototype'].includes(part)) ||
-        ['msg_origin', 'stellar_log_index', 'parser_err_msg'].includes(rule.target.split('.')[0])) {
-      errors.push('Unsafe enrichment output at step ' + (i + 1));
+    if(rule.operator==='merge_fields'){
+      const sources=rule.sources??[];
+      if(sources.length<2||sources.length>8||new Set(sources).size!==sources.length)
+        errors.push('Merge requires 2–8 unique source fields at step '+step);
+      if(sources.some(source=>!available.has(source)||available.get(source)!=='string'))
+        errors.push('Merge sources must be existing text normalized fields at step '+step);
+      if(!validDelimiter(rule.delimiter))errors.push('Merge delimiter must be 1–8 visible characters at step '+step);
+      addEnrichmentTarget(rule.target,step);
+      continue;
     }
-    if (destinations.some((value) => value === rule.target ||
-        value.startsWith(rule.target + '.') || rule.target.startsWith(value + '.'))) {
-      errors.push('Enrichment destination collision at step ' + (i + 1));
+    if (!['set_const', 'copy', 'lowercase', 'uppercase'].includes(rule.operator)) {
+      errors.push('Unsupported enrichment operation at step ' + step);continue;
     }
     if (rule.operator === 'set_const') {
       if (rule.value.length > 256) errors.push('Enrichment constant exceeds 256 characters');
     } else if (!available.has(rule.source)) {
-      errors.push('Enrichment source is not a normalized field at step ' + (i + 1));
+      errors.push('Enrichment source is not a normalized field at step ' + step);
     } else if ((rule.operator === 'lowercase' || rule.operator === 'uppercase') &&
                available.get(rule.source) !== 'string') {
-      errors.push('Case changes require a text source field at step ' + (i + 1));
+      errors.push('Case changes require a text source field at step ' + step);
     }
-    destinations.push(rule.target);
-    available.set(rule.target, rule.operator === 'set_const' ? 'string' : (available.get(rule.source) ?? 'unknown'));
+    addEnrichmentTarget(rule.target,step,
+      rule.operator === 'set_const' ? 'string' : (available.get(rule.source) ?? 'unknown'));
   }
   const ruleKeys = new Set<string>();
   for (const rule of options.classification.rules) {

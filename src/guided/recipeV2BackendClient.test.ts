@@ -277,6 +277,29 @@ describe('P0-AP3 strict v0.2 backend client with pinned same-origin capability',
   expect(await checkRecipeV02Compiler(modern as typeof fetch,undefined,true,false,
     ['json','rfc5424_cef','rfc5424_leef'])).toBe(true);
  });
+ it('requires explicit split/merge compiler operators only when reviewed recipe uses them',async()=>{
+  const source=[
+   '{"action":"allow:http","src_ip":"198.51.100.10","dst_port":443}',
+   '{"action":"deny:ssh","src_ip":"203.0.113.5","dst_port":22}',
+  ].join('\n');
+  const draft=createDraft();draft.format='json';
+  const base=draft.guided!;
+  draft.guided={...base,enrichment:[
+   {id:'split',operator:'split_field',source:'custom.action',target:'',value:'',delimiter:':',
+    targets:['custom.action_kind','custom.action_detail']},
+   {id:'merge',operator:'merge_fields',source:'',target:'custom.action_joined',value:'',delimiter:'/',
+    sources:['custom.action_kind','custom.action_detail']},
+  ]};
+  const review=await buildReviewableRecipe(source,draft,preview(source,draft));
+  expect(review.ok).toBe(true);if(!review.ok)return;
+  const missing=vi.fn(async()=>response(capability));
+  await expect(compileReviewedRecipeV02({recipe:review.recipe,legacyProject:review.legacyProject},
+    undefined,missing as typeof fetch)).rejects.toThrow(/contract was not verified/);
+  expect(missing).toHaveBeenCalledTimes(1);
+  const supported={...capability,supportedOperators:[...capability.supportedOperators,'split_field','merge_fields']};
+  expect(await checkRecipeV02Compiler(vi.fn(async()=>response(supported)) as typeof fetch,
+    undefined,false,false,[],false,['split_field','merge_fields'])).toBe(true);
+ });
  it('refuses altered receipts, files and a mismatched baseline pair',async()=>{
   const {review,pair,receipt}=await setup();
   for(const altered of [
