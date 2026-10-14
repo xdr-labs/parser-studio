@@ -32,18 +32,28 @@ At the Auto Parser result, after a SHA-verified compiler response, provide indiv
 
 | Order | Acceptance | Scope and current state |
 |---|---|---|
-| P0-1 | Exactly 2 methods, legacy UI removed | Implement UI root and explicit navigation/deep-link regression |
-| P0-2 | ChatGPT copy/paste validated end-to-end | Exact SHA, reviewed masked samples only, full current-sample/holdout checks, browser+backend generation |
-| P0-3 | Reuse all Auto Parser core features | Preserve local source accounting, strictly supported format families, mappings, Ruby/CONF, ZIP |
-| P0-4 | Bring useful legacy operations to results | Version history already moved; port proposal, simulation, approved replay/Interflow UI must be re-scoped and tested |
+| P0-1 | Exactly 2 methods, legacy UI removed | **COMPLETE:** current Chromium verifies two-path root, retired deep-link redirects, keyboard flow and mobile no-overflow. |
+| P0-2 | ChatGPT copy/paste validated end-to-end | **COMPLETE:** explicit redaction, strict v0.2 Recipe import, current-sample + independent holdout qualification, approval, and exact backend Ruby/CONF generation pass live Chromium. |
+| P0-3 | Reuse all Auto Parser core features | **COMPLETE:** source accounting, bounded format families, mappings, Ruby/CONF, ZIP, Dictionary review, visible-redaction preservation and explicit Native verification are integrated. |
+| P0-4 | Bring useful legacy operations to results | **COMPLETE:** port review, immutable history, browser-local replay, owner-scoped Test Lab recovery/evidence and gated Interflow actions are contextual result tools with live-backend browser regression. |
 | P0-5 | Existing Chromium behaviors dispositioned | **COMPLETE:** all 48 archived suites are machine-accounted as migrated, owner-superseded, or externally gated; archived suites never count as current PASS. Existing Project JSON and Ruby/CONF import/inspection behavior is migrated under Auto Parser Advanced tools. |
-| P0-6 | Independent exact-head qualification | Vitest, TS/Vite, CI Chromium, pinned real localhost backend, Native Fluentd and SHA parity |
-| P1-1 | Explicit-schema mixed CSV | Backend 845d4b1 + e7ee1d9: strict JSON/KV/CSV single-line family selection, 2–100 reviewed columns, fixed comma/semicolon/TAB delimiter, Native synthetic qualification; UI Auto Parser shows one inline CSV column review step, with explicit reapproval on source/schema edits and v0.2 DRAFT SHA evidence. Browser/real backend integration is required before marking complete. |
-| P1-2 | Native multiline | Bounded explicit TCP LF LF framed Java Stack Trace supported in current backend; arbitrary Java/UDP unframed remains unsupported |
+| P0-6 | Independent exact-head qualification | **COMPLETE for internal scope:** UI/unit/build/current Chromium + exact pinned backend live Chromium + source-bound Ruby 3.2/Fluentd 1.17.1 Native proof. Proprietary Stellar target and human acceptance remain separate gates. |
+| P1-1 | Explicit-schema mixed CSV | **COMPLETE bounded subset:** reviewed 2–100 columns, comma/semicolon/TAB delimiter, reapproval on source/schema edits, v0.1/v0.2 SHA parity, Native synthetic qualification and exact-backend Chromium integration PASS. |
+| P1-2 | Native multiline | **COMPLETE bounded subset:** explicit TCP LF LF Java Stack Trace compiles and passes exact-backend Chromium/Native qualification. Arbitrary Java/UDP/unframed multiline remains intentionally unsupported. |
 | Gated | Real DP Apply, Sensor send, Interflow, human E2E | Await target credentials/permissions and separately approved test conditions |
 | Gated | PR merge / release | Explicit owner release approval only |
 
-**Critical provenance:** The two recovery worktrees (UI PR #7, backend PR #4) are independent; the old common Git worktree metadata is missing. Preserve the original old paths. The separately created /home/aella/parser-studio-two-path-ui-20261013 contains the initial uncommitted ChatGPTAssist draft; its original must not be deleted or overwritten. Integrate changes into PR #7 and pin its CI to exact PR #4 backend HEAD. The original backend contract and synthetic Native tests remain required.
+**Current integration provenance (2026-10-14):** active UI Draft PR #17 is feat/stellar-export-visual-parity-20261014; active backend Draft PR #4 is feat/r15-parser-pair-backend; active source-engine Draft PR #16 is poc/security-stream-framing-20261014. Preserve historical recovery worktrees and unrelated dirty state. UI quality CI must pin exact backend candidate e3f45651554eafc598a79ed7a61eed55b1b65ea9; Native/target claims are never inferred from browser-only evidence.
+
+## Internal qualification snapshot — 2026-10-14
+
+- UI PR #17 candidate before this documentation/CI-pin update: f7c5e33c5e8c2e766432f6d2915d19aae18bc196; local **594/594 Vitest**, production build PASS, current browser suite **21 PASS / 28 integration-gated SKIP**, and exact backend e3f4565 integration subset **26/26 PASS**.
+- Engine PR #16: 33c23a3242e2ed97ab202fa9053057eefdb07426; visible-mask focused **12/12 PASS**, full engine **321 PASS / 1 SKIP**, exact-head quality CI SUCCESS. Visible markers are preserved exactly and hidden values are never reconstructed.
+- Backend PR #4: e3f45651554eafc598a79ed7a61eed55b1b65ea9; backend **339/339 PASS**, pinned Ruby 3.2.3 / Fluentd 1.17.1 qualification PASS, source-bound per-project Native proof **2/2 events exact**, exact-head Native CI SUCCESS.
+- Current UI with private verifier injection also completed browser -> v0.1 DRAFT -> v0.2 exact SHA -> Native Fluentd **2/2 exact**; public HTTPS remains Native-verifier disabled by design.
+- Public HTTPS development smoke verifies visible redaction review, Existing Parser Advanced surface, 390px no-overflow and no private Native execution button.
+
+Only real Stellar DP/sensor/Interflow proof, owner-supplied proprietary compatibility artifacts, human acceptance, merge and release remain externally gated.
 
 ## Acceptance gates
 
