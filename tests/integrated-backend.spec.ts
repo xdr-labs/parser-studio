@@ -189,6 +189,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     const nativeBounded=page.getByLabel('v0.2 exact compiler evidence');
     await expect(nativeBounded).toContainText('v0.1 pair SHA MATCHED');
     await expect(nativeBounded).toContainText('Native user parser NOT VERIFIED');
+    await expect(nativeBounded).toContainText('Private Native verifier is not configured on this backend');
+    await expect(page.getByRole('button',{name:'Run Private Native Ruby/CONF Verification'})).toHaveCount(0);
     await expect(nativeBounded).not.toContainText('198.51.100.10');
     await expect(reviewed).toContainText('parse_json');
     await expect(reviewed).not.toContainText('198.51.100.10');

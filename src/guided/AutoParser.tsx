@@ -13,8 +13,9 @@ import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelop
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
-import {verifyNativeProject,NativeProjectVerificationUnavailable,
-  type NativeProjectVerificationReport} from './nativeProjectVerificationClient';
+import {checkNativeProjectVerificationAvailability,verifyNativeProject,
+  NativeProjectVerificationUnavailable,type NativeProjectVerificationReport}
+  from './nativeProjectVerificationClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import type {StructuralMiningReport} from './localPatternMining';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
@@ -102,6 +103,7 @@ export default function AutoParser({
  const [recipeCompiled,setRecipeCompiled]=useState<{key:string;value:ReviewedRecipeCompilation}|null>(null);
  const [recipeCompilerError,setRecipeCompilerError]=useState('');
  const [nativeEvidence,setNativeEvidence]=useState<NativeEvidence|null>(null);
+ const [nativeAvailability,setNativeAvailability]=useState<'UNCHECKED'|'AVAILABLE'|'UNAVAILABLE'|'ERROR'>('UNCHECKED');
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [drainAvailability,setDrainAvailability]=useState<'UNCHECKED'|'ERROR'|Drain3Availability>('UNCHECKED');
@@ -126,7 +128,7 @@ export default function AutoParser({
    [sample,draft.guided?.eventBoundary]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
-   setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);
+   setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);setNativeAvailability('UNCHECKED');
    setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
    setDrainAvailability('UNCHECKED');setDrainConsent(false);
    setDrainResult(null);setDrainNotice('');
@@ -453,8 +455,16 @@ export default function AutoParser({
      const result=await compileReviewedRecipeV02({
        recipe:currentRecipe.recipe,legacyProject:currentRecipe.legacyProject,
      },currentPair);
-     if(token===epoch.current&&currentRef.current===expected)
+     if(token===epoch.current&&currentRef.current===expected){
        setRecipeCompiled({key:expected,value:result});
+       try{
+         const available=await checkNativeProjectVerificationAvailability();
+         if(token===epoch.current&&currentRef.current===expected)
+           setNativeAvailability(available?'AVAILABLE':'UNAVAILABLE');
+       }catch{
+         if(token===epoch.current&&currentRef.current===expected)setNativeAvailability('ERROR');
+       }
+     }
    }catch{
      if(token===epoch.current&&currentRef.current===expected)
        setRecipeCompilerError('The backend could not verify the strict v0.2 stages against the current DRAFT pair. The original v0.1 files remain available.');
@@ -1027,10 +1037,16 @@ export default function AutoParser({
            <p>Optional Native verification is a separate explicit action. It sends this
              bounded current sample to the configured same-origin private backend only;
              no LLM, DP install or sensor send occurs.</p>
-           <button type="button" disabled={busy||pending||!suite}
-             onClick={()=>{void verifyCurrentNativeProject();}}>
-             {busy?'Verifying…':'Run Private Native Ruby/CONF Verification'}
-           </button>
+           {nativeAvailability==='AVAILABLE'
+             ? <button type="button" disabled={busy||pending||!suite}
+                 onClick={()=>{void verifyCurrentNativeProject();}}>
+                 {busy?'Verifying…':'Run Private Native Ruby/CONF Verification'}
+               </button>
+             : nativeAvailability==='UNAVAILABLE'
+               ? <span>Private Native verifier is not configured on this backend. DRAFT remains Native NOT VERIFIED.</span>
+               : nativeAvailability==='ERROR'
+                 ? <span>Private Native verifier capability could not be trusted. DRAFT remains Native NOT VERIFIED.</span>
+                 : <span>Checking private Native verifier availability…</span>}
            {currentNativeEvidence&&<div className="auto-parser-result"
              aria-label="Native Ruby and CONF verification evidence">
              <strong>{currentNativeEvidence.status==='PASS'?
