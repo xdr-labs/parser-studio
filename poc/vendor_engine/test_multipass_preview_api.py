@@ -1,3 +1,4 @@
+import json
 import unittest
 from multipass_preview_api import allowed_origin,preview
 
@@ -12,6 +13,20 @@ class PreviewContract(unittest.TestCase):
             key=span['path'].split('.')[-1]
             self.assertEqual(result['fields']['asa'][key],raw.encode()[span['startByte']:span['endByte']].decode())
         self.assertFalse(result['nativeVerified'])
+    def test_dictionary_projection_is_optional_exact_key_metadata_only(self):
+        raw='{"srcip":"192.0.2.1","dstport":443,"action":"deny","src_ip":"198.51.100.4"}'
+        result=preview(raw);dictionary=result['dictionary']
+        self.assertEqual('parser-studio.stellar-dictionary-projection.v0.1',dictionary['contract'])
+        self.assertEqual(['srcip','dstport','action'],[item['targetField'] for item in dictionary['mapped']])
+        self.assertEqual(1,dictionary['unmappedCount'])
+        self.assertFalse(dictionary['automaticAliasInference'])
+        self.assertTrue(dictionary['sourceExtractionPreserved'])
+        self.assertFalse(dictionary['nativeVerified']);self.assertFalse(dictionary['targetVerified'])
+        source_token=raw.encode()[result['spans'][0]['startByte']:result['spans'][0]['endByte']].decode()
+        self.assertEqual('192.0.2.1',json.loads(source_token))
+        self.assertEqual((result['spans'][0]['startByte'],result['spans'][0]['endByte']),
+                         (dictionary['mapped'][0]['startByte'],dictionary['mapped'][0]['endByte']))
+        self.assertNotIn('value',dictionary['mapped'][0])
     def test_source_limits(self):
         with self.assertRaises(ValueError):preview('')
         with self.assertRaises(ValueError):preview('a'*65537)

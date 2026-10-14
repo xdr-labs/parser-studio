@@ -1,0 +1,85 @@
+{
+  "automatic_generic_alias_inference": false,
+  "cef_authored": {
+    "issues": {},
+    "mapped_occurrences": 120,
+    "mapping_rule_classes": {
+      "cef_standard_alias": 120
+    },
+    "mapping_targets": {
+      "action": 96,
+      "srcip": 12,
+      "srcport": 12
+    },
+    "normalized_fields": 120,
+    "raw_preserved": 96,
+    "records": 96,
+    "source_extraction_normalization_attempted_false": 96,
+    "source_occurrences": 900,
+    "source_tree_preserved": 96,
+    "unmapped_occurrences": 780
+  },
+  "cef_commercial": {
+    "issues": {},
+    "mapped_occurrences": 39,
+    "mapping_rule_classes": {
+      "cef_standard_alias": 39
+    },
+    "mapping_targets": {
+      "action": 10,
+      "dstip": 6,
+      "dstport": 5,
+      "srcip": 12,
+      "srcport": 6
+    },
+    "normalized_fields": 39,
+    "raw_preserved": 22,
+    "records": 22,
+    "source_extraction_normalization_attempted_false": 22,
+    "source_occurrences": 482,
+    "source_tree_preserved": 22,
+    "unmapped_occurrences": 443
+  },
+  "contract": "parser-studio.poc.stellar-dictionary-coverage.v0.1",
+  "dictionary_field_count": 11,
+  "dictionary_revision": "stellar-standard-metadata-7.0.xs-2026-10-14",
+  "measurement": "Value-free mapping coverage and source-occurrence preservation only; not open-world semantic accuracy.",
+  "native_verified": false,
+  "raw_redistributed": false,
+  "security_commercial": {
+    "issues": {
+      "DICTIONARY_TYPE_REJECTED:severity": 6
+    },
+    "mapped_occurrences": 626,
+    "mapping_rule_classes": {
+      "exact_dictionary_name": 626
+    },
+    "mapping_targets": {
+      "action": 141,
+      "dstip": 91,
+      "dstport": 81,
+      "hostname": 24,
+      "proto": 85,
+      "severity": 3,
+      "srcip": 92,
+      "srcport": 81,
+      "url": 28
+    },
+    "normalized_fields": 626,
+    "raw_preserved": 392,
+    "records": 392,
+    "source_extraction_normalization_attempted_false": 392,
+    "source_occurrences": 27991,
+    "source_tree_preserved": 392,
+    "unmapped_occurrences": 27365
+  },
+  "security_manifest_sha256": "b60a0ea24b6edb95d289aab13307f9185f40ea51b41c8955ab3d6401e7120b49",
+  "source_extraction_gate_independent": true,
+  "source_urls": [
+    "https://docs.stellarcyber.ai/prod-docs/6.5.xs/Common/Metadata-Dictionary.htm?TocPath=REFERENCE%7C_____8",
+    "https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm",
+    "https://community.opentext.com/cfs-filesystemfile/__key/communityserver-discussions-components-files/224/3731.CommonEventFormatV25.pdf"
+  ],
+  "target_verified": false,
+  "unknown_vendor_fields_preserved": true
+}
