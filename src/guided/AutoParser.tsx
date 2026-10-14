@@ -923,9 +923,11 @@ export default function AutoParser({
          <p className="beginner-next-step" role="status">Analyze the logs first. Parser Studio will not create a parser from an unreviewed sample.</p>}
        {!advanced&&currentMultiPassReview&&!beginnerResolved&&
          <p className="beginner-next-step needs-fix" role="status">Resolve the events marked above before continuing. Already-correct fields remain preserved.</p>}
+       {!advanced&&currentMultiPassReview&&beginnerResolved&&pending&&
+         <p className="beginner-next-step" role="status">Source extraction is complete. Preparing the browser parser draft for field review…</p>}
        <button type="button" className="auto-parser-primary"
          disabled={!canReview} onClick={()=>{void review();}}>
-         {busy?'Checking the parser…':advanced?'Review Detected Results':'Review Parsed Fields'} <ArrowRight size={16}/>
+         {busy?'Checking the parser…':!advanced&&beginnerResolved&&pending?'Preparing Parser Draft…':advanced?'Review Detected Results':'Review Parsed Fields'} <ArrowRight size={16}/>
        </button>
      </section>}
      {step===1&&<section aria-label="Fix Problems stage">
