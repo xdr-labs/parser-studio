@@ -1,0 +1,45 @@
+{
+  "candidate_code_sha256": {
+    "engine.py": "7a9e924f92d956bb9d7fd2b3a7064b2c4eea4cd8791c8ca16268afa5e6d27427",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "security_framing.py": "c1e2b694f6fe0cfecfe094a772adc44027ce877c27843b71ea23f72759dc9810",
+    "security_source.py": "56128b1acec9135a707b27e31d33b337a1627c5fafd056e8ff51757ac44adb2b",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "34de798678e81642f8719f04d62524118eae937c86b9ef6c617089f1bfdffbe1"
+  },
+  "contract": "parser-studio.poc.security-stream-validation.v1",
+  "dictionary_attempted": false,
+  "external_upstream_scored_in_this_execution": 0,
+  "followup": {
+    "log_sha256": "f3e741330f2796f64f641cb22f8d265c90a4aa04614f1005bf68fbd4808f09e3",
+    "module": "test_trusted_template_reuse",
+    "previously_skipped_tests_requalified": 2,
+    "same_code": true,
+    "tests_passed": 6
+  },
+  "full_suite": {
+    "discovered": 204,
+    "errors": 0,
+    "failures": 0,
+    "initial_passed": 201,
+    "initial_skipped": 3,
+    "log_sha256": "639b2d7ad9b3b6ee91115986c98f33677c8b41c7014a5d7f08dd8b7b8bf2f43c"
+  },
+  "known_existing_256_record_regression_in_full_suite": true,
+  "masking_optimization": false,
+  "native_verified": false,
+  "parent_commit": "c2f464444a7aa899bd8b251507234720e4cbdde2",
+  "production_changed": false,
+  "remaining_skip": "test_benchmark_security_sources.SecurityReferenceTests.test_pinned_security_corpus_and_derived_transports_have_explicit_denominators",
+  "remaining_skip_reason": "New upstream security fixture evaluation was blocked twice; fixture caches were not linked or read through an alternate route.",
+  "remaining_skipped_tests": 1,
+  "self_authored_security_records": 216,
+  "self_authored_security_streams": 96,
+  "source_field_fn": 0,
+  "source_field_fp": 0,
+  "source_field_occurrences": 6036,
+  "source_field_tp": 6036,
+  "unique_passed_tests": 203
+}

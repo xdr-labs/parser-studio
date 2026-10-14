@@ -11,6 +11,7 @@ from datetime import datetime
 import hashlib
 import ipaddress
 import json
+import math
 import re
 from typing import Any
 
@@ -175,7 +176,13 @@ class SpanJsonDecoder:
                     self.i+=1
             self.nodes[path]=(out,start,self.i)
             return out
+        if self.count>=MAX_CAPTURED_FIELDS:
+            raise ValueError("JSON_FIELD_LIMIT")
         value,end=DEC.raw_decode(self.raw,self.i)
+        # Python's default decoder accepts NaN/Infinity and overflows large
+        # exponents. Neither may become a verified original numeric value.
+        if isinstance(value,float) and not math.isfinite(value):
+            raise ValueError("JSON_NUMBER_RANGE_OR_CONSTANT_UNSUPPORTED")
         self.i=end
         self.count+=1
         self.nodes[path]=(value,start,end)
