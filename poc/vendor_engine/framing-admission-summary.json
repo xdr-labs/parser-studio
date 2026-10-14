@@ -1,0 +1,149 @@
+{
+  "admission_policy": "BSD header verified by deterministic raw scanner -> typed, else legacy",
+  "adoption": "REJECTED_FOR_AUTOMATIC_FAMILY_ROUTING",
+  "blind_train_gold_separation": true,
+  "contract": "parser-studio.poc.independent-header-admission-v0.2",
+  "dictionary_attempted": false,
+  "excluded_reference_events": 14,
+  "families": [
+    {
+      "excluded_reference_events": 0,
+      "family": "Hadoop",
+      "framed_admission": {
+        "FN": 2472,
+        "FP": 1263,
+        "TP": 13,
+        "f1": 0.0069,
+        "precision": 0.0102,
+        "recall": 0.0052
+      },
+      "gold_spans": 2485,
+      "holdout_unique_source_hashes": 794,
+      "legacy": {
+        "FN": 2472,
+        "FP": 1263,
+        "TP": 13,
+        "f1": 0.0069,
+        "precision": 0.0102,
+        "recall": 0.0052
+      },
+      "model_sha256": {
+        "legacy": "d26fd39e12afbf99fd56f929d2d4d99ed3eca70521e881223d868a2e8e8084ab",
+        "typed": "0eb3f67c7d0ac1fa4a365eb88376fc6c8f77059c57202a5483cbe07ccd801777"
+      },
+      "reference_exclusion_reasons": {},
+      "reference_scored": 794,
+      "source_records_preserved": 794,
+      "test_events": 794,
+      "train_events": 1206,
+      "train_unique_source_hashes": 1191,
+      "typed": {
+        "FN": 1531,
+        "FP": 6025,
+        "TP": 954,
+        "f1": 0.2016,
+        "precision": 0.1367,
+        "recall": 0.3839
+      },
+      "typed_by_raw_header_all_heldout": 0,
+      "typed_by_raw_header_reference_scored": 0
+    },
+    {
+      "excluded_reference_events": 14,
+      "family": "Mac",
+      "framed_admission": {
+        "FN": 1629,
+        "FP": 386,
+        "TP": 368,
+        "f1": 0.2675,
+        "precision": 0.4881,
+        "recall": 0.1843
+      },
+      "gold_spans": 1997,
+      "holdout_unique_source_hashes": 796,
+      "legacy": {
+        "FN": 1889,
+        "FP": 348,
+        "TP": 108,
+        "f1": 0.0881,
+        "precision": 0.2368,
+        "recall": 0.0541
+      },
+      "model_sha256": {
+        "legacy": "5b109dbb99b7eecdc3cf2f3fc38d7feeb483a30c7fb93b91648da06d282f1212",
+        "typed": "bf9021b25c7feb83e5fca2025c9f0885d91de7776bea6d11df0d99aaf25f39aa"
+      },
+      "reference_exclusion_reasons": {
+        "REFERENCE_TEMPLATE_MISMATCH": 12,
+        "REFERENCE_TOO_LARGE": 2
+      },
+      "reference_scored": 785,
+      "source_records_preserved": 799,
+      "test_events": 799,
+      "train_events": 1201,
+      "train_unique_source_hashes": 1195,
+      "typed": {
+        "FN": 1635,
+        "FP": 316,
+        "TP": 362,
+        "f1": 0.2707,
+        "precision": 0.5339,
+        "recall": 0.1813
+      },
+      "typed_by_raw_header_all_heldout": 746,
+      "typed_by_raw_header_reference_scored": 732
+    }
+  ],
+  "frozen_models_unchanged_after_reference_evaluation": true,
+  "holdout_events": 1593,
+  "labels_sha256": {
+    "Hadoop_2k.log": "e88e5bf99d7f23f482517cc79290ad75b90d914af5d6114176e8bbf0f8ae0fad",
+    "Mac_2k.log": "c8d5d74e0dcd923675ee944ea592abaf0eae91ef492435330694ce5008267c8d"
+  },
+  "metric_denominator": "reference-scored events only; excluded references are not successes",
+  "native_verified": false,
+  "pinned_commit": "dd61d0952749ee7963bde24220d1be5ede023033",
+  "raw_and_gold_ignored": true,
+  "reason": "Header presence does not qualify model variable boundaries; high false-positive source captures",
+  "reference_exclusion_reasons": {
+    "REFERENCE_TEMPLATE_MISMATCH": 12,
+    "REFERENCE_TOO_LARGE": 2
+  },
+  "reference_nonempty_spans": 4482,
+  "reference_scored_events": 1579,
+  "results": {
+    "framed_admission": {
+      "FN": 4101,
+      "FP": 1649,
+      "TP": 381,
+      "f1": 0.117,
+      "precision": 0.1877,
+      "recall": 0.085
+    },
+    "legacy": {
+      "FN": 4361,
+      "FP": 1611,
+      "TP": 121,
+      "f1": 0.0389,
+      "precision": 0.0699,
+      "recall": 0.027
+    },
+    "typed": {
+      "FN": 3166,
+      "FP": 6341,
+      "TP": 1316,
+      "f1": 0.2168,
+      "precision": 0.1719,
+      "recall": 0.2936
+    }
+  },
+  "same_revision_hash_disjoint_heldout": true,
+  "source": "logpai/loghub",
+  "source_records_preserved": 1593,
+  "source_redaction_assessment": "NOT_ASSESSED; raw source redaction is not inferred from annotation wildcards or internal masks",
+  "source_sha256": {
+    "Hadoop_2k.log": "9ecaeb807d50d5fb5a20982ea66f1c8d32545259a51ce7456c1ab78db0509732",
+    "Mac_2k.log": "d9ea495488728d8c989dc942fca3324a3cc7b19b0a6f409a5fd568ad547fd931"
+  },
+  "split_seed": "extraction-first-residual-sha-split-20261014-v1"
+}

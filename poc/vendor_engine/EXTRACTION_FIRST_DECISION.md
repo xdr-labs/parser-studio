@@ -14,6 +14,13 @@ values while losing or misidentifying others is PARTIAL, not a full pass.
 No Dictionary mapping, target artifact compiler, DP write, sensor send, UI
 or external LLM is part of this research.
 
+**Lowest priority: already-masked/redacted/anonymized input.** Preserve each
+visible token and its source span, recognize masking best-effort, and never
+recover or fabricate hidden values. A Loghub annotation wildcard or Drain3's
+internal IP/NUMBER representation is not evidence that a raw input is redacted.
+Do not present an unassessed corpus as an unmasked-only KPI, or exclusions as
+successful extraction. Existing safety/no-data-loss tests remain mandatory.
+
 ## A. Source-structure extraction evidence
 
 - Eight SHA-pinned upstream research datasets from Fortinet/PAN-OS/Trellix/
@@ -134,6 +141,49 @@ PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/trusted
 # Apache-2.0 Spell checkout and isolated optional dependencies.
 PYTHONPATH=poc/vendor_engine/.cache/logparser:poc/vendor_engine/.cache/logparser_deps python3 poc/vendor_engine/benchmark_spell_source.py
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 -m unittest discover -s poc/vendor_engine -p 'test_*.py' -q
+```
+
+## C. Mac/Hadoop framing admission — negative experiment completed
+
+The frozen hypothesis selected corrected typed extraction only when the raw
+record passed the existing deterministic BSD header scanner; other records
+used legacy extraction. Both models were trained from raw content only,
+BEFORE reading the independent labels. Parameters and the historical outcome
+were not changed to improve this failed hypothesis.
+
+- Pinned Loghub revision: `dd61d0952749ee7963bde24220d1be5ede023033`.
+- 4,000 raw records: 2,407 training and **1,593 total heldout records**.
+- **1,579 reference-scored events / 4,482 annotated nonempty variable spans**.
+- **14 excluded Mac references**: 12 `REFERENCE_TEMPLATE_MISMATCH`, two
+  `REFERENCE_TOO_LARGE`. Exclusions are not successes and no original record
+  is dropped. Hadoop: 794/794 scored. Mac: 785/799 scored.
+- Models and source slices are audited before reference reads, training and
+  holdout raw hashes are disjoint, and frozen model digests remain unchanged
+  after scoring. Published artifacts contain aggregate counts and hashes,
+  not raw events, gold labels, captures or learned literal templates.
+
+| Fixed mode | TP | FP | FN | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Legacy | 121 | 1,611 | 4,361 | 6.99% | 2.70% | 3.89% |
+| Global typed | 1,316 | 6,341 | 3,166 | 17.19% | 29.36% | 21.68% |
+| BSD-header admission | 381 | 1,649 | 4,101 | 18.77% | 8.50% | 11.70% |
+
+**Decision: REJECT header-only automatic grammar admission.** An identifiable
+header does not establish correct variable boundaries in the message body.
+No setting above is promoted to a product default. This is annotated-variable
+source-span agreement, not complete vendor-field accuracy or normalization.
+Source redaction status has NOT been assessed, so these historical mixed-source
+metrics are not labeled unmasked-only. Same upstream revision train/holdout
+is not a genuinely new software-version test. Any later Mac/Hadoop tuning
+must be labeled exploratory, not a fresh prospective evaluation.
+
+Reproducible qualified artifacts: `benchmark_framing_admission.py`,
+`test_benchmark_framing_admission.py`, `framing-admission-summary.json` (v0.2
+corrects the original ambiguous holdout denominator without changing TP/FP/FN).
+
+```bash
+PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/benchmark_framing_admission.py
+PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 -m unittest discover -s poc/vendor_engine -p 'test_benchmark_framing_admission.py' -v
 ```
 
 ## Implementation decision and remaining product gates
