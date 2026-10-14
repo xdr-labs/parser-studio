@@ -1,0 +1,235 @@
+{
+  "baseline": {
+    "exclusion_reasons": {
+      "REFERENCE_BRACKET_PAIR_INCOMPLETE": 2
+    },
+    "families": [
+      {
+        "FN": 285,
+        "FP": 84,
+        "RAW_ONLY": 12,
+        "TP": 0,
+        "all_events": 12,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 0,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 0,
+        "exclusion_reasons": {},
+        "f1": 0.0,
+        "family": "checkpoint_authentication",
+        "gold_fields": 285,
+        "issues": {
+          "RFC5424_SD_UNCLOSED": 12
+        },
+        "precision": 0.0,
+        "raw_preserved": 12,
+        "recall": 0.0,
+        "reference_scored_events": 12
+      },
+      {
+        "FN": 343,
+        "FP": 84,
+        "RAW_ONLY": 12,
+        "TP": 0,
+        "all_events": 12,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 0,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 0,
+        "exclusion_reasons": {},
+        "f1": 0.0,
+        "family": "checkpoint_audit",
+        "gold_fields": 343,
+        "issues": {
+          "RFC5424_SD_UNCLOSED": 12
+        },
+        "precision": 0.0,
+        "raw_preserved": 12,
+        "recall": 0.0,
+        "reference_scored_events": 12
+      },
+      {
+        "FN": 59,
+        "FP": 14,
+        "RAW_ONLY": 4,
+        "TP": 0,
+        "all_events": 4,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 0,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 0,
+        "excluded_event_not_false_green": 2,
+        "exclusion_reasons": {
+          "REFERENCE_BRACKET_PAIR_INCOMPLETE": 2
+        },
+        "f1": 0.0,
+        "family": "checkpoint_with_time",
+        "gold_fields": 59,
+        "issues": {
+          "RFC5424_SD_UNCLOSED": 4
+        },
+        "precision": 0.0,
+        "raw_preserved": 4,
+        "recall": 0.0,
+        "reference_excluded_events": 2,
+        "reference_scored_events": 2
+      }
+    ],
+    "total": {
+      "FN": 687,
+      "FP": 182,
+      "RAW_ONLY": 28,
+      "TP": 0,
+      "all_events": 28,
+      "composite_source_fields": 0,
+      "exact_all_field_events": 0,
+      "exact_composite_fields": 0,
+      "exact_tree_events": 0,
+      "excluded_event_not_false_green": 2,
+      "f1": 0.0,
+      "gold_fields": 687,
+      "precision": 0.0,
+      "raw_preserved": 28,
+      "recall": 0.0,
+      "reference_excluded_events": 2,
+      "reference_scored_events": 26
+    }
+  },
+  "baseline_commit": "ba663baf66f8be818848772feb0d2c63b9964603",
+  "candidate": {
+    "exclusion_reasons": {
+      "REFERENCE_BRACKET_PAIR_INCOMPLETE": 2
+    },
+    "families": [
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 12,
+        "TP": 285,
+        "all_events": 12,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 12,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 12,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "checkpoint_authentication",
+        "gold_fields": 285,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "reference_scored_events": 12
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "SOURCE_PARSED": 12,
+        "TP": 343,
+        "all_events": 12,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 12,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 12,
+        "exclusion_reasons": {},
+        "f1": 1.0,
+        "family": "checkpoint_audit",
+        "gold_fields": 343,
+        "issues": {},
+        "precision": 1.0,
+        "raw_preserved": 12,
+        "recall": 1.0,
+        "reference_scored_events": 12
+      },
+      {
+        "FN": 0,
+        "FP": 0,
+        "PARTIAL": 2,
+        "SOURCE_PARSED": 2,
+        "TP": 59,
+        "all_events": 4,
+        "composite_source_fields": 0,
+        "exact_all_field_events": 2,
+        "exact_composite_fields": 0,
+        "exact_tree_events": 2,
+        "excluded_event_not_false_green": 2,
+        "exclusion_reasons": {
+          "REFERENCE_BRACKET_PAIR_INCOMPLETE": 2
+        },
+        "f1": 1.0,
+        "family": "checkpoint_with_time",
+        "gold_fields": 59,
+        "issues": {
+          "BRACKET_QUOTED_VALUE_REQUIRED": 2,
+          "BRACKET_SOURCE_INCOMPLETE": 2
+        },
+        "precision": 1.0,
+        "raw_preserved": 4,
+        "recall": 1.0,
+        "reference_excluded_events": 2,
+        "reference_scored_events": 2
+      }
+    ],
+    "total": {
+      "FN": 0,
+      "FP": 0,
+      "PARTIAL": 2,
+      "SOURCE_PARSED": 26,
+      "TP": 687,
+      "all_events": 28,
+      "composite_source_fields": 0,
+      "exact_all_field_events": 26,
+      "exact_composite_fields": 0,
+      "exact_tree_events": 26,
+      "excluded_event_not_false_green": 2,
+      "f1": 1.0,
+      "gold_fields": 687,
+      "precision": 1.0,
+      "raw_preserved": 28,
+      "recall": 1.0,
+      "reference_excluded_events": 2,
+      "reference_scored_events": 26
+    }
+  },
+  "candidate_frozen_before_first_additional_raw": true,
+  "candidate_sha256": {
+    "benchmark_commercial_security.py": "c89d16705266f8a3f9cb981895fcb73d8b5f5c7a5d191c27eaef52bf8e1791c9",
+    "commercial_reference.py": "c9352de753c0228de41cfb8fb449caa3c26e5a193a79c8b858c7fab7f892ad32",
+    "engine.py": "7a9e924f92d956bb9d7fd2b3a7064b2c4eea4cd8791c8ca16268afa5e6d27427",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "security_envelope.py": "53926960451f4e501f3e7f66e3aafdeebf4f5ba86bf5cc1c46fa1f60ed740a6c",
+    "security_pairs.py": "2c5a78381f943b9d0fbea3ee65a76a54b105056aa5ce8a2571137961bc093165",
+    "security_source.py": "7bb1d7bea0091c3a793132d235976d58063412d0df85a2b472dbf2633dd674ab",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "7a9d4c3c60ef74e2c4cf2654c16b91db9f0632b37b9cbbe43bb0936445c52f95"
+  },
+  "contract": "parser-studio.poc.commercial-security-source.v1",
+  "dictionary_attempted": false,
+  "evidence_class": "PROSPECTIVE_THREE_NEW_FIXTURE_FAMILIES_SAME_UPSTREAM_REVISION_NOT_FUTURE_VERSION",
+  "frozen_source_sha256": {
+    "engine.py": "7a9e924f92d956bb9d7fd2b3a7064b2c4eea4cd8791c8ca16268afa5e6d27427",
+    "java_source.py": "b5864ae36fe29a1047c2c284c4ff799e192dc97f7d9d800aa627833677dc31ca",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "security_envelope.py": "53926960451f4e501f3e7f66e3aafdeebf4f5ba86bf5cc1c46fa1f60ed740a6c",
+    "security_framing.py": "ae63b948e165b595f9c7eb0699b7f90a1517a815c8a177939e5661ebcd733482",
+    "security_pairs.py": "2c5a78381f943b9d0fbea3ee65a76a54b105056aa5ce8a2571137961bc093165",
+    "security_source.py": "7bb1d7bea0091c3a793132d235976d58063412d0df85a2b472dbf2633dd674ab",
+    "source_kv.py": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "7a9d4c3c60ef74e2c4cf2654c16b91db9f0632b37b9cbbe43bb0936445c52f95"
+  },
+  "limitations": [
+    "New source fixture families in the same already exposed vendor/repository revision; not unseen-vendor or future-version evidence.",
+    "Any reference exclusion remains visible and cannot count as correct extraction.",
+    "Raw examples remain ignored local research inputs, not product templates."
+  ],
+  "manifest_sha256": "384b4fe6a80819a80be3a601f348dbc1f7af2213e0995b0836c4c1629c554b59",
+  "masking_optimization": false,
+  "measurement": "Every atomic source header/payload identity, decoded type/value AND exact UTF-8 value interval; composite SD raw spans separate",
+  "native_verified": false,
+  "raw_redistributed": false,
+  "redaction_assessment": "Explicit-source values only; upstream anonymization history not independently known",
+  "reference": "Independent stdlib CSV/shlex and complete lexical source tokens; no semantic expected JSON or source templates"
+}

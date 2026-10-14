@@ -8,6 +8,7 @@ Existing parse_source behavior is unchanged for reproducible prior evidence.
 from __future__ import annotations
 from engine import MAX_RAW_BYTES
 from security_envelope import extract_security_envelope
+from security_pairs import PREFIX as PAIR_PREFIX,extract_pair_envelope,parse_bracket_pairs
 from source_parse import SourceEvent,ValueSpan,parse_source,_span,_close
 from structured_source import extract_rfc3164,extract_rfc5424,extract_plain_bsd
 
@@ -43,11 +44,39 @@ def _cee(raw:str)->SourceEvent:
     return _close(result)
 
 
+def _join_source(raw:str,outer,start:int|None,body:SourceEvent|None,syntax:str)->SourceEvent:
+    result=SourceEvent(raw,syntax=syntax)
+    result.vendor_fields=dict(outer.fields)
+    result.primitive_fields=outer.primitive_fields
+    result.value_spans=[_span(raw,path,a,b) for path,a,b in outer.spans]
+    result.covered=list(outer.covered);result.issues=list(outer.issues)
+    if body is not None and start is not None:
+        result.vendor_fields['body']=body.vendor_fields
+        result.primitive_fields+=body.primitive_fields
+        result.value_spans.extend(_shift(body.value_spans,len(raw[:start].encode('utf8')),'body.'))
+        result.covered.extend((start+a,start+b) for a,b in body.covered)
+        result.issues.extend(body.issues)
+    return _close(result)
+
+
 def parse_security_source(raw:str)->SourceEvent:
     """Extract native security fields; no normalization or product IO."""
     if not isinstance(raw,str):raise TypeError('RAW_NOT_STRING')
     if not raw or len(raw.encode('utf8'))>MAX_RAW_BYTES or '\x00' in raw:
         return parse_source(raw)
+    if PAIR_PREFIX.match(raw):return parse_bracket_pairs(raw)
+    pair_header=extract_pair_envelope(raw)
+    if pair_header is not None:
+        outer,start=pair_header
+        return _join_source(raw,outer,start,parse_bracket_pairs(raw[start:]),'SECURITY_SYSLOG_BRACKET_COLON_KV')
+    # A malformed source timestamp must not erase independently valid SD
+    # fields. Keep the strict RFC codec's default and report its warning.
+    preserved=extract_rfc5424(raw,source_preserving=True)
+    if preserved is not None:
+        outer,start=preserved
+        if outer.fields and outer.issues and set(outer.issues)<={'RFC5424_TIMESTAMP_INVALID','RFC5424_DUPLICATE_SD_KEY','RFC5424_SD_TRAILING_SPACE_NONSTANDARD'}:
+            body=parse_source(raw[start:]) if start is not None else None
+            return _join_source(raw,outer,start,body,'SYSLOG_SOURCE_ANOMALIES_PRESERVED')
     if raw.startswith('@cee:'):
         return _cee(raw)
     tagless=extract_security_envelope(raw)

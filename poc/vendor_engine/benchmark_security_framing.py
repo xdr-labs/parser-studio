@@ -112,10 +112,11 @@ def flat_record(kind,seed):
         for key in path[:-1]:node=node.setdefault(key,{})
         node[path[-1]]=value
     if kind=='kv':
-        raw='<189>'
+        raw='<'
+        cell(['syslog','pri'],'189');raw+='>'
         for key,value in [('type','utm'),('subtype','ips'),('action','dropped'),('srcip','192.0.2.40'),('sessionid',str(seed))]:
             if not raw.endswith('>'):raw+=' '
-            raw+=key+'=';cell([key],value)
+            raw+=key+'=';cell(['body',key],value)
     else:
         cef=kind=='cef';raw='CEF:' if cef else 'LEEF:'
         names=['version','vendor','product','device_version','signature_id','name','severity'] if cef else ['version','vendor','product','product_version','event_id','delimiter']
@@ -163,6 +164,10 @@ mode=sys.argv[1]
 if mode=='candidate':from security_framing import parse_security_batch
 
 def key(path,value,a,b):
+    # Source scopes, not an adapter-specific presentation wrapper. Header PRI
+    # is now explicit oracle data, never silently excluded as an extra field.
+    path=(['header']+path[1:] if path[:1]==['syslog'] else
+          ['payload']+(path[1:] if path[:1]==['body'] else path))
     return (json.dumps(path,ensure_ascii=True),type(value).__name__,json.dumps(value,ensure_ascii=True,sort_keys=True,allow_nan=False),a,b)
 def measure(row):
     raw=row['raw'];frames=[]
@@ -228,10 +233,10 @@ def evaluate():
         baseline=run(directory,rows,'baseline')
     candidate=run(HERE,rows,'candidate')
     return {
-        'contract':'parser-studio.poc.security-source-framing-benchmark.v1',
+        'contract':'parser-studio.poc.security-source-framing-benchmark.v2',
         'evidence_class':'SELF_AUTHORED_SECURITY_SHAPES_NOT_UPSTREAM_OR_PRODUCT_ACCURACY',
         'baseline_definition':'physical-line splitting plus committed parse_security_source; not a full product ingestion benchmark',
-        'baseline_revision':BASELINE,'candidate_definition':'lossless structural framing then the same source-field parser',
+        'baseline_revision':BASELINE,'candidate_definition':'lossless structural framing with current source decoder; source header/payload scopes canonicalized',
         'measurement':'original source identity + exact type/value + absolute UTF-8 span; all record boundaries and trees',
         'all_streams':len(rows),'all_original_records':sum(len(r['events']) for r in rows),
         'unmasked_original_records':sum(len(r['events']) for r in rows),'masked_records':0,
@@ -243,14 +248,14 @@ def evaluate():
         'dictionary_attempted':False,'native_verified':False,'masking_optimization':False,
         'limitations':['Fixtures are intentionally self-authored AWS-WAF/IPS-shaped structural cases, not production/vendor captures.',
                        'The improvement is event framing, not a newly improved semantic or field-decoding model.',
-                       'External upstream fixtures are acquired but UNASSESSED due to a repeated security-state tool block.',
+                       'This self-authored structural corpus is separate from independently scored commercial/upstream source evidence.',
                        'Ambiguous incomplete suffixes remain raw-only. Native/Ruby/CONF/DP and product integration are separate gates.'],
     }
 
 
 if __name__=='__main__':
     report=evaluate()
-    (HERE/'security-framing-summary.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+    (HERE/'security-framing-current-summary.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
     print('SECURITY_STREAMS',report['all_streams'],'ORIGINAL_RECORDS',report['all_original_records'])
     print('PHYSICAL_LINE_BASELINE',report['baseline']['total'])
     print('STRUCTURAL_FRAMING',report['candidate']['total'])

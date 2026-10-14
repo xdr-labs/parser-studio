@@ -1,0 +1,47 @@
+{
+  "candidate_sha256": {
+    "benchmark_commercial_security.py": "c89d16705266f8a3f9cb981895fcb73d8b5f5c7a5d191c27eaef52bf8e1791c9",
+    "benchmark_security_framing.py": "d99ebe02c3ccdc5acd84bffbe163fbe5a2483a6c37875ab399a2049f9935dcfc",
+    "commercial_reference.py": "228f48ab0a642742a715d424b47d7ac09c45cc2057fd852720e67cc78f0a740b",
+    "engine.py": "7a9e924f92d956bb9d7fd2b3a7064b2c4eea4cd8791c8ca16268afa5e6d27427",
+    "security_envelope.py": "53926960451f4e501f3e7f66e3aafdeebf4f5ba86bf5cc1c46fa1f60ed740a6c",
+    "security_framing.py": "ae63b948e165b595f9c7eb0699b7f90a1517a815c8a177939e5661ebcd733482",
+    "security_pairs.py": "db94672aecdc411ee60d801fc223462cd6477bf2e9401aeae7ffa13c8cc5b833",
+    "security_source.py": "7bb1d7bea0091c3a793132d235976d58063412d0df85a2b472dbf2633dd674ab",
+    "source_parse.py": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd",
+    "structured_source.py": "7a9d4c3c60ef74e2c4cf2654c16b91db9f0632b37b9cbbe43bb0936445c52f95",
+    "test_benchmark_security_framing.py": "b9076c8defe11f5051bd21b1218f99839ff1969e2f6807623f9c887bf3b4495f",
+    "test_commercial_reference.py": "d56406a49e688b0ef969b959a46edd2999ebfa5aef97ea653f26b02c6f474de1",
+    "test_commercial_security.py": "e24db71c000dc94e4727c45cd945a5578766e5f6b7ebfd594778c1a593fa9b95"
+  },
+  "contract": "parser-studio.poc.commercial-source-validation.v1",
+  "dictionary_attempted": false,
+  "exact_source_field_occurrences": 28747,
+  "false_source_fields": 0,
+  "first_prospective_result_preserved": true,
+  "full_suite": {
+    "discovered": 233,
+    "errors": 0,
+    "failures": 0,
+    "log_sha256": "c29f2c7a372cefefe4d265a38ab7d8fed271ef24a42772b7ad2c3358ce95c2b9",
+    "passed": 233,
+    "skipped": 0
+  },
+  "fully_reference_scored_records": 419,
+  "initial_full_suite": {
+    "discovered": 233,
+    "failures": 1,
+    "reason": "Historical synthetic KV oracle omitted the retained PRI header and presentation body scope; source-independent encoder corrected, old report left unchanged."
+  },
+  "malformed_reference_exclusions": 1,
+  "masking_optimization": false,
+  "missing_reference_fields": 0,
+  "native_verified": false,
+  "parent_commit": "ba663baf66f8be818848772feb0d2c63b9964603",
+  "post_exposure_followup_explicit": true,
+  "prior_commercial_blocker_resolved_by_same_operation": true,
+  "production_changed": false,
+  "raw_redistributed": false,
+  "source_format_warnings_preserved": true,
+  "source_records_preserved": 420
+}

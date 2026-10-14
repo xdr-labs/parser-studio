@@ -1,0 +1,32 @@
+[
+  {
+    "id": "checkpoint_authentication",
+    "repository": "elastic/integrations",
+    "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+    "source_path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint-authentication.log",
+    "sha256": "36f10d1d7b71383cbfc45c5d768b174cbb98533bb7022dc618d6b4b4bf6203d6",
+    "bytes": 6308,
+    "physical_lines": 12,
+    "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED"
+  },
+  {
+    "id": "checkpoint_audit",
+    "repository": "elastic/integrations",
+    "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+    "source_path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint-audit.log",
+    "sha256": "d5d5828da36e393f09c2fed079358a29bff6bb6da9ad7a59a134f18c1962e2b7",
+    "bytes": 12009,
+    "physical_lines": 12,
+    "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED"
+  },
+  {
+    "id": "checkpoint_with_time",
+    "repository": "elastic/integrations",
+    "commit": "99b5848f5863e395dc61f2ce227efd3969af826b",
+    "source_path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint-with-time.log",
+    "sha256": "225391aab93dfea2ff51517f406d4a70e6d3d4202b813bae59806c8d579fa7ac",
+    "bytes": 3678,
+    "physical_lines": 4,
+    "license_status": "LOCAL_RESEARCH_ONLY_NOT_REDISTRIBUTION_APPROVED"
+  }
+]

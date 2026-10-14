@@ -267,10 +267,12 @@ RFC5424_HEAD=re.compile(
 )
 
 
-def extract_rfc5424(raw:str)->tuple[Fragment,int|None]|None:
+def extract_rfc5424(raw:str,*,source_preserving:bool=False)->tuple[Fragment,int|None]|None:
     """RFC5424 v1 bounded header and SD attributes, with optional body.
 
-    Copies the *constraints*, not implementation, of our qualified local TS
+    The default remains strict. source_preserving retains invalid timestamp,
+    duplicate SD values and terminal SD spacing with explicit issues; it does
+    not certify RFC conformance. Copies the *constraints*, not implementation, of our qualified local TS
     scanner. All SD fields are vendor source fields, never ECS mappings.
     """
     match=RFC5424_HEAD.match(raw)
@@ -290,7 +292,7 @@ def extract_rfc5424(raw:str)->tuple[Fragment,int|None]|None:
                 raise ValueError("RFC5424_TIMESTAMP_ZONE_REQUIRED")
         except ValueError:
             result.issues.append("RFC5424_TIMESTAMP_INVALID")
-            return result,None
+            if not source_preserving:return result,None
     limits={"hostname":255,"appname":48,"procid":128,"msgid":32}
     for path,limit in limits.items():
         value=values[path]
@@ -328,9 +330,13 @@ def extract_rfc5424(raw:str)->tuple[Fragment,int|None]|None:
                 fields={}
                 while raw[pos:pos+1]==" ":
                     pos+=1
+                    if source_preserving and raw[pos:pos+1]==']':
+                        result.issues.append('RFC5424_SD_TRAILING_SPACE_NONSTANDARD')
+                        break
                     key=read_name()
-                    if key in fields or key in UNSAFE:
+                    if key in UNSAFE or key in fields and not source_preserving:
                         raise ValueError("RFC5424_DUPLICATE_SD_KEY")
+                    if key in fields:result.issues.append('RFC5424_DUPLICATE_SD_KEY')
                     if raw[pos:pos+2]!='=\"':
                         raise ValueError("RFC5424_SD_VALUE_NOT_QUOTED")
                     pos+=2
@@ -348,7 +354,11 @@ def extract_rfc5424(raw:str)->tuple[Fragment,int|None]|None:
                         pos+=1
                     if pos>=len(raw):
                         raise ValueError("RFC5424_UNTERMINATED_SD_VALUE")
-                    fields[key]=_unescape(raw[first:pos])
+                    value=_unescape(raw[first:pos])
+                    if key in fields:
+                        previous=fields[key]
+                        fields[key]=previous+[value] if isinstance(previous,list) else [previous,value]
+                    else:fields[key]=value
                     result.spans.append((f"syslog.structured_data.{ident}.{key}",first,pos))
                     result.primitive_fields+=1
                     pos+=1

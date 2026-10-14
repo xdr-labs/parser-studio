@@ -12,7 +12,7 @@ class SecurityBenchmarkTests(unittest.TestCase):
         rows=streams()
         self.assertEqual(96,len(rows))
         self.assertEqual(216,sum(len(row['events']) for row in rows))
-        self.assertEqual(6036,sum(len(row['gold']) for row in rows))
+        self.assertEqual(6048,sum(len(row['gold']) for row in rows))
         self.assertEqual(rows,streams())
         for row in rows:
             data=row['raw'].encode('utf8')
@@ -29,7 +29,7 @@ class SecurityBenchmarkTests(unittest.TestCase):
 
     def test_security_baseline_comparison_has_explicit_denominators(self):
         report=evaluate();after=report['candidate']['total'];before=report['baseline']['total']
-        self.assertEqual((6036,0,0),(after['TP'],after['FP'],after['FN']))
+        self.assertEqual((6048,0,0),(after['TP'],after['FP'],after['FN']))
         self.assertEqual(216,after['exact_record_boundaries'])
         self.assertEqual(216,after['exact_record_trees'])
         self.assertEqual(60,before['exact_record_boundaries'])
