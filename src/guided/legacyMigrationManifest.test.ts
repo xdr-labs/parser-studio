@@ -19,15 +19,13 @@ describe('retired Wizard/Workbench behavioral migration manifest',()=>{
   expect(manifest.entries.every(x=>x.replacement.length>=20)).toBe(true);
   expect(manifest.releaseRule).toContain('never count as current PASS');
  });
- it('has no undispositioned P0 legacy behavior and keeps remaining P1 import work explicit',()=>{
+ it('has no undispositioned legacy behavior; remaining non-migrated behavior is owner-superseded or external-gated',()=>{
   const manifest=JSON.parse(readFileSync(resolve(process.cwd(),
    'tests/legacy-removed-ui/migration-manifest.json'),'utf8')) as Manifest;
   const allowed=new Set(['MIGRATED_CURRENT','SUPERSEDED_TWO_PATH','GATED_EXTERNAL','P1_REMAINING']);
   expect(manifest.entries.every(x=>allowed.has(x.status))).toBe(true);
-  const pending=manifest.entries.filter(x=>x.status==='P1_REMAINING').map(x=>x.legacySuite).sort();
-  expect(pending).toEqual([
-   'exact-parser-import.spec.ts','offline-project-json-import.spec.ts','pair-inspection.spec.ts',
-  ]);
+  const pending=manifest.entries.filter(x=>x.status==='P1_REMAINING').map(x=>x.legacySuite);
+  expect(pending).toEqual([]);
   expect(manifest.entries.some(x=>x.status==='MIGRATED_CURRENT')).toBe(true);
   expect(manifest.entries.some(x=>x.status==='SUPERSEDED_TWO_PATH')).toBe(true);
   expect(manifest.entries.some(x=>x.status==='GATED_EXTERNAL')).toBe(true);

@@ -36,7 +36,7 @@ At the Auto Parser result, after a SHA-verified compiler response, provide indiv
 | P0-2 | ChatGPT copy/paste validated end-to-end | Exact SHA, reviewed masked samples only, full current-sample/holdout checks, browser+backend generation |
 | P0-3 | Reuse all Auto Parser core features | Preserve local source accounting, strictly supported format families, mappings, Ruby/CONF, ZIP |
 | P0-4 | Bring useful legacy operations to results | Version history already moved; port proposal, simulation, approved replay/Interflow UI must be re-scoped and tested |
-| P0-5 | Existing Chromium behaviors dispositioned | **COMPLETE for P0:** all 48 archived suites are machine-accounted as migrated, owner-superseded, externally gated, or explicit P1 remaining work; archived suites never count as current PASS. Three P1 import/inspection surfaces remain open. |
+| P0-5 | Existing Chromium behaviors dispositioned | **COMPLETE:** all 48 archived suites are machine-accounted as migrated, owner-superseded, or externally gated; archived suites never count as current PASS. Existing Project JSON and Ruby/CONF import/inspection behavior is migrated under Auto Parser Advanced tools. |
 | P0-6 | Independent exact-head qualification | Vitest, TS/Vite, CI Chromium, pinned real localhost backend, Native Fluentd and SHA parity |
 | P1-1 | Explicit-schema mixed CSV | Backend 845d4b1 + e7ee1d9: strict JSON/KV/CSV single-line family selection, 2–100 reviewed columns, fixed comma/semicolon/TAB delimiter, Native synthetic qualification; UI Auto Parser shows one inline CSV column review step, with explicit reapproval on source/schema edits and v0.2 DRAFT SHA evidence. Browser/real backend integration is required before marking complete. |
 | P1-2 | Native multiline | Bounded explicit TCP LF LF framed Java Stack Trace supported in current backend; arbitrary Java/UDP unframed remains unsupported |
@@ -168,5 +168,5 @@ per-action approvals and response integrity without real target traffic.
 
 All archived Wizard/Workbench suites now have a machine-checked behavioral disposition in
 `tests/legacy-removed-ui/migration-manifest.json`. Archived tests still never count as current
-PASS. P0 has no undispositioned legacy behavior; three explicitly P1 import/inspection surfaces
-remain open, and real target operations remain separately gated.
+PASS. No archived legacy behavior remains undispositioned; exact Project JSON/Ruby/CONF review is
+migrated under Auto Parser Advanced tools, and real target operations remain separately gated.

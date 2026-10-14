@@ -2,7 +2,7 @@
   "contract": "parser-studio.legacy-ui-migration.v1",
   "legacySuiteCount": 48,
   "ownerDecision": "Exactly two public creation methods: Auto Parser and ChatGPT Assisted Parser",
-  "releaseRule": "Archived suites never count as current PASS; P0 has no undispositioned legacy behavior. P1_REMAINING stays explicitly open.",
+  "releaseRule": "Archived suites never count as current PASS; every archived behavior is migrated, owner-superseded, or externally gated.",
   "entries": [
     {
       "legacySuite": "ai-integrated-review.spec.ts",
@@ -106,8 +106,8 @@
     },
     {
       "legacySuite": "exact-parser-import.spec.ts",
-      "status": "P1_REMAINING",
-      "replacement": "P1 existing parser import and review has backend contracts but no current two-path UI surface"
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/existing-parser-review.spec.ts + ExistingParserReviewPanel exact Ruby/CONF restore"
     },
     {
       "legacySuite": "expanded-starters.spec.ts",
@@ -186,8 +186,8 @@
     },
     {
       "legacySuite": "offline-project-json-import.spec.ts",
-      "status": "P1_REMAINING",
-      "replacement": "P1 exact offline project import has local contracts but no current two-path UI surface"
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/existing-parser-review.spec.ts + ExistingParserReviewPanel local Project JSON restore"
     },
     {
       "legacySuite": "offline-synthetic-scenario.spec.ts",
@@ -201,8 +201,8 @@
     },
     {
       "legacySuite": "pair-inspection.spec.ts",
-      "status": "P1_REMAINING",
-      "replacement": "P1 Ruby and CONF inspection is backend-client capable but not exposed in current two-path UI"
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/existing-parser-review.spec.ts + ExistingParserReviewPanel read-only Ruby/CONF inspection"
     },
     {
       "legacySuite": "port-proposal.spec.ts",

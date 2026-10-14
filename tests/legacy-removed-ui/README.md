@@ -7,7 +7,7 @@ not deleted or falsely reported as current passing tests.
 
 Original archived suites currently present: **48 files**. Their behavioral disposition is enforced by `migration-manifest.json` and `src/guided/legacyMigrationManifest.test.ts`; archived suites themselves never count as current PASS.
 
-The manifest has no undispositioned P0 behavior. Three P1 import/inspection suites remain explicitly open (`exact-parser-import`, `offline-project-json-import`, `pair-inspection`); legacy target preflight stays a separately authorized external gate.
+The manifest has no undispositioned legacy behavior. Existing Project JSON review, Ruby/CONF inspection, and exact pair restore are now migrated into the Auto Parser Advanced existing-parser panel; legacy target preflight stays a separately authorized external gate.
 
 Feature-contract coverage retained outside retired screens:
 - Existing Vitest source/algorithm tests still run without modification.
