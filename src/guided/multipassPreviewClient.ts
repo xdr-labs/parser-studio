@@ -1,3 +1,5 @@
+import {sha256Utf8Hex} from '../sha256';
+
 /** Explicit opt-in local Multi-Pass source preview; no automatic source upload. */
 export interface MultiPassSourcePreview {
  contract:'parser-studio.multipass-source-preview.v0.1';
@@ -22,10 +24,9 @@ export async function requestMultiPassPreview(raw:string,requester:typeof fetch=
   value.sourceBytes!==size||!value.fields||Array.isArray(value.fields)||
   !Array.isArray(value.spans)||!Array.isArray(value.residuals)||!Array.isArray(value.issues))
   throw new Error('Untrusted Multi-Pass response.');
- if(!/^[a-f0-9]{64}$/.test(value.sourceSha256??'')||!globalThis.crypto?.subtle)
+ if(!/^[a-f0-9]{64}$/.test(value.sourceSha256??''))
   throw new Error('Unverified source identity.');
- const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw));
- const expected=[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');
+ const expected=await sha256Utf8Hex(raw);
  if(value.sourceSha256!==expected)throw new Error('Multi-Pass response source mismatch.');
  for(const item of [...value.spans,...value.residuals]){
   if(!Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||

@@ -11,10 +11,15 @@ export default defineConfig({
   plugins: [react()],
   // No raw customer sample is sent automatically. Restricted APIs deny by
   // default unless an authorized backend explicitly injects an owner grant.
-  server: { proxy: {
+  server: { allowedHosts:['.trycloudflare.com'], proxy: {
     '/api/v1/parser-pairs': loopbackProxy,
     '/api/v1/test-lab': loopbackProxy,
-    '/api/v1/multipass': {target:'http://127.0.0.1:4192',changeOrigin:false},
+    '/api/v1/multipass': {
+      target:'http://127.0.0.1:4192',changeOrigin:false,
+      configure(proxy){
+        proxy.on('proxyReq',request=>request.setHeader('Origin','http://127.0.0.1:5180'));
+      },
+    },
   } },
   test: {
     environment: 'jsdom',
