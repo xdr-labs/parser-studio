@@ -54,3 +54,49 @@ records / 2,160 independently encoded target fields. MP-5 whole-record baseline
 ledgers, raw 72/72, false-complete 0 in both. This is structural residual evidence,
 not new vendor traffic or open-world accuracy. Full regression after MP-6:
 279/279 PASS, zero skips/errors/failures.
+
+### MP-7 security regression gate
+
+The selected multi-pass parser is evaluated through the same lossless stream
+framing path and the declared-schema document path. The aggregate security gate
+covers AWS WAF, Suricata/IDS/IPS, FortiGate, PAN-OS, Check Point, Cisco ASA,
+Forcepoint NGFW/SMC, Trend Micro, CEF, LEEF, CEE, Syslog wrappers, nested
+JSON/arrays, malformed/truncated inputs, duplicate fields and escaped/quoted
+values.
+
+Final MP-7 aggregate results: WAF/Suricata 2,110 TP / 0 FP / 0 FN; derived CEE
+5,127 / 0 / 0; commercial FortiGate/PAN-OS/Check Point 27,968 / 0 / 0;
+commercial CEF 482 / 0 / 0; LEEF xHH 3,552 / 0 / 0 plus external xa6 19 / 0 / 0;
+stream framing 6,048 / 0 / 0 with 216/216 exact record trees/boundaries.
+Thirty-three malformed controls plus one truncated stream have zero
+false-complete results and preserve raw input. The document-state gate accounts
+for all 240 physical records with zero loss or stale-schema capture.
+
+Runtime is observational only. The recorded 101-record sample measured the
+multi-pass path slower than the one-pass path, as expected; no accuracy-preserving
+optimization has been attempted.
+
+### MP-8 engine decision
+
+multipass_adjudicator.parse_security_multipass is selected as the Auto Parser
+source-extraction candidate. security_source.parse_security_source remains the
+base implementation and is not replaced.
+
+Measured additive slices improve without regression:
+- authored CEF: 840 TP / 36 FP / 60 FN -> 900 / 0 / 0, false-complete 36 -> 0;
+- authored LEEF xHH: 0 / 0 / 3,552 -> 3,552 / 0 / 0;
+- frozen external xa6 LEEF: 0 / 0 / 19 -> 19 / 0 / 0;
+- residual security-body controls: 0 / 0 / 2,160 -> 2,160 / 0 / 0,
+  with false-complete remaining zero.
+
+Retained limits remain explicit: one malformed FortiGate source stays PARTIAL;
+PAN-OS positional CSV semantics are unresolved beyond exact source columns;
+Check Point invalid-time/duplicate-SD warnings remain visible; the xa6 example
+is documentation evidence rather than customer/manufacturer production traffic;
+residual improvement is self-authored structural evidence. Dictionary mapping,
+mask reconstruction, native target qualification, DP/sensor writes, merge and
+release remain downstream gates.
+
+Final local source-engine regression after MP-8: 284/284 PASS, zero
+skips/errors/failures. multipass-security-gate-summary.json is the aggregate
+decision artifact.

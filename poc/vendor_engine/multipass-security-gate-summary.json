@@ -1,4 +1,59 @@
 {
+  "additive_improvements": {
+    "cef_authored": {
+      "after": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 900,
+        "false_complete": 0
+      },
+      "before": {
+        "FN": 60,
+        "FP": 36,
+        "TP": 840,
+        "false_complete": 36
+      }
+    },
+    "leef_external_xa6": {
+      "after": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 19
+      },
+      "before": {
+        "FN": 19,
+        "FP": 0,
+        "TP": 0
+      }
+    },
+    "leef_xhh_authored": {
+      "after": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 3552
+      },
+      "before": {
+        "FN": 3552,
+        "FP": 0,
+        "TP": 0
+      }
+    },
+    "residual_security_body": {
+      "after": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 2160,
+        "false_complete": 0
+      },
+      "before": {
+        "FN": 2160,
+        "FP": 0,
+        "TP": 0,
+        "false_complete": 0
+      }
+    }
+  },
+  "base_engine_preserved": "security_source.parse_security_source",
   "cef": {
     "authored": {
       "FN": 0,
@@ -302,6 +357,7 @@
     "duplicate/repeated fields",
     "escaped/quoted values"
   ],
+  "decision": "SELECT_AS_AUTO_PARSER_SOURCE_CANDIDATE",
   "dictionary_attempted": false,
   "document_state": {
     "declared_exact_spans": 32,
@@ -362,6 +418,15 @@
   },
   "masking_optimization": false,
   "native_verified": false,
+  "negative_findings": [
+    "One malformed FortiGate quoted source remains PARTIAL and excluded from exact-field scoring.",
+    "PAN-OS positional CSV fields are source-exact but schema/semantic column meaning remains unresolved.",
+    "Check Point invalid-time and duplicate structured-data warnings are preserved, not normalized away.",
+    "The xa6 LEEF example is parser-vendor documentation evidence, not manufacturer/customer production traffic.",
+    "Residual recovery evidence is self-authored structural coverage, not open-world vendor accuracy.",
+    "Generic sentence/template mining is not an acceptance KPI.",
+    "Dictionary/native target/DP/sensor/release qualification is not part of this source gate."
+  ],
   "residual": {
     "all_events": 72,
     "baseline": {
@@ -487,9 +552,9 @@
   },
   "runtime": {
     "acceptance_gate": false,
-    "multipass_total_us": 328772.021,
+    "multipass_total_us": 460798.6,
     "records": 101,
-    "single_pass_total_us": 213020.165
+    "single_pass_total_us": 237556.055
   },
   "runtime_is_acceptance_gate": false,
   "security_json_cee": {
@@ -746,6 +811,7 @@
       }
     ]
   },
+  "selected_engine": "multipass_adjudicator.parse_security_multipass",
   "stream_framing": {
     "FN": 0,
     "FP": 0,
