@@ -1,5 +1,5 @@
 import unittest
-from multipass_preview_api import preview
+from multipass_preview_api import allowed_origin,preview
 
 class PreviewContract(unittest.TestCase):
     def test_source_spans_and_residual_are_exact(self):
@@ -15,5 +15,12 @@ class PreviewContract(unittest.TestCase):
     def test_source_limits(self):
         with self.assertRaises(ValueError):preview('')
         with self.assertRaises(ValueError):preview('a'*65537)
+    def test_only_loopback_http_development_origins_are_allowed(self):
+        for origin in (None,'http://127.0.0.1:5180','http://127.0.0.1:5284','http://localhost:65535'):
+            self.assertTrue(allowed_origin(origin),origin)
+        for origin in ('https://127.0.0.1:5180','http://example.com:5180',
+                       'http://127.0.0.1.evil.example:5180','http://127.0.0.1:80',
+                       'http://user@127.0.0.1:5180','null','http://[::1]:5180'):
+            self.assertFalse(allowed_origin(origin),origin)
 
 if __name__=='__main__':unittest.main()

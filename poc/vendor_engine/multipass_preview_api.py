@@ -5,6 +5,7 @@ Never claim native Fluentd or target verification. Do not log source values.
 from __future__ import annotations
 import json
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
+from urllib.parse import urlsplit
 from multipass_adjudicator import parse_security_multipass
 from source_parse import assert_source_accounting
 
@@ -25,11 +26,22 @@ def preview(raw:str)->dict:
             'residuals':[region(a,b) for a,b in event.unparsed],
             'issues':event.issues[:32],'nativeVerified':False,'targetVerified':False}
 
+def allowed_origin(origin:str|None)->bool:
+    if origin is None:return True
+    try:
+        parsed=urlsplit(origin)
+        return (parsed.scheme=='http' and parsed.hostname in ('127.0.0.1','localhost') and
+                parsed.port is not None and 1024<=parsed.port<=65535 and
+                parsed.path in ('','/') and not parsed.query and not parsed.fragment and
+                parsed.username is None and parsed.password is None)
+    except (ValueError,TypeError):
+        return False
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,format,*args):pass
     def do_POST(self):
         if self.path!='/api/v1/multipass/preview':self.send_error(404);return
-        if self.headers.get('Origin') not in (None,'http://127.0.0.1:5180','http://localhost:5180'):
+        if not allowed_origin(self.headers.get('Origin')):
             self.send_error(403);return
         try:
             length=int(self.headers.get('Content-Length','-1'))
