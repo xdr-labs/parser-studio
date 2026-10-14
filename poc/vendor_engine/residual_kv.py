@@ -11,7 +11,7 @@ import re
 from typing import Any
 
 SAFE_ISLAND=re.compile(
-    r"(?<![A-Za-z0-9_?/#])(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,63})="
+    r"(?<![^\s;,(])(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,63})="
 )
 DANGEROUS={"__proto__","prototype","constructor"}
 
@@ -25,14 +25,52 @@ class Islands:
     field_count:int=0
 
 
+def _quoted_regions(raw:str)->list[tuple[int,int]]:
+    """Lexical quotes are opaque to key discovery, including malformed tails.
+
+    A quote inside a word is not an opening quote (for example, contractions).
+    An owning key before a quoted value remains eligible; only nested key-like
+    strings inside the quoted source region are excluded. Scan once so the
+    input-size bound also bounds adversarial quoting work.
+    """
+    regions=[]
+    pos=0
+    while pos<len(raw):
+        if raw[pos] not in ("\"", "'") or (
+            pos>0 and not raw[pos-1].isspace() and raw[pos-1] not in "=(:,;"
+        ):
+            pos+=1
+            continue
+        begin=pos
+        quote=raw[pos]
+        pos+=1
+        while pos<len(raw):
+            if raw[pos]=="\\":
+                pos=min(pos+2,len(raw))
+            elif raw[pos]==quote:
+                pos+=1
+                break
+            else:
+                pos+=1
+        regions.append((begin,pos))
+    return regions
+
+
 def recover_kv_islands(raw:str,minimum_keys:int=2)->Islands:
     if len(raw)>131072 or "\x00" in raw or minimum_keys<2:
         raise ValueError("ISLAND_BOUND_INVALID")
     out=Islands()
     candidates=[]
     cursor=0
+    regions=_quoted_regions(raw)
+    region_index=0
     for hit in SAFE_ISLAND.finditer(raw):
         if hit.start()<cursor:continue
+        while region_index<len(regions) and regions[region_index][1]<=hit.start():
+            region_index+=1
+        if (region_index<len(regions) and
+            regions[region_index][0]<=hit.start()<regions[region_index][1]):
+            continue
         key=hit.group("key")
         if key in DANGEROUS:continue
         pos=hit.end()

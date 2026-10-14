@@ -1,0 +1,217 @@
+{
+  "all_events": 84,
+  "baseline": {
+    "families": {
+      "bare_url": {
+        "FN": 0,
+        "FP": 12,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 0,
+        "exact_field_tree_events": 0,
+        "f1": 0.8,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 0.666667,
+        "recall": 1.0
+      },
+      "calendar_envelope": {
+        "FN": 15,
+        "FP": 4,
+        "TP": 165,
+        "events": 24,
+        "exact_field_and_span_events": 22,
+        "exact_field_tree_events": 22,
+        "f1": 0.945559,
+        "gold_fields": 180,
+        "original_records_preserved": 24,
+        "precision": 0.976331,
+        "recall": 0.916667
+      },
+      "malformed_quote": {
+        "FN": 0,
+        "FP": 24,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 0,
+        "exact_field_tree_events": 0,
+        "f1": 0.666667,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 0.5,
+        "recall": 1.0
+      },
+      "owned_quoted_value": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 36,
+        "events": 12,
+        "exact_field_and_span_events": 12,
+        "exact_field_tree_events": 12,
+        "f1": 1.0,
+        "gold_fields": 36,
+        "original_records_preserved": 12,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "path_suffix": {
+        "FN": 0,
+        "FP": 12,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 0,
+        "exact_field_tree_events": 0,
+        "f1": 0.8,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 0.666667,
+        "recall": 1.0
+      },
+      "quoted_prose": {
+        "FN": 0,
+        "FP": 24,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 0,
+        "exact_field_tree_events": 0,
+        "f1": 0.666667,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 0.5,
+        "recall": 1.0
+      }
+    },
+    "total": {
+      "FN": 15,
+      "FP": 76,
+      "TP": 297,
+      "events": 84,
+      "exact_field_and_span_events": 34,
+      "exact_field_tree_events": 34,
+      "f1": 0.867153,
+      "gold_fields": 312,
+      "original_records_preserved": 84,
+      "precision": 0.796247,
+      "recall": 0.951923
+    }
+  },
+  "baseline_revision": "24d232178a11b59db67afedd198374c5fdf702c8",
+  "candidate": {
+    "families": {
+      "bare_url": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 12,
+        "exact_field_tree_events": 12,
+        "f1": 1.0,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "calendar_envelope": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 180,
+        "events": 24,
+        "exact_field_and_span_events": 24,
+        "exact_field_tree_events": 24,
+        "f1": 1.0,
+        "gold_fields": 180,
+        "original_records_preserved": 24,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "malformed_quote": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 12,
+        "exact_field_tree_events": 12,
+        "f1": 1.0,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "owned_quoted_value": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 36,
+        "events": 12,
+        "exact_field_and_span_events": 12,
+        "exact_field_tree_events": 12,
+        "f1": 1.0,
+        "gold_fields": 36,
+        "original_records_preserved": 12,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "path_suffix": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 12,
+        "exact_field_tree_events": 12,
+        "f1": 1.0,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "quoted_prose": {
+        "FN": 0,
+        "FP": 0,
+        "TP": 24,
+        "events": 12,
+        "exact_field_and_span_events": 12,
+        "exact_field_tree_events": 12,
+        "f1": 1.0,
+        "gold_fields": 24,
+        "original_records_preserved": 12,
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    },
+    "total": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 312,
+      "events": 84,
+      "exact_field_and_span_events": 84,
+      "exact_field_tree_events": 84,
+      "f1": 1.0,
+      "gold_fields": 312,
+      "original_records_preserved": 84,
+      "precision": 1.0,
+      "recall": 1.0
+    }
+  },
+  "candidate_module_sha256": {
+    "engine.py": "52f42f22a19ff86909536a3eb6c012394473f08738e4fea7f6398289db1d1629",
+    "residual_kv.py": "7ed3aebb0e3ac8cb7fad72cf1ce351642c8b2ac9aaf26d7456cafc21165130dd",
+    "source_parse.py": "06d3f45d9facfce6e5987ec1144948bb2d6a1823da7b8719e9450d7a9ea98722",
+    "structured_source.py": "34de798678e81642f8719f04d62524118eae937c86b9ef6c617089f1bfdffbe1"
+  },
+  "contract": "parser-studio.poc.unmasked-boundary-regression-v0.1",
+  "corpus_sha256": "5358a030c9a5ef59a310c7653f8e19302ed94ee9c68bd5b6345c5df54e911fe7",
+  "dictionary_attempted": false,
+  "evidence_class": "SYNTHETIC_REGRESSION_NOT_REAL_VENDOR_HOLDOUT",
+  "excluded_events": 0,
+  "expected_source_fields": 312,
+  "limitations": [
+    "Inputs deliberately cover reproduced bugs; improvements are not population accuracy or unseen-vendor generalization.",
+    "This report does not replace or revise the frozen Mac/Hadoop negative benchmark.",
+    "Unresolved prose and malformed tails stay in the original raw event, not invented fields."
+  ],
+  "masked_events": 0,
+  "measurement": "Original field path + exact UTF-8 span TP/FP/FN; typed field tree equality checked separately",
+  "native_verified": false,
+  "no_training_or_reference_reuse": true,
+  "unassessed_events": 0,
+  "unmasked_events": 84
+}

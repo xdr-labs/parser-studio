@@ -186,6 +186,44 @@ PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 poc/vendor_engine/benchma
 PYTHONPATH=poc/vendor_engine/.cache/drain_deps python3 -m unittest discover -s poc/vendor_engine -p 'test_benchmark_framing_admission.py' -v
 ```
 
+## D. Ordinary unmasked-source regressions — calendar and lexical boundaries
+
+After the negative experiment was committed, source inspection and new RED
+regressions found (1) missing November in the BSD month table, (2) a URL query
+or filename suffix being misidentified as a vendor key, and (3) nested key-like
+strings inside quoted prose or malformed quoted values being extracted as
+new fields. Six failing subcases were reproduced before the fix.
+
+The engine now accepts all 12 valid months while still rejecting impossible
+dates; key discovery requires a real token/delimiter boundary and skips quoted
+regions in one bounded pass. An owning quoted vendor value is preserved as one
+value, including embedded equals signs, Unicode, duplicates and exact source
+spans. Unresolved prose/malformed tails remain residual in the unchanged raw
+record. No Dictionary or raw-redaction-specific optimization was introduced.
+
+**Controlled synthetic regression evidence, NOT a new-vendor accuracy claim:**
+`benchmark_unmasked_boundaries.py` runs the exact committed baseline
+`24d232178a11b59db67afedd198374c5fdf702c8` and candidate in isolated Python
+processes. Gold paths, string values and byte spans are constructed alongside
+the input, independently of parser output. All **84 events / 312 source
+fields** deliberately contain visible unmasked values: zero masked, unassessed
+or excluded events. Both retain 84/84 original records.
+
+| Same regression corpus | TP | FP | FN | Field/span F1 | Exact field tree + all spans |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Committed baseline | 297 | 76 | 15 | 86.7153% | 34/84 events |
+| Corrected lexical/calendar boundaries | 312 | 0 | 0 | 100% | 84/84 events |
+
+This focused benchmark proves the reproduced fixes, not open-world parsing,
+new manufacturer/version generalization, annotated-variable improvements,
+masked-value inference or Stellar/native compatibility. Earlier frozen
+Mac/Hadoop and OpenSSH/Proxifier metrics remain historical and unchanged.
+
+```bash
+python3 poc/vendor_engine/benchmark_unmasked_boundaries.py
+python3 -m unittest discover -s poc/vendor_engine -p 'test_unmasked_source_boundaries.py' -v
+```
+
 ## Implementation decision and remaining product gates
 
 **Adopt extraction-first retrieval plus deterministic parsing as the PoC's
