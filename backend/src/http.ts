@@ -3,6 +3,9 @@ import { TextDecoder } from "node:util";
 import { hasValidUnicodeJson } from "./unicode.js";
 import { compilePair } from "./compiler.js";
 import {compileRecipePair,validateRecipePair} from "./parser-recipe-v02.js";
+import {NativeProjectVerificationError,prepareNativeProjectVerification,
+  verifyNativeProjectReport,type NativeProjectPrepared}
+  from "./native-project-verification.js";
 import {mineDrain3,Drain3WorkerError} from "./drain3-worker.js";
 import {AIReviewGateway,AIReviewGatewayError} from "./ai-review-gateway.js";
 import recipeSchema from "../schema/parser-recipe.v0.2.schema.json" with {type:"json"};
@@ -86,6 +89,13 @@ export interface BackendServerOptions {
     manifest:unknown;
     expectedHead:string;
     authorize:(request:IncomingMessage)=>Promise<boolean>;
+  };
+  /** Disabled by default. Authenticated verifier receives only a strictly
+   * validated compiler-generated pair plus source-bound expected hashes.
+   * It must not deploy, send sensor traffic, or return raw/normalized values. */
+  nativeProjectVerifier?:{
+    authorize:(request:IncomingMessage)=>Promise<boolean>;
+    verify:(prepared:NativeProjectPrepared)=>Promise<unknown>;
   };
   /** Opt-in private offline miner; no external AI, no default network egress.
    * Both trusted interpreter path and authorization are server-owned.
@@ -258,6 +268,45 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
     // Separate strict staged v0.2 endpoint: v0.1 API contract is unchanged.
     // Only a completely matching, reviewed legacy v0.1 projection compiles.
     const recipeBase="/api/v1/parser-pairs/recipe/v0.2";
+    if(path===recipeBase+"/native-verify"){
+      if(req.method!=="POST"){send(res,405,{error:"METHOD_NOT_ALLOWED"});return;}
+      const verifier=options.nativeProjectVerifier;
+      if(!verifier){send(res,403,{error:"NATIVE_PROJECT_VERIFY_DISABLED"});return;}
+      let authorized=false;
+      try{authorized=await verifier.authorize(req)===true;}catch{authorized=false;}
+      if(!authorized){send(res,403,{error:"NATIVE_PROJECT_VERIFY_DENIED"});return;}
+      if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
+        req.headers["content-type"]||"")){
+        send(res,415,{error:"UNSUPPORTED_MEDIA_TYPE"});return;
+      }
+      const nativeRequestLimit=448*1024;
+      if(Number(req.headers["content-length"]??0)>nativeRequestLimit){
+        send(res,413,{error:"INPUT_TOO_LARGE"});return;
+      }
+      let prepared:NativeProjectPrepared;
+      try{
+        const input=await jsonInput(req,nativeRequestLimit);
+        prepared=prepareNativeProjectVerification(input);
+      }catch(error){
+        const code=(error as {code?:string}).code;
+        if(code==="LIMIT")send(res,413,{error:"INPUT_TOO_LARGE"});
+        else if(code==="JSON")send(res,400,{error:"INVALID_JSON"});
+        else if(error instanceof NativeProjectVerificationError)
+          send(res,422,{error:error.code,nativeUserParserVerified:false,
+            targetImportVerified:false});
+        else send(res,422,{error:"NATIVE_PROJECT_INPUT_INVALID",
+          nativeUserParserVerified:false,targetImportVerified:false});
+        return;
+      }
+      try{
+        const report=verifyNativeProjectReport(await verifier.verify(prepared),prepared);
+        send(res,200,report);
+      }catch{
+        send(res,503,{error:"NATIVE_PROJECT_VERIFY_UNAVAILABLE",
+          nativeUserParserVerified:false,targetImportVerified:false});
+      }
+      return;
+    }
     if(path===recipeBase+"/schema"||path===recipeBase+"/capabilities"||
        path===recipeBase+"/validate"||path===recipeBase+"/generate"){
       const isGet=path.endsWith("/schema")||path.endsWith("/capabilities");
@@ -287,6 +336,8 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
             "mixed_csv_unreviewed_schema","multiline_unframed_generic","arbitrary_regex",
             "ruby_execution","jsonata","classification_exists","enrichment_unmodeled"],
           sourceHashVerifiedAgainstEvents:false,nativeUserParserVerified:false,
+          nativeProjectVerificationConfigured:options.nativeProjectVerifier!==undefined,
+          nativeProjectVerificationRequiresAuth:true,
           targetImportVerified:false,apiDoesNotDeploy:true,
         });return;
       }

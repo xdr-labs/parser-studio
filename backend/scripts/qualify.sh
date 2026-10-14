@@ -89,6 +89,9 @@ run_bounded_ruby -rbundler/setup test_native/fluentd_plugin_smoke.rb .tmp/native
 run_bounded_ruby -rbundler/setup test_native/fluentd_config_smoke.rb .tmp/native-fixtures
 echo "[4v2/5] Strict v0.2 staged compiler equivalence, pinned native Fluentd callback and CONF AST"
 run_bounded_ruby -rbundler/setup test_native/recipe_v02_native_smoke.rb .tmp/recipe-v02-fixtures
+echo "[4v3/5] Source-bound per-project Native proof through compiler-generated Ruby/CONF only"
+export PARSER_NATIVE_RUBY="$(command -v "$RUBY_COMMAND")"
+node dist/scripts/verify-native-project-local.js
 if recipe_guard=$(run_bounded_ruby -rbundler/setup \
     test_native/recipe_v02_native_smoke.rb /tmp/native-untrusted 2>&1); then
   echo "ERROR: Recipe native runner accepted untrusted directory." >&2

@@ -79,6 +79,14 @@ The lengths and hashes above are illustrative and must be read from the **actual
 
 **Do not change `status` to ENGINE_TESTED** solely because a separate synthetic Fluentd test passed. A per-project, sandboxed, bound native run with fixture evidence is necessary; actual Stellar Cyber loader/import verification remains separately assigned to the owner.
 
+### Optional per-project Native verification
+
+`POST /api/v1/parser-pairs/recipe/v0.2/native-verify` is **disabled by default** and requires a server-injected `nativeProjectVerifier` plus an independent authorization callback. The request must contain exactly the confirmed strict ParserRecipe v0.2, its matching legacy ParserProject, the bounded source sample, and one ordered expected record/time digest per logical event. The backend recompiles the pair itself, binds the source SHA-256 and event count, and passes only compiler-generated Ruby/CONF plus source-bound event bytes to the trusted verifier.
+
+A successful response is metadata-only: source/recipe/parser/CONF hashes, event counters, pinned Ruby 3.2 / Fluentd 1.17.1 profile, CONF-AST/parser-callback flags, `nativeUserParserVerified:true`, and `targetImportVerified:false`. It never returns raw or normalized values, never sends sensor traffic, and never upgrades proprietary Stellar loader/import status. Malformed or stale client input fails before execution; verifier/runtime failures return a redacted unavailable response.
+
+The package-owned local adapter is also disabled unless explicitly constructed by a trusted deployment. It requires absolute trusted runtime paths, an allowlisted minimal environment, bounded stdin/stdout, 1 GiB virtual-memory and 30-second CPU limits through `prlimit`, a maximum 30-second wall timeout, and the fixed package runner. The default CLI server does not construct this adapter automatically.
+
 ## Read-only import/clone contract
 
 `/inspect` accepts a paired host-reference `.conf` and extensionless Ruby source fragment in memory. It scans structural markers and receiver metadata only; **never evals Ruby, writes files, or echoes the original imported source**.
@@ -98,7 +106,7 @@ The inspect response includes diagnostics with stable code, severity=warning and
 3. POST /generate only on validated project → download two files, optionally create a client-side ZIP.
 4. Show status **DRAFT**, evidence restrictions and exact filenames; never imply Stellar Cyber installation occurred.
 
-Ruby callback diagnostics (to expose in future Test Lab after isolated native runner integration): `parser_err_msg` is a stable type/error marker, `parser_err_stage` indicates extraction/normalization/enrichment/classification, and `parser_err_field` identifies schema-controlled original field where applicable. The current HTTP API has **no user log execution endpoint**; no arbitrary user log/Ruby runtime is exposed.
+Ruby callback diagnostics: `parser_err_msg` is a stable type/error marker, `parser_err_stage` indicates extraction/normalization/enrichment/classification, and `parser_err_field` identifies the schema-controlled original field where applicable. The ordinary/default HTTP server still exposes no enabled user-log execution runtime. The optional authenticated `/recipe/v0.2/native-verify` boundary above can run only internally compiled Ruby/CONF through an explicitly injected verifier; arbitrary caller-supplied Ruby is never accepted.
 
 ## P1 offline synthetic starter templates
 

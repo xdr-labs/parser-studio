@@ -23,13 +23,15 @@ Receipt flags `sourceHashVerifiedAgainstEvents=false`, `nativeUserParserVerified
 
 ## Offline native qualifications
 
-`bash scripts/qualify.sh` generates eleven **public-synthetic-only**, source-SHA-bound v0.2/legacy-identical parser pairs in a fixed isolated fixture directory. The native Ruby 3.2 + Fluentd 1.17.1 smoke verifies:
+`bash scripts/qualify.sh` generates eighteen **public-synthetic-only**, source-SHA-bound v0.2/legacy-identical parser profiles in a fixed isolated fixture directory. The native Ruby 3.2 + Fluentd 1.17.1 smoke verifies:
 - strict fixed fixture root, exact HEAD, complete file-name/hash set, no symlink/hardlink substitutions, and source SHA of every golden event;
 - generated `.conf` Fluentd AST with the same source/parser receiver port (7501 in these synthetic fixtures) for TCP and UDP, and expected log-index rewriting;
 - real Fluentd parser plugin callback and exactly one **typed** normalized record and time for each of seven independent golden cases: JSON, quoted KV-compatible, CSV, CEF, LEEF, RFC5424+CEF and RFC5424+LEEF;
 - hard rejection of unrelated fixture roots.
 
-The existing 10-profile / 23-golden-event native suite remains unchanged and runs in the same qualification job. The extra eleven native profiles prove the **synthetic v0.2-to-v0.1 compilation path** but **not** an arbitrary customer parser, proprietary Stellar loader, actual sensor listener, DP import/readback or tenant Interflow E2E.
+The existing 10-profile / 23-golden-event native suite remains unchanged and runs in the same qualification job. The additional v0.2 profiles prove the **synthetic v0.2-to-v0.1 compilation path** but **not** a proprietary Stellar loader, actual sensor listener, DP import/readback or tenant Interflow E2E.
+
+The same qualification job also exercises the source-bound **per-project Native verification boundary** with an independently authored two-event synthetic project. The backend recompiles the exact reviewed recipe/project pair, binds source and expected record/time hashes, and the package-owned local adapter launches only the fixed runner under pinned Ruby 3.2 / Fluentd 1.17.1 with CPU/memory/wall/output limits. PASS means that this exact generated user-parser candidate produced the expected records through the Fluentd Parser API and its CONF AST matched the receiver contract. The report remains value-free and explicitly keeps `targetImportVerified=false` and `sensorTrafficSent=false`.
 
 ## Remaining product work
 
