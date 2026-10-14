@@ -81,3 +81,10 @@ body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
 .stellar-ai-import summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--charcoal)}
 .stellar-ai-import button{padding:9px 12px;border-radius:8px;background:var(--stellar-orange);color:#fff;border:0;font-weight:700}
 .stellar-ai-import button:disabled{opacity:.5}
+.stellar-multipass-panel{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;margin:14px 0}
+.stellar-multipass-panel>button{background:var(--stellar-orange);border:0;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700}
+.stellar-multipass-panel>button:disabled{opacity:.5}
+.stellar-multipass-panel>small{display:block;margin:8px 0;color:var(--muted)}
+.stellar-multipass-panel pre{max-height:200px;overflow:auto;background:#f5f5f6;padding:12px;border-radius:8px}
+.stellar-span-chip,.stellar-residual-chip{display:inline-block;padding:4px 7px;margin:3px;border-radius:6px;font-size:11px}
+.stellar-span-chip{background:#e4f5ee;color:#096443}.stellar-residual-chip{background:#fff0d2;color:#865600}

@@ -25,6 +25,7 @@ import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBound
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import AutoParserAIReview from './AutoParserAIReview';
+import {requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
 import AutoParserResultTools from './AutoParserResultTools';
 import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
@@ -77,6 +78,9 @@ export default function AutoParser({
 }:Props){
  const [step,setStep]=useState<0|1|2>(0);
  const [selected,setSelected]=useState(0);
+ const [multiPass,setMultiPass]=useState<{raw:string;result:MultiPassSourcePreview}|null>(null);
+ const [multiPassNotice,setMultiPassNotice]=useState('');
+ const [multiPassBusy,setMultiPassBusy]=useState(false);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
@@ -469,6 +473,16 @@ export default function AutoParser({
      setSample(value);setDatasetName(file.name);setSelected(0);setStep(0);
    }catch{setMessage('Only bounded, valid UTF-8 text files can be opened locally.');}
  }
+ async function previewMultiPass(){
+  if(!sample.trim()||multiPassBusy)return;
+  const original=sample;setMultiPass(null);setMultiPassNotice('');setMultiPassBusy(true);
+  try{
+   const result=await requestMultiPassPreview(original);
+   setMultiPass({raw:original,result});
+  }catch{setMultiPassNotice('Local Multi-Pass service unavailable or untrusted. Browser preview remains separate.');}
+  finally{setMultiPassBusy(false);}
+ }
+ const currentMultiPass=multiPass?.raw===sample?multiPass.result:null;
  return <main className="auto-parser-workspace" aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
      <span className="pane-index">AUTO PARSER 2.0 · LOCAL FIRST</span>
@@ -507,6 +521,22 @@ export default function AutoParser({
          placeholder="Paste representative raw log events here. No format selection needed."
          value={sample} onChange={e=>{setSample(e.target.value);
            setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
+       <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
+         <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
+           {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
+         </button>
+         <small>Explicit local request only · Source extraction, not native Ruby/CONF verification</small>
+         {multiPassNotice&&<p role="status">{multiPassNotice}</p>}
+         {currentMultiPass&&<div role="status">
+           <strong>{currentMultiPass.status} · {currentMultiPass.syntax}</strong>
+           <p>Extracted fields and source byte spans are shown below. Residuals remain available for AI correction.</p>
+           <pre>{JSON.stringify(currentMultiPass.fields,null,2)}</pre>
+           <div>{currentMultiPass.spans.map((span,i)=><span key={i} className="stellar-span-chip">
+             {span.path} [{span.startByte}–{span.endByte}]</span>)}</div>
+           <div>{currentMultiPass.residuals.map((span,i)=><span key={i} className="stellar-residual-chip">
+             Unparsed [{span.startByte}–{span.endByte}]</span>)}</div>
+         </div>}
+       </div>
        <div className="auto-parser-ledger" aria-label="Automatic event accounting">
          <strong>{report.accounted}/{report.sourceCount} events analyzed locally</strong>
          <span>{report.unsupported} require review · Native parser NOT VERIFIED</span>
