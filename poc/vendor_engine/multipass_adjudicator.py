@@ -172,6 +172,11 @@ LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',(
 def parse_security_once(raw:str)->SourceEvent:
     """Run qualified whole-record candidates once, without residual recursion."""
     base=parse_security_source(raw);events={'security.base':base};contracts=[candidate_from_event(base,BASE_EVIDENCE)]
+    # Recognize explicit SonicWall host + id=firewall KV only when base is incomplete.
+    if base.status!='SOURCE_PARSED':
+        from security_sonicwall import parse_sonicwall_host_kv
+        sonicwall=parse_sonicwall_host_kv(raw)
+        if sonicwall is not None and sonicwall.status=='SOURCE_PARSED':return sonicwall
     # ASA is a conservative fallback only: preserve any already accepted base fields.
     if not base.vendor_fields:
         from security_asa import parse_asa_message
