@@ -26,7 +26,7 @@ test('P1 user explicitly probes auth-only availability then consents before priv
  let probes=0,posts=0;
  await page.route(/\/api\/v1\/parser-pairs\/patterns\/drain3(?:\/capabilities)?(?:\?.*)?$/,route=>{
    const req=route.request(),url=new URL(req.url());
-   expect(url.origin).toBe('http://127.0.0.1:5180');
+   expect(url.origin).toBe(new URL(page.url()).origin);
    if(req.method()==='GET'){
      probes++;
      expect(url.pathname).toBe('/api/v1/parser-pairs/patterns/drain3/capabilities');
