@@ -1,0 +1,24 @@
+# Parser Studio — Auto Parser final PoC and AI-assisted recovery roadmap
+
+Owner decision (2026-10-14): keep exactly two user-facing creation methods, **Auto Parser** and **ChatGPT Assisted Parser**. The automatic Accuracy-First Multi-Pass source engine remains the primary path. There are **two mandatory AI recovery cases**, not a third creation mode:
+
+1. **Whole-log assistance**: when the automatic engine returns RAW_ONLY/unsupported with no usable fields, offer **Analyze Entire Log with AI**. A user reviews/redacts and copies a complete-log prompt, then pastes a constrained JSON Recipe candidate back for validation.
+2. **Selected-region correction**: when automatic extraction is PARTIAL, wrong, or not what the user wants, offer **Improve Selection with AI**. Select raw byte range(s), missing text, or an already extracted field. Support correcting a wrong mapping, splitting/merging fields, adding a requested field, or scoped nested parsing. Show exact raw span, existing claims, rule/provenance, user goal and counterexamples. Do not overwrite previously accepted claims silently.
+
+## Execution order and measurable acceptance
+
+**P0-E1 — Last bounded automatic parser improvement (FIRST).** Continue Cisco ASA/FTD native message extraction and other evidence-backed gaps on the already-exposed development corpus; no broad natural-language template mining or guessing of semantic field labels. Keep source-native field identity/value/type/UTF-8 spans and raw preservation. Add RED -> GREEN tests for each new source grammar, guard against false complete, run full regression and exact-head CI. Record actual before/after independent source claims, not merely SOURCE_PARSED statuses. Existing development fixtures are never relabeled as unseen.
+
+**P0-E2 — Honest engine PoC decision.** Re-evaluate against `ENGINE_POC_ACCEPTANCE.md`: >=500 unique genuinely new events from >=5 security products, >=3 format families, >=2 novel product/version or event subtypes; independent exact field/value/type/span micro F1 >=99%; exact event completion >=95%; zero false complete/raw loss/exceptions; two new independent batches without P0/P1 defects; full regression and exact-head CI success. If all pass, mark **ENGINE_POC_PASS** and stop PoC. If not, mark **ENGINE_POC_LIMITED / NOT QUALIFIED**, publish the measured gaps and freeze the best validated candidate for the next product phase. Do not fabricate a PASS, dilute the threshold, or continue unbounded PoC cycles.
+
+**P0-AI1 — Whole-log AI fallback.** Trigger on RAW_ONLY/unsupported; show all original bytes in the local review UI, with redaction/consent before any manual prompt copy. Generate a bounded provider-neutral prompt and import a schema-validated v0.2 Recipe; never execute arbitrary returned Ruby/Regex/JSONata or send logs automatically. Verify on positive, negative and held-out samples.
+
+**P0-AI2 — In-place selection and repair.** Highlight extracted, uncertain and unparsed raw spans; allow mouse/touch exact-range selection and field click, including already-parsed-but-wrong fields. Generate a scoped prompt with current fields/rules/byte spans, selected text, requested correction and counterexamples. Preserve all nonselected accepted fields by default; explicit user-approved changes require before/after diff and no regression. Permit opaque field fallback where exact extraction is not provable, and keep PARTIAL status honest.
+
+**P0-AI3 — Candidate import, verification and native reachability.** Strictly validate pasted Recipe JSON and supported grammar AST; re-run full Multi-Pass + candidate on original, independent negative and holdout samples; display TP/FP/FN, conflicts and newly recovered fields; require explicit user approval before replacing a rule. Generate Ruby + CONF only for compiler-supported stages, SHA-verify the pair, and never label browser-only tests as native/DP/sensor E2E.
+
+**P0-AI4 — Two-path Web UI E2E.** Only two entry paths remain. Test zero-field full-log fallback, partial unparsed selection, correcting an already parsed wrong field, split/merge, undo/reject candidate, privacy review, invalid AI result, rule conflict, unchanged existing fields, mobile touch selection and accessibility. Retired Wizard/Workbench are not reintroduced. Actual DP/sensor/production actions require separate authorization.
+
+## Handoff and boundaries
+
+This document is a **roadmap**, not evidence that AI UI integration or real external AI access is complete. Reuse existing P0-TRACE and P1-AP6 UI/backend components where verified. Engine PoC completion does not require pretending unsupported vendor prose is parsed; unsupported residuals flow into the AI-assisted product stage with raw preserved. Prioritize source extraction over Dictionary semantics; masked/redacted value reconstruction remains out of scope.
