@@ -1,0 +1,46 @@
+{
+  "all_events": 4000,
+  "candidate_frozen_before_new_raw_and_labels": true,
+  "candidate_java_sha256": "9869aacc69fc9fc6914ab35837a907089efb635ebd3ad6350c7c95437b202608",
+  "candidate_source_parse_sha256": "c487b70418d4f6222a8009502f77992ee3c3001c9a3f902fcfbfd5a68b6e8705",
+  "contract": "parser-studio.poc.java-envelope-raw-only-probe-v0.1",
+  "dictionary_attempted": false,
+  "evidence": "Raw-only parser proposals, not independently verified correct fields or body extraction",
+  "families": [
+    {
+      "PARTIAL": 2000,
+      "events": 2000,
+      "family": "Spark",
+      "header_admitted": 2000,
+      "original_records_preserved": 2000,
+      "proposed_header_fields": 8000
+    },
+    {
+      "PARTIAL": 346,
+      "RAW_ONLY": 1654,
+      "events": 2000,
+      "family": "Zookeeper",
+      "header_admitted": 0,
+      "original_records_preserved": 2000,
+      "proposed_header_fields": 0
+    }
+  ],
+  "frozen_prediction_sha256": "2f55d12c5965990cc662b41bea332ee37c7c86b1a2dcc5eefd84f7fe0e43b11c",
+  "license_policy": "Local research only; raw, gold and source-derived private predictions remain ignored, not product assets",
+  "native_verified": false,
+  "original_records_preserved": 4000,
+  "raw_sha256": {
+    "Spark_2k.log": "2e8b9a37fc5c238253e0b8e18a8bd5e489671def91767ae1192d28c8e1f95901",
+    "Zookeeper_2k.log": "e40e0af5ef9eb6e4097200f260b9d1f626b3676f861a432e87977242e75543d8"
+  },
+  "redaction_assessment": "NOT_ASSESSED; do not label this real-source probe unmasked-only",
+  "reference_blocker": "Reference acquisition/read request blocked twice by OpenAI security-state determination; no alternate-tool or host retry used",
+  "reference_labels_loaded": false,
+  "reference_metrics": null,
+  "reference_scored_events": 0,
+  "source_commit": "dd61d0952749ee7963bde24220d1be5ede023033",
+  "source_license_sha256": "9ffa6ae259833cdc6e7ed8a0219fec72ef6455fb457b3c44096cb1ac1f0696d4",
+  "source_repository": "logpai/loghub",
+  "status": "REFERENCE_VALIDATION_INCOMPLETE",
+  "target_verified": false
+}

@@ -224,6 +224,56 @@ python3 poc/vendor_engine/benchmark_unmasked_boundaries.py
 python3 -m unittest discover -s poc/vendor_engine -p 'test_unmasked_source_boundaries.py' -v
 ```
 
+## E. Direct Java envelope extraction — candidate; reference validation incomplete
+
+The next ordinary-source unit implements **direct bounded envelope fields**,
+not the rejected strategy of using header presence to choose a body miner.
+Source inspiration is limited to published Apache PatternLayout conventions
+and first-party [Spark v1.5.2 configuration](https://github.com/apache/spark/blob/v1.5.2/conf/log4j.properties.template)
+and [ZooKeeper 3.4.6 configuration](https://github.com/apache/zookeeper/blob/release-3.4.6/conf/log4j.properties).
+No vendor implementation, Loghub template, customer data or normalized
+Dictionary mapping is copied into the engine.
+
+`java_source.py` extracts date, time, level and explicitly bounded logger,
+thread/context and optional node-ID fields. It keeps two-digit dates as source
+strings and does not invent a century or timezone. Unknown prose remains
+residual/PARTIAL; recognizing a header never certifies the body, Drain grammar,
+Ruby/CONF, Fluentd or Stellar compatibility. Five focused tests (including
+invalid dates, missing delimiters, Unicode spans and false-success prevention)
+were RED before implementation and pass afterward. Four of the five test
+methods failed before implementation; the invalid-header guard already passed.
+
+**First raw-only probe on previously unused source families**, using candidate
+hashes frozen BEFORE the new raw files or labels were acquired:
+
+| Source family | Original records preserved | Header proposals | Proposed header fields | Independent reference-scored events |
+| --- | ---: | ---: | ---: | ---: |
+| Spark | 2,000/2,000 | 2,000 | 8,000 | 0 — pending |
+| ZooKeeper | 2,000/2,000 | 0 | 0 | 0 — pending |
+
+All Spark records remain PARTIAL; the full body is not declared parsed.
+ZooKeeper's zero-header result is retained as a negative finding, not tuned
+away or excluded. The independent reference CSV acquisition/read request was
+blocked twice by OpenAI's security-state determination after normal same-tool,
+same-device, same-path retry. Both new reference CSV files are confirmed
+absent. No alternate tool, host or download route was used to bypass the block.
+
+The local existing-fixture suite passes **138 tests** with this candidate,
+but this does NOT qualify independent Spark/ZooKeeper field accuracy. Code is
+saved as an experimental PoC candidate; `java-envelope-probe-summary.json`
+contains only hashes and aggregates. Raw source, license notice and frozen
+private predictions remain in ignored `.cache/`. Redaction status of this
+real-source probe is unassessed, so it is not an unmasked-only benchmark.
+
+**Immediate unfinished action:** under current permitted conditions, normally
+retry the SAME reference-acquisition/read operation on dev-atlas. On success,
+verify raw/reference SHA and row correspondence, score actual header values
+and exact byte spans against independent annotations, retain the frozen
+first-pass zero-ZooKeeper result, and separately label subsequent adaptation
+as exploratory. Do not call any count above TP, precision, recall or F1 yet.
+Do not start Dictionary/masking work or repeat completed Mac/Hadoop tests
+merely to restart this task.
+
 ## Implementation decision and remaining product gates
 
 **Adopt extraction-first retrieval plus deterministic parsing as the PoC's

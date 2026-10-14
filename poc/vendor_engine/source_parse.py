@@ -23,6 +23,7 @@ from structured_source import (
     extract_plain_bsd,extract_apache_error,
 )
 from residual_kv import recover_kv_islands
+from java_source import extract_java_envelope
 
 KV_AT_START=re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,127}=")
 JSON_ARRAY_START=re.compile(r'^\[\s*(?:[\[{}\]"0-9-]|true\b|false\b|null\b)')
@@ -137,6 +138,9 @@ def parse_source(raw:str)->SourceEvent:
     if framed is None:
         framed=extract_apache_error(raw)
         family="APACHE_ERROR"
+    if framed is None:
+        framed=extract_java_envelope(raw)
+        family="JAVA_PATTERN_LAYOUT"
     if framed is not None:
         outer,body_start=framed
         event.syntax=family
