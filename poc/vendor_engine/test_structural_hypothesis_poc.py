@@ -8,10 +8,13 @@ from structural_hypothesis_poc import (
     learn_event_template_hypotheses,
     learn_positional_csv_hypothesis,
     learn_relative_rgram_hypotheses,
+    learn_leading_numeric_hypotheses,
     merge_residual_hypothesis,
+    parse_leading_numeric_slots,
     parse_with_event_template,
     parse_with_hypothesis,
     parse_with_relative_rgram,
+    augment_partial_with_numeric_prefix,
 )
 from source_parse import SourceEvent, ValueSpan, assert_source_accounting
 
@@ -339,6 +342,101 @@ class StructuralHypothesisPocTests(unittest.TestCase):
             ),
         ]
         self.assertEqual({}, learn_relative_rgram_hypotheses(training))
+
+    def test_leading_numeric_skeleton_recovers_partial_slots_without_completion(self):
+        training = [
+            "05/30-19:09:10.917356  alert one",
+            "12/30-14:09:21.116402  alert two",
+            "01/21-02:23:42.327730  alert three",
+            "09/04-21:55:02.041364  alert four",
+        ]
+        hypotheses = learn_leading_numeric_hypotheses(training)
+        self.assertEqual(1, len(hypotheses))
+        raw = "10/31-07:08:09.123456  alert holdout"
+        candidate = parse_leading_numeric_slots(raw, hypotheses)
+        self.assertIsNotNone(candidate)
+        self.assertEqual(5, len(candidate.value_spans))
+
+        baseline = SourceEvent(raw, syntax="UNKNOWN")
+        baseline.issues = ["NO_SUPPORTED_GRAMMAR"]
+        baseline.unparsed = [(0, len(raw))]
+        assert_source_accounting(baseline)
+
+        augmented = augment_partial_with_numeric_prefix(baseline, candidate)
+        self.assertIsNotNone(augmented)
+        self.assertEqual("PARTIAL", augmented.status)
+        self.assertEqual(["NO_SUPPORTED_GRAMMAR"], augmented.issues)
+        self.assertEqual([(0, len(raw))], augmented.unparsed)
+        self.assertEqual(5, len(augmented.value_spans))
+        self.assertEqual(
+            ["10", "31", "07", "08", "09.123456"],
+            list(
+                augmented.vendor_fields["hypothesis_partial"][
+                    "numeric_prefix"
+                ].values()
+            ),
+        )
+
+    def test_leading_numeric_skeleton_requires_repeated_shape(self):
+        training = [
+            "05/30-19:09:10.917356  first",
+            "2026-10-15T10:11:12Z second",
+            "1234 random",
+            "09/04-21:55:02.041364  fourth",
+        ]
+        self.assertEqual({}, learn_leading_numeric_hypotheses(training))
+
+    def test_numeric_partial_recovery_only_adds_residual_spans(self):
+        training = [
+            "05/30-19:09:10.917356  first",
+            "12/30-14:09:21.116402  second",
+            "01/21-02:23:42.327730  third",
+        ]
+        hypotheses = learn_leading_numeric_hypotheses(training)
+        raw = "09/04-21:55:02.041364  alert"
+        candidate = parse_leading_numeric_slots(raw, hypotheses)
+        self.assertIsNotNone(candidate)
+
+        baseline = SourceEvent(raw, syntax="BASE")
+        baseline.vendor_fields = {"existing": "09"}
+        baseline.value_spans = [ValueSpan("existing", 0, 2, ("existing",))]
+        baseline.primitive_fields = 1
+        baseline.covered = [(0, 2)]
+        baseline.unparsed = [(2, len(raw))]
+        baseline.issues = ["NO_SUPPORTED_GRAMMAR"]
+        assert_source_accounting(baseline)
+
+        augmented = augment_partial_with_numeric_prefix(baseline, candidate)
+        self.assertIsNotNone(augmented)
+        self.assertEqual((0, 2), (
+            augmented.value_spans[0].start_byte,
+            augmented.value_spans[0].end_byte,
+        ))
+        self.assertEqual(5, len(augmented.value_spans))
+        self.assertTrue(all(
+            span.start_byte >= 2
+            for span in augmented.value_spans[1:]
+        ))
+
+    def test_numeric_partial_recovery_respects_nul_safety_boundary(self):
+        training = [
+            "05/30-19:09:10.917356  first",
+            "12/30-14:09:21.116402  second",
+            "01/21-02:23:42.327730  third",
+        ]
+        hypotheses = learn_leading_numeric_hypotheses(training)
+        raw = "09/04-21:55:02.041364\x00alert"
+        self.assertIsNone(parse_leading_numeric_slots(raw, hypotheses))
+
+        clean = "09/04-21:55:02.041364  alert"
+        candidate = parse_leading_numeric_slots(clean, hypotheses)
+        baseline = SourceEvent(clean, syntax="UNKNOWN")
+        baseline.issues = ["SOURCE_SIZE_OR_NUL_INVALID"]
+        baseline.unparsed = [(0, len(clean))]
+        assert_source_accounting(baseline)
+        self.assertIsNone(
+            augment_partial_with_numeric_prefix(baseline, candidate)
+        )
 
     def _csv_event(self, width):
         values = [f"v{index}" for index in range(width)]

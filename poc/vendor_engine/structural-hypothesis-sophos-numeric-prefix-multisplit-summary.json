@@ -1,0 +1,227 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 54,
+    "augmented_events": 9,
+    "baseline_incomplete": 9,
+    "baseline_span_preserved_events": 9,
+    "events": 9,
+    "events_with_expected_doc": 9,
+    "expected_timestamp_consistent_events": 9,
+    "independently_validated_spans": 54,
+    "mutation_attempts": 27,
+    "official_exact_span_value": 54
+  },
+  "all_added_spans_independently_validated": true,
+  "contract": "parser-studio.poc.numeric-prefix-sophos-utm-reference-multisplit.v1",
+  "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "elastic_pipeline_blob_sha": "99cd308d7d68bc1e194f949201f22537fbc4586d",
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "official_grammar": "SOPHOS_TIMESTAMP=YEAR:MONTHNUM:MONTHDAY-HOUR:MINUTE:SECOND",
+  "raw_values_published": false,
+  "scope": "SOPHOS_UTM_PARTIAL_SOURCE_VALUE_RECOVERY",
+  "semantic_mapping_scored": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "splits": [
+    {
+      "files": [
+        {
+          "augmented_event_sha256": [
+            "1529a761a640d73d697f314e263ff4b2c7f8a1acaa3ec62bdfa4e772567b02ae"
+          ],
+          "elastic_expected_blob_sha": "488d20eed82f895d7b57111abfc103138b892ad1",
+          "expected_sha256": "252f6fb103a21a68b3cf99cba1a69b3ef3ad202ff1862b0f6bd30e2fa681247b",
+          "file": "test-sophos-utm-dhcp.log",
+          "holdout_events": 1,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 6,
+            "augmented_events": 1,
+            "baseline_incomplete": 1,
+            "baseline_span_preserved_events": 1,
+            "events": 1,
+            "events_with_expected_doc": 1,
+            "expected_timestamp_consistent_events": 1,
+            "independently_validated_spans": 6,
+            "mutation_attempts": 3,
+            "official_exact_span_value": 6
+          },
+          "source_sha256": "ea61476c35d45569c438d04c3c276f2850aa217a9943800ba65747c8e9cf476e",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [
+            "224c47fb441575162b5fda467ce15eb87320633c05d415f77fe8eb45b0dae305",
+            "38ae5cb78f513cc7b90e57b094cd7c4e52dd8ac95a76f3f797d88b228dd8b93e"
+          ],
+          "elastic_expected_blob_sha": "b23763fb138eeea969a02ee57b5715a7bc8a53c6",
+          "expected_sha256": "7304e45da4ba54e97d7de29f637c1c29b30ebdfa77436af7fa8a7e5f2f8feec4",
+          "file": "test-sophos-utm-dns.log",
+          "holdout_events": 2,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 12,
+            "augmented_events": 2,
+            "baseline_incomplete": 2,
+            "baseline_span_preserved_events": 2,
+            "events": 2,
+            "events_with_expected_doc": 2,
+            "expected_timestamp_consistent_events": 2,
+            "independently_validated_spans": 12,
+            "mutation_attempts": 6,
+            "official_exact_span_value": 12
+          },
+          "source_sha256": "8ee65cf0e47d258030951873f2e2481377817f87feacf2882cfda8eb7a230499",
+          "train_events": 3
+        }
+      ],
+      "metrics": {
+        "added_spans": 18,
+        "augmented_events": 3,
+        "baseline_incomplete": 3,
+        "baseline_span_preserved_events": 3,
+        "events": 3,
+        "events_with_expected_doc": 3,
+        "expected_timestamp_consistent_events": 3,
+        "independently_validated_spans": 18,
+        "mutation_attempts": 9,
+        "official_exact_span_value": 18
+      },
+      "seed": "structural-hypothesis-security-ms-a"
+    },
+    {
+      "files": [
+        {
+          "augmented_event_sha256": [
+            "679b4ecaa6379fc846ab74480d7dc08ab9e1888102fbaedd1a068226b2f58696"
+          ],
+          "elastic_expected_blob_sha": "488d20eed82f895d7b57111abfc103138b892ad1",
+          "expected_sha256": "252f6fb103a21a68b3cf99cba1a69b3ef3ad202ff1862b0f6bd30e2fa681247b",
+          "file": "test-sophos-utm-dhcp.log",
+          "holdout_events": 1,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 6,
+            "augmented_events": 1,
+            "baseline_incomplete": 1,
+            "baseline_span_preserved_events": 1,
+            "events": 1,
+            "events_with_expected_doc": 1,
+            "expected_timestamp_consistent_events": 1,
+            "independently_validated_spans": 6,
+            "mutation_attempts": 3,
+            "official_exact_span_value": 6
+          },
+          "source_sha256": "ea61476c35d45569c438d04c3c276f2850aa217a9943800ba65747c8e9cf476e",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [
+            "224c47fb441575162b5fda467ce15eb87320633c05d415f77fe8eb45b0dae305",
+            "2a4170b654c6d86192a783d4492275b6ffc55dcbf5e9024270b698bcf9726b8e"
+          ],
+          "elastic_expected_blob_sha": "b23763fb138eeea969a02ee57b5715a7bc8a53c6",
+          "expected_sha256": "7304e45da4ba54e97d7de29f637c1c29b30ebdfa77436af7fa8a7e5f2f8feec4",
+          "file": "test-sophos-utm-dns.log",
+          "holdout_events": 2,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 12,
+            "augmented_events": 2,
+            "baseline_incomplete": 2,
+            "baseline_span_preserved_events": 2,
+            "events": 2,
+            "events_with_expected_doc": 2,
+            "expected_timestamp_consistent_events": 2,
+            "independently_validated_spans": 12,
+            "mutation_attempts": 6,
+            "official_exact_span_value": 12
+          },
+          "source_sha256": "8ee65cf0e47d258030951873f2e2481377817f87feacf2882cfda8eb7a230499",
+          "train_events": 3
+        }
+      ],
+      "metrics": {
+        "added_spans": 18,
+        "augmented_events": 3,
+        "baseline_incomplete": 3,
+        "baseline_span_preserved_events": 3,
+        "events": 3,
+        "events_with_expected_doc": 3,
+        "expected_timestamp_consistent_events": 3,
+        "independently_validated_spans": 18,
+        "mutation_attempts": 9,
+        "official_exact_span_value": 18
+      },
+      "seed": "structural-hypothesis-security-ms-b"
+    },
+    {
+      "files": [
+        {
+          "augmented_event_sha256": [
+            "679b4ecaa6379fc846ab74480d7dc08ab9e1888102fbaedd1a068226b2f58696"
+          ],
+          "elastic_expected_blob_sha": "488d20eed82f895d7b57111abfc103138b892ad1",
+          "expected_sha256": "252f6fb103a21a68b3cf99cba1a69b3ef3ad202ff1862b0f6bd30e2fa681247b",
+          "file": "test-sophos-utm-dhcp.log",
+          "holdout_events": 1,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 6,
+            "augmented_events": 1,
+            "baseline_incomplete": 1,
+            "baseline_span_preserved_events": 1,
+            "events": 1,
+            "events_with_expected_doc": 1,
+            "expected_timestamp_consistent_events": 1,
+            "independently_validated_spans": 6,
+            "mutation_attempts": 3,
+            "official_exact_span_value": 6
+          },
+          "source_sha256": "ea61476c35d45569c438d04c3c276f2850aa217a9943800ba65747c8e9cf476e",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [
+            "27976632fb4def766df7ef8cfbba2170a54a622601b7789b4685f487d7864589",
+            "38ae5cb78f513cc7b90e57b094cd7c4e52dd8ac95a76f3f797d88b228dd8b93e"
+          ],
+          "elastic_expected_blob_sha": "b23763fb138eeea969a02ee57b5715a7bc8a53c6",
+          "expected_sha256": "7304e45da4ba54e97d7de29f637c1c29b30ebdfa77436af7fa8a7e5f2f8feec4",
+          "file": "test-sophos-utm-dns.log",
+          "holdout_events": 2,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 12,
+            "augmented_events": 2,
+            "baseline_incomplete": 2,
+            "baseline_span_preserved_events": 2,
+            "events": 2,
+            "events_with_expected_doc": 2,
+            "expected_timestamp_consistent_events": 2,
+            "independently_validated_spans": 12,
+            "mutation_attempts": 6,
+            "official_exact_span_value": 12
+          },
+          "source_sha256": "8ee65cf0e47d258030951873f2e2481377817f87feacf2882cfda8eb7a230499",
+          "train_events": 3
+        }
+      ],
+      "metrics": {
+        "added_spans": 18,
+        "augmented_events": 3,
+        "baseline_incomplete": 3,
+        "baseline_span_preserved_events": 3,
+        "events": 3,
+        "events_with_expected_doc": 3,
+        "expected_timestamp_consistent_events": 3,
+        "independently_validated_spans": 18,
+        "mutation_attempts": 9,
+        "official_exact_span_value": 18
+      },
+      "seed": "structural-hypothesis-security-ms-c"
+    }
+  ],
+  "status_policy": "PARTIAL remains PARTIAL; numeric-prefix recovery cannot certify whole-record completeness",
+  "unique_augmented_events": 6
+}

@@ -1,4 +1,4 @@
-# Structural Hypothesis Engine — Security-Product PoC v3 (2026-10-15)
+# Structural Hypothesis Engine — Security-Product PoC v4 (2026-10-15)
 
 ## Decision status
 
@@ -10,33 +10,38 @@ incomplete. The learner uses source syntax only. Product/vendor identity is
 never an admission feature and semantic/Stellar Dictionary mapping is out of
 scope.
 
-Three hypothesis families were implemented and challenged under the same
-strict residual-only acceptance boundary:
+Four hypothesis families were implemented and challenged:
 
 1. cross-event delimiter/key-anchor grammar induction;
 2. numeric event-code literal-anchor / variable-slot templates;
-3. relative R-gram residual signatures for repeated security-message bodies.
+3. relative R-gram residual signatures for repeated security-message bodies;
+4. repeated leading numeric skeletons for partial source-value recovery.
 
-Only the relative R-gram family currently survives the final no-loss gate with
+The first three compete only for strict residual-only whole-event promotion.
+Only the relative R-gram family currently survives that final no-loss gate with
 independently validated new source values. Earlier delimiter/template promotions
 were rejected after hardening because candidate values re-segmented already
 claimed baseline source regions.
 
+The fourth family intentionally has a different contract: it may add exact
+source-value spans proven by repeated sample structure, but it must preserve the
+event's PARTIAL state and all original issues/residual regions. This allows
+accuracy-first extraction gains without falsely certifying the whole grammar.
+
 All accepted candidates are additive. An already `SOURCE_PARSED` event is
-never reinterpreted. A learned candidate can complete an event only through a
-residual-only merge that preserves every baseline field/span and adds new,
-non-empty exact source spans wholly inside baseline residual regions.
+never reinterpreted.
 
 ## Scope
 
 Only security-product telemetry is in scope. General application/OS prose logs
 are excluded.
 
-The current corpus covers **21 security-product families** and **15 security
+The current corpus covers **22 security-product families** and **16 security
 categories**, including:
 
 - AWS WAF
 - Suricata IDS/IPS / network detection
+- Snort IDS/IPS
 - Zeek NDR/network telemetry
 - Darktrace NDR
 - ExtraHop NDR
@@ -154,6 +159,51 @@ vendor-name admission rule.
 
 Final strict single-split gain: **6 Cisco Secure Email promotions**.
 
+## Primitive E — leading numeric skeleton partial recovery
+
+This layer addresses a different requirement: maximize exact source-value
+recovery even when the whole record grammar cannot yet be certified.
+
+Across a training batch it learns only repeated leading numeric/separator
+skeletons, for example a shape equivalent to:
+
+`<NUM>/<NUM>-<NUM>:<NUM>:<NUM>`
+
+or:
+
+`<NUM>:<NUM>:<NUM>-<NUM>:<NUM>:<NUM>`
+
+The learner is not given vendor/product identity, field semantics, expected
+timestamps or a fixed Snort/Sophos grammar. Admission requires:
+
+- at least three training samples with the exact same numeric/separator shape;
+- at least four numeric slots and at least two distinct punctuation separators;
+- explicit slot-count and prefix-length bounds;
+- exact holdout skeleton match;
+- every emitted value span wholly inside a baseline residual region;
+- no operation past NUL/size/resource-limit safety issues.
+
+Unlike the whole-event hypotheses, this layer **does not clear issues or
+residuals and cannot turn PARTIAL into SOURCE_PARSED**. It only appends
+temporary source slots with exact UTF-8 spans.
+
+Independent validation:
+
+- Snort fast IDS/IPS: three splits, **60 / 60** added spans exactly match the
+  pinned Elastic `SNORT_DATE` source boundaries; **12 / 12** evaluated
+  holdout occurrences also match expected timestamp components.
+- Sophos UTM DHCP/DNS: three splits, **54 / 54** added spans exactly match
+  Elastic's pinned `SOPHOS_TIMESTAMP` source boundaries; **9 / 9** evaluated
+  holdout occurrences match expected timestamps.
+- learner reference-value leakage: **none**;
+- baseline span loss: **0**;
+- raw mismatch: **0**.
+
+Machine-readable evidence:
+
+- `structural-hypothesis-snort-numeric-prefix-multisplit-summary.json`
+- `structural-hypothesis-sophos-numeric-prefix-multisplit-summary.json`
+
 ## Residual-only no-loss merge
 
 The acceptance boundary is stricter than candidate self-parsing:
@@ -176,30 +226,40 @@ or replacing source claims that the current parser already made.
 
 Current tracked benchmark:
 
-- source files: **81**
-- security-product families: **21**
-- security categories: **15**
-- evaluation events: **417**
-- disjoint train/holdout evaluation events: **364**
-- tiny-file no-regression control events: **53**
-- baseline `SOURCE_PARSED`: **298**
-- baseline incomplete: **119**
+- source files: **85**
+- security-product families: **22**
+- security categories: **16**
+- evaluation events: **430**
+- disjoint train/holdout evaluation events: **371**
+- tiny-file no-regression control events: **59**
+- baseline `SOURCE_PARSED`: **304**
+- baseline incomplete: **126**
 
 Final accepted new completions:
 
-- total: **6 / 119 = 5.0% of baseline-incomplete evaluation events**
+- total: **6 / 126 = 4.8% of baseline-incomplete evaluation events**
 - delimiter/key-anchor: **0**
 - event-code template: **0**
 - relative R-gram: **6**
 - promotion family: **Cisco Secure Email only**
 
-Extraction evidence:
+Whole-event promotion extraction evidence:
 
 - additional source-value spans: **12**
 - residual bytes removed: **492**
 - promotions preserving every baseline span: **6 / 6**
 - baseline span loss: **0**
 - raw mismatch: **0**
+
+Additional partial-only source recovery:
+
+- augmented incomplete events: **7**
+- added source-value spans: **38**
+- Snort IDS/IPS fast format: **4 events / +20 spans**
+- Sophos UTM: **3 events / +18 spans**
+- baseline span loss: **0**
+- raw mismatch: **0**
+- every augmented event remains **PARTIAL**
 
 Adversarial safety:
 
@@ -235,24 +295,27 @@ security-only corpus.
 
 Aggregate:
 
-- evaluation cases: **1,251**
-- baseline incomplete cases: **356**
-- accepted promotions: **21 / 356 = 5.9%**
-- accepted primitive: **relative R-gram only**
+- evaluation cases: **1,290**
+- baseline incomplete cases: **377**
+- accepted whole-event promotions: **21 / 377 = 5.6%**
+- accepted whole-event primitive: **relative R-gram only**
 - promotion family: **Cisco Secure Email only**
 - accepted promotions preserving every baseline span: **21 / 21**
+- whole-event added source spans: **44**
+- residual bytes removed by whole-event promotions: **1,752**
+- partial-only augmented events: **21**
+- partial-only added source spans: **114**
+- partial families: **Snort fast 12 / Sophos UTM 9**
 - baseline span loss: **0**
 - raw mismatch: **0**
-- additional source-value spans across splits: **44**
-- residual bytes removed across splits: **1,752**
 - mutation attempts: **105**
 - mutation false-complete: **0**
 
 Per split:
 
-- split A: **7** promotions, **15** new spans, **589** residual bytes removed
-- split B: **7** promotions, **15** new spans, **589** residual bytes removed
-- split C: **7** promotions, **14** new spans, **574** residual bytes removed
+- split A: **7** complete promotions plus **7** partial augmentations / **38** partial spans
+- split B: **7** complete promotions plus **7** partial augmentations / **38** partial spans
+- split C: **7** complete promotions plus **7** partial augmentations / **38** partial spans
 
 Independent reference validation across all three splits:
 
@@ -265,6 +328,20 @@ Independent reference validation across all three splits:
 - independently validated added spans: **44 / 44**
 - unvalidated added spans: **0**
 
+Independent partial-recovery validation across all three splits:
+
+- Snort fast augmentation occurrences: **12**
+- Snort fast added spans: **60 / 60 exact** against pinned `SNORT_DATE`
+- Snort expected timestamp consistency: **12 / 12**
+- Sophos UTM augmentation occurrences: **9**
+- Sophos UTM added spans: **54 / 54 exact** against pinned
+  `SOPHOS_TIMESTAMP`
+- Sophos expected timestamp consistency: **9 / 9**
+- combined independently validated partial spans: **114 / 114**
+- partial baseline span loss: **0**
+- partial raw mismatch: **0**
+- every augmented event remains **PARTIAL**
+
 Machine-readable evidence:
 
 - `structural-hypothesis-security-multisplit-summary.json`
@@ -272,24 +349,25 @@ Machine-readable evidence:
 
 ## Tests and regression
 
-Focused Structural Hypothesis suite after strict v3 hardening:
-**18 / 18 PASS**.
+Focused Structural Hypothesis suite after v4 partial-recovery work:
+**22 / 22 PASS**.
 
-A fresh full discovery executed **424 tests**. Exactly nine tests require
-historical ignored commercial/LEEF evidence or the optional Drain3 research
-dependency unavailable in this isolated worktree; they error on missing
-external inputs rather than parser assertions.
+A fresh full discovery executed **428 tests**. Exactly the same nine tests
+require historical ignored commercial/LEEF evidence or the optional Drain3
+research dependency unavailable in this isolated worktree; they error on
+missing external inputs rather than parser assertions. There were **0 assertion
+failures** in the full discovery.
 
 The cache-independent regression excludes exactly those nine verified
 external-evidence tests and completed:
 
-- tests in filtered suite: **415**
-- PASS: **408**
+- tests in filtered suite: **419**
+- PASS: **412**
 - optional skips: **7**
 - failures: **0**
 - errors: **0**
 
-This is the reproducible code-regression gate for the isolated strict-v3 PoC
+This is the reproducible code-regression gate for the isolated v4 PoC
 worktree.
 
 ## Rejected follow-up — masked residual R-gram
@@ -317,51 +395,77 @@ Machine-readable negative evidence:
 
 ## Interpretation
 
-The strict result is narrower than the earlier exploratory result but much
-stronger evidentially.
+The v4 result supports **two complementary batch-learned layers** above the
+current single-event Multi-Pass / Generic Structural engine.
 
-The valid improvement is currently:
+Whole-event learned recovery:
 
 `qualified single-event parser
- -> learn repeated residual R-gram from the sample batch
- -> exact signature match on a holdout event
- -> emit only dynamic source slots
+ -> repeated residual R-gram learning
+ -> exact holdout signature match
+ -> dynamic source slots only
  -> residual-only no-loss merge
- -> grammar-specific adversarial qualification`
+ -> adversarial qualification`
 
-This recovered source values that the current engine deliberately left
-unparsed, without changing any already accepted source span. The gain repeated
-across three deterministic splits, and every added span was independently
-validated against either Elastic's pinned official expected output or Cisco's
-published Secure Email log grammar.
+This path can promote an event to `SOURCE_PARSED` only when the learned grammar
+accounts for the remaining source without replacing any accepted baseline
+claim. Cisco Secure Email is the independently validated example: across three
+splits the PoC added **44 / 44 independently correct source spans**.
 
-The delimiter/key-anchor and event-code template experiments remain useful
-research negatives. They can propose plausible structure, but under the current
-strict no-loss gate they do not yet produce accepted product-quality gains.
+Partial learned recovery:
 
-This PoC therefore supports **adding a batch-learned residual grammar layer as
-a candidate architecture**, not replacing the current Multi-Pass/Generic
-Structural engine. It is still **not product integration approval**: the
-demonstrated strict gain is one repeated grammar class from one product family,
-while the wider WAF/IPS/EDR/NDR/firewall corpus mainly acts as abstention and
-regression evidence.
+`qualified incomplete event
+ -> repeated structural skeleton learning
+ -> exact holdout skeleton match
+ -> add only source slots wholly inside baseline residual
+ -> preserve original issues/residual/status`
+
+This path deliberately does **not** certify the whole grammar. It improves
+source-value recall while leaving the event PARTIAL. Snort IDS/IPS and Sophos
+UTM independently validate this behavior with **114 / 114 exact added spans**
+across three splits.
+
+Together, the independently validated multi-split evidence is therefore
+**158 / 158 newly recovered source spans** across three different security
+product families and two structurally different learned primitives, with zero
+baseline span loss. The earlier delimiter/key-anchor, event-code template and
+masked-R-gram experiments remain retained negative evidence and are not counted
+as gains.
+
+The architecture supported by the PoC is consequently:
+
+`existing qualified parsers
+ -> strict batch-learned complete candidate when provable
+ -> bounded batch-learned partial candidates on residual only
+ -> deterministic no-loss adjudication
+ -> semantic/Stellar mapping later`
+
+This is materially more useful than optimizing only the SOURCE_PARSED rate,
+because Parser Studio's primary KPI is exact original source-field/value
+recovery. It also avoids forcing a speculative grammar to appear complete.
+
+The PoC still does **not** authorize product integration. The independently
+validated gain spans three product families, but open-world evidence is still
+small relative to the full security-vendor/version space and the new
+numeric-skeleton primitive currently proves only repeated leading numeric
+structures.
 
 ## Next PoC gates
 
 Continue without weakening admission rules:
 
-1. freeze the strict v3 evidence and treat all pre-hardening 17/52 promotion
-   counts as superseded;
-2. find at least one additional independently verifiable non-JSON security
-   family where R-gram/anchor learning adds residual source values;
-3. add counterexample-guided specialization when a learned signature accepts a
-   structurally similar negative;
-4. expand grammar-derived mutations to token reordering, duplicated literals,
-   embedded delimiters and quote corruption;
-5. run a larger fresh security-only holdout that includes WAF, IDS/IPS, EDR,
-   NDR, NGFW, email/security gateway and identity/NAC logs;
-6. productize only if exact source-value/span precision remains 100% on
-   independently scored promotions, baseline span loss stays zero and
+1. freeze the v4 evidence and treat all earlier exploratory promotion counts as
+   superseded by the strict complete/partial split;
+2. test a fresh security-only holdout with additional non-JSON vendor/version
+   families, especially EDR and NDR long-tail formats;
+3. add at least one independently verified partial structural class beyond
+   leading timestamps, such as repeated labeled/protocol anchors;
+4. add counterexample-guided specialization plus token reordering, duplicated
+   anchors, quote corruption and embedded-delimiter mutations;
+5. score exact source TP/FP/FN on the fresh holdout, separately for complete
+   promotion and partial augmentation;
+6. productize only if independently scored added-span precision remains 100%,
+   baseline span loss stays zero, raw preservation stays 100%, and
    false-complete remains zero.
 
 No product integration, PR merge, release, production, DP/sensor, auth,

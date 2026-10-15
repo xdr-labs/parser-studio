@@ -1187,3 +1187,179 @@ def delete_required_rgram_literal(
     end = region_start + target.end
     mutated = raw[:start] + raw[end:]
     return mutated if mutated != raw else None
+
+
+# ---------------------------------------------------------------------------
+# Cross-event leading numeric skeletons for partial additive recovery.
+# ---------------------------------------------------------------------------
+
+LEADING_NUMERIC_REGION = re.compile(r"^[0-9][0-9 /:.,+\-]*")
+LEADING_NUMBER = re.compile(r"\d+(?:\.\d+)?")
+NUMERIC_SKELETON_SLOT = "<NUM>"
+
+
+@dataclass(frozen=True)
+class LeadingNumericSkeletonHypothesis:
+    skeleton: str
+    slot_count: int
+    training_support: int
+    minimum_prefix_chars: int
+
+
+def _leading_numeric_observation(
+    raw: str,
+) -> tuple[str, list[tuple[int, int]]] | None:
+    if not isinstance(raw, str) or not raw or not raw[0].isdigit():
+        return None
+    match = LEADING_NUMERIC_REGION.match(raw)
+    if match is None:
+        return None
+    region = match.group(0)
+    # Do not learn tiny identifiers or simple counters.  This layer is for a
+    # repeated structured numeric prefix with several separators/slots.
+    slots = list(LEADING_NUMBER.finditer(region))
+    if len(slots) < 4 or len(slots) > 12 or len(region) < 12:
+        return None
+    punctuation = {char for char in region if not char.isalnum() and not char.isspace()}
+    if len(punctuation) < 2:
+        return None
+    pieces: list[str] = []
+    cursor = 0
+    spans: list[tuple[int, int]] = []
+    for slot in slots:
+        pieces.append(region[cursor:slot.start()])
+        pieces.append(NUMERIC_SKELETON_SLOT)
+        spans.append(slot.span())
+        cursor = slot.end()
+    pieces.append(region[cursor:])
+    skeleton = "".join(pieces)
+    return skeleton, spans
+
+
+def learn_leading_numeric_hypotheses(
+    samples: Iterable[str],
+    *,
+    minimum_support: int = 3,
+) -> dict[str, LeadingNumericSkeletonHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("NUMERIC_SKELETON_MINIMUM_SUPPORT_TOO_LOW")
+    observations: dict[str, list[int]] = defaultdict(list)
+    slot_counts: dict[str, int] = {}
+    for raw in list(samples)[:MAX_TRAIN]:
+        observed = _leading_numeric_observation(raw)
+        if observed is None:
+            continue
+        skeleton, spans = observed
+        observations[skeleton].append(spans[-1][1])
+        slot_counts[skeleton] = len(spans)
+    result: dict[str, LeadingNumericSkeletonHypothesis] = {}
+    for skeleton, ends in observations.items():
+        if len(ends) < minimum_support:
+            continue
+        result[skeleton] = LeadingNumericSkeletonHypothesis(
+            skeleton=skeleton,
+            slot_count=slot_counts[skeleton],
+            training_support=len(ends),
+            minimum_prefix_chars=min(ends),
+        )
+    return result
+
+
+def parse_leading_numeric_slots(
+    raw: str,
+    hypotheses: dict[str, LeadingNumericSkeletonHypothesis],
+) -> SourceEvent | None:
+    if not isinstance(raw, str) or "\x00" in raw:
+        return None
+    observed = _leading_numeric_observation(raw)
+    if observed is None:
+        return None
+    skeleton, spans_char = observed
+    hypothesis = hypotheses.get(skeleton)
+    if hypothesis is None or len(spans_char) != hypothesis.slot_count:
+        return None
+    if spans_char[-1][1] < hypothesis.minimum_prefix_chars:
+        return None
+    values: list[str] = []
+    spans: list[ValueSpan] = []
+    for index, (start, end) in enumerate(spans_char):
+        value = raw[start:end]
+        values.append(value)
+        spans.append(
+            ValueSpan(
+                f"numeric_prefix.slot_{index}",
+                len(raw[:start].encode("utf8")),
+                len(raw[:end].encode("utf8")),
+                ("numeric_prefix", "slots", index),
+            )
+        )
+    event = SourceEvent(raw, syntax="STRUCTURAL_HYPOTHESIS+NUMERIC_PREFIX")
+    event.vendor_fields = {"numeric_prefix": {"slots": values}}
+    event.value_spans = spans
+    event.primitive_fields = len(spans)
+    event.covered = [(0, len(raw))]
+    assert_source_accounting(event)
+    return event
+
+
+def augment_partial_with_numeric_prefix(
+    baseline: SourceEvent,
+    candidate: SourceEvent | None,
+) -> SourceEvent | None:
+    """Add only exact residual numeric slots and keep the event incomplete."""
+    if candidate is None or baseline.status == "SOURCE_PARSED":
+        return None
+    if candidate.raw != baseline.raw:
+        return None
+    if any(
+        "LIMIT" in issue or "SIZE_OR_NUL" in issue
+        for issue in baseline.issues
+    ):
+        return None
+    assert_source_accounting(baseline)
+    assert_source_accounting(candidate)
+    residual_ranges = _unparsed_byte_ranges(baseline)
+    baseline_ranges = {
+        (span.start_byte, span.end_byte)
+        for span in baseline.value_spans
+    }
+    additions = [
+        span for span in candidate.value_spans
+        if (span.start_byte, span.end_byte) not in baseline_ranges
+        and span.start_byte < span.end_byte
+        and any(
+            start <= span.start_byte and span.end_byte <= end
+            for start, end in residual_ranges
+        )
+    ]
+    if not additions:
+        return None
+
+    from copy import deepcopy
+
+    result = deepcopy(baseline)
+    raw_bytes = result.raw.encode("utf8")
+    fields: dict[str, str] = {}
+    for index, span in enumerate(additions):
+        key = f"slot_{index}"
+        fields[key] = raw_bytes[span.start_byte:span.end_byte].decode("utf8")
+        result.value_spans.append(
+            ValueSpan(
+                f"hypothesis_partial.numeric_prefix.{key}",
+                span.start_byte,
+                span.end_byte,
+                ("hypothesis_partial", "numeric_prefix", key),
+            )
+        )
+    result.vendor_fields = deepcopy(baseline.vendor_fields)
+    result.vendor_fields.setdefault("hypothesis_partial", {})[
+        "numeric_prefix"
+    ] = fields
+    result.primitive_fields = len(result.value_spans)
+    result.syntax = baseline.syntax + "+NUMERIC_PREFIX_PARTIAL"
+    # Crucially, keep baseline issues/unparsed ranges.  This layer improves
+    # source-value recall but cannot certify whole-record completeness.
+    assert_source_accounting(result)
+    if result.status == "SOURCE_PARSED":
+        return None
+    return result

@@ -14,13 +14,16 @@ from benchmark_structural_hypothesis_security import _events, _files
 from multipass_adjudicator import parse_security_multipass, parse_security_once
 from source_parse import assert_source_accounting
 from structural_hypothesis_poc import (
+    augment_partial_with_numeric_prefix,
     delete_required_delimited_anchors,
     delete_required_rgram_literal,
     delete_required_template_anchor,
     learn_best_hypothesis,
     learn_event_template_hypotheses,
+    learn_leading_numeric_hypotheses,
     learn_relative_rgram_hypotheses,
     merge_residual_hypothesis,
+    parse_leading_numeric_slots,
     parse_with_event_template,
     parse_with_hypothesis,
     parse_with_relative_rgram,
@@ -86,6 +89,10 @@ def run_seed(seed: str) -> dict:
     promotion_span_preserved = 0
     promotion_span_loss = 0
     promotion_raw_mismatch = 0
+    partial_augmented_events = 0
+    partial_source_span_gain = 0
+    partial_span_loss = 0
+    partial_raw_mismatch = 0
 
     for source in _files():
         path = Path(source["path"])
@@ -100,6 +107,7 @@ def run_seed(seed: str) -> dict:
         rgrams = learn_relative_rgram_hypotheses(
             [parse_security_once(raw) for raw in train]
         )
+        numeric = learn_leading_numeric_hypotheses(train)
 
         for raw in holdout:
             baseline = parse_security_multipass(raw)
@@ -139,6 +147,52 @@ def run_seed(seed: str) -> dict:
                     chosen = "rgram"
 
             if merged is None:
+                numeric_candidate = parse_leading_numeric_slots(raw, numeric)
+                partial = augment_partial_with_numeric_prefix(
+                    baseline, numeric_candidate
+                )
+                if partial is not None:
+                    baseline_spans = {
+                        (
+                            span.path,
+                            span.source_segments,
+                            span.start_byte,
+                            span.end_byte,
+                        )
+                        for span in baseline.value_spans
+                    }
+                    partial_spans = {
+                        (
+                            span.path,
+                            span.source_segments,
+                            span.start_byte,
+                            span.end_byte,
+                        )
+                        for span in partial.value_spans
+                    }
+                    if partial.raw != baseline.raw:
+                        partial_raw_mismatch += 1
+                    elif not baseline_spans <= partial_spans:
+                        partial_span_loss += 1
+                    else:
+                        gain = (
+                            len(partial.value_spans)
+                            - len(baseline.value_spans)
+                        )
+                        partial_augmented_events += 1
+                        partial_source_span_gain += gain
+                        totals["partial_augmented_events"] += 1
+                        totals["numeric_prefix_partial_events"] += 1
+                        totals["partial_source_span_gain"] += gain
+                        by_family[source["family"]][
+                            "partial_augmented_events"
+                        ] += 1
+                        by_family[source["family"]][
+                            "numeric_prefix_partial_events"
+                        ] += 1
+                        by_family[source["family"]][
+                            "partial_source_span_gain"
+                        ] += gain
                 continue
 
             baseline_spans = {
@@ -193,6 +247,13 @@ def run_seed(seed: str) -> dict:
         "totals": dict(totals),
         "promoted_source_span_gain": span_gain,
         "promoted_residual_byte_reduction": residual_reduction,
+        "partial_recovery": {
+            "augmented_events": partial_augmented_events,
+            "source_span_gain": partial_source_span_gain,
+            "baseline_span_loss": partial_span_loss,
+            "raw_mismatch": partial_raw_mismatch,
+            "status_policy": "PARTIAL remains PARTIAL",
+        },
         "promotion_safety": {
             "accepted_promotions_with_all_baseline_spans_preserved":
                 promotion_span_preserved,
@@ -213,11 +274,16 @@ def run() -> dict:
     splits = [run_seed(seed) for seed in SEEDS]
     aggregate = Counter()
     family_promotions = Counter()
+    family_partial = Counter()
     mutation_attempts = 0
     mutation_false_complete = 0
     promotion_span_preserved = 0
     promotion_span_loss = 0
     promotion_raw_mismatch = 0
+    partial_augmented_events = 0
+    partial_source_span_gain = 0
+    partial_span_loss = 0
+    partial_raw_mismatch = 0
     for result in splits:
         aggregate.update(result["totals"])
         mutation_attempts += result["mutation_safety"]["attempts"]
@@ -227,10 +293,15 @@ def run() -> dict:
         ]
         promotion_span_loss += result["promotion_safety"]["baseline_span_loss"]
         promotion_raw_mismatch += result["promotion_safety"]["raw_mismatch"]
+        partial_augmented_events += result["partial_recovery"]["augmented_events"]
+        partial_source_span_gain += result["partial_recovery"]["source_span_gain"]
+        partial_span_loss += result["partial_recovery"]["baseline_span_loss"]
+        partial_raw_mismatch += result["partial_recovery"]["raw_mismatch"]
         for family, metrics in result["by_family"].items():
             family_promotions[family] += metrics.get("promotions", 0)
+            family_partial[family] += metrics.get("partial_augmented_events", 0)
     output = {
-        "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v3",
+        "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v4",
         "scope": "SECURITY_PRODUCTS_ONLY",
         "split_count": len(splits),
         "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
@@ -238,6 +309,14 @@ def run() -> dict:
         "splits": splits,
         "aggregate_totals": dict(aggregate),
         "aggregate_family_promotions": dict(sorted(family_promotions.items())),
+        "aggregate_family_partial_recovery": dict(sorted(family_partial.items())),
+        "aggregate_partial_recovery": {
+            "augmented_events": partial_augmented_events,
+            "source_span_gain": partial_source_span_gain,
+            "baseline_span_loss": partial_span_loss,
+            "raw_mismatch": partial_raw_mismatch,
+            "status_policy": "PARTIAL remains PARTIAL",
+        },
         "aggregate_promotion_safety": {
             "accepted_promotions_with_all_baseline_spans_preserved":
                 promotion_span_preserved,

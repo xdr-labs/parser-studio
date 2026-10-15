@@ -19,6 +19,14 @@
       "rgram_attempts": 10,
       "rgram_promotions": 6
     },
+    "IDS_IPS": {
+      "baseline_complete": 6,
+      "baseline_incomplete": 7,
+      "events": 13,
+      "numeric_prefix_partial_events": 4,
+      "partial_augmented_events": 4,
+      "partial_source_span_gain": 20
+    },
     "IDS_IPS_NDR": {
       "baseline_complete": 11,
       "events": 11
@@ -64,7 +72,10 @@
     "UTM": {
       "baseline_complete": 7,
       "baseline_incomplete": 3,
-      "events": 10
+      "events": 10,
+      "numeric_prefix_partial_events": 3,
+      "partial_augmented_events": 3,
+      "partial_source_span_gain": 18
     },
     "WAF": {
       "baseline_complete": 2,
@@ -138,10 +149,21 @@
       "baseline_complete": 3,
       "events": 3
     },
+    "snort": {
+      "baseline_complete": 6,
+      "baseline_incomplete": 7,
+      "events": 13,
+      "numeric_prefix_partial_events": 4,
+      "partial_augmented_events": 4,
+      "partial_source_span_gain": 20
+    },
     "sophos_utm": {
       "baseline_complete": 7,
       "baseline_incomplete": 3,
-      "events": 10
+      "events": 10,
+      "numeric_prefix_partial_events": 3,
+      "partial_augmented_events": 3,
+      "partial_source_span_gain": 18
     },
     "sophos_xg": {
       "baseline_complete": 79,
@@ -177,6 +199,7 @@
     "EDR",
     "EDR_XDR",
     "EMAIL_SECURITY",
+    "IDS_IPS",
     "IDS_IPS_NDR",
     "NAC_IDENTITY_SECURITY",
     "NDR",
@@ -190,8 +213,8 @@
     "WAF",
     "WAF_NGFW"
   ],
-  "contract": "parser-studio.poc.structural-hypothesis-security.v3",
-  "disjoint_evaluation_events": 364,
+  "contract": "parser-studio.poc.structural-hypothesis-security.v4",
+  "disjoint_evaluation_events": 371,
   "families": [
     "aws_waf",
     "checkpoint",
@@ -206,6 +229,7 @@
     "juniper_srx",
     "panw",
     "sentinel_one",
+    "snort",
     "sophos_utm",
     "sophos_xg",
     "suricata",
@@ -215,17 +239,26 @@
     "zeek",
     "zscaler_zia"
   ],
-  "files": 81,
+  "files": 85,
   "limitations": [
-    "v2 learns delimiter/key-anchor and numeric-event-code template structure; it is not a general CFG learner.",
-    "Promotion is structural evidence, not semantic field normalization evidence.",
+    "v4 is a bounded hypothesis ensemble, not a general CFG learner.",
+    "Whole-event promotion and PARTIAL-only source recovery use different acceptance contracts.",
     "Only existing incomplete events are eligible; prior SOURCE_PARSED records are never reinterpreted.",
-    "The promoted holdouts do not yet have an independent vendor-native field/span oracle, so promotion is not product qualification."
+    "Independent source correctness is scored in dedicated Cisco Secure Email, Snort, and Sophos reference benchmarks rather than inferred from this aggregate status benchmark.",
+    "Semantic/Stellar Dictionary mapping remains outside this source-extraction PoC."
   ],
   "mutation_safety": {
     "attempts": 30,
     "false_complete": 0,
     "mutation_types": 5
+  },
+  "partial_independent_reference_scored_in_dedicated_benchmarks": true,
+  "partial_recovery": {
+    "augmented_events": 7,
+    "baseline_span_loss": 0,
+    "raw_mismatch": 0,
+    "source_span_gain": 38,
+    "status_policy": "PARTIAL remains PARTIAL"
   },
   "per_file": [
     {
@@ -238,6 +271,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -260,6 +297,10 @@
         "baseline_complete": 8,
         "events": 8
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -281,6 +322,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -292,6 +337,109 @@
       "train_count": 3
     },
     {
+      "category": "IDS_IPS",
+      "event_count": 10,
+      "family": "snort",
+      "file_sha256": "59288f017fac9d9c3d47cc1431d7803ff30e267f9f13900ddab6a84ccab581c0",
+      "holdout_count": 4,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 4,
+        "events": 4,
+        "numeric_prefix_partial_events": 4,
+        "partial_augmented_events": 4,
+        "partial_source_span_gain": 20
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 1,
+        "training_support_total": 6
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 6
+    },
+    {
+      "category": "IDS_IPS",
+      "event_count": 3,
+      "family": "snort",
+      "file_sha256": "4ce9157e714e209c427d44659728458725935ada0ae37a152d4c806067011a77",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 3,
+        "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 3
+    },
+    {
+      "category": "IDS_IPS",
+      "event_count": 3,
+      "family": "snort",
+      "file_sha256": "8c48beed157ca350d665e3c4ebad8ca98bca45c196386d2588876c112c2dca40",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 1,
+        "training_support_total": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 3
+    },
+    {
+      "category": "IDS_IPS",
+      "event_count": 8,
+      "family": "snort",
+      "file_sha256": "bc2fe2d6cf4dc3dd01cea3c51e51292313fc21a4d3155e402e34cf744e9ebf29",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 1,
+        "training_support_total": 5
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 5
+    },
+    {
       "category": "EDR",
       "event_count": 1,
       "family": "trellix_edr",
@@ -301,6 +449,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -323,6 +475,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -343,6 +499,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -365,6 +525,10 @@
         "baseline_complete": 5,
         "events": 5
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -385,6 +549,10 @@
       "metrics": {
         "baseline_complete": 27,
         "events": 27
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -407,6 +575,10 @@
         "baseline_complete": 6,
         "events": 6
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -427,6 +599,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -449,6 +625,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -469,6 +649,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -491,6 +675,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -511,6 +699,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -533,6 +725,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -553,6 +749,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -575,6 +775,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -596,6 +800,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -616,6 +824,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -639,6 +851,10 @@
         "baseline_incomplete": 1,
         "events": 7
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -659,6 +875,10 @@
       "metrics": {
         "baseline_incomplete": 6,
         "events": 6
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -682,6 +902,10 @@
         "events": 8,
         "template_attempts": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -703,6 +927,10 @@
         "baseline_incomplete": 5,
         "events": 5
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -723,6 +951,10 @@
       "metrics": {
         "baseline_complete": 8,
         "events": 8
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -749,6 +981,10 @@
         "rgram_attempts": 10,
         "rgram_promotions": 6
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 1,
         "training_support_total": 19
@@ -769,6 +1005,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -791,6 +1031,10 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -811,6 +1055,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -833,6 +1081,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -853,6 +1105,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -883,6 +1139,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -903,6 +1163,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -925,6 +1189,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -945,6 +1213,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -977,6 +1249,10 @@
         "delimited_attempts": 1,
         "events": 5
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1008,6 +1284,10 @@
         "delimited_attempts": 3,
         "events": 21
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1036,6 +1316,10 @@
       "metrics": {
         "baseline_complete": 4,
         "events": 4
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1068,6 +1352,10 @@
         "delimited_attempts": 6,
         "events": 8
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1089,6 +1377,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1109,6 +1401,10 @@
       "metrics": {
         "baseline_complete": 14,
         "events": 14
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1139,6 +1435,10 @@
         "baseline_incomplete": 2,
         "delimited_attempts": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1171,6 +1471,10 @@
         "delimited_attempts": 2,
         "events": 6
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1193,6 +1497,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1213,6 +1521,10 @@
       "metrics": {
         "baseline_incomplete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1236,6 +1548,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1257,6 +1573,10 @@
         "baseline_complete": 7,
         "baseline_incomplete": 1,
         "events": 8
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1287,6 +1607,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1309,6 +1633,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1329,6 +1657,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1359,6 +1691,10 @@
         "baseline_complete": 9,
         "events": 9
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1379,6 +1715,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1401,6 +1741,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1421,6 +1765,10 @@
       "metrics": {
         "baseline_incomplete": 1,
         "events": 1
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1444,6 +1792,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1465,6 +1817,10 @@
         "baseline_complete": 7,
         "baseline_incomplete": 4,
         "events": 11
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1488,6 +1844,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1508,6 +1868,10 @@
       "metrics": {
         "baseline_complete": 5,
         "events": 5
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1531,6 +1895,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1552,6 +1920,10 @@
         "baseline_complete": 1,
         "baseline_incomplete": 9,
         "events": 10
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1575,6 +1947,10 @@
         "baseline_incomplete": 1,
         "events": 5
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1594,7 +1970,14 @@
       "hypothesis": null,
       "metrics": {
         "baseline_incomplete": 1,
-        "events": 1
+        "events": 1,
+        "numeric_prefix_partial_events": 1,
+        "partial_augmented_events": 1,
+        "partial_source_span_gain": 6
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 1,
+        "training_support_total": 3
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1615,7 +1998,14 @@
       "hypothesis": null,
       "metrics": {
         "baseline_incomplete": 2,
-        "events": 2
+        "events": 2,
+        "numeric_prefix_partial_events": 2,
+        "partial_augmented_events": 2,
+        "partial_source_span_gain": 12
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 1,
+        "training_support_total": 3
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1638,6 +2028,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "numeric_prefix_hypotheses": {
+        "count": 1,
+        "training_support_total": 5
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1658,6 +2052,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1681,6 +2079,10 @@
         "baseline_incomplete": 2,
         "events": 7
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1703,6 +2105,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1723,6 +2129,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1745,6 +2155,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1765,6 +2179,10 @@
       "metrics": {
         "baseline_incomplete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1787,6 +2205,10 @@
         "baseline_incomplete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1807,6 +2229,10 @@
       "metrics": {
         "baseline_incomplete": 3,
         "events": 3
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1829,6 +2255,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1849,6 +2279,10 @@
       "metrics": {
         "baseline_incomplete": 6,
         "events": 6
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1871,6 +2305,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1891,6 +2329,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1913,6 +2355,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1933,6 +2379,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1956,6 +2406,10 @@
         "baseline_incomplete": 10,
         "events": 33
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1976,6 +2430,10 @@
       "metrics": {
         "baseline_complete": 18,
         "events": 18
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1998,6 +2456,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "relative_rgram_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -2018,6 +2480,10 @@
       "metrics": {
         "baseline_complete": 18,
         "events": 18
+      },
+      "numeric_prefix_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -2042,14 +2508,17 @@
   "raw_values_published": false,
   "scope": "SECURITY_PRODUCTS_ONLY",
   "semantic_mapping_scored": false,
-  "small_file_no_regression_control_events": 53,
+  "small_file_no_regression_control_events": 59,
   "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
   "totals": {
-    "baseline_complete": 298,
-    "baseline_incomplete": 119,
+    "baseline_complete": 304,
+    "baseline_incomplete": 126,
     "delimited_attempts": 14,
-    "events": 417,
+    "events": 430,
     "hypothesis_attempts": 6,
+    "numeric_prefix_partial_events": 7,
+    "partial_augmented_events": 7,
+    "partial_source_span_gain": 38,
     "promotions": 6,
     "rgram_attempts": 10,
     "rgram_promotions": 6,

@@ -15,13 +15,16 @@ from typing import Iterable
 from multipass_adjudicator import parse_security_multipass, parse_security_once
 from source_parse import assert_source_accounting
 from structural_hypothesis_poc import (
+    augment_partial_with_numeric_prefix,
     delete_required_delimited_anchors,
     delete_required_rgram_literal,
     delete_required_template_anchor,
     learn_best_hypothesis,
     learn_event_template_hypotheses,
+    learn_leading_numeric_hypotheses,
     learn_relative_rgram_hypotheses,
     merge_residual_hypothesis,
+    parse_leading_numeric_slots,
     parse_with_event_template,
     parse_with_hypothesis,
     parse_with_relative_rgram,
@@ -44,6 +47,10 @@ def _files() -> list[dict[str, str]]:
         {"category": "WAF", "family": "aws_waf", "path": str(ENGINE_CACHE / "security_sources/aws_waf.raw")},
         {"category": "IDS_IPS_NDR", "family": "suricata", "path": str(ENGINE_CACHE / "security_sources/suricata_alert.raw")},
         {"category": "IDS_IPS_NDR", "family": "suricata", "path": str(ENGINE_CACHE / "security_sources/suricata_v6.raw")},
+        {"category": "IDS_IPS", "family": "snort", "path": str(LOCAL_CACHE / "snort_fast.log")},
+        {"category": "IDS_IPS", "family": "snort", "path": str(LOCAL_CACHE / "snort_syslog.log")},
+        {"category": "IDS_IPS", "family": "snort", "path": str(LOCAL_CACHE / "snort_pfsense.log")},
+        {"category": "IDS_IPS", "family": "snort", "path": str(LOCAL_CACHE / "snort_csv.log")},
         {"category": "EDR", "family": "trellix_edr", "path": str(ENGINE_CACHE / "trellix_edr.raw")},
         {"category": "EDR", "family": "trellix_epo", "path": str(ENGINE_CACHE / "trellix_epo.raw")},
         {"category": "EDR_XDR", "family": "trend_vision", "path": str(ENGINE_CACHE / "trend_vision.raw")},
@@ -124,6 +131,10 @@ def run() -> dict:
     mutation_attempts = 0
     promoted_span_gain = 0
     promoted_residual_reduction = 0
+    partial_source_span_gain = 0
+    partial_augmented_events = 0
+    partial_baseline_span_loss = 0
+    partial_raw_mismatch = 0
     promoted_baseline_spans_preserved = 0
     promoted_baseline_span_loss = 0
     promoted_raw_mismatch = 0
@@ -148,6 +159,7 @@ def run() -> dict:
         rgram_hypotheses = learn_relative_rgram_hypotheses(
             [parse_security_once(raw) for raw in train]
         )
+        numeric_hypotheses = learn_leading_numeric_hypotheses(train)
         stats = Counter()
         for raw in holdout:
             baseline = parse_security_multipass(raw)
@@ -206,6 +218,53 @@ def run() -> dict:
                         chosen_kind = "rgram"
 
             if merged is None:
+                numeric_candidate = parse_leading_numeric_slots(
+                    raw, numeric_hypotheses
+                )
+                partial = augment_partial_with_numeric_prefix(
+                    baseline, numeric_candidate
+                )
+                if partial is not None:
+                    baseline_spans = {
+                        (
+                            span.path,
+                            span.source_segments,
+                            span.start_byte,
+                            span.end_byte,
+                        )
+                        for span in baseline.value_spans
+                    }
+                    partial_spans = {
+                        (
+                            span.path,
+                            span.source_segments,
+                            span.start_byte,
+                            span.end_byte,
+                        )
+                        for span in partial.value_spans
+                    }
+                    if partial.raw != baseline.raw:
+                        partial_raw_mismatch += 1
+                        stats["partial_safety_rejected_raw_mismatch"] += 1
+                        totals["partial_safety_rejected_raw_mismatch"] += 1
+                    elif not baseline_spans <= partial_spans:
+                        partial_baseline_span_loss += 1
+                        stats["partial_safety_rejected_span_loss"] += 1
+                        totals["partial_safety_rejected_span_loss"] += 1
+                    else:
+                        gain = max(
+                            0,
+                            len(partial.value_spans)
+                            - len(baseline.value_spans),
+                        )
+                        partial_augmented_events += 1
+                        partial_source_span_gain += gain
+                        stats["partial_augmented_events"] += 1
+                        stats["numeric_prefix_partial_events"] += 1
+                        stats["partial_source_span_gain"] += gain
+                        totals["partial_augmented_events"] += 1
+                        totals["numeric_prefix_partial_events"] += 1
+                        totals["partial_source_span_gain"] += gain
                 continue
 
             baseline_spans = {
@@ -308,6 +367,13 @@ def run() -> dict:
                     for item in rgram_hypotheses.values()
                 ),
             },
+            "numeric_prefix_hypotheses": {
+                "count": len(numeric_hypotheses),
+                "training_support_total": sum(
+                    item.training_support
+                    for item in numeric_hypotheses.values()
+                ),
+            },
             "metrics": dict(stats),
         }
         per_file.append(row)
@@ -315,7 +381,7 @@ def run() -> dict:
         by_family[source["family"]].update(stats)
 
     result = {
-        "contract": "parser-studio.poc.structural-hypothesis-security.v3",
+        "contract": "parser-studio.poc.structural-hypothesis-security.v4",
         "scope": "SECURITY_PRODUCTS_ONLY",
         "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
         "additional_public_fixture_source": "elastic/integrations",
@@ -332,6 +398,13 @@ def run() -> dict:
         "totals": dict(totals),
         "promoted_source_span_gain": promoted_span_gain,
         "promoted_residual_byte_reduction": promoted_residual_reduction,
+        "partial_recovery": {
+            "augmented_events": partial_augmented_events,
+            "source_span_gain": partial_source_span_gain,
+            "baseline_span_loss": partial_baseline_span_loss,
+            "raw_mismatch": partial_raw_mismatch,
+            "status_policy": "PARTIAL remains PARTIAL",
+        },
         "promotion_safety": {
             "accepted_promotions_with_all_baseline_spans_preserved":
                 promoted_baseline_spans_preserved,
@@ -346,11 +419,13 @@ def run() -> dict:
         "by_category": {key: dict(value) for key, value in sorted(by_category.items())},
         "by_family": {key: dict(value) for key, value in sorted(by_family.items())},
         "per_file": per_file,
+        "partial_independent_reference_scored_in_dedicated_benchmarks": True,
         "limitations": [
-            "v2 learns delimiter/key-anchor and numeric-event-code template structure; it is not a general CFG learner.",
-            "Promotion is structural evidence, not semantic field normalization evidence.",
+            "v4 is a bounded hypothesis ensemble, not a general CFG learner.",
+            "Whole-event promotion and PARTIAL-only source recovery use different acceptance contracts.",
             "Only existing incomplete events are eligible; prior SOURCE_PARSED records are never reinterpreted.",
-            "The promoted holdouts do not yet have an independent vendor-native field/span oracle, so promotion is not product qualification.",
+            "Independent source correctness is scored in dedicated Cisco Secure Email, Snort, and Sophos reference benchmarks rather than inferred from this aggregate status benchmark.",
+            "Semantic/Stellar Dictionary mapping remains outside this source-extraction PoC.",
         ],
     }
     SUMMARY.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf8")

@@ -1,4 +1,28 @@
 {
+  "aggregate_family_partial_recovery": {
+    "aws_waf": 0,
+    "checkpoint": 0,
+    "cisco_asa": 0,
+    "cisco_ise": 0,
+    "cisco_secure_email": 0,
+    "crowdstrike": 0,
+    "darktrace": 0,
+    "extrahop": 0,
+    "f5_bigip": 0,
+    "fortigate": 0,
+    "juniper_srx": 0,
+    "panw": 0,
+    "sentinel_one": 0,
+    "snort": 12,
+    "sophos_utm": 9,
+    "sophos_xg": 0,
+    "suricata": 0,
+    "trellix_edr": 0,
+    "trellix_epo": 0,
+    "trend_vision": 0,
+    "zeek": 0,
+    "zscaler_zia": 0
+  },
   "aggregate_family_promotions": {
     "aws_waf": 0,
     "checkpoint": 0,
@@ -13,6 +37,7 @@
     "juniper_srx": 0,
     "panw": 0,
     "sentinel_one": 0,
+    "snort": 0,
     "sophos_utm": 0,
     "sophos_xg": 0,
     "suricata": 0,
@@ -26,19 +51,29 @@
     "attempts": 105,
     "false_complete": 0
   },
+  "aggregate_partial_recovery": {
+    "augmented_events": 21,
+    "baseline_span_loss": 0,
+    "raw_mismatch": 0,
+    "source_span_gain": 114,
+    "status_policy": "PARTIAL remains PARTIAL"
+  },
   "aggregate_promotion_safety": {
     "accepted_promotions_with_all_baseline_spans_preserved": 21,
     "baseline_span_loss": 0,
     "raw_mismatch": 0
   },
   "aggregate_totals": {
-    "baseline_complete": 895,
-    "baseline_incomplete": 356,
-    "events": 1251,
+    "baseline_complete": 913,
+    "baseline_incomplete": 377,
+    "events": 1290,
+    "numeric_prefix_partial_events": 21,
+    "partial_augmented_events": 21,
+    "partial_source_span_gain": 114,
     "promotions": 21,
     "rgram_promotions": 21
   },
-  "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v3",
+  "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v4",
   "raw_values_published": false,
   "scope": "SECURITY_PRODUCTS_ONLY",
   "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
@@ -105,10 +140,21 @@
           "baseline_complete": 3,
           "events": 3
         },
+        "snort": {
+          "baseline_complete": 6,
+          "baseline_incomplete": 7,
+          "events": 13,
+          "numeric_prefix_partial_events": 4,
+          "partial_augmented_events": 4,
+          "partial_source_span_gain": 20
+        },
         "sophos_utm": {
           "baseline_complete": 7,
           "baseline_incomplete": 3,
-          "events": 10
+          "events": 10,
+          "numeric_prefix_partial_events": 3,
+          "partial_augmented_events": 3,
+          "partial_source_span_gain": 18
         },
         "sophos_xg": {
           "baseline_complete": 80,
@@ -144,6 +190,13 @@
         "attempts": 35,
         "false_complete": 0
       },
+      "partial_recovery": {
+        "augmented_events": 7,
+        "baseline_span_loss": 0,
+        "raw_mismatch": 0,
+        "source_span_gain": 38,
+        "status_policy": "PARTIAL remains PARTIAL"
+      },
       "promoted_residual_byte_reduction": 589,
       "promoted_source_span_gain": 15,
       "promotion_safety": {
@@ -153,9 +206,12 @@
       },
       "seed": "structural-hypothesis-security-ms-a",
       "totals": {
-        "baseline_complete": 298,
-        "baseline_incomplete": 119,
-        "events": 417,
+        "baseline_complete": 304,
+        "baseline_incomplete": 126,
+        "events": 430,
+        "numeric_prefix_partial_events": 7,
+        "partial_augmented_events": 7,
+        "partial_source_span_gain": 38,
         "promotions": 7,
         "rgram_promotions": 7
       }
@@ -221,10 +277,21 @@
           "baseline_complete": 3,
           "events": 3
         },
+        "snort": {
+          "baseline_complete": 6,
+          "baseline_incomplete": 7,
+          "events": 13,
+          "numeric_prefix_partial_events": 4,
+          "partial_augmented_events": 4,
+          "partial_source_span_gain": 20
+        },
         "sophos_utm": {
           "baseline_complete": 7,
           "baseline_incomplete": 3,
-          "events": 10
+          "events": 10,
+          "numeric_prefix_partial_events": 3,
+          "partial_augmented_events": 3,
+          "partial_source_span_gain": 18
         },
         "sophos_xg": {
           "baseline_complete": 80,
@@ -260,6 +327,13 @@
         "attempts": 35,
         "false_complete": 0
       },
+      "partial_recovery": {
+        "augmented_events": 7,
+        "baseline_span_loss": 0,
+        "raw_mismatch": 0,
+        "source_span_gain": 38,
+        "status_policy": "PARTIAL remains PARTIAL"
+      },
       "promoted_residual_byte_reduction": 589,
       "promoted_source_span_gain": 15,
       "promotion_safety": {
@@ -269,9 +343,12 @@
       },
       "seed": "structural-hypothesis-security-ms-b",
       "totals": {
-        "baseline_complete": 303,
-        "baseline_incomplete": 114,
-        "events": 417,
+        "baseline_complete": 309,
+        "baseline_incomplete": 121,
+        "events": 430,
+        "numeric_prefix_partial_events": 7,
+        "partial_augmented_events": 7,
+        "partial_source_span_gain": 38,
         "promotions": 7,
         "rgram_promotions": 7
       }
@@ -337,10 +414,21 @@
           "baseline_complete": 3,
           "events": 3
         },
+        "snort": {
+          "baseline_complete": 6,
+          "baseline_incomplete": 7,
+          "events": 13,
+          "numeric_prefix_partial_events": 4,
+          "partial_augmented_events": 4,
+          "partial_source_span_gain": 20
+        },
         "sophos_utm": {
           "baseline_complete": 7,
           "baseline_incomplete": 3,
-          "events": 10
+          "events": 10,
+          "numeric_prefix_partial_events": 3,
+          "partial_augmented_events": 3,
+          "partial_source_span_gain": 18
         },
         "sophos_xg": {
           "baseline_complete": 75,
@@ -376,6 +464,13 @@
         "attempts": 35,
         "false_complete": 0
       },
+      "partial_recovery": {
+        "augmented_events": 7,
+        "baseline_span_loss": 0,
+        "raw_mismatch": 0,
+        "source_span_gain": 38,
+        "status_policy": "PARTIAL remains PARTIAL"
+      },
       "promoted_residual_byte_reduction": 574,
       "promoted_source_span_gain": 14,
       "promotion_safety": {
@@ -385,9 +480,12 @@
       },
       "seed": "structural-hypothesis-security-ms-c",
       "totals": {
-        "baseline_complete": 294,
-        "baseline_incomplete": 123,
-        "events": 417,
+        "baseline_complete": 300,
+        "baseline_incomplete": 130,
+        "events": 430,
+        "numeric_prefix_partial_events": 7,
+        "partial_augmented_events": 7,
+        "partial_source_span_gain": 38,
         "promotions": 7,
         "rgram_promotions": 7
       }

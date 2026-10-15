@@ -1,0 +1,102 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 60,
+    "augmented_events": 12,
+    "baseline_incomplete": 12,
+    "baseline_span_preserved_events": 12,
+    "events": 12,
+    "events_with_expected_doc": 12,
+    "expected_timestamp_consistent_events": 12,
+    "independently_validated_spans": 60,
+    "mutation_attempts": 36,
+    "official_exact_span_value": 60
+  },
+  "all_added_spans_independently_validated": true,
+  "contract": "parser-studio.poc.numeric-prefix-snort-reference-multisplit.v1",
+  "elastic_expected_blob_sha": "d0daa4817ee0d8b01ba2bd68c7ab67ab8e71a7d3",
+  "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "elastic_plaintext_pipeline_blob_sha": "197aa96409995a42bba8f4c86ad1b01557724198",
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "official_grammar": "SNORT_DATE=%{MONTHNUM}/%{MONTHDAY}(/%{YEAR})?-%{TIME}",
+  "raw_values_published": false,
+  "scope": "SNORT_IDS_IPS_PARTIAL_SOURCE_VALUE_RECOVERY",
+  "semantic_mapping_scored": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "splits": [
+    {
+      "augmented_event_sha256": [
+        "656efeb81d542dff4240c985c63420a6739dada3801b0020cf2af4d754de8597",
+        "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+        "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7",
+        "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+      ],
+      "holdout_events": 4,
+      "hypothesis_count": 1,
+      "metrics": {
+        "added_spans": 20,
+        "augmented_events": 4,
+        "baseline_incomplete": 4,
+        "baseline_span_preserved_events": 4,
+        "events": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent_events": 4,
+        "independently_validated_spans": 20,
+        "mutation_attempts": 12,
+        "official_exact_span_value": 20
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "5306f325a880c2c3d63fa2d2f717d1cd2ee43e62ced8f8644f49e3cc4649cfdd",
+        "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+        "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7",
+        "e168810de5c34270cede5d94700b5351ca384f64e016b1b0768885d6dc27a781"
+      ],
+      "holdout_events": 4,
+      "hypothesis_count": 1,
+      "metrics": {
+        "added_spans": 20,
+        "augmented_events": 4,
+        "baseline_incomplete": 4,
+        "baseline_span_preserved_events": 4,
+        "events": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent_events": 4,
+        "independently_validated_spans": 20,
+        "mutation_attempts": 12,
+        "official_exact_span_value": 20
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "19cb7ec940ecf7218ba75998792af4fd7d8acfb31d5c501a4feebb9fd9d6dd1d",
+        "30bd1a993ddd60a54544f566d538d83aac2082837c79124070ce1263208a9353",
+        "b416b398a4d153b4ae490bfc570e35172da987fd5accb559fd6e77c5d1fb415b",
+        "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+      ],
+      "holdout_events": 4,
+      "hypothesis_count": 1,
+      "metrics": {
+        "added_spans": 20,
+        "augmented_events": 4,
+        "baseline_incomplete": 4,
+        "baseline_span_preserved_events": 4,
+        "events": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent_events": 4,
+        "independently_validated_spans": 20,
+        "mutation_attempts": 12,
+        "official_exact_span_value": 20
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 6
+    }
+  ],
+  "status_policy": "PARTIAL remains PARTIAL; numeric-prefix recovery cannot certify whole-record completeness",
+  "unique_augmented_events": 9
+}
