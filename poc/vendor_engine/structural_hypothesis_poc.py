@@ -17,7 +17,7 @@ from math import ceil
 import re
 from typing import Iterable
 
-from source_parse import SourceEvent, ValueSpan, assert_source_accounting
+from source_parse import SourceEvent, ValueSpan, _close, assert_source_accounting
 
 SAFE_KEY = re.compile(r"[A-Za-z][A-Za-z0-9_. /-]{0,63}")
 KEY_AT = re.compile(r"(?P<key>[A-Za-z][A-Za-z0-9_. /-]{0,63}?)\s*=")
@@ -964,6 +964,7 @@ RGRAM_TOKEN = re.compile(
     r"|(?:\d{1,3}\.){3}\d{1,3}"
     r"|[A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+"
     r"|[0-9a-fA-F]{20,}"
+    r"|\d[0-9/:.\-]{4,}\d"
     r"|\d+(?:\.\d+)*"
     r"|[A-Za-z_][A-Za-z0-9_-]*"
     r"|[^\w\s]"
@@ -1014,6 +1015,10 @@ def _rgram_dynamic_span(text: str, match: re.Match[str]) -> tuple[int, int] | No
         return start, end
     if re.fullmatch(r"[0-9a-fA-F]{20,}", token):
         return start, end
+    if re.fullmatch(r"\d[0-9/:.\-]{4,}\d", token):
+        punctuation = {char for char in token if not char.isdigit()}
+        if punctuation:
+            return start, end
     if re.fullmatch(r"\d+(?:\.\d+)*", token):
         return start, end
     return None
@@ -1187,3 +1192,312 @@ def delete_required_rgram_literal(
     end = region_start + target.end
     mutated = raw[:start] + raw[end:]
     return mutated if mutated != raw else None
+
+
+# ---------------------------------------------------------------------------
+# Cross-event aligned residual atoms.
+# ---------------------------------------------------------------------------
+
+ALIGNED_TIME_LIKE = re.compile(r"^\d[0-9/:.\-]{4,}\d$")
+
+
+@dataclass(frozen=True)
+class AlignedResidualHypothesis:
+    residual_count: int
+    residual_index: int
+    anchors: tuple[str, ...]
+    typed_anchor_indexes: tuple[int, ...]
+    training_support: int
+    minimum_coverage: float
+
+
+def _time_like_value(value: str) -> bool:
+    if ALIGNED_TIME_LIKE.fullmatch(value) is None:
+        return False
+    punctuation = {char for char in value if not char.isdigit()}
+    return ":" in punctuation and bool({"/", "-"} & punctuation)
+
+
+def _match_rgram_anchors(
+    tokens: list[RgramToken], anchors: tuple[str, ...] | list[str]
+) -> list[RgramToken] | None:
+    matched: list[RgramToken] = []
+    cursor = 0
+    for anchor in anchors:
+        found = None
+        while cursor < len(tokens):
+            token = tokens[cursor]
+            cursor += 1
+            if token.signature == anchor:
+                found = token
+                break
+        if found is None:
+            return None
+        matched.append(found)
+    return matched
+
+
+def learn_aligned_residual_hypotheses(
+    training_events: Iterable[SourceEvent],
+    *,
+    minimum_support: int = 3,
+) -> dict[tuple[int, int], AlignedResidualHypothesis]:
+    """Learn repeated anchor subsequences per residual ordinal.
+
+    This is deliberately a partial-recovery learner.  It does not claim that
+    the entire event grammar is known.  Only strongly typed values occupying a
+    stable cross-event anchor position can later be added to an incomplete
+    event.
+    """
+    if minimum_support < 3:
+        raise ValueError("ALIGNED_RESIDUAL_MINIMUM_SUPPORT_TOO_LOW")
+
+    groups: dict[
+        tuple[int, int],
+        list[tuple[SourceEvent, int, int, list[RgramToken]]],
+    ] = defaultdict(list)
+    for event in list(training_events)[:MAX_TRAIN]:
+        if event.status == "SOURCE_PARSED":
+            continue
+        if any(
+            fragment in issue
+            for issue in event.issues
+            for fragment in RGRAM_HARD_ISSUE_FRAGMENTS
+        ):
+            continue
+        residual_count = len(event.unparsed)
+        if residual_count == 0:
+            continue
+        for index, (start, end) in enumerate(event.unparsed):
+            if not (0 <= start < end <= len(event.raw)):
+                continue
+            if end - start < 12 or end - start > RGRAM_MAX_REGION_CHARS:
+                continue
+            tokens = _rgram_tokens(event.raw[start:end])
+            if tokens:
+                groups[(residual_count, index)].append(
+                    (event, start, end, tokens)
+                )
+
+    result: dict[tuple[int, int], AlignedResidualHypothesis] = {}
+    for key, rows in groups.items():
+        if len(rows) < minimum_support:
+            continue
+
+        sequences = [
+            [token.signature for token in tokens]
+            for _event, _start, _end, tokens in rows
+        ]
+        common = list(sequences[0])
+        for sequence in sequences[1:]:
+            common = _lcs_tokens(common, sequence)
+            if len(common) < 8:
+                break
+        if len(common) < 8:
+            continue
+
+        literal_tokens = sum(anchor != RGRAM_VAR for anchor in common)
+        if literal_tokens < 5 or RGRAM_VAR not in common:
+            continue
+
+        coverages = [
+            len(common) / max(1, len(sequence))
+            for sequence in sequences
+        ]
+        minimum_coverage = min(coverages)
+        if minimum_coverage < 0.55:
+            continue
+
+        typed_indexes: list[int] = []
+        variable_indexes = [
+            index for index, anchor in enumerate(common)
+            if anchor == RGRAM_VAR
+        ]
+        for anchor_index in variable_indexes:
+            typed_support = 0
+            matched_rows = 0
+            for event, start, _end, tokens in rows:
+                matched = _match_rgram_anchors(tokens, common)
+                if matched is None:
+                    continue
+                matched_rows += 1
+                token = matched[anchor_index]
+                value = event.raw[
+                    start + token.start : start + token.end
+                ]
+                if _time_like_value(value):
+                    typed_support += 1
+            if (
+                matched_rows >= minimum_support
+                and typed_support == matched_rows
+            ):
+                typed_indexes.append(anchor_index)
+
+        if not typed_indexes:
+            continue
+
+        residual_count, residual_index = key
+        result[key] = AlignedResidualHypothesis(
+            residual_count=residual_count,
+            residual_index=residual_index,
+            anchors=tuple(common),
+            typed_anchor_indexes=tuple(typed_indexes),
+            training_support=len(rows),
+            minimum_coverage=minimum_coverage,
+        )
+    return result
+
+
+def augment_with_aligned_residual_atoms(
+    event: SourceEvent,
+    hypotheses: dict[tuple[int, int], AlignedResidualHypothesis],
+) -> SourceEvent:
+    """Add cross-event qualified typed atoms while keeping incompleteness."""
+    assert_source_accounting(event)
+    if event.status == "SOURCE_PARSED" or not hypotheses:
+        return event
+    if any(
+        fragment in issue
+        for issue in event.issues
+        for fragment in RGRAM_HARD_ISSUE_FRAGMENTS
+    ):
+        return event
+
+    from copy import deepcopy
+
+    out = deepcopy(event)
+    existing = [
+        (span.start_byte, span.end_byte)
+        for span in out.value_spans
+        if span.start_byte < span.end_byte
+    ]
+    bucket = list(
+        out.vendor_fields.get("hypothesis_atoms", {}).get(
+            "time_like", []
+        )
+    )
+    additions: list[ValueSpan] = []
+    added_char_ranges: list[tuple[int, int]] = []
+
+    residual_count = len(event.unparsed)
+    for index, (start, end) in enumerate(event.unparsed):
+        hypothesis = hypotheses.get((residual_count, index))
+        if hypothesis is None:
+            continue
+        tokens = _rgram_tokens(event.raw[start:end])
+        if not tokens:
+            continue
+        # Holdout may contain longer free-text between the same exact
+        # anchors. Keep every learned anchor mandatory, but allow bounded
+        # additional prose without treating the train token ratio as a fixed
+        # message length contract.
+        minimum_holdout_coverage = max(
+            0.55, hypothesis.minimum_coverage - 0.20
+        )
+        if (
+            len(hypothesis.anchors) / max(1, len(tokens))
+            < minimum_holdout_coverage
+        ):
+            continue
+        matched = _match_rgram_anchors(
+            tokens, hypothesis.anchors
+        )
+        if matched is None:
+            continue
+
+        for anchor_index in hypothesis.typed_anchor_indexes:
+            token = matched[anchor_index]
+            char_start = start + token.start
+            char_end = start + token.end
+            value = event.raw[char_start:char_end]
+            if not _time_like_value(value):
+                continue
+            byte_start = len(
+                event.raw[:char_start].encode("utf8")
+            )
+            byte_end = len(
+                event.raw[:char_end].encode("utf8")
+            )
+            if any(
+                max(byte_start, a) < min(byte_end, b)
+                for a, b in existing
+            ):
+                continue
+            if any(
+                span.start_byte == byte_start
+                and span.end_byte == byte_end
+                for span in additions
+            ):
+                continue
+            item_index = len(bucket)
+            bucket.append(value)
+            additions.append(
+                ValueSpan(
+                    f"hypothesis_atoms.time_like.{item_index}",
+                    byte_start,
+                    byte_end,
+                    ("hypothesis_atoms", "time_like", item_index),
+                )
+            )
+            added_char_ranges.append((char_start, char_end))
+
+    if not additions:
+        return event
+
+    container = out.vendor_fields.get("hypothesis_atoms")
+    if container is None:
+        container = {}
+        out.vendor_fields["hypothesis_atoms"] = container
+    if not isinstance(container, dict):
+        return event
+    container["time_like"] = bucket
+
+    out.value_spans.extend(additions)
+    out.value_spans.sort(
+        key=lambda span: (span.start_byte, span.end_byte, span.path)
+    )
+    out.primitive_fields = len(out.value_spans)
+    out.covered.extend(added_char_ranges)
+    out.syntax += "+ALIGNED_RESIDUAL_ATOMS"
+    out.unparsed = []
+    out = _close(out)
+    # This layer improves recall only. It is never a completeness proof.
+    if not out.issues:
+        out.issues.append("ALIGNED_RESIDUAL_CANDIDATE_ONLY")
+    assert_source_accounting(out)
+    return out
+
+
+def delete_required_aligned_anchor(
+    raw: str,
+    event: SourceEvent,
+    hypotheses: dict[tuple[int, int], AlignedResidualHypothesis],
+) -> str | None:
+    """Delete one learned literal anchor for counterexample qualification."""
+    if raw != event.raw:
+        return None
+    residual_count = len(event.unparsed)
+    for index, (start, end) in enumerate(event.unparsed):
+        hypothesis = hypotheses.get((residual_count, index))
+        if hypothesis is None:
+            continue
+        tokens = _rgram_tokens(raw[start:end])
+        if not tokens:
+            continue
+        matched = _match_rgram_anchors(tokens, hypothesis.anchors)
+        if matched is None:
+            continue
+        literal_indexes = [
+            anchor_index
+            for anchor_index, anchor in enumerate(hypothesis.anchors)
+            if anchor != RGRAM_VAR
+        ]
+        if len(literal_indexes) < 5:
+            continue
+        target_index = literal_indexes[len(literal_indexes) // 2]
+        target = matched[target_index]
+        char_start = start + target.start
+        char_end = start + target.end
+        mutated = raw[:char_start] + raw[char_end:]
+        return mutated if mutated != raw else None
+    return None

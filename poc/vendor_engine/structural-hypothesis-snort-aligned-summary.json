@@ -1,0 +1,99 @@
+{
+  "acceptance": {
+    "all_added_spans_independently_validated": true,
+    "anchor_deletion_false_additions_zero": true,
+    "baseline_span_loss_zero": true,
+    "status_never_promoted": true
+  },
+  "aggregate_metrics": {
+    "added_spans": 11,
+    "anchor_deletion_attempts": 11,
+    "augmented_events": 11,
+    "augmented_events_with_official_expected": 11,
+    "baseline_partial": 12,
+    "events": 12,
+    "official_timestamp_exact": 11,
+    "status_unchanged": 12
+  },
+  "contract": "parser-studio.poc.snort-aligned-residual-atoms.v1",
+  "expected_fixture_blob_sha": "d0daa4817ee0d8b01ba2bd68c7ab67ab8e71a7d3",
+  "learner_expected_reference_used": false,
+  "learner_vendor_identity_used": false,
+  "raw_fixture_blob_sha": "23a7b6e9b8c4853217e743a4813a6db32815c3f9",
+  "raw_values_published": false,
+  "reference_pipeline_blob_sha": "197aa96409995a42bba8f4c86ad1b01557724198",
+  "reference_source_pattern": "SNORT_DATE=%{MONTHNUM}/%{MONTHDAY}(/%{YEAR})?-%{TIME}",
+  "scope": "SNORT_IDS_IPS_FAST_LOG_SOURCE_EXTRACTION",
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_count": 3,
+  "splits": [
+    {
+      "augmented_event_sha256": [
+        "656efeb81d542dff4240c985c63420a6739dada3801b0020cf2af4d754de8597",
+        "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+        "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7",
+        "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+      ],
+      "holdout_events": 4,
+      "hypothesis_count": 1,
+      "metrics": {
+        "added_spans": 4,
+        "anchor_deletion_attempts": 4,
+        "augmented_events": 4,
+        "augmented_events_with_official_expected": 4,
+        "baseline_partial": 4,
+        "events": 4,
+        "official_timestamp_exact": 4,
+        "status_unchanged": 4
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "5306f325a880c2c3d63fa2d2f717d1cd2ee43e62ced8f8644f49e3cc4649cfdd",
+        "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+        "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7"
+      ],
+      "holdout_events": 4,
+      "hypothesis_count": 1,
+      "metrics": {
+        "added_spans": 3,
+        "anchor_deletion_attempts": 3,
+        "augmented_events": 3,
+        "augmented_events_with_official_expected": 3,
+        "baseline_partial": 4,
+        "events": 4,
+        "official_timestamp_exact": 3,
+        "status_unchanged": 4
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "19cb7ec940ecf7218ba75998792af4fd7d8acfb31d5c501a4feebb9fd9d6dd1d",
+        "30bd1a993ddd60a54544f566d538d83aac2082837c79124070ce1263208a9353",
+        "b416b398a4d153b4ae490bfc570e35172da987fd5accb559fd6e77c5d1fb415b",
+        "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+      ],
+      "holdout_events": 4,
+      "hypothesis_count": 1,
+      "metrics": {
+        "added_spans": 4,
+        "anchor_deletion_attempts": 4,
+        "augmented_events": 4,
+        "augmented_events_with_official_expected": 4,
+        "baseline_partial": 4,
+        "events": 4,
+        "official_timestamp_exact": 4,
+        "status_unchanged": 4
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 6
+    }
+  ],
+  "unique_augmented_events": 8,
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed"
+}

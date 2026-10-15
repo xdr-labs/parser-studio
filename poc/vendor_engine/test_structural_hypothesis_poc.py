@@ -1,8 +1,11 @@
 import unittest
 
 from structural_hypothesis_poc import (
+    augment_with_aligned_residual_atoms,
     candidate_improves,
     confirm_positional_csv,
+    delete_required_aligned_anchor,
+    learn_aligned_residual_hypotheses,
     learn_best_hypothesis,
     delete_required_rgram_literal,
     learn_event_template_hypotheses,
@@ -285,6 +288,138 @@ class StructuralHypothesisPocTests(unittest.TestCase):
         self.assertIsNotNone(merged)
         self.assertEqual("SOURCE_PARSED", merged.status)
         self.assertEqual(holdout.value_spans[0], merged.value_spans[0])
+
+    def test_relative_rgram_keeps_punctuated_numeric_token_whole(self):
+        training = [
+            self._rgram_view(
+                "03/12-10:11:12.123 Alert rule 101 source 192.0.2.1 "
+                "destination 198.51.100.1 blocked"
+            ),
+            self._rgram_view(
+                "04/13-11:12:13.456 Alert rule 202 source 192.0.2.2 "
+                "destination 198.51.100.2 blocked"
+            ),
+            self._rgram_view(
+                "05/14-12:13:14.789 Alert rule 303 source 192.0.2.3 "
+                "destination 198.51.100.3 blocked"
+            ),
+        ]
+        hypotheses = learn_relative_rgram_hypotheses(training)
+        self.assertEqual(1, len(hypotheses))
+        holdout = self._rgram_view(
+            "06/15-13:14:15.987 Alert rule 404 source 192.0.2.4 "
+            "destination 198.51.100.4 blocked"
+        )
+        candidate = parse_with_relative_rgram(
+            holdout.raw, holdout, hypotheses
+        )
+        self.assertIsNotNone(candidate)
+        slots = candidate.vendor_fields["rgram"]["slots"]
+        self.assertIn("06/15-13:14:15.987", slots.values())
+        # The composite timestamp must be one field, never six two-byte slots.
+        two_byte_numeric = [
+            value for value in slots.values()
+            if len(value.encode("utf8")) == 2 and value.isdigit()
+        ]
+        self.assertEqual([], two_byte_numeric)
+
+    def test_aligned_residual_atoms_add_whole_time_like_value_only(self):
+        training = [
+            self._rgram_view(
+                "03/12-10:11:12.123 [**] [1:100:1] short alert "
+                "[**] [Classification: suspicious] [Priority: 2] {UDP}"
+            ),
+            self._rgram_view(
+                "04/13-11:12:13.456 [**] [1:200:1] a much longer alert text "
+                "[**] [Classification: policy] [Priority: 3] {TCP}"
+            ),
+            self._rgram_view(
+                "05/14-12:13:14.789 [**] [1:300:1] another event "
+                "[**] [Classification: malware] [Priority: 1] {ICMP}"
+            ),
+        ]
+        hypotheses = learn_aligned_residual_hypotheses(training)
+        self.assertTrue(hypotheses)
+
+        holdout = self._rgram_view(
+            "06/15-13:14:15.987 [**] [1:400:1] unseen description words "
+            "[**] [Classification: network] [Priority: 4] {UDP}"
+        )
+        before = list(holdout.value_spans)
+        augmented = augment_with_aligned_residual_atoms(
+            holdout, hypotheses
+        )
+        self.assertEqual("PARTIAL", augmented.status)
+        self.assertEqual(before, augmented.value_spans[: len(before)])
+        values = augmented.vendor_fields["hypothesis_atoms"]["time_like"]
+        self.assertEqual(["06/15-13:14:15.987"], values)
+        added = augmented.value_spans[len(before):]
+        self.assertEqual(1, len(added))
+        self.assertEqual(
+            "06/15-13:14:15.987",
+            augmented.raw.encode()[
+                added[0].start_byte : added[0].end_byte
+            ].decode(),
+        )
+        self.assertNotIn("13", values)
+        self.assertNotIn("14", values)
+
+    def test_aligned_residual_atoms_abstain_on_hard_issue(self):
+        training = [
+            self._rgram_view(
+                "03/12-10:11:12.123 [**] [1:100:1] alpha beta gamma "
+                "[**] [Classification: suspicious] [Priority: 2]"
+            ),
+            self._rgram_view(
+                "04/13-11:12:13.456 [**] [1:200:1] delta epsilon zeta "
+                "[**] [Classification: policy] [Priority: 3]"
+            ),
+            self._rgram_view(
+                "05/14-12:13:14.789 [**] [1:300:1] eta theta iota "
+                "[**] [Classification: malware] [Priority: 1]"
+            ),
+        ]
+        hypotheses = learn_aligned_residual_hypotheses(training)
+        self.assertTrue(hypotheses)
+        holdout = self._rgram_view(
+            "06/15-13:14:15.987 [**] [1:400:1] unseen words here "
+            "[**] [Classification: network] [Priority: 4]"
+        )
+        holdout.issues.append("SOURCE_TRUNCATED")
+        augmented = augment_with_aligned_residual_atoms(
+            holdout, hypotheses
+        )
+        self.assertIs(holdout, augmented)
+
+    def test_aligned_residual_atoms_reject_required_anchor_deletion(self):
+        training = [
+            self._rgram_view(
+                "03/12-10:11:12.123 [**] [1:100:1] alpha words "
+                "[**] [Classification: suspicious] [Priority: 2]"
+            ),
+            self._rgram_view(
+                "04/13-11:12:13.456 [**] [1:200:1] beta words here "
+                "[**] [Classification: policy] [Priority: 3]"
+            ),
+            self._rgram_view(
+                "05/14-12:13:14.789 [**] [1:300:1] gamma text "
+                "[**] [Classification: malware] [Priority: 1]"
+            ),
+        ]
+        hypotheses = learn_aligned_residual_hypotheses(training)
+        holdout = self._rgram_view(
+            "06/15-13:14:15.987 [**] [1:400:1] unseen description "
+            "[**] [Classification: network] [Priority: 4]"
+        )
+        mutated_raw = delete_required_aligned_anchor(
+            holdout.raw, holdout, hypotheses
+        )
+        self.assertIsNotNone(mutated_raw)
+        mutated = self._rgram_view(mutated_raw[len("header "):])
+        augmented = augment_with_aligned_residual_atoms(
+            mutated, hypotheses
+        )
+        self.assertNotIn("hypothesis_atoms", augmented.vendor_fields)
 
     def test_relative_rgram_rejects_truncation_and_required_literal_deletion(self):
         training = [

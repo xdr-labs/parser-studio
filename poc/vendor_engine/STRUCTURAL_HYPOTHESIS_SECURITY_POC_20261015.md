@@ -270,27 +270,92 @@ Machine-readable evidence:
 - `structural-hypothesis-security-multisplit-summary.json`
 - `structural-hypothesis-cisco-reference-multisplit-summary.json`
 
+## Primitive E — aligned residual partial augmentation
+
+The strict completion gate is intentionally not the only useful outcome. Some
+security logs contain a stable, independently verifiable value inside a residual
+while surrounding free text remains unknown. Requiring full-record grammar
+proof would leave that value unextracted.
+
+The aligned residual learner therefore operates in a second, lower-authority
+mode:
+
+`incomplete event batch
+ -> group the same residual ordinal/count
+ -> learn an LCS of exact relative anchors
+ -> identify a source-type slot that is stable across train samples
+ -> require every learned anchor on holdout
+ -> add only the independently shaped source atom
+ -> preserve PARTIAL status`
+
+It never clears issues and never turns an incomplete event into
+`SOURCE_PARSED`. Existing source spans are immutable.
+
+The first independently validated target is Snort IDS/IPS fast-log input. The
+generic tokenizer was also corrected so a punctuated numeric source token such
+as a date/time is represented as one value rather than several two-digit
+fragments. No Snort/vendor identifier is an admission feature.
+
+Three deterministic train/holdout splits over the pinned Snort fast fixture:
+
+- holdout event occurrences: **12**;
+- baseline PARTIAL: **12 / 12**;
+- augmented event occurrences: **11**;
+- unique augmented events: **8**;
+- added source spans: **11**;
+- added spans exactly consistent with Elastic's pinned official
+  `SNORT_DATE` / expected `@timestamp`: **11 / 11**;
+- status unchanged: **12 / 12**;
+- baseline span loss: **0**;
+- learned-anchor deletion counterexamples: **11**;
+- false additions after anchor deletion: **0**.
+
+The official evaluation-only reference is the pinned Elastic grammar
+`SNORT_DATE=%{MONTHNUM}/%{MONTHDAY}(/%{YEAR})?-%{TIME}`.
+The learner never receives the expected timestamps or this grammar.
+
+A broader abstention/regression pass exercised **98 source files / 25 security
+families / 688 holdout events** spanning WAF, IDS/IPS, EDR/XDR, NDR, NGFW,
+VPN, NAC/identity, SWG and email security:
+
+- baseline complete: **411**;
+- baseline incomplete: **277**;
+- augmented events: **4**;
+- added spans: **4**;
+- augmented family: **Snort only**;
+- baseline span loss: **0**;
+- status changes: **0**.
+
+Thus AWS WAF, Suricata, CrowdStrike, SentinelOne, Trellix, Trend Vision One,
+Zeek, Darktrace, ExtraHop, PAN-OS, FortiGate, Check Point, Cisco ASA,
+Barracuda WAF/CloudGen Firewall, WatchGuard, F5, Cisco ISE, Sophos and Zscaler
+acted as abstention/no-regression controls in this pass.
+
+Machine-readable evidence:
+
+- `structural-hypothesis-snort-aligned-summary.json`
+- `structural-hypothesis-aligned-security-summary.json`
+
 ## Tests and regression
 
-Focused Structural Hypothesis suite after strict v3 hardening:
-**18 / 18 PASS**.
+Focused Structural Hypothesis suite after the aligned-residual extension:
+**22 / 22 PASS**.
 
-A fresh full discovery executed **424 tests**. Exactly nine tests require
-historical ignored commercial/LEEF evidence or the optional Drain3 research
-dependency unavailable in this isolated worktree; they error on missing
-external inputs rather than parser assertions.
+A fresh full discovery attempted **428 tests**. Exactly eight tests require
+historical ignored security/commercial holdout evidence or the optional Drain3
+research dependency unavailable in this isolated worktree; those eight error on
+missing external inputs rather than parser assertions.
 
-The cache-independent regression excludes exactly those nine verified
+The cache-independent regression then excluded exactly those eight identified
 external-evidence tests and completed:
 
-- tests in filtered suite: **415**
-- PASS: **408**
-- optional skips: **7**
+- tests executed: **420**
+- optional skips: **28**
 - failures: **0**
 - errors: **0**
 
-This is the reproducible code-regression gate for the isolated strict-v3 PoC
-worktree.
+This is the reproducible code-regression gate for the isolated
+security-expansion PoC worktree.
 
 ## Rejected follow-up — masked residual R-gram
 
@@ -320,49 +385,58 @@ Machine-readable negative evidence:
 The strict result is narrower than the earlier exploratory result but much
 stronger evidentially.
 
-The valid improvement is currently:
+The valid improvement now has two bounded modes:
+
+1. **complete-residual R-gram recovery** — when the entire remaining residual
+   grammar is repeated and independently qualified, emit the variable slots and
+   allow the normal residual-only no-loss merge to complete the event;
+2. **aligned residual atom augmentation** — when only one stable typed source
+   position is proven, add that exact source span but deliberately keep the
+   event PARTIAL.
+
+The resulting candidate architecture is:
 
 `qualified single-event parser
- -> learn repeated residual R-gram from the sample batch
- -> exact signature match on a holdout event
- -> emit only dynamic source slots
- -> residual-only no-loss merge
- -> grammar-specific adversarial qualification`
+ -> batch-learned residual hypotheses
+ -> [complete residual R-gram] exact signature + no-loss completion
+ -> [partial aligned atoms] exact anchors + typed source span, status unchanged
+ -> grammar-specific counterexamples / independent reference validation`
 
-This recovered source values that the current engine deliberately left
-unparsed, without changing any already accepted source span. The gain repeated
-across three deterministic splits, and every added span was independently
-validated against either Elastic's pinned official expected output or Cisco's
-published Secure Email log grammar.
+The first mode recovered Cisco Secure Email values across three deterministic
+splits with every added span independently validated. The second mode recovered
+Snort IDS/IPS timestamp source spans across three splits, again with every added
+span independently validated, while leaving all events PARTIAL.
 
-The delimiter/key-anchor and event-code template experiments remain useful
-research negatives. They can propose plausible structure, but under the current
-strict no-loss gate they do not yet produce accepted product-quality gains.
+The delimiter/key-anchor, event-code template and masked-residual experiments
+remain useful research negatives. They proposed plausible structure but failed
+the strict no-loss or independent-value correctness gates and are not counted as
+improvement.
 
-This PoC therefore supports **adding a batch-learned residual grammar layer as
-a candidate architecture**, not replacing the current Multi-Pass/Generic
-Structural engine. It is still **not product integration approval**: the
-demonstrated strict gain is one repeated grammar class from one product family,
-while the wider WAF/IPS/EDR/NDR/firewall corpus mainly acts as abstention and
-regression evidence.
+This PoC therefore supports **adding a low-authority batch-learned residual
+layer after the current Multi-Pass/Generic Structural engine**, not replacing
+it. It now has independently verified gain in two distinct security-product
+classes (email security and IDS/IPS), while the broader WAF/EDR/NDR/NGFW/NAC/SWG
+corpus demonstrates conservative abstention and zero baseline-span loss. This is
+still PoC evidence rather than product integration approval.
 
 ## Next PoC gates
 
 Continue without weakening admission rules:
 
-1. freeze the strict v3 evidence and treat all pre-hardening 17/52 promotion
-   counts as superseded;
-2. find at least one additional independently verifiable non-JSON security
-   family where R-gram/anchor learning adds residual source values;
+1. freeze this security-expansion evidence and keep all
+   pre-hardening 17/52 promotion counts superseded;
+2. add at least one further independently verifiable security family beyond
+   Cisco Secure Email and Snort before considering product integration;
 3. add counterexample-guided specialization when a learned signature accepts a
    structurally similar negative;
 4. expand grammar-derived mutations to token reordering, duplicated literals,
    embedded delimiters and quote corruption;
-5. run a larger fresh security-only holdout that includes WAF, IDS/IPS, EDR,
-   NDR, NGFW, email/security gateway and identity/NAC logs;
+5. run a larger fresh security-only holdout, preserving the current WAF,
+   IDS/IPS, EDR/XDR, NDR, NGFW, email/security gateway, NAC and SWG diversity;
 6. productize only if exact source-value/span precision remains 100% on
-   independently scored promotions, baseline span loss stays zero and
-   false-complete remains zero.
+   independently scored additions/promotions, baseline span loss stays zero,
+   PARTIAL-only layers never inflate completeness, and false-complete remains
+   zero.
 
 No product integration, PR merge, release, production, DP/sensor, auth,
 credential or target-loader action is authorized by this PoC.
