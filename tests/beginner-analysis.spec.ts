@@ -282,7 +282,7 @@ test('unconfirmed comma-delimited candidates do not falsely claim positional CSV
  await expect(problem).not.toContainText('positional CSV');
 });
 
-test('vendor-prefixed JSON is not misdescribed as positional CSV or offered an unsafe merge',async({page})=>{
+test('vendor-prefixed JSON offers bounded local authoring without an unsafe CSV merge',async({page})=>{
  const raw='darktrace {"model":{"name":"Unrestricted Test Model"},"device":{"ip":"192.0.2.10"}}';
  const response={
   contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',
@@ -299,11 +299,16 @@ test('vendor-prefixed JSON is not misdescribed as positional CSV or offered an u
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('JSON with a text prefix');
- await expect(problem).toContainText('valid JSON after a short text prefix');
- await expect(problem).toContainText('Recommended fix · Separate prefixed JSON from plain JSON');
+ await expect(problem).toContainText('Recommended fix · Use the extracted fields');
+ await expect(problem).toContainText('bounded local rule for this exact structure');
  await expect(problem).not.toContainText('positional CSV');
+ const use=problem.getByRole('button',{name:'Use extracted fields'});
+ await expect(use).toBeVisible();
  await expect(problem.getByRole('button',{name:'Fix with ChatGPT'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:/Keep all .* values with temporary names/})).toHaveCount(0);
+ await use.click();
+ await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });
 
 test('a comma inside Syslog prose does not expose positional CSV controls',async({page})=>{

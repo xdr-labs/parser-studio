@@ -35,6 +35,19 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     });
   });
 
+  it('extracts bounded vendor-prefixed JSON without merging it with plain JSON',()=>{
+    const raw='darktrace {"model":{"name":"Test Model"},"device":{"ip":"192.0.2.10"}}';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      generic:{mode:'prefixed_json',prefix:'darktrace',source_raw:raw},
+      body:{model:{name:'Test Model'},device:{ip:'192.0.2.10'}},
+    });
+    expect(extractGenericStructural('darktrace {"model":').fields).toEqual({});
+    expect(extractGenericStructural('darktrace [1,2,3]').fields).toEqual({});
+    expect(extractGenericStructural('dark trace {"model":{}}').fields).toEqual({});
+  });
+
   it('preserves repeated comma-KV source keys as ordered value occurrences',()=>{
     const raw='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: ok, AD-Domain=host.local, AD-Srv-Record=one, AD-Srv-Record=two';
     const result=extractGenericStructural(raw);

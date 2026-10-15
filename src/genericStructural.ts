@@ -28,6 +28,19 @@ function shortRfc5424Json(raw:string):Record<string,unknown>|null{
   };
 }
 
+function prefixedJson(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const match=/^([A-Za-z0-9_.:/-]{1,64})[ \t]+(\{.*\})$/.exec(raw);
+  if(!match)return null;
+  let body:unknown;
+  try{body=JSON.parse(match[2]!);}catch{return null;}
+  if(!body||Array.isArray(body)||typeof body!=='object')return null;
+  return {
+    generic:{mode:'prefixed_json',prefix:match[1],source_raw:raw},
+    body:body as Record<string,unknown>,
+  };
+}
+
 function shortRfc5424Structured(raw:string):Record<string,unknown>|null{
   const match=raw.match(/^<(\d{1,3})>(1) (\S{1,64}) ([!-~]{1,255}) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))$/);
   if(!match)return null;
@@ -408,7 +421,7 @@ function asa(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
-  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??asa(raw)??watchguardProfile(raw)??
+  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??asa(raw)??watchguardProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
     rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:

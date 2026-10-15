@@ -212,7 +212,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const recipeImportEligible=!!rec&&rec.kind!=='metadata'&&rec.kind!=='split';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
-  const genericStructuralSourcePath=parserRuleReviewRequired&&draft?.guided&&onApplyCandidate?
+  const genericStructuralSourcePath=current&&draft?.guided&&onApplyCandidate?
     genericStructuralAnchor(source,events):null;
   const genericStructuralPreserveEligible=Boolean(genericStructuralSourcePath&&draft&&onApplyCandidate);
   const useExtractedGenericStructural=()=>{
