@@ -47,6 +47,8 @@ describe('Beginner metadata preservation review',()=>{
       events={[{startByte:0,endByte:preview.sourceBytes,preview}]}
       onOpenAssisted={vi.fn()} draft={createDraft()} onApplyCandidate={vi.fn()}/>);
     expect(screen.queryByRole('button',{name:'Preserve source metadata as text'})).toBeNull();
+    expect(screen.getByText(/Correct the source metadata before creating the parser/)).toBeTruthy();
+    expect(screen.getByText(/ChatGPT review is explanation-only and cannot be applied as a parser fix/)).toBeTruthy();
     expect(screen.getByRole('button',{name:'Review with ChatGPT'})).toBeTruthy();
   });
 });

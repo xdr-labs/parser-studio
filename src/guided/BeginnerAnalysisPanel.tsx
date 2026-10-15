@@ -319,7 +319,9 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         <Wrench size={18}/><div><strong>Recommended fix · {genericStructuralPreserveEligible?'Use the extracted fields':rec.label}</strong>
           <p>{genericStructuralPreserveEligible
             ?'Parser Studio already has a bounded local rule for this exact structure. Use the extracted fields directly; no ChatGPT step is required.'
-            :rec.text}</p></div>
+            :rec.kind==='metadata'&&!metadataPreserveEligible
+              ?'Parser Studio kept the extracted fields, but the current compiler cannot safely preserve this malformed timestamp or structured-data metadata. Correct the source metadata before creating the parser. ChatGPT review is explanation-only and cannot be applied as a parser fix.'
+              :rec.text}</p></div>
       </div>}
       <div className="beginner-fix-actions">
         {rec?.kind==='csv'&&neutralCsvColumnCount&&onUseNeutralCsvColumns&&
