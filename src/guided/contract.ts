@@ -51,7 +51,7 @@ export interface PairProjectContract {
     messageLimit: number;
     framing: 'newline' | 'blank_line_json' | 'blank_line_java';
   };
-  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'regex' | 'syslog' };
+  input: { format: 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'generic_structural' | 'regex' | 'syslog' };
   normalization: Record<FieldGroup, {
     source: string;
     normalized_name: string;
@@ -120,9 +120,9 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if (!Number.isInteger(options.receiver.port) || options.receiver.port < 1024 || options.receiver.port > 65535) errors.push('Receiving port must be an integer in 1024–65535');
   // One shared sensor ingress / generated CONF <source> port. The backend
   // enforces a narrower minimum for RFC5424 Syslog parser pairs.
-  if (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format) &&
+  if (['syslog_rfc3164','syslog_rfc5424','generic_structural'].includes(draft.format) &&
       Number.isInteger(options.receiver.port) && options.receiver.port<6800) {
-    errors.push('RFC3164/RFC5424 Syslog sensor and CONF listener port must be at least 6800');
+    errors.push('RFC3164/RFC5424/Generic Structural sensor and CONF listener port must be at least 6800');
   }
   if (!Number.isInteger(options.receiver.messageLimit) || options.receiver.messageLimit < 1024 || options.receiver.messageLimit > 65536) errors.push('Message limit must be an integer in 1024–65536 bytes');
 
@@ -145,8 +145,8 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   if(options.eventBoundary!=='single-line'&&!framedJson&&!framedJava)
     errors.push('Blank-line grouping is browser-only without a strictly selected TCP JSON or Java LF LF framing.');
 
-  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed','java_stacktrace','regex'] as string[]).includes(draft.format)) {
-    errors.push('This compiler subset requires explicit JSON, Key / Value, CSV, RFC3164/RFC5424, standalone CEF/LEEF, Java stack trace or bounded Regex; Auto and generic Syslog are preview-only');
+  if (!(['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed','java_stacktrace','generic_structural','regex'] as string[]).includes(draft.format)) {
+    errors.push('This compiler subset requires explicit JSON, Key / Value, CSV, RFC3164/RFC5424, standalone CEF/LEEF, Java stack trace, bounded Generic Structural recovery or bounded Regex; Auto and generic Syslog are preview-only');
   }
   const regexSelected=draft.format==='regex'||
     (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)&&draft.syslogBodyFormat==='regex');
@@ -292,7 +292,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       vendor: draft.vendor,
       product: draft.name,
       receiver: options.receiver,
-      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' },
+      input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'generic_structural' | 'regex' },
       normalization,
       classification: {
         rules: options.classification.rules.map(({ sourceField, equals, index }) => ({ sourceField, equals, index })),

@@ -35,7 +35,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line' | 'blank_line_json' | 'blank_line_java';
   };
-  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' } | {format:'regex';pattern:string} | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';pattern?:string } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' } | {format:'regex';pattern:string} | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';pattern?:string } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -170,7 +170,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
             ...(draft.syslogBodyFormat && draft.syslogBodyFormat !== 'raw'
               ? { syslogBodyFormat: draft.syslogBodyFormat } : {}),
             ...(draft.syslogBodyFormat==='regex'?{pattern:draft.pattern}:{}) }
-        : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' },
+        : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' },
     normalization: {
       msgOriginSource: options.slug,
       msgClass: options.slug,

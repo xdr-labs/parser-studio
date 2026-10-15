@@ -15,7 +15,7 @@ export default defineConfig({
     '/api/v1/parser-pairs': loopbackProxy,
     '/api/v1/test-lab': loopbackProxy,
     '/api/v1/multipass': {
-      target:'http://127.0.0.1:4192',changeOrigin:false,
+      target:'http://127.0.0.1:4292',changeOrigin:false,
       configure(proxy){
         proxy.on('proxyReq',request=>request.setHeader('Origin','http://127.0.0.1:5180'));
       },

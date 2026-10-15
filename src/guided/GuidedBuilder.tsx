@@ -1150,7 +1150,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     if (number === 1) return hasLogs && draft.format !== 'auto' ? 'complete' : hasLogs ? 'attention' : 'future';
     if (number === 2) return draft.mappings.length > 0 ? 'complete' : 'attention';
     if (number === 3) return options.receiver.protocols.length && Number.isInteger(options.receiver.port) &&
-      options.receiver.port >= (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
+      options.receiver.port >= (['syslog_rfc3164','syslog_rfc5424','generic_structural'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))?6800:1024) && options.receiver.port <= 65535 ? 'complete' : 'attention';
     if (number === 4) return runState?.suite.counts.total && runState.suite.counts.failures === 0 ? 'complete' : 'attention';
     return 'future';
   };
@@ -1294,7 +1294,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
           {step === 1 && <>
             <div className="guided-section-title"><span>01</span> Select Log Format <span className="guided-inline-badge">Select the correct format</span></div>
             <div className="guided-format-choices" role="group" aria-label="Guided format">
-              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace', 'syslog', 'regex'] as const).map((format) =>
+              {(['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace', 'generic_structural', 'syslog', 'regex'] as const).map((format) =>
                 <button type="button" key={format} aria-pressed={draft.format === format} className={'guided-format ' + (draft.format === format ? 'active' : '')} onClick={() => changeDraft('format', format)}>
                   {draft.format === format ? <CheckCircle2 size={17} /> : <FileText size={17} />}
                   <strong>{formatLabel(format)}</strong>
@@ -1681,12 +1681,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
                 reassembly, generic Java syntax, or target verification.</small>
             </label>}
             <div className="guided-three-fields">
-              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
+              <label className="guided-field"><span>Sensor / Parser CONF Port</span><input aria-label="Receiving port" type="number" min={['syslog_rfc3164','syslog_rfc5424','generic_structural'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))?6800:1024} max={65535} step={1} value={options.receiver.port} onChange={(e) => setReceiver('port', Number(e.target.value))} /></label>
               <label className="guided-field"><span>Bind Policy</span><select aria-label="Bind policy" value={options.receiver.bindPolicy} onChange={(e) => setReceiver('bindPolicy', e.target.value)}><option value="loopback">Loopback test (127.0.0.1)</option><option value="all">All interfaces (0.0.0.0)</option></select></label>
               <label className="guided-field"><span>Maximum Message Size (bytes)</span><input aria-label="Message limit" type="number" min={1024} max={65536} value={options.receiver.messageLimit} onChange={(e) => setReceiver('messageLimit', Number(e.target.value))} /></label>
             </div>
             <div className="guided-note"><ShieldCheck size={15}/> One shared port: the sensor log destination and generated <code>.conf</code> receiver <code>&lt;source&gt;</code> use the same number. It is not a separate transport port. This does not establish listener readiness.</div>
-            {(['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))) && options.receiver.port<6800 &&
+            {(['syslog_rfc3164','syslog_rfc5424','generic_structural'].includes(draft.format)||draft.format==='mixed'&&draft.mixedFormats?.some(f=>f.startsWith('rfc5424_')||f.startsWith('rfc3164_'))) && options.receiver.port<6800 &&
               <p role="alert" className="guided-error">Syslog and RFC3164/RFC5424 mixed sensor and CONF listener port must be at least 6800.</p>}
             <div className="guided-port-proposal" aria-label="Parser listener port candidate">
               <strong>Parser Listener Port Candidate · Read-only</strong>

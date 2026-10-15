@@ -51,7 +51,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
 
   lines.push('',
     'ParserRecipe safety contract:',
-    'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
+    'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, reviewed parse_generic_structural only when the local backend advertises GENERIC_STRUCTURAL_ULTRA_COMPILER_V1 and the event matches that bounded grammar, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
     'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
     'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
     'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');
@@ -87,6 +87,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
   }else{
     lines.push(
       '- Return only one ParserRecipe v0.2 JSON object using supported declarative stages.',
+      '- Prefer parse_generic_structural over a broad Regex only when the problem event matches the reviewed Generic Structural compiler grammar advertised by the local backend.',
       '- For an unresolved text body, parse_regex is allowed only under the bounded named-capture rules stated above.',
       '- Parser Studio will run independent holdout validation before any rule can be applied.');
   }

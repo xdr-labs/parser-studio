@@ -89,7 +89,7 @@ export async function deriveAIMetadata(
  const sourceFormat=converted.project.extraction.format;
  // The optional metadata-only LLM contract does not include Java Stack Trace:
  // no provider egress even if source timestamps and framing are recognized.
- if(sourceFormat==='java_stacktrace'||sourceFormat==='regex')deny();
+ if(sourceFormat==='java_stacktrace'||sourceFormat==='regex'||sourceFormat==='generic_structural')deny();
  const bodyFormat=sourceFormat==='mixed'?'mixed':
   sourceFormat==='syslog_rfc3164'||sourceFormat==='syslog_rfc5424'?
    converted.project.extraction.syslogBodyFormat:sourceFormat;

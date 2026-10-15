@@ -3,6 +3,7 @@ import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from 
 import { lookupFieldValue } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
+import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
@@ -175,6 +176,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
     case 'java_stacktrace': return parseJavaStacktrace(raw);
+    case 'generic_structural': return extractGenericStructural(raw);
     case 'mixed': {
       const selected=draft.mixedFormats??[];
       if(selected.length<2||selected.length>4||
@@ -455,6 +457,7 @@ export function formatLabel(format: Format | 'unknown'): string {
     auto: 'Auto detect', json: 'JSON', kv: 'Key / Value', csv: 'CSV',
     mixed:'Mixed JSON / KV / CEF / LEEF (strict)',
     java_stacktrace:'Java Exception Stack Trace (TCP LF LF framed)',
+    generic_structural:'Generic Structural (bounded recovery)',
     syslog_rfc3164: 'RFC3164 (year/zone unknown)',
     syslog_rfc5424: 'RFC5424', cef: 'CEF', leef: 'LEEF',
     syslog: 'Syslog (preview)', regex: 'Regex', unknown: 'Unrecognized',
