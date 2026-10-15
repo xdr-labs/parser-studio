@@ -35,19 +35,19 @@ function recipe(includeSplit=true,includeMerge=false){
  };
 }
 async function openAiRecipe(page:Page){
- const box=page.getByLabel('AI Recipe JSON');
- if(!(await box.isVisible()))await page.getByText('Paste AI Recipe for strict review').click();
+ const box=page.getByLabel('ChatGPT JSON result');
+ if(!(await box.isVisible()))await page.getByText('Paste ChatGPT Result').click();
  await expect(box).toBeVisible();
  return box;
 }
 async function qualifyAndApply(page:Page,value:unknown,buttonName:string,expectedRefinement:string){
  const box=await openAiRecipe(page);
  await box.fill(JSON.stringify(value));
- await page.getByLabel('AI candidate holdout logs').fill(holdout);
- await page.getByLabel('Confirm independent AI holdout provenance').check();
- await page.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
+ await page.getByLabel('Additional test logs').fill(holdout);
+ await page.getByLabel('Confirm different test examples').check();
+ await page.getByRole('button',{name:'Test Proposed Fix'}).click();
  await expect(page.getByText(/Fix passed: one bounded split\/merge rule/)).toBeVisible();
- await page.getByLabel('Approve verified inline AI candidate').check();
+ await page.getByLabel('Approve tested fix').check();
  await page.getByRole('button',{name:buttonName}).click();
  const refinements=page.getByLabel('Applied normalization refinements');
  await expect(refinements).toBeVisible();
@@ -64,8 +64,8 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  await page.getByRole('button',{name:'Review Detected Results'}).click();
  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 
- await qualifyAndApply(page,recipe(true,false),'Apply Approved Split/Merge Rule','Split #1');
- await qualifyAndApply(page,recipe(true,true),'Apply Approved Split/Merge Rule','Merge #2');
+ await qualifyAndApply(page,recipe(true,false),'Apply Verified Fix','Split #1');
+ await qualifyAndApply(page,recipe(true,true),'Apply Verified Fix','Merge #2');
 
  await page.getByLabel('Review Fields stage').getByRole('button',{name:/Create Parser/}).click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();

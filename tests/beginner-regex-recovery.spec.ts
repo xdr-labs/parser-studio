@@ -78,14 +78,14 @@ test('beginner can recover Cisco FTD with a ChatGPT bounded Regex recipe, indepe
 
  const ai=page.getByLabel('AI result verification');
  await expect(ai).toBeVisible();
- await ai.getByLabel('AI Recipe JSON').fill(JSON.stringify(recipe));
- await ai.getByLabel('AI candidate holdout logs').fill(holdout);
- await ai.getByLabel('Confirm independent AI holdout provenance').check();
- await ai.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
+ await ai.getByLabel('ChatGPT JSON result').fill(JSON.stringify(recipe));
+ await ai.getByLabel('Additional test logs').fill(holdout);
+ await ai.getByLabel('Confirm different test examples').check();
+ await ai.getByRole('button',{name:'Test Proposed Fix'}).click();
  await expect(ai).toContainText('Fix passed: full parser recovery');
  await expect(ai).toContainText('2 additional test logs checked');
- await ai.getByLabel('Approve verified inline AI candidate').check();
- await ai.getByRole('button',{name:'Apply Approved Recovery Parser to Draft'}).click();
+ await ai.getByLabel('Approve tested fix').check();
+ await ai.getByRole('button',{name:'Apply Verified Fix'}).click();
  await expect(summary).toContainText('2 of 2 log events parsed completely',{timeout:10000});
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);

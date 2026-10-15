@@ -73,13 +73,13 @@ describe('AI recovery review safety',()=>{
   };
   render(<AutoParserAIReview raw={source} status="unsupported" onChatGPT={vi.fn()}
    source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}/>);
-  fireEvent.change(screen.getByRole('textbox',{name:'AI Recipe JSON'}),{target:{value:JSON.stringify(recipe)}});
-  fireEvent.change(screen.getByRole('textbox',{name:'AI candidate holdout logs'}),{target:{value:holdout}});
-  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm independent AI holdout provenance'}));
-  fireEvent.click(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}));
+  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
   expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
-  fireEvent.click(screen.getByRole('checkbox',{name:'Approve verified inline AI candidate'}));
-  fireEvent.click(screen.getByRole('button',{name:'Apply Approved Recovery Parser to Draft'}));
+  fireEvent.click(screen.getByRole('checkbox',{name:'Approve tested fix'}));
+  fireEvent.click(screen.getByRole('button',{name:'Apply Verified Fix'}));
   await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
   expect(apply.mock.calls[0]![0]).toMatchObject({format:'csv',csvColumns:'action,src_ip'});
  });
@@ -114,20 +114,20 @@ describe('AI recovery review safety',()=>{
   render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
    source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}/>);
   const validate=async()=>{
-   fireEvent.change(screen.getByRole('textbox',{name:'AI Recipe JSON'}),{target:{value:JSON.stringify(recipe)}});
-   fireEvent.change(screen.getByRole('textbox',{name:'AI candidate holdout logs'}),{target:{value:holdout}});
-   const attestation=screen.getByRole('checkbox',{name:'Confirm independent AI holdout provenance'}) as HTMLInputElement;
+   fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+   fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+   const attestation=screen.getByRole('checkbox',{name:'Confirm different test examples'}) as HTMLInputElement;
    if(!attestation.checked)fireEvent.click(attestation);
-   fireEvent.click(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}));
+   fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
    expect(await screen.findByText(/Fix passed: one corrected mapping/)).toBeTruthy();
   };
   await validate();
-  fireEvent.click(screen.getByRole('button',{name:'Reject Candidate'}));
-  expect(await screen.findByText(/AI candidate rejected by the user/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Discard Fix'}));
+  expect(await screen.findByText(/Fix discarded/)).toBeTruthy();
   expect(apply).not.toHaveBeenCalled();
   await validate();
-  fireEvent.click(screen.getByRole('checkbox',{name:'Approve verified inline AI candidate'}));
-  fireEvent.click(screen.getByRole('button',{name:'Apply Approved Mapping Correction'}));
+  fireEvent.click(screen.getByRole('checkbox',{name:'Approve tested fix'}));
+  fireEvent.click(screen.getByRole('button',{name:'Apply Verified Fix'}));
   await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
   expect(apply.mock.calls[0]![0].mappings[0].target).toBe('custom.source_address');
   expect(apply.mock.calls[0]![0].mappings[1]).toEqual(draft.mappings[1]);
@@ -135,9 +135,9 @@ describe('AI recovery review safety',()=>{
  });
  it('rejects unverified AI recipe and never applies changes',()=>{
   render(<AutoParserAIReview raw="RAW" status="unsupported" onChatGPT={vi.fn()}/>);
-  fireEvent.click(screen.getByText('Paste AI Recipe for strict review'));
-  fireEvent.change(screen.getByRole('textbox',{name:'AI Recipe JSON'}),{target:{value:'{"code":"unsafe"}'}});
-  expect(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}).hasAttribute('disabled')).toBe(true);
+  fireEvent.click(screen.getByText('Paste ChatGPT Result'));
+  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:'{"code":"unsafe"}'}});
+  expect(screen.getByRole('button',{name:'Test Proposed Fix'}).hasAttribute('disabled')).toBe(true);
  });
  it('opens the existing assisted parser path',()=>{
   const onChatGPT=vi.fn();

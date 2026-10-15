@@ -111,9 +111,9 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    }
    if(report.holdoutStatus==='REJECTED'){
     const reason=report.holdoutIndependence?.ok===false?report.holdoutIndependence.reason:'TOO_SMALL';
-    const detail=reason==='IDENTICAL_TO_TRAINING'?'holdout is identical to the training sample':
-      reason==='TRAINING_OVERLAP'?'holdout contains training events':'holdout has too few unique independent events';
-    setImportResult(`Candidate rejected: ${detail}. No rules were applied.`);return;
+    const detail=reason==='IDENTICAL_TO_TRAINING'?'the additional test logs are identical to the original examples':
+      reason==='TRAINING_OVERLAP'?'the additional test logs reuse original examples':'more unique additional test logs are needed';
+    setImportResult(`Fix not applied: ${detail}. No changes were made.`);return;
    }
    if(!report.acceptedWithoutRegression||report.holdoutStatus!=='TESTED'||
       !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
@@ -133,7 +133,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Additional test logs (use different examples)</label>
    <textarea id="stellar-ai-holdout" aria-label="Additional test logs" rows={3} maxLength={65536}
     value={holdout} onChange={e=>{setHoldout(e.target.value);setHoldoutAttested(false);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');setImportResult('');}}/>
-   <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm additional test logs"
+   <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm different test examples"
     checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');}}/>
     These are different log examples from the ones used to create this fix.</label>
    <button type="button" aria-label="Test Proposed Fix"
@@ -145,13 +145,13 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       I reviewed the tested result and approve applying this fix. Existing unrelated fields and rules must remain unchanged.</label>
     <button type="button" onClick={()=>{
      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-     setImportResult('AI candidate rejected by the user. Existing parser rules remain unchanged.');
-    }}>Reject Candidate</button>
+     setImportResult('Fix discarded. Existing parser rules remain unchanged.');
+    }}>Discard Fix</button>
     <button type="button" disabled={!approval||!onApplyCandidate} onClick={()=>{
      if(!approval||!approvedCandidate||!onApplyCandidate||!source||!draft||!suite)return;
      if(!holdoutAttested||validatedEvidence!==evidenceFingerprint()){
       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-      setImportResult('Candidate rejected: approval evidence is stale. Re-run holdout validation against the current sample and proposal.');return;
+      setImportResult('The logs or ChatGPT result changed after testing. Test the fix again before applying it.');return;
      }
      try{
       const candidateSuite=preview(source,approvedCandidate.draft),candidateHoldout=preview(holdout,approvedCandidate.draft);
@@ -162,18 +162,15 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       if(!recheck.acceptedWithoutRegression||recheck.holdoutStatus!=='TESTED'||
          !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-       setImportResult('Candidate rejected during final holdout recheck. No rules were applied.');return;
+       setImportResult('The fix no longer passes the final check. No changes were made.');return;
       }
      }catch{
       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-      setImportResult('Candidate rejected: final training or holdout evidence is stale, reordered, or mutated.');return;
+      setImportResult('The logs changed during the final check. Test the fix again before applying it.');return;
      }
-     const appliedMode=approvedCandidate.mode;onApplyCandidate(approvedCandidate.draft);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-     setImportResult(appliedMode==='recovery'?'Approved recovery parser added to draft. Native parser testing and export verification remain required.':
-      appliedMode==='correction'?'Approved mapping correction added to draft. Native parser testing and export verification remain required.':
-      appliedMode==='enrichment'?'Approved split/merge rule added to draft. Native parser testing and export verification remain required.':
-      'Approved mapping added to draft. Native parser testing and export verification remain required.');
-    }} aria-label={approvedCandidate.mode==='recovery'?'Apply Approved Recovery Parser to Draft':approvedCandidate.mode==='correction'?'Apply Approved Mapping Correction':approvedCandidate.mode==='enrichment'?'Apply Approved Split/Merge Rule':'Apply Approved Mapping to Draft'}>
+     onApplyCandidate(approvedCandidate.draft);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+     setImportResult('Fix applied to the parser draft. Continue to Review Fields, then create the parser.');
+    }} aria-label="Apply Verified Fix">
       Apply Verified Fix
     </button>
    </div>}
@@ -182,7 +179,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   <h3>Paste ChatGPT Result</h3>
   <p>Paste the JSON returned by ChatGPT. Parser Studio will test it against the current logs and additional examples before anything changes.</p>
   {importPanel}
-  <small>No rule changes until validation passes and you explicitly approve the candidate.</small>
+  <small>No changes are made until the tests pass and you approve the fix.</small>
  </aside>;
  return <aside className="stellar-ai-review" aria-label="Improve with AI">
   <h3>Improve with AI</h3>
@@ -214,6 +211,6 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   </div>
   {notice&&<p role="status">{notice}</p>}
   {importPanel}
-  <small>AI output is a proposal only. Import, independent validation and user approval are required before changing parser rules.</small>
+  <small>ChatGPT suggestions cannot change the parser until the fix passes the additional test logs and you approve it.</small>
  </aside>;
 }

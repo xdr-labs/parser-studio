@@ -54,24 +54,24 @@ async function reachReview(page:import('@playwright/test').Page){
 }
 test('already parsed field correction can be rejected or explicitly applied without changing unrelated mappings',async({page})=>{
  await reachReview(page);
- await page.getByText('Paste AI Recipe for strict review').click();
+ await page.getByText('Paste ChatGPT Result').click();
  const recipe=JSON.stringify(correctionRecipe());
- const recipeBox=page.getByLabel('AI Recipe JSON');
- const holdoutBox=page.getByLabel('AI candidate holdout logs');
+ const recipeBox=page.getByLabel('ChatGPT JSON result');
+ const holdoutBox=page.getByLabel('Additional test logs');
  await recipeBox.fill(recipe);await holdoutBox.fill(holdout);
- await page.getByLabel('Confirm independent AI holdout provenance').check();
- await page.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
+ await page.getByLabel('Confirm different test examples').check();
+ await page.getByRole('button',{name:'Test Proposed Fix'}).click();
  await expect(page.getByText(/Fix passed: one corrected mapping/)).toBeVisible();
- await page.getByRole('button',{name:'Reject Candidate'}).click();
- await expect(page.getByText(/AI candidate rejected by the user/)).toBeVisible();
+ await page.getByRole('button',{name:'Discard Fix'}).click();
+ await expect(page.getByText(/Fix discarded/)).toBeVisible();
  await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_ip');
  await expect(page.getByLabel('Suggested field mappings')).not.toContainText('custom.source_address');
 
  await recipeBox.fill(recipe);await holdoutBox.fill(holdout);
- await page.getByLabel('Confirm independent AI holdout provenance').check();
- await page.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await page.getByLabel('Approve verified inline AI candidate').check();
- await page.getByRole('button',{name:'Apply Approved Mapping Correction'}).click();
+ await page.getByLabel('Confirm different test examples').check();
+ await page.getByRole('button',{name:'Test Proposed Fix'}).click();
+ await page.getByLabel('Approve tested fix').check();
+ await page.getByRole('button',{name:'Apply Verified Fix'}).click();
  await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_address');
  await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.destination_port');
  await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.action');
@@ -79,12 +79,12 @@ test('already parsed field correction can be rejected or explicitly applied with
 
 test('unsupported split or merge AI operators fail closed and never create a candidate',async({page})=>{
  await reachReview(page);
- await page.getByText('Paste AI Recipe for strict review').click();
+ await page.getByText('Paste ChatGPT Result').click();
  const unsafe=correctionRecipe();
  unsafe.stages.splice(2,0,{op:'split_field',source:'src_ip',delimiter:':',targets:['custom.ip','custom.port']} as never);
- await page.getByLabel('AI Recipe JSON').fill(JSON.stringify(unsafe));
- await page.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await expect(page.getByText(/Rejected AI proposal: UNTRUSTED_RECIPE/)).toBeVisible();
- await expect(page.getByRole('button',{name:'Reject Candidate'})).toHaveCount(0);
+ await page.getByLabel('ChatGPT JSON result').fill(JSON.stringify(unsafe));
+ await page.getByRole('button',{name:'Test Proposed Fix'}).click();
+ await expect(page.getByText(/ChatGPT result rejected: UNTRUSTED_RECIPE/)).toBeVisible();
+ await expect(page.getByRole('button',{name:'Discard Fix'})).toHaveCount(0);
  await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_ip');
 });

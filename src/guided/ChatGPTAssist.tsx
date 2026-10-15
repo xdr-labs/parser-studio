@@ -236,8 +236,8 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     <header className="auto-parser-intro">
       <span className="pane-index">CHATGPT ASSISTED PARSER · MANUAL COPY & PASTE</span>
       <h1>Use ChatGPT for unfamiliar logs.</h1>
-      <p>Paste logs locally, copy a reviewed prompt into ChatGPT, then paste its JSON recipe here.
-        ChatGPT cannot deploy a parser. Every suggested rule must pass Parser Studio validation.</p>
+      <p>Paste logs locally, copy the prepared prompt into ChatGPT, then paste the JSON result here.
+        Parser Studio tests the result before it can change or create any parser files.</p>
     </header>
     <div className="auto-parser-body">
       <section aria-label="ChatGPT preparation">

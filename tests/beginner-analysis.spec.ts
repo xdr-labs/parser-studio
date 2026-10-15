@@ -112,9 +112,9 @@ test('structured partial result exposes strict ParserRecipe paste and rejects an
  await expect(prompt).toContainText('Return only one ParserRecipe v0.2 JSON object');
  const aiReview=page.getByLabel('AI result verification');
  await expect(aiReview).toBeVisible();
- await aiReview.getByLabel('AI Recipe JSON').fill('{}');
- await aiReview.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await expect(aiReview).toContainText('Rejected AI proposal');
+ await aiReview.getByLabel('ChatGPT JSON result').fill('{}');
+ await aiReview.getByRole('button',{name:'Test Proposed Fix'}).click();
+ await expect(aiReview).toContainText('ChatGPT result rejected');
 });
 
 
@@ -176,13 +176,13 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
   ],nativeVerified:false,targetVerified:false,
  };
  const ai=page.getByLabel('AI result verification');
- await ai.getByLabel('AI Recipe JSON').fill(JSON.stringify(recipe));
- await ai.getByLabel('AI candidate holdout logs').fill(holdout);
- await ai.getByLabel('Confirm independent AI holdout provenance').check();
- await ai.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
+ await ai.getByLabel('ChatGPT JSON result').fill(JSON.stringify(recipe));
+ await ai.getByLabel('Additional test logs').fill(holdout);
+ await ai.getByLabel('Confirm different test examples').check();
+ await ai.getByRole('button',{name:'Test Proposed Fix'}).click();
  await expect(ai).toContainText('Fix passed: full parser recovery');
- await ai.getByLabel('Approve verified inline AI candidate').check();
- await ai.getByRole('button',{name:'Apply Approved Recovery Parser to Draft'}).click();
+ await ai.getByLabel('Approve tested fix').check();
+ await ai.getByRole('button',{name:'Apply Verified Fix'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('2 of 2 log events parsed completely');
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
