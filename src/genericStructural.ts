@@ -291,6 +291,21 @@ function scanProfileTokens(raw:string,start:number):{tokens:string[];kv:Record<s
     while(pos<raw.length&&/\s/.test(raw[pos]!))pos++;
     if(pos===raw.length)break;
     if(++count>100)return null;
+    if(raw[pos]==='"'||raw[pos]==="'"){
+      const quote=raw[pos]!,begin=pos+1;let cursor=begin,closed=false;
+      while(cursor<raw.length){
+        if(raw[cursor]==='\\'&&cursor+1<raw.length){cursor+=2;continue;}
+        if(raw[cursor]===quote){closed=true;break;}
+        cursor++;
+      }
+      if(!closed)return null;
+      tokens.push(raw.slice(begin,cursor));cursor++;
+      if(cursor<raw.length&&'.,:!?'.includes(raw[cursor]!))cursor++;
+      if(cursor<raw.length&&!/\s/.test(raw[cursor]!)&&![';',','].includes(raw[cursor]!))return null;
+      pos=cursor;
+      if(pos<raw.length&&[';',','].includes(raw[pos]!))pos++;
+      continue;
+    }
     if(raw[pos]==='('){
       const end=raw.indexOf(')',pos+1);
       if(end<0||(end+1<raw.length&&!/\s/.test(raw[end+1]!)))return null;
@@ -329,6 +344,41 @@ function ipToken(value:string):boolean{
   const v4=value.split('.');
   if(v4.length===4&&v4.every(part=>/^\d{1,3}$/.test(part)&&Number(part)<=255))return true;
   return value.includes(':')&&/^[0-9A-Fa-f:]+$/.test(value)&&value.split(':').length>=3;
+}
+
+function validIsoPriClock(date:string,time:string,timezone:string):boolean{
+  const d=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const t=/^(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?$/.exec(time);
+  if(!d||!t)return false;
+  const year=Number(d[1]),month=Number(d[2]),day=Number(d[3]);
+  const hour=Number(t[1]),minute=Number(t[2]),second=Number(t[3]);
+  if(year<1||year>9999||month<1||month>12||hour>23||minute>59||second>59)return false;
+  const leap=year%4===0&&(year%100!==0||year%400===0);
+  const days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
+  if(day<1||day>days[month-1]!)return false;
+  if(timezone==='Z')return true;
+  const zone=/^([+-])(\d{2}):?(\d{2})$/.exec(timezone);
+  return !!zone&&Number(zone[2])<=23&&Number(zone[3])<=59;
+}
+
+function isoPriMixed(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const head=/^<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.exec(raw);
+  if(!head)return null;
+  const pri=Number(head[1]);
+  if(!Number.isInteger(pri)||pri<0||pri>191||!validIsoPriClock(head[2]!,head[3]!,head[4]!))return null;
+  const body=scanProfileTokens(raw,head[0].length);
+  if(!body||body.tokens.length<16)return null;
+  const values:string[]=[...body.tokens];
+  for(const value of Object.values(body.kv)){
+    if(Array.isArray(value))values.push(...value.map(String));
+    else values.push(String(value));
+  }
+  if(values.filter(ipToken).length<2)return null;
+  return {
+    syslog:{pri:head[1],date:head[2],time:head[3],timezone:head[4]},
+    generic:body,
+  };
 }
 
 function watchguardProfile(raw:string):Record<string,unknown>|null{
@@ -453,7 +503,7 @@ function asa(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
-  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??asa(raw)??watchguardProfile(raw)??
+  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??asa(raw)??watchguardProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
     rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:

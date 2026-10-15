@@ -178,6 +178,35 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     });
   });
 
+  it('extracts bounded ISO PRI mixed positional logs only with strong network evidence',()=>{
+    const raw='<129>2026-10-15 14:54:44.502 +0100 edge WAF ALERT CODE 192.0.2.1 61507 198.51.100.2 443 app policy LOG NONE token1 token2 token3 token4 "-" "multi word positional value" token7 token8';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'129',date:'2026-10-15',time:'14:54:44.502',timezone:'+0100'},
+    });
+    expect((result.fields.generic as {tokens:string[]}).tokens.slice(0,8))
+      .toEqual(['edge','WAF','ALERT','CODE','192.0.2.1','61507','198.51.100.2','443']);
+    expect((result.fields.generic as {tokens:string[]}).tokens).toContain('-');
+    expect((result.fields.generic as {tokens:string[]}).tokens).toContain('multi word positional value');
+    const draft=createDraft();
+    draft.format='generic_structural';
+    draft.mappings=[{id:'pri',source:'syslog.pri',target:'custom.source_pri',type:'string'}];
+    if(draft.guided){draft.guided={...draft.guided,groups:{pri:'vendor_fields'},classification:{defaultIndex:'Syslog',rules:[]}};}
+    const suite=preview(raw,draft);
+    expect(suite.counts.failures).toBe(0);
+    expect(suite.events[0]!.normalized).toMatchObject({'custom.source_pri':'129'});
+    const sourceProjection=suite.events[0]!.normalized.parserstudio_source as
+      {generic:{tokens:string[]}};
+    expect(sourceProjection.generic.tokens.slice(0,8))
+      .toEqual(['edge','WAF','ALERT','CODE','192.0.2.1','61507','198.51.100.2','443']);
+    expect(extractGenericStructural(raw.replace('<129>','<192>')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('+0100','+2500')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('2026-10-15','2026-02-30')).fields).toEqual({});
+    expect(extractGenericStructural('<129>2026-10-15 14:54:44.502 +0100 edge short 192.0.2.1 198.51.100.2').fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('198.51.100.2','not-an-ip')).fields).toEqual({});
+  });
+
   it('extracts the bounded WatchGuard Firebox traffic profile without semantic guessing',()=>{
     const raw='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
     const result=extractGenericStructural(raw);
