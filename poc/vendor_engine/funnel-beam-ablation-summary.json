@@ -1,0 +1,123 @@
+{
+  "contract": "parser-studio.poc.funnel-beam-ablation.v1",
+  "deltas": {
+    "beam4_gain_over_beam1_at_one_pass": {
+      "added_spans": 0,
+      "improved_events": 0
+    },
+    "full_gain_over_multi_pass_greedy": {
+      "added_spans": 0,
+      "improved_events": 0
+    },
+    "multi_pass_gain_over_one_pass_greedy": {
+      "added_spans": 50,
+      "improved_events": 0
+    }
+  },
+  "raw_values_published": false,
+  "results": {
+    "multi_pass_beam4": {
+      "config": {
+        "beam_width": 4,
+        "max_passes": 6
+      },
+      "provenance": {
+        "learned:rgram": 8,
+        "partial-learned:rgram": 13,
+        "partial:csv-label": 12,
+        "partial:extended-bsd": 798,
+        "partial:numeric": 24,
+        "partial:typed-label": 50
+      },
+      "totals": {
+        "added_spans": 5844,
+        "complete_exact_preserved": 583,
+        "complete_promotions": 8,
+        "events": 1647,
+        "improved_events": 855,
+        "max_pass_observed": 3,
+        "partial_improvements": 847,
+        "pass_sum": 2552,
+        "source_splits": 60,
+        "training_replay_pass_sum": 110
+      }
+    },
+    "multi_pass_greedy": {
+      "config": {
+        "beam_width": 1,
+        "max_passes": 6
+      },
+      "provenance": {
+        "learned:rgram": 8,
+        "partial-learned:rgram": 13,
+        "partial:csv-label": 12,
+        "partial:extended-bsd": 798,
+        "partial:numeric": 24,
+        "partial:typed-label": 50
+      },
+      "totals": {
+        "added_spans": 5844,
+        "complete_exact_preserved": 583,
+        "complete_promotions": 8,
+        "events": 1647,
+        "improved_events": 855,
+        "max_pass_observed": 3,
+        "partial_improvements": 847,
+        "pass_sum": 2552,
+        "source_splits": 60,
+        "training_replay_pass_sum": 110
+      }
+    },
+    "one_pass_beam4": {
+      "config": {
+        "beam_width": 4,
+        "max_passes": 1
+      },
+      "provenance": {
+        "learned:rgram": 8,
+        "partial-learned:rgram": 13,
+        "partial:csv-label": 12,
+        "partial:extended-bsd": 798,
+        "partial:numeric": 24
+      },
+      "totals": {
+        "added_spans": 5794,
+        "complete_exact_preserved": 583,
+        "complete_promotions": 8,
+        "events": 1647,
+        "improved_events": 855,
+        "max_pass_observed": 1,
+        "partial_improvements": 847,
+        "pass_sum": 1647,
+        "source_splits": 60,
+        "training_replay_pass_sum": 60
+      }
+    },
+    "one_pass_greedy": {
+      "config": {
+        "beam_width": 1,
+        "max_passes": 1
+      },
+      "provenance": {
+        "learned:rgram": 8,
+        "partial-learned:rgram": 13,
+        "partial:csv-label": 12,
+        "partial:extended-bsd": 798,
+        "partial:numeric": 24
+      },
+      "totals": {
+        "added_spans": 5794,
+        "complete_exact_preserved": 583,
+        "complete_promotions": 8,
+        "events": 1647,
+        "improved_events": 855,
+        "max_pass_observed": 1,
+        "partial_improvements": 847,
+        "pass_sum": 1647,
+        "source_splits": 60,
+        "training_replay_pass_sum": 60
+      }
+    }
+  },
+  "scope": "SECURITY_POSITIVE_AND_DEVELOPMENT_FAMILIES"
+}

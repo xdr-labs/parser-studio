@@ -1,0 +1,100 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 44,
+    "cisco_documented_reputation": 21,
+    "cisco_documented_url": 2,
+    "elastic_expected_exact": 21,
+    "independently_validated_spans": 44,
+    "promoted_events": 21
+  },
+  "all_added_spans_independently_validated": true,
+  "cisco_vendor_document_id": "226298",
+  "contract": "parser-studio.poc.structural-hypothesis-cisco-reference-multisplit.v1",
+  "elastic_expected_blob_sha": "64a877228883a14e230eddd290d7116947b1da2c",
+  "elastic_expected_reference_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "elastic_pipeline_blob_sha": "193201b0e80f155a0854db6a81f20473148d777a",
+  "learner_reference_values_used": false,
+  "raw_values_published": false,
+  "scope": "CISCO_SECURE_EMAIL_PROMOTIONS_ONLY",
+  "split_count": 3,
+  "splits": [
+    {
+      "holdout_events": 28,
+      "hypothesis_count": 1,
+      "matched_expected_paths": {
+        "email.message_id": 7
+      },
+      "metrics": {
+        "added_spans": 15,
+        "cisco_documented_reputation": 7,
+        "cisco_documented_url": 1,
+        "elastic_expected_exact": 7,
+        "independently_validated_spans": 15,
+        "promoted_events": 7
+      },
+      "promotion_event_sha256": [
+        "0f10c39009adb4011fbf32839366abb65e8477b19bb48d3e684d38b16ba98c65",
+        "0f272dec59a8ee0cdab92b35a57678ddebefcdb02f91fbb4b4fce0d49720edab",
+        "675386deca5aeb28ca4e9953734be31e9e6fcf9268c8017d4d9a49a9d7cdfc58",
+        "7d6a39132b7bfe2a1320744b225743596a6f2f6d5ce16426d6fdb525848a404e",
+        "83ed395f45ec8295677deca5ddca3e26f394c01f69c32fdd5fb19deebfac86da",
+        "97117c29b52388d945bcb7ec1d3026785f6556ba251261e43ccb978d473aa53a",
+        "ce3a1af44e5f4ae9c6c7a2a31e285985e6a7d3bcb09877cebe72687e4dd94d86"
+      ],
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 53
+    },
+    {
+      "holdout_events": 28,
+      "hypothesis_count": 1,
+      "matched_expected_paths": {
+        "email.message_id": 7
+      },
+      "metrics": {
+        "added_spans": 15,
+        "cisco_documented_reputation": 7,
+        "cisco_documented_url": 1,
+        "elastic_expected_exact": 7,
+        "independently_validated_spans": 15,
+        "promoted_events": 7
+      },
+      "promotion_event_sha256": [
+        "0f10c39009adb4011fbf32839366abb65e8477b19bb48d3e684d38b16ba98c65",
+        "0f272dec59a8ee0cdab92b35a57678ddebefcdb02f91fbb4b4fce0d49720edab",
+        "303f1ba4a4a3e26e34f2a1ea3134b1a42817bb245a57b3a4f959ab7e5d38c553",
+        "63f7a61b1c8a97442fc6ae39ccb59b33abd379bd0b37e107bfff343a65820372",
+        "70ae9800132b781c56d5fcd8e4ea3953a097c76f70923f0cf1e05330be41a9ac",
+        "7d6a39132b7bfe2a1320744b225743596a6f2f6d5ce16426d6fdb525848a404e",
+        "83ed395f45ec8295677deca5ddca3e26f394c01f69c32fdd5fb19deebfac86da"
+      ],
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 53
+    },
+    {
+      "holdout_events": 28,
+      "hypothesis_count": 1,
+      "matched_expected_paths": {
+        "email.message_id": 7
+      },
+      "metrics": {
+        "added_spans": 14,
+        "cisco_documented_reputation": 7,
+        "elastic_expected_exact": 7,
+        "independently_validated_spans": 14,
+        "promoted_events": 7
+      },
+      "promotion_event_sha256": [
+        "0f10c39009adb4011fbf32839366abb65e8477b19bb48d3e684d38b16ba98c65",
+        "0f272dec59a8ee0cdab92b35a57678ddebefcdb02f91fbb4b4fce0d49720edab",
+        "70ae9800132b781c56d5fcd8e4ea3953a097c76f70923f0cf1e05330be41a9ac",
+        "7ffdca3516b8e2da5784270af6c065e084163cd6506091db979f5681e45580c0",
+        "81e95632acf8c83cb50ea511676626b4186091a5720d33c2556ead7a8bb5da05",
+        "8b7bfcca0485daa5eac04e02969fd9afcb3eeeb4d7b51a98d2a54622ef6737ab",
+        "cdde5440b3cab69ff1e42d1bea45cd6a946b845c373268af7e2d60e72570363c"
+      ],
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 53
+    }
+  ],
+  "unique_promoted_events": 14
+}

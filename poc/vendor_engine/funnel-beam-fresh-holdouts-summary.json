@@ -1,0 +1,83 @@
+{
+  "cases": [
+    {
+      "by_family": {
+        "fortinet_fortimanager": {
+          "baseline_complete": 11,
+          "events": 11
+        },
+        "juniper_junos": {
+          "abstentions": 35,
+          "baseline_incomplete": 35,
+          "events": 35
+        },
+        "netskope": {
+          "baseline_complete": 20,
+          "events": 20
+        },
+        "proofpoint_on_demand": {
+          "baseline_complete": 20,
+          "events": 20
+        },
+        "pulse_connect_secure": {
+          "abstentions": 14,
+          "baseline_incomplete": 14,
+          "events": 14
+        }
+      },
+      "file_set_sha256": "01a82e74e2ca54571efc0213039a8a1372536da619d892b367e478a3737437cb",
+      "totals": {
+        "abstentions": 49,
+        "baseline_complete": 51,
+        "baseline_incomplete": 49,
+        "events": 100
+      },
+      "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+      "verified_git_blob_files": 14,
+      "version": 2
+    },
+    {
+      "by_family": {
+        "cisco_secure_endpoint": {
+          "baseline_complete": 145,
+          "events": 145
+        },
+        "cisco_umbrella": {
+          "abstentions": 1,
+          "baseline_complete": 20,
+          "baseline_incomplete": 1,
+          "events": 21
+        },
+        "cloudflare": {
+          "baseline_complete": 1,
+          "events": 1
+        },
+        "fortinet_forticlient": {
+          "baseline_complete": 35,
+          "events": 35
+        },
+        "microsoft_defender_endpoint": {
+          "baseline_complete": 2,
+          "events": 2
+        }
+      },
+      "file_set_sha256": "c1724955a36e5733e3861d34acb11d58480be761fe0f20b882a537d658253de8",
+      "totals": {
+        "abstentions": 1,
+        "baseline_complete": 203,
+        "baseline_incomplete": 1,
+        "events": 204
+      },
+      "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+      "verified_git_blob_files": 20,
+      "version": 3
+    }
+  ],
+  "contract": "parser-studio.poc.funnel-beam-fresh-holdouts.v1",
+  "evaluation_feedback_into_training": false,
+  "funnel_core_sha256": "85d90ba07f13544fb337007699ca3b143315bd8434df3a0a4a490b4e3e9098ff",
+  "product_baseline_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "raw_values_published": false,
+  "runtime_ranked": false,
+  "structural_hypothesis_sha256": "1acd829d41176a696afc2ce7561f5c6af397c75eb15e22d67b6073008d501ec5"
+}

@@ -1,0 +1,1445 @@
+{
+  "aggregate": {
+    "added_spans": 5844,
+    "baseline_complete_exact_preserved": 2167,
+    "baseline_partial": 1273,
+    "baseline_raw_only": 181,
+    "baseline_source_parsed": 2167,
+    "complete_promotions": 8,
+    "eval_events": 3621,
+    "funnel_partial": 1267,
+    "funnel_raw_only": 179,
+    "funnel_source_parsed": 2175,
+    "improved_events": 855,
+    "mutation_attempts": 32,
+    "partial_improvements": 847,
+    "residual_bytes_reduced": 788,
+    "small_control_events": 309,
+    "source_files_seen": 495,
+    "stopped_no_improvement": 3621,
+    "train_events": 6723
+  },
+  "aggregate_by_family": {
+    "aws_waf": {
+      "baseline_source_parsed": 6,
+      "eval_events": 6,
+      "funnel_source_parsed": 6,
+      "source_files_seen": 3
+    },
+    "barracuda": {
+      "baseline_partial": 4,
+      "baseline_raw_only": 8,
+      "baseline_source_parsed": 36,
+      "eval_events": 48,
+      "funnel_partial": 4,
+      "funnel_raw_only": 8,
+      "funnel_source_parsed": 36,
+      "source_files_seen": 24
+    },
+    "barracuda_waf": {
+      "baseline_partial": 4,
+      "baseline_raw_only": 8,
+      "baseline_source_parsed": 36,
+      "eval_events": 48,
+      "funnel_partial": 4,
+      "funnel_raw_only": 8,
+      "funnel_source_parsed": 36,
+      "source_files_seen": 15
+    },
+    "checkpoint": {
+      "baseline_partial": 3,
+      "baseline_source_parsed": 18,
+      "eval_events": 21,
+      "funnel_partial": 3,
+      "funnel_source_parsed": 18,
+      "source_files_seen": 3
+    },
+    "cisco_asa": {
+      "baseline_partial": 42,
+      "eval_events": 42,
+      "funnel_partial": 42,
+      "source_files_seen": 6
+    },
+    "cisco_ise": {
+      "baseline_partial": 49,
+      "baseline_raw_only": 2,
+      "baseline_source_parsed": 231,
+      "eval_events": 282,
+      "funnel_partial": 49,
+      "funnel_raw_only": 2,
+      "funnel_source_parsed": 231,
+      "source_files_seen": 57
+    },
+    "cisco_secure_email": {
+      "added_spans": 45,
+      "baseline_partial": 99,
+      "baseline_source_parsed": 24,
+      "complete_promotions": 8,
+      "eval_events": 123,
+      "funnel_partial": 91,
+      "funnel_source_parsed": 32,
+      "improved_events": 21,
+      "partial_improvements": 13,
+      "prov:learned:rgram": 8,
+      "prov:partial-learned:rgram": 13,
+      "residual_bytes_reduced": 788,
+      "source_files_seen": 9
+    },
+    "cisco_secure_endpoint": {
+      "baseline_source_parsed": 429,
+      "eval_events": 429,
+      "funnel_source_parsed": 429,
+      "source_files_seen": 30
+    },
+    "cisco_umbrella": {
+      "baseline_partial": 1,
+      "baseline_source_parsed": 35,
+      "eval_events": 36,
+      "funnel_partial": 1,
+      "funnel_source_parsed": 35,
+      "source_files_seen": 21
+    },
+    "claroty_ctd": {
+      "baseline_source_parsed": 24,
+      "eval_events": 24,
+      "funnel_source_parsed": 24,
+      "source_files_seen": 6
+    },
+    "cloudflare": {
+      "baseline_source_parsed": 3,
+      "eval_events": 3,
+      "funnel_source_parsed": 3,
+      "source_files_seen": 3
+    },
+    "crowdstrike": {
+      "baseline_source_parsed": 12,
+      "eval_events": 12,
+      "funnel_source_parsed": 12,
+      "source_files_seen": 6
+    },
+    "darktrace": {
+      "baseline_partial": 2,
+      "baseline_source_parsed": 10,
+      "eval_events": 12,
+      "funnel_partial": 2,
+      "funnel_source_parsed": 10,
+      "source_files_seen": 6
+    },
+    "extrahop": {
+      "baseline_source_parsed": 3,
+      "eval_events": 3,
+      "funnel_source_parsed": 3,
+      "source_files_seen": 6
+    },
+    "f5_bigip": {
+      "baseline_source_parsed": 24,
+      "eval_events": 24,
+      "funnel_source_parsed": 24,
+      "source_files_seen": 27
+    },
+    "fortigate": {
+      "baseline_source_parsed": 15,
+      "eval_events": 15,
+      "funnel_source_parsed": 15,
+      "source_files_seen": 3
+    },
+    "fortinet_forticlient": {
+      "baseline_source_parsed": 105,
+      "eval_events": 105,
+      "funnel_source_parsed": 105,
+      "source_files_seen": 3
+    },
+    "fortinet_fortimanager": {
+      "baseline_source_parsed": 33,
+      "eval_events": 33,
+      "funnel_source_parsed": 33,
+      "source_files_seen": 6
+    },
+    "juniper_junos": {
+      "baseline_partial": 41,
+      "baseline_raw_only": 64,
+      "eval_events": 105,
+      "funnel_partial": 41,
+      "funnel_raw_only": 64,
+      "source_files_seen": 3
+    },
+    "juniper_srx": {
+      "baseline_partial": 47,
+      "baseline_raw_only": 2,
+      "baseline_source_parsed": 59,
+      "eval_events": 108,
+      "funnel_partial": 47,
+      "funnel_raw_only": 2,
+      "funnel_source_parsed": 59,
+      "source_files_seen": 21
+    },
+    "microsoft_defender_endpoint": {
+      "baseline_source_parsed": 6,
+      "eval_events": 6,
+      "funnel_source_parsed": 6,
+      "source_files_seen": 3
+    },
+    "netscout_sightline": {
+      "added_spans": 36,
+      "baseline_partial": 34,
+      "baseline_raw_only": 71,
+      "eval_events": 105,
+      "funnel_partial": 34,
+      "funnel_raw_only": 71,
+      "improved_events": 9,
+      "partial_improvements": 9,
+      "prov:partial:csv-label": 9,
+      "residual_bytes_reduced": 0,
+      "source_files_seen": 3
+    },
+    "netskope": {
+      "baseline_source_parsed": 60,
+      "eval_events": 60,
+      "funnel_source_parsed": 60,
+      "source_files_seen": 12
+    },
+    "panw": {
+      "baseline_source_parsed": 81,
+      "eval_events": 81,
+      "funnel_source_parsed": 81,
+      "source_files_seen": 3
+    },
+    "proofpoint_on_demand": {
+      "baseline_source_parsed": 60,
+      "eval_events": 60,
+      "funnel_source_parsed": 60,
+      "source_files_seen": 9
+    },
+    "proofpoint_tap": {
+      "baseline_source_parsed": 27,
+      "eval_events": 27,
+      "funnel_source_parsed": 27,
+      "source_files_seen": 12
+    },
+    "pulse_connect_secure": {
+      "baseline_partial": 42,
+      "eval_events": 42,
+      "funnel_partial": 42,
+      "source_files_seen": 12
+    },
+    "sentinel_one": {
+      "baseline_source_parsed": 9,
+      "eval_events": 9,
+      "funnel_source_parsed": 9,
+      "source_files_seen": 3
+    },
+    "snort": {
+      "added_spans": 75,
+      "baseline_partial": 24,
+      "baseline_raw_only": 24,
+      "baseline_source_parsed": 9,
+      "eval_events": 57,
+      "funnel_partial": 24,
+      "funnel_raw_only": 24,
+      "funnel_source_parsed": 9,
+      "improved_events": 15,
+      "partial_improvements": 15,
+      "prov:partial:numeric": 15,
+      "residual_bytes_reduced": 0,
+      "source_files_seen": 15
+    },
+    "sophos_utm": {
+      "added_spans": 54,
+      "baseline_partial": 7,
+      "baseline_raw_only": 2,
+      "baseline_source_parsed": 12,
+      "eval_events": 21,
+      "funnel_partial": 9,
+      "funnel_source_parsed": 12,
+      "improved_events": 9,
+      "partial_improvements": 9,
+      "prov:partial:numeric": 9,
+      "residual_bytes_reduced": 0,
+      "source_files_seen": 12
+    },
+    "sophos_xg": {
+      "baseline_partial": 71,
+      "baseline_source_parsed": 199,
+      "eval_events": 270,
+      "funnel_partial": 71,
+      "funnel_source_parsed": 199,
+      "source_files_seen": 51
+    },
+    "suricata": {
+      "baseline_source_parsed": 24,
+      "eval_events": 24,
+      "funnel_source_parsed": 24,
+      "source_files_seen": 6
+    },
+    "symantec_endpoint": {
+      "added_spans": 6,
+      "baseline_partial": 3,
+      "baseline_source_parsed": 6,
+      "eval_events": 9,
+      "funnel_partial": 3,
+      "funnel_source_parsed": 6,
+      "improved_events": 3,
+      "partial_improvements": 3,
+      "prov:partial:csv-label": 3,
+      "residual_bytes_reduced": 0,
+      "source_files_seen": 51
+    },
+    "trellix_edr": {
+      "source_files_seen": 3
+    },
+    "trellix_epo": {
+      "source_files_seen": 3
+    },
+    "trend_vision": {
+      "baseline_source_parsed": 6,
+      "eval_events": 6,
+      "funnel_source_parsed": 6,
+      "source_files_seen": 3
+    },
+    "watchguard": {
+      "added_spans": 2814,
+      "baseline_partial": 400,
+      "baseline_source_parsed": 266,
+      "eval_events": 666,
+      "funnel_partial": 400,
+      "funnel_source_parsed": 266,
+      "improved_events": 399,
+      "partial_improvements": 399,
+      "prov:partial:extended-bsd": 399,
+      "prov:partial:typed-label": 25,
+      "residual_bytes_reduced": 0,
+      "source_files_seen": 12
+    },
+    "watchguard_firebox": {
+      "added_spans": 2814,
+      "baseline_partial": 400,
+      "baseline_source_parsed": 266,
+      "eval_events": 666,
+      "funnel_partial": 400,
+      "funnel_source_parsed": 266,
+      "improved_events": 399,
+      "partial_improvements": 399,
+      "prov:partial:extended-bsd": 399,
+      "prov:partial:typed-label": 25,
+      "residual_bytes_reduced": 0,
+      "source_files_seen": 12
+    },
+    "zeek": {
+      "baseline_source_parsed": 21,
+      "eval_events": 21,
+      "funnel_source_parsed": 21,
+      "source_files_seen": 6
+    },
+    "zscaler_zia": {
+      "baseline_source_parsed": 12,
+      "eval_events": 12,
+      "funnel_source_parsed": 12,
+      "source_files_seen": 6
+    }
+  },
+  "aggregate_provenance": {
+    "learned:rgram": 8,
+    "partial-learned:rgram": 13,
+    "partial:csv-label": 12,
+    "partial:extended-bsd": 798,
+    "partial:numeric": 24,
+    "partial:typed-label": 50
+  },
+  "beam_width": 4,
+  "contract": "parser-studio.poc.funnel-beam-security.v1",
+  "decision_policy": {
+    "baseline_claim_loss_allowed": false,
+    "baseline_complete_must_be_exact": true,
+    "complete_promotion_requires_strict_complete_hypothesis": true,
+    "partial_recovery_may_certify_complete": false,
+    "stop_when_no_new_beam_state": true
+  },
+  "evaluation_feedback_into_training": false,
+  "funnel_core_sha256": "85d90ba07f13544fb337007699ca3b143315bd8434df3a0a4a490b4e3e9098ff",
+  "max_pass_observed": 3,
+  "max_passes": 6,
+  "product_baseline_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "raw_values_published": false,
+  "runtime_ranked": false,
+  "scope": "SECURITY_PRODUCTS_ONLY",
+  "split_count": 3,
+  "splits": [
+    {
+      "by_family": {
+        "aws_waf": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "barracuda": {
+          "baseline_partial": 1,
+          "baseline_raw_only": 3,
+          "baseline_source_parsed": 12,
+          "eval_events": 16,
+          "funnel_partial": 1,
+          "funnel_raw_only": 3,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 8
+        },
+        "barracuda_waf": {
+          "baseline_partial": 1,
+          "baseline_raw_only": 3,
+          "baseline_source_parsed": 12,
+          "eval_events": 16,
+          "funnel_partial": 1,
+          "funnel_raw_only": 3,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 5
+        },
+        "checkpoint": {
+          "baseline_partial": 1,
+          "baseline_source_parsed": 6,
+          "eval_events": 7,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 6,
+          "source_files_seen": 1
+        },
+        "cisco_asa": {
+          "baseline_partial": 14,
+          "eval_events": 14,
+          "funnel_partial": 14,
+          "source_files_seen": 2
+        },
+        "cisco_ise": {
+          "baseline_partial": 15,
+          "baseline_raw_only": 1,
+          "baseline_source_parsed": 78,
+          "eval_events": 94,
+          "funnel_partial": 15,
+          "funnel_raw_only": 1,
+          "funnel_source_parsed": 78,
+          "source_files_seen": 19
+        },
+        "cisco_secure_email": {
+          "added_spans": 19,
+          "baseline_partial": 33,
+          "baseline_source_parsed": 8,
+          "complete_promotions": 3,
+          "eval_events": 41,
+          "funnel_partial": 30,
+          "funnel_source_parsed": 11,
+          "improved_events": 9,
+          "partial_improvements": 6,
+          "prov:learned:rgram": 3,
+          "prov:partial-learned:rgram": 6,
+          "residual_bytes_reduced": 290,
+          "source_files_seen": 3
+        },
+        "cisco_secure_endpoint": {
+          "baseline_source_parsed": 143,
+          "eval_events": 143,
+          "funnel_source_parsed": 143,
+          "source_files_seen": 10
+        },
+        "cisco_umbrella": {
+          "baseline_source_parsed": 12,
+          "eval_events": 12,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 7
+        },
+        "claroty_ctd": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 2
+        },
+        "cloudflare": {
+          "baseline_source_parsed": 1,
+          "eval_events": 1,
+          "funnel_source_parsed": 1,
+          "source_files_seen": 1
+        },
+        "crowdstrike": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        },
+        "darktrace": {
+          "baseline_partial": 1,
+          "baseline_source_parsed": 3,
+          "eval_events": 4,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 3,
+          "source_files_seen": 2
+        },
+        "extrahop": {
+          "baseline_source_parsed": 1,
+          "eval_events": 1,
+          "funnel_source_parsed": 1,
+          "source_files_seen": 2
+        },
+        "f5_bigip": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 9
+        },
+        "fortigate": {
+          "baseline_source_parsed": 5,
+          "eval_events": 5,
+          "funnel_source_parsed": 5,
+          "source_files_seen": 1
+        },
+        "fortinet_forticlient": {
+          "baseline_source_parsed": 35,
+          "eval_events": 35,
+          "funnel_source_parsed": 35,
+          "source_files_seen": 1
+        },
+        "fortinet_fortimanager": {
+          "baseline_source_parsed": 11,
+          "eval_events": 11,
+          "funnel_source_parsed": 11,
+          "source_files_seen": 2
+        },
+        "juniper_junos": {
+          "baseline_partial": 12,
+          "baseline_raw_only": 23,
+          "eval_events": 35,
+          "funnel_partial": 12,
+          "funnel_raw_only": 23,
+          "source_files_seen": 1
+        },
+        "juniper_srx": {
+          "baseline_partial": 14,
+          "baseline_raw_only": 1,
+          "baseline_source_parsed": 21,
+          "eval_events": 36,
+          "funnel_partial": 14,
+          "funnel_raw_only": 1,
+          "funnel_source_parsed": 21,
+          "source_files_seen": 7
+        },
+        "microsoft_defender_endpoint": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "netscout_sightline": {
+          "added_spans": 8,
+          "baseline_partial": 12,
+          "baseline_raw_only": 23,
+          "eval_events": 35,
+          "funnel_partial": 12,
+          "funnel_raw_only": 23,
+          "improved_events": 2,
+          "partial_improvements": 2,
+          "prov:partial:csv-label": 2,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 1
+        },
+        "netskope": {
+          "baseline_source_parsed": 20,
+          "eval_events": 20,
+          "funnel_source_parsed": 20,
+          "source_files_seen": 4
+        },
+        "panw": {
+          "baseline_source_parsed": 27,
+          "eval_events": 27,
+          "funnel_source_parsed": 27,
+          "source_files_seen": 1
+        },
+        "proofpoint_on_demand": {
+          "baseline_source_parsed": 20,
+          "eval_events": 20,
+          "funnel_source_parsed": 20,
+          "source_files_seen": 3
+        },
+        "proofpoint_tap": {
+          "baseline_source_parsed": 9,
+          "eval_events": 9,
+          "funnel_source_parsed": 9,
+          "source_files_seen": 4
+        },
+        "pulse_connect_secure": {
+          "baseline_partial": 14,
+          "eval_events": 14,
+          "funnel_partial": 14,
+          "source_files_seen": 4
+        },
+        "sentinel_one": {
+          "baseline_source_parsed": 3,
+          "eval_events": 3,
+          "funnel_source_parsed": 3,
+          "source_files_seen": 1
+        },
+        "snort": {
+          "added_spans": 30,
+          "baseline_partial": 8,
+          "baseline_raw_only": 8,
+          "baseline_source_parsed": 3,
+          "eval_events": 19,
+          "funnel_partial": 8,
+          "funnel_raw_only": 8,
+          "funnel_source_parsed": 3,
+          "improved_events": 6,
+          "partial_improvements": 6,
+          "prov:partial:numeric": 6,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 5
+        },
+        "sophos_utm": {
+          "added_spans": 18,
+          "baseline_partial": 2,
+          "baseline_raw_only": 1,
+          "baseline_source_parsed": 4,
+          "eval_events": 7,
+          "funnel_partial": 3,
+          "funnel_source_parsed": 4,
+          "improved_events": 3,
+          "partial_improvements": 3,
+          "prov:partial:numeric": 3,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "sophos_xg": {
+          "baseline_partial": 26,
+          "baseline_source_parsed": 64,
+          "eval_events": 90,
+          "funnel_partial": 26,
+          "funnel_source_parsed": 64,
+          "source_files_seen": 17
+        },
+        "suricata": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 2
+        },
+        "symantec_endpoint": {
+          "added_spans": 2,
+          "baseline_partial": 1,
+          "baseline_source_parsed": 2,
+          "eval_events": 3,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 2,
+          "improved_events": 1,
+          "partial_improvements": 1,
+          "prov:partial:csv-label": 1,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 17
+        },
+        "trellix_edr": {
+          "source_files_seen": 1
+        },
+        "trellix_epo": {
+          "source_files_seen": 1
+        },
+        "trend_vision": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "watchguard": {
+          "added_spans": 954,
+          "baseline_partial": 135,
+          "baseline_source_parsed": 87,
+          "eval_events": 222,
+          "funnel_partial": 135,
+          "funnel_source_parsed": 87,
+          "improved_events": 135,
+          "partial_improvements": 135,
+          "prov:partial:extended-bsd": 135,
+          "prov:partial:typed-label": 10,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "watchguard_firebox": {
+          "added_spans": 954,
+          "baseline_partial": 135,
+          "baseline_source_parsed": 87,
+          "eval_events": 222,
+          "funnel_partial": 135,
+          "funnel_source_parsed": 87,
+          "improved_events": 135,
+          "partial_improvements": 135,
+          "prov:partial:extended-bsd": 135,
+          "prov:partial:typed-label": 10,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "zeek": {
+          "baseline_source_parsed": 7,
+          "eval_events": 7,
+          "funnel_source_parsed": 7,
+          "source_files_seen": 2
+        },
+        "zscaler_zia": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        }
+      },
+      "pass_histogram": {
+        "1": 916,
+        "2": 271,
+        "3": 20
+      },
+      "provenance": {
+        "learned:rgram": 3,
+        "partial-learned:rgram": 6,
+        "partial:csv-label": 3,
+        "partial:extended-bsd": 270,
+        "partial:numeric": 9,
+        "partial:typed-label": 20
+      },
+      "seed": "funnel-a",
+      "small_control_status": {
+        "PARTIAL": 27,
+        "SOURCE_PARSED": 76
+      },
+      "totals": {
+        "added_spans": 1985,
+        "baseline_complete_exact_preserved": 719,
+        "baseline_partial": 425,
+        "baseline_raw_only": 63,
+        "baseline_source_parsed": 719,
+        "complete_promotions": 3,
+        "eval_events": 1207,
+        "funnel_partial": 423,
+        "funnel_raw_only": 62,
+        "funnel_source_parsed": 722,
+        "improved_events": 291,
+        "mutation_attempts": 12,
+        "partial_improvements": 288,
+        "residual_bytes_reduced": 290,
+        "small_control_events": 103,
+        "source_files_seen": 165,
+        "stopped_no_improvement": 1207,
+        "train_events": 2241
+      },
+      "training_replay_pass_histogram": {
+        "1": 98,
+        "2": 13,
+        "3": 2
+      }
+    },
+    {
+      "by_family": {
+        "aws_waf": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "barracuda": {
+          "baseline_partial": 2,
+          "baseline_raw_only": 2,
+          "baseline_source_parsed": 12,
+          "eval_events": 16,
+          "funnel_partial": 2,
+          "funnel_raw_only": 2,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 8
+        },
+        "barracuda_waf": {
+          "baseline_partial": 2,
+          "baseline_raw_only": 2,
+          "baseline_source_parsed": 12,
+          "eval_events": 16,
+          "funnel_partial": 2,
+          "funnel_raw_only": 2,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 5
+        },
+        "checkpoint": {
+          "baseline_partial": 2,
+          "baseline_source_parsed": 5,
+          "eval_events": 7,
+          "funnel_partial": 2,
+          "funnel_source_parsed": 5,
+          "source_files_seen": 1
+        },
+        "cisco_asa": {
+          "baseline_partial": 14,
+          "eval_events": 14,
+          "funnel_partial": 14,
+          "source_files_seen": 2
+        },
+        "cisco_ise": {
+          "baseline_partial": 19,
+          "baseline_raw_only": 1,
+          "baseline_source_parsed": 74,
+          "eval_events": 94,
+          "funnel_partial": 19,
+          "funnel_raw_only": 1,
+          "funnel_source_parsed": 74,
+          "source_files_seen": 19
+        },
+        "cisco_secure_email": {
+          "added_spans": 15,
+          "baseline_partial": 33,
+          "baseline_source_parsed": 8,
+          "complete_promotions": 3,
+          "eval_events": 41,
+          "funnel_partial": 30,
+          "funnel_source_parsed": 11,
+          "improved_events": 7,
+          "partial_improvements": 4,
+          "prov:learned:rgram": 3,
+          "prov:partial-learned:rgram": 4,
+          "residual_bytes_reduced": 290,
+          "source_files_seen": 3
+        },
+        "cisco_secure_endpoint": {
+          "baseline_source_parsed": 143,
+          "eval_events": 143,
+          "funnel_source_parsed": 143,
+          "source_files_seen": 10
+        },
+        "cisco_umbrella": {
+          "baseline_source_parsed": 12,
+          "eval_events": 12,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 7
+        },
+        "claroty_ctd": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 2
+        },
+        "cloudflare": {
+          "baseline_source_parsed": 1,
+          "eval_events": 1,
+          "funnel_source_parsed": 1,
+          "source_files_seen": 1
+        },
+        "crowdstrike": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        },
+        "darktrace": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        },
+        "extrahop": {
+          "baseline_source_parsed": 1,
+          "eval_events": 1,
+          "funnel_source_parsed": 1,
+          "source_files_seen": 2
+        },
+        "f5_bigip": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 9
+        },
+        "fortigate": {
+          "baseline_source_parsed": 5,
+          "eval_events": 5,
+          "funnel_source_parsed": 5,
+          "source_files_seen": 1
+        },
+        "fortinet_forticlient": {
+          "baseline_source_parsed": 35,
+          "eval_events": 35,
+          "funnel_source_parsed": 35,
+          "source_files_seen": 1
+        },
+        "fortinet_fortimanager": {
+          "baseline_source_parsed": 11,
+          "eval_events": 11,
+          "funnel_source_parsed": 11,
+          "source_files_seen": 2
+        },
+        "juniper_junos": {
+          "baseline_partial": 15,
+          "baseline_raw_only": 20,
+          "eval_events": 35,
+          "funnel_partial": 15,
+          "funnel_raw_only": 20,
+          "source_files_seen": 1
+        },
+        "juniper_srx": {
+          "baseline_partial": 18,
+          "baseline_raw_only": 1,
+          "baseline_source_parsed": 17,
+          "eval_events": 36,
+          "funnel_partial": 18,
+          "funnel_raw_only": 1,
+          "funnel_source_parsed": 17,
+          "source_files_seen": 7
+        },
+        "microsoft_defender_endpoint": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "netscout_sightline": {
+          "added_spans": 20,
+          "baseline_partial": 13,
+          "baseline_raw_only": 22,
+          "eval_events": 35,
+          "funnel_partial": 13,
+          "funnel_raw_only": 22,
+          "improved_events": 5,
+          "partial_improvements": 5,
+          "prov:partial:csv-label": 5,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 1
+        },
+        "netskope": {
+          "baseline_source_parsed": 20,
+          "eval_events": 20,
+          "funnel_source_parsed": 20,
+          "source_files_seen": 4
+        },
+        "panw": {
+          "baseline_source_parsed": 27,
+          "eval_events": 27,
+          "funnel_source_parsed": 27,
+          "source_files_seen": 1
+        },
+        "proofpoint_on_demand": {
+          "baseline_source_parsed": 20,
+          "eval_events": 20,
+          "funnel_source_parsed": 20,
+          "source_files_seen": 3
+        },
+        "proofpoint_tap": {
+          "baseline_source_parsed": 9,
+          "eval_events": 9,
+          "funnel_source_parsed": 9,
+          "source_files_seen": 4
+        },
+        "pulse_connect_secure": {
+          "baseline_partial": 14,
+          "eval_events": 14,
+          "funnel_partial": 14,
+          "source_files_seen": 4
+        },
+        "sentinel_one": {
+          "baseline_source_parsed": 3,
+          "eval_events": 3,
+          "funnel_source_parsed": 3,
+          "source_files_seen": 1
+        },
+        "snort": {
+          "added_spans": 20,
+          "baseline_partial": 8,
+          "baseline_raw_only": 8,
+          "baseline_source_parsed": 3,
+          "eval_events": 19,
+          "funnel_partial": 8,
+          "funnel_raw_only": 8,
+          "funnel_source_parsed": 3,
+          "improved_events": 4,
+          "partial_improvements": 4,
+          "prov:partial:numeric": 4,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 5
+        },
+        "sophos_utm": {
+          "added_spans": 18,
+          "baseline_partial": 3,
+          "baseline_source_parsed": 4,
+          "eval_events": 7,
+          "funnel_partial": 3,
+          "funnel_source_parsed": 4,
+          "improved_events": 3,
+          "partial_improvements": 3,
+          "prov:partial:numeric": 3,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "sophos_xg": {
+          "baseline_partial": 23,
+          "baseline_source_parsed": 67,
+          "eval_events": 90,
+          "funnel_partial": 23,
+          "funnel_source_parsed": 67,
+          "source_files_seen": 17
+        },
+        "suricata": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 2
+        },
+        "symantec_endpoint": {
+          "added_spans": 2,
+          "baseline_partial": 1,
+          "baseline_source_parsed": 2,
+          "eval_events": 3,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 2,
+          "improved_events": 1,
+          "partial_improvements": 1,
+          "prov:partial:csv-label": 1,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 17
+        },
+        "trellix_edr": {
+          "source_files_seen": 1
+        },
+        "trellix_epo": {
+          "source_files_seen": 1
+        },
+        "trend_vision": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "watchguard": {
+          "added_spans": 935,
+          "baseline_partial": 134,
+          "baseline_source_parsed": 88,
+          "eval_events": 222,
+          "funnel_partial": 134,
+          "funnel_source_parsed": 88,
+          "improved_events": 133,
+          "partial_improvements": 133,
+          "prov:partial:extended-bsd": 133,
+          "prov:partial:typed-label": 5,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "watchguard_firebox": {
+          "added_spans": 935,
+          "baseline_partial": 134,
+          "baseline_source_parsed": 88,
+          "eval_events": 222,
+          "funnel_partial": 134,
+          "funnel_source_parsed": 88,
+          "improved_events": 133,
+          "partial_improvements": 133,
+          "prov:partial:extended-bsd": 133,
+          "prov:partial:typed-label": 5,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "zeek": {
+          "baseline_source_parsed": 7,
+          "eval_events": 7,
+          "funnel_source_parsed": 7,
+          "source_files_seen": 2
+        },
+        "zscaler_zia": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        }
+      },
+      "pass_histogram": {
+        "1": 921,
+        "2": 276,
+        "3": 10
+      },
+      "provenance": {
+        "learned:rgram": 3,
+        "partial-learned:rgram": 4,
+        "partial:csv-label": 6,
+        "partial:extended-bsd": 266,
+        "partial:numeric": 7,
+        "partial:typed-label": 10
+      },
+      "seed": "funnel-b",
+      "small_control_status": {
+        "PARTIAL": 27,
+        "SOURCE_PARSED": 76
+      },
+      "totals": {
+        "added_spans": 1945,
+        "baseline_complete_exact_preserved": 716,
+        "baseline_partial": 435,
+        "baseline_raw_only": 56,
+        "baseline_source_parsed": 716,
+        "complete_promotions": 3,
+        "eval_events": 1207,
+        "funnel_partial": 432,
+        "funnel_raw_only": 56,
+        "funnel_source_parsed": 719,
+        "improved_events": 286,
+        "mutation_attempts": 12,
+        "partial_improvements": 283,
+        "residual_bytes_reduced": 290,
+        "small_control_events": 103,
+        "source_files_seen": 165,
+        "stopped_no_improvement": 1207,
+        "train_events": 2241
+      },
+      "training_replay_pass_histogram": {
+        "1": 99,
+        "2": 12,
+        "3": 2
+      }
+    },
+    {
+      "by_family": {
+        "aws_waf": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "barracuda": {
+          "baseline_partial": 1,
+          "baseline_raw_only": 3,
+          "baseline_source_parsed": 12,
+          "eval_events": 16,
+          "funnel_partial": 1,
+          "funnel_raw_only": 3,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 8
+        },
+        "barracuda_waf": {
+          "baseline_partial": 1,
+          "baseline_raw_only": 3,
+          "baseline_source_parsed": 12,
+          "eval_events": 16,
+          "funnel_partial": 1,
+          "funnel_raw_only": 3,
+          "funnel_source_parsed": 12,
+          "source_files_seen": 5
+        },
+        "checkpoint": {
+          "baseline_source_parsed": 7,
+          "eval_events": 7,
+          "funnel_source_parsed": 7,
+          "source_files_seen": 1
+        },
+        "cisco_asa": {
+          "baseline_partial": 14,
+          "eval_events": 14,
+          "funnel_partial": 14,
+          "source_files_seen": 2
+        },
+        "cisco_ise": {
+          "baseline_partial": 15,
+          "baseline_source_parsed": 79,
+          "eval_events": 94,
+          "funnel_partial": 15,
+          "funnel_source_parsed": 79,
+          "source_files_seen": 19
+        },
+        "cisco_secure_email": {
+          "added_spans": 11,
+          "baseline_partial": 33,
+          "baseline_source_parsed": 8,
+          "complete_promotions": 2,
+          "eval_events": 41,
+          "funnel_partial": 31,
+          "funnel_source_parsed": 10,
+          "improved_events": 5,
+          "partial_improvements": 3,
+          "prov:learned:rgram": 2,
+          "prov:partial-learned:rgram": 3,
+          "residual_bytes_reduced": 208,
+          "source_files_seen": 3
+        },
+        "cisco_secure_endpoint": {
+          "baseline_source_parsed": 143,
+          "eval_events": 143,
+          "funnel_source_parsed": 143,
+          "source_files_seen": 10
+        },
+        "cisco_umbrella": {
+          "baseline_partial": 1,
+          "baseline_source_parsed": 11,
+          "eval_events": 12,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 11,
+          "source_files_seen": 7
+        },
+        "claroty_ctd": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 2
+        },
+        "cloudflare": {
+          "baseline_source_parsed": 1,
+          "eval_events": 1,
+          "funnel_source_parsed": 1,
+          "source_files_seen": 1
+        },
+        "crowdstrike": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        },
+        "darktrace": {
+          "baseline_partial": 1,
+          "baseline_source_parsed": 3,
+          "eval_events": 4,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 3,
+          "source_files_seen": 2
+        },
+        "extrahop": {
+          "baseline_source_parsed": 1,
+          "eval_events": 1,
+          "funnel_source_parsed": 1,
+          "source_files_seen": 2
+        },
+        "f5_bigip": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 9
+        },
+        "fortigate": {
+          "baseline_source_parsed": 5,
+          "eval_events": 5,
+          "funnel_source_parsed": 5,
+          "source_files_seen": 1
+        },
+        "fortinet_forticlient": {
+          "baseline_source_parsed": 35,
+          "eval_events": 35,
+          "funnel_source_parsed": 35,
+          "source_files_seen": 1
+        },
+        "fortinet_fortimanager": {
+          "baseline_source_parsed": 11,
+          "eval_events": 11,
+          "funnel_source_parsed": 11,
+          "source_files_seen": 2
+        },
+        "juniper_junos": {
+          "baseline_partial": 14,
+          "baseline_raw_only": 21,
+          "eval_events": 35,
+          "funnel_partial": 14,
+          "funnel_raw_only": 21,
+          "source_files_seen": 1
+        },
+        "juniper_srx": {
+          "baseline_partial": 15,
+          "baseline_source_parsed": 21,
+          "eval_events": 36,
+          "funnel_partial": 15,
+          "funnel_source_parsed": 21,
+          "source_files_seen": 7
+        },
+        "microsoft_defender_endpoint": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "netscout_sightline": {
+          "added_spans": 8,
+          "baseline_partial": 9,
+          "baseline_raw_only": 26,
+          "eval_events": 35,
+          "funnel_partial": 9,
+          "funnel_raw_only": 26,
+          "improved_events": 2,
+          "partial_improvements": 2,
+          "prov:partial:csv-label": 2,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 1
+        },
+        "netskope": {
+          "baseline_source_parsed": 20,
+          "eval_events": 20,
+          "funnel_source_parsed": 20,
+          "source_files_seen": 4
+        },
+        "panw": {
+          "baseline_source_parsed": 27,
+          "eval_events": 27,
+          "funnel_source_parsed": 27,
+          "source_files_seen": 1
+        },
+        "proofpoint_on_demand": {
+          "baseline_source_parsed": 20,
+          "eval_events": 20,
+          "funnel_source_parsed": 20,
+          "source_files_seen": 3
+        },
+        "proofpoint_tap": {
+          "baseline_source_parsed": 9,
+          "eval_events": 9,
+          "funnel_source_parsed": 9,
+          "source_files_seen": 4
+        },
+        "pulse_connect_secure": {
+          "baseline_partial": 14,
+          "eval_events": 14,
+          "funnel_partial": 14,
+          "source_files_seen": 4
+        },
+        "sentinel_one": {
+          "baseline_source_parsed": 3,
+          "eval_events": 3,
+          "funnel_source_parsed": 3,
+          "source_files_seen": 1
+        },
+        "snort": {
+          "added_spans": 25,
+          "baseline_partial": 8,
+          "baseline_raw_only": 8,
+          "baseline_source_parsed": 3,
+          "eval_events": 19,
+          "funnel_partial": 8,
+          "funnel_raw_only": 8,
+          "funnel_source_parsed": 3,
+          "improved_events": 5,
+          "partial_improvements": 5,
+          "prov:partial:numeric": 5,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 5
+        },
+        "sophos_utm": {
+          "added_spans": 18,
+          "baseline_partial": 2,
+          "baseline_raw_only": 1,
+          "baseline_source_parsed": 4,
+          "eval_events": 7,
+          "funnel_partial": 3,
+          "funnel_source_parsed": 4,
+          "improved_events": 3,
+          "partial_improvements": 3,
+          "prov:partial:numeric": 3,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "sophos_xg": {
+          "baseline_partial": 22,
+          "baseline_source_parsed": 68,
+          "eval_events": 90,
+          "funnel_partial": 22,
+          "funnel_source_parsed": 68,
+          "source_files_seen": 17
+        },
+        "suricata": {
+          "baseline_source_parsed": 8,
+          "eval_events": 8,
+          "funnel_source_parsed": 8,
+          "source_files_seen": 2
+        },
+        "symantec_endpoint": {
+          "added_spans": 2,
+          "baseline_partial": 1,
+          "baseline_source_parsed": 2,
+          "eval_events": 3,
+          "funnel_partial": 1,
+          "funnel_source_parsed": 2,
+          "improved_events": 1,
+          "partial_improvements": 1,
+          "prov:partial:csv-label": 1,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 17
+        },
+        "trellix_edr": {
+          "source_files_seen": 1
+        },
+        "trellix_epo": {
+          "source_files_seen": 1
+        },
+        "trend_vision": {
+          "baseline_source_parsed": 2,
+          "eval_events": 2,
+          "funnel_source_parsed": 2,
+          "source_files_seen": 1
+        },
+        "watchguard": {
+          "added_spans": 925,
+          "baseline_partial": 131,
+          "baseline_source_parsed": 91,
+          "eval_events": 222,
+          "funnel_partial": 131,
+          "funnel_source_parsed": 91,
+          "improved_events": 131,
+          "partial_improvements": 131,
+          "prov:partial:extended-bsd": 131,
+          "prov:partial:typed-label": 10,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "watchguard_firebox": {
+          "added_spans": 925,
+          "baseline_partial": 131,
+          "baseline_source_parsed": 91,
+          "eval_events": 222,
+          "funnel_partial": 131,
+          "funnel_source_parsed": 91,
+          "improved_events": 131,
+          "partial_improvements": 131,
+          "prov:partial:extended-bsd": 131,
+          "prov:partial:typed-label": 10,
+          "residual_bytes_reduced": 0,
+          "source_files_seen": 4
+        },
+        "zeek": {
+          "baseline_source_parsed": 7,
+          "eval_events": 7,
+          "funnel_source_parsed": 7,
+          "source_files_seen": 2
+        },
+        "zscaler_zia": {
+          "baseline_source_parsed": 4,
+          "eval_events": 4,
+          "funnel_source_parsed": 4,
+          "source_files_seen": 2
+        }
+      },
+      "pass_histogram": {
+        "1": 929,
+        "2": 258,
+        "3": 20
+      },
+      "provenance": {
+        "learned:rgram": 2,
+        "partial-learned:rgram": 3,
+        "partial:csv-label": 3,
+        "partial:extended-bsd": 262,
+        "partial:numeric": 8,
+        "partial:typed-label": 20
+      },
+      "seed": "funnel-c",
+      "small_control_status": {
+        "PARTIAL": 27,
+        "SOURCE_PARSED": 76
+      },
+      "totals": {
+        "added_spans": 1914,
+        "baseline_complete_exact_preserved": 732,
+        "baseline_partial": 413,
+        "baseline_raw_only": 62,
+        "baseline_source_parsed": 732,
+        "complete_promotions": 2,
+        "eval_events": 1207,
+        "funnel_partial": 412,
+        "funnel_raw_only": 61,
+        "funnel_source_parsed": 734,
+        "improved_events": 278,
+        "mutation_attempts": 8,
+        "partial_improvements": 276,
+        "residual_bytes_reduced": 208,
+        "small_control_events": 103,
+        "source_files_seen": 165,
+        "stopped_no_improvement": 1207,
+        "train_events": 2241
+      },
+      "training_replay_pass_histogram": {
+        "1": 98,
+        "2": 13,
+        "3": 2
+      }
+    }
+  ],
+  "structural_hypothesis_sha256": "1acd829d41176a696afc2ce7561f5c6af397c75eb15e22d67b6073008d501ec5"
+}
