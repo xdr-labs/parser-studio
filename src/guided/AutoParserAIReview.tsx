@@ -133,15 +133,15 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Additional test logs (use different examples)</label>
    <textarea id="stellar-ai-holdout" aria-label="Additional test logs" rows={3} maxLength={65536}
     value={holdout} onChange={e=>{setHoldout(e.target.value);setHoldoutAttested(false);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');setImportResult('');}}/>
-   <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm independent AI holdout provenance"
+   <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm additional test logs"
     checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');}}/>
     These are different log examples from the ones used to create this fix.</label>
-   <button type="button" aria-label="Validate Proposal (Review Only)"
+   <button type="button" aria-label="Test Proposed Fix"
     disabled={!source||!draft||!suite||!recipeText.trim()||importBusy}
     onClick={()=>void reviewImport()}>Test Proposed Fix</button>
    {importResult&&<p role="status">{importResult}</p>}
    {approvedCandidate&&<div className="stellar-ai-approval">
-    <label><input type="checkbox" aria-label="Approve verified inline AI candidate" checked={approval} onChange={e=>setApproval(e.target.checked)}/>
+    <label><input type="checkbox" aria-label="Approve tested fix" checked={approval} onChange={e=>setApproval(e.target.checked)}/>
       I reviewed the tested result and approve applying this fix. Existing unrelated fields and rules must remain unchanged.</label>
     <button type="button" onClick={()=>{
      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
