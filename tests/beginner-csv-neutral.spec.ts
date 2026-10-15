@@ -71,3 +71,40 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002,field_003,field_004,field_005');
  await expect(page.getByText('Field names are ready. Continue to Review Fields.')).toBeVisible();
 });
+
+test('source-complete variable-width positional CSV explains that one schema cannot cover every row',async({page})=>{
+ const unevenLines=[
+  'Nov 30 16:44:36 PA-220 1,2018/11/30 16:44:36,THREAT,192.0.2.10,443',
+  'Nov 30 16:44:37 PA-220 1,2018/11/30 16:44:37,THREAT,192.0.2.11,8443,extra',
+ ];
+ const unevenRaw=unevenLines.join('\n');
+ let cursor=0;
+ const events=unevenLines.map((line,index)=>{
+  const startByte=cursor,endByte=startByte+Buffer.byteLength(line);cursor=endByte+(index===0?1:0);
+  return {index,startByte,endByte,preview:{
+   contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+   syntax:'SYSLOG_BSD_CSV',sourceSha256:sha(line),sourceBytes:Buffer.byteLength(line),
+   fields:{},spans:[],residuals:[],issues:[],nativeVerified:false,targetVerified:false,
+  }};
+ });
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+   contract:'parser-studio.multipass-source-batch-preview.v0.1',
+   sourceSha256:sha(unevenRaw),sourceBytes:Buffer.byteLength(unevenRaw),eventCount:2,events,
+   separators:[{startByte:events[0]!.endByte,endByte:events[0]!.endByte+1,kind:'WHITESPACE'}],
+   nativeVerified:false,targetVerified:false,
+  })}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(unevenRaw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const summary=page.getByLabel('Beginner analysis summary');
+ await expect(summary).toContainText('2 of 2 source events extracted');
+ await expect(summary).toContainText('do not share one consistent CSV shape');
+ await expect(summary).not.toContainText('parsed completely');
+ const csvReview=page.getByLabel('Review CSV column names');
+ await expect(csvReview).toContainText('Positional rows have different column counts');
+ await expect(csvReview).toContainText('One column list cannot safely parse all of them');
+ await expect(csvReview.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
+ await expect(csvReview.getByRole('status')).toContainText('separated into matching positional shapes');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+});
