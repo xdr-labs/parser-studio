@@ -104,8 +104,8 @@ measured accuracy gain; widening the beam currently does not.
 
 Local exact implementation worktree:
 
-- focused Funnel + preview product tests: 21 PASS.
-- full vendor_engine: 417 PASS / 4 optional skips / 0 failures / 0 errors.
+- focused Funnel + Structural + preview product tests: 50 PASS.
+- full vendor_engine: 447 PASS / 4 optional skips / 0 failures / 0 errors.
 - web unit tests: 556 / 556 PASS.
 - TypeScript/Vite production build: PASS.
 - same-candidate local Chromium tests that do not require the pinned live
