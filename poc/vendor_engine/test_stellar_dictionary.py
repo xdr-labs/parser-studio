@@ -2,6 +2,7 @@ from copy import deepcopy
 import unittest
 
 from multipass_adjudicator import parse_security_multipass
+from source_parse import SourceEvent,ValueSpan,assert_source_accounting
 from stellar_dictionary import (
     DICTIONARY_REVISION,CEF_DICTIONARY_URL,STELLAR_DICTIONARY_URL,
     normalize_stellar_dictionary,
@@ -109,6 +110,26 @@ class StellarDictionaryNormalizationTests(unittest.TestCase):
         self.assertEqual(sum(ref.path=="cef_extension.src"
                              for ref in normalized.unmapped_occurrences),2)
         self.assertEqual(normalized.normalized_fields["action"],"deny")
+
+    def test_list_index_display_paths_are_projection_safe(self):
+        raw="alpha beta group"
+        event=SourceEvent(raw,syntax="TEST_LIST_PATHS")
+        event.vendor_fields={"watchguard":{"tokens":["alpha","beta"],"groups":["group"]}}
+        event.value_spans=[
+            ValueSpan("watchguard.tokens.0",0,5),
+            ValueSpan("watchguard.tokens.1",6,10),
+            ValueSpan("watchguard.groups.0",11,16),
+        ]
+        event.primitive_fields=3
+        event.covered=[(0,len(raw))]
+        assert_source_accounting(event)
+        normalized=normalize_stellar_dictionary(event)
+        self.assertEqual({},normalized.normalized_fields)
+        self.assertEqual(
+            {"watchguard.tokens.0","watchguard.tokens.1","watchguard.groups.0"},
+            {ref.path for ref in normalized.unmapped_occurrences},
+        )
+        self.assertEqual(event.vendor_fields,normalized.source_fields)
 
     def test_public_report_is_value_free_and_source_parser_remains_separate(self):
         raw="srcip=192.0.2.10 action=deny custom_key=PRIVATE_VALUE"

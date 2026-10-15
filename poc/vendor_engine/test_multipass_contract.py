@@ -1,6 +1,6 @@
 import unittest
 from security_source import parse_security_source
-from source_parse import assert_source_accounting
+from source_parse import SourceEvent,ValueSpan,assert_source_accounting
 try:
     from multipass_contract import CandidateEvidence,candidate_from_event
 except ModuleNotFoundError:
@@ -67,6 +67,28 @@ class MultiPassContractTests(unittest.TestCase):
             set(candidate.field_tree['syslog']),
         )
         self.assertEqual(7,len(candidate.occurrences))
+
+    def test_list_index_display_paths_are_lossless(self):
+        raw='alpha beta group'
+        event=SourceEvent(raw,syntax='TEST_LIST_PATHS')
+        event.vendor_fields={'watchguard':{'tokens':['alpha','beta'],'groups':['group']}}
+        event.value_spans=[
+            ValueSpan('watchguard.tokens.0',0,5),
+            ValueSpan('watchguard.tokens.1',6,10),
+            ValueSpan('watchguard.groups.0',11,16),
+        ]
+        event.primitive_fields=3
+        event.covered=[(0,len(raw))]
+        assert_source_accounting(event)
+        candidate=candidate_from_event(event,self.evidence())
+        self.assertEqual(
+            ['alpha','beta','group'],
+            [item.value for item in candidate.occurrences],
+        )
+        self.assertEqual(
+            ['watchguard.tokens.0','watchguard.tokens.1','watchguard.groups.0'],
+            [item.display_path for item in candidate.occurrences],
+        )
 
     def test_evidence_is_explicit_not_an_unbounded_score(self):
         with self.assertRaises(ValueError):

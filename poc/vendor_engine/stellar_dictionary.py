@@ -140,6 +140,15 @@ def _segments_value(node:Any,segments:tuple[str|int,...])->Any:
     return current
 
 def _display_value(node:Any,path:str)->Any:
+    if isinstance(node,list):
+        index_text,separator,remainder=path.partition(".")
+        if not index_text.isdigit():
+            raise ValueError("DICTIONARY_DISPLAY_PATH_MISMATCH")
+        index=int(index_text)
+        if not 0<=index<len(node):
+            raise ValueError("DICTIONARY_DISPLAY_PATH_MISMATCH")
+        value=node[index]
+        return _display_value(value,remainder) if separator else value
     if not isinstance(node,dict):
         raise ValueError("DICTIONARY_DISPLAY_PATH_MISMATCH")
     if path in node:
