@@ -23,6 +23,8 @@ interface Props {
   resolvedByReviewedCandidate?:boolean;
   parserRuleReviewRequired?:boolean;
   parserRuleReviewEventIndexes?:number[];
+  csvReviewRequired?:boolean;
+  csvConsistentShapeAvailable?:boolean;
   neutralCsvColumnCount?:number;
   onUseNeutralCsvColumns?:()=>void;
   protectedSourceValuesByEvent?:string[][];
@@ -194,7 +196,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
   resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
-  neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
+  csvReviewRequired=false,csvConsistentShapeAvailable=true,neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
   protectedResidualTextByEvent}:Props){
   const [selected,setSelected]=useState(0);
   const [promptOpen,setPromptOpen]=useState(false);
@@ -202,7 +204,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const [promptBusy,setPromptBusy]=useState(false);
   const [copyStatus,setCopyStatus]=useState('');
   const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
-  const neutralCsvReviewRequired=Boolean(neutralCsvColumnCount&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
+  const csvReviewPending=Boolean(csvReviewRequired&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
   const parsed=resolvedByReviewedCandidate?events.length:parserRuleReviewRequired?0:sourceParsed;
   const ruleReviewProblems=parserRuleReviewRequired&&events.length
     ?(parserRuleReviewEventIndexes?.length
@@ -264,18 +266,22 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     }catch{setCopyStatus('Copy was blocked by the browser. Select the prompt text and copy it manually.');}
   };
   return <section className="beginner-analysis" aria-label="Beginner analysis summary">
-    <div className={"beginner-analysis-head "+(problems.length||neutralCsvReviewRequired?'needs-attention':'complete')}>
-      {problems.length||neutralCsvReviewRequired?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
+    <div className={"beginner-analysis-head "+(problems.length||csvReviewPending?'needs-attention':'complete')}>
+      {problems.length||csvReviewPending?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
       <div>
-        <strong>{neutralCsvReviewRequired
+        <strong>{csvReviewPending
           ?`${sourceParsed} of ${events.length} source event${events.length===1?'':'s'} extracted`
           :parserRuleReviewRequired
           ?`${sourceParsed} of ${events.length} source event${events.length===1?'':'s'} extracted`
           :`${parsed} of ${events.length} log event${events.length===1?'':'s'} parsed completely`}</strong>
         <p>{resolvedByReviewedCandidate
           ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
-          :neutralCsvReviewRequired
-          ?'Parser Studio extracted every source value, but this positional CSV does not contain trustworthy field names. Keep temporary names or enter your own before continuing.'
+          :csvReviewPending
+          ?!csvConsistentShapeAvailable
+            ?'Parser Studio extracted the source values, but these positional rows do not share one consistent CSV shape. Analyze matching row shapes separately before continuing.'
+            :neutralCsvColumnCount
+              ?'Parser Studio extracted every source value, but this positional CSV does not contain trustworthy field names. Keep temporary names or enter your own before continuing.'
+              :'Parser Studio extracted the source values, but this positional CSV still needs a matching separator plus column names before continuing.'
           :parserRuleReviewRequired
           ?'Parser Studio found the source fields, but it still needs one additional rule before it can create the parser. No extracted values will be lost.'
           :problems.length
