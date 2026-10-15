@@ -613,6 +613,11 @@ export default function AutoParser({
  const currentMultiPassCounts=currentMultiPassReview?.events.reduce((counts,event)=>{
   counts[event.preview.status]=(counts[event.preview.status]??0)+1;return counts;
  },{} as Record<string,number>)??{};
+ const protectedSourceValuesByEvent=currentMultiPassReview?.events.map(event=>{
+  const eventRaw=utf8Slice(sample,event.startByte,event.endByte);
+  return event.preview.spans.filter(span=>span.endByte>span.startByte)
+    .map(span=>utf8Slice(eventRaw,span.startByte,span.endByte));
+ });
  return <main className={'auto-parser-workspace '+(advanced?'advanced-mode':'beginner-mode')} aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
      <span className="pane-index">AUTO PARSER · BEGINNER MODE</span>
@@ -669,7 +674,8 @@ export default function AutoParser({
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
          parserRuleReviewRequired={parserRuleReviewRequired}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
-         onUseNeutralCsvColumns={suggestNeutralCsvColumns}/>}
+         onUseNeutralCsvColumns={suggestNeutralCsvColumns}
+         protectedSourceValuesByEvent={protectedSourceValuesByEvent}/>}
        <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
@@ -738,9 +744,11 @@ export default function AutoParser({
            </div>}
            {advanced&&selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="partial" onChatGPT={onChatGPT}
              initialByteRange={selectedMultiPass} selectionContext={{kind:selectedMultiPass.kind,path:selectedMultiPass.path}}
-             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
+             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
+             protectedSourceValuesByEvent={protectedSourceValuesByEvent}/>}
            {advanced&&currentMultiPass.status==='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="unsupported" onChatGPT={onChatGPT}
-             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
+             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
+             protectedSourceValuesByEvent={protectedSourceValuesByEvent}/>}
 
          </div>}
        </div>
@@ -802,7 +810,8 @@ export default function AutoParser({
        {advanced&&sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
          <strong>Some source events need assistance</strong>
          <p>{report.unsupported} of {report.sourceCount} events were not fully recognized. The original input is preserved; unsupported events are not silently discarded or marked parser-ready.</p>
-         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}/>
+         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}
+           protectedSourceValuesByEvent={protectedSourceValuesByEvent}/>
        </div>}
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
@@ -969,7 +978,8 @@ export default function AutoParser({
          <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
-       {chosen&&suite&&!pending?<AutoParserAIReview raw={chosen.raw} status={chosen.status} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>:
+       {chosen&&suite&&!pending?<AutoParserAIReview raw={chosen.raw} status={chosen.status} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
+         protectedSourceValuesByEvent={protectedSourceValuesByEvent}/>:
         <div className="stellar-ai-review" role="status" aria-label="Improve with AI preview status">
           <h3>Improve with AI</h3><p>Refreshing the current browser preview before AI correction can be reviewed.</p>
         </div>}

@@ -83,6 +83,35 @@ describe('AI recovery review safety',()=>{
   await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
   expect(apply.mock.calls[0]![0]).toMatchObject({format:'csv',csvColumns:'action,src_ip'});
  });
+ it('rejects a full recovery that drops source values already extracted by Multi-Pass',async()=>{
+  vi.stubGlobal('crypto',webcrypto);
+  const source='ALLOW 192.0.2.1 user=alice';
+  const holdout='DENY 192.0.2.2 user=bob\nALLOW 192.0.2.3 user=carol';
+  const draft=createDraft(),apply=vi.fn();
+  const recipe={
+   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+   projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+   sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
+   stages:[
+    {op:'split_event',boundary:'single-line'},
+    {op:'parse_regex',pattern:'^(?<action>\\w+) (?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+) user=\\w+$'},
+    {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+    {op:'map_field',source:'src_ip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
+    {op:'cast_type',target:'custom.source_ip',data_type:'ip'},
+    {op:'classify',defaultIndex:'syslog',rules:[]},{op:'fallback_unparsed',mode:'retain_unparsed'},
+   ],nativeVerified:false,targetVerified:false,
+  };
+  render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
+   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
+   protectedSourceValuesByEvent={[["ALLOW","192.0.2.1","alice"]]}/>);
+  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+  expect(await screen.findByText(/would drop 1 of 3 source value occurrences already extracted/)).toBeTruthy();
+  expect(screen.queryByRole('checkbox',{name:'Approve tested fix'})).toBeNull();
+  expect(apply).not.toHaveBeenCalled();
+ });
  it('supports explicit rejection and later approval of one verified mapping correction',async()=>{
   vi.stubGlobal('crypto',webcrypto);
   const source=[

@@ -22,6 +22,7 @@ interface Props {
   parserRuleReviewRequired?:boolean;
   neutralCsvColumnCount?:number;
   onUseNeutralCsvColumns?:()=>void;
+  protectedSourceValuesByEvent?:string[][];
 }
 
 function utf8Slice(source:string,startByte:number,endByte:number):string{
@@ -147,7 +148,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
   resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,
-  neutralCsvColumnCount,onUseNeutralCsvColumns}:Props){
+  neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent}:Props){
   const [selected,setSelected]=useState(0);
   const [promptOpen,setPromptOpen]=useState(false);
   const [promptText,setPromptText]=useState('');
@@ -265,7 +266,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           <AutoParserAIReview importOnly raw={raw}
             status={current.event.preview.status==='RAW_ONLY'?'unsupported':'partial'}
             onChatGPT={onOpenAssisted} source={source} draft={draft} suite={suite}
-            onApplyCandidate={onApplyCandidate}/>
+            onApplyCandidate={onApplyCandidate}
+            protectedSourceValuesByEvent={protectedSourceValuesByEvent}/>
         </>}
         {recipeImportEligible&&draft&&!suite&&<div className="beginner-inline-wait" role="status">
           <strong>Preparing result review…</strong>

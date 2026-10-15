@@ -191,6 +191,53 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
 });
 
 
+test('ChatGPT recovery cannot discard values already extracted by Multi-Pass',async({page})=>{
+ const source='ALLOW 192.0.2.1 alice';
+ const holdout='DENY 192.0.2.2 bob\nALLOW 192.0.2.3 carol';
+ const startIp=Buffer.byteLength('ALLOW '),endIp=startIp+Buffer.byteLength('192.0.2.1');
+ const startUser=endIp+1,endUser=startUser+Buffer.byteLength('alice');
+ const preview={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+  syntax:'GENERIC_STRUCTURAL+POSITIONAL',sourceSha256:sha(source),sourceBytes:Buffer.byteLength(source),
+  fields:{generic:{action:'ALLOW',src:'192.0.2.1',user:'alice'}},
+  spans:[
+   {path:'generic.action',startByte:0,endByte:5},
+   {path:'generic.src',startByte:startIp,endByte:endIp},
+   {path:'generic.user',startByte:startUser,endByte:endUser},
+  ],residuals:[],issues:[],nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(preview)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(source);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const problem=page.getByLabel('Parse problem inspector');
+ await expect(problem).toContainText('Fields found — one more rule is needed');
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+  sample:{sha256:sha(source),events:1},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_regex',pattern:'^(?<action>\\w+) (?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+) \\w+$'},
+   {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+   {op:'map_field',source:'src_ip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
+   {op:'cast_type',target:'custom.source_ip',data_type:'ip'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ const ai=page.getByLabel('AI result verification');
+ await ai.getByLabel('ChatGPT JSON result').fill(JSON.stringify(recipe));
+ await ai.getByLabel('Additional test logs').fill(holdout);
+ await ai.getByLabel('Confirm different test examples').check();
+ await ai.getByRole('button',{name:'Test Proposed Fix'}).click();
+ await expect(ai).toContainText('would drop 1 of 3 source value occurrences already extracted by Parser Studio');
+ await expect(ai.getByLabel('Approve tested fix')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+});
+
 test('metadata-only source anomaly explains that no bytes were dropped and does not invent an extraction fix',async({page})=>{
  const raw='<85>1 2023-01-13T10:10:16--5:00 gw CP-GW - Log [Fields@1 src="192.0.2.1" src="192.0.2.2" ]';
  const response={
