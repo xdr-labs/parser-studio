@@ -40,8 +40,8 @@ describe('Beginner parser-rule review event targeting',()=>{
       parserRuleReviewEventIndexes={[1,2]}/>);
     const options=screen.getAllByRole('option').map(option=>option.textContent);
     expect(options).toEqual([
-      'Event 2 · Part of this event still needs parsing',
-      'Event 3 · Part of this event still needs parsing',
+      'Event 2 · Parser rule needs review',
+      'Event 3 · Parser rule needs review',
     ]);
   });
 });

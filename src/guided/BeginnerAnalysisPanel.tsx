@@ -286,7 +286,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     {current&&<div className="beginner-problem" aria-label="Parse problem inspector">
       {problems.length>1&&<label>Problem to review
         <select aria-label="Problem event" value={selected} onChange={e=>{setSelected(Number(e.target.value));setPromptOpen(false);setPromptText('');setCopyStatus('');}}>
-          {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {problemTitle(item.event.preview)}</option>)}
+          {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {parserRuleReviewRequired?'Parser rule needs review':problemTitle(item.event.preview)}</option>)}
         </select>
       </label>}
       <h3>{parserRuleReviewRequired
