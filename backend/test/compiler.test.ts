@@ -54,6 +54,12 @@ test("fragment includes only one set of markers, safe literal payload, and Ruby 
  assert.equal(JSON.parse(Buffer.from(payload!,"base64").toString("utf8")).vendor,p.vendor);
  assert.equal(ruby.includes("Kernel.exit"),false);
 });
+test("generated CSV parser strips field-edge whitespace without enabling liberal parsing",()=>{
+ const ruby=compilePair(sampleProject()).files[1]!.content;
+ assert.match(ruby,/CSV\.parse_line\(text, col_sep: separator, liberal_parsing: false, strip: true\)/);
+ assert.equal(ruby.includes("liberal_parsing: true"),false);
+});
+
 test("compiler refuses invalid project; canonical map key order doesn't change artifacts", () => {
  const invalid=sampleProject();invalid.slug="x\n@include /etc";assert.throws(()=>compilePair(invalid),/Invalid parser project/);
  const a=sampleProject(),b=sampleProject();
