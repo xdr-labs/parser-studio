@@ -71,3 +71,27 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002,field_003,field_004,field_005');
  await expect(page.getByText('Field names are ready. Continue to Review Fields.')).toBeVisible();
 });
+
+test('beginner cannot confirm fewer CSV names than the detected positional columns',async({page})=>{
+ const payload=batch();
+ for(const event of payload.events){
+  event.preview.status='SOURCE_PARSED';
+  event.preview.syntax='SYSLOG_BSD_CSV';
+  event.preview.issues=[];
+ }
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(payload)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const csvReview=page.getByLabel('Review CSV column names');
+ const names=page.getByRole('textbox',{name:'Reviewed CSV column names'});
+ await expect(names).toHaveValue('time,action,src_ip,dst_port');
+ const confirm=page.getByRole('button',{name:'I Confirm These CSV Column Names'});
+ await expect(confirm).toBeDisabled();
+ await expect(csvReview).toContainText('5 columns were detected, but 4 names are entered');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+ await csvReview.getByRole('button',{name:'Keep all 5 values with temporary names'}).click();
+ await expect(names).toHaveValue('field_001,field_002,field_003,field_004,field_005');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
+});

@@ -199,12 +199,14 @@ export default function AutoParser({
  const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
  const csvApproved=!csvReviewActive||csvApprovedKey===csvSchemaKey;
  const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());
- const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
-   csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
-   new Set(csvColumns).size===csvColumns.length&&
-   [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
  const neutralCsvColumnCount=csvReviewActive?
    inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
+ const csvColumnCountMismatch=neutralCsvColumnCount!==null&&
+   csvColumns.length!==neutralCsvColumnCount;
+ const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
+   csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
+   new Set(csvColumns).size===csvColumns.length&&!csvColumnCountMismatch&&
+   [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
    const names=Array.from({length:neutralCsvColumnCount},
@@ -811,7 +813,9 @@ export default function AutoParser({
          </button>}
          <p role="status">{csvApproved?
            'Field names are ready. Continue to Review Fields.':
-           'Choose temporary names or enter your own, then confirm the names and separator.'}</p>
+           csvColumnCountMismatch&&neutralCsvColumnCount!==null?
+             String(neutralCsvColumnCount)+' columns were detected, but '+String(csvColumns.length)+' names are entered. Use temporary names or enter exactly '+String(neutralCsvColumnCount)+' names.':
+             'Choose temporary names or enter your own, then confirm the names and separator.'}</p>
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">
