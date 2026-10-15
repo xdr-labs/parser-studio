@@ -32,6 +32,15 @@ describe('safe, version-neutral browser preview', () => {
   });
 
 
+  it('accepts bounded field-edge whitespace before and after quoted CSV cells', () => {
+    const draft = { ...createDraft(), csvColumns: 'id,action,detail', csvDelimiter: ',' as const };
+    expect(extractFields(' 1 , "allow" , "quoted, detail" ', 'csv', draft))
+      .toEqual({ fields: { id: '1', action: 'allow', detail: 'quoted, detail' }, errors: [] });
+    expect(inferConsistentCsvColumnCount(
+      '"1", "allow", "quoted, detail"\n"2", "deny", "other, detail"', ','
+    )).toBe(3);
+  });
+
   it('parses semicolon-delimited CSV with quoted separators and retains declared column order', () => {
     const draft = { ...createDraft(), csvColumns: 'action,detail,dst_port', csvDelimiter: ';' as const };
     const result = extractFields('deny;"semi;quoted";443', 'csv', draft);
