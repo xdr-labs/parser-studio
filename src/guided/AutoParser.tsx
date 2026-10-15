@@ -199,10 +199,13 @@ export default function AutoParser({
  const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
  const csvApproved=!csvReviewActive||csvApprovedKey===csvSchemaKey;
  const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());
+ const neutralCsvColumnCount=csvReviewActive?
+   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
  const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
-   [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
+   [',',';','\t'].includes(draft.csvDelimiter??'INVALID')&&
+   (neutralCsvColumnCount===null||csvColumns.length===neutralCsvColumnCount);
  const csvSupportedShapeCounts=csvReviewActive?
    ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(sample,delimiter))
      .filter((count):count is number=>count!==null):[];
@@ -210,8 +213,6 @@ export default function AutoParser({
  const csvSelectedShapeInspection=csvReviewActive?
    inspectCsvColumnShapes(sample,draft.csvDelimiter??','):{groups:[],invalidEventNumbers:[]};
  const csvSelectedShapeGroups=csvSelectedShapeInspection.groups;
- const neutralCsvColumnCount=csvReviewActive?
-   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
  const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
    csvColumns.length===neutralCsvColumnCount);
  const formatCsvEventNumbers=(numbers:number[]):string=>{
