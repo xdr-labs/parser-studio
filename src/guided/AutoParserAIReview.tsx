@@ -31,7 +31,8 @@ function protectedValueRegression(candidate:SuiteResult,protectedValues:string[]
  for(let index=0;index<protectedValues.length;index++){
   const required=protectedValues[index]??[];
   if(!required.length)continue;
-  const pool=scalarValues(candidate.events[index]?.fields);
+  const event=candidate.events[index];
+  const pool=[...scalarValues(event?.fields),...scalarValues(event?.normalized)];
   const used=new Array(pool.length).fill(false);let missing=0;
   for(const source of required){
    const choices=sourceAlternatives(source);let found=-1;
