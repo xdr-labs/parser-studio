@@ -79,7 +79,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    let result=await importReviewOnlyAIRecipe(recipeText,source,draft,suite);
    if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
     result=await importRecoveryAIRecipe(recipeText,source,draft,suite);
-   if(!result.ok){setImportResult(`Rejected AI proposal: ${result.reason}. No rules were applied.`);return;}
+   if(!result.ok){setImportResult(`ChatGPT result rejected: ${result.reason}. No changes were made.`);return;}
    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
    let candidateMode:'mapping'|'correction'|'enrichment'|'recovery';
    let correctionScope:{oldTarget:string;newTarget:string}|undefined;
@@ -95,7 +95,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      else{proposal=proposeV01EnrichmentFromAI(result,source,draft,suite);candidateMode='enrichment';}
     }
    }
-   if(!proposal.ok){setImportResult(`REVIEW ONLY: ${result.report.changedStageCount} changes. No safely compilable parser candidate: ${proposal.reason}.`);return;}
+   if(!proposal.ok){setImportResult(`This ChatGPT result cannot be safely turned into a parser fix: ${proposal.reason}. No changes were made.`);return;}
    if(!holdout.trim()){setImportResult('Add different test log examples before applying this fix. No parser rules were changed.');return;}
    if(!holdoutAttested){setImportResult('Confirm that the additional test logs are different from the examples used to create this fix. No parser rules were changed.');return;}
    let report:ReturnType<typeof compareCandidate>;
@@ -122,16 +122,16 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope});setValidatedEvidence(evidenceFingerprint());
    const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':candidateMode==='enrichment'?'one bounded split/merge rule':'one added mapping';
    setImportResult(`Fix passed: ${description}; ${report.holdout?.sourceCount??0} additional test log${(report.holdout?.sourceCount??0)===1?'':'s'} checked with no regressions. Ready to apply.`);
-  }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
+  }catch{setImportResult('Parser Studio could not test the ChatGPT result. No changes were made.');}
   finally{setImportBusy(false);}
  }
  const importPanel=<><details className="stellar-ai-import" open={importOnly}>
-   <summary>Paste AI Recipe for strict review</summary>
-   <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ParserRecipe v0.2 JSON proposal</label>
-   <textarea id="stellar-ai-recipe" aria-label="AI Recipe JSON" rows={5} maxLength={32768}
+   <summary>Paste ChatGPT Result</summary>
+   <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ChatGPT JSON result</label>
+   <textarea id="stellar-ai-recipe" aria-label="ChatGPT JSON result" rows={5} maxLength={32768}
     value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');}}/>
    <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Additional test logs (use different examples)</label>
-   <textarea id="stellar-ai-holdout" aria-label="AI candidate holdout logs" rows={3} maxLength={65536}
+   <textarea id="stellar-ai-holdout" aria-label="Additional test logs" rows={3} maxLength={65536}
     value={holdout} onChange={e=>{setHoldout(e.target.value);setHoldoutAttested(false);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');setImportResult('');}}/>
    <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm independent AI holdout provenance"
     checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');}}/>
