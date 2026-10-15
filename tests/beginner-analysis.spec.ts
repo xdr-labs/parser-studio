@@ -42,13 +42,13 @@ test('first-time user gets one Analyze action, plain failure location and a read
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('Part of this event still needs parsing');
  await expect(problem).toContainText('The Syslog header was recognized but the message body still needs an extraction rule.');
- await expect(problem).toContainText('Recommended fix · Message-body pattern');
+ await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
  await expect(problem).toContainText('Built inbound TCP connection');
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
  await expect(prompt).toContainText('Detected syntax: BSD_SYSLOG+UNKNOWN');
  await expect(prompt).toContainText('Original problem event:');
- await expect(prompt).toContainText('bounded named-capture Regex');
+ await expect(prompt).toContainText('unique named captures (?<field>...)');
  await expect(prompt).toContainText('Return only one ParserRecipe v0.2 JSON object');
  await expect(prompt).toContainText('parse_regex');
  await expect(page.getByLabel('AI result verification')).toBeVisible();
@@ -105,8 +105,8 @@ test('structured partial result exposes strict ParserRecipe paste and rejects an
  await page.getByLabel('Auto Parser raw logs').fill(jsonRaw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Recommended fix · JSON field mapping');
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await expect(problem).toContainText('Recommended fix · Map the remaining JSON fields');
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
  await expect(prompt).toContainText('Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.');
  await expect(prompt).toContainText('Return only one ParserRecipe v0.2 JSON object');
@@ -151,8 +151,8 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
  await page.getByLabel('Auto Parser raw logs').fill(training);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Recommended fix · Message-body pattern');
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const recipe={
   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
   projectId:'draft-demo_firewall',sourceFormat:'syslog_rfc3164',bodyFormat:'regex',
@@ -180,14 +180,14 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
  await ai.getByLabel('AI candidate holdout logs').fill(holdout);
  await ai.getByLabel('Confirm independent AI holdout provenance').check();
  await ai.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await expect(ai).toContainText('Ready for explicit approval: full parser recovery');
+ await expect(ai).toContainText('Fix passed: full parser recovery');
  await ai.getByLabel('Approve verified inline AI candidate').check();
  await ai.getByRole('button',{name:'Apply Approved Recovery Parser to Draft'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('2 of 2 log events parsed completely');
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Review Parsed Fields'})).toBeEnabled();
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });
 
 
@@ -210,7 +210,7 @@ test('metadata-only source anomaly explains that no bytes were dropped and does 
  await expect(problem).toContainText('source metadata warning · no source bytes dropped');
  await expect(problem).toContainText('Recommended fix · Review source metadata');
  await expect(problem.locator('mark')).toHaveCount(0);
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await problem.getByRole('button',{name:'Review with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
  await expect(prompt).toContainText('parser-studio.source-metadata-review.v0.1');
  await expect(prompt).toContainText('Do not propose a Regex merely to hide malformed source metadata.');
@@ -232,11 +232,52 @@ test('unknown non-Syslog text recommends a bounded text pattern without inventin
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Recommended fix · Text extraction pattern');
- await expect(problem).toContainText('Do not assume Syslog');
+ await expect(problem).toContainText('Recommended fix · Create a rule for this text format');
+ await expect(problem).toContainText('could not identify a standard format');
  await expect(problem).not.toContainText('Keep the detected Syslog context');
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
- await expect(prompt).toContainText('Recommended repair method: Text extraction pattern');
- await expect(prompt).toContainText('Do not assume Syslog');
+ await expect(prompt).toContainText('Recommended repair method: Create a rule for this text format');
+ await expect(prompt).toContainText('could not identify a standard format');
+});
+
+
+test('beginner sees a clear UI/backend version mismatch instead of a vague backend unavailable error',async({page})=>{
+ const source=first;
+ const bytes=Buffer.byteLength(source);
+ const preview={
+  contract:'parser-studio.multipass-source-preview.v0.1',
+  status:'SOURCE_PARSED',syntax:'JSON',sourceSha256:sha(source),sourceBytes:bytes,
+  fields:{action:'allow',srcip:'192.0.2.1'},spans:[],residuals:[],issues:[],
+  nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(preview)}));
+ await page.route('**/api/v1/parser-pairs/capabilities',route=>route.fulfill({
+  status:200,contentType:'application/json',body:JSON.stringify({
+   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
+   authoring:{
+    receiverProtocols:['udp','tcp'],extractionFormats:['json'],
+    formatCoverage:'reviewed-bounded-subset',httpReceiver:false,
+    multipleDistinctReceiverPorts:false,multiline:false,arbitraryRuby:false,
+    boundedRegexNamedCaptureSubset:true,boundedRegexMaxPatternChars:256,
+    boundedRegexRuntimeTimeoutMs:50,
+   },
+   import:{exactInternalPairsEditable:true,unknownLegacyRubyEditable:false,structuralInspectionOnly:true},
+   verification:{engineVerified:false,targetImportVerified:false,liveListenerVerified:false,proprietaryLoaderVerified:false},
+   limits:{maxProjectBodyBytes:65536,maxInspectBodyBytes:65536},
+  }),
+ }));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(source);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely');
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled();
+ await review.click();
+ const alert=page.getByRole('alert');
+ await expect(alert).toContainText('Parser Studio components are out of sync');
+ await expect(alert).toContainText('Log analysis succeeded');
+ await expect(alert).toContainText('Update or restart the development backend');
+ await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
 });

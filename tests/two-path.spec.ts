@@ -56,11 +56,11 @@ test('ChatGPT Assisted mode includes only user-reviewed masked examples and no i
   expect(prompt).toContain('REVIEW_ONLY');
   expect(prompt).toContain('untrusted source data');
   expect(requests.some(url=>/chatgpt\.com|openai\.com|api\.openai\.com/.test(url))).toBe(false);
-  await page.getByLabel('ChatGPT pasted recipe').fill('{"op":"eval","ruby":"EXECUTE"}');
-  await page.getByRole('button',{name:'Validate AI Result'}).click();
-  await expect(page.getByRole('region',{name:'ChatGPT recipe validation'}))
-    .toContainText('AI response rejected');
-  await expect(page.getByLabel('ChatGPT generated DRAFT pair')).toHaveCount(0);
+  await page.getByLabel('ChatGPT result JSON').fill('{"op":"eval","ruby":"EXECUTE"}');
+  await page.getByRole('button',{name:'Check ChatGPT Result'}).click();
+  await expect(page.getByRole('region',{name:'ChatGPT result review'}))
+    .toContainText('ChatGPT result rejected');
+  await expect(page.getByLabel('ChatGPT created parser files')).toHaveCount(0);
 });
 
 test('ChatGPT redaction approval resets when the reviewed masked example changes',async({page})=>{

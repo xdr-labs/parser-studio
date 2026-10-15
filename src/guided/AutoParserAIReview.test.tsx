@@ -77,7 +77,7 @@ describe('AI recovery review safety',()=>{
   fireEvent.change(screen.getByRole('textbox',{name:'AI candidate holdout logs'}),{target:{value:holdout}});
   fireEvent.click(screen.getByRole('checkbox',{name:'Confirm independent AI holdout provenance'}));
   fireEvent.click(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}));
-  expect(await screen.findByText(/Ready for explicit approval: full parser recovery/)).toBeTruthy();
+  expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
   fireEvent.click(screen.getByRole('checkbox',{name:'Approve verified inline AI candidate'}));
   fireEvent.click(screen.getByRole('button',{name:'Apply Approved Recovery Parser to Draft'}));
   await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
@@ -119,7 +119,7 @@ describe('AI recovery review safety',()=>{
    const attestation=screen.getByRole('checkbox',{name:'Confirm independent AI holdout provenance'}) as HTMLInputElement;
    if(!attestation.checked)fireEvent.click(attestation);
    fireEvent.click(screen.getByRole('button',{name:'Validate Proposal (Review Only)'}));
-   expect(await screen.findByText(/Ready for explicit approval: one corrected mapping/)).toBeTruthy();
+   expect(await screen.findByText(/Fix passed: one corrected mapping/)).toBeTruthy();
   };
   await validate();
   fireEvent.click(screen.getByRole('button',{name:'Reject Candidate'}));

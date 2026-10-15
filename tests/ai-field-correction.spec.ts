@@ -50,7 +50,7 @@ async function reachReview(page:import('@playwright/test').Page){
  if(await page.getByRole('button',{name:'Advanced'}).count())
   await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 }
 test('already parsed field correction can be rejected or explicitly applied without changing unrelated mappings',async({page})=>{
  await reachReview(page);
@@ -61,7 +61,7 @@ test('already parsed field correction can be rejected or explicitly applied with
  await recipeBox.fill(recipe);await holdoutBox.fill(holdout);
  await page.getByLabel('Confirm independent AI holdout provenance').check();
  await page.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await expect(page.getByText(/Ready for explicit approval: one corrected mapping/)).toBeVisible();
+ await expect(page.getByText(/Fix passed: one corrected mapping/)).toBeVisible();
  await page.getByRole('button',{name:'Reject Candidate'}).click();
  await expect(page.getByText(/AI candidate rejected by the user/)).toBeVisible();
  await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_ip');

@@ -46,7 +46,7 @@ async function qualifyAndApply(page:Page,value:unknown,buttonName:string,expecte
  await page.getByLabel('AI candidate holdout logs').fill(holdout);
  await page.getByLabel('Confirm independent AI holdout provenance').check();
  await page.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await expect(page.getByText(/Ready for explicit approval: one bounded split\/merge rule/)).toBeVisible();
+ await expect(page.getByText(/Fix passed: one bounded split\/merge rule/)).toBeVisible();
  await page.getByLabel('Approve verified inline AI candidate').check();
  await page.getByRole('button',{name:buttonName}).click();
  const refinements=page.getByLabel('Applied normalization refinements');
@@ -62,15 +62,15 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  if(await page.getByRole('button',{name:'Advanced'}).count())
   await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 
  await qualifyAndApply(page,recipe(true,false),'Apply Approved Split/Merge Rule','Split #1');
  await qualifyAndApply(page,recipe(true,true),'Apply Approved Split/Merge Rule','Merge #2');
 
- await page.getByLabel('Fix Problems stage').getByRole('button',{name:/Test & Create/}).click();
- await expect(page.getByLabel('Test and Create stage')).toBeVisible();
+ await page.getByLabel('Review Fields stage').getByRole('button',{name:/Create Parser/}).click();
+ await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
- await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
+ await page.getByRole('button',{name:'Create Parser Files'}).click();
  expect((await generatedResponse).status()).toBe(200);
  const generated=page.getByLabel('Generated Auto Parser DRAFT pair');
  await expect(generated).toContainText('Two DRAFT files verified for SHA-256 integrity · Native NOT VERIFIED');

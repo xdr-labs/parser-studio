@@ -70,8 +70,8 @@ test('beginner can recover Cisco FTD with a ChatGPT bounded Regex recipe, indepe
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('0 of 2 log events parsed completely');
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Recommended fix · Message-body pattern');
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
  await expect(prompt).toContainText('parse_regex');
  await expect(prompt).toContainText('Return only one ParserRecipe v0.2 JSON object');
@@ -82,21 +82,23 @@ test('beginner can recover Cisco FTD with a ChatGPT bounded Regex recipe, indepe
  await ai.getByLabel('AI candidate holdout logs').fill(holdout);
  await ai.getByLabel('Confirm independent AI holdout provenance').check();
  await ai.getByRole('button',{name:'Validate Proposal (Review Only)'}).click();
- await expect(ai).toContainText('Ready for explicit approval: full parser recovery');
- await expect(ai).toContainText('2 independent holdout events tested');
+ await expect(ai).toContainText('Fix passed: full parser recovery');
+ await expect(ai).toContainText('2 additional test logs checked');
  await ai.getByLabel('Approve verified inline AI candidate').check();
  await ai.getByRole('button',{name:'Apply Approved Recovery Parser to Draft'}).click();
  await expect(summary).toContainText('2 of 2 log events parsed completely',{timeout:10000});
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Review Parsed Fields'})).toBeEnabled();
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
  if(process.env.PARSER_STUDIO_LIVE_BACKEND==='1'){
-  await page.getByRole('button',{name:'Review Parsed Fields'}).click();
-  await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
-  await page.getByLabel('Fix Problems stage').getByRole('button',{name:/Test & Create/}).click();
-  await expect(page.getByLabel('Test and Create stage')).toBeVisible();
-  await page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'}).click();
-  await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+  await page.getByRole('button',{name:'Review Fields',exact:true}).click();
+  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+  await page.getByLabel('Review Fields stage').getByRole('button',{name:/Create Parser/}).click();
+  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
+  await page.getByRole('button',{name:'Create Parser Files'}).click();
+  const generated=page.getByLabel('Generated Auto Parser DRAFT pair');
+  await expect(generated).toContainText('Parser files created successfully');
+  await expect(generated.getByLabel('Parser file verification details'))
     .toContainText('Two DRAFT files verified');
  }
 });

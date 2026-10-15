@@ -61,7 +61,7 @@ async function begin(page:Page){
  if(await page.getByRole('button',{name:'Advanced'}).count())
   await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 }
 test('new visitor sees only the two supported creation methods and a three-step Auto Parser',async({page})=>{
  await page.goto('/');
@@ -70,7 +70,7 @@ test('new visitor sees only the two supported creation methods and a three-step 
  await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button')).toHaveCount(3);
  await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
  await expect(page.getByLabel('Auto Parser raw logs')).toBeEmpty();
- await expect(page.getByRole('button',{name:'Review Parsed Fields'})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
  await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toHaveCount(0);
  await expect(page.getByRole('region',{name:'Parser pipeline rules'})).toHaveCount(0);
  await page.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
@@ -86,10 +86,10 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  await expect(page.getByLabel('Suggested field mappings')).toContainText('not official catalog');
  await page.getByLabel('Auto Parser review event').selectOption('event-2');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('203.0.113.5');
- await page.getByRole('button',{name:'Test & Create',exact:false}).last().click();
- await expect(page.getByLabel('Test and Create stage')).toBeVisible();
- await expect(page.getByRole('button',{name:'Run Tests & Generate DRAFT Files'})).toBeEnabled();
- await page.getByRole('button',{name:'Fix Problems'}).last().click();
+ await page.getByRole('button',{name:'Create Parser',exact:false}).last().click();
+ await expect(page.getByLabel('Create Parser stage')).toBeVisible();
+ await expect(page.getByRole('button',{name:'Create Parser Files'})).toBeEnabled();
+ await page.getByRole('button',{name:'Review Fields',exact:true}).last().click();
  await page.getByRole('button',{name:'Back to Logs'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
  expect(posts()).toBe(0);
@@ -106,7 +106,7 @@ test('mixed families and unknown logs are not dropped or transmitted to validati
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
  await expect(page.getByRole('alert')).toContainText('unsupported family combination, malformed, or unrecognized');
  await expect(page.getByRole('navigation',{name:'Auto Parser steps'})
-   .getByRole('button',{name:/Test & Create/})).toBeDisabled();
+   .getByRole('button',{name:/Create Parser/})).toBeDisabled();
  expect(posts()).toBe(0);
 });
 test('denied backend metadata blocks beginner compilation and does not exfiltrate samples',async({page})=>{
@@ -118,8 +118,8 @@ test('denied backend metadata blocks beginner compilation and does not exfiltrat
  if(await page.getByRole('button',{name:'Advanced'}).count())
   await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByRole('alert')).toContainText('backend capabilities are unavailable');
- await expect(page.getByLabel('Fix Problems stage')).toHaveCount(0);
+ await expect(page.getByRole('alert')).toContainText('unavailable or access was denied');
+ await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
 });
 test('narrow viewport allows keyboard controls, avoids horizontal overflow, and never auto-sends source',async({page})=>{
@@ -138,5 +138,5 @@ test('narrow viewport allows keyboard controls, avoids horizontal overflow, and 
  await review.focus();
  await expect(review).toBeFocused();
  await page.keyboard.press('Enter');
- await expect(page.getByLabel('Fix Problems stage')).toBeVisible();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 });

@@ -138,19 +138,19 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
         result=await importRecoveryAIRecipe(response,sample,context.draft,context.suite);
       setReview(result);setHoldoutAttested(false);setCandidateApproval(false);
-      if(!result.ok)setNotice('AI response rejected: '+result.reason+'. No parser rules changed.');
+      if(!result.ok)setNotice('ChatGPT result rejected: '+result.reason+'. No parser rules changed.');
       else if(result.report.mode==='FULL_RECOVERY')
-        setNotice('Full recovery candidate accepted for local verification only. The current parser has not changed.');
+        setNotice('ChatGPT result is ready for testing. No parser changes have been applied yet.');
     }catch{setNotice('The AI response could not be validated. No rules changed.');}
     finally{setBusy(false);}
   }
   async function compareMapping(){
     if(!context||context.sample!==sample||!review||!review.ok||!holdout.trim()||busy||pending)return;
     if(!holdoutAttested){
-      setNotice('Confirm that the holdout events were not used to create, tune, or select this AI proposal.');return;
+      setNotice('Confirm that these additional test logs are different from the examples used to create the fix.');return;
     }
     if(new TextEncoder().encode(holdout).byteLength>MAX_SAMPLE){
-      setNotice('Holdout input exceeds the local 64 KiB limit.');return;
+      setNotice('The additional test logs exceed the local 64 KiB limit.');return;
     }
     let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
     let correctionScope:{oldTarget:string;newTarget:string}|undefined;
@@ -182,11 +182,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       const qualified=result.acceptedWithoutRegression&&result.holdoutStatus==='TESTED'&&
         completeSuite(candidate)&&completeSuite(candidateHoldout);
       setComparison({candidate:proposal.candidate,value:result,qualified});
-      if(!qualified)setNotice('The AI candidate failed full-sample, independent holdout, or regression verification. Existing rules are unchanged.');
-      else setNotice(review.report.mode==='FULL_RECOVERY'?
-        'Full recovery candidate passed local source, independent holdout, and no-regression checks. Explicit approval is still required.':
-        'Suggested mapping passed local source, independent holdout, and no-regression checks. Explicit approval is still required.');
-    }catch{setNotice('Holdout regression could not be verified; existing parser rules remain unchanged.');}
+      if(!qualified)setNotice('The proposed fix did not pass both the original logs and the additional test logs. Existing parser rules are unchanged.');
+      else setNotice('The proposed fix passed the original logs and the additional test logs. Review and approve it before applying.');
+    }catch{setNotice('The additional-log test could not be completed. Existing parser rules remain unchanged.');}
     finally{setBusy(false);}
   }
   async function generateVerifiedDraft(){
@@ -196,7 +194,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     if(!recovery&&(!baseline||!baseline.ok)){setNotice('No validated baseline is available. No files generated.');return;}
     const unchanged=!recovery&&baseline?.ok&&JSON.stringify(baseline.recipe)===JSON.stringify(review.candidate);
     if(!unchanged&&(!comparison?.qualified||comparison.value.holdoutStatus!=='TESTED'||!candidateApproval)){
-      setNotice('Changed or recovered rules require an independent holdout with zero regressions and your explicit approval.');
+      setNotice('Test the proposed fix with different log examples and approve the result before applying it.');
       return;
     }
     const candidate=unchanged?context.draft:comparison!.candidate;
@@ -220,9 +218,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         recipe:review.candidate,legacyProject:adapted.project,
       },pair);
       setGenerated({pair,draft:candidate});
-      setNotice('DRAFT Ruby and CONF files verified against the real backend and exact v0.2 SHA receipts. No target changed.');
+      setNotice('Parser files created and verified. Nothing was deployed to a DP or sensor.');
     }catch{
-      setNotice('The AI proposal did not pass supported generation, schema or SHA verification. No files were released.');
+      setNotice('Parser Studio could not safely create files from this ChatGPT result. No files were released and no parser rules were changed.');
     }finally{setBusy(false);}
   }
   const download=(filename:string,content:string)=>{
@@ -283,71 +281,73 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             Open ChatGPT in a new tab</a></p>
         </div>}
       </section>
-      <section aria-label="ChatGPT recipe validation">
-        <h2>3. Paste AI result</h2>
-        <p>Paste the JSON recipe from ChatGPT. Ruby, Grok and arbitrary executable
-          code are not accepted. Bounded named-capture Regex is accepted only through the reviewed parse_regex contract.</p>
-        <textarea aria-label="ChatGPT pasted recipe" rows={8} maxLength={MAX_RECIPE}
+      <section aria-label="ChatGPT result review">
+        <h2>3. Paste the ChatGPT result</h2>
+        <p>Paste the JSON result from ChatGPT. Parser Studio checks it before any parser rule can change.</p>
+        <textarea aria-label="ChatGPT result JSON" rows={8} maxLength={MAX_RECIPE}
           spellCheck={false} value={response} onChange={e=>{
             setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setNotice('');setHoldoutAttested(false);setCandidateApproval(false);
-          }} placeholder="Paste the ParserRecipe v0.2 JSON response here."/>
+          }} placeholder="Paste the JSON result from ChatGPT here."/>
         <button type="button" disabled={!response.trim()||!context||pending||busy}
-          onClick={()=>{void validate();}}>Validate AI Result</button>
+          onClick={()=>{void validate();}}>Check ChatGPT Result</button>
         {notice&&<p role="status" className="auto-parser-note">{notice}</p>}
-        {review?.ok&&<div aria-label="ChatGPT validated recipe" className="auto-parser-result">
-          <strong>REVIEW ONLY · {review.report.sampleEvents} events linked to source · {review.report.mode==='FULL_RECOVERY'?'Full parser recovery':'Baseline-safe edit'}</strong>
-          <span>{review.report.addedMappings} suggested mappings ·
-            {review.report.changedStageCount} changed stages</span>
-          <span>AI does not prove Fluentd or Stellar Cyber compatibility.
-            Unchanged reviewed recipes can be generated directly. Any changed mapping or full recovery
-            requires an independent holdout, full local parsing, and explicit approval.</span>
-          <label>Independent holdout log events (not used for the AI proposal)
-            <textarea aria-label="ChatGPT independent holdout logs" rows={4}
+        {review?.ok&&<div aria-label="ChatGPT result ready for testing" className="auto-parser-result">
+          <strong>ChatGPT result accepted for testing · {review.report.sampleEvents} source event{review.report.sampleEvents===1?'':'s'}</strong>
+          <span>No parser rules have changed yet.</span>
+          <details className="auto-parser-recipe">
+            <summary>Technical change details</summary>
+            <span>{review.report.addedMappings} suggested mappings · {review.report.changedStageCount} changed stages ·
+              {review.report.mode==='FULL_RECOVERY'?' full parser recovery':' baseline-safe edit'}</span>
+          </details>
+          <label>Additional test logs (use different examples)
+            <textarea aria-label="Additional ChatGPT test logs" rows={4}
               maxLength={MAX_SAMPLE} value={holdout} onChange={e=>{
                 setHoldout(e.target.value);setHoldoutAttested(false);setCandidateApproval(false);setComparison(null);setGenerated(null);
               }}/>
           </label>
           {!baselineUnchanged&&<label className="auto-parser-persist-label">
-            <input type="checkbox" aria-label="Confirm ChatGPT holdout independence"
+            <input type="checkbox" aria-label="Confirm test examples are different"
               checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setCandidateApproval(false);setComparison(null);}}/>
-            I confirm these holdout events were not used to create, tune, or select this AI proposal.
+            These are different log examples from the ones used to create this fix.
           </label>}
           {!baselineUnchanged&&<button type="button" disabled={!holdout.trim()||!holdoutAttested||busy||pending}
-            onClick={()=>{void compareMapping();}}>{review.report.mode==='FULL_RECOVERY'?'Test Full Recovery Candidate':'Test Suggested Mapping'}</button>}
-          {comparison&&<div role="status">
-            <span>Prior positives protected: {comparison.value.acceptedWithoutRegression?'YES':'NO'}</span>
-            <span>Holdout tested: {comparison.value.holdoutStatus}</span>
-            <span>Full source + holdout qualification: {comparison.qualified?'PASS':'FAILED'}</span>
+            onClick={()=>{void compareMapping();}}>Test Proposed Fix</button>}
+          {comparison&&<div role="status" aria-label="ChatGPT fix test result">
+            <span>Original logs still pass: {comparison.value.acceptedWithoutRegression?'YES':'NO'}</span>
+            <span>Additional logs tested: {comparison.value.holdoutStatus==='TESTED'?'YES':'NO'}</span>
+            <span>Overall test: {comparison.qualified?'PASS':'FAILED'}</span>
           </div>}
           {!baselineUnchanged&&comparison?.qualified&&<label className="auto-parser-persist-label">
-            <input type="checkbox" aria-label="Approve verified ChatGPT parser candidate"
+            <input type="checkbox" aria-label="Approve tested ChatGPT fix"
               checked={candidateApproval} onChange={e=>setCandidateApproval(e.target.checked)}/>
-            {review.report.mode==='FULL_RECOVERY'?
-              'I approve replacing the current unverified parser draft with this fully checked recovery candidate.':
-              'I approve applying this verified parser change. Existing unrelated rules remain unchanged.'}
+            I reviewed the test result and approve applying this fix.
           </label>}
           <button type="button" className="auto-parser-primary"
             disabled={busy||pending||(!baselineUnchanged&&(!comparison?.qualified||!candidateApproval))}
             onClick={()=>{void generateVerifiedDraft();}}>
-            {busy?'Validating…':'Approve & Generate Ruby + CONF DRAFT Files'} <ArrowRight size={15}/>
+            {busy?'Creating parser files…':'Apply Fix & Create Parser Files'} <ArrowRight size={15}/>
           </button>
           {generated&&<div className="auto-parser-download"
-             aria-label="ChatGPT generated DRAFT pair">
-            <strong>Two SHA-verified DRAFT files · Native and target NOT VERIFIED</strong>
+             aria-label="ChatGPT created parser files">
+            <strong>Parser files created successfully</strong>
+            <span>Nothing was deployed to a DP or sensor.</span>
+            <details className="auto-parser-recipe">
+              <summary>Verification details</summary>
+              <span>Two SHA-verified parser files · Native and target verification not yet performed.</span>
+            </details>
             {generated.pair.files.map(file=><button type="button" key={file.name}
               onClick={()=>download(file.name,file.content)}>
               <FileText size={15}/> Download {file.name}</button>)}
             <button type="button" onClick={()=>{
               setDraft(generated.draft);
               onAutoParser();
-            }}>Review in Auto Parser</button>
+            }}>Review Fields in Auto Parser</button>
           </div>}
         </div>}
       </section>
       <p className="auto-parser-note"><ShieldAlert size={16}/>
-        If the AI proposes a grammar that the backend does not support, Parser Studio will
-        not fabricate a deployable parser. Return to Auto Parser for supported generation
-        or revise the proposal.</p>
+        If ChatGPT returns something Parser Studio cannot safely use, no parser changes are made.
+        Revise the result or return to Auto Parser.</p>
       <button type="button" onClick={onAutoParser}>
         <FileText size={15}/> Return to Auto Parser
       </button>

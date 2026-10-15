@@ -45,9 +45,14 @@ function plainIssue(code:string):string{
   };
   return known[code]??'This source region needs an additional reviewed parsing rule ('+code.replaceAll('_',' ').toLowerCase()+').';
 }
+function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
+  return Object.keys(preview.fields).length===0&&
+    preview.residuals.some(region=>region.startByte===0&&region.endByte>=preview.sourceBytes);
+}
 function friendlySyntax(preview:MultiPassSourcePreview):string{
   const syntax=preview.syntax.toUpperCase();
-  if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'Cisco/security Syslog message';
+  if(wholeEventNeedsRule(preview))return 'custom text format';
+  if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
   if(syntax.includes('CSV_UNLABELED'))return 'Syslog-wrapped positional CSV';
   if(syntax.includes('SYSLOG'))return 'Syslog with structured security fields';
   if(syntax.includes('JSON'))return 'JSON';
@@ -56,46 +61,60 @@ function friendlySyntax(preview:MultiPassSourcePreview):string{
   if(syntax.includes('KV'))return 'key/value fields';
   return 'security log structure';
 }
-function recommendation(preview:MultiPassSourcePreview):{label:string;text:string}{
+function recommendation(preview:MultiPassSourcePreview):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
+  if(wholeEventNeedsRule(preview))return {
+    kind:'text',
+    label:'Create a rule for this text format',
+    text:'Parser Studio could not identify a standard format. Use the repeated separators or text pattern to extract only the values that are present, then test the fix against additional examples.',
+  };
   if(preview.residuals.length===0&&
     (issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
      issues.includes('RFC5424_SD_TRAILING_SPACE_NONSTANDARD')))return {
+    kind:'metadata',
     label:'Review source metadata',
-    text:'The useful fields were extracted. Keep them. Review the invalid timestamp or duplicate/non-standard Syslog metadata instead of adding a Regex that would hide the source anomaly.',
+    text:'The useful fields were extracted. Keep them. The source itself contains a timestamp or structured-data problem that should be corrected or intentionally preserved before creating the parser.',
   };
   if(syntax.includes('JSON'))return {
-    label:'JSON field mapping',
-    text:'Use direct JSON field paths first. If values need reshaping, ask ChatGPT for a supported declarative split/merge mapping; Parser Studio does not execute arbitrary JSONata expressions.',
+    kind:'json',
+    label:'Map the remaining JSON fields',
+    text:'Keep the JSON structure and map only the missing fields. Parser Studio will preserve fields that are already correct.',
   };
   if(syntax.includes('CEF'))return {
-    label:'CEF extension mapping',
-    text:'Keep the CEF header parser and map the remaining extension keys. Do not replace structured CEF with a broad Regex.',
+    kind:'cef',
+    label:'Map the remaining CEF fields',
+    text:'Keep the CEF structure and map only the remaining extension fields.',
   };
   if(syntax.includes('LEEF'))return {
-    label:'LEEF extension mapping',
-    text:'Keep the LEEF parser and map the remaining extension keys using the detected delimiter.',
+    kind:'leef',
+    label:'Map the remaining LEEF fields',
+    text:'Keep the LEEF structure and map only the remaining extension fields.',
   };
   if(syntax.includes('CSV')||issues.includes('CSV')||issues.includes('UNLABELED'))return {
-    label:'Column schema mapping',
-    text:'The values are positional. Map the columns to reviewed field names first; for PAN-OS, a known version-specific schema is preferable to guessing.',
+    kind:'csv',
+    label:'Keep all values with temporary field names',
+    text:'The log has values in fixed positions but does not contain column names. Keep every value with temporary names now; you can rename the fields later without losing source data.',
   };
   if(syntax.includes('KV')&&!syntax.includes('UNKNOWN'))return {
-    label:'Key/value rule',
-    text:'Keep key=value parsing and add a bounded rule only for the quoted or delimited section that remains unresolved.',
+    kind:'kv',
+    label:'Keep the key/value fields and fix the remaining section',
+    text:'Parser Studio already understands the key/value fields. Create one small rule only for the part that remains unresolved.',
   };
   if(syntax.includes('SYSLOG')||syntax.includes('ASA')||syntax.includes('FTD'))return {
-    label:'Message-body pattern',
-    text:'Keep the detected Syslog context and target only the unresolved message body. Parser Studio accepts a bounded named-capture Regex only after safety checks, independent holdout validation and the normal DRAFT/Native verification gates.',
+    kind:'message',
+    label:'Create a rule for the remaining message text',
+    text:'Parser Studio found the message structure and existing fields. Create one additional rule for the unresolved text, then test it against additional examples before applying it.',
   };
   if(syntax.includes('UNKNOWN'))return {
-    label:'Text extraction pattern',
-    text:'Parser Studio could not identify a standard envelope. Use the repeated delimiters or text structure only for the unresolved event, with bounded named captures and independent holdout validation. Do not assume Syslog or discard unmatched events.',
+    kind:'text',
+    label:'Create a rule for this text format',
+    text:'Use the repeated separators or text pattern to extract only the values that are present. Parser Studio will keep unmatched events instead of silently dropping them.',
   };
   return {
-    label:'Assisted recovery',
-    text:'Use ChatGPT Assisted Parser to propose a bounded ParserRecipe for this unresolved event, then test it against independent holdout logs before applying it.',
+    kind:'assisted',
+    label:'Fix this event with ChatGPT',
+    text:'Let ChatGPT propose a parser fix, then let Parser Studio test the proposal against additional logs before you apply it.',
   };
 }
 function metadataOnlyReview(preview:MultiPassSourcePreview):boolean{
@@ -142,7 +161,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
   const rec=current?recommendation(current.event.preview):null;
-  const recipeImportEligible=!!rec&&rec.label!=='Review source metadata';
+  const recipeImportEligible=!!rec&&rec.kind!=='metadata';
   const openPrompt=async()=>{
     if(!current||!rec||promptBusy)return;
     setPromptBusy(true);setCopyStatus('');
@@ -174,7 +193,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         <p>{resolvedByReviewedCandidate
           ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
           :parserRuleReviewRequired
-          ?'Source extraction succeeded, but Parser Studio still needs a compiler-safe parser rule for this source shape. No extracted fields are discarded.'
+          ?'Parser Studio found the source fields, but it still needs one additional rule before it can create the parser. No extracted values will be lost.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
           :'No unresolved source region was found. Continue to review field meanings and create the parser draft.'}</p>
@@ -187,10 +206,10 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         </select>
       </label>}
       <h3>{parserRuleReviewRequired
-        ?'Source fields were extracted, but parser generation needs one more rule'
+        ?'Fields found — one more rule is needed'
         :problemTitle(current.event.preview)}</h3>
       <p>{parserRuleReviewRequired
-        ?<>Parser Studio extracted this <b>{friendlySyntax(current.event.preview)}</b> event, but the current DRAFT compiler cannot yet reproduce the source shape safely. Review a bounded rule before continuing.</>
+        ?<>Parser Studio found the fields in this <b>{friendlySyntax(current.event.preview)}</b>, but it needs one additional rule before it can build the parser.</>
         :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview)}</b>, but it will not mark this event parser-ready until the remaining review is resolved.</>}</p>
       <div className="beginner-problem-source">
         <span>Original event {current.index+1} · {parserRuleReviewRequired
@@ -204,14 +223,14 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
       <div className="beginner-problem-details">
         <div><strong>What needs attention</strong>
           {parserRuleReviewRequired
-            ?<p>Source fields were extracted, but the current parser draft has no compiler-safe rule that reproduces this exact structure yet.</p>
+            ?<p>The field values are already available. Only the parser rule that reproduces this message format is still missing.</p>
             :current.event.preview.issues.length
               ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code)}</li>)}</ul>
               :<p>The engine could not produce a complete trustworthy field set for this event.</p>}
         </div>
-        <div><strong>{parserRuleReviewRequired?'Parser rule gap':metadataOnlyReview(current.event.preview)?'Source metadata review':'Unparsed source'}</strong>
+        <div><strong>{parserRuleReviewRequired?'What Parser Studio still needs':metadataOnlyReview(current.event.preview)?'Source metadata review':'Unparsed source'}</strong>
           {parserRuleReviewRequired
-            ?<p>No source bytes are missing. The next step is to create and validate a bounded parser rule that reproduces the already-extracted structure.</p>
+            ?<p>No source text is missing. Create one rule for this message format, then test it against additional log examples.</p>
             :current.event.preview.residuals.length
               ?current.event.preview.residuals.map((region,i)=><code key={i}>{utf8Slice(raw,region.startByte,region.endByte)}</code>)
               :metadataOnlyReview(current.event.preview)
@@ -223,29 +242,41 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         <Wrench size={18}/><div><strong>Recommended fix · {rec.label}</strong><p>{rec.text}</p></div>
       </div>}
       <div className="beginner-fix-actions">
-        {rec?.label==='Column schema mapping'&&neutralCsvColumnCount&&onUseNeutralCsvColumns&&
+        {rec?.kind==='csv'&&neutralCsvColumnCount&&onUseNeutralCsvColumns&&
           <button type="button" className="auto-parser-primary" onClick={onUseNeutralCsvColumns}>
-            Use {neutralCsvColumnCount} Neutral Column Names
+            Keep all {neutralCsvColumnCount} values with temporary names
           </button>}
-        <button type="button" className={rec?.label==='Column schema mapping'?'':'auto-parser-primary'} disabled={promptBusy}
+        <button type="button" className={rec?.kind==='csv'?'':'auto-parser-primary'} disabled={promptBusy}
           onClick={()=>void openPrompt()}>
-          <Bot size={16}/> {promptBusy?'Preparing Prompt…':'Ask ChatGPT'}
+          <Bot size={16}/> {promptBusy?'Preparing…':rec?.kind==='metadata'?'Review with ChatGPT':'Fix with ChatGPT'}
         </button>
-        <button type="button" onClick={onOpenAssisted}>Open Assisted Parser</button>
       </div>
       {promptOpen&&<div className="beginner-chatgpt" aria-label="ChatGPT repair prompt">
-        <strong>Ready-to-use ChatGPT prompt</strong>
-        <p>Review or redact sensitive values, then copy. Parser Studio never sends this automatically.</p>
+        <strong>1. Copy this prompt to ChatGPT</strong>
+        <p>Review or redact sensitive values first. Parser Studio never sends the log automatically.</p>
         <textarea aria-label="Generated ChatGPT repair prompt" value={promptText} readOnly rows={14}/>
         <button type="button" onClick={()=>void copyPrompt()}><Clipboard size={15}/> Copy Prompt</button>
         {copyStatus&&<p role="status">{copyStatus}</p>}
-        {recipeImportEligible&&draft&&suite&&onApplyCandidate&&<AutoParserAIReview importOnly raw={raw}
-          status={current.event.preview.status==='RAW_ONLY'?'unsupported':'partial'}
-          onChatGPT={onOpenAssisted} source={source} draft={draft} suite={suite}
-          onApplyCandidate={onApplyCandidate}/>}
+        {recipeImportEligible&&draft&&suite&&onApplyCandidate&&<>
+          <div className="beginner-inline-step">
+            <strong>2. Paste the ChatGPT result below</strong>
+            <p>Parser Studio will test the proposed fix against the current logs and additional test logs before you can apply it.</p>
+          </div>
+          <AutoParserAIReview importOnly raw={raw}
+            status={current.event.preview.status==='RAW_ONLY'?'unsupported':'partial'}
+            onChatGPT={onOpenAssisted} source={source} draft={draft} suite={suite}
+            onApplyCandidate={onApplyCandidate}/>
+        </>}
+        {recipeImportEligible&&draft&&!suite&&<div className="beginner-inline-wait" role="status">
+          <strong>Preparing result review…</strong>
+          <p>The local preview is still preparing the safe validation step. You can paste the ChatGPT result here as soon as it is ready.</p>
+        </div>}
+        {recipeImportEligible&&<button type="button" className="beginner-secondary-link" onClick={onOpenAssisted}>
+          Use the full ChatGPT workflow instead
+        </button>}
         {!recipeImportEligible&&<p className="beginner-manual-fix-note" role="note">
-          This event needs source-metadata review rather than a new extraction rule. Keep the extracted fields
-          and correct the source anomaly upstream, or intentionally preserve it after review.
+          The fields were extracted. This is a source-metadata problem, not a missing parser rule.
+          Correct the source timestamp/structured-data issue upstream or intentionally preserve it after review.
         </p>}
       </div>}
     </div>}

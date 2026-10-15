@@ -55,7 +55,7 @@ interface Props {
  advanced:boolean;onAdvancedChange:(value:boolean)=>void;
 }
 const MAX_LOCAL_TEXT=64*1024;
-const STEPS=['Add Logs','Fix Problems','Test & Create'] as const;
+const STEPS=['Add Logs','Review Fields','Create Parser'] as const;
 type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
@@ -86,6 +86,14 @@ const readable:Record<string,string>={
  MODEL_REVIEW_REQUIRED:'Review the detected field mappings on this screen before generating.',
 };
 function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
+function backendReviewMessage(error:unknown){
+ const detail=error instanceof Error?error.message:'';
+ if(/HTTP|request failed|fetch|network|unavailable/i.test(detail))
+   return 'The parser creation service is unavailable or access was denied. Log analysis succeeded and your parsed fields are preserved. Try again after the local backend is reachable and authorized.';
+ if(/capabilit|contract|allowlist|bounded|authoring|verification flags|inconsistent/i.test(detail))
+   return 'Parser Studio components are out of sync. Log analysis succeeded, but this UI cannot create parser files with the connected backend version. Update or restart the development backend, then try again. Your parsed fields are preserved.';
+ return 'Parser Studio could not start parser creation with the connected backend. Your parsed fields are preserved; open Tools & Diagnostics for technical details or retry after the backend is updated.';
+}
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
  runPreview,activeSession,onSessionUpdate,onChatGPT,advanced,onAdvancedChange,
@@ -300,8 +308,8 @@ export default function AutoParser({
        requiresApproval:next.requiresApproval,
      });
      setStep(1);setSelected(0);
-   }catch{
-     if(token===epoch.current)setMessage(readable.BACKEND_UNAVAILABLE);
+   }catch(error){
+     if(token===epoch.current)setMessage(backendReviewMessage(error));
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function generate(){
@@ -927,17 +935,16 @@ export default function AutoParser({
          <p className="beginner-next-step" role="status">Source extraction is complete. Preparing the browser parser draft for field review…</p>}
        <button type="button" className="auto-parser-primary"
          disabled={!canReview} onClick={()=>{void review();}}>
-         {busy?'Checking the parser…':!advanced&&beginnerResolved&&pending?'Preparing Parser Draft…':advanced?'Review Detected Results':'Review Parsed Fields'} <ArrowRight size={16}/>
+         {busy?'Checking the parser…':!advanced&&beginnerResolved&&pending?'Preparing Parser Draft…':advanced?'Review Detected Results':'Review Fields'} <ArrowRight size={16}/>
        </button>
      </section>}
-     {step===1&&<section aria-label="Fix Problems stage">
-       <h2>Fix Problems</h2>
-       <p>The original sample remains unchanged. Source values appear only in your local
-         event inspector; extracted/normalized values are never sent as raw logs.</p>
+     {step===1&&<section aria-label="Review Fields stage">
+       <h2>Review Fields</h2>
+       <p>Confirm the fields Parser Studio found. You can adjust names or types before creating the parser.</p>
        <div className="auto-parser-summary">
-         <span>Browser events <strong>{report.sourceCount}</strong></span>
+         <span>{advanced?'Browser events':'Log events'} <strong>{report.sourceCount}</strong></span>
          <span>Need review <strong>{report.unsupported}</strong></span>
-         <span>Mapping rules <strong>{draft.mappings.length}</strong></span>
+         <span>{advanced?'Mapping rules':'Fields mapped'} <strong>{draft.mappings.length}</strong></span>
        </div>
        {report.events.some(event=>event.timePolicy==='YEAR_AND_ZONE_UNKNOWN')&&
          <p className="auto-parser-warning" role="note">
@@ -1018,46 +1025,64 @@ export default function AutoParser({
          <button type="button" onClick={()=>setStep(0)}><ArrowLeft size={15}/> Back to Logs</button>
          <button type="button" className="auto-parser-primary" disabled={pending||!suite}
            onClick={()=>setStep(2)}>
-           {pending?'Preparing Test…':'Test & Create'} <ArrowRight size={16}/>
+           {pending?'Preparing…':'Create Parser'} <ArrowRight size={16}/>
          </button>
        </div>
      </section>}
-     {step===2&&<section aria-label="Test and Create stage">
-       <h2>Test &amp; Generate</h2>
-       <p>Run every sample through the local Web Worker, then validate the typed
-         authoring contract with the real backend and verify both DRAFT file SHA-256 hashes.
-         No parser deployment or sensor test occurs.</p>
+     {step===2&&<section aria-label="Create Parser stage">
+       <h2>{advanced?'Test & Create':'Create Parser'}</h2>
+       <p>{advanced
+         ?<>Run every sample through the local Web Worker, then validate the typed
+           authoring contract with the real backend and verify both DRAFT file SHA-256 hashes.
+           No parser deployment or sensor test occurs.</>
+         :<>Parser Studio will test every sample again. If they pass, it creates the parser
+           files for download. Nothing is deployed to a DP or sensor automatically.</>}</p>
        <div className="auto-parser-summary">
-         <span>Events <strong>{report.sourceCount}</strong></span>
-         <span>Locally matched <strong>{suite?.counts.matched??0}</strong></span>
-         <span>Normalized <strong>{suite?.counts.normalized??0}</strong></span>
-         <span>Errors <strong>{suite?.counts.failures??0}</strong></span>
+         <span>Log events <strong>{report.sourceCount}</strong></span>
+         <span>{advanced?'Locally matched':'Parsed'} <strong>{suite?.counts.matched??0}</strong></span>
+         <span>{advanced?'Normalized':'Ready'} <strong>{suite?.counts.normalized??0}</strong></span>
+         <span>{advanced?'Errors':'Issues'} <strong>{suite?.counts.failures??0}</strong></span>
        </div>
        {!confirmed()&&<p className="auto-parser-warning" role="note">
          Not all sample events passed. Review detected fields and mappings above
          before generating your parser.</p>}
-       <button type="button" className="auto-parser-primary" disabled={!canGenerate||!confirmed()}
-         onClick={()=>{void generate();}}>
-         {busy?'Testing the full sample…':'Run Tests & Generate DRAFT Files'}
+       <button type="button" className="auto-parser-primary"
+         aria-label="Create Parser Files"
+         disabled={!canGenerate||!confirmed()} onClick={()=>{void generate();}}>
+         {busy?'Testing the full sample…':advanced?'Run Tests & Generate DRAFT Files':'Create Parser Files'}
        </button>
        {currentEvidence&&<div className="auto-parser-result" aria-label="Auto Parser test evidence">
-         <strong>{currentEvidence.status==='PASS'?
-           'Schema/Hashes PASS · '+(currentNativeEvidence?.status==='PASS'?'Native Verified':'Native Unverified'):
-           'Generation Not Verified'}</strong>
-         <span>{currentEvidence.total} browser events reviewed ·
-           Stellar DP target import NOT VERIFIED</span>
+         <strong>{currentEvidence.status==='PASS'?'All sample logs passed the final test':'Parser creation stopped'}</strong>
+         <span>{currentEvidence.status==='PASS'
+           ?`${currentEvidence.total} sample event${currentEvidence.total===1?'':'s'} tested successfully. Nothing has been deployed.`
+           :'One or more sample logs still need review. No parser files were released.'}</span>
          {currentEvidence.issues.map((issue,i)=><span key={i}>{issue}</span>)}
+         {advanced&&<small>
+           Technical evidence: SHA/schema {currentEvidence.status} ·
+           {currentNativeEvidence?.status==='PASS'?' Native verified':' Native not verified'} ·
+           Stellar target import not verified.
+         </small>}
        </div>}
        {currentPair&&<div className="auto-parser-download" aria-label="Generated Auto Parser DRAFT pair">
-         <strong><CheckCircle2 size={17}/> Two DRAFT files verified for SHA-256 integrity ·
-           {currentNativeEvidence?.status==='PASS'?' Native VERIFIED':' Native NOT VERIFIED'}</strong>
+         <strong><CheckCircle2 size={17}/> {advanced
+           ?<>Two DRAFT files verified for SHA-256 integrity ·
+             {currentNativeEvidence?.status==='PASS'?' Native VERIFIED':' Native NOT VERIFIED'}</>
+           :'Parser files created successfully'}</strong>
+         {!advanced&&<span>{currentNativeEvidence?.status==='PASS'
+           ?'Local parser runtime verification passed. A real Stellar DP/sensor test has not been run.'
+           :'All current samples passed. A real Stellar DP/sensor test has not been run yet.'}</span>}
+         {!advanced&&<details className="auto-parser-recipe" aria-label="Parser file verification details">
+           <summary>Verification details</summary>
+           <span>Two DRAFT files verified for SHA-256 integrity ·
+             {currentNativeEvidence?.status==='PASS'?' Native VERIFIED':' Native NOT VERIFIED'}</span>
+         </details>}
          {currentPair.files.map(file=><button key={file.name} type="button"
            onClick={()=>download(file.name,file.content)}>
-           <FileText size={15}/>{file.name} <Download size={15}/>
+           <FileText size={15}/>{advanced?file.name:file.name.endsWith('.conf')?'Download listener configuration':'Download parser logic'} <Download size={15}/>
          </button>)}
          <button type="button" disabled={busy}
-           onClick={()=>{void zipPair();}}><FileArchive size={16}/> Download Verified DRAFT ZIP</button>
-         {currentZip&&<small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>}
+           onClick={()=>{void zipPair();}}><FileArchive size={16}/> {advanced?'Download Verified DRAFT ZIP':'Download Parser Package'}</button>
+         {advanced&&currentZip&&<small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>}
        </div>}
        {currentPair&&<ArtifactRevisionHistoryPanel
          projectId={currentPair.manifest.projectId}
@@ -1225,7 +1250,7 @@ export default function AutoParser({
            ?' Current source-bound Ruby/CONF passed the pinned Native Fluentd runtime; real Stellar Cyber import remains unverified.'
            :' Native Fluentd compatibility and real Stellar Cyber import remain unverified.'}</p>
        <div className="auto-parser-actions">
-         <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Fix Problems</button>
+         <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Review Fields</button>
          <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>
        </div>
      </section>}

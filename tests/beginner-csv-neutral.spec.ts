@@ -34,14 +34,14 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('0 of 2 log events parsed completely');
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Recommended fix · Column schema mapping');
- const neutral=problem.getByRole('button',{name:'Use 5 Neutral Column Names'});
+ await expect(problem).toContainText('Recommended fix · Keep all values with temporary field names');
+ const neutral=problem.getByRole('button',{name:'Keep all 5 values with temporary names'});
  await expect(neutral).toBeVisible();
  await neutral.click();
  await expect(summary).toContainText('2 of 2 log events parsed completely');
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Review Parsed Fields'})).toBeEnabled();
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002,field_003,field_004,field_005');
  await expect(page.getByText('CSV field names reviewed. Automatic parser testing is ready.')).toBeVisible();

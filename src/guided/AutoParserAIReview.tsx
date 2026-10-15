@@ -96,8 +96,8 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     }
    }
    if(!proposal.ok){setImportResult(`REVIEW ONLY: ${result.report.changedStageCount} changes. No safely compilable parser candidate: ${proposal.reason}.`);return;}
-   if(!holdout.trim()){setImportResult('Independent holdout sample required before approval. No rules were applied.');return;}
-   if(!holdoutAttested){setImportResult('Confirm that the holdout events were not used to create or tune this AI proposal. No rules were applied.');return;}
+   if(!holdout.trim()){setImportResult('Add different test log examples before applying this fix. No parser rules were changed.');return;}
+   if(!holdoutAttested){setImportResult('Confirm that the additional test logs are different from the examples used to create this fix. No parser rules were changed.');return;}
    let report:ReturnType<typeof compareCandidate>;
    let candidateSuite:SuiteResult,candidateHoldout:SuiteResult;
    try{
@@ -117,11 +117,11 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    }
    if(!report.acceptedWithoutRegression||report.holdoutStatus!=='TESTED'||
       !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
-    setImportResult('Candidate rejected: full training/holdout parsing or regression verification failed. No rules were applied.');return;
+    setImportResult('The proposed fix did not pass both the original logs and the additional test logs. No parser rules were changed.');return;
    }
    setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope});setValidatedEvidence(evidenceFingerprint());
    const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':candidateMode==='enrichment'?'one bounded split/merge rule':'one added mapping';
-   setImportResult(`Ready for explicit approval: ${description}, 0 training/holdout regressions; ${report.holdout?.sourceCount??0} independent holdout events tested. Browser-only; native verification pending.`);
+   setImportResult(`Fix passed: ${description}; ${report.holdout?.sourceCount??0} additional test log${(report.holdout?.sourceCount??0)===1?'':'s'} checked with no regressions. Ready to apply.`);
   }catch{setImportResult('AI proposal validation unavailable. No rules were applied.');}
   finally{setImportBusy(false);}
  }
@@ -130,21 +130,19 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    <label className="stellar-ai-label" htmlFor="stellar-ai-recipe">ParserRecipe v0.2 JSON proposal</label>
    <textarea id="stellar-ai-recipe" aria-label="AI Recipe JSON" rows={5} maxLength={32768}
     value={recipeText} onChange={e=>{setRecipeText(e.target.value);setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');}}/>
-   <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Independent holdout logs (required)</label>
+   <label className="stellar-ai-label" htmlFor="stellar-ai-holdout">Additional test logs (use different examples)</label>
    <textarea id="stellar-ai-holdout" aria-label="AI candidate holdout logs" rows={3} maxLength={65536}
     value={holdout} onChange={e=>{setHoldout(e.target.value);setHoldoutAttested(false);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');setImportResult('');}}/>
    <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm independent AI holdout provenance"
     checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');}}/>
-    I confirm these holdout events were not used to create, tune, or select this AI proposal.</label>
-   <button type="button" disabled={!source||!draft||!suite||!recipeText.trim()||importBusy}
-    onClick={()=>void reviewImport()}>Validate Proposal (Review Only)</button>
+    These are different log examples from the ones used to create this fix.</label>
+   <button type="button" aria-label="Validate Proposal (Review Only)"
+    disabled={!source||!draft||!suite||!recipeText.trim()||importBusy}
+    onClick={()=>void reviewImport()}>Test Proposed Fix</button>
    {importResult&&<p role="status">{importResult}</p>}
    {approvedCandidate&&<div className="stellar-ai-approval">
     <label><input type="checkbox" aria-label="Approve verified inline AI candidate" checked={approval} onChange={e=>setApproval(e.target.checked)}/>
-      {approvedCandidate.mode==='recovery'?'I approve replacing the current unverified parser draft with this verified recovery parser.':
-       approvedCandidate.mode==='correction'?'I approve this one verified mapping correction. All unrelated rules must remain unchanged.':
-       approvedCandidate.mode==='enrichment'?'I approve this one bounded split/merge rule. All existing mappings and unrelated rules must remain unchanged.':
-       'I approve the one verified additive mapping. Existing rules must remain unchanged.'}</label>
+      I reviewed the tested result and approve applying this fix. Existing unrelated fields and rules must remain unchanged.</label>
     <button type="button" onClick={()=>{
      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
      setImportResult('AI candidate rejected by the user. Existing parser rules remain unchanged.');
@@ -175,12 +173,14 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       appliedMode==='correction'?'Approved mapping correction added to draft. Native parser testing and export verification remain required.':
       appliedMode==='enrichment'?'Approved split/merge rule added to draft. Native parser testing and export verification remain required.':
       'Approved mapping added to draft. Native parser testing and export verification remain required.');
-    }}>{approvedCandidate.mode==='recovery'?'Apply Approved Recovery Parser to Draft':approvedCandidate.mode==='correction'?'Apply Approved Mapping Correction':approvedCandidate.mode==='enrichment'?'Apply Approved Split/Merge Rule':'Apply Approved Mapping to Draft'}</button>
+    }} aria-label={approvedCandidate.mode==='recovery'?'Apply Approved Recovery Parser to Draft':approvedCandidate.mode==='correction'?'Apply Approved Mapping Correction':approvedCandidate.mode==='enrichment'?'Apply Approved Split/Merge Rule':'Apply Approved Mapping to Draft'}>
+      Apply Verified Fix
+    </button>
    </div>}
   </details></>;
  if(importOnly)return <aside className="stellar-ai-review beginner-ai-result-review" aria-label="AI result verification">
   <h3>Paste ChatGPT Result</h3>
-  <p>Paste the ParserRecipe v0.2 returned by ChatGPT. Parser Studio will reject it unless the current source and an independent holdout both pass.</p>
+  <p>Paste the JSON returned by ChatGPT. Parser Studio will test it against the current logs and additional examples before anything changes.</p>
   {importPanel}
   <small>No rule changes until validation passes and you explicitly approve the candidate.</small>
  </aside>;

@@ -111,3 +111,17 @@
 
 .beginner-next-step{margin:12px 0;padding:10px 12px;border-radius:8px;border:1px solid #d5e3e7;background:#f6fafb;color:#55707d;font-size:11px;line-height:1.55}
 .beginner-next-step.needs-fix{border-color:#e4c9a8;background:#fff8ef;color:#79582e}
+
+.beginner-inline-step{margin-top:14px;padding-top:12px;border-top:1px solid #d8e6ea}
+.beginner-inline-step strong,.beginner-inline-wait strong{font-size:12px;color:#245f6e}
+.beginner-inline-step p,.beginner-inline-wait p{margin:5px 0 0;font-size:11px;line-height:1.55;color:#647b86}
+.beginner-inline-wait{margin-top:12px;padding:12px;border:1px solid #d5e4e8;background:#f7fbfc;border-radius:8px}
+.beginner-secondary-link{margin-top:10px}
+.beginner-mode [aria-label="Offline parser revision history"],
+.beginner-mode [aria-label="Local synthetic replay preview"],
+.beginner-mode [aria-label="Authorized test and Interflow verification"],
+.beginner-mode [aria-label="Whole-sample regression and holdout review"],
+.beginner-mode [aria-label="Reusable approved mapping patterns"],
+.beginner-mode [aria-label="Local review session metrics"],
+.beginner-mode [aria-label="ParserRecipe v0.2 review"],
+.beginner-mode [aria-label="Native Ruby and CONF verification evidence"]{display:none!important}

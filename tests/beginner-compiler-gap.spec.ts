@@ -20,14 +20,14 @@ test('source extraction success is not falsely called parser-ready when the DRAF
 
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('1 of 1 source event extracted');
- await expect(summary).toContainText('compiler-safe parser rule');
+ await expect(summary).toContainText('one additional rule before it can create the parser');
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Source fields were extracted, but parser generation needs one more rule');
- await expect(problem).toContainText('No source bytes are missing');
- await expect(problem).toContainText('Recommended fix · Message-body pattern');
- await expect(page.getByRole('button',{name:'Review Parsed Fields'})).toBeDisabled();
+ await expect(problem).toContainText('Fields found — one more rule is needed');
+ await expect(problem).toContainText('No source text is missing');
+ await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
 
- await problem.getByRole('button',{name:'Ask ChatGPT'}).click();
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
  await expect(prompt).toContainText('ParserRecipe safety contract');
  await expect(prompt).toContainText('bounded parse_regex');
