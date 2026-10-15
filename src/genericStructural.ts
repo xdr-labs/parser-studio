@@ -214,9 +214,16 @@ function spaceKv(raw:string):Record<string,unknown>|null{
     if(/[\u0000-\u001f\u007f]/.test(value)||new TextEncoder().encode(value).byteLength>512)return null;
     fields[entry.key]=value;
     if(!quoted&&/[ \t]/.test(value)){
-      const first=value.split(/[ \t]+/)[0]!;
-      const safe=entry.key.replaceAll('-','_')+'_001';
-      atoms[safe]=first;
+      const pieces=value.split(/[ \t]+/).filter(Boolean);
+      if(pieces.length>32)return null;
+      for(let pieceIndex=0;pieceIndex<pieces.length;pieceIndex++){
+        const piece=pieces[pieceIndex]!;
+        if(new TextEncoder().encode(piece).byteLength>256)return null;
+        const safe=entry.key.replaceAll('-','_')+'_'+String(pieceIndex+1).padStart(3,'0');
+        if(Object.prototype.hasOwnProperty.call(atoms,safe))return null;
+        atoms[safe]=piece;
+        if(Object.keys(atoms).length>100)return null;
+      }
     }
   }
   const generic:Record<string,unknown>={mode:'space_kv',source_raw:raw,kv:fields};

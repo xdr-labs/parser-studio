@@ -10,7 +10,7 @@ const holdout=[
  'May  6 18:11:02 dev02: %FTD-6-302015: Built inbound UDP connection 222222222 for outside:10.20.30.41/60124 (81.2.69.145/60124) to inside:172.16.1.11/53 (81.2.69.145/53)',
 ].join('\n');
 const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
-const pattern=String.raw`^.*%FTD-\d-(?<event_id>\d+): Built inbound (?<protocol>TCP|UDP) connection \d+ for \w+:(?<srcip>[0-9.]+)/(?<srcport>\d+) .* to \w+:(?<dstip>[0-9.]+)/(?<dstport>\d+).*$`;
+const pattern=String.raw`^.*%FTD-\d-(?<event_id>\d+): (?<message>Built inbound .*)$`;
 
 function batch(raw:string){
  const lines=raw.split('\n');
@@ -46,15 +46,7 @@ const recipe={
   {op:'parse_regex',pattern},
   {op:'map_field',source:'event_id',target:'custom.event_id',data_type:'integer',group:'ns_fields'},
   {op:'cast_type',target:'custom.event_id',data_type:'integer'},
-  {op:'map_field',source:'protocol',target:'custom.protocol',data_type:'string',group:'top_fields'},
-  {op:'map_field',source:'srcip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
-  {op:'cast_type',target:'custom.source_ip',data_type:'ip'},
-  {op:'map_field',source:'srcport',target:'custom.source_port',data_type:'port',group:'ns_fields'},
-  {op:'cast_type',target:'custom.source_port',data_type:'port'},
-  {op:'map_field',source:'dstip',target:'custom.destination_ip',data_type:'ip',group:'top_fields'},
-  {op:'cast_type',target:'custom.destination_ip',data_type:'ip'},
-  {op:'map_field',source:'dstport',target:'custom.destination_port',data_type:'port',group:'ns_fields'},
-  {op:'cast_type',target:'custom.destination_port',data_type:'port'},
+  {op:'map_field',source:'message',target:'custom.message',data_type:'string',group:'vendor_fields'},
   {op:'classify',defaultIndex:'syslog',rules:[]},
   {op:'fallback_unparsed',mode:'retain_unparsed'},
  ],

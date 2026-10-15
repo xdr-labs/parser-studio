@@ -129,7 +129,7 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     });
   });
 
-  it('keeps an unquoted multiword KV value plus its first atom for conservative recovery',()=>{
+  it('keeps every bounded atom from an unquoted multiword KV value for source-preserving recovery',()=>{
     const raw='device="SFW" date=2017-01-31 time=14:16:19 timezone="IST" device_name="CR750iNG-XP" device_id=C44313350024- P29PUA log_id=010101600001 status="Allow"';
     const result=extractGenericStructural(raw);
     expect(result.errors).toEqual([]);
@@ -138,7 +138,7 @@ describe('bounded Generic Structural browser compiler twin',()=>{
         mode:'space_kv',source_raw:raw,
         kv:{device:'SFW',date:'2017-01-31',time:'14:16:19',timezone:'IST',device_name:'CR750iNG-XP',
           device_id:'C44313350024- P29PUA',log_id:'010101600001',status:'Allow'},
-        atoms:{device_id_001:'C44313350024-'},
+        atoms:{device_id_001:'C44313350024-',device_id_002:'P29PUA'},
       },
     });
   });
