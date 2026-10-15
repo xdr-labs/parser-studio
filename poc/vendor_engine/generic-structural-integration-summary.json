@@ -335,13 +335,12 @@
         "raw_preserved": 275
       },
       "f5_bigip": {
-        "current_RAW_ONLY": 2,
-        "current_SOURCE_PARSED": 34,
+        "current_SOURCE_PARSED": 36,
         "events": 36,
         "old_complete": 32,
         "old_complete_divergence": 0,
         "old_complete_exact": 32,
-        "promoted": 2,
+        "promoted": 4,
         "raw_preserved": 36
       },
       "juniper_srx": {
@@ -377,15 +376,15 @@
     },
     "total": {
       "current_PARTIAL": 182,
-      "current_RAW_ONLY": 30,
-      "current_SOURCE_PARSED": 496,
+      "current_RAW_ONLY": 28,
+      "current_SOURCE_PARSED": 498,
       "events": 708,
       "old_complete": 283,
       "old_complete_divergence": 0,
       "old_complete_exact": 283,
       "old_exception": 7,
       "old_exception_repaired": 7,
-      "promoted": 213,
+      "promoted": 215,
       "raw_preserved": 708
     }
   },

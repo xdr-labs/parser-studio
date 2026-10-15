@@ -19,7 +19,7 @@ MONTHS={"Jan":31,"Feb":29,"Mar":31,"Apr":30,"May":31,
         "Jun":30,"Jul":31,"Aug":31,"Sep":30,"Oct":31,"Nov":30,"Dec":31}
 BSD_FRAMED=re.compile(
     r"^<(?P<pri>\d{1,3})>(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) "
-    r"(?P<time>\d{2}:\d{2}:\d{2}) +(?P<host>[^\s]+) "
+    r"(?P<time>\d{2}:\d{2}:\d{2}) +(?P<host>[^\s]+) +"
     r"(?P<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?): +",
 )
 
