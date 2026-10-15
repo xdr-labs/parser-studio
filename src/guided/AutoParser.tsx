@@ -199,19 +199,23 @@ export default function AutoParser({
  const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
  const csvApproved=!csvReviewActive||csvApprovedKey===csvSchemaKey;
  const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());
- const neutralCsvColumnCount=csvReviewActive?
-   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
+ const csvReviewSource=csvReviewActive?
+   splitEvents(sample,(draft.guided?.eventBoundary??'single-line') as EventBoundary,MAX_EVENTS+1)
+     .filter((_,index)=>report.events[index]?.envelope==='none'&&report.events[index]?.body==='csv')
+     .map(record=>record.raw).join('\n'):'';
+ const neutralCsvColumnCount=csvReviewActive&&csvReviewSource?
+   inferConsistentCsvColumnCount(csvReviewSource,draft.csvDelimiter??','):null;
  const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
    [',',';','\t'].includes(draft.csvDelimiter??'INVALID')&&
    (neutralCsvColumnCount===null||csvColumns.length===neutralCsvColumnCount);
- const csvSupportedShapeCounts=csvReviewActive?
-   ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(sample,delimiter))
+ const csvSupportedShapeCounts=csvReviewActive&&csvReviewSource?
+   ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(csvReviewSource,delimiter))
      .filter((count):count is number=>count!==null):[];
  const csvConsistentShapeAvailable=!csvReviewActive||csvSupportedShapeCounts.length>0;
- const csvSelectedShapeInspection=csvReviewActive?
-   inspectCsvColumnShapes(sample,draft.csvDelimiter??','):{groups:[],invalidEventNumbers:[]};
+ const csvSelectedShapeInspection=csvReviewActive&&csvReviewSource?
+   inspectCsvColumnShapes(csvReviewSource,draft.csvDelimiter??','):{groups:[],invalidEventNumbers:[]};
  const csvSelectedShapeGroups=csvSelectedShapeInspection.groups;
  const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
    csvColumns.length===neutralCsvColumnCount);
