@@ -22,6 +22,7 @@ interface Props {
   onApplyCandidate?:(draft:ParserDraft)=>void;
   resolvedByReviewedCandidate?:boolean;
   parserRuleReviewRequired?:boolean;
+  parserRuleReviewEventIndexes?:number[];
   neutralCsvColumnCount?:number;
   onUseNeutralCsvColumns?:()=>void;
   protectedSourceValuesByEvent?:string[][];
@@ -192,7 +193,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 }
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
-  resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,
+  resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
   neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
   protectedResidualTextByEvent}:Props){
   const [selected,setSelected]=useState(0);
@@ -203,8 +204,14 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
   const neutralCsvReviewRequired=Boolean(neutralCsvColumnCount&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
   const parsed=resolvedByReviewedCandidate?events.length:parserRuleReviewRequired?0:sourceParsed;
-  const problems=resolvedByReviewedCandidate?[]:parserRuleReviewRequired&&events.length
-    ?[{event:events[0]!,index:0}]
+  const ruleReviewProblems=parserRuleReviewRequired&&events.length
+    ?(parserRuleReviewEventIndexes?.length
+      ?parserRuleReviewEventIndexes.filter(index=>index>=0&&index<events.length)
+        .map(index=>({event:events[index]!,index}))
+      :[{event:events[0]!,index:0}])
+    :[];
+  const problems=resolvedByReviewedCandidate?[]:parserRuleReviewRequired
+    ?ruleReviewProblems
     :events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';

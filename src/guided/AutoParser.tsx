@@ -243,7 +243,9 @@ export default function AutoParser({
  const chosen=records[selected]??records[0];
  const multiPassSourceComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
    multiPass.events.every(event=>event.preview.status==='SOURCE_PARSED');
- const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&report.unsupported>0);
+ const parserRuleReviewEventIndexes=report.events.map((event,index)=>
+   event.status!=='RECOGNIZED'?index:-1).filter(index=>index>=0);
+ const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&parserRuleReviewEventIndexes.length>0);
  const beginnerAuthoritativeComplete=Boolean(multiPassSourceComplete&&!parserRuleReviewRequired);
  const browserSuiteComplete=!!suite&&suite.engine==='browser-preview'&&
    suite.nativeFluentdVerified===false&&suite.stellarExportVerified===false&&
@@ -687,6 +689,7 @@ export default function AutoParser({
          draft={draft} suite={suite} onApplyCandidate={setDraft}
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
          parserRuleReviewRequired={parserRuleReviewRequired}
+         parserRuleReviewEventIndexes={parserRuleReviewEventIndexes}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
