@@ -1,4 +1,4 @@
-"""Security-product-only benchmark for Structural Hypothesis PoC v1.
+"""Security-product-only benchmark for Structural Hypothesis PoC v3.
 
 No raw log values are written to the summary.  Inputs stay in ignored/local
 research caches.  The benchmark deliberately includes already-well-parsed WAF,
@@ -12,16 +12,19 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from multipass_adjudicator import parse_security_multipass
+from multipass_adjudicator import parse_security_multipass, parse_security_once
 from source_parse import assert_source_accounting
 from structural_hypothesis_poc import (
     delete_required_delimited_anchors,
+    delete_required_rgram_literal,
     delete_required_template_anchor,
     learn_best_hypothesis,
     learn_event_template_hypotheses,
+    learn_relative_rgram_hypotheses,
     merge_residual_hypothesis,
     parse_with_event_template,
     parse_with_hypothesis,
+    parse_with_relative_rgram,
 )
 
 BASE = Path(__file__).resolve().parent
@@ -60,6 +63,9 @@ def _files() -> list[dict[str, str]]:
         {"category": "NGFW", "family": "checkpoint", "path": str(LOCAL_CACHE / "checkpoint_r81x.log")},
         {"category": "NGFW_VPN", "family": "cisco_asa", "path": str(LOCAL_CACHE / "cisco_asa_anyconnect.log")},
         {"category": "NGFW_VPN", "family": "cisco_asa", "path": str(LOCAL_CACHE / "cisco_asa_fix.log")},
+        {"category": "EMAIL_SECURITY", "family": "cisco_secure_email", "path": str(LOCAL_CACHE / "cisco_secure_email_amp.log")},
+        {"category": "EMAIL_SECURITY", "family": "cisco_secure_email", "path": str(LOCAL_CACHE / "cisco_secure_email_consolidated.log")},
+        {"category": "EMAIL_SECURITY", "family": "cisco_secure_email", "path": str(LOCAL_CACHE / "cisco_secure_email_text_mail.log")},
     ]
     extra = {
         "f5_bigip": "WAF_NGFW",
@@ -139,6 +145,9 @@ def run() -> dict:
             disjoint_evaluation_events += len(holdout)
         hypothesis = learn_best_hypothesis(train)
         template_hypotheses = learn_event_template_hypotheses(train)
+        rgram_hypotheses = learn_relative_rgram_hypotheses(
+            [parse_security_once(raw) for raw in train]
+        )
         stats = Counter()
         for raw in holdout:
             baseline = parse_security_multipass(raw)
@@ -179,6 +188,22 @@ def run() -> dict:
                     )
                     if merged is not None:
                         chosen_kind = "template"
+
+            structural_view = None
+            if merged is None and rgram_hypotheses:
+                structural_view = parse_security_once(raw)
+                rgram_candidate = parse_with_relative_rgram(
+                    raw, structural_view, rgram_hypotheses
+                )
+                if rgram_candidate is not None:
+                    stats["rgram_attempts"] += 1
+                    totals["rgram_attempts"] += 1
+                    assert_source_accounting(rgram_candidate)
+                    merged = merge_residual_hypothesis(
+                        baseline, rgram_candidate
+                    )
+                    if merged is not None:
+                        chosen_kind = "rgram"
 
             if merged is None:
                 continue
@@ -224,6 +249,14 @@ def run() -> dict:
                 else delete_required_template_anchor(
                     raw, template_hypotheses
                 )
+                if chosen_kind == "template"
+                else delete_required_rgram_literal(
+                    raw,
+                    structural_view
+                    if structural_view is not None
+                    else parse_security_once(raw),
+                    rgram_hypotheses,
+                )
             )
             mutations = [
                 raw[: max(1, int(len(raw) * 0.60))],
@@ -240,6 +273,12 @@ def run() -> dict:
                     parse_with_hypothesis(mutated, hypothesis)
                     if chosen_kind == "delimited"
                     else parse_with_event_template(mutated, template_hypotheses)
+                    if chosen_kind == "template"
+                    else parse_with_relative_rgram(
+                        mutated,
+                        parse_security_once(mutated),
+                        rgram_hypotheses,
+                    )
                 )
                 mutated_merged = merge_residual_hypothesis(
                     mutated_baseline, mutated_candidate
@@ -262,6 +301,13 @@ def run() -> dict:
                     for item in template_hypotheses.values()
                 ),
             },
+            "relative_rgram_hypotheses": {
+                "count": len(rgram_hypotheses),
+                "training_support_total": sum(
+                    item.training_support
+                    for item in rgram_hypotheses.values()
+                ),
+            },
             "metrics": dict(stats),
         }
         per_file.append(row)
@@ -269,7 +315,7 @@ def run() -> dict:
         by_family[source["family"]].update(stats)
 
     result = {
-        "contract": "parser-studio.poc.structural-hypothesis-security.v1",
+        "contract": "parser-studio.poc.structural-hypothesis-security.v3",
         "scope": "SECURITY_PRODUCTS_ONLY",
         "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
         "additional_public_fixture_source": "elastic/integrations",

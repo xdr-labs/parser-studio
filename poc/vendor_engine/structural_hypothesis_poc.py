@@ -941,3 +941,241 @@ def delete_required_template_anchor(
     target = matched[len(matched) // 2]
     mutated = raw[:target.start] + raw[target.end:]
     return mutated if mutated != raw else None
+
+
+# ---------------------------------------------------------------------------
+# Relative R-gram residual hypotheses.
+# ---------------------------------------------------------------------------
+
+RGRAM_TOKEN = re.compile(
+    r"https?://\S+"
+    r"|www\.\S+"
+    r"|<[^>\r\n]*>"
+    r"|\"(?:\\.|[^\"])*\""
+    r"|'(?:\\.|[^'])*'"
+    r"|(?:\d{1,3}\.){3}\d{1,3}"
+    r"|[A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+"
+    r"|[0-9a-fA-F]{20,}"
+    r"|\d+(?:\.\d+)*"
+    r"|[A-Za-z_][A-Za-z0-9_-]*"
+    r"|[^\w\s]"
+)
+RGRAM_VAR = "<VAR>"
+RGRAM_MAX_REGION_CHARS = 16384
+RGRAM_MAX_TOKENS = 192
+RGRAM_HARD_ISSUE_FRAGMENTS = (
+    "SIZE_OR_NUL",
+    "UNCLOSED",
+    "TRUNCATED",
+    "BYTE_LIMIT",
+    "FIELD_LIMIT",
+    "DEPTH_LIMIT",
+    "INVALID",
+)
+
+
+@dataclass(frozen=True)
+class RelativeRgramHypothesis:
+    signature: tuple[str, ...]
+    training_support: int
+    literal_tokens: int
+    variable_slots: int
+
+
+@dataclass(frozen=True)
+class RgramToken:
+    signature: str
+    start: int
+    end: int
+
+
+def _rgram_dynamic_span(text: str, match: re.Match[str]) -> tuple[int, int] | None:
+    token = match.group(0)
+    start, end = match.span()
+    if len(token) >= 2 and token[0] in ('"', "'") and token[-1] == token[0]:
+        return start + 1, end - 1
+    if len(token) >= 2 and token[0] == "<" and token[-1] == ">":
+        return start + 1, end - 1
+    if token.startswith(("http://", "https://", "www.")):
+        return start, end
+    if re.fullmatch(r"(?:\d{1,3}\.){3}\d{1,3}", token):
+        return start, end
+    if "@" in token and re.fullmatch(
+        r"[A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+", token
+    ):
+        return start, end
+    if re.fullmatch(r"[0-9a-fA-F]{20,}", token):
+        return start, end
+    if re.fullmatch(r"\d+(?:\.\d+)*", token):
+        return start, end
+    return None
+
+
+def _rgram_tokens(text: str) -> list[RgramToken] | None:
+    if not text or len(text) > RGRAM_MAX_REGION_CHARS or "\x00" in text:
+        return None
+    out: list[RgramToken] = []
+    for match in RGRAM_TOKEN.finditer(text):
+        dynamic = _rgram_dynamic_span(text, match)
+        if dynamic is None:
+            out.append(RgramToken(match.group(0), *match.span()))
+        else:
+            start, end = dynamic
+            if start < end:
+                out.append(RgramToken(RGRAM_VAR, start, end))
+    if not out or len(out) > RGRAM_MAX_TOKENS:
+        return None
+    return out
+
+
+def _single_residual(event: SourceEvent) -> tuple[int, int] | None:
+    if event.status == "SOURCE_PARSED" or len(event.unparsed) != 1:
+        return None
+    if any(
+        fragment in issue
+        for issue in event.issues
+        for fragment in RGRAM_HARD_ISSUE_FRAGMENTS
+    ):
+        return None
+    start, end = event.unparsed[0]
+    if not (0 <= start < end <= len(event.raw)):
+        return None
+    if end - start < 12 or end - start > RGRAM_MAX_REGION_CHARS:
+        return None
+    return start, end
+
+
+def _rgram_signature(
+    event: SourceEvent,
+) -> tuple[tuple[str, ...], list[tuple[int, int]]] | None:
+    region = _single_residual(event)
+    if region is None:
+        return None
+    start, end = region
+    tokens = _rgram_tokens(event.raw[start:end])
+    if tokens is None:
+        return None
+    signature = tuple(token.signature for token in tokens)
+    variable_spans = [
+        (start + token.start, start + token.end)
+        for token in tokens
+        if token.signature == RGRAM_VAR
+    ]
+    return signature, variable_spans
+
+
+def learn_relative_rgram_hypotheses(
+    training_events: Iterable[SourceEvent],
+    *,
+    minimum_support: int = 3,
+) -> dict[tuple[str, ...], RelativeRgramHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("RGRAM_MINIMUM_SUPPORT_TOO_LOW")
+    groups: dict[tuple[str, ...], int] = Counter()
+    for event in list(training_events)[:MAX_TRAIN]:
+        observed = _rgram_signature(event)
+        if observed is None:
+            continue
+        signature, variable_spans = observed
+        literal_tokens = sum(token != RGRAM_VAR for token in signature)
+        if (
+            literal_tokens < 5
+            or not variable_spans
+            or len(variable_spans) > 32
+        ):
+            continue
+        groups[signature] += 1
+
+    out: dict[tuple[str, ...], RelativeRgramHypothesis] = {}
+    for signature, support in groups.items():
+        if support < minimum_support:
+            continue
+        literal_tokens = sum(token != RGRAM_VAR for token in signature)
+        variable_slots = sum(token == RGRAM_VAR for token in signature)
+        out[signature] = RelativeRgramHypothesis(
+            signature=signature,
+            training_support=support,
+            literal_tokens=literal_tokens,
+            variable_slots=variable_slots,
+        )
+    return out
+
+
+def parse_with_relative_rgram(
+    raw: str,
+    structural_view: SourceEvent,
+    hypotheses: dict[tuple[str, ...], RelativeRgramHypothesis],
+) -> SourceEvent | None:
+    if (
+        not isinstance(raw, str)
+        or structural_view.raw != raw
+        or raw[:1] in ("{", "[")
+        or raw.startswith(("CEF:", "LEEF:"))
+    ):
+        return None
+    observed = _rgram_signature(structural_view)
+    if observed is None:
+        return None
+    signature, variable_spans = observed
+    hypothesis = hypotheses.get(signature)
+    if hypothesis is None or len(variable_spans) != hypothesis.variable_slots:
+        return None
+
+    fields: dict[str, str] = {}
+    spans: list[ValueSpan] = []
+    for index, (start, end) in enumerate(variable_spans):
+        if not (0 <= start < end <= len(raw)):
+            return None
+        value = raw[start:end]
+        if not value:
+            return None
+        key = f"slot_{index}"
+        fields[key] = value
+        spans.append(
+            ValueSpan(
+                f"rgram.{key}",
+                len(raw[:start].encode("utf8")),
+                len(raw[:end].encode("utf8")),
+                ("rgram", "slots", index),
+            )
+        )
+    if not spans:
+        return None
+
+    event = SourceEvent(raw, syntax="STRUCTURAL_HYPOTHESIS+RELATIVE_RGRAM")
+    event.vendor_fields = {"rgram": {"slots": fields}}
+    event.value_spans = spans
+    event.primitive_fields = len(spans)
+    event.covered = [(0, len(raw))]
+    assert_source_accounting(event)
+    return event
+
+
+def delete_required_rgram_literal(
+    raw: str,
+    structural_view: SourceEvent,
+    hypotheses: dict[tuple[str, ...], RelativeRgramHypothesis],
+) -> str | None:
+    observed = _rgram_signature(structural_view)
+    if observed is None:
+        return None
+    signature, _variable_spans = observed
+    if signature not in hypotheses:
+        return None
+    region = _single_residual(structural_view)
+    if region is None:
+        return None
+    region_start, region_end = region
+    tokens = _rgram_tokens(raw[region_start:region_end])
+    if tokens is None:
+        return None
+    literals = [
+        token for token in tokens if token.signature != RGRAM_VAR
+    ]
+    if len(literals) < 5:
+        return None
+    target = literals[len(literals) // 2]
+    start = region_start + target.start
+    end = region_start + target.end
+    mutated = raw[:start] + raw[end:]
+    return mutated if mutated != raw else None

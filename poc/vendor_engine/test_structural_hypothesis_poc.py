@@ -4,11 +4,14 @@ from structural_hypothesis_poc import (
     candidate_improves,
     confirm_positional_csv,
     learn_best_hypothesis,
+    delete_required_rgram_literal,
     learn_event_template_hypotheses,
     learn_positional_csv_hypothesis,
+    learn_relative_rgram_hypotheses,
     merge_residual_hypothesis,
     parse_with_event_template,
     parse_with_hypothesis,
+    parse_with_relative_rgram,
 )
 from source_parse import SourceEvent, ValueSpan, assert_source_accounting
 
@@ -202,6 +205,112 @@ class StructuralHypothesisPocTests(unittest.TestCase):
             "198.51.100.9"
         )
         self.assertIsNone(parse_with_event_template(truncated, hypotheses))
+
+    def _rgram_view(self, body):
+        raw = "header " + body
+        start = len("header ")
+        event = SourceEvent(raw, syntax="BASE")
+        event.vendor_fields = {"header": "header"}
+        event.value_spans = [
+            ValueSpan("header", 0, len("header"), ("header",))
+        ]
+        event.primitive_fields = 1
+        event.covered = [(0, start)]
+        event.unparsed = [(start, len(raw))]
+        assert_source_accounting(event)
+        return event
+
+    def test_relative_rgram_learns_repeated_security_body_signature(self):
+        training = [
+            self._rgram_view(
+                "Info: MID 101 URL https://a.test/a has reputation 0.0 "
+                "matched Condition: URL Reputation Rule"
+            ),
+            self._rgram_view(
+                "Info: MID 202 URL https://b.test/b has reputation 3.0 "
+                "matched Condition: URL Reputation Rule"
+            ),
+            self._rgram_view(
+                "Info: MID 303 URL https://c.test/c has reputation 5.7 "
+                "matched Condition: URL Reputation Rule"
+            ),
+        ]
+        hypotheses = learn_relative_rgram_hypotheses(training)
+        self.assertEqual(1, len(hypotheses))
+
+        holdout = self._rgram_view(
+            "Info: MID 404 URL https://d.test/d has reputation 9.1 "
+            "matched Condition: URL Reputation Rule"
+        )
+        candidate = parse_with_relative_rgram(
+            holdout.raw, holdout, hypotheses
+        )
+        self.assertIsNotNone(candidate)
+        assert_source_accounting(candidate)
+        self.assertEqual("SOURCE_PARSED", candidate.status)
+        slots = candidate.vendor_fields["rgram"]["slots"]
+        self.assertIn("404", slots.values())
+        self.assertIn("https://d.test/d", slots.values())
+        self.assertIn("9.1", slots.values())
+
+        merged = merge_residual_hypothesis(holdout, candidate)
+        self.assertIsNotNone(merged)
+        self.assertEqual("SOURCE_PARSED", merged.status)
+        self.assertEqual(holdout.value_spans[0], merged.value_spans[0])
+
+    def test_relative_rgram_rejects_truncation_and_required_literal_deletion(self):
+        training = [
+            self._rgram_view(
+                "Info: MID 101 URL https://a.test/a has reputation 0.0 "
+                "matched Condition: URL Reputation Rule"
+            ),
+            self._rgram_view(
+                "Info: MID 202 URL https://b.test/b has reputation 3.0 "
+                "matched Condition: URL Reputation Rule"
+            ),
+            self._rgram_view(
+                "Info: MID 303 URL https://c.test/c has reputation 5.7 "
+                "matched Condition: URL Reputation Rule"
+            ),
+        ]
+        hypotheses = learn_relative_rgram_hypotheses(training)
+        full = self._rgram_view(
+            "Info: MID 404 URL https://d.test/d has reputation 9.1 "
+            "matched Condition: URL Reputation Rule"
+        )
+        truncated = self._rgram_view(
+            "Info: MID 404 URL https://d.test/d has reputation 9.1"
+        )
+        self.assertIsNone(
+            parse_with_relative_rgram(
+                truncated.raw, truncated, hypotheses
+            )
+        )
+
+        mutated_raw = delete_required_rgram_literal(
+            full.raw, full, hypotheses
+        )
+        self.assertIsNotNone(mutated_raw)
+        mutated_body = mutated_raw[len("header "):]
+        mutated_view = self._rgram_view(mutated_body)
+        self.assertIsNone(
+            parse_with_relative_rgram(
+                mutated_view.raw, mutated_view, hypotheses
+            )
+        )
+
+    def test_relative_rgram_requires_three_training_examples(self):
+        training = [
+            self._rgram_view(
+                "Info: MID 101 URL https://a.test/a has reputation 0.0 "
+                "matched Condition: URL Reputation Rule"
+            ),
+            self._rgram_view(
+                "Info: MID 202 URL https://b.test/b has reputation 3.0 "
+                "matched Condition: URL Reputation Rule"
+            ),
+        ]
+        self.assertEqual({}, learn_relative_rgram_hypotheses(training))
 
     def _csv_event(self, width):
         values = [f"v{index}" for index in range(width)]

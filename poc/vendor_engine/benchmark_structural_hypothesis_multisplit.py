@@ -11,16 +11,19 @@ import json
 from pathlib import Path
 
 from benchmark_structural_hypothesis_security import _events, _files
-from multipass_adjudicator import parse_security_multipass
+from multipass_adjudicator import parse_security_multipass, parse_security_once
 from source_parse import assert_source_accounting
 from structural_hypothesis_poc import (
     delete_required_delimited_anchors,
+    delete_required_rgram_literal,
     delete_required_template_anchor,
     learn_best_hypothesis,
     learn_event_template_hypotheses,
+    learn_relative_rgram_hypotheses,
     merge_residual_hypothesis,
     parse_with_event_template,
     parse_with_hypothesis,
+    parse_with_relative_rgram,
 )
 
 BASE = Path(__file__).resolve().parent
@@ -50,6 +53,8 @@ def _mutations(
     chosen: str,
     delimited,
     templates,
+    rgrams,
+    structural_view,
 ) -> list[str]:
     result = [
         raw[: max(1, int(len(raw) * 0.60))],
@@ -61,6 +66,10 @@ def _mutations(
         delete_required_delimited_anchors(raw, delimited)
         if chosen == "delimited"
         else delete_required_template_anchor(raw, templates)
+        if chosen == "template"
+        else delete_required_rgram_literal(
+            raw, structural_view, rgrams
+        )
     )
     if structural is not None:
         result.append(structural)
@@ -88,6 +97,9 @@ def run_seed(seed: str) -> dict:
         train, holdout = _split_seed(rows, seed)
         delimited = learn_best_hypothesis(train)
         templates = learn_event_template_hypotheses(train)
+        rgrams = learn_relative_rgram_hypotheses(
+            [parse_security_once(raw) for raw in train]
+        )
 
         for raw in holdout:
             baseline = parse_security_multipass(raw)
@@ -116,6 +128,16 @@ def run_seed(seed: str) -> dict:
                 if merged is not None:
                     chosen = "template"
 
+            structural_view = None
+            if merged is None and rgrams:
+                structural_view = parse_security_once(raw)
+                candidate = parse_with_relative_rgram(
+                    raw, structural_view, rgrams
+                )
+                merged = merge_residual_hypothesis(baseline, candidate)
+                if merged is not None:
+                    chosen = "rgram"
+
             if merged is None:
                 continue
 
@@ -142,8 +164,10 @@ def run_seed(seed: str) -> dict:
             span_gain += len(merged.value_spans) - len(baseline.value_spans)
             residual_reduction += baseline.residual_bytes - merged.residual_bytes
 
+            if structural_view is None:
+                structural_view = parse_security_once(raw)
             for mutated in _mutations(
-                raw, chosen, delimited, templates
+                raw, chosen, delimited, templates, rgrams, structural_view
             ):
                 mutation_attempts += 1
                 mutated_baseline = parse_security_multipass(mutated)
@@ -151,6 +175,12 @@ def run_seed(seed: str) -> dict:
                     parse_with_hypothesis(mutated, delimited)
                     if chosen == "delimited"
                     else parse_with_event_template(mutated, templates)
+                    if chosen == "template"
+                    else parse_with_relative_rgram(
+                        mutated,
+                        parse_security_once(mutated),
+                        rgrams,
+                    )
                 )
                 mutated_merged = merge_residual_hypothesis(
                     mutated_baseline, mutated_candidate
@@ -200,7 +230,7 @@ def run() -> dict:
         for family, metrics in result["by_family"].items():
             family_promotions[family] += metrics.get("promotions", 0)
     output = {
-        "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v1",
+        "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v3",
         "scope": "SECURITY_PRODUCTS_ONLY",
         "split_count": len(splits),
         "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",

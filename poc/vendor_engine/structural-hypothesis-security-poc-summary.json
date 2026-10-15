@@ -10,6 +10,15 @@
       "baseline_complete": 2,
       "events": 2
     },
+    "EMAIL_SECURITY": {
+      "baseline_complete": 8,
+      "baseline_incomplete": 33,
+      "events": 41,
+      "hypothesis_attempts": 10,
+      "promotions": 10,
+      "rgram_attempts": 10,
+      "rgram_promotions": 10
+    },
     "IDS_IPS_NDR": {
       "baseline_complete": 11,
       "events": 11
@@ -99,6 +108,15 @@
       "hypothesis_attempts": 5,
       "promotions": 5
     },
+    "cisco_secure_email": {
+      "baseline_complete": 8,
+      "baseline_incomplete": 33,
+      "events": 41,
+      "hypothesis_attempts": 10,
+      "promotions": 10,
+      "rgram_attempts": 10,
+      "rgram_promotions": 10
+    },
     "crowdstrike": {
       "baseline_complete": 6,
       "events": 6
@@ -170,6 +188,7 @@
   "categories": [
     "EDR",
     "EDR_XDR",
+    "EMAIL_SECURITY",
     "IDS_IPS_NDR",
     "NAC_IDENTITY_SECURITY",
     "NDR",
@@ -183,13 +202,14 @@
     "WAF",
     "WAF_NGFW"
   ],
-  "contract": "parser-studio.poc.structural-hypothesis-security.v1",
-  "disjoint_evaluation_events": 323,
+  "contract": "parser-studio.poc.structural-hypothesis-security.v3",
+  "disjoint_evaluation_events": 364,
   "families": [
     "aws_waf",
     "checkpoint",
     "cisco_asa",
     "cisco_ise",
+    "cisco_secure_email",
     "crowdstrike",
     "darktrace",
     "extrahop",
@@ -207,7 +227,7 @@
     "zeek",
     "zscaler_zia"
   ],
-  "files": 78,
+  "files": 81,
   "limitations": [
     "v2 learns delimiter/key-anchor and numeric-event-code template structure; it is not a general CFG learner.",
     "Promotion is structural evidence, not semantic field normalization evidence.",
@@ -215,7 +235,7 @@
     "The promoted holdouts do not yet have an independent vendor-native field/span oracle, so promotion is not product qualification."
   ],
   "mutation_safety": {
-    "attempts": 35,
+    "attempts": 85,
     "false_complete": 0,
     "mutation_types": 5
   },
@@ -230,6 +250,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -248,6 +272,10 @@
         "baseline_complete": 8,
         "events": 8
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -264,6 +292,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -282,6 +314,10 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -298,6 +334,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -316,6 +356,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -332,6 +376,10 @@
       "metrics": {
         "baseline_complete": 5,
         "events": 5
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -350,6 +398,10 @@
         "baseline_complete": 27,
         "events": 27
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -366,6 +418,10 @@
       "metrics": {
         "baseline_complete": 6,
         "events": 6
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -384,6 +440,10 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -400,6 +460,10 @@
       "metrics": {
         "baseline_complete": 4,
         "events": 4
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -418,6 +482,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -434,6 +502,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -452,6 +524,10 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -468,6 +544,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -486,6 +566,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -502,6 +586,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -520,6 +608,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -536,6 +628,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -555,6 +651,10 @@
         "baseline_incomplete": 1,
         "events": 7
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -571,6 +671,10 @@
       "metrics": {
         "baseline_incomplete": 6,
         "events": 6
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -593,11 +697,82 @@
         "template_attempts": 2,
         "template_promotions": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 4,
         "training_support_total": 11
       },
       "train_count": 16
+    },
+    {
+      "category": "EMAIL_SECURITY",
+      "event_count": 15,
+      "family": "cisco_secure_email",
+      "file_sha256": "cd2ad765f4fc34cb0b96357a83fb57ed3e1a05129736a2c47312591afcbb68a5",
+      "holdout_count": 5,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 5,
+        "events": 5
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 10
+    },
+    {
+      "category": "EMAIL_SECURITY",
+      "event_count": 22,
+      "family": "cisco_secure_email",
+      "file_sha256": "33f3eee90edbe395454de98c38393ad67a52806210cda98ab25dd3a6dafa5fd5",
+      "holdout_count": 8,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 8,
+        "events": 8
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 14
+    },
+    {
+      "category": "EMAIL_SECURITY",
+      "event_count": 81,
+      "family": "cisco_secure_email",
+      "file_sha256": "279453568eafc5045f3ba9255104982338652eb41a85ca1100f748f54bdc1be9",
+      "holdout_count": 28,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 28,
+        "events": 28,
+        "hypothesis_attempts": 10,
+        "promotions": 10,
+        "rgram_attempts": 10,
+        "rgram_promotions": 10
+      },
+      "relative_rgram_hypotheses": {
+        "count": 1,
+        "training_support_total": 19
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 53
     },
     {
       "category": "WAF_NGFW",
@@ -609,6 +784,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -627,6 +806,10 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -643,6 +826,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -661,6 +848,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -677,6 +868,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -703,6 +898,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -719,6 +918,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -737,6 +940,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -753,6 +960,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -784,6 +995,10 @@
         "hypothesis_attempts": 1,
         "promotions": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -814,6 +1029,10 @@
         "hypothesis_attempts": 1,
         "promotions": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -838,6 +1057,10 @@
       "metrics": {
         "baseline_complete": 4,
         "events": 4
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -869,6 +1092,10 @@
         "hypothesis_attempts": 3,
         "promotions": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -886,6 +1113,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -902,6 +1133,10 @@
       "metrics": {
         "baseline_complete": 14,
         "events": 14
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -928,6 +1163,10 @@
         "baseline_incomplete": 2,
         "delimited_attempts": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -956,6 +1195,10 @@
         "delimited_attempts": 2,
         "events": 6
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -974,6 +1217,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -990,6 +1237,10 @@
       "metrics": {
         "baseline_incomplete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1009,6 +1260,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1026,6 +1281,10 @@
         "baseline_complete": 7,
         "baseline_incomplete": 1,
         "events": 8
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1052,6 +1311,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1070,6 +1333,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1086,6 +1353,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1112,6 +1383,10 @@
         "baseline_complete": 9,
         "events": 9
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1128,6 +1403,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1146,6 +1425,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1162,6 +1445,10 @@
       "metrics": {
         "baseline_incomplete": 1,
         "events": 1
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1181,6 +1468,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1198,6 +1489,10 @@
         "baseline_complete": 7,
         "baseline_incomplete": 4,
         "events": 11
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1217,6 +1512,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1233,6 +1532,10 @@
       "metrics": {
         "baseline_complete": 5,
         "events": 5
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1252,6 +1555,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1269,6 +1576,10 @@
         "baseline_complete": 1,
         "baseline_incomplete": 9,
         "events": 10
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1288,6 +1599,10 @@
         "baseline_incomplete": 1,
         "events": 5
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1304,6 +1619,10 @@
       "metrics": {
         "baseline_incomplete": 1,
         "events": 1
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1322,6 +1641,10 @@
         "baseline_incomplete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1339,6 +1662,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1355,6 +1682,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1374,6 +1705,10 @@
         "baseline_incomplete": 2,
         "events": 7
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1392,6 +1727,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1408,6 +1747,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1426,6 +1769,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1442,6 +1789,10 @@
       "metrics": {
         "baseline_incomplete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1460,6 +1811,10 @@
         "baseline_incomplete": 3,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1476,6 +1831,10 @@
       "metrics": {
         "baseline_incomplete": 3,
         "events": 3
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1494,6 +1853,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1510,6 +1873,10 @@
       "metrics": {
         "baseline_incomplete": 6,
         "events": 6
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1528,6 +1895,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1544,6 +1915,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1562,6 +1937,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1578,6 +1957,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1597,6 +1980,10 @@
         "baseline_incomplete": 10,
         "events": 33
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1613,6 +2000,10 @@
       "metrics": {
         "baseline_complete": 18,
         "events": 18
+      },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "template_hypotheses": {
         "count": 0,
@@ -1631,6 +2022,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1648,6 +2043,10 @@
         "baseline_complete": 18,
         "events": 18
       },
+      "relative_rgram_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "template_hypotheses": {
         "count": 0,
         "training_support_total": 0
@@ -1656,11 +2055,11 @@
     }
   ],
   "product_vendor_identity_used_by_learner": false,
-  "promoted_residual_byte_reduction": 1130,
-  "promoted_source_span_gain": 58,
+  "promoted_residual_byte_reduction": 2308,
+  "promoted_source_span_gain": 78,
   "promotion_independent_vendor_gold_scored": false,
   "promotion_safety": {
-    "accepted_promotions_with_all_baseline_spans_preserved": 7,
+    "accepted_promotions_with_all_baseline_spans_preserved": 17,
     "baseline_span_loss": 0,
     "raw_mismatch": 0
   },
@@ -1670,13 +2069,15 @@
   "small_file_no_regression_control_events": 53,
   "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
   "totals": {
-    "baseline_complete": 290,
-    "baseline_incomplete": 86,
+    "baseline_complete": 298,
+    "baseline_incomplete": 119,
     "delimited_attempts": 14,
     "delimited_promotions": 5,
-    "events": 376,
-    "hypothesis_attempts": 7,
-    "promotions": 7,
+    "events": 417,
+    "hypothesis_attempts": 17,
+    "promotions": 17,
+    "rgram_attempts": 10,
+    "rgram_promotions": 10,
     "template_attempts": 2,
     "template_promotions": 2
   }
