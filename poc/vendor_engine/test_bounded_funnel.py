@@ -21,6 +21,22 @@ class BoundedFunnelProductTest(unittest.TestCase):
         self.assertEqual(1, FunnelConfig().beam_width)
         self.assertEqual(6, FunnelConfig().max_passes)
 
+    def test_all_complete_batch_skips_structural_replay(self):
+        raws = [
+            '{"event":{"action":"allow","src":"192.0.2.10"},"count":7}',
+            '{"event":{"action":"deny","src":"192.0.2.11"},"count":8}',
+        ]
+        result = run_funnel_batch(raws)
+        self.assertEqual(0, result.passes_run)
+        self.assertEqual(2, len(result.selected))
+        for baseline, selected in zip(result.baselines, result.selected):
+            self.assertEqual("SOURCE_PARSED", baseline.status)
+            self.assertEqual(baseline.raw, selected.raw)
+            self.assertEqual(baseline.vendor_fields, selected.vendor_fields)
+            self.assertEqual(baseline.value_spans, selected.value_spans)
+            self.assertEqual(baseline.issues, selected.issues)
+            self.assertEqual(baseline.unparsed, selected.unparsed)
+
     def test_product_batch_entrypoint_freezes_complete_and_enforces_bounds(self):
         raws = [
             '{"event":{"action":"allow","src":"192.0.2.10"},"count":7}',

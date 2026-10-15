@@ -700,6 +700,17 @@ def run_funnel_batch(
     for baseline in baselines:
         assert_source_accounting(baseline)
 
+    # Product invariant: already-complete qualified results are immutable and
+    # need no structural learning/replay. This fast path is especially
+    # important for wide JSON/security records with thousands of exact leaves.
+    if all(baseline.status == "SOURCE_PARSED" for baseline in baselines):
+        return FunnelBatchResult(
+            baselines=tuple(baselines),
+            selected=tuple(deepcopy(baseline) for baseline in baselines),
+            hypotheses=FunnelHypotheses(None, {}, {}, {}, {}, {}, {}),
+            passes_run=0,
+        )
+
     hypotheses, replayed, passes = replay_training(items, config=config)
     selected: list[SourceEvent] = []
     for baseline, candidate in zip(baselines, replayed):
