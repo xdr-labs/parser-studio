@@ -51,7 +51,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
 
   lines.push('',
     'ParserRecipe safety contract:',
-    'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, reviewed parse_generic_structural only when the local backend advertises GENERIC_STRUCTURAL_ULTRA_COMPILER_V4 and the event matches that bounded grammar, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
+    'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, reviewed parse_generic_structural only when the local backend advertises GENERIC_STRUCTURAL_ULTRA_COMPILER_V7 and the event matches that bounded grammar, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
     'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
     'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
     'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');
@@ -88,6 +88,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     lines.push(
       '- Return only one ParserRecipe v0.2 JSON object using supported declarative stages.',
       '- For FULL_RECOVERY, preserve every already-extracted source value occurrence in the final parser output. A reviewed lossless source projection such as Generic Structural parserstudio_source may provide that preservation; otherwise use explicit map_field stages. Do not leave successfully extracted values only in an intermediate extraction object.',
+      ...(preview.residuals.length?['- For FULL_RECOVERY, preserve every unparsed source region listed above in the final parser output too. Capturing a region as raw_event is not enough unless that capture is mapped into final output (or retained by an approved lossless source projection).']:[]),
       '- Prefer parse_generic_structural over a broad Regex only when the problem event matches the reviewed Generic Structural compiler grammar advertised by the local backend.',
       '- For an unresolved text body, parse_regex is allowed only under the bounded named-capture rules stated above.',
       '- Parser Studio will run independent holdout validation before any rule can be applied.');

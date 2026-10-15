@@ -127,7 +127,7 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
   '<134>May 5 17:52:17 dev02 %FTD-6-302013: Built outbound TCP connection 211 for dmz:10.20.10.10/44400 (81.2.69.146/44400) to inside:192.168.3.2/8443 (81.2.69.146/8443)',
   '<134>May 5 17:52:18 dev02 %FTD-6-302015: Built outbound UDP connection 212 for dmz:10.20.10.11/44401 (81.2.69.147/44401) to inside:192.168.3.3/53 (81.2.69.147/53)',
  ].join('\n');
- const pattern='^%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+).{0,80} to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+).{0,80}$';
+ const pattern='^(?<raw>%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+).{0,80} to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+).{0,80})$';
  const trainingRows=training.split('\n');
  const fullBytes=Buffer.byteLength(training);
  let cursor=0;
@@ -161,6 +161,7 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
    {op:'split_event',boundary:'single-line'},
    {op:'unwrap_syslog',version:3164,mode:'strict_header'},
    {op:'parse_regex',pattern},
+   {op:'map_field',source:'body.raw',target:'custom.source_raw',data_type:'string',group:'vendor_fields'},
    {op:'map_field',source:'body.connection_id',target:'custom.connection_id',data_type:'integer',group:'top_fields'},
    {op:'cast_type',target:'custom.connection_id',data_type:'integer'},
    {op:'map_field',source:'body.src_ip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
@@ -190,6 +191,49 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });
 
+
+test('comma-bearing ASA recovery clears stale CSV review and enables Review Fields',async({page})=>{
+ const raw='LOCAL4.WARNING: fw-1 %ASA-4-106023: Deny udp src v1:outside:192.0.2.10/54864 dst v2:inside:198.51.100.3/53 by access-group "outside_acl" [0x0, 0x0]';
+ const holdout=[
+  'LOCAL4.WARNING: fw-1 %ASA-4-106023: Deny udp src outside:192.0.2.11/54865 dst v2:inside:198.51.100.4/53 by access-group "outside_acl" [0x0, 0x0]',
+  'fw-edge : %ASA-4-106023: Deny tcp src outside:192.0.2.12/61943 dst identity:198.51.100.5/443 by access-group "" [0x3499b430, 0x0]',
+ ].join('\n');
+ const response={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',syntax:'CISCO_ASA_FTD_MESSAGE_ID',
+  sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),
+  fields:{asa:{product:'ASA',severity:'4',message_id:'106023',action:'Deny',protocol:'udp'}},
+  spans:[],residuals:[{startByte:0,endByte:Buffer.byteLength(raw)}],
+  issues:['ASA_MESSAGE_BODY_UNPARSED'],nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const problem=page.getByLabel('Parse problem inspector');
+ await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'generic_structural',bodyFormat:'generic_structural',
+  sample:{sha256:sha(raw),events:1},
+  stages:[
+   {op:'split_event',boundary:'single-line'},{op:'parse_generic_structural'},
+   {op:'map_field',source:'asa.message_id',target:'custom.message_id',data_type:'string',group:'vendor_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},{op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ const ai=page.getByLabel('AI result verification');
+ await ai.getByLabel('ChatGPT JSON result').fill(JSON.stringify(recipe));
+ await ai.getByLabel('Additional test logs').fill(holdout);
+ await ai.getByLabel('Confirm different test examples').check();
+ await ai.getByRole('button',{name:'Test Proposed Fix'}).click();
+ await expect(ai).toContainText('Fix passed: full parser recovery');
+ await ai.getByLabel('Approve tested fix').check();
+ await ai.getByRole('button',{name:'Apply Verified Fix'}).click();
+ await expect(page.getByLabel('Beginner analysis summary')).toContainText('reviewed parser fix passes the current sample');
+ await expect(page.getByLabel('Review CSV column names')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
+});
 
 test('metadata-only source anomaly explains that no bytes were dropped and does not invent an extraction fix',async({page})=>{
  const raw='<85>1 2023-01-13T10:10:16--5:00 gw CP-GW - Log [Fields@1 src="192.0.2.1" src="192.0.2.2" ]';

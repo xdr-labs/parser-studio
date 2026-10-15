@@ -24,6 +24,24 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect((result.fields.generic as Record<string,unknown>).prefix_014).toBe('Connector');
   });
 
+  it('parses bounded short RFC5424-style CEF without vendor-specific semantics',()=>{
+    const raw='<5>1 2023-07-28T05:01:01Z vault-host CEF:0|Example|Vault|12.2|59|Clear Safe History|5|act=Clear suser=exampleuser cs2Label=Safe Name cs2=TempSafe';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'5',version:'1',timestamp:'2023-07-28T05:01:01Z',hostname:'vault-host'},
+      body:{cef_version:'0',cef_device_vendor:'Example',cef_device_product:'Vault',
+        cef_signature_id:'59',act:'Clear',suser:'exampleuser',cs2:'TempSafe'},
+    });
+  });
+
+  it('preserves repeated comma-KV source keys as ordered value occurrences',()=>{
+    const raw='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: ok, AD-Domain=host.local, AD-Srv-Record=one, AD-Srv-Record=two';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect((result.fields.generic as {kv:Record<string,unknown>}).kv['AD-Srv-Record']).toEqual(['one','two']);
+  });
+
   it('preserves every Generic Structural source value in final preview across optional fields',()=>{
     const first='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: failed, AD-Admin=ise.host.local, AD-Domain=host.local, AD-IP-Address=192.0.2.10';
     const second='<182>Mar 3 10:43:05 ise-host APP 0002 1 0 2022-03-03 10:43:05.020 +00:00 0003 INFO Connector: ok, AD-Domain=host.local, AD-Log-Id=1645707128/8';
@@ -85,13 +103,16 @@ describe('bounded Generic Structural browser compiler twin',()=>{
   });
 
   it('extracts bounded bracket colon-KV and preserves the unzoned timestamp as source text',()=>{
-    const raw='<134>1 2020-03-30T07:20:35 gw CheckPoint 8363 - [action:"Accept"; src:"192.0.2.1"; product:"VPN-1 & FireWall-1"; note:"x;y"]';
+    const raw='<134>1 2020-03-30T07:20:35 gw CheckPoint 8363 - [action:"Accept"; src:"192.0.2.1"; product:"VPN-1 & FireWall-1"; group:"ops"; group:"admins"; sys_message::"risk"; note:"x;y"]';
     const result=extractGenericStructural(raw);
     expect(result.errors).toEqual([]);
     expect(result.fields).toMatchObject({
       syslog:{pri:'134',version:'1',timestamp:'2020-03-30T07:20:35',hostname:'gw',appname:'CheckPoint',procid:'8363',msgid:'-'},
-      body:{action:'Accept',src:'192.0.2.1',product:'VPN-1 & FireWall-1',note:'x;y'},
+      body:{action:'Accept',src:'192.0.2.1',product:'VPN-1 & FireWall-1',group:['ops','admins'],'sys_message:':'risk',note:'x;y'},
     });
+    const zoned=extractGenericStructural(raw.replace('2020-03-30T07:20:35','2020-03-30T07:20:35Z'));
+    expect(zoned.errors).toEqual([]);
+    expect((zoned.fields.syslog as Record<string,unknown>).timestamp).toBe('2020-03-30T07:20:35Z');
     expect(extractGenericStructural(raw.replace('2020-03-30T07:20:35','2020-13-30T07:20:35')).fields).toEqual({});
   });
 
@@ -122,6 +143,60 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     });
   });
 
+  it('extracts the bounded WatchGuard Firebox traffic profile without semantic guessing',()=>{
+    const raw='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      watchguard_header:{pri:'139',month:'Jan',day:'16',time:'15:19:05',hostname:'WatchGuard-Firebox',
+        serial:'FVE6035FD3AE3',device_time:'2024-01-19T08:48:15',app_tag:'firewall'},
+      watchguard:{tokens:['Allow','1-Trusted','0-External','tcp','10.0.1.2','175.16.199.1','39398','25'],
+        kv:{msg_id:'1BFF-000F',msg:'SMTP request',proxy_act:'SMTP-Outgoing.1'},groups:['SMTP-proxy-00']},
+    });
+  });
+
+  it('extracts the bounded Juniper legacy RT_FLOW profile as source tokens',()=>{
+    const raw='Apr 29 01:14:45 10.9.9.1 RT_FLOW: RT_FLOW_SESSION_CREATE: session created 192.168.83.99/40275->192.168.32.1/161 None 192.168.83.99/40275->192.168.32.1/161 None None 17 allow-all-out ICTNet StaffNet 23228 N/A(N/A) vlan.255';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{month:'Apr',day:'29',time:'01:14:45',hostname:'10.9.9.1',app_tag:'RT_FLOW'},
+      juniper:{event:'RT_FLOW_SESSION_CREATE'},
+    });
+    const tokens=(result.fields.juniper as {tokens:string[]}).tokens;
+    expect(tokens.slice(0,3)).toEqual(['session','created','192.168.83.99/40275->192.168.32.1/161']);
+    expect(tokens).toHaveLength(14);
+  });
+
+  it('extracts bounded sentence-prefixed comma-delimited KV for secure-email events',()=>{
+    const raw="Info: Response received for file reputation query from Cloud. FileName = 'mod-6.exe', MID = 5, Disposition = MALICIOUS, Malware = W32.TEST, Reputation Score = 73, sha256 = "+'a'.repeat(64)+", upload_action = 2";
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      generic:{mode:'delimited_kv',delimiter:',',
+        fields:{FileName:'mod-6.exe',MID:'5',Disposition:'MALICIOUS',Malware:'W32.TEST','Reputation Score':'73',upload_action:'2'}},
+    });
+    expect((result.fields.generic as {prefix_tokens:string[]}).prefix_tokens.slice(0,2)).toEqual(['Info','Response']);
+  });
+
+  it('preserves RFC3164 envelope source fields around bounded secure-email comma-KV',()=>{
+    const raw="<166>Mar 17 18:24:37 amp: Info: File reputation query initiating. File Name = 'mod-6.exe', MID = 5, File Size = 1673216 bytes, File Type = application/x-dosexec";
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'166',month:'Mar',day:'17',time:'18:24:37',host:'amp:',tag:'Info'},
+      generic:{mode:'delimited_kv',delimiter:',',prefix_tokens:['File','reputation','query','initiating.'],
+        fields:{'File Name':'mod-6.exe',MID:'5','File Size':'1673216 bytes','File Type':'application/x-dosexec'}},
+    });
+  });
+
+  it('rejects prototype-bearing source keys across Generic Structural KV grammars',()=>{
+    const comma='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: ok, AD-Domain=host.local, constructor=bad';
+    expect(extractGenericStructural(comma).fields).toEqual({});
+    const spaced='device="SFW" date=2017-01-31 time=14:16:19 timezone="IST" constructor=bad status="Allow"';
+    expect(extractGenericStructural(spaced).fields).toEqual({});
+  });
+
   it('extracts bounded ASA/FTD connection structure',()=>{
     const raw='May  5 17:51:17 dev01: %FTD-6-302013: Built inbound TCP connection 111 for net:10.10.10.10/53500 (192.0.2.44/53500) to fw111:192.168.2.2/443 (198.51.100.20/443)';
     const result=extractGenericStructural(raw);
@@ -130,6 +205,24 @@ describe('bounded Generic Structural browser compiler twin',()=>{
       syslog:{app_tag:'%FTD-6-302013',hostname:'dev01:'},
       asa:{action:'Built',protocol:'TCP',src_ip:'10.10.10.10',dst_ip:'192.168.2.2',dst_port:'443'},
     });
+  });
+
+  it('extracts bounded ASA 106023 access-group wrapper variants and preserves the source text',()=>{
+    const raw='LOCAL4.WARNING: fw-1 %ASA-4-106023: Deny udp src v1:outside:192.0.2.10/54864 dst v2:inside:198.51.100.3/53 by access-group "outside_acl" [0x0, 0x0]';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{app_tag:'%ASA-4-106023',source_facility:'LOCAL4',source_level:'WARNING',hostname:'fw-1'},
+      asa:{source_raw:raw,product:'ASA',severity:'4',message_id:'106023',action:'Deny',protocol:'udp',
+        src_context:'v1',src_interface:'outside',src_ip:'192.0.2.10',src_port:'54864',
+        dst_context:'v2',dst_interface:'inside',dst_ip:'198.51.100.3',dst_port:'53',
+        access_group:'outside_acl',flag_1:'0x0',flag_2:'0x0'},
+    });
+    const noPorts=raw.replace('/54864','').replace('/53','');
+    expect(extractGenericStructural(noPorts).errors).toEqual([]);
+    const hostOnly='fw-edge : '+raw.slice(raw.indexOf('%ASA'));
+    expect(extractGenericStructural(hostOnly).fields).toMatchObject({syslog:{hostname:'fw-edge'},asa:{message_id:'106023'}});
+    expect(extractGenericStructural(raw.replace('v1:outside','v9:outside')).fields).toEqual({});
   });
 
   it('fails closed on arbitrary prose and accepts the reviewed recipe stage only',()=>{

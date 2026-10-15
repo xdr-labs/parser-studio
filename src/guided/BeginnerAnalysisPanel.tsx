@@ -4,6 +4,8 @@ import type {MultiPassSourcePreview} from './multipassPreviewClient';
 import type {ParserDraft,SuiteResult} from '../model';
 import AutoParserAIReview from './AutoParserAIReview';
 import {buildBeginnerRepairPrompt} from './beginnerAiPrompt';
+import {extractGenericStructural} from '../genericStructural';
+import {listSafeLeafPaths} from '../fieldPaths';
 
 export interface BeginnerAnalysisEvent {
   startByte:number;
@@ -33,6 +35,18 @@ function utf8Slice(source:string,startByte:number,endByte:number):string{
 }
 function eventRaw(source:string,event:BeginnerAnalysisEvent){
   return utf8Slice(source,event.startByte,event.endByte);
+}
+function genericStructuralAnchor(source:string,events:BeginnerAnalysisEvent[]):string|null{
+  const pathSets=events.map(event=>{
+    const extracted=extractGenericStructural(eventRaw(source,event));
+    if(extracted.errors.length)return null;
+    return new Set(listSafeLeafPaths(extracted.fields));
+  });
+  if(!pathSets.length||pathSets.some(paths=>paths===null))return null;
+  const [first,...rest]=pathSets as Set<string>[];
+  const common=[...first].filter(path=>rest.every(paths=>paths.has(path)));
+  for(const preferred of ['syslog.pri','generic.mode'])if(common.includes(preferred))return preferred;
+  return common[0]??null;
 }
 function plainIssue(code:string):string{
   const known:Record<string,string>={
@@ -180,6 +194,19 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const recipeImportEligible=!!rec&&rec.kind!=='metadata';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
+  const genericStructuralSourcePath=parserRuleReviewRequired&&draft?.guided&&onApplyCandidate?
+    genericStructuralAnchor(source,events):null;
+  const genericStructuralPreserveEligible=Boolean(genericStructuralSourcePath&&draft&&onApplyCandidate);
+  const useExtractedGenericStructural=()=>{
+    if(!genericStructuralSourcePath||!draft||!onApplyCandidate||!draft.guided)return;
+    onApplyCandidate({...draft,format:'generic_structural',
+      mappings:[{id:'generic-structural-source',source:genericStructuralSourcePath,
+        target:'custom.source_field_001',type:'string'}],
+      guided:{...draft.guided,enrichment:[],groups:{'generic-structural-source':'vendor_fields'},
+        classification:{defaultIndex:'Syslog',rules:[]}}});
+    setPromptOpen(false);setPromptText('');
+    setCopyStatus('Parser Studio will use its bounded local grammar and preserve the extracted source fields.');
+  };
   const preserveSourceMetadata=()=>{
     if(!metadataPreserveEligible||!draft||!onApplyCandidate)return;
     const opts=draft.guided;
@@ -271,18 +298,25 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         </div>
       </div>
       {rec&&<div className="beginner-fix">
-        <Wrench size={18}/><div><strong>Recommended fix · {rec.label}</strong><p>{rec.text}</p></div>
+        <Wrench size={18}/><div><strong>Recommended fix · {genericStructuralPreserveEligible?'Use the extracted fields':rec.label}</strong>
+          <p>{genericStructuralPreserveEligible
+            ?'Parser Studio already has a bounded local rule for this exact structure. Use the extracted fields directly; no ChatGPT step is required.'
+            :rec.text}</p></div>
       </div>}
       <div className="beginner-fix-actions">
         {rec?.kind==='csv'&&neutralCsvColumnCount&&onUseNeutralCsvColumns&&
           <button type="button" className="auto-parser-primary" onClick={onUseNeutralCsvColumns}>
             Keep all {neutralCsvColumnCount} values with temporary names
           </button>}
+        {genericStructuralPreserveEligible&&<button type="button" className="auto-parser-primary"
+          onClick={useExtractedGenericStructural}>
+          Use extracted fields
+        </button>}
         {metadataPreserveEligible&&<button type="button" className="auto-parser-primary"
           onClick={preserveSourceMetadata}>
           Preserve source metadata as text
         </button>}
-        <button type="button" className={rec?.kind==='csv'||metadataPreserveEligible?'':'auto-parser-primary'} disabled={promptBusy}
+        <button type="button" className={rec?.kind==='csv'||metadataPreserveEligible||genericStructuralPreserveEligible?'':'auto-parser-primary'} disabled={promptBusy}
           onClick={()=>void openPrompt()}>
           <Bot size={16}/> {promptBusy?'Preparing…':rec?.kind==='metadata'?'Review with ChatGPT':'Fix with ChatGPT'}
         </button>

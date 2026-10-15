@@ -196,14 +196,15 @@ export default function AutoParser({
    });
  };
  const csvFound=report.families.some(f=>f.envelope==='none'&&f.body==='csv');
+ const csvReviewActive=csvFound&&(draft.format==='auto'||draft.format==='csv');
  const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
- const csvApproved=!csvFound||csvApprovedKey===csvSchemaKey;
+ const csvApproved=!csvReviewActive||csvApprovedKey===csvSchemaKey;
  const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());
  const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
    [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
- const neutralCsvColumnCount=csvFound?
+ const neutralCsvColumnCount=csvReviewActive?
    inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
@@ -217,7 +218,7 @@ export default function AutoParser({
  };
  const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
- const assessment=csvFound&&csvApproved&&report.families.length===1&&
+ const assessment=csvReviewActive&&csvApproved&&report.families.length===1&&
    report.families[0]?.body==='csv'&&
    localAssessment.status==='COLUMNS_REQUIRED'&&
    capability?.source===sample&&
@@ -254,7 +255,7 @@ export default function AutoParser({
  const browserExtractionComplete=!!suite&&suite.engine==='browser-preview'&&
    suite.counts.total>0&&suite.counts.matched===suite.counts.total&&
    suite.counts.extracted===suite.counts.total&&suite.counts.failures===0;
- const neutralCsvComplete=csvFound&&csvApproved&&csvNamesValid&&browserExtractionComplete;
+ const neutralCsvComplete=csvReviewActive&&csvApproved&&csvNamesValid&&browserExtractionComplete;
  const beginnerResolved=beginnerAuthoritativeComplete||reviewedCandidateComplete||neutralCsvComplete;
  const explicitBackendProject=useMemo(()=>draft.format==='auto'?null:toBackendProject(draft),[draft]);
  const explicitDraftCompilable=useMemo(()=>{
@@ -296,7 +297,7 @@ export default function AutoParser({
        setStep(1);setSelected(0);return;
      }
      const baseline=assessEnvelopeCompilation(report,cap);
-     const compiler=csvFound&&csvApproved&&report.families.length===1&&
+     const compiler=csvReviewActive&&csvApproved&&report.families.length===1&&
        baseline.status==='COLUMNS_REQUIRED'&&cap.authoring.extractionFormats.includes('csv')?
        {status:'DRAFT_COMPILABLE' as const,format:'csv' as const,
         bodyFormat:null,nativeVerified:false as const,targetVerified:false as const}:
@@ -768,7 +769,7 @@ export default function AutoParser({
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
        </div>
-       {csvFound&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
+       {csvReviewActive&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
          <strong>Positional values found — choose field names</strong>
          <p>Parser Studio extracted the values, but these rows do not contain trustworthy field names.
            Keep temporary names now or enter names you know, then choose the data separator.
