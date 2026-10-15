@@ -1,0 +1,1125 @@
+{
+  "by_category": {
+    "EDR": {
+      "baseline_complete": 4,
+      "events": 4
+    },
+    "EDR_XDR": {
+      "baseline_complete": 2,
+      "events": 2
+    },
+    "IDS_IPS_NDR": {
+      "baseline_complete": 11,
+      "events": 11
+    },
+    "NAC_IDENTITY_SECURITY": {
+      "baseline_complete": 77,
+      "baseline_incomplete": 22,
+      "events": 99,
+      "hypothesis_attempts": 14,
+      "promotions": 5
+    },
+    "NDR_NETWORK_TELEMETRY": {
+      "baseline_complete": 7,
+      "events": 7
+    },
+    "NGFW": {
+      "baseline_complete": 32,
+      "events": 32
+    },
+    "NGFW_IDS_IPS": {
+      "baseline_complete": 22,
+      "baseline_incomplete": 17,
+      "events": 39
+    },
+    "NGFW_UTM": {
+      "baseline_complete": 79,
+      "baseline_incomplete": 29,
+      "events": 108
+    },
+    "UTM": {
+      "baseline_complete": 7,
+      "baseline_incomplete": 3,
+      "events": 10
+    },
+    "WAF": {
+      "baseline_complete": 2,
+      "events": 2
+    },
+    "WAF_NGFW": {
+      "baseline_complete": 18,
+      "events": 18
+    }
+  },
+  "by_family": {
+    "aws_waf": {
+      "baseline_complete": 2,
+      "events": 2
+    },
+    "cisco_ise": {
+      "baseline_complete": 77,
+      "baseline_incomplete": 22,
+      "events": 99,
+      "hypothesis_attempts": 14,
+      "promotions": 5
+    },
+    "f5_bigip": {
+      "baseline_complete": 18,
+      "events": 18
+    },
+    "fortigate": {
+      "baseline_complete": 5,
+      "events": 5
+    },
+    "juniper_srx": {
+      "baseline_complete": 22,
+      "baseline_incomplete": 17,
+      "events": 39
+    },
+    "panw": {
+      "baseline_complete": 27,
+      "events": 27
+    },
+    "sophos_utm": {
+      "baseline_complete": 7,
+      "baseline_incomplete": 3,
+      "events": 10
+    },
+    "sophos_xg": {
+      "baseline_complete": 79,
+      "baseline_incomplete": 29,
+      "events": 108
+    },
+    "suricata": {
+      "baseline_complete": 11,
+      "events": 11
+    },
+    "trellix_edr": {
+      "baseline_complete": 1,
+      "events": 1
+    },
+    "trellix_epo": {
+      "baseline_complete": 3,
+      "events": 3
+    },
+    "trend_vision": {
+      "baseline_complete": 2,
+      "events": 2
+    },
+    "zeek": {
+      "baseline_complete": 7,
+      "events": 7
+    }
+  },
+  "categories": [
+    "EDR",
+    "EDR_XDR",
+    "IDS_IPS_NDR",
+    "NAC_IDENTITY_SECURITY",
+    "NDR_NETWORK_TELEMETRY",
+    "NGFW",
+    "NGFW_IDS_IPS",
+    "NGFW_UTM",
+    "UTM",
+    "WAF",
+    "WAF_NGFW"
+  ],
+  "contract": "parser-studio.poc.structural-hypothesis-security.v1",
+  "families": [
+    "aws_waf",
+    "cisco_ise",
+    "f5_bigip",
+    "fortigate",
+    "juniper_srx",
+    "panw",
+    "sophos_utm",
+    "sophos_xg",
+    "suricata",
+    "trellix_edr",
+    "trellix_epo",
+    "trend_vision",
+    "zeek"
+  ],
+  "files": 66,
+  "limitations": [
+    "v1 learns delimiter/key-anchor structure only; it is not a general CFG learner.",
+    "Promotion is structural evidence, not semantic field normalization evidence.",
+    "Only existing incomplete events are eligible; prior SOURCE_PARSED records are never reinterpreted.",
+    "Not every promoted source has an independent vendor-native field oracle in this PoC."
+  ],
+  "mutation_safety": {
+    "attempts": 10,
+    "false_complete": 0
+  },
+  "per_file": [
+    {
+      "category": "WAF",
+      "event_count": 5,
+      "family": "aws_waf",
+      "file_sha256": "8852f05a2e00c1e03ed698e5a292dc13c03cb7464e7408cd3eb8c6065ce9dbf4",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 3
+    },
+    {
+      "category": "IDS_IPS_NDR",
+      "event_count": 22,
+      "family": "suricata",
+      "file_sha256": "9b85e83c8db440cad6811ba77faf2b2081cf514568eba1ddb0869028a334377d",
+      "holdout_count": 8,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 8,
+        "events": 8
+      },
+      "train_count": 14
+    },
+    {
+      "category": "IDS_IPS_NDR",
+      "event_count": 3,
+      "family": "suricata",
+      "file_sha256": "632b6be798370bb1d2a311ca2714e25f3abda89072c8458e303a9dba47e0eb0e",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "EDR",
+      "event_count": 1,
+      "family": "trellix_edr",
+      "file_sha256": "f02556977dff694ecd9aabcd82f1fb61612d36d0e4970f3739f80c4c81eca731",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "train_count": 1
+    },
+    {
+      "category": "EDR",
+      "event_count": 3,
+      "family": "trellix_epo",
+      "file_sha256": "cec3bfde03aeb58f8399b79733d590be1eca10da8680488753b9f543a0c199ec",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "EDR_XDR",
+      "event_count": 7,
+      "family": "trend_vision",
+      "file_sha256": "3680aa765e169404d639c854b8dcdeca556b4977daeb04d323e806e118c3831c",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 5
+    },
+    {
+      "category": "NGFW",
+      "event_count": 13,
+      "family": "fortigate",
+      "file_sha256": "dbcfa9f0d25bee660fd7a494e34899c4e02da93e8e6a7f19cca8eb56b9458b63",
+      "holdout_count": 5,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 5,
+        "events": 5
+      },
+      "train_count": 8
+    },
+    {
+      "category": "NGFW",
+      "event_count": 76,
+      "family": "panw",
+      "file_sha256": "bd887e7dc52ae644f43d83947cacc570d46a912d5fd66bf212d586d363933396",
+      "holdout_count": 27,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 27,
+        "events": 27
+      },
+      "train_count": 49
+    },
+    {
+      "category": "NDR_NETWORK_TELEMETRY",
+      "event_count": 16,
+      "family": "zeek",
+      "file_sha256": "fe7c53c82085ce2cbca3420dc801584c9d617d4dd38131f82cf55d38bd9af698",
+      "holdout_count": 6,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 6,
+        "events": 6
+      },
+      "train_count": 10
+    },
+    {
+      "category": "NDR_NETWORK_TELEMETRY",
+      "event_count": 4,
+      "family": "zeek",
+      "file_sha256": "80c09e1f63427a03c0fabce17fe1730ff14d22504171c848c13ef3bfcbbdf237",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "train_count": 3
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 2,
+      "family": "f5_bigip",
+      "file_sha256": "28206d4e38683307b8393a0481b1366f45fb1621d2a188c589412090e6db5af6",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 4,
+      "family": "f5_bigip",
+      "file_sha256": "f96e749ff95f184d341f928bf41489651b52514cad3b6fc59d5ffb7d99de54e8",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "train_count": 3
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 9,
+      "family": "f5_bigip",
+      "file_sha256": "c3611d9d728b801a4f4d71fcf1e8c6e6f8ca85b1dcc96afc65810477e157e083",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 6
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 7,
+      "family": "f5_bigip",
+      "file_sha256": "5fbfb18c9cd3ed1bbac7ffadf2b020120d7e27089d84480adfffd477f0cd5f89",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 5
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 6,
+      "family": "f5_bigip",
+      "file_sha256": "b393c0af3d3eb6a0800bb33848a850cfbabc79fb7c66b294b14f090f17459a98",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 4
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 3,
+      "family": "f5_bigip",
+      "file_sha256": "1bb4e4d747ddf5233d8ebe48de8977c0aa2e54aa508c94d39e82b4755acb80f8",
+      "holdout_count": 3,
+      "hypothesis": {
+        "confidence": 0.666667,
+        "delimiter": ";",
+        "has_first_anchor": true,
+        "min_anchor_hits": 24,
+        "stable_anchor_count": 39,
+        "terminal_anchor_count": 1,
+        "training_samples": 3
+      },
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 1,
+      "family": "f5_bigip",
+      "file_sha256": "136f1d9ac20ce3abe9b893b1e16327e3d8c210f3a4359910fc598b96e6b81447",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "train_count": 1
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 3,
+      "family": "f5_bigip",
+      "file_sha256": "378760d10f361ce5785c12986177d88aaa7e5909401c1751ce6cf80842ee4f90",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "WAF_NGFW",
+      "event_count": 1,
+      "family": "f5_bigip",
+      "file_sha256": "334ee54a6cff3a47e47bebea24551d7e5a3bdc48cec67b7f3bf290778e9ca54e",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "train_count": 1
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 13,
+      "family": "cisco_ise",
+      "file_sha256": "da2a963dd4bdd5fbb91ea0c7506eabea40129ec14e3734d887e0962a94078989",
+      "holdout_count": 5,
+      "hypothesis": {
+        "confidence": 0.7,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 3,
+        "stable_anchor_count": 5,
+        "terminal_anchor_count": 2,
+        "training_samples": 8
+      },
+      "metrics": {
+        "baseline_complete": 4,
+        "baseline_incomplete": 1,
+        "events": 5,
+        "hypothesis_attempts": 1,
+        "promotions": 1
+      },
+      "train_count": 8
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 60,
+      "family": "cisco_ise",
+      "file_sha256": "55a2ff4e9ec2bb89767b2fdaafc071d0cc21b8670e1102fe00b07684c23d0a2c",
+      "holdout_count": 21,
+      "hypothesis": {
+        "confidence": 0.782051,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 3,
+        "stable_anchor_count": 4,
+        "terminal_anchor_count": 5,
+        "training_samples": 39
+      },
+      "metrics": {
+        "baseline_complete": 18,
+        "baseline_incomplete": 3,
+        "events": 21,
+        "hypothesis_attempts": 3,
+        "promotions": 1
+      },
+      "train_count": 39
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 11,
+      "family": "cisco_ise",
+      "file_sha256": "e4c2a8b7dc482c5a1eb9258f72e8eb1b4d3af98777fe0740b40f8c6e0939e0b1",
+      "holdout_count": 4,
+      "hypothesis": {
+        "confidence": 0.630495,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 8,
+        "stable_anchor_count": 13,
+        "terminal_anchor_count": 1,
+        "training_samples": 7
+      },
+      "metrics": {
+        "baseline_complete": 4,
+        "events": 4
+      },
+      "train_count": 7
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 24,
+      "family": "cisco_ise",
+      "file_sha256": "db3e3fceaf0867ffa813fe592212deab77e19d5095a34d152b993d5159ee007c",
+      "holdout_count": 8,
+      "hypothesis": {
+        "confidence": 0.625,
+        "delimiter": ";",
+        "has_first_anchor": true,
+        "min_anchor_hits": 3,
+        "stable_anchor_count": 2,
+        "terminal_anchor_count": 2,
+        "training_samples": 16
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "baseline_incomplete": 6,
+        "events": 8,
+        "hypothesis_attempts": 6,
+        "promotions": 3
+      },
+      "train_count": 16
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 1,
+      "family": "cisco_ise",
+      "file_sha256": "fd6b77413fb7337c37e7f82ae67f4dcb05ce480cd02c9dc917c1aae14f9e6b64",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 1,
+        "events": 1
+      },
+      "train_count": 1
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 40,
+      "family": "cisco_ise",
+      "file_sha256": "b5e16646bf4f5e18fa28a74097a0ab1e408fda84bbaad2ad55ce9d96f3d50952",
+      "holdout_count": 14,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 14,
+        "events": 14
+      },
+      "train_count": 26
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 7,
+      "family": "cisco_ise",
+      "file_sha256": "711ffa0134220c75af23a4fc7134bcda11c4ca91ad92eab42d3ba9e2fd837ed5",
+      "holdout_count": 2,
+      "hypothesis": {
+        "confidence": 0.6,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 3,
+        "stable_anchor_count": 4,
+        "terminal_anchor_count": 1,
+        "training_samples": 5
+      },
+      "metrics": {
+        "baseline_incomplete": 2,
+        "events": 2,
+        "hypothesis_attempts": 2
+      },
+      "train_count": 5
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 17,
+      "family": "cisco_ise",
+      "file_sha256": "d263031dd48b8795e2b8b195d925c2436df609e225c8de3b399654586efa31ce",
+      "holdout_count": 6,
+      "hypothesis": {
+        "confidence": 0.553657,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 5,
+        "stable_anchor_count": 7,
+        "terminal_anchor_count": 2,
+        "training_samples": 11
+      },
+      "metrics": {
+        "baseline_complete": 4,
+        "baseline_incomplete": 2,
+        "events": 6,
+        "hypothesis_attempts": 2
+      },
+      "train_count": 11
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 6,
+      "family": "cisco_ise",
+      "file_sha256": "919e69f2c91103df931e153d6bcdf5e477da036d101bd6bce34f77f4f5ab07be",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "baseline_incomplete": 1,
+        "events": 2
+      },
+      "train_count": 4
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 2,
+      "family": "cisco_ise",
+      "file_sha256": "bc74876b783d72d78f92011bd6e94c0081aa377daae104bd529fc5a309adaba8",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 2,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 8,
+      "family": "cisco_ise",
+      "file_sha256": "4d8a0852653b96a1a170b8f43a63dc5eff33f6e1053fea449b1a38746008326a",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "baseline_incomplete": 1,
+        "events": 3
+      },
+      "train_count": 5
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 22,
+      "family": "cisco_ise",
+      "file_sha256": "03db2b7ac3b5d78b21ecc448f36f3a7241feccbb3509c2b66c602c8a07fed614",
+      "holdout_count": 8,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 7,
+        "baseline_incomplete": 1,
+        "events": 8
+      },
+      "train_count": 14
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 8,
+      "family": "cisco_ise",
+      "file_sha256": "4d44d8f40759ef7e9f93cda6e56babc5cac5fcd41fb73d0e39501034641874fd",
+      "holdout_count": 3,
+      "hypothesis": {
+        "confidence": 0.822857,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 5,
+        "stable_anchor_count": 7,
+        "terminal_anchor_count": 1,
+        "training_samples": 5
+      },
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 5
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 2,
+      "family": "cisco_ise",
+      "file_sha256": "0f6b2334ca1846891d5571fa8e7834c97047b5e31f91e390880b30698198c0b7",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "baseline_incomplete": 1,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 6,
+      "family": "cisco_ise",
+      "file_sha256": "d920589df27735280fc1b44b67221b7ecda5936bea8335714d835c38f3c2ca19",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 4
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 27,
+      "family": "cisco_ise",
+      "file_sha256": "44c8639de63704e3c3a05640bddf66b4402c8f92f517ceb066451fa5c62072e4",
+      "holdout_count": 9,
+      "hypothesis": {
+        "confidence": 0.847569,
+        "delimiter": ",",
+        "has_first_anchor": false,
+        "min_anchor_hits": 12,
+        "stable_anchor_count": 19,
+        "terminal_anchor_count": 2,
+        "training_samples": 18
+      },
+      "metrics": {
+        "baseline_complete": 9,
+        "events": 9
+      },
+      "train_count": 18
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 7,
+      "family": "cisco_ise",
+      "file_sha256": "eecc44a5d9c1102b2b121d4eeebdb1b96aac82bf95133702c9408905ee20def0",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 5
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 10,
+      "family": "cisco_ise",
+      "file_sha256": "3dcd4613cf4d686fd386feaa7d375064caab97e53490fb6d557346fc0a0a9ba3",
+      "holdout_count": 4,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 4,
+        "events": 4
+      },
+      "train_count": 6
+    },
+    {
+      "category": "NAC_IDENTITY_SECURITY",
+      "event_count": 4,
+      "family": "cisco_ise",
+      "file_sha256": "87d452c9600b5690fb0061f2a35d783721f6b632bc735a33f2317c1ef611eddc",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 1,
+        "events": 1
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 6,
+      "family": "juniper_srx",
+      "file_sha256": "030650c611387aceab426ff7a4167edea3b8538d24a4a5e3be8643b141e28e15",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "baseline_incomplete": 1,
+        "events": 2
+      },
+      "train_count": 4
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 31,
+      "family": "juniper_srx",
+      "file_sha256": "44681891ec7aaa2ac122ba8cc39b2b79b3ad34d2bace307b7988ce5857174085",
+      "holdout_count": 11,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 7,
+        "baseline_incomplete": 4,
+        "events": 11
+      },
+      "train_count": 20
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 9,
+      "family": "juniper_srx",
+      "file_sha256": "f80d55018a4003718d54f7a4060f7e83200ccd165e10209e8ba2db9b8411e9e6",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "baseline_incomplete": 1,
+        "events": 3
+      },
+      "train_count": 6
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 14,
+      "family": "juniper_srx",
+      "file_sha256": "06832f891eabea3b99b927a8e35c0951ff863d477b50ff67aec63dbdbefbc877",
+      "holdout_count": 5,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 5,
+        "events": 5
+      },
+      "train_count": 9
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 3,
+      "family": "juniper_srx",
+      "file_sha256": "4ffcbcd9ead6f532bce9a0220a688e1a8c5408a82dcabedd045b42dedcfacf74",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "baseline_incomplete": 1,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 29,
+      "family": "juniper_srx",
+      "file_sha256": "824899cdba53292e9788ba89a47e4bcb44fa6b7908f37056b3c758e3cec4847e",
+      "holdout_count": 10,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "baseline_incomplete": 9,
+        "events": 10
+      },
+      "train_count": 19
+    },
+    {
+      "category": "NGFW_IDS_IPS",
+      "event_count": 13,
+      "family": "juniper_srx",
+      "file_sha256": "fbb52595fc5a63584585a32be372075af688564873ee71800bfbfcee6e9ce98c",
+      "holdout_count": 5,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 4,
+        "baseline_incomplete": 1,
+        "events": 5
+      },
+      "train_count": 8
+    },
+    {
+      "category": "UTM",
+      "event_count": 4,
+      "family": "sophos_utm",
+      "file_sha256": "ea61476c35d45569c438d04c3c276f2850aa217a9943800ba65747c8e9cf476e",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 1,
+        "events": 1
+      },
+      "train_count": 3
+    },
+    {
+      "category": "UTM",
+      "event_count": 5,
+      "family": "sophos_utm",
+      "file_sha256": "8ee65cf0e47d258030951873f2e2481377817f87feacf2882cfda8eb7a230499",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 2,
+        "events": 2
+      },
+      "train_count": 3
+    },
+    {
+      "category": "UTM",
+      "event_count": 10,
+      "family": "sophos_utm",
+      "file_sha256": "f017064ec8148009949f99b01be1c5e8256ef867c6fa623a28ac56011ca37807",
+      "holdout_count": 4,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 4,
+        "events": 4
+      },
+      "train_count": 6
+    },
+    {
+      "category": "UTM",
+      "event_count": 3,
+      "family": "sophos_utm",
+      "file_sha256": "7defc13c5a7c7568837bbde3099f75c1e3b0d090add76f0c5bce515979dace81",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 19,
+      "family": "sophos_xg",
+      "file_sha256": "81036ed0708c315e1b23af59e43fef25043378091d485e9cfc1169b88664d588",
+      "holdout_count": 7,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 5,
+        "baseline_incomplete": 2,
+        "events": 7
+      },
+      "train_count": 12
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 2,
+      "family": "sophos_xg",
+      "file_sha256": "c8a37525b81838f55a74097973c3c3cf5d7307ea1c572751cc3818beb88c33fa",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "baseline_incomplete": 1,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 3,
+      "family": "sophos_xg",
+      "file_sha256": "b4714eec4df003c2f7abed24c04602c0107c4462c7750c3fbcec82c2b0d1b29e",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 2,
+      "family": "sophos_xg",
+      "file_sha256": "f4c83355c7b25507dfbeedf90580528c08731a913342accb51fecb26acc8a4f4",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 2,
+      "family": "sophos_xg",
+      "file_sha256": "46f2ff4fdac4a0ead7f0debd304bd84f1c3fb226c7fa235e1702eecddec31674",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 2,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 3,
+      "family": "sophos_xg",
+      "file_sha256": "d37c56478c39510b3cad66dcf18621580ecc632bbe2df58b587675225bfa49f5",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 8,
+      "family": "sophos_xg",
+      "file_sha256": "5ceb7a440f36bff5db39456f21b8fc4cf18b059de5145ad665b558439df1ddb4",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 3,
+        "events": 3
+      },
+      "train_count": 5
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 1,
+      "family": "sophos_xg",
+      "file_sha256": "0ee72a99c11019d676791aa8d04bee8e3fc511f4bc66bbd09e0754480918eb7c",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 1,
+        "events": 1
+      },
+      "train_count": 1
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 16,
+      "family": "sophos_xg",
+      "file_sha256": "0f2c1e1bbeabee2996e9b7b4ae4c3238b21607a23c7771b030df5d2a624c04fc",
+      "holdout_count": 6,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 6,
+        "events": 6
+      },
+      "train_count": 10
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 4,
+      "family": "sophos_xg",
+      "file_sha256": "18c2e63198d89e8d11821bc27c3aa039bea2db69183850d08b28486deb9677da",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 1,
+        "events": 1
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 5,
+      "family": "sophos_xg",
+      "file_sha256": "03a19155b5c3f2ee293b9c5b9d76be59e6fd1dadb6929ff467ac28bc13192095",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 5,
+      "family": "sophos_xg",
+      "file_sha256": "04dfafb13af7690383487e8c80c27277114c2388317ba2cba0c2111d33c6d615",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 2,
+      "family": "sophos_xg",
+      "file_sha256": "9df2440747b8059c77bad0939985ed37ca3ae293515197ef48718d8aadfc676e",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 95,
+      "family": "sophos_xg",
+      "file_sha256": "2fa4c23733b2a24ed4af32fbcaf89c69774483152d307dd9bc110c095114a33a",
+      "holdout_count": 33,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 23,
+        "baseline_incomplete": 10,
+        "events": 33
+      },
+      "train_count": 62
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 51,
+      "family": "sophos_xg",
+      "file_sha256": "7e57987b3a5db0b51104891c9a3193aaf291151c8fa8d6c91d1b79ba9c7259e7",
+      "holdout_count": 18,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 18,
+        "events": 18
+      },
+      "train_count": 33
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 3,
+      "family": "sophos_xg",
+      "file_sha256": "eca399bfcbaae7c85a1dcb7bd508a5c7441c0fe315d68fa8a59b3b6442b9fdc2",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NGFW_UTM",
+      "event_count": 50,
+      "family": "sophos_xg",
+      "file_sha256": "d45c19ac090e93c845a8edac5b2b570e16bc2dc935606bced72fee20623f09c1",
+      "holdout_count": 18,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 18,
+        "events": 18
+      },
+      "train_count": 32
+    }
+  ],
+  "product_vendor_identity_used_by_learner": false,
+  "promoted_residual_byte_reduction": 800,
+  "promoted_source_span_gain": 56,
+  "raw_values_published": false,
+  "scope": "SECURITY_PRODUCTS_ONLY",
+  "semantic_mapping_scored": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "totals": {
+    "baseline_complete": 261,
+    "baseline_incomplete": 71,
+    "events": 332,
+    "hypothesis_attempts": 14,
+    "promotions": 5
+  }
+}
