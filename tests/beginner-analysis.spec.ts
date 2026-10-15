@@ -282,6 +282,30 @@ test('unconfirmed comma-delimited candidates do not falsely claim positional CSV
  await expect(problem).not.toContainText('positional CSV');
 });
 
+test('vendor-prefixed JSON is not misdescribed as positional CSV or offered an unsafe merge',async({page})=>{
+ const raw='darktrace {"model":{"name":"Unrestricted Test Model"},"device":{"ip":"192.0.2.10"}}';
+ const response={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',
+  syntax:'CSV_UNLABELED_CANDIDATE+GENERIC_ATOMS',sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),
+  fields:{generic_atoms:{network:['192.0.2.10']}},spans:[],
+  residuals:[{startByte:0,endByte:Buffer.byteLength(raw)}],
+  issues:['UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION','SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID'],
+  nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const problem=page.getByLabel('Parse problem inspector');
+ await expect(problem).toContainText('JSON with a text prefix');
+ await expect(problem).toContainText('valid JSON after a short text prefix');
+ await expect(problem).toContainText('Recommended fix · Separate prefixed JSON from plain JSON');
+ await expect(problem).not.toContainText('positional CSV');
+ await expect(problem.getByRole('button',{name:'Fix with ChatGPT'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/Keep all .* values with temporary names/})).toHaveCount(0);
+});
+
 test('a comma inside Syslog prose does not expose positional CSV controls',async({page})=>{
  const raw='Feb 8 04:00:48 edge 585917: Feb 8 04:00:47.272: %SEC-6-IPACCESSLOGRP: list 177 denied igmp 192.0.2.10 -> 224.0.0.22, 1 packet';
  const response={

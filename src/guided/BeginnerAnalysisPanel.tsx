@@ -48,7 +48,19 @@ function genericStructuralAnchor(source:string,events:BeginnerAnalysisEvent[]):s
   for(const preferred of ['syslog.pri','generic.mode'])if(common.includes(preferred))return preferred;
   return common[0]??null;
 }
-function plainIssue(code:string):string{
+function prefixedJson(raw:string):boolean{
+  const open=raw.indexOf('{');
+  if(open<1||open>64||!/^[A-Za-z0-9_.:/-]+[ \t]+$/.test(raw.slice(0,open)))return false;
+  try{
+    const value=JSON.parse(raw.slice(open));
+    return !!value&&typeof value==='object'&&!Array.isArray(value);
+  }catch{return false;}
+}
+function plainIssue(code:string,raw=''):string{
+  if(prefixedJson(raw)&&code==='UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION')
+    return 'This event contains valid JSON after a short text prefix, so its wrapper must be handled separately.';
+  if(prefixedJson(raw)&&code==='SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID')
+    return 'The short text prefix prevents the normal JSON path from being used even though the JSON payload itself is valid.';
   const known:Record<string,string>={
     KV_QUOTE_UNCLOSED:'A quoted key/value field is not closed, so the rest of the event cannot be trusted as normal key/value data.',
     RFC5424_SD_UNCLOSED:'The Syslog structured-data section is not closed correctly.',
@@ -65,9 +77,10 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
   return Object.keys(preview.fields).length===0&&
     preview.residuals.some(region=>region.startByte===0&&region.endByte>=preview.sourceBytes);
 }
-function friendlySyntax(preview:MultiPassSourcePreview):string{
+function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
   const syntax=preview.syntax.toUpperCase();
   if(wholeEventNeedsRule(preview))return 'custom text format';
+  if(prefixedJson(raw))return 'JSON with a text prefix';
   if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
   if(syntax.includes('CSV_UNLABELED'))return 'comma-delimited text candidate';
   if(syntax.includes('SYSLOG'))return 'Syslog with structured security fields';
@@ -77,13 +90,18 @@ function friendlySyntax(preview:MultiPassSourcePreview):string{
   if(syntax.includes('KV'))return 'key/value fields';
   return 'security log structure';
 }
-function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted';label:string;text:string}{
+function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw=''):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
   if(wholeEventNeedsRule(preview))return {
     kind:'text',
     label:'Create a rule for this text format',
     text:'Parser Studio could not identify a standard format. Use the repeated separators or text pattern to extract only the values that are present, then test the fix against additional examples.',
+  };
+  if(prefixedJson(raw))return {
+    kind:'split',
+    label:'Separate prefixed JSON from plain JSON',
+    text:'This event contains valid JSON after a short vendor prefix while other events may be plain JSON. Keep these variants in separate parser samples; Parser Studio will not silently merge the two formats.',
   };
   if(preview.residuals.length===0&&
     (issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
@@ -190,8 +208,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     :events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
-  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns)):null;
-  const recipeImportEligible=!!rec&&rec.kind!=='metadata';
+  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns),raw):null;
+  const recipeImportEligible=!!rec&&rec.kind!=='metadata'&&rec.kind!=='split';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
   const genericStructuralSourcePath=parserRuleReviewRequired&&draft?.guided&&onApplyCandidate?
@@ -268,8 +286,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         ?'Fields found — one more rule is needed'
         :problemTitle(current.event.preview)}</h3>
       <p>{parserRuleReviewRequired
-        ?<>Parser Studio found the fields in this <b>{friendlySyntax(current.event.preview)}</b>, but it needs one additional rule before it can build the parser.</>
-        :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview)}</b>, but it will not mark this event parser-ready until the remaining review is resolved.</>}</p>
+        ?<>Parser Studio found the fields in this <b>{friendlySyntax(current.event.preview,raw)}</b>, but it needs one additional rule before it can build the parser.</>
+        :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview,raw)}</b>, but it will not mark this event parser-ready until the remaining review is resolved.</>}</p>
       <div className="beginner-problem-source">
         <span>Original event {current.index+1} · {parserRuleReviewRequired
           ?'parser rule needs review'
@@ -284,7 +302,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           {parserRuleReviewRequired
             ?<p>The field values are already available. Only the parser rule that reproduces this message format is still missing.</p>
             :current.event.preview.issues.length
-              ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code)}</li>)}</ul>
+              ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code,raw)}</li>)}</ul>
               :<p>The engine could not produce a complete trustworthy field set for this event.</p>}
         </div>
         <div><strong>{parserRuleReviewRequired?'What Parser Studio still needs':metadataOnlyReview(current.event.preview)?'Source metadata review':'Unparsed source'}</strong>
@@ -316,10 +334,10 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           onClick={preserveSourceMetadata}>
           Preserve source metadata as text
         </button>}
-        <button type="button" className={rec?.kind==='csv'||metadataPreserveEligible||genericStructuralPreserveEligible?'':'auto-parser-primary'} disabled={promptBusy}
+        {rec?.kind!=='split'&&<button type="button" className={rec?.kind==='csv'||metadataPreserveEligible||genericStructuralPreserveEligible?'':'auto-parser-primary'} disabled={promptBusy}
           onClick={()=>void openPrompt()}>
           <Bot size={16}/> {promptBusy?'Preparing…':rec?.kind==='metadata'?'Review with ChatGPT':'Fix with ChatGPT'}
-        </button>
+        </button>}
       </div>
       {promptOpen&&<div className="beginner-chatgpt" aria-label="ChatGPT repair prompt">
         <strong>1. Copy this prompt to ChatGPT</strong>
