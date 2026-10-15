@@ -1,0 +1,226 @@
+{
+  "contract": "parser-studio.poc.structural-hypothesis-fresh-security-holdout.v1",
+  "families": {
+    "barracuda_waf": {
+      "category": "WAF",
+      "directory": "packages/barracuda/data_stream/waf/_dev/test/pipeline",
+      "file_count": 5
+    },
+    "netscout_sightline": {
+      "category": "NDR_DDOS",
+      "directory": "packages/netscout/data_stream/sightline/_dev/test/pipeline",
+      "file_count": 1
+    },
+    "symantec_endpoint": {
+      "category": "EDR_ENDPOINT",
+      "directory": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline",
+      "file_count": 17
+    },
+    "watchguard_firebox": {
+      "category": "NGFW",
+      "directory": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline",
+      "file_count": 4
+    }
+  },
+  "file_count": 27,
+  "file_set_sha256": "e5d20dd86bf8991da39e38d191023d244035aee6bada431f764d3e7a997aac61",
+  "files": [
+    {
+      "blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+      "category": "NGFW",
+      "family": "watchguard_firebox",
+      "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-alarm.log",
+      "size_bytes": 4777
+    },
+    {
+      "blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+      "category": "NGFW",
+      "family": "watchguard_firebox",
+      "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-diagnostic.log",
+      "size_bytes": 39944
+    },
+    {
+      "blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+      "category": "NGFW",
+      "family": "watchguard_firebox",
+      "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-event.log",
+      "size_bytes": 37408
+    },
+    {
+      "blob_sha": "af82483a7d4f7538bfac685b20bddba4adc10b08",
+      "category": "NGFW",
+      "family": "watchguard_firebox",
+      "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-traffic.log",
+      "size_bytes": 71523
+    },
+    {
+      "blob_sha": "0a24be20bcc5c8c5f3f9038df6989a9cf20faa62",
+      "category": "WAF",
+      "family": "barracuda_waf",
+      "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-access.log",
+      "size_bytes": 10729
+    },
+    {
+      "blob_sha": "02c1f654baeb8bcf8c4e60f2b1a8d7ffd71d3a1e",
+      "category": "WAF",
+      "family": "barracuda_waf",
+      "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-audit.log",
+      "size_bytes": 235
+    },
+    {
+      "blob_sha": "f5f85046d140cf67ace18bc7bae69d2acde6b3b6",
+      "category": "WAF",
+      "family": "barracuda_waf",
+      "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-network-firewall.log",
+      "size_bytes": 609
+    },
+    {
+      "blob_sha": "b7efcd34e78b4ba48caa7155dfe18af35e1bb6cd",
+      "category": "WAF",
+      "family": "barracuda_waf",
+      "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-system.log",
+      "size_bytes": 1338
+    },
+    {
+      "blob_sha": "9e48f0626667f5f1ed41fcfe52fe653885aa4c59",
+      "category": "WAF",
+      "family": "barracuda_waf",
+      "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-web-firewall.log",
+      "size_bytes": 1682
+    },
+    {
+      "blob_sha": "bd8d089c540fb5140ca7fcafd91229222558985b",
+      "category": "NDR_DDOS",
+      "family": "netscout_sightline",
+      "path": "packages/netscout/data_stream/sightline/_dev/test/pipeline/test-generated.log",
+      "size_bytes": 12056
+    },
+    {
+      "blob_sha": "65f8d81fbf3d4482c8ba34ee74e757cbfd7aacc9",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-administrative.log",
+      "size_bytes": 203
+    },
+    {
+      "blob_sha": "6a387bcc8cb7154d8ca455841da0a07840892e8d",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-activity.log",
+      "size_bytes": 164
+    },
+    {
+      "blob_sha": "b8cc7323738637c501d62677083384e725c84dac",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-behavior.log",
+      "size_bytes": 1098
+    },
+    {
+      "blob_sha": "8122f49406d83b3443442a03d95f44f35e7395b2",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-packet.log",
+      "size_bytes": 378
+    },
+    {
+      "blob_sha": "f12420aa445b3bedfc3f73116245cfc5b810cdf4",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-proactive-detection-sonar.log",
+      "size_bytes": 2682
+    },
+    {
+      "blob_sha": "ac28bca8535a3f86ee9b92b6256eab3129ca9a31",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-risk.log",
+      "size_bytes": 1557
+    },
+    {
+      "blob_sha": "6a53fc23065db5826040390c5be1f4190267beb1",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-scan.log",
+      "size_bytes": 1030
+    },
+    {
+      "blob_sha": "6d1ca799d1b7bd0691803df5b5a6d1b6e9117d65",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-security.log",
+      "size_bytes": 4297
+    },
+    {
+      "blob_sha": "4be49dfbcbfd7d7e56d98bd07dd26420f275be2c",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-system.log",
+      "size_bytes": 260
+    },
+    {
+      "blob_sha": "d7f6d4a461279d45a3808d477b817d1c2ba1a8f1",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-traffic.log",
+      "size_bytes": 1502
+    },
+    {
+      "blob_sha": "09faa919cbfd40bde70dca1359f7636fb751493b",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy-rfc3164-sep14-3ru7.log",
+      "size_bytes": 251
+    },
+    {
+      "blob_sha": "e25d3a5814092a8eb59fc75358a7b9878c0d22c7",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy.log",
+      "size_bytes": 194
+    },
+    {
+      "blob_sha": "5e8d0ca80a9588cc47065ab482a78a454df7b9ad",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-remove-mapped-fields.log",
+      "size_bytes": 1206
+    },
+    {
+      "blob_sha": "37caca3b759bad202b0a5a0e3e8c4fcb4b741e44",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc3164.log",
+      "size_bytes": 614
+    },
+    {
+      "blob_sha": "2c57a7c10093dbd19bcf7063aafc17863bab2799",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc5424.log",
+      "size_bytes": 604
+    },
+    {
+      "blob_sha": "5e51d5a0e6f0c57d52ce44835a11c4f43d63769e",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-system.log",
+      "size_bytes": 330
+    },
+    {
+      "blob_sha": "5b8980d9e76412aa2efbc69c717c63314647a80f",
+      "category": "EDR_ENDPOINT",
+      "family": "symantec_endpoint",
+      "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-text-log-dump.log",
+      "size_bytes": 900
+    }
+  ],
+  "frozen_before_evaluation": true,
+  "frozen_date": "2026-10-15",
+  "product_vendor_identity_used_by_learner": false,
+  "raw_published": false,
+  "scope": "SECURITY_PRODUCTS_ONLY_FRESH_HOLDOUT",
+  "selection_rule": "All .log files present in the four preselected pipeline test directories at the pinned upstream revision; source set frozen before reading fixture contents or running Parser Studio evaluation.",
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed"
+}
