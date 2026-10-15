@@ -4,6 +4,8 @@
 
 **PROMISING / LIMITED. Continue PoC; do not integrate into the product engine yet.**
 
+Follow-up evidence: `TYPED_RESIDUAL_SECURITY_POC_20261015.md` validates a stricter recall-only typed residual layer on Cisco ISE and Snort, with 56/56 independently exact added source spans, zero augmentation on 224 typed-field corruptions, and a 430-test full regression pass. The follow-up does not supersede the current product engine or authorize integration.
+
 This PoC evaluates whether batch-level structural learning can recover source
 values that the current single-event Multi-Pass engine deliberately leaves
 incomplete. The learner uses source syntax only. Product/vendor identity is

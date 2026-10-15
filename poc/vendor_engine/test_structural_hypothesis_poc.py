@@ -8,10 +8,16 @@ from structural_hypothesis_poc import (
     learn_event_template_hypotheses,
     learn_positional_csv_hypothesis,
     learn_relative_rgram_hypotheses,
+    learn_masked_residual_rgram_hypotheses,
+    learn_typed_residual_hypotheses,
     merge_residual_hypothesis,
+    augment_residual_hypothesis,
     parse_with_event_template,
     parse_with_hypothesis,
     parse_with_relative_rgram,
+    parse_with_masked_residual_rgram,
+    parse_with_typed_residual_hypotheses,
+    delete_required_masked_rgram_literal,
 )
 from source_parse import SourceEvent, ValueSpan, assert_source_accounting
 
@@ -339,6 +345,224 @@ class StructuralHypothesisPocTests(unittest.TestCase):
             ),
         ]
         self.assertEqual({}, learn_relative_rgram_hypotheses(training))
+
+    def test_residual_augmentation_adds_only_residual_values_without_status_promotion(self):
+        raw = "prefix Domain=example.test, Controller=dc09, Message=ok, Result=allow"
+        hypothesis = learn_best_hypothesis(self.train)
+        candidate = parse_with_hypothesis(raw, hypothesis)
+        self.assertIsNotNone(candidate)
+
+        baseline = SourceEvent(raw, syntax="BASE")
+        baseline.vendor_fields = {"existing": "prefix"}
+        baseline.value_spans = [
+            ValueSpan("existing", 0, 6, ("existing",))
+        ]
+        baseline.covered = [(0, 6)]
+        baseline.unparsed = [(6, len(raw))]
+        baseline.issues = ["BASE_INCOMPLETE"]
+        assert_source_accounting(baseline)
+
+        augmented = augment_residual_hypothesis(baseline, candidate)
+        self.assertIsNotNone(augmented)
+        self.assertEqual("PARTIAL", augmented.status)
+        self.assertEqual(baseline.unparsed, augmented.unparsed)
+        self.assertEqual(baseline.issues, augmented.issues)
+        self.assertGreater(len(augmented.value_spans), len(baseline.value_spans))
+        self.assertEqual(
+            baseline.value_spans[0],
+            next(span for span in augmented.value_spans if span.path == "existing"),
+        )
+
+    def test_residual_augmentation_rejects_hard_malformed_baseline(self):
+        raw = "prefix Domain=example.test, Controller=dc09, Message=ok, Result=allow"
+        hypothesis = learn_best_hypothesis(self.train)
+        candidate = parse_with_hypothesis(raw, hypothesis)
+        baseline = SourceEvent(raw, syntax="BASE")
+        baseline.covered = [(0, 6)]
+        baseline.unparsed = [(6, len(raw))]
+        baseline.issues = ["SOURCE_SIZE_OR_NUL_INVALID"]
+        assert_source_accounting(baseline)
+        self.assertIsNone(augment_residual_hypothesis(baseline, candidate))
+
+    def _masked_baseline(self, raw):
+        left = raw.index("192.0.2.1:443")
+        left_end = left + len("192.0.2.1:443")
+        right = raw.index("198.51.100.2:80")
+        right_end = right + len("198.51.100.2:80")
+        event = SourceEvent(raw, syntax="BASE_NETWORK_ATOMS")
+        event.vendor_fields = {
+            "src_endpoint": raw[left:left_end],
+            "dst_endpoint": raw[right:right_end],
+        }
+        event.value_spans = [
+            ValueSpan(
+                "src_endpoint",
+                len(raw[:left].encode("utf8")),
+                len(raw[:left_end].encode("utf8")),
+                ("src_endpoint",),
+            ),
+            ValueSpan(
+                "dst_endpoint",
+                len(raw[:right].encode("utf8")),
+                len(raw[:right_end].encode("utf8")),
+                ("dst_endpoint",),
+            ),
+        ]
+        event.primitive_fields = 2
+        event.covered = [(left, left_end), (right, right_end)]
+        event.unparsed = [
+            (0, left),
+            (left_end, right),
+            (right_end, len(raw)),
+        ]
+        assert_source_accounting(event)
+        return event
+
+    def test_masked_rgram_keeps_baseline_values_opaque_and_emits_only_residual(self):
+        raws = [
+            "03/12-10:11:12 src=192.0.2.1:443 -> dst=198.51.100.2:80",
+            "04/13-11:12:13 src=192.0.2.1:443 -> dst=198.51.100.2:80",
+            "05/14-12:13:14 src=192.0.2.1:443 -> dst=198.51.100.2:80",
+        ]
+        training = [self._masked_baseline(raw) for raw in raws]
+        hypotheses = learn_masked_residual_rgram_hypotheses(training)
+        self.assertEqual(1, len(hypotheses))
+
+        raw = "06/15-13:14:15 src=192.0.2.1:443 -> dst=198.51.100.2:80"
+        baseline = self._masked_baseline(raw)
+        candidate = parse_with_masked_residual_rgram(
+            raw, baseline, hypotheses
+        )
+        self.assertIsNotNone(candidate)
+        self.assertEqual("SOURCE_PARSED", candidate.status)
+        baseline_ranges = {
+            (span.start_byte, span.end_byte)
+            for span in baseline.value_spans
+        }
+        self.assertEqual(1, len(candidate.value_spans))
+        timestamp_span = candidate.value_spans[0]
+        self.assertEqual(
+            "06/15-13:14:15",
+            raw.encode()[timestamp_span.start_byte:timestamp_span.end_byte].decode(),
+        )
+        self.assertTrue(all(
+            (span.start_byte, span.end_byte) not in baseline_ranges
+            for span in candidate.value_spans
+        ))
+        merged = merge_residual_hypothesis(baseline, candidate)
+        self.assertIsNotNone(merged)
+        before = {
+            (span.path, span.source_segments, span.start_byte, span.end_byte)
+            for span in baseline.value_spans
+        }
+        after = {
+            (span.path, span.source_segments, span.start_byte, span.end_byte)
+            for span in merged.value_spans
+        }
+        self.assertTrue(before <= after)
+
+    def test_masked_rgram_requires_three_examples_and_fails_on_literal_deletion(self):
+        raw1 = "03/12-10:11:12 src=192.0.2.1:443 -> dst=198.51.100.2:80"
+        raw2 = "04/13-11:12:13 src=192.0.2.1:443 -> dst=198.51.100.2:80"
+        raw3 = "05/14-12:13:14 src=192.0.2.1:443 -> dst=198.51.100.2:80"
+        two = [self._masked_baseline(raw1), self._masked_baseline(raw2)]
+        self.assertEqual({}, learn_masked_residual_rgram_hypotheses(two))
+        training = two + [self._masked_baseline(raw3)]
+        hypotheses = learn_masked_residual_rgram_hypotheses(training)
+        self.assertEqual(1, len(hypotheses))
+        corrupted = delete_required_masked_rgram_literal(
+            raw3, training[-1], hypotheses
+        )
+        self.assertIsNotNone(corrupted)
+        corrupted_baseline = self._masked_baseline(corrupted)
+        self.assertIsNone(
+            parse_with_masked_residual_rgram(
+                corrupted, corrupted_baseline, hypotheses
+            )
+        )
+
+    def test_typed_residual_learns_full_snort_date_field(self):
+        raws = [
+            "03/12-10:11:12 src=192.0.2.1:443 -> dst=198.51.100.2:80",
+            "04/13-11:12:13 src=192.0.2.1:443 -> dst=198.51.100.2:80",
+            "05/14-12:13:14 src=192.0.2.1:443 -> dst=198.51.100.2:80",
+        ]
+        training = [self._masked_baseline(raw) for raw in raws]
+        hypotheses = learn_typed_residual_hypotheses(training)
+        self.assertIn("SNORT_DATE", hypotheses)
+
+        raw = "06/15-13:14:15 src=192.0.2.1:443 -> dst=198.51.100.2:80"
+        baseline = self._masked_baseline(raw)
+        candidate = parse_with_typed_residual_hypotheses(
+            raw, baseline, hypotheses
+        )
+        self.assertIsNotNone(candidate)
+        self.assertEqual(1, len(candidate.value_spans))
+        span = candidate.value_spans[0]
+        self.assertEqual(
+            "06/15-13:14:15",
+            raw.encode()[span.start_byte:span.end_byte].decode(),
+        )
+        augmented = augment_residual_hypothesis(baseline, candidate)
+        self.assertIsNotNone(augmented)
+        self.assertEqual(baseline.status, augmented.status)
+        self.assertEqual(baseline.unparsed, augmented.unparsed)
+        self.assertEqual(baseline.issues, augmented.issues)
+
+    def _typed_syslog_baseline(self, raw):
+        host = "host01"
+        start = raw.index(host)
+        end = start + len(host)
+        event = SourceEvent(raw, syntax="BASE_PARTIAL_SYSLOG")
+        event.vendor_fields = {"host": host}
+        event.value_spans = [
+            ValueSpan(
+                "host",
+                len(raw[:start].encode("utf8")),
+                len(raw[:end].encode("utf8")),
+                ("host",),
+            )
+        ]
+        event.primitive_fields = 1
+        event.covered = [(start, end)]
+        event.unparsed = [(0, start), (end, len(raw))]
+        event.issues = ["UNSUPPORTED_PRI_BODY"]
+        assert_source_accounting(event)
+        return event
+
+    def test_typed_residual_learns_full_syslog_timestamp_field(self):
+        raws = [
+            "<178>Sep 24 16:03:27 host01 CISE_Alarm WARN: one",
+            "<178>Sep 25 17:04:28 host01 CISE_Alarm WARN: two",
+            "<178>Sep 26 18:05:29 host01 CISE_Alarm WARN: three",
+        ]
+        training = [self._typed_syslog_baseline(raw) for raw in raws]
+        hypotheses = learn_typed_residual_hypotheses(training)
+        self.assertIn("SYSLOG_TIMESTAMP", hypotheses)
+
+        raw = "<178>Sep 27 19:06:30 host01 CISE_Alarm WARN: holdout"
+        baseline = self._typed_syslog_baseline(raw)
+        candidate = parse_with_typed_residual_hypotheses(
+            raw, baseline, hypotheses
+        )
+        self.assertIsNotNone(candidate)
+        self.assertEqual(1, len(candidate.value_spans))
+        span = candidate.value_spans[0]
+        self.assertEqual(
+            "Sep 27 19:06:30",
+            raw.encode()[span.start_byte:span.end_byte].decode(),
+        )
+        augmented = augment_residual_hypothesis(baseline, candidate)
+        self.assertIsNotNone(augmented)
+        self.assertEqual("PARTIAL", augmented.status)
+
+        invalid = "<178>Sep 31 25:99:99 host01 CISE_Alarm WARN: invalid"
+        invalid_baseline = self._typed_syslog_baseline(invalid)
+        self.assertIsNone(
+            parse_with_typed_residual_hypotheses(
+                invalid, invalid_baseline, hypotheses
+            )
+        )
 
     def _csv_event(self, width):
         values = [f"v{index}" for index in range(width)]

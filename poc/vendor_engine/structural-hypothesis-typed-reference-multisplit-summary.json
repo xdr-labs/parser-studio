@@ -1,0 +1,634 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 56,
+    "augmented_events": 56,
+    "baseline_complete": 73,
+    "baseline_incomplete": 56,
+    "completeness_preserved": 56,
+    "events_with_expected_doc": 56,
+    "expected_timestamp_consistent": 56,
+    "independently_validated_spans": 56,
+    "issues_preserved": 56,
+    "mutation_attempts": 224,
+    "official_source_exact_span_value": 56
+  },
+  "by_family": {
+    "cisco_ise": {
+      "added_spans": 38,
+      "augmented_events": 38,
+      "baseline_complete": 73,
+      "baseline_incomplete": 38,
+      "completeness_preserved": 38,
+      "events_with_expected_doc": 38,
+      "expected_timestamp_consistent": 38,
+      "independently_validated_spans": 38,
+      "issues_preserved": 38,
+      "mutation_attempts": 152,
+      "official_source_exact_span_value": 38
+    },
+    "snort": {
+      "added_spans": 18,
+      "augmented_events": 18,
+      "baseline_incomplete": 18,
+      "completeness_preserved": 18,
+      "events_with_expected_doc": 18,
+      "expected_timestamp_consistent": 18,
+      "independently_validated_spans": 18,
+      "issues_preserved": 18,
+      "mutation_attempts": 72,
+      "official_source_exact_span_value": 18
+    }
+  },
+  "by_kind": {
+    "SNORT_DATE": {
+      "added_spans": 18,
+      "augmented_events": 18,
+      "baseline_incomplete": 18,
+      "completeness_preserved": 18,
+      "events_with_expected_doc": 18,
+      "expected_timestamp_consistent": 18,
+      "independently_validated_spans": 18,
+      "issues_preserved": 18,
+      "mutation_attempts": 72,
+      "official_source_exact_span_value": 18
+    },
+    "SYSLOG_TIMESTAMP": {
+      "added_spans": 38,
+      "augmented_events": 38,
+      "baseline_complete": 73,
+      "baseline_incomplete": 38,
+      "completeness_preserved": 38,
+      "events_with_expected_doc": 38,
+      "expected_timestamp_consistent": 38,
+      "independently_validated_spans": 38,
+      "issues_preserved": 38,
+      "mutation_attempts": 152,
+      "official_source_exact_span_value": 38
+    }
+  },
+  "contract": "parser-studio.poc.typed-residual-security-reference-multisplit.v1",
+  "elastic_default_cisco_ise_pipeline_blob_sha": "0674392df50caf70303f451935210ed0056f926c",
+  "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "elastic_snort_plaintext_pipeline_blob_sha": "197aa96409995a42bba8f4c86ad1b01557724198",
+  "expected_blob_shas": {
+    "snort_fast.log": "d0daa4817ee0d8b01ba2bd68c7ab67ab8e71a7d3",
+    "snort_full.logical": "f1d170a48f4a8c33e73b130d5a2acf48e0dd0a4b",
+    "test-pipeline-administrative-and-operational-audit.log": "82b9ec6813c716deb45ef87977095f00aac816ac",
+    "test-pipeline-cise-alarm.log": "69067ea045c2f1db99674e77dd954796a78ea525",
+    "test-pipeline-guest.log": "8f916a66302492099540b9e46f1632ec71ddbc37",
+    "test-pipeline-identity-stores-diagnostics.log": "b73a87ef52faeb7e3bb3535db112081e0897b78a"
+  },
+  "gates": {
+    "all_added_spans_independently_validated": true,
+    "all_expected_timestamps_consistent": true,
+    "completeness_preserved": true,
+    "issues_preserved": true,
+    "typed_field_corruption_fail_closed": true
+  },
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "raw_values_published": false,
+  "results": [
+    {
+      "augmented_event_sha256": [
+        "1938f8aa7b3f3ac9ef613587144dce575d5b856ba2b5ba516e48e8f260682c7a",
+        "4aba7be104a625da1e2ae44fe4dc5d37deea37886ce84497127e9ebef8c0f7d2",
+        "f63a6dbf8976f490fb1c0a9c1762a46524460536e7e12bb269708e94c8b046c8"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 21,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 5
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 3,
+        "augmented_events": 3,
+        "baseline_complete": 18,
+        "baseline_incomplete": 3,
+        "completeness_preserved": 3,
+        "events_with_expected_doc": 3,
+        "expected_timestamp_consistent": 3,
+        "independently_validated_spans": 3,
+        "issues_preserved": 3,
+        "mutation_attempts": 12,
+        "official_source_exact_span_value": 3
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "test-pipeline-administrative-and-operational-audit.log",
+      "train_events": 39
+    },
+    {
+      "augmented_event_sha256": [
+        "1938f8aa7b3f3ac9ef613587144dce575d5b856ba2b5ba516e48e8f260682c7a",
+        "2c8f06e6dc000505ccabd4d6c7c8c439813839fad2c6f30ec6d3ed319054c468",
+        "d80e2905c6f9e6c9cf4f3043043f352571aa63ef7fbc192127618d9cd57e59f6",
+        "f63a6dbf8976f490fb1c0a9c1762a46524460536e7e12bb269708e94c8b046c8"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 21,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 4
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 4,
+        "augmented_events": 4,
+        "baseline_complete": 17,
+        "baseline_incomplete": 4,
+        "completeness_preserved": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent": 4,
+        "independently_validated_spans": 4,
+        "issues_preserved": 4,
+        "mutation_attempts": 16,
+        "official_source_exact_span_value": 4
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "test-pipeline-administrative-and-operational-audit.log",
+      "train_events": 39
+    },
+    {
+      "augmented_event_sha256": [
+        "4aba7be104a625da1e2ae44fe4dc5d37deea37886ce84497127e9ebef8c0f7d2"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 21,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 7
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 1,
+        "augmented_events": 1,
+        "baseline_complete": 20,
+        "baseline_incomplete": 1,
+        "completeness_preserved": 1,
+        "events_with_expected_doc": 1,
+        "expected_timestamp_consistent": 1,
+        "independently_validated_spans": 1,
+        "issues_preserved": 1,
+        "mutation_attempts": 4,
+        "official_source_exact_span_value": 1
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "test-pipeline-administrative-and-operational-audit.log",
+      "train_events": 39
+    },
+    {
+      "augmented_event_sha256": [
+        "0e451a13d3124021ac176d7cab435e9096e7bf3a3ac4aed30e5a1e62c62c787c",
+        "515aa19a0d1d54b4125ad3701b981dc831a59a58e4a39da6f3bc856f948aabd3",
+        "85b0296325fcb0d93bb628bbe02acf09dc4169f881ba0381b16bd694a6bd9245",
+        "ca752a58755a3036075ca209de5d7fd99257a499a944f92655ae9b1a1b95635d",
+        "cb20d7eb9ec2a94f759ccab2d78f0b64f28255691607094a1c663062ee1ec151",
+        "d11df8f8fc2d64894708cdd29e475099f35def86c7251d9049bab7a12475d3db",
+        "dabc2d658657ca48b797b4c7f10282db3fcc79857a8d1eef29a6f2f0e015347a"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 8,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 13
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 7,
+        "augmented_events": 7,
+        "baseline_complete": 1,
+        "baseline_incomplete": 7,
+        "completeness_preserved": 7,
+        "events_with_expected_doc": 7,
+        "expected_timestamp_consistent": 7,
+        "independently_validated_spans": 7,
+        "issues_preserved": 7,
+        "mutation_attempts": 28,
+        "official_source_exact_span_value": 7
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "test-pipeline-cise-alarm.log",
+      "train_events": 16
+    },
+    {
+      "augmented_event_sha256": [
+        "1dcc5fd5553c6500f44680ca9ad3992233d160b4b3c91d3f4b01959461825dad",
+        "2618b290625ac4ce30a26f8af3e9306a3b31c9819033c89641b614a58f7f1688",
+        "290583473f7b26fbc2ffa502ab719c3a0ef5a6e428271c19929f05f81702e2d3",
+        "cbc57605887d2d16ecee3c9cb499add93e0bf88edeeb54eb49ca77242c701c92",
+        "d11df8f8fc2d64894708cdd29e475099f35def86c7251d9049bab7a12475d3db",
+        "dabc2d658657ca48b797b4c7f10282db3fcc79857a8d1eef29a6f2f0e015347a"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 8,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 14
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 6,
+        "augmented_events": 6,
+        "baseline_complete": 2,
+        "baseline_incomplete": 6,
+        "completeness_preserved": 6,
+        "events_with_expected_doc": 6,
+        "expected_timestamp_consistent": 6,
+        "independently_validated_spans": 6,
+        "issues_preserved": 6,
+        "mutation_attempts": 24,
+        "official_source_exact_span_value": 6
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "test-pipeline-cise-alarm.log",
+      "train_events": 16
+    },
+    {
+      "augmented_event_sha256": [
+        "043b3a1998bbeca5ba3c91eb9b893f755ac60b4fcb7375ed4811bed9fd6808d0",
+        "1dcc5fd5553c6500f44680ca9ad3992233d160b4b3c91d3f4b01959461825dad",
+        "515aa19a0d1d54b4125ad3701b981dc831a59a58e4a39da6f3bc856f948aabd3",
+        "af7761471eebbc000a0bded3c1e960aea6746d294fd1ee0050da58d099a46c37",
+        "d81e783c2f292d69764b71bc578083039b2b0e4bdeb2cd56f2e3fcdc3167879a",
+        "dabc2d658657ca48b797b4c7f10282db3fcc79857a8d1eef29a6f2f0e015347a"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 8,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 14
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 6,
+        "augmented_events": 6,
+        "baseline_complete": 2,
+        "baseline_incomplete": 6,
+        "completeness_preserved": 6,
+        "events_with_expected_doc": 6,
+        "expected_timestamp_consistent": 6,
+        "independently_validated_spans": 6,
+        "issues_preserved": 6,
+        "mutation_attempts": 24,
+        "official_source_exact_span_value": 6
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "test-pipeline-cise-alarm.log",
+      "train_events": 16
+    },
+    {
+      "augmented_event_sha256": [
+        "95214a18af11e4427aa36259490321f78ec531cdf340a2034a8520da077966e6"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 2,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 4
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 1,
+        "augmented_events": 1,
+        "baseline_complete": 1,
+        "baseline_incomplete": 1,
+        "completeness_preserved": 1,
+        "events_with_expected_doc": 1,
+        "expected_timestamp_consistent": 1,
+        "independently_validated_spans": 1,
+        "issues_preserved": 1,
+        "mutation_attempts": 4,
+        "official_source_exact_span_value": 1
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "test-pipeline-guest.log",
+      "train_events": 5
+    },
+    {
+      "augmented_event_sha256": [
+        "95214a18af11e4427aa36259490321f78ec531cdf340a2034a8520da077966e6"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 2,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 4
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 1,
+        "augmented_events": 1,
+        "baseline_complete": 1,
+        "baseline_incomplete": 1,
+        "completeness_preserved": 1,
+        "events_with_expected_doc": 1,
+        "expected_timestamp_consistent": 1,
+        "independently_validated_spans": 1,
+        "issues_preserved": 1,
+        "mutation_attempts": 4,
+        "official_source_exact_span_value": 1
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "test-pipeline-guest.log",
+      "train_events": 5
+    },
+    {
+      "augmented_event_sha256": [
+        "c2b4fa52219d2632a16d10aec46d4782a87ec5be285a53a16305a1c589306310",
+        "f94d74109d94b875f5ecd82ceb717ec0ccd7a937d4afdc9c710b2228be3c140d"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 2,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 3
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 2,
+        "baseline_incomplete": 2,
+        "completeness_preserved": 2,
+        "events_with_expected_doc": 2,
+        "expected_timestamp_consistent": 2,
+        "independently_validated_spans": 2,
+        "issues_preserved": 2,
+        "mutation_attempts": 8,
+        "official_source_exact_span_value": 2
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "test-pipeline-guest.log",
+      "train_events": 5
+    },
+    {
+      "augmented_event_sha256": [
+        "5ded34085dc7a7b1dd82ea4756f00e097ab3e53a42684ae22e2665f89fd04ad9",
+        "9eaa516f9796b005619bafd9a57c3f067787e30de181eb5b944c82c5592c1f3a"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 6,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 5
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 2,
+        "baseline_complete": 4,
+        "baseline_incomplete": 2,
+        "completeness_preserved": 2,
+        "events_with_expected_doc": 2,
+        "expected_timestamp_consistent": 2,
+        "independently_validated_spans": 2,
+        "issues_preserved": 2,
+        "mutation_attempts": 8,
+        "official_source_exact_span_value": 2
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "test-pipeline-identity-stores-diagnostics.log",
+      "train_events": 11
+    },
+    {
+      "augmented_event_sha256": [
+        "319992f65c3db1d508e3ac232bdbe3cabaa271db319c76d4fd0bf6dac5cabd1c",
+        "3850f83d100e9b4e5dcf826e924f8b4cc394522c9efd0f2bc6333c58df67cb78"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 6,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 5
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 2,
+        "baseline_complete": 4,
+        "baseline_incomplete": 2,
+        "completeness_preserved": 2,
+        "events_with_expected_doc": 2,
+        "expected_timestamp_consistent": 2,
+        "independently_validated_spans": 2,
+        "issues_preserved": 2,
+        "mutation_attempts": 8,
+        "official_source_exact_span_value": 2
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "test-pipeline-identity-stores-diagnostics.log",
+      "train_events": 11
+    },
+    {
+      "augmented_event_sha256": [
+        "3850f83d100e9b4e5dcf826e924f8b4cc394522c9efd0f2bc6333c58df67cb78",
+        "5ded34085dc7a7b1dd82ea4756f00e097ab3e53a42684ae22e2665f89fd04ad9",
+        "f6d9d5437863a346025508bd0d3952cd04cace382f8872a5cad8bf06e938846e"
+      ],
+      "category": "NAC_IDENTITY_SECURITY",
+      "family": "cisco_ise",
+      "holdout_events": 6,
+      "hypotheses": {
+        "SYSLOG_TIMESTAMP": 4
+      },
+      "kind": "SYSLOG_TIMESTAMP",
+      "metrics": {
+        "added_spans": 3,
+        "augmented_events": 3,
+        "baseline_complete": 3,
+        "baseline_incomplete": 3,
+        "completeness_preserved": 3,
+        "events_with_expected_doc": 3,
+        "expected_timestamp_consistent": 3,
+        "independently_validated_spans": 3,
+        "issues_preserved": 3,
+        "mutation_attempts": 12,
+        "official_source_exact_span_value": 3
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "test-pipeline-identity-stores-diagnostics.log",
+      "train_events": 11
+    },
+    {
+      "augmented_event_sha256": [
+        "656efeb81d542dff4240c985c63420a6739dada3801b0020cf2af4d754de8597",
+        "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+        "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7",
+        "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+      ],
+      "category": "IDS_IPS",
+      "family": "snort",
+      "holdout_events": 4,
+      "hypotheses": {
+        "SNORT_DATE": 6
+      },
+      "kind": "SNORT_DATE",
+      "metrics": {
+        "added_spans": 4,
+        "augmented_events": 4,
+        "baseline_incomplete": 4,
+        "completeness_preserved": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent": 4,
+        "independently_validated_spans": 4,
+        "issues_preserved": 4,
+        "mutation_attempts": 16,
+        "official_source_exact_span_value": 4
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "snort_fast.log",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "5306f325a880c2c3d63fa2d2f717d1cd2ee43e62ced8f8644f49e3cc4649cfdd",
+        "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+        "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7",
+        "e168810de5c34270cede5d94700b5351ca384f64e016b1b0768885d6dc27a781"
+      ],
+      "category": "IDS_IPS",
+      "family": "snort",
+      "holdout_events": 4,
+      "hypotheses": {
+        "SNORT_DATE": 6
+      },
+      "kind": "SNORT_DATE",
+      "metrics": {
+        "added_spans": 4,
+        "augmented_events": 4,
+        "baseline_incomplete": 4,
+        "completeness_preserved": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent": 4,
+        "independently_validated_spans": 4,
+        "issues_preserved": 4,
+        "mutation_attempts": 16,
+        "official_source_exact_span_value": 4
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "snort_fast.log",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "19cb7ec940ecf7218ba75998792af4fd7d8acfb31d5c501a4feebb9fd9d6dd1d",
+        "30bd1a993ddd60a54544f566d538d83aac2082837c79124070ce1263208a9353",
+        "b416b398a4d153b4ae490bfc570e35172da987fd5accb559fd6e77c5d1fb415b",
+        "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+      ],
+      "category": "IDS_IPS",
+      "family": "snort",
+      "holdout_events": 4,
+      "hypotheses": {
+        "SNORT_DATE": 6
+      },
+      "kind": "SNORT_DATE",
+      "metrics": {
+        "added_spans": 4,
+        "augmented_events": 4,
+        "baseline_incomplete": 4,
+        "completeness_preserved": 4,
+        "events_with_expected_doc": 4,
+        "expected_timestamp_consistent": 4,
+        "independently_validated_spans": 4,
+        "issues_preserved": 4,
+        "mutation_attempts": 16,
+        "official_source_exact_span_value": 4
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "snort_fast.log",
+      "train_events": 6
+    },
+    {
+      "augmented_event_sha256": [
+        "4b5cff0f4d61f6ec1b2ec7ee2d8d03ed225fd3b6bba5317e0899e03495f7a2b0",
+        "dc9e2dde70bc8ff57484b5d6a89419f8e4f11dccc407010457276cf5b23c9759"
+      ],
+      "category": "IDS_IPS",
+      "family": "snort",
+      "holdout_events": 2,
+      "hypotheses": {
+        "SNORT_DATE": 5
+      },
+      "kind": "SNORT_DATE",
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 2,
+        "baseline_incomplete": 2,
+        "completeness_preserved": 2,
+        "events_with_expected_doc": 2,
+        "expected_timestamp_consistent": 2,
+        "independently_validated_spans": 2,
+        "issues_preserved": 2,
+        "mutation_attempts": 8,
+        "official_source_exact_span_value": 2
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "snort_full.logical",
+      "train_events": 5
+    },
+    {
+      "augmented_event_sha256": [
+        "31e5813c34d40a998af1ccdb3a5d66c7d0c1420d2b9a04452e9c85d6b43720d1",
+        "c93cfdcf91eb22aea964294aca435b6502baa0dab6c7c3e32f5e41db808ac6b2"
+      ],
+      "category": "IDS_IPS",
+      "family": "snort",
+      "holdout_events": 2,
+      "hypotheses": {
+        "SNORT_DATE": 5
+      },
+      "kind": "SNORT_DATE",
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 2,
+        "baseline_incomplete": 2,
+        "completeness_preserved": 2,
+        "events_with_expected_doc": 2,
+        "expected_timestamp_consistent": 2,
+        "independently_validated_spans": 2,
+        "issues_preserved": 2,
+        "mutation_attempts": 8,
+        "official_source_exact_span_value": 2
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "snort_full.logical",
+      "train_events": 5
+    },
+    {
+      "augmented_event_sha256": [
+        "89783cd80454a450e6d9f55eca9c098b12a6455a81df017fd2d3b429a2e8b25f",
+        "dc9e2dde70bc8ff57484b5d6a89419f8e4f11dccc407010457276cf5b23c9759"
+      ],
+      "category": "IDS_IPS",
+      "family": "snort",
+      "holdout_events": 2,
+      "hypotheses": {
+        "SNORT_DATE": 5
+      },
+      "kind": "SNORT_DATE",
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 2,
+        "baseline_incomplete": 2,
+        "completeness_preserved": 2,
+        "events_with_expected_doc": 2,
+        "expected_timestamp_consistent": 2,
+        "independently_validated_spans": 2,
+        "issues_preserved": 2,
+        "mutation_attempts": 8,
+        "official_source_exact_span_value": 2
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "snort_full.logical",
+      "train_events": 5
+    }
+  ],
+  "scope": "SECURITY_PRODUCTS_TYPED_RESIDUAL_AUGMENTATION_ONLY",
+  "source_completeness_promotion_performed": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_count": 3,
+  "stream_count": 6,
+  "unique_augmented_events": 41
+}

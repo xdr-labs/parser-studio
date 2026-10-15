@@ -1,0 +1,1208 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 85,
+    "augmented_events": 85,
+    "baseline_complete": 779,
+    "baseline_incomplete": 367,
+    "events": 1146
+  },
+  "augmentation_families": [
+    "cisco_ise",
+    "snort"
+  ],
+  "by_category": {
+    "EDR": {
+      "baseline_complete": 33,
+      "events": 33
+    },
+    "EDR_XDR": {
+      "baseline_complete": 6,
+      "events": 6
+    },
+    "EMAIL_SECURITY": {
+      "baseline_complete": 25,
+      "baseline_incomplete": 98,
+      "events": 123
+    },
+    "IDS_IPS": {
+      "added_spans": 18,
+      "augmented_events": 18,
+      "baseline_incomplete": 18,
+      "events": 18
+    },
+    "IDS_IPS_NDR": {
+      "baseline_complete": 27,
+      "events": 27
+    },
+    "NAC_IDENTITY_SECURITY": {
+      "added_spans": 67,
+      "augmented_events": 67,
+      "baseline_complete": 214,
+      "baseline_incomplete": 74,
+      "events": 288
+    },
+    "NDR": {
+      "baseline_complete": 18,
+      "baseline_incomplete": 3,
+      "events": 21
+    },
+    "NGFW": {
+      "baseline_complete": 114,
+      "baseline_incomplete": 3,
+      "events": 117
+    },
+    "NGFW_IDS_IPS": {
+      "baseline_complete": 67,
+      "baseline_incomplete": 44,
+      "events": 111
+    },
+    "NGFW_UTM": {
+      "baseline_complete": 205,
+      "baseline_incomplete": 77,
+      "events": 282
+    },
+    "NGFW_VPN": {
+      "baseline_incomplete": 42,
+      "events": 42
+    },
+    "SWG_CLOUD_FIREWALL": {
+      "baseline_complete": 9,
+      "events": 9
+    },
+    "UTM": {
+      "baseline_complete": 16,
+      "baseline_incomplete": 8,
+      "events": 24
+    },
+    "WAF": {
+      "baseline_complete": 6,
+      "events": 6
+    },
+    "WAF_NGFW": {
+      "baseline_complete": 39,
+      "events": 39
+    }
+  },
+  "by_family": {
+    "aws_waf": {
+      "categories": [
+        "WAF"
+      ],
+      "metrics": {
+        "baseline_complete": 6,
+        "events": 6
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 3
+        }
+      ],
+      "unique_events": 5
+    },
+    "checkpoint": {
+      "categories": [
+        "NGFW"
+      ],
+      "metrics": {
+        "baseline_complete": 18,
+        "baseline_incomplete": 3,
+        "events": 21
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 7,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 6,
+            "baseline_incomplete": 1,
+            "events": 7
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 14
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 7,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 6,
+            "baseline_incomplete": 1,
+            "events": 7
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 14
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 7,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 6,
+            "baseline_incomplete": 1,
+            "events": 7
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 14
+        }
+      ],
+      "unique_events": 21
+    },
+    "cisco_asa": {
+      "categories": [
+        "NGFW_VPN"
+      ],
+      "metrics": {
+        "baseline_incomplete": 42,
+        "events": 42
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 14,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_incomplete": 14,
+            "events": 14
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 26
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 14,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_incomplete": 14,
+            "events": 14
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 26
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 14,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_incomplete": 14,
+            "events": 14
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 26
+        }
+      ],
+      "unique_events": 40
+    },
+    "cisco_ise": {
+      "categories": [
+        "NAC_IDENTITY_SECURITY"
+      ],
+      "metrics": {
+        "added_spans": 67,
+        "augmented_events": 67,
+        "baseline_complete": 214,
+        "baseline_incomplete": 74,
+        "events": 288
+      },
+      "source_files": 19,
+      "splits": [
+        {
+          "augmented_event_sha256": [
+            "0e451a13d3124021ac176d7cab435e9096e7bf3a3ac4aed30e5a1e62c62c787c",
+            "1938f8aa7b3f3ac9ef613587144dce575d5b856ba2b5ba516e48e8f260682c7a",
+            "4aba7be104a625da1e2ae44fe4dc5d37deea37886ce84497127e9ebef8c0f7d2",
+            "4ec5a48eab4769019b7663e6e32b8ee3417421c29d1095e96cad1e7cdd153372",
+            "515aa19a0d1d54b4125ad3701b981dc831a59a58e4a39da6f3bc856f948aabd3",
+            "525f976e321f96e0b3a5425ed1784eab7a49b0c5bc8e915c8a388011e28cc374",
+            "5ded34085dc7a7b1dd82ea4756f00e097ab3e53a42684ae22e2665f89fd04ad9",
+            "60ef4d0521c2e001f842644c585d5aa9080745e197037391b0979b132e4c06f4",
+            "749407c9cb0ab8e125381e35909440dd8fa169c11e25e1a49d0d70045b04e660",
+            "85b0296325fcb0d93bb628bbe02acf09dc4169f881ba0381b16bd694a6bd9245",
+            "95214a18af11e4427aa36259490321f78ec531cdf340a2034a8520da077966e6",
+            "99307abf0bef58cfb71c0481a2d7146e7838d36fa0b685f56a7c16e5bcefde56",
+            "9eaa516f9796b005619bafd9a57c3f067787e30de181eb5b944c82c5592c1f3a",
+            "c2b4fa52219d2632a16d10aec46d4782a87ec5be285a53a16305a1c589306310",
+            "ca752a58755a3036075ca209de5d7fd99257a499a944f92655ae9b1a1b95635d",
+            "cb20d7eb9ec2a94f759ccab2d78f0b64f28255691607094a1c663062ee1ec151",
+            "d11df8f8fc2d64894708cdd29e475099f35def86c7251d9049bab7a12475d3db",
+            "dabc2d658657ca48b797b4c7f10282db3fcc79857a8d1eef29a6f2f0e015347a",
+            "f63a6dbf8976f490fb1c0a9c1762a46524460536e7e12bb269708e94c8b046c8",
+            "f6450dcc130c6713de41b3b822b8dceb1963a3ae7189edda9cf08b053cb8cf68"
+          ],
+          "holdout_events": 96,
+          "hypotheses": {
+            "SYSLOG_TIMESTAMP": 37
+          },
+          "metrics": {
+            "added_spans": 20,
+            "augmented_events": 20,
+            "baseline_complete": 72,
+            "baseline_incomplete": 24,
+            "events": 96
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 179
+        },
+        {
+          "augmented_event_sha256": [
+            "1938f8aa7b3f3ac9ef613587144dce575d5b856ba2b5ba516e48e8f260682c7a",
+            "1dcc5fd5553c6500f44680ca9ad3992233d160b4b3c91d3f4b01959461825dad",
+            "2618b290625ac4ce30a26f8af3e9306a3b31c9819033c89641b614a58f7f1688",
+            "290583473f7b26fbc2ffa502ab719c3a0ef5a6e428271c19929f05f81702e2d3",
+            "2c8f06e6dc000505ccabd4d6c7c8c439813839fad2c6f30ec6d3ed319054c468",
+            "319992f65c3db1d508e3ac232bdbe3cabaa271db319c76d4fd0bf6dac5cabd1c",
+            "3850f83d100e9b4e5dcf826e924f8b4cc394522c9efd0f2bc6333c58df67cb78",
+            "4ec5a48eab4769019b7663e6e32b8ee3417421c29d1095e96cad1e7cdd153372",
+            "4ffffb10f4937db97585021f6ef8a474920c417e6e825f4e19eaa7bc383b7cfb",
+            "525f976e321f96e0b3a5425ed1784eab7a49b0c5bc8e915c8a388011e28cc374",
+            "60ef4d0521c2e001f842644c585d5aa9080745e197037391b0979b132e4c06f4",
+            "8650699bbf1009a8c9174d24ba4fda7e6212912ea316f6c9f7759c998de4dad7",
+            "95214a18af11e4427aa36259490321f78ec531cdf340a2034a8520da077966e6",
+            "a97c5d34a2926b0a8dbdae24b6d91f9d006c3ed99c1939698877a2b28759652b",
+            "ae682970da99fdd0c327cff8129a37d16257717be4a995e535ee609daf6a36fa",
+            "cb20d7eb9ec2a94f759ccab2d78f0b64f28255691607094a1c663062ee1ec151",
+            "cbc57605887d2d16ecee3c9cb499add93e0bf88edeeb54eb49ca77242c701c92",
+            "d11df8f8fc2d64894708cdd29e475099f35def86c7251d9049bab7a12475d3db",
+            "d80e2905c6f9e6c9cf4f3043043f352571aa63ef7fbc192127618d9cd57e59f6",
+            "dabc2d658657ca48b797b4c7f10282db3fcc79857a8d1eef29a6f2f0e015347a",
+            "db273b318d759f8b470bccc905632f5fdb2510505eedffe43a3f7221a44c946b",
+            "f63a6dbf8976f490fb1c0a9c1762a46524460536e7e12bb269708e94c8b046c8",
+            "f6450dcc130c6713de41b3b822b8dceb1963a3ae7189edda9cf08b053cb8cf68"
+          ],
+          "holdout_events": 96,
+          "hypotheses": {
+            "SYSLOG_TIMESTAMP": 34
+          },
+          "metrics": {
+            "added_spans": 23,
+            "augmented_events": 23,
+            "baseline_complete": 71,
+            "baseline_incomplete": 25,
+            "events": 96
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 179
+        },
+        {
+          "augmented_event_sha256": [
+            "043b3a1998bbeca5ba3c91eb9b893f755ac60b4fcb7375ed4811bed9fd6808d0",
+            "1dcc5fd5553c6500f44680ca9ad3992233d160b4b3c91d3f4b01959461825dad",
+            "290583473f7b26fbc2ffa502ab719c3a0ef5a6e428271c19929f05f81702e2d3",
+            "3850f83d100e9b4e5dcf826e924f8b4cc394522c9efd0f2bc6333c58df67cb78",
+            "42c15a2993e4d6088c4ba26bb967165f581a45765bd94591127ee04e0921c609",
+            "4aba7be104a625da1e2ae44fe4dc5d37deea37886ce84497127e9ebef8c0f7d2",
+            "4c63f1e58b0f76757344632ca78211cc33e117ee1501c99252f77306a6c97dfa",
+            "4ffffb10f4937db97585021f6ef8a474920c417e6e825f4e19eaa7bc383b7cfb",
+            "515aa19a0d1d54b4125ad3701b981dc831a59a58e4a39da6f3bc856f948aabd3",
+            "5ded34085dc7a7b1dd82ea4756f00e097ab3e53a42684ae22e2665f89fd04ad9",
+            "741da46bb0db0634a830c9e93796a16137a08743924bee00c77ebcfeb3e0949c",
+            "749407c9cb0ab8e125381e35909440dd8fa169c11e25e1a49d0d70045b04e660",
+            "99307abf0bef58cfb71c0481a2d7146e7838d36fa0b685f56a7c16e5bcefde56",
+            "a97c5d34a2926b0a8dbdae24b6d91f9d006c3ed99c1939698877a2b28759652b",
+            "ae682970da99fdd0c327cff8129a37d16257717be4a995e535ee609daf6a36fa",
+            "af7761471eebbc000a0bded3c1e960aea6746d294fd1ee0050da58d099a46c37",
+            "c2b4fa52219d2632a16d10aec46d4782a87ec5be285a53a16305a1c589306310",
+            "c9a8ac63dfa8f50a95261c628e0668b4890893cbfc221c7364c51c610d4ae974",
+            "d81e783c2f292d69764b71bc578083039b2b0e4bdeb2cd56f2e3fcdc3167879a",
+            "dabc2d658657ca48b797b4c7f10282db3fcc79857a8d1eef29a6f2f0e015347a",
+            "db273b318d759f8b470bccc905632f5fdb2510505eedffe43a3f7221a44c946b",
+            "f6d9d5437863a346025508bd0d3952cd04cace382f8872a5cad8bf06e938846e",
+            "f94d74109d94b875f5ecd82ceb717ec0ccd7a937d4afdc9c710b2228be3c140d",
+            "ff86626e852fc2004dc5cc6badcc3b427f087b1cd3abe291a1346b3992cda22a"
+          ],
+          "holdout_events": 96,
+          "hypotheses": {
+            "SYSLOG_TIMESTAMP": 33
+          },
+          "metrics": {
+            "added_spans": 24,
+            "augmented_events": 24,
+            "baseline_complete": 71,
+            "baseline_incomplete": 25,
+            "events": 96
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 179
+        }
+      ],
+      "unique_events": 275
+    },
+    "cisco_secure_email": {
+      "categories": [
+        "EMAIL_SECURITY"
+      ],
+      "metrics": {
+        "baseline_complete": 25,
+        "baseline_incomplete": 98,
+        "events": 123
+      },
+      "source_files": 3,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 41,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 11,
+            "baseline_incomplete": 30,
+            "events": 41
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 77
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 41,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 6,
+            "baseline_incomplete": 35,
+            "events": 41
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 77
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 41,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 8,
+            "baseline_incomplete": 33,
+            "events": 41
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 77
+        }
+      ],
+      "unique_events": 118
+    },
+    "crowdstrike": {
+      "categories": [
+        "EDR"
+      ],
+      "metrics": {
+        "baseline_complete": 15,
+        "events": 15
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 8
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 8
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 8
+        }
+      ],
+      "unique_events": 13
+    },
+    "darktrace": {
+      "categories": [
+        "NDR"
+      ],
+      "metrics": {
+        "baseline_complete": 12,
+        "baseline_incomplete": 3,
+        "events": 15
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 4,
+            "baseline_incomplete": 1,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 8
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 4,
+            "baseline_incomplete": 1,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 8
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 4,
+            "baseline_incomplete": 1,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 8
+        }
+      ],
+      "unique_events": 13
+    },
+    "extrahop": {
+      "categories": [
+        "NDR"
+      ],
+      "metrics": {
+        "baseline_complete": 6,
+        "events": 6
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 5
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 5
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 5
+        }
+      ],
+      "unique_events": 7
+    },
+    "f5_bigip": {
+      "categories": [
+        "WAF_NGFW"
+      ],
+      "metrics": {
+        "baseline_complete": 39,
+        "events": 39
+      },
+      "source_files": 9,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 13,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 13,
+            "events": 13
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 23
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 13,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 13,
+            "events": 13
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 23
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 13,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 13,
+            "events": 13
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 23
+        }
+      ],
+      "unique_events": 36
+    },
+    "fortigate": {
+      "categories": [
+        "NGFW"
+      ],
+      "metrics": {
+        "baseline_complete": 15,
+        "events": 15
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 8
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 8
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 5,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "events": 5
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 8
+        }
+      ],
+      "unique_events": 13
+    },
+    "juniper_srx": {
+      "categories": [
+        "NGFW_IDS_IPS"
+      ],
+      "metrics": {
+        "baseline_complete": 67,
+        "baseline_incomplete": 44,
+        "events": 111
+      },
+      "source_files": 7,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 37,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 20,
+            "baseline_incomplete": 17,
+            "events": 37
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 68
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 37,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 24,
+            "baseline_incomplete": 13,
+            "events": 37
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 68
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 37,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 23,
+            "baseline_incomplete": 14,
+            "events": 37
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 68
+        }
+      ],
+      "unique_events": 105
+    },
+    "panw": {
+      "categories": [
+        "NGFW"
+      ],
+      "metrics": {
+        "baseline_complete": 81,
+        "events": 81
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 27,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 27,
+            "events": 27
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 49
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 27,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 27,
+            "events": 27
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 49
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 27,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 27,
+            "events": 27
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 49
+        }
+      ],
+      "unique_events": 76
+    },
+    "sentinel_one": {
+      "categories": [
+        "EDR"
+      ],
+      "metrics": {
+        "baseline_complete": 9,
+        "events": 9
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 5
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 5
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 5
+        }
+      ],
+      "unique_events": 8
+    },
+    "snort": {
+      "categories": [
+        "IDS_IPS"
+      ],
+      "metrics": {
+        "added_spans": 18,
+        "augmented_events": 18,
+        "baseline_incomplete": 18,
+        "events": 18
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [
+            "1add0b45ff75c245d9e238a92052ef66934c18f7ac1b3f3692ff54b8c1b7df27",
+            "37f13772826906fff224fceff01234d50cc0bb471d0f5330cea7a42caab8a2e5",
+            "4b5cff0f4d61f6ec1b2ec7ee2d8d03ed225fd3b6bba5317e0899e03495f7a2b0",
+            "656efeb81d542dff4240c985c63420a6739dada3801b0020cf2af4d754de8597",
+            "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+            "dc9e2dde70bc8ff57484b5d6a89419f8e4f11dccc407010457276cf5b23c9759"
+          ],
+          "holdout_events": 6,
+          "hypotheses": {
+            "SNORT_DATE": 11
+          },
+          "metrics": {
+            "added_spans": 6,
+            "augmented_events": 6,
+            "baseline_incomplete": 6,
+            "events": 6
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 11
+        },
+        {
+          "augmented_event_sha256": [
+            "31e5813c34d40a998af1ccdb3a5d66c7d0c1420d2b9a04452e9c85d6b43720d1",
+            "819554887c4d2a7d38882d105a5eb672dec1d1983b71212f6d2574c0717739db",
+            "c93cfdcf91eb22aea964294aca435b6502baa0dab6c7c3e32f5e41db808ac6b2",
+            "d799b8d3e69bd77f50d1c60065b3e3e2958fdd87543b17dddd69588813f296c7",
+            "dc9e2dde70bc8ff57484b5d6a89419f8e4f11dccc407010457276cf5b23c9759",
+            "e168810de5c34270cede5d94700b5351ca384f64e016b1b0768885d6dc27a781"
+          ],
+          "holdout_events": 6,
+          "hypotheses": {
+            "SNORT_DATE": 11
+          },
+          "metrics": {
+            "added_spans": 6,
+            "augmented_events": 6,
+            "baseline_incomplete": 6,
+            "events": 6
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 11
+        },
+        {
+          "augmented_event_sha256": [
+            "19cb7ec940ecf7218ba75998792af4fd7d8acfb31d5c501a4feebb9fd9d6dd1d",
+            "30bd1a993ddd60a54544f566d538d83aac2082837c79124070ce1263208a9353",
+            "89783cd80454a450e6d9f55eca9c098b12a6455a81df017fd2d3b429a2e8b25f",
+            "b416b398a4d153b4ae490bfc570e35172da987fd5accb559fd6e77c5d1fb415b",
+            "dc9e2dde70bc8ff57484b5d6a89419f8e4f11dccc407010457276cf5b23c9759",
+            "e6d68eebb61659dfb5ec5cfe6194700cb89cb3211c51828193ad7cb65759d593"
+          ],
+          "holdout_events": 6,
+          "hypotheses": {
+            "SNORT_DATE": 11
+          },
+          "metrics": {
+            "added_spans": 6,
+            "augmented_events": 6,
+            "baseline_incomplete": 6,
+            "events": 6
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 11
+        }
+      ],
+      "unique_events": 17
+    },
+    "sophos_utm": {
+      "categories": [
+        "UTM"
+      ],
+      "metrics": {
+        "baseline_complete": 16,
+        "baseline_incomplete": 8,
+        "events": 24
+      },
+      "source_files": 4,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 8,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "baseline_incomplete": 3,
+            "events": 8
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 14
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 8,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 5,
+            "baseline_incomplete": 3,
+            "events": 8
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 14
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 8,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 6,
+            "baseline_incomplete": 2,
+            "events": 8
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 14
+        }
+      ],
+      "unique_events": 22
+    },
+    "sophos_xg": {
+      "categories": [
+        "NGFW_UTM"
+      ],
+      "metrics": {
+        "baseline_complete": 205,
+        "baseline_incomplete": 77,
+        "events": 282
+      },
+      "source_files": 17,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 94,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 70,
+            "baseline_incomplete": 24,
+            "events": 94
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 176
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 94,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 73,
+            "baseline_incomplete": 21,
+            "events": 94
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 176
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 94,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 62,
+            "baseline_incomplete": 32,
+            "events": 94
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 176
+        }
+      ],
+      "unique_events": 270
+    },
+    "suricata": {
+      "categories": [
+        "IDS_IPS_NDR"
+      ],
+      "metrics": {
+        "baseline_complete": 27,
+        "events": 27
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 9,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 9,
+            "events": 9
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 16
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 9,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 9,
+            "events": 9
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 16
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 9,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 9,
+            "events": 9
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 16
+        }
+      ],
+      "unique_events": 25
+    },
+    "trellix_edr": {
+      "categories": [
+        "EDR"
+      ],
+      "metrics": {
+        "events_too_small_for_learning": 1
+      },
+      "source_files": 1,
+      "splits": [],
+      "unique_events": 1
+    },
+    "trellix_epo": {
+      "categories": [
+        "EDR"
+      ],
+      "metrics": {
+        "baseline_complete": 9,
+        "events": 9
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 3
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 3
+        }
+      ],
+      "unique_events": 3
+    },
+    "trend_vision": {
+      "categories": [
+        "EDR_XDR"
+      ],
+      "metrics": {
+        "baseline_complete": 6,
+        "events": 6
+      },
+      "source_files": 1,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 5
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 5
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 2,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 2,
+            "events": 2
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 5
+        }
+      ],
+      "unique_events": 7
+    },
+    "zscaler_zia": {
+      "categories": [
+        "SWG_CLOUD_FIREWALL"
+      ],
+      "metrics": {
+        "baseline_complete": 9,
+        "events": 9
+      },
+      "source_files": 2,
+      "splits": [
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-a",
+          "train_events": 6
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-b",
+          "train_events": 6
+        },
+        {
+          "augmented_event_sha256": [],
+          "holdout_events": 3,
+          "hypotheses": {},
+          "metrics": {
+            "baseline_complete": 3,
+            "events": 3
+          },
+          "seed": "structural-hypothesis-security-ms-c",
+          "train_events": 6
+        }
+      ],
+      "unique_events": 9
+    }
+  },
+  "categories": [
+    "EDR",
+    "EDR_XDR",
+    "EMAIL_SECURITY",
+    "IDS_IPS",
+    "IDS_IPS_NDR",
+    "NAC_IDENTITY_SECURITY",
+    "NDR",
+    "NGFW",
+    "NGFW_IDS_IPS",
+    "NGFW_UTM",
+    "NGFW_VPN",
+    "SWG_CLOUD_FIREWALL",
+    "UTM",
+    "WAF",
+    "WAF_NGFW"
+  ],
+  "contract": "parser-studio.poc.typed-residual-security-controls.v1",
+  "family_count": 21,
+  "gates": {
+    "baseline_issues_preserved": true,
+    "baseline_status_preserved": true,
+    "no_unvalidated_family_augmentation": true,
+    "raw_preserved": true
+  },
+  "learner_vendor_identity_used": false,
+  "limitations": [
+    "Families with fewer than three unique events are recorded but cannot train a batch hypothesis.",
+    "This control benchmark does not score source correctness; exact ISE/Snort span correctness is a separate pinned-reference gate.",
+    "The typed learner currently covers only strict SYSLOG_TIMESTAMP and SNORT_DATE shapes."
+  ],
+  "raw_values_published": false,
+  "reference_validated_augmentation_families": [
+    "cisco_ise",
+    "snort"
+  ],
+  "scope": "SECURITY_PRODUCTS_ONLY_FAMILY_LEVEL",
+  "source_completeness_promotion_performed": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_count": 3,
+  "unique_augmented_events": 58,
+  "unvalidated_augmentation_families": []
+}

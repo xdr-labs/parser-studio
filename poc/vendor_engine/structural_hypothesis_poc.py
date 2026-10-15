@@ -1187,3 +1187,581 @@ def delete_required_rgram_literal(
     end = region_start + target.end
     mutated = raw[:start] + raw[end:]
     return mutated if mutated != raw else None
+
+
+# ---------------------------------------------------------------------------
+# Baseline-masked residual R-gram hypotheses.
+# ---------------------------------------------------------------------------
+
+MASKED_BASE = "<BASE>"
+MASKED_CONTEXT_VAR = "<CTX>"
+MASKED_SPECIAL = {RGRAM_VAR, MASKED_BASE, MASKED_CONTEXT_VAR}
+
+
+@dataclass(frozen=True)
+class MaskedResidualRgramHypothesis:
+    signature: tuple[str, ...]
+    training_support: int
+    literal_tokens: int
+    variable_slots: int
+    baseline_slots: int
+
+
+def _byte_to_char_boundaries(raw: str) -> dict[int, int]:
+    result = {0: 0}
+    byte_offset = 0
+    for index, char in enumerate(raw, 1):
+        byte_offset += len(char.encode("utf8"))
+        result[byte_offset] = index
+    return result
+
+
+def _merged_baseline_char_ranges(event: SourceEvent) -> list[tuple[int, int]] | None:
+    boundaries = _byte_to_char_boundaries(event.raw)
+    ranges: list[tuple[int, int]] = []
+    for span in event.value_spans:
+        if span.start_byte == span.end_byte:
+            continue
+        start = boundaries.get(span.start_byte)
+        end = boundaries.get(span.end_byte)
+        if start is None or end is None:
+            return None
+        ranges.append((start, end))
+    ranges.sort()
+    merged: list[list[int]] = []
+    for start, end in ranges:
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            merged[-1][1] = max(merged[-1][1], end)
+    return [(start, end) for start, end in merged]
+
+
+def _range_inside(
+    start: int, end: int, ranges: list[tuple[int, int]]
+) -> bool:
+    return any(a <= start and end <= b for a, b in ranges)
+
+
+def _masked_gap_tokens(
+    raw: str,
+    start: int,
+    end: int,
+    residuals: list[tuple[int, int]],
+) -> list[RgramToken] | None:
+    out: list[RgramToken] = []
+    for match in RGRAM_TOKEN.finditer(raw, start, end):
+        dynamic = _rgram_dynamic_span(raw, match)
+        if dynamic is None:
+            out.append(RgramToken(match.group(0), *match.span()))
+            continue
+        value_start, value_end = dynamic
+        if _range_inside(value_start, value_end, residuals):
+            out.append(RgramToken(RGRAM_VAR, value_start, value_end))
+            continue
+        if not any(
+            max(value_start, a) < min(value_end, b)
+            for a, b in residuals
+        ):
+            out.append(
+                RgramToken(MASKED_CONTEXT_VAR, value_start, value_end)
+            )
+            continue
+        return None
+    return out
+
+
+def _masked_rgram_tokens(event: SourceEvent) -> list[RgramToken] | None:
+    if event.status == "SOURCE_PARSED":
+        return None
+    if any(
+        fragment in issue
+        for issue in event.issues
+        for fragment in RGRAM_HARD_ISSUE_FRAGMENTS
+    ):
+        return None
+    raw = event.raw
+    if not raw or len(raw) > RGRAM_MAX_REGION_CHARS or "\x00" in raw:
+        return None
+    baseline_ranges = _merged_baseline_char_ranges(event)
+    if baseline_ranges is None:
+        return None
+    residuals = list(event.unparsed)
+    if not residuals:
+        return None
+
+    out: list[RgramToken] = []
+    cursor = 0
+    for start, end in baseline_ranges:
+        if cursor < start:
+            gap = _masked_gap_tokens(raw, cursor, start, residuals)
+            if gap is None:
+                return None
+            out.extend(gap)
+        out.append(RgramToken(MASKED_BASE, start, end))
+        cursor = max(cursor, end)
+    if cursor < len(raw):
+        gap = _masked_gap_tokens(raw, cursor, len(raw), residuals)
+        if gap is None:
+            return None
+        out.extend(gap)
+
+    if not out or len(out) > RGRAM_MAX_TOKENS:
+        return None
+    if not any(token.signature == RGRAM_VAR for token in out):
+        return None
+    if not any(token.signature == MASKED_BASE for token in out):
+        return None
+    return out
+
+
+def _masked_rgram_signature(
+    event: SourceEvent,
+) -> tuple[tuple[str, ...], list[tuple[int, int]]] | None:
+    tokens = _masked_rgram_tokens(event)
+    if tokens is None:
+        return None
+    signature = tuple(token.signature for token in tokens)
+    variables = [
+        (token.start, token.end)
+        for token in tokens
+        if token.signature == RGRAM_VAR
+    ]
+    return signature, variables
+
+
+def learn_masked_residual_rgram_hypotheses(
+    training_events: Iterable[SourceEvent],
+    *,
+    minimum_support: int = 3,
+) -> dict[tuple[str, ...], MaskedResidualRgramHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("MASKED_RGRAM_MINIMUM_SUPPORT_TOO_LOW")
+    counts: Counter[tuple[str, ...]] = Counter()
+    for event in list(training_events)[:MAX_TRAIN]:
+        observed = _masked_rgram_signature(event)
+        if observed is not None:
+            counts[observed[0]] += 1
+
+    result: dict[tuple[str, ...], MaskedResidualRgramHypothesis] = {}
+    for signature, support in counts.items():
+        if support < minimum_support:
+            continue
+        variable_slots = sum(token == RGRAM_VAR for token in signature)
+        baseline_slots = sum(token == MASKED_BASE for token in signature)
+        literal_tokens = sum(token not in MASKED_SPECIAL for token in signature)
+        if (
+            variable_slots < 1
+            or variable_slots > 32
+            or baseline_slots < 1
+            or literal_tokens < 5
+        ):
+            continue
+        result[signature] = MaskedResidualRgramHypothesis(
+            signature=signature,
+            training_support=support,
+            literal_tokens=literal_tokens,
+            variable_slots=variable_slots,
+            baseline_slots=baseline_slots,
+        )
+    return result
+
+
+def _masked_compound_value_ranges(
+    event: SourceEvent,
+) -> list[tuple[int, int]] | None:
+    """Group adjacent dynamic tokens joined only by punctuation.
+
+    A source field such as 09/04-21:42:42.860730 is one value, not five
+    unrelated numeric fields. Whitespace is a hard grouping boundary, so an
+    RFC3164-like 26 02:16:17 remains 26 plus 02:16:17 rather than being
+    merged into an invented field.
+    """
+    tokens = _masked_rgram_tokens(event)
+    if tokens is None:
+        return None
+    raw = event.raw
+    groups: list[tuple[int, int]] = []
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token.signature != RGRAM_VAR:
+            index += 1
+            continue
+        start = token.start
+        end = token.end
+        cursor = index + 1
+        while cursor + 1 < len(tokens):
+            literal = tokens[cursor]
+            next_token = tokens[cursor + 1]
+            if (
+                literal.signature in MASKED_SPECIAL
+                or next_token.signature != RGRAM_VAR
+            ):
+                break
+            if any(
+                char.isalnum() or char == "_"
+                for char in literal.signature
+            ):
+                break
+            if any(char.isspace() for char in raw[end:literal.start]):
+                break
+            if any(
+                char.isspace()
+                for char in raw[literal.end:next_token.start]
+            ):
+                break
+            end = next_token.end
+            cursor += 2
+        groups.append((start, end))
+        index = cursor if cursor > index + 1 else index + 1
+    return groups
+
+
+def parse_with_masked_residual_rgram(
+    raw: str,
+    baseline: SourceEvent,
+    hypotheses: dict[tuple[str, ...], MaskedResidualRgramHypothesis],
+) -> SourceEvent | None:
+    if raw != baseline.raw or baseline.status == "SOURCE_PARSED":
+        return None
+    observed = _masked_rgram_signature(baseline)
+    if observed is None:
+        return None
+    signature, _variable_ranges = observed
+    if signature not in hypotheses:
+        return None
+    grouped_ranges = _masked_compound_value_ranges(baseline)
+    if not grouped_ranges:
+        return None
+
+    residuals = list(baseline.unparsed)
+    fields: list[str] = []
+    spans: list[ValueSpan] = []
+    for start, end in grouped_ranges:
+        if not _range_inside(start, end, residuals):
+            return None
+        if start >= end:
+            continue
+        value = raw[start:end]
+        index = len(fields)
+        fields.append(value)
+        spans.append(
+            ValueSpan(
+                f"masked_rgram.slot_{index}",
+                len(raw[:start].encode("utf8")),
+                len(raw[:end].encode("utf8")),
+                ("masked_rgram", "slots", index),
+            )
+        )
+    if not spans:
+        return None
+
+    event = SourceEvent(
+        raw, syntax="STRUCTURAL_HYPOTHESIS+MASKED_RESIDUAL_RGRAM"
+    )
+    event.vendor_fields = {"masked_rgram": {"slots": fields}}
+    event.value_spans = spans
+    event.primitive_fields = len(spans)
+    event.covered = [(0, len(raw))]
+    assert_source_accounting(event)
+    return event
+
+
+def delete_required_masked_rgram_literal(
+    raw: str,
+    baseline: SourceEvent,
+    hypotheses: dict[tuple[str, ...], MaskedResidualRgramHypothesis],
+) -> str | None:
+    tokens = _masked_rgram_tokens(baseline)
+    if tokens is None:
+        return None
+    signature = tuple(token.signature for token in tokens)
+    if signature not in hypotheses:
+        return None
+    literals = [
+        token for token in tokens
+        if token.signature not in MASKED_SPECIAL
+    ]
+    if len(literals) < 5:
+        return None
+    target = literals[len(literals) // 2]
+    mutated = raw[:target.start] + raw[target.end:]
+    return mutated if mutated != raw else None
+
+
+def augment_residual_hypothesis(
+    baseline: SourceEvent, candidate: SourceEvent | None
+) -> SourceEvent | None:
+    """Add candidate values wholly inside baseline residual without certifying completeness.
+
+    Unlike merge_residual_hypothesis(), this path intentionally keeps the
+    baseline covered/unparsed/issues contract unchanged.  It is therefore a
+    recall-only augmentation for incomplete events: accepted source spans grow,
+    but PARTIAL/RAW_ONLY cannot become SOURCE_PARSED merely because a learned
+    grammar proposed additional values.
+    """
+    if candidate is None or baseline.status == "SOURCE_PARSED":
+        return None
+    if baseline.raw != candidate.raw:
+        return None
+    hard_issue_fragments = (
+        "SIZE_OR_NUL",
+        "UNCLOSED",
+        "TRUNCATED",
+        "BYTE_LIMIT",
+        "FIELD_LIMIT",
+        "DEPTH_LIMIT",
+        "INVALID",
+    )
+    if any(
+        fragment in issue
+        for issue in baseline.issues
+        for fragment in hard_issue_fragments
+    ):
+        return None
+    assert_source_accounting(baseline)
+    assert_source_accounting(candidate)
+
+    baseline_ranges = {
+        (span.start_byte, span.end_byte)
+        for span in baseline.value_spans
+    }
+    residual_ranges = _unparsed_byte_ranges(baseline)
+    additions: list[ValueSpan] = []
+    seen = set(baseline_ranges)
+    for span in candidate.value_spans:
+        key = (span.start_byte, span.end_byte)
+        if span.start_byte == span.end_byte or key in seen:
+            continue
+        if not any(
+            start <= span.start_byte and span.end_byte <= end
+            for start, end in residual_ranges
+        ):
+            continue
+        additions.append(span)
+        seen.add(key)
+    if not additions:
+        return None
+
+    from copy import deepcopy
+
+    result = deepcopy(baseline)
+    raw_bytes = baseline.raw.encode("utf8")
+    fields = result.vendor_fields.setdefault(
+        "hypothesis_residual_augmented", {}
+    )
+    replacement_spans: list[ValueSpan] = []
+    for index, span in enumerate(additions):
+        key = f"value_{index}"
+        fields[key] = raw_bytes[span.start_byte:span.end_byte].decode("utf8")
+        replacement_spans.append(
+            ValueSpan(
+                f"hypothesis_residual_augmented.{key}",
+                span.start_byte,
+                span.end_byte,
+                ("hypothesis_residual_augmented", key),
+            )
+        )
+    result.value_spans.extend(replacement_spans)
+    result.value_spans.sort(
+        key=lambda item: (item.start_byte, item.end_byte, item.path)
+    )
+    result.primitive_fields = len(result.value_spans)
+    result.syntax = baseline.syntax + "+STRUCTURAL_HYPOTHESIS_AUGMENTED"
+    # Deliberately preserve covered/unparsed/issues from baseline.
+    assert_source_accounting(result)
+    if result.status != baseline.status:
+        raise AssertionError("HYPOTHESIS_AUGMENTATION_CHANGED_COMPLETENESS")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Cross-event typed residual hypotheses.
+# ---------------------------------------------------------------------------
+
+TYPED_MONTHS = {
+    "Jan": 31,
+    "Feb": 29,
+    "Mar": 31,
+    "Apr": 30,
+    "May": 31,
+    "Jun": 30,
+    "Jul": 31,
+    "Aug": 31,
+    "Sep": 30,
+    "Oct": 31,
+    "Nov": 30,
+    "Dec": 31,
+}
+TYPED_SNORT_DATE = re.compile(
+    r"(?<![0-9A-Za-z])"
+    r"(?P<month>\d{1,2})/(?P<day>\d{1,2})"
+    r"(?:/(?P<year>\d{2,4}))?-"
+    r"(?P<hour>\d{1,2}):(?P<minute>\d{2}):"
+    r"(?P<second>\d{2}(?:\.\d+)?)"
+    r"(?![0-9A-Za-z])"
+)
+TYPED_SYSLOG_TIMESTAMP = re.compile(
+    r"(?<![A-Za-z])"
+    r"(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
+    r"[ ]+(?P<day>\d{1,2}) "
+    r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
+    r"(?![0-9])"
+)
+
+
+@dataclass(frozen=True)
+class TypedResidualHypothesis:
+    kind: str
+    training_support: int
+
+
+@dataclass(frozen=True)
+class TypedResidualMatch:
+    kind: str
+    start: int
+    end: int
+
+
+def _valid_hms(hour: str, minute: str, second: str) -> bool:
+    try:
+        h = int(hour)
+        m = int(minute)
+        s = int(second.split(".", 1)[0])
+    except ValueError:
+        return False
+    return 0 <= h <= 23 and 0 <= m <= 59 and 0 <= s <= 59
+
+
+def _typed_residual_matches(event: SourceEvent) -> list[TypedResidualMatch]:
+    if event.status == "SOURCE_PARSED":
+        return []
+    if any(
+        fragment in issue
+        for issue in event.issues
+        for fragment in RGRAM_HARD_ISSUE_FRAGMENTS
+    ):
+        return []
+    residuals = list(event.unparsed)
+    if not residuals:
+        return []
+    raw = event.raw
+    out: list[TypedResidualMatch] = []
+
+    for match in TYPED_SNORT_DATE.finditer(raw):
+        try:
+            month = int(match.group("month"))
+            day = int(match.group("day"))
+        except ValueError:
+            continue
+        if (
+            not 1 <= month <= 12
+            or not 1 <= day <= 31
+            or not _valid_hms(
+                match.group("hour"),
+                match.group("minute"),
+                match.group("second"),
+            )
+        ):
+            continue
+        if _range_inside(match.start(), match.end(), residuals):
+            out.append(
+                TypedResidualMatch(
+                    "SNORT_DATE", match.start(), match.end()
+                )
+            )
+
+    for match in TYPED_SYSLOG_TIMESTAMP.finditer(raw):
+        try:
+            day = int(match.group("day"))
+        except ValueError:
+            continue
+        if (
+            not 1 <= day <= TYPED_MONTHS[match.group("month")]
+            or not _valid_hms(
+                match.group("hour"),
+                match.group("minute"),
+                match.group("second"),
+            )
+        ):
+            continue
+        if _range_inside(match.start(), match.end(), residuals):
+            out.append(
+                TypedResidualMatch(
+                    "SYSLOG_TIMESTAMP", match.start(), match.end()
+                )
+            )
+
+    out.sort(key=lambda item: (item.start, item.end, item.kind))
+    for left, right in zip(out, out[1:]):
+        if left.start < right.end and right.start < left.end:
+            # Two typed interpretations of the same bytes are ambiguous.
+            return []
+    return out
+
+
+def learn_typed_residual_hypotheses(
+    training_events: Iterable[SourceEvent],
+    *,
+    minimum_support: int = 3,
+) -> dict[str, TypedResidualHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("TYPED_RESIDUAL_MINIMUM_SUPPORT_TOO_LOW")
+    counts: Counter[str] = Counter()
+    for event in list(training_events)[:MAX_TRAIN]:
+        matches = _typed_residual_matches(event)
+        per_kind: Counter[str] = Counter(match.kind for match in matches)
+        for kind, count in per_kind.items():
+            if count == 1:
+                counts[kind] += 1
+    return {
+        kind: TypedResidualHypothesis(kind, support)
+        for kind, support in counts.items()
+        if support >= minimum_support
+    }
+
+
+def parse_with_typed_residual_hypotheses(
+    raw: str,
+    baseline: SourceEvent,
+    hypotheses: dict[str, TypedResidualHypothesis],
+) -> SourceEvent | None:
+    if raw != baseline.raw or baseline.status == "SOURCE_PARSED":
+        return None
+    matches = [
+        match for match in _typed_residual_matches(baseline)
+        if match.kind in hypotheses
+    ]
+    if not matches:
+        return None
+    per_kind: Counter[str] = Counter(match.kind for match in matches)
+    if any(count != 1 for count in per_kind.values()):
+        return None
+
+    fields: dict[str, str] = {}
+    spans: list[ValueSpan] = []
+    for match in matches:
+        key = match.kind.lower()
+        if key in fields:
+            return None
+        value = raw[match.start:match.end]
+        fields[key] = value
+        spans.append(
+            ValueSpan(
+                f"typed_residual.{key}",
+                len(raw[:match.start].encode("utf8")),
+                len(raw[:match.end].encode("utf8")),
+                ("typed_residual", key),
+            )
+        )
+
+    event = SourceEvent(
+        raw, syntax="STRUCTURAL_HYPOTHESIS+TYPED_RESIDUAL"
+    )
+    event.vendor_fields = {"typed_residual": fields}
+    event.value_spans = spans
+    event.primitive_fields = len(spans)
+    event.covered = [(0, len(raw))]
+    assert_source_accounting(event)
+    return event

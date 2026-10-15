@@ -1,0 +1,80 @@
+{
+  "aggregate_metrics": {
+    "baseline_incomplete": 18
+  },
+  "contract": "parser-studio.poc.masked-rgram-snort-framing-audit.v1",
+  "corrected_conclusion": "Masked residual R-gram yields no qualified hypothesis on Snort Fast or correctly framed Snort Full in these three splits. Earlier physical-line gains are invalid and superseded.",
+  "elastic_full_expected_blob_sha": "f1d170a48f4a8c33e73b130d5a2acf48e0dd0a4b",
+  "elastic_full_multiline_config_blob_sha": "d6f314c62a78d34a051dc61d0e84289a0f7c5d4b",
+  "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "full_logical_events": 7,
+  "full_logical_events_matching_official_expected": 7,
+  "full_physical_lines": 41,
+  "multiline_first_line_pattern": "^[**]",
+  "raw_values_published": false,
+  "results": [
+    {
+      "holdout_events": 4,
+      "hypothesis_count": 0,
+      "metrics": {
+        "baseline_incomplete": 4
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "snort_fast",
+      "train_events": 6
+    },
+    {
+      "holdout_events": 4,
+      "hypothesis_count": 0,
+      "metrics": {
+        "baseline_incomplete": 4
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "snort_fast",
+      "train_events": 6
+    },
+    {
+      "holdout_events": 4,
+      "hypothesis_count": 0,
+      "metrics": {
+        "baseline_incomplete": 4
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "snort_fast",
+      "train_events": 6
+    },
+    {
+      "holdout_events": 2,
+      "hypothesis_count": 0,
+      "metrics": {
+        "baseline_incomplete": 2
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "stream": "snort_full_logical",
+      "train_events": 5
+    },
+    {
+      "holdout_events": 2,
+      "hypothesis_count": 0,
+      "metrics": {
+        "baseline_incomplete": 2
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "stream": "snort_full_logical",
+      "train_events": 5
+    },
+    {
+      "holdout_events": 2,
+      "hypothesis_count": 0,
+      "metrics": {
+        "baseline_incomplete": 2
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "stream": "snort_full_logical",
+      "train_events": 5
+    }
+  ],
+  "scope": "SNORT_IDS_IPS_NEGATIVE_EVIDENCE",
+  "source_completeness_promotion_performed": false,
+  "status": "REJECTED_PHYSICAL_LINE_EVIDENCE"
+}
