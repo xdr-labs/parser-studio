@@ -308,18 +308,41 @@ def parse_quoted_kv(result:ParseResult, begin:int) -> dict[str,tuple[str,int,int
 def parse_csv_spans(result:ParseResult,begin:int) -> list[tuple[str,int,int]]:
     # csv.reader provides validation and transformations; spans are scanned
     # independently and must agree in count and actual decoded content.
+    #
+    # Some security exporters emit a space after the delimiter before a
+    # structurally quoted value:  a, "b,c",d.  Python's strict default reader
+    # treats that quote as literal data and silently splits b,c into two
+    # columns.  Only adopt skipinitialspace when it produces strictly fewer
+    # columns, which is evidence that an otherwise quoted delimiter was being
+    # misread.  Ordinary CSV keeps the existing strict semantics.
     s=result.raw[begin:]
     if "\r" in s or "\n" in s:
         raise ValueError("CSV_EVENT_MULTILINE_UNSUPPORTED")
     try:
-        values=next(csv.reader([s],strict=True))
+        strict_values=next(csv.reader([s],strict=True))
     except csv.Error as e:
         raise ValueError("CSV_GRAMMAR_INVALID") from e
+    values=strict_values
+    edge_space_mode=False
+    if re.search(r',[ ]+"',s):
+        try:
+            spaced_values=next(csv.reader(
+                [s],strict=True,skipinitialspace=True,
+            ))
+        except csv.Error:
+            spaced_values=strict_values
+        if len(spaced_values)<len(strict_values):
+            values=spaced_values
+            edge_space_mode=True
+
     parts=[]
     pos=begin
     for value in values:
         if pos>len(result.raw):raise ValueError("CSV_SPAN_MISMATCH")
         start=pos
+        if edge_space_mode:
+            while result.raw[pos:pos+1]==' ':
+                pos+=1
         if result.raw[pos:pos+1]=='"':
             pos+=1
             chars=[]

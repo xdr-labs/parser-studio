@@ -49,6 +49,23 @@ class SourceSyntaxTests(unittest.TestCase):
         self.assertEqual(0,event.residual_bytes)
         assert_source_accounting(event)
 
+    def test_csv_field_edge_space_before_quoted_delimiter_value_is_structural(self):
+        raw=('"2026-10-15 10:11:12","user", "Group,Site,Network", '
+             '"10.10.1.100","81.2.69.144","Allowed","1 (A)", '
+             '"NOERROR","example.test", "Chat,Photo Sharing,Allow List"')
+        event=parse_source(raw)
+        self.assertEqual("CSV_UNLABELED_CANDIDATE",event.syntax)
+        self.assertEqual("PARTIAL",event.status)
+        self.assertEqual(10,event.primitive_fields)
+        self.assertEqual("Group,Site,Network",event.vendor_fields["column_2"])
+        self.assertEqual("10.10.1.100",event.vendor_fields["column_3"])
+        self.assertEqual("Chat,Photo Sharing,Allow List",event.vendor_fields["column_9"])
+        self.assertEqual(10,len(event.value_spans))
+        self.assertEqual("Group,Site,Network",raw.encode()[
+            event.value_spans[2].start_byte:event.value_spans[2].end_byte
+        ].decode())
+        assert_source_accounting(event)
+
     def test_headerless_csv_field_identity_is_only_positional(self):
         event=parse_source("a,b,")
         self.assertEqual("CSV_UNLABELED_CANDIDATE",event.syntax)
