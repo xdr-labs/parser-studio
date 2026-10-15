@@ -45,10 +45,11 @@ test("Generic Structural V8 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.deepEqual(sw.generic.prefix_tokens,["Prefix","words."]);
   assert.equal(sw.generic.fields.ID,"5");
 
-  const checkpoint='<134>1 2020-03-30T07:20:35Z gw CheckPoint 8363 - [flags:"1"; sys_message::"risk"]';
+  const checkpoint='<134>1 2020-03-30T07:20:35Z gw CheckPoint 8363 - [flags:"1"; sys_message::"risk"]  ';
   const cp=runRuby("parserstudio_generic_structural",checkpoint) as any;
   assert.equal(cp.body.flags,"1");
   assert.equal(cp.body["sys_message:"],"risk");
+  assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
 test("Generic Structural V8 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{

@@ -190,7 +190,7 @@ def parserstudio_generic_bracket_colon_kv(text)
   return nil unless values.each_with_index.all? { |value, index|
     value.bytesize <= limits[index] && value.match?(/\A[!-~]+\z/)
   }
-  body_text = text[match.end(0)..-1].to_s
+  body_text = text[match.end(0)..-1].to_s.sub(/[ \t]+\z/, '')
   return nil unless body_text.start_with?('[') && body_text.end_with?(']')
   body = {}
   pos = 1
