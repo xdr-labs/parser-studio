@@ -113,6 +113,10 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     const zoned=extractGenericStructural(raw.replace('2020-03-30T07:20:35','2020-03-30T07:20:35Z'));
     expect(zoned.errors).toEqual([]);
     expect((zoned.fields.syslog as Record<string,unknown>).timestamp).toBe('2020-03-30T07:20:35Z');
+    const trailing=extractGenericStructural(raw+'  ');
+    expect(trailing.errors).toEqual([]);
+    expect((trailing.fields.body as Record<string,unknown>).action).toBe('Accept');
+    expect(extractGenericStructural(raw+' unexpected')).toMatchObject({fields:{}});
     expect(extractGenericStructural(raw.replace('2020-03-30T07:20:35','2020-13-30T07:20:35')).fields).toEqual({});
   });
 

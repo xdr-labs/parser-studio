@@ -73,7 +73,7 @@ function validUnzonedTimestamp(value:string):boolean{
 }
 
 function bracketColonKv(raw:string):Record<string,unknown>|null{
-  const match=raw.match(/^<(\d{1,3})>(1) (\S+) ([!-~]{1,255}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[.*\])$/);
+  const match=raw.match(/^<(\d{1,3})>(1) (\S+) ([!-~]{1,255}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[.*\])[ \t]*$/);
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||
