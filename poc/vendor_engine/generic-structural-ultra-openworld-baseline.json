@@ -1,0 +1,3136 @@
+{
+  "contract": "parser-studio.poc.ultra-openworld-baseline.v1",
+  "corpus_contract": "parser-studio.poc.generic-structural-ultra-openworld-corpus.v1",
+  "exceptions": {},
+  "failure_clusters": [
+    {
+      "cluster": "ASA_BODY|EVENT_CODE+IP2",
+      "events": 368,
+      "families": {
+        "cisco_asa": 313,
+        "cisco_ftd": 55
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+QUOTED",
+      "events": 297,
+      "families": {
+        "panw": 1,
+        "watchguard_firebox": 295,
+        "zscaler_zia": 1
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "PRI_BODY|PRI",
+      "events": 192,
+      "families": {
+        "cisco_aironet": 93,
+        "cisco_asa": 14,
+        "cisco_ftd": 1,
+        "cisco_ios": 55,
+        "cisco_nexus": 28,
+        "juniper_srx": 1
+      },
+      "family_count": 6
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+WIDE_CSV+IP2+QUOTED",
+      "events": 112,
+      "families": {
+        "panw": 112
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|PRI+WIDE_CSV+QUOTED",
+      "events": 111,
+      "families": {
+        "cyberarkpas": 111
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|OTHER",
+      "events": 109,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_ftd": 2,
+        "cisco_nexus": 5,
+        "crowdstrike": 1,
+        "eset_protect": 3,
+        "forescout": 7,
+        "juniper_netscreen": 82,
+        "sophos": 8
+      },
+      "family_count": 8
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+WIDE_CSV+IP2",
+      "events": 105,
+      "families": {
+        "panw": 105
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+BSDISH",
+      "events": 87,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_nexus": 3,
+        "cisco_secure_email_gateway": 83
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE+IP2",
+      "events": 79,
+      "families": {
+        "cisco_asa": 40,
+        "cisco_ftd": 39
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE",
+      "events": 61,
+      "families": {
+        "cisco_asa": 51,
+        "cisco_ftd": 10
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+WIDE_CSV+IP2+QUOTED",
+      "events": 59,
+      "families": {
+        "cyberarkpas": 59
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2",
+      "events": 58,
+      "families": {
+        "cisco_asa": 57,
+        "cisco_ftd": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH",
+      "events": 56,
+      "families": {
+        "cisco_asa": 3,
+        "juniper_junos": 53
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH",
+      "events": 52,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_ios": 5,
+        "cisco_ise": 16,
+        "cisco_nexus": 30
+      },
+      "family_count": 4
+    },
+    {
+      "cluster": "ASA_BODY|EVENT_CODE",
+      "events": 48,
+      "families": {
+        "cisco_asa": 45,
+        "cisco_ftd": 3
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+WIDE_CSV",
+      "events": 47,
+      "families": {
+        "panw": 47
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+BSDISH+QUOTED",
+      "events": 38,
+      "families": {
+        "cisco_secure_email_gateway": 38
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH",
+      "events": 34,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ios": 6,
+        "juniper_junos": 26
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "SIZE_OR_NUL|PRI",
+      "events": 33,
+      "families": {
+        "cisco_ftd": 33
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+IP2+QUOTED+LABEL_KV",
+      "events": 31,
+      "families": {
+        "watchguard_firebox": 31
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+IP2",
+      "events": 29,
+      "families": {
+        "cisco_aironet": 15,
+        "cisco_ios": 12,
+        "cisco_nexus": 2
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "ASA_BODY|PRI+BSDISH+EVENT_CODE+IP2",
+      "events": 27,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ftd": 25
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+IP2+QUOTED",
+      "events": 27,
+      "families": {
+        "watchguard_firebox": 27
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|EVENT_CODE+IP2+QUOTED",
+      "events": 26,
+      "families": {
+        "cisco_asa": 20,
+        "cisco_ftd": 6
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "OTHER|PRI+KV5+IP2+QUOTED",
+      "events": 26,
+      "families": {
+        "fortinet_fortiproxy": 1,
+        "juniper_srx": 6,
+        "sophos": 19
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+LABEL_KV",
+      "events": 25,
+      "families": {
+        "cisco_ise": 25
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|KV5+IP2+QUOTED",
+      "events": 25,
+      "families": {
+        "sophos": 25
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE",
+      "events": 23,
+      "families": {
+        "cisco_asa": 23
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+IP2",
+      "events": 23,
+      "families": {
+        "cisco_ftd": 1,
+        "cisco_ios": 21,
+        "juniper_junos": 1
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "OTHER|PRI+WIDE_CSV+IP2+QUOTED",
+      "events": 23,
+      "families": {
+        "cyberarkpas": 23
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+WIDE_CSV+QUOTED",
+      "events": 21,
+      "families": {
+        "cyberarkpas": 21
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+QUOTED+LABEL_KV",
+      "events": 17,
+      "families": {
+        "cisco_ise": 5,
+        "watchguard_firebox": 12
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI",
+      "events": 17,
+      "families": {
+        "cisco_meraki": 17
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|IP2",
+      "events": 13,
+      "families": {
+        "cisco_asa": 4,
+        "cisco_ftd": 2,
+        "juniper_netscreen": 7
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "ASA_BODY|BSDISH+EVENT_CODE+IP2",
+      "events": 12,
+      "families": {
+        "cisco_asa": 12
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|OTHER",
+      "events": 12,
+      "families": {
+        "cisco_ftd": 1,
+        "juniper_netscreen": 2,
+        "symantec_endpoint": 9
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "PRI_BODY|PRI+ISO_SYSLOGISH",
+      "events": 11,
+      "families": {
+        "barracuda": 9,
+        "cisco_ios": 2
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 11,
+      "families": {
+        "cisco_asa": 6,
+        "cisco_ftd": 5
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+QUOTED",
+      "events": 10,
+      "families": {
+        "cisco_aironet": 7,
+        "citrix_waf": 3
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 10,
+      "families": {
+        "cisco_asa": 7,
+        "cisco_ftd": 3
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+COMMA_KV+LABEL_KV",
+      "events": 10,
+      "families": {
+        "cisco_ise": 10
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI",
+      "events": 10,
+      "families": {
+        "citrix_waf": 1,
+        "juniper_srx": 9
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "events": 10,
+      "families": {
+        "cyberarkpas": 10
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|BSDISH",
+      "events": 10,
+      "families": {
+        "juniper_junos": 10
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE+KV2+LABEL_KV",
+      "events": 9,
+      "families": {
+        "cisco_asa": 7,
+        "cisco_ftd": 2
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE+QUOTED",
+      "events": 9,
+      "families": {
+        "cisco_asa": 8,
+        "cisco_ftd": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "CSV_UNLABELED|PRI+BSDISH",
+      "events": 9,
+      "families": {
+        "cisco_secure_email_gateway": 8,
+        "symantec_endpoint": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI+KV5+IP2+QUOTED",
+      "events": 8,
+      "families": {
+        "checkpoint": 2,
+        "juniper_srx": 6
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+IP2",
+      "events": 8,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_ftd": 2,
+        "cisco_ios": 1,
+        "cisco_nexus": 4
+      },
+      "family_count": 4
+    },
+    {
+      "cluster": "PRI_BODY|PRI+KV5+IP2+QUOTED",
+      "events": 8,
+      "families": {
+        "juniper_srx": 8
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE+IP2+QUOTED",
+      "events": 7,
+      "families": {
+        "cisco_asa": 6,
+        "cisco_ftd": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "ASA_BODY|PRI+ISO_SYSLOGISH+EVENT_CODE+IP2",
+      "events": 7,
+      "families": {
+        "cisco_asa": 3,
+        "cisco_ftd": 4
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "CSV_UNLABELED|EVENT_CODE+IP2",
+      "events": 7,
+      "families": {
+        "cisco_asa": 5,
+        "cisco_ftd": 2
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2",
+      "events": 7,
+      "families": {
+        "cisco_ise": 7
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI+KV2+QUOTED+LABEL_KV",
+      "events": 7,
+      "families": {
+        "cisco_meraki": 7
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|QUOTED",
+      "events": 7,
+      "families": {
+        "juniper_netscreen": 6,
+        "sophos": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+KV2+LABEL_KV",
+      "events": 6,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ise": 3,
+        "juniper_junos": 1
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+IP2",
+      "events": 6,
+      "families": {
+        "cisco_asa": 2,
+        "citrix_waf": 4
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV5+COMMA_KV",
+      "events": 6,
+      "families": {
+        "cisco_ise": 6
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|PRI+IP2",
+      "events": 6,
+      "families": {
+        "juniper_srx": 6
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|PRI+KV5+QUOTED",
+      "events": 6,
+      "families": {
+        "sophos": 6
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+EVENT_CODE+KV2+LABEL_KV",
+      "events": 5,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_ftd": 4
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI+IP2+QUOTED",
+      "events": 5,
+      "families": {
+        "cisco_meraki": 5
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+QUOTED",
+      "events": 5,
+      "families": {
+        "juniper_junos": 5
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "KV_BOUNDARY|KV5+IP2+QUOTED",
+      "events": 5,
+      "families": {
+        "sophos": 5
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "KV_BOUNDARY|PRI+KV5+QUOTED",
+      "events": 5,
+      "families": {
+        "sophos": 5
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "JSON_LIMIT|JSONISH+WIDE_CSV+IP2+QUOTED",
+      "events": 4,
+      "families": {
+        "amazon_security_lake": 4
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+ISO_SYSLOGISH+IP2",
+      "events": 4,
+      "families": {
+        "barracuda": 4
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2+QUOTED",
+      "events": 4,
+      "families": {
+        "cisco_asa": 4
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+EVENT_CODE",
+      "events": 4,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ftd": 2
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "CSV_UNLABELED|EVENT_CODE+IP2+QUOTED",
+      "events": 4,
+      "families": {
+        "cisco_asa": 3,
+        "cisco_ftd": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "ASA_BODY|PRI+ISO_SYSLOGISH+EVENT_CODE+WIDE_CSV+IP2",
+      "events": 4,
+      "families": {
+        "cisco_ftd": 4
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|KV5+QUOTED",
+      "events": 4,
+      "families": {
+        "sophos": 4
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+ISO_SYSLOGISH+QUOTED",
+      "events": 3,
+      "families": {
+        "barracuda": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|EVENT_CODE+IP2",
+      "events": 3,
+      "families": {
+        "cisco_asa": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 3,
+      "families": {
+        "cisco_asa": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|BSDISH+EVENT_CODE",
+      "events": 3,
+      "families": {
+        "cisco_asa": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|EVENT_CODE+KV2+LABEL_KV",
+      "events": 3,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ftd": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+EVENT_CODE+IP2",
+      "events": 3,
+      "families": {
+        "cisco_ftd": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI+IP2",
+      "events": 3,
+      "families": {
+        "cisco_meraki": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|PRI+BSDISH+QUOTED",
+      "events": 3,
+      "families": {
+        "cisco_secure_email_gateway": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+BSDISH+IP2",
+      "events": 3,
+      "families": {
+        "cisco_secure_email_gateway": 2,
+        "zscaler_zia": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "CSV_UNLABELED|WIDE_CSV+IP2+QUOTED",
+      "events": 3,
+      "families": {
+        "cisco_umbrella": 2,
+        "eset_protect": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+KV5+COMMA_KV+IP2+QUOTED+LABEL_KV",
+      "events": 3,
+      "families": {
+        "cyberarkpas": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|WIDE_CSV+QUOTED",
+      "events": 3,
+      "families": {
+        "cyberarkpas": 1,
+        "darktrace": 1,
+        "eset_protect": 1
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+QUOTED",
+      "events": 3,
+      "families": {
+        "juniper_junos": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+IP2",
+      "events": 3,
+      "families": {
+        "juniper_srx": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+KV5+QUOTED",
+      "events": 3,
+      "families": {
+        "juniper_srx": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|QUOTED",
+      "events": 3,
+      "families": {
+        "panw": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|KV5+IP2+QUOTED+LABEL_KV",
+      "events": 3,
+      "families": {
+        "sophos": 3
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE+QUOTED",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|BSDISH+EVENT_CODE",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|BSDISH+EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE+KV2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|BSDISH+EVENT_CODE+KV2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|EVENT_CODE+KV2+COMMA_KV+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|BSDISH+EVENT_CODE",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|BSDISH+EVENT_CODE+IP2+QUOTED",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|BSDISH+EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_asa": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|PRI+BSDISH+EVENT_CODE+KV2+IP2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_ftd": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|PRI+BSDISH+EVENT_CODE+QUOTED",
+      "events": 2,
+      "families": {
+        "cisco_ftd": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|IP2",
+      "events": 2,
+      "families": {
+        "cisco_ftd": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV5+COMMA_KV+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_ise": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV5+COMMA_KV+QUOTED+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_ise": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV5+COMMA_KV+SEMI_KV+IP2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_ise": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI+KV2+QUOTED",
+      "events": 2,
+      "families": {
+        "cisco_meraki": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|PRI+BSDISH+KV2+COMMA_KV+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_secure_email_gateway": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+BSDISH+KV2+LABEL_KV",
+      "events": 2,
+      "families": {
+        "cisco_secure_email_gateway": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH+IP2+QUOTED",
+      "events": 2,
+      "families": {
+        "citrix_waf": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|KV5+QUOTED+LABEL_KV",
+      "events": 2,
+      "families": {
+        "fortinet_fortigate": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "SIZE_OR_NUL|KV5+IP2+QUOTED",
+      "events": 2,
+      "families": {
+        "fortinet_fortigate": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|KV5+LABEL_KV",
+      "events": 2,
+      "families": {
+        "juniper_netscreen": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|PRI+KV5+SEMI_KV+IP2+QUOTED",
+      "events": 2,
+      "families": {
+        "juniper_srx": 1,
+        "sophos": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "KV_BOUNDARY|PRI+KV5+IP2+QUOTED",
+      "events": 2,
+      "families": {
+        "sophos": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|WIDE_CSV+IP2",
+      "events": 2,
+      "families": {
+        "symantec_endpoint": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV5+IP2+QUOTED+LABEL_KV",
+      "events": 2,
+      "families": {
+        "watchguard_firebox": 2
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+ISO_SYSLOGISH+IP2+QUOTED",
+      "events": 1,
+      "families": {
+        "barracuda": 1
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "OTHER|PRI+IP2+QUOTED",
+      "events": 1,
+      "families": {
+        "checkpoint": 1
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|BSDISH+EVENT_CODE+IP2",
+      "events": 1,
+      "families": {
+        "cisco_asa": 1
+      },
+      "family_count": 1
+    }
+  ],
+  "families": {
+    "abnormal_security": {
+      "complete_rate_ppm": 1000000,
+      "events": 29,
+      "issues": 0,
+      "raw_preserved": 29,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 16257,
+      "source_fields": 441,
+      "source_spans": 441,
+      "status_SOURCE_PARSED": 29
+    },
+    "amazon_security_lake": {
+      "complete_rate_ppm": 937500,
+      "events": 64,
+      "issues": 4,
+      "raw_preserved": 64,
+      "residual_byte_rate_ppm": 365972,
+      "residual_bytes": 237182,
+      "source_bytes": 648088,
+      "source_fields": 12088,
+      "source_spans": 12088,
+      "status_RAW_ONLY": 4,
+      "status_SOURCE_PARSED": 60
+    },
+    "arista_ngfw": {
+      "complete_rate_ppm": 1000000,
+      "events": 141,
+      "issues": 0,
+      "raw_preserved": 141,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 79046,
+      "source_fields": 3781,
+      "source_spans": 3781,
+      "status_SOURCE_PARSED": 141
+    },
+    "aws_securityhub": {
+      "complete_rate_ppm": 1000000,
+      "events": 14,
+      "issues": 0,
+      "raw_preserved": 14,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 62420,
+      "source_fields": 1515,
+      "source_spans": 1515,
+      "status_SOURCE_PARSED": 14
+    },
+    "barracuda": {
+      "complete_rate_ppm": 653061,
+      "events": 49,
+      "issues": 17,
+      "raw_preserved": 49,
+      "residual_byte_rate_ppm": 193854,
+      "residual_bytes": 2820,
+      "source_bytes": 14547,
+      "source_fields": 1254,
+      "source_spans": 1254,
+      "status_RAW_ONLY": 17,
+      "status_SOURCE_PARSED": 32
+    },
+    "barracuda_cloudgen_firewall": {
+      "complete_rate_ppm": 1000000,
+      "events": 6,
+      "issues": 0,
+      "raw_preserved": 6,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 2763,
+      "source_fields": 112,
+      "source_spans": 112,
+      "status_SOURCE_PARSED": 6
+    },
+    "beyondtrust_epm": {
+      "complete_rate_ppm": 1000000,
+      "events": 13,
+      "issues": 0,
+      "raw_preserved": 13,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 112245,
+      "source_fields": 3046,
+      "source_spans": 3046,
+      "status_SOURCE_PARSED": 13
+    },
+    "beyondtrust_isi": {
+      "complete_rate_ppm": 1000000,
+      "events": 4,
+      "issues": 0,
+      "raw_preserved": 4,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 3187,
+      "source_fields": 48,
+      "source_spans": 48,
+      "status_SOURCE_PARSED": 4
+    },
+    "beyondtrust_pra": {
+      "complete_rate_ppm": 1000000,
+      "events": 2,
+      "issues": 0,
+      "raw_preserved": 2,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 4851,
+      "source_fields": 161,
+      "source_spans": 161,
+      "status_SOURCE_PARSED": 2
+    },
+    "checkpoint": {
+      "complete_rate_ppm": 972973,
+      "events": 111,
+      "issues": 7,
+      "raw_preserved": 111,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 100532,
+      "source_fields": 3827,
+      "source_spans": 3827,
+      "status_PARTIAL": 3,
+      "status_SOURCE_PARSED": 108
+    },
+    "checkpoint_email": {
+      "complete_rate_ppm": 1000000,
+      "events": 18,
+      "issues": 0,
+      "raw_preserved": 18,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 23084,
+      "source_fields": 315,
+      "source_spans": 315,
+      "status_SOURCE_PARSED": 18
+    },
+    "checkpoint_harmony_endpoint": {
+      "complete_rate_ppm": 1000000,
+      "events": 19,
+      "issues": 0,
+      "raw_preserved": 19,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 32039,
+      "source_fields": 715,
+      "source_spans": 715,
+      "status_SOURCE_PARSED": 19
+    },
+    "cisco_aironet": {
+      "complete_rate_ppm": 49587,
+      "events": 121,
+      "issues": 115,
+      "raw_preserved": 121,
+      "residual_byte_rate_ppm": 937951,
+      "residual_bytes": 24156,
+      "source_bytes": 25754,
+      "source_fields": 104,
+      "source_spans": 104,
+      "status_RAW_ONLY": 115,
+      "status_SOURCE_PARSED": 6
+    },
+    "cisco_asa": {
+      "complete_rate_ppm": 0,
+      "events": 686,
+      "issues": 690,
+      "raw_preserved": 686,
+      "residual_byte_rate_ppm": 848319,
+      "residual_bytes": 95743,
+      "source_bytes": 112862,
+      "source_fields": 2699,
+      "source_spans": 2699,
+      "status_PARTIAL": 655,
+      "status_RAW_ONLY": 31
+    },
+    "cisco_duo": {
+      "complete_rate_ppm": 1000000,
+      "events": 61,
+      "issues": 0,
+      "raw_preserved": 61,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 37986,
+      "source_fields": 1133,
+      "source_spans": 1133,
+      "status_SOURCE_PARSED": 61
+    },
+    "cisco_ftd": {
+      "complete_rate_ppm": 303125,
+      "events": 320,
+      "issues": 223,
+      "raw_preserved": 320,
+      "residual_byte_rate_ppm": 322723,
+      "residual_bytes": 35263,
+      "source_bytes": 109267,
+      "source_fields": 3111,
+      "source_spans": 3111,
+      "status_PARTIAL": 175,
+      "status_RAW_ONLY": 48,
+      "status_SOURCE_PARSED": 97
+    },
+    "cisco_ios": {
+      "complete_rate_ppm": 0,
+      "events": 103,
+      "issues": 103,
+      "raw_preserved": 103,
+      "residual_byte_rate_ppm": 874307,
+      "residual_bytes": 12138,
+      "source_bytes": 13883,
+      "source_fields": 153,
+      "source_spans": 153,
+      "status_PARTIAL": 28,
+      "status_RAW_ONLY": 75
+    },
+    "cisco_ise": {
+      "complete_rate_ppm": 698182,
+      "events": 275,
+      "issues": 233,
+      "raw_preserved": 275,
+      "residual_byte_rate_ppm": 110138,
+      "residual_bytes": 18114,
+      "source_bytes": 164467,
+      "source_fields": 7948,
+      "source_spans": 7948,
+      "status_PARTIAL": 65,
+      "status_RAW_ONLY": 18,
+      "status_SOURCE_PARSED": 192
+    },
+    "cisco_meraki": {
+      "complete_rate_ppm": 871795,
+      "events": 273,
+      "issues": 35,
+      "raw_preserved": 273,
+      "residual_byte_rate_ppm": 78907,
+      "residual_bytes": 4878,
+      "source_bytes": 61820,
+      "source_fields": 3645,
+      "source_spans": 3645,
+      "status_RAW_ONLY": 35,
+      "status_SOURCE_PARSED": 238
+    },
+    "cisco_nexus": {
+      "complete_rate_ppm": 40000,
+      "events": 75,
+      "issues": 72,
+      "raw_preserved": 75,
+      "residual_byte_rate_ppm": 900932,
+      "residual_bytes": 9476,
+      "source_bytes": 10518,
+      "source_fields": 72,
+      "source_spans": 72,
+      "status_PARTIAL": 3,
+      "status_RAW_ONLY": 69,
+      "status_SOURCE_PARSED": 3
+    },
+    "cisco_secure_email_gateway": {
+      "complete_rate_ppm": 150602,
+      "events": 166,
+      "issues": 142,
+      "raw_preserved": 166,
+      "residual_byte_rate_ppm": 255731,
+      "residual_bytes": 15250,
+      "source_bytes": 59633,
+      "source_fields": 2173,
+      "source_spans": 2173,
+      "status_PARTIAL": 141,
+      "status_SOURCE_PARSED": 25
+    },
+    "cisco_secure_endpoint": {
+      "complete_rate_ppm": 1000000,
+      "events": 404,
+      "issues": 0,
+      "raw_preserved": 404,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 574013,
+      "source_fields": 13309,
+      "source_spans": 13309,
+      "status_SOURCE_PARSED": 404
+    },
+    "cisco_umbrella": {
+      "complete_rate_ppm": 953488,
+      "events": 43,
+      "issues": 2,
+      "raw_preserved": 43,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 15959,
+      "source_fields": 857,
+      "source_spans": 857,
+      "status_PARTIAL": 2,
+      "status_SOURCE_PARSED": 41
+    },
+    "citrix_waf": {
+      "complete_rate_ppm": 500000,
+      "events": 22,
+      "issues": 11,
+      "raw_preserved": 22,
+      "residual_byte_rate_ppm": 383065,
+      "residual_bytes": 2850,
+      "source_bytes": 7440,
+      "source_fields": 279,
+      "source_spans": 279,
+      "status_PARTIAL": 1,
+      "status_RAW_ONLY": 10,
+      "status_SOURCE_PARSED": 11
+    },
+    "cloudflare": {
+      "complete_rate_ppm": 1000000,
+      "events": 52,
+      "issues": 0,
+      "raw_preserved": 52,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 34308,
+      "source_fields": 1175,
+      "source_spans": 1175,
+      "status_SOURCE_PARSED": 52
+    },
+    "cloudflare_logpush": {
+      "complete_rate_ppm": 1000000,
+      "events": 81,
+      "issues": 0,
+      "raw_preserved": 81,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 97554,
+      "source_fields": 2939,
+      "source_spans": 2939,
+      "status_SOURCE_PARSED": 81
+    },
+    "crowdsec": {
+      "complete_rate_ppm": 1000000,
+      "events": 19,
+      "issues": 0,
+      "raw_preserved": 19,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 45888,
+      "source_fields": 1636,
+      "source_spans": 1636,
+      "status_SOURCE_PARSED": 19
+    },
+    "crowdstrike": {
+      "complete_rate_ppm": 998198,
+      "events": 555,
+      "issues": 1,
+      "raw_preserved": 555,
+      "residual_byte_rate_ppm": 4,
+      "residual_bytes": 3,
+      "source_bytes": 672349,
+      "source_fields": 16853,
+      "source_spans": 16853,
+      "status_RAW_ONLY": 1,
+      "status_SOURCE_PARSED": 554
+    },
+    "cyberark_epm": {
+      "complete_rate_ppm": 1000000,
+      "events": 31,
+      "issues": 0,
+      "raw_preserved": 31,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 39364,
+      "source_fields": 1320,
+      "source_spans": 1320,
+      "status_SOURCE_PARSED": 31
+    },
+    "cyberarkpas": {
+      "complete_rate_ppm": 385027,
+      "events": 374,
+      "issues": 231,
+      "raw_preserved": 374,
+      "residual_byte_rate_ppm": 411170,
+      "residual_bytes": 243668,
+      "source_bytes": 592621,
+      "source_fields": 11920,
+      "source_spans": 11920,
+      "status_RAW_ONLY": 230,
+      "status_SOURCE_PARSED": 144
+    },
+    "darktrace": {
+      "complete_rate_ppm": 933333,
+      "events": 15,
+      "issues": 2,
+      "raw_preserved": 15,
+      "residual_byte_rate_ppm": 14902,
+      "residual_bytes": 622,
+      "source_bytes": 41740,
+      "source_fields": 1629,
+      "source_spans": 1629,
+      "status_RAW_ONLY": 1,
+      "status_SOURCE_PARSED": 14
+    },
+    "elastic_security": {
+      "complete_rate_ppm": 1000000,
+      "events": 1,
+      "issues": 0,
+      "raw_preserved": 1,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 20774,
+      "source_fields": 611,
+      "source_spans": 611,
+      "status_SOURCE_PARSED": 1
+    },
+    "eset_protect": {
+      "complete_rate_ppm": 900000,
+      "events": 50,
+      "issues": 7,
+      "raw_preserved": 50,
+      "residual_byte_rate_ppm": 56322,
+      "residual_bytes": 1850,
+      "source_bytes": 32847,
+      "source_fields": 857,
+      "source_spans": 857,
+      "status_RAW_ONLY": 5,
+      "status_SOURCE_PARSED": 45
+    },
+    "f5_bigip": {
+      "complete_rate_ppm": 1000000,
+      "events": 36,
+      "issues": 0,
+      "raw_preserved": 36,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 88650,
+      "source_fields": 2699,
+      "source_spans": 2699,
+      "status_SOURCE_PARSED": 36
+    },
+    "forescout": {
+      "complete_rate_ppm": 466667,
+      "events": 15,
+      "issues": 8,
+      "raw_preserved": 15,
+      "residual_byte_rate_ppm": 183459,
+      "residual_bytes": 488,
+      "source_bytes": 2660,
+      "source_fields": 88,
+      "source_spans": 88,
+      "status_PARTIAL": 1,
+      "status_RAW_ONLY": 7,
+      "status_SOURCE_PARSED": 7
+    },
+    "fortinet_forticlient": {
+      "complete_rate_ppm": 1000000,
+      "events": 100,
+      "issues": 0,
+      "raw_preserved": 100,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 27256,
+      "source_fields": 1800,
+      "source_spans": 1800,
+      "status_SOURCE_PARSED": 100
+    },
+    "fortinet_fortiedr": {
+      "complete_rate_ppm": 1000000,
+      "events": 2,
+      "issues": 0,
+      "raw_preserved": 2,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 1351,
+      "source_fields": 64,
+      "source_spans": 64,
+      "status_SOURCE_PARSED": 2
+    },
+    "fortinet_fortigate": {
+      "complete_rate_ppm": 967213,
+      "events": 183,
+      "issues": 6,
+      "raw_preserved": 183,
+      "residual_byte_rate_ppm": 21171,
+      "residual_bytes": 2133,
+      "source_bytes": 100750,
+      "source_fields": 5044,
+      "source_spans": 5044,
+      "status_PARTIAL": 3,
+      "status_RAW_ONLY": 3,
+      "status_SOURCE_PARSED": 177
+    },
+    "fortinet_fortimail": {
+      "complete_rate_ppm": 1000000,
+      "events": 34,
+      "issues": 0,
+      "raw_preserved": 34,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 10348,
+      "source_fields": 467,
+      "source_spans": 467,
+      "status_SOURCE_PARSED": 34
+    },
+    "fortinet_fortimanager": {
+      "complete_rate_ppm": 1000000,
+      "events": 31,
+      "issues": 0,
+      "raw_preserved": 31,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 17608,
+      "source_fields": 758,
+      "source_spans": 758,
+      "status_SOURCE_PARSED": 31
+    },
+    "fortinet_fortiproxy": {
+      "complete_rate_ppm": 969697,
+      "events": 33,
+      "issues": 1,
+      "raw_preserved": 33,
+      "residual_byte_rate_ppm": 8413,
+      "residual_bytes": 175,
+      "source_bytes": 20802,
+      "source_fields": 1062,
+      "source_spans": 1062,
+      "status_PARTIAL": 1,
+      "status_SOURCE_PARSED": 32
+    },
+    "jamf_compliance_reporter": {
+      "complete_rate_ppm": 1000000,
+      "events": 53,
+      "issues": 0,
+      "raw_preserved": 53,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 63280,
+      "source_fields": 2017,
+      "source_spans": 2017,
+      "status_SOURCE_PARSED": 53
+    },
+    "jamf_pro": {
+      "complete_rate_ppm": 1000000,
+      "events": 12,
+      "issues": 0,
+      "raw_preserved": 12,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 2380,
+      "source_fields": 24,
+      "source_spans": 24,
+      "status_SOURCE_PARSED": 12
+    },
+    "jamf_protect": {
+      "complete_rate_ppm": 1000000,
+      "events": 73,
+      "issues": 0,
+      "raw_preserved": 73,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 182601,
+      "source_fields": 6674,
+      "source_spans": 6674,
+      "status_SOURCE_PARSED": 73
+    },
+    "juniper_junos": {
+      "complete_rate_ppm": 0,
+      "events": 100,
+      "issues": 100,
+      "raw_preserved": 100,
+      "residual_byte_rate_ppm": 643223,
+      "residual_bytes": 6658,
+      "source_bytes": 10351,
+      "source_fields": 161,
+      "source_spans": 161,
+      "status_PARTIAL": 31,
+      "status_RAW_ONLY": 69
+    },
+    "juniper_netscreen": {
+      "complete_rate_ppm": 0,
+      "events": 100,
+      "issues": 100,
+      "raw_preserved": 100,
+      "residual_byte_rate_ppm": 958607,
+      "residual_bytes": 13409,
+      "source_bytes": 13988,
+      "source_fields": 14,
+      "source_spans": 14,
+      "status_PARTIAL": 5,
+      "status_RAW_ONLY": 95
+    },
+    "juniper_srx": {
+      "complete_rate_ppm": 552381,
+      "events": 105,
+      "issues": 47,
+      "raw_preserved": 105,
+      "residual_byte_rate_ppm": 175172,
+      "residual_bytes": 9467,
+      "source_bytes": 54044,
+      "source_fields": 2189,
+      "source_spans": 2189,
+      "status_PARTIAL": 46,
+      "status_RAW_ONLY": 1,
+      "status_SOURCE_PARSED": 58
+    },
+    "m365_defender": {
+      "complete_rate_ppm": 1000000,
+      "events": 108,
+      "issues": 0,
+      "raw_preserved": 108,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 230676,
+      "source_fields": 5355,
+      "source_spans": 5355,
+      "status_SOURCE_PARSED": 108
+    },
+    "microsoft_defender_cloud": {
+      "complete_rate_ppm": 1000000,
+      "events": 18,
+      "issues": 0,
+      "raw_preserved": 18,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 60601,
+      "source_fields": 979,
+      "source_spans": 979,
+      "status_SOURCE_PARSED": 18
+    },
+    "microsoft_defender_endpoint": {
+      "complete_rate_ppm": 1000000,
+      "events": 26,
+      "issues": 0,
+      "raw_preserved": 26,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 24719,
+      "source_fields": 672,
+      "source_spans": 672,
+      "status_SOURCE_PARSED": 26
+    },
+    "microsoft_sentinel": {
+      "complete_rate_ppm": 1000000,
+      "events": 4,
+      "issues": 0,
+      "raw_preserved": 4,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 5891,
+      "source_fields": 114,
+      "source_spans": 114,
+      "status_SOURCE_PARSED": 4
+    },
+    "modsecurity": {
+      "complete_rate_ppm": 750000,
+      "events": 12,
+      "issues": 3,
+      "raw_preserved": 12,
+      "residual_byte_rate_ppm": 149255,
+      "residual_bytes": 6169,
+      "source_bytes": 41332,
+      "source_fields": 470,
+      "source_spans": 470,
+      "status_RAW_ONLY": 3,
+      "status_SOURCE_PARSED": 9
+    },
+    "netskope": {
+      "complete_rate_ppm": 1000000,
+      "events": 57,
+      "issues": 0,
+      "raw_preserved": 57,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 118220,
+      "source_fields": 3936,
+      "source_spans": 3936,
+      "status_SOURCE_PARSED": 57
+    },
+    "okta": {
+      "complete_rate_ppm": 1000000,
+      "events": 24,
+      "issues": 0,
+      "raw_preserved": 24,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 45704,
+      "source_fields": 1516,
+      "source_spans": 1516,
+      "status_SOURCE_PARSED": 24
+    },
+    "panw": {
+      "complete_rate_ppm": 628099,
+      "events": 726,
+      "issues": 270,
+      "raw_preserved": 726,
+      "residual_byte_rate_ppm": 246041,
+      "residual_bytes": 84539,
+      "source_bytes": 343597,
+      "source_fields": 39725,
+      "source_spans": 39725,
+      "status_PARTIAL": 5,
+      "status_RAW_ONLY": 265,
+      "status_SOURCE_PARSED": 456
+    },
+    "panw_cortex_xdr": {
+      "complete_rate_ppm": 1000000,
+      "events": 23,
+      "issues": 0,
+      "raw_preserved": 23,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 100190,
+      "source_fields": 2998,
+      "source_spans": 2998,
+      "status_SOURCE_PARSED": 23
+    },
+    "proofpoint_365totalprotection": {
+      "complete_rate_ppm": 1000000,
+      "events": 3,
+      "issues": 0,
+      "raw_preserved": 3,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 4441,
+      "source_fields": 157,
+      "source_spans": 157,
+      "status_SOURCE_PARSED": 3
+    },
+    "proofpoint_essentials": {
+      "complete_rate_ppm": 1000000,
+      "events": 14,
+      "issues": 0,
+      "raw_preserved": 14,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 16108,
+      "source_fields": 375,
+      "source_spans": 375,
+      "status_SOURCE_PARSED": 14
+    },
+    "proofpoint_itm": {
+      "complete_rate_ppm": 1000000,
+      "events": 1,
+      "issues": 0,
+      "raw_preserved": 1,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 1763,
+      "source_fields": 45,
+      "source_spans": 45,
+      "status_SOURCE_PARSED": 1
+    },
+    "proofpoint_on_demand": {
+      "complete_rate_ppm": 1000000,
+      "events": 55,
+      "issues": 0,
+      "raw_preserved": 55,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 88359,
+      "source_fields": 2625,
+      "source_spans": 2625,
+      "status_SOURCE_PARSED": 55
+    },
+    "proofpoint_tap": {
+      "complete_rate_ppm": 1000000,
+      "events": 27,
+      "issues": 0,
+      "raw_preserved": 27,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 31246,
+      "source_fields": 842,
+      "source_spans": 842,
+      "status_SOURCE_PARSED": 27
+    },
+    "qualys_vmdr": {
+      "complete_rate_ppm": 1000000,
+      "events": 25,
+      "issues": 0,
+      "raw_preserved": 25,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 157890,
+      "source_fields": 1643,
+      "source_spans": 1643,
+      "status_SOURCE_PARSED": 25
+    },
+    "qualys_was": {
+      "complete_rate_ppm": 1000000,
+      "events": 15,
+      "issues": 0,
+      "raw_preserved": 15,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 49492,
+      "source_fields": 855,
+      "source_spans": 855,
+      "status_SOURCE_PARSED": 15
+    },
+    "rapid7_insightvm": {
+      "complete_rate_ppm": 1000000,
+      "events": 31,
+      "issues": 0,
+      "raw_preserved": 31,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 128710,
+      "source_fields": 3080,
+      "source_spans": 3080,
+      "status_SOURCE_PARSED": 31
+    },
+    "sentinel_one": {
+      "complete_rate_ppm": 1000000,
+      "events": 68,
+      "issues": 0,
+      "raw_preserved": 68,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 136350,
+      "source_fields": 4523,
+      "source_spans": 4523,
+      "status_SOURCE_PARSED": 68
+    },
+    "sentinel_one_cloud_funnel": {
+      "complete_rate_ppm": 1000000,
+      "events": 18,
+      "issues": 0,
+      "raw_preserved": 18,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 86255,
+      "source_fields": 1996,
+      "source_spans": 1996,
+      "status_SOURCE_PARSED": 18
+    },
+    "sonicwall_firewall": {
+      "complete_rate_ppm": 1000000,
+      "events": 220,
+      "issues": 0,
+      "raw_preserved": 220,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 72639,
+      "source_fields": 4973,
+      "source_spans": 4973,
+      "status_SOURCE_PARSED": 220
+    },
+    "sophos": {
+      "complete_rate_ppm": 726027,
+      "events": 292,
+      "issues": 165,
+      "raw_preserved": 292,
+      "residual_byte_rate_ppm": 25658,
+      "residual_bytes": 5213,
+      "source_bytes": 203174,
+      "source_fields": 10031,
+      "source_spans": 10031,
+      "status_PARTIAL": 71,
+      "status_RAW_ONLY": 9,
+      "status_SOURCE_PARSED": 212
+    },
+    "sophos_central": {
+      "complete_rate_ppm": 1000000,
+      "events": 6,
+      "issues": 0,
+      "raw_preserved": 6,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 13745,
+      "source_fields": 333,
+      "source_spans": 333,
+      "status_SOURCE_PARSED": 6
+    },
+    "sublime_security": {
+      "complete_rate_ppm": 1000000,
+      "events": 7,
+      "issues": 0,
+      "raw_preserved": 7,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 23929,
+      "source_fields": 675,
+      "source_spans": 675,
+      "status_SOURCE_PARSED": 7
+    },
+    "suricata": {
+      "complete_rate_ppm": 1000000,
+      "events": 60,
+      "issues": 0,
+      "raw_preserved": 60,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 41195,
+      "source_fields": 1589,
+      "source_spans": 1589,
+      "status_SOURCE_PARSED": 60
+    },
+    "symantec_endpoint": {
+      "complete_rate_ppm": 612903,
+      "events": 31,
+      "issues": 12,
+      "raw_preserved": 31,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 16043,
+      "source_fields": 585,
+      "source_spans": 585,
+      "status_PARTIAL": 12,
+      "status_SOURCE_PARSED": 19
+    },
+    "symantec_endpoint_security": {
+      "complete_rate_ppm": 1000000,
+      "events": 60,
+      "issues": 0,
+      "raw_preserved": 60,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 1771369,
+      "source_fields": 68063,
+      "source_spans": 68063,
+      "status_SOURCE_PARSED": 60
+    },
+    "tenable_io": {
+      "complete_rate_ppm": 1000000,
+      "events": 32,
+      "issues": 0,
+      "raw_preserved": 32,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 60098,
+      "source_fields": 1491,
+      "source_spans": 1491,
+      "status_SOURCE_PARSED": 32
+    },
+    "tenable_sc": {
+      "complete_rate_ppm": 1000000,
+      "events": 16,
+      "issues": 0,
+      "raw_preserved": 16,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 36652,
+      "source_fields": 698,
+      "source_spans": 698,
+      "status_SOURCE_PARSED": 16
+    },
+    "ti_crowdstrike": {
+      "complete_rate_ppm": 1000000,
+      "events": 11,
+      "issues": 0,
+      "raw_preserved": 11,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 11827,
+      "source_fields": 406,
+      "source_spans": 406,
+      "status_SOURCE_PARSED": 11
+    },
+    "ti_eset": {
+      "complete_rate_ppm": 1000000,
+      "events": 102,
+      "issues": 0,
+      "raw_preserved": 102,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 70930,
+      "source_fields": 1379,
+      "source_spans": 1379,
+      "status_SOURCE_PARSED": 102
+    },
+    "trend_micro_vision_one": {
+      "complete_rate_ppm": 1000000,
+      "events": 46,
+      "issues": 0,
+      "raw_preserved": 46,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 95076,
+      "source_fields": 2636,
+      "source_spans": 2636,
+      "status_SOURCE_PARSED": 46
+    },
+    "watchguard_firebox": {
+      "complete_rate_ppm": 410915,
+      "events": 623,
+      "issues": 367,
+      "raw_preserved": 623,
+      "residual_byte_rate_ppm": 437548,
+      "residual_bytes": 66117,
+      "source_bytes": 151108,
+      "source_fields": 6097,
+      "source_spans": 6097,
+      "status_PARTIAL": 46,
+      "status_RAW_ONLY": 321,
+      "status_SOURCE_PARSED": 256
+    },
+    "zeek": {
+      "complete_rate_ppm": 1000000,
+      "events": 135,
+      "issues": 0,
+      "raw_preserved": 135,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 50254,
+      "source_fields": 1913,
+      "source_spans": 1913,
+      "status_SOURCE_PARSED": 135
+    },
+    "zscaler_zia": {
+      "complete_rate_ppm": 967742,
+      "events": 93,
+      "issues": 3,
+      "raw_preserved": 93,
+      "residual_byte_rate_ppm": 2020,
+      "residual_bytes": 287,
+      "source_bytes": 142059,
+      "source_fields": 5143,
+      "source_spans": 5143,
+      "status_PARTIAL": 2,
+      "status_RAW_ONLY": 1,
+      "status_SOURCE_PARSED": 90
+    },
+    "zscaler_zpa": {
+      "complete_rate_ppm": 1000000,
+      "events": 13,
+      "issues": 0,
+      "raw_preserved": 13,
+      "residual_byte_rate_ppm": 0,
+      "residual_bytes": 0,
+      "source_bytes": 14183,
+      "source_fields": 443,
+      "source_spans": 443,
+      "status_SOURCE_PARSED": 13
+    }
+  },
+  "field_semantics_scored": false,
+  "largest_residual_events": [
+    {
+      "event_sha256": "8e6dc2efce342758a539e870ed15ea96e841176cb45ab0ac287812e47653c4b2",
+      "family": "amazon_security_lake",
+      "issue_class": "JSON_LIMIT",
+      "residual_bytes": 59298,
+      "shape": "JSONISH+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 59298,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "37442d0d56091c639cdf381fcaf03e76b5fceca5ccda7ca271a08a3029af7203",
+      "family": "amazon_security_lake",
+      "issue_class": "JSON_LIMIT",
+      "residual_bytes": 59298,
+      "shape": "JSONISH+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 59298,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "4eaa45d9d4434079ae905b7ffcd307e9221a26f19ca6c9631965c110d06fac10",
+      "family": "amazon_security_lake",
+      "issue_class": "JSON_LIMIT",
+      "residual_bytes": 59295,
+      "shape": "JSONISH+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 59295,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "26282a2d12d9c96e0325cba2be97fa6607890ffcd6e7d914357a0ea65fb639e9",
+      "family": "amazon_security_lake",
+      "issue_class": "JSON_LIMIT",
+      "residual_bytes": 59291,
+      "shape": "JSONISH+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 59291,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "f54bdfc456995a03a7c5eaca9170f4664c0ea34509b8e2924df49c08a144f26a",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4259,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4262,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "27a472a253f4b5bb4a78c87cbfcd3a892a6406ef0791f1599295060fd6924122",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4259,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4262,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "749d9ce3a80610a8e91d0d982bc294a7a5d875ba22f207be1dc45cb74708238c",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4259,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4262,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "1165500dc9cbc818a83c9948cf25eba5a88076149f81b998fa55a34076c6eef9",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4259,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4262,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "55d33e3fe9c1a1ab70270d06db4bb1182a1ebafcd4b5c3bcebd0db1e7b999eee",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4213,
+      "shape": "PRI+KV5+COMMA_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4216,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "543fd5fe2676a48c60be2d7b79b46c8e276ef900bc15f691d216704e078d1a1a",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4196,
+      "shape": "PRI+KV5+COMMA_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4199,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "37a97995d1b0e99ce79b7be42334a65160aebd47ec3b40a5819ab345e3bc5a88",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4165,
+      "shape": "PRI+KV5+COMMA_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4168,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "719bcf61170d71e40c50ab2162214d6481bb59b94ba5bfcd1557bc437fea361d",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 4070,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 4073,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "e245718bd82e9efafeb51e184ddfa11f09377ee7ddbcdb54ad32ebe271ceaca1",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 3909,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED",
+      "source_bytes": 3912,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "bdb612f8f88e9c987ea1232a0e274a9eb70669dbbcc0c38e9b1bbe7d68d1c452",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 3510,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 3513,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "a1d99b11c81256ae081a863ab6634f3b3ce4ad3a5a25aa5533290925052db050",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 3508,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 3511,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "c1d91929723793790dc51815156135dc3f30f8217853e3a46a2bfd7f8267e064",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 3506,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 3509,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "331db50ff604099ebcaeba7940a839b0b377d199fb53852e6a103259823443cd",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 3506,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 3509,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "1ac370d8f7f0dbf94c2024dcd2e8ffb31563dac3559d9bec7ee614d2ca8ffe99",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 3504,
+      "shape": "PRI+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 3507,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "5e9cb18740e9e6cd45ff9281d661cbc71c9863128b803a8868f43487b190c0bb",
+      "family": "modsecurity",
+      "issue_class": "OTHER",
+      "residual_bytes": 2498,
+      "shape": "JSONISH+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED+LABEL_KV",
+      "source_bytes": 2498,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "a0c010ce95c660e413f134d7c9e9e68bc38b42b85da58510f3bbdc910ce329dc",
+      "family": "modsecurity",
+      "issue_class": "OTHER",
+      "residual_bytes": 2158,
+      "shape": "JSONISH+KV5+COMMA_KV+SEMI_KV+IP2+QUOTED",
+      "source_bytes": 2158,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "fd5ed26b7e61687a9e20ad5f60ce2ab7ebdb3d0ab0770a8b89722a8e2f98e5bb",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1912,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1915,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "412ac08082e9b9d9c7d5754af3607c303b19d99899c53c30039991720df2eea7",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1762,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1765,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "cb650d41da04fed55043e2d4c0cc50d6b5d804e98dfdffc86f7d1c2536ac79a2",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1750,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1753,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "35cc2210147d7d9dd5c40ea812d2c750ceaa684f8b3a2cd5f42691371d36f674",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1646,
+      "shape": "PRI+KV2+IP2+QUOTED",
+      "source_bytes": 1649,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "5e9e66c4f66ef863612dceef9cb0d90e78af80227afa6ea3d5a54b455d024c7d",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1642,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1645,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "df098fcea5c37c7f61843a570fcf98c93813ef647fdce1fc995a606d2f07b95b",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1628,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1631,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "9d3d11b122e825412fd585e47d7449360cb075053c0556f6b75f51584cbf27d8",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1598,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1601,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "da5f1c2c8cf83a9d83377ab52e36deb5c2bc5e2b26dc651a74cfbafa034dcd1e",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1594,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1597,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "34ab4e9586348a444cad0d16dacef1e12dce2196b7a93a04697f263d81e8997f",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1574,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1577,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "fa085f4bb4ef97cc24e11846759774e07c8089f22c4d69fa3d128df29570c4dd",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1572,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1575,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "4b3cb21181e055aa7d9e9ecb857cbedfd46da152f82027bb77a2f3cbbcd2e0f1",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1558,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1561,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d7361017b84df8304e0102218dfdc8dae3ba1392a6b45dfc421206b9dfd26bde",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1546,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1549,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "26cbdc84ec1652ba0b5d2c3974e612ddd733036c627429b278b31137583025c7",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1546,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1549,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "78a19d08220a9fa0f12b39864b321ef71734c49700cdeca3f4e5596d3393f59b",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1542,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1545,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "6d3ea314233eadf769a5b4a13be2a887e594a2664bc87cc4584587adce0f9b1e",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1534,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1537,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "319a7e7328139c9c4e7025d7c604d063dd7c8aad09547d369c7e778c649d83cb",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1530,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1533,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "a6a90053c6211663da98d975449bc09b792798263f95ff4859d36cdc646509c2",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1522,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1525,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "c984fdad484e2bbc00405860d09bb7847cafff09d358ba1d9a17da225612df2b",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1518,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1521,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "58126a2bd5543c6529b8abcc26a68a522d63e417d942fa11368b2a0c70f6d975",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1518,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1521,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "21f694f2c8fef41a9296276ac0029afabdd5750cdcd111659943408af5f6b775",
+      "family": "modsecurity",
+      "issue_class": "OTHER",
+      "residual_bytes": 1513,
+      "shape": "JSONISH+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1513,
+      "source_spans": 0,
+      "syntax": "JSON"
+    },
+    {
+      "event_sha256": "18999202dd3b3e44fe459d0fcb31a331115cba25d49ebb93c2d347c6cd86c0b9",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1512,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1515,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "87fa60b7356a6b406f629611095aa901a5743591ec69c2d4024eeb7cd8f734ba",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1510,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1513,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "4dfe0e855a341ecb850167bd3ae9dc2f70d8714d109b9ee54b05734508fb38df",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1510,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1513,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "9d4757f1cd91d8ae5986807abf7c67be0be71093d7a93fe2419ed1b28b3b73e2",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1510,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1513,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "1a8fcb52b0718c7037e023e000b5d5ef03dc5e342f8347759ee67f344b80a4db",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1504,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1507,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "b88093f182d86ca9e0d45f3156c80e5624d673029882942e84ca65f9c0fc5da9",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1502,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1505,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "45fa7f19c5736f16a41d5feb9f6110016ae76ca6b1a20b5b6d844c173e99469a",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1498,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1501,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "1696b873f6118029d41556dc745632855601c6927f22fd0b4d706d5d4a3388d6",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1482,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1485,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d3b7c6f3cfb183c540284b297eb4db140ef57be8ea036cfd27e45c32a9bd8e1d",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1478,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1481,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "f5fe224363308908f3538141b3709d35f24d6d9fd9b9a033396faafef0981cdd",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1474,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1477,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "368c45cd9ea2d71b27ec40ef5df07aef4274fdf4920afb81124bc8ea70b66ef7",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1472,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1475,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "e74d64cb6dc6fd91ef6d47ceb56dd2ca48847fd9d32fe82f6d610816f369c2ef",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1472,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1475,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "fb290338f4dde557280bf5d54cad715a43cbfa7d73576601e61371577ddd73d3",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1470,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1473,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "43cefa297da0b8c234004f6547340c665fd239c4b6ad7612ee85e4fbf37b2b78",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1470,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1473,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "c58f7b6ab14f3f5ef2dc6298a8f9cbde5487356c560988d2875612c84c53416a",
+      "family": "cisco_ise",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1467,
+      "shape": "PRI+BSDISH+KV2+LABEL_KV",
+      "source_bytes": 1541,
+      "source_spans": 2,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "7755fc02176c03e5263c4f718bbda962d15d8caa8e4dc878ac615c6fe3ba9da9",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1464,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1467,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "749407c9cb0ab8e125381e35909440dd8fa169c11e25e1a49d0d70045b04e660",
+      "family": "cisco_ise",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1456,
+      "shape": "PRI+BSDISH+KV5+COMMA_KV+SEMI_KV+IP2+LABEL_KV",
+      "source_bytes": 4995,
+      "source_spans": 153,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "7e1e24e26daf2942f49fb3746b871c29fde9f5745e14aa7bbca961f68298c45f",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1456,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1459,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "ee1028f48c7c644d37956ef83e229eb43b959db56a0d3d01e1288b489c5a45e3",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1454,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1457,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "3f5e0a75233122d49f61abc413db8aaef5e611f34cfda7f46a983185137882b9",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1452,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1455,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d8081ea1001783a9208a61d9ed34ef3b7ef3cad911f951e466fd4d6674e96e57",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1446,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1449,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "10ca7c52d62f2ce0b48ba1fff38457ef2be627225784a05ccca0ea8432c91613",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1446,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1449,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "7ba240c88e2848f02a39d9887e91b03cbe350959d3c3e2c2dfbfc2710683eac3",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1442,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1445,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "83b496f8f7821765844aa86585d324f4b28cdff7f7630b3af64240ef68c70c2b",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1436,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1439,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "f229065db6b772eaec9d2512ea03a972cdacef80531b6287b40c765e3925ca8c",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1432,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1435,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "bf6a9e8f17db17666823d58cf5998aebdb6f0d6db8c1eab4a25af5ab7b785a6e",
+      "family": "cyberarkpas",
+      "issue_class": "OTHER",
+      "residual_bytes": 1430,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1430,
+      "source_spans": 0,
+      "syntax": "SYSLOG_RFC5424"
+    },
+    {
+      "event_sha256": "945f008b65014705247d3b58bf1f86a19978e7e0e30fe172a02192c04821f835",
+      "family": "cyberarkpas",
+      "issue_class": "OTHER",
+      "residual_bytes": 1430,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1430,
+      "source_spans": 0,
+      "syntax": "SYSLOG_RFC5424"
+    },
+    {
+      "event_sha256": "b3a7a233698ad0760e5d832ba167a30010a7fb3696565c9da10224ce19b4e641",
+      "family": "cyberarkpas",
+      "issue_class": "OTHER",
+      "residual_bytes": 1418,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1418,
+      "source_spans": 0,
+      "syntax": "SYSLOG_RFC5424"
+    },
+    {
+      "event_sha256": "ad0ab507b4e6dcd10d589d7fb089176453c638270fa8ad565387596c0f7ce72f",
+      "family": "cyberarkpas",
+      "issue_class": "OTHER",
+      "residual_bytes": 1418,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1418,
+      "source_spans": 0,
+      "syntax": "SYSLOG_RFC5424"
+    },
+    {
+      "event_sha256": "511f54176bc699290bc0c0881c90587c84fb509aa763cbef43f71b549c2919a0",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1408,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1411,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "d46c82aa4521f5eaf50c548bb8a6fba65c0aad345155e11db0f600dfca5ebcce",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1408,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1411,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "aefeb58940ffbfe3f4c5d6a5c7cffc85a46e1fbd45f24509b579f4c70db6b834",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1406,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1409,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "6456cf846409c61e8acc4f5b5fdc9d361a23c539e1a210b43660215c2f26dfad",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1404,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1407,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "3426bf5256fbecaaab1fbf7cc15ea1939644e6211fb2a29daf5fd5f12a212d45",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1402,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1405,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "14023326c7450d4b9bc2b0f6d31e91211cf852466502add225733da230c77f89",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1402,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1405,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "3058674dd89a01868f8e0ecbcdf5700f11dd18cc33ec28e8c96148dbfb9ac59a",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1400,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1403,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "71e528a397da749caabfdea0c4bc93b33875fe6c9887afea567dee2ccd317113",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1398,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1401,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "dd289f8c0dc552f6cb60587075b43942fe74ab1bd866a454faa7e2617051f1ae",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1396,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1399,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "2fa64fbe56fab19911e2c86e1ead35957cfe4dd97610dbdc2dd094d5333f8ee9",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1394,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1397,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    },
+    {
+      "event_sha256": "0458e5b8eaff348439f8a2fc493f1d728134ececd2eab89c1ef3f37578e79cdb",
+      "family": "cyberarkpas",
+      "issue_class": "PRI_BODY",
+      "residual_bytes": 1386,
+      "shape": "PRI+WIDE_CSV+IP2+QUOTED",
+      "source_bytes": 1389,
+      "source_spans": 0,
+      "syntax": "UNKNOWN"
+    }
+  ],
+  "parser_head": "cbf18695d605452a3163521d2bd7a7a6b93b0f1c",
+  "raw_published": false,
+  "top_issues": [
+    [
+      "UNSUPPORTED_PRI_BODY",
+      870
+    ],
+    [
+      "ASA_MESSAGE_BODY_UNPARSED",
+      683
+    ],
+    [
+      "NO_SUPPORTED_GRAMMAR",
+      438
+    ],
+    [
+      "UNSUPPORTED_BSD_BODY",
+      340
+    ],
+    [
+      "ISLAND_DUPLICATE_VENDOR_FIELD",
+      154
+    ],
+    [
+      "KV_EMPTY_UNQUOTED_VALUE",
+      143
+    ],
+    [
+      "RFC5424_HEADER_TOKEN_INVALID",
+      134
+    ],
+    [
+      "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION",
+      81
+    ],
+    [
+      "RFC5424_TIMESTAMP_INVALID",
+      43
+    ],
+    [
+      "SOURCE_SIZE_OR_NUL_INVALID",
+      37
+    ],
+    [
+      "KV_TOKEN_UNRECOGNIZED",
+      13
+    ],
+    [
+      "FRAMING_JSON_TRAILING_CONTENT",
+      12
+    ],
+    [
+      "SOURCE_SYNTAX_ERROR:JSON_DEPTH_OR_FIELD_LIMIT",
+      4
+    ],
+    [
+      "SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID",
+      4
+    ],
+    [
+      "RFC5424_SD_UNCLOSED",
+      4
+    ],
+    [
+      "KV_QUOTE_UNCLOSED",
+      3
+    ],
+    [
+      "SOURCE_SYNTAX_ERROR:JSON_DUPLICATE_OR_UNSAFE_KEY",
+      3
+    ],
+    [
+      "RFC5424_DUPLICATE_SD_KEY",
+      2
+    ],
+    [
+      "RFC5424_SD_TRAILING_SPACE_NONSTANDARD",
+      2
+    ],
+    [
+      "CEF_NONSTANDARD_ESCAPE_RETAINED",
+      2
+    ],
+    [
+      "RFC5424_SD_BYTE_LIMIT",
+      2
+    ],
+    [
+      "SOURCE_TIMESTAMP_INVALID",
+      1
+    ],
+    [
+      "KV_AFTER_QUOTE_INVALID",
+      1
+    ],
+    [
+      "RFC5424_SD_VALUE_NOT_QUOTED",
+      1
+    ]
+  ],
+  "top_syntaxes": [
+    [
+      "JSON",
+      2751
+    ],
+    [
+      "UNKNOWN",
+      1397
+    ],
+    [
+      "CISCO_ASA_FTD_MESSAGE_ID",
+      683
+    ],
+    [
+      "SECURITY_SYSLOG_ENVELOPE+KV",
+      547
+    ],
+    [
+      "GENERIC_STRUCTURAL+MIXED",
+      489
+    ],
+    [
+      "GENERIC_POSITIONAL_CSV",
+      396
+    ],
+    [
+      "SYSLOG_RFC5424",
+      222
+    ],
+    [
+      "GENERIC_STRUCTURAL+COMMA_KV",
+      221
+    ],
+    [
+      "SECURITY_SYSLOG_ENVELOPE+GENERIC_POSITIONAL_CSV",
+      212
+    ],
+    [
+      "WATCHGUARD_FIREBOX_TRAFFIC_PROFILE",
+      211
+    ],
+    [
+      "KV",
+      185
+    ],
+    [
+      "BSD_SYSLOG+UNKNOWN",
+      149
+    ],
+    [
+      "SYSLOG_RFC3164+JSON",
+      141
+    ],
+    [
+      "SYSLOG_RFC3164+UNKNOWN",
+      131
+    ],
+    [
+      "SECURITY_SYSLOG_BRACKET_COLON_KV",
+      109
+    ],
+    [
+      "CSV_UNLABELED_CANDIDATE",
+      43
+    ],
+    [
+      "GENERIC_ISO_PRI+MIXED",
+      32
+    ],
+    [
+      "SECURITY_SYSLOG_ENVELOPE+CEF_STANDARD",
+      19
+    ],
+    [
+      "SYSLOG_RFC5424+UNKNOWN",
+      18
+    ],
+    [
+      "MERAKI_PROFILE",
+      17
+    ],
+    [
+      "SYSLOG_RFC3164+CSV_UNLABELED_CANDIDATE",
+      16
+    ],
+    [
+      "BSD_SYSLOG+CSV_UNLABELED_CANDIDATE",
+      15
+    ],
+    [
+      "GENERIC_STRUCTURAL+DELIMITED_KV",
+      12
+    ],
+    [
+      "SECURITY_SYSLOG_ENVELOPE+JSON",
+      11
+    ],
+    [
+      "SYSLOG_SOURCE_ANOMALIES_PRESERVED",
+      8
+    ],
+    [
+      "SONICWALL_IPV4_KV",
+      8
+    ],
+    [
+      "SYSLOG_RFC5424_HEADER_PRESERVED",
+      7
+    ],
+    [
+      "SYSLOG_RFC5424+CSV_UNLABELED_CANDIDATE",
+      7
+    ],
+    [
+      "SYSLOG_BSD_CSV",
+      4
+    ],
+    [
+      "GENERIC_RFC3164_BODY+COMMA_KV",
+      3
+    ],
+    [
+      "BSD_SYSLOG+BSD_SYSLOG+UNKNOWN",
+      2
+    ],
+    [
+      "SYSLOG_RFC3164+CEF_STANDARD",
+      2
+    ],
+    [
+      "GENERIC_RFC5424_BODY+SEMICOLON_COLON_KV",
+      2
+    ],
+    [
+      "GENERIC_RFC3164_BODY+DELIMITED_KV",
+      1
+    ],
+    [
+      "BSD_SYSLOG+CEF_STANDARD",
+      1
+    ],
+    [
+      "MULTIPASS_MERGE[security.base+cef.standard]",
+      1
+    ],
+    [
+      "SYSLOG_RFC5424+KV",
+      1
+    ],
+    [
+      "SYSLOG_RFC3164+GENERIC_POSITIONAL_CSV",
+      1
+    ],
+    [
+      "SYSLOG_RFC5424+GENERIC_POSITIONAL_CSV",
+      1
+    ]
+  ],
+  "total": {
+    "complete_rate_ppm": 662085,
+    "events": 8076,
+    "issues": 2977,
+    "raw_preserved": 8076,
+    "residual_byte_rate_ppm": 100838,
+    "residual_bytes": 898668,
+    "source_bytes": 8912000,
+    "source_fields": 303148,
+    "source_spans": 303148,
+    "status_PARTIAL": 1296,
+    "status_RAW_ONLY": 1433,
+    "status_SOURCE_PARSED": 5347
+  }
+}
