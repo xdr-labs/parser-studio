@@ -1,0 +1,22 @@
+{
+  "contract": "parser-studio.poc.masked-residual-rgram-negative.v1",
+  "scope": "SECURITY_PRODUCTS_ONLY",
+  "family": "cisco_ise",
+  "source_file": "test-pipeline-cise-alarm.log",
+  "source_file_sha256": "9bfa8c3106d4ac6e9a2654a6a97d5d0ac2016198",
+  "expected_reference_sha256": "69067ea045c2f1db99674e77dd954796a78ea525",
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "candidate_promotions": 3,
+  "candidate_added_spans": 12,
+  "candidate_added_span_length_bytes": {
+    "2": 12
+  },
+  "official_expected_document_matches": 3,
+  "added_span_exact_expected_value_matches": 0,
+  "added_span_only_substring_matches": 12,
+  "baseline_span_loss": 0,
+  "raw_values_published": false,
+  "verdict": "REJECTED_FALSE_STRUCTURAL_SEGMENTATION",
+  "reason": "All added spans were two-byte fragments and none exactly matched an independent expected field value. The exploratory masked-R-gram implementation was discarded rather than counted as improvement."
+}

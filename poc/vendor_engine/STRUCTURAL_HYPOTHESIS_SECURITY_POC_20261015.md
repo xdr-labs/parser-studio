@@ -292,6 +292,29 @@ external-evidence tests and completed:
 This is the reproducible code-regression gate for the isolated strict-v3 PoC
 worktree.
 
+## Rejected follow-up — masked residual R-gram
+
+A follow-up experiment masked all baseline value spans and learned only the
+remaining residual token pattern. On Cisco ISE `CISE_Alarm`, it appeared to
+promote three holdout events while preserving every baseline span. Independent
+comparison against Elastic's pinned official expected output rejected the
+result:
+
+- candidate promotions: **3**;
+- added spans: **12**;
+- every added span length: **2 bytes**;
+- added spans exactly matching an independent expected field value: **0 / 12**;
+- all matches were only incidental substrings of larger expected values.
+
+Verdict: **REJECTED_FALSE_STRUCTURAL_SEGMENTATION**. The exploratory code was
+removed and none of these candidates are counted in the PoC gain. This is a
+useful counterexample: baseline-span preservation alone is not sufficient;
+newly recovered values also need independent correctness evidence.
+
+Machine-readable negative evidence:
+
+- `structural-hypothesis-masked-rgram-negative.json`
+
 ## Interpretation
 
 The strict result is narrower than the earlier exploratory result but much
