@@ -89,12 +89,18 @@ function tokenizeCSV(raw: string, delimiter: string): string[] | null {
       } else token += c;
     } else if (state === 'afterQuote') {
       if (c === delimiter) { out.push(token); token = ''; state = 'start'; }
+      else if (c === ' ' || (c === '\t' && delimiter !== '\t')) continue;
       else return null;
     } else if (c === delimiter) {
       out.push(token.trim()); token = ''; state = 'start';
     } else if (c === '"') {
       if (state !== 'start') return null;
       state = 'quoted';
+    } else if (state === 'start' && (c === ' ' || (c === '\t' && delimiter !== '\t'))) {
+      // Match the generated strict CSV parser's bounded field-edge stripping:
+      // whitespace adjacent to a field is ignored, but quotes inside an
+      // already-started unquoted value remain invalid.
+      continue;
     } else {
       token += c;
       state = 'plain';
