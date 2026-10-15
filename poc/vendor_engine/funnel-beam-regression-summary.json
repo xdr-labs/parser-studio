@@ -4,6 +4,7 @@
   "contract": "parser-studio.poc.funnel-beam-regression.v2",
   "environment": {
     "drain3": "ignored .cache/drain_deps added to PYTHONPATH",
+    "logparser": "ignored .cache/logparser and .cache/logparser_deps added to PYTHONPATH",
     "raw_values_published": false
   },
   "focused": {
@@ -16,7 +17,7 @@
   "full_vendor_engine": {
     "errors": 0,
     "failures": 0,
-    "optional_skips": 14,
+    "optional_skips": 13,
     "tests": 444
   },
   "funnel_core_sha256": "85d90ba07f13544fb337007699ca3b143315bd8434df3a0a4a490b4e3e9098ff",

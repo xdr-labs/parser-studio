@@ -193,8 +193,8 @@ Current research implementation:
 Regression:
 
 - focused Funnel + Structural suite: **38 / 38 PASS**
-- full vendor_engine discovery: **444 tests PASS / 14 optional skips / 0 failures / 0 errors**
-- optional Drain3 tests executed with the existing ignored .cache/drain_deps path on PYTHONPATH.
+- full vendor_engine discovery: **444 tests PASS / 13 optional skips / 0 failures / 0 errors**
+- optional dependency qualification used the existing ignored .cache/drain_deps, .cache/logparser, and .cache/logparser_deps paths on PYTHONPATH.
 
 verify_funnel_beam_evidence.py checks implementation hashes, independent-reference ranges, frozen-holdout abstention, broad no-loss gates, real multi-layer evidence, and regression summaries.
 
