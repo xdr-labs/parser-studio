@@ -54,4 +54,17 @@ class CiscoAsaConservativeTests(unittest.TestCase):
         self.assertIsNone(parse_asa_message('%ASA-4-113029: first %FTD-6-302013: second'))
         self.assertIsNone(parse_asa_message('%ASA-4-113029: first\n%FTD-6-302013: second'))
 
+    def test_asa_message_id_beats_incidental_unlabeled_csv_commas(self):
+        raw=('Apr 17 2020 14:00:31 edge-asa : %ASA-4-106023: Deny icmp '
+             'src Inside:192.0.2.10 dst Outside:198.51.100.20 '
+             '(type 11, code 0) by access-group "inside_acl" [0x0, 0x0]')
+        event=parse_security_multipass(raw)
+        self.assertEqual('CISCO_ASA_FTD_MESSAGE_ID',event.syntax)
+        self.assertEqual('PARTIAL',event.status)
+        self.assertEqual('ASA',event.vendor_fields['asa']['product'])
+        self.assertEqual('106023',event.vendor_fields['asa']['message_id'])
+        self.assertEqual('Deny',event.vendor_fields['asa']['action'])
+        self.assertNotIn('column_0',event.vendor_fields)
+        self.assertIn('ASA_MESSAGE_BODY_UNPARSED',event.issues)
+
 if __name__=='__main__':unittest.main()

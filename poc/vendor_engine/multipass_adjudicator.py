@@ -331,6 +331,12 @@ def parse_security_once(raw:str)->SourceEvent:
                            if issue not in ('NO_SUPPORTED_GRAMMAR','UNSUPPORTED_BSD_BODY','UNSUPPORTED_PRI_BODY')]
             return merged
         return asa
+    # An explicit Cisco ASA/FTD message ID is stronger structural evidence than
+    # an unlabeled CSV guess caused by commas inside ASA prose such as
+    # "(type 11, code 0)". Do not ask novice users to name fake CSV columns.
+    if (asa is not None and base.status!='SOURCE_PARSED'
+            and 'CSV_UNLABELED_CANDIDATE' in base.syntax):
+        return asa
     if not base.vendor_fields and asa is not None:return asa
     cef=parse_security_cef(raw,base_parser=parse_security_source)
     if 'CEF_STANDARD' in cef.syntax:
