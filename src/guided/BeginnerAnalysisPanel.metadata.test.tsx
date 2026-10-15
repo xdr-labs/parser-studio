@@ -5,6 +5,32 @@ import {createDraft} from '../model';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
 describe('Beginner metadata preservation review',()=>{
+
+  it('does not call source-complete positional CSV parser-ready while schema review is pending',()=>{
+    const source='alpha,beta,gamma';
+    const preview={
+      contract:'parser-studio.multipass-source-preview.v0.1',
+      status:'SOURCE_PARSED',
+      syntax:'CSV_UNLABELED',
+      sourceSha256:'0'.repeat(64),
+      sourceBytes:source.length,
+      fields:{csv:['alpha','beta','gamma']},
+      spans:[],
+      residuals:[],
+      issues:[],
+      nativeVerified:false,
+      targetVerified:false,
+    } as const;
+    render(<BeginnerAnalysisPanel source={source}
+      events={[{startByte:0,endByte:source.length,preview}]}
+      onOpenAssisted={()=>{}}
+      csvReviewRequired csvConsistentShapeAvailable={false}/>);
+    expect(screen.getByText('1 of 1 source event extracted')).toBeInTheDocument();
+    expect(screen.queryByText(/parsed completely/)).not.toBeInTheDocument();
+    expect(screen.getByText(/do not share one consistent CSV shape/)).toBeInTheDocument();
+  });
+
+
   it('offers an explicit no-inference path for bounded bracket colon-KV metadata',()=>{
     const source='<134>1 2020-03-30T07:20:35 gw CheckPoint 8363 - [action:"Accept"; src:"192.0.2.1"]';
     const preview:MultiPassSourcePreview={

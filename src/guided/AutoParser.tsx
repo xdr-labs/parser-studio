@@ -203,8 +203,14 @@ export default function AutoParser({
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
    [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
+ const csvSupportedShapeCounts=csvReviewActive?
+   ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(sample,delimiter))
+     .filter((count):count is number=>count!==null):[];
+ const csvConsistentShapeAvailable=!csvReviewActive||csvSupportedShapeCounts.length>0;
  const neutralCsvColumnCount=csvReviewActive?
    inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
+ const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
+   csvColumns.length===neutralCsvColumnCount);
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
    const names=Array.from({length:neutralCsvColumnCount},
@@ -687,6 +693,8 @@ export default function AutoParser({
          draft={draft} suite={suite} onApplyCandidate={setDraft}
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
          parserRuleReviewRequired={parserRuleReviewRequired}
+         csvReviewRequired={csvReviewActive&&!csvApproved}
+         csvConsistentShapeAvailable={csvConsistentShapeAvailable}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
@@ -777,10 +785,12 @@ export default function AutoParser({
            {' · '}{x.count}</span>)}
        </div>
        {csvReviewActive&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
-         <strong>Positional values found — choose field names</strong>
-         <p>Parser Studio extracted the values, but these rows do not contain trustworthy field names.
-           Keep temporary names now or enter names you know, then choose the data separator.
-           Parser Studio will test every row before generating files.</p>
+         <strong>{csvConsistentShapeAvailable
+           ?'Positional values found — choose field names'
+           :'Positional rows have different column counts'}</strong>
+         <p>{csvConsistentShapeAvailable
+           ?'Parser Studio extracted the values, but these rows do not contain trustworthy field names. Keep temporary names now or enter names you know, then choose the data separator. Parser Studio will test every row before generating files.'
+           :'Parser Studio extracted source values, but the rows do not share one consistent column count using comma, semicolon or tab. One column list cannot safely parse all of them. Analyze matching row shapes separately before creating a parser.'}</p>
          <label>Column names, separated by commas
            <input aria-label="Reviewed CSV column names" value={draft.csvColumns}
              maxLength={4096}
@@ -805,13 +815,20 @@ export default function AutoParser({
              <option value={'\t'}>Tab</option>
            </select>
          </label>
-         {!csvApproved&&<button type="button" disabled={!csvNamesValid||pending}
+         {!csvApproved&&<button type="button"
+           disabled={!csvNamesValid||!csvSelectedShapeMatchesNames||pending}
            onClick={()=>setCsvApprovedKey(csvSchemaKey)}>
            I Confirm These CSV Column Names
          </button>}
          <p role="status">{csvApproved?
            'Field names are ready. Continue to Review Fields.':
-           'Choose temporary names or enter your own, then confirm the names and separator.'}</p>
+           !csvConsistentShapeAvailable?
+             'These rows need to be separated into matching positional shapes before one CSV parser can be created.':
+           !neutralCsvColumnCount?
+             'Choose the separator that gives every row the same column count before confirming field names.':
+           !csvSelectedShapeMatchesNames?
+             `Enter exactly ${neutralCsvColumnCount} unique field names for the selected separator before confirming.`:
+             'Field names and separator are consistent. Confirm them to continue.'}</p>
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">
