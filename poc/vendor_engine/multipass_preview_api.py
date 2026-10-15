@@ -8,6 +8,7 @@ import json
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlsplit
 from multipass_adjudicator import parse_security_multipass
+from bounded_funnel import parse_security_funnel,run_funnel_batch
 from security_framing import parse_security_batch
 from stellar_dictionary import (CEF_DICTIONARY_URL,DICTIONARY_REVISION,OFFICIAL_DICTIONARY_URL_65,
                                 OFFICIAL_DICTIONARY_URL_70,normalize_stellar_dictionary)
@@ -66,7 +67,7 @@ def _preview_event(raw:str,event)->dict:
 def preview(raw:str)->dict:
     if not isinstance(raw,str) or not raw or len(raw.encode('utf8'))>MAX_BYTES:
         raise ValueError('SOURCE_LIMIT')
-    return _preview_event(raw,parse_security_multipass(raw))
+    return _preview_event(raw,parse_security_funnel(raw))
 
 
 def preview_batch(raw:str)->dict:
@@ -74,6 +75,7 @@ def preview_batch(raw:str)->dict:
         raise ValueError('SOURCE_LIMIT')
     batch=parse_security_batch(raw,max_events=500,max_bytes=MAX_BYTES,
                                parser=parse_security_multipass)
+    funnel=run_funnel_batch([frame.raw for frame in batch.frames])
     return {
         'contract':'parser-studio.multipass-source-batch-preview.v0.1',
         'sourceSha256':hashlib.sha256(raw.encode('utf8')).hexdigest(),
@@ -83,7 +85,7 @@ def preview_batch(raw:str)->dict:
             'index':index,
             'startByte':frame.start_byte,
             'endByte':frame.end_byte,
-            'preview':_preview_event(frame.raw,frame.event),
+            'preview':_preview_event(frame.raw,funnel.selected[index]),
         } for index,frame in enumerate(batch.frames)],
         'separators':[{
             'startByte':separator.start_byte,

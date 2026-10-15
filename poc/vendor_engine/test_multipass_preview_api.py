@@ -96,6 +96,25 @@ class PreviewContract(unittest.TestCase):
         self.assertEqual(len(encoded),position)
         self.assertFalse(result['nativeVerified']);self.assertFalse(result['targetVerified'])
 
+    def test_batch_preview_runs_bounded_funnel_learning_without_false_complete(self):
+        from multipass_adjudicator import parse_security_multipass
+        rows=[
+            '05/30-19:09:10.917356  alert one',
+            '12/30-14:09:21.116402  alert two',
+            '01/21-02:23:42.327730  alert three',
+            '09/04-21:55:02.041364  alert four',
+        ]
+        result=preview_batch('\n'.join(rows))
+        self.assertEqual(4,result['eventCount'])
+        for raw,item in zip(rows,result['events']):
+            baseline=parse_security_multipass(raw)
+            previewed=item['preview']
+            self.assertEqual('PARTIAL',previewed['status'])
+            self.assertIn('NO_SUPPORTED_GRAMMAR',previewed['issues'])
+            self.assertGreater(len(previewed['spans']),len(baseline.value_spans))
+            self.assertEqual(__import__('hashlib').sha256(raw.encode()).hexdigest(),
+                             previewed['sourceSha256'])
+
     def test_batch_preview_uses_security_stream_framing_for_mixed_records(self):
         raw=('date=2026-10-14 type="utm" subtype="webfilter" srcip=192.0.2.10 action="blocked"\n'
              'CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.20 act=deny')
