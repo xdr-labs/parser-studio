@@ -9,10 +9,55 @@ import {MAX_EVENTS,preview,splitEvents} from '../parser';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void;importOnly?:boolean}
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void;importOnly?:boolean;protectedSourceValuesByEvent?:string[][];protectedResidualTextByEvent?:string[][]}
 const completeSuite=(value:SuiteResult)=>value.counts.total>0&&value.counts.matched===value.counts.total&&
  value.counts.extracted===value.counts.total&&value.counts.normalized===value.counts.total&&value.counts.failures===0;
-export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate,importOnly=false}:Props){
+function scalarValues(value:unknown):string[]{
+ if(value===null)return ['null'];
+ if(Array.isArray(value))return value.flatMap(scalarValues);
+ if(typeof value==='object'&&value!==null)return Object.values(value as Record<string,unknown>).flatMap(scalarValues);
+ return value===undefined?[]:[String(value)];
+}
+function sourceAlternatives(value:string):string[]{
+ const out=[value];
+ if(value.length>=2&&value[0]==='\"'&&value.at(-1)==='\"'){
+  try{const parsed=JSON.parse(value);if(typeof parsed==='string')out.push(parsed);}catch{/* keep exact source */}
+ }else if(value.length>=2&&value[0]==="'"&&value.at(-1)==="'")out.push(value.slice(1,-1));
+ return [...new Set(out)];
+}
+function protectedValueRegression(candidate:SuiteResult,protectedValues:string[][]|undefined):
+ {event:number;missing:number;required:number;available:number}|null{
+ if(!protectedValues?.some(values=>values.length))return null;
+ for(let index=0;index<protectedValues.length;index++){
+  const required=protectedValues[index]??[];
+  if(!required.length)continue;
+  const pool=scalarValues(candidate.events[index]?.fields);
+  const used=new Array(pool.length).fill(false);let missing=0;
+  for(const source of required){
+   const choices=sourceAlternatives(source);let found=-1;
+   for(let i=0;i<pool.length;i++)if(!used[i]&&choices.includes(pool[i]!)){found=i;break;}
+   if(found<0)missing++;else used[found]=true;
+  }
+  if(missing)return {event:index+1,missing,required:required.length,available:pool.length};
+ }
+ return null;
+}
+function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:string[][]|undefined):
+ {event:number;missing:number;required:number}|null{
+ if(!protectedResiduals?.some(values=>values.length))return null;
+ for(let index=0;index<protectedResiduals.length;index++){
+  const required=(protectedResiduals[index]??[]).map(value=>value.trim()).filter(Boolean);
+  if(!required.length)continue;
+  const pool=scalarValues(candidate.events[index]?.fields);
+  let missing=0;
+  for(const residual of required){
+   if(!pool.some(value=>value.includes(residual)))missing++;
+  }
+  if(missing)return {event:index+1,missing,required:required.length};
+ }
+ return null;
+}
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate,importOnly=false,protectedSourceValuesByEvent,protectedResidualTextByEvent}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
@@ -102,6 +147,15 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    let candidateSuite:SuiteResult,candidateHoldout:SuiteResult;
    try{
     candidateSuite=preview(source,proposal.candidate);candidateHoldout=preview(holdout,proposal.candidate);
+    const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent);
+    if(protectedRegression){
+     setImportResult(`Fix not applied: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences already extracted by Parser Studio. No changes were made.`);return;
+    }
+    const residualRegression=candidateMode==='recovery'?
+     protectedResidualRegression(candidateSuite,protectedResidualTextByEvent):null;
+    if(residualRegression){
+     setImportResult(`Fix not applied: event ${residualRegression.event} would leave ${residualRegression.missing} of ${residualRegression.required} previously unparsed source regions outside the candidate fields. Preserve the remaining source text before applying the fix.`);return;
+    }
     const comparisonInput={source,baseline:suite,candidate:candidateSuite,
      holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
     report=candidateMode==='correction'&&correctionScope?
@@ -155,6 +209,17 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      }
      try{
       const candidateSuite=preview(source,approvedCandidate.draft),candidateHoldout=preview(holdout,approvedCandidate.draft);
+      const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent);
+      if(protectedRegression){
+       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+       setImportResult(`The fix is no longer safe: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences already extracted by Parser Studio. No changes were made.`);return;
+      }
+      const residualRegression=approvedCandidate.mode==='recovery'?
+       protectedResidualRegression(candidateSuite,protectedResidualTextByEvent):null;
+      if(residualRegression){
+       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+       setImportResult(`The fix is no longer safe: event ${residualRegression.event} would leave ${residualRegression.missing} of ${residualRegression.required} previously unparsed source regions outside the candidate fields. No changes were made.`);return;
+      }
       const recheckInput={source,baseline:suite,candidate:candidateSuite,
        holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
       const recheck=approvedCandidate.mode==='correction'&&approvedCandidate.scope?

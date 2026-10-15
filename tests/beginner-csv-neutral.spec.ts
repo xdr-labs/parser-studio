@@ -39,10 +39,11 @@ test('source-complete PAN-OS positional CSV still asks for neutral column approv
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('2 of 2 source events extracted');
- const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Syslog-wrapped positional CSV');
- await expect(problem).toContainText('Recommended fix · Keep all values with temporary field names');
- const neutral=problem.getByRole('button',{name:'Keep all 5 values with temporary names'});
+ await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
+ const csvReview=page.getByLabel('Review CSV column names');
+ await expect(csvReview).toContainText('Positional values found — choose field names');
+ await expect(csvReview).toContainText('do not contain trustworthy field names');
+ const neutral=csvReview.getByRole('button',{name:'Keep all 5 values with temporary names'});
  await expect(neutral).toBeVisible();
  await neutral.click();
  await expect(summary).toContainText('2 of 2 log events parsed completely');
@@ -68,5 +69,5 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002,field_003,field_004,field_005');
- await expect(page.getByText('CSV field names reviewed. Automatic parser testing is ready.')).toBeVisible();
+ await expect(page.getByText('Field names are ready. Continue to Review Fields.')).toBeVisible();
 });

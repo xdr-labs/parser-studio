@@ -32,7 +32,7 @@ test('Auto Parser requires explicit CSV columns and delimiter confirmation witho
  await expect(review).toBeDisabled();
  await page.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
  await expect(page.getByLabel('Review CSV column names'))
-   .toContainText('CSV field names reviewed');
+   .toContainText('Field names are ready. Continue to Review Fields.');
  await expect(review).toBeEnabled();
  await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,port');
  await expect(review).toBeDisabled();

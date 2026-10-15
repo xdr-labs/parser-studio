@@ -243,8 +243,7 @@ export default function AutoParser({
  const chosen=records[selected]??records[0];
  const multiPassSourceComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
    multiPass.events.every(event=>event.preview.status==='SOURCE_PARSED');
- const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&
-   (report.unsupported>0||(csvFound&&!csvApproved)));
+ const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&report.unsupported>0);
  const beginnerAuthoritativeComplete=Boolean(multiPassSourceComplete&&!parserRuleReviewRequired);
  const browserSuiteComplete=!!suite&&suite.engine==='browser-preview'&&
    suite.nativeFluentdVerified===false&&suite.stellarExportVerified===false&&
@@ -614,6 +613,17 @@ export default function AutoParser({
  const currentMultiPassCounts=currentMultiPassReview?.events.reduce((counts,event)=>{
   counts[event.preview.status]=(counts[event.preview.status]??0)+1;return counts;
  },{} as Record<string,number>)??{};
+ const protectedSourceValuesByEvent=currentMultiPassReview?.events.map(event=>{
+  const eventRaw=utf8Slice(sample,event.startByte,event.endByte);
+  return event.preview.spans.filter(span=>span.endByte>span.startByte)
+    .map(span=>utf8Slice(eventRaw,span.startByte,span.endByte));
+ });
+ const protectedResidualTextByEvent=currentMultiPassReview?.events.map(event=>{
+  const eventRaw=utf8Slice(sample,event.startByte,event.endByte);
+  return event.preview.residuals.filter(region=>region.endByte>region.startByte)
+    .map(region=>utf8Slice(eventRaw,region.startByte,region.endByte))
+    .filter(text=>text.trim().length>0);
+ });
  return <main className={'auto-parser-workspace '+(advanced?'advanced-mode':'beginner-mode')} aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
      <span className="pane-index">AUTO PARSER · BEGINNER MODE</span>
@@ -670,7 +680,9 @@ export default function AutoParser({
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
          parserRuleReviewRequired={parserRuleReviewRequired}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
-         onUseNeutralCsvColumns={suggestNeutralCsvColumns}/>}
+         onUseNeutralCsvColumns={suggestNeutralCsvColumns}
+         protectedSourceValuesByEvent={protectedSourceValuesByEvent}
+           protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
        <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
@@ -739,9 +751,13 @@ export default function AutoParser({
            </div>}
            {advanced&&selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="partial" onChatGPT={onChatGPT}
              initialByteRange={selectedMultiPass} selectionContext={{kind:selectedMultiPass.kind,path:selectedMultiPass.path}}
-             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
+             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
+             protectedSourceValuesByEvent={protectedSourceValuesByEvent}
+           protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
            {advanced&&currentMultiPass.status==='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="unsupported" onChatGPT={onChatGPT}
-             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>}
+             source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
+             protectedSourceValuesByEvent={protectedSourceValuesByEvent}
+           protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
 
          </div>}
        </div>
@@ -753,9 +769,9 @@ export default function AutoParser({
            {' · '}{x.count}</span>)}
        </div>
        {csvFound&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
-         <strong>CSV rows detected — confirm each column name</strong>
-         <p>CSV rows do not contain field names. Name the columns in the
-           order they appear in a CSV row, and choose its data separator.
+         <strong>Positional values found — choose field names</strong>
+         <p>Parser Studio extracted the values, but these rows do not contain trustworthy field names.
+           Keep temporary names now or enter names you know, then choose the data separator.
            Parser Studio will test every row before generating files.</p>
          <label>Column names, separated by commas
            <input aria-label="Reviewed CSV column names" value={draft.csvColumns}
@@ -764,11 +780,11 @@ export default function AutoParser({
          </label>
          {neutralCsvColumnCount&&<div className="auto-parser-note" aria-label="Neutral CSV column suggestion">
            <strong>{neutralCsvColumnCount} consistent columns detected</strong>
-           <p>Parser Studio can fill neutral names such as field_001 and field_002
+           <p>Parser Studio can keep every value under temporary names such as field_001 and field_002
              without guessing vendor semantics. Original values remain unchanged;
              you can rename or map fields later.</p>
-           <button type="button" onClick={suggestNeutralCsvColumns}>
-             Fill {neutralCsvColumnCount} Neutral Column Names
+           <button type="button" className="auto-parser-primary" onClick={suggestNeutralCsvColumns}>
+             Keep all {neutralCsvColumnCount} values with temporary names
            </button>
          </div>}
          <label>Separator in your CSV rows
@@ -781,13 +797,13 @@ export default function AutoParser({
              <option value={'\t'}>Tab</option>
            </select>
          </label>
-         <button type="button" disabled={!csvNamesValid||pending}
+         {!csvApproved&&<button type="button" disabled={!csvNamesValid||pending}
            onClick={()=>setCsvApprovedKey(csvSchemaKey)}>
            I Confirm These CSV Column Names
-         </button>
+         </button>}
          <p role="status">{csvApproved?
-           'CSV field names reviewed. Automatic parser testing is ready.':
-           'Review required: CSV names and separator must be confirmed before analysis.'}</p>
+           'Field names are ready. Continue to Review Fields.':
+           'Choose temporary names or enter your own, then confirm the names and separator.'}</p>
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">
@@ -803,7 +819,9 @@ export default function AutoParser({
        {advanced&&sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
          <strong>Some source events need assistance</strong>
          <p>{report.unsupported} of {report.sourceCount} events were not fully recognized. The original input is preserved; unsupported events are not silently discarded or marked parser-ready.</p>
-         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}/>
+         <AutoParserAIReview raw={sample} status="unsupported" onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite}
+           protectedSourceValuesByEvent={protectedSourceValuesByEvent}
+           protectedResidualTextByEvent={protectedResidualTextByEvent}/>
        </div>}
        <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
          cannot be silently dropped or marked compiler-ready.</p>
@@ -970,10 +988,16 @@ export default function AutoParser({
          <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
-       {chosen&&suite&&!pending?<AutoParserAIReview raw={chosen.raw} status={chosen.status} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}/>:
-        <div className="stellar-ai-review" role="status" aria-label="Improve with AI preview status">
-          <h3>Improve with AI</h3><p>Refreshing the current browser preview before AI correction can be reviewed.</p>
-        </div>}
+       <details className="auto-parser-recipe" open={advanced}
+         aria-label="Optional AI field correction">
+         <summary>Need a different extraction? Fix a field with ChatGPT</summary>
+         {chosen&&suite&&!pending?<AutoParserAIReview raw={chosen.raw} status={chosen.status} onChatGPT={onChatGPT} source={sample} draft={draft} suite={suite} onApplyCandidate={setDraft}
+           protectedSourceValuesByEvent={protectedSourceValuesByEvent}
+           protectedResidualTextByEvent={protectedResidualTextByEvent}/>:
+          <div className="stellar-ai-review" role="status" aria-label="Improve with AI preview status">
+            <p>Preparing the optional ChatGPT correction tools for this event.</p>
+          </div>}
+       </details>
        </div>
        <details className="auto-parser-recipe beginner-field-summary" open={advanced}
          aria-label="Suggested field mappings">

@@ -22,6 +22,8 @@ interface Props {
   parserRuleReviewRequired?:boolean;
   neutralCsvColumnCount?:number;
   onUseNeutralCsvColumns?:()=>void;
+  protectedSourceValuesByEvent?:string[][];
+  protectedResidualTextByEvent?:string[][];
 }
 
 function utf8Slice(source:string,startByte:number,endByte:number):string{
@@ -52,9 +54,8 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
 function friendlySyntax(preview:MultiPassSourcePreview):string{
   const syntax=preview.syntax.toUpperCase();
   if(wholeEventNeedsRule(preview))return 'custom text format';
-  if(syntax.includes('CSV'))return (syntax.includes('SYSLOG')||syntax.includes('BSD')||syntax.includes('RFC'))?
-    'Syslog-wrapped positional CSV':'positional CSV';
-  if(syntax.includes('ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
+  if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
+  if(syntax.includes('CSV_UNLABELED'))return 'Syslog-wrapped positional CSV';
   if(syntax.includes('SYSLOG'))return 'Syslog with structured security fields';
   if(syntax.includes('JSON'))return 'JSON';
   if(syntax.includes('CEF'))return 'CEF';
@@ -62,7 +63,7 @@ function friendlySyntax(preview:MultiPassSourcePreview):string{
   if(syntax.includes('KV'))return 'key/value fields';
   return 'security log structure';
 }
-function recommendation(preview:MultiPassSourcePreview):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted';label:string;text:string}{
+function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
   if(wholeEventNeedsRule(preview))return {
@@ -92,11 +93,23 @@ function recommendation(preview:MultiPassSourcePreview):{kind:'metadata'|'json'|
     label:'Map the remaining LEEF fields',
     text:'Keep the LEEF structure and map only the remaining extension fields.',
   };
-  if(syntax.includes('CSV')||issues.includes('CSV')||issues.includes('UNLABELED'))return {
-    kind:'csv',
-    label:'Keep all values with temporary field names',
-    text:'The log has values in fixed positions but does not contain column names. Keep every value with temporary names now; you can rename the fields later without losing source data.',
+  if(issues.includes('CSV_GRAMMAR_INVALID'))return {
+    kind:'text',
+    label:'Review this irregular delimited text',
+    text:'This event looks comma-delimited, but its CSV structure is not trustworthy enough to assign columns safely. Keep the values already extracted and create a bounded rule only after testing additional examples.',
   };
+  if(syntax.includes('CSV')||issues.includes('CSV')||issues.includes('UNLABELED')){
+    if(!canUseNeutralCsvNames)return {
+      kind:'assisted',
+      label:'Create a rule for this positional log',
+      text:'Parser Studio found positional values, but this wrapped or irregular form cannot safely receive automatic temporary column names. Keep the extracted values and test a reviewed parser rule against additional examples.',
+    };
+    return {
+      kind:'csv',
+      label:'Keep all values with temporary field names',
+      text:'The log has values in fixed positions but does not contain column names. Keep every value with temporary names now; you can rename the fields later without losing source data.',
+    };
+  }
   if(syntax.includes('KV')&&!syntax.includes('UNKNOWN'))return {
     kind:'kv',
     label:'Keep the key/value fields and fix the remaining section',
@@ -148,20 +161,22 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
   resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,
-  neutralCsvColumnCount,onUseNeutralCsvColumns}:Props){
+  neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
+  protectedResidualTextByEvent}:Props){
   const [selected,setSelected]=useState(0);
   const [promptOpen,setPromptOpen]=useState(false);
   const [promptText,setPromptText]=useState('');
   const [promptBusy,setPromptBusy]=useState(false);
   const [copyStatus,setCopyStatus]=useState('');
   const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
+  const neutralCsvReviewRequired=Boolean(neutralCsvColumnCount&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
   const parsed=resolvedByReviewedCandidate?events.length:parserRuleReviewRequired?0:sourceParsed;
   const problems=resolvedByReviewedCandidate?[]:parserRuleReviewRequired&&events.length
     ?[{event:events[0]!,index:0}]
     :events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
-  const rec=current?recommendation(current.event.preview):null;
+  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns)):null;
   const recipeImportEligible=!!rec&&rec.kind!=='metadata';
   const openPrompt=async()=>{
     if(!current||!rec||promptBusy)return;
@@ -185,14 +200,18 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     }catch{setCopyStatus('Copy was blocked by the browser. Select the prompt text and copy it manually.');}
   };
   return <section className="beginner-analysis" aria-label="Beginner analysis summary">
-    <div className={"beginner-analysis-head "+(problems.length?'needs-attention':'complete')}>
-      {problems.length?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
+    <div className={"beginner-analysis-head "+(problems.length||neutralCsvReviewRequired?'needs-attention':'complete')}>
+      {problems.length||neutralCsvReviewRequired?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
       <div>
-        <strong>{parserRuleReviewRequired
+        <strong>{neutralCsvReviewRequired
+          ?`${sourceParsed} of ${events.length} source event${events.length===1?'':'s'} extracted`
+          :parserRuleReviewRequired
           ?`${sourceParsed} of ${events.length} source event${events.length===1?'':'s'} extracted`
           :`${parsed} of ${events.length} log event${events.length===1?'':'s'} parsed completely`}</strong>
         <p>{resolvedByReviewedCandidate
           ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
+          :neutralCsvReviewRequired
+          ?'Parser Studio extracted every source value, but this positional CSV does not contain trustworthy field names. Keep temporary names or enter your own before continuing.'
           :parserRuleReviewRequired
           ?'Parser Studio found the source fields, but it still needs one additional rule before it can create the parser. No extracted values will be lost.'
           :problems.length
@@ -266,7 +285,9 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           <AutoParserAIReview importOnly raw={raw}
             status={current.event.preview.status==='RAW_ONLY'?'unsupported':'partial'}
             onChatGPT={onOpenAssisted} source={source} draft={draft} suite={suite}
-            onApplyCandidate={onApplyCandidate}/>
+            onApplyCandidate={onApplyCandidate}
+            protectedSourceValuesByEvent={protectedSourceValuesByEvent}
+            protectedResidualTextByEvent={protectedResidualTextByEvent}/>
         </>}
         {recipeImportEligible&&draft&&!suite&&<div className="beginner-inline-wait" role="status">
           <strong>Preparing result review…</strong>
