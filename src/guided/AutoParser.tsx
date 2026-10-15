@@ -195,8 +195,11 @@ export default function AutoParser({
      };
    });
  };
+ const multiPassCsvEvidence=multiPass?.raw===sample&&multiPass.events.length>0&&
+   multiPass.events.every(event=>event.preview.syntax.toUpperCase().includes('CSV'));
  const csvFound=report.families.some(f=>f.envelope==='none'&&f.body==='csv');
- const csvReviewActive=csvFound&&(draft.format==='auto'||draft.format==='csv');
+ const csvReviewActive=csvFound&&(draft.format==='csv'||advanced||
+   (draft.format==='auto'&&(report.unsupported===0||Boolean(multiPassCsvEvidence))));
  const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
  const csvApproved=!csvReviewActive||csvApprovedKey===csvSchemaKey;
  const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());

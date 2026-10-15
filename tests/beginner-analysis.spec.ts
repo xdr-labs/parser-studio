@@ -262,6 +262,45 @@ test('metadata-only source anomaly explains that no bytes were dropped and does 
 });
 
 
+test('unconfirmed comma-delimited candidates do not falsely claim positional CSV columns',async({page})=>{
+ const raw='<166>Mar 17 18:24:37 amp: Info: SHA256: abc, Submit Timestamp: 1, Update Timestamp: 2, Disposition: 3';
+ const response={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',
+  syntax:'SYSLOG_RFC3164+CSV_UNLABELED_CANDIDATE',sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),
+  fields:{syslog:{host:'amp'}},spans:[],
+  residuals:[{startByte:0,endByte:Buffer.byteLength(raw)}],
+  issues:['UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION'],nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const problem=page.getByLabel('Parse problem inspector');
+ await expect(problem).toContainText('comma-delimited text candidate');
+ await expect(problem).toContainText('Recommended fix · Create a rule for this comma-delimited text');
+ await expect(problem).not.toContainText('positional CSV');
+});
+
+test('a comma inside Syslog prose does not expose positional CSV controls',async({page})=>{
+ const raw='Feb 8 04:00:48 edge 585917: Feb 8 04:00:47.272: %SEC-6-IPACCESSLOGRP: list 177 denied igmp 192.0.2.10 -> 224.0.0.22, 1 packet';
+ const response={
+  contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',
+  syntax:'BSD_SYSLOG+UNKNOWN+GENERIC_ATOMS',sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),
+  fields:{syslog:{hostname:'edge'}},spans:[],
+  residuals:[{startByte:28,endByte:Buffer.byteLength(raw)}],
+  issues:['NO_SUPPORTED_GRAMMAR'],nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ await expect(page.getByLabel('Parse problem inspector')).toContainText('security device message');
+ await expect(page.getByLabel('Review CSV column names')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/Keep all .* values with temporary names/})).toHaveCount(0);
+});
+
 test('unknown non-Syslog text recommends a bounded text pattern without inventing Syslog context',async({page})=>{
  const raw='ALERT#A17#192.0.2.5#198.51.100.4#udp#53#deny';
  const response={

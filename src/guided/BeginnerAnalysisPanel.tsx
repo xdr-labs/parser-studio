@@ -55,7 +55,7 @@ function plainIssue(code:string):string{
     RFC5424_DUPLICATE_SD_KEY:'The Syslog structured-data section contains a repeated field name.',
     RFC5424_SD_TRAILING_SPACE_NONSTANDARD:'The Syslog structured-data section contains non-standard spacing.',
     RFC5424_TIMESTAMP_INVALID:'The Syslog timestamp is not valid enough to use as event time.',
-    UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION:'The event is positional CSV. Values were found, but the log itself does not contain reliable column names.',
+    UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION:'The event contains comma-delimited text, but Parser Studio cannot confirm trustworthy column boundaries or names from this sample alone.',
     UNSUPPORTED_BSD_BODY:'The Syslog header was recognized but the message body still needs an extraction rule.',
     RFC5424_HEADER_TOKEN_INVALID:'The Syslog header contains a token outside the supported grammar.',
   };
@@ -69,7 +69,7 @@ function friendlySyntax(preview:MultiPassSourcePreview):string{
   const syntax=preview.syntax.toUpperCase();
   if(wholeEventNeedsRule(preview))return 'custom text format';
   if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
-  if(syntax.includes('CSV_UNLABELED'))return 'Syslog-wrapped positional CSV';
+  if(syntax.includes('CSV_UNLABELED'))return 'comma-delimited text candidate';
   if(syntax.includes('SYSLOG'))return 'Syslog with structured security fields';
   if(syntax.includes('JSON'))return 'JSON';
   if(syntax.includes('CEF'))return 'CEF';
@@ -115,8 +115,8 @@ function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=fal
   if(syntax.includes('CSV')||issues.includes('CSV')||issues.includes('UNLABELED')){
     if(!canUseNeutralCsvNames)return {
       kind:'assisted',
-      label:'Create a rule for this positional log',
-      text:'Parser Studio found positional values, but this wrapped or irregular form cannot safely receive automatic temporary column names. Keep the extracted values and test a reviewed parser rule against additional examples.',
+      label:'Create a rule for this comma-delimited text',
+      text:'Parser Studio found comma-delimited structure, but this wrapped or irregular form cannot safely receive automatic temporary column names. Keep the extracted values and test a reviewed parser rule against additional examples.',
     };
     return {
       kind:'csv',
