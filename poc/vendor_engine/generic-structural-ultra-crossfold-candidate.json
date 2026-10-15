@@ -176,22 +176,22 @@
     {
       "candidate_events": 48,
       "fresh_spans": 474,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302014"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=1c96e4fc28fec1cb"
     },
     {
       "candidate_events": 26,
       "fresh_spans": 234,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302016"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=06b348af8bc2cd83"
     },
     {
       "candidate_events": 53,
       "fresh_spans": 212,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:305011"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=8023868470d797f6"
     },
     {
       "candidate_events": 34,
       "fresh_spans": 170,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:305012"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=760f5b84ec87c887"
     },
     {
       "candidate_events": 18,
@@ -206,12 +206,12 @@
     {
       "candidate_events": 16,
       "fresh_spans": 123,
-      "route": "PRI_BODY|PRI|EC=FOO:6:BAR"
+      "route": "PRI_BODY|PRI|EC_SHA256=b480295f10e59ba6"
     },
     {
       "candidate_events": 22,
       "fresh_spans": 104,
-      "route": "ASA_BODY|PRI+BSDISH+EVENT_CODE+IP2|EC=FTD:3:305006"
+      "route": "ASA_BODY|PRI+BSDISH+EVENT_CODE+IP2|EC_SHA256=9d19c9ab83bd991a"
     },
     {
       "candidate_events": 11,
@@ -226,12 +226,12 @@
     {
       "candidate_events": 16,
       "fresh_spans": 64,
-      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED|EC=ASA:4:106023"
+      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED|EC_SHA256=2c05789e8dba8a89"
     },
     {
       "candidate_events": 51,
       "fresh_spans": 59,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302013"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=36df6c56db62aac5"
     },
     {
       "candidate_events": 12,
@@ -241,22 +241,22 @@
     {
       "candidate_events": 3,
       "fresh_spans": 42,
-      "route": "PRI_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV|EC=ASA:6:751025"
+      "route": "PRI_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV|EC_SHA256=608f69c680c06a49"
     },
     {
       "candidate_events": 6,
       "fresh_spans": 42,
-      "route": "PRI_BODY|PRI+IP2|EC=TCP:6:BADAUTH"
+      "route": "PRI_BODY|PRI+IP2|EC_SHA256=80997deedfabc019"
     },
     {
       "candidate_events": 28,
       "fresh_spans": 35,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302015"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=13ebbceac78d1c97"
     },
     {
       "candidate_events": 7,
       "fresh_spans": 35,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:2:106016"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=ab43e5f226567d56"
     },
     {
       "candidate_events": 6,
@@ -266,22 +266,22 @@
     {
       "candidate_events": 7,
       "fresh_spans": 35,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:2:106016"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=6f69893f32f46ca4"
     },
     {
       "candidate_events": 5,
       "fresh_spans": 35,
-      "route": "NO_GRAMMAR|BSDISH+IP2|EC=SEC:6:IPACCESSLOGP"
+      "route": "NO_GRAMMAR|BSDISH+IP2|EC_SHA256=fbd49cd72d319c40"
     },
     {
       "candidate_events": 17,
       "fresh_spans": 34,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:5:106100"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=efc91cc2ed31c59d"
     },
     {
       "candidate_events": 17,
       "fresh_spans": 34,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:5:106100"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=6e2c257f3ca9422f"
     },
     {
       "candidate_events": 5,
@@ -296,7 +296,7 @@
     {
       "candidate_events": 2,
       "fresh_spans": 22,
-      "route": "PRI_BODY|PRI|EC=CLIENT_ORCH_LOG:6:CLIENT_ADDED_TO_RUN_STATE"
+      "route": "PRI_BODY|PRI|EC_SHA256=36e7b79deec4bac9"
     },
     {
       "candidate_events": 3,
@@ -316,12 +316,12 @@
     {
       "candidate_events": 2,
       "fresh_spans": 18,
-      "route": "NO_GRAMMAR|BSDISH+IP2|EC=FMANFP:6:IPACCESSLOGP"
+      "route": "NO_GRAMMAR|BSDISH+IP2|EC_SHA256=7f63197428ca8fa7"
     },
     {
       "candidate_events": 4,
       "fresh_spans": 16,
-      "route": "PRI_BODY|PRI+IP2|EC=FMANFP:6:IPACCESSLOGP"
+      "route": "PRI_BODY|PRI+IP2|EC_SHA256=7f63197428ca8fa7"
     },
     {
       "candidate_events": 8,
@@ -336,7 +336,7 @@
     {
       "candidate_events": 5,
       "fresh_spans": 15,
-      "route": "PRI_BODY|PRI|EC=APMGR_AWIPS_SYSLOG:6:APMGR_AWIPS_MESSAGE"
+      "route": "PRI_BODY|PRI|EC_SHA256=de602e129e65453d"
     },
     {
       "candidate_events": 2,
@@ -351,22 +351,22 @@
     {
       "candidate_events": 5,
       "fresh_spans": 10,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:6:302013"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=73259ea5ad9b1dbf"
     },
     {
       "candidate_events": 1,
       "fresh_spans": 9,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:6:302014"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=384046ad7b09f46f"
     },
     {
       "candidate_events": 2,
       "fresh_spans": 9,
-      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED|EC=FTD:4:106023"
+      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED|EC_SHA256=9c922555e84b8c47"
     },
     {
       "candidate_events": 2,
       "fresh_spans": 8,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:106100"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=893420eaa075dc00"
     },
     {
       "candidate_events": 1,
@@ -396,12 +396,12 @@
     {
       "candidate_events": 2,
       "fresh_spans": 8,
-      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:607001"
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC_SHA256=2123ddc5013a0625"
     },
     {
       "candidate_events": 3,
       "fresh_spans": 6,
-      "route": "PRI_BODY|PRI|EC=SESSION_MGR:5:FAIL"
+      "route": "PRI_BODY|PRI|EC_SHA256=db133432eebba368"
     },
     {
       "candidate_events": 1,
@@ -411,7 +411,7 @@
     {
       "candidate_events": 3,
       "fresh_spans": 5,
-      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC=FTD:6:302013"
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC_SHA256=73259ea5ad9b1dbf"
     },
     {
       "candidate_events": 1,
@@ -431,32 +431,32 @@
     {
       "candidate_events": 1,
       "fresh_spans": 4,
-      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2|EC=FTD:4:313005"
+      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2|EC_SHA256=1983bf99ab2a8fe9"
     },
     {
       "candidate_events": 1,
       "fresh_spans": 4,
-      "route": "ASA_BODY|PRI+EVENT_CODE+IP2+QUOTED|EC=ASA:4:106023"
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2+QUOTED|EC_SHA256=2c05789e8dba8a89"
     },
     {
       "candidate_events": 1,
       "fresh_spans": 2,
-      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC=ASA:6:302015"
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC_SHA256=13ebbceac78d1c97"
     },
     {
       "candidate_events": 1,
       "fresh_spans": 2,
-      "route": "ASA_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV|EC=FTD:6:113005"
+      "route": "ASA_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV|EC_SHA256=341970cf7f9fb73e"
     },
     {
       "candidate_events": 1,
       "fresh_spans": 2,
-      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2|EC=ASA:6:302022"
+      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2|EC_SHA256=8f6258e7dd7505bf"
     },
     {
       "candidate_events": 1,
       "fresh_spans": 0,
-      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC=FTD:6:302020"
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC_SHA256=13ac1e15d8cde476"
     }
   ],
   "total": {

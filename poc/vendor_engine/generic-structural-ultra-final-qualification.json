@@ -20,6 +20,7 @@
     "fold_count": 5,
     "same_event_sha_train_holdout_overlap": false,
     "semantic_roles_assigned": false,
+    "public_event_code_route_values": "sha256_16_only",
     "total": {
       "candidate_events": 820,
       "candidate_spans": 5174,
@@ -91,7 +92,7 @@
       "errors": 0,
       "failures": 0,
       "optional_skips": 1,
-      "tests": 402
+      "tests": 403
     },
     "json_gold_94": {
       "FN": 0,
@@ -167,6 +168,111 @@
     "source_parsed": 5872,
     "source_spans": 329365
   },
+  "p0_regression_audit": {
+    "baseline_complete_events": 5347,
+    "baseline_head": "05d96919593252e53e474fec8adf331f9de7b5cd",
+    "classification": {
+      "baseline_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+      "common_issue_counts": {
+        "ISLAND_DUPLICATE_VENDOR_FIELD": 2,
+        "UNSUPPORTED_PRI_BODY": 7
+      },
+      "family": "cisco_ise",
+      "pre_fix_status": "PARTIAL",
+      "pre_fix_syntax": "UNKNOWN",
+      "root_cause": "COMMA_KV_LEADING_SUMMARY_SEGMENT_WITH_EQUALS_REJECTED_BY_HARDENING",
+      "source_kv_empty_strictness_is_root_cause": false
+    },
+    "contract": "parser-studio.poc.ultra-baseline-complete-regression-audit.value-free.v1",
+    "corpus_event_sha_set_digest": "f4997fda2504a3378a1bad28d09696a5bce8def8db856b1e6bc715d9b1a98b01",
+    "events": [
+      {
+        "baseline_span_count": 17,
+        "empty_value_parts": 0,
+        "event_sha256": "903ece15230b7de7015d298050ab8a85a03ccb672b5a2042da45f3a9bf6014f0",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 17,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 135,
+        "pre_fix_span_count": 8
+      },
+      {
+        "baseline_span_count": 32,
+        "empty_value_parts": 1,
+        "event_sha256": "e71dc5ed50b852b24a93735ec4e078bedb76f0b138b78424cb3ee04e0f21e6b2",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 32,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 130,
+        "pre_fix_span_count": 23
+      },
+      {
+        "baseline_span_count": 37,
+        "empty_value_parts": 0,
+        "event_sha256": "5b1758ff3d55e603701d74a615fe41fb822f1dcc390f4dcb8297a3d15bae158a",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 37,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 361,
+        "pre_fix_span_count": 25
+      },
+      {
+        "baseline_span_count": 27,
+        "empty_value_parts": 0,
+        "event_sha256": "dfeaf670dd412e0c55c8f1c74ba5dd8940efdb4246d7bd0a618c1904fee6aa3f",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 27,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 191,
+        "pre_fix_span_count": 18
+      },
+      {
+        "baseline_span_count": 16,
+        "empty_value_parts": 0,
+        "event_sha256": "0e6b8035d175c1fe9f0a39144e632f95b6c8e1ed6232b205f8a74083a989290a",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 16,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 76,
+        "pre_fix_span_count": 7
+      },
+      {
+        "baseline_span_count": 15,
+        "empty_value_parts": 0,
+        "event_sha256": "8fbc9f0387867c438067a25fd94efaedc5f3cc582124f38cabd124756642684d",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 15,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 74,
+        "pre_fix_span_count": 6
+      },
+      {
+        "baseline_span_count": 49,
+        "empty_value_parts": 0,
+        "event_sha256": "d4b6a943910d2785ff421cc0b4c884bf3a9c4d87e4d418bd75fca0648c6770e9",
+        "post_fix_residual_bytes": 0,
+        "post_fix_span_count": 49,
+        "post_fix_status": "SOURCE_PARSED",
+        "post_fix_syntax": "GENERIC_STRUCTURAL+COMMA_KV",
+        "pre_fix_residual_bytes": 332,
+        "pre_fix_span_count": 40
+      }
+    ],
+    "expected_complete_from_promotions": 5872,
+    "fix_scope": "Allow exactly one malformed/prose-like leading summary segment only when a vendor-neutral RFC3164 timestamp+host envelope is present; later malformed segments still fail closed.",
+    "post_fix_exact_restored_events": 7,
+    "post_fix_regression_events": 0,
+    "pre_fix_current_complete_events": 5865,
+    "raw_published": false,
+    "status_regression_events": 7,
+    "values_published": false
+  },
   "partial_recovery": {
     "added_atoms": 1631,
     "added_envelope": 672,
@@ -192,14 +298,44 @@
   },
   "raw_published": false,
   "strict_empty_ablation": {
-    "decision": "reject relaxed empty-value admission because it creates a false-complete structural-boundary case",
-    "malformed_control": "empty= next=ok",
-    "relaxed_extra_promotions": 58,
-    "relaxed_source_parsed": 5930,
-    "relaxed_status": "SOURCE_PARSED",
-    "selected": "strict",
-    "strict_source_parsed": 5872,
-    "strict_status": "PARTIAL"
+    "contract": "parser-studio.poc.ultra-empty-unquoted-strictness-ablation.value-free.v2",
+    "corpus_event_sha_set_digest": "f4997fda2504a3378a1bad28d09696a5bce8def8db856b1e6bc715d9b1a98b01",
+    "decision": "KEEP_STRICT",
+    "delta_relaxed_minus_strict": {
+      "partial": -58,
+      "promotions": 58,
+      "raw_only": 0,
+      "residual_bytes": 0,
+      "source_parsed": 58,
+      "source_spans": 0
+    },
+    "malformed_boundary_control": {
+      "input_class": "unquoted empty value followed by another key",
+      "relaxed_status": "SOURCE_PARSED",
+      "relaxed_test_expected_failure": true,
+      "strict_status": "PARTIAL"
+    },
+    "parser_candidate": "final Ultra generic structural core with fallback-only admission",
+    "quoted_empty_values_remain_supported": true,
+    "rationale": "Relaxing KV_EMPTY_UNQUOTED_VALUE adds 58 COMPLETE statuses but zero spans and zero residual-byte recovery, and it turns a malformed structural-boundary control into SOURCE_PARSED.",
+    "raw_published": false,
+    "relaxed": {
+      "partial": 1212,
+      "promotions": 583,
+      "raw_only": 934,
+      "residual_bytes": 327505,
+      "source_parsed": 5930,
+      "source_spans": 329365
+    },
+    "strict": {
+      "partial": 1270,
+      "promotions": 525,
+      "raw_only": 934,
+      "residual_bytes": 327505,
+      "source_parsed": 5872,
+      "source_spans": 329365
+    },
+    "values_published": false
   },
   "top_failure_clusters": [
     {

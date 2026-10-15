@@ -63,6 +63,15 @@ def _coarse(route:str)->str:
     return route.split('|EC=',1)[0]
 
 
+def _public_route(route:str)->str:
+    """Publish routing shape without source-derived event-code values."""
+    if '|EC=' not in route:
+        return route
+    coarse,event_code=route.split('|EC=',1)
+    digest=hashlib.sha256(event_code.encode('utf8')).hexdigest()[:16]
+    return coarse+'|EC_SHA256='+digest
+
+
 def _partial(event):
     envelope=augment_incomplete_envelope(event)
     atoms=augment_incomplete_atoms(envelope)
@@ -214,7 +223,7 @@ def run():
         'total':dict(total),'folds':folds,
         'families':{k:dict(v) for k,v in sorted(families.items())},
         'top_routes':[
-            {'route':route,**dict(stats)}
+            {'route':_public_route(route),**dict(stats)}
             for route,stats in sorted(
                 routes.items(),
                 key=lambda item:item[1].get('fresh_spans',0),

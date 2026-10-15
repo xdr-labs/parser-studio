@@ -5,9 +5,18 @@ from unittest.mock import patch
 from generic_structural_poc import parse_generic_structural
 from multipass_adjudicator import parse_security_once
 from source_parse import assert_source_accounting
+from ultra_template_crossfold_eval import _public_route
 
 
 class UltraOpenWorldPrimitiveTests(unittest.TestCase):
+    def test_template_public_route_never_publishes_source_event_code(self):
+        route='ASA_BODY|EVENT_CODE+IP2|EC=VENDOR:6:302014'
+        public=_public_route(route)
+        self.assertTrue(public.startswith('ASA_BODY|EVENT_CODE+IP2|EC_SHA256='))
+        self.assertNotIn('VENDOR',public)
+        self.assertNotIn('302014',public)
+        self.assertEqual('PRI_BODY|PRI',_public_route('PRI_BODY|PRI'))
+
     def test_ultra_fallbacks_never_replace_a_legacy_complete_result(self):
         raw=(
             '<142>May 10 15:19:05 gateway node app: '
