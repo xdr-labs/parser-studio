@@ -243,7 +243,8 @@ export default function AutoParser({
  const chosen=records[selected]??records[0];
  const multiPassSourceComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
    multiPass.events.every(event=>event.preview.status==='SOURCE_PARSED');
- const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&report.unsupported>0);
+ const parserRuleReviewRequired=Boolean(multiPassSourceComplete&&draft.format==='auto'&&
+   (report.unsupported>0||(csvFound&&!csvApproved)));
  const beginnerAuthoritativeComplete=Boolean(multiPassSourceComplete&&!parserRuleReviewRequired);
  const browserSuiteComplete=!!suite&&suite.engine==='browser-preview'&&
    suite.nativeFluentdVerified===false&&suite.stellarExportVerified===false&&

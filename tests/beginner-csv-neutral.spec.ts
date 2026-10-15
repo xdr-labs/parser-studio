@@ -25,6 +25,30 @@ function batch(){
   nativeVerified:false,targetVerified:false};
 }
 
+test('source-complete PAN-OS positional CSV still asks for neutral column approval before review',async({page})=>{
+ const payload=batch();
+ for(const event of payload.events){
+  event.preview.status='SOURCE_PARSED';
+  event.preview.syntax='SYSLOG_BSD_CSV';
+  event.preview.issues=[];
+ }
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(payload)}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const summary=page.getByLabel('Beginner analysis summary');
+ await expect(summary).toContainText('2 of 2 source events extracted');
+ const problem=page.getByLabel('Parse problem inspector');
+ await expect(problem).toContainText('Syslog-wrapped positional CSV');
+ await expect(problem).toContainText('Recommended fix · Keep all values with temporary field names');
+ const neutral=problem.getByRole('button',{name:'Keep all 5 values with temporary names'});
+ await expect(neutral).toBeVisible();
+ await neutral.click();
+ await expect(summary).toContainText('2 of 2 log events parsed completely');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
+});
+
 test('beginner can preserve PAN-OS positional values with neutral columns without guessing semantics',async({page})=>{
  await page.route('**/api/v1/multipass/preview-batch',route=>
   route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(batch())}));

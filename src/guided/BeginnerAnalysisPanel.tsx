@@ -52,8 +52,9 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
 function friendlySyntax(preview:MultiPassSourcePreview):string{
   const syntax=preview.syntax.toUpperCase();
   if(wholeEventNeedsRule(preview))return 'custom text format';
-  if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
-  if(syntax.includes('CSV_UNLABELED'))return 'Syslog-wrapped positional CSV';
+  if(syntax.includes('CSV'))return (syntax.includes('SYSLOG')||syntax.includes('BSD')||syntax.includes('RFC'))?
+    'Syslog-wrapped positional CSV':'positional CSV';
+  if(syntax.includes('ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
   if(syntax.includes('SYSLOG'))return 'Syslog with structured security fields';
   if(syntax.includes('JSON'))return 'JSON';
   if(syntax.includes('CEF'))return 'CEF';
