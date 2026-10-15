@@ -47,6 +47,23 @@ describe('P0-AP1 value-free envelope/body and compiler parity',()=>{
       noValues(r);
     }
   });
+  it('accepts wide bounded JSON up to the engine leaf budget without weakening depth safety',()=>{
+    const wide=JSON.stringify(Object.fromEntries(
+      Array.from({length:146},(_,index)=>['field_'+String(index+1),index])));
+    const r=analyzeLogEnvelopes(wide,'single-line');
+    expect(r.events[0]).toMatchObject({envelope:'none',body:'json',status:'RECOGNIZED'});
+    expect(assessEnvelopeCompilation(r,cap).status).toBe('DRAFT_COMPILABLE');
+
+    const atLimit=JSON.stringify({items:Array.from({length:4096},()=>0)});
+    expect(analyzeLogEnvelopes(atLimit,'single-line').events[0]?.status).toBe('RECOGNIZED');
+    const overLimit=JSON.stringify({items:Array.from({length:4097},()=>0)});
+    expect(analyzeLogEnvelopes(overLimit,'single-line').events[0]?.status).not.toBe('RECOGNIZED');
+
+    let deep:unknown='value';
+    for(let i=0;i<9;i++)deep={level:deep};
+    expect(analyzeLogEnvelopes(JSON.stringify(deep),'single-line').events[0]?.status).not.toBe('RECOGNIZED');
+    noValues(r);
+  });
   it('accounts for every mixed and unknown record without dropping a minority',()=>{
     const r=analyzeLogEnvelopes([json,rfc3164,kv,'UNRECOGNIZED_SECRET'].join('\n'),'single-line');
     expect(r).toMatchObject({sourceCount:4,accounted:4,unsupported:1,complete:true});

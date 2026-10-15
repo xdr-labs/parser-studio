@@ -60,12 +60,15 @@ function jsonValid(input:string):boolean{
   try{
     const value=JSON.parse(input) as unknown;
     if(!value||typeof value!=='object'||Array.isArray(value))return false;
+    let leaves=0;
     const descend=(node:unknown,depth:number):boolean=>{
       if(depth>8)return false;
-      if(!node||typeof node!=='object')return true;
-      if(Array.isArray(node))return node.length<=128&&node.every(item=>descend(item,depth+1));
-      const entries=Object.entries(node);
-      return entries.length<=128&&entries.every(([name,item])=>
+      if(!node||typeof node!=='object'){
+        leaves++;
+        return leaves<=4096;
+      }
+      if(Array.isArray(node))return node.every(item=>descend(item,depth+1));
+      return Object.entries(node).every(([name,item])=>
         name!=='__proto__'&&name!=='constructor'&&name!=='prototype'&&
         descend(item,depth+1));
     };
