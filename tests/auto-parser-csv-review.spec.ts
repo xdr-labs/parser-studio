@@ -22,9 +22,10 @@ test('Auto Parser requires explicit CSV columns and delimiter confirmation witho
  await page.getByLabel('Auto Parser raw logs').fill(sample);
  await expect(page.getByLabel('Automatic event accounting'))
    .toContainText('4/4 events analyzed locally');
- await expect(page.getByLabel('Review CSV column names')).toBeVisible();
+ await expect(page.getByLabel('Review CSV column names')).toHaveCount(0);
  if(await page.getByRole('button',{name:'Advanced'}).count())
   await page.getByRole('button',{name:'Advanced'}).click();
+ await expect(page.getByLabel('Review CSV column names')).toBeVisible();
  const review=page.getByRole('button',{name:'Review Detected Results'});
  await expect(review).toBeDisabled();
  await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,dst_port');

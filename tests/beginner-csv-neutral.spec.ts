@@ -42,6 +42,8 @@ test('source-complete PAN-OS positional CSV still asks for neutral column approv
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('Syslog-wrapped positional CSV');
  await expect(problem).toContainText('Recommended fix · Keep all values with temporary field names');
+ await expect(page.getByLabel('Review CSV column names')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/Neutral Column Names/})).toHaveCount(0);
  const neutral=problem.getByRole('button',{name:'Keep all 5 values with temporary names'});
  await expect(neutral).toBeVisible();
  await neutral.click();
@@ -69,4 +71,22 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002,field_003,field_004,field_005');
  await expect(page.getByText('CSV field names reviewed. Automatic parser testing is ready.')).toBeVisible();
+});
+
+
+test('advanced CSV autofill does not approve column names until the explicit confirm action',async({page})=>{
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(batch())}));
+ await page.goto('/');
+ await page.getByRole('button',{name:'Advanced'}).click();
+ await page.getByLabel('Auto Parser raw logs').fill(raw);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const csv=page.getByLabel('Review CSV column names');
+ await expect(csv).toBeVisible();
+ await csv.getByRole('button',{name:'Fill 5 Neutral Column Names'}).click();
+ await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue(
+  'field_001,field_002,field_003,field_004,field_005');
+ await expect(csv).toContainText('Review required: confirm the CSV names and separator before creating the parser.');
+ await csv.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
+ await expect(csv).toContainText('CSV field names reviewed. Automatic parser testing is ready.');
 });

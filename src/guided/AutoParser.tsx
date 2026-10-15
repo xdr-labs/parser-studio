@@ -205,16 +205,23 @@ export default function AutoParser({
    [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
  const neutralCsvColumnCount=csvFound?
    inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
- const suggestNeutralCsvColumns=()=>{
+ const setNeutralCsvColumns=(approve:boolean)=>{
    if(!neutralCsvColumnCount)return;
    const names=Array.from({length:neutralCsvColumnCount},
      (_,index)=>'field_'+String(index+1).padStart(3,'0')).join(',');
    const delimiter=draft.csvDelimiter??',';
-   const key=JSON.stringify([sample,names,delimiter]);
-   pendingNeutralCsvApproval.current=key;
+   if(approve){
+     const key=JSON.stringify([sample,names,delimiter]);
+     pendingNeutralCsvApproval.current=key;
+     setCsvApprovedKey(key);
+   }else{
+     pendingNeutralCsvApproval.current='';
+     setCsvApprovedKey('');
+   }
    setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter}));
-   setCsvApprovedKey(key);
  };
+ const adoptNeutralCsvColumns=()=>setNeutralCsvColumns(true);
+ const fillNeutralCsvColumns=()=>setNeutralCsvColumns(false);
  const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
  const assessment=csvFound&&csvApproved&&report.families.length===1&&
@@ -670,7 +677,7 @@ export default function AutoParser({
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
          parserRuleReviewRequired={parserRuleReviewRequired}
          neutralCsvColumnCount={neutralCsvColumnCount??undefined}
-         onUseNeutralCsvColumns={suggestNeutralCsvColumns}/>}
+         onUseNeutralCsvColumns={adoptNeutralCsvColumns}/>}
        <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
@@ -752,7 +759,7 @@ export default function AutoParser({
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
        </div>
-       {csvFound&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
+       {csvFound&&advanced&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
          <strong>CSV rows detected — confirm each column name</strong>
          <p>CSV rows do not contain field names. Name the columns in the
            order they appear in a CSV row, and choose its data separator.
@@ -767,7 +774,7 @@ export default function AutoParser({
            <p>Parser Studio can fill neutral names such as field_001 and field_002
              without guessing vendor semantics. Original values remain unchanged;
              you can rename or map fields later.</p>
-           <button type="button" onClick={suggestNeutralCsvColumns}>
+           <button type="button" onClick={fillNeutralCsvColumns}>
              Fill {neutralCsvColumnCount} Neutral Column Names
            </button>
          </div>}
@@ -787,7 +794,7 @@ export default function AutoParser({
          </button>
          <p role="status">{csvApproved?
            'CSV field names reviewed. Automatic parser testing is ready.':
-           'Review required: CSV names and separator must be confirmed before analysis.'}</p>
+           'Review required: confirm the CSV names and separator before creating the parser.'}</p>
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">
