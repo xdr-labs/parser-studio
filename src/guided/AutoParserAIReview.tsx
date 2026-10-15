@@ -107,7 +107,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     report=candidateMode==='correction'&&correctionScope?
      compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
    }catch{
-    setImportResult('Candidate rejected: training or holdout evidence is stale, reordered, or mutated. Re-run validation from the current sample.');return;
+    setImportResult('The logs or ChatGPT result changed while testing. Test the fix again before applying it.');return;
    }
    if(report.holdoutStatus==='REJECTED'){
     const reason=report.holdoutIndependence?.ok===false?report.holdoutIndependence.reason:'TOO_SMALL';
