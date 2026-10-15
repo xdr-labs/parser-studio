@@ -8,7 +8,7 @@ describe('Beginner metadata preservation review',()=>{
 
   it('does not call source-complete positional CSV parser-ready while schema review is pending',()=>{
     const source='alpha,beta,gamma';
-    const preview={
+    const preview:MultiPassSourcePreview={
       contract:'parser-studio.multipass-source-preview.v0.1',
       status:'SOURCE_PARSED',
       syntax:'CSV_UNLABELED',
@@ -20,7 +20,7 @@ describe('Beginner metadata preservation review',()=>{
       issues:[],
       nativeVerified:false,
       targetVerified:false,
-    } as const;
+    };
     render(<BeginnerAnalysisPanel source={source}
       events={[{startByte:0,endByte:source.length,preview}]}
       onOpenAssisted={()=>{}}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDraft, DEMO_SAMPLES } from './model';
-import { convertValue, detectFormat, extractFields, inferConsistentCsvColumnCount, preview, splitEvents } from './parser';
+import { convertValue, detectFormat, extractFields, inferConsistentCsvColumnCount, inspectCsvColumnShapes, preview, splitEvents, summarizeCsvColumnShapes } from './parser';
 
 describe('safe, version-neutral browser preview', () => {
   it('detects known sample formats and declines unknowns', () => {
@@ -49,6 +49,19 @@ describe('safe, version-neutral browser preview', () => {
     expect(inferConsistentCsvColumnCount('a,b\n1,2,3', ',')).toBeNull();
     expect(inferConsistentCsvColumnCount('a,"unterminated\n1,2', ',')).toBeNull();
     expect(inferConsistentCsvColumnCount('single\nvalue', ',')).toBeNull();
+    expect(summarizeCsvColumnShapes('a,b\n1,2,3\n4,5', ',')).toEqual([
+      {columnCount:2,eventNumbers:[1,3]},
+      {columnCount:3,eventNumbers:[2]},
+    ]);
+    const wide=Array.from({length:120},(_,index)=>String(index)).join(',');
+    expect(summarizeCsvColumnShapes(wide, ',')).toEqual([
+      {columnCount:120,eventNumbers:[1]},
+    ]);
+    expect(inferConsistentCsvColumnCount(wide, ',')).toBeNull();
+    expect(inspectCsvColumnShapes('a,b\n1,"unterminated\n4,5', ',')).toEqual({
+      groups:[{columnCount:2,eventNumbers:[1,3]}],
+      invalidEventNumbers:[2],
+    });
   });
 
   it('fails closed on unsupported CSV delimiters or malformed quoted cells', () => {
