@@ -37,7 +37,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     boundedRegexNamedCaptureSubset: true,
     boundedRegexMaxPatternChars: 256,
     boundedRegexRuntimeTimeoutMs: 50,
-    genericStructuralGrammar: "GENERIC_STRUCTURAL_ULTRA_COMPILER_V4" as const,
+    genericStructuralGrammar: "GENERIC_STRUCTURAL_ULTRA_COMPILER_V7" as const,
     rfc3164StrictTaggedMessageSubset: true,
     rfc3164TaglessStructuredSecuritySubset: true,
     rfc3164TimePolicy: "YEAR_AND_ZONE_UNKNOWN" as const,

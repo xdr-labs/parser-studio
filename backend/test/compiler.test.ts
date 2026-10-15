@@ -105,9 +105,14 @@ test("Generic Structural compiler is opt-in, bounded and keeps legacy artifact b
  const ruby=pair.files[1]!.content;
  assert.match(ruby,/when 'generic_structural'/);
  assert.match(ruby,/def parserstudio_generic_structural\(text\)/);
+ assert.match(ruby,/def parserstudio_generic_short_rfc5424_structured\(text\)/);
  assert.match(ruby,/def parserstudio_generic_junos_rfc5424_sd\(text\)/);
  assert.match(ruby,/def parserstudio_generic_space_kv\(text\)/);
+ assert.match(ruby,/def parserstudio_generic_watchguard\(text\)/);
+ assert.match(ruby,/def parserstudio_generic_juniper_legacy\(text\)/);
+ assert.match(ruby,/def parserstudio_generic_delimited_comma_kv\(text\)/);
  assert.match(ruby,/def parserstudio_generic_bracket_colon_kv\(text\)/);
+ assert.match(ruby,/def parserstudio_generic_rfc3164_delimited_comma_kv\(text\)/);
  assert.match(ruby,/normalized = \{'parserstudio_source' => original\}/);
  assert.match(ruby,/GENERIC STRUCTURAL|Generic Structural|generic structural/i);
  const low=structuredClone(p);low.receiver.port=6799;

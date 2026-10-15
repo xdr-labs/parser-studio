@@ -2,9 +2,15 @@
 # Emitted only for generic_structural projects; no arbitrary user code executes.
 
 def parserstudio_generic_structural(text)
+  result = parserstudio_generic_short_rfc5424_structured(text)
+  return result if result
   result = parserstudio_generic_short_rfc5424_json(text)
   return result if result
   result = parserstudio_generic_asa(text)
+  return result if result
+  result = parserstudio_generic_watchguard(text)
+  return result if result
+  result = parserstudio_generic_juniper_legacy(text)
   return result if result
   result = parserstudio_generic_junos_rfc5424_sd(text)
   return result if result
@@ -12,9 +18,34 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_comma_kv(text)
   return result if result
+  result = parserstudio_generic_rfc3164_delimited_comma_kv(text)
+  return result if result
+  result = parserstudio_generic_delimited_comma_kv(text)
+  return result if result
   result = parserstudio_generic_space_kv(text)
   return result if result
   raise ArgumentError, 'Unsupported generic structural event'
+end
+
+def parserstudio_generic_short_rfc5424_structured(text)
+  match = /\A<(\d{1,3})>(1) (\S{1,64}) ([!-~]{1,255}) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))\z/m.match(text)
+  return nil unless match
+  priority = Integer(match[1], 10)
+  return nil unless priority.between?(0, 191)
+  return nil unless match[3].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
+  begin
+    Time.iso8601(match[3])
+    body = match[5].start_with?('CEF:') ? parserstudio_cef(match[5]) : parserstudio_leef(match[5])
+  rescue StandardError
+    return nil
+  end
+  {
+    'syslog' => {
+      'pri' => match[1], 'version' => match[2],
+      'timestamp' => match[3], 'hostname' => match[4]
+    },
+    'body' => body
+  }
 end
 
 def parserstudio_generic_short_rfc5424_json(text)
@@ -68,6 +99,10 @@ def parserstudio_split_escaped(text, delimiter)
   parts
 end
 
+def parserstudio_generic_source_key_safe(key)
+  !['__proto__', 'constructor', 'prototype'].include?(key)
+end
+
 def parserstudio_generic_junos_rfc5424_sd(text)
   match = /\A<(\d{1,3})>(1) (\S+) ([!-~]{1,255}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[junos@[A-Za-z0-9.:-]{1,64}(?: [^\]]*)?\])\z/.match(text)
   return nil unless match
@@ -116,6 +151,7 @@ def parserstudio_generic_junos_rfc5424_sd(text)
     end
     return nil unless closed
     safe = key.tr('-', '_')
+    return nil unless parserstudio_generic_source_key_safe(key) && parserstudio_generic_source_key_safe(safe)
     return nil if fields.key?(safe)
     fields[safe] = value
     return nil if fields.length > 64
@@ -131,11 +167,24 @@ def parserstudio_generic_junos_rfc5424_sd(text)
   }
 end
 
+def parserstudio_generic_structural_timestamp_valid(value)
+  candidate = value.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/) ? value :
+    value.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?\z/) ? value + 'Z' : nil
+  return false unless candidate
+  begin
+    parsed = Time.iso8601(candidate)
+    parsed.year.between?(1, 9999)
+  rescue StandardError
+    false
+  end
+end
+
 def parserstudio_generic_bracket_colon_kv(text)
   match = /\A<(\d{1,3})>(\d{1,2}) (\S+) (\S+) (\S+) (\S+) (\S+) /.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191) && match[2] == '1'
+  return nil unless parserstudio_generic_structural_timestamp_valid(match[3])
   values = [match[3], match[4], match[5], match[6], match[7]]
   limits = [64, 255, 48, 128, 32]
   return nil unless values.each_with_index.all? { |value, index|
@@ -149,15 +198,13 @@ def parserstudio_generic_bracket_colon_kv(text)
   while pos < body_text.length - 1
     pos += 1 while pos < body_text.length - 1 && [' ', "\t"].include?(body_text[pos])
     break if pos == body_text.length - 1
-    key_match = /\A[A-Za-z_][A-Za-z0-9_.:-]{0,127}/.match(body_text[pos..-1].to_s)
-    return nil unless key_match
-    key = key_match[0]
-    return nil if ['__proto__', 'prototype', 'constructor'].include?(key)
-    pos += key.length
-    return nil unless body_text[pos] == ':'
-    pos += 1
-    return nil unless body_text[pos] == '"'
-    pos += 1
+    rest = body_text[pos..-1].to_s
+    delimiter = /:\s*"/.match(rest)
+    return nil unless delimiter && delimiter.begin(0) > 0
+    key = rest[0...delimiter.begin(0)].strip
+    return nil unless key.match?(/\A[A-Za-z_][A-Za-z0-9_.:#-]{0,127}\z/) &&
+      parserstudio_generic_source_key_safe(key)
+    pos += delimiter.end(0)
     value = +''
     closed = false
     while pos < body_text.length - 1
@@ -215,7 +262,7 @@ def parserstudio_generic_comma_kv(text)
     eq = stripped.index('=')
     return nil unless eq && eq > 0
     key = stripped[0...eq].strip
-    return nil unless key.match?(/\A[A-Za-z_][A-Za-z0-9_.#\/-]{0,127}\z/) && !fields.key?(key)
+    return nil unless key.match?(/\A[A-Za-z_][A-Za-z0-9_.#\/-]{0,127}\z/) && parserstudio_generic_source_key_safe(key)
     value = stripped[(eq + 1)..-1].to_s.strip
     if value.length >= 2 && ((value.start_with?('"') && value.end_with?('"')) ||
        (value.start_with?("'") && value.end_with?("'")))
@@ -223,7 +270,8 @@ def parserstudio_generic_comma_kv(text)
     elsif value.start_with?('"', "'") || value.end_with?('"', "'")
       return nil
     end
-    fields[key] = value
+    previous = fields[key]
+    fields[key] = previous.nil? ? value : previous.is_a?(Array) ? previous + [value] : [previous, value]
   end
   return nil unless fields.length >= 2
   generic = {'mode' => 'comma_kv', 'kv' => fields}
@@ -256,6 +304,7 @@ def parserstudio_generic_space_kv(text)
   atoms = {}
   entries.each_with_index do |entry, index|
     key = entry['key']
+    return nil unless parserstudio_generic_source_key_safe(key)
     return nil if fields.key?(key)
     finish = index + 1 < entries.length ? entries[index + 1]['start'] : text.length
     value = text[entry['value_start']...finish].to_s.strip
@@ -280,7 +329,194 @@ def parserstudio_generic_space_kv(text)
   {'generic'=>generic}
 end
 
+def parserstudio_generic_valid_bsd_clock(month, day_text, time)
+  days = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
+          'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
+  return false unless days.key?(month)
+  day = Integer(day_text, 10)
+  hour, minute, second = time.split(':').map { |value| Integer(value, 10) }
+  day.between?(1, days[month]) && hour.between?(0, 23) &&
+    minute.between?(0, 59) && second.between?(0, 59)
+rescue StandardError
+  false
+end
+
+def parserstudio_generic_profile_tokens(text, start)
+  return nil unless start.between?(0, text.length)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  tokens = []
+  groups = []
+  kv = {}
+  pos = start
+  count = 0
+  while pos < text.length
+    pos += 1 while pos < text.length && text[pos].match?(/\s/)
+    break if pos == text.length
+    count += 1
+    return nil if count > 100
+    if text[pos] == '('
+      finish = text.index(')', pos + 1)
+      return nil unless finish
+      return nil if finish + 1 < text.length && !text[finish + 1].match?(/\s/)
+      groups << text[(pos + 1)...finish]
+      pos = finish + 1
+      next
+    end
+    key_match = /\A([A-Za-z_][A-Za-z0-9_.-]{0,127})=/.match(text[pos..-1].to_s)
+    if key_match
+      key = key_match[1]
+      return nil unless parserstudio_generic_source_key_safe(key)
+      cursor = pos + key_match[0].length
+      start_value = cursor
+      finish = cursor
+      quote = text[cursor]
+      if ['"', "'"].include?(quote)
+        cursor += 1
+        start_value = cursor
+        closed = false
+        while cursor < text.length
+          if text[cursor] == '\\' && cursor + 1 < text.length
+            cursor += 2
+            next
+          end
+          if text[cursor] == quote
+            finish = cursor
+            cursor += 1
+            closed = true
+            break
+          end
+          cursor += 1
+        end
+        return nil unless closed
+        return nil if cursor < text.length && !text[cursor].match?(/\s/)
+      else
+        cursor += 1 while cursor < text.length && !text[cursor].match?(/\s/)
+        finish = cursor
+      end
+      value = text[start_value...finish].to_s
+      previous = kv[key]
+      kv[key] = previous.nil? ? value : previous.is_a?(Array) ? previous + [value] : [previous, value]
+      pos = cursor
+      next
+    end
+    begin_token = pos
+    pos += 1 while pos < text.length && !text[pos].match?(/\s/)
+    tokens << text[begin_token...pos]
+  end
+  {'tokens'=>tokens, 'kv'=>kv, 'groups'=>groups}
+end
+
+def parserstudio_generic_ip_token(value)
+  IPAddr.new(value)
+  true
+rescue StandardError
+  false
+end
+
+def parserstudio_generic_watchguard(text)
+  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.match(text)
+  return nil unless match
+  return nil unless parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
+  return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
+  if match[7]
+    begin
+      Time.iso8601(match[7])
+    rescue StandardError
+      return nil
+    end
+  end
+  body = parserstudio_generic_profile_tokens(text, match.end(0))
+  return nil unless body && !body['tokens'].empty? &&
+    ['Allow','Deny','Drop'].include?(body['tokens'][0])
+  msg_id = body['kv']['msg_id']
+  return nil unless msg_id.is_a?(String) && msg_id.match?(/\A[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}\z/)
+  return nil if body['tokens'].count { |value| parserstudio_generic_ip_token(value) } < 2
+  header = {'month'=>match[2], 'day'=>match[3], 'time'=>match[4],
+            'hostname'=>match[5], 'app_tag'=>match[8]}
+  header['pri'] = match[1] if match[1]
+  header['serial'] = match[6] if match[6]
+  header['device_time'] = match[7] if match[7]
+  {'watchguard_header'=>header, 'watchguard'=>body}
+end
+
+def parserstudio_generic_juniper_legacy(text)
+  head = /\A([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.match(text)
+  return nil unless head && head[5] == 'RT_FLOW'
+  return nil unless parserstudio_generic_valid_bsd_clock(head[1], head[2], head[3])
+  event = /\A(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.match(text[head.end(0)..-1].to_s)
+  return nil unless event
+  body = parserstudio_generic_profile_tokens(text, head.end(0) + event[0].length)
+  return nil unless body && body['tokens'].any? {
+    |value| value.match?(/\A[^\/\s]+\/[0-9]{1,5}->[^\/\s]+\/[0-9]{1,5}\z/)
+  }
+  {
+    'syslog'=>{'month'=>head[1], 'day'=>head[2], 'time'=>head[3],
+               'hostname'=>head[4], 'app_tag'=>head[5]},
+    'juniper'=>{'event'=>event[1], **body}
+  }
+end
+
+def parserstudio_generic_delimited_comma_kv(text)
+  return nil if text.bytesize > 8192
+  parts = parserstudio_split_escaped(text, ',')
+  return nil unless parts && parts.length >= 4
+  fields = {}
+  prefix = ''
+  parsed = 0
+  safe = /\A[A-Za-z0-9][A-Za-z0-9 ._:\/()#-]{0,127}\z/
+  parts.each_with_index do |raw_segment, index|
+    segment = raw_segment.strip
+    next if segment.empty?
+    eq = segment.index('=')
+    return nil unless eq && eq > 0
+    before = segment[0...eq].rstrip
+    key = before.strip
+    if index == 0
+      cut = [before.rindex(': '), before.rindex('. ')].compact.max
+      if cut
+        suffix = before[(cut + 2)..-1].to_s.strip
+        if suffix.match?(safe)
+          key = suffix
+          prefix = before[0...(cut + 2)].strip
+        end
+      end
+    end
+    return nil unless key.match?(safe) && parserstudio_generic_source_key_safe(key)
+    value = segment[(eq + 1)..-1].to_s.strip
+    if value.length >= 2 && ((value.start_with?('"') && value.end_with?('"')) ||
+       (value.start_with?("'") && value.end_with?("'")))
+      value = value[1...-1]
+    elsif value.start_with?('"', "'") || value.end_with?('"', "'")
+      return nil
+    end
+    previous = fields[key]
+    fields[key] = previous.nil? ? value : previous.is_a?(Array) ? previous + [value] : [previous, value]
+    parsed += 1
+  end
+  return nil if parsed < 4
+  prefix_tokens = prefix.empty? ? [] : prefix.split(/[ \t]+/).map { |value|
+    value.length > 1 && [':', ','].include?(value[-1]) ? value[0...-1] : value
+  }
+  return nil if prefix_tokens.length > 64 || prefix_tokens.any? { |value| value.empty? || value.bytesize > 256 }
+  {'generic'=>{'mode'=>'delimited_kv', 'delimiter'=>',',
+               'prefix_tokens'=>prefix_tokens, 'fields'=>fields}}
+end
+
+def parserstudio_generic_rfc3164_delimited_comma_kv(text)
+  return nil if text.bytesize > 8192
+  head = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +/.match(text)
+  return nil unless head && parserstudio_generic_valid_bsd_clock(head[2], head[3], head[4])
+  return nil if head[1] && !Integer(head[1], 10).between?(0, 191)
+  body = parserstudio_generic_delimited_comma_kv(text[head.end(0)..-1].to_s)
+  return nil unless body
+  syslog = {'month'=>head[2], 'day'=>head[3], 'time'=>head[4],
+            'host'=>head[5], 'tag'=>head[6]}
+  syslog['pri'] = head[1] if head[1]
+  {'syslog'=>syslog, 'generic'=>body['generic']}
+end
+
 def parserstudio_generic_asa(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
   id_pattern = /%(ASA|FTD)-(\d)-(\d{6}):[ \t]*/
   id = id_pattern.match(text)
   return nil unless id
@@ -290,9 +526,10 @@ def parserstudio_generic_asa(text)
   body = text[id.end(0)..-1].to_s
   built = /\A(?<action>Built) (?<direction>inbound|outbound) (?<protocol>TCP|UDP) connection (?<connection_id>[0-9]{1,20}) for (?<src_interface>[A-Za-z0-9_.:-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})\/(?<src_port>[0-9]{1,5}) \((?<mapped_src_ip>[0-9A-Fa-f:.]{2,64})\/(?<mapped_src_port>[0-9]{1,5})\) to (?<dst_interface>[A-Za-z0-9_.:-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<dst_port>[0-9]{1,5}) \((?<mapped_dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<mapped_dst_port>[0-9]{1,5})\)\z/.match(body)
   deny = /\A(?<action>Deny) (?<protocol>tcp|udp|icmp) src (?<src_interface>[A-Za-z0-9_.:-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})\/(?<src_port>[0-9]{1,5}) dst (?<dst_interface>[A-Za-z0-9_.:-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<dst_port>[0-9]{1,5})\z/.match(body)
-  full = built || deny
+  deny_access = /\A(?<action>Deny) (?<protocol>tcp|udp|icmp) src (?:(?<src_context>v[12]):)?(?<src_interface>[A-Za-z0-9_.-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})(?:\/(?<src_port>[0-9]{1,5}))? dst (?:(?<dst_context>v[12]):)?(?<dst_interface>[A-Za-z0-9_.-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})(?:\/(?<dst_port>[0-9]{1,5}))? by access-group \"(?<access_group>[^\"\r\n]{0,128})\" \[(?<flag_1>0x[0-9A-Fa-f]+), (?<flag_2>0x[0-9A-Fa-f]+)\]\z/.match(body)
+  full = built || deny || deny_access
   return nil unless full
-  fields = {'product' => id[1], 'severity' => id[2], 'message_id' => id[3]}
+  fields = {'source_raw' => text, 'product' => id[1], 'severity' => id[2], 'message_id' => id[3]}
   full.names.each do |name|
     value = full[name]
     fields[name] = value unless value.nil?
@@ -306,19 +543,32 @@ def parserstudio_generic_asa(text)
   prefix = text[0...id.begin(0)]
   unless prefix.empty?
     header = /\A([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]*\z/.match(prefix)
-    return nil unless header
-    month_days = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
-      'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
-    day = Integer(header[2], 10)
-    hour = Integer(header[3], 10)
-    minute = Integer(header[4], 10)
-    second = Integer(header[5], 10)
-    return nil unless month_days[header[1]] && day.between?(1, month_days[header[1]]) &&
-      hour.between?(0, 23) && minute.between?(0, 59) && second.between?(0, 59)
-    syslog['month'] = header[1]
-    syslog['day'] = header[2]
-    syslog['time'] = "#{header[3]}:#{header[4]}:#{header[5]}"
-    syslog['hostname'] = header[6]
+    if header
+      month_days = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
+        'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
+      day = Integer(header[2], 10)
+      hour = Integer(header[3], 10)
+      minute = Integer(header[4], 10)
+      second = Integer(header[5], 10)
+      return nil unless month_days[header[1]] && day.between?(1, month_days[header[1]]) &&
+        hour.between?(0, 23) && minute.between?(0, 59) && second.between?(0, 59)
+      syslog['month'] = header[1]
+      syslog['day'] = header[2]
+      syslog['time'] = "#{header[3]}:#{header[4]}:#{header[5]}"
+      syslog['hostname'] = header[6]
+    else
+      facility = /\A([A-Z0-9]{2,16})\.([A-Z]{2,16}): +([!-~]{1,255}) +\z/.match(prefix)
+      host_only = /\A([!-~]{1,255}) +: +\z/.match(prefix)
+      if facility
+        syslog['source_facility'] = facility[1]
+        syslog['source_level'] = facility[2]
+        syslog['hostname'] = facility[3]
+      elsif host_only
+        syslog['hostname'] = host_only[1]
+      else
+        return nil
+      end
+    end
   end
   {'syslog' => syslog, 'asa' => fields}
 end
