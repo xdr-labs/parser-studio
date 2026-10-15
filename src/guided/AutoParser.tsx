@@ -199,12 +199,13 @@ export default function AutoParser({
  const csvSchemaKey=JSON.stringify([sample,draft.csvColumns,draft.csvDelimiter]);
  const csvApproved=!csvReviewActive||csvApprovedKey===csvSchemaKey;
  const csvColumns=draft.csvColumns.split(',').map(x=>x.trim());
+ const neutralCsvColumnCount=csvReviewActive?
+   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
  const csvNamesValid=csvColumns.length>=2&&csvColumns.length<=100&&
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
-   [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
- const neutralCsvColumnCount=csvReviewActive?
-   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
+   [',',';','\t'].includes(draft.csvDelimiter??'INVALID')&&
+   (neutralCsvColumnCount===null||csvColumns.length===neutralCsvColumnCount);
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
    const names=Array.from({length:neutralCsvColumnCount},

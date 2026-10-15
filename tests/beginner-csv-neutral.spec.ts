@@ -45,6 +45,8 @@ test('source-complete PAN-OS positional CSV still asks for neutral column approv
  await expect(csvReview).toContainText('do not contain trustworthy field names');
  const neutral=csvReview.getByRole('button',{name:'Keep all 5 values with temporary names'});
  await expect(neutral).toBeVisible();
+ await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('time,action,src_ip,dst_port');
+ await expect(csvReview.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
  await neutral.click();
  await expect(summary).toContainText('2 of 2 log events parsed completely');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
