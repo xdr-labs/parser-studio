@@ -374,6 +374,53 @@ class-level skip handling the runner completed:
 Together with the focused **22 / 22 PASS**, this is the reproducible
 code-regression gate for the current isolated v4 PoC worktree.
 
+## Fresh prospective security holdout — v4 abstention result
+
+A separate source set was frozen in
+`STRUCTURAL_HYPOTHESIS_FRESH_SECURITY_HOLDOUT_20261015.json` before Parser
+Studio read or evaluated the fixtures. It contains 27 files from four previously
+unused security-product families:
+
+- Barracuda WAF;
+- NETSCOUT Sightline NDR/DDoS;
+- Symantec Endpoint security;
+- WatchGuard Firebox NGFW.
+
+The frozen v4 hypothesis engine was then evaluated without tuning across three
+deterministic train/holdout splits. Files with fewer than four events were never
+reused as both train and holdout.
+
+Aggregate across the three splits:
+
+- evaluation events: **903** (**301 per split**);
+- baseline SOURCE_PARSED: **351**;
+- baseline PARTIAL: **483**;
+- baseline RAW_ONLY: **69**;
+- new whole-event promotions: **0**;
+- new whole-event source spans: **0**;
+- partial-only augmented events: **0**;
+- partial-only added source spans: **0**.
+
+Per-family evaluation occurrences across all splits:
+
+- Barracuda WAF: **54**;
+- NETSCOUT Sightline: **105**;
+- Symantec Endpoint: **78**;
+- WatchGuard Firebox: **666**.
+
+This is an important negative result. The v4 learner did not force a speculative
+grammar onto unseen products merely to raise coverage. It also means the
+cross-event primitives demonstrated on Cisco Secure Email, Snort and Sophos do
+**not yet generalize broadly enough** to justify product integration.
+
+Machine-readable evidence:
+
+- `structural-hypothesis-fresh-security-holdout-summary.json`
+
+After this result was recorded, these fixtures may be used as development data.
+Any improvement learned from them must be validated on a **new pre-frozen
+security holdout** before it can count as generalization evidence.
+
 ## Rejected follow-up — masked residual R-gram
 
 A follow-up experiment masked all baseline value spans and learned only the

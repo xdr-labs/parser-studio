@@ -1,0 +1,1728 @@
+{
+  "aggregate_by_family": {
+    "barracuda_waf": {
+      "baseline_PARTIAL": 11,
+      "baseline_RAW_ONLY": 7,
+      "baseline_SOURCE_PARSED": 36,
+      "events": 54
+    },
+    "netscout_sightline": {
+      "baseline_PARTIAL": 43,
+      "baseline_RAW_ONLY": 62,
+      "events": 105
+    },
+    "symantec_endpoint": {
+      "baseline_PARTIAL": 27,
+      "baseline_SOURCE_PARSED": 51,
+      "events": 78
+    },
+    "watchguard_firebox": {
+      "baseline_PARTIAL": 402,
+      "baseline_SOURCE_PARSED": 264,
+      "events": 666
+    }
+  },
+  "aggregate_totals": {
+    "baseline_PARTIAL": 483,
+    "baseline_RAW_ONLY": 69,
+    "baseline_SOURCE_PARSED": 351,
+    "events": 903
+  },
+  "contract": "parser-studio.poc.structural-hypothesis-fresh-security-prospective.v1",
+  "families": {
+    "barracuda_waf": {
+      "category": "WAF",
+      "directory": "packages/barracuda/data_stream/waf/_dev/test/pipeline",
+      "file_count": 5
+    },
+    "netscout_sightline": {
+      "category": "NDR_DDOS",
+      "directory": "packages/netscout/data_stream/sightline/_dev/test/pipeline",
+      "file_count": 1
+    },
+    "symantec_endpoint": {
+      "category": "EDR_ENDPOINT",
+      "directory": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline",
+      "file_count": 17
+    },
+    "watchguard_firebox": {
+      "category": "NGFW",
+      "directory": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline",
+      "file_count": 4
+    }
+  },
+  "hypothesis_engine_revision": "v4-frozen-before-fresh-evaluation",
+  "interpretation": "A zero gain is an honest abstention result, not a failure of baseline parsing. Any tuning after this run turns these fixtures into development data and requires a new pre-frozen holdout.",
+  "manifest_contract": "parser-studio.poc.structural-hypothesis-fresh-security-holdout.v1",
+  "manifest_file_set_sha256": "e5d20dd86bf8991da39e38d191023d244035aee6bada431f764d3e7a997aac61",
+  "product_vendor_identity_used_by_learner": false,
+  "prospective_gain": {
+    "complete_promotions": 0,
+    "complete_source_span_gain": 0,
+    "partial_augmented_events": 0,
+    "partial_source_span_gain": 0
+  },
+  "raw_values_published": false,
+  "scope": "SECURITY_PRODUCTS_ONLY_FRESH_HOLDOUT",
+  "short_file_train_holdout_reuse": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_count": 3,
+  "splits": [
+    {
+      "by_family": {
+        "barracuda_waf": {
+          "baseline_PARTIAL": 3,
+          "baseline_RAW_ONLY": 3,
+          "baseline_SOURCE_PARSED": 12,
+          "events": 18
+        },
+        "netscout_sightline": {
+          "baseline_PARTIAL": 14,
+          "baseline_RAW_ONLY": 21,
+          "events": 35
+        },
+        "symantec_endpoint": {
+          "baseline_PARTIAL": 9,
+          "baseline_SOURCE_PARSED": 17,
+          "events": 26
+        },
+        "watchguard_firebox": {
+          "baseline_PARTIAL": 133,
+          "baseline_SOURCE_PARSED": 89,
+          "events": 222
+        }
+      },
+      "per_file": [
+        {
+          "blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+          "category": "NGFW",
+          "event_count": 23,
+          "family": "watchguard_firebox",
+          "holdout_count": 8,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 8,
+            "events": 8
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-alarm.log",
+          "train_count": 15
+        },
+        {
+          "blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+          "category": "NGFW",
+          "event_count": 181,
+          "family": "watchguard_firebox",
+          "holdout_count": 63,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 51,
+            "baseline_SOURCE_PARSED": 12,
+            "events": 63
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-diagnostic.log",
+          "train_count": 118
+        },
+        {
+          "blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+          "category": "NGFW",
+          "event_count": 212,
+          "family": "watchguard_firebox",
+          "holdout_count": 74,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 73,
+            "baseline_SOURCE_PARSED": 1,
+            "events": 74
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-event.log",
+          "train_count": 138
+        },
+        {
+          "blob_sha": "af82483a7d4f7538bfac685b20bddba4adc10b08",
+          "category": "NGFW",
+          "event_count": 221,
+          "family": "watchguard_firebox",
+          "holdout_count": 77,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "baseline_SOURCE_PARSED": 76,
+            "events": 77
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-traffic.log",
+          "train_count": 144
+        },
+        {
+          "blob_sha": "0a24be20bcc5c8c5f3f9038df6989a9cf20faa62",
+          "category": "WAF",
+          "event_count": 30,
+          "family": "barracuda_waf",
+          "holdout_count": 10,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 10,
+            "events": 10
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-access.log",
+          "train_count": 20
+        },
+        {
+          "blob_sha": "02c1f654baeb8bcf8c4e60f2b1a8d7ffd71d3a1e",
+          "category": "WAF",
+          "event_count": 2,
+          "family": "barracuda_waf",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-audit.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "f5f85046d140cf67ace18bc7bae69d2acde6b3b6",
+          "category": "WAF",
+          "event_count": 4,
+          "family": "barracuda_waf",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-network-firewall.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "b7efcd34e78b4ba48caa7155dfe18af35e1bb6cd",
+          "category": "WAF",
+          "event_count": 9,
+          "family": "barracuda_waf",
+          "holdout_count": 3,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_RAW_ONLY": 3,
+            "events": 3
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-system.log",
+          "train_count": 6
+        },
+        {
+          "blob_sha": "9e48f0626667f5f1ed41fcfe52fe653885aa4c59",
+          "category": "WAF",
+          "event_count": 5,
+          "family": "barracuda_waf",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-web-firewall.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "bd8d089c540fb5140ca7fcafd91229222558985b",
+          "category": "NDR_DDOS",
+          "event_count": 100,
+          "family": "netscout_sightline",
+          "holdout_count": 35,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 14,
+            "baseline_RAW_ONLY": 21,
+            "events": 35
+          },
+          "path": "packages/netscout/data_stream/sightline/_dev/test/pipeline/test-generated.log",
+          "train_count": 65
+        },
+        {
+          "blob_sha": "65f8d81fbf3d4482c8ba34ee74e757cbfd7aacc9",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-administrative.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6a387bcc8cb7154d8ca455841da0a07840892e8d",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-activity.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "b8cc7323738637c501d62677083384e725c84dac",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-behavior.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "8122f49406d83b3443442a03d95f44f35e7395b2",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-packet.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "f12420aa445b3bedfc3f73116245cfc5b810cdf4",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-proactive-detection-sonar.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "ac28bca8535a3f86ee9b92b6256eab3129ca9a31",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-risk.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6a53fc23065db5826040390c5be1f4190267beb1",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-scan.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6d1ca799d1b7bd0691803df5b5a6d1b6e9117d65",
+          "category": "EDR_ENDPOINT",
+          "event_count": 6,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-security.log",
+          "train_count": 4
+        },
+        {
+          "blob_sha": "4be49dfbcbfd7d7e56d98bd07dd26420f275be2c",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-system.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "d7f6d4a461279d45a3808d477b817d1c2ba1a8f1",
+          "category": "EDR_ENDPOINT",
+          "event_count": 3,
+          "family": "symantec_endpoint",
+          "holdout_count": 3,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 3,
+            "events": 3
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-traffic.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "09faa919cbfd40bde70dca1359f7636fb751493b",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy-rfc3164-sep14-3ru7.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "e25d3a5814092a8eb59fc75358a7b9878c0d22c7",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "5e8d0ca80a9588cc47065ab482a78a454df7b9ad",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-remove-mapped-fields.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "37caca3b759bad202b0a5a0e3e8c4fcb4b741e44",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc3164.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "2c57a7c10093dbd19bcf7063aafc17863bab2799",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc5424.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "5e51d5a0e6f0c57d52ce44835a11c4f43d63769e",
+          "category": "EDR_ENDPOINT",
+          "event_count": 4,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-system.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "5b8980d9e76412aa2efbc69c717c63314647a80f",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-text-log-dump.log",
+          "train_count": 0
+        }
+      ],
+      "seed": "structural-hypothesis-security-ms-a",
+      "totals": {
+        "baseline_PARTIAL": 159,
+        "baseline_RAW_ONLY": 24,
+        "baseline_SOURCE_PARSED": 118,
+        "events": 301
+      }
+    },
+    {
+      "by_family": {
+        "barracuda_waf": {
+          "baseline_PARTIAL": 4,
+          "baseline_RAW_ONLY": 2,
+          "baseline_SOURCE_PARSED": 12,
+          "events": 18
+        },
+        "netscout_sightline": {
+          "baseline_PARTIAL": 15,
+          "baseline_RAW_ONLY": 20,
+          "events": 35
+        },
+        "symantec_endpoint": {
+          "baseline_PARTIAL": 9,
+          "baseline_SOURCE_PARSED": 17,
+          "events": 26
+        },
+        "watchguard_firebox": {
+          "baseline_PARTIAL": 134,
+          "baseline_SOURCE_PARSED": 88,
+          "events": 222
+        }
+      },
+      "per_file": [
+        {
+          "blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+          "category": "NGFW",
+          "event_count": 23,
+          "family": "watchguard_firebox",
+          "holdout_count": 8,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 8,
+            "events": 8
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-alarm.log",
+          "train_count": 15
+        },
+        {
+          "blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+          "category": "NGFW",
+          "event_count": 181,
+          "family": "watchguard_firebox",
+          "holdout_count": 63,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 50,
+            "baseline_SOURCE_PARSED": 13,
+            "events": 63
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-diagnostic.log",
+          "train_count": 118
+        },
+        {
+          "blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+          "category": "NGFW",
+          "event_count": 212,
+          "family": "watchguard_firebox",
+          "holdout_count": 74,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 74,
+            "events": 74
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-event.log",
+          "train_count": 138
+        },
+        {
+          "blob_sha": "af82483a7d4f7538bfac685b20bddba4adc10b08",
+          "category": "NGFW",
+          "event_count": 221,
+          "family": "watchguard_firebox",
+          "holdout_count": 77,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "baseline_SOURCE_PARSED": 75,
+            "events": 77
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-traffic.log",
+          "train_count": 144
+        },
+        {
+          "blob_sha": "0a24be20bcc5c8c5f3f9038df6989a9cf20faa62",
+          "category": "WAF",
+          "event_count": 30,
+          "family": "barracuda_waf",
+          "holdout_count": 10,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 10,
+            "events": 10
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-access.log",
+          "train_count": 20
+        },
+        {
+          "blob_sha": "02c1f654baeb8bcf8c4e60f2b1a8d7ffd71d3a1e",
+          "category": "WAF",
+          "event_count": 2,
+          "family": "barracuda_waf",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-audit.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "f5f85046d140cf67ace18bc7bae69d2acde6b3b6",
+          "category": "WAF",
+          "event_count": 4,
+          "family": "barracuda_waf",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-network-firewall.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "b7efcd34e78b4ba48caa7155dfe18af35e1bb6cd",
+          "category": "WAF",
+          "event_count": 9,
+          "family": "barracuda_waf",
+          "holdout_count": 3,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "baseline_RAW_ONLY": 2,
+            "events": 3
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-system.log",
+          "train_count": 6
+        },
+        {
+          "blob_sha": "9e48f0626667f5f1ed41fcfe52fe653885aa4c59",
+          "category": "WAF",
+          "event_count": 5,
+          "family": "barracuda_waf",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-web-firewall.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "bd8d089c540fb5140ca7fcafd91229222558985b",
+          "category": "NDR_DDOS",
+          "event_count": 100,
+          "family": "netscout_sightline",
+          "holdout_count": 35,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 15,
+            "baseline_RAW_ONLY": 20,
+            "events": 35
+          },
+          "path": "packages/netscout/data_stream/sightline/_dev/test/pipeline/test-generated.log",
+          "train_count": 65
+        },
+        {
+          "blob_sha": "65f8d81fbf3d4482c8ba34ee74e757cbfd7aacc9",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-administrative.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6a387bcc8cb7154d8ca455841da0a07840892e8d",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-activity.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "b8cc7323738637c501d62677083384e725c84dac",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-behavior.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "8122f49406d83b3443442a03d95f44f35e7395b2",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-packet.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "f12420aa445b3bedfc3f73116245cfc5b810cdf4",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-proactive-detection-sonar.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "ac28bca8535a3f86ee9b92b6256eab3129ca9a31",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-risk.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6a53fc23065db5826040390c5be1f4190267beb1",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-scan.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6d1ca799d1b7bd0691803df5b5a6d1b6e9117d65",
+          "category": "EDR_ENDPOINT",
+          "event_count": 6,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-security.log",
+          "train_count": 4
+        },
+        {
+          "blob_sha": "4be49dfbcbfd7d7e56d98bd07dd26420f275be2c",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-system.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "d7f6d4a461279d45a3808d477b817d1c2ba1a8f1",
+          "category": "EDR_ENDPOINT",
+          "event_count": 3,
+          "family": "symantec_endpoint",
+          "holdout_count": 3,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 3,
+            "events": 3
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-traffic.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "09faa919cbfd40bde70dca1359f7636fb751493b",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy-rfc3164-sep14-3ru7.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "e25d3a5814092a8eb59fc75358a7b9878c0d22c7",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "5e8d0ca80a9588cc47065ab482a78a454df7b9ad",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-remove-mapped-fields.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "37caca3b759bad202b0a5a0e3e8c4fcb4b741e44",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc3164.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "2c57a7c10093dbd19bcf7063aafc17863bab2799",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc5424.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "5e51d5a0e6f0c57d52ce44835a11c4f43d63769e",
+          "category": "EDR_ENDPOINT",
+          "event_count": 4,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-system.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "5b8980d9e76412aa2efbc69c717c63314647a80f",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-text-log-dump.log",
+          "train_count": 0
+        }
+      ],
+      "seed": "structural-hypothesis-security-ms-b",
+      "totals": {
+        "baseline_PARTIAL": 162,
+        "baseline_RAW_ONLY": 22,
+        "baseline_SOURCE_PARSED": 117,
+        "events": 301
+      }
+    },
+    {
+      "by_family": {
+        "barracuda_waf": {
+          "baseline_PARTIAL": 4,
+          "baseline_RAW_ONLY": 2,
+          "baseline_SOURCE_PARSED": 12,
+          "events": 18
+        },
+        "netscout_sightline": {
+          "baseline_PARTIAL": 14,
+          "baseline_RAW_ONLY": 21,
+          "events": 35
+        },
+        "symantec_endpoint": {
+          "baseline_PARTIAL": 9,
+          "baseline_SOURCE_PARSED": 17,
+          "events": 26
+        },
+        "watchguard_firebox": {
+          "baseline_PARTIAL": 135,
+          "baseline_SOURCE_PARSED": 87,
+          "events": 222
+        }
+      },
+      "per_file": [
+        {
+          "blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+          "category": "NGFW",
+          "event_count": 23,
+          "family": "watchguard_firebox",
+          "holdout_count": 8,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 8,
+            "events": 8
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-alarm.log",
+          "train_count": 15
+        },
+        {
+          "blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+          "category": "NGFW",
+          "event_count": 181,
+          "family": "watchguard_firebox",
+          "holdout_count": 63,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 51,
+            "baseline_SOURCE_PARSED": 12,
+            "events": 63
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-diagnostic.log",
+          "train_count": 118
+        },
+        {
+          "blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+          "category": "NGFW",
+          "event_count": 212,
+          "family": "watchguard_firebox",
+          "holdout_count": 74,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 73,
+            "baseline_SOURCE_PARSED": 1,
+            "events": 74
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-event.log",
+          "train_count": 138
+        },
+        {
+          "blob_sha": "af82483a7d4f7538bfac685b20bddba4adc10b08",
+          "category": "NGFW",
+          "event_count": 221,
+          "family": "watchguard_firebox",
+          "holdout_count": 77,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 3,
+            "baseline_SOURCE_PARSED": 74,
+            "events": 77
+          },
+          "path": "packages/watchguard_firebox/data_stream/log/_dev/test/pipeline/test-traffic.log",
+          "train_count": 144
+        },
+        {
+          "blob_sha": "0a24be20bcc5c8c5f3f9038df6989a9cf20faa62",
+          "category": "WAF",
+          "event_count": 30,
+          "family": "barracuda_waf",
+          "holdout_count": 10,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 10,
+            "events": 10
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-access.log",
+          "train_count": 20
+        },
+        {
+          "blob_sha": "02c1f654baeb8bcf8c4e60f2b1a8d7ffd71d3a1e",
+          "category": "WAF",
+          "event_count": 2,
+          "family": "barracuda_waf",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-audit.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "f5f85046d140cf67ace18bc7bae69d2acde6b3b6",
+          "category": "WAF",
+          "event_count": 4,
+          "family": "barracuda_waf",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-network-firewall.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "b7efcd34e78b4ba48caa7155dfe18af35e1bb6cd",
+          "category": "WAF",
+          "event_count": 9,
+          "family": "barracuda_waf",
+          "holdout_count": 3,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "baseline_RAW_ONLY": 2,
+            "events": 3
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-system.log",
+          "train_count": 6
+        },
+        {
+          "blob_sha": "9e48f0626667f5f1ed41fcfe52fe653885aa4c59",
+          "category": "WAF",
+          "event_count": 5,
+          "family": "barracuda_waf",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/barracuda/data_stream/waf/_dev/test/pipeline/test-web-firewall.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "bd8d089c540fb5140ca7fcafd91229222558985b",
+          "category": "NDR_DDOS",
+          "event_count": 100,
+          "family": "netscout_sightline",
+          "holdout_count": 35,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 14,
+            "baseline_RAW_ONLY": 21,
+            "events": 35
+          },
+          "path": "packages/netscout/data_stream/sightline/_dev/test/pipeline/test-generated.log",
+          "train_count": 65
+        },
+        {
+          "blob_sha": "65f8d81fbf3d4482c8ba34ee74e757cbfd7aacc9",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-administrative.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6a387bcc8cb7154d8ca455841da0a07840892e8d",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-activity.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "b8cc7323738637c501d62677083384e725c84dac",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-behavior.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "8122f49406d83b3443442a03d95f44f35e7395b2",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-packet.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "f12420aa445b3bedfc3f73116245cfc5b810cdf4",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-proactive-detection-sonar.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "ac28bca8535a3f86ee9b92b6256eab3129ca9a31",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-risk.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6a53fc23065db5826040390c5be1f4190267beb1",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-scan.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "6d1ca799d1b7bd0691803df5b5a6d1b6e9117d65",
+          "category": "EDR_ENDPOINT",
+          "event_count": 6,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-security.log",
+          "train_count": 4
+        },
+        {
+          "blob_sha": "4be49dfbcbfd7d7e56d98bd07dd26420f275be2c",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-system.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "d7f6d4a461279d45a3808d477b817d1c2ba1a8f1",
+          "category": "EDR_ENDPOINT",
+          "event_count": 3,
+          "family": "symantec_endpoint",
+          "holdout_count": 3,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 3,
+            "events": 3
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-agent-traffic.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "09faa919cbfd40bde70dca1359f7636fb751493b",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy-rfc3164-sep14-3ru7.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "e25d3a5814092a8eb59fc75358a7b9878c0d22c7",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-policy.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "5e8d0ca80a9588cc47065ab482a78a454df7b9ad",
+          "category": "EDR_ENDPOINT",
+          "event_count": 2,
+          "family": "symantec_endpoint",
+          "holdout_count": 2,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 2,
+            "events": 2
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-remove-mapped-fields.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "37caca3b759bad202b0a5a0e3e8c4fcb4b741e44",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc3164.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "2c57a7c10093dbd19bcf7063aafc17863bab2799",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-rfc5424.log",
+          "train_count": 0
+        },
+        {
+          "blob_sha": "5e51d5a0e6f0c57d52ce44835a11c4f43d63769e",
+          "category": "EDR_ENDPOINT",
+          "event_count": 4,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_PARTIAL": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-system.log",
+          "train_count": 3
+        },
+        {
+          "blob_sha": "5b8980d9e76412aa2efbc69c717c63314647a80f",
+          "category": "EDR_ENDPOINT",
+          "event_count": 1,
+          "family": "symantec_endpoint",
+          "holdout_count": 1,
+          "hypotheses": {
+            "delimited": 0,
+            "numeric_prefix": 0,
+            "relative_rgram": 0,
+            "template": 0
+          },
+          "metrics": {
+            "baseline_SOURCE_PARSED": 1,
+            "events": 1
+          },
+          "path": "packages/symantec_endpoint/data_stream/log/_dev/test/pipeline/test-text-log-dump.log",
+          "train_count": 0
+        }
+      ],
+      "seed": "structural-hypothesis-security-ms-c",
+      "totals": {
+        "baseline_PARTIAL": 162,
+        "baseline_RAW_ONLY": 23,
+        "baseline_SOURCE_PARSED": 116,
+        "events": 301
+      }
+    }
+  ],
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed"
+}
