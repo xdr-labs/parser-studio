@@ -8,7 +8,7 @@ export interface BackendCapabilities {
   authoring: {
     receiverProtocols: Array<'udp' | 'tcp'>;
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'regex' | 'generic_structural'>;
-    genericStructuralGrammar?: 'GENERIC_STRUCTURAL_ULTRA_COMPILER_V9';
+    genericStructuralGrammar?: 'GENERIC_STRUCTURAL_ULTRA_COMPILER_V10';
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
@@ -189,7 +189,7 @@ export async function fetchBackendCapabilities(
   if(!javaAdvertised&&javaClaims.some(x=>x!==undefined))
     throw new Error('Untrusted Java frame capability without parser support.');
   const genericStructuralAdvertised=a.extractionFormats.includes('generic_structural');
-  if(genericStructuralAdvertised&&a.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V9')
+  if(genericStructuralAdvertised&&a.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V10')
     throw new Error('Generic Structural authoring requires the exact bounded compiler grammar.');
   if(!genericStructuralAdvertised&&a.genericStructuralGrammar!==undefined)
     throw new Error('Untrusted Generic Structural capability without parser support.');
@@ -291,7 +291,7 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     throw new Error('Regex DRAFT requires the exact bounded named-capture safety contract.');
   if(project.extraction.format==='generic_structural'&&(
     project.receiver.port<6800||
-    cap.authoring.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V9'))
+    cap.authoring.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V10'))
     throw new Error('Generic Structural DRAFT requires the exact bounded grammar and listener port >=6800.');
   if(project.extraction.format==='java_stacktrace'&&(
     project.receiver.tcpFraming!=='blank_line_java'||

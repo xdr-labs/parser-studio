@@ -197,16 +197,34 @@ function commaKv(raw:string):Record<string,unknown>|null{
   return Object.keys(syslog).length?{syslog,generic}:{generic};
 }
 
+function spaceKvEntries(raw:string):Array<{key:string;start:number;valueStart:number}>|null{
+  const entries:Array<{key:string;start:number;valueStart:number}>=[];
+  let quote='';let escaped=false;
+  for(let pos=0;pos<raw.length;pos++){
+    const char=raw[pos]!;
+    if(quote){
+      if(escaped){escaped=false;continue;}
+      if(char==='\\'){escaped=true;continue;}
+      if(char===quote)quote='';
+      continue;
+    }
+    const boundary=pos===0||raw[pos-1]===' '||raw[pos-1]==='\t';
+    if(boundary){
+      const match=/^([A-Za-z_][A-Za-z0-9_.-]{0,63})=/.exec(raw.slice(pos));
+      if(match){
+        entries.push({key:match[1]!,start:pos,valueStart:pos+match[0].length});
+        if(entries.length>100)return null;
+      }
+    }
+    if(char==='"'||char==="'")quote=char;
+  }
+  return quote||escaped?null:entries;
+}
+
 function spaceKv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192)return null;
-  const pattern=/(?:^|[ \t])([A-Za-z_][A-Za-z0-9_.-]{0,63})=/g;
-  const entries:Array<{key:string;start:number;valueStart:number}>=[];
-  let match:RegExpExecArray|null;
-  while((match=pattern.exec(raw))!==null){
-    const start=match.index+(match[0]![0]===' '||match[0]![0]==='\t'?1:0);
-    entries.push({key:match[1]!,start,valueStart:match.index+match[0]!.length});
-    if(entries.length>100)return null;
-  }
+  const entries=spaceKvEntries(raw);
+  if(!entries)return null;
   if(entries.length<5)return null;
   const prefix=raw.slice(0,entries[0]!.start).trim();
   const tokens=prefix?prefix.split(/[ \t]+/).map(value=>
@@ -243,6 +261,20 @@ function spaceKv(raw:string):Record<string,unknown>|null{
   tokens.forEach((value,index)=>{generic['prefix_'+String(index+1).padStart(3,'0')]=value;});
   if(Object.keys(atoms).length)generic.atoms=atoms;
   return {generic};
+}
+
+function priSpaceKv(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const match=/^<(\d{1,3})>(.+)$/.exec(raw);
+  if(!match)return null;
+  const pri=Number(match[1]);
+  if(!Number.isInteger(pri)||pri<0||pri>191)return null;
+  const parsed=spaceKv(match[2]!);
+  if(!parsed||!parsed.generic||typeof parsed.generic!=='object')return null;
+  return {
+    syslog:{pri:match[1]},
+    generic:{...(parsed.generic as Record<string,unknown>),source_raw:raw},
+  };
 }
 
 function validBsdClock(month:string,dayText:string,time:string):boolean{
@@ -423,7 +455,7 @@ function asa(raw:string):Record<string,unknown>|null{
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
   const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??asa(raw)??watchguardProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
-    rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??spaceKv(raw);
+    rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
 }

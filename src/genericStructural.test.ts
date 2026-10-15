@@ -133,6 +133,24 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect(extractGenericStructural(raw.replace('2020-03-30T07:20:35','2020-13-30T07:20:35')).fields).toEqual({});
   });
 
+  it('extracts bounded PRI-prefixed space-delimited KV without inventing Syslog body semantics',()=>{
+    const raw='<134>date=2023-02-23 time=22:49:29 tz="+0500" devname=FMG-VM device_id=FMG001 log_id=0001010018 type=event subtype=system pri=information desc="User login successful" msg="inner status=embedded value" status=success';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'134'},
+      generic:{
+        mode:'space_kv',source_raw:raw,
+        kv:{date:'2023-02-23',time:'22:49:29',tz:'+0500',devname:'FMG-VM',
+          device_id:'FMG001',log_id:'0001010018',type:'event',subtype:'system',
+          pri:'information',desc:'User login successful',msg:'inner status=embedded value',status:'success'},
+      },
+    });
+    expect(extractGenericStructural(raw.replace('<134>','<192>')).fields).toEqual({});
+    expect(extractGenericStructural('<134>date=2023-02-23 time=22:49:29 type=event subtype=system').fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('desc="User login successful"','desc="User login successful')).fields).toEqual({});
+  });
+
   it('extracts bounded prefix plus space-delimited KV and preserves the exact source',()=>{
     const raw='2023:04:28-00:50:54 sophos-test-vm1 ulogd[12511]: id="2021" severity="info" sys="SecureNet" sub="packetfilter" name="Packet dropped (GEOIP)" action="drop"';
     const result=extractGenericStructural(raw);
