@@ -104,7 +104,72 @@ test('source-complete variable-width positional CSV explains that one schema can
  const csvReview=page.getByLabel('Review CSV column names');
  await expect(csvReview).toContainText('Positional rows have different column counts');
  await expect(csvReview).toContainText('One column list cannot safely parse all of them');
+ const groups=csvReview.getByLabel('CSV row shape groups');
+ await expect(groups).toContainText('5 columns · 1 event · event 1');
+ await expect(groups).toContainText('6 columns · 1 event · event 2');
+ await expect(groups).toContainText('No source event is discarded automatically');
  await expect(csvReview.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
  await expect(csvReview.getByRole('status')).toContainText('separated into matching positional shapes');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+});
+
+test('shape diagnostics report rows above the 100-column parser limit without enabling confirmation',async({page})=>{
+ const normal=Array.from({length:5},(_,index)=>String(index)).join(',');
+ const wide=Array.from({length:120},(_,index)=>String(index)).join(',');
+ const source=normal+'\n'+wide;
+ let cursor=0;
+ const lines=[normal,wide];
+ const events=lines.map((line,index)=>{
+  const startByte=cursor,endByte=startByte+Buffer.byteLength(line);cursor=endByte+(index===0?1:0);
+  return {index,startByte,endByte,preview:{
+   contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+   syntax:'CSV_UNLABELED',sourceSha256:sha(line),sourceBytes:Buffer.byteLength(line),
+   fields:{},spans:[],residuals:[],issues:[],nativeVerified:false,targetVerified:false,
+  }};
+ });
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+   contract:'parser-studio.multipass-source-batch-preview.v0.1',
+   sourceSha256:sha(source),sourceBytes:Buffer.byteLength(source),eventCount:2,events,
+   separators:[{startByte:events[0]!.endByte,endByte:events[0]!.endByte+1,kind:'WHITESPACE'}],
+   nativeVerified:false,targetVerified:false,
+  })}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(source);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const groups=page.getByLabel('CSV row shape groups');
+ await expect(groups).toContainText('5 columns · 1 event · event 1');
+ await expect(groups).toContainText('120 columns · 1 event · event 2 · exceeds the 100-column parser limit');
+ await expect(page.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
+});
+
+test('shape diagnostics keep valid groups visible when another event has malformed CSV quoting',async({page})=>{
+ const lines=['a,b','1,"unterminated','4,5'];
+ const source=lines.join('\n');
+ let cursor=0;
+ const events=lines.map((line,index)=>{
+  const startByte=cursor,endByte=startByte+Buffer.byteLength(line);cursor=endByte+(index<lines.length-1?1:0);
+  return {index,startByte,endByte,preview:{
+   contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+   syntax:'CSV_UNLABELED',sourceSha256:sha(line),sourceBytes:Buffer.byteLength(line),
+   fields:{},spans:[],residuals:[],issues:[],nativeVerified:false,targetVerified:false,
+  }};
+ });
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+   contract:'parser-studio.multipass-source-batch-preview.v0.1',
+   sourceSha256:sha(source),sourceBytes:Buffer.byteLength(source),eventCount:3,events,
+   separators:[
+    {startByte:events[0]!.endByte,endByte:events[0]!.endByte+1,kind:'WHITESPACE'},
+    {startByte:events[1]!.endByte,endByte:events[1]!.endByte+1,kind:'WHITESPACE'},
+   ],nativeVerified:false,targetVerified:false,
+  })}));
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(source);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const groups=page.getByLabel('CSV row shape groups');
+ await expect(groups).toContainText('2 columns · 2 events · event 1, 3');
+ await expect(groups).toContainText('Not safe CSV: event 2');
+ await expect(groups).toContainText('needs separate review');
+ await expect(page.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
 });
