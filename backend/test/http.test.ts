@@ -105,7 +105,7 @@ test("capabilities API must truthfully advertise only supported and verified bac
    assert.equal(info.authoring.boundedRegexNamedCaptureSubset,true);
    assert.equal(info.authoring.boundedRegexMaxPatternChars,256);
    assert.equal(info.authoring.boundedRegexRuntimeTimeoutMs,50);
-   assert.equal(info.authoring.genericStructuralGrammar,"GENERIC_STRUCTURAL_ULTRA_COMPILER_V10");
+   assert.equal(info.authoring.genericStructuralGrammar,"GENERIC_STRUCTURAL_ULTRA_COMPILER_V11");
    assert.equal(info.authoring.httpReceiver,false);
    assert.equal(info.authoring.multipleDistinctReceiverPorts,false);
    assert.equal(info.authoring.formatCoverage,"reviewed-bounded-subset");

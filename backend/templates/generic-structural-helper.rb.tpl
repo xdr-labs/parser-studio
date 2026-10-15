@@ -8,6 +8,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_prefixed_json(text)
   return result if result
+  result = parserstudio_generic_iso_pri_mixed(text)
+  return result if result
   result = parserstudio_generic_asa(text)
   return result if result
   result = parserstudio_generic_watchguard(text)
@@ -420,6 +422,31 @@ def parserstudio_generic_profile_tokens(text, start)
     break if pos == text.length
     count += 1
     return nil if count > 100
+    if ['"', "'"].include?(text[pos])
+      quote = text[pos]
+      cursor = pos + 1
+      begin_value = cursor
+      closed = false
+      while cursor < text.length
+        if text[cursor] == '\' && cursor + 1 < text.length
+          cursor += 2
+          next
+        end
+        if text[cursor] == quote
+          closed = true
+          break
+        end
+        cursor += 1
+      end
+      return nil unless closed
+      tokens << text[begin_value...cursor]
+      cursor += 1
+      cursor += 1 if cursor < text.length && '.,:!?'.include?(text[cursor])
+      return nil if cursor < text.length && !text[cursor].match?(/\s/) && ![',',';'].include?(text[cursor])
+      pos = cursor
+      pos += 1 if pos < text.length && [',',';'].include?(text[pos])
+      next
+    end
     if text[pos] == '('
       finish = text.index(')', pos + 1)
       return nil unless finish
@@ -477,6 +504,34 @@ def parserstudio_generic_ip_token(value)
   true
 rescue StandardError
   false
+end
+
+def parserstudio_generic_iso_pri_mixed(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
+  return nil unless match
+  priority = Integer(match[1], 10)
+  return nil unless priority.between?(0, 191)
+  zone = match[4]
+  normalized_zone = zone == 'Z' ? 'Z' : (zone.include?(':') ? zone : zone[0,3] + ':' + zone[3,2])
+  begin
+    Time.iso8601("#{match[2]}T#{match[3]}#{normalized_zone}")
+  rescue StandardError
+    return nil
+  end
+  body = parserstudio_generic_profile_tokens(text, match.end(0))
+  return nil unless body && body['tokens'].length >= 16
+  values = body['tokens'].dup
+  body['kv'].each_value do |value|
+    value.is_a?(Array) ? values.concat(value.map(&:to_s)) : values << value.to_s
+  end
+  return nil if values.count { |value| parserstudio_generic_ip_token(value) } < 2
+  {
+    'syslog'=>{'pri'=>match[1],'date'=>match[2],'time'=>match[3],'timezone'=>match[4]},
+    'generic'=>body
+  }
+rescue StandardError
+  nil
 end
 
 def parserstudio_generic_watchguard(text)

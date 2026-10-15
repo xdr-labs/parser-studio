@@ -60,6 +60,20 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
+test("Generic Structural V11 Ruby helper parses bounded ISO PRI mixed positional logs",{skip:!rubyAvailable},()=>{
+  const raw='<129>2026-10-15 14:54:44.502 +0100 edge WAF ALERT CODE 192.0.2.1 61507 198.51.100.2 443 app policy LOG NONE token1 token2 token3 token4 "-" "multi word positional value" token7 token8';
+  const parsed=runRuby("parserstudio_generic_structural",raw) as any;
+  assert.deepEqual(parsed.syslog,{pri:"129",date:"2026-10-15",time:"14:54:44.502",timezone:"+0100"});
+  assert.deepEqual(parsed.generic.tokens.slice(0,8),["edge","WAF","ALERT","CODE","192.0.2.1","61507","198.51.100.2","443"]);
+  assert.ok(parsed.generic.tokens.includes("-"));
+  assert.ok(parsed.generic.tokens.includes("multi word positional value"));
+  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("<129>","<192>")),null);
+  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("+0100","+2500")),null);
+  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("2026-10-15","2026-02-30")),null);
+  assert.equal(runRuby("parserstudio_generic_structural",'<129>2026-10-15 14:54:44.502 +0100 edge short 192.0.2.1 198.51.100.2'),null);
+  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("198.51.100.2","not-an-ip")),null);
+});
+
 test("Generic Structural V10 Ruby helper parses bounded PRI-prefixed space KV",{skip:!rubyAvailable},()=>{
   const raw='<134>date=2023-02-23 time=22:49:29 tz="+0500" devname=FMG-VM device_id=FMG001 log_id=0001010018 type=event subtype=system pri=information desc="User login successful" msg="inner status=embedded value" status=success';
   const parsed=runRuby("parserstudio_generic_structural",raw) as any;
