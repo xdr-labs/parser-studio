@@ -1,0 +1,135 @@
+{
+  "contract": "parser-studio.poc.structural-hypothesis-fresh-security-holdout.v2",
+  "scope": "SECURITY_PRODUCTS_ONLY_FRESH_HOLDOUT_2",
+  "frozen_date": "2026-10-15",
+  "frozen_before_evaluation": true,
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "selection_rule": "All .log files in the preselected Proofpoint On Demand, Netskope, FortiManager, Pulse Connect Secure and Juniper Junos pipeline-test directories at the pinned revision; only path/blob SHA/size metadata was inspected before freeze.",
+  "product_vendor_identity_used_by_learner": false,
+  "raw_published": false,
+  "file_count": 14,
+  "file_set_sha256": "01a82e74e2ca54571efc0213039a8a1372536da619d892b367e478a3737437cb",
+  "families": {
+    "proofpoint_on_demand": {
+      "category": "EMAIL_SECURITY",
+      "file_count": 3
+    },
+    "netskope": {
+      "category": "CASB_SWG",
+      "file_count": 4
+    },
+    "fortinet_fortimanager": {
+      "category": "SECURITY_MANAGEMENT",
+      "file_count": 2
+    },
+    "pulse_connect_secure": {
+      "category": "VPN_ZTNA",
+      "file_count": 4
+    },
+    "juniper_junos": {
+      "category": "NETWORK_SECURITY",
+      "file_count": 1
+    }
+  },
+  "files": [
+    {
+      "family": "fortinet_fortimanager",
+      "category": "SECURITY_MANAGEMENT",
+      "path": "packages/fortinet_fortimanager/data_stream/log/_dev/test/pipeline/test-fortimanager-additional.log",
+      "blob_sha": "02788dfc5eac9cb3d64e034d0210e8d8c83c6f39",
+      "size_bytes": 4431
+    },
+    {
+      "family": "fortinet_fortimanager",
+      "category": "SECURITY_MANAGEMENT",
+      "path": "packages/fortinet_fortimanager/data_stream/log/_dev/test/pipeline/test-fortimanager.log",
+      "blob_sha": "36734c1d1405dbbb14e3b0e5f066f204d2f29ea4",
+      "size_bytes": 13208
+    },
+    {
+      "family": "juniper_junos",
+      "category": "NETWORK_SECURITY",
+      "path": "packages/juniper_junos/data_stream/log/_dev/test/pipeline/test-generated.log",
+      "blob_sha": "e8663f48748241a6f06cdb279253ed79c329c241",
+      "size_bytes": 10451
+    },
+    {
+      "family": "netskope",
+      "category": "CASB_SWG",
+      "path": "packages/netskope/data_stream/alerts_events_v2/_dev/test/pipeline/test-combined.log",
+      "blob_sha": "90bc27a6fdcb8fc88a1936721373b739b12c48dd",
+      "size_bytes": 14828
+    },
+    {
+      "family": "netskope",
+      "category": "CASB_SWG",
+      "path": "packages/netskope/data_stream/alerts/_dev/test/pipeline/test-alerts.log",
+      "blob_sha": "8b5e02ccf350c59dc6801100340096609ab88ea1",
+      "size_bytes": 61254
+    },
+    {
+      "family": "netskope",
+      "category": "CASB_SWG",
+      "path": "packages/netskope/data_stream/events/_dev/test/pipeline/test-events.log",
+      "blob_sha": "c042d9a099d4cacc7ac1d6be8856655f4df92e41",
+      "size_bytes": 26561
+    },
+    {
+      "family": "netskope",
+      "category": "CASB_SWG",
+      "path": "packages/netskope/data_stream/transaction/_dev/test/pipeline/test-transaction.log",
+      "blob_sha": "001b71f1d57fbfc6da4610126e9d8e4a339f07b1",
+      "size_bytes": 16011
+    },
+    {
+      "family": "proofpoint_on_demand",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_on_demand/data_stream/audit/_dev/test/pipeline/test-audit.log",
+      "blob_sha": "eeefd8a94b580fe74ba590943811b2ffbfc6e822",
+      "size_bytes": 9571
+    },
+    {
+      "family": "proofpoint_on_demand",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_on_demand/data_stream/mail/_dev/test/pipeline/test-mail.log",
+      "blob_sha": "d4123c76028aa183365a262bc02463bed957ec48",
+      "size_bytes": 16253
+    },
+    {
+      "family": "proofpoint_on_demand",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_on_demand/data_stream/message/_dev/test/pipeline/test-message.log",
+      "blob_sha": "58e6d168e3182428b0202f69d8ac985e1d416c5b",
+      "size_bytes": 62590
+    },
+    {
+      "family": "pulse_connect_secure",
+      "category": "VPN_ZTNA",
+      "path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-admin.log",
+      "blob_sha": "1fa48896d42309c249c3714476e652ab47d87f15",
+      "size_bytes": 2301
+    },
+    {
+      "family": "pulse_connect_secure",
+      "category": "VPN_ZTNA",
+      "path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-syslog.log",
+      "blob_sha": "774c0efdd18b05ee7d7b8facb222968157e8724b",
+      "size_bytes": 1150
+    },
+    {
+      "family": "pulse_connect_secure",
+      "category": "VPN_ZTNA",
+      "path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-system.log",
+      "blob_sha": "e59bf8499833344e3b85bbd845ade627c66fc7b4",
+      "size_bytes": 2558
+    },
+    {
+      "family": "pulse_connect_secure",
+      "category": "VPN_ZTNA",
+      "path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-vpn.log",
+      "blob_sha": "0fd957e97064c21ddace3da40596301b60cc4c5e",
+      "size_bytes": 3934
+    }
+  ]
+}
