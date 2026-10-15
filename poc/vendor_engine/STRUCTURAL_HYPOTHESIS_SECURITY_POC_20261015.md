@@ -10,11 +10,17 @@ incomplete. The learner uses source syntax only. Product/vendor identity is
 never an admission feature and semantic/Stellar Dictionary mapping is out of
 scope.
 
-Three independent hypothesis families now show measurable value:
+Three hypothesis families were implemented and challenged under the same
+strict residual-only acceptance boundary:
 
 1. cross-event delimiter/key-anchor grammar induction;
 2. numeric event-code literal-anchor / variable-slot templates;
 3. relative R-gram residual signatures for repeated security-message bodies.
+
+Only the relative R-gram family currently survives the final no-loss gate with
+independently validated new source values. Earlier delimiter/template promotions
+were rejected after hardening because candidate values re-segmented already
+claimed baseline source regions.
 
 All accepted candidates are additive. An already `SOURCE_PARSED` event is
 never reinterpreted. A learned candidate can complete an event only through a
@@ -82,7 +88,7 @@ Values extend to the next learned structural key anchor rather than to the next
 delimiter. This recovers values containing unquoted delimiter characters while
 remaining bounded.
 
-Current single-split gain: **5 Cisco ISE promotions**.
+Final strict single-split gain: **0 accepted promotions**. Earlier apparent Cisco ISE gains were rejected because the learned candidate re-segmented baseline claims rather than adding only residual values.
 
 ## Primitive B — positional CSV corpus confirmation
 
@@ -116,7 +122,7 @@ Admission requires:
 - every training example self-parses;
 - truncation/deletion/NUL training mutations fail closed.
 
-Current single-split gain: **2 Cisco ASA/VPN promotions**.
+Final strict single-split gain: **0 accepted promotions**. Two earlier ASA/VPN candidates were rejected by the strengthened exact-baseline-or-residual representation rule.
 
 ## Primitive D — relative R-gram residual signatures
 
@@ -146,7 +152,7 @@ single-event parser correctly kept repeated text-mail body formats PARTIAL.
 Cross-event R-gram learning recovered those repeated variable slots without a
 vendor-name admission rule.
 
-Current single-split gain: **10 Cisco Secure Email promotions**.
+Final strict single-split gain: **6 Cisco Secure Email promotions**.
 
 ## Residual-only no-loss merge
 
@@ -179,42 +185,48 @@ Current tracked benchmark:
 - baseline `SOURCE_PARSED`: **298**
 - baseline incomplete: **119**
 
-Accepted new completions:
+Final accepted new completions:
 
-- total: **17 / 119 = 14.3% of baseline-incomplete evaluation events**
-- delimiter/key-anchor: **5**
-- event-code template: **2**
-- relative R-gram: **10**
-
-Promotion families:
-
-- Cisco ISE: **5**
-- Cisco ASA/VPN: **2**
-- Cisco Secure Email: **10**
+- total: **6 / 119 = 5.0% of baseline-incomplete evaluation events**
+- delimiter/key-anchor: **0**
+- event-code template: **0**
+- relative R-gram: **6**
+- promotion family: **Cisco Secure Email only**
 
 Extraction evidence:
 
-- additional source-value spans: **78**
-- residual bytes removed: **2,308**
-- promotions preserving every baseline span: **17 / 17**
+- additional source-value spans: **12**
+- residual bytes removed: **492**
+- promotions preserving every baseline span: **6 / 6**
 - baseline span loss: **0**
 - raw mismatch: **0**
 
 Adversarial safety:
 
-- mutation attempts: **85**
-- mutation families include truncation, prefix loss, NUL corruption and
-  grammar-specific required-anchor deletion
+- mutation attempts: **30**
+- mutation families: truncation, prefix loss, NUL corruption and required-literal deletion
 - false-complete: **0**
 
+Independent source-value validation of the 12 new spans:
+
+- **6 / 12** exactly equal Elastic's pinned official expected value for
+  `email.message_id`;
+- **6 / 12** are the URL reputation-score slot independently documented by
+  Cisco for the exact mail-log shape;
+- unvalidated added spans: **0**.
+
+The learner did not receive Elastic expected values, Cisco field semantics or
+vendor/product identity. The references are evaluation-only.
+
 AWS WAF, Suricata, Zeek, Darktrace, ExtraHop, EDR/XDR, firewall, SWG and other
-already-complete records remain no-regression/abstention controls. No promotion
-is counted merely because an issue/status can be cleared without recovering
-new source values.
+security records remain no-regression/abstention controls. No promotion is
+counted merely because an issue/status can be cleared without recovering new
+source values.
 
 Machine-readable evidence:
 
 - `structural-hypothesis-security-poc-summary.json`
+- `structural-hypothesis-cisco-reference-summary.json`
 
 ## Three-split repeatability
 
@@ -225,93 +237,109 @@ Aggregate:
 
 - evaluation cases: **1,251**
 - baseline incomplete cases: **356**
-- accepted promotions: **52**
-  - delimiter/key-anchor: **15**
-  - event-code template: **5**
-  - relative R-gram: **32**
-- accepted promotions preserving every baseline span: **52 / 52**
+- accepted promotions: **21 / 356 = 5.9%**
+- accepted primitive: **relative R-gram only**
+- promotion family: **Cisco Secure Email only**
+- accepted promotions preserving every baseline span: **21 / 21**
 - baseline span loss: **0**
 - raw mismatch: **0**
-- additional source-value spans across splits: **244**
-- residual bytes removed across splits: **7,298**
-- mutation attempts: **260**
+- additional source-value spans across splits: **44**
+- residual bytes removed across splits: **1,752**
+- mutation attempts: **105**
 - mutation false-complete: **0**
-
-Aggregate promotion families:
-
-- Cisco ISE: **15**
-- Cisco ASA/VPN: **5**
-- Cisco Secure Email: **32**
 
 Per split:
 
-- split A: **20** promotions, mutation false-complete **0**
-- split B: **18** promotions, mutation false-complete **0**
-- split C: **14** promotions, mutation false-complete **0**
+- split A: **7** promotions, **15** new spans, **589** residual bytes removed
+- split B: **7** promotions, **15** new spans, **589** residual bytes removed
+- split C: **7** promotions, **14** new spans, **574** residual bytes removed
+
+Independent reference validation across all three splits:
+
+- promotion occurrences: **21**
+- unique promoted events: **14**
+- added spans: **44**
+- Elastic official expected exact matches: **21**
+- Cisco-documented reputation-score values: **21**
+- Cisco-documented URL values not emitted by the Elastic expected output: **2**
+- independently validated added spans: **44 / 44**
+- unvalidated added spans: **0**
 
 Machine-readable evidence:
 
 - `structural-hypothesis-security-multisplit-summary.json`
+- `structural-hypothesis-cisco-reference-multisplit-summary.json`
 
 ## Tests and regression
 
-Focused Structural Hypothesis suite after Primitive D: **17 / 17 PASS**.
+Focused Structural Hypothesis suite after strict v3 hardening:
+**18 / 18 PASS**.
 
-The fresh PoC worktree lacks several historical ignored commercial/CEF cache
-files and the optional Drain3 cache. Those cache-dependent tests fail on missing
-inputs rather than parser assertions. The latest cache-independent regression
-excludes exactly those nine known cache-dependent cases and completed:
+A fresh full discovery executed **424 tests**. Exactly nine tests require
+historical ignored commercial/LEEF evidence or the optional Drain3 research
+dependency unavailable in this isolated worktree; they error on missing
+external inputs rather than parser assertions.
 
-- tests run: **414**
-- PASS: **407**
+The cache-independent regression excludes exactly those nine verified
+external-evidence tests and completed:
+
+- tests in filtered suite: **415**
+- PASS: **408**
 - optional skips: **7**
 - failures: **0**
 - errors: **0**
 
-This is the reproducible code-regression gate for the isolated PoC worktree.
+This is the reproducible code-regression gate for the isolated strict-v3 PoC
+worktree.
 
 ## Interpretation
 
-The result is stronger than v2 because gain now spans **three structurally
-different security-product classes**:
+The strict result is narrower than the earlier exploratory result but much
+stronger evidentially.
 
-1. delimiter/KV records with variable-value boundaries;
-2. event-code messages with repeated positional slots;
-3. repeated security message bodies identified by relative lexical anchors.
-
-The architecture that is now supported by evidence is:
+The valid improvement is currently:
 
 `qualified single-event parser
- -> cross-event hypothesis learning on incomplete samples
- -> exact candidate match
+ -> learn repeated residual R-gram from the sample batch
+ -> exact signature match on a holdout event
+ -> emit only dynamic source slots
  -> residual-only no-loss merge
  -> grammar-specific adversarial qualification`
 
-This is a useful direction for Auto Parser because it learns from the user's
-sample batch without requiring the user to know the vendor log grammar.
+This recovered source values that the current engine deliberately left
+unparsed, without changing any already accepted source span. The gain repeated
+across three deterministic splits, and every added span was independently
+validated against either Elastic's pinned official expected output or Cisco's
+published Secure Email log grammar.
 
-It still does **not** qualify for product integration. The 17 promoted
-single-split events and 52 repeated-split promotions do not yet have a fully
-independent vendor-native field/span oracle. They prove additive structural
-recovery and safety against the current baseline, not semantic correctness or
-native parser compatibility.
+The delimiter/key-anchor and event-code template experiments remain useful
+research negatives. They can propose plausible structure, but under the current
+strict no-loss gate they do not yet produce accepted product-quality gains.
+
+This PoC therefore supports **adding a batch-learned residual grammar layer as
+a candidate architecture**, not replacing the current Multi-Pass/Generic
+Structural engine. It is still **not product integration approval**: the
+demonstrated strict gain is one repeated grammar class from one product family,
+while the wider WAF/IPS/EDR/NDR/firewall corpus mainly acts as abstention and
+regression evidence.
 
 ## Next PoC gates
 
 Continue without weakening admission rules:
 
-1. build independent source-value/span gold for learned promotions, starting
-   with Cisco Secure Email and Cisco ASA;
-2. add relative-anchor hypotheses to additional non-JSON IDS/IPS, EDR and NDR
-   long-tail security logs;
-3. test counterexample-guided specialization when a learned signature accepts a
+1. freeze the strict v3 evidence and treat all pre-hardening 17/52 promotion
+   counts as superseded;
+2. find at least one additional independently verifiable non-JSON security
+   family where R-gram/anchor learning adds residual source values;
+3. add counterexample-guided specialization when a learned signature accepts a
    structurally similar negative;
-4. expand grammar-derived mutations beyond deletion/truncation to reordering,
-   duplicate anchors, embedded delimiters and quote corruption;
-5. compare a bounded hypothesis ensemble against the frozen product baseline on
-   a larger fresh security-only holdout;
-6. integrate into the product only if exact source TP/FP/FN and false-complete
-   gates remain at least as strong as the current qualified engine.
+4. expand grammar-derived mutations to token reordering, duplicated literals,
+   embedded delimiters and quote corruption;
+5. run a larger fresh security-only holdout that includes WAF, IDS/IPS, EDR,
+   NDR, NGFW, email/security gateway and identity/NAC logs;
+6. productize only if exact source-value/span precision remains 100% on
+   independently scored promotions, baseline span loss stays zero and
+   false-complete remains zero.
 
 No product integration, PR merge, release, production, DP/sensor, auth,
 credential or target-loader action is authorized by this PoC.

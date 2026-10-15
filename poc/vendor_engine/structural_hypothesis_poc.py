@@ -437,13 +437,21 @@ def merge_residual_hypothesis(
     additions: list[ValueSpan] = []
     for span in candidate.value_spans:
         key = (span.start_byte, span.end_byte)
-        if key in baseline_ranges or span.start_byte == span.end_byte:
+        if span.start_byte == span.end_byte:
+            continue
+        if key in baseline_ranges:
             continue
         if any(
             start <= span.start_byte and span.end_byte <= end
             for start, end in residual_ranges
         ):
             additions.append(span)
+            continue
+        # Every non-empty value claimed by the learned complete grammar must be
+        # represented exactly by the baseline or be recoverable wholly from a
+        # baseline residual.  Ignoring an overlapping/resegmented claim and
+        # still declaring the event complete would be a false-complete path.
+        return None
     if not additions:
         return None
 

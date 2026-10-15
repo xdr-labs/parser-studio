@@ -144,6 +144,34 @@ class StructuralHypothesisPocTests(unittest.TestCase):
             self.assertNotIn((span.start_byte, span.end_byte), baseline_ranges)
             self.assertGreaterEqual(span.start_byte, 6)
 
+    def test_residual_merge_rejects_unrepresented_candidate_value_span(self):
+        raw = "prefix alpha beta gamma"
+        baseline = SourceEvent(raw, syntax="BASE")
+        baseline.vendor_fields = {"existing": "alpha beta"}
+        baseline.value_spans = [
+            ValueSpan("existing", 7, 17, ("existing",))
+        ]
+        baseline.primitive_fields = 1
+        baseline.covered = [(0, 18)]
+        baseline.unparsed = [(18, len(raw))]
+        assert_source_accounting(baseline)
+
+        candidate = SourceEvent(
+            raw,
+            syntax="CANDIDATE",
+            vendor_fields={"candidate": {"wide": "alpha beta gamma"}},
+            value_spans=[
+                ValueSpan("candidate.wide", 7, len(raw), ("candidate", "wide"))
+            ],
+            covered=[(0, len(raw))],
+            primitive_fields=1,
+        )
+        assert_source_accounting(candidate)
+        self.assertEqual("SOURCE_PARSED", candidate.status)
+        self.assertIsNone(
+            merge_residual_hypothesis(baseline, candidate)
+        )
+
     def test_residual_merge_never_clears_malformed_or_resource_limit_issues(self):
         hypothesis = learn_best_hypothesis(self.train)
         raw = (

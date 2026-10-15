@@ -2,9 +2,9 @@
   "aggregate_family_promotions": {
     "aws_waf": 0,
     "checkpoint": 0,
-    "cisco_asa": 5,
-    "cisco_ise": 15,
-    "cisco_secure_email": 32,
+    "cisco_asa": 0,
+    "cisco_ise": 0,
+    "cisco_secure_email": 21,
     "crowdstrike": 0,
     "darktrace": 0,
     "extrahop": 0,
@@ -23,22 +23,20 @@
     "zscaler_zia": 0
   },
   "aggregate_mutation_safety": {
-    "attempts": 260,
+    "attempts": 105,
     "false_complete": 0
   },
   "aggregate_promotion_safety": {
-    "accepted_promotions_with_all_baseline_spans_preserved": 52,
+    "accepted_promotions_with_all_baseline_spans_preserved": 21,
     "baseline_span_loss": 0,
     "raw_mismatch": 0
   },
   "aggregate_totals": {
     "baseline_complete": 895,
     "baseline_incomplete": 356,
-    "delimited_promotions": 15,
     "events": 1251,
-    "promotions": 52,
-    "rgram_promotions": 32,
-    "template_promotions": 5
+    "promotions": 21,
+    "rgram_promotions": 21
   },
   "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v3",
   "raw_values_published": false,
@@ -59,23 +57,19 @@
         },
         "cisco_asa": {
           "baseline_incomplete": 14,
-          "events": 14,
-          "promotions": 3,
-          "template_promotions": 3
+          "events": 14
         },
         "cisco_ise": {
           "baseline_complete": 74,
           "baseline_incomplete": 25,
-          "delimited_promotions": 6,
-          "events": 99,
-          "promotions": 6
+          "events": 99
         },
         "cisco_secure_email": {
           "baseline_complete": 10,
           "baseline_incomplete": 31,
           "events": 41,
-          "promotions": 11,
-          "rgram_promotions": 11
+          "promotions": 7,
+          "rgram_promotions": 7
         },
         "crowdstrike": {
           "baseline_complete": 6,
@@ -147,13 +141,13 @@
         }
       },
       "mutation_safety": {
-        "attempts": 100,
+        "attempts": 35,
         "false_complete": 0
       },
-      "promoted_residual_byte_reduction": 3052,
-      "promoted_source_span_gain": 100,
+      "promoted_residual_byte_reduction": 589,
+      "promoted_source_span_gain": 15,
       "promotion_safety": {
-        "accepted_promotions_with_all_baseline_spans_preserved": 20,
+        "accepted_promotions_with_all_baseline_spans_preserved": 7,
         "baseline_span_loss": 0,
         "raw_mismatch": 0
       },
@@ -161,11 +155,9 @@
       "totals": {
         "baseline_complete": 298,
         "baseline_incomplete": 119,
-        "delimited_promotions": 6,
         "events": 417,
-        "promotions": 20,
-        "rgram_promotions": 11,
-        "template_promotions": 3
+        "promotions": 7,
+        "rgram_promotions": 7
       }
     },
     {
@@ -186,16 +178,14 @@
         "cisco_ise": {
           "baseline_complete": 76,
           "baseline_incomplete": 23,
-          "delimited_promotions": 6,
-          "events": 99,
-          "promotions": 6
+          "events": 99
         },
         "cisco_secure_email": {
           "baseline_complete": 9,
           "baseline_incomplete": 32,
           "events": 41,
-          "promotions": 12,
-          "rgram_promotions": 12
+          "promotions": 7,
+          "rgram_promotions": 7
         },
         "crowdstrike": {
           "baseline_complete": 6,
@@ -267,13 +257,13 @@
         }
       },
       "mutation_safety": {
-        "attempts": 90,
+        "attempts": 35,
         "false_complete": 0
       },
-      "promoted_residual_byte_reduction": 2775,
-      "promoted_source_span_gain": 95,
+      "promoted_residual_byte_reduction": 589,
+      "promoted_source_span_gain": 15,
       "promotion_safety": {
-        "accepted_promotions_with_all_baseline_spans_preserved": 18,
+        "accepted_promotions_with_all_baseline_spans_preserved": 7,
         "baseline_span_loss": 0,
         "raw_mismatch": 0
       },
@@ -281,10 +271,9 @@
       "totals": {
         "baseline_complete": 303,
         "baseline_incomplete": 114,
-        "delimited_promotions": 6,
         "events": 417,
-        "promotions": 18,
-        "rgram_promotions": 12
+        "promotions": 7,
+        "rgram_promotions": 7
       }
     },
     {
@@ -300,23 +289,19 @@
         },
         "cisco_asa": {
           "baseline_incomplete": 14,
-          "events": 14,
-          "promotions": 2,
-          "template_promotions": 2
+          "events": 14
         },
         "cisco_ise": {
           "baseline_complete": 76,
           "baseline_incomplete": 23,
-          "delimited_promotions": 3,
-          "events": 99,
-          "promotions": 3
+          "events": 99
         },
         "cisco_secure_email": {
           "baseline_complete": 8,
           "baseline_incomplete": 33,
           "events": 41,
-          "promotions": 9,
-          "rgram_promotions": 9
+          "promotions": 7,
+          "rgram_promotions": 7
         },
         "crowdstrike": {
           "baseline_complete": 6,
@@ -388,13 +373,13 @@
         }
       },
       "mutation_safety": {
-        "attempts": 70,
+        "attempts": 35,
         "false_complete": 0
       },
-      "promoted_residual_byte_reduction": 1471,
-      "promoted_source_span_gain": 49,
+      "promoted_residual_byte_reduction": 574,
+      "promoted_source_span_gain": 14,
       "promotion_safety": {
-        "accepted_promotions_with_all_baseline_spans_preserved": 14,
+        "accepted_promotions_with_all_baseline_spans_preserved": 7,
         "baseline_span_loss": 0,
         "raw_mismatch": 0
       },
@@ -402,11 +387,9 @@
       "totals": {
         "baseline_complete": 294,
         "baseline_incomplete": 123,
-        "delimited_promotions": 3,
         "events": 417,
-        "promotions": 14,
-        "rgram_promotions": 9,
-        "template_promotions": 2
+        "promotions": 7,
+        "rgram_promotions": 7
       }
     }
   ]

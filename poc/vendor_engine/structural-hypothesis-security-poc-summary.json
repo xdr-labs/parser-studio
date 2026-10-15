@@ -14,10 +14,10 @@
       "baseline_complete": 8,
       "baseline_incomplete": 33,
       "events": 41,
-      "hypothesis_attempts": 10,
-      "promotions": 10,
+      "hypothesis_attempts": 6,
+      "promotions": 6,
       "rgram_attempts": 10,
-      "rgram_promotions": 10
+      "rgram_promotions": 6
     },
     "IDS_IPS_NDR": {
       "baseline_complete": 11,
@@ -27,10 +27,7 @@
       "baseline_complete": 77,
       "baseline_incomplete": 22,
       "delimited_attempts": 14,
-      "delimited_promotions": 5,
-      "events": 99,
-      "hypothesis_attempts": 5,
-      "promotions": 5
+      "events": 99
     },
     "NDR": {
       "baseline_complete": 10,
@@ -58,10 +55,7 @@
     "NGFW_VPN": {
       "baseline_incomplete": 14,
       "events": 14,
-      "hypothesis_attempts": 2,
-      "promotions": 2,
-      "template_attempts": 2,
-      "template_promotions": 2
+      "template_attempts": 2
     },
     "SWG_CLOUD_FIREWALL": {
       "baseline_complete": 4,
@@ -94,28 +88,22 @@
     "cisco_asa": {
       "baseline_incomplete": 14,
       "events": 14,
-      "hypothesis_attempts": 2,
-      "promotions": 2,
-      "template_attempts": 2,
-      "template_promotions": 2
+      "template_attempts": 2
     },
     "cisco_ise": {
       "baseline_complete": 77,
       "baseline_incomplete": 22,
       "delimited_attempts": 14,
-      "delimited_promotions": 5,
-      "events": 99,
-      "hypothesis_attempts": 5,
-      "promotions": 5
+      "events": 99
     },
     "cisco_secure_email": {
       "baseline_complete": 8,
       "baseline_incomplete": 33,
       "events": 41,
-      "hypothesis_attempts": 10,
-      "promotions": 10,
+      "hypothesis_attempts": 6,
+      "promotions": 6,
       "rgram_attempts": 10,
-      "rgram_promotions": 10
+      "rgram_promotions": 6
     },
     "crowdstrike": {
       "baseline_complete": 6,
@@ -235,7 +223,7 @@
     "The promoted holdouts do not yet have an independent vendor-native field/span oracle, so promotion is not product qualification."
   ],
   "mutation_safety": {
-    "attempts": 85,
+    "attempts": 30,
     "false_complete": 0,
     "mutation_types": 5
   },
@@ -692,10 +680,7 @@
       "metrics": {
         "baseline_incomplete": 8,
         "events": 8,
-        "hypothesis_attempts": 2,
-        "promotions": 2,
-        "template_attempts": 2,
-        "template_promotions": 2
+        "template_attempts": 2
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -759,10 +744,10 @@
       "metrics": {
         "baseline_incomplete": 28,
         "events": 28,
-        "hypothesis_attempts": 10,
-        "promotions": 10,
+        "hypothesis_attempts": 6,
+        "promotions": 6,
         "rgram_attempts": 10,
-        "rgram_promotions": 10
+        "rgram_promotions": 6
       },
       "relative_rgram_hypotheses": {
         "count": 1,
@@ -990,10 +975,7 @@
         "baseline_complete": 4,
         "baseline_incomplete": 1,
         "delimited_attempts": 1,
-        "delimited_promotions": 1,
-        "events": 5,
-        "hypothesis_attempts": 1,
-        "promotions": 1
+        "events": 5
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1024,10 +1006,7 @@
         "baseline_complete": 18,
         "baseline_incomplete": 3,
         "delimited_attempts": 3,
-        "delimited_promotions": 1,
-        "events": 21,
-        "hypothesis_attempts": 1,
-        "promotions": 1
+        "events": 21
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -1087,10 +1066,7 @@
         "baseline_complete": 2,
         "baseline_incomplete": 6,
         "delimited_attempts": 6,
-        "delimited_promotions": 3,
-        "events": 8,
-        "hypothesis_attempts": 3,
-        "promotions": 3
+        "events": 8
       },
       "relative_rgram_hypotheses": {
         "count": 0,
@@ -2055,11 +2031,11 @@
     }
   ],
   "product_vendor_identity_used_by_learner": false,
-  "promoted_residual_byte_reduction": 2308,
-  "promoted_source_span_gain": 78,
+  "promoted_residual_byte_reduction": 492,
+  "promoted_source_span_gain": 12,
   "promotion_independent_vendor_gold_scored": false,
   "promotion_safety": {
-    "accepted_promotions_with_all_baseline_spans_preserved": 17,
+    "accepted_promotions_with_all_baseline_spans_preserved": 6,
     "baseline_span_loss": 0,
     "raw_mismatch": 0
   },
@@ -2072,13 +2048,11 @@
     "baseline_complete": 298,
     "baseline_incomplete": 119,
     "delimited_attempts": 14,
-    "delimited_promotions": 5,
     "events": 417,
-    "hypothesis_attempts": 17,
-    "promotions": 17,
+    "hypothesis_attempts": 6,
+    "promotions": 6,
     "rgram_attempts": 10,
-    "rgram_promotions": 10,
-    "template_attempts": 2,
-    "template_promotions": 2
+    "rgram_promotions": 6,
+    "template_attempts": 2
   }
 }
