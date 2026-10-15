@@ -1,8 +1,10 @@
 {
+  "additional_public_fixture_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "additional_public_fixture_source": "elastic/integrations",
   "by_category": {
     "EDR": {
-      "baseline_complete": 4,
-      "events": 4
+      "baseline_complete": 13,
+      "events": 13
     },
     "EDR_XDR": {
       "baseline_complete": 2,
@@ -24,8 +26,9 @@
       "events": 7
     },
     "NGFW": {
-      "baseline_complete": 32,
-      "events": 32
+      "baseline_complete": 38,
+      "baseline_incomplete": 1,
+      "events": 39
     },
     "NGFW_IDS_IPS": {
       "baseline_complete": 22,
@@ -36,6 +39,14 @@
       "baseline_complete": 79,
       "baseline_incomplete": 29,
       "events": 108
+    },
+    "NGFW_VPN": {
+      "baseline_incomplete": 14,
+      "events": 14
+    },
+    "SWG_CLOUD_FIREWALL": {
+      "baseline_complete": 4,
+      "events": 4
     },
     "UTM": {
       "baseline_complete": 7,
@@ -56,12 +67,25 @@
       "baseline_complete": 2,
       "events": 2
     },
+    "checkpoint": {
+      "baseline_complete": 6,
+      "baseline_incomplete": 1,
+      "events": 7
+    },
+    "cisco_asa": {
+      "baseline_incomplete": 14,
+      "events": 14
+    },
     "cisco_ise": {
       "baseline_complete": 77,
       "baseline_incomplete": 22,
       "events": 99,
       "hypothesis_attempts": 14,
       "promotions": 5
+    },
+    "crowdstrike": {
+      "baseline_complete": 6,
+      "events": 6
     },
     "f5_bigip": {
       "baseline_complete": 18,
@@ -79,6 +103,10 @@
     "panw": {
       "baseline_complete": 27,
       "events": 27
+    },
+    "sentinel_one": {
+      "baseline_complete": 3,
+      "events": 3
     },
     "sophos_utm": {
       "baseline_complete": 7,
@@ -109,6 +137,10 @@
     "zeek": {
       "baseline_complete": 7,
       "events": 7
+    },
+    "zscaler_zia": {
+      "baseline_complete": 4,
+      "events": 4
     }
   },
   "categories": [
@@ -120,6 +152,8 @@
     "NGFW",
     "NGFW_IDS_IPS",
     "NGFW_UTM",
+    "NGFW_VPN",
+    "SWG_CLOUD_FIREWALL",
     "UTM",
     "WAF",
     "WAF_NGFW"
@@ -127,20 +161,25 @@
   "contract": "parser-studio.poc.structural-hypothesis-security.v1",
   "families": [
     "aws_waf",
+    "checkpoint",
+    "cisco_asa",
     "cisco_ise",
+    "crowdstrike",
     "f5_bigip",
     "fortigate",
     "juniper_srx",
     "panw",
+    "sentinel_one",
     "sophos_utm",
     "sophos_xg",
     "suricata",
     "trellix_edr",
     "trellix_epo",
     "trend_vision",
-    "zeek"
+    "zeek",
+    "zscaler_zia"
   ],
-  "files": 66,
+  "files": 74,
   "limitations": [
     "v1 learns delimiter/key-anchor structure only; it is not a general CFG learner.",
     "Promotion is structural evidence, not semantic field normalization evidence.",
@@ -281,6 +320,111 @@
         "events": 1
       },
       "train_count": 3
+    },
+    {
+      "category": "SWG_CLOUD_FIREWALL",
+      "event_count": 5,
+      "family": "zscaler_zia",
+      "file_sha256": "841521b04b6c059d6f81a58567e29a58a196687786186195c70747350a446181",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 3
+    },
+    {
+      "category": "SWG_CLOUD_FIREWALL",
+      "event_count": 6,
+      "family": "zscaler_zia",
+      "file_sha256": "49326df25eec7eb45f8f5509fe4b67e57dfc086d880ce40ffac7f10cf9f8e671",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 4
+    },
+    {
+      "category": "EDR",
+      "event_count": 8,
+      "family": "sentinel_one",
+      "file_sha256": "f5fdd8eac662dd4eda40b044207633574b5cef5f82df3eefdcc80bbf4c8f8d3a",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "train_count": 5
+    },
+    {
+      "category": "EDR",
+      "event_count": 11,
+      "family": "crowdstrike",
+      "file_sha256": "90d362fe5621c5d1cabf8a4b20725a0123531d039c744e1e7f78ec96e81baaf5",
+      "holdout_count": 4,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 4,
+        "events": 4
+      },
+      "train_count": 7
+    },
+    {
+      "category": "EDR",
+      "event_count": 2,
+      "family": "crowdstrike",
+      "file_sha256": "a466a1125d3c8737b1af92fbea681634b14e3d08c89e49998ce8d572dbbb46b7",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NGFW",
+      "event_count": 21,
+      "family": "checkpoint",
+      "file_sha256": "8a4496f0ba850d2d85dc8434bf3fe0266b98829cfc1c0d56a14603caf5856ad4",
+      "holdout_count": 7,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 6,
+        "baseline_incomplete": 1,
+        "events": 7
+      },
+      "train_count": 14
+    },
+    {
+      "category": "NGFW_VPN",
+      "event_count": 16,
+      "family": "cisco_asa",
+      "file_sha256": "71acc080bcebdf7172ab0f5552067e574cbb56756d13630fb591cb36ece8186a",
+      "holdout_count": 6,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 6,
+        "events": 6
+      },
+      "train_count": 10
+    },
+    {
+      "category": "NGFW_VPN",
+      "event_count": 24,
+      "family": "cisco_asa",
+      "file_sha256": "0e5e2534d34ab90f25b86002a27dd40dbfa89786eca11cb1d0edd799d5e8ca95",
+      "holdout_count": 8,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_incomplete": 8,
+        "events": 8
+      },
+      "train_count": 16
     },
     {
       "category": "WAF_NGFW",
@@ -1116,9 +1260,9 @@
   "semantic_mapping_scored": false,
   "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
   "totals": {
-    "baseline_complete": 261,
-    "baseline_incomplete": 71,
-    "events": 332,
+    "baseline_complete": 280,
+    "baseline_incomplete": 86,
+    "events": 366,
     "hypothesis_attempts": 14,
     "promotions": 5
   }

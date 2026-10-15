@@ -26,8 +26,13 @@ Security categories exercised:
 - Zeek NDR/network telemetry
 - Trellix EDR and ePO
 - Trend Vision One EDR/XDR
+- CrowdStrike EDR
+- SentinelOne EDR
 - FortiGate NGFW
 - PAN-OS NGFW
+- Check Point NGFW
+- Cisco ASA/VPN
+- Zscaler ZIA SWG/cloud firewall
 - F5 BIG-IP WAF/NGFW
 - Cisco ISE NAC / identity security
 - Juniper SRX NGFW/IDS/IPS
@@ -35,7 +40,9 @@ Security categories exercised:
 - Sophos XG NGFW/UTM
 
 The learner receives no vendor/product identity and performs no semantic/Stellar
-Dictionary mapping.
+Dictionary mapping. Additional public CrowdStrike/SentinelOne/Zscaler/Check Point/
+Cisco ASA/Zeek fixtures are pinned to elastic/integrations revision
+57ac255efb40d98151337b4ff11b9015679391ed; raw fixtures stay in ignored cache.
 
 ## Baseline
 
@@ -91,11 +98,11 @@ not relaxed.
 
 ## Security-only holdout result
 
-Value-free result from 66 source files / 13 security-product families:
+Value-free result from 74 source files / 18 security-product families:
 
-- holdout events: **332**
-- current baseline SOURCE_PARSED: **261**
-- current baseline incomplete: **71**
+- holdout events: **366**
+- current baseline SOURCE_PARSED: **280**
+- current baseline incomplete: **86**
 - cross-event hypothesis attempts: **14**
 - additional structural completions: **5**
 - additional source value spans: **56**
@@ -104,9 +111,11 @@ Value-free result from 66 source files / 13 security-product families:
 - bounded mutation attempts on promoted events: **10**
 - mutation false-complete: **0**
 
-All five current promotions are Cisco ISE records. AWS WAF, Suricata, Zeek,
-EDR/XDR, NGFW and other already-complete security records remain controls and
-are not reinterpreted.
+All five current promotions are Cisco ISE records. The expanded CrowdStrike,
+SentinelOne, Zscaler, Check Point and Cisco ASA holdout adds no new promotion,
+which bounds this v1 primitive to repeated delimiter/KV long-tail structures.
+AWS WAF, Suricata, Zeek, EDR/XDR, NGFW and other already-complete security
+records remain controls and are not reinterpreted.
 
 Machine-readable evidence:
 structural-hypothesis-security-poc-summary.json

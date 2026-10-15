@@ -44,6 +44,14 @@ def _files() -> list[dict[str, str]]:
         {"category": "NGFW", "family": "panw", "path": str(ENGINE_CACHE / "palo_threat.raw")},
         {"category": "NDR_NETWORK_TELEMETRY", "family": "zeek", "path": str(LOCAL_CACHE / "zeek_conn.log")},
         {"category": "NDR_NETWORK_TELEMETRY", "family": "zeek", "path": str(LOCAL_CACHE / "zeek_notice.log")},
+        {"category": "SWG_CLOUD_FIREWALL", "family": "zscaler_zia", "path": str(LOCAL_CACHE / "zscaler_firewall.log")},
+        {"category": "SWG_CLOUD_FIREWALL", "family": "zscaler_zia", "path": str(LOCAL_CACHE / "zscaler_firewall_http.log")},
+        {"category": "EDR", "family": "sentinel_one", "path": str(LOCAL_CACHE / "sentinel_one_threat.log")},
+        {"category": "EDR", "family": "crowdstrike", "path": str(LOCAL_CACHE / "crowdstrike_alert.log")},
+        {"category": "EDR", "family": "crowdstrike", "path": str(LOCAL_CACHE / "crowdstrike_automated_lead.log")},
+        {"category": "NGFW", "family": "checkpoint", "path": str(LOCAL_CACHE / "checkpoint_r81x.log")},
+        {"category": "NGFW_VPN", "family": "cisco_asa", "path": str(LOCAL_CACHE / "cisco_asa_anyconnect.log")},
+        {"category": "NGFW_VPN", "family": "cisco_asa", "path": str(LOCAL_CACHE / "cisco_asa_fix.log")},
     ]
     extra = {
         "f5_bigip": "WAF_NGFW",
@@ -174,6 +182,8 @@ def run() -> dict:
         "contract": "parser-studio.poc.structural-hypothesis-security.v1",
         "scope": "SECURITY_PRODUCTS_ONLY",
         "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+        "additional_public_fixture_source": "elastic/integrations",
+        "additional_public_fixture_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
         "product_vendor_identity_used_by_learner": False,
         "semantic_mapping_scored": False,
         "raw_values_published": False,
