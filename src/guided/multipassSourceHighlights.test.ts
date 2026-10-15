@@ -75,4 +75,23 @@ describe('Multi-Pass exact source highlight map',()=>{
   }));
   expect(result).toEqual({ok:false,reason:'AMBIGUOUS_FIELD_OVERLAP'});
  });
+
+ it('reconstructs a thousand non-overlapping fields within the normal unit-test budget',()=>{
+  const values=Array.from({length:1000},(_,i)=>'v'+String(i).padStart(4,'0')+'x'.repeat(32));
+  const chunks=values.map((value,i)=>'field_'+String(i).padStart(4,'0')+'='+value);
+  const raw=chunks.join(' ');
+  let cursor=0;
+  const spans=chunks.map((chunk,i)=>{
+   const equals=chunk.indexOf('=');
+   const startByte=cursor+equals+1;
+   const endByte=cursor+chunk.length;
+   cursor=endByte+(i===chunks.length-1?0:1);
+   return {path:'field_'+String(i).padStart(4,'0'),startByte,endByte};
+  });
+  const result=buildMultiPassSourceHighlights(raw,preview({spans}));
+  expect(result.ok).toBe(true);
+  if(!result.ok)return;
+  expect(result.selectable).toHaveLength(1000);
+  expect(result.segments.map(item=>item.text).join('')).toBe(raw);
+ });
 });

@@ -62,10 +62,6 @@ type Zip={key:string;filename:string;sha256:string};
 type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
  report?:NativeProjectVerificationReport;message:string};
 type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>};
-function utf8Slice(source:string,startByte:number,endByte:number):string{
- const bytes=new TextEncoder().encode(source);
- return new TextDecoder('utf-8',{fatal:true}).decode(bytes.slice(startByte,endByte));
-}
 function download(filename:string,content:string|ArrayBuffer,binary=false){
  const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
  const url=URL.createObjectURL(object);
@@ -607,27 +603,35 @@ export default function AutoParser({
   }catch{setMultiPassNotice('Local Multi-Pass service unavailable or untrusted. Browser preview remains separate.');}
   finally{setMultiPassBusy(false);}
  }
- const currentMultiPassReview=multiPass?.raw===sample?multiPass:null;
- const currentMultiPassFrame=currentMultiPassReview?.events[multiPassEvent]??currentMultiPassReview?.events[0]??null;
- const currentMultiPass=currentMultiPassFrame?.preview??null;
- const currentMultiPassRaw=currentMultiPassFrame?
-  utf8Slice(sample,currentMultiPassFrame.startByte,currentMultiPassFrame.endByte):'';
- const currentMultiPassHighlights=currentMultiPass?
-  buildMultiPassSourceHighlights(currentMultiPassRaw,currentMultiPass):null;
- const currentMultiPassCounts=currentMultiPassReview?.events.reduce((counts,event)=>{
-  counts[event.preview.status]=(counts[event.preview.status]??0)+1;return counts;
- },{} as Record<string,number>)??{};
- const protectedSourceValuesByEvent=currentMultiPassReview?.events.map(event=>{
-  const eventRaw=utf8Slice(sample,event.startByte,event.endByte);
-  return event.preview.spans.filter(span=>span.endByte>span.startByte)
-    .map(span=>utf8Slice(eventRaw,span.startByte,span.endByte));
- });
- const protectedResidualTextByEvent=currentMultiPassReview?.events.map(event=>{
-  const eventRaw=utf8Slice(sample,event.startByte,event.endByte);
-  return event.preview.residuals.filter(region=>region.endByte>region.startByte)
-    .map(region=>utf8Slice(eventRaw,region.startByte,region.endByte))
-    .filter(text=>text.trim().length>0);
- });
+ const multiPassDerived=useMemo(()=>{
+  const review=multiPass?.raw===sample?multiPass:null;
+  const frame=review?.events[multiPassEvent]??review?.events[0]??null;
+  const preview=frame?.preview??null;
+  const bytes=new TextEncoder().encode(sample);
+  const decoder=new TextDecoder('utf-8',{fatal:true});
+  const decode=(startByte:number,endByte:number)=>decoder.decode(bytes.slice(startByte,endByte));
+  const raw=frame?decode(frame.startByte,frame.endByte):'';
+  const highlights=advanced&&preview?buildMultiPassSourceHighlights(raw,preview):null;
+  const counts=review?.events.reduce((value,event)=>{
+   value[event.preview.status]=(value[event.preview.status]??0)+1;return value;
+  },{} as Record<string,number>)??{};
+  const protectedValues=review?.events.map(event=>
+   event.preview.spans.filter(span=>span.endByte>span.startByte)
+    .map(span=>decode(event.startByte+span.startByte,event.startByte+span.endByte)));
+  const protectedResiduals=review?.events.map(event=>
+   event.preview.residuals.filter(region=>region.endByte>region.startByte)
+    .map(region=>decode(event.startByte+region.startByte,event.startByte+region.endByte))
+    .filter(text=>text.trim().length>0));
+  return {review,frame,preview,raw,highlights,counts,protectedValues,protectedResiduals};
+ },[multiPass,sample,multiPassEvent,advanced]);
+ const currentMultiPassReview=multiPassDerived.review;
+ const currentMultiPassFrame=multiPassDerived.frame;
+ const currentMultiPass=multiPassDerived.preview;
+ const currentMultiPassRaw=multiPassDerived.raw;
+ const currentMultiPassHighlights=multiPassDerived.highlights;
+ const currentMultiPassCounts=multiPassDerived.counts;
+ const protectedSourceValuesByEvent=multiPassDerived.protectedValues;
+ const protectedResidualTextByEvent=multiPassDerived.protectedResiduals;
  return <main className={'auto-parser-workspace '+(advanced?'advanced-mode':'beginner-mode')} aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
      <span className="pane-index">AUTO PARSER · BEGINNER MODE</span>
@@ -687,7 +691,7 @@ export default function AutoParser({
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
-       <div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
+       {advanced&&<div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
          </button>
@@ -764,7 +768,7 @@ export default function AutoParser({
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
 
          </div>}
-       </div>
+       </div>}
        <div className="auto-parser-ledger" aria-label="Automatic event accounting">
          <strong>{report.accounted}/{report.sourceCount} events analyzed locally</strong>
          <span>{report.unsupported} require review · Native parser NOT VERIFIED</span>
