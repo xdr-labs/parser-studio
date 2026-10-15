@@ -1,0 +1,107 @@
+{
+  "automatic_apply_allowed": false,
+  "contract": "parser-studio.poc.massive-crossfold-span-candidate.v1",
+  "events_considered": 1113,
+  "families": {
+    "barracuda": {
+      "holdout_events": 17
+    },
+    "cisco_ftd": {
+      "candidate_events": 287,
+      "candidate_spans": 2145,
+      "fresh_after_partial": 1695,
+      "holdout_events": 446
+    },
+    "cisco_meraki": {
+      "holdout_events": 35
+    },
+    "cisco_secure_email_gateway": {
+      "candidate_events": 36,
+      "candidate_spans": 108,
+      "fresh_after_partial": 74,
+      "holdout_events": 125
+    },
+    "citrix_waf": {
+      "holdout_events": 11
+    },
+    "darktrace": {
+      "holdout_events": 1
+    },
+    "eset_protect": {
+      "holdout_events": 5
+    },
+    "forescout": {
+      "holdout_events": 8
+    },
+    "juniper_netscreen": {
+      "holdout_events": 98
+    },
+    "watchguard_firebox": {
+      "candidate_events": 137,
+      "candidate_spans": 1756,
+      "fresh_after_partial": 1560,
+      "holdout_events": 367
+    }
+  },
+  "fold_count": 5,
+  "folds": {
+    "0": {
+      "candidate_events": 88,
+      "candidate_spans": 790,
+      "fresh_after_partial": 650,
+      "holdout_events": 202,
+      "models": 73,
+      "no_model": 8,
+      "unmatched_or_abstained": 106
+    },
+    "1": {
+      "candidate_events": 127,
+      "candidate_spans": 1063,
+      "fresh_after_partial": 845,
+      "holdout_events": 276,
+      "models": 65,
+      "no_model": 14,
+      "unmatched_or_abstained": 135
+    },
+    "2": {
+      "candidate_events": 88,
+      "candidate_spans": 773,
+      "fresh_after_partial": 658,
+      "holdout_events": 204,
+      "models": 69,
+      "no_model": 5,
+      "unmatched_or_abstained": 111
+    },
+    "3": {
+      "candidate_events": 81,
+      "candidate_spans": 685,
+      "fresh_after_partial": 587,
+      "holdout_events": 225,
+      "models": 65,
+      "no_model": 13,
+      "unmatched_or_abstained": 131
+    },
+    "4": {
+      "candidate_events": 76,
+      "candidate_spans": 698,
+      "fresh_after_partial": 589,
+      "holdout_events": 206,
+      "models": 68,
+      "no_model": 8,
+      "unmatched_or_abstained": 122
+    }
+  },
+  "raw_published": false,
+  "same_event_sha_train_holdout_overlap": false,
+  "seed": "massive-crossfold-20261015-v1",
+  "semantic_roles_assigned": false,
+  "total": {
+    "candidate_events": 460,
+    "candidate_spans": 4009,
+    "fresh_after_partial": 3329,
+    "holdout_events": 1113,
+    "no_model": 48,
+    "unmatched_or_abstained": 605,
+    "used_coarse_fallback": 14
+  }
+}
