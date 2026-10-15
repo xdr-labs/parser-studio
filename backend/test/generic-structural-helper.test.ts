@@ -18,7 +18,7 @@ function runRuby(method:string,raw:string):unknown{
   return JSON.parse(out.stdout);
 }
 
-test("Generic Structural V7 Ruby helper matches bounded WatchGuard, Juniper and secure-email grammars",{skip:!rubyAvailable},()=>{
+test("Generic Structural V8 Ruby helper matches bounded WatchGuard, Juniper and secure-email grammars",{skip:!rubyAvailable},()=>{
   const watchguard='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
   const wg=runRuby("parserstudio_generic_structural",watchguard) as any;
   assert.equal(wg.watchguard_header.hostname,"WatchGuard-Firebox");
@@ -51,7 +51,7 @@ test("Generic Structural V7 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(cp.body["sys_message:"],"risk");
 });
 
-test("Generic Structural V7 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{
+test("Generic Structural V8 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{
   const comma='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: ok, AD-Domain=host.local, constructor=bad';
   assert.equal(runRuby("parserstudio_generic_comma_kv",comma),null);
   const spaced='device="SFW" date=2017-01-31 time=14:16:19 timezone="IST" constructor=bad status="Allow"';

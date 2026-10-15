@@ -319,8 +319,15 @@ def parserstudio_generic_space_kv(text)
     return nil if value.bytesize > 512 || value.match?(/[\x00-\x1f\x7f]/)
     fields[key] = value
     if !quoted && value.match?(/[ \t]/)
-      first = value.split(/[ \t]+/)[0]
-      atoms[key.tr('-', '_') + '_001'] = first
+      pieces = value.split(/[ \t]+/).reject(&:empty?)
+      return nil if pieces.length > 32
+      pieces.each_with_index do |piece, piece_index|
+        return nil if piece.bytesize > 256
+        safe = key.tr('-', '_') + format('_%03d', piece_index + 1)
+        return nil if atoms.key?(safe)
+        atoms[safe] = piece
+        return nil if atoms.length > 100
+      end
     end
   end
   generic = {'mode'=>'space_kv', 'source_raw'=>text, 'kv'=>fields}
