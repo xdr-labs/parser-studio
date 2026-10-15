@@ -30,12 +30,12 @@ class GenericStructuralLandingQualificationTests(unittest.TestCase):
     def test_postfreeze_gate_and_juniper_exception_repair(self):
         total=self.result['postfreeze']['total']
         self.assertEqual(708,total['events'])
-        self.assertEqual(496,total['current_SOURCE_PARSED'])
+        self.assertEqual(519,total['current_SOURCE_PARSED'])
         self.assertEqual(708,total['raw_preserved'])
         self.assertEqual(283,total['old_complete'])
         self.assertEqual(283,total['old_complete_exact'])
         self.assertEqual(0,total['old_complete_divergence'])
-        self.assertEqual(213,total['promoted'])
+        self.assertEqual(236,total['promoted'])
         self.assertEqual(7,total['old_exception'])
         self.assertEqual(7,total['old_exception_repaired'])
 

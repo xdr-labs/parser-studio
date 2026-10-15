@@ -16,8 +16,8 @@ import re
 from typing import Any
 
 MAX_RAW_BYTES = 131072
-MAX_CAPTURED_FIELDS = 1024
-MAX_JSON_DEPTH = 18
+MAX_CAPTURED_FIELDS = 4096
+MAX_JSON_DEPTH = 40
 BSD = re.compile(r"^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) +\d{1,2} \d\d:\d\d:\d\d +\S+ +")
 PRI = re.compile(r"^<(?P<priority>\d{1,3})>")
 IPv4_STRICT = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")

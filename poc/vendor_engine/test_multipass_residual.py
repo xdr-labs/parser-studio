@@ -67,7 +67,19 @@ class MultiPassResidualTests(unittest.TestCase):
              'src=192.0.2.10 action=deny collector: {"src":"198.51.100.9"}')
         no_residual=parse_security_multipass(raw,max_residual_depth=0)
         final=parse_security_multipass(raw)
-        self.assertEqual(no_residual.vendor_fields,final.vendor_fields)
+        self.assertEqual(no_residual.vendor_fields['syslog'],final.vendor_fields['syslog'])
+        self.assertEqual(no_residual.vendor_fields['body'],final.vendor_fields['body'])
+        self.assertEqual('192.0.2.10',final.vendor_fields['body']['src'])
+        self.assertIn('generic_atoms',final.vendor_fields)
+        before={
+            (span.path,span.start_byte,span.end_byte,span.source_segments)
+            for span in no_residual.value_spans
+        }
+        after={
+            (span.path,span.start_byte,span.end_byte,span.source_segments)
+            for span in final.value_spans
+        }
+        self.assertTrue(before<=after)
         self.assertNotEqual('SOURCE_PARSED',final.status)
         assert_source_accounting(final)
 

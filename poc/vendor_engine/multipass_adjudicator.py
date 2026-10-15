@@ -167,9 +167,11 @@ def _evidence(parser_id,tier,grammar,proofs):
 
 BASE_EVIDENCE=_evidence('security.base','QUALIFIED_BASE','security-source-pr16',('commercial-27968-exact','framing-6048-exact'))
 GENERIC_EVIDENCE=_evidence(
-    'generic.structural','QUALIFIED_STRUCTURAL','generic-structural-v2',
+    'generic.structural','QUALIFIED_STRUCTURAL','generic-structural-v3',
     ('948-frozen-zero-complete-regression','485-independent-gold-f1-1',
-     '708-postfreeze-zero-complete-regression'),
+     '708-postfreeze-zero-complete-regression',
+     'ultra-8076-525-promotions-26318-exact-zero-fp-fn',
+     'ultra-json-195809-exact-zero-fp-fn'),
 )
 CEF_EVIDENCE=_evidence('cef.standard','QUALIFIED_STANDARD','cef-0-1-standard-boundaries',('commercial-cef-482-exact','authored-cef-900-exact','false-complete-zero'))
 LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',('authored-leef-3552-exact','external-xa6-19-exact'))
@@ -363,11 +365,60 @@ def parse_security_once(raw:str)->SourceEvent:
     return result
 
 
+def _candidate_only_partial_recovery(event:SourceEvent)->SourceEvent:
+    """Add independently source-backed residual values without certifying completeness."""
+    assert_source_accounting(event)
+    if event.status=='SOURCE_PARSED':
+        return event
+    # Parser/resource limits are hard safety boundaries. Candidate-only
+    # recovery must never scavenge past a field/depth/input limit that caused
+    # the qualified parser to stop.
+    if any(
+        'LIMIT' in issue or 'SIZE_OR_NUL' in issue
+        for issue in event.issues
+    ):
+        return event
+    from engine import MAX_CAPTURED_FIELDS
+    from generic_partial_envelope import augment_incomplete_envelope
+    from generic_partial_atoms import augment_incomplete_atoms
+    from generic_partial_labels import augment_incomplete_labels
+    from generic_partial_single_kv import augment_incomplete_single_kv
+
+    original=deepcopy(event)
+    before={
+        (span.path,span.start_byte,span.end_byte,span.source_segments)
+        for span in original.value_spans
+    }
+    try:
+        current=augment_incomplete_envelope(event)
+        current=augment_incomplete_atoms(current)
+        current=augment_incomplete_labels(current)
+        current=augment_incomplete_single_kv(current)
+        assert_source_accounting(current)
+    except (TypeError,ValueError,KeyError,IndexError):
+        return original
+    after={
+        (span.path,span.start_byte,span.end_byte,span.source_segments)
+        for span in current.value_spans
+    }
+    if len(current.value_spans)>MAX_CAPTURED_FIELDS:
+        return original
+    if current.raw!=original.raw or not before<=after:
+        return original
+    # This layer can turn RAW_ONLY into PARTIAL, but never proves the whole
+    # record grammar. Any accidental complete result fails closed to the
+    # pre-recovery event rather than inflating the product COMPLETE metric.
+    if current.status=='SOURCE_PARSED':
+        return original
+    return current
+
+
 def parse_security_multipass(raw:str,*,max_residual_depth:int=3)->SourceEvent:
-    """Adjudicate qualified parsers, then re-parse only compatible residual body regions."""
+    """Adjudicate, re-parse compatible residuals, then add candidate-only source recovery."""
     first=parse_security_once(raw)
     if max_residual_depth==0:return first
     from multipass_residual import recover_residual_regions
-    return recover_residual_regions(
+    recovered=recover_residual_regions(
         first,parse_once=parse_security_once,max_depth=max_residual_depth,
     )
+    return _candidate_only_partial_recovery(recovered)
