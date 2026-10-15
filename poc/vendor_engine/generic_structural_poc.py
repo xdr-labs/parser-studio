@@ -17,7 +17,7 @@ from engine import MAX_RAW_BYTES,PRI
 from security_cef import parse_security_cef
 from security_leef import parse_security_leef
 from security_source import parse_security_source
-from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting
+from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting,parse_source
 from structured_source import extract_plain_bsd,extract_rfc3164,extract_rfc5424
 
 SAFE_KV_KEY=re.compile(r'[A-Za-z_][A-Za-z0-9_.:/#-]{0,127}\Z')
@@ -32,13 +32,47 @@ NETWORK_ATOM=re.compile(
     r'(?::[0-9]{1,5}|/[0-9]{1,5})?(?![0-9])'
 )
 EVENT_CODE=re.compile(
-    r'(?<![A-Za-z0-9_])%([A-Z][A-Z0-9_-]{1,31})-(\d{1,2})-(\d{3,8}):'
+    r'(?<![A-Za-z0-9_])%([A-Z][A-Z0-9_-]{1,31})-(\d{1,2})-'
+    r'([A-Z0-9_]{3,64}):'
+)
+SHORT_RFC5424_JSON_HEAD=re.compile(
+    r'^<(?P<pri>\d{1,3})>(?P<version>\d{1,3}) +'
+    r'(?P<timestamp>\S+) +(?P<hostname>[!-~]{1,255}) +(?P<body>[{[])'
+)
+ISO_HOST_JSON_HEAD=re.compile(
+    r'^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'
+    r'(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +'
+    r'(?P<hostname>[!-~]{1,255}) +(?:\ufeff)?(?P<body>[{[])'
+)
+SHORT_CSV_ID=re.compile(r'[A-Za-z0-9_.:-]{6,}\Z')
+SHORT_CSV_TIMESTAMP=re.compile(
+    r'\d{4}[/-]\d{2}[/-]\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?'
+    r'(?:Z|[+-]\d{2}:?\d{2})?\Z'
+)
+CSV_ASSIGNMENT_CELL=re.compile(
+    r'\s*[A-Za-z_][A-Za-z0-9_.:/#() \-]{0,127}\s*='
 )
 ISO_PRI_HEAD=re.compile(
     r'^<(?P<pri>\d{1,3})>(?P<date>\d{4}-\d{2}-\d{2}) +'
     r'(?P<time>\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +'
     r'(?P<timezone>Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +'
 )
+BSD_TIME_HEAD=re.compile(
+    r'^(?:<(?P<pri>\d{1,3})>)?'
+    r'(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) +'
+    r'(?P<time>\d{2}:\d{2}:\d{2}) +'
+)
+RFC3164_LOOSE_HOST_HEAD=re.compile(
+    r'^(?:<(?P<pri>\d{1,3})>)?'
+    r'(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) +'
+    r'(?P<time>\d{2}:\d{2}:\d{2}) +'
+    r'(?P<hostname>[A-Za-z0-9_.-]{1,255}) +'
+)
+TAIL_ISO_DATE=re.compile(r'(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)')
+MONTH_DAYS={
+    'Jan':31,'Feb':29,'Mar':31,'Apr':30,'May':31,'Jun':30,
+    'Jul':31,'Aug':31,'Sep':30,'Oct':31,'Nov':30,'Dec':31,
+}
 MAX_FIELDS=1024
 
 
@@ -122,7 +156,22 @@ def _adaptive_comma_kv(raw:str,start:int)->tuple[dict[str,Any],list[ValueSpan],i
         eq=raw.find('=',a,b)
         if eq<=a:continue
         key=raw[a:eq].strip()
-        if ':' in key or not SAFE_COMMA_KEY.fullmatch(key):continue
+        if (
+            ':' in key
+            or not SAFE_COMMA_KEY.fullmatch(key)
+            or _prose_like_key(key)
+        ):
+            # The grammar already permits one summary segment before the
+            # closed comma-KV run. An '=' inside only that leading segment
+            # must not invalidate the later structural fields. Any malformed
+            # or prose-like segment after the run starts still fails closed.
+            if (
+                part_index==0
+                and not parsed
+                and RFC3164_LOOSE_HOST_HEAD.match(raw) is not None
+            ):
+                continue
+            return None
         va=eq+1
         while va<b and raw[va].isspace():va+=1
         vb=b
@@ -153,6 +202,65 @@ def _adaptive_comma_kv(raw:str,start:int)->tuple[dict[str,Any],list[ValueSpan],i
     fields={};spans=[]
     for _part_index,key,va,vb,a,b in parsed:
         value=raw[va:vb];_append(fields,key,value)
+        spans.append(_span('generic.kv.'+key,raw,va,vb))
+    return fields,spans,first
+
+
+def _adaptive_rfc3164_tail_kv(
+    raw:str,start:int,
+)->tuple[dict[str,Any],list[ValueSpan],int]|None:
+    """Two-or-more field comma tail behind a strong positional RFC3164 body."""
+    parts=_split_escaped_commas(raw,start)
+    if parts is None or len(parts)<3:
+        return None
+    parsed=[]
+    for index,(a,b) in enumerate(parts):
+        while a<b and raw[a].isspace():a+=1
+        while b>a and raw[b-1].isspace():b-=1
+        if a==b:
+            continue
+        eq=raw.find('=',a,b)
+        if eq<=a:
+            if index==0:
+                continue
+            return None
+        key=raw[a:eq].strip()
+        if (
+            ':' in key
+            or not SAFE_COMMA_KEY.fullmatch(key)
+            or _prose_like_key(key)
+        ):
+            return None
+        va=eq+1
+        while va<b and raw[va].isspace():va+=1
+        vb=b
+        while vb>va and raw[vb-1].isspace():vb-=1
+        if va<vb and raw[va] in ('"',"'"):
+            quote=raw[va]
+            if vb-va<2 or raw[vb-1]!=quote:
+                return None
+            va+=1;vb-=1
+        parsed.append((index,key,va,vb,a,b))
+    if len(parsed)<2 or min(item[0] for item in parsed)!=1:
+        return None
+    # All non-empty segments after the positional prefix must be fields.
+    for index,(a,b) in enumerate(parts):
+        aa=a
+        while aa<b and raw[aa].isspace():aa+=1
+        bb=b
+        while bb>aa and raw[bb-1].isspace():bb-=1
+        if index==0 or aa==bb:
+            continue
+        if not any(item[0]==index and item[4]==aa and item[5]==bb for item in parsed):
+            return None
+    first=min(item[4] for item in parsed)
+    prefix=raw[start:first]
+    prefix_tokens,_=_positional_range(raw,start,first)
+    if len(prefix_tokens)<8 or TAIL_ISO_DATE.search(prefix) is None:
+        return None
+    fields={};spans=[]
+    for _index,key,va,vb,_a,_b in parsed:
+        _append(fields,key,raw[va:vb])
         spans.append(_span('generic.kv.'+key,raw,va,vb))
     return fields,spans,first
 
@@ -221,6 +329,91 @@ def _adaptive_delimited_kv(
         _append(fields,key,raw[va:vb])
         spans.append(_span('generic.kv.'+key,raw,va,vb))
     first_key=min(p[4] for p in parsed)
+    return fields,spans,first_key
+
+
+COLON_LABEL=re.compile(
+    r'(?P<key>[A-Za-z][A-Za-z0-9 _./#()\-]{0,63}):[ \t]+'
+)
+ISO_PREFIX=re.compile(
+    r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?'
+    r'(?:Z|[+-]\d{2}:?\d{2})?(?:\s|$)'
+)
+
+
+def _safe_label_prefix(text:str)->bool:
+    """Allow one bounded structural prefix, never arbitrary URL/prose."""
+    value=text.strip()
+    if not value or len(value)>256 or '://' in value or '=' in value:
+        return False
+    if not any(char.isspace() for char in value):
+        return True
+    return bool(EVENT_CODE.search(value) or ISO_PREFIX.match(value))
+
+
+def _prose_like_key(key:str)->bool:
+    if ':' in key or '://' in key:
+        return True
+    return any(token.endswith(('.', '!', '?')) for token in key.split())
+
+
+def _adaptive_comma_colon_kv(
+    raw:str,start:int,
+)->tuple[dict[str,Any],list[ValueSpan],int]|None:
+    """Parse comma-delimited Key: Value runs with one optional prefix."""
+    parts=_split_escaped_delimiter(raw,start,',')
+    if parts is None or len(parts)<5:
+        return None
+    parsed=[]
+    prefix_only=False
+    for index,(seg_a,seg_b) in enumerate(parts):
+        a=seg_a;b=seg_b
+        while a<b and raw[a].isspace():a+=1
+        while b>a and raw[b-1].isspace():b-=1
+        if a==b:
+            continue
+        text=raw[a:b]
+        matches=list(COLON_LABEL.finditer(text))
+        if index==0:
+            if not matches:
+                if not _safe_label_prefix(text):
+                    return None
+                prefix_only=True
+                continue
+            match=matches[-1]
+            prefix=text[:match.start()].strip()
+            if prefix and not _safe_label_prefix(prefix):
+                return None
+        else:
+            if not matches or matches[0].start()!=0:
+                return None
+            match=matches[0]
+        key=match.group('key').strip()
+        if not SAFE_COMMA_KEY.fullmatch(key) or _prose_like_key(key):
+            return None
+        if index>0 and len(matches)!=1:
+            return None
+        key_start=a+match.start('key')
+        va=a+match.end()
+        vb=b
+        while vb>va and raw[vb-1].isspace():vb-=1
+        if va<vb and raw[va] in ('"',"'"):
+            quote=raw[va]
+            if vb-va<2 or raw[vb-1]!=quote:
+                return None
+            va+=1;vb-=1
+        parsed.append((index,key,va,vb,key_start))
+    if len(parsed)<5:
+        return None
+    if min(item[0] for item in parsed)>1:
+        return None
+    if prefix_only and min(item[0] for item in parsed)!=1:
+        return None
+    fields={};spans=[]
+    for _index,key,va,vb,_key_start in parsed:
+        _append(fields,key,raw[va:vb])
+        spans.append(_span('generic.kv.'+key,raw,va,vb))
+    first_key=min(item[4] for item in parsed)
     return fields,spans,first_key
 
 
@@ -408,6 +601,250 @@ def _add_event_code_tokens(event:SourceEvent)->SourceEvent:
     return out
 
 
+
+def _quoted_csv_cell(raw:str)->bool:
+    return re.search(
+        r'(?:^|,)\s*"(?:(?:"")|[^"]){3,}"\s*(?=,|$)',
+        raw,
+    ) is not None
+
+
+def _short_structural_csv_evidence(raw:str,fields:dict[str,Any])->bool:
+    values=list(fields.values())
+    if len(values)<8:
+        return False
+    first=str(values[0]).strip()
+    second=str(values[1]).strip()
+    return bool(
+        SHORT_CSV_ID.fullmatch(first)
+        and SHORT_CSV_TIMESTAMP.fullmatch(second)
+    )
+
+
+def _join_envelope_body(
+    raw:str,outer:SourceEvent,start:int,body:SourceEvent,syntax:str,
+)->SourceEvent:
+    out=SourceEvent(raw,syntax=syntax+'+'+body.syntax)
+    out.vendor_fields=dict(outer.vendor_fields)
+    out.vendor_fields['body']=body.vendor_fields
+    out.primitive_fields=outer.primitive_fields+body.primitive_fields
+    out.value_spans=list(outer.value_spans)
+    offset=_b(raw,start)
+    for span in body.value_spans:
+        segments=(
+            ('body',)+span.source_segments
+            if span.source_segments is not None
+            else None
+        )
+        out.value_spans.append(ValueSpan(
+            'body.'+span.path,
+            offset+span.start_byte,
+            offset+span.end_byte,
+            segments,
+        ))
+    out.covered=[(0,start)]+[(start+a,start+b) for a,b in body.covered]
+    out.issues=list(body.issues)
+    return _close(out)
+
+
+def _rfc3164_loose_tail_kv(raw:str)->SourceEvent|None:
+    """Strong RFC3164 host header plus positional prefix and closed KV tail."""
+    match=RFC3164_LOOSE_HOST_HEAD.match(raw)
+    if match is None:
+        return None
+    pri=match.group('pri')
+    if pri is None or int(pri)>191:
+        return None
+    day=int(match.group('day'))
+    hh,mm,ss=(int(value) for value in match.group('time').split(':'))
+    if (
+        day<1 or day>MONTH_DAYS.get(match.group('month'),0)
+        or hh>23 or mm>59 or ss>59
+    ):
+        return None
+    start=match.end()
+    tail=_adaptive_rfc3164_tail_kv(raw,start)
+    if tail is None:
+        return None
+    fields,body_spans,first=tail
+    prefix_tokens,prefix_spans=_positional_range(raw,start,first)
+    if len(prefix_tokens)<8:
+        return None
+    syslog={
+        key:match.group(key)
+        for key in ('pri','month','day','time','hostname')
+    }
+    out=SourceEvent(raw,syntax='GENERIC_RFC3164_TAIL+COMMA_KV')
+    out.vendor_fields={
+        'syslog':syslog,
+        'generic':{
+            'mode':'rfc3164_tail_comma_kv',
+            'prefix_tokens':prefix_tokens,
+            'fields':fields,
+        },
+    }
+    out.value_spans=[
+        _span(
+            'syslog.'+key,raw,*match.span(key),('syslog',key)
+        )
+        for key in ('pri','month','day','time','hostname')
+    ]
+    out.value_spans.extend(prefix_spans)
+    out.value_spans.extend(body_spans)
+    out.primitive_fields=len(out.value_spans)
+    out.covered=[(0,len(raw))]
+    out=_close(out)
+    assert_source_accounting(out)
+    return out
+
+
+def _bsd_timestamp_wide_csv(raw:str)->SourceEvent|None:
+    """Admit BSD timestamp framing only when the remaining body is strong CSV."""
+    match=BSD_TIME_HEAD.match(raw)
+    if match is None:
+        return None
+    pri=match.group('pri')
+    if pri is not None and int(pri)>191:
+        return None
+    day=int(match.group('day'))
+    hh,mm,ss=(int(value) for value in match.group('time').split(':'))
+    if (
+        day<1 or day>MONTH_DAYS.get(match.group('month'),0)
+        or hh>23 or mm>59 or ss>59
+    ):
+        return None
+
+    prefix_end=match.end()
+    candidates=[]
+    # Variant A: standard BSD host token exists before the CSV body.
+    space=raw.find(' ',prefix_end)
+    if space>prefix_end:
+        host=raw[prefix_end:space]
+        if ',' not in host and len(host)<=255:
+            body_start=space+1
+            while raw[body_start:body_start+1]==' ':
+                body_start+=1
+            candidates.append((body_start,host,(prefix_end,space)))
+    # Variant B: timestamp is followed directly by the CSV record.
+    candidates.append((prefix_end,None,None))
+
+    for body_start,hostname,host_span in candidates:
+        body=_standard_candidate(raw[body_start:])
+        if (
+            body.status!='SOURCE_PARSED'
+            or 'GENERIC_POSITIONAL_CSV' not in body.syntax
+            or body.residual_bytes
+        ):
+            continue
+        keys=('month','day','time')
+        syslog={key:match.group(key) for key in keys}
+        if pri is not None:
+            syslog={'pri':pri,**syslog}
+        if hostname is not None:
+            syslog['hostname']=hostname
+        outer=SourceEvent(raw,syntax='GENERIC_BSD_TIMESTAMP_ENVELOPE')
+        outer.vendor_fields={'syslog':syslog}
+        outer.value_spans=[]
+        if pri is not None:
+            outer.value_spans.append(_span(
+                'syslog.pri',raw,*match.span('pri'),('syslog','pri')
+            ))
+        outer.value_spans.extend(
+            _span(
+                'syslog.'+key,raw,*match.span(key),('syslog',key)
+            )
+            for key in keys
+        )
+        if host_span is not None:
+            outer.value_spans.append(_span(
+                'syslog.hostname',raw,*host_span,('syslog','hostname')
+            ))
+        outer.primitive_fields=len(outer.value_spans)
+        return _join_envelope_body(
+            raw,outer,body_start,body,'GENERIC_BSD_TIMESTAMP_BODY'
+        )
+    return None
+
+
+def _iso_host_json(raw:str)->SourceEvent|None:
+    """Parse ISO timestamp + host wrappers only around a complete JSON body."""
+    match=ISO_HOST_JSON_HEAD.match(raw)
+    if match is None:
+        return None
+    timestamp=match.group('timestamp')
+    try:
+        datetime.fromisoformat(
+            timestamp[:-1]+'+00:00' if timestamp.endswith('Z') else timestamp
+        )
+    except ValueError:
+        return None
+    body_start=match.start('body')
+    body=parse_source(raw[body_start:])
+    if (
+        body.syntax!='JSON'
+        or body.status not in ('SOURCE_PARSED','STRUCTURED_EMPTY')
+        or body.residual_bytes
+    ):
+        return None
+    outer=SourceEvent(raw,syntax='GENERIC_ISO_HOST_JSON_ENVELOPE')
+    outer.vendor_fields={'envelope':{
+        'timestamp':timestamp,
+        'hostname':match.group('hostname'),
+    }}
+    outer.value_spans=[
+        _span(
+            'envelope.timestamp',raw,*match.span('timestamp'),
+            ('envelope','timestamp'),
+        ),
+        _span(
+            'envelope.hostname',raw,*match.span('hostname'),
+            ('envelope','hostname'),
+        ),
+    ]
+    outer.primitive_fields=2
+    result=_join_envelope_body(
+        raw,outer,body_start,body,'GENERIC_ISO_HOST_JSON'
+    )
+    result.syntax='GENERIC_ISO_HOST_JSON'
+    return result
+
+
+def _short_rfc5424_json(raw:str)->SourceEvent|None:
+    match=SHORT_RFC5424_JSON_HEAD.match(raw)
+    if match is None:
+        return None
+    if int(match.group('pri'))>191 or match.group('version')!='1':
+        return None
+    timestamp=match.group('timestamp')
+    try:
+        datetime.fromisoformat(
+            timestamp[:-1]+'+00:00' if timestamp.endswith('Z') else timestamp
+        )
+    except ValueError:
+        return None
+    body_start=match.start('body')
+    body=parse_source(raw[body_start:])
+    if body.syntax!='JSON' or body.status not in ('SOURCE_PARSED','STRUCTURED_EMPTY'):
+        return None
+    if body.residual_bytes:
+        return None
+    outer=SourceEvent(raw,syntax='GENERIC_SHORT_RFC5424_PREFIX')
+    keys=('pri','version','timestamp','hostname')
+    outer.vendor_fields={'syslog':{key:match.group(key) for key in keys}}
+    outer.value_spans=[
+        _span(
+            'syslog.'+key,raw,*match.span(key),
+            ('syslog',key),
+        )
+        for key in keys
+    ]
+    outer.primitive_fields=len(outer.value_spans)
+    result=_join_envelope_body(
+        raw,outer,body_start,body,'GENERIC_SHORT_RFC5424_JSON'
+    )
+    result.syntax='GENERIC_SHORT_RFC5424_JSON'
+    return result
+
 def _standard_candidate(raw:str)->SourceEvent:
     base=parse_security_source(raw)
     cef=parse_security_cef(raw,base_parser=parse_security_source)
@@ -437,18 +874,58 @@ def _standard_candidate(raw:str)->SourceEvent:
             for value in csv_values
         )>=2
     )
+    short_structural_csv=(
+        isinstance(csv_fields,dict)
+        and _short_structural_csv_evidence(raw,csv_fields)
+    )
+    assignment_cells=sum(
+        CSV_ASSIGNMENT_CELL.match(str(value)) is not None
+        for value in csv_values
+    )
+    kvish_csv=(
+        assignment_cells>=3
+        and assignment_cells*4>=max(1,len(csv_values))
+    )
     if (
         base.status=='PARTIAL'
         and base.issues==['UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION']
         and base.residual_bytes==0
         and isinstance(csv_fields,dict)
-        and (len(csv_fields)>=16 or quoted_csv or network_csv)
+        and not (
+            base.syntax=='CSV_UNLABELED_CANDIDATE'
+            and BSD_TIME_HEAD.match(raw) is not None
+        )
+        and not kvish_csv
+        and (
+            len(csv_fields)>=16
+            or quoted_csv
+            or network_csv
+            or short_structural_csv
+        )
         and all(str(k).startswith('column_') for k in csv_fields)
     ):
         promoted=deepcopy(base)
         promoted.syntax=promoted.syntax.replace(
             'CSV_UNLABELED_CANDIDATE','GENERIC_POSITIONAL_CSV'
         )
+        identified=[]
+        for span in promoted.value_spans:
+            if span.source_segments is not None:
+                identified.append(span)
+                continue
+            match=re.fullmatch(r'(body\.)?(column_\d+)',span.path)
+            if match is None:
+                identified.append(span)
+                continue
+            segments=(
+                ('body',match.group(2))
+                if match.group(1) is not None
+                else (match.group(2),)
+            )
+            identified.append(ValueSpan(
+                span.path,span.start_byte,span.end_byte,segments
+            ))
+        promoted.value_spans=identified
         promoted.issues=[]
         base=promoted
     return base
@@ -465,6 +942,11 @@ def _generic_event(raw:str,start:int,outer:SourceEvent|None,syntax:str,
             if relaxed is not None:
                 relaxed_delimiter=delimiter
                 break
+    comma_colon=(
+        None
+        if force_mode=='mixed'
+        else _adaptive_comma_colon_kv(raw,start)
+    )
     colon_run=(
         None
         if force_mode=='mixed'
@@ -506,6 +988,17 @@ def _generic_event(raw:str,start:int,outer:SourceEvent|None,syntax:str,
             'fields':fields,
         }
         mode='DELIMITED_KV'
+        spans=prefix_spans+body_spans
+        structural_ok=True
+    elif comma_colon is not None:
+        fields,body_spans,first=comma_colon
+        prefix_tokens,prefix_spans=_positional_range(raw,start,first)
+        body={
+            'mode':'comma_colon_kv',
+            'prefix_tokens':prefix_tokens,
+            'fields':fields,
+        }
+        mode='COMMA_COLON_KV'
         spans=prefix_spans+body_spans
         structural_ok=True
     elif colon_run is not None:
@@ -605,6 +1098,15 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
     standard=_standard_candidate(raw)
     if standard.status=='SOURCE_PARSED':
         return standard
+    # A direct JSON-looking event is owned by the JSON grammar. If JSON is
+    # malformed, truncated, duplicate-key, over-depth, or over-field-limit,
+    # never reinterpret the same bytes as a looser mixed/delimited grammar.
+    if raw[:1] in ('{','['):
+        return standard
+    # Preserve any complete result produced by the pre-Ultra generic path
+    # before trying newly discovered Ultra primitives.  The new primitives are
+    # additive fallback grammars: they must never reinterpret an event that the
+    # earlier structural parser already completed.
     # If the standards parser already accounts for the complete source and
     # only carries a validation warning, do not reinterpret the record into a
     # different grammar merely to turn PARTIAL into SOURCE_PARSED.
@@ -632,6 +1134,15 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
             _span(path,raw,a,b) for path,a,b in fragment.spans
         ]
         outer.primitive_fields=len(outer.value_spans)
+        body_standard=_standard_candidate(raw[start:])
+        if (
+            body_standard.status=='SOURCE_PARSED'
+            and 'GENERIC_POSITIONAL_CSV' in body_standard.syntax
+        ):
+            return _join_envelope_body(
+                raw,outer,start,body_standard,
+                envelope_syntax.replace('_ENVELOPE','_BODY'),
+            )
         candidate=_generic_event(
             raw,start,outer,envelope_syntax.replace('_ENVELOPE','_BODY'),
             force_mode=(
@@ -649,6 +1160,14 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         outer.vendor_fields=fragment.fields
         outer.value_spans=[_span(path,raw,a,b) for path,a,b in fragment.spans]
         outer.primitive_fields=len(outer.value_spans)
+        body_standard=_standard_candidate(raw[start:])
+        if (
+            body_standard.status=='SOURCE_PARSED'
+            and 'GENERIC_POSITIONAL_CSV' in body_standard.syntax
+        ):
+            return _join_envelope_body(
+                raw,outer,start,body_standard,'GENERIC_BSD_BODY'
+            )
         candidate=_generic_event(
             raw,start,outer,'GENERIC_BSD',
             force_mode=(
@@ -712,6 +1231,19 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         ),
     )
     if candidate is not None:return candidate
+
+    # Ultra additions are fallback-only.  They may promote an event that the
+    # legacy structural path could not complete, but they cannot replace a
+    # complete legacy result or its established source spans.
+    for fallback in (
+        _iso_host_json,
+        _short_rfc5424_json,
+        _bsd_timestamp_wide_csv,
+        _rfc3164_loose_tail_kv,
+    ):
+        candidate=fallback(raw)
+        if candidate is not None:
+            return candidate
     return _add_event_code_tokens(standard)
 
 

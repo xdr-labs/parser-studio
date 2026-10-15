@@ -1,0 +1,486 @@
+{
+  "baseline_head": "05d96919593252e53e474fec8adf331f9de7b5cd",
+  "blind_baseline": {
+    "events": 8076,
+    "residual_bytes": 898668,
+    "source_bytes": 8912000,
+    "source_parsed": 5347,
+    "source_spans": 303148
+  },
+  "contract": "parser-studio.poc.generic-structural-ultra-final-qualification.v1",
+  "corpus": {
+    "event_sha_set_digest": "f4997fda2504a3378a1bad28d09696a5bce8def8db856b1e6bc715d9b1a98b01",
+    "product_families_with_logs": 82,
+    "source_bytes": 8912000,
+    "unique_events": 8076,
+    "upstream_log_files": 679
+  },
+  "crossfold_template": {
+    "automatic_apply_allowed": false,
+    "fold_count": 5,
+    "same_event_sha_train_holdout_overlap": false,
+    "semantic_roles_assigned": false,
+    "total": {
+      "candidate_events": 820,
+      "candidate_spans": 5174,
+      "fresh_spans": 4944,
+      "holdout": 2062,
+      "no_model": 76,
+      "unmatched_or_abstained": 1166,
+      "used_coarse_fallback": 64
+    }
+  },
+  "decision": {
+    "generic_core": "freeze",
+    "product_layers": [
+      "standards/profile",
+      "generic_structural",
+      "candidate_only_partial_recovery",
+      "train_only_template_candidate",
+      "ai_or_user_assisted_recipe"
+    ],
+    "reason": "remaining high-volume clusters are predominantly vendor-family sentence grammars or broad PRI/prose shapes whose global admission would increase false-complete risk"
+  },
+  "field_semantics_scored": false,
+  "frozen_gates": {
+    "708": {
+      "current_PARTIAL": 161,
+      "current_RAW_ONLY": 28,
+      "current_SOURCE_PARSED": 519,
+      "events": 708,
+      "old_complete": 283,
+      "old_complete_divergence": 0,
+      "old_complete_exact": 283,
+      "old_exception": 7,
+      "old_exception_repaired": 7,
+      "promoted": 236,
+      "raw_preserved": 708
+    },
+    "948": {
+      "current_PARTIAL": 259,
+      "current_RAW_ONLY": 5,
+      "current_SOURCE_PARSED": 684,
+      "events": 948,
+      "old_complete": 461,
+      "old_complete_divergence": 0,
+      "old_complete_exact": 461,
+      "promoted": 223,
+      "raw_preserved": 948
+    },
+    "commercial_gold": {
+      "FN": 0,
+      "FP": 0,
+      "PARTIAL": 3,
+      "SOURCE_PARSED": 389,
+      "TP": 27968,
+      "all_events": 392,
+      "composite_source_fields": 3,
+      "exact_all_field_events": 391,
+      "exact_composite_fields": 3,
+      "exact_tree_events": 391,
+      "excluded_event_not_false_green": 1,
+      "f1": 1.0,
+      "gold_fields": 27968,
+      "precision": 1.0,
+      "raw_preserved": 392,
+      "recall": 1.0,
+      "reference_excluded_events": 1,
+      "reference_scored_events": 391
+    },
+    "full_unittest": {
+      "errors": 0,
+      "failures": 0,
+      "optional_skips": 1,
+      "tests": 402
+    },
+    "json_gold_94": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 4601,
+      "events": 94,
+      "exact": 94,
+      "f1": 1.0,
+      "false_complete": 0,
+      "fields": 4601
+    },
+    "mutation_safety": {
+      "events": 8076,
+      "json_truncations": 2751,
+      "nul_mutations": 8076,
+      "original_partial_zero_residual": 141,
+      "original_zero_residual": 6014,
+      "prefix_mutations": 8076,
+      "raw_preserved": 35055,
+      "status_json_trunc_RAW_ONLY": 2751,
+      "status_nul_PARTIAL": 921,
+      "status_nul_RAW_ONLY": 7155,
+      "status_original_PARTIAL": 1282,
+      "status_original_RAW_ONLY": 922,
+      "status_original_SOURCE_PARSED": 5872,
+      "status_prefix_PARTIAL": 1589,
+      "status_prefix_RAW_ONLY": 4061,
+      "status_prefix_SOURCE_PARSED": 2426,
+      "status_tail_PARTIAL": 2302,
+      "status_tail_RAW_ONLY": 3940,
+      "status_tail_SOURCE_PARSED": 1834,
+      "tail_mutations": 8076
+    },
+    "ultra_json_gold": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 195809,
+      "exact_all_events": 2748,
+      "exact_span_FN": 0,
+      "exact_span_FP": 0,
+      "exact_span_TP": 195809,
+      "exact_span_f1": 1.0,
+      "exact_tree_events": 2748,
+      "f1": 1.0,
+      "false_complete_events": 0,
+      "gold_fields": 195809,
+      "jsonish_events": 2751,
+      "raw_preserved": 2748,
+      "reference_events": 2748,
+      "reference_rejected": 3,
+      "source_parsed_events": 2748
+    }
+  },
+  "generic_core": {
+    "partial": 1270,
+    "prior_complete_additive_spans": 24,
+    "prior_complete_missing_spans": 0,
+    "promotion_reference": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 26318,
+      "candidate_occurrences": 26318,
+      "exact_events": 525,
+      "f1": 1.0,
+      "promoted_events": 525,
+      "reference_occurrences": 26318,
+      "scored_events": 525
+    },
+    "promotions": 525,
+    "raw_only": 934,
+    "raw_preserved": 8076,
+    "residual_bytes": 327505,
+    "source_parsed": 5872,
+    "source_spans": 329365
+  },
+  "partial_recovery": {
+    "added_atoms": 1631,
+    "added_envelope": 672,
+    "added_labels": 213,
+    "added_single": 939,
+    "added_total": 3455,
+    "base_PARTIAL": 1270,
+    "base_RAW_ONLY": 934,
+    "base_SOURCE_PARSED": 5872,
+    "events": 8076,
+    "events_with_any_addition": 1343,
+    "events_with_atoms": 967,
+    "events_with_envelope": 65,
+    "events_with_labels": 44,
+    "events_with_single": 488,
+    "final_PARTIAL": 1988,
+    "final_RAW_ONLY": 216,
+    "final_SOURCE_PARSED": 5872,
+    "old_spans_preserved": 8076,
+    "raw_preserved": 8076,
+    "residual_after": 287805,
+    "residual_before": 327505
+  },
+  "raw_published": false,
+  "strict_empty_ablation": {
+    "decision": "reject relaxed empty-value admission because it creates a false-complete structural-boundary case",
+    "malformed_control": "empty= next=ok",
+    "relaxed_extra_promotions": 58,
+    "relaxed_source_parsed": 5930,
+    "relaxed_status": "SOURCE_PARSED",
+    "selected": "strict",
+    "strict_source_parsed": 5872,
+    "strict_status": "PARTIAL"
+  },
+  "top_failure_clusters": [
+    {
+      "cluster": "ASA_BODY|EVENT_CODE+IP2",
+      "events": 368,
+      "families": {
+        "cisco_asa": 313,
+        "cisco_ftd": 55
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+QUOTED",
+      "events": 296,
+      "families": {
+        "watchguard_firebox": 295,
+        "zscaler_zia": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI",
+      "events": 192,
+      "families": {
+        "cisco_aironet": 93,
+        "cisco_asa": 14,
+        "cisco_ftd": 1,
+        "cisco_ios": 55,
+        "cisco_nexus": 28,
+        "juniper_srx": 1
+      },
+      "family_count": 6
+    },
+    {
+      "cluster": "NO_GRAMMAR|OTHER",
+      "events": 109,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_ftd": 2,
+        "cisco_nexus": 5,
+        "crowdstrike": 1,
+        "eset_protect": 3,
+        "forescout": 7,
+        "juniper_netscreen": 82,
+        "sophos": 8
+      },
+      "family_count": 8
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+BSDISH",
+      "events": 87,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_nexus": 3,
+        "cisco_secure_email_gateway": 83
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE+IP2",
+      "events": 79,
+      "families": {
+        "cisco_asa": 40,
+        "cisco_ftd": 39
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "ASA_BODY|PRI+EVENT_CODE",
+      "events": 61,
+      "families": {
+        "cisco_asa": 51,
+        "cisco_ftd": 10
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2",
+      "events": 58,
+      "families": {
+        "cisco_asa": 57,
+        "cisco_ftd": 1
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "BSD_BODY|BSDISH",
+      "events": 56,
+      "families": {
+        "cisco_asa": 3,
+        "juniper_junos": 53
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH",
+      "events": 52,
+      "families": {
+        "cisco_asa": 1,
+        "cisco_ios": 5,
+        "cisco_ise": 16,
+        "cisco_nexus": 30
+      },
+      "family_count": 4
+    },
+    {
+      "cluster": "ASA_BODY|EVENT_CODE",
+      "events": 48,
+      "families": {
+        "cisco_asa": 45,
+        "cisco_ftd": 3
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "NO_GRAMMAR|PRI+BSDISH+QUOTED",
+      "events": 38,
+      "families": {
+        "cisco_secure_email_gateway": 38
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH",
+      "events": 34,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ios": 6,
+        "juniper_junos": 26
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "SIZE_OR_NUL|PRI",
+      "events": 33,
+      "families": {
+        "cisco_ftd": 33
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+IP2+QUOTED+LABEL_KV",
+      "events": 31,
+      "families": {
+        "watchguard_firebox": 31
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+IP2",
+      "events": 29,
+      "families": {
+        "cisco_aironet": 15,
+        "cisco_ios": 12,
+        "cisco_nexus": 2
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "ASA_BODY|PRI+BSDISH+EVENT_CODE+IP2",
+      "events": 27,
+      "families": {
+        "cisco_asa": 2,
+        "cisco_ftd": 25
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+IP2+QUOTED",
+      "events": 27,
+      "families": {
+        "watchguard_firebox": 27
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "ASA_BODY|EVENT_CODE+IP2+QUOTED",
+      "events": 26,
+      "families": {
+        "cisco_asa": 20,
+        "cisco_ftd": 6
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "OTHER|PRI+KV5+IP2+QUOTED",
+      "events": 26,
+      "families": {
+        "fortinet_fortiproxy": 1,
+        "juniper_srx": 6,
+        "sophos": 19
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "OTHER|KV5+IP2+QUOTED",
+      "events": 25,
+      "families": {
+        "sophos": 25
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+EVENT_CODE",
+      "events": 23,
+      "families": {
+        "cisco_asa": 23
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|BSDISH+IP2",
+      "events": 23,
+      "families": {
+        "cisco_ftd": 1,
+        "cisco_ios": 21,
+        "juniper_junos": 1
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+QUOTED+LABEL_KV",
+      "events": 17,
+      "families": {
+        "cisco_ise": 5,
+        "watchguard_firebox": 12
+      },
+      "family_count": 2
+    },
+    {
+      "cluster": "RFC5424_TIMESTAMP|PRI",
+      "events": 17,
+      "families": {
+        "cisco_meraki": 17
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "PRI_BODY|PRI+BSDISH+KV2+LABEL_KV",
+      "events": 15,
+      "families": {
+        "cisco_ise": 15
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "NO_GRAMMAR|IP2",
+      "events": 13,
+      "families": {
+        "cisco_asa": 4,
+        "cisco_ftd": 2,
+        "juniper_netscreen": 7
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "ASA_BODY|BSDISH+EVENT_CODE+IP2",
+      "events": 12,
+      "families": {
+        "cisco_asa": 12
+      },
+      "family_count": 1
+    },
+    {
+      "cluster": "CSV_UNLABELED|OTHER",
+      "events": 12,
+      "families": {
+        "cisco_ftd": 1,
+        "juniper_netscreen": 2,
+        "symantec_endpoint": 9
+      },
+      "family_count": 3
+    },
+    {
+      "cluster": "PRI_BODY|PRI+ISO_SYSLOGISH",
+      "events": 11,
+      "families": {
+        "barracuda": 9,
+        "cisco_ios": 2
+      },
+      "family_count": 2
+    }
+  ]
+}

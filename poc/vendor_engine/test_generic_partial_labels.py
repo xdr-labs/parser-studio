@@ -41,6 +41,28 @@ class GenericPartialLabelTests(unittest.TestCase):
                 event=augment_incomplete_labels(parse_security_source(raw))
                 self.assertNotIn('generic_labels',event.vendor_fields)
 
+    def test_bracket_labels_are_exact_candidate_only_values(self):
+        raw=(
+            'Login Success [user: analyst] [Source: 192.0.2.7] '
+            '[localport: 22] trailing prose'
+        )
+        event=augment_incomplete_labels(parse_security_source(raw))
+        assert_source_accounting(event)
+        self.assertEqual('PARTIAL',event.status)
+        labels=event.vendor_fields['generic_labels']
+        self.assertEqual(['analyst'],labels['user'])
+        self.assertEqual(['192.0.2.7'],labels['Source'])
+        self.assertEqual(['22'],labels['localport'])
+        data=raw.encode()
+        for span in event.value_spans:
+            if span.path.startswith('generic_labels.'):
+                self.assertTrue(data[span.start_byte:span.end_byte])
+
+    def test_bracket_without_explicit_separator_is_ignored(self):
+        raw='alert [ordinary prose] [0x0, 0x0] trailing'
+        event=augment_incomplete_labels(parse_security_source(raw))
+        self.assertNotIn('generic_labels',event.vendor_fields)
+
     def test_existing_spans_and_complete_events_are_never_changed(self):
         complete=parse_security_source('a=1 b=2 c=3 d=4 e=5')
         self.assertIs(complete,augment_incomplete_labels(complete))

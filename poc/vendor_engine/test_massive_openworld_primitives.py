@@ -86,6 +86,75 @@ class MassiveOpenWorldPrimitiveTests(unittest.TestCase):
             url_event.vendor_fields['url'],
         )
 
+    def test_iso_host_wrapper_requires_complete_json_body(self):
+        raw=(
+            '2026-01-01T00:00:01-00:00 hostname0001 \ufeff'
+            '{"format":"elastic","version":"1.0","count":7,'
+            '"nested":{"ok":true}}'
+        )
+        event=parse_security_once(raw);assert_source_accounting(event)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertEqual('GENERIC_ISO_HOST_JSON',event.syntax)
+        self.assertEqual(
+            '2026-01-01T00:00:01-00:00',
+            event.vendor_fields['envelope']['timestamp'],
+        )
+        self.assertEqual('hostname0001',event.vendor_fields['envelope']['hostname'])
+        self.assertEqual(7,event.vendor_fields['body']['count'])
+        self.assertEqual(0,event.residual_bytes)
+
+        bad=(
+            '2026-01-01T00:00:01-00:00 hostname0001 free text',
+            '2026-99-01T00:00:01-00:00 hostname0001 {"ok":true}',
+            '2026-01-01T00:00:01-00:00 hostname0001 {"ok":true} trailing',
+        )
+        for value in bad:
+            with self.subTest(value=value):
+                rejected=parse_security_once(value);assert_source_accounting(rejected)
+                self.assertNotEqual('SOURCE_PARSED',rejected.status)
+                self.assertNotEqual('GENERIC_ISO_HOST_JSON',rejected.syntax)
+
+    def test_bsd_timestamp_wide_csv_allows_optional_hostname_only_with_strong_body(self):
+        no_host=(
+            'Nov 30 16:09:08 931201168,2021-10-22T16:10:10.000000Z,'
+            'no-serial,GLOBALPROTECT,globalprotect,9.1,'
+            '2021-10-22T16:10:05.000000Z,vsys1,gateway-hip-check,'
+            'host-info,user,HOSTNAME,10.1.1.1,10.2.2.2,10.3.3.3,'
+            'uuid-value,SERIALNR,5.2.6'
+        )
+        event=parse_security_once(no_host);assert_source_accounting(event)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertIn('GENERIC_BSD_TIMESTAMP_BODY',event.syntax)
+        self.assertIn('GENERIC_POSITIONAL_CSV',event.syntax)
+        self.assertNotIn('hostname',event.vendor_fields['syslog'])
+        self.assertEqual('931201168',event.vendor_fields['body']['column_0'])
+        body_spans=[
+            span for span in event.value_spans
+            if span.path.startswith('body.column_')
+        ]
+        self.assertTrue(body_spans)
+        self.assertTrue(all(
+            span.source_segments is not None
+            and span.source_segments[:1]==('body',)
+            for span in body_spans
+        ))
+        self.assertEqual(0,event.residual_bytes)
+
+        with_host=(
+            '<190>Aug 6 15:45:10 gateway 123456,2024/08/06 15:45:10,'
+            'audit,2561,gui-op,user,"<show><config/></show>",success'
+        )
+        hosted=parse_security_once(with_host);assert_source_accounting(hosted)
+        self.assertEqual('SOURCE_PARSED',hosted.status)
+        self.assertIn('GENERIC_POSITIONAL_CSV',hosted.syntax)
+        self.assertEqual('gateway',hosted.vendor_fields['syslog']['hostname'])
+        self.assertEqual('123456',hosted.vendor_fields['body']['column_0'])
+
+        weak='Apr 11 20:06:15 gateway ordinary free text body'
+        weak_event=parse_security_once(weak);assert_source_accounting(weak_event)
+        self.assertNotEqual('SOURCE_PARSED',weak_event.status)
+        self.assertNotIn('GENERIC_BSD_TIMESTAMP_BODY',weak_event.syntax)
+
     def test_wide_iso_pri_positional_record_preserves_quoted_tokens(self):
         raw=(
             '<134>2023-03-20 17:24:08.959 +0100 '
@@ -126,6 +195,85 @@ class MassiveOpenWorldPrimitiveTests(unittest.TestCase):
         short_network='a,b,c,d,192.0.2.1,e,198.51.100.2,f,g,h'
         self.assertNotEqual(
             'SOURCE_PARSED',parse_security_once(short_network).status
+        )
+
+        timestamped=(
+            '931201168,2021-10-22T16:10:10.000000Z,no-serial,'
+            'GLOBALPROTECT,globalprotect,9.1,vsys1,event,host-info,user'
+        )
+        timestamped_event=parse_security_once(timestamped)
+        self.assertEqual('SOURCE_PARSED',timestamped_event.status)
+        self.assertIn('GENERIC_POSITIONAL_CSV',timestamped_event.syntax)
+
+        kvish=(
+            'summary,src=192.0.2.1,dst=198.51.100.2,user=alice,'
+            'protocol=Radius,port=1812,device=edge,action=allow,'
+            'result=ok,group=ops,site=lab,code=7'
+        )
+        kvish_event=parse_security_once(kvish);assert_source_accounting(kvish_event)
+        self.assertNotIn('GENERIC_POSITIONAL_CSV',kvish_event.syntax)
+
+        metric_list=(
+            'summary,ConfigVersionId=1,OperationCounters=Counter=a,'
+            'metric_b:2,metric_c:3,metric_d:4,metric_e:5,metric_f:6,'
+            'metric_g:7,metric_h:8,metric_i:9,metric_j:10'
+        )
+        metric_event=parse_security_once(metric_list);assert_source_accounting(metric_event)
+        self.assertNotIn('GENERIC_POSITIONAL_CSV',metric_event.syntax)
+
+    def test_comma_colon_kv_run_recovers_explicit_labels_not_csv(self):
+        ftd=(
+            '2026-08-18T18:24:29Z edge %EDGE-1-430003: '
+            'AccessControlRuleAction: Allow, SrcIP: 192.0.2.10, '
+            'DstIP: 198.51.100.20, SrcPort: 55105, DstPort: 53, '
+            'Protocol: udp, IngressZone: inside, EgressZone: outside'
+        )
+        event=parse_security_once(ftd);assert_source_accounting(event)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertIn('COMMA_COLON_KV',event.syntax)
+        self.assertEqual('Allow',event.vendor_fields['generic']['fields']['AccessControlRuleAction'])
+        self.assertEqual('192.0.2.10',event.vendor_fields['generic']['fields']['SrcIP'])
+        self.assertNotIn('GENERIC_POSITIONAL_CSV',event.syntax)
+
+        symantec=(
+            'server02,Event Description: Portscan,Local Host IP: 192.0.2.2,'
+            'Remote Host IP: 198.51.100.9,Begin: 2020-12-08 09:08:01,'
+            'Occurrences: 1,Action: Blocked,Rule: Block all other traffic'
+        )
+        event=parse_security_once(symantec);assert_source_accounting(event)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertIn('COMMA_COLON_KV',event.syntax)
+        self.assertEqual('server02',event.vendor_fields['generic']['prefix_tokens'][0])
+        self.assertEqual('Blocked',event.vendor_fields['generic']['fields']['Action'])
+
+        bad=(
+            'prefix,A: 1,B: 2,C: 3,D: 4',
+            'prefix,A: 1,B: 2,free prose,C: 3,D: 4,E: 5',
+            'https://example.test/a:b,C: 3,D: 4,E: 5,F: 6,G: 7',
+            'Info: File Analysis complete. SHA256: abcdef, Submit Timestamp: 1, Update Timestamp: 2, Disposition: 3 Score: 100, run_id: 4 Details: done',
+            'IKE negotiation completed. IKE Version: 1, VPN: TUN VPN Gateway: GW1, Local: 10.0.0.1/500, Remote: 10.0.0.2/500, Local IKE-ID: 10.0.0.1, Remote IKE-ID: 10.0.0.2, VR-ID: 6, Role: Responder',
+        )
+        for raw in bad:
+            with self.subTest(raw=raw):
+                rejected=parse_security_once(raw);assert_source_accounting(rejected)
+                self.assertNotIn('COMMA_COLON_KV',rejected.syntax)
+                self.assertNotEqual('SOURCE_PARSED',rejected.status)
+
+    def test_sentence_prefixed_comma_equals_uses_suffix_key_not_prose_key(self):
+        raw=(
+            "Info: Response received for file reputation query from Cloud. "
+            "FileName = 'mod-6.exe', MID = 5, Disposition = MALICIOUS, "
+            "Malware = W32.TEST, Reputation Score = 73, sha256 =" + 'a'*64 +
+            ", upload_action = 2"
+        )
+        event=parse_security_once(raw);assert_source_accounting(event)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertIn('DELIMITED_KV',event.syntax)
+        fields=event.vendor_fields['generic']['fields']
+        self.assertEqual('mod-6.exe',fields['FileName'])
+        self.assertNotIn(
+            'Response received for file reputation query from Cloud. FileName',
+            fields,
         )
 
     def test_semicolon_colon_kv_run_is_structural_without_semantics(self):
@@ -195,6 +343,30 @@ class MassiveOpenWorldPrimitiveTests(unittest.TestCase):
         self.assertIn('AH',event.vendor_fields['generic']['tokens'])
         self.assertNotIn('AH.',event.vendor_fields['generic']['tokens'])
 
+    def test_comma_kv_leading_summary_equals_does_not_poison_closed_run(self):
+        from generic_structural_poc import _adaptive_comma_kv
+
+        raw=(
+            '<190>Oct 15 00:00:00 ise01 notice: session=abc123,'
+            'field1=value1,field2=value2,field3=value3,'
+            'field4=value4,field5=value5,field6=value6'
+        )
+        event=parse_security_once(raw);assert_source_accounting(event)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertEqual(0,event.residual_bytes)
+
+        start=len('<190>')
+        candidate=_adaptive_comma_kv(raw,start)
+        self.assertIsNotNone(candidate)
+        self.assertEqual(6,len(candidate[0]))
+
+        malformed=(
+            '<190>Oct 15 00:00:00 ise01 notice: session=abc123,'
+            'field1=value1,field2=value2,prose: nested=value,'
+            'field3=value3,field4=value4,field5=value5,field6=value6'
+        )
+        self.assertIsNone(_adaptive_comma_kv(malformed,start))
+
     def test_deep_json_budget_is_bounded_but_above_18(self):
         value=1
         for _ in range(24):
@@ -204,8 +376,16 @@ class MassiveOpenWorldPrimitiveTests(unittest.TestCase):
         self.assertEqual('SOURCE_PARSED',event.status)
         self.assertEqual(1,event.primitive_fields)
 
+        deep=1
+        for _ in range(36):
+            deep={'nested':deep}
+        accepted=parse_security_multipass(
+            json.dumps(deep,separators=(',',':'))
+        )
+        self.assertEqual('SOURCE_PARSED',accepted.status)
+
         over=1
-        for _ in range(34):
+        for _ in range(42):
             over={'nested':over}
         rejected=parse_security_multipass(
             json.dumps(over,separators=(',',':'))

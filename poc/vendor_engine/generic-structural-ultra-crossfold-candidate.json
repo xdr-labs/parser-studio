@@ -1,0 +1,471 @@
+{
+  "automatic_apply_allowed": false,
+  "contract": "parser-studio.poc.ultra-crossfold-template-candidate.v1",
+  "corpus_contract": "parser-studio.poc.generic-structural-ultra-openworld-corpus.v1",
+  "events_considered": 2062,
+  "families": {
+    "barracuda": {
+      "candidate_events": 4,
+      "candidate_spans": 8,
+      "fresh_spans": 8,
+      "holdout": 17
+    },
+    "cisco_aironet": {
+      "candidate_events": 19,
+      "candidate_spans": 84,
+      "fresh_spans": 84,
+      "holdout": 115
+    },
+    "cisco_asa": {
+      "candidate_events": 324,
+      "candidate_spans": 1684,
+      "fresh_spans": 1482,
+      "holdout": 661
+    },
+    "cisco_ftd": {
+      "candidate_events": 87,
+      "candidate_spans": 367,
+      "fresh_spans": 339,
+      "holdout": 217
+    },
+    "cisco_ios": {
+      "candidate_events": 27,
+      "candidate_spans": 206,
+      "fresh_spans": 206,
+      "holdout": 102
+    },
+    "cisco_ise": {
+      "candidate_events": 13,
+      "candidate_spans": 56,
+      "fresh_spans": 56,
+      "holdout": 61
+    },
+    "cisco_meraki": {
+      "candidate_events": 1,
+      "candidate_spans": 5,
+      "fresh_spans": 5,
+      "holdout": 35
+    },
+    "cisco_nexus": {
+      "holdout": 72
+    },
+    "cisco_secure_email_gateway": {
+      "candidate_events": 32,
+      "candidate_spans": 44,
+      "fresh_spans": 44,
+      "holdout": 125
+    },
+    "citrix_waf": {
+      "candidate_events": 1,
+      "candidate_spans": 14,
+      "fresh_spans": 14,
+      "holdout": 11
+    },
+    "crowdstrike": {
+      "holdout": 1
+    },
+    "darktrace": {
+      "holdout": 1
+    },
+    "eset_protect": {
+      "holdout": 5
+    },
+    "forescout": {
+      "holdout": 8
+    },
+    "fortinet_fortigate": {
+      "holdout": 4
+    },
+    "fortinet_fortiproxy": {
+      "holdout": 1
+    },
+    "juniper_junos": {
+      "candidate_events": 5,
+      "candidate_spans": 20,
+      "fresh_spans": 20,
+      "holdout": 98
+    },
+    "juniper_netscreen": {
+      "candidate_events": 3,
+      "candidate_spans": 12,
+      "fresh_spans": 12,
+      "holdout": 98
+    },
+    "juniper_srx": {
+      "holdout": 33
+    },
+    "modsecurity": {
+      "holdout": 3
+    },
+    "sophos": {
+      "holdout": 24
+    },
+    "watchguard_firebox": {
+      "candidate_events": 304,
+      "candidate_spans": 2674,
+      "fresh_spans": 2674,
+      "holdout": 367
+    },
+    "zscaler_zia": {
+      "holdout": 3
+    }
+  },
+  "fold_count": 5,
+  "folds": {
+    "0": {
+      "candidate_events": 170,
+      "candidate_spans": 1136,
+      "fresh_spans": 1095,
+      "holdout": 429,
+      "models": 194,
+      "no_model": 12,
+      "unmatched_or_abstained": 247,
+      "used_coarse_fallback": 12
+    },
+    "1": {
+      "candidate_events": 170,
+      "candidate_spans": 1044,
+      "fresh_spans": 985,
+      "holdout": 414,
+      "models": 192,
+      "no_model": 12,
+      "unmatched_or_abstained": 232,
+      "used_coarse_fallback": 12
+    },
+    "2": {
+      "candidate_events": 140,
+      "candidate_spans": 868,
+      "fresh_spans": 823,
+      "holdout": 396,
+      "models": 197,
+      "no_model": 13,
+      "unmatched_or_abstained": 243,
+      "used_coarse_fallback": 13
+    },
+    "3": {
+      "candidate_events": 178,
+      "candidate_spans": 1114,
+      "fresh_spans": 1068,
+      "holdout": 411,
+      "models": 192,
+      "no_model": 19,
+      "unmatched_or_abstained": 214,
+      "used_coarse_fallback": 19
+    },
+    "4": {
+      "candidate_events": 162,
+      "candidate_spans": 1012,
+      "fresh_spans": 973,
+      "holdout": 412,
+      "models": 191,
+      "no_model": 20,
+      "unmatched_or_abstained": 230,
+      "used_coarse_fallback": 8
+    }
+  },
+  "raw_published": false,
+  "same_event_sha_train_holdout_overlap": false,
+  "seed": "ultra-crossfold-20261015-v1",
+  "semantic_roles_assigned": false,
+  "top_routes": [
+    {
+      "candidate_events": 252,
+      "fresh_spans": 2268,
+      "route": "PRI_BODY|PRI+BSDISH+QUOTED"
+    },
+    {
+      "candidate_events": 48,
+      "fresh_spans": 474,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302014"
+    },
+    {
+      "candidate_events": 26,
+      "fresh_spans": 234,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302016"
+    },
+    {
+      "candidate_events": 53,
+      "fresh_spans": 212,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:305011"
+    },
+    {
+      "candidate_events": 34,
+      "fresh_spans": 170,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:305012"
+    },
+    {
+      "candidate_events": 18,
+      "fresh_spans": 162,
+      "route": "PRI_BODY|PRI+BSDISH+IP2+QUOTED"
+    },
+    {
+      "candidate_events": 23,
+      "fresh_spans": 155,
+      "route": "PRI_BODY|PRI+BSDISH+KV2+IP2+QUOTED+LABEL_KV"
+    },
+    {
+      "candidate_events": 16,
+      "fresh_spans": 123,
+      "route": "PRI_BODY|PRI|EC=FOO:6:BAR"
+    },
+    {
+      "candidate_events": 22,
+      "fresh_spans": 104,
+      "route": "ASA_BODY|PRI+BSDISH+EVENT_CODE+IP2|EC=FTD:3:305006"
+    },
+    {
+      "candidate_events": 11,
+      "fresh_spans": 89,
+      "route": "PRI_BODY|PRI+BSDISH+KV2+QUOTED+LABEL_KV"
+    },
+    {
+      "candidate_events": 18,
+      "fresh_spans": 78,
+      "route": "ASA_BODY|EVENT_CODE+IP2"
+    },
+    {
+      "candidate_events": 16,
+      "fresh_spans": 64,
+      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED|EC=ASA:4:106023"
+    },
+    {
+      "candidate_events": 51,
+      "fresh_spans": 59,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302013"
+    },
+    {
+      "candidate_events": 12,
+      "fresh_spans": 48,
+      "route": "PRI_BODY|PRI+BSDISH+KV2+LABEL_KV"
+    },
+    {
+      "candidate_events": 3,
+      "fresh_spans": 42,
+      "route": "PRI_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV|EC=ASA:6:751025"
+    },
+    {
+      "candidate_events": 6,
+      "fresh_spans": 42,
+      "route": "PRI_BODY|PRI+IP2|EC=TCP:6:BADAUTH"
+    },
+    {
+      "candidate_events": 28,
+      "fresh_spans": 35,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:302015"
+    },
+    {
+      "candidate_events": 7,
+      "fresh_spans": 35,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:2:106016"
+    },
+    {
+      "candidate_events": 6,
+      "fresh_spans": 35,
+      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED"
+    },
+    {
+      "candidate_events": 7,
+      "fresh_spans": 35,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:2:106016"
+    },
+    {
+      "candidate_events": 5,
+      "fresh_spans": 35,
+      "route": "NO_GRAMMAR|BSDISH+IP2|EC=SEC:6:IPACCESSLOGP"
+    },
+    {
+      "candidate_events": 17,
+      "fresh_spans": 34,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:5:106100"
+    },
+    {
+      "candidate_events": 17,
+      "fresh_spans": 34,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:5:106100"
+    },
+    {
+      "candidate_events": 5,
+      "fresh_spans": 33,
+      "route": "PRI_BODY|PRI"
+    },
+    {
+      "candidate_events": 12,
+      "fresh_spans": 24,
+      "route": "NO_GRAMMAR|PRI+BSDISH+QUOTED"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 22,
+      "route": "PRI_BODY|PRI|EC=CLIENT_ORCH_LOG:6:CLIENT_ADDED_TO_RUN_STATE"
+    },
+    {
+      "candidate_events": 3,
+      "fresh_spans": 21,
+      "route": "PRI_BODY|PRI+EVENT_CODE+KV2+LABEL_KV"
+    },
+    {
+      "candidate_events": 20,
+      "fresh_spans": 20,
+      "route": "NO_GRAMMAR|PRI+BSDISH"
+    },
+    {
+      "candidate_events": 5,
+      "fresh_spans": 20,
+      "route": "BSD_BODY|BSDISH"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 18,
+      "route": "NO_GRAMMAR|BSDISH+IP2|EC=FMANFP:6:IPACCESSLOGP"
+    },
+    {
+      "candidate_events": 4,
+      "fresh_spans": 16,
+      "route": "PRI_BODY|PRI+IP2|EC=FMANFP:6:IPACCESSLOGP"
+    },
+    {
+      "candidate_events": 8,
+      "fresh_spans": 16,
+      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2"
+    },
+    {
+      "candidate_events": 14,
+      "fresh_spans": 16,
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2"
+    },
+    {
+      "candidate_events": 5,
+      "fresh_spans": 15,
+      "route": "PRI_BODY|PRI|EC=APMGR_AWIPS_SYSLOG:6:APMGR_AWIPS_MESSAGE"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 14,
+      "route": "NO_GRAMMAR|BSDISH+IP2"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 14,
+      "route": "BSD_BODY|BSDISH+IP2"
+    },
+    {
+      "candidate_events": 5,
+      "fresh_spans": 10,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:6:302013"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 9,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=FTD:6:302014"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 9,
+      "route": "ASA_BODY|EVENT_CODE+IP2+QUOTED|EC=FTD:4:106023"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 8,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:106100"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 8,
+      "route": "PRI_BODY|PRI+BSDISH+KV5+COMMA_KV"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 8,
+      "route": "NO_GRAMMAR|OTHER"
+    },
+    {
+      "candidate_events": 4,
+      "fresh_spans": 8,
+      "route": "ASA_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 8,
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2+QUOTED"
+    },
+    {
+      "candidate_events": 4,
+      "fresh_spans": 8,
+      "route": "PRI_BODY|PRI+ISO_SYSLOGISH+IP2"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 8,
+      "route": "ASA_BODY|EVENT_CODE+IP2|EC=ASA:6:607001"
+    },
+    {
+      "candidate_events": 3,
+      "fresh_spans": 6,
+      "route": "PRI_BODY|PRI|EC=SESSION_MGR:5:FAIL"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 6,
+      "route": "ASA_BODY|EVENT_CODE"
+    },
+    {
+      "candidate_events": 3,
+      "fresh_spans": 5,
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC=FTD:6:302013"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 5,
+      "route": "RFC5424_TIMESTAMP|PRI+KV2+QUOTED+LABEL_KV"
+    },
+    {
+      "candidate_events": 2,
+      "fresh_spans": 4,
+      "route": "NO_GRAMMAR|IP2"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 4,
+      "route": "PRI_BODY|PRI+IP2"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 4,
+      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2|EC=FTD:4:313005"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 4,
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2+QUOTED|EC=ASA:4:106023"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 2,
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC=ASA:6:302015"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 2,
+      "route": "ASA_BODY|PRI+EVENT_CODE+KV2+IP2+LABEL_KV|EC=FTD:6:113005"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 2,
+      "route": "NO_GRAMMAR|BSDISH+EVENT_CODE+IP2|EC=ASA:6:302022"
+    },
+    {
+      "candidate_events": 1,
+      "fresh_spans": 0,
+      "route": "ASA_BODY|PRI+EVENT_CODE+IP2|EC=FTD:6:302020"
+    }
+  ],
+  "total": {
+    "candidate_events": 820,
+    "candidate_spans": 5174,
+    "fresh_spans": 4944,
+    "holdout": 2062,
+    "no_model": 76,
+    "unmatched_or_abstained": 1166,
+    "used_coarse_fallback": 64
+  }
+}

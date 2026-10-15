@@ -40,6 +40,32 @@ class GenericPartialAtomTests(unittest.TestCase):
         event=augment_incomplete_atoms(parse_security_source(raw))
         self.assertNotIn('generic_atoms',event.vendor_fields)
 
+    def test_ipv6_dotted_mac_and_uuid_are_validated_source_atoms(self):
+        raw=(
+            'Alert 2001:db8::10 device 0200.0000.0001 '
+            'session 123e4567-e89b-12d3-a456-426614174000 trailing prose'
+        )
+        event=augment_incomplete_atoms(parse_security_source(raw))
+        assert_source_accounting(event)
+        self.assertEqual('PARTIAL',event.status)
+        atoms=event.vendor_fields['generic_atoms']
+        self.assertIn('2001:db8::10',atoms['network'])
+        self.assertIn('0200.0000.0001',atoms['mac'])
+        self.assertIn(
+            '123e4567-e89b-12d3-a456-426614174000',atoms['uuid']
+        )
+
+    def test_invalid_ipv6_dotted_mac_and_uuid_are_not_atoms(self):
+        raw=(
+            'Alert 2001:::bad device 0200.0000.00ZZ '
+            'session 123e4567-e89b-12d3-a456-zzzzzzzzzzzz prose'
+        )
+        event=augment_incomplete_atoms(parse_security_source(raw))
+        atoms=event.vendor_fields.get('generic_atoms',{})
+        self.assertNotIn('network',atoms)
+        self.assertNotIn('mac',atoms)
+        self.assertNotIn('uuid',atoms)
+
     def test_atoms_never_remove_existing_spans_or_raw(self):
         raw='NOTICE prefix user=Zoë action=allow peer 192.0.2.7 trailing prose'
         base=parse_security_source(raw)

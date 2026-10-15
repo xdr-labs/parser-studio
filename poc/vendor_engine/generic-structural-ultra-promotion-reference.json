@@ -1,0 +1,95 @@
+{
+  "contract": "parser-studio.poc.ultra-promotion-independent-reference.v1",
+  "families": {
+    "amazon_security_lake": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 6636,
+      "candidate_occurrences": 6636,
+      "exact_events": 4,
+      "promoted_events": 4,
+      "reference_occurrences": 6636,
+      "scored_events": 4
+    },
+    "cisco_ise": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 591,
+      "candidate_occurrences": 591,
+      "exact_events": 21,
+      "promoted_events": 21,
+      "reference_occurrences": 591,
+      "scored_events": 21
+    },
+    "cyberarkpas": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 7555,
+      "candidate_occurrences": 7555,
+      "exact_events": 230,
+      "promoted_events": 230,
+      "reference_occurrences": 7555,
+      "scored_events": 230
+    },
+    "panw": {
+      "FN": 0,
+      "FP": 0,
+      "TP": 11536,
+      "candidate_occurrences": 11536,
+      "exact_events": 270,
+      "promoted_events": 270,
+      "reference_occurrences": 11536,
+      "scored_events": 270
+    }
+  },
+  "field_semantics_scored": false,
+  "raw_published": false,
+  "syntaxes": [
+    {
+      "events": 267,
+      "family": "panw",
+      "syntax": "GENERIC_BSD_TIMESTAMP_BODY+GENERIC_POSITIONAL_CSV"
+    },
+    {
+      "events": 229,
+      "family": "cyberarkpas",
+      "syntax": "GENERIC_SHORT_RFC5424_JSON"
+    },
+    {
+      "events": 20,
+      "family": "cisco_ise",
+      "syntax": "GENERIC_RFC3164_TAIL+COMMA_KV"
+    },
+    {
+      "events": 4,
+      "family": "amazon_security_lake",
+      "syntax": "JSON"
+    },
+    {
+      "events": 3,
+      "family": "panw",
+      "syntax": "GENERIC_POSITIONAL_CSV"
+    },
+    {
+      "events": 1,
+      "family": "cisco_ise",
+      "syntax": "GENERIC_BSD_TIMESTAMP_BODY+GENERIC_POSITIONAL_CSV"
+    },
+    {
+      "events": 1,
+      "family": "cyberarkpas",
+      "syntax": "GENERIC_ISO_HOST_JSON"
+    }
+  ],
+  "total": {
+    "FN": 0,
+    "FP": 0,
+    "TP": 26318,
+    "candidate_occurrences": 26318,
+    "exact_events": 525,
+    "f1": 1.0,
+    "promoted_events": 525,
+    "reference_occurrences": 26318,
+    "scored_events": 525
+  }
+}

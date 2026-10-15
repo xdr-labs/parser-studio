@@ -1,0 +1,32 @@
+{
+  "contract": "parser-studio.poc.ultra-empty-unquoted-strictness-ablation.value-free.v1",
+  "corpus_event_sha_set_digest": "f4997fda2504a3378a1bad28d09696a5bce8def8db856b1e6bc715d9b1a98b01",
+  "parser_candidate": "P0 regression-fixed Ultra generic structural core",
+  "strict": {
+    "source_parsed": 5872,
+    "partial": 1270,
+    "raw_only": 934,
+    "source_spans": 323367,
+    "residual_bytes": 327505,
+    "kv_empty_unquoted_issue_events_or_occurrences": 143
+  },
+  "relaxed": {
+    "source_parsed": 5930,
+    "partial": 1212,
+    "raw_only": 934,
+    "source_spans": 323367,
+    "residual_bytes": 327505
+  },
+  "delta_relaxed_minus_strict": {
+    "source_parsed": 58,
+    "partial": -58,
+    "raw_only": 0,
+    "source_spans": 0,
+    "residual_bytes": 0
+  },
+  "decision": "KEEP_STRICT",
+  "rationale": "Relaxing KV_EMPTY_UNQUOTED_VALUE changes status only. It adds no source-backed spans and removes no residual bytes, so the apparent COMPLETE gain is status inflation rather than extraction accuracy.",
+  "quoted_empty_values_remain_supported": true,
+  "raw_published": false,
+  "values_published": false
+}

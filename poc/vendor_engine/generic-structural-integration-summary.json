@@ -327,11 +327,11 @@
   "postfreeze": {
     "families": {
       "cisco_ise": {
-        "current_PARTIAL": 65,
+        "current_PARTIAL": 44,
         "current_RAW_ONLY": 18,
-        "current_SOURCE_PARSED": 192,
+        "current_SOURCE_PARSED": 213,
         "events": 275,
-        "promoted": 192,
+        "promoted": 213,
         "raw_preserved": 275
       },
       "f5_bigip": {
@@ -375,16 +375,16 @@
       }
     },
     "total": {
-      "current_PARTIAL": 182,
+      "current_PARTIAL": 161,
       "current_RAW_ONLY": 28,
-      "current_SOURCE_PARSED": 498,
+      "current_SOURCE_PARSED": 519,
       "events": 708,
       "old_complete": 283,
       "old_complete_divergence": 0,
       "old_complete_exact": 283,
       "old_exception": 7,
       "old_exception_repaired": 7,
-      "promoted": 215,
+      "promoted": 236,
       "raw_preserved": 708
     }
   },

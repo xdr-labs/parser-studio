@@ -12,6 +12,10 @@ import re
 from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting
 
 KEY=re.compile(r'[A-Za-z][A-Za-z0-9 _./#()\-]{0,63}\Z')
+BRACKET_FIELD=re.compile(
+    r'\[(?P<key>[A-Za-z][A-Za-z0-9_. /#()\-]{0,63})'
+    r'\s*[:=]\s*(?P<value>[^\[\]\r\n]{1,256})\]'
+)
 
 
 def _b(raw:str,pos:int)->int:
@@ -117,6 +121,17 @@ def augment_incomplete_labels(event:SourceEvent)->SourceEvent:
             break
         if not invalid and len(rows)>=2 and len(rows)>len(candidates):
             candidates=rows
+    for match in BRACKET_FIELD.finditer(event.raw):
+        key=match.group('key').strip()
+        if not KEY.fullmatch(key) or key.lower() in {'http','https'}:
+            continue
+        va,vb=match.span('value')
+        while va<vb and event.raw[va].isspace():
+            va+=1
+        while vb>va and event.raw[vb-1].isspace():
+            vb-=1
+        if va<vb:
+            candidates.append((key,va,vb,event.raw[va:vb]))
     if not candidates:
         return event
     out=deepcopy(event)
@@ -124,7 +139,7 @@ def augment_incomplete_labels(event:SourceEvent)->SourceEvent:
     spans=[]
     for key,a,b,value in candidates:
         byte_a=_b(event.raw,a);byte_b=_b(event.raw,b)
-        if _overlaps(byte_a,byte_b,out.value_spans):
+        if _overlaps(byte_a,byte_b,out.value_spans+spans):
             continue
         bucket=values.setdefault(key,[])
         index=len(bucket);bucket.append(value)

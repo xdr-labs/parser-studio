@@ -9,6 +9,7 @@ from __future__ import annotations
 from copy import deepcopy
 import ipaddress
 import re
+import uuid
 
 from source_parse import SourceEvent,ValueSpan,_close,assert_source_accounting
 
@@ -24,6 +25,19 @@ MAC=re.compile(
 )
 URL=re.compile(r'https?://[^\s"\'<>]+')
 SHA256=re.compile(r'(?<![0-9A-Fa-f])[0-9A-Fa-f]{64}(?![0-9A-Fa-f])')
+IPV6_CANDIDATE=re.compile(
+    r'(?<![0-9A-Fa-f:])[0-9A-Fa-f:]{3,}(?![0-9A-Fa-f:])'
+)
+CISCO_DOTTED_MAC=re.compile(
+    r'(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4}'
+    r'(?![0-9A-Fa-f])'
+)
+UUID_TEXT=re.compile(
+    r'(?<![0-9A-Fa-f])'
+    r'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-'
+    r'[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
+    r'(?![0-9A-Fa-f])'
+)
 
 
 def _b(raw:str,pos:int)->int:
@@ -49,6 +63,25 @@ def _candidates(raw:str):
             yield 'network',match.start(),match.end(),match.group(0)
     for match in MAC.finditer(raw):
         yield 'mac',match.start(),match.end(),match.group(0)
+    for match in CISCO_DOTTED_MAC.finditer(raw):
+        yield 'mac',match.start(),match.end(),match.group(0)
+    for match in IPV6_CANDIDATE.finditer(raw):
+        value=match.group(0)
+        if value.count(':')<2:
+            continue
+        try:
+            parsed=ipaddress.ip_address(value)
+        except ValueError:
+            continue
+        if parsed.version==6:
+            yield 'network',match.start(),match.end(),value
+    for match in UUID_TEXT.finditer(raw):
+        value=match.group(0)
+        try:
+            uuid.UUID(value)
+        except ValueError:
+            continue
+        yield 'uuid',match.start(),match.end(),value
     for match in URL.finditer(raw):
         yield 'url',match.start(),match.end(),match.group(0)
     for match in SHA256.finditer(raw):
