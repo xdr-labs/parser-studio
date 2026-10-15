@@ -1,0 +1,171 @@
+{
+  "contract": "parser-studio.poc.structural-hypothesis-fresh-security-holdout.v3",
+  "scope": "SECURITY_PRODUCTS_ONLY_FRESH_HOLDOUT_3",
+  "frozen_date": "2026-10-15",
+  "frozen_before_evaluation": true,
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "selection_rule": "All pipeline-test .log files in the preselected Cisco Secure Endpoint, Claroty CTD, Cisco Umbrella and Proofpoint TAP packages at the pinned revision; only path/blob SHA metadata was inspected before freeze.",
+  "product_vendor_identity_used_by_learner": false,
+  "raw_published": false,
+  "families": {
+    "cisco_secure_endpoint": {
+      "category": "EDR",
+      "file_count": 10
+    },
+    "claroty_ctd": {
+      "category": "NDR_OT",
+      "file_count": 2
+    },
+    "cisco_umbrella": {
+      "category": "DNS_SWG_IPS",
+      "file_count": 7
+    },
+    "proofpoint_tap": {
+      "category": "EMAIL_SECURITY",
+      "file_count": 4
+    }
+  },
+  "files": [
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp4.log",
+      "blob_sha": "9e04010b5481a7de8b9b46b46216c33143061e45"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp2.log",
+      "blob_sha": "35b4789fba9847bc7ded471c9db7454177640b4b"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp6.log",
+      "blob_sha": "da5ec2ad9dbdb98b6d3911164dd9e3a80528efdb"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp7.log",
+      "blob_sha": "1d8d7825cfd473749b3581345fec6870c67084ec"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp5.log",
+      "blob_sha": "71eea7f5cbcac6b617c951b334058a3f90570b78"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp8.log",
+      "blob_sha": "ac9053a7a844b76e34dab9a2188662f5a394ce3c"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp9.log",
+      "blob_sha": "540b832be250266dd56df0841bbe35d684ad59cd"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp1.log",
+      "blob_sha": "db356536df532a292c6f331da2b3d6ef1b5332b5"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp3.log",
+      "blob_sha": "33c5b6791eae4ec2c31699cf14f54a5632c936fe"
+    },
+    {
+      "family": "cisco_secure_endpoint",
+      "category": "EDR",
+      "path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp-empty.log",
+      "blob_sha": "b7c814d671e93e89ff86063dec254f2b55684996"
+    },
+    {
+      "family": "claroty_ctd",
+      "category": "NDR_OT",
+      "path": "packages/claroty_ctd/data_stream/asset/_dev/test/pipeline/test-asset.log",
+      "blob_sha": "bd90f6af2dd23fbcbc22237890c0ff36bdfca8db"
+    },
+    {
+      "family": "claroty_ctd",
+      "category": "NDR_OT",
+      "path": "packages/claroty_ctd/data_stream/baseline/_dev/test/pipeline/test-baseline.log",
+      "blob_sha": "53ca0ec2c9c47c04bf87fb3c82cb934ff3eb1411"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-iplogs.log",
+      "blob_sha": "927fc2bdb8812b1d6903e6d251bb55ef8fed5d6d"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-dlplogs.log",
+      "blob_sha": "f9d400177f65049561540d273cae4c74674c73ea"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-dnslogs.log",
+      "blob_sha": "83cd68467cc299d6c52d2d99811f0d70fa09ceb2"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-auditlogs.log",
+      "blob_sha": "580557aa2396ae8bca3e687acc239600009b761c"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-proxylogs.log",
+      "blob_sha": "b7598e44f9846deff09828db47636c876ddc4949"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-intrusionlogs.log",
+      "blob_sha": "8c6ca7c4f3fba28438be046ea2f854040bf0ccc7"
+    },
+    {
+      "family": "cisco_umbrella",
+      "category": "DNS_SWG_IPS",
+      "path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-cloudfirewalllogs.log",
+      "blob_sha": "5bd9a6932dcd37c8dfc121dfaab50df1ebf8b652"
+    },
+    {
+      "family": "proofpoint_tap",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_tap/data_stream/clicks_blocked/_dev/test/pipeline/test-clicks-blocked.log",
+      "blob_sha": "649a10ea5279c35e41e4a9e6449b56218c599d52"
+    },
+    {
+      "family": "proofpoint_tap",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_tap/data_stream/message_blocked/_dev/test/pipeline/test-message-blocked.log",
+      "blob_sha": "8bc0d41c546ad2358bbd9c95705af79f929b0947"
+    },
+    {
+      "family": "proofpoint_tap",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_tap/data_stream/clicks_permitted/_dev/test/pipeline/test-clicks-permitted.log",
+      "blob_sha": "1de6a58f482594987162c03b7d94d4ea2129aa44"
+    },
+    {
+      "family": "proofpoint_tap",
+      "category": "EMAIL_SECURITY",
+      "path": "packages/proofpoint_tap/data_stream/message_delivered/_dev/test/pipeline/test-message-delivered.log",
+      "blob_sha": "b8c211dc62dfa2f3298eb4be05ab71dd9bdd1a42"
+    }
+  ],
+  "file_count": 23,
+  "file_set_sha256": "d59b58dcccf6434ea71c84f161815e54ee572f03310cf1338c07262d8321c575"
+}
