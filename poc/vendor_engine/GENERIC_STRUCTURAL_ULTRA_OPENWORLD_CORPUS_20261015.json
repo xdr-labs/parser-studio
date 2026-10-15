@@ -5521,6 +5521,9 @@
       "sha256": "cc9c4a557b72b0a031c94ed4a0dc52602d1d2627b67475e2be6efba2c5eb08ad"
     }
   ],
+  "framing_issue_counts": {
+    "FRAMING_JSON_TRAILING_CONTENT": 12
+  },
   "license_policy": "Raw upstream fixtures remain in ignored local research cache; committed evidence contains provenance, counts and digests only.",
   "package_file_counts": {
     "abnormal_security": 6,
