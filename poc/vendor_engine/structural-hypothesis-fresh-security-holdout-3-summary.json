@@ -1,0 +1,503 @@
+{
+  "by_family": {
+    "cisco_secure_endpoint": {
+      "baseline_complete": 145,
+      "events": 145
+    },
+    "cisco_umbrella": {
+      "abstentions": 1,
+      "baseline_complete": 20,
+      "baseline_incomplete": 1,
+      "events": 21
+    },
+    "cloudflare": {
+      "baseline_complete": 1,
+      "events": 1
+    },
+    "fortinet_forticlient": {
+      "baseline_complete": 35,
+      "events": 35
+    },
+    "microsoft_defender_endpoint": {
+      "baseline_complete": 2,
+      "events": 2
+    }
+  },
+  "contract": "parser-studio.poc.structural-hypothesis-fresh-security-holdout-3-result.v1",
+  "frozen_manifest_file_set_sha256": "c1724955a36e5733e3861d34acb11d58480be761fe0f20b882a537d658253de8",
+  "interpretation": [
+    "The file set was frozen and committed before raw content acquisition.",
+    "No admission rule was weakened after observing the third holdout.",
+    "Development-only Symantec/NETSCOUT CSV-label gains are not reused as prospective evidence.",
+    "Zero gain is retained as negative generalization evidence rather than converted into vendor-specific exceptions."
+  ],
+  "learned_hypothesis_counts": {
+    "csv_cell_label": 0,
+    "delimited": 0,
+    "event_template": 0,
+    "extended_bsd": 0,
+    "numeric_prefix": 0,
+    "relative_rgram": 0,
+    "residual_typed_label": 0
+  },
+  "per_file": [
+    {
+      "category": "EDR",
+      "evaluation_events": 1,
+      "evaluation_is_disjoint": false,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "source_events": 1,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp-empty.log",
+      "train_events": 1
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 17,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 17,
+        "events": 17
+      },
+      "source_events": 49,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp1.log",
+      "train_events": 32
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 15,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 15,
+        "events": 15
+      },
+      "source_events": 42,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp2.log",
+      "train_events": 27
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 16,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 16,
+        "events": 16
+      },
+      "source_events": 45,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp3.log",
+      "train_events": 29
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 35,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 35,
+        "events": 35
+      },
+      "source_events": 100,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp4.log",
+      "train_events": 65
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 22,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 22,
+        "events": 22
+      },
+      "source_events": 62,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp5.log",
+      "train_events": 40
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 19,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 19,
+        "events": 19
+      },
+      "source_events": 53,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp6.log",
+      "train_events": 34
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 17,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 17,
+        "events": 17
+      },
+      "source_events": 49,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp7.log",
+      "train_events": 32
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 6,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp8.log",
+      "train_events": 4
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 1,
+      "evaluation_is_disjoint": false,
+      "family": "cisco_secure_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "source_events": 1,
+      "source_path": "packages/cisco_secure_endpoint/data_stream/event/_dev/test/pipeline/test-cisco-amp9.log",
+      "train_events": 1
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 3,
+      "evaluation_is_disjoint": false,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "source_events": 3,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-auditlogs.log",
+      "train_events": 3
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 1,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "source_events": 4,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-cloudfirewalllogs.log",
+      "train_events": 3
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": false,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 2,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-dlplogs.log",
+      "train_events": 2
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 6,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "abstentions": 1,
+        "baseline_complete": 5,
+        "baseline_incomplete": 1,
+        "events": 6
+      },
+      "source_events": 16,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-dnslogs.log",
+      "train_events": 10
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": false,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 2,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-intrusionlogs.log",
+      "train_events": 2
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": false,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 2,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-iplogs.log",
+      "train_events": 2
+    },
+    {
+      "category": "DNS_SWG_IPS",
+      "evaluation_events": 5,
+      "evaluation_is_disjoint": true,
+      "family": "cisco_umbrella",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 5,
+        "events": 5
+      },
+      "source_events": 14,
+      "source_path": "packages/cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-proxylogs.log",
+      "train_events": 9
+    },
+    {
+      "category": "WAF_EDGE_SECURITY",
+      "evaluation_events": 1,
+      "evaluation_is_disjoint": true,
+      "family": "cloudflare",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "source_events": 4,
+      "source_path": "packages/cloudflare/data_stream/logpull/_dev/test/pipeline/test-http-json.log",
+      "train_events": 3
+    },
+    {
+      "category": "ENDPOINT_SECURITY",
+      "evaluation_events": 35,
+      "evaluation_is_disjoint": true,
+      "family": "fortinet_forticlient",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 35,
+        "events": 35
+      },
+      "source_events": 100,
+      "source_path": "packages/fortinet_forticlient/data_stream/log/_dev/test/pipeline/test-generated.log",
+      "train_events": 65
+    },
+    {
+      "category": "EDR",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": true,
+      "family": "microsoft_defender_endpoint",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "extended_bsd": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0,
+        "residual_typed_label": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 6,
+      "source_path": "packages/microsoft_defender_endpoint/data_stream/log/_dev/test/pipeline/test-defenderatp.log",
+      "train_events": 4
+    }
+  ],
+  "product_vendor_identity_used_by_learner": false,
+  "raw_values_published": false,
+  "result": "ABSTENTION_ONLY",
+  "scope": "SECURITY_PRODUCTS_ONLY_FRESH_HOLDOUT_3",
+  "semantic_mapping_scored": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_seed": "structural-hypothesis-fresh-security-holdout-v3",
+  "totals": {
+    "abstentions": 1,
+    "baseline_complete": 203,
+    "baseline_incomplete": 1,
+    "events": 204
+  },
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "verified_git_blob_files": 20
+}

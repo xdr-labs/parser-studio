@@ -362,7 +362,7 @@ changed.
 
 Exact current worktree full discovery:
 
-- tests run: **437**
+- tests run: **435**
 - optional skips: **4**
 - failures: **0**
 - errors: **0**
@@ -624,6 +624,42 @@ Machine-readable evidence:
 - `STRUCTURAL_HYPOTHESIS_FRESH_SECURITY_HOLDOUT_2_20261015.json`
 - `structural-hypothesis-fresh-security-holdout-2-summary.json`
 
+## Third pre-frozen security holdout
+
+A third source set was frozen in Git before raw acquisition under the canonical
+manifest commit `1167d19`. It contains **20 pinned pipeline log files** from
+five previously unused security-product families:
+
+- Cisco Secure Endpoint EDR;
+- Microsoft Defender for Endpoint EDR;
+- Cloudflare edge/WAF security;
+- Cisco Umbrella DNS/SWG/IPS;
+- Fortinet FortiClient endpoint security.
+
+All **20 / 20** manifest files were verified against their pinned upstream Git
+blob SHA before evaluation. The v5 candidate was then run unchanged and without
+vendor identity as a learner feature.
+
+Prospective result:
+
+- evaluation events: **204**;
+- baseline SOURCE_PARSED: **203**;
+- baseline incomplete: **1**;
+- whole-event promotions: **0**;
+- partial augmentations: **0**;
+- abstentions: **1 / 1 incomplete event**;
+- raw/span replacement violations: **0**.
+
+This holdout confirms safe abstention, but it is **not a positive open-world
+recall test** because the existing qualified engine already parsed 99.5% of the
+evaluation events. The single remaining Cisco Umbrella event did not satisfy any
+learned admission contract and remained incomplete. No threshold was relaxed.
+
+Machine-readable evidence:
+
+- `STRUCTURAL_HYPOTHESIS_FRESH_SECURITY_HOLDOUT_3_20261015.json`
+- `structural-hypothesis-fresh-security-holdout-3-summary.json`
+
 ## Interpretation
 
 The strict v4 result supports **two complementary batch-learned layers** above
@@ -705,31 +741,37 @@ actually evidenced:
   **181 / 181** incomplete events;
 - the second pre-frozen Proofpoint/Netskope/FortiManager/Pulse/Junos holdout
   abstained on **49 / 49** incomplete events, even with CSV-cell label
-  refinement enabled.
+  refinement enabled;
+- the third pre-frozen Cisco Secure Endpoint/Defender/Cloudflare/Umbrella/
+  FortiClient holdout verified **20 / 20** pinned files; the existing engine
+  completed **203 / 204** evaluation events and the learned layer safely
+  abstained on the single remaining incomplete event.
 
 The same evidence also shows the limit: current qualified evidence has not yet
 shown measurable recall gain on an independently pre-frozen unseen product
-family. Holdout #2 evaluated CSV-cell refinement but was consumed before the
-extended-BSD and typed-label refinements were developed. Therefore the v5
-candidate must be frozen before opening a third holdout.
+family. Holdout #3 had too little incomplete-source opportunity to provide a
+meaningful positive recall test, while holdout #2 remained a full abstention
+result.
 
 The PoC supports a **strict additive candidate layer** as a research direction,
 not replacement of Multi-Pass / Generic Structural and not unconditional
 enablement as the default Auto Parser path.
 
-## Remaining research gates before productization
+## Final PoC disposition
 
-Continue without weakening admission rules:
+**Close this research PoC as POC_SUCCESS_LIMITED.** Further improvement should
+move to a separate integration/next-generation PoC rather than continuing to
+add primitives to this branch.
 
-1. commit/freeze the v5 candidate before acquiring or inspecting raw content for
-   **fresh holdout #3**;
-2. require positive independently validated added-span recall on that unseen
-   security-product holdout; zero gain remains an honest abstention result;
-3. add counterexample-guided specialization plus token reordering, duplicated
-   anchors, quote corruption and embedded-delimiter mutations;
-4. productize only if independently scored added-span precision remains 100%,
-   baseline span loss stays zero, raw preservation stays 100%, partial recovery
-   never certifies whole-record completeness, and false-complete remains zero.
+Productization remains gated by all of the following:
+
+1. independently scored added-span precision remains **100%**;
+2. baseline source-span loss remains **0** and raw preservation remains
+   **100%**;
+3. partial recovery never certifies whole-record completeness;
+4. complete-candidate false-complete remains **0** under adversarial mutation;
+5. any new grammar family must prove gain on a newly frozen holdout rather than
+   on data used to design that grammar.
 
 No product integration, PR merge, release, production, DP/sensor, auth,
 credential or target-loader action is authorized by this PoC.
