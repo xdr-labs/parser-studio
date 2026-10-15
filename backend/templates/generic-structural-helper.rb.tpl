@@ -24,6 +24,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_delimited_comma_kv(text)
   return result if result
+  result = parserstudio_generic_pri_space_kv(text)
+  return result if result
   result = parserstudio_generic_space_kv(text)
   return result if result
   raise ArgumentError, 'Unsupported generic structural event'
@@ -299,18 +301,42 @@ def parserstudio_generic_comma_kv(text)
   result
 end
 
+def parserstudio_generic_space_kv_entries(text)
+  entries = []
+  quote = nil
+  escaped = false
+  pos = 0
+  while pos < text.length
+    char = text[pos]
+    if quote
+      if escaped
+        escaped = false
+      elsif char == '\\'
+        escaped = true
+      elsif char == quote
+        quote = nil
+      end
+      pos += 1
+      next
+    end
+    if pos == 0 || [' ', "\t"].include?(text[pos - 1])
+      match = /\A([A-Za-z_][A-Za-z0-9_.-]{0,63})=/.match(text[pos..-1].to_s)
+      if match
+        entries << {'key'=>match[1], 'start'=>pos, 'value_start'=>pos + match[0].length}
+        return nil if entries.length > 100
+      end
+    end
+    quote = char if ['"', "'"].include?(char)
+    pos += 1
+  end
+  return nil if quote || escaped
+  entries
+end
+
 def parserstudio_generic_space_kv(text)
   return nil if text.bytesize > 8192
-  pattern = /(?:\A|[ \t])([A-Za-z_][A-Za-z0-9_.-]{0,63})=/
-  entries = []
-  offset = 0
-  while (match = pattern.match(text, offset))
-    start = match.begin(0)
-    start += 1 if [' ', "\t"].include?(text[start])
-    entries << {'key'=>match[1], 'start'=>start, 'value_start'=>match.end(0)}
-    return nil if entries.length > 100
-    offset = match.end(0)
-  end
+  entries = parserstudio_generic_space_kv_entries(text)
+  return nil unless entries
   return nil if entries.length < 5
   prefix = text[0...entries[0]['start']].to_s.strip
   tokens = prefix.empty? ? [] : prefix.split(/[ \t]+/).map do |value|
@@ -352,6 +378,21 @@ def parserstudio_generic_space_kv(text)
   tokens.each_with_index { |value, index| generic[format('prefix_%03d', index + 1)] = value }
   generic['atoms'] = atoms unless atoms.empty?
   {'generic'=>generic}
+end
+
+def parserstudio_generic_pri_space_kv(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A<(\d{1,3})>(.+)\z/.match(text)
+  return nil unless match
+  priority = Integer(match[1], 10)
+  return nil unless priority.between?(0, 191)
+  parsed = parserstudio_generic_space_kv(match[2])
+  return nil unless parsed.is_a?(Hash) && parsed['generic'].is_a?(Hash)
+  generic = parsed['generic'].dup
+  generic['source_raw'] = text
+  {'syslog'=>{'pri'=>match[1]}, 'generic'=>generic}
+rescue StandardError
+  nil
 end
 
 def parserstudio_generic_valid_bsd_clock(month, day_text, time)

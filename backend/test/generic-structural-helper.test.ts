@@ -60,7 +60,22 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
-test("Generic Structural V9 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{
+test("Generic Structural V10 Ruby helper parses bounded PRI-prefixed space KV",{skip:!rubyAvailable},()=>{
+  const raw='<134>date=2023-02-23 time=22:49:29 tz="+0500" devname=FMG-VM device_id=FMG001 log_id=0001010018 type=event subtype=system pri=information desc="User login successful" msg="inner status=embedded value" status=success';
+  const parsed=runRuby("parserstudio_generic_structural",raw) as any;
+  assert.equal(parsed.syslog.pri,"134");
+  assert.equal(parsed.generic.mode,"space_kv");
+  assert.equal(parsed.generic.source_raw,raw);
+  assert.equal(parsed.generic.kv.device_id,"FMG001");
+  assert.equal(parsed.generic.kv.desc,"User login successful");
+  assert.equal(parsed.generic.kv.msg,"inner status=embedded value");
+  assert.equal(parsed.generic.kv.status,"success");
+  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("<134>","<192>")),null);
+  assert.equal(runRuby("parserstudio_generic_structural",'<134>date=2023-02-23 time=22:49:29 type=event subtype=system'),null);
+  assert.equal(runRuby("parserstudio_generic_structural",raw.replace('desc="User login successful"','desc="User login successful')),null);
+});
+
+test("Generic Structural V10 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{
   const comma='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: ok, AD-Domain=host.local, constructor=bad';
   assert.equal(runRuby("parserstudio_generic_comma_kv",comma),null);
   const spaced='device="SFW" date=2017-01-31 time=14:16:19 timezone="IST" constructor=bad status="Allow"';
