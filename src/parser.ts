@@ -105,21 +105,53 @@ function tokenizeCSV(raw: string, delimiter: string): string[] | null {
   return out;
 }
 
+export interface CsvColumnShape {
+  columnCount:number;
+  eventNumbers:number[];
+}
+export interface CsvShapeInspection {
+  groups:CsvColumnShape[];
+  invalidEventNumbers:number[];
+}
+
+/** Report structural CSV widths and source event numbers without field values.
+ * Rows that cannot be safely tokenized are listed separately rather than
+ * suppressing useful shape evidence from the rest of the sample. */
+export function inspectCsvColumnShapes(
+  input:string,delimiter:','|';'|'\t',limit=MAX_EVENTS,
+):CsvShapeInspection{
+  const bounded=Math.min(limit,MAX_EVENTS);
+  const records=splitEvents(input,'single-line',bounded+1);
+  if(!records.length||records.length>bounded)return {groups:[],invalidEventNumbers:[]};
+  const groups=new Map<number,number[]>(),invalidEventNumbers:number[]=[];
+  for(let index=0;index<records.length;index++){
+    const values=tokenizeCSV(records[index]!.raw,delimiter);
+    if(!values||values.length<2){invalidEventNumbers.push(index+1);continue;}
+    const items=groups.get(values.length)??[];
+    items.push(index+1);groups.set(values.length,items);
+  }
+  return {
+    groups:[...groups.entries()]
+      .map(([columnCount,eventNumbers])=>({columnCount,eventNumbers}))
+      .sort((a,b)=>b.eventNumbers.length-a.eventNumbers.length||a.columnCount-b.columnCount),
+    invalidEventNumbers,
+  };
+}
+export function summarizeCsvColumnShapes(
+  input:string,delimiter:','|';'|'\t',limit=MAX_EVENTS,
+):CsvColumnShape[]{
+  return inspectCsvColumnShapes(input,delimiter,limit).groups;
+}
+
 /** Infer only the number of columns in a homogeneous one-line CSV sample.
  * No vendor meaning or header semantics are inferred. */
 export function inferConsistentCsvColumnCount(
   input:string,delimiter:','|';'|'\t',limit=MAX_EVENTS,
 ):number|null{
-  const records=splitEvents(input,'single-line',Math.min(limit,MAX_EVENTS)+1);
-  if(!records.length||records.length>Math.min(limit,MAX_EVENTS))return null;
-  let expected:number|null=null;
-  for(const record of records){
-    const values=tokenizeCSV(record.raw,delimiter);
-    if(!values||values.length<2||values.length>100)return null;
-    if(expected===null)expected=values.length;
-    else if(values.length!==expected)return null;
-  }
-  return expected;
+  const inspection=inspectCsvColumnShapes(input,delimiter,limit);
+  const shapes=inspection.groups;
+  return inspection.invalidEventNumbers.length===0&&shapes.length===1&&shapes[0]!.columnCount<=100?
+    shapes[0]!.columnCount:null;
 }
 
 function extractCSV(raw: string, columns: string, delimiter: string): Extraction {

@@ -20,7 +20,7 @@ import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownP
 import type {StructuralMiningReport} from './localPatternMining';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
-import {inferConsistentCsvColumnCount,splitEvents,MAX_EVENTS} from '../parser';
+import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
@@ -207,10 +207,23 @@ export default function AutoParser({
    ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(sample,delimiter))
      .filter((count):count is number=>count!==null):[];
  const csvConsistentShapeAvailable=!csvReviewActive||csvSupportedShapeCounts.length>0;
+ const csvSelectedShapeInspection=csvReviewActive?
+   inspectCsvColumnShapes(sample,draft.csvDelimiter??','):{groups:[],invalidEventNumbers:[]};
+ const csvSelectedShapeGroups=csvSelectedShapeInspection.groups;
  const neutralCsvColumnCount=csvReviewActive?
    inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
  const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
    csvColumns.length===neutralCsvColumnCount);
+ const formatCsvEventNumbers=(numbers:number[]):string=>{
+   const ranges:string[]=[];let start=numbers[0],end=numbers[0];
+   for(const value of numbers.slice(1)){
+     if(end!==undefined&&value===end+1){end=value;continue;}
+     if(start!==undefined&&end!==undefined)ranges.push(start===end?String(start):start+'–'+end);
+     start=end=value;
+   }
+   if(start!==undefined&&end!==undefined)ranges.push(start===end?String(start):start+'–'+end);
+   return ranges.join(', ');
+ };
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
    const names=Array.from({length:neutralCsvColumnCount},
@@ -794,6 +807,16 @@ export default function AutoParser({
          <p>{csvConsistentShapeAvailable
            ?'Parser Studio extracted the values, but these rows do not contain trustworthy field names. Keep temporary names now or enter names you know, then choose the data separator. Parser Studio will test every row before generating files.'
            :'Parser Studio extracted source values, but the rows do not share one consistent column count using comma, semicolon or tab. One column list cannot safely parse all of them. Analyze matching row shapes separately before creating a parser.'}</p>
+         {!csvConsistentShapeAvailable&&
+           (csvSelectedShapeGroups.length>0||csvSelectedShapeInspection.invalidEventNumbers.length>0)&&
+           <div className="auto-parser-note" aria-label="CSV row shape groups">
+             <strong>Row groups for the selected separator</strong>
+             {csvSelectedShapeGroups.length>0&&<ul>{csvSelectedShapeGroups.map(group=>
+               <li key={group.columnCount}>{group.columnCount} columns · {group.eventNumbers.length} event{group.eventNumbers.length===1?'':'s'} · event {formatCsvEventNumbers(group.eventNumbers)}{group.columnCount>100?' · exceeds the 100-column parser limit':''}</li>)}</ul>}
+             {csvSelectedShapeInspection.invalidEventNumbers.length>0&&
+               <p><b>Not safe CSV:</b> event {formatCsvEventNumbers(csvSelectedShapeInspection.invalidEventNumbers)} could not be tokenized with this separator and needs separate review.</p>}
+             <p>Use these event numbers to make one parser sample per matching row shape. No source event is discarded automatically.</p>
+           </div>}
          <label>Column names, separated by commas
            <input aria-label="Reviewed CSV column names" value={draft.csvColumns}
              maxLength={4096}
