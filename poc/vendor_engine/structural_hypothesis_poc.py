@@ -964,6 +964,7 @@ RGRAM_TOKEN = re.compile(
     r"|(?:\d{1,3}\.){3}\d{1,3}"
     r"|[A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+"
     r"|[0-9a-fA-F]{20,}"
+    r"|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?"
     r"|\d[0-9/:.\-]{4,}\d"
     r"|\d+(?:\.\d+)*"
     r"|[A-Za-z_][A-Za-z0-9_-]*"
@@ -1014,6 +1015,12 @@ def _rgram_dynamic_span(text: str, match: re.Match[str]) -> tuple[int, int] | No
     ):
         return start, end
     if re.fullmatch(r"[0-9a-fA-F]{20,}", token):
+        return start, end
+    if re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
+        r"(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?",
+        token,
+    ):
         return start, end
     if re.fullmatch(r"\d[0-9/:.\-]{4,}\d", token):
         punctuation = {char for char in token if not char.isdigit()}
@@ -1199,6 +1206,10 @@ def delete_required_rgram_literal(
 # ---------------------------------------------------------------------------
 
 ALIGNED_TIME_LIKE = re.compile(r"^\d[0-9/:.\-]{4,}\d$")
+ALIGNED_ISO_DATETIME = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
+    r"(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$"
+)
 
 
 @dataclass(frozen=True)
@@ -1212,6 +1223,8 @@ class AlignedResidualHypothesis:
 
 
 def _time_like_value(value: str) -> bool:
+    if ALIGNED_ISO_DATETIME.fullmatch(value) is not None:
+        return True
     if ALIGNED_TIME_LIKE.fullmatch(value) is None:
         return False
     punctuation = {char for char in value if not char.isdigit()}

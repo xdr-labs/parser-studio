@@ -1,0 +1,251 @@
+{
+  "acceptance": {
+    "all_added_spans_independently_validated": true,
+    "anchor_deletion_false_additions_zero": true,
+    "baseline_span_loss_zero": true,
+    "status_never_promoted": true
+  },
+  "aggregate_metrics": {
+    "added_spans": 382,
+    "anchor_deletion_attempts": 382,
+    "augmented_events": 382,
+    "augmented_events_with_official_expected": 382,
+    "baseline_complete": 39,
+    "baseline_incomplete": 396,
+    "events": 435,
+    "official_timestamp_exact": 382,
+    "status_unchanged": 435
+  },
+  "contract": "parser-studio.poc.watchguard-aligned-residual-atoms.v1",
+  "learner_expected_reference_used": false,
+  "learner_vendor_identity_used": false,
+  "raw_values_published": false,
+  "reference_field": "watchguard_firebox.log.timestamp",
+  "reference_pipeline_blob_sha": "4c64981d839ccbbf403490fc6ab646cfbebdf604",
+  "scope": "WATCHGUARD_FIREBOX_SOURCE_EXTRACTION",
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_count": 3,
+  "splits": [
+    {
+      "metrics": {
+        "added_spans": 130,
+        "anchor_deletion_attempts": 130,
+        "augmented_events": 130,
+        "augmented_events_with_official_expected": 130,
+        "baseline_complete": 13,
+        "baseline_incomplete": 132,
+        "events": 145,
+        "official_timestamp_exact": 130,
+        "status_unchanged": 145
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "sources": [
+        {
+          "expected_blob_sha": "8bd8cb5643700efbda62b77b7a25408d0f644993",
+          "holdout_events": 8,
+          "hypothesis_count": 2,
+          "metrics": {
+            "added_spans": 6,
+            "anchor_deletion_attempts": 6,
+            "augmented_events": 6,
+            "augmented_events_with_official_expected": 6,
+            "baseline_complete": 0,
+            "baseline_incomplete": 8,
+            "events": 8,
+            "official_timestamp_exact": 6,
+            "status_unchanged": 8
+          },
+          "name": "alarm",
+          "raw_blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+          "train_events": 15
+        },
+        {
+          "expected_blob_sha": "82374d251243ada7201c790f870427763466d378",
+          "holdout_events": 63,
+          "hypothesis_count": 3,
+          "metrics": {
+            "added_spans": 51,
+            "anchor_deletion_attempts": 51,
+            "augmented_events": 51,
+            "augmented_events_with_official_expected": 51,
+            "baseline_complete": 12,
+            "baseline_incomplete": 51,
+            "events": 63,
+            "official_timestamp_exact": 51,
+            "status_unchanged": 63
+          },
+          "name": "diagnostic",
+          "raw_blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+          "train_events": 118
+        },
+        {
+          "expected_blob_sha": "7fabe2679ff254eea00a5ec685dea2539ec5bcb6",
+          "holdout_events": 74,
+          "hypothesis_count": 4,
+          "metrics": {
+            "added_spans": 73,
+            "anchor_deletion_attempts": 73,
+            "augmented_events": 73,
+            "augmented_events_with_official_expected": 73,
+            "baseline_complete": 1,
+            "baseline_incomplete": 73,
+            "events": 74,
+            "official_timestamp_exact": 73,
+            "status_unchanged": 74
+          },
+          "name": "event",
+          "raw_blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+          "train_events": 138
+        }
+      ]
+    },
+    {
+      "metrics": {
+        "added_spans": 130,
+        "anchor_deletion_attempts": 130,
+        "augmented_events": 130,
+        "augmented_events_with_official_expected": 130,
+        "baseline_complete": 13,
+        "baseline_incomplete": 132,
+        "events": 145,
+        "official_timestamp_exact": 130,
+        "status_unchanged": 145
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "sources": [
+        {
+          "expected_blob_sha": "8bd8cb5643700efbda62b77b7a25408d0f644993",
+          "holdout_events": 8,
+          "hypothesis_count": 2,
+          "metrics": {
+            "added_spans": 6,
+            "anchor_deletion_attempts": 6,
+            "augmented_events": 6,
+            "augmented_events_with_official_expected": 6,
+            "baseline_complete": 0,
+            "baseline_incomplete": 8,
+            "events": 8,
+            "official_timestamp_exact": 6,
+            "status_unchanged": 8
+          },
+          "name": "alarm",
+          "raw_blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+          "train_events": 15
+        },
+        {
+          "expected_blob_sha": "82374d251243ada7201c790f870427763466d378",
+          "holdout_events": 63,
+          "hypothesis_count": 3,
+          "metrics": {
+            "added_spans": 50,
+            "anchor_deletion_attempts": 50,
+            "augmented_events": 50,
+            "augmented_events_with_official_expected": 50,
+            "baseline_complete": 13,
+            "baseline_incomplete": 50,
+            "events": 63,
+            "official_timestamp_exact": 50,
+            "status_unchanged": 63
+          },
+          "name": "diagnostic",
+          "raw_blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+          "train_events": 118
+        },
+        {
+          "expected_blob_sha": "7fabe2679ff254eea00a5ec685dea2539ec5bcb6",
+          "holdout_events": 74,
+          "hypothesis_count": 4,
+          "metrics": {
+            "added_spans": 74,
+            "anchor_deletion_attempts": 74,
+            "augmented_events": 74,
+            "augmented_events_with_official_expected": 74,
+            "baseline_complete": 0,
+            "baseline_incomplete": 74,
+            "events": 74,
+            "official_timestamp_exact": 74,
+            "status_unchanged": 74
+          },
+          "name": "event",
+          "raw_blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+          "train_events": 138
+        }
+      ]
+    },
+    {
+      "metrics": {
+        "added_spans": 122,
+        "anchor_deletion_attempts": 122,
+        "augmented_events": 122,
+        "augmented_events_with_official_expected": 122,
+        "baseline_complete": 13,
+        "baseline_incomplete": 132,
+        "events": 145,
+        "official_timestamp_exact": 122,
+        "status_unchanged": 145
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "sources": [
+        {
+          "expected_blob_sha": "8bd8cb5643700efbda62b77b7a25408d0f644993",
+          "holdout_events": 8,
+          "hypothesis_count": 1,
+          "metrics": {
+            "added_spans": 3,
+            "anchor_deletion_attempts": 3,
+            "augmented_events": 3,
+            "augmented_events_with_official_expected": 3,
+            "baseline_complete": 0,
+            "baseline_incomplete": 8,
+            "events": 8,
+            "official_timestamp_exact": 3,
+            "status_unchanged": 8
+          },
+          "name": "alarm",
+          "raw_blob_sha": "cbe4f31b2abf3165400f33b3bed612a3c0a1f9f9",
+          "train_events": 15
+        },
+        {
+          "expected_blob_sha": "82374d251243ada7201c790f870427763466d378",
+          "holdout_events": 63,
+          "hypothesis_count": 3,
+          "metrics": {
+            "added_spans": 49,
+            "anchor_deletion_attempts": 49,
+            "augmented_events": 49,
+            "augmented_events_with_official_expected": 49,
+            "baseline_complete": 12,
+            "baseline_incomplete": 51,
+            "events": 63,
+            "official_timestamp_exact": 49,
+            "status_unchanged": 63
+          },
+          "name": "diagnostic",
+          "raw_blob_sha": "b07f9c2a36f04c602aebc7a6f27fef5fe09ed3e1",
+          "train_events": 118
+        },
+        {
+          "expected_blob_sha": "7fabe2679ff254eea00a5ec685dea2539ec5bcb6",
+          "holdout_events": 74,
+          "hypothesis_count": 3,
+          "metrics": {
+            "added_spans": 70,
+            "anchor_deletion_attempts": 70,
+            "augmented_events": 70,
+            "augmented_events_with_official_expected": 70,
+            "baseline_complete": 1,
+            "baseline_incomplete": 73,
+            "events": 74,
+            "official_timestamp_exact": 70,
+            "status_unchanged": 74
+          },
+          "name": "event",
+          "raw_blob_sha": "d0fa1cb7901a6722f74b6efca04eafb73d009137",
+          "train_events": 138
+        }
+      ]
+    }
+  ],
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed"
+}

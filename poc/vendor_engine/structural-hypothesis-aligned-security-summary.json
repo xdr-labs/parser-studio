@@ -4,7 +4,8 @@
     "status_change_zero": true
   },
   "augmented_families": [
-    "snort"
+    "snort",
+    "watchguard"
   ],
   "by_category": {
     "EDR": {
@@ -50,6 +51,8 @@
       "events": 7
     },
     "NGFW": {
+      "added_spans": 119,
+      "augmented_events": 119,
       "baseline_complete": 132,
       "baseline_incomplete": 133,
       "events": 265
@@ -209,6 +212,8 @@
       "events": 2
     },
     "watchguard": {
+      "added_spans": 119,
+      "augmented_events": 119,
       "baseline_complete": 90,
       "baseline_incomplete": 132,
       "events": 222
@@ -1532,8 +1537,10 @@
       "family": "watchguard",
       "file_sha256": "a80dcd65b5aa9c5d6e174d44fe620bdf797dfba694aab84bb7e766aedd038926",
       "holdout_count": 8,
-      "hypothesis_count": 0,
+      "hypothesis_count": 2,
       "metrics": {
+        "added_spans": 7,
+        "augmented_events": 7,
         "baseline_complete": 0,
         "baseline_incomplete": 8,
         "events": 8
@@ -1546,8 +1553,10 @@
       "family": "watchguard",
       "file_sha256": "69c8a21c47a4d19c6bf809e06ee45503251d82c63de8e43c4a94044e1cf2f683",
       "holdout_count": 63,
-      "hypothesis_count": 0,
+      "hypothesis_count": 3,
       "metrics": {
+        "added_spans": 49,
+        "augmented_events": 49,
         "baseline_complete": 13,
         "baseline_incomplete": 50,
         "events": 63
@@ -1560,8 +1569,10 @@
       "family": "watchguard",
       "file_sha256": "5ec89886bd29362f3be757507a6daa93924657a36d8f0ef103360d151d6d2d58",
       "holdout_count": 74,
-      "hypothesis_count": 0,
+      "hypothesis_count": 2,
       "metrics": {
+        "added_spans": 63,
+        "augmented_events": 63,
         "baseline_complete": 1,
         "baseline_incomplete": 73,
         "events": 74
@@ -1660,8 +1671,8 @@
   "semantic_mapping_scored": false,
   "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
   "totals": {
-    "added_spans": 4,
-    "augmented_events": 4,
+    "added_spans": 123,
+    "augmented_events": 123,
     "baseline_complete": 411,
     "baseline_incomplete": 277,
     "events": 688

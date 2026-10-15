@@ -364,6 +364,32 @@ class StructuralHypothesisPocTests(unittest.TestCase):
         self.assertNotIn("13", values)
         self.assertNotIn("14", values)
 
+    def test_aligned_residual_atoms_keep_iso_datetime_whole(self):
+        training = [
+            self._rgram_view(
+                "prefix node (2024-05-10T09:49:05) service[10]: body alpha"
+            ),
+            self._rgram_view(
+                "prefix node (2024-05-11T10:50:06) service[11]: body beta"
+            ),
+            self._rgram_view(
+                "prefix node (2024-05-12T11:51:07) service[12]: body gamma"
+            ),
+        ]
+        hypotheses = learn_aligned_residual_hypotheses(training)
+        self.assertTrue(hypotheses)
+        holdout = self._rgram_view(
+            "prefix node (2024-05-13T12:52:08) service[13]: body delta"
+        )
+        augmented = augment_with_aligned_residual_atoms(
+            holdout, hypotheses
+        )
+        self.assertEqual("PARTIAL", augmented.status)
+        values = augmented.vendor_fields["hypothesis_atoms"]["time_like"]
+        self.assertEqual(["2024-05-13T12:52:08"], values)
+        self.assertNotIn("2024-05-13", values)
+        self.assertNotIn("52", values)
+
     def test_aligned_residual_atoms_abstain_on_hard_issue(self):
         training = [
             self._rgram_view(

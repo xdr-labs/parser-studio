@@ -314,34 +314,52 @@ The official evaluation-only reference is the pinned Elastic grammar
 `SNORT_DATE=%{MONTHNUM}/%{MONTHDAY}(/%{YEAR})?-%{TIME}`.
 The learner never receives the expected timestamps or this grammar.
 
-A broader abstention/regression pass exercised **98 source files / 25 security
-families / 688 holdout events** spanning WAF, IDS/IPS, EDR/XDR, NDR, NGFW,
-VPN, NAC/identity, SWG and email security:
+A second independently validated aligned-atom family is WatchGuard Firebox
+NGFW. The same generic tokenizer now keeps a complete ISO8601-style source
+timestamp as one dynamic token rather than splitting its date/time components.
+No WatchGuard/vendor identifier participates in learning.
+
+Three deterministic splits across pinned WatchGuard alarm, diagnostic and event
+fixtures:
+
+- holdout event occurrences: **435**;
+- baseline incomplete: **396**;
+- augmented event occurrences: **382**;
+- added source spans: **382**;
+- added spans independently consistent with the pinned official
+  `watchguard_firebox.log.timestamp`: **382 / 382**;
+- status unchanged: **435 / 435**;
+- baseline span loss: **0**;
+- learned-anchor deletion counterexamples: **382**;
+- false additions after anchor deletion: **0**.
+
+The broader abstention/regression pass, rerun after this extension, now covers
+**98 source files / 25 security families / 688 holdout events**:
 
 - baseline complete: **411**;
 - baseline incomplete: **277**;
-- augmented events: **4**;
-- added spans: **4**;
-- augmented family: **Snort only**;
+- augmented events: **123**;
+- added spans: **123**;
+- augmented families: **Snort and WatchGuard only**;
 - baseline span loss: **0**;
 - status changes: **0**.
 
-Thus AWS WAF, Suricata, CrowdStrike, SentinelOne, Trellix, Trend Vision One,
-Zeek, Darktrace, ExtraHop, PAN-OS, FortiGate, Check Point, Cisco ASA,
-Barracuda WAF/CloudGen Firewall, WatchGuard, F5, Cisco ISE, Sophos and Zscaler
-acted as abstention/no-regression controls in this pass.
+All other WAF, Suricata, EDR/XDR, NDR, NGFW, VPN, NAC, SWG and email-security
+families abstained in the aligned-atom layer. Cisco Secure Email remains covered
+separately by the strict complete-residual R-gram path.
 
 Machine-readable evidence:
 
 - `structural-hypothesis-snort-aligned-summary.json`
+- `structural-hypothesis-watchguard-aligned-summary.json`
 - `structural-hypothesis-aligned-security-summary.json`
 
 ## Tests and regression
 
 Focused Structural Hypothesis suite after the aligned-residual extension:
-**22 / 22 PASS**.
+**23 / 23 PASS**.
 
-A fresh full discovery attempted **428 tests**. Exactly eight tests require
+A fresh full discovery attempted **429 tests**. Exactly eight tests require
 historical ignored security/commercial holdout evidence or the optional Drain3
 research dependency unavailable in this isolated worktree; those eight error on
 missing external inputs rather than parser assertions.
@@ -349,7 +367,7 @@ missing external inputs rather than parser assertions.
 The cache-independent regression then excluded exactly those eight identified
 external-evidence tests and completed:
 
-- tests executed: **420**
+- tests executed: **421**
 - optional skips: **28**
 - failures: **0**
 - errors: **0**
@@ -404,8 +422,9 @@ The resulting candidate architecture is:
 
 The first mode recovered Cisco Secure Email values across three deterministic
 splits with every added span independently validated. The second mode recovered
-Snort IDS/IPS timestamp source spans across three splits, again with every added
-span independently validated, while leaving all events PARTIAL.
+both Snort IDS/IPS timestamp source spans and WatchGuard Firebox NGFW ISO
+timestamp source spans across three splits, again with every added span
+independently validated, while leaving all affected events PARTIAL.
 
 The delimiter/key-anchor, event-code template and masked-residual experiments
 remain useful research negatives. They proposed plausible structure but failed
@@ -414,8 +433,8 @@ improvement.
 
 This PoC therefore supports **adding a low-authority batch-learned residual
 layer after the current Multi-Pass/Generic Structural engine**, not replacing
-it. It now has independently verified gain in two distinct security-product
-classes (email security and IDS/IPS), while the broader WAF/EDR/NDR/NGFW/NAC/SWG
+it. It now has independently verified gain in three security-product families
+spanning email security, IDS/IPS and NGFW, while the broader WAF/EDR/NDR/NAC/SWG
 corpus demonstrates conservative abstention and zero baseline-span loss. This is
 still PoC evidence rather than product integration approval.
 
@@ -423,17 +442,17 @@ still PoC evidence rather than product integration approval.
 
 Continue without weakening admission rules:
 
-1. freeze this security-expansion evidence and keep all
+1. freeze this three-family security-expansion evidence and keep all
    pre-hardening 17/52 promotion counts superseded;
-2. add at least one further independently verifiable security family beyond
-   Cisco Secure Email and Snort before considering product integration;
-3. add counterexample-guided specialization when a learned signature accepts a
-   structurally similar negative;
-4. expand grammar-derived mutations to token reordering, duplicated literals,
-   embedded delimiters and quote corruption;
-5. run a larger fresh security-only holdout, preserving the current WAF,
-   IDS/IPS, EDR/XDR, NDR, NGFW, email/security gateway, NAC and SWG diversity;
-6. productize only if exact source-value/span precision remains 100% on
+2. acquire a genuinely fresh unseen security-only corpus before any further
+   grammar tuning, preserving WAF, IDS/IPS, EDR/XDR, NDR, NGFW, email/security
+   gateway, NAC and SWG diversity;
+3. expand counterexamples to token reordering, duplicated literals, embedded
+   delimiters and quote corruption, while retaining required-anchor deletion;
+4. only then create a separate product-integration candidate that runs this
+   learned layer after current Multi-Pass/Generic Structural and below
+   standards/verified profiles;
+5. productize only if exact source-value/span precision remains 100% on
    independently scored additions/promotions, baseline span loss stays zero,
    PARTIAL-only layers never inflate completeness, and false-complete remains
    zero.
