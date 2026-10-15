@@ -315,7 +315,9 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     matched = Object.keys(fields).length > 0;
   }
   trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
-  const normalized: Record<string, unknown> = {};
+  const normalized: Record<string, unknown> = draft.format==='generic_structural'
+    ? {parserstudio_source:fields}
+    : {};
   const mapped = new Set<string>();
   for (const mapping of draft.mappings) {
     const source = mapping.source.trim();
@@ -331,6 +333,13 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     const sourceValue = lookupFieldValue(fields, source);
     if (!sourceValue.found) {
       diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'SOURCE_NOT_FOUND', message: 'Source field is absent: ' + source, field: source });
+      continue;
+    }
+    // Match the backend DRAFT runtime: ignored source values remain preserved
+    // in Generic Structural parserstudio_source, but are not coerced/mapped.
+    if (sourceValue.value === null || sourceValue.value === undefined ||
+        ['', 'N/A', '-'].includes(String(sourceValue.value))) {
+      mapped.add(source);
       continue;
     }
     mapped.add(source);

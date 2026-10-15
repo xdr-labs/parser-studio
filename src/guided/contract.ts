@@ -74,7 +74,7 @@ export const CLASSIFICATIONS: EventClass[] = ['Session', 'Threat', 'Syslog', 'Wi
 export const FIELD_GROUPS: FieldGroup[] = ['top_fields', 'ns_fields', 'vendor_fields'];
 // A conservative subset of the v0.1 backend field path grammar. The browser
 // preview also uses this narrower syntax; do not claim a full Interflow dictionary.
-const SAFE_UI_FIELD_PATH = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+const SAFE_UI_FIELD_PATH = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const UNSAFE_FIELD_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 const RESERVED_OUTPUT_ROOTS = new Set([
   'msg_origin', 'stellar_log_index', 'parser_err_msg', 'parser_err_stage', 'parser_err_field',

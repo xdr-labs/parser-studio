@@ -72,7 +72,7 @@ function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=fal
     text:'Parser Studio could not identify a standard format. Use the repeated separators or text pattern to extract only the values that are present, then test the fix against additional examples.',
   };
   if(preview.residuals.length===0&&
-    (issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
+    (issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
      issues.includes('RFC5424_SD_TRAILING_SPACE_NONSTANDARD')))return {
     kind:'metadata',
     label:'Review source metadata',
@@ -134,7 +134,7 @@ function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=fal
 function metadataOnlyReview(preview:MultiPassSourcePreview):boolean{
   const issues=preview.issues.join(' ').toUpperCase();
   return preview.residuals.length===0&&
-    (issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
+    (issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
      issues.includes('RFC5424_SD_TRAILING_SPACE_NONSTANDARD'));
 }
 function problemTitle(preview:MultiPassSourcePreview):string{
@@ -178,6 +178,18 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const raw=current?eventRaw(source,current.event):'';
   const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns)):null;
   const recipeImportEligible=!!rec&&rec.kind!=='metadata';
+  const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
+    current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
+  const preserveSourceMetadata=()=>{
+    if(!metadataPreserveEligible||!draft||!onApplyCandidate)return;
+    const opts=draft.guided;
+    if(!opts)return;
+    onApplyCandidate({...draft,format:'generic_structural',
+      mappings:[{id:'metadata-source-pri',source:'syslog.pri',target:'custom.source_pri',type:'string'}],
+      guided:{...opts,enrichment:[],groups:{'metadata-source-pri':'vendor_fields'},
+        classification:{defaultIndex:'Syslog',rules:[]}}});
+    setPromptOpen(false);setPromptText('');setCopyStatus('Source metadata will be preserved as text. No timestamp value was inferred.');
+  };
   const openPrompt=async()=>{
     if(!current||!rec||promptBusy)return;
     setPromptBusy(true);setCopyStatus('');
@@ -266,7 +278,11 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           <button type="button" className="auto-parser-primary" onClick={onUseNeutralCsvColumns}>
             Keep all {neutralCsvColumnCount} values with temporary names
           </button>}
-        <button type="button" className={rec?.kind==='csv'?'':'auto-parser-primary'} disabled={promptBusy}
+        {metadataPreserveEligible&&<button type="button" className="auto-parser-primary"
+          onClick={preserveSourceMetadata}>
+          Preserve source metadata as text
+        </button>}
+        <button type="button" className={rec?.kind==='csv'||metadataPreserveEligible?'':'auto-parser-primary'} disabled={promptBusy}
           onClick={()=>void openPrompt()}>
           <Bot size={16}/> {promptBusy?'Preparing…':rec?.kind==='metadata'?'Review with ChatGPT':'Fix with ChatGPT'}
         </button>

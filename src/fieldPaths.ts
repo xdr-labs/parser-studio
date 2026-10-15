@@ -3,7 +3,7 @@
  * source paths. Backend lookup prefers an exact literal key before descending
  * nested JSON objects. Never traverse inherited/prototype or array-index paths.
  */
-const PATH = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
+const PATH = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const UNSAFE = new Set(['__proto__', 'constructor', 'prototype']);
 const MAX_DEPTH = 8;
 const MAX_FIELDS = 100;

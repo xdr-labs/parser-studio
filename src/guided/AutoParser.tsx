@@ -1001,7 +1001,7 @@ export default function AutoParser({
        </div>
        <details className="auto-parser-recipe beginner-field-summary" open={advanced}
          aria-label="Suggested field mappings">
-         <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} detected · Open only if you want to inspect names and types</summary>
+         <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} mapped · {draft.format==='generic_structural'?'Extracted source fields are preserved automatically':'Open only if you want to inspect names and types'}</summary>
          <div className="auto-parser-map-list">
            {draft.mappings.map((rule)=><div key={rule.id}>
              <strong>{rule.source}</strong> <ArrowRight size={13}/>

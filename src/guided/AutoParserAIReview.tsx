@@ -25,14 +25,20 @@ function sourceAlternatives(value:string):string[]{
  }else if(value.length>=2&&value[0]==="'"&&value.at(-1)==="'")out.push(value.slice(1,-1));
  return [...new Set(out)];
 }
-function protectedValueRegression(candidate:SuiteResult,protectedValues:string[][]|undefined):
- {event:number;missing:number;required:number;available:number}|null{
+function protectedValueRegression(candidate:SuiteResult,protectedValues:string[][]|undefined,
+ normalizedOnly=false):{event:number;missing:number;required:number;available:number}|null{
  if(!protectedValues?.some(values=>values.length))return null;
  for(let index=0;index<protectedValues.length;index++){
-  const required=protectedValues[index]??[];
+  const observed=protectedValues[index]??[];
+  // The backend's reviewed normalization contract intentionally ignores an
+  // explicit empty string. Do not make FULL_RECOVERY impossible by requiring
+  // JSON "" / '' source spans to reappear in final normalized output.
+  const required=normalizedOnly?
+   observed.filter(source=>!sourceAlternatives(source).includes('')):observed;
   if(!required.length)continue;
   const event=candidate.events[index];
-  const pool=[...scalarValues(event?.fields),...scalarValues(event?.normalized)];
+  const pool=normalizedOnly?scalarValues(event?.normalized):
+   [...scalarValues(event?.fields),...scalarValues(event?.normalized)];
   const used=new Array(pool.length).fill(false);let missing=0;
   for(const source of required){
    const choices=sourceAlternatives(source);let found=-1;
@@ -49,7 +55,9 @@ function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:st
  for(let index=0;index<protectedResiduals.length;index++){
   const required=(protectedResiduals[index]??[]).map(value=>value.trim()).filter(Boolean);
   if(!required.length)continue;
-  const pool=scalarValues(candidate.events[index]?.fields);
+  // Recovery residuals must survive into the final parser output, not only
+  // an intermediate extraction object that normalization can discard.
+  const pool=scalarValues(candidate.events[index]?.normalized);
   let missing=0;
   for(const residual of required){
    if(!pool.some(value=>value.includes(residual)))missing++;
@@ -148,14 +156,16 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    let candidateSuite:SuiteResult,candidateHoldout:SuiteResult;
    try{
     candidateSuite=preview(source,proposal.candidate);candidateHoldout=preview(holdout,proposal.candidate);
-    const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent);
+    const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
+     candidateMode==='recovery');
     if(protectedRegression){
-     setImportResult(`Fix not applied: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences already extracted by Parser Studio. No changes were made.`);return;
+     const location=candidateMode==='recovery'?'final parser output':'reviewed extraction';
+     setImportResult(`Fix not applied: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences from the ${location}. No changes were made.`);return;
     }
     const residualRegression=candidateMode==='recovery'?
      protectedResidualRegression(candidateSuite,protectedResidualTextByEvent):null;
     if(residualRegression){
-     setImportResult(`Fix not applied: event ${residualRegression.event} would leave ${residualRegression.missing} of ${residualRegression.required} previously unparsed source regions outside the candidate fields. Preserve the remaining source text before applying the fix.`);return;
+     setImportResult(`Fix not applied: event ${residualRegression.event} would leave ${residualRegression.missing} of ${residualRegression.required} previously unparsed source regions outside the final parser output. Preserve the remaining source text before applying the fix.`);return;
     }
     const comparisonInput={source,baseline:suite,candidate:candidateSuite,
      holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
@@ -210,10 +220,12 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      }
      try{
       const candidateSuite=preview(source,approvedCandidate.draft),candidateHoldout=preview(holdout,approvedCandidate.draft);
-      const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent);
+      const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
+       approvedCandidate.mode==='recovery');
       if(protectedRegression){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-       setImportResult(`The fix is no longer safe: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences already extracted by Parser Studio. No changes were made.`);return;
+       const location=approvedCandidate.mode==='recovery'?'final parser output':'reviewed extraction';
+       setImportResult(`The fix is no longer safe: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences from the ${location}. No changes were made.`);return;
       }
       const residualRegression=approvedCandidate.mode==='recovery'?
        protectedResidualRegression(candidateSuite,protectedResidualTextByEvent):null;

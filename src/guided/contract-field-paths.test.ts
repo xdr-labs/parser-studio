@@ -34,6 +34,23 @@ describe('no-code field paths match the supported safe backend identifier subset
     expect(toBackendProject(draft).ok).toBe(false);
   });
 
+
+  it('accepts backend-safe hyphenated source segments used by reviewed security log fields', () => {
+    const draft = createDraft();
+    draft.format = 'generic_structural';
+    draft.mappings = [{
+      id: 'ad-domain', source: 'generic.kv.AD-Domain',
+      target: 'custom.ad_domain', type: 'string',
+    }];
+    draft.guided = {
+      ...draft.guided!,
+      groups: {'ad-domain':'vendor_fields'},
+      classification: {defaultIndex:'Syslog',rules:[]},
+    };
+    expect(compilerDraftContract(draft).ok).toBe(true);
+    expect(toBackendProject(draft).ok).toBe(true);
+  });
+
   it('accepts valid dotted field paths without relying on a proprietary dictionary', () => {
     const draft = createDraft();
     draft.format = 'json';
