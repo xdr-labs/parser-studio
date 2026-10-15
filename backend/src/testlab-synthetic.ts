@@ -61,6 +61,8 @@ function parseCsvLine(source:string,separator:string):string[]{
   while(true){
     if(output.length>=100)fail("TESTLAB_CSV_COLUMNS_INVALID");
     let value="";
+    while(position<source.length&&
+      (source[position]===" "||(source[position]==="\t"&&separator!=="\t")))position++;
     if(source[position]==='"'){
       position++;
       let closed=false;
@@ -72,6 +74,8 @@ function parseCsvLine(source:string,separator:string):string[]{
         }else{value+=character;position++;}
       }
       if(!closed)fail("TESTLAB_CSV_QUOTE_INVALID");
+      while(position<source.length&&
+        (source[position]===" "||(source[position]==="\t"&&separator!=="\t")))position++;
       if(position<source.length&&source[position]!==separator)
         fail("TESTLAB_CSV_QUOTE_INVALID");
     }else{
@@ -79,6 +83,7 @@ function parseCsvLine(source:string,separator:string):string[]{
         if(source[position]==='"')fail("TESTLAB_CSV_QUOTE_INVALID");
         value+=source[position++];
       }
+      value=value.trim();
     }
     output.push(value);
     if(position>=source.length)break;

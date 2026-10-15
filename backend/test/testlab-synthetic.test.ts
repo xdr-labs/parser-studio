@@ -102,6 +102,19 @@ test("CSV synthetic preview updates only chosen IP/user/timestamp while preservi
   assert.equal(preview.runtimeParsingVerified,false);
 });
 
+test("CSV field-edge whitespace is bounded and quoted values remain structural",()=>{
+  const preview=createSyntheticPreview({
+    format:"csv",
+    source:' 203.0.113.1 , "Allowed" , "message, with comma" ',
+    csvColumns:["src_ip","action","message"],
+    csvDelimiter:",",
+    seed:9,sequence:0,
+    variableFields:[{path:"src_ip",kind:"ipv4"}],
+  },now);
+  assert.match(preview.syntheticEvent,/^(192\.0\.2|198\.51\.100|203\.0\.113)\.\d+,Allowed,/);
+  assert.ok(preview.syntheticEvent.endsWith(',"message, with comma"'));
+});
+
 test("CSV quoting and alternative delimiter preserve unchanged field values",()=>{
   const preview=createSyntheticPreview({
     format:"csv",

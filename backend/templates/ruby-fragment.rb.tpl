@@ -176,7 +176,7 @@ def parserstudio_csv(text, settings)
   fields = settings['csvColumns']
   raise ArgumentError, 'CSV column names required' unless fields.is_a?(Array) && !fields.empty?
   separator = settings['csvDelimiter'] || ','
-  row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false)
+  row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: true)
   raise ArgumentError, 'No CSV event parsed' unless row.is_a?(Array)
   raise ArgumentError, 'CSV column count mismatch' unless row.length == fields.length
   Hash[fields.zip(row)]
