@@ -22,6 +22,13 @@ export function detectFormat(raw: string): Detection {
   const structured = detectStructuredFamily(value);
   if (structured) return { format: structured, confidence: 0.96, reason: 'Recognized standalone structured log header' };
   if (/^[{[]/.test(value)) return { format: 'json', confidence: 0.96, reason: 'Starts with JSON object or array syntax' };
+  // Cisco ASA/FTD messages contain commas and key=value fragments inside the
+  // free-form message body. Browser-only CSV/KV heuristics must not reinterpret
+  // those incidental tokens; the authoritative Funnel source engine owns this family.
+  if (/%(?:ASA(?:-session)?|FTD)-\d-\d+:\s/.test(value)) {
+    return { format: 'unknown', confidence: 0,
+      reason: 'Cisco ASA/FTD message requires the local Multi-Pass source engine' };
+  }
   if (/^<\d{1,3}>(?:\d\s|[A-Z][a-z]{2}\s|\d{4}-)/.test(value)) {
     return { format: 'syslog', confidence: 0.87, reason: 'Syslog priority and header detected' };
   }

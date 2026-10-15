@@ -73,6 +73,16 @@ describe('safe, version-neutral browser preview', () => {
     });
   });
 
+  it('does not misclassify Cisco ASA/FTD message bodies as browser CSV or KV', () => {
+    const asa='Jun 08 2020 12:59:57: %ASA-4-313009: Denied invalid ICMP code 9, for Inside:10.0.0.1/8795 to identity:10.0.0.2/0, ICMP id 295, ICMP type 8';
+    const asaKv='Apr 17 2020 14:15:07 edge01 : %ASA-3-313008: Denied IPv6-ICMP type=134, code=0 from fe80::1 on interface ISP1';
+    const ftd='<140>Feb 02 2025 14:02:35: %FTD-4-106103: access-list TEST denied tcp outside/192.0.2.1(51950) -> inside/198.51.100.2(443)';
+    for(const raw of [asa,asaKv,ftd]){
+      expect(detectFormat(raw)).toMatchObject({format:'unknown',
+        reason:'Cisco ASA/FTD message requires the local Multi-Pass source engine'});
+    }
+  });
+
   it('fails closed on unsupported CSV delimiters or malformed quoted cells', () => {
     const bad = { ...createDraft(), csvColumns: 'action,detail', csvDelimiter: '|' as unknown as ',' };
     expect(extractFields('deny|message', 'csv', bad).errors.length).toBeGreaterThan(0);
