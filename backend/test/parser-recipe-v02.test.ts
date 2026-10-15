@@ -37,7 +37,7 @@ function candidate(format:ParserProject['extraction']['format']='json'){
 }
 
 test('P0-AP3 v0.2 compiles same native-qualified Ruby + CONF bytes for allowed families',()=>{
- for(const format of ['json','kv','csv','cef','leef','syslog_rfc5424'] as const){
+ for(const format of ['json','kv','csv','cef','leef','syslog_rfc5424','generic_structural'] as const){
   const input=candidate(format);
   assert.equal(validateRecipePair(input).ok,true,format);
   const compiled=compileRecipePair(input);

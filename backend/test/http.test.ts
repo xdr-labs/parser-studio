@@ -101,10 +101,11 @@ test("capabilities API must truthfully advertise only supported and verified bac
    const info=await response.json() as any;
    assert.equal(info.contract,"host-customized-pair.v0.1");
    assert.deepEqual(info.authoring.receiverProtocols,["udp","tcp"]);
-   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc3164","syslog_rfc5424","cef","leef","mixed","java_stacktrace","regex"]);
+   assert.deepEqual(info.authoring.extractionFormats,["json","kv","csv","syslog_rfc3164","syslog_rfc5424","cef","leef","mixed","java_stacktrace","regex","generic_structural"]);
    assert.equal(info.authoring.boundedRegexNamedCaptureSubset,true);
    assert.equal(info.authoring.boundedRegexMaxPatternChars,256);
    assert.equal(info.authoring.boundedRegexRuntimeTimeoutMs,50);
+   assert.equal(info.authoring.genericStructuralGrammar,"GENERIC_STRUCTURAL_ULTRA_COMPILER_V1");
    assert.equal(info.authoring.httpReceiver,false);
    assert.equal(info.authoring.multipleDistinctReceiverPorts,false);
    assert.equal(info.authoring.formatCoverage,"reviewed-bounded-subset");

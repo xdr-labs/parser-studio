@@ -9,7 +9,7 @@ import {canonicalJson,validateProject,validateBoundedRegexPattern} from "./valid
 import {compilePair} from "./compiler.js";
 import type {ParserProject,PairExport,ValidationIssue,ValidationResult,FieldType,LogIndex} from "./types.js";
 
-export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef"|"mixed"|"java_stacktrace"|"regex";
+export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef"|"mixed"|"java_stacktrace"|"regex"|"generic_structural";
 export type RecipeSource=RecipeBody|"syslog_rfc3164"|"syslog_rfc5424";
 type Group="top_fields"|"ns_fields"|"vendor_fields";
 type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group};
@@ -23,7 +23,7 @@ export type RecipeStage=
  | {op:"split_event";boundary:"single-line"|"blank-line"}
  | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
  | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef"|"csv")[];mode:"strict_prefix"}
- | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"}
+ | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"|"parse_generic_structural"}
  | {op:"parse_regex";pattern:string}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
  | MapStage | CastStage | SplitFieldStage | MergeFieldsStage | ClassifyStage
@@ -53,8 +53,8 @@ const UNSAFE=new Set(["__proto__","constructor","prototype"]);
 const TYPES=new Set<FieldType>(["string","integer","ip","port","boolean","date"]);
 const GROUPS=[["top_fields","topFields"],["ns_fields","nsFields"],
  ["vendor_fields","vendorFields"]] as const;
-const PARSERS=new Set(["parse_json","parse_kv","parse_csv","parse_cef","parse_leef","parse_java_stacktrace","parse_regex"]);
-const BODY=new Set<RecipeBody>(["json","kv","csv","cef","leef","mixed","java_stacktrace","regex"]);
+const PARSERS=new Set(["parse_json","parse_kv","parse_csv","parse_cef","parse_leef","parse_java_stacktrace","parse_regex","parse_generic_structural"]);
+const BODY=new Set<RecipeBody>(["json","kv","csv","cef","leef","mixed","java_stacktrace","regex","generic_structural"]);
 const rootKeys=["legacyProject","recipe"];
 const error=(code:string,path:string):ValidationIssue=>({
  code,path,message:"Reviewed recipe is unsupported or mismatched: "+code});
@@ -152,7 +152,7 @@ export function recipeFromLegacyProject(
   if(validateBoundedRegexPattern(pattern)!==null)throw new Error("UNSUPPORTED_REGEX_PATTERN");
   stages.push({op:"parse_regex",pattern:pattern!});
  }else stages.push({op:("parse_"+fmt.body) as
-  "parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"});
+  "parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"|"parse_generic_structural"});
  for(const stage of expectedMappings(project)){
   stages.push(stage);
   if(stage.data_type!=="string"){

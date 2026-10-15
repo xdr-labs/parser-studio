@@ -65,7 +65,7 @@ export function validateProject(input: unknown): ValidationResult {
     for (const error of validateSchema.errors ?? []) {
       const path = error.instancePath || (error.params as { additionalProperty?: string }).additionalProperty || "/";
       if (error.keyword === "minimum" && error.instancePath === "/receiver/port" &&
-          ["syslog_rfc3164","syslog_rfc5424"].includes(
+          ["syslog_rfc3164","syslog_rfc5424","generic_structural"].includes(
             (input as ParserProject | null)?.extraction?.format ?? "") &&
           (error.params as { limit?: number }).limit === 6800) {
         issue(issues, "syslog_port_minimum", "/receiver/port",

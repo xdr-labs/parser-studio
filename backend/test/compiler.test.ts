@@ -82,3 +82,30 @@ test("bounded Syslog Regex body validates only with safe named captures and comp
  assert.equal(validateProject(unsafe).ok,false);
  assert.ok(validateProject(unsafe).issues.some(x=>x.code.startsWith("regex_")));
 });
+
+
+test("Generic Structural compiler is opt-in, bounded and keeps legacy artifact bytes isolated",()=>{
+ const legacy=compilePair(sampleProject()).files[1]!.content;
+ assert.equal(legacy.includes("parserstudio_generic_structural"),false);
+ const p=sampleProject();
+ p.receiver.port=7501;
+ p.extraction={format:"generic_structural"};
+ p.normalization.topFields={
+  "syslog.pri":{normalized_name:"source_pri",data_type:"string"},
+  "generic.kv.AD-Domain":{normalized_name:"ad_domain",data_type:"string"},
+  "body.event.id":{normalized_name:"event_id",data_type:"integer"},
+  "asa.src_ip":{normalized_name:"srcip",data_type:"ip"},
+  "asa.dst_port":{normalized_name:"dstport",data_type:"port"},
+ };
+ p.normalization.nsFields={};p.normalization.vendorFields={};p.classification.rules=[];
+ const validation=validateProject(p);
+ assert.equal(validation.ok,true,JSON.stringify(validation));
+ const pair=compilePair(p);
+ const ruby=pair.files[1]!.content;
+ assert.match(ruby,/when 'generic_structural'/);
+ assert.match(ruby,/def parserstudio_generic_structural\(text\)/);
+ assert.match(ruby,/GENERIC STRUCTURAL|Generic Structural|generic structural/i);
+ const low=structuredClone(p);low.receiver.port=6799;
+ assert.equal(validateProject(low).ok,false);
+ assert.ok(validateProject(low).issues.some(x=>x.code==="syslog_port_minimum"));
+});

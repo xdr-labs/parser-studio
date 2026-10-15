@@ -41,7 +41,8 @@
         "syslog_rfc5424",
         "mixed",
         "java_stacktrace",
-        "regex"
+        "regex",
+        "generic_structural"
       ]
     },
     "bodyFormat": {
@@ -53,7 +54,8 @@
         "leef",
         "mixed",
         "java_stacktrace",
-        "regex"
+        "regex",
+        "generic_structural"
       ]
     },
     "sample": {
@@ -219,6 +221,18 @@
             "properties": {
               "op": {
                 "const": "parse_java_stacktrace"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_generic_structural"
               }
             }
           },

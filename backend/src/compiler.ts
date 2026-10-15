@@ -5,8 +5,10 @@ import { canonicalJson, validateProject } from "./validate.js";
 
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
+const GENERIC_STRUCTURAL_HELPER = readFileSync(new URL("../templates/generic-structural-helper.rb.tpl", import.meta.url), "utf8");
 const REGEX_EXTRACTOR_NEEDLE = "  when 'leef'\n    parserstudio_leef(text)\n  else";
 const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'regex'\n    parserstudio_regex(text, settings)\n  else";
+const GENERIC_STRUCTURAL_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'generic_structural'\n    parserstudio_generic_structural(text)\n  else";
 const REGEX_RUBY_HELPER = String.raw`
 # Parser Studio bounded named-capture Regex helper. This fixed helper is
 # emitted only for a Regex project; existing parser artifact bytes stay unchanged.
@@ -89,6 +91,10 @@ function emitRubyFragment(project: ParserProject): string {
   if(project.extraction.format==="regex"){
     if(!fragment.includes(REGEX_EXTRACTOR_NEEDLE))throw new Error("Regex template marker missing");
     fragment=fragment.replace(REGEX_EXTRACTOR_NEEDLE,REGEX_EXTRACTOR_BRANCH);
+  }else if(project.extraction.format==="generic_structural"){
+    if(!fragment.includes(REGEX_EXTRACTOR_NEEDLE))throw new Error("Generic structural template marker missing");
+    fragment=fragment.replace(REGEX_EXTRACTOR_NEEDLE,GENERIC_STRUCTURAL_EXTRACTOR_BRANCH);
+    fragment+=GENERIC_STRUCTURAL_HELPER;
   }
   if(project.extraction.format==="regex"||regexBody)fragment+=REGEX_RUBY_HELPER;
   return fragment;

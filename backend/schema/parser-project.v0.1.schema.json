@@ -129,7 +129,8 @@
             "leef",
             "mixed",
             "java_stacktrace",
-            "regex"
+            "regex",
+            "generic_structural"
           ]
         },
         "maxDepth": {
@@ -565,7 +566,8 @@
               "format": {
                 "enum": [
                   "syslog_rfc3164",
-                  "syslog_rfc5424"
+                  "syslog_rfc5424",
+                  "generic_structural"
                 ]
               }
             },
