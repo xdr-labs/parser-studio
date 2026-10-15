@@ -31,22 +31,36 @@ export function suggestUnmappedFields(
   const found = new Set<string>();
   const proposals: SuggestedFieldMapping[] = [];
 
-  for (const fields of samples) {
-    for (const source of listSafeLeafPaths(fields)) {
-      if (proposals.length >= 50) return proposals;
-      if (found.has(source) || existingSources.has(source) || !SAFE_PATH.test(source)) continue;
-      found.add(source);
-      if (source.split('.').some(segment => DANGEROUS.has(segment) || !segment)) continue;
-      const normalized = 'custom.' + source.replace(/\./g, '_');
-      if (SYSTEM.has(source.split('.')[0]) || normalized.length > 128) continue;
-      if (taken.some(target => conflicts(target, normalized))) continue;
-      const proposal: SuggestedFieldMapping = {
-        source, target: normalized, type: 'string',
-        group: classifierFields.has(source) ? 'top_fields' : 'vendor_fields',
-      };
-      proposals.push(proposal);
-      taken.push(normalized);
+  // Do not let one wide JSON event consume the entire 50-mapping budget.
+  // Mixed security samples often have disjoint JSON/KV/CEF/LEEF field names;
+  // round-robin candidates across events so every represented family can keep
+  // at least some source-backed output without raising the global safety cap.
+  const queues = samples.map(fields => listSafeLeafPaths(fields));
+  while (proposals.length < 50) {
+    let addedThisRound = false;
+    let candidatesRemain = false;
+    for (const queue of queues) {
+      while (queue.length) {
+        candidatesRemain = true;
+        const source = queue.shift()!;
+        if (found.has(source) || existingSources.has(source) || !SAFE_PATH.test(source)) continue;
+        found.add(source);
+        if (source.split('.').some(segment => DANGEROUS.has(segment) || !segment)) continue;
+        const normalized = 'custom.' + source.replace(/\./g, '_');
+        if (SYSTEM.has(source.split('.')[0]) || normalized.length > 128) continue;
+        if (taken.some(target => conflicts(target, normalized))) continue;
+        const proposal: SuggestedFieldMapping = {
+          source, target: normalized, type: 'string',
+          group: classifierFields.has(source) ? 'top_fields' : 'vendor_fields',
+        };
+        proposals.push(proposal);
+        taken.push(normalized);
+        addedThisRound = true;
+        break;
+      }
+      if (proposals.length >= 50) break;
     }
+    if (!candidatesRemain || !addedThisRound) break;
   }
   return proposals;
 }
