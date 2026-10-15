@@ -18,7 +18,7 @@ function runRuby(method:string,raw:string):unknown{
   return JSON.parse(out.stdout);
 }
 
-test("Generic Structural V8 Ruby helper matches bounded WatchGuard, Juniper and secure-email grammars",{skip:!rubyAvailable},()=>{
+test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and secure-email grammars",{skip:!rubyAvailable},()=>{
   const watchguard='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
   const wg=runRuby("parserstudio_generic_structural",watchguard) as any;
   assert.equal(wg.watchguard_header.hostname,"WatchGuard-Firebox");
@@ -45,6 +45,14 @@ test("Generic Structural V8 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.deepEqual(sw.generic.prefix_tokens,["Prefix","words."]);
   assert.equal(sw.generic.fields.ID,"5");
 
+  const prefixed='darktrace {"model":{"name":"Test Model"},"device":{"ip":"192.0.2.10"}}';
+  const pj=runRuby("parserstudio_generic_structural",prefixed) as any;
+  assert.equal(pj.generic.mode,"prefixed_json");
+  assert.equal(pj.generic.prefix,"darktrace");
+  assert.equal(pj.body.device.ip,"192.0.2.10");
+  assert.equal(runRuby("parserstudio_generic_prefixed_json",'darktrace {"model":'),null);
+  assert.equal(runRuby("parserstudio_generic_prefixed_json",'darktrace [1,2,3]'),null);
+
   const checkpoint='<134>1 2020-03-30T07:20:35Z gw CheckPoint 8363 - [flags:"1"; sys_message::"risk"]  ';
   const cp=runRuby("parserstudio_generic_structural",checkpoint) as any;
   assert.equal(cp.body.flags,"1");
@@ -52,7 +60,7 @@ test("Generic Structural V8 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
-test("Generic Structural V8 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{
+test("Generic Structural V9 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{
   const comma='<180>Mar 3 10:42:25 ise-host APP 0001 1 0 2022-03-03 10:42:25.842 +00:00 0002 WARN Connector: ok, AD-Domain=host.local, constructor=bad';
   assert.equal(runRuby("parserstudio_generic_comma_kv",comma),null);
   const spaced='device="SFW" date=2017-01-31 time=14:16:19 timezone="IST" constructor=bad status="Allow"';

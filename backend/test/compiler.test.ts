@@ -106,6 +106,7 @@ test("Generic Structural compiler is opt-in, bounded and keeps legacy artifact b
  assert.match(ruby,/when 'generic_structural'/);
  assert.match(ruby,/def parserstudio_generic_structural\(text\)/);
  assert.match(ruby,/def parserstudio_generic_short_rfc5424_structured\(text\)/);
+ assert.match(ruby,/def parserstudio_generic_prefixed_json\(text\)/);
  assert.match(ruby,/def parserstudio_generic_junos_rfc5424_sd\(text\)/);
  assert.match(ruby,/def parserstudio_generic_space_kv\(text\)/);
  assert.match(ruby,/pieces\.each_with_index/);

@@ -6,6 +6,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_short_rfc5424_json(text)
   return result if result
+  result = parserstudio_generic_prefixed_json(text)
+  return result if result
   result = parserstudio_generic_asa(text)
   return result if result
   result = parserstudio_generic_watchguard(text)
@@ -65,6 +67,22 @@ def parserstudio_generic_short_rfc5424_json(text)
       'pri' => match[1], 'version' => match[2],
       'timestamp' => match[3], 'hostname' => match[4]
     },
+    'body' => body
+  }
+end
+
+def parserstudio_generic_prefixed_json(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A([A-Za-z0-9_.:\/-]{1,64})[ \t]+(\{.*\})\z/.match(text)
+  return nil unless match
+  begin
+    body = JSON.parse(match[2])
+  rescue JSON::ParserError
+    return nil
+  end
+  return nil unless body.is_a?(Hash)
+  {
+    'generic' => {'mode'=>'prefixed_json', 'prefix'=>match[1], 'source_raw'=>text},
     'body' => body
   }
 end
