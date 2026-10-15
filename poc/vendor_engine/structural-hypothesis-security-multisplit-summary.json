@@ -1,0 +1,387 @@
+{
+  "aggregate_family_promotions": {
+    "aws_waf": 0,
+    "checkpoint": 0,
+    "cisco_asa": 5,
+    "cisco_ise": 15,
+    "crowdstrike": 0,
+    "darktrace": 0,
+    "extrahop": 0,
+    "f5_bigip": 0,
+    "fortigate": 0,
+    "juniper_srx": 0,
+    "panw": 0,
+    "sentinel_one": 0,
+    "sophos_utm": 0,
+    "sophos_xg": 0,
+    "suricata": 0,
+    "trellix_edr": 0,
+    "trellix_epo": 0,
+    "trend_vision": 0,
+    "zeek": 0,
+    "zscaler_zia": 0
+  },
+  "aggregate_mutation_safety": {
+    "attempts": 100,
+    "false_complete": 0
+  },
+  "aggregate_promotion_safety": {
+    "accepted_promotions_with_all_baseline_spans_preserved": 20,
+    "baseline_span_loss": 0,
+    "raw_mismatch": 0
+  },
+  "aggregate_totals": {
+    "baseline_complete": 868,
+    "baseline_incomplete": 260,
+    "delimited_promotions": 15,
+    "events": 1128,
+    "promotions": 20,
+    "template_promotions": 5
+  },
+  "contract": "parser-studio.poc.structural-hypothesis-security-multisplit.v1",
+  "raw_values_published": false,
+  "scope": "SECURITY_PRODUCTS_ONLY",
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_count": 3,
+  "splits": [
+    {
+      "by_family": {
+        "aws_waf": {
+          "baseline_complete": 2,
+          "events": 2
+        },
+        "checkpoint": {
+          "baseline_complete": 6,
+          "baseline_incomplete": 1,
+          "events": 7
+        },
+        "cisco_asa": {
+          "baseline_incomplete": 14,
+          "events": 14,
+          "promotions": 3,
+          "template_promotions": 3
+        },
+        "cisco_ise": {
+          "baseline_complete": 74,
+          "baseline_incomplete": 25,
+          "delimited_promotions": 6,
+          "events": 99,
+          "promotions": 6
+        },
+        "crowdstrike": {
+          "baseline_complete": 6,
+          "events": 6
+        },
+        "darktrace": {
+          "baseline_complete": 5,
+          "baseline_incomplete": 1,
+          "events": 6
+        },
+        "extrahop": {
+          "baseline_complete": 4,
+          "events": 4
+        },
+        "f5_bigip": {
+          "baseline_complete": 18,
+          "events": 18
+        },
+        "fortigate": {
+          "baseline_complete": 5,
+          "events": 5
+        },
+        "juniper_srx": {
+          "baseline_complete": 23,
+          "baseline_incomplete": 16,
+          "events": 39
+        },
+        "panw": {
+          "baseline_complete": 27,
+          "events": 27
+        },
+        "sentinel_one": {
+          "baseline_complete": 3,
+          "events": 3
+        },
+        "sophos_utm": {
+          "baseline_complete": 7,
+          "baseline_incomplete": 3,
+          "events": 10
+        },
+        "sophos_xg": {
+          "baseline_complete": 80,
+          "baseline_incomplete": 28,
+          "events": 108
+        },
+        "suricata": {
+          "baseline_complete": 11,
+          "events": 11
+        },
+        "trellix_edr": {
+          "baseline_complete": 1,
+          "events": 1
+        },
+        "trellix_epo": {
+          "baseline_complete": 3,
+          "events": 3
+        },
+        "trend_vision": {
+          "baseline_complete": 2,
+          "events": 2
+        },
+        "zeek": {
+          "baseline_complete": 7,
+          "events": 7
+        },
+        "zscaler_zia": {
+          "baseline_complete": 4,
+          "events": 4
+        }
+      },
+      "mutation_safety": {
+        "attempts": 45,
+        "false_complete": 0
+      },
+      "promoted_residual_byte_reduction": 1817,
+      "promoted_source_span_gain": 77,
+      "promotion_safety": {
+        "accepted_promotions_with_all_baseline_spans_preserved": 9,
+        "baseline_span_loss": 0,
+        "raw_mismatch": 0
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "totals": {
+        "baseline_complete": 288,
+        "baseline_incomplete": 88,
+        "delimited_promotions": 6,
+        "events": 376,
+        "promotions": 9,
+        "template_promotions": 3
+      }
+    },
+    {
+      "by_family": {
+        "aws_waf": {
+          "baseline_complete": 2,
+          "events": 2
+        },
+        "checkpoint": {
+          "baseline_complete": 6,
+          "baseline_incomplete": 1,
+          "events": 7
+        },
+        "cisco_asa": {
+          "baseline_incomplete": 14,
+          "events": 14
+        },
+        "cisco_ise": {
+          "baseline_complete": 76,
+          "baseline_incomplete": 23,
+          "delimited_promotions": 6,
+          "events": 99,
+          "promotions": 6
+        },
+        "crowdstrike": {
+          "baseline_complete": 6,
+          "events": 6
+        },
+        "darktrace": {
+          "baseline_complete": 5,
+          "baseline_incomplete": 1,
+          "events": 6
+        },
+        "extrahop": {
+          "baseline_complete": 4,
+          "events": 4
+        },
+        "f5_bigip": {
+          "baseline_complete": 18,
+          "events": 18
+        },
+        "fortigate": {
+          "baseline_complete": 5,
+          "events": 5
+        },
+        "juniper_srx": {
+          "baseline_complete": 27,
+          "baseline_incomplete": 12,
+          "events": 39
+        },
+        "panw": {
+          "baseline_complete": 27,
+          "events": 27
+        },
+        "sentinel_one": {
+          "baseline_complete": 3,
+          "events": 3
+        },
+        "sophos_utm": {
+          "baseline_complete": 7,
+          "baseline_incomplete": 3,
+          "events": 10
+        },
+        "sophos_xg": {
+          "baseline_complete": 80,
+          "baseline_incomplete": 28,
+          "events": 108
+        },
+        "suricata": {
+          "baseline_complete": 11,
+          "events": 11
+        },
+        "trellix_edr": {
+          "baseline_complete": 1,
+          "events": 1
+        },
+        "trellix_epo": {
+          "baseline_complete": 3,
+          "events": 3
+        },
+        "trend_vision": {
+          "baseline_complete": 2,
+          "events": 2
+        },
+        "zeek": {
+          "baseline_complete": 7,
+          "events": 7
+        },
+        "zscaler_zia": {
+          "baseline_complete": 4,
+          "events": 4
+        }
+      },
+      "mutation_safety": {
+        "attempts": 30,
+        "false_complete": 0
+      },
+      "promoted_residual_byte_reduction": 1332,
+      "promoted_source_span_gain": 70,
+      "promotion_safety": {
+        "accepted_promotions_with_all_baseline_spans_preserved": 6,
+        "baseline_span_loss": 0,
+        "raw_mismatch": 0
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "totals": {
+        "baseline_complete": 294,
+        "baseline_incomplete": 82,
+        "delimited_promotions": 6,
+        "events": 376,
+        "promotions": 6
+      }
+    },
+    {
+      "by_family": {
+        "aws_waf": {
+          "baseline_complete": 2,
+          "events": 2
+        },
+        "checkpoint": {
+          "baseline_complete": 6,
+          "baseline_incomplete": 1,
+          "events": 7
+        },
+        "cisco_asa": {
+          "baseline_incomplete": 14,
+          "events": 14,
+          "promotions": 2,
+          "template_promotions": 2
+        },
+        "cisco_ise": {
+          "baseline_complete": 76,
+          "baseline_incomplete": 23,
+          "delimited_promotions": 3,
+          "events": 99,
+          "promotions": 3
+        },
+        "crowdstrike": {
+          "baseline_complete": 6,
+          "events": 6
+        },
+        "darktrace": {
+          "baseline_complete": 5,
+          "baseline_incomplete": 1,
+          "events": 6
+        },
+        "extrahop": {
+          "baseline_complete": 4,
+          "events": 4
+        },
+        "f5_bigip": {
+          "baseline_complete": 18,
+          "events": 18
+        },
+        "fortigate": {
+          "baseline_complete": 5,
+          "events": 5
+        },
+        "juniper_srx": {
+          "baseline_complete": 24,
+          "baseline_incomplete": 15,
+          "events": 39
+        },
+        "panw": {
+          "baseline_complete": 27,
+          "events": 27
+        },
+        "sentinel_one": {
+          "baseline_complete": 3,
+          "events": 3
+        },
+        "sophos_utm": {
+          "baseline_complete": 7,
+          "baseline_incomplete": 3,
+          "events": 10
+        },
+        "sophos_xg": {
+          "baseline_complete": 75,
+          "baseline_incomplete": 33,
+          "events": 108
+        },
+        "suricata": {
+          "baseline_complete": 11,
+          "events": 11
+        },
+        "trellix_edr": {
+          "baseline_complete": 1,
+          "events": 1
+        },
+        "trellix_epo": {
+          "baseline_complete": 3,
+          "events": 3
+        },
+        "trend_vision": {
+          "baseline_complete": 2,
+          "events": 2
+        },
+        "zeek": {
+          "baseline_complete": 7,
+          "events": 7
+        },
+        "zscaler_zia": {
+          "baseline_complete": 4,
+          "events": 4
+        }
+      },
+      "mutation_safety": {
+        "attempts": 25,
+        "false_complete": 0
+      },
+      "promoted_residual_byte_reduction": 613,
+      "promoted_source_span_gain": 31,
+      "promotion_safety": {
+        "accepted_promotions_with_all_baseline_spans_preserved": 5,
+        "baseline_span_loss": 0,
+        "raw_mismatch": 0
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "totals": {
+        "baseline_complete": 286,
+        "baseline_incomplete": 90,
+        "delimited_promotions": 3,
+        "events": 376,
+        "promotions": 5,
+        "template_promotions": 2
+      }
+    }
+  ]
+}

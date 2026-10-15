@@ -4,10 +4,13 @@ from structural_hypothesis_poc import (
     candidate_improves,
     confirm_positional_csv,
     learn_best_hypothesis,
+    learn_event_template_hypotheses,
     learn_positional_csv_hypothesis,
+    merge_residual_hypothesis,
+    parse_with_event_template,
     parse_with_hypothesis,
 )
-from source_parse import SourceEvent, assert_source_accounting
+from source_parse import SourceEvent, ValueSpan, assert_source_accounting
 
 
 class StructuralHypothesisPocTests(unittest.TestCase):
@@ -108,6 +111,97 @@ class StructuralHypothesisPocTests(unittest.TestCase):
         complete.vendor_fields = {"a": "b"}
         complete.covered = [(0, len(raw))]
         self.assertFalse(candidate_improves(complete, candidate))
+
+    def test_residual_merge_preserves_baseline_spans_and_adds_only_residual_values(self):
+        hypothesis = learn_best_hypothesis(self.train)
+        raw = (
+            "prefix Domain=example.test, Controller=dc09, "
+            "Message=ok, Result=allow"
+        )
+        candidate = parse_with_hypothesis(raw, hypothesis)
+        baseline = SourceEvent(raw, syntax="BASE")
+        baseline.vendor_fields = {"existing": "prefix"}
+        baseline.value_spans = [
+            ValueSpan("existing", 0, 6, ("existing",))
+        ]
+        baseline.primitive_fields = 1
+        baseline.covered = [(0, 6)]
+        baseline.unparsed = [(6, len(raw))]
+        assert_source_accounting(baseline)
+
+        merged = merge_residual_hypothesis(baseline, candidate)
+        self.assertIsNotNone(merged)
+        self.assertEqual("SOURCE_PARSED", merged.status)
+        self.assertEqual(baseline.value_spans[0], merged.value_spans[0])
+        self.assertEqual("prefix", merged.vendor_fields["existing"])
+        baseline_ranges = {
+            (span.start_byte, span.end_byte) for span in baseline.value_spans
+        }
+        for span in merged.value_spans[1:]:
+            self.assertNotIn((span.start_byte, span.end_byte), baseline_ranges)
+            self.assertGreaterEqual(span.start_byte, 6)
+
+    def test_residual_merge_never_clears_malformed_or_resource_limit_issues(self):
+        hypothesis = learn_best_hypothesis(self.train)
+        raw = (
+            "prefix Domain=example.test, Controller=dc09, "
+            "Message=ok, Result=allow"
+        )
+        candidate = parse_with_hypothesis(raw, hypothesis)
+        for issue in (
+            "KV_QUOTE_UNCLOSED",
+            "SOURCE_SIZE_OR_NUL_INVALID",
+            "RFC5424_SD_BYTE_LIMIT",
+            "JSON_TRUNCATED",
+        ):
+            with self.subTest(issue=issue):
+                baseline = SourceEvent(raw, syntax="BASE")
+                baseline.vendor_fields = {"existing": "prefix"}
+                baseline.value_spans = [
+                    ValueSpan("existing", 0, 6, ("existing",))
+                ]
+                baseline.primitive_fields = 1
+                baseline.covered = [(0, 6)]
+                baseline.unparsed = [(6, len(raw))]
+                baseline.issues = [issue]
+                assert_source_accounting(baseline)
+                self.assertIsNone(
+                    merge_residual_hypothesis(baseline, candidate)
+                )
+
+    def test_event_template_learns_literal_anchors_and_variable_slots(self):
+        training = [
+            "<166>Oct 15 edge %EDGE-6-100001: User alice connected from 192.0.2.1 to gateway blue request allowed",
+            "<166>Oct 15 edge %EDGE-6-100001: User bob connected from 192.0.2.2 to gateway green request allowed",
+            "<166>Oct 15 edge %EDGE-6-100001: User carol connected from 192.0.2.3 to gateway red request allowed",
+        ]
+        hypotheses = learn_event_template_hypotheses(training)
+        self.assertEqual(1, len(hypotheses))
+        raw = (
+            "<166>Oct 15 edge %EDGE-6-100001: User dave connected from "
+            "198.51.100.9 to gateway amber request allowed"
+        )
+        event = parse_with_event_template(raw, hypotheses)
+        self.assertIsNotNone(event)
+        assert_source_accounting(event)
+        self.assertEqual("SOURCE_PARSED", event.status)
+        slots = event.vendor_fields["template"]["slots"]
+        self.assertTrue(any("dave" in value for value in slots))
+        self.assertTrue(any("198.51.100.9" in value for value in slots))
+        self.assertTrue(any("amber" in value for value in slots))
+
+    def test_event_template_rejects_truncated_holdout(self):
+        training = [
+            "<166>Oct 15 edge %EDGE-6-100001: User alice connected from 192.0.2.1 to gateway blue request allowed",
+            "<166>Oct 15 edge %EDGE-6-100001: User bob connected from 192.0.2.2 to gateway green request allowed",
+            "<166>Oct 15 edge %EDGE-6-100001: User carol connected from 192.0.2.3 to gateway red request allowed",
+        ]
+        hypotheses = learn_event_template_hypotheses(training)
+        truncated = (
+            "<166>Oct 15 edge %EDGE-6-100001: User dave connected from "
+            "198.51.100.9"
+        )
+        self.assertIsNone(parse_with_event_template(truncated, hypotheses))
 
     def _csv_event(self, width):
         values = [f"v{index}" for index in range(width)]

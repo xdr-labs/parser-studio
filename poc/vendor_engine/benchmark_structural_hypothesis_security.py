@@ -15,8 +15,12 @@ from typing import Iterable
 from multipass_adjudicator import parse_security_multipass
 from source_parse import assert_source_accounting
 from structural_hypothesis_poc import (
-    candidate_improves,
+    delete_required_delimited_anchors,
+    delete_required_template_anchor,
     learn_best_hypothesis,
+    learn_event_template_hypotheses,
+    merge_residual_hypothesis,
+    parse_with_event_template,
     parse_with_hypothesis,
 )
 
@@ -44,6 +48,10 @@ def _files() -> list[dict[str, str]]:
         {"category": "NGFW", "family": "panw", "path": str(ENGINE_CACHE / "palo_threat.raw")},
         {"category": "NDR_NETWORK_TELEMETRY", "family": "zeek", "path": str(LOCAL_CACHE / "zeek_conn.log")},
         {"category": "NDR_NETWORK_TELEMETRY", "family": "zeek", "path": str(LOCAL_CACHE / "zeek_notice.log")},
+        {"category": "NDR", "family": "darktrace", "path": str(LOCAL_CACHE / "darktrace_model.log")},
+        {"category": "NDR", "family": "darktrace", "path": str(LOCAL_CACHE / "darktrace_ai.log")},
+        {"category": "NDR", "family": "extrahop", "path": str(LOCAL_CACHE / "extrahop_detection.log")},
+        {"category": "NDR", "family": "extrahop", "path": str(LOCAL_CACHE / "extrahop_investigation.log")},
         {"category": "SWG_CLOUD_FIREWALL", "family": "zscaler_zia", "path": str(LOCAL_CACHE / "zscaler_firewall.log")},
         {"category": "SWG_CLOUD_FIREWALL", "family": "zscaler_zia", "path": str(LOCAL_CACHE / "zscaler_firewall_http.log")},
         {"category": "EDR", "family": "sentinel_one", "path": str(LOCAL_CACHE / "sentinel_one_threat.log")},
@@ -110,6 +118,11 @@ def run() -> dict:
     mutation_attempts = 0
     promoted_span_gain = 0
     promoted_residual_reduction = 0
+    promoted_baseline_spans_preserved = 0
+    promoted_baseline_span_loss = 0
+    promoted_raw_mismatch = 0
+    disjoint_evaluation_events = 0
+    small_file_control_events = 0
     file_sources = _files()
 
     for source in file_sources:
@@ -120,7 +133,12 @@ def run() -> dict:
         if not rows:
             continue
         train, holdout = _split(rows)
+        if len(rows) < 4:
+            small_file_control_events += len(holdout)
+        else:
+            disjoint_evaluation_events += len(holdout)
         hypothesis = learn_best_hypothesis(train)
+        template_hypotheses = learn_event_template_hypotheses(train)
         stats = Counter()
         for raw in holdout:
             baseline = parse_security_multipass(raw)
@@ -135,33 +153,98 @@ def run() -> dict:
 
             stats["baseline_incomplete"] += 1
             totals["baseline_incomplete"] += 1
-            if hypothesis is None:
+
+            merged = None
+            chosen_kind = None
+            if hypothesis is not None:
+                stats["delimited_attempts"] += 1
+                totals["delimited_attempts"] += 1
+                candidate = parse_with_hypothesis(raw, hypothesis)
+                if candidate is not None:
+                    assert_source_accounting(candidate)
+                    merged = merge_residual_hypothesis(baseline, candidate)
+                    if merged is not None:
+                        chosen_kind = "delimited"
+
+            if merged is None and template_hypotheses:
+                template_candidate = parse_with_event_template(
+                    raw, template_hypotheses
+                )
+                if template_candidate is not None:
+                    stats["template_attempts"] += 1
+                    totals["template_attempts"] += 1
+                    assert_source_accounting(template_candidate)
+                    merged = merge_residual_hypothesis(
+                        baseline, template_candidate
+                    )
+                    if merged is not None:
+                        chosen_kind = "template"
+
+            if merged is None:
                 continue
+
+            baseline_spans = {
+                (span.path, span.source_segments, span.start_byte, span.end_byte)
+                for span in baseline.value_spans
+            }
+            merged_spans = {
+                (span.path, span.source_segments, span.start_byte, span.end_byte)
+                for span in merged.value_spans
+            }
+            if baseline.raw != merged.raw:
+                promoted_raw_mismatch += 1
+                stats["safety_rejected_raw_mismatch"] += 1
+                totals["safety_rejected_raw_mismatch"] += 1
+                continue
+            if not baseline_spans <= merged_spans:
+                promoted_baseline_span_loss += 1
+                stats["safety_rejected_span_loss"] += 1
+                totals["safety_rejected_span_loss"] += 1
+                continue
+            promoted_baseline_spans_preserved += 1
+
             stats["hypothesis_attempts"] += 1
             totals["hypothesis_attempts"] += 1
-            candidate = parse_with_hypothesis(raw, hypothesis)
-            if candidate is not None:
-                assert_source_accounting(candidate)
-            if not candidate_improves(baseline, candidate):
-                continue
-
             stats["promotions"] += 1
             totals["promotions"] += 1
-            promoted_span_gain += max(0, len(candidate.value_spans) - len(baseline.value_spans))
+            stats[f"{chosen_kind}_promotions"] += 1
+            totals[f"{chosen_kind}_promotions"] += 1
+            promoted_span_gain += max(
+                0, len(merged.value_spans) - len(baseline.value_spans)
+            )
             promoted_residual_reduction += max(
-                0, baseline.residual_bytes - candidate.residual_bytes
+                0, baseline.residual_bytes - merged.residual_bytes
             )
 
-            # Fail-closed mutation: truncation and NUL corruption must not yield
-            # a complete hypothesis parse.
+            # Fail-closed mutation: the same product-style residual merge must
+            # not certify truncation or NUL-corrupted input.
+            structural_mutation = (
+                delete_required_delimited_anchors(raw, hypothesis)
+                if chosen_kind == "delimited"
+                else delete_required_template_anchor(
+                    raw, template_hypotheses
+                )
+            )
             mutations = [
                 raw[: max(1, int(len(raw) * 0.60))],
+                raw[: max(1, int(len(raw) * 0.80))],
+                raw[max(1, int(len(raw) * 0.20)) :],
                 raw[: max(1, len(raw) // 2)] + "\x00" + raw[len(raw) // 2 :],
             ]
+            if structural_mutation is not None:
+                mutations.append(structural_mutation)
             for mutated in mutations:
                 mutation_attempts += 1
-                mutated_candidate = parse_with_hypothesis(mutated, hypothesis)
-                if mutated_candidate is not None and mutated_candidate.status == "SOURCE_PARSED":
+                mutated_baseline = parse_security_multipass(mutated)
+                mutated_candidate = (
+                    parse_with_hypothesis(mutated, hypothesis)
+                    if chosen_kind == "delimited"
+                    else parse_with_event_template(mutated, template_hypotheses)
+                )
+                mutated_merged = merge_residual_hypothesis(
+                    mutated_baseline, mutated_candidate
+                )
+                if mutated_merged is not None and mutated_merged.status == "SOURCE_PARSED":
                     mutation_false_complete += 1
 
         row = {
@@ -172,6 +255,13 @@ def run() -> dict:
             "train_count": len(train),
             "holdout_count": len(holdout),
             "hypothesis": _hypothesis_metadata(hypothesis),
+            "template_hypotheses": {
+                "count": len(template_hypotheses),
+                "training_support_total": sum(
+                    item.training_support
+                    for item in template_hypotheses.values()
+                ),
+            },
             "metrics": dict(stats),
         }
         per_file.append(row)
@@ -186,25 +276,35 @@ def run() -> dict:
         "additional_public_fixture_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
         "product_vendor_identity_used_by_learner": False,
         "semantic_mapping_scored": False,
+        "promotion_independent_vendor_gold_scored": False,
         "raw_values_published": False,
         "categories": sorted(by_category),
         "families": sorted(by_family),
         "files": len(per_file),
+        "disjoint_evaluation_events": disjoint_evaluation_events,
+        "small_file_no_regression_control_events": small_file_control_events,
         "totals": dict(totals),
         "promoted_source_span_gain": promoted_span_gain,
         "promoted_residual_byte_reduction": promoted_residual_reduction,
+        "promotion_safety": {
+            "accepted_promotions_with_all_baseline_spans_preserved":
+                promoted_baseline_spans_preserved,
+            "baseline_span_loss": promoted_baseline_span_loss,
+            "raw_mismatch": promoted_raw_mismatch,
+        },
         "mutation_safety": {
             "attempts": mutation_attempts,
             "false_complete": mutation_false_complete,
+            "mutation_types": 5,
         },
         "by_category": {key: dict(value) for key, value in sorted(by_category.items())},
         "by_family": {key: dict(value) for key, value in sorted(by_family.items())},
         "per_file": per_file,
         "limitations": [
-            "v1 learns delimiter/key-anchor structure only; it is not a general CFG learner.",
+            "v2 learns delimiter/key-anchor and numeric-event-code template structure; it is not a general CFG learner.",
             "Promotion is structural evidence, not semantic field normalization evidence.",
             "Only existing incomplete events are eligible; prior SOURCE_PARSED records are never reinterpreted.",
-            "Not every promoted source has an independent vendor-native field oracle in this PoC.",
+            "The promoted holdouts do not yet have an independent vendor-native field/span oracle, so promotion is not product qualification.",
         ],
     }
     SUMMARY.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", "utf8")

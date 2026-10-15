@@ -17,9 +17,15 @@
     "NAC_IDENTITY_SECURITY": {
       "baseline_complete": 77,
       "baseline_incomplete": 22,
+      "delimited_attempts": 14,
+      "delimited_promotions": 5,
       "events": 99,
-      "hypothesis_attempts": 14,
+      "hypothesis_attempts": 5,
       "promotions": 5
+    },
+    "NDR": {
+      "baseline_complete": 10,
+      "events": 10
     },
     "NDR_NETWORK_TELEMETRY": {
       "baseline_complete": 7,
@@ -42,7 +48,11 @@
     },
     "NGFW_VPN": {
       "baseline_incomplete": 14,
-      "events": 14
+      "events": 14,
+      "hypothesis_attempts": 2,
+      "promotions": 2,
+      "template_attempts": 2,
+      "template_promotions": 2
     },
     "SWG_CLOUD_FIREWALL": {
       "baseline_complete": 4,
@@ -74,18 +84,32 @@
     },
     "cisco_asa": {
       "baseline_incomplete": 14,
-      "events": 14
+      "events": 14,
+      "hypothesis_attempts": 2,
+      "promotions": 2,
+      "template_attempts": 2,
+      "template_promotions": 2
     },
     "cisco_ise": {
       "baseline_complete": 77,
       "baseline_incomplete": 22,
+      "delimited_attempts": 14,
+      "delimited_promotions": 5,
       "events": 99,
-      "hypothesis_attempts": 14,
+      "hypothesis_attempts": 5,
       "promotions": 5
     },
     "crowdstrike": {
       "baseline_complete": 6,
       "events": 6
+    },
+    "darktrace": {
+      "baseline_complete": 6,
+      "events": 6
+    },
+    "extrahop": {
+      "baseline_complete": 4,
+      "events": 4
     },
     "f5_bigip": {
       "baseline_complete": 18,
@@ -148,6 +172,7 @@
     "EDR_XDR",
     "IDS_IPS_NDR",
     "NAC_IDENTITY_SECURITY",
+    "NDR",
     "NDR_NETWORK_TELEMETRY",
     "NGFW",
     "NGFW_IDS_IPS",
@@ -159,12 +184,15 @@
     "WAF_NGFW"
   ],
   "contract": "parser-studio.poc.structural-hypothesis-security.v1",
+  "disjoint_evaluation_events": 323,
   "families": [
     "aws_waf",
     "checkpoint",
     "cisco_asa",
     "cisco_ise",
     "crowdstrike",
+    "darktrace",
+    "extrahop",
     "f5_bigip",
     "fortigate",
     "juniper_srx",
@@ -179,16 +207,17 @@
     "zeek",
     "zscaler_zia"
   ],
-  "files": 74,
+  "files": 78,
   "limitations": [
-    "v1 learns delimiter/key-anchor structure only; it is not a general CFG learner.",
+    "v2 learns delimiter/key-anchor and numeric-event-code template structure; it is not a general CFG learner.",
     "Promotion is structural evidence, not semantic field normalization evidence.",
     "Only existing incomplete events are eligible; prior SOURCE_PARSED records are never reinterpreted.",
-    "Not every promoted source has an independent vendor-native field oracle in this PoC."
+    "The promoted holdouts do not yet have an independent vendor-native field/span oracle, so promotion is not product qualification."
   ],
   "mutation_safety": {
-    "attempts": 10,
-    "false_complete": 0
+    "attempts": 35,
+    "false_complete": 0,
+    "mutation_types": 5
   },
   "per_file": [
     {
@@ -201,6 +230,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -215,6 +248,10 @@
         "baseline_complete": 8,
         "events": 8
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 14
     },
     {
@@ -227,6 +264,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -241,6 +282,10 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 1
     },
     {
@@ -253,6 +298,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -267,6 +316,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 5
     },
     {
@@ -279,6 +332,10 @@
       "metrics": {
         "baseline_complete": 5,
         "events": 5
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 8
     },
@@ -293,6 +350,10 @@
         "baseline_complete": 27,
         "events": 27
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 49
     },
     {
@@ -305,6 +366,10 @@
       "metrics": {
         "baseline_complete": 6,
         "events": 6
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 10
     },
@@ -319,6 +384,78 @@
         "baseline_complete": 1,
         "events": 1
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NDR",
+      "event_count": 11,
+      "family": "darktrace",
+      "file_sha256": "e46bec3199a367d4962918e478cf62470a5c3c4e161053c558b4209347de1823",
+      "holdout_count": 4,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 4,
+        "events": 4
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 7
+    },
+    {
+      "category": "NDR",
+      "event_count": 2,
+      "family": "darktrace",
+      "file_sha256": "5dc4c4a7fb38015cdafda8695ec569ec5b6fac3a5bb59ffc4b1817467285d674",
+      "holdout_count": 2,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 2
+    },
+    {
+      "category": "NDR",
+      "event_count": 3,
+      "family": "extrahop",
+      "file_sha256": "f8cedeb636570a45ecf2df56e0ee817dcb58b4087647e589e745c9cf9fe5268d",
+      "holdout_count": 3,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 3,
+        "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
+      "train_count": 3
+    },
+    {
+      "category": "NDR",
+      "event_count": 4,
+      "family": "extrahop",
+      "file_sha256": "f071d0e4d20847eeb6144ac66a2cda18202d2a53ba99576f47626450556fd785",
+      "holdout_count": 1,
+      "hypothesis": null,
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -331,6 +468,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -345,6 +486,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 4
     },
     {
@@ -357,6 +502,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 5
     },
@@ -371,6 +520,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 7
     },
     {
@@ -383,6 +536,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 2
     },
@@ -398,6 +555,10 @@
         "baseline_incomplete": 1,
         "events": 7
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 14
     },
     {
@@ -411,6 +572,10 @@
         "baseline_incomplete": 6,
         "events": 6
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 10
     },
     {
@@ -422,7 +587,15 @@
       "hypothesis": null,
       "metrics": {
         "baseline_incomplete": 8,
-        "events": 8
+        "events": 8,
+        "hypothesis_attempts": 2,
+        "promotions": 2,
+        "template_attempts": 2,
+        "template_promotions": 2
+      },
+      "template_hypotheses": {
+        "count": 4,
+        "training_support_total": 11
       },
       "train_count": 16
     },
@@ -437,6 +610,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 2
     },
     {
@@ -449,6 +626,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -463,6 +644,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 6
     },
     {
@@ -476,6 +661,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 5
     },
     {
@@ -488,6 +677,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 4
     },
@@ -510,6 +703,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -522,6 +719,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 1
     },
@@ -536,6 +737,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -548,6 +753,10 @@
       "metrics": {
         "baseline_complete": 1,
         "events": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 1
     },
@@ -569,9 +778,15 @@
       "metrics": {
         "baseline_complete": 4,
         "baseline_incomplete": 1,
+        "delimited_attempts": 1,
+        "delimited_promotions": 1,
         "events": 5,
         "hypothesis_attempts": 1,
         "promotions": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 8
     },
@@ -593,9 +808,15 @@
       "metrics": {
         "baseline_complete": 18,
         "baseline_incomplete": 3,
+        "delimited_attempts": 3,
+        "delimited_promotions": 1,
         "events": 21,
-        "hypothesis_attempts": 3,
+        "hypothesis_attempts": 1,
         "promotions": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 39
     },
@@ -618,6 +839,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 7
     },
     {
@@ -638,9 +863,15 @@
       "metrics": {
         "baseline_complete": 2,
         "baseline_incomplete": 6,
+        "delimited_attempts": 6,
+        "delimited_promotions": 3,
         "events": 8,
-        "hypothesis_attempts": 6,
+        "hypothesis_attempts": 3,
         "promotions": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 16
     },
@@ -655,6 +886,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 1
     },
     {
@@ -667,6 +902,10 @@
       "metrics": {
         "baseline_complete": 14,
         "events": 14
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 26
     },
@@ -687,8 +926,12 @@
       },
       "metrics": {
         "baseline_incomplete": 2,
-        "events": 2,
-        "hypothesis_attempts": 2
+        "delimited_attempts": 2,
+        "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 5
     },
@@ -710,8 +953,12 @@
       "metrics": {
         "baseline_complete": 4,
         "baseline_incomplete": 2,
-        "events": 6,
-        "hypothesis_attempts": 2
+        "delimited_attempts": 2,
+        "events": 6
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 11
     },
@@ -727,6 +974,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 4
     },
     {
@@ -739,6 +990,10 @@
       "metrics": {
         "baseline_incomplete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 2
     },
@@ -754,6 +1009,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 5
     },
     {
@@ -767,6 +1026,10 @@
         "baseline_complete": 7,
         "baseline_incomplete": 1,
         "events": 8
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 14
     },
@@ -789,6 +1052,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 5
     },
     {
@@ -803,6 +1070,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 2
     },
     {
@@ -815,6 +1086,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 4
     },
@@ -837,6 +1112,10 @@
         "baseline_complete": 9,
         "events": 9
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 18
     },
     {
@@ -849,6 +1128,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 5
     },
@@ -863,6 +1146,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 6
     },
     {
@@ -875,6 +1162,10 @@
       "metrics": {
         "baseline_incomplete": 1,
         "events": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -890,6 +1181,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 4
     },
     {
@@ -903,6 +1198,10 @@
         "baseline_complete": 7,
         "baseline_incomplete": 4,
         "events": 11
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 20
     },
@@ -918,6 +1217,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 6
     },
     {
@@ -930,6 +1233,10 @@
       "metrics": {
         "baseline_complete": 5,
         "events": 5
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 9
     },
@@ -945,6 +1252,10 @@
         "baseline_incomplete": 1,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -958,6 +1269,10 @@
         "baseline_complete": 1,
         "baseline_incomplete": 9,
         "events": 10
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 19
     },
@@ -973,6 +1288,10 @@
         "baseline_incomplete": 1,
         "events": 5
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 8
     },
     {
@@ -985,6 +1304,10 @@
       "metrics": {
         "baseline_incomplete": 1,
         "events": 1
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -999,6 +1322,10 @@
         "baseline_incomplete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -1012,6 +1339,10 @@
         "baseline_complete": 4,
         "events": 4
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 6
     },
     {
@@ -1024,6 +1355,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -1039,6 +1374,10 @@
         "baseline_incomplete": 2,
         "events": 7
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 12
     },
     {
@@ -1053,6 +1392,10 @@
         "baseline_incomplete": 1,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 2
     },
     {
@@ -1065,6 +1408,10 @@
       "metrics": {
         "baseline_complete": 3,
         "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -1079,6 +1426,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 2
     },
     {
@@ -1091,6 +1442,10 @@
       "metrics": {
         "baseline_incomplete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 2
     },
@@ -1105,6 +1460,10 @@
         "baseline_incomplete": 3,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -1117,6 +1476,10 @@
       "metrics": {
         "baseline_incomplete": 3,
         "events": 3
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 5
     },
@@ -1131,6 +1494,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 1
     },
     {
@@ -1143,6 +1510,10 @@
       "metrics": {
         "baseline_incomplete": 6,
         "events": 6
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 10
     },
@@ -1157,6 +1528,10 @@
         "baseline_incomplete": 1,
         "events": 1
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -1169,6 +1544,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 3
     },
@@ -1183,6 +1562,10 @@
         "baseline_complete": 2,
         "events": 2
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -1195,6 +1578,10 @@
       "metrics": {
         "baseline_complete": 2,
         "events": 2
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 2
     },
@@ -1210,6 +1597,10 @@
         "baseline_incomplete": 10,
         "events": 33
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 62
     },
     {
@@ -1222,6 +1613,10 @@
       "metrics": {
         "baseline_complete": 18,
         "events": 18
+      },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
       },
       "train_count": 33
     },
@@ -1236,6 +1631,10 @@
         "baseline_complete": 3,
         "events": 3
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 3
     },
     {
@@ -1249,21 +1648,36 @@
         "baseline_complete": 18,
         "events": 18
       },
+      "template_hypotheses": {
+        "count": 0,
+        "training_support_total": 0
+      },
       "train_count": 32
     }
   ],
   "product_vendor_identity_used_by_learner": false,
-  "promoted_residual_byte_reduction": 800,
-  "promoted_source_span_gain": 56,
+  "promoted_residual_byte_reduction": 1130,
+  "promoted_source_span_gain": 58,
+  "promotion_independent_vendor_gold_scored": false,
+  "promotion_safety": {
+    "accepted_promotions_with_all_baseline_spans_preserved": 7,
+    "baseline_span_loss": 0,
+    "raw_mismatch": 0
+  },
   "raw_values_published": false,
   "scope": "SECURITY_PRODUCTS_ONLY",
   "semantic_mapping_scored": false,
+  "small_file_no_regression_control_events": 53,
   "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
   "totals": {
-    "baseline_complete": 280,
+    "baseline_complete": 290,
     "baseline_incomplete": 86,
-    "events": 366,
-    "hypothesis_attempts": 14,
-    "promotions": 5
+    "delimited_attempts": 14,
+    "delimited_promotions": 5,
+    "events": 376,
+    "hypothesis_attempts": 7,
+    "promotions": 7,
+    "template_attempts": 2,
+    "template_promotions": 2
   }
 }

@@ -42,6 +42,7 @@ class StructuralHypothesis:
     first_anchor: str | None
     min_anchor_hits: int
     terminal_anchors: tuple[str, ...]
+    minimum_prefix_chars: int
     training_samples: int
     average_anchor_support: float
     order_consistency: float
@@ -191,6 +192,20 @@ def learn_delimited_kv_hypothesis(
     ]
     first_anchor = max(first_candidates)[2] if first_candidates else None
 
+    prefix_positions: list[int] = []
+    for raw in rows:
+        markers = _delimiter_markers(raw, delimiter)
+        if first_anchor is not None:
+            first = _find_first_anchor(raw, delimiter, first_anchor)
+            if first is not None:
+                markers.append(first)
+        markers.sort(key=lambda item: item.key_start)
+        if markers:
+            prefix_positions.append(markers[0].key_start)
+    if len(prefix_positions) < max(2, ceil(len(rows) * 0.60)):
+        return None
+    minimum_prefix_chars = min(prefix_positions)
+
     anchor_count = len(stable) + int(first_anchor is not None)
     if anchor_count < 3:
         return None
@@ -210,6 +225,7 @@ def learn_delimited_kv_hypothesis(
         first_anchor=first_anchor,
         min_anchor_hits=max(3, min(anchor_count, ceil(anchor_count * 0.60))),
         terminal_anchors=tuple(terminal_anchors),
+        minimum_prefix_chars=minimum_prefix_chars,
         training_samples=len(rows),
         average_anchor_support=avg_support,
         order_consistency=consistency,
@@ -301,6 +317,13 @@ def parse_with_hypothesis(
     if not markers:
         return None
     markers.sort(key=lambda item: item.key_start)
+    prefix_tolerance = max(
+        4, min(24, ceil(hypothesis.minimum_prefix_chars * 0.15))
+    )
+    if markers[0].key_start < max(
+        0, hypothesis.minimum_prefix_chars - prefix_tolerance
+    ):
+        return None
 
     # Qualification uses only repeated training anchors.  Once qualified, all
     # syntactically valid key markers in the holdout are retained, including
@@ -369,12 +392,96 @@ def parse_with_hypothesis(
     return event
 
 
-def candidate_improves(baseline: SourceEvent, candidate: SourceEvent | None) -> bool:
+def _unparsed_byte_ranges(event: SourceEvent) -> list[tuple[int, int]]:
+    raw = event.raw
+    return [
+        (
+            len(raw[:start].encode("utf8")),
+            len(raw[:end].encode("utf8")),
+        )
+        for start, end in event.unparsed
+    ]
+
+
+def merge_residual_hypothesis(
+    baseline: SourceEvent, candidate: SourceEvent | None
+) -> SourceEvent | None:
+    """Preserve every baseline claim and add only values wholly inside residuals."""
     if candidate is None or candidate.status != "SOURCE_PARSED":
-        return False
+        return None
     if baseline.status == "SOURCE_PARSED" or baseline.raw != candidate.raw:
-        return False
-    return candidate.residual_bytes < baseline.residual_bytes
+        return None
+    hard_issue_fragments = (
+        "SIZE_OR_NUL",
+        "UNCLOSED",
+        "TRUNCATED",
+        "BYTE_LIMIT",
+        "FIELD_LIMIT",
+        "DEPTH_LIMIT",
+        "INVALID",
+    )
+    if any(
+        fragment in issue
+        for issue in baseline.issues
+        for fragment in hard_issue_fragments
+    ):
+        return None
+    assert_source_accounting(baseline)
+    assert_source_accounting(candidate)
+
+    baseline_ranges = {
+        (span.start_byte, span.end_byte)
+        for span in baseline.value_spans
+    }
+    residual_ranges = _unparsed_byte_ranges(baseline)
+    additions: list[ValueSpan] = []
+    for span in candidate.value_spans:
+        key = (span.start_byte, span.end_byte)
+        if key in baseline_ranges or span.start_byte == span.end_byte:
+            continue
+        if any(
+            start <= span.start_byte and span.end_byte <= end
+            for start, end in residual_ranges
+        ):
+            additions.append(span)
+    if not additions:
+        return None
+
+    from copy import deepcopy
+
+    result = deepcopy(baseline)
+    residual_fields: dict[str, object] = {}
+    replacement_spans: list[ValueSpan] = []
+    raw_bytes = baseline.raw.encode("utf8")
+    for index, span in enumerate(additions):
+        key = f"value_{index}"
+        value = raw_bytes[span.start_byte:span.end_byte].decode("utf8")
+        residual_fields[key] = value
+        replacement_spans.append(
+            ValueSpan(
+                f"hypothesis_residual.{key}",
+                span.start_byte,
+                span.end_byte,
+                ("hypothesis_residual", key),
+            )
+        )
+
+    result.vendor_fields = deepcopy(baseline.vendor_fields)
+    result.vendor_fields["hypothesis_residual"] = residual_fields
+    result.value_spans = list(baseline.value_spans) + replacement_spans
+    result.primitive_fields = len(result.value_spans)
+    result.syntax = baseline.syntax + "+STRUCTURAL_HYPOTHESIS_RESIDUAL"
+    result.covered = [(0, len(result.raw))]
+    result.unparsed = []
+    result.issues = []
+    assert_source_accounting(result)
+    if result.status != "SOURCE_PARSED":
+        return None
+    return result
+
+
+def candidate_improves(baseline: SourceEvent, candidate: SourceEvent | None) -> bool:
+    return merge_residual_hypothesis(baseline, candidate) is not None
 
 
 @dataclass(frozen=True)
@@ -447,3 +554,390 @@ def confirm_positional_csv(
     if candidate.status != "SOURCE_PARSED":
         return None
     return candidate
+
+
+# ---------------------------------------------------------------------------
+# Cross-event literal-anchor alignment hypothesis.
+# ---------------------------------------------------------------------------
+
+EVENT_CODE_CLUSTER = re.compile(
+    r"%[A-Za-z0-9_-]+-(?:\d+)-(?P<message_id>\d+):"
+)
+TEMPLATE_LEX = re.compile(
+    r"%[A-Za-z0-9_-]+-\d+-\d+:"
+    r"|\"(?:\\.|[^\"])*\""
+    r"|\'(?:\\.|[^\'])*\'"
+    r"|(?:\d{1,3}\.){3}\d{1,3}"
+    r"|[A-Za-z_][A-Za-z0-9_.-]*"
+    r"|\d+(?:\.\d+)*"
+    r"|[^\w\s]"
+)
+
+
+@dataclass(frozen=True)
+class TemplateToken:
+    text: str
+    start: int
+    end: int
+
+
+@dataclass(frozen=True)
+class GapRule:
+    prefix: str
+    suffix: str
+
+
+@dataclass(frozen=True)
+class EventTemplateHypothesis:
+    message_id: str
+    anchors: tuple[str, ...]
+    gaps: tuple[GapRule, ...]
+    training_support: int
+    anchor_coverage: float
+    minimum_terminal_fraction: float
+
+
+def _event_message_id(raw: str) -> str | None:
+    match = EVENT_CODE_CLUSTER.search(raw)
+    return match.group("message_id") if match is not None else None
+
+
+def _literal_tokens(raw: str) -> list[TemplateToken]:
+    out: list[TemplateToken] = []
+    for match in TEMPLATE_LEX.finditer(raw):
+        text = match.group(0)
+        if EVENT_CODE_CLUSTER.fullmatch(text):
+            continue
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", text):
+            continue
+        out.append(TemplateToken(text, match.start(), match.end()))
+    return out
+
+
+def _lcs_tokens(left: list[str], right: list[str]) -> list[str]:
+    if not left or not right:
+        return []
+    table = [[0] * (len(right) + 1) for _ in range(len(left) + 1)]
+    for i, a in enumerate(left, 1):
+        for j, b in enumerate(right, 1):
+            table[i][j] = (
+                table[i - 1][j - 1] + 1
+                if a == b
+                else max(table[i - 1][j], table[i][j - 1])
+            )
+    out: list[str] = []
+    i, j = len(left), len(right)
+    while i and j:
+        if left[i - 1] == right[j - 1]:
+            out.append(left[i - 1])
+            i -= 1
+            j -= 1
+        elif table[i - 1][j] >= table[i][j - 1]:
+            i -= 1
+        else:
+            j -= 1
+    out.reverse()
+    return out
+
+
+def _match_anchor_positions(
+    raw: str, anchors: tuple[str, ...] | list[str]
+) -> list[TemplateToken] | None:
+    tokens = _literal_tokens(raw)
+    matched: list[TemplateToken] = []
+    cursor = 0
+    for anchor in anchors:
+        found = None
+        while cursor < len(tokens):
+            token = tokens[cursor]
+            cursor += 1
+            if token.text == anchor:
+                found = token
+                break
+        if found is None:
+            return None
+        matched.append(found)
+    return matched
+
+
+def _gap_ranges(raw: str, matched: list[TemplateToken]) -> list[tuple[int, int]]:
+    if not matched:
+        return []
+    ranges = [(0, matched[0].start)]
+    ranges.extend(
+        (left.end, right.start)
+        for left, right in zip(matched, matched[1:])
+    )
+    ranges.append((matched[-1].end, len(raw)))
+    return ranges
+
+
+def _common_prefix(values: list[str]) -> str:
+    if not values:
+        return ""
+    prefix = min(values, key=len)
+    while prefix and not all(value.startswith(prefix) for value in values):
+        prefix = prefix[:-1]
+    return prefix
+
+
+def _common_suffix(values: list[str], prefix_length: int) -> str:
+    if not values:
+        return ""
+    candidates = [value[prefix_length:] for value in values]
+    suffix = min(candidates, key=len)
+    while suffix and not all(value.endswith(suffix) for value in candidates):
+        suffix = suffix[1:]
+    return suffix
+
+
+def _separator_prefix(value: str) -> str:
+    match = re.match(r"^[^A-Za-z0-9_]*", value)
+    return match.group(0) if match is not None else ""
+
+
+def _separator_suffix(value: str) -> str:
+    match = re.search(r"[^A-Za-z0-9_]*$", value)
+    return match.group(0) if match is not None else ""
+
+
+def _build_event_template(
+    message_id: str, rows: list[str]
+) -> EventTemplateHypothesis | None:
+    if len(rows) < 2:
+        return None
+    literal_sequences = [[token.text for token in _literal_tokens(raw)] for raw in rows]
+    common = list(literal_sequences[0])
+    for sequence in literal_sequences[1:]:
+        common = _lcs_tokens(common, sequence)
+        if len(common) < 6:
+            return None
+    if len(common) < 6:
+        return None
+
+    coverage = sum(
+        len(common) / max(1, len(sequence))
+        for sequence in literal_sequences
+    ) / len(literal_sequences)
+    if coverage < 0.45:
+        return None
+
+    matched_rows: list[list[TemplateToken]] = []
+    gap_rows: list[list[str]] = []
+    terminal_fractions: list[float] = []
+    for raw in rows:
+        matched = _match_anchor_positions(raw, common)
+        if matched is None:
+            return None
+        matched_rows.append(matched)
+        ranges = _gap_ranges(raw, matched)
+        gap_rows.append([raw[start:end] for start, end in ranges])
+        terminal_fractions.append(matched[-1].end / max(1, len(raw)))
+
+    if min(terminal_fractions) < 0.55:
+        return None
+
+    gap_rules: list[GapRule] = []
+    for index in range(len(common) + 1):
+        values = [gaps[index] for gaps in gap_rows]
+        # Only boundary separators are grammar literals.  Alphanumeric common
+        # prefixes/suffixes can be coincidentally constant source values
+        # (addresses, users, IDs) and must remain variable slots.
+        common_prefix = _common_prefix(values)
+        prefix = _separator_prefix(common_prefix)
+        common_suffix = _common_suffix(values, len(prefix))
+        suffix = _separator_suffix(common_suffix)
+        if prefix and suffix and all(
+            len(value) < len(prefix) + len(suffix)
+            for value in values
+        ):
+            suffix = ""
+        gap_rules.append(GapRule(prefix, suffix))
+
+    hypothesis = EventTemplateHypothesis(
+        message_id=message_id,
+        anchors=tuple(common),
+        gaps=tuple(gap_rules),
+        training_support=len(rows),
+        anchor_coverage=coverage,
+        minimum_terminal_fraction=min(terminal_fractions),
+    )
+
+    # Self-qualification: every train row must parse and obvious truncations
+    # must fail closed before the hypothesis can be evaluated on holdout data.
+    for raw in rows:
+        candidate = parse_with_event_template(raw, {message_id: hypothesis})
+        if candidate is None or candidate.status != "SOURCE_PARSED":
+            return None
+        mutations = [
+            raw[: max(1, int(len(raw) * 0.60))],
+            raw[: max(1, int(len(raw) * 0.80))],
+            raw[max(1, int(len(raw) * 0.20)) :],
+            raw[: max(1, len(raw) // 2)] + "\x00" + raw[len(raw) // 2 :],
+        ]
+        structural = delete_required_template_anchor(
+            raw, {message_id: hypothesis}
+        )
+        if structural is not None:
+            mutations.append(structural)
+        for mutated in mutations:
+            if parse_with_event_template(mutated, {message_id: hypothesis}) is not None:
+                return None
+    return hypothesis
+
+
+def learn_event_template_hypotheses(
+    samples: Iterable[str],
+) -> dict[str, EventTemplateHypothesis]:
+    groups: dict[str, list[str]] = defaultdict(list)
+    for raw in list(samples)[:MAX_TRAIN]:
+        if not isinstance(raw, str) or not raw:
+            continue
+        message_id = _event_message_id(raw)
+        if message_id is not None:
+            groups[message_id].append(raw)
+    result: dict[str, EventTemplateHypothesis] = {}
+    for message_id, rows in groups.items():
+        hypothesis = _build_event_template(message_id, rows)
+        if hypothesis is not None:
+            result[message_id] = hypothesis
+    return result
+
+
+def parse_with_event_template(
+    raw: str, hypotheses: dict[str, EventTemplateHypothesis]
+) -> SourceEvent | None:
+    if not isinstance(raw, str) or not raw or "\x00" in raw:
+        return None
+    if raw[:1] in ("{", "[") or raw.startswith(("CEF:", "LEEF:")):
+        return None
+    message_id = _event_message_id(raw)
+    if message_id is None:
+        return None
+    hypothesis = hypotheses.get(message_id)
+    if hypothesis is None:
+        return None
+
+    matched = _match_anchor_positions(raw, hypothesis.anchors)
+    if matched is None:
+        return None
+    terminal_fraction = matched[-1].end / max(1, len(raw))
+    if terminal_fraction < max(
+        0.45, hypothesis.minimum_terminal_fraction - 0.12
+    ):
+        return None
+
+    ranges = _gap_ranges(raw, matched)
+    if len(ranges) != len(hypothesis.gaps):
+        return None
+
+    slots: list[str] = []
+    spans: list[ValueSpan] = []
+    for index, ((start, end), rule) in enumerate(zip(ranges, hypothesis.gaps)):
+        text = raw[start:end]
+        if not text.startswith(rule.prefix):
+            return None
+        if rule.suffix and not text.endswith(rule.suffix):
+            return None
+        center_start = start + len(rule.prefix)
+        center_end = end - len(rule.suffix) if rule.suffix else end
+        while center_start < center_end and raw[center_start].isspace():
+            center_start += 1
+        while center_end > center_start and raw[center_end - 1].isspace():
+            center_end -= 1
+        if center_start >= center_end:
+            continue
+        center = raw[center_start:center_end]
+        if not any(char.isalnum() for char in center):
+            continue
+        slot_index = len(slots)
+        slots.append(center)
+        spans.append(
+            ValueSpan(
+                f"template.slot_{slot_index}",
+                len(raw[:center_start].encode("utf8")),
+                len(raw[:center_end].encode("utf8")),
+                ("template", "slots", slot_index),
+            )
+        )
+    if not slots:
+        return None
+
+    event = SourceEvent(raw, syntax="STRUCTURAL_HYPOTHESIS+EVENT_TEMPLATE")
+    event.vendor_fields = {
+        "template": {
+            "message_id": message_id,
+            "slots": slots,
+        }
+    }
+    event.value_spans = spans
+    event.primitive_fields = len(spans)
+    event.covered = [(0, len(raw))]
+    assert_source_accounting(event)
+    return event
+
+
+def delete_required_delimited_anchors(
+    raw: str, hypothesis: StructuralHypothesis
+) -> str | None:
+    """Create a structural corruption by removing enough learned key anchors."""
+    markers = _delimiter_markers(raw, hypothesis.delimiter)
+    if hypothesis.first_anchor is not None:
+        first = _find_first_anchor(raw, hypothesis.delimiter, hypothesis.first_anchor)
+        if first is not None:
+            markers.append(first)
+    markers.sort(key=lambda item: item.key_start)
+    learned = set(hypothesis.stable_anchors)
+    if hypothesis.first_anchor is not None:
+        learned.add(hypothesis.first_anchor)
+
+    by_key: dict[str, KeyMarker] = {}
+    for marker in markers:
+        if marker.key in learned and marker.key not in by_key:
+            by_key[marker.key] = marker
+    distinct = list(by_key.values())
+    if len(distinct) < hypothesis.min_anchor_hits:
+        return None
+
+    remove_count = max(
+        1, len(distinct) - hypothesis.min_anchor_hits + 1
+    )
+    # Prefer central anchors so this is neither ordinary prefix nor tail
+    # truncation; those are tested separately.
+    center = len(distinct) // 2
+    ordered = sorted(
+        distinct,
+        key=lambda marker: abs(distinct.index(marker) - center),
+    )
+    selected = ordered[:remove_count]
+    ranges = sorted(
+        (
+            marker.delimiter_start
+            if marker.delimiter_start is not None
+            else marker.key_start,
+            marker.eq_end,
+        )
+        for marker in selected
+    )
+    mutated = raw
+    for start, end in reversed(ranges):
+        mutated = mutated[:start] + mutated[end:]
+    return mutated if mutated != raw else None
+
+
+def delete_required_template_anchor(
+    raw: str, hypotheses: dict[str, EventTemplateHypothesis]
+) -> str | None:
+    """Create a structural corruption by removing one required literal anchor."""
+    message_id = _event_message_id(raw)
+    if message_id is None:
+        return None
+    hypothesis = hypotheses.get(message_id)
+    if hypothesis is None:
+        return None
+    matched = _match_anchor_positions(raw, hypothesis.anchors)
+    if not matched:
+        return None
+    target = matched[len(matched) // 2]
+    mutated = raw[:target.start] + raw[target.end:]
+    return mutated if mutated != raw else None
