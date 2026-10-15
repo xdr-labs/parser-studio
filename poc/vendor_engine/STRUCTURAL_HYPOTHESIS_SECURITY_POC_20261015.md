@@ -352,27 +352,25 @@ Machine-readable evidence:
 
 ## Tests and regression
 
-Focused Structural Hypothesis suite after v4 partial-recovery work:
-**22 / 22 PASS**.
+Focused Structural Hypothesis suite on the final research candidate:
+**29 / 29 PASS**.
 
-The latest test loader enumerates **432 tests** after adding four numeric-prefix
-tests. A full discovery immediately before those four additions executed 428
-tests and exposed exactly nine environment-dependent errors: historical ignored
-commercial/LEEF evidence or the optional Drain3 research dependency was absent.
-There were **0 assertion failures**.
+The previously missing ignored LEEF evidence was reconnected from the preserved
+PoC worktree, and the existing pinned Drain3 0.9.11 ignored dependency was added
+to the test-only `PYTHONPATH`. No tracked dependency or product runtime was
+changed.
 
-The current cache-independent regression excludes exactly those same nine
-verified external-evidence tests. The loader selected 423 test objects; after
-class-level skip handling the runner completed:
+Exact current worktree full discovery:
 
-- tests run: **419**
-- PASS: **412**
-- optional skips: **7**
+- tests run: **437**
+- optional skips: **4**
 - failures: **0**
 - errors: **0**
+- result: **PASS**
 
-Together with the focused **22 / 22 PASS**, this is the reproducible
-code-regression gate for the current isolated v4 PoC worktree.
+Together with the focused **29 / 29 PASS** and the dedicated independent
+reference benchmarks, this is the reproducible code-regression gate for the
+final isolated PoC worktree.
 
 ## Fresh prospective security holdout — v4 abstention result
 
@@ -444,10 +442,195 @@ Machine-readable negative evidence:
 
 - `structural-hypothesis-masked-rgram-negative.json`
 
+## Fresh open-world security holdout
+
+A separate source set was frozen before evaluation at the same pinned
+`elastic/integrations` revision. It contains 27 files from four previously
+unused security-product families:
+
+- Barracuda WAF;
+- NETSCOUT Sightline NDR/DDoS;
+- Symantec Endpoint / EDR;
+- WatchGuard Firebox NGFW.
+
+The frozen set contains **820 source events**. Deterministic splitting produced
+**301 evaluation events**, of which **276 are fully disjoint holdouts** and 25
+come from files too small to split and are retained only as controls.
+
+Fresh-holdout baseline:
+
+- `SOURCE_PARSED`: **120 / 301**;
+- incomplete: **181 / 301**.
+
+Structural Hypothesis v4 result on those 181 incomplete events:
+
+- whole-event promotions: **0**;
+- partial augmentations: **0**;
+- unsafe raw/span replacements: **0**;
+- abstentions: **181 / 181**.
+
+No admission threshold was relaxed after seeing this result. WatchGuard message
+identifiers did not repeat sufficiently across train/holdout for safe template
+learning, and the Symantec positional CSV samples did not meet the existing
+support/width qualification gates. Those cases remain incomplete rather than
+receiving vendor-specific exceptions.
+
+This is useful negative evidence: the current learned primitives improve known
+repeated structural classes but **do not yet provide open-world recall gains on
+these four new families**. At the same time, they fail closed instead of
+manufacturing fields on unseen structures.
+
+Machine-readable evidence:
+
+- `STRUCTURAL_HYPOTHESIS_FRESH_SECURITY_HOLDOUT_20261015.json`
+- `structural-hypothesis-fresh-security-holdout-summary.json`
+
+## CSV-cell label refinement — development evidence only
+
+A follow-up parser learns repeated labels embedded inside already extracted
+unlabeled CSV cells and adds child value spans without replacing the parent CSV
+spans or clearing `UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION`.
+
+This primitive was designed after inspecting the first fresh holdout, so the
+first-holdout families are **development evidence only**, not prospective
+generalization evidence.
+
+Independent multi-split validation:
+
+- Symantec Endpoint: **3 augmentation occurrences / 6 added spans / 6 of 6
+  exact** against Elastic's pinned expected `site` and `server` values;
+- NETSCOUT Sightline NDR: **17 augmentation occurrences / 68 added spans / 68
+  of 68 exact** against the independently specified Change Log grammar;
+- every parent CSV span remained byte-identical;
+- every augmented event remained **PARTIAL**;
+- learner input contained neither reference values nor vendor/product identity.
+
+These results establish that the primitive can refine a known repeated CSV-cell
+shape safely, but they do not count as fresh open-world recall evidence.
+
+Machine-readable evidence:
+
+- `structural-hypothesis-symantec-csv-label-multisplit-summary.json`
+- `structural-hypothesis-netscout-csv-label-multisplit-summary.json`
+- `structural-hypothesis-csv-label-development-summary.json`
+
+## Additional v5 development primitives
+
+### Extended BSD/syslog envelope refinement
+
+The first fresh holdout exposed a repeated composite syslog envelope that the
+single-event parser only partially recognized. A batch learner now qualifies
+the structural shape without using vendor identity:
+
+`PRI + BSD timestamp + hostname + 0..2 middle tokens + optional inner ISO
+timestamp + appname + optional procid + body`.
+
+Validation uses the pinned Elastic WatchGuard default pipeline grok
+(`4c64981d839ccbbf403490fc6ab646cfbebdf604`) as an independent source-boundary
+reference. Across three deterministic mixed-product splits:
+
+- augmentation occurrences: **414**;
+- added source spans: **2,891**;
+- exact official grok capture spans: **2,891 / 2,891**;
+- baseline spans preserved: **414 / 414 events**;
+- every event remained incomplete;
+- malformed-shape/NUL mutation attempts: **828**;
+- mutations producing any augmentation: **0**;
+- mutation false-complete: **0**.
+
+This is development evidence because the primitive was designed after the first
+fresh holdout was observed.
+
+Machine-readable evidence:
+
+- `structural-hypothesis-watchguard-extended-bsd-multisplit-summary.json`
+
+### Explicit residual typed labels
+
+A second conservative layer learns only repeated residual syntax of the form
+`ExplicitLabel=<typed value>`, where the value is already independently
+recognizable as a bounded IP/number/URL/quoted value and the label is not a
+common lowercase generic KV token. It never clears residual bytes or issues.
+
+Across three mixed-product development splits:
+
+- augmentation occurrences: **26**;
+- added source spans: **26**;
+- exact pinned WatchGuard expected values: **26 / 26**;
+- baseline spans preserved: **26 / 26 events**;
+- every event remained incomplete;
+- learned labels were limited to repeated structural evidence
+  (`GatewayEndpoint`, `Gateway-Endpoint`, `Tunnel`);
+- NUL / broken-assignment mutation attempts: **52**;
+- mutations producing any augmentation: **0**;
+- mutation false-complete: **0**.
+
+The learner did not receive those label names as vendor rules; they were learned
+from repeated source syntax in the mixed security batch.
+
+Machine-readable evidence:
+
+- `structural-hypothesis-watchguard-typed-label-multisplit-summary.json`
+
+### Rejected broad multi-residual R-gram
+
+A broader experiment attempted to emit every typed atom from repeated residual
+region signatures. It had high apparent recall but insufficient precision:
+
+- candidate events: **141**;
+- candidate spans: **1,413**;
+- independently supported official leaf values: **426**;
+- unvalidated spans: **987**.
+
+Verdict: **REJECTED_LOW_PRECISION_ATOMIZATION**. Exact repeated residual shape
+alone is insufficient to define source-field boundaries. The implementation was
+removed; only the negative evidence is retained.
+
+Machine-readable negative evidence:
+
+- `structural-hypothesis-multi-residual-rgram-negative.json`
+
+## Second pre-frozen security holdout
+
+A second source set was selected from file metadata only and committed as
+`aa6d893` before raw fixture acquisition or evaluation. It contains **14 pinned
+pipeline log files** from five previously unused product families:
+
+- Proofpoint On Demand email security;
+- Netskope CASB/SWG;
+- Fortinet FortiManager security management;
+- Pulse Connect Secure VPN/ZTNA;
+- Juniper Junos network security.
+
+The current hypothesis ensemble, including CSV-cell label refinement, was then
+run unchanged.
+
+Prospective result:
+
+- evaluation events: **100**;
+- baseline SOURCE_PARSED: **51**;
+- baseline incomplete: **49**;
+- whole-event promotions: **0**;
+- partial augmentations: **0**;
+- abstentions: **49 / 49 incomplete events**;
+- pinned Git blob verification: **14 / 14 files**.
+
+No admission threshold was relaxed after seeing the result. This second negative
+holdout confirms that the verified gains are real for repeated structures but
+still do **not** constitute broad open-world parser generalization.
+
+Machine-readable evidence:
+
+- `STRUCTURAL_HYPOTHESIS_FRESH_SECURITY_HOLDOUT_2_20261015.json`
+- `structural-hypothesis-fresh-security-holdout-2-summary.json`
+
 ## Interpretation
 
-The v4 result supports **two complementary batch-learned layers** above the
-current single-event Multi-Pass / Generic Structural engine.
+The strict v4 result supports **two complementary batch-learned layers** above
+the current single-event Multi-Pass / Generic Structural engine. The v5
+development candidate keeps those layers and adds three more conservative
+partial-only refinements: CSV-cell labels, composite BSD/syslog envelopes and
+explicit residual typed labels.
 
 Whole-event learned recovery:
 
@@ -495,27 +678,53 @@ This is materially more useful than optimizing only the SOURCE_PARSED rate,
 because Parser Studio's primary KPI is exact original source-field/value
 recovery. It also avoids forcing a speculative grammar to appear complete.
 
-The PoC still does **not** authorize product integration. The independently
-validated gain spans three product families, but open-world evidence is still
-small relative to the full security-vendor/version space and the new
-numeric-skeleton primitive currently proves only repeated leading numeric
-structures.
+## PoC decision
 
-## Next PoC gates
+**POC_SUCCESS_LIMITED.** The experiment proves that batch-learned structural
+hypotheses can safely improve the current parser when a repeated grammar is
+actually evidenced:
+
+- **158 / 158 independently validated new source spans** across Cisco Secure
+  Email, Snort IDS/IPS and Sophos UTM in three deterministic splits;
+- the v5 development candidate adds **2,991 / 2,991 independently validated
+  added-span occurrences** across three partial-only refinements:
+  - CSV-cell labels: **74 / 74** on Symantec Endpoint and NETSCOUT Sightline;
+  - extended BSD/syslog envelope: **2,891 / 2,891** exact pinned WatchGuard
+    grok capture spans;
+  - explicit residual typed labels: **26 / 26** exact pinned WatchGuard
+    expected values;
+- these 2,991 development spans are deliberately excluded from
+  prospective-generalization claims because all three refinements were designed
+  after the first holdout became development data;
+- complete promotions preserve every baseline span and raw event;
+- partial augmentation never upgrades PARTIAL to SOURCE_PARSED;
+- complete-candidate mutation false-complete remains **0**;
+- dedicated Snort/Sophos partial mutations produced **0 unexpected
+  augmentations** as well as **0 false-complete**;
+- the first fresh Barracuda/NETSCOUT/Symantec/WatchGuard holdout abstained on
+  **181 / 181** incomplete events;
+- the second pre-frozen Proofpoint/Netskope/FortiManager/Pulse/Junos holdout
+  abstained on **49 / 49** incomplete events, even with CSV-cell label
+  refinement enabled.
+
+The same evidence also shows the limit: current hypothesis families do not yet
+produce measurable recall gain on independently pre-frozen unseen product
+families. Therefore the PoC supports a **strict additive candidate layer** as a
+research direction, not replacement of Multi-Pass / Generic Structural and not
+unconditional enablement as the default Auto Parser path.
+
+## Remaining research gates before productization
 
 Continue without weakening admission rules:
 
-1. freeze the v4 evidence and treat all earlier exploratory promotion counts as
-   superseded by the strict complete/partial split;
-2. test a fresh security-only holdout with additional non-JSON vendor/version
-   families, especially EDR and NDR long-tail formats;
-3. add at least one independently verified partial structural class beyond
-   leading timestamps, such as repeated labeled/protocol anchors;
-4. add counterexample-guided specialization plus token reordering, duplicated
+1. demonstrate **positive added-span recall on a new pre-frozen unseen
+   security-product holdout**, not only on development corpora;
+2. add counterexample-guided specialization plus token reordering, duplicated
    anchors, quote corruption and embedded-delimiter mutations;
-5. score exact source TP/FP/FN on the fresh holdout, separately for complete
-   promotion and partial augmentation;
-6. productize only if independently scored added-span precision remains 100%,
+3. extend hypothesis generation beyond the currently proven repeated R-gram,
+   numeric-prefix and CSV-cell-label shapes without adding vendor-name
+   admission rules;
+4. productize only if independently scored added-span precision remains 100%,
    baseline span loss stays zero, raw preservation stays 100%, and
    false-complete remains zero.
 

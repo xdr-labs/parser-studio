@@ -1363,3 +1363,577 @@ def augment_partial_with_numeric_prefix(
     if result.status == "SOURCE_PARSED":
         return None
     return result
+
+
+# ---------------------------------------------------------------------------
+# Cross-event CSV cell label refinement.
+# ---------------------------------------------------------------------------
+
+CSV_LABEL_WORDS = re.compile(
+    r"^[A-Za-z][A-Za-z0-9_.-]*(?: [A-Za-z][A-Za-z0-9_.-]*){0,3}$"
+)
+
+
+@dataclass(frozen=True)
+class CsvCellLabelHypothesis:
+    width: int
+    training_support: int
+    stable_labels: tuple[tuple[int, str], ...]
+
+
+def _eligible_unlabeled_csv(event: SourceEvent) -> bool:
+    return (
+        event.status != "SOURCE_PARSED"
+        and event.residual_bytes == 0
+        and set(event.issues) == {"UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"}
+        and _csv_width(event) >= 3
+    )
+
+
+def _csv_column_span(event: SourceEvent, index: int) -> ValueSpan | None:
+    suffix = f"column_{index}"
+    matches = [
+        span for span in event.value_spans
+        if span.path == suffix or span.path.endswith("." + suffix)
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _cell_label_candidates(cell: str) -> list[tuple[str, int, int]]:
+    """Return innermost plausible label/value boundaries without semantics."""
+    raw_candidates: list[tuple[str, int, int, int]] = []
+    for match in re.finditer(r":", cell):
+        colon = match.start()
+        # Walk back only to a hard punctuation boundary.  Whitespace remains
+        # inside labels such as "Setting Type" or "Event Description".
+        start = colon
+        while start > 0 and cell[start - 1] not in ":;,|[]{}()":
+            start -= 1
+        label = " ".join(cell[start:colon].strip().split())
+        if not label or len(label) > 48 or not CSV_LABEL_WORDS.fullmatch(label):
+            continue
+        # Avoid treating URI schemes and ordinary lowercase prose tokens as
+        # learned field labels. Stable title/camel/upper labels remain valid.
+        if " " not in label and not any(ch.isupper() for ch in label):
+            continue
+        value_start = colon + 1
+        while value_start < len(cell) and cell[value_start].isspace():
+            value_start += 1
+        value_end = len(cell)
+        while value_end > value_start and cell[value_end - 1].isspace():
+            value_end -= 1
+        if value_start >= value_end:
+            continue
+        raw_candidates.append((label, value_start, value_end, colon))
+
+    # If a candidate's value contains another plausible labeled field, keep
+    # the inner field instead of fabricating an outer value that merely wraps
+    # another label (e.g. "Change Log: Username:nseq" -> Username only).
+    out: list[tuple[str, int, int]] = []
+    for label, value_start, value_end, colon in raw_candidates:
+        if any(
+            other_colon > colon and other_colon < value_end
+            for _other_label, _a, _b, other_colon in raw_candidates
+        ):
+            continue
+        out.append((label, value_start, value_end))
+    return out
+
+
+def learn_csv_cell_label_hypotheses(
+    training_events: Iterable[SourceEvent],
+    *,
+    minimum_support: int = 3,
+) -> dict[int, CsvCellLabelHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("CSV_LABEL_MINIMUM_SUPPORT_TOO_LOW")
+    grouped: dict[int, list[SourceEvent]] = defaultdict(list)
+    for event in list(training_events)[:MAX_TRAIN]:
+        if _eligible_unlabeled_csv(event):
+            grouped[_csv_width(event)].append(event)
+
+    result: dict[int, CsvCellLabelHypothesis] = {}
+    for width, events in grouped.items():
+        if len(events) < minimum_support:
+            continue
+        counts: Counter[tuple[int, str]] = Counter()
+        for event in events:
+            raw_bytes = event.raw.encode("utf8")
+            seen: set[tuple[int, str]] = set()
+            for index in range(width):
+                span = _csv_column_span(event, index)
+                if span is None:
+                    continue
+                try:
+                    cell = raw_bytes[span.start_byte:span.end_byte].decode("utf8")
+                except UnicodeDecodeError:
+                    continue
+                for label, _start, _end in _cell_label_candidates(cell):
+                    seen.add((index, label))
+            counts.update(seen)
+        threshold = max(minimum_support, ceil(len(events) * 0.70))
+        stable = sorted(
+            (item for item, count in counts.items() if count >= threshold),
+            key=lambda item: (item[0], item[1]),
+        )
+        # One repeated label can be coincidental prose.  Require at least two
+        # independently stable labeled columns before refining a CSV family.
+        if len(stable) < 2:
+            continue
+        result[width] = CsvCellLabelHypothesis(
+            width=width,
+            training_support=len(events),
+            stable_labels=tuple(stable),
+        )
+    return result
+
+
+def refine_csv_cell_labels(
+    baseline: SourceEvent,
+    hypotheses: dict[int, CsvCellLabelHypothesis],
+) -> SourceEvent | None:
+    """Preserve parent CSV spans and add learned child label/value spans."""
+    if not _eligible_unlabeled_csv(baseline):
+        return None
+    if any("LIMIT" in issue or "SIZE_OR_NUL" in issue for issue in baseline.issues):
+        return None
+    width = _csv_width(baseline)
+    hypothesis = hypotheses.get(width)
+    if hypothesis is None:
+        return None
+
+    from copy import deepcopy
+
+    raw_bytes = baseline.raw.encode("utf8")
+    additions: list[tuple[str, ValueSpan, str]] = []
+    for index, expected_label in hypothesis.stable_labels:
+        parent = _csv_column_span(baseline, index)
+        if parent is None:
+            continue
+        try:
+            cell = raw_bytes[parent.start_byte:parent.end_byte].decode("utf8")
+        except UnicodeDecodeError:
+            continue
+        matches = [
+            (label, start, end)
+            for label, start, end in _cell_label_candidates(cell)
+            if label == expected_label
+        ]
+        if len(matches) != 1:
+            continue
+        label, rel_start, rel_end = matches[0]
+        byte_start = parent.start_byte + len(cell[:rel_start].encode("utf8"))
+        byte_end = parent.start_byte + len(cell[:rel_end].encode("utf8"))
+        if not (parent.start_byte <= byte_start < byte_end <= parent.end_byte):
+            continue
+        value = raw_bytes[byte_start:byte_end].decode("utf8")
+        additions.append(
+            (
+                label,
+                ValueSpan(
+                    f"csv_refined.{label}",
+                    byte_start,
+                    byte_end,
+                    ("csv_refined", label),
+                ),
+                value,
+            )
+        )
+    if len(additions) < 2:
+        return None
+
+    result = deepcopy(baseline)
+    refined: dict[str, object] = {}
+    occurrences: Counter[str] = Counter()
+    for label, span, value in additions:
+        occurrence = occurrences[label]
+        occurrences[label] += 1
+        if occurrence:
+            span = ValueSpan(
+                span.path,
+                span.start_byte,
+                span.end_byte,
+                ("csv_refined", label, occurrence),
+            )
+        existing = refined.get(label)
+        if existing is None:
+            refined[label] = value
+        elif isinstance(existing, list):
+            existing.append(value)
+        else:
+            refined[label] = [existing, value]
+        result.value_spans.append(span)
+    result.vendor_fields = deepcopy(baseline.vendor_fields)
+    result.vendor_fields["csv_refined"] = refined
+    result.primitive_fields = len(result.value_spans)
+    result.syntax = baseline.syntax + "+CSV_CELL_LABEL_REFINEMENT"
+    # This is additive field recovery, not whole-record qualification.
+    assert_source_accounting(result)
+    if result.status == "SOURCE_PARSED":
+        return None
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Cross-event extended BSD/syslog envelope refinement.
+# ---------------------------------------------------------------------------
+
+EXTENDED_BSD_HEAD = re.compile(
+    r"^<(?P<pri>\d{1,3})>"
+    r"(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) "
+    r"(?P<time>\d{2}:\d{2}:\d{2}) "
+    r"(?P<host>[^\s]+)"
+    r"(?P<middle>(?: [A-Za-z0-9_.-]+){0,2})"
+    r" \((?P<inner_timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)\) "
+    r"(?P<app>[A-Za-z_][A-Za-z0-9_.-]{0,95})"
+    r"(?:\[(?P<pid>\d{1,8})\])?: "
+)
+
+
+@dataclass(frozen=True)
+class ExtendedBsdEnvelopeHypothesis:
+    middle_token_count: int
+    pid_present: bool
+    training_support: int
+
+
+def _extended_bsd_observation(
+    raw: str,
+) -> tuple[re.Match[str], tuple[int, bool]] | None:
+    if not isinstance(raw, str) or not raw or "\x00" in raw:
+        return None
+    match = EXTENDED_BSD_HEAD.match(raw)
+    if match is None:
+        return None
+    values = match.groupdict()
+    try:
+        from datetime import datetime
+        from structured_source import MONTHS
+        pri = int(values["pri"])
+        day = int(values["day"])
+        hour, minute, second = (int(x) for x in values["time"].split(":"))
+        if (
+            pri > 191
+            or day < 1
+            or day > MONTHS.get(values["month"], 0)
+            or hour > 23
+            or minute > 59
+            or second > 59
+        ):
+            return None
+        inner = values["inner_timestamp"]
+        parsed = datetime.fromisoformat(inner.replace("Z", "+00:00"))
+        if "T" not in inner:
+            return None
+        _ = parsed
+    except (ValueError, TypeError):
+        return None
+    middle = values.get("middle") or ""
+    middle_count = len(middle.split())
+    return match, (middle_count, values.get("pid") is not None)
+
+
+def learn_extended_bsd_envelope_hypotheses(
+    samples: Iterable[str],
+    *,
+    minimum_support: int = 3,
+) -> dict[tuple[int, bool], ExtendedBsdEnvelopeHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("EXTENDED_BSD_MINIMUM_SUPPORT_TOO_LOW")
+    counts: Counter[tuple[int, bool]] = Counter()
+    for raw in list(samples)[:MAX_TRAIN]:
+        observed = _extended_bsd_observation(raw)
+        if observed is not None:
+            counts[observed[1]] += 1
+    return {
+        shape: ExtendedBsdEnvelopeHypothesis(
+            middle_token_count=shape[0],
+            pid_present=shape[1],
+            training_support=support,
+        )
+        for shape, support in counts.items()
+        if support >= minimum_support
+    }
+
+
+def parse_extended_bsd_envelope(
+    raw: str,
+    hypotheses: dict[tuple[int, bool], ExtendedBsdEnvelopeHypothesis],
+) -> SourceEvent | None:
+    observed = _extended_bsd_observation(raw)
+    if observed is None:
+        return None
+    match, shape = observed
+    if shape not in hypotheses:
+        return None
+    values = match.groupdict()
+
+    fields: dict[str, object] = {}
+    spans: list[ValueSpan] = []
+
+    def add(name: str, start: int, end: int, value: str) -> None:
+        fields[name] = value
+        spans.append(
+            ValueSpan(
+                f"extended_bsd.{name}",
+                len(raw[:start].encode("utf8")),
+                len(raw[:end].encode("utf8")),
+                ("extended_bsd", name),
+            )
+        )
+
+    add("priority", *match.span("pri"), values["pri"])
+    timestamp_start = match.start("month")
+    timestamp_end = match.end("time")
+    add(
+        "syslog_timestamp",
+        timestamp_start,
+        timestamp_end,
+        raw[timestamp_start:timestamp_end],
+    )
+    add("hostname", *match.span("host"), values["host"])
+
+    middle = (values.get("middle") or "").strip()
+    if middle:
+        search_start = match.end("host")
+        for index, token in enumerate(middle.split()):
+            token_start = raw.find(token, search_start, match.start("inner_timestamp") - 1)
+            if token_start < 0:
+                return None
+            token_end = token_start + len(token)
+            add(f"prefix_token_{index}", token_start, token_end, token)
+            search_start = token_end
+
+    add(
+        "inner_timestamp",
+        *match.span("inner_timestamp"),
+        values["inner_timestamp"],
+    )
+    add("appname", *match.span("app"), values["app"])
+    if values.get("pid") is not None:
+        add("procid", *match.span("pid"), values["pid"])
+
+    event = SourceEvent(raw, syntax="STRUCTURAL_HYPOTHESIS+EXTENDED_BSD_ENVELOPE")
+    event.vendor_fields = {"extended_bsd": fields}
+    event.value_spans = spans
+    event.primitive_fields = len(spans)
+    event.covered = [(0, match.end())]
+    if match.end() < len(raw):
+        event.unparsed = [(match.end(), len(raw))]
+    assert_source_accounting(event)
+    return event
+
+
+def augment_partial_with_extended_bsd_envelope(
+    baseline: SourceEvent,
+    candidate: SourceEvent | None,
+) -> SourceEvent | None:
+    """Add learned composite envelope fields without changing parse status."""
+    if candidate is None or baseline.status == "SOURCE_PARSED":
+        return None
+    if candidate.raw != baseline.raw:
+        return None
+    if any("LIMIT" in issue or "SIZE_OR_NUL" in issue for issue in baseline.issues):
+        return None
+    assert_source_accounting(baseline)
+    assert_source_accounting(candidate)
+
+    baseline_ranges = {
+        (span.start_byte, span.end_byte) for span in baseline.value_spans
+    }
+    additions = [
+        span for span in candidate.value_spans
+        if (span.start_byte, span.end_byte) not in baseline_ranges
+    ]
+    if not additions:
+        return None
+    # Header refinement must not cross an already accepted value span.
+    for span in additions:
+        if any(
+            max(span.start_byte, old.start_byte) < min(span.end_byte, old.end_byte)
+            for old in baseline.value_spans
+        ):
+            return None
+
+    from copy import deepcopy
+
+    result = deepcopy(baseline)
+    result.vendor_fields = deepcopy(baseline.vendor_fields)
+    result.vendor_fields["extended_bsd"] = deepcopy(
+        candidate.vendor_fields["extended_bsd"]
+    )
+    result.value_spans.extend(deepcopy(additions))
+    result.primitive_fields = len(result.value_spans)
+    result.syntax = baseline.syntax + "+EXTENDED_BSD_ENVELOPE_PARTIAL"
+    assert_source_accounting(result)
+    if result.status == "SOURCE_PARSED":
+        return None
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Repeated explicit residual label + typed-value partial recovery.
+# ---------------------------------------------------------------------------
+
+RESIDUAL_TYPED_LABEL = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{1,63}$")
+
+
+@dataclass(frozen=True)
+class ResidualTypedLabelHypothesis:
+    label: str
+    training_support: int
+
+
+def _admissible_residual_typed_label(label: str) -> bool:
+    if not RESIDUAL_TYPED_LABEL.fullmatch(label):
+        return False
+    # Keep this layer distinct from ordinary generic KV parsing.  It is meant
+    # for explicit product-style labels that the single-event parser left in a
+    # residual, not common lowercase tokens such as msg= or id=.
+    return any(char.isupper() for char in label) or "-" in label
+
+
+def _residual_typed_label_observations(
+    event: SourceEvent,
+) -> list[tuple[str, int, int]]:
+    if event.status == "SOURCE_PARSED":
+        return []
+    if any(
+        fragment in issue
+        for issue in event.issues
+        for fragment in RGRAM_HARD_ISSUE_FRAGMENTS
+    ):
+        return []
+    out: list[tuple[str, int, int]] = []
+    for region_start, region_end in event.unparsed:
+        if not (0 <= region_start < region_end <= len(event.raw)):
+            continue
+        tokens = _rgram_tokens(event.raw[region_start:region_end])
+        if tokens is None:
+            continue
+        for index in range(len(tokens) - 2):
+            label, equals, value = tokens[index:index + 3]
+            if (
+                not _admissible_residual_typed_label(label.signature)
+                or equals.signature != "="
+                or value.signature != RGRAM_VAR
+            ):
+                continue
+            start = region_start + value.start
+            end = region_start + value.end
+            if 0 <= start < end <= len(event.raw):
+                out.append((label.signature, start, end))
+    return out
+
+
+def learn_residual_typed_label_hypotheses(
+    training_events: Iterable[SourceEvent],
+    *,
+    minimum_support: int = 3,
+) -> dict[str, ResidualTypedLabelHypothesis]:
+    if minimum_support < 3:
+        raise ValueError("RESIDUAL_TYPED_LABEL_MINIMUM_SUPPORT_TOO_LOW")
+    counts: Counter[str] = Counter()
+    for event in list(training_events)[:MAX_TRAIN]:
+        # One event contributes one support vote per label regardless of
+        # duplicate occurrences inside the same raw record.
+        counts.update({
+            label for label, _start, _end
+            in _residual_typed_label_observations(event)
+        })
+    return {
+        label: ResidualTypedLabelHypothesis(label, support)
+        for label, support in sorted(counts.items())
+        if support >= minimum_support
+    }
+
+
+def augment_partial_with_residual_typed_labels(
+    baseline: SourceEvent,
+    hypotheses: dict[str, ResidualTypedLabelHypothesis],
+) -> SourceEvent | None:
+    """Add only learned explicit label values and retain incomplete status."""
+    if baseline.status == "SOURCE_PARSED" or not hypotheses:
+        return None
+    if any(
+        "LIMIT" in issue or "SIZE_OR_NUL" in issue
+        for issue in baseline.issues
+    ):
+        return None
+    assert_source_accounting(baseline)
+
+    char_to_byte = [0]
+    byte_offset = 0
+    for char in baseline.raw:
+        byte_offset += len(char.encode("utf8"))
+        char_to_byte.append(byte_offset)
+
+    baseline_ranges = {
+        (span.start_byte, span.end_byte)
+        for span in baseline.value_spans
+    }
+    additions: list[tuple[str, int, int]] = []
+    for label, start_char, end_char in _residual_typed_label_observations(baseline):
+        if label not in hypotheses:
+            continue
+        start_byte = char_to_byte[start_char]
+        end_byte = char_to_byte[end_char]
+        if start_byte == end_byte or (start_byte, end_byte) in baseline_ranges:
+            continue
+        additions.append((label, start_byte, end_byte))
+
+    # Stable de-duplication for repeated observations at the same source span.
+    unique: list[tuple[str, int, int]] = []
+    seen: set[tuple[str, int, int]] = set()
+    for item in additions:
+        if item not in seen:
+            seen.add(item)
+            unique.append(item)
+    if not unique:
+        return None
+
+    from copy import deepcopy
+
+    result = deepcopy(baseline)
+    raw_bytes = result.raw.encode("utf8")
+    fields: dict[str, object] = {}
+    occurrences: Counter[str] = Counter()
+    for label, start_byte, end_byte in unique:
+        occurrence = occurrences[label]
+        occurrences[label] += 1
+        value = raw_bytes[start_byte:end_byte].decode("utf8")
+        existing = fields.get(label)
+        if existing is None:
+            fields[label] = value
+        elif isinstance(existing, list):
+            existing.append(value)
+        else:
+            fields[label] = [existing, value]
+        segments = (
+            ("hypothesis_partial", "residual_typed_labels", label)
+            if occurrence == 0
+            else (
+                "hypothesis_partial", "residual_typed_labels",
+                label, occurrence,
+            )
+        )
+        result.value_spans.append(
+            ValueSpan(
+                f"hypothesis_partial.residual_typed_labels.{label}",
+                start_byte,
+                end_byte,
+                segments,
+            )
+        )
+
+    result.vendor_fields = deepcopy(baseline.vendor_fields)
+    result.vendor_fields.setdefault("hypothesis_partial", {})[
+        "residual_typed_labels"
+    ] = fields
+    result.primitive_fields = len(result.value_spans)
+    result.syntax = baseline.syntax + "+RESIDUAL_TYPED_LABEL_PARTIAL"
+    # Never clear issues/unparsed or promote the whole record.
+    assert_source_accounting(result)
+    if result.status == "SOURCE_PARSED":
+        return None
+    return result

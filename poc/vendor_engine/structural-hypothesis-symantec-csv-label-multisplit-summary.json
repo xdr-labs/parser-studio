@@ -1,0 +1,93 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 6,
+    "augmented_events": 3,
+    "baseline_parent_spans_preserved": 3,
+    "events": 36,
+    "events_with_expected_doc": 3,
+    "independently_validated_spans": 6,
+    "official_exact_span_value": 6,
+    "still_partial": 3
+  },
+  "all_added_spans_independently_validated": true,
+  "contract": "parser-studio.poc.symantec-csv-cell-label-multisplit.v1",
+  "elastic_expected_blob_sha": "a56bba80b6d64426e2c01777b016c7b4f56c3016",
+  "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "raw_values_published": false,
+  "reference_fields": [
+    "Site",
+    "Server"
+  ],
+  "scope": "SYMANTEC_ENDPOINT_PARTIAL_CHILD_FIELD_RECOVERY",
+  "semantic_mapping_scored": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "splits": [
+    {
+      "augmented_event_sha256": [
+        "c63e11b921aa64d35e02b7312a1edd043e04ac7e2060a26b44dc6bfbd232cf6a"
+      ],
+      "holdout_events": 12,
+      "hypothesis_widths": [
+        3
+      ],
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 1,
+        "baseline_parent_spans_preserved": 1,
+        "events": 12,
+        "events_with_expected_doc": 1,
+        "independently_validated_spans": 2,
+        "official_exact_span_value": 2,
+        "still_partial": 1
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 21
+    },
+    {
+      "augmented_event_sha256": [
+        "99d42583a68d6402185ae353ac833e849645ffa208fccce872011436157f8697"
+      ],
+      "holdout_events": 12,
+      "hypothesis_widths": [
+        3
+      ],
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 1,
+        "baseline_parent_spans_preserved": 1,
+        "events": 12,
+        "events_with_expected_doc": 1,
+        "independently_validated_spans": 2,
+        "official_exact_span_value": 2,
+        "still_partial": 1
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 21
+    },
+    {
+      "augmented_event_sha256": [
+        "c63e11b921aa64d35e02b7312a1edd043e04ac7e2060a26b44dc6bfbd232cf6a"
+      ],
+      "holdout_events": 12,
+      "hypothesis_widths": [
+        3
+      ],
+      "metrics": {
+        "added_spans": 2,
+        "augmented_events": 1,
+        "baseline_parent_spans_preserved": 1,
+        "events": 12,
+        "events_with_expected_doc": 1,
+        "independently_validated_spans": 2,
+        "official_exact_span_value": 2,
+        "still_partial": 1
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 21
+    }
+  ],
+  "status_policy": "Parent CSV columns remain unchanged; child recovery remains PARTIAL.",
+  "unique_augmented_events": 2
+}

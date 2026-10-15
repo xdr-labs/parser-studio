@@ -1,0 +1,344 @@
+{
+  "by_family": {
+    "fortinet_fortimanager": {
+      "baseline_complete": 11,
+      "events": 11
+    },
+    "juniper_junos": {
+      "abstentions": 35,
+      "baseline_incomplete": 35,
+      "events": 35
+    },
+    "netskope": {
+      "baseline_complete": 20,
+      "events": 20
+    },
+    "proofpoint_on_demand": {
+      "baseline_complete": 20,
+      "events": 20
+    },
+    "pulse_connect_secure": {
+      "abstentions": 14,
+      "baseline_incomplete": 14,
+      "events": 14
+    }
+  },
+  "contract": "parser-studio.poc.structural-hypothesis-fresh-security-holdout-2-result.v1",
+  "frozen_manifest_file_set_sha256": "01a82e74e2ca54571efc0213039a8a1372536da619d892b367e478a3737437cb",
+  "interpretation": [
+    "The file set was frozen and committed before raw content acquisition.",
+    "No admission rule was weakened after observing the second holdout.",
+    "Development-only Symantec/NETSCOUT CSV-label gains are not reused as prospective evidence.",
+    "Zero gain is retained as negative generalization evidence rather than converted into vendor-specific exceptions."
+  ],
+  "learned_hypothesis_counts": {
+    "csv_cell_label": 0,
+    "delimited": 0,
+    "event_template": 0,
+    "numeric_prefix": 0,
+    "relative_rgram": 0
+  },
+  "per_file": [
+    {
+      "category": "SECURITY_MANAGEMENT",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": true,
+      "family": "fortinet_fortimanager",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 5,
+      "source_path": "packages/fortinet_fortimanager/data_stream/log/_dev/test/pipeline/test-fortimanager-additional.log",
+      "train_events": 3
+    },
+    {
+      "category": "SECURITY_MANAGEMENT",
+      "evaluation_events": 9,
+      "evaluation_is_disjoint": true,
+      "family": "fortinet_fortimanager",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 9,
+        "events": 9
+      },
+      "source_events": 26,
+      "source_path": "packages/fortinet_fortimanager/data_stream/log/_dev/test/pipeline/test-fortimanager.log",
+      "train_events": 17
+    },
+    {
+      "category": "NETWORK_SECURITY",
+      "evaluation_events": 35,
+      "evaluation_is_disjoint": true,
+      "family": "juniper_junos",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "abstentions": 35,
+        "baseline_incomplete": 35,
+        "events": 35
+      },
+      "source_events": 100,
+      "source_path": "packages/juniper_junos/data_stream/log/_dev/test/pipeline/test-generated.log",
+      "train_events": 65
+    },
+    {
+      "category": "CASB_SWG",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": true,
+      "family": "netskope",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 2,
+        "events": 2
+      },
+      "source_events": 5,
+      "source_path": "packages/netskope/data_stream/alerts_events_v2/_dev/test/pipeline/test-combined.log",
+      "train_events": 3
+    },
+    {
+      "category": "CASB_SWG",
+      "evaluation_events": 10,
+      "evaluation_is_disjoint": true,
+      "family": "netskope",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 10,
+        "events": 10
+      },
+      "source_events": 28,
+      "source_path": "packages/netskope/data_stream/alerts/_dev/test/pipeline/test-alerts.log",
+      "train_events": 18
+    },
+    {
+      "category": "CASB_SWG",
+      "evaluation_events": 7,
+      "evaluation_is_disjoint": true,
+      "family": "netskope",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 7,
+        "events": 7
+      },
+      "source_events": 21,
+      "source_path": "packages/netskope/data_stream/events/_dev/test/pipeline/test-events.log",
+      "train_events": 14
+    },
+    {
+      "category": "CASB_SWG",
+      "evaluation_events": 1,
+      "evaluation_is_disjoint": true,
+      "family": "netskope",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 1,
+        "events": 1
+      },
+      "source_events": 4,
+      "source_path": "packages/netskope/data_stream/transaction/_dev/test/pipeline/test-transaction.log",
+      "train_events": 3
+    },
+    {
+      "category": "EMAIL_SECURITY",
+      "evaluation_events": 5,
+      "evaluation_is_disjoint": true,
+      "family": "proofpoint_on_demand",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 5,
+        "events": 5
+      },
+      "source_events": 14,
+      "source_path": "packages/proofpoint_on_demand/data_stream/audit/_dev/test/pipeline/test-audit.log",
+      "train_events": 9
+    },
+    {
+      "category": "EMAIL_SECURITY",
+      "evaluation_events": 7,
+      "evaluation_is_disjoint": true,
+      "family": "proofpoint_on_demand",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 7,
+        "events": 7
+      },
+      "source_events": 19,
+      "source_path": "packages/proofpoint_on_demand/data_stream/mail/_dev/test/pipeline/test-mail.log",
+      "train_events": 12
+    },
+    {
+      "category": "EMAIL_SECURITY",
+      "evaluation_events": 8,
+      "evaluation_is_disjoint": true,
+      "family": "proofpoint_on_demand",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "baseline_complete": 8,
+        "events": 8
+      },
+      "source_events": 22,
+      "source_path": "packages/proofpoint_on_demand/data_stream/message/_dev/test/pipeline/test-message.log",
+      "train_events": 14
+    },
+    {
+      "category": "VPN_ZTNA",
+      "evaluation_events": 4,
+      "evaluation_is_disjoint": true,
+      "family": "pulse_connect_secure",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "abstentions": 4,
+        "baseline_incomplete": 4,
+        "events": 4
+      },
+      "source_events": 10,
+      "source_path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-admin.log",
+      "train_events": 6
+    },
+    {
+      "category": "VPN_ZTNA",
+      "evaluation_events": 2,
+      "evaluation_is_disjoint": true,
+      "family": "pulse_connect_secure",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "abstentions": 2,
+        "baseline_incomplete": 2,
+        "events": 2
+      },
+      "source_events": 5,
+      "source_path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-syslog.log",
+      "train_events": 3
+    },
+    {
+      "category": "VPN_ZTNA",
+      "evaluation_events": 3,
+      "evaluation_is_disjoint": true,
+      "family": "pulse_connect_secure",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "abstentions": 3,
+        "baseline_incomplete": 3,
+        "events": 3
+      },
+      "source_events": 9,
+      "source_path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-system.log",
+      "train_events": 6
+    },
+    {
+      "category": "VPN_ZTNA",
+      "evaluation_events": 5,
+      "evaluation_is_disjoint": true,
+      "family": "pulse_connect_secure",
+      "learned_hypotheses": {
+        "csv_cell_label": 0,
+        "delimited": 0,
+        "event_template": 0,
+        "numeric_prefix": 0,
+        "relative_rgram": 0
+      },
+      "metrics": {
+        "abstentions": 5,
+        "baseline_incomplete": 5,
+        "events": 5
+      },
+      "source_events": 14,
+      "source_path": "packages/pulse_connect_secure/data_stream/log/_dev/test/pipeline/test-log-vpn.log",
+      "train_events": 9
+    }
+  ],
+  "product_vendor_identity_used_by_learner": false,
+  "raw_values_published": false,
+  "result": "ABSTENTION_ONLY",
+  "scope": "SECURITY_PRODUCTS_ONLY_FRESH_HOLDOUT_2",
+  "semantic_mapping_scored": false,
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "split_seed": "structural-hypothesis-fresh-security-holdout-v2",
+  "totals": {
+    "abstentions": 49,
+    "baseline_complete": 51,
+    "baseline_incomplete": 49,
+    "events": 100
+  },
+  "upstream_repository": "elastic/integrations",
+  "upstream_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "verified_git_blob_files": 14
+}

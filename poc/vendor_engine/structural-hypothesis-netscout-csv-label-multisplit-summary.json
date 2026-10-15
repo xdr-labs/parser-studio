@@ -1,0 +1,104 @@
+{
+  "aggregate_metrics": {
+    "added_spans": 68,
+    "augmented_events": 17,
+    "baseline_parent_spans_preserved": 17,
+    "events": 105,
+    "independently_validated_spans": 68,
+    "reference_change_log_events": 18,
+    "reference_exact_span_value": 68,
+    "still_partial": 17
+  },
+  "all_added_spans_independently_validated": true,
+  "contract": "parser-studio.poc.netscout-csv-cell-label-multisplit.v1",
+  "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "raw_values_published": false,
+  "reference_grammar": "Change Log: Username:<value>, Subsystem:<value>, Setting Type:<value>, Message:<value>",
+  "scope": "NETSCOUT_SIGHTLINE_NDR_PARTIAL_CHILD_FIELD_RECOVERY",
+  "semantic_mapping_scored": false,
+  "source_blob_sha": "bd8d089c540fb5140ca7fcafd91229222558985b",
+  "source_engine_head": "4596f4629a4cb7b900eb459cadffb0d2813c7957",
+  "splits": [
+    {
+      "augmented_event_sha256": [
+        "0b1f62a3a4ac3714c470c32f778cdec9a74006055d5877ca141ca89e0063a3af",
+        "1c0219878e2125514c1c43c921026b98c0bc9cb359c44bc0644b07657670ae7f",
+        "30cad8eb2d26c876faba21e80a080d388c4705e008dfafe0a9feb7138fa974a4",
+        "6a311b5c44e38c81d1fc700aa334beff12fe2d1844b22bf96701dab370bb1c9a"
+      ],
+      "holdout_events": 35,
+      "hypothesis_widths": [
+        4
+      ],
+      "metrics": {
+        "added_spans": 16,
+        "augmented_events": 4,
+        "baseline_parent_spans_preserved": 4,
+        "events": 35,
+        "independently_validated_spans": 16,
+        "reference_change_log_events": 4,
+        "reference_exact_span_value": 16,
+        "still_partial": 4
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 65
+    },
+    {
+      "augmented_event_sha256": [
+        "008ec1dfb39a7958e03295d98795a6be7f55859b4f36720fbcb3afccb1c5aa5e",
+        "0b1f62a3a4ac3714c470c32f778cdec9a74006055d5877ca141ca89e0063a3af",
+        "30cad8eb2d26c876faba21e80a080d388c4705e008dfafe0a9feb7138fa974a4",
+        "bc169378daf53fe6b7a760781d3396842ac812a0afaec63cbca276ac66e21a5a",
+        "d98b4082b68b7c7ac3088fd3b731a78d1cfd223f83910b540dd008577d55b513",
+        "f140d6e306d8b22dcaeb73bab49375ee268ef06abd5cbeae0ec2421d9f1c3cd5"
+      ],
+      "holdout_events": 35,
+      "hypothesis_widths": [
+        4
+      ],
+      "metrics": {
+        "added_spans": 24,
+        "augmented_events": 6,
+        "baseline_parent_spans_preserved": 6,
+        "events": 35,
+        "independently_validated_spans": 24,
+        "reference_change_log_events": 7,
+        "reference_exact_span_value": 24,
+        "still_partial": 6
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 65
+    },
+    {
+      "augmented_event_sha256": [
+        "008ec1dfb39a7958e03295d98795a6be7f55859b4f36720fbcb3afccb1c5aa5e",
+        "1c0219878e2125514c1c43c921026b98c0bc9cb359c44bc0644b07657670ae7f",
+        "30cad8eb2d26c876faba21e80a080d388c4705e008dfafe0a9feb7138fa974a4",
+        "6a311b5c44e38c81d1fc700aa334beff12fe2d1844b22bf96701dab370bb1c9a",
+        "9667f45055796054b70dbec461a87a9296579d01e0b05d34ef37abadfb70a647",
+        "a8ee3ba10e11c07da018abdf7947e2e1a3c55456c4c3ced819874f551e7cd142",
+        "f140d6e306d8b22dcaeb73bab49375ee268ef06abd5cbeae0ec2421d9f1c3cd5"
+      ],
+      "holdout_events": 35,
+      "hypothesis_widths": [
+        4
+      ],
+      "metrics": {
+        "added_spans": 28,
+        "augmented_events": 7,
+        "baseline_parent_spans_preserved": 7,
+        "events": 35,
+        "independently_validated_spans": 28,
+        "reference_change_log_events": 7,
+        "reference_exact_span_value": 28,
+        "still_partial": 7
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 65
+    }
+  ],
+  "status_policy": "Parent CSV columns remain unchanged; child recovery cannot clear UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION or certify completeness.",
+  "unique_augmented_events": 10
+}

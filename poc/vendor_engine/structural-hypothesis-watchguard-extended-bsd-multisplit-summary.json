@@ -1,0 +1,116 @@
+{
+  "aggregate_by_family": {
+    "watchguard_firebox": {
+      "added_spans": 2891,
+      "augmented_events": 414,
+      "official_exact_capture_span": 2891
+    }
+  },
+  "aggregate_metrics": {
+    "added_spans": 2891,
+    "augmented_events": 414,
+    "baseline_span_loss": 0,
+    "baseline_span_preserved": 414,
+    "events_matching_official_grok": 414,
+    "mutation_attempts": 828,
+    "official_exact_capture_span": 2891,
+    "still_incomplete": 414,
+    "unexpected_complete": 0
+  },
+  "all_added_spans_independently_validated": true,
+  "all_mutations_fail_closed": true,
+  "contract": "parser-studio.poc.extended-bsd-envelope-development.v1",
+  "elastic_watchguard_default_pipeline_sha": "4c64981d839ccbbf403490fc6ab646cfbebdf604",
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "official_grok_shape": "PRI + SYSLOGTIMESTAMP + WATCHGUARDHOSTNAME + optional WORD/member + optional ISO8601 + PROG + optional procid",
+  "prospective_claim_allowed": false,
+  "raw_values_published": false,
+  "scope": "FIRST_FRESH_HOLDOUT_DEVELOPMENT_ONLY",
+  "splits": [
+    {
+      "by_family": {
+        "watchguard_firebox": {
+          "added_spans": 922,
+          "augmented_events": 132,
+          "official_exact_capture_span": 922
+        }
+      },
+      "holdout_events": 287,
+      "hypothesis_shapes": {
+        "(0, False)": 3,
+        "(1, False)": 88,
+        "(1, True)": 320
+      },
+      "metrics": {
+        "added_spans": 922,
+        "augmented_events": 132,
+        "baseline_span_loss": 0,
+        "baseline_span_preserved": 132,
+        "events_matching_official_grok": 132,
+        "mutation_attempts": 264,
+        "official_exact_capture_span": 922,
+        "still_incomplete": 132,
+        "unexpected_complete": 0
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 533
+    },
+    {
+      "by_family": {
+        "watchguard_firebox": {
+          "added_spans": 964,
+          "augmented_events": 138,
+          "official_exact_capture_span": 964
+        }
+      },
+      "holdout_events": 287,
+      "hypothesis_shapes": {
+        "(0, False)": 3,
+        "(1, False)": 89,
+        "(1, True)": 315,
+        "(2, True)": 3
+      },
+      "metrics": {
+        "added_spans": 964,
+        "augmented_events": 138,
+        "baseline_span_loss": 0,
+        "baseline_span_preserved": 138,
+        "events_matching_official_grok": 138,
+        "mutation_attempts": 276,
+        "official_exact_capture_span": 964,
+        "still_incomplete": 138,
+        "unexpected_complete": 0
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 533
+    },
+    {
+      "by_family": {
+        "watchguard_firebox": {
+          "added_spans": 1005,
+          "augmented_events": 144,
+          "official_exact_capture_span": 1005
+        }
+      },
+      "holdout_events": 287,
+      "hypothesis_shapes": {
+        "(1, False)": 98,
+        "(1, True)": 308
+      },
+      "metrics": {
+        "added_spans": 1005,
+        "augmented_events": 144,
+        "baseline_span_loss": 0,
+        "baseline_span_preserved": 144,
+        "events_matching_official_grok": 144,
+        "mutation_attempts": 288,
+        "official_exact_capture_span": 1005,
+        "still_incomplete": 144,
+        "unexpected_complete": 0
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 533
+    }
+  ]
+}

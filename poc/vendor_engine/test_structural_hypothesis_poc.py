@@ -4,17 +4,24 @@ from structural_hypothesis_poc import (
     candidate_improves,
     confirm_positional_csv,
     learn_best_hypothesis,
+    learn_csv_cell_label_hypotheses,
     delete_required_rgram_literal,
     learn_event_template_hypotheses,
+    learn_extended_bsd_envelope_hypotheses,
     learn_positional_csv_hypothesis,
     learn_relative_rgram_hypotheses,
+    learn_residual_typed_label_hypotheses,
     learn_leading_numeric_hypotheses,
     merge_residual_hypothesis,
     parse_leading_numeric_slots,
     parse_with_event_template,
+    parse_extended_bsd_envelope,
     parse_with_hypothesis,
     parse_with_relative_rgram,
     augment_partial_with_numeric_prefix,
+    augment_partial_with_extended_bsd_envelope,
+    augment_partial_with_residual_typed_labels,
+    refine_csv_cell_labels,
 )
 from source_parse import SourceEvent, ValueSpan, assert_source_accounting
 
@@ -483,6 +490,196 @@ class StructuralHypothesisPocTests(unittest.TestCase):
             self._csv_event(10),
         ]
         self.assertIsNone(learn_positional_csv_hypothesis(training))
+
+    def _labeled_csv_event(self, raw):
+        cells = raw.split(",")
+        event = SourceEvent(raw, syntax="CSV_UNLABELED_CANDIDATE")
+        cursor = 0
+        for index, cell in enumerate(cells):
+            start = cursor
+            end = start + len(cell)
+            event.value_spans.append(
+                ValueSpan(
+                    f"column_{index}",
+                    start,
+                    end,
+                    None,
+                )
+            )
+            event.vendor_fields[f"column_{index}"] = cell
+            cursor = end + (1 if index + 1 < len(cells) else 0)
+        event.primitive_fields = len(event.value_spans)
+        event.covered = [(0, len(raw))]
+        event.issues = ["UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"]
+        assert_source_accounting(event)
+        return event
+
+    def test_csv_cell_label_refinement_preserves_parent_spans(self):
+        training = [
+            self._labeled_csv_event(
+                "Site: alpha,Server: edge1,Message: login allowed"
+            ),
+            self._labeled_csv_event(
+                "Site: beta,Server: edge2,Message: login denied"
+            ),
+            self._labeled_csv_event(
+                "Site: gamma,Server: edge3,Message: policy updated"
+            ),
+        ]
+        hypotheses = learn_csv_cell_label_hypotheses(training)
+        self.assertIn(3, hypotheses)
+
+        baseline = self._labeled_csv_event(
+            "Site: delta,Server: edge4,Message: session expired"
+        )
+        parents = list(baseline.value_spans)
+        refined = refine_csv_cell_labels(baseline, hypotheses)
+        self.assertIsNotNone(refined)
+        self.assertEqual("PARTIAL", refined.status)
+        self.assertEqual(parents, refined.value_spans[: len(parents)])
+        child_spans = refined.value_spans[len(parents) :]
+        self.assertEqual(3, len(child_spans))
+        for child in child_spans:
+            self.assertTrue(any(
+                parent.start_byte <= child.start_byte
+                and child.end_byte <= parent.end_byte
+                for parent in parents
+            ))
+        self.assertEqual(
+            {
+                "Site": "delta",
+                "Server": "edge4",
+                "Message": "session expired",
+            },
+            refined.vendor_fields["csv_refined"],
+        )
+
+    def test_csv_cell_label_refinement_abstains_on_one_stable_label(self):
+        training = [
+            self._labeled_csv_event("Site: alpha,ordinary prose one,tail one"),
+            self._labeled_csv_event("Site: beta,ordinary prose two,tail two"),
+            self._labeled_csv_event("Site: gamma,ordinary prose three,tail three"),
+        ]
+        self.assertEqual({}, learn_csv_cell_label_hypotheses(training))
+
+    def test_extended_bsd_envelope_learns_composite_header_fields(self):
+        training = [
+            '<142>May 10 15:19:05 edge-a SERIAL001 (2024-05-10T09:49:05) firewall[10]: msg_id="a" body',
+            '<143>May 11 16:20:06 edge-b SERIAL002 (2024-05-11T10:50:06) firewall[11]: msg_id="b" body',
+            '<144>May 12 17:21:07 edge-c SERIAL003 (2024-05-12T11:51:07) firewall[12]: msg_id="c" body',
+        ]
+        hypotheses = learn_extended_bsd_envelope_hypotheses(training)
+        self.assertIn((1, True), hypotheses)
+
+        raw = '<145>May 13 18:22:08 edge-d SERIAL004 (2024-05-13T12:52:08) firewall[13]: msg_id="d" body'
+        candidate = parse_extended_bsd_envelope(raw, hypotheses)
+        self.assertIsNotNone(candidate)
+        fields = candidate.vendor_fields["extended_bsd"]
+        self.assertEqual("145", fields["priority"])
+        self.assertEqual("May 13 18:22:08", fields["syslog_timestamp"])
+        self.assertEqual("edge-d", fields["hostname"])
+        self.assertEqual("SERIAL004", fields["prefix_token_0"])
+        self.assertEqual("2024-05-13T12:52:08", fields["inner_timestamp"])
+        self.assertEqual("firewall", fields["appname"])
+        self.assertEqual("13", fields["procid"])
+
+        msg_start = raw.index('d"')
+        baseline = SourceEvent(raw, syntax="BASE")
+        baseline.vendor_fields = {"existing": "d"}
+        baseline.value_spans = [
+            ValueSpan("existing", msg_start, msg_start + 1, ("existing",))
+        ]
+        baseline.primitive_fields = 1
+        baseline.covered = [(0, len(raw))]
+        baseline.issues = ["UNSUPPORTED_PRI_BODY"]
+        assert_source_accounting(baseline)
+
+        augmented = augment_partial_with_extended_bsd_envelope(
+            baseline, candidate
+        )
+        self.assertIsNotNone(augmented)
+        self.assertEqual("PARTIAL", augmented.status)
+        self.assertEqual(
+            baseline.value_spans,
+            augmented.value_spans[: len(baseline.value_spans)],
+        )
+
+    def test_extended_bsd_envelope_fails_closed_on_bad_time_or_low_support(self):
+        training = [
+            '<142>May 10 15:19:05 edge-a SERIAL001 (2024-05-10T09:49:05) app[10]: body',
+            '<143>May 11 16:20:06 edge-b SERIAL002 (2024-05-11T10:50:06) app[11]: body',
+        ]
+        self.assertEqual(
+            {}, learn_extended_bsd_envelope_hypotheses(training)
+        )
+        hypotheses = learn_extended_bsd_envelope_hypotheses(training * 2)
+        bad = '<142>May 99 99:99:99 edge-a SERIAL001 (2024-99-99T99:99:99) app[10]: body'
+        self.assertIsNone(parse_extended_bsd_envelope(bad, hypotheses))
+
+
+    def _typed_label_residual_event(self, raw):
+        event = SourceEvent(raw, syntax="TEST_TYPED_LABEL_RESIDUAL")
+        event.covered = []
+        event.unparsed = [(0, len(raw))]
+        event.issues = ["NO_SUPPORTED_GRAMMAR"]
+        assert_source_accounting(event)
+        return event
+
+    def test_residual_typed_labels_recover_only_repeated_explicit_values(self):
+        training = [
+            self._typed_label_residual_event(
+                'failure GatewayEndpoint=192.0.2.1 done Tunnel="vpn-a" end'
+            ),
+            self._typed_label_residual_event(
+                'failure GatewayEndpoint=192.0.2.2 done Tunnel="vpn-b" end'
+            ),
+            self._typed_label_residual_event(
+                'failure GatewayEndpoint=192.0.2.3 done Tunnel="vpn-c" end'
+            ),
+        ]
+        hypotheses = learn_residual_typed_label_hypotheses(training)
+        self.assertEqual({"GatewayEndpoint", "Tunnel"}, set(hypotheses))
+        baseline = self._typed_label_residual_event(
+            'failure GatewayEndpoint=198.51.100.9 done Tunnel="vpn-z" end'
+        )
+        augmented = augment_partial_with_residual_typed_labels(
+            baseline, hypotheses
+        )
+        self.assertIsNotNone(augmented)
+        self.assertEqual("PARTIAL", augmented.status)
+        self.assertEqual(baseline.unparsed, augmented.unparsed)
+        self.assertEqual(baseline.issues, augmented.issues)
+        self.assertEqual(
+            {
+                "GatewayEndpoint": "198.51.100.9",
+                "Tunnel": "vpn-z",
+            },
+            augmented.vendor_fields["hypothesis_partial"][
+                "residual_typed_labels"
+            ],
+        )
+
+    def test_residual_typed_labels_ignore_common_lowercase_kv(self):
+        training = [
+            self._typed_label_residual_event("msg=192.0.2.1 end"),
+            self._typed_label_residual_event("msg=192.0.2.2 end"),
+            self._typed_label_residual_event("msg=192.0.2.3 end"),
+        ]
+        self.assertEqual({}, learn_residual_typed_label_hypotheses(training))
+
+    def test_residual_typed_labels_require_three_event_support(self):
+        training = [
+            self._typed_label_residual_event(
+                "failure GatewayEndpoint=192.0.2.1 end"
+            ),
+            self._typed_label_residual_event(
+                "failure GatewayEndpoint=192.0.2.2 end"
+            ),
+        ]
+        self.assertEqual(
+            {},
+            learn_residual_typed_label_hypotheses(training),
+        )
 
 
 if __name__ == "__main__":

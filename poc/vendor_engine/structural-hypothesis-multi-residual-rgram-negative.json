@@ -1,0 +1,32 @@
+{
+  "contract": "parser-studio.poc.multi-residual-rgram-negative.v1",
+  "scope": "FIRST_FRESH_HOLDOUT_DEVELOPMENT_ONLY",
+  "raw_values_published": false,
+  "semantic_mapping_scored": false,
+  "candidate_events": 141,
+  "added_spans": 1413,
+  "events_with_official_expected": 141,
+  "independent_exact_leaf_value_matches": 426,
+  "unvalidated_spans": 987,
+  "by_family": {
+    "watchguard_firebox": {
+      "events": 140,
+      "added_spans": 1406,
+      "independent_exact_leaf_value_matches": 426,
+      "unvalidated_spans": 980
+    },
+    "barracuda_waf": {
+      "events": 1,
+      "added_spans": 7,
+      "independent_exact_leaf_value_matches": 0,
+      "unvalidated_spans": 7
+    }
+  },
+  "matched_expected_paths": {
+    "log.syslog.procid": 420,
+    "watchguard_firebox.log.gateway_endpoint": 4,
+    "watchguard_firebox.log.tunnel_name": 2
+  },
+  "decision": "REJECTED_LOW_PRECISION_ATOMIZATION",
+  "reason": "Exact residual signatures repeated, but generic typed-atom emission fragmented composite source fields; only 426/1413 candidate spans were independently supported by pinned official expected leaves."
+}

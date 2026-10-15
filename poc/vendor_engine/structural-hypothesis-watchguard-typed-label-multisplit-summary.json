@@ -1,0 +1,111 @@
+{
+  "aggregate_by_family": {
+    "watchguard_firebox": {
+      "added_spans": 26,
+      "augmented_events": 26,
+      "independent_exact_value": 26
+    }
+  },
+  "aggregate_metrics": {
+    "added_spans": 26,
+    "augmented_events": 26,
+    "baseline_span_preserved": 26,
+    "events_with_official_expected": 26,
+    "independent_exact_value": 26,
+    "mutation_attempts": 52,
+    "still_incomplete": 26
+  },
+  "all_added_spans_independently_validated": true,
+  "all_mutations_fail_closed": true,
+  "contract": "parser-studio.poc.residual-typed-label-development.v1",
+  "learned_label_occurrences_across_splits": {
+    "Gateway-Endpoint": 2,
+    "GatewayEndpoint": 3,
+    "Tunnel": 3
+  },
+  "learner_reference_values_used": false,
+  "learner_vendor_identity_used": false,
+  "prospective_claim_allowed": false,
+  "raw_values_published": false,
+  "scope": "FIRST_FRESH_HOLDOUT_DEVELOPMENT_ONLY",
+  "split_count": 3,
+  "splits": [
+    {
+      "by_family": {
+        "watchguard_firebox": {
+          "added_spans": 7,
+          "augmented_events": 7,
+          "independent_exact_value": 7
+        }
+      },
+      "holdout_events": 287,
+      "learned_labels": [
+        "GatewayEndpoint",
+        "Tunnel"
+      ],
+      "metrics": {
+        "added_spans": 7,
+        "augmented_events": 7,
+        "baseline_span_preserved": 7,
+        "events_with_official_expected": 7,
+        "independent_exact_value": 7,
+        "mutation_attempts": 14,
+        "still_incomplete": 7
+      },
+      "seed": "structural-hypothesis-security-ms-a",
+      "train_events": 533
+    },
+    {
+      "by_family": {
+        "watchguard_firebox": {
+          "added_spans": 10,
+          "augmented_events": 10,
+          "independent_exact_value": 10
+        }
+      },
+      "holdout_events": 287,
+      "learned_labels": [
+        "Gateway-Endpoint",
+        "GatewayEndpoint",
+        "Tunnel"
+      ],
+      "metrics": {
+        "added_spans": 10,
+        "augmented_events": 10,
+        "baseline_span_preserved": 10,
+        "events_with_official_expected": 10,
+        "independent_exact_value": 10,
+        "mutation_attempts": 20,
+        "still_incomplete": 10
+      },
+      "seed": "structural-hypothesis-security-ms-b",
+      "train_events": 533
+    },
+    {
+      "by_family": {
+        "watchguard_firebox": {
+          "added_spans": 9,
+          "augmented_events": 9,
+          "independent_exact_value": 9
+        }
+      },
+      "holdout_events": 287,
+      "learned_labels": [
+        "Gateway-Endpoint",
+        "GatewayEndpoint",
+        "Tunnel"
+      ],
+      "metrics": {
+        "added_spans": 9,
+        "augmented_events": 9,
+        "baseline_span_preserved": 9,
+        "events_with_official_expected": 9,
+        "independent_exact_value": 9,
+        "mutation_attempts": 18,
+        "still_incomplete": 9
+      },
+      "seed": "structural-hypothesis-security-ms-c",
+      "train_events": 533
+    }
+  ]
+}

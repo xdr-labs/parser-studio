@@ -1,0 +1,34 @@
+{
+  "by_family": {
+    "netscout_sightline": {
+      "added_spans": 16,
+      "events": 4,
+      "expected_message_substring_only": 16,
+      "remained_partial": 4
+    },
+    "symantec_endpoint": {
+      "added_spans": 0,
+      "events": 1,
+      "remained_partial": 1
+    }
+  },
+  "contract": "parser-studio.poc.csv-cell-label-development.v1",
+  "decision": "KEEP_FOR_POST_CHANGE_HOLDOUT_TESTING",
+  "hypothesis_widths": [
+    3,
+    4
+  ],
+  "metrics": {
+    "added_spans": 16,
+    "events": 5,
+    "expected_message_substring_only": 16,
+    "remained_partial": 5
+  },
+  "netscout_expected_blob_sha": "3fe09a7311ed7a22c9a88f582e4c2925e63a7216",
+  "prospective_claim_allowed": false,
+  "raw_values_published": false,
+  "reason": "Primitive designed after inspecting the first fresh holdout.",
+  "scope": "DEVELOPMENT_EVIDENCE_ONLY_NOT_PROSPECTIVE",
+  "semantic_mapping_scored": false,
+  "symantec_expected_blob_sha": "a56bba80b6d64426e2c01777b016c7b4f56c3016"
+}
