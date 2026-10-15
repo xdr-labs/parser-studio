@@ -707,26 +707,29 @@ actually evidenced:
   abstained on **49 / 49** incomplete events, even with CSV-cell label
   refinement enabled.
 
-The same evidence also shows the limit: current hypothesis families do not yet
-produce measurable recall gain on independently pre-frozen unseen product
-families. Therefore the PoC supports a **strict additive candidate layer** as a
-research direction, not replacement of Multi-Pass / Generic Structural and not
-unconditional enablement as the default Auto Parser path.
+The same evidence also shows the limit: current qualified evidence has not yet
+shown measurable recall gain on an independently pre-frozen unseen product
+family. Holdout #2 evaluated CSV-cell refinement but was consumed before the
+extended-BSD and typed-label refinements were developed. Therefore the v5
+candidate must be frozen before opening a third holdout.
+
+The PoC supports a **strict additive candidate layer** as a research direction,
+not replacement of Multi-Pass / Generic Structural and not unconditional
+enablement as the default Auto Parser path.
 
 ## Remaining research gates before productization
 
 Continue without weakening admission rules:
 
-1. demonstrate **positive added-span recall on a new pre-frozen unseen
-   security-product holdout**, not only on development corpora;
-2. add counterexample-guided specialization plus token reordering, duplicated
+1. commit/freeze the v5 candidate before acquiring or inspecting raw content for
+   **fresh holdout #3**;
+2. require positive independently validated added-span recall on that unseen
+   security-product holdout; zero gain remains an honest abstention result;
+3. add counterexample-guided specialization plus token reordering, duplicated
    anchors, quote corruption and embedded-delimiter mutations;
-3. extend hypothesis generation beyond the currently proven repeated R-gram,
-   numeric-prefix and CSV-cell-label shapes without adding vendor-name
-   admission rules;
 4. productize only if independently scored added-span precision remains 100%,
-   baseline span loss stays zero, raw preservation stays 100%, and
-   false-complete remains zero.
+   baseline span loss stays zero, raw preservation stays 100%, partial recovery
+   never certifies whole-record completeness, and false-complete remains zero.
 
 No product integration, PR merge, release, production, DP/sensor, auth,
 credential or target-loader action is authorized by this PoC.

@@ -17,13 +17,18 @@ from typing import Any
 from multipass_adjudicator import parse_security_multipass, parse_security_once
 from source_parse import assert_source_accounting
 from structural_hypothesis_poc import (
+    augment_partial_with_extended_bsd_envelope,
     augment_partial_with_numeric_prefix,
+    augment_partial_with_residual_typed_labels,
     learn_best_hypothesis,
     learn_csv_cell_label_hypotheses,
     learn_event_template_hypotheses,
+    learn_extended_bsd_envelope_hypotheses,
     learn_leading_numeric_hypotheses,
     learn_relative_rgram_hypotheses,
+    learn_residual_typed_label_hypotheses,
     merge_residual_hypothesis,
+    parse_extended_bsd_envelope,
     parse_leading_numeric_slots,
     parse_with_event_template,
     parse_with_hypothesis,
@@ -92,11 +97,15 @@ def run() -> dict[str, Any]:
         )
         numeric = learn_leading_numeric_hypotheses(train)
         csv_labels = learn_csv_cell_label_hypotheses(train_events)
+        extended_bsd = learn_extended_bsd_envelope_hypotheses(train)
+        typed_labels = learn_residual_typed_label_hypotheses(train_events)
         learned["delimited"] += int(delimiter is not None)
         learned["event_template"] += len(templates)
         learned["relative_rgram"] += len(rgrams)
         learned["numeric_prefix"] += len(numeric)
         learned["csv_cell_label"] += len(csv_labels)
+        learned["extended_bsd"] += len(extended_bsd)
+        learned["residual_typed_label"] += len(typed_labels)
 
         stats = Counter()
         for raw in holdout:
@@ -160,6 +169,17 @@ def run() -> dict[str, Any]:
             if partial is None:
                 partial = refine_csv_cell_labels(baseline, csv_labels)
                 partial_kind = "csv_cell_label"
+            if partial is None:
+                partial = augment_partial_with_extended_bsd_envelope(
+                    baseline,
+                    parse_extended_bsd_envelope(raw, extended_bsd),
+                )
+                partial_kind = "extended_bsd"
+            if partial is None:
+                partial = augment_partial_with_residual_typed_labels(
+                    baseline, typed_labels
+                )
+                partial_kind = "residual_typed_label"
 
             if partial is None:
                 stats["abstentions"] += 1
@@ -199,6 +219,8 @@ def run() -> dict[str, Any]:
                     "relative_rgram": len(rgrams),
                     "numeric_prefix": len(numeric),
                     "csv_cell_label": len(csv_labels),
+                    "extended_bsd": len(extended_bsd),
+                    "residual_typed_label": len(typed_labels),
                 },
                 "metrics": dict(stats),
             }
