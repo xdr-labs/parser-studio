@@ -12,11 +12,17 @@
     "official_exact_span_value": 54
   },
   "all_added_spans_independently_validated": true,
+  "all_mutations_fail_closed": true,
   "contract": "parser-studio.poc.numeric-prefix-sophos-utm-reference-multisplit.v1",
   "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
   "elastic_pipeline_blob_sha": "99cd308d7d68bc1e194f949201f22537fbc4586d",
   "learner_reference_values_used": false,
   "learner_vendor_identity_used": false,
+  "mutation_safety": {
+    "attempts": 27,
+    "false_complete": 0,
+    "unexpected_augmentation": 0
+  },
   "official_grammar": "SOPHOS_TIMESTAMP=YEAR:MONTHNUM:MONTHDAY-HOUR:MINUTE:SECOND",
   "raw_values_published": false,
   "scope": "SOPHOS_UTM_PARTIAL_SOURCE_VALUE_RECOVERY",

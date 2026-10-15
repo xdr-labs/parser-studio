@@ -186,11 +186,10 @@ def _evaluate(seed: str, rows: list[str], expected) -> dict[str, Any]:
             mutated_augmented = augment_partial_with_numeric_prefix(
                 mutated_baseline, mutated_candidate
             )
-            if (
-                mutated_augmented is not None
-                and mutated_augmented.status == "SOURCE_PARSED"
-            ):
-                metrics["mutation_false_complete"] += 1
+            if mutated_augmented is not None:
+                metrics["mutation_augmentation"] += 1
+                if mutated_augmented.status == "SOURCE_PARSED":
+                    metrics["mutation_false_complete"] += 1
 
     metrics["independently_validated_spans"] = metrics[
         "official_exact_span_value"
@@ -240,6 +239,16 @@ def run() -> dict[str, Any]:
         "splits": splits,
         "aggregate_metrics": dict(aggregate),
         "unique_augmented_events": len(unique_augmented),
+        "mutation_safety": {
+            "attempts": aggregate["mutation_attempts"],
+            "unexpected_augmentation": aggregate["mutation_augmentation"],
+            "false_complete": aggregate["mutation_false_complete"],
+        },
+        "all_mutations_fail_closed": (
+            aggregate["mutation_attempts"] > 0
+            and aggregate["mutation_augmentation"] == 0
+            and aggregate["mutation_false_complete"] == 0
+        ),
         "all_added_spans_independently_validated": (
             aggregate["added_spans"] > 0
             and aggregate["added_spans"]

@@ -340,6 +340,9 @@ Independent partial-recovery validation across all three splits:
 - combined independently validated partial spans: **114 / 114**
 - partial baseline span loss: **0**
 - partial raw mismatch: **0**
+- malformed-shape/NUL mutation attempts: **63**
+- mutation attempts producing any partial augmentation: **0**
+- mutation false-complete: **0**
 - every augmented event remains **PARTIAL**
 
 Machine-readable evidence:
@@ -352,23 +355,24 @@ Machine-readable evidence:
 Focused Structural Hypothesis suite after v4 partial-recovery work:
 **22 / 22 PASS**.
 
-A fresh full discovery executed **428 tests**. Exactly the same nine tests
-require historical ignored commercial/LEEF evidence or the optional Drain3
-research dependency unavailable in this isolated worktree; they error on
-missing external inputs rather than parser assertions. There were **0 assertion
-failures** in the full discovery.
+The latest test loader enumerates **432 tests** after adding four numeric-prefix
+tests. A full discovery immediately before those four additions executed 428
+tests and exposed exactly nine environment-dependent errors: historical ignored
+commercial/LEEF evidence or the optional Drain3 research dependency was absent.
+There were **0 assertion failures**.
 
-The cache-independent regression excludes exactly those nine verified
-external-evidence tests and completed:
+The current cache-independent regression excludes exactly those same nine
+verified external-evidence tests. The loader selected 423 test objects; after
+class-level skip handling the runner completed:
 
-- tests in filtered suite: **419**
+- tests run: **419**
 - PASS: **412**
 - optional skips: **7**
 - failures: **0**
 - errors: **0**
 
-This is the reproducible code-regression gate for the isolated v4 PoC
-worktree.
+Together with the focused **22 / 22 PASS**, this is the reproducible
+code-regression gate for the current isolated v4 PoC worktree.
 
 ## Rejected follow-up — masked residual R-gram
 

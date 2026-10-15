@@ -12,12 +12,18 @@
     "official_exact_span_value": 60
   },
   "all_added_spans_independently_validated": true,
+  "all_mutations_fail_closed": true,
   "contract": "parser-studio.poc.numeric-prefix-snort-reference-multisplit.v1",
   "elastic_expected_blob_sha": "d0daa4817ee0d8b01ba2bd68c7ab67ab8e71a7d3",
   "elastic_integrations_revision": "57ac255efb40d98151337b4ff11b9015679391ed",
   "elastic_plaintext_pipeline_blob_sha": "197aa96409995a42bba8f4c86ad1b01557724198",
   "learner_reference_values_used": false,
   "learner_vendor_identity_used": false,
+  "mutation_safety": {
+    "attempts": 36,
+    "false_complete": 0,
+    "unexpected_augmentation": 0
+  },
   "official_grammar": "SNORT_DATE=%{MONTHNUM}/%{MONTHDAY}(/%{YEAR})?-%{TIME}",
   "raw_values_published": false,
   "scope": "SNORT_IDS_IPS_PARTIAL_SOURCE_VALUE_RECOVERY",
