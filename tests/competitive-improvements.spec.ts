@@ -24,6 +24,28 @@ test('Review Fields explains the actual parsing path in beginner language',async
   await expect(explain).toContainText('Native Fluentd and Stellar target import verification remain separate evidence gates.');
 });
 
+test('Map Fields exposes mapping name, value, coverage and catalog evidence',async({page})=>{
+  await page.goto('/');
+  await page.getByLabel('Auto Parser raw logs').fill(PAN);
+  await page.getByRole('button',{name:'Analyze Logs'}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(review).toBeEnabled({timeout:15_000});
+  await review.click();
+  const map=page.getByRole('button',{name:'Map Fields',exact:true});
+  await expect(map).toBeEnabled({timeout:10_000});
+  await map.click();
+
+  const suggestions=page.getByLabel('Recommended field matches');
+  const evidence=suggestions.locator('details.normalization-match-evidence').first();
+  await expect(evidence).toBeVisible();
+  await evidence.getByText('Why this match?').click();
+  await expect(evidence).toContainText('Name evidence');
+  await expect(evidence).toContainText('Value evidence');
+  await expect(evidence).toContainText('Event coverage');
+  await expect(evidence).toContainText('Catalog evidence');
+  await expect(evidence).toContainText('Stellar field dictionary 7.0.xs');
+});
+
 test('mixed explicit families are isolated into an automatic parser set',async({page})=>{
   const {createHash}=await import('node:crypto');
   const source='TRAFFIC_EVT\nTHREAT_EVT';

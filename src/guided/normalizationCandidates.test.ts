@@ -6,7 +6,8 @@ describe('official-catalog normalization candidates',()=>{
   it('recommends documented Stellar destinations with compatible source values',()=>{
     expect(suggestNormalizationCandidates({src_ip:'192.0.2.1',dst_port:443},[])).toEqual([
       expect.objectContaining({source:'src_ip',target:'srcip',type:'ip',confidence:'HIGH',
-        catalogVerified:true,catalogRelease:'7.0.xs',group:'top_fields'}),
+        method:'REVIEWED_SECURITY_ALIAS',catalogVerified:true,catalogRelease:'7.0.xs',
+        compatible:1,incompatible:0,observed:1,total:1,missing:0,group:'top_fields'}),
       expect.objectContaining({source:'dst_port',target:'dstport',type:'integer',confidence:'HIGH',
         catalogVerified:true,catalogRelease:'7.0.xs',group:'top_fields'}),
     ]);
@@ -23,7 +24,8 @@ describe('official-catalog normalization candidates',()=>{
       {fields:{src_ip:'192.0.2.1'}},{fields:{src_ip:'not-an-ip'}},
     ]} as unknown as SuiteResult;
     expect(suggestNormalizationCandidatesFromSuite(suite,[])[0]).toMatchObject({
-      source:'src_ip',confidence:'REVIEW',observed:2,total:2,safeForBulk:false,
+      source:'src_ip',confidence:'REVIEW',compatible:1,incompatible:1,
+      observed:2,total:2,missing:0,safeForBulk:false,
     });
   });
   it('covers common AWS CloudTrail and WAF source address names without broad semantic guessing',()=>{
@@ -110,6 +112,18 @@ describe('official-catalog normalization candidates',()=>{
       expect.objectContaining({source:'action',target:'action',confidence:'HIGH'}),
     ]));
     expect(suggestions.some(item=>['severityName','tactic','technique','techniqueId'].includes(item.source))).toBe(false);
+  });
+
+  it('reports nested-name evidence separately from aliases and records event coverage',()=>{
+    const suite={events:[
+      {fields:{wrapper:{hostname:'sensor-1'}}},
+      {fields:{wrapper:{other:'value'}}},
+    ]} as unknown as SuiteResult;
+    expect(suggestNormalizationCandidatesFromSuite(suite,[])[0]).toMatchObject({
+      source:'wrapper.hostname',target:'hostname',
+      method:'NESTED_LEAF_DICTIONARY_NAME',
+      confidence:'HIGH',compatible:1,incompatible:0,observed:1,total:2,missing:1,
+    });
   });
 
   it('abstains when another mapping owns the official destination',()=>{

@@ -57,6 +57,11 @@ function catalogState(mapping:MappingRule,group:string){
   if(entry?.mappable&&entry.mappingType===mapping.type)return {label:'Matched to Stellar',kind:'verified' as const};
   return {label:'Check this mapping',kind:'review' as const};
 }
+function candidateNameEvidence(method:NormalizationCandidate['method']):string{
+  if(method==='EXACT_DICTIONARY_NAME')return 'Exact full source-name match';
+  if(method==='NESTED_LEAF_DICTIONARY_NAME')return 'Exact nested leaf-name match';
+  return 'Reviewed security-log alias';
+}
 const FINDING_LABEL:Record<NormalizationFindingCode,string>={
   TARGET_COLLISION:'Two fields use the same Stellar destination',
   TYPE_ERROR:'A sample value does not fit the selected value type',
@@ -217,16 +222,21 @@ export default function NormalizationMappingReview({
             <div className="normalization-target">
               <strong>{candidate.target}</strong>
               <span>{candidate.type} · Stellar field</span>
-              <small>{candidate.method==='EXACT_DICTIONARY_NAME'?'Same name as Stellar field':'Common security-log name'} · value seen in {candidate.observed}/{candidate.total} event{candidate.total===1?'':'s'}</small>
+              <small>{candidateNameEvidence(candidate.method)} · present in {candidate.observed}/{candidate.total} event{candidate.total===1?'':'s'}</small>
             </div>
             <span className={'normalization-confidence '+candidate.confidence.toLowerCase()}>
               {candidate.confidence==='HIGH'?'Recommended':'Check first'}
             </span>
             <button type="button" aria-label={'Apply official mapping '+candidate.source}
               onClick={()=>applyCandidate(candidate)}>Use this match</button>
-            <p>{candidate.confidence==='HIGH'
-              ?'The field name and all observed sample values fit this Stellar field.'
-              :'The name looks related, but at least one sample value needs your review before this mapping is applied.'}</p>
+            <p>{candidate.explanation}</p>
+            <details className="normalization-match-evidence">
+              <summary>Why this match?</summary>
+              <span><b>Name evidence</b> {candidateNameEvidence(candidate.method)}</span>
+              <span><b>Value evidence</b> {candidate.compatible}/{candidate.observed} observed value{candidate.observed===1?'':'s'} fit the {candidate.type} target type{candidate.incompatible?(' · '+candidate.incompatible+' conflict'+(candidate.incompatible===1?'':'s')):''}</span>
+              <span><b>Event coverage</b> Present in {candidate.observed}/{candidate.total} event{candidate.total===1?'':'s'}{candidate.missing?(' · missing from '+candidate.missing):''}</span>
+              <span><b>Catalog evidence</b> Stellar field dictionary {candidate.catalogRelease} · selectable destination</span>
+            </details>
           </article>)}
         </div>}
     </section>

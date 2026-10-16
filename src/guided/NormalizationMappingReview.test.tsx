@@ -40,6 +40,17 @@ describe('normalization mapping review UI',()=>{
     expect(screen.getByLabelText('Field changes only')).toHaveTextContent('192.0.2.10');
   });
 
+  it('shows the evidence behind a recommended Stellar mapping',()=>{
+    render(<Harness/>);
+    const suggestions=screen.getByLabelText('Recommended field matches');
+    expect(suggestions).toHaveTextContent('Why this match?');
+    expect(suggestions).toHaveTextContent('Name evidence');
+    expect(suggestions).toHaveTextContent('Reviewed security-log alias');
+    expect(suggestions).toHaveTextContent('2/2 observed values fit the ip target type');
+    expect(suggestions).toHaveTextContent('Present in 2/2 events');
+    expect(suggestions).toHaveTextContent('Stellar field dictionary 7.0.xs');
+  });
+
   it('keeps a non-dictionary target as a vendor field and still lets the user search the official catalog',()=>{
     render(<Harness/>);
     const firstTarget=screen.getByLabelText('Stellar field 0');

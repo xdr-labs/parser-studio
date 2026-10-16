@@ -10,12 +10,15 @@ export interface NormalizationCandidate {
   type:MappingRule['type'];
   group:FieldGroup;
   confidence:'HIGH'|'REVIEW';
-  method:'EXACT_DICTIONARY_NAME'|'DOCUMENTED_ALIAS';
+  method:'EXACT_DICTIONARY_NAME'|'NESTED_LEAF_DICTIONARY_NAME'|'REVIEWED_SECURITY_ALIAS';
   explanation:string;
   catalogVerified:true;
   catalogRelease:'7.0.xs';
+  compatible:number;
+  incompatible:number;
   observed:number;
   total:number;
+  missing:number;
   replacesMappingId?:string;
   currentTarget?:string;
   safeForBulk:boolean;
@@ -89,10 +92,16 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   const leaf=source.split('.').at(-1)??source;
   const exact=findStellarMetadataField(source);
   const leafExact=findStellarMetadataField(leaf);
-  const target=exact?.mappable?source:
-    leafExact?.mappable?leaf:
-    ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
-  if(!target)return null;
+  const alias=ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
+  let target:string|undefined;
+  let method:NormalizationCandidate['method'];
+  if(exact?.mappable){
+    target=source;method='EXACT_DICTIONARY_NAME';
+  }else if(leafExact?.mappable){
+    target=leaf;method='NESTED_LEAF_DICTIONARY_NAME';
+  }else if(alias){
+    target=alias;method='REVIEWED_SECURITY_ALIAS';
+  }else return null;
   const catalog=findStellarMetadataField(target);
   if(!catalog?.mappable||!catalog.mappingType||!catalog.group)return null;
   const current=existing.find(rule=>rule.source===source);
@@ -104,7 +113,8 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   if(values.length===0)return null;
   const compatible=values.filter(result=>result.found&&
     valueFitsNormalizationTarget(target,catalog.mappingType!,result.value)).length;
-  const method:NormalizationCandidate['method']=target===source?'EXACT_DICTIONARY_NAME':'DOCUMENTED_ALIAS';
+  const incompatible=values.length-compatible;
+  const missing=Math.max(0,events.length-values.length);
   const high=compatible===values.length;
   const defaultGenerated=new Map([
     ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
@@ -118,10 +128,13 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
     confidence:high?'HIGH':'REVIEW',method,
     explanation:high
       ?(method==='EXACT_DICTIONARY_NAME'
-        ?'Source name matches the official Stellar metadata field and observed values match its documented type.'
-        :'Reviewed source alias maps to an official Stellar metadata field and observed values match its documented type.')
-      :'The field-name match is plausible, but at least one observed value does not match the documented Stellar type.',
-    catalogVerified:true,catalogRelease:'7.0.xs',observed:values.length,total:events.length,
+        ?'The full source name matches an official Stellar metadata field and every observed value matches its documented type.'
+        :method==='NESTED_LEAF_DICTIONARY_NAME'
+          ?'The final segment of this nested source path exactly matches an official Stellar metadata field and every observed value matches its documented type.'
+          :'A reviewed security-log alias maps this source name to an official Stellar metadata field and every observed value matches its documented type.')
+      :'The field-name evidence is plausible, but at least one observed value does not match the documented Stellar type.',
+    catalogVerified:true,catalogRelease:'7.0.xs',
+    compatible,incompatible,observed:values.length,total:events.length,missing,
     ...(current?{replacesMappingId:current.id,currentTarget:current.target}:{}),
     safeForBulk:high&&(!current||replaceIsGenerated),
   };
