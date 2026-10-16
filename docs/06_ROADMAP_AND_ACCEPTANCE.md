@@ -334,3 +334,31 @@ a synthetic server rate change.
 Affected regression evidence:
 `src/guided/approvedTestLabSession.test.ts`,
 `tests/approved-testlab-rate.spec.ts`.
+
+
+## 2026-10-16 Full User E2E implementation checkpoint
+
+This section is the current evidence-based continuation checkpoint. The original R0-R5 checklist above is an initial plan and its unchecked items are **not** a reliable completion percentage; reconcile each acceptance gate against same-candidate evidence before marking complete.
+
+### Verified development changes
+
+- UI cumulative branch `fix/novice-e2e-cumulative-ui-20261016`, verified commit `6d7143b` (later commits must be checked separately).
+- Backend cumulative branch `fix/novice-e2e-cumulative-backend-20261016`, verified commit `1438535` (later commits must be checked separately).
+- Isolated historical UI branch `fix/novice-e2e-isolated-ui-20261015`, commit `ba12659`, preserved as history, not an independent release candidate.
+- Bounded Funnel remains additive to the qualified Multi-Pass/Generic Structural base. No PR merge, production release, DP/sensor or native-target change is implied.
+- WatchGuard alarm/diagnostic/event: 416/416 bounded structural extraction in a source-corpus check; this is **not** a 416/416 native parser or browser E2E claim. Prior novice guided recovery and limited actual Chromium parser generation are recorded in Issue #1.
+- Focused UI tests: 45/45 PASS for structural clustering/capabilities/extraction, followed by 5/5 PASS for distinct BSD host-label shape.
+- Focused backend tests: 17 PASS, 8 Ruby-runtime-dependent SKIP, 0 FAIL; missing Ruby runtime means native parity is not yet qualified.
+
+### Remaining acceptance work (ordered)
+
+1. **R1 contract evidence:** reconcile actual owner-supplied parser artifacts and version-specific Stellar/native compatibility evidence. Do not infer compatibility from browser extraction.
+2. **R2 parser coverage:** measure Juniper Junos 100-event structural clusters and Pulse Connect Secure repeated shapes with independent holdouts and Funnel source-span/no-loss preservation. Only admit bounded Parser Set behavior if measured coverage improves without false-complete. Continue long-tail variants with explicit Auto-only / local-guided / ChatGPT-assisted / safe-abstention counters.
+3. **R2/R3 integrated candidate:** combine the qualified UI/backend/Funnel changes onto one reviewed candidate, test actual Chromium novice click/input flow through `Create Parser Files`, and validate artifact bytes and supported native Ruby execution.
+4. **R3 native and release evidence:** establish the pinned Ruby/Fluentd environment and exact-head native test results, record remaining optional skips and compatibility limitations.
+5. **R4 UX and safety:** repeat beginner recovery, mixed family, accessibility, performance and privacy regressions on that exact candidate. Preserve no-loss, protected spans, raw, and false-complete gates.
+6. **R5 acceptance:** browser scenarios, full novice/operator E2E, HEAD freeze, exact-head CI/provenance/public smoke, then separate owner acceptance before any merge/release/production change.
+
+### Worktree preservation
+
+Obsolete UI experimental worktrees were consolidated to the original main worktree plus one cumulative UI worktree. Historical dirty patches and isolated E2E scripts are preserved outside Git under `/home/aella/parser-studio-worktree-preservation-20261016/`; do not publish raw private logs or diagnostic scripts. Untracked dependency directories and test-results may remain as local build artifacts and are not Git code changes.
