@@ -11,6 +11,7 @@ import {extractClassicElbAccess,extractS3Access} from './awsLegacyAccess';
 import {parseCiscoIseBody,parseF5AsmBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
 import {isIpToken as ipToken,isIpv4Token as ipv4Token,isIpv6Token as ipv6Token,isPortToken as validPortToken} from './networkTokens';
 import {parseRfc4180SingleDataRow} from './rfc4180Csv';
+import {parseJunosBracketEvent} from './junosBracketBody';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -167,6 +168,29 @@ function junosRfc5424Sd(raw:string):Record<string,unknown>|null{
     junos_sd:fields};
 }
 
+function sourceQualifiedUnzonedJunos(raw:string):Record<string,unknown>|null{
+  if(raw.includes('\0')||/[\r\n]/.test(raw)||new TextEncoder().encode(raw).byteLength>8192)return null;
+  const marker=raw.indexOf(' [junos@');
+  if(marker<0)return null;
+  const tokens=raw.slice(0,marker).split(' ');
+  if(tokens.length!==6)return null;
+  const priVersion=/^<(\d{1,3})>1$/.exec(tokens[0]??'');
+  if(!priVersion||Number(priVersion[1])>191||!validUnzonedTimestamp(tokens[1]??'')||
+     !/^[!-~]{1,255}$/.test(tokens[2]??''))return null;
+  const message=tokens.slice(3).join(' ')+' '+raw.slice(marker+1);
+  const event=parseJunosBracketEvent(message);
+  if(!event)return null;
+  return {
+    syslog:{
+      pri:priVersion[1],version:'1',timestamp:tokens[1],hostname:tokens[2],
+      appname:event.appname,procid:event.procid,msgid:event.msgid,
+      timezone_missing:true,structured_data_raw:event.structuredDataRaw,
+    },
+    junos_sd:event.fields,
+    juniper:{source_raw:raw,message_raw:message,source_envelope:'unzoned_rfc5424_candidate'},
+  };
+}
+
 function commaKv(raw:string):Record<string,unknown>|null{
   const parts=splitEscaped(raw,',');
   if(!parts||parts.length<3)return null;
@@ -285,6 +309,7 @@ function priSpaceKv(raw:string):Record<string,unknown>|null{
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191)return null;
   const body=match[2]!;
+  if(body.includes(' [junos@'))return null;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(body)&&/\bdevname=/.test(body)&&/\bdevid=/.test(body)&&
      !parseFortinetKvBody(body))return null;
   if(claimsSophosXgShape(body)&&!parseSophosKvBody(body))return null;
@@ -1058,6 +1083,7 @@ function junosStructuredDataElementsValid(
     if(!/^junos@[A-Za-z0-9.:-]{1,64}$/.test(element.id))return false;
     const normalized=new Set<string>();
     for(const key of Object.keys(element.params)){
+      if(Array.isArray(element.params[key]))return false;
       if(!/^[A-Za-z_][A-Za-z0-9_-]{0,63}$/.test(key)||!sourceKeySafe(key))return false;
       const safe=key.replaceAll('-','_');
       if(!sourceKeySafe(safe)||normalized.has(safe))return false;
@@ -1109,6 +1135,15 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
   const syslog=envelopeToSyslogFields(envelope);
   const messageRaw=envelope.message;
   const message=normalizedEnvelopeMessage(envelope);
+
+  const junos=parseJunosBracketEvent(message);
+  if(junos)return {
+    syslog:{...syslog,appname:junos.appname,procid:junos.procid,msgid:junos.msgid,
+      structured_data_raw:junos.structuredDataRaw},
+    junos_sd:junos.fields,
+    juniper:{source_raw:raw,message_raw:messageRaw,source_envelope:envelope.variant},
+  };
+  if(/^RT_[A-Z0-9_]+ - [A-Z][A-Z0-9_]+ \[junos@/.test(message))return null;
 
   const fortinet=parseFortinetKvBody(message);
   if(fortinet)return {
@@ -1583,6 +1618,7 @@ function hostlessStructuredSyslog(raw:string):Record<string,unknown>|null{
 }
 
 function knownVendorStructuredFailure(raw:string):boolean{
+  if(/^<\d{1,3}>1 /.test(raw)&&raw.includes(' [junos@'))return true;
   if(claimsPanosSignature(raw)||looksLikePanosBody(raw)||/^\d{8,20},\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2},audit,/.test(raw))return true;
   if(/^%?(?:ASA|FTD)-[0-7]-\d{6}:/.test(raw))return true;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(raw)&&/\bdevname=/.test(raw)&&/\bdevid=/.test(raw))return true;
@@ -1591,6 +1627,7 @@ function knownVendorStructuredFailure(raw:string):boolean{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope)return false;
   const message=normalizedEnvelopeMessage(envelope);
+  if(/^RT_[A-Z0-9_]+ - [A-Z][A-Z0-9_]+ \[junos@/.test(message))return true;
   if(envelope.appname==='RT_FLOW'&&/^RT_FLOW_SESSION_[A-Z_]+:/.test(message))return true;
   if(/^%(?:ASA|FTD)-\d-\d{6}:/.test(message))return true;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(message)&&/\bdevname=/.test(message)&&/\bdevid=/.test(message))return true;
@@ -1605,7 +1642,7 @@ function knownVendorStructuredFailure(raw:string):boolean{
 
 function extractGenericStructuralUnframed(raw:string):GenericStructuralExtraction{
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
-    juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
+    juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??sourceQualifiedUnzonedJunos(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??standalonePanosCsv(raw)??standalonePanosAuditCsv(raw)??standaloneUnlabeledCsv(raw)??
     extractCiscoFirewallEnvelope(raw)??parseBindQueryLog(raw)??standaloneBindQueryProfile(raw)??
     parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseApacheErrorLog(raw)??parseSquidAccessLog(raw)??parseWindowsFirewallLog(raw)??

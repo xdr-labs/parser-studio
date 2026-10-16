@@ -34,13 +34,13 @@ exact original whitespace, or Stellar normalization.
 
 ## True baseline and candidate
 
-| Source family | Before JSON fix | After JSON fix | After Sophos qualification |
-| --- | ---: | ---: | ---: |
-| Juniper SRX | 72 / 105 | 72 / 105 | 72 / 105 |
-| Check Point | 109 / 111 | 109 / 111 | 109 / 111 |
-| Sophos XG | 232 / 271 | 232 / 271 | 256 / 271 |
-| CrowdStrike Falcon | 38 / 84 | 84 / 84 | 84 / 84 |
-| **Total** | **451 / 571 (79.0%)** | **497 / 571 (87.0%)** | **521 / 571 (91.2%)** |
+| Source family | Initial baseline | After JSON fix | After Sophos validation | After Junos strictness |
+| --- | ---: | ---: | ---: | ---: |
+| Juniper SRX | 72 / 105 | 72 / 105 | 72 / 105 | **81 / 105** |
+| Check Point | 109 / 111 | 109 / 111 | 109 / 111 | 109 / 111 |
+| Sophos XG | 232 / 271 | 232 / 271 | 256 / 271 | 256 / 271 |
+| CrowdStrike Falcon | 38 / 84 | 84 / 84 | 84 / 84 | 84 / 84 |
+| **Total** | **451 / 571 (79.0%)** | **497 / 571 (87.0%)** | **521 / 571 (91.2%)** | **530 / 571 (92.8%)** |
 
 These counts represent structural success only. They do not establish the
 accuracy of semantic field naming, user-authored parser generation,
@@ -90,19 +90,25 @@ Run from this PoC worktree:
 
 ```sh
 python3 scripts/poc/fetchFreshVendorHoldout.py
+python3 scripts/poc/createSophosKvOracle.py
+python3 scripts/poc/createJunosBracketOracle.py
 npx vite-node scripts/poc/runFreshVendorHoldout.ts
-npx vitest run src/prettyJsonSingle.poc.test.ts src/securityInputPipeline.poc.test.ts src/lineEventStream.poc.test.ts src/jsonBatch.poc.test.ts src/ndjsonStream.poc.test.ts
+npx vite-node scripts/poc/runSophosKvOracle.ts
+npx vite-node scripts/poc/runJunosBracketOracle.ts
+npx vitest run src/prettyJsonSingle.poc.test.ts src/junosBracketFallback.poc.test.ts src/securityInputPipeline.poc.test.ts
 npm test
 npm run typecheck
 npm run build
 ```
 
 An offline rerun can set `PARSER_STUDIO_FRESH_HOLDOUT_DIR` to an already
-verified private fixture directory. The runner requires 571 / 521,
-84 / 84 CrowdStrike, 3,092 / 3,092 scalar occurrences, and zero accepted
-negative controls. The separate Sophos source-accuracy oracle is defined in
-`docs/POC_SOPHOS_XG_OPTIONAL_EMPTY_KV_20261016.md`.
-Both runners exit nonzero on qualification drift.
+verified private fixture directory. The runner requires 571 / 530,
+81 / 105 Juniper, 256 / 271 Sophos, 84 / 84 CrowdStrike,
+3,092 / 3,092 CrowdStrike scalar occurrences, and zero accepted JSON negatives.
+The separate source-fidelity oracles are documented in
+`docs/POC_SOPHOS_XG_OPTIONAL_EMPTY_KV_20261016.md` and
+`docs/POC_JUNIPER_SRX_JUNOS_BRACKET_20261017.md`.
+Every runner exits nonzero on qualification drift.
 
 ## Residual classification and next research
 
@@ -129,11 +135,12 @@ parser found:
   of equals signs.
 
 The initial 24/50/61 classification was measured before Sophos hardening.
-The current candidate leaves **50** structural failures (Juniper 33,
-Check Point 2, Sophos 15): **31** with an envelope, **19** without, and
-**37** containing at least three textual KV candidates. These metrics are
-asserted by the offline evaluation runner, which also distinguishes source-
-verified Sophos extraction from generic structural matches.
+After Sophos work there were 50 residuals. The current Juniper-hardened
+candidate leaves **41** structural failures (Juniper 24, Check Point 2,
+Sophos 15): **24** with a recognized envelope, **17** without, and
+**28** containing at least three textual KV candidates. The qualification
+runner asserts 24/17/28, and independent Python oracles verify Sophos and
+Juniper source fields instead of treating loose generic extraction as exact.
 
 Do not patch the residuals with a larger full-line vendor regex or permit
 a known-source failure to downgrade to generic success. Additional unseen

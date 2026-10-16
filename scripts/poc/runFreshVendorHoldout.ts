@@ -71,12 +71,12 @@ const summary={
   groups:familyStats,
 };
 console.log('FRESH_VENDOR_HOLDOUT_QUALIFICATION '+JSON.stringify(summary));
-const good=events.length===571&&accepted===521&&
-  familyStats['juniper_srx/log']?.events===105&&familyStats['juniper_srx/log']?.parsed===72&&
+const good=events.length===571&&accepted===530&&
+  familyStats['juniper_srx/log']?.events===105&&familyStats['juniper_srx/log']?.parsed===81&&
   familyStats['checkpoint/firewall']?.events===111&&familyStats['checkpoint/firewall']?.parsed===109&&
   familyStats['sophos/xg']?.events===271&&familyStats['sophos/xg']?.parsed===256&&
   familyStats['crowdstrike/falcon']?.events===84&&familyStats['crowdstrike/falcon']?.parsed===84&&
   jsonEvents===84&&expectedScalars===3092&&recoveredScalars===3092&&jsonFailed===0&&
   jsonMalformedAccepted===0&&knownInvalid.length===1&&knownInvalidAccepted===0&&
-  residualEnvelopeRecognized===31&&residualEnvelopeUnknown===19&&residualWithThreeKvPairs===37;
+  residualEnvelopeRecognized===24&&residualEnvelopeUnknown===17&&residualWithThreeKvPairs===28;
 if(!good){process.exitCode=1;console.error('Fresh vendor holdout did not meet recorded qualification');}
