@@ -1082,3 +1082,51 @@ The same rule now applies consistently from framing through source refinement:
 `strong format signature -> strict parser -> success OR terminal failure`
 
 A strong signature must never be used only to select a permissive generic parser. This prevents recall gains from being purchased with format confusion or silent downgrade acceptance.
+
+## Expansion round 13 — heterogeneous line streams and IPv6 Syslog boundaries
+
+Round 13 tightened two common ingestion boundaries without adding a vendor-specific parser.
+
+### Heterogeneous line-event stream
+
+Some security exports are newline-delimited but are not a single homogeneous transport format. A file may contain a Syslog event, a standalone CEF event, JSON, an appliance-specific reviewed event, and another source format on separate lines.
+
+The pipeline now has a final bounded `line_event_stream` fallback after all strong container signatures have been evaluated:
+
+- LF and CRLF are supported only when line endings are uniform;
+- blank event boundaries are rejected;
+- a stream is accepted only when it contains at least two events and every line passes the existing reviewed single-event dispatcher;
+- if one line fails structural parsing, the whole stream fails instead of partially emitting events;
+- each source line is preserved as the event raw value;
+- stronger homogeneous containers such as RFC6587 Syslog and NDJSON keep precedence.
+
+The change exposed an over-broad RFC6587 non-transparent signature. Previously, an input beginning with Syslog could be claimed as a Syslog stream merely because a later line also began with a PRI token, even if intervening lines were valid CEF or JSON. The event breaker now claims newline/NUL Syslog framing only when every candidate record is Syslog-shaped. Octet-counted RFC6587 remains a strong signature.
+
+### Named timezone with IPv6 HOSTNAME
+
+Focused Syslog boundary testing found that named-zone BSD variants such as `KST 2001:db8::10` could interpret the timezone token as HOSTNAME because the named-zone HOSTNAME branch was narrower than other BSD variants.
+
+The named-zone branches now accept the same bounded printable non-space HOSTNAME token needed for IPv6 literals. Unknown uppercase tokens are still not invented as timezones; only the explicit named-zone allowlist is recognized.
+
+### Round-13 evidence
+
+- heterogeneous line-event focused suite: 5 / 5 PASS;
+- reviewed mixed LF stream: PAN-OS Syslog + CEF + JSON + F5 ASM + Windows Firewall all preserved as five events;
+- uniform CRLF mixed stream: PASS;
+- one unreviewed line, blank boundaries, mixed LF/CRLF, and stray CR: rejected;
+- homogeneous NDJSON and RFC6587 continue to win over the generic line-event fallback;
+- named-zone IPv6 Syslog focused suite: 2 / 2 PASS;
+- classic/year-before/year-after named-zone IPv6 variants: all structured successfully;
+- deterministic Syslog matrix: 210 / 210 structured;
+- full repository unit suite: 150 / 150 test files PASS;
+- full repository assertions: 938 / 938 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+### Architectural implication
+
+The event hierarchy is now more explicit:
+
+`strong container/framing -> heterogeneous reviewed line framing -> single event -> envelope -> body/source grammar -> preservation -> semantic mapping -> normalization`
+
+The heterogeneous line layer does not guess event meaning. It only provides a safe boundary when every constituent line is already independently parseable by a qualified grammar.
