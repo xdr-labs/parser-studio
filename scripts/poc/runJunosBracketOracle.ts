@@ -13,7 +13,7 @@ const oracle=JSON.parse(fs.readFileSync(path.join(root,'junos_bracket_oracle.jso
 const negatives=JSON.parse(fs.readFileSync(path.join(root,'junos_bracket_mutations.json'),'utf8')) as Event[];
 
 let total=0,structured=0,sourceSpecific=0,oracleExact=0,oracleMissing=0,oracleMismatch=0;
-let rawRetained=0,freeTextRejected=0,genericOnly=0;
+let rawRetained=0,freeTextRejected=0,genericOnly=0,bareSourceSpecific=0;
 const mismatchIds:string[]=[];
 for(const event of records.filter(r=>r.source.startsWith('juniper_srx/log/'))){
   total++;
@@ -23,6 +23,7 @@ for(const event of records.filter(r=>r.source.startsWith('juniper_srx/log/'))){
   const fields=parsed.ok?parsed.events[0]?.fields??{}:{};
   const attrs=fields.junos_sd as Record<string,string>|undefined;
   if(attrs)sourceSpecific++;
+  else if(fields.juniper_flow_kv)bareSourceSpecific++;
   else if(parsed.ok)genericOnly++;
   if(event.source.endsWith('test-system.log')&&!parsed.ok)freeTextRejected++;
   const expected=oracle.oracle[event.id];
@@ -42,14 +43,14 @@ for(const event of negatives){
     if(acceptedIds.length<12)acceptedIds.push(event.id);
   }
 }
-const summary={events:total,structured,sourceSpecific,genericOnly,
+const summary={events:total,structured,sourceSpecific,bareSourceSpecific,genericOnly,
   oracleRows:Object.keys(oracle.oracle).length,oracleExact,oracleMissing,oracleMismatch,
   notIndependentlyScannable:oracle.unscannable.length,rawRetained,freeTextRejected,
   malformedEvents:negatives.length,malformedRejected:negatives.length-acceptedNegatives,
   malformedAccepted:acceptedNegatives,mismatchIds,acceptedIds};
 console.log('JUNOS_BRACKET_QUALIFICATION '+JSON.stringify(summary));
-const qualified=total===105&&structured===81&&sourceSpecific===69&&genericOnly===12&&
+const qualified=total===105&&structured===86&&sourceSpecific===69&&bareSourceSpecific===5&&genericOnly===12&&
   Object.keys(oracle.oracle).length===69&&oracleExact===69&&oracleMissing===0&&oracleMismatch===0&&
-  oracle.unscannable.length===36&&rawRetained===81&&freeTextRejected===13&&
+  oracle.unscannable.length===36&&rawRetained===86&&freeTextRejected===13&&
   negatives.length===414&&acceptedNegatives===0;
 if(!qualified){process.exitCode=1;console.error('Junos bracket/source-fidelity qualification drift');}

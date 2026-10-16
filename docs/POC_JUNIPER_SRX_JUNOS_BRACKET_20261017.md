@@ -37,39 +37,57 @@ candidate:
 - Plain RFC5424 prose and non-certifiable smart-quoted or mixed-text fragments
   remain unstructured rather than being counted as success.
 
-Five earlier generic-only Juniper successes were removed from the denominator
-of accepted events through fail-closed validation; all 69 independently
-validated Junos field sets remain intact.
+Five Juniper bare-bracket flow events that were previously removed as
+unverified generic-only successes are now accepted by a *source-qualified*
+`RT_FLOW` body grammar, not by reopening the permissive fallback. They use
+`[source-address="..." source-port="..." destination-address="..."
+destination-port="..." ...]` rather than `[junos@...]`.
+The grammar requires valid source and destination IPs and ports, bounded
+quoting, unique safe attribute names, and a qualified Syslog envelope.
+The other 12 generic-only successes remain unverified at source-field level.
+All 69 independently validated `[junos@]` field sets remain intact.
 
 ## Structural and source-fidelity results
 
-| Metric | Before Junos work | Intermediate, permissive | Qualified |
-| --- | ---: | ---: | ---: |
-| Juniper structurally parsed | 72/105 | 86/105 | **81/105 (77.1%)** |
-| Qualified Junos SD attribute oracles | not measured | 69/69 exact | **69/69 exact** |
-| Malformed Junos variants accepted | not measured | 121/414 | **0/414** |
-| Juniper generic-only structural successes | not separately gated | 17 | **12** |
-| Juniper free-text syslog safely left unstructured | not separately gated | 13 | **13** |
-| Four-vendor corpus structurally parsed | 521/571 | 535/571 | **530/571 (92.8%)** |
+| Metric | Before Junos work | Intermediate, permissive | Qualified strict `junos@` | Qualified bare-bracket addition |
+| --- | ---: | ---: | ---: | ---: |
+| Juniper structurally parsed | 72/105 | 86/105 | 81/105 | **86/105 (81.9%)** |
+| Qualified `junos@` attribute oracles | not measured | 69/69 exact | 69/69 exact | **69/69 exact** |
+| Qualified bare-bracket attribute oracles | not measured | not measured | not measured | **5/5 exact** |
+| Malformed `junos@` variants accepted | not measured | 121/414 | 0/414 | **0/414** |
+| Malformed bare-bracket variants accepted | not measured | not measured | not measured | **0/45** |
+| Juniper source-specific bare-bracket successes | not measured | unqualified | 0 | **5** |
+| Juniper generic-only structural successes | not separately gated | 17 | 12 | **12** |
+| Juniper free-text syslog safely left unstructured | not separately gated | 13 | 13 | **13** |
+| Four-vendor corpus structurally parsed | 521/571 | 535/571 | 530/571 | **535/571 (93.7%)** |
 
 `scripts/poc/createJunosBracketOracle.py` is an independent Python tokenizer:
 69/105 records contain a qualified `[junos@` attribute sequence with a
 complete, valid bracket and quote structure. For **69/69**, all attribute
 names and values from the TypeScript source-specific extraction exactly match
-the Python oracle, with **0** missing and **0** mismatched. All 81 successful
-raw event strings were preserved unchanged.
+the Python oracle, with **0** missing and **0** mismatched. A separate,
+independent Python bare-bracket oracle verifies all attribute names and values
+for the five original `test-flow.log#26/#27/#28/#29/#31` records: **5/5 exact**,
+**0** missing, **0** mismatched. All **86/86** structurally successful Juniper
+events preserve their original raw strings.
 
-The 36/105 records without an independent Junos bracket oracle include
-regular free text, malformed structure and other source-body dialects. Their
-generic structural results are **not** claimed to be value-level accurate.
+Of the 36/105 records outside the `junos@` source oracle, five now have
+independent bare-bracket source-field evidence. The other 31 include regular
+free text, malformed structure and other body dialects; the 12 generic-only
+structural successes are **not** claimed to be source-field accurate. Neither
+oracle verifies semantic normalization or native Stellar parser compatibility.
 
 ## Negative controls
 
 The independent Python script generates six deterministic mutations per
 69 source records: impossible calendar date, invalid PRI, duplicate attribute,
 unsafe attribute, unclosed quotation, and missing closing bracket. All
-**414/414** are rejected. Invalid known-source records must not be reclassified
-as successful generic KV or generic structured-data parsing.
+**414/414** are rejected. The new bare-bracket oracle generates nine controlled
+mutations of each of the five source records (invalid calendar/PRI/IP/port,
+duplicate or unsafe attribute, truncated or unclosed bracket, and wrong
+application identifier); **45/45** are rejected, with **0** accepted. Invalid
+known-source records must not be reclassified as successful generic KV or
+generic structured-data parsing.
 
 This is a regression control on defined mutations, not comprehensive fuzzing
 or proof of every possible Junos log shape.
@@ -81,11 +99,13 @@ From the isolated PoC worktree:
 ```sh
 python3 scripts/poc/fetchFreshVendorHoldout.py
 python3 scripts/poc/createJunosBracketOracle.py
+python3 scripts/poc/createJunosBareFlowOracle.py
 npx vite-node scripts/poc/runJunosBracketOracle.ts
+npx vite-node scripts/poc/runJunosBareFlowOracle.ts
 npx vite-node scripts/poc/runFreshVendorHoldout.ts
 npx vite-node scripts/poc/runSophosKvOracle.ts
 npx vite-node scripts/poc/runPublicSecurityHoldout.ts
-npx vitest run src/junosBracketFallback.poc.test.ts
+npx vitest run src/junosBracketFallback.poc.test.ts src/junosBareFlow.poc.test.ts
 npm test
 npm run typecheck
 npm run build
@@ -97,8 +117,8 @@ nonzero if exact-value, negative-control or measured-count gates drift.
 
 ## Remaining research and acceptance boundary
 
-The four-vendor test still contains **41** safe abstentions:
-Juniper 24, Sophos 15, Check Point 2. Two Check Point samples use malformed
+The four-vendor test still contains **36** safe abstentions:
+Juniper 19, Sophos 15, Check Point 2. Two Check Point samples use malformed
 RFC5424 timezones and should remain rejected, rather than weakening the
 common envelope. Further Juniper and Sophos repair requires independently
 verifiable field-level oracles for new source dialects, not a universal regex
@@ -106,6 +126,7 @@ or arbitrary generic fallback. Field semantics, normalization, parser-file
 generation, browser Full User E2E, and target runtime remain outside PoC
 acceptance.
 
-The 571-event dataset was used to tune this candidate. **92.8% is in-sample
+The 571-event dataset was used to tune this candidate. **93.7% is in-sample
 qualification on these public fixtures**, not an unbiased future
-generalization estimate.
+generalization estimate. Structural success, exact source-field fidelity and
+semantic normalization are distinct acceptance dimensions.

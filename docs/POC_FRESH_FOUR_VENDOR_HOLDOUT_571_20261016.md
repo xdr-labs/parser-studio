@@ -34,17 +34,25 @@ exact original whitespace, or Stellar normalization.
 
 ## True baseline and candidate
 
-| Source family | Initial baseline | After JSON fix | After Sophos validation | After Junos strictness |
-| --- | ---: | ---: | ---: | ---: |
-| Juniper SRX | 72 / 105 | 72 / 105 | 72 / 105 | **81 / 105** |
-| Check Point | 109 / 111 | 109 / 111 | 109 / 111 | 109 / 111 |
-| Sophos XG | 232 / 271 | 232 / 271 | 256 / 271 | 256 / 271 |
-| CrowdStrike Falcon | 38 / 84 | 84 / 84 | 84 / 84 | 84 / 84 |
-| **Total** | **451 / 571 (79.0%)** | **497 / 571 (87.0%)** | **521 / 571 (91.2%)** | **530 / 571 (92.8%)** |
+| Source family | Initial baseline | After JSON fix | After Sophos validation | After Junos strictness | After certified Junos bare-bracket |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Juniper SRX | 72 / 105 | 72 / 105 | 72 / 105 | 81 / 105 | **86 / 105** |
+| Check Point | 109 / 111 | 109 / 111 | 109 / 111 | 109 / 111 | 109 / 111 |
+| Sophos XG | 232 / 271 | 232 / 271 | 256 / 271 | 256 / 271 | 256 / 271 |
+| CrowdStrike Falcon | 38 / 84 | 84 / 84 | 84 / 84 | 84 / 84 | 84 / 84 |
+| **Total** | **451 / 571 (79.0%)** | **497 / 571 (87.0%)** | **521 / 571 (91.2%)** | **530 / 571 (92.8%)** | **535 / 571 (93.7%)** |
 
 These counts represent structural success only. They do not establish the
 accuracy of semantic field naming, user-authored parser generation,
-Stellar target artifacts, or runtime integration.
+Stellar target artifacts, or runtime integration. The final 86 Juniper
+structural successes comprise **69** independently source-exact `junos_sd`,
+**5** independently source-exact `juniper_flow_kv` bare-bracket events, and
+**12** remaining generic-only events without source-field fidelity evidence.
+The new bare-bracket class retains original source raws **5/5** and rejects
+**45/45** invalid mutations; the original `junos@` oracle remains **69/69**
+source-exact and rejects **414/414** invalid mutations. The corpus was used
+for parser tuning, so these are *in-sample* qualifications, not fresh unbiased
+out-of-sample estimates.
 
 At first evaluation the 571 logical events were new to this PoC. The input
 layer was then corrected using the same corpus, so the after-result is
@@ -92,18 +100,20 @@ Run from this PoC worktree:
 python3 scripts/poc/fetchFreshVendorHoldout.py
 python3 scripts/poc/createSophosKvOracle.py
 python3 scripts/poc/createJunosBracketOracle.py
+python3 scripts/poc/createJunosBareFlowOracle.py
 npx vite-node scripts/poc/runFreshVendorHoldout.ts
 npx vite-node scripts/poc/runSophosKvOracle.ts
 npx vite-node scripts/poc/runJunosBracketOracle.ts
-npx vitest run src/prettyJsonSingle.poc.test.ts src/junosBracketFallback.poc.test.ts src/securityInputPipeline.poc.test.ts
+npx vite-node scripts/poc/runJunosBareFlowOracle.ts
+npx vitest run src/prettyJsonSingle.poc.test.ts src/junosBracketFallback.poc.test.ts src/junosBareFlow.poc.test.ts src/securityInputPipeline.poc.test.ts
 npm test
 npm run typecheck
 npm run build
 ```
 
 An offline rerun can set `PARSER_STUDIO_FRESH_HOLDOUT_DIR` to an already
-verified private fixture directory. The runner requires 571 / 530,
-81 / 105 Juniper, 256 / 271 Sophos, 84 / 84 CrowdStrike,
+verified private fixture directory. The runner requires 535 / 571,
+86 / 105 Juniper, 109 / 111 Check Point, 256 / 271 Sophos, 84 / 84 CrowdStrike,
 3,092 / 3,092 CrowdStrike scalar occurrences, and zero accepted JSON negatives.
 The separate source-fidelity oracles are documented in
 `docs/POC_SOPHOS_XG_OPTIONAL_EMPTY_KV_20261016.md` and
@@ -135,12 +145,18 @@ parser found:
   of equals signs.
 
 The initial 24/50/61 classification was measured before Sophos hardening.
-After Sophos work there were 50 residuals. The current Juniper-hardened
-candidate leaves **41** structural failures (Juniper 24, Check Point 2,
-Sophos 15): **24** with a recognized envelope, **17** without, and
-**28** containing at least three textual KV candidates. The qualification
-runner asserts 24/17/28, and independent Python oracles verify Sophos and
-Juniper source fields instead of treating loose generic extraction as exact.
+After Sophos work there were 50 residuals. Strict `junos@` qualification
+left **41** structural failures (Juniper 24, Check Point 2, Sophos 15):
+24 recognized-envelope, 17 unrecognized-envelope, and 28 with at least
+three textual KV candidates.
+
+The independently qualified bare-bracket `RT_FLOW` grammar extracts five
+additional source events and leaves **36** residual failures (Juniper 19,
+Check Point 2, Sophos 15): **23** with a recognized Syslog envelope, **13**
+without, and **23** containing at least three textual KV candidates.
+The current qualification runner asserts 23/13/23, and independent Python
+oracles verify the two Juniper source dialects separately instead of treating
+loose generic extraction as exact.
 
 Do not patch the residuals with a larger full-line vendor regex or permit
 a known-source failure to downgrade to generic success. Additional unseen
