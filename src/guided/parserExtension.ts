@@ -63,7 +63,7 @@ function groupOf(draft:ParserDraft,id:string):string{
 }
 
 function safeMappingSet(draft:ParserDraft):boolean{
-  if(draft.mappings.length>80)return false;
+  if(draft.mappings.length>MAX_EXTENSION_MAPPINGS)return false;
   const ids=new Set<string>();
   for(const mapping of draft.mappings){
     const group=groupOf(draft,mapping.id);
@@ -125,7 +125,7 @@ export async function applyMappingExtension(
      extension.productVersion!==(base.version??'')||
      extension.parserSlug!==(base.guided?.slug??'')||
      extension.baseMappingCount!==base.mappings.length||
-     extension.changes.length>80)return null;
+     extension.changes.length>MAX_EXTENSION_MAPPINGS)return null;
   const options=base.guided?{...base.guided,groups:{...base.guided.groups}}:undefined;
   const mappings=base.mappings.map(mapping=>({...mapping}));
   for(const change of extension.changes){
