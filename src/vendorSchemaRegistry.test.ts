@@ -41,19 +41,19 @@ describe('vendor schema registry',()=>{
     expect(match?.fields.vendor_extra_001).toBe('future');
   });
 
-  it('does not confuse a numeric padding value with the core sequence/actionflags pair',()=>{
+  it('does not treat an arbitrary numeric inserted field as reviewed padding',()=>{
     const padded=[...BASE.slice(0,38),'0',...BASE.slice(38)];
-    const match=matchOrderedVendorSchema(padded);
-    expect(match?.profile).toBe('panos.traffic.padding54');
-    expect(match?.fields.padding).toBe('0');
-    expect(match?.fields.seqno).toBe('0');
-    expect(match?.fields.actionflags).toBe('0x0');
+    expect(matchOrderedVendorSchema(padded)).toBeNull();
   });
 
-  it('fails closed for a lookalike with invalid core anchors',()=>{
+  it('fails closed for lookalikes with invalid or shifted core anchors',()=>{
     const malformed=[...BASE];
     malformed[24]='99999';
     expect(matchOrderedVendorSchema(malformed)).toBeNull();
+
+    const shifted=[...BASE];
+    shifted.splice(37,0,'unexpected-shift');
+    expect(matchOrderedVendorSchema(shifted)).toBeNull();
   });
 
   it('publishes drift-safe schema descriptors',()=>{

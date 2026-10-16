@@ -109,8 +109,8 @@ export function matchOrderedVendorSchema(values:readonly string[]):OrderedVendor
   let names:readonly string[];
   if(looksSequence(values[38]??'')&&looksActionFlags(values[39]??'')){
     profile='panos.traffic.core53';names=PANOS_TRAFFIC_CORE_53;
-  }else if(values.length>=54&&looksSequence(values[39]??'')&&
-           looksActionFlags(values[40]??'')){
+  }else if(values.length>=54&&(values[38]??'')===''&&
+           looksSequence(values[39]??'')&&looksActionFlags(values[40]??'')){
     profile='panos.traffic.padding54';names=PANOS_TRAFFIC_PADDING_54;
   }else return null;
 
