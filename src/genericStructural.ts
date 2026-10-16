@@ -486,9 +486,10 @@ function bsdTaggedMessageProfile(raw:string):Record<string,unknown>|null{
   const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);
   if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
   if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
-  // Do not let malformed bracket-id messages bypass the stricter bracket-id
-  // profile by falling through to this generic tagged-message grammar.
+  // Do not let malformed known structures bypass stricter parsers by
+  // falling through to this generic tagged-message grammar.
   if(/^\[\d+\]:/.test(match[7]!))return null;
+  if(match[6]==='RT_FLOW'&&/^RT_FLOW_SESSION_/.test(match[7]!))return null;
   return {
     syslog:{...(match[1]!==undefined?{pri:match[1]}:{}),month:match[2],day:match[3],
       time:match[4],hostname:match[5],app_tag:match[6]},
@@ -589,6 +590,10 @@ function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
   if(/^[A-Za-z_][A-Za-z0-9_.-]*=/.test(body))return null;
   const values=positionalCsvValues(body);
   if(!values||values.length<12||values.length>100||!/^[0-9]{1,10}$/.test(values[0]??''))return null;
+  // This legacy full-line rule is effectively a PAN-OS security CSV
+  // recognizer. Reuse the stricter body signature so malformed PAN-like
+  // records cannot bypass the layered envelope path.
+  if(!panosPositionalCsvBody(body))return null;
   const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
   const ips=values.filter(value=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255)).length;
   const securityCategory=values.some(value=>
@@ -653,11 +658,98 @@ function securityPositionalCsvBody(text:string):Record<string,unknown>|null{
   return columns;
 }
 
+function bracketColonKvBody(text:string):Record<string,unknown>|null{
+  if(!text.startsWith('[')||!text.endsWith(']')||new TextEncoder().encode(text).byteLength>8192)return null;
+  const inner=text.slice(1,-1);
+  const segments=splitEscaped(inner,';');
+  if(!segments)return null;
+  const body:Record<string,unknown>={};
+  for(const rawSegment of segments){
+    const segment=rawSegment.trim();
+    if(!segment)continue;
+    const delimiter=/:\s*"/.exec(segment);
+    if(!delimiter||delimiter.index<=0)return null;
+    const key=segment.slice(0,delimiter.index).trim();
+    if(!/^[A-Za-z_][A-Za-z0-9_.#:-]{0,127}$/.test(key)||!sourceKeySafe(key))return null;
+    const encoded=segment.slice(delimiter.index+1).trim();
+    if(encoded.length<2||!encoded.startsWith('"')||!encoded.endsWith('"'))return null;
+    const value=encoded.slice(1,-1),previous=body[key];
+    body[key]=previous===undefined?value:Array.isArray(previous)?[...previous,value]:[previous,value];
+    if(Object.keys(body).length>100)return null;
+  }
+  return Object.keys(body).length>=2?body:null;
+}
+
+function juniperRtFlowBody(text:string):Record<string,unknown>|null{
+  const event=/^(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.exec(text);
+  if(!event)return null;
+  const body=scanProfileTokens(text,event[0].length);
+  if(!body||!body.tokens.some(value=>/^[^/\s]+\/[0-9]{1,5}->[^/\s]+\/[0-9]{1,5}$/.test(value)))return null;
+  return {event:event[1],...body};
+}
+
+function watchguardTrafficBody(text:string):{
+  header:Record<string,unknown>;
+  body:{tokens:string[];kv:Record<string,unknown>;groups:string[]};
+}|null{
+  const head=/^(?:([A-Za-z0-9.-]{2,64}) +)?(?:\(([0-9T:+-]{19,35})\) +)?(firewall(?:\[\d{1,8}\])?): +/.exec(text);
+  if(!head)return null;
+  if(head[2]!==undefined&&Number.isNaN(Date.parse(head[2]!)))return null;
+  const body=scanProfileTokens(text,head[0].length);
+  if(!body||!body.tokens.length||!['Allow','Deny','Drop'].includes(body.tokens[0]!))return null;
+  const msgId=body.kv.msg_id;
+  if(typeof msgId!=='string'||!/^[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}$/.test(msgId))return null;
+  if(body.tokens.filter(ipToken).length<2)return null;
+  return {
+    header:{
+      ...(head[1]?{serial:head[1]}:{}),
+      ...(head[2]?{device_time:head[2]}:{}),
+      app_tag:head[3],
+    },
+    body,
+  };
+}
+
 function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|null{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope||envelope.variant==='colon_date')return null;
   const syslog=envelopeToSyslogFields(envelope);
   const message=envelope.message;
+
+  if(/^%(?:ASA|FTD)-/.test(message)){
+    const parsed=asa(message);
+    if(parsed?.asa&&typeof parsed.asa==='object'){
+      const vendorSyslog=parsed.syslog&&typeof parsed.syslog==='object'
+        ? parsed.syslog as Record<string,unknown>:{};
+      return {
+        syslog:{...syslog,...vendorSyslog},
+        asa:{...(parsed.asa as Record<string,unknown>),source_raw:raw,message_raw:message},
+      };
+    }
+  }
+
+  if(envelope.appname==='RT_FLOW'){
+    const juniper=juniperRtFlowBody(message);
+    if(juniper)return {
+      syslog,
+      juniper:{...juniper,source_raw:raw,message_raw:message},
+    };
+    if(/^RT_FLOW_SESSION_/.test(message))return null;
+  }
+
+  const bracket=bracketColonKvBody(message);
+  if(bracket)return {
+    syslog,
+    body:bracket,
+    generic:{mode:'syslog_envelope_bracket_colon_kv',source_raw:raw,message_raw:message},
+  };
+
+  const watchguard=watchguardTrafficBody(message);
+  if(watchguard)return {
+    syslog,
+    watchguard_header:watchguard.header,
+    watchguard:{...watchguard.body,source_raw:raw,message_raw:message},
+  };
 
   if(/^CEF:0\|/.test(message)){
     const parsed=extractStructuredFamily(message,'cef');
@@ -680,11 +772,18 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     generic:{mode:'syslog_envelope_json',source_raw:raw,message_raw:message},
   };
 
+  const panosValues=positionalCsvValues(message);
+  const panosLike=!!panosValues&&panosValues.length>=7&&
+    /^\d{0,10}$/.test(panosValues[0]??'')&&
+    /^\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?$/.test(panosValues[1]??'')&&
+    /^[A-Za-z0-9_.:-]{4,64}$/.test(panosValues[2]??'')&&
+    /^[A-Z][A-Z0-9_]{2,31}$/.test(panosValues[3]??'');
   const panos=panosPositionalCsvBody(message);
   if(panos)return {
     syslog,
     generic:{mode:'syslog_envelope_positional_csv',profile:'panos',delimiter:',',source_raw:raw,message_raw:message,columns:panos},
   };
+  if(panosLike)return null;
 
   const positional=securityPositionalCsvBody(message);
   if(positional)return {
