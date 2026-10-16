@@ -7,7 +7,7 @@ function envelopeParsed(fields:Record<string,unknown>):boolean{
 }
 
 function structuredBodyParsed(fields:Record<string,unknown>):boolean{
-  if(fields.asa||fields.watchguard||fields.juniper||fields.body)return true;
+  if(fields.asa||fields.watchguard||fields.juniper||fields.snort||fields.body)return true;
   const generic=fields.generic;
   if(!generic||typeof generic!=='object'||Array.isArray(generic))return false;
   const mode=(generic as {mode?:unknown}).mode;
@@ -44,16 +44,9 @@ describe('syslog foundation PoC coverage',()=>{
     };
     console.log('SYSLOG_POC_COVERAGE '+JSON.stringify(summary));
     expect(positive).toHaveLength(49);
-    expect(summary.parsed).toBe(43);
-    expect(summary.structuredBody).toBe(43);
+    expect(summary.parsed).toBe(48);
+    expect(summary.structuredBody).toBe(48);
     expect(summary.negativeAccepted).toBe(0);
-    expect(summary.failures).toEqual([
-      'snort-rfc3164',
-      'snort-rfc3164-year-before-time',
-      'snort-rfc3164-year-after-time',
-      'snort-rfc3339-loose',
-      'snort-iso-space-zone',
-      'rfc5424-general-text',
-    ]);
+    expect(summary.failures).toEqual(['rfc5424-general-text']);
   });
 });

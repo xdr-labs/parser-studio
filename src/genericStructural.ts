@@ -1,5 +1,6 @@
-import {extractStructuredFamily} from './structuredFamilies';
+import {extractStructuredFamily,strictKeyValues} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
+import {unwrapSingleSyslogRecord} from './syslogFraming';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -11,8 +12,8 @@ export interface GenericStructuralExtraction {
 }
 
 function validRfc3339(value:string):boolean{
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
-    Number.isFinite(Date.parse(value));
+  const match=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  return !!match&&validIsoPriClock(match[1]!,match[2]!,match[3]!);
 }
 
 function shortRfc5424Json(raw:string):Record<string,unknown>|null{
@@ -78,12 +79,8 @@ function splitEscaped(value:string,delimiter:string):string[]|null{
 }
 
 function validUnzonedTimestamp(value:string):boolean{
-  const match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?$/.exec(value);
-  if(!match)return false;
-  const month=Number(match[2]),day=Number(match[3]),hour=Number(match[4]),minute=Number(match[5]),second=Number(match[6]);
-  const monthDays=[31,29,31,30,31,30,31,31,30,31,30,31];
-  return month>=1&&month<=12&&day>=1&&day<=monthDays[month-1]!&&
-    hour<=23&&minute<=59&&second<=59;
+  const match=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)$/.exec(value);
+  return !!match&&validIsoPriClock(match[1]!,match[2]!,'Z');
 }
 
 function bracketColonKv(raw:string):Record<string,unknown>|null{
@@ -285,6 +282,17 @@ function validBsdClock(month:string,dayText:string,time:string):boolean{
     clock.length===3&&clock[0]!>=0&&clock[0]!<=23&&clock[1]!>=0&&clock[1]!<=59&&clock[2]!>=0&&clock[2]!<=59;
 }
 
+function bsdMonthNumber(month:string):number{
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(month)+1;
+}
+
+function validBsdClockWithYear(month:string,dayText:string,yearText:string,time:string):boolean{
+  const monthIndex=bsdMonthNumber(month);
+  if(monthIndex<1||!/^\d{4}$/.test(yearText))return false;
+  const date=yearText+'-'+String(monthIndex).padStart(2,'0')+'-'+String(Number(dayText)).padStart(2,'0');
+  return validIsoPriClock(date,time,'Z');
+}
+
 function scanProfileTokens(raw:string,start:number):{tokens:string[];kv:Record<string,unknown>;groups:string[]}|null{
   if(start<0||start>raw.length||new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const tokens:string[]=[],groups:string[]=[];const kv:Record<string,unknown>={};let pos=start,count=0;
@@ -341,10 +349,46 @@ function scanProfileTokens(raw:string,start:number):{tokens:string[];kv:Record<s
   return {tokens,kv,groups};
 }
 
+function ipv4Token(value:string):boolean{
+  const parts=value.split('.');
+  return parts.length===4&&parts.every(part=>
+    /^\d{1,3}$/.test(part)&&Number(part)>=0&&Number(part)<=255
+  );
+}
+
+function ipv6Token(value:string):boolean{
+  if(!value.includes(':')||!/^[0-9A-Fa-f:]+$/.test(value))return false;
+  if(value.indexOf('::')!==value.lastIndexOf('::'))return false;
+  const compressed=value.includes('::');
+  const sides=value.split('::');
+  if(sides.length>2)return false;
+  const left=sides[0]?sides[0]!.split(':'):[];
+  const right=sides.length===2&&sides[1]?sides[1]!.split(':'):[];
+  const groups=[...left,...right];
+  if(groups.some(group=>!/^[0-9A-Fa-f]{1,4}$/.test(group)))return false;
+  return compressed?groups.length<8:groups.length===8;
+}
+
 function ipToken(value:string):boolean{
-  const v4=value.split('.');
-  if(v4.length===4&&v4.every(part=>/^\d{1,3}$/.test(part)&&Number(part)<=255))return true;
-  return value.includes(':')&&/^[0-9A-Fa-f:]+$/.test(value)&&value.split(':').length>=3;
+  return ipv4Token(value)||ipv6Token(value);
+}
+
+function validPortToken(value:string):boolean{
+  if(!/^\d{1,5}$/.test(value))return false;
+  const port=Number(value);
+  return Number.isInteger(port)&&port>=0&&port<=65535;
+}
+
+function flowTupleToken(value:string):boolean{
+  const arrow=value.indexOf('->');
+  if(arrow<=0||arrow!==value.lastIndexOf('->'))return false;
+  const source=value.slice(0,arrow),destination=value.slice(arrow+2);
+  const sourceSlash=source.lastIndexOf('/'),destinationSlash=destination.lastIndexOf('/');
+  if(sourceSlash<=0||destinationSlash<=0)return false;
+  const sourceIp=source.slice(0,sourceSlash),sourcePort=source.slice(sourceSlash+1);
+  const destinationIp=destination.slice(0,destinationSlash),destinationPort=destination.slice(destinationSlash+1);
+  return ipToken(sourceIp)&&ipToken(destinationIp)&&
+    validPortToken(sourcePort)&&validPortToken(destinationPort);
 }
 
 function validIsoPriClock(date:string,time:string,timezone:string):boolean{
@@ -360,6 +404,48 @@ function validIsoPriClock(date:string,time:string,timezone:string):boolean{
   if(timezone==='Z')return true;
   const zone=/^([+-])(\d{2}):?(\d{2})$/.exec(timezone);
   return !!zone&&Number(zone[2])<=23&&Number(zone[3])<=59;
+}
+
+function securityEndpoint(value:string):{ip:string;port?:string}|null{
+  const bracket=/^\[([^\]]+)\](?::(\d{1,5}))?$/.exec(value);
+  if(bracket){
+    if(!ipToken(bracket[1]!))return null;
+    if(bracket[2]!==undefined&&!validPortToken(bracket[2]!))return null;
+    return {ip:bracket[1]!,...(bracket[2]?{port:bracket[2]}:{})};
+  }
+
+  const v4=/^((?:\d{1,3}\.){3}\d{1,3})(?::(\d{1,5}))?$/.exec(value);
+  if(v4){
+    if(!ipv4Token(v4[1]!))return null;
+    if(v4[2]!==undefined&&!validPortToken(v4[2]!))return null;
+    return {ip:v4[1]!,...(v4[2]?{port:v4[2]}:{})};
+  }
+
+  if(ipv6Token(value))return {ip:value};
+  return null;
+}
+
+function snortAlertBody(text:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
+  const match=/^\[(\d{1,10}):(\d{1,10}):(\d{1,10})\] +(.{1,256}?) +\[Classification: ([^\]\r\n]{1,128})\] +\[Priority: (\d{1,3})\] +\{([A-Za-z0-9_.-]{1,16})\} +(\S+) +-> +(\S+)$/.exec(text);
+  if(!match)return null;
+  const priority=Number(match[6]);
+  if(!Number.isInteger(priority)||priority<0||priority>255)return null;
+  const source=securityEndpoint(match[8]!);
+  const destination=securityEndpoint(match[9]!);
+  if(!source||!destination)return null;
+  return {
+    gid:match[1],sid:match[2],rev:match[3],
+    signature:match[4],classification:match[5],priority:match[6],protocol:match[7],
+    src_ip:source.ip,...(source.port?{src_port:source.port}:{}),
+    dst_ip:destination.ip,...(destination.port?{dst_port:destination.port}:{}),
+  };
+}
+
+function validExtendedIsoTimestamp(value:string,allowUnzoned:boolean):boolean{
+  const match=/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(Z|[+-]\d{2}:?\d{2})?$/.exec(value);
+  if(!match||(!allowUnzoned&&!match[3]))return false;
+  return validIsoPriClock(match[1]!,match[2]!,match[3]??'Z');
 }
 
 function isoPriMixed(raw:string):Record<string,unknown>|null{
@@ -409,7 +495,7 @@ function watchguardProfile(raw:string):Record<string,unknown>|null{
   const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
-  if(head[7]!==undefined&&Number.isNaN(Date.parse(head[7]!)))return null;
+  if(head[7]!==undefined&&!validExtendedIsoTimestamp(head[7]!,true))return null;
   const body=scanProfileTokens(raw,head[0].length);
   if(!body||!body.tokens.length||!['Allow','Deny','Drop'].includes(body.tokens[0]!))return null;
   const msgId=body.kv.msg_id;
@@ -427,7 +513,7 @@ function watchguardMessageProfile(raw:string):Record<string,unknown>|null{
   const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)$/.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
-  if(Number.isNaN(Date.parse(head[7]!)))return null;
+  if(!validExtendedIsoTimestamp(head[7]!,true))return null;
   const header:Record<string,unknown>={
     month:head[2],day:head[3],time:head[4],hostname:head[5],
     device_time:head[7],app_tag:head[8],
@@ -444,7 +530,7 @@ function dualTimestampSessionProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const match=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)$/.exec(raw);
   if(!match||!validBsdClock(match[1]!,match[2]!,match[3]!))return null;
-  if(Number.isNaN(Date.parse(match[5]!))||!validIsoPriClock(match[8]!,match[9]!,'Z'))return null;
+  if(!validExtendedIsoTimestamp(match[5]!,false)||!validIsoPriClock(match[8]!,match[9]!,'Z'))return null;
   return {
     syslog:{month:match[1],day:match[2],time:match[3],hostname:match[4],
       version:'1',timestamp:match[5],source:match[6],app_tag:match[7]},
@@ -503,7 +589,9 @@ function juniperLegacyProfile(raw:string):Record<string,unknown>|null{
   const event=/^(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.exec(after);
   if(!event)return null;
   const body=scanProfileTokens(raw,head[0].length+event[0].length);
-  if(!body||!body.tokens.some(value=>/^[^/\s]+\/[0-9]{1,5}->[^/\s]+\/[0-9]{1,5}$/.test(value)))return null;
+  if(!body)return null;
+  const tuples=body.tokens.filter(value=>value.includes('->'));
+  if(!tuples.length||tuples.some(value=>!flowTupleToken(value)))return null;
   return {
     syslog:{month:head[1],day:head[2],time:head[3],hostname:head[4],app_tag:head[5]},
     juniper:{event:event[1],...body},
@@ -619,6 +707,39 @@ function boundedEnvelopeJson(text:string):Record<string,unknown>|null{
   return safe(parsed,0)?parsed as Record<string,unknown>:null;
 }
 
+function boundedEmbeddedJsonBody(text:string):{
+  mode:'cee_json'|'embedded_json';
+  body:Record<string,unknown>;
+  prefix:string;
+}|null{
+  if(new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
+
+  if(text.startsWith('@cee:')){
+    const payload=text.slice(5).replace(/^ +/,'');
+    const body=boundedEnvelopeJson(payload);
+    return body?{mode:'cee_json',body,prefix:'@cee:'}:null;
+  }
+
+  let quote='',escaped=false;
+  for(let index=0;index<text.length;index++){
+    const ch=text[index]!;
+    if(quote){
+      if(escaped){escaped=false;continue;}
+      if(ch==='\\'){escaped=true;continue;}
+      if(ch===quote)quote='';
+      continue;
+    }
+    if(ch==='"'||ch==="'"){quote=ch;continue;}
+    if(ch!=='{')continue;
+    const prefix=text.slice(0,index);
+    if(prefix.includes('\uFEFF')||new TextEncoder().encode(prefix).byteLength>256)return null;
+    const candidate=text.slice(index).trimEnd();
+    const body=boundedEnvelopeJson(candidate);
+    if(body)return {mode:'embedded_json',body,prefix:prefix.trimEnd()};
+  }
+  return null;
+}
+
 function looksLikePanosBody(text:string):boolean{
   const values=positionalCsvValues(text);
   if(!values||values.length<4)return false;
@@ -644,12 +765,67 @@ function panosPositionalCsvBody(text:string):Record<string,unknown>|null{
 }
 
 
+function decodeDelimitedEqualsValue(raw:string,delimiter:string):string|null{
+  let value=raw.trim();
+  if(!value)return '';
+  let quote='';
+  if(value.startsWith('"')||value.startsWith("'")){
+    quote=value[0]!;
+    if(value.length<2||value[value.length-1]!==quote)return null;
+    value=value.slice(1,-1);
+  }else if(value.endsWith('"')||value.endsWith("'")){
+    return null;
+  }
+  let decoded='';
+  for(let index=0;index<value.length;index++){
+    const ch=value[index]!;
+    if(ch!=='\\'){decoded+=ch;continue;}
+    const next=value[index+1];
+    if(next===undefined)return null;
+    if(next===delimiter||next==='\\'||next==='='||next==='"'||next==="'"){
+      decoded+=next;index++;continue;
+    }
+    decoded+='\\'+next;index++;
+  }
+  if(/[\u0000-\u001f\u007f]/.test(decoded)&&!decoded.includes('\t'))return null;
+  if(new TextEncoder().encode(decoded).byteLength>2048)return null;
+  return decoded;
+}
+
+function shortEnvelopeSpaceKvBody(text:string):Record<string,unknown>|null{
+  if(!/^[A-Za-z_][A-Za-z0-9_.-]{0,127}=/.test(text))return null;
+  const parsed=strictKeyValues(text);
+  if(parsed.errors.length)return null;
+  const keys=Object.keys(parsed.fields);
+  if(keys.length<3||keys.length>4||keys.some(key=>!sourceKeySafe(key)))return null;
+  return parsed.fields;
+}
+
+function delimitedEqualsKvBody(text:string,delimiter:string):Record<string,unknown>|null{
+  if(!['|',';','\t'].includes(delimiter)||new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
+  const parts=splitEscaped(text,delimiter);
+  if(!parts||parts.length<3||parts.length>128)return null;
+  const fields:Record<string,unknown>={};
+  for(const rawPart of parts){
+    const part=rawPart.trim();
+    if(!part)return null;
+    const eq=part.indexOf('=');
+    if(eq<=0)return null;
+    const key=part.slice(0,eq).trim();
+    if(!/^[A-Za-z_][A-Za-z0-9_.#\/-]{0,127}$/.test(key)||!sourceKeySafe(key))return null;
+    const value=decodeDelimitedEqualsValue(part.slice(eq+1),delimiter);
+    if(value===null)return null;
+    const previous=fields[key];
+    fields[key]=previous===undefined?value:Array.isArray(previous)?[...previous,value]:[previous,value];
+    if(Object.keys(fields).length>100)return null;
+  }
+  return Object.keys(fields).length>=3?fields:null;
+}
+
 function securityPositionalCsvBody(text:string):Record<string,unknown>|null{
   const values=positionalCsvValues(text);
   if(!values||values.length<12||values.length>150)return null;
-  const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
-  const validIp=(value:string)=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255);
-  if(values.filter(validIp).length<2)return null;
+  if(values.filter(ipToken).length<2)return null;
   const columns:Record<string,string>={};
   values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
   return columns;
@@ -681,8 +857,14 @@ function juniperRtFlowBody(text:string):Record<string,unknown>|null{
   const event=/^(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.exec(text);
   if(!event)return null;
   const body=scanProfileTokens(text,event[0].length);
-  if(!body||!body.tokens.some(value=>/^[^/\s]+\/[0-9]{1,5}->[^/\s]+\/[0-9]{1,5}$/.test(value)))return null;
+  if(!body)return null;
+  const tuples=body.tokens.filter(value=>value.includes('->'));
+  if(!tuples.length||tuples.some(value=>!flowTupleToken(value)))return null;
   return {event:event[1],...body};
+}
+
+function looksLikeWatchguardBody(text:string):boolean{
+  return /^(?:[A-Za-z0-9.-]{2,64} +)?(?:\([0-9T:+-]{19,35}\) +)?firewall(?:\[\d{1,8}\])?: +/.test(text);
 }
 
 function watchguardTrafficBody(text:string):{
@@ -691,7 +873,7 @@ function watchguardTrafficBody(text:string):{
 }|null{
   const head=/^(?:([A-Za-z0-9.-]{2,64}) +)?(?:\(([0-9T:+-]{19,35})\) +)?(firewall(?:\[\d{1,8}\])?): +/.exec(text);
   if(!head)return null;
-  if(head[2]!==undefined&&Number.isNaN(Date.parse(head[2]!)))return null;
+  if(head[2]!==undefined&&!validExtendedIsoTimestamp(head[2]!,true))return null;
   const body=scanProfileTokens(text,head[0].length);
   if(!body||!body.tokens.length||!['Allow','Deny','Drop'].includes(body.tokens[0]!))return null;
   const msgId=body.kv.msg_id;
@@ -707,11 +889,34 @@ function watchguardTrafficBody(text:string):{
   };
 }
 
+function normalizedEnvelopeMessage(envelope:{variant:string;message:string}):string{
+  return envelope.variant==='rfc5424'&&envelope.message.startsWith('\uFEFF')
+    ?envelope.message.slice(1):envelope.message;
+}
+
+function junosStructuredDataElementsValid(
+  elements:Array<{id:string;params:Record<string,string|string[]>}>,
+):boolean{
+  for(const element of elements){
+    if(!element.id.startsWith('junos@'))continue;
+    if(!/^junos@[A-Za-z0-9.:-]{1,64}$/.test(element.id))return false;
+    const normalized=new Set<string>();
+    for(const key of Object.keys(element.params)){
+      if(!/^[A-Za-z_][A-Za-z0-9_-]{0,63}$/.test(key)||!sourceKeySafe(key))return false;
+      const safe=key.replaceAll('-','_');
+      if(!sourceKeySafe(safe)||normalized.has(safe))return false;
+      normalized.add(safe);
+    }
+  }
+  return true;
+}
+
 function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|null{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope||envelope.variant==='colon_date')return null;
   const syslog=envelopeToSyslogFields(envelope);
-  const message=envelope.message;
+  const messageRaw=envelope.message;
+  const message=normalizedEnvelopeMessage(envelope);
 
   if(/^%(?:ASA|FTD)-/.test(message)){
     const parsed=asa(message);
@@ -720,78 +925,134 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
         ? parsed.syslog as Record<string,unknown>:{};
       return {
         syslog:{...syslog,...vendorSyslog},
-        asa:{...(parsed.asa as Record<string,unknown>),source_raw:raw,message_raw:message},
+        asa:{...(parsed.asa as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
       };
     }
+    return null;
   }
 
-  if(envelope.appname==='RT_FLOW'){
+  if(envelope.appname==='RT_FLOW'&&/^RT_FLOW_SESSION_[A-Z_]+:/.test(message)){
     const juniper=juniperRtFlowBody(message);
     if(juniper)return {
       syslog,
-      juniper:{...juniper,source_raw:raw,message_raw:message},
+      juniper:{...juniper,source_raw:raw,message_raw:messageRaw},
     };
+    return null;
   }
+
+  const snort=snortAlertBody(message);
+  if(snort)return {
+    syslog,
+    snort:{...snort,source_raw:raw,message_raw:messageRaw},
+  };
+  if(envelope.appname?.toLowerCase()==='snort'&&message.startsWith('['))return null;
 
   const bracket=bracketColonKvBody(message);
   if(bracket)return {
     syslog,
     body:bracket,
-    generic:{mode:'syslog_envelope_bracket_colon_kv',source_raw:raw,message_raw:message},
+    generic:{mode:'syslog_envelope_bracket_colon_kv',source_raw:raw,message_raw:messageRaw},
   };
 
-  const watchguard=watchguardTrafficBody(message);
-  if(watchguard)return {
-    syslog,
-    watchguard_header:watchguard.header,
-    watchguard:{...watchguard.body,source_raw:raw,message_raw:message},
-  };
+  if(looksLikeWatchguardBody(message)){
+    const watchguard=watchguardTrafficBody(message);
+    if(watchguard)return {
+      syslog,
+      watchguard_header:watchguard.header,
+      watchguard:{...watchguard.body,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
 
-  if(/^CEF:0\|/.test(message)){
+  if(/^CEF:/.test(message)){
     const parsed=extractStructuredFamily(message,'cef');
     if(!parsed.errors.length)return {
       syslog,body:parsed.fields,
-      generic:{mode:'syslog_envelope_cef',source_raw:raw,message_raw:message},
+      generic:{mode:'syslog_envelope_cef',source_raw:raw,message_raw:messageRaw},
     };
+    return null;
   }
-  if(/^LEEF:(?:1\.0|2\.0)\|/.test(message)){
+  if(/^LEEF:/.test(message)){
     const parsed=extractStructuredFamily(message,'leef');
     if(!parsed.errors.length)return {
       syslog,body:parsed.fields,
-      generic:{mode:'syslog_envelope_leef',source_raw:raw,message_raw:message},
+      generic:{mode:'syslog_envelope_leef',source_raw:raw,message_raw:messageRaw},
     };
+    return null;
   }
 
   const json=boundedEnvelopeJson(message);
   if(json)return {
     syslog,body:json,
-    generic:{mode:'syslog_envelope_json',source_raw:raw,message_raw:message},
+    generic:{mode:'syslog_envelope_json',source_raw:raw,message_raw:messageRaw},
   };
 
-  const panos=panosPositionalCsvBody(message);
-  if(panos)return {
-    syslog,
-    generic:{mode:'syslog_envelope_positional_csv',profile:'panos',delimiter:',',source_raw:raw,message_raw:message,columns:panos},
+  if(looksLikePanosBody(message)){
+    const panos=panosPositionalCsvBody(message);
+    if(!panos)return null;
+    return {
+      syslog,
+      generic:{mode:'syslog_envelope_positional_csv',profile:'panos',delimiter:',',source_raw:raw,message_raw:messageRaw,columns:panos},
+    };
+  }
+
+  const embeddedJson=boundedEmbeddedJsonBody(message);
+  if(embeddedJson)return {
+    syslog,body:embeddedJson.body,
+    generic:{
+      mode:embeddedJson.mode==='cee_json'
+        ?'syslog_envelope_cee_json':'syslog_envelope_embedded_json',
+      prefix:embeddedJson.prefix,
+      source_raw:raw,message_raw:messageRaw,
+    },
   };
-  if(looksLikePanosBody(message))return null;
+  if(message.startsWith('@cee:'))return null;
+
+  for(const delimiter of ['\t','|',';']){
+    const kv=delimitedEqualsKvBody(message,delimiter);
+    if(kv)return {
+      syslog,
+      generic:{
+        mode:'syslog_envelope_delimited_kv',delimiter,
+        source_raw:raw,message_raw:messageRaw,kv,
+      },
+    };
+  }
+
+  const shortKv=envelope.confidence==='partial'?null:shortEnvelopeSpaceKvBody(message);
+  if(shortKv)return {
+    syslog,
+    generic:{
+      mode:'syslog_envelope_space_kv',
+      source_raw:raw,message_raw:messageRaw,kv:shortKv,
+    },
+  };
 
   const positional=securityPositionalCsvBody(message);
   if(positional)return {
     syslog,
-    generic:{mode:'syslog_envelope_positional_csv',delimiter:',',source_raw:raw,message_raw:message,columns:positional},
+    generic:{mode:'syslog_envelope_positional_csv',delimiter:',',source_raw:raw,message_raw:messageRaw,columns:positional},
   };
 
   const comma=delimitedCommaKv(message);
   if(comma?.generic&&typeof comma.generic==='object')return {
     syslog,
-    generic:{...(comma.generic as Record<string,unknown>),source_raw:raw,message_raw:message},
+    generic:{...(comma.generic as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
   };
 
   const spaced=spaceKv(message);
   if(spaced?.generic&&typeof spaced.generic==='object')return {
     syslog,
-    generic:{...(spaced.generic as Record<string,unknown>),source_raw:raw,message_raw:message},
+    generic:{...(spaced.generic as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
   };
+
+  if(envelope.structuredDataElements?.length){
+    if(!junosStructuredDataElementsValid(envelope.structuredDataElements))return null;
+    return {
+      syslog,
+      generic:{mode:'syslog_envelope_structured_data',source_raw:raw,message_raw:messageRaw},
+    };
+  }
 
   return null;
 }
@@ -804,12 +1065,16 @@ function asa(raw:string):Record<string,unknown>|null{
   if(/%(?:ASA|FTD)-\d-\d{6}:[ \t]*/.test(after))return null;
   const severity=Number(id[2]);
   if(!Number.isInteger(severity)||severity<0||severity>7)return null;
-  const built=after.match(/^(?<action>Built) (?<direction>inbound|outbound) (?<protocol>TCP|UDP) connection (?<connection_id>[0-9]{1,20}) for (?<src_interface>[A-Za-z0-9_.:-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})\/(?<src_port>[0-9]{1,5}) \((?<mapped_src_ip>[0-9A-Fa-f:.]{2,64})\/(?<mapped_src_port>[0-9]{1,5})\) to (?<dst_interface>[A-Za-z0-9_.:-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<dst_port>[0-9]{1,5}) \((?<mapped_dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<mapped_dst_port>[0-9]{1,5})\)$/);
-  const deny=after.match(/^(?<action>Deny) (?<protocol>tcp|udp|icmp) src (?<src_interface>[A-Za-z0-9_.:-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})\/(?<src_port>[0-9]{1,5}) dst (?<dst_interface>[A-Za-z0-9_.:-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<dst_port>[0-9]{1,5})$/);
+  const built=after.match(/^(?<action>Built) (?<direction>inbound|outbound) (?<protocol>TCP|UDP) connection (?<connection_id>[0-9]{1,20}) for (?<src_interface>[A-Za-z0-9_.-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})\/(?<src_port>[0-9]{1,5}) \((?<mapped_src_ip>[0-9A-Fa-f:.]{2,64})\/(?<mapped_src_port>[0-9]{1,5})\) to (?<dst_interface>[A-Za-z0-9_.-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<dst_port>[0-9]{1,5}) \((?<mapped_dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<mapped_dst_port>[0-9]{1,5})\)$/);
+  const deny=after.match(/^(?<action>Deny) (?<protocol>tcp|udp|icmp) src (?<src_interface>[A-Za-z0-9_.-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})\/(?<src_port>[0-9]{1,5}) dst (?<dst_interface>[A-Za-z0-9_.-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})\/(?<dst_port>[0-9]{1,5})$/);
   const denyAccess=after.match(/^(?<action>Deny) (?<protocol>tcp|udp|icmp) src (?:(?<src_context>v[12]):)?(?<src_interface>[A-Za-z0-9_.-]{1,64}):(?<src_ip>[0-9A-Fa-f:.]{2,64})(?:\/(?<src_port>[0-9]{1,5}))? dst (?:(?<dst_context>v[12]):)?(?<dst_interface>[A-Za-z0-9_.-]{1,64}):(?<dst_ip>[0-9A-Fa-f:.]{2,64})(?:\/(?<dst_port>[0-9]{1,5}))? by access-group \"(?<access_group>[^\"\r\n]{0,128})\" \[(?<flag_1>0x[0-9A-Fa-f]+), (?<flag_2>0x[0-9A-Fa-f]+)\]$/);
   const full=built??deny??denyAccess;
   if(!full?.groups)return null;
   const fields:Record<string,unknown>={source_raw:raw,product:id[1],severity:id[2],message_id:id[3],...full.groups};
+  for(const name of ['src_ip','dst_ip','mapped_src_ip','mapped_dst_ip']){
+    const value=fields[name];
+    if(value!==undefined&&(!ipToken(String(value))))return null;
+  }
   for(const name of ['src_port','dst_port','mapped_src_port','mapped_dst_port']){
     const value=fields[name];
     if(value===undefined)continue;
@@ -821,13 +1086,14 @@ function asa(raw:string):Record<string,unknown>|null{
   if(prefix){
     const header=prefix.match(/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(?:(\d{4}) +)?(\d{2}):(\d{2}):(\d{2}) +([^\s:]{1,255})(?: +([A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?))? *:? *$/);
     if(header){
-      const monthDays:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
       const pri=header[1]===undefined?undefined:Number(header[1]);
-      const day=Number(header[3]),year=header[4]===undefined?undefined:Number(header[4]);
-      const hour=Number(header[5]),minute=Number(header[6]),second=Number(header[7]);
-      if((pri!==undefined&&(pri<0||pri>191))||!monthDays[header[2]!]||day<1||day>monthDays[header[2]!]!||
+      const year=header[4]===undefined?undefined:Number(header[4]);
+      const time=header[5]+':'+header[6]+':'+header[7];
+      if((pri!==undefined&&(pri<0||pri>191))||
          (year!==undefined&&(year<1||year>9999))||
-         hour<0||hour>23||minute<0||minute>59||second<0||second>59)return null;
+         (header[4]!==undefined
+           ?!validBsdClockWithYear(header[2]!,header[3]!,header[4]!,time)
+           :!validBsdClock(header[2]!,header[3]!,time)))return null;
       Object.assign(syslog,{
         ...(pri!==undefined?{pri:String(pri)}:{}),month:header[2],day:header[3],
         ...(year!==undefined?{year:header[4]}:{}),
@@ -848,18 +1114,18 @@ function asa(raw:string):Record<string,unknown>|null{
 function knownVendorStructuredFailure(raw:string):boolean{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope)return false;
-  const message=envelope.message;
+  const message=normalizedEnvelopeMessage(envelope);
   if(envelope.appname==='RT_FLOW'&&/^RT_FLOW_SESSION_[A-Z_]+:/.test(message))return true;
   if(/^%(?:ASA|FTD)-\d-\d{6}:/.test(message))return true;
   if(looksLikePanosBody(message))return true;
   return false;
 }
 
-export function extractGenericStructural(raw:string):GenericStructuralExtraction{
+function extractGenericStructuralUnframed(raw:string):GenericStructuralExtraction{
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
-    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??priSpaceKv(raw)??
-    syslogEnvelopeStructuredFallback(raw);
+    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
+    syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
   if(strict)return {fields:strict,errors:[]};
   if(knownVendorStructuredFailure(raw))
     return {fields:{},errors:['Known vendor structure failed strict validation']};
@@ -867,4 +1133,22 @@ export function extractGenericStructural(raw:string):GenericStructuralExtraction
     bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw);
   return loose?{fields:loose,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
+}
+
+export function extractGenericStructural(raw:string):GenericStructuralExtraction{
+  const frame=unwrapSingleSyslogRecord(raw);
+  if(!frame.ok)return {fields:{},errors:[frame.error]};
+  const parsed=extractGenericStructuralUnframed(frame.message);
+  if(parsed.errors.length||frame.mode==='unframed')return parsed;
+  return {
+    fields:{
+      ...parsed.fields,
+      framing:{
+        mode:frame.mode,
+        ...(frame.octets!==undefined?{octets:frame.octets}:{}),
+        source_raw:raw,
+      },
+    },
+    errors:[],
+  };
 }

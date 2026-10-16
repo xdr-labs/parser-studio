@@ -432,3 +432,72 @@ Final candidate validation on the isolated PoC clone:
 The Vite production build reports only the repository's existing large-chunk advisory; it is not a parser correctness failure.
 
 This remains a PoC branch. It is intentionally not merged into the active product development worktree. Product integration should cherry-pick/reimplement the small architectural units into the active Funnel pipeline after reviewing the active branch's concurrent changes.
+
+## Expansion round 2 — body dialect, framing, and strictness
+
+After the first envelope/vendor-body decoupling result, the PoC continued against additional security-log structures and protocol deviations. The second round intentionally targeted gaps rather than repeating the original PAN-OS success cases.
+
+Added coverage:
+
+- RFC6587 octet-counted and non-transparent framing;
+- RFC3164 timezone/year ordering variants;
+- RFC5424 structured-data element/parameter extraction;
+- RFC5424 UTF-8 BOM-prefixed bodies;
+- Snort bounded alert bodies;
+- embedded JSON and `@cee:` JSON;
+- pipe, semicolon, and tab-delimited `key=value` bodies;
+- short but deterministic 3–4 field space-KV bodies behind a validated envelope;
+- IPv6-aware network token and flow-tuple validation;
+- strict leap-year/calendar validation across common and vendor-specific headers;
+- known-dialect downgrade guards so malformed vendor payloads cannot be rescued by a looser generic parser.
+
+### Fixed corpus improvement
+
+The original 49-event fixed corpus now measures:
+
+| Metric | Initial baseline | Round 1 | Round 2 |
+| --- | ---: | ---: | ---: |
+| Structured parser success | 15 / 49 (30.6%) | 43 / 49 (87.8%) | 48 / 49 (98.0%) |
+| Structured body extraction | 13 / 49 (26.5%) | 43 / 49 (87.8%) | 48 / 49 (98.0%) |
+| Malformed fixed-corpus events accepted | 0 / 12 | 0 / 12 | 0 / 12 |
+
+The only fixed-corpus record intentionally not promoted to a structured success is ordinary RFC5424 free text. Its envelope is parseable, but it does not contain deterministic structured body fields, so treating it as a structured event would inflate recall by changing the definition of success.
+
+### Round-2 deterministic evidence
+
+- dedicated PoC suites: 17 / 17 files PASS, 131 / 131 tests PASS;
+- full repository unit suite: 106 / 106 files PASS, 802 / 802 tests PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- fixed corpus structured success: 48 / 49;
+- 210-combination Syslog/body matrix: 210 / 210 PASS;
+- vendor cross-wrapper matrix: 30 / 30 PASS;
+- delimiter-aware KV matrix: 24 / 24 PASS;
+- embedded JSON / CEE matrix: 8 / 8 PASS;
+- short envelope KV matrix: 8 / 8 PASS;
+- IPv6 positional CSV matrix: 4 / 4 PASS;
+- RFC3164 timezone/year variants: 8 / 8 PASS;
+- RFC5424 structured-data cases: 5 / 5 PASS;
+- RFC5424 BOM structured bodies: 4 / 4 PASS;
+- Snort fixed-corpus wrapper variants: 5 / 5 PASS.
+
+Negative/adversarial evidence remains fail-closed:
+
+- invalid timestamp/calendar matrix: 10 / 10 rejected;
+- invalid RFC3164 timezone/year cases: 6 / 6 rejected;
+- malformed delimiter KV: 5 / 5 rejected;
+- malformed embedded JSON/CEE: 8 / 8 rejected;
+- ambiguous/unsafe short KV: 5 / 5 rejected;
+- malformed Snort: 5 / 5 rejected;
+- invalid ASA network tokens: 5 / 5 rejected;
+- invalid Juniper tuples: 5 / 5 rejected;
+- malformed vendor-body cross-wrapper cases: 9 / 9 rejected;
+- known-dialect downgrade attempts: 4 / 4 rejected.
+
+### Round-2 architectural implication
+
+The parser is now materially less dependent on enumerating vendor-specific complete-line regexes. The strongest reusable hierarchy observed by the tests is:
+
+`framing -> envelope -> deterministic body dialect -> vendor refinement -> semantic mapping`
+
+This is preferable to adding another full-line vendor rule whenever a timestamp, timezone, relay wrapper, or transport framing changes.

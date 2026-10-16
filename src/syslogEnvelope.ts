@@ -3,6 +3,9 @@ export type SyslogEnvelopeVariant=
   'rfc3164'|
   'rfc3164_year_before_time'|
   'rfc3164_year_after_time'|
+  'rfc3164_tz'|
+  'rfc3164_year_before_time_tz'|
+  'rfc3164_year_after_time_tz'|
   'rfc3339_loose'|
   'iso_space'|
   'slash_date'|
@@ -27,6 +30,7 @@ export interface SyslogEnvelope{
   procid?:string;
   msgid?:string;
   structuredData?:string;
+  structuredDataElements?:Array<{id:string;params:Record<string,string|string[]>}>;
   message:string;
 }
 
@@ -68,6 +72,17 @@ function validBsdTimestamp(month:string,dayText:string,time:string):boolean{
   return !!MONTH_DAYS[month]&&Number.isInteger(day)&&day>=1&&day<=MONTH_DAYS[month]!&&validClock(time);
 }
 
+function monthNumber(month:string):number{
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(month)+1;
+}
+
+function validBsdTimestampWithYear(
+  month:string,dayText:string,yearText:string,time:string,
+):boolean{
+  const year=Number(yearText),monthIndex=monthNumber(month),day=Number(dayText);
+  return monthIndex>=1&&validClock(time)&&validCalendarDate(year,monthIndex,day);
+}
+
 function validIsoTimestamp(value:string,requireZone:boolean):boolean{
   const match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(Z|[+-]\d{2}:?\d{2})?$/.exec(value);
   if(!match)return false;
@@ -99,10 +114,78 @@ function fieldTokenValid(value:string,max:number):boolean{
   );
 }
 
-function parseStructuredData(input:string):{structuredData:string;message:string}|null{
+const UNSAFE_SD_NAMES=new Set(['__proto__','constructor','prototype']);
+
+function validSdName(value:string):boolean{
+  return value.length>=1&&value.length<=32&&
+    /^[\x21-\x7e]+$/.test(value)&&
+    !/[=\]" ]/.test(value)&&
+    !UNSAFE_SD_NAMES.has(value);
+}
+
+function parseStructuredDataElements(
+  raw:string,
+):Array<{id:string;params:Record<string,string|string[]>}>|null{
+  if(raw==='-')return [];
+  if(!raw.startsWith('[')||utf8Size(raw)>8192)return null;
+  const elements:Array<{id:string;params:Record<string,string|string[]>}>=[];
+  const ids=new Set<string>();
+  let cursor=0;
+  while(cursor<raw.length){
+    if(raw[cursor]!=='['||elements.length>=64)return null;
+    cursor++;
+    const idStart=cursor;
+    while(cursor<raw.length&&raw[cursor]!==' '&&raw[cursor]!==']')cursor++;
+    const id=raw.slice(idStart,cursor);
+    if(!validSdName(id)||ids.has(id))return null;
+    ids.add(id);
+    const params:Record<string,string|string[]>=Object.create(null);
+    let paramCount=0;
+    while(cursor<raw.length&&raw[cursor]===' '){
+      if(++paramCount>128)return null;
+      cursor++;
+      const nameStart=cursor;
+      while(cursor<raw.length&&raw[cursor]!=='=')cursor++;
+      if(cursor>=raw.length)return null;
+      const name=raw.slice(nameStart,cursor);
+      if(!validSdName(name)||raw.slice(cursor,cursor+2)!=='="')return null;
+      cursor+=2;
+      let value='',closed=false;
+      while(cursor<raw.length){
+        const ch=raw[cursor]!;
+        if(ch==='"'){cursor++;closed=true;break;}
+        if(ch==='\\'){
+          const next=raw[cursor+1];
+          if(next===undefined)return null;
+          if(next==='"'||next==='\\'||next===']'){
+            value+=next;cursor+=2;continue;
+          }
+          value+='\\'+next;cursor+=2;continue;
+        }
+        value+=ch;cursor++;
+      }
+      if(!closed||utf8Size(value)>2048)return null;
+      const previous=params[name];
+      params[name]=previous===undefined?value:
+        Array.isArray(previous)?[...previous,value]:[previous,value];
+    }
+    if(raw[cursor]!==']')return null;
+    cursor++;
+    elements.push({id,params});
+  }
+  return elements;
+}
+
+function parseStructuredData(input:string):{
+  structuredData:string;
+  elements:Array<{id:string;params:Record<string,string|string[]>}>;
+  message:string;
+}|null{
   if(input.startsWith('-')){
     const rest=input.slice(1);
-    if(rest===''||rest.startsWith(' '))return {structuredData:'-',message:rest.trimStart()};
+    if(rest===''||rest.startsWith(' '))return {
+      structuredData:'-',elements:[],message:rest===''?'':rest.slice(1),
+    };
     return null;
   }
   if(!input.startsWith('['))return null;
@@ -122,9 +205,11 @@ function parseStructuredData(input:string):{structuredData:string;message:string
     if(!closed||quoted||escaped)return null;
   }
   const structuredData=input.slice(0,cursor);
+  const elements=parseStructuredDataElements(structuredData);
+  if(!elements)return null;
   const rest=input.slice(cursor);
   if(rest!==''&&!rest.startsWith(' '))return null;
-  return {structuredData,message:rest.trimStart()};
+  return {structuredData,elements,message:rest===''?'':rest.slice(1)};
 }
 
 function decorateMessage(envelope:SyslogEnvelope):SyslogEnvelope{
@@ -155,6 +240,7 @@ function parseRfc5424(pri:string|undefined,rest:string):SyslogEnvelope|null{
     ...(procid!=='-'?{procid}:{}),
     ...(msgid!=='-'?{msgid}:{}),
     structuredData:sd.structuredData,
+    ...(sd.elements.length?{structuredDataElements:sd.elements}:{}),
     message:sd.message,
   };
 }
@@ -164,9 +250,42 @@ function withPri(pri:string|undefined):Pick<SyslogEnvelope,'pri'|'facility'|'sev
 }
 
 function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
+  const yearBeforeTz=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{2}:?\d{2}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  if(yearBeforeTz){
+    if(!validBsdTimestampWithYear(yearBeforeTz[1]!,yearBeforeTz[2]!,yearBeforeTz[3]!,yearBeforeTz[4]!)||
+       !validZone(yearBeforeTz[5]!))return null;
+    return decorateMessage({
+      variant:'rfc3164_year_before_time_tz',confidence:'strong',...withPri(pri),
+      month:yearBeforeTz[1],day:yearBeforeTz[2],year:yearBeforeTz[3],time:yearBeforeTz[4],
+      timezone:yearBeforeTz[5],hostname:yearBeforeTz[6],message:yearBeforeTz[7]??'',
+    });
+  }
+
+  const yearAfterTz=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(Z|[+-]\d{2}:?\d{2}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  if(yearAfterTz){
+    if(!validBsdTimestampWithYear(yearAfterTz[1]!,yearAfterTz[2]!,yearAfterTz[4]!,yearAfterTz[3]!)||
+       !validZone(yearAfterTz[5]!))return null;
+    return decorateMessage({
+      variant:'rfc3164_year_after_time_tz',confidence:'strong',...withPri(pri),
+      month:yearAfterTz[1],day:yearAfterTz[2],time:yearAfterTz[3],year:yearAfterTz[4],
+      timezone:yearAfterTz[5],hostname:yearAfterTz[6],message:yearAfterTz[7]??'',
+    });
+  }
+
+  const classicTz=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{2}:?\d{2}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  if(classicTz){
+    if(!validBsdTimestamp(classicTz[1]!,classicTz[2]!,classicTz[3]!)||
+       !validZone(classicTz[4]!))return null;
+    return decorateMessage({
+      variant:'rfc3164_tz',confidence:'strong',...withPri(pri),
+      month:classicTz[1],day:classicTz[2],time:classicTz[3],timezone:classicTz[4],
+      hostname:classicTz[5],message:classicTz[6]??'',
+    });
+  }
+
   const yearBefore=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/.exec(rest);
-  if(yearBefore&&validBsdTimestamp(yearBefore[1]!,yearBefore[2]!,yearBefore[4]!)&&
-     Number(yearBefore[3])>=1900&&Number(yearBefore[3])<=9999){
+  if(yearBefore){
+    if(!validBsdTimestampWithYear(yearBefore[1]!,yearBefore[2]!,yearBefore[3]!,yearBefore[4]!))return null;
     return decorateMessage({
       variant:'rfc3164_year_before_time',confidence:'strong',...withPri(pri),
       month:yearBefore[1],day:yearBefore[2],year:yearBefore[3],time:yearBefore[4],
@@ -175,8 +294,8 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
   }
 
   const yearAfter=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
-  if(yearAfter&&validBsdTimestamp(yearAfter[1]!,yearAfter[2]!,yearAfter[3]!)&&
-     Number(yearAfter[4])>=1900&&Number(yearAfter[4])<=9999){
+  if(yearAfter){
+    if(!validBsdTimestampWithYear(yearAfter[1]!,yearAfter[2]!,yearAfter[4]!,yearAfter[3]!))return null;
     return decorateMessage({
       variant:'rfc3164_year_after_time',confidence:'strong',...withPri(pri),
       month:yearAfter[1],day:yearAfter[2],time:yearAfter[3],year:yearAfter[4],
@@ -278,6 +397,11 @@ export function envelopeToSyslogFields(envelope:SyslogEnvelope):Record<string,un
   ] as const){
     const value=envelope[key];
     if(value!==undefined)fields[key]=value;
+  }
+  if(envelope.structuredDataElements?.length){
+    fields.structured_data=Object.fromEntries(
+      envelope.structuredDataElements.map(element=>[element.id,element.params])
+    );
   }
   return fields;
 }
