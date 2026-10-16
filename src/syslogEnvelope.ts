@@ -258,9 +258,20 @@ function withPri(pri:string|undefined):Pick<SyslogEnvelope,'pri'|'facility'|'sev
   return decomposePri(pri)??{};
 }
 
+function validBsdHostnameToken(value:string):boolean{
+  if(/^[A-Za-z0-9][A-Za-z0-9_.-]{0,254}$/.test(value))return true;
+  if(!value.includes(':')||value.length>39||!/^[0-9A-Fa-f:]+$/.test(value)||
+     value.indexOf('::')!==value.lastIndexOf('::'))return false;
+  const sides=value.split('::');
+  if(sides.length>2)return false;
+  const groups=sides.flatMap(side=>side?side.split(':'):[]);
+  if(groups.some(group=>!/^[0-9A-Fa-f]{1,4}$/.test(group)))return false;
+  return sides.length===2?groups.length<8:groups.length===8;
+}
+
 function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
-  const yearBeforeNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([A-Z]{2,8}) +([A-Za-z0-9][A-Za-z0-9_.-]{0,254})(?: +(.*))?$/.exec(rest);
-  if(yearBeforeNamed&&BSD_NAMED_ZONES.has(yearBeforeNamed[5]!)&&
+  const yearBeforeNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([A-Z]{2,8}) +([\x21-\x7e]{1,255})(?: +(.*))?$/.exec(rest);
+  if(yearBeforeNamed&&BSD_NAMED_ZONES.has(yearBeforeNamed[5]!)&&validBsdHostnameToken(yearBeforeNamed[6]!)&&
      validBsdTimestampWithYear(yearBeforeNamed[1]!,yearBeforeNamed[2]!,yearBeforeNamed[3]!,yearBeforeNamed[4]!)){
     return decorateMessage({
       variant:'rfc3164_year_before_time_tz',confidence:'strong',...withPri(pri),
@@ -280,8 +291,8 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
-  const yearAfterNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +([A-Z]{2,8}) +([A-Za-z0-9][A-Za-z0-9_.-]{0,254})(?: +(.*))?$/.exec(rest);
-  if(yearAfterNamed&&BSD_NAMED_ZONES.has(yearAfterNamed[5]!)&&
+  const yearAfterNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +([A-Z]{2,8}) +([\x21-\x7e]{1,255})(?: +(.*))?$/.exec(rest);
+  if(yearAfterNamed&&BSD_NAMED_ZONES.has(yearAfterNamed[5]!)&&validBsdHostnameToken(yearAfterNamed[6]!)&&
      validBsdTimestampWithYear(yearAfterNamed[1]!,yearAfterNamed[2]!,yearAfterNamed[4]!,yearAfterNamed[3]!)){
     return decorateMessage({
       variant:'rfc3164_year_after_time_tz',confidence:'strong',...withPri(pri),
@@ -301,8 +312,8 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
-  const classicNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([A-Z]{2,8}) +([A-Za-z0-9][A-Za-z0-9_.-]{0,254})(?: +(.*))?$/.exec(rest);
-  if(classicNamed&&BSD_NAMED_ZONES.has(classicNamed[4]!)&&
+  const classicNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([A-Z]{2,8}) +([\x21-\x7e]{1,255})(?: +(.*))?$/.exec(rest);
+  if(classicNamed&&BSD_NAMED_ZONES.has(classicNamed[4]!)&&validBsdHostnameToken(classicNamed[5]!)&&
      validBsdTimestamp(classicNamed[1]!,classicNamed[2]!,classicNamed[3]!)){
     return decorateMessage({
       variant:'rfc3164_tz',confidence:'strong',...withPri(pri),

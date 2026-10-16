@@ -11,7 +11,7 @@ export interface SecurityPipelineEvent{
 
 export interface SecurityPipelineSuccess{
   ok:true;
-  kind:'single_event'|Exclude<SecurityEventBreakResult extends infer R ? R extends {ok:true;kind:infer K}?K:never:never,never>;
+  kind:'single_event'|'line_event_stream'|Exclude<SecurityEventBreakResult extends infer R ? R extends {ok:true;kind:infer K}?K:never:never,never>;
   container:boolean;
   source_raw:string;
   events:SecurityPipelineEvent[];
@@ -45,10 +45,43 @@ function genericEvent(index:number,raw:string):SecurityPipelineEvent|null{
   return parsed.errors.length?null:{index,raw,fields:parsed.fields};
 }
 
+function lineEventStream(raw:string):SecurityPipelineResult|null{
+  if(!/[\r\n]/.test(raw))return null;
+  const hasCrlf=raw.includes('\r\n');
+  const withoutCrlf=raw.replace(/\r\n/g,'');
+  if(withoutCrlf.includes('\r'))
+    return {ok:false,error:'Line event stream contains an unsupported carriage return'};
+  if(hasCrlf&&withoutCrlf.includes('\n'))
+    return {ok:false,error:'Line event stream mixes LF and CRLF boundaries'};
+  const normalized=hasCrlf?raw.replace(/\r\n/g,'\n'):raw;
+  const body=normalized.endsWith('\n')?normalized.slice(0,-1):normalized;
+  const lines=body.split('\n');
+  if(lines.length<2)return null;
+  if(lines.length>1000)return {ok:false,error:'Line event stream exceeds the event limit'};
+  if(lines.some(line=>line.length===0))
+    return {ok:false,error:'Line event stream contains an empty event boundary'};
+  const events:SecurityPipelineEvent[]=[];
+  for(let index=0;index<lines.length;index++){
+    const line=lines[index]!;
+    if(new TextEncoder().encode(line).byteLength>64*1024)
+      return {ok:false,error:'Line event exceeds the parser limit'};
+    const event=genericEvent(index,line);
+    if(!event)
+      return {ok:false,error:'Line '+String(index+1)+' failed reviewed single-event parsing'};
+    events.push(event);
+  }
+  return {
+    ok:true,kind:'line_event_stream',container:true,source_raw:raw,events,
+    context:{framing:hasCrlf?'crlf':'lf'},
+  };
+}
+
 export function parseSecurityInput(raw:string):SecurityPipelineResult{
   const broken=breakSecurityInput(raw);
   if(!broken.ok){
     if(broken.claimed)return {ok:false,error:broken.error};
+    const lines=lineEventStream(raw);
+    if(lines)return lines;
     const single=genericEvent(0,raw);
     return single?{ok:true,kind:'single_event',container:false,source_raw:raw,events:[single]}:
       {ok:false,error:'Input did not match a bounded container or single-event grammar'};

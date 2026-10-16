@@ -38,6 +38,20 @@ function looksLikeJsonArrayContainer(raw:string):boolean{
     rest.startsWith('true')||rest.startsWith('false')||rest.startsWith('null');
 }
 
+function looksLikeNonTransparentSyslogStream(raw:string):boolean{
+  if(!/^<\d{1,3}>/.test(raw))return false;
+  if(raw.includes('\0')){
+    const frames=raw.split('\0');
+    if(frames.at(-1)==='')frames.pop();
+    return frames.length>=2&&frames.every(frame=>/^<\d{1,3}>/.test(frame));
+  }
+  if(!/[\r\n]/.test(raw))return false;
+  const normalized=raw.replace(/\r\n/g,'\n');
+  const body=normalized.endsWith('\n')?normalized.slice(0,-1):normalized;
+  const lines=body.split('\n');
+  return lines.length>=2&&lines.every(line=>/^<\d{1,3}>/.test(line));
+}
+
 export function breakSecurityInput(raw:string):SecurityEventBreakResult{
   if(!raw||bytes(raw)>MAX_INPUT_BYTES)
     return {ok:false,claimed:true,error:'Input is empty, binary, or exceeds the event-breaker limit'};
@@ -104,8 +118,7 @@ export function breakSecurityInput(raw:string):SecurityEventBreakResult{
     return {ok:false,claimed:true,error:'Input resembles a systemd journal export but failed strict validation'};
   }
 
-  if(/^[1-9]\d* +<\d{1,3}>/.test(raw)||
-     (/^<\d{1,3}>/.test(raw)&&(raw.includes('\n<')||raw.includes('\0<')))){
+  if(/^[1-9]\d* +<\d{1,3}>/.test(raw)||looksLikeNonTransparentSyslogStream(raw)){
     const syslog=splitSyslogStream(raw);
     if(syslog.ok)return {ok:true,kind:'rfc6587_syslog',count:syslog.records.length,payload:syslog};
     return {ok:false,claimed:true,error:'Input resembles a multi-record Syslog stream but failed strict framing'};
