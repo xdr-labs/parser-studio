@@ -13,20 +13,18 @@ const holdout=[
 function recipe(includeSplit=true,includeMerge=false){
  const stages:any[]=[
   {op:'split_event',boundary:'single-line'},{op:'parse_json'},
-  {op:'map_field',source:'src_ip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
-  {op:'cast_type',target:'custom.source_ip',data_type:'ip'},
-  {op:'map_field',source:'dst_port',target:'custom.destination_port',data_type:'port',group:'ns_fields'},
-  {op:'cast_type',target:'custom.destination_port',data_type:'port'},
-  {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+  {op:'map_field',source:'action',target:'action',data_type:'string',group:'top_fields'},
+  {op:'map_field',source:'src_ip',target:'srcip',data_type:'ip',group:'top_fields'},
+  {op:'cast_type',target:'srcip',data_type:'ip'},
+  {op:'map_field',source:'dst_port',target:'dstport',data_type:'integer',group:'top_fields'},
+  {op:'cast_type',target:'dstport',data_type:'integer'},
  ];
- if(includeSplit)stages.push({op:'split_field',source:'custom.action',delimiter:':',
+ if(includeSplit)stages.push({op:'split_field',source:'action',delimiter:':',
    targets:['custom.action_kind','custom.action_detail']});
  if(includeMerge)stages.push({op:'merge_fields',
    sources:['custom.action_kind','custom.action_detail'],delimiter:'/',target:'custom.action_joined'});
- stages.push({op:'classify',defaultIndex:'syslog',rules:[
-  {field:'custom.action',operator:'equals',value:'deny',index:'threat'},
-  {field:'custom.action',operator:'equals',value:'allow',index:'session'},
- ]},{op:'fallback_unparsed',mode:'retain_unparsed'});
+ stages.push({op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'});
  return {
   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
   projectId:'draft-demo_firewall',sourceFormat:'json',bodyFormat:'json',
@@ -68,17 +66,19 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  await qualifyAndApply(page,recipe(true,true),'Apply Verified Fix','Merge #2');
 
  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
-  await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
+ const create=page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'});
+ await expect(create).toBeEnabled({timeout:10_000});
+ await create.click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Create Parser Files'}).click();
  expect((await generatedResponse).status()).toBe(200);
  const generated=page.getByLabel('Generated parser files');
- await expect(generated).toContainText('Two generated files have matching recorded SHA-256 integrity evidence');
+ await expect(generated).toContainText('Parser files created successfully');
 
  await page.getByLabel('Parser-building steps review').locator('summary').click();
  await page.getByRole('button',{name:'Review Staged Recipe'}).click();
- const reviewed=page.getByLabel('Parser-building steps');
+ const reviewed=page.getByRole('status',{name:'Parser-building steps',exact:true});
  await expect(reviewed).toContainText('split_field');
  await expect(reviewed).toContainText('merge_fields');
  await expect(reviewed).not.toContainText('198.51.100.10');

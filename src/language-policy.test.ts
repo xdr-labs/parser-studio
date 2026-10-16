@@ -53,7 +53,8 @@ describe('English-only product and development content', () => {
     expect(app).not.toContain("'ko-KR'");
     const auto=readFileSync(path.join(root,'src/guided/AutoParser.tsx'),'utf8');
     const assisted=readFileSync(path.join(root,'src/guided/ChatGPTAssist.tsx'),'utf8');
-    expect(auto).toContain('Ask ChatGPT about an unfamiliar log');
+    expect(auto).not.toContain('Ask ChatGPT about an unfamiliar log');
+    expect(app).toContain('ChatGPT Assisted Parser');
     expect(assisted).toContain('ChatGPT Assisted Parser');
     expect(app).toContain('Auto Parser');
     expect(app).not.toContain("workspace==='guided'");
