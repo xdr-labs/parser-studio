@@ -3,8 +3,11 @@ import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {unwrapSingleSyslogRecord} from './syslogFraming';
 import {extractVpcFlowStructural,parseVpcFlowLogV2} from './awsVpcFlow';
 import {extractAlbStructural,parseAlbAccessLog} from './awsAlbAccess';
-import {parseBindQueryMessage,parseCiscoIosMessage,parseCiscoIosSequenceSyslog,parseHttpAccessLog,parseLegacyOriginatorMessage,parseSquidAccessLog} from './commonSecurityProfiles';
+import {parseApacheErrorLog,parseBindQueryMessage,parseCiscoIosMessage,parseCiscoIosSequenceSyslog,parseHttpAccessLog,parseLegacyOriginatorMessage,parseSquidAccessLog} from './commonSecurityProfiles';
 import {extractLinuxAuditStructural,parseLinuxAuditRecord} from './linuxAudit';
+import {extractCiscoFirewallEnvelope,parseCiscoFirewallEnvelope} from './ciscoFirewallEnvelope';
+import {parseBindQueryLog} from './bindQueryLog';
+import {extractClassicElbAccess,extractS3Access} from './awsLegacyAccess';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -807,6 +810,35 @@ function zeekConnTsvBody(text:string):Record<string,unknown>|null{
   return Object.keys(columns).length===values.length?columns:null;
 }
 
+function standaloneBindQueryProfile(raw:string):Record<string,unknown>|null{
+  const query=parseBindQueryMessage(raw);
+  return query?{bind_query:{...query,source_raw:raw}}:null;
+}
+
+function commaLabelValueBody(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||new TextEncoder().encode(text).byteLength>8192)return null;
+  const segments=splitEscaped(text,',');
+  if(!segments||segments.length<3||segments.length>128)return null;
+  const fields:Record<string,unknown>={};
+  for(const rawSegment of segments){
+    const segment=rawSegment.trim();
+    if(!segment)return null;
+    const colon=segment.indexOf(':');
+    if(colon<=0)return null;
+    const key=segment.slice(0,colon).trim();
+    if(!/^[A-Za-z][A-Za-z0-9 _./()#-]{0,127}$/.test(key)||!sourceKeySafe(key))return null;
+    let value=segment.slice(colon+1).trim();
+    if(value.length>=2&&((value.startsWith('"')&&value.endsWith('"'))||
+       (value.startsWith("'")&&value.endsWith("'"))))value=value.slice(1,-1);
+    else if(value.startsWith('"')||value.startsWith("'")||value.endsWith('"')||value.endsWith("'"))return null;
+    if(/[\u0000-\u001f\u007f]/.test(value)||new TextEncoder().encode(value).byteLength>4096)return null;
+    const previous=fields[key];
+    fields[key]=previous===undefined?value:Array.isArray(previous)?[...previous,value]:[previous,value];
+    if(Object.keys(fields).length>100)return null;
+  }
+  return Object.keys(fields).length>=3?fields:null;
+}
+
 function standaloneXmlProfile(raw:string):Record<string,unknown>|null{
   const xml=boundedXmlBody(raw);
   return xml?{xml,generic:{mode:'bounded_xml',source_raw:raw}}:null;
@@ -1005,6 +1037,22 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
         asa:{...(parsed.asa as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
       };
     }
+    const generic=parseCiscoFirewallEnvelope(message);
+    if(generic)return {
+      syslog,
+      cisco_firewall:{...generic,source_raw:raw,message_raw:messageRaw},
+      generic:{mode:'syslog_envelope_cisco_firewall_message',source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
+  if(envelope.appname&&/^(?:ASA|FTD)-[0-7]-\d{6}$/.test(envelope.appname)){
+    const generic=parseCiscoFirewallEnvelope(envelope.appname+': '+message);
+    if(generic)return {
+      syslog,
+      cisco_firewall:{...generic,source_raw:raw,message_raw:messageRaw},
+      generic:{mode:'syslog_envelope_cisco_firewall_message',source_raw:raw,message_raw:messageRaw},
+    };
     return null;
   }
 
@@ -1176,6 +1224,15 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     syslog,
     aws_alb_access:albAccess,
     generic:{mode:'syslog_envelope_aws_alb_access',source_raw:raw,message_raw:messageRaw},
+  };
+
+  const labelValues=commaLabelValueBody(message);
+  if(labelValues)return {
+    syslog,
+    generic:{
+      mode:'syslog_envelope_comma_label_value',
+      source_raw:raw,message_raw:messageRaw,fields:labelValues,
+    },
   };
 
   const shortKv=envelope.confidence==='partial'?null:shortEnvelopeSpaceKvBody(message);
@@ -1358,6 +1415,7 @@ function hostlessStructuredSyslog(raw:string):Record<string,unknown>|null{
 }
 
 function knownVendorStructuredFailure(raw:string):boolean{
+  if(/^%?(?:ASA|FTD)-[0-7]-\d{6}:/.test(raw))return true;
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope)return false;
   const message=normalizedEnvelopeMessage(envelope);
@@ -1371,7 +1429,9 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
-    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseSquidAccessLog(raw)??extractLinuxAuditStructural(raw)??
+    extractCiscoFirewallEnvelope(raw)??parseBindQueryLog(raw)??standaloneBindQueryProfile(raw)??
+    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseApacheErrorLog(raw)??parseSquidAccessLog(raw)??
+    extractClassicElbAccess(raw)??extractS3Access(raw)??extractLinuxAuditStructural(raw)??
     standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??extractVpcFlowStructural(raw)??extractAlbStructural(raw)??
     nestedRelayStructuredSyslog(raw)??hostlessStructuredSyslog(raw)??syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
   if(strict)return {fields:strict,errors:[]};

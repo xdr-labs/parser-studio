@@ -807,3 +807,78 @@ The PoC now has a concrete reusable hierarchy rather than a collection of unrela
 `transport/file container -> event breaker -> logical event -> envelope/body/schema parser -> source-specific refinement -> semantic mapping -> normalization`
 
 Multi-event framing and single-event parsing are now separate contracts. This prevents a malformed container from being partially reinterpreted as a valid single event and prevents a valid container from forcing vendor-specific parsing into the framing layer.
+
+## Expansion round 8 — external holdout generalization
+
+Round 8 deliberately stopped expanding the original synthetic/fixed corpus and measured the parser against public examples adapted from `logstash-patterns-core` at commit `74a4098582d3331a2b9b18c04d2446f2c0efb648`. The first 15-event selection had not been used to design the earlier Syslog/PAN corpus.
+
+### Holdout baseline
+
+Before adding any Round-8 grammar, the external selection measured:
+
+- 15 total events;
+- 6 / 15 parsed;
+- failures grouped into reusable families rather than individual samples: three Cisco ASA message-envelope variants, two BIND query wrapper/body variants, one Apache error record, one Classic ELB access record, one S3 server access record, and one comma `Label: value` Syslog body.
+
+The holdout test remained a measurement test rather than being changed into an acceptance target while the failures were classified.
+
+### Reusable improvements
+
+Round 8 added or generalized source grammars rather than one regex per failed sample:
+
+- **Cisco ASA/FTD message envelope** — preserves unknown six-digit message IDs under one bounded envelope while reserving strict network message IDs such as 106023 and 302013–302016 for their stronger parsers. A malformed strict message therefore cannot be rescued by the generic Cisco envelope.
+- **BIND query wrapper reuse** — the existing validated BIND query-body grammar is now reusable for both standalone query bodies and the native `DD-Mon-YYYY time category: level:` wrapper.
+- **Comma label/value body dialect** — supports at least three comma-delimited `Label: value` segments behind a validated Syslog envelope. Source labels are preserved exactly; the parser does not guess that a leading word is an application name.
+- **Apache error envelope** — one bounded bracketed grammar covers both legacy `[timestamp] [level] [client] message` and modern `[timestamp] [module:level] [pid/tid] [client] message` forms with calendar/client validation.
+- **AWS legacy positional access logs** — one bounded whitespace/quote/bracket tokenizer supports Classic ELB and S3 server access records while retaining documented source-field positions and forward-compatible trailing fields.
+
+### Event-breaker false-positive found by the holdout
+
+The Apache error holdout exposed a higher-level bug: the top-level event breaker treated any line beginning with `[` as a JSON-array container. Therefore `[Mon Aug ...] [error] ...` was claimed as malformed JSON before the Apache parser could run.
+
+The fix was made in the event-breaking layer, not in the Apache parser. JSON arrays are now claimed only when the token after `[` can lexically begin a JSON value (`{`, `[`, string, number, `true`, `false`, `null`, or `]`). Bracketed non-JSON single events are left for the single-event dispatcher.
+
+This is another example of the same architectural rule used throughout the PoC: fix the boundary that misclassified the input rather than adding a downstream exception.
+
+### Holdout progression
+
+| Measurement point | Parsed | Coverage |
+| --- | ---: | ---: |
+| External baseline | 6 / 15 | 40.0% |
+| After Cisco/BIND/comma-label reusable grammars | 12 / 15 | 80.0% |
+| After AWS legacy access grammars | 14 / 15 | 93.3% |
+| After event-breaker bracket fix + Apache error grammar | 15 / 15 | 100% |
+
+A second distinct 15-event selection from the same public source commit was then measured after the architecture was fixed. It includes different ASA IDs, NetScreen/Shorewall/Junos variants, BIND PTR, Squid variants, HTTP variants, Classic ELB no-target/TLS records, S3 object access, and another file-event Syslog form.
+
+- second variant selection: 15 / 15 parsed;
+- failures: 0.
+
+### Source-preservation audit
+
+Parsing success alone was not accepted as evidence. Selected source values were flattened from the final structured result and checked for reachability. The preservation audit now covers NetScreen, Shorewall, Junos, Squid, ASA, Classic ELB, BIND native wrapper, BIND standalone body, Apache error, S3 access, and comma-label Syslog.
+
+- preservation-audit samples with missing required source values: 0.
+
+### Round-8 qualification
+
+- final full repository unit suite: 137 / 137 test files PASS;
+- final assertions: 895 / 895 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- original 49-event fixed corpus: 48 / 49 structured, 0 malformed fixed-corpus acceptance;
+- original adversarial Syslog suite: 31 / 31 PASS;
+- first external Logstash holdout: 15 / 15 parsed;
+- second external Logstash variant selection: 15 / 15 parsed;
+- source-preservation audit: 0 missing values;
+- focused external grammar suite and AWS legacy-access negative cases: PASS.
+
+### Architectural conclusion from the external holdout
+
+The 40% external baseline confirms that the original 98% fixed-corpus result was not sufficient by itself. The important result is not that the holdout ultimately reached 100%, but that the nine original failures collapsed into a small number of reusable boundary/grammar defects.
+
+The observed fixes continue to support the same product architecture:
+
+`container/framing -> event breaker -> logical event -> envelope -> body/source grammar -> source preservation -> semantic mapping -> normalization`
+
+Future holdouts should come from different public ecosystems rather than adding more samples from the same Logstash source, so new measurements remain useful tests of generalization.

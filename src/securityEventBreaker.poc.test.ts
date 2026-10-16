@@ -42,8 +42,12 @@ describe('top-level bounded security event breaker PoC',()=>{
       JSON.stringify({event:'single'}),
       'type=SYSCALL msg=audit(1792152261.123:420): syscall=59 success=yes',
       'timestamp,src_ip,action',
+      '[Mon Aug 31 16:27:04 2015] [error] [client 10.17.42.3] Premature end of script headers: example.com',
     ];
     expect(singles.filter(raw=>breakSecurityInput(raw).ok)).toEqual([]);
+    const bracketed=breakSecurityInput(singles[4]!);
+    expect(bracketed.ok).toBe(false);
+    if(!bracketed.ok)expect(bracketed.claimed).toBe(false);
   });
 
   it('fails closed when a strong container signature is present but malformed',()=>{

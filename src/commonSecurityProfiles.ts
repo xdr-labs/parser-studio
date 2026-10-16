@@ -99,7 +99,7 @@ function parseHttpTimestamp(value:string):{raw:string;timezone:string}|null{
 
 export function parseHttpAccessLog(raw:string):Record<string,unknown>|null{
   if(!raw||raw.includes('\0')||/[\r\n]/.test(raw)||bytes(raw)>16384)return null;
-  const match=/^(\S+) +(\S+) +(\S+) +\[([^\]]+)\] +"((?:\\.|[^"\\])*)" +(\d{3}) +(\d+|-)(?: +"((?:\\.|[^"\\])*)" +"((?:\\.|[^"\\])*)")?$/.exec(raw);
+  const match=/^(\S+) +(\S+) +(\S+) +\[([^\]]+)\] +"((?:\\.|[^"\\])*)" +(\d{3}|-) +(\d+|-)(?: +"((?:\\.|[^"\\])*)" +"((?:\\.|[^"\\])*)")?$/.exec(raw);
   if(!match||!ip(match[1]!))return null;
   const timestamp=parseHttpTimestamp(match[4]!);
   if(!timestamp)return null;
@@ -109,8 +109,8 @@ export function parseHttpAccessLog(raw:string):Record<string,unknown>|null{
   if(request===null||referer===null||userAgent===null)return null;
   const requestMatch=/^([A-Z][A-Z0-9_-]{1,15}) +(\S{1,8192}) +HTTP\/(\d(?:\.\d)?)$/.exec(request);
   if(!requestMatch)return null;
-  const status=Number(match[6]);
-  if(status<100||status>599)return null;
+  const status=match[6]==='-'?undefined:Number(match[6]);
+  if(status!==undefined&&(status<100||status>599))return null;
   return {
     http_access:{
       client_ip:match[1],ident:match[2],user:match[3],timestamp:timestamp.raw,timezone:timestamp.timezone,
@@ -129,7 +129,8 @@ export function parseSquidAccessLog(raw:string):Record<string,unknown>|null{
   if(parts.length!==10)return null;
   if(!/^\d{9,12}(?:\.\d{1,6})?$/.test(parts[0]!)||!/^[0-9]{1,10}$/.test(parts[1]!)||!ip(parts[2]!))return null;
   const result=/^([A-Z][A-Z0-9_-]{2,63})\/(\d{3})$/.exec(parts[3]!);
-  if(!result||Number(result[2])>599||Number(result[2])<100||!/^\d+$/.test(parts[4]!))return null;
+  const resultStatus=result?Number(result[2]):NaN;
+  if(!result||!Number.isInteger(resultStatus)||!(resultStatus===0||(resultStatus>=100&&resultStatus<=599))||!/^\d+$/.test(parts[4]!))return null;
   if(!/^[A-Z][A-Z0-9_-]{1,15}$/.test(parts[5]!)||parts[6]!.length>8192)return null;
   if(parts[7]!.length>256)return null;
   const hierarchy=/^([A-Z][A-Z0-9_-]{2,63})\/(.+)$/.exec(parts[8]!);
@@ -166,4 +167,38 @@ export function parseLegacyOriginatorMessage(text:string):Record<string,unknown>
   const keys=Object.keys(parsed.fields);
   if(!keys.length||keys.length>64||keys.some(key=>UNSAFE_KEYS.has(key))||bytes(match[3]!)>4096)return null;
   return {structured_id:match[1],params:parsed.fields,message:match[3]};
+}
+
+export function parseApacheErrorLog(raw:string):Record<string,unknown>|null{
+  if(!raw||raw.includes('\0')||/[\r\n]/.test(raw)||bytes(raw)>16384)return null;
+  const match=/^\[([A-Z][a-z]{2}) +([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4})\] +\[([^\]]{1,128})\](?: +\[pid +(\d{1,10})(?::tid +(\d{1,20}))?\])?(?: +\[client +([^\]]{1,255})\])? +(.+)$/.exec(raw);
+  if(!match)return null;
+  const month=MONTHS.indexOf(match[2] as typeof MONTHS[number])+1;
+  if(month<1||!calendar(Number(match[5]),month,Number(match[3]))||!clock(match[4]!))return null;
+  const levelToken=match[6]!;
+  const levelParts=levelToken.split(':');
+  if(levelParts.length>2||levelParts.some(part=>!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(part)))return null;
+  let clientIp:string|undefined,clientPort:string|undefined;
+  if(match[9]){
+    const client=match[9]!;
+    if(ip(client))clientIp=client;
+    else{
+      const cut=client.lastIndexOf(':');
+      if(cut<=0)return null;
+      const host=client.slice(0,cut),portText=client.slice(cut+1);
+      if(!ip(host)||!port(portText))return null;
+      clientIp=host;clientPort=portText;
+    }
+  }
+  if(bytes(match[10]!)>8192)return null;
+  return {
+    apache_error:{
+      weekday:match[1],month:match[2],day:match[3],time:match[4],year:match[5],
+      ...(levelParts.length===2?{module:levelParts[0],level:levelParts[1]}:{level:levelParts[0]}),
+      ...(match[7]?{pid:match[7]}:{}),...(match[8]?{tid:match[8]}:{}),
+      ...(clientIp?{client_ip:clientIp}:{}),...(clientPort?{client_port:clientPort}:{}),
+      message:match[10],source_raw:raw,
+    },
+    generic:{mode:'apache_error_log',source_raw:raw},
+  };
 }

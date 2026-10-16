@@ -25,6 +25,16 @@ export type SecurityEventBreakResult=
 const MAX_INPUT_BYTES=1024*1024;
 function bytes(value:string):number{return new TextEncoder().encode(value).byteLength;}
 
+function looksLikeJsonArrayContainer(raw:string):boolean{
+  const trimmed=raw.trimStart();
+  if(!trimmed.startsWith('['))return false;
+  const rest=trimmed.slice(1).trimStart();
+  if(!rest)return true;
+  const first=rest[0]!;
+  return ['{','[','"',']','-'].includes(first)||/[0-9]/.test(first)||
+    rest.startsWith('true')||rest.startsWith('false')||rest.startsWith('null');
+}
+
 export function breakSecurityInput(raw:string):SecurityEventBreakResult{
   if(!raw||bytes(raw)>MAX_INPUT_BYTES)
     return {ok:false,claimed:true,error:'Input is empty, binary, or exceeds the event-breaker limit'};
@@ -43,7 +53,7 @@ export function breakSecurityInput(raw:string):SecurityEventBreakResult{
     return {ok:false,claimed:true,error:'Input resembles an RFC7464 JSON text sequence but failed strict validation'};
   }
 
-  if(/^\s*[\[{]/.test(raw)){
+  if(raw.trimStart().startsWith('{')||looksLikeJsonArrayContainer(raw)){
     const batch=parseJsonObjectBatch(raw);
     if(batch.ok)return {ok:true,kind:'json_batch',count:batch.batch.records.length,payload:batch};
     if(raw.endsWith('\n')){
