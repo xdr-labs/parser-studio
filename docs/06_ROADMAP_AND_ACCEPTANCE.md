@@ -362,3 +362,27 @@ This section is the current evidence-based continuation checkpoint. The original
 ### Worktree preservation
 
 Obsolete UI experimental worktrees were consolidated to the original main worktree plus one cumulative UI worktree. Historical dirty patches and isolated E2E scripts are preserved outside Git under `/home/aella/parser-studio-worktree-preservation-20261016/`; do not publish raw private logs or diagnostic scripts. Untracked dependency directories and test-results may remain as local build artifacts and are not Git code changes.
+
+
+## 2026-10-16 Owner priority — broad novice Live Parsing E2E and Stellar target qualification
+
+**Execution priority:** continue wide-ranging *actual Chromium novice parsing* E2E first. Discover generalized parser-algorithm and UI/UX defects by exercising representative security-vendor logs, including long-tail and mixed/partial/malformed variants. Repair only demonstrated defects, rerun the same real user path, retain source-span/no-loss/Funnel gates, and commit/push verified changes. Do not confuse local browser/loopback Live E2E with a verified external Stellar target.
+
+### P0-LIVE-STELLAR — future externally approved target E2E
+
+1. **Connection and capability preflight:** owner-provided DP hostname, scoped API credentials and tenant; confirm target API family/version, authorization and read-only parser/port inventory. Never store secrets in browser artifacts or Git.
+2. **Parser registration:** use an explicitly approved disposable test identity, validated Ruby/CONF bytes, unique non-conflicting listener port, exact target/tenant binding, backend authorization and before/after audit; independently read back registration and activation status. Keep real target writes disabled until separate approval.
+3. **Sensor delivery:** obtain the owner-provided test sensor address and supported transport/port, verify sensor-to-DP ingestion configuration and port alignment, generate bounded safe synthetic logs with controlled variable fields/run markers, and send using explicit start/pause/resume/stop, rate, lease and event quotas. No production sensor or unapproved network sending.
+4. **Ingest and parsing verification:** query authorized DP Syslog/Traffic/Session indexes as actually supported; bind tenant, time window and unique run marker; correlate sent/accepted/sensor/DP stages, compare expected extracted and normalized fields per event, and report lost, delayed, mismatched or unverified stages separately. No false PASS from mock or browser preview.
+5. **Recovery and cleanup:** stop sending, export metadata-only redacted evidence with exact candidate hashes, verify cleanup of only the disposable parser/port after separate approval, and retain audit/rollback evidence. No automatic delete of existing customer parsers.
+6. **Acceptance:** same exact HEAD and verified target configuration; full browser novice path + live target E2E + native Ruby/Fluentd evidence + authorized readback; no mock result counted as external target PASS.
+
+### Immediate broad parsing E2E matrix
+
+- Test diverse firewall/IPS/WAF/EDR/NDR/VPN/DNS/cloud audit/network appliance families across JSON, CEF, LEEF, KV, CSV, RFC3164/5424, nested/mixed and wide/partial variants. Use available sanitized corpora and preserve source truth.
+- Measure distinct outcomes: Auto-only DRAFT success; Auto + local guided extraction; Auto + ChatGPT independently verified repair; and intentional safe abstention. Record training versus independent holdout separately, per-family counts and regressions.
+- For Junos: 100-event corpus; 95 distinct events have passed grouped Chromium recovery, while #20/#52/#84 failed Funnel no-loss gates and #69/#82 remain malformed/underconstrained. This is **not** a 95% fully automatic parser or native success rate.
+- For Pulse Connect Secure: 9/9 local-guided Chromium DRAFT creation passed, not external target E2E.
+- For WatchGuard: 416/416 bounded source-structure extraction, not 416 native/target verified events.
+- Prioritize generalized bounded structural grouping/Parser Set, false-complete prevention, explanation of unparsed spans, beginner action clarity, and preservation of exact source regions.
+- Continue real Chromium click/input flows, not just API/unit tests. Do not run real DP writes, sensor traffic, credentials or target changes without separate owner approval.
