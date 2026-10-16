@@ -8,6 +8,7 @@ import {extractLinuxAuditStructural,parseLinuxAuditRecord} from './linuxAudit';
 import {extractCiscoFirewallEnvelope,parseCiscoFirewallEnvelope} from './ciscoFirewallEnvelope';
 import {parseBindQueryLog} from './bindQueryLog';
 import {extractClassicElbAccess,extractS3Access} from './awsLegacyAccess';
+import {parseCiscoIseBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -274,7 +275,10 @@ function priSpaceKv(raw:string):Record<string,unknown>|null{
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191)return null;
-  const parsed=spaceKv(match[2]!);
+  const body=match[2]!;
+  if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(body)&&/\bdevname=/.test(body)&&/\bdevid=/.test(body)&&
+     !parseFortinetKvBody(body))return null;
+  const parsed=spaceKv(body);
   if(!parsed||!parsed.generic||typeof parsed.generic!=='object')return null;
   return {
     syslog:{pri:match[1]},
@@ -1020,12 +1024,72 @@ function junosStructuredDataElementsValid(
   return true;
 }
 
+function standaloneFortinetProfile(raw:string):Record<string,unknown>|null{
+  const parsed=parseFortinetKvBody(raw);
+  return parsed?{
+    fortinet:{...parsed,source_raw:raw},
+    generic:{mode:'fortinet_kv',source_raw:raw},
+  }:null;
+}
+
+function standaloneSophosProfile(raw:string):Record<string,unknown>|null{
+  const parsed=parseSophosKvBody(raw);
+  return parsed?{
+    sophos:{...parsed,source_raw:raw},
+    generic:{mode:'sophos_kv',source_raw:raw},
+  }:null;
+}
+
+function sophosUtmColonProfile(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>16384||raw.includes('\0')||/[\r\n]/.test(raw))return null;
+  const match=/^(?:<(\d{1,3})>)?(\d{4}):(\d{2}):(\d{2})-(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255}) +ulogd\[(\d{1,10})\]: +(.+)$/.exec(raw);
+  if(!match)return null;
+  if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
+  if(!validIsoPriClock(match[2]+'-'+match[3]+'-'+match[4],match[5]!,'Z'))return null;
+  const body=parseSophosKvBody(match[8]!);
+  if(!body||body.variant!=='utm')return null;
+  const existing=spaceKv(raw);
+  return {
+    ...(existing??{}),
+    syslog:{
+      ...(match[1]!==undefined?{pri:match[1]}:{}),
+      timestamp:match[2]+':'+match[3]+':'+match[4]+'-'+match[5],
+      hostname:match[6],appname:'ulogd',procid:match[7],
+    },
+    sophos:{...body,source_raw:raw,message_raw:match[8]},
+  };
+}
+
 function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|null{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope||envelope.variant==='colon_date')return null;
   const syslog=envelopeToSyslogFields(envelope);
   const messageRaw=envelope.message;
   const message=normalizedEnvelopeMessage(envelope);
+
+  const fortinet=parseFortinetKvBody(message);
+  if(fortinet)return {
+    syslog,
+    fortinet:{...fortinet,source_raw:raw,message_raw:messageRaw},
+  };
+  if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(message)&&/\bdevname=/.test(message)&&/\bdevid=/.test(message))
+    return null;
+
+  if(message.startsWith('CISE_')){
+    const ise=parseCiscoIseBody(message);
+    if(ise)return {
+      syslog,
+      cisco_ise:{...ise,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
+  const sophos=parseSophosKvBody(message);
+  if(sophos)return {
+    syslog,
+    sophos:{...sophos,source_raw:raw,message_raw:messageRaw},
+  };
+  if(/\b(?:device="SFW"|sys="SecureNet")\b/.test(message))return null;
 
   if(/^%(?:ASA|FTD)-/.test(message)){
     const parsed=asa(message);
@@ -1452,11 +1516,17 @@ function hostlessStructuredSyslog(raw:string):Record<string,unknown>|null{
 
 function knownVendorStructuredFailure(raw:string):boolean{
   if(/^%?(?:ASA|FTD)-[0-7]-\d{6}:/.test(raw))return true;
+  if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(raw)&&/\bdevname=/.test(raw)&&/\bdevid=/.test(raw))return true;
+  if(/^device="SFW"\s+date=/.test(raw)&&/\blog_type=/.test(raw))return true;
+  if(/^(?:<\d{1,3}>)?\d{4}:\d{2}:\d{2}-\d{2}:\d{2}:\d{2}(?:\.\d+)?\s+\S+\s+ulogd\[\d+\]:/.test(raw))return true;
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope)return false;
   const message=normalizedEnvelopeMessage(envelope);
   if(envelope.appname==='RT_FLOW'&&/^RT_FLOW_SESSION_[A-Z_]+:/.test(message))return true;
   if(/^%(?:ASA|FTD)-\d-\d{6}:/.test(message))return true;
+  if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(message)&&/\bdevname=/.test(message)&&/\bdevid=/.test(message))return true;
+  if(message.startsWith('CISE_'))return true;
+  if((/\bdevice="SFW"\b/.test(message)&&/\blog_type=/.test(message))||/\bsys="SecureNet"\b/.test(message))return true;
   if(envelope.appname?.toLowerCase()==='sudo'&&/^[A-Za-z0-9_.@-]+ +: +/.test(message))return true;
   if(message.startsWith('[')&&message.includes('[UFW '))return true;
   if(looksLikePanosBody(message))return true;
@@ -1469,6 +1539,7 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
     extractCiscoFirewallEnvelope(raw)??parseBindQueryLog(raw)??standaloneBindQueryProfile(raw)??
     parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseApacheErrorLog(raw)??parseSquidAccessLog(raw)??parseWindowsFirewallLog(raw)??
+    standaloneFortinetProfile(raw)??standaloneSophosProfile(raw)??sophosUtmColonProfile(raw)??
     extractClassicElbAccess(raw)??extractS3Access(raw)??extractLinuxAuditStructural(raw)??
     standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??extractVpcFlowStructural(raw)??extractAlbStructural(raw)??
     nestedRelayStructuredSyslog(raw)??hostlessStructuredSyslog(raw)??syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);

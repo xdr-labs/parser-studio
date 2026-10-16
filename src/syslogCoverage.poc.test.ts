@@ -7,7 +7,7 @@ function envelopeParsed(fields:Record<string,unknown>):boolean{
 }
 
 function structuredBodyParsed(fields:Record<string,unknown>):boolean{
-  if(fields.asa||fields.watchguard||fields.juniper||fields.snort||fields.body)return true;
+  if(fields.asa||fields.watchguard||fields.juniper||fields.snort||fields.body||fields.fortinet||fields.cisco_ise||fields.sophos||fields.checkpoint||fields.linux_audit||fields.pam||fields.sshd||fields.sudo||fields.ufw||fields.bind_security||fields.windows_firewall)return true;
   const generic=fields.generic;
   if(!generic||typeof generic!=='object'||Array.isArray(generic))return false;
   const mode=(generic as {mode?:unknown}).mode;

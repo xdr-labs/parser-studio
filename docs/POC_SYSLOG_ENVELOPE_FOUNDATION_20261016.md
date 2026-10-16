@@ -988,3 +988,45 @@ The event-breaker/container list now includes CRI and Docker json-file in additi
 Container-runtime support required no change to PAN-OS, CEF, LEEF, JSON, or other body parsers. That is the desired behavior of the layered architecture:
 
 `container runtime framing -> logical payload -> existing single-event dispatcher -> source grammar -> preservation -> semantic mapping`
+
+## Expansion round 11 — independent Elastic raw-fixture holdout
+
+Round 11 added a new independent holdout assembled from public raw pipeline fixtures in the Elastic integrations repository. The fixtures were adapted/redacted while preserving their source grammar. Unlike `sample_event.json` outputs, these inputs are pre-parser raw logs.
+
+Holdout families:
+
+- Fortinet FortiGate appliance KV logs;
+- Check Point proprietary RFC5424-like bracket/colon records;
+- Cisco ISE authentication-flow and AD-connector logs;
+- Sophos XG and Sophos UTM packet-filter logs;
+- CrowdStrike Falcon event-stream JSON;
+- Okta System Log JSON.
+
+### Baseline and refinement result
+
+The existing pipeline already parsed all 20 holdout events, demonstrating broad structural coverage. The qualitative audit, however, showed that FortiGate, Cisco ISE, and Sophos were reaching only generic structural results. Round 11 therefore added bounded source refinements without replacing the existing source-preserving contracts.
+
+- FortiGate: validated date/time/device/type anchors plus optional log-id, timezone, IP, and port validation; Syslog PRI wrapping remains a separate envelope concern.
+- Cisco ISE: one common `CISE_*` body envelope covers long timestamped and short continuation forms; comma-separated source fields preserve repeated values and escaped delimiters.
+- Sophos: XG and UTM share a bounded KV body grammar while retaining different source anchors; UTM colon-date wrapping is refined separately without weakening the generic colon-date policy.
+- Check Point: the existing `syslog + body` contract is intentionally preserved. An attempted source-specific replacement was rejected because it would break the stable Generic Structural output contract despite no gain in source preservation.
+
+### Contract-preservation lesson
+
+Source-specific refinement must be additive. During this round, early refinements exposed regressions when they replaced previously qualified Generic Structural output shapes. The final implementation preserves existing generic/source projections and adds source-specific structure only where it does not remove prior fields or change a stable contract.
+
+Strong known-source signatures remain fail-closed: a malformed FortiGate, Cisco ISE, or Sophos event cannot fall through into a looser generic KV parser and be counted as a successful parse.
+
+### Round-11 evidence
+
+- Elastic raw-fixture holdout: 20 / 20 parsed;
+- holdout families: FortiGate 3/3, Check Point 3/3, Cisco ISE 5/5, Sophos 3/3, CrowdStrike 3/3, Okta 3/3;
+- source-preservation audit: 7 / 7 representative events, zero required source values missing;
+- appliance source-refinement focused suite: 7 / 7 PASS;
+- fixed 49-event Syslog corpus: 48 / 49 structured, only intentionally unstructured RFC5424 free text excluded;
+- malformed fixed-corpus acceptance: 0;
+- full repository unit suite: 145 / 145 files PASS, 923 / 923 assertions PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+Independent Logstash and Wazuh holdouts remained qualified after these changes, confirming that the refinement did not trade one ecosystem's coverage for another.
