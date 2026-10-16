@@ -172,4 +172,8 @@ test('shape diagnostics keep valid groups visible when another event has malform
  await expect(groups).toContainText('Not safe CSV: event 2');
  await expect(groups).toContainText('needs separate review');
  await expect(page.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
+ await groups.getByRole('button',{name:'Use only these 2 events'}).click();
+ await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue('a,b\n4,5');
+ await page.getByRole('button',{name:'Restore original CSV sample'}).click();
+ await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
 });
