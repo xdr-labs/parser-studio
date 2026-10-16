@@ -106,6 +106,7 @@ export default function AutoParser({
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
  const [capability,setCapability]=useState<{source:string;value:BackendCapabilities}|null>(null);
  const [csvApprovedKey,setCsvApprovedKey]=useState('');
+ const [csvOriginalSample,setCsvOriginalSample]=useState<string|null>(null);
  const pendingNeutralCsvApproval=useRef('');
  // Review is revoked on every manual input edit, including edit-then-revert.
  // The one exception is the explicit beginner action that fills neutral
@@ -223,6 +224,18 @@ export default function AutoParser({
    }
    if(start!==undefined&&end!==undefined)ranges.push(start===end?String(start):start+'–'+end);
    return ranges.join(', ');
+ };
+ const useCsvShapeSample=(eventNumbers:number[])=>{
+   const records=splitEvents(sample,'single-line',MAX_EVENTS+1);
+   if(records.length===0||records.length>MAX_EVENTS||
+     !eventNumbers.length||eventNumbers.some(n=>!Number.isSafeInteger(n)||n<1||n>records.length))return;
+   const selected=new Set(eventNumbers);
+   const next=records.filter((_,i)=>selected.has(i+1)).map(record=>record.raw).join('\n');
+   if(!next||next===sample)return;
+   if(csvOriginalSample===null)setCsvOriginalSample(sample);
+   setSample(next);
+   setSelected(0);
+   setStep(0);
  };
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
@@ -689,6 +702,7 @@ export default function AutoParser({
          </label>
          <small>{datasetName} · Maximum 64 KiB / 500 events</small>
        </div>
+         {csvOriginalSample!==null&&<button type="button" disabled={pending} onClick={()=>{setSample(csvOriginalSample);setCsvOriginalSample(null);setStep(0);setSelected(0);}}>Restore original CSV sample</button>}
        <textarea spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
          placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
          value={sample} onChange={e=>{setSample(e.target.value);
@@ -812,10 +826,10 @@ export default function AutoParser({
            <div className="auto-parser-note" aria-label="CSV row shape groups">
              <strong>Row groups for the selected separator</strong>
              {csvSelectedShapeGroups.length>0&&<ul>{csvSelectedShapeGroups.map(group=>
-               <li key={group.columnCount}>{group.columnCount} columns · {group.eventNumbers.length} event{group.eventNumbers.length===1?'':'s'} · event {formatCsvEventNumbers(group.eventNumbers)}{group.columnCount>100?' · exceeds the 100-column parser limit':''}</li>)}</ul>}
+               <li key={group.columnCount}>{group.columnCount} columns · {group.eventNumbers.length} event{group.eventNumbers.length===1?'':'s'} · event {formatCsvEventNumbers(group.eventNumbers)}{group.columnCount>100?' · exceeds the 100-column parser limit':''} · <button type="button" disabled={pending||group.columnCount>100} onClick={()=>useCsvShapeSample(group.eventNumbers)}>Use only these {group.eventNumbers.length} events</button></li>)}</ul>}
              {csvSelectedShapeInspection.invalidEventNumbers.length>0&&
                <p><b>Not safe CSV:</b> event {formatCsvEventNumbers(csvSelectedShapeInspection.invalidEventNumbers)} could not be tokenized with this separator and needs separate review.</p>}
-             <p>Use these event numbers to make one parser sample per matching row shape. No source event is discarded automatically.</p>
+             <p>Select a group to create a new working sample containing only those events. Other source events remain available through Restore original CSV sample. No group is selected automatically.</p>
            </div>}
          <label>Column names, separated by commas
            <input aria-label="Reviewed CSV column names" value={draft.csvColumns}
