@@ -33,6 +33,7 @@ const VALID_GROUPS=new Set(['top_fields','ns_fields','vendor_fields']);
 const VALID_TYPES=new Set(['string','integer','number','boolean','ip','port','timestamp']);
 const SAFE_ID=/^[A-Za-z0-9_.:-]{1,128}$/;
 const SAFE_PATH=/^[A-Za-z_][A-Za-z0-9_.@:\-[\]]{0,255}$/;
+const MAX_EXTENSION_MAPPINGS=60;
 
 function safeChange(change:MappingExtensionChange):boolean{
   return change.operation==='UPSERT'&&SAFE_ID.test(change.mappingId)&&
