@@ -777,11 +777,6 @@ export default function AutoParser({
      <h1>Paste security logs. Parser Studio will guide you to a parser step by step.</h1>
      <p>You do not need to know parser formats or write code. Start with a few representative
        logs, use the main button on each screen, and Parser Studio will tell you when something needs review.</p>
-     <div className="auto-parser-links">
-       <button type="button" onClick={onChatGPT}>Ask ChatGPT about an unfamiliar log</button>
-       <HelpTip label="ChatGPT help"
-         text="Use this when Parser Studio shows that part of a log still needs help. Review the proposed fix before applying it."/>
-     </div>
    </header>
    <nav aria-label="Auto Parser steps" className="auto-parser-steps">
      {STEPS.map((label,index)=>{
