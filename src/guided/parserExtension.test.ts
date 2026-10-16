@@ -70,4 +70,29 @@ describe('mapping-only parser extension',()=>{
     const wrong=structuredClone(base);wrong.name='Different product';
     expect(await applyMappingExtension(wrong,built.extension)).toBeNull();
   });
+
+  it('uses the same 60-mapping bound as the parser compiler',async()=>{
+    const base=createDraft();
+    const oversized=structuredClone(base);
+    oversized.mappings=Array.from({length:61},(_,index)=>({
+      id:'map-'+index,source:'field_'+index,target:'field_'+index,type:'string' as const,
+    }));
+    oversized.guided!.groups=Object.fromEntries(
+      oversized.mappings.map(mapping=>[mapping.id,'vendor_fields']),
+    );
+    expect(await buildMappingExtension(base,oversized))
+      .toEqual({ok:false,reason:'INVALID_MAPPING_SET'});
+
+    const current=structuredClone(base);
+    current.mappings.push({id:'new-dst',source:'dst_ip',target:'dstip',type:'ip'});
+    const built=await buildMappingExtension(base,current);
+    expect(built.ok).toBe(true);
+    if(!built.ok)return;
+    const tampered=structuredClone(built.extension);
+    tampered.changes=Array.from({length:61},(_,index)=>({
+      operation:'UPSERT' as const,mappingId:'extra-'+index,source:'field_'+index,
+      target:'field_'+index,type:'string' as const,group:'vendor_fields',
+    }));
+    expect(await applyMappingExtension(base,tampered)).toBeNull();
+  });
 });
