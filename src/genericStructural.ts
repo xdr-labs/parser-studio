@@ -398,6 +398,24 @@ function watchguardProfile(raw:string):Record<string,unknown>|null{
   return {watchguard_header:header,watchguard:body};
 }
 
+function watchguardMessageProfile(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)$/.exec(raw);
+  if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
+  if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
+  if(Number.isNaN(Date.parse(head[7]!)))return null;
+  const header:Record<string,unknown>={
+    month:head[2],day:head[3],time:head[4],hostname:head[5],
+    device_time:head[7],app_tag:head[8],
+  };
+  if(head[1]!==undefined)header.pri=head[1];
+  if(head[6]!==undefined)header.serial=head[6];
+  return {
+    watchguard_header:header,
+    watchguard_message:{source_raw:raw,msg_id:head[9],message:head[10]},
+  };
+}
+
 function juniperLegacyProfile(raw:string):Record<string,unknown>|null{
   const head=/^([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.exec(raw);
   if(!head||head[5]!=='RT_FLOW'||!validBsdClock(head[1]!,head[2]!,head[3]!))return null;
@@ -503,7 +521,7 @@ function asa(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
-  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??asa(raw)??watchguardProfile(raw)??
+  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
     rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:

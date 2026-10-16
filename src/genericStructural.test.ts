@@ -219,6 +219,25 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     });
   });
 
+  it('extracts bounded WatchGuard free-form message envelopes without changing traffic parsing',()=>{
+    const alarm='<142>May 10 15:19:05 WatchGuard-Firebox (2024-05-10T09:49:05) firewall: msg_id="3000-0152" IPv4 source route attack from 10.0.1.34 detected. (IPS)';
+    const diagnostic='<142>May 10 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-05-10T09:49:05) firewall[10]: msg_id="3000-0006" Application control settings updated';
+    expect(extractGenericStructural(alarm)).toMatchObject({errors:[],fields:{
+      watchguard_header:{pri:'142',month:'May',day:'10',time:'15:19:05',
+        hostname:'WatchGuard-Firebox',device_time:'2024-05-10T09:49:05',app_tag:'firewall'},
+      watchguard_message:{source_raw:alarm,msg_id:'3000-0152',
+        message:'IPv4 source route attack from 10.0.1.34 detected. (IPS)'},
+    }});
+    expect(extractGenericStructural(diagnostic)).toMatchObject({errors:[],fields:{
+      watchguard_header:{serial:'FVE6035FD3AE3',app_tag:'firewall[10]'},
+      watchguard_message:{source_raw:diagnostic,msg_id:'3000-0006',
+        message:'Application control settings updated'},
+    }});
+    expect(extractGenericStructural(alarm.replace('<142>','<192>')).fields).toEqual({});
+    expect(extractGenericStructural(alarm.replace('2024-05-10T09:49:05','2024-13-10T09:49:05')).fields).toEqual({});
+    expect(extractGenericStructural(alarm.replace('3000-0152','bad-id')).fields).toEqual({});
+  });
+
   it('extracts the bounded Juniper legacy RT_FLOW profile as source tokens',()=>{
     const raw='Apr 29 01:14:45 10.9.9.1 RT_FLOW: RT_FLOW_SESSION_CREATE: session created 192.168.83.99/40275->192.168.32.1/161 None 192.168.83.99/40275->192.168.32.1/161 None None 17 allow-all-out ICTNet StaffNet 23228 N/A(N/A) vlan.255';
     const result=extractGenericStructural(raw);
