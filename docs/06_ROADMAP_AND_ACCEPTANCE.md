@@ -362,3 +362,17 @@ This section is the current evidence-based continuation checkpoint. The original
 ### Worktree preservation
 
 Obsolete UI experimental worktrees were consolidated to the original main worktree plus one cumulative UI worktree. Historical dirty patches and isolated E2E scripts are preserved outside Git under `/home/aella/parser-studio-worktree-preservation-20261016/`; do not publish raw private logs or diagnostic scripts. Untracked dependency directories and test-results may remain as local build artifacts and are not Git code changes.
+
+## P0-NORM — Stellar Cyber normalization mapping review (owner decision 2026-10-16)
+
+Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retain the two top-level creation methods. Parsing and normalization must remain independently measurable; preserve original extracted values, and never infer target verification from browser previews.
+
+- [ ] NORM-01: obtain and revision-pin the official Stellar Cyber metadata dictionary and validate top-level, namespace, `msg_origin`, type and target-field constraints against owner-supplied target evidence. Until then, mark catalog UNVERIFIED and never represent illustrative aliases as official fields.
+- [ ] NORM-02: deterministic, explainable field-name/value/type candidate engine with confidence and abstention, collision protection, and no silent remapping or original-value loss.
+- [ ] NORM-03: dedicated beginner Map Fields stage showing source values, proposed destinations, approval/override/unmap, searchable verified catalog when available, and keyboard-accessible controls.
+- [ ] NORM-04: selected-event and whole-sample raw/extracted/normalized comparison with per-event type, timestamp, collision and missing-field diagnostics; candidate changes revoke prior verification evidence.
+- [ ] NORM-05: explicit reviewed mapping persistence in the portable draft, support 1:N only where verified by target adapter, and keep custom fields when target mapping is uncertain.
+- [ ] NORM-06: actual native Ruby/CONF and separately authorized Stellar DP ingestion/index comparison, with source and normalized output hashes and fail-closed export readiness.
+- [ ] NORM-07: beginner Full User E2E across EDR/XDR/NDR/EPP/AWS/WAF/IPS/VPN, accessibility, holdouts, exact-head CI and acceptance.
+
+Implementation order NORM-02 conservative local preview foundation → NORM-03 → NORM-04 → NORM-01 official catalog qualification → NORM-05/06/07. No production/DP write or release without separate authorization.

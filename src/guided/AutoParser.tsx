@@ -18,6 +18,7 @@ import {checkNativeProjectVerificationAvailability,verifyNativeProject,
   from './nativeProjectVerificationClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
+import {suggestNormalizationCandidates} from './normalizationCandidates';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
@@ -1122,6 +1123,24 @@ export default function AutoParser({
           </div>}
        </details>
        </div>
+       <section className="auto-parser-note beginner-essential-note" aria-label="Normalization mapping review">
+         <h3>Suggested normalization mappings</h3>
+         <p>Browser-only alias suggestions. Official Stellar Cyber metadata dictionary NOT VERIFIED.
+           Nothing is applied until you choose a suggestion. Existing source values remain intact.</p>
+         {chosen&&suggestNormalizationCandidates(chosen.fields,draft.mappings).map(candidate=><div
+           className="two-path-mapping-editor" key={candidate.source}>
+           <span>{candidate.source} → {candidate.target} · {candidate.type} · {candidate.confidence}</span>
+           <small>{candidate.explanation}</small>
+           <button type="button" aria-label={'Use normalization suggestion '+candidate.source}
+             onClick={()=>setDraft(old=>({...old,mappings:[...old.mappings,{
+               id:'normalization-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_'),
+               source:candidate.source,target:candidate.target,type:candidate.type,
+             }]}))}>Use suggestion</button>
+         </div>)}
+         {chosen&&<details><summary>Extracted and normalized output</summary>
+           <pre>{JSON.stringify({extracted:chosen.fields,normalized:chosen.normalized},null,2)}</pre>
+         </details>}
+       </section>
        <details className="auto-parser-recipe beginner-field-summary" open={advanced}
          aria-label="Suggested field mappings">
          <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} mapped · {draft.format==='generic_structural'?'Extracted source fields are preserved automatically':'Open only if you want to inspect names and types'}</summary>
