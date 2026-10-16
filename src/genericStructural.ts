@@ -10,6 +10,7 @@ import {parseBindQueryLog} from './bindQueryLog';
 import {extractClassicElbAccess,extractS3Access} from './awsLegacyAccess';
 import {parseCiscoIseBody,parseF5AsmBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
 import {isIpToken as ipToken,isIpv4Token as ipv4Token,isIpv6Token as ipv6Token,isPortToken as validPortToken} from './networkTokens';
+import {parseRfc4180SingleDataRow} from './rfc4180Csv';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -631,17 +632,21 @@ function rfc3164DelimitedCommaKv(raw:string):Record<string,unknown>|null{
 
 function positionalCsvValues(text:string):string[]|null{
   if(!text||text.includes('\0'))return null;
-  const values:string[]=[];let token='';let quoted=false;
+  const values:string[]=[];let token='',quoted=false,afterQuote=false;
   for(let i=0;i<text.length;i++){
     const ch=text[i]!;
     if(quoted){
       if(ch==='"'){
         if(text[i+1]==='"'){token+='"';i++;continue;}
-        quoted=false;continue;
+        quoted=false;afterQuote=true;continue;
       }
       token+=ch;continue;
     }
-    if(ch==='"'){quoted=true;continue;}
+    if(afterQuote){
+      if(ch===','){values.push(token);token='';afterQuote=false;continue;}
+      return null;
+    }
+    if(ch==='"'&&token===''){quoted=true;continue;}
     if(ch===','){values.push(token);token='';continue;}
     token+=ch;
   }
@@ -824,12 +829,17 @@ function standaloneZeekTsvProfile(raw:string):Record<string,unknown>|null{
   return columns?{generic:{mode:'zeek_conn_tsv',profile:'zeek_conn_candidate',delimiter:'\t',source_raw:raw,columns}}:null;
 }
 
+function claimsPanosSignature(raw:string):boolean{
+  if(!raw||/[\r\n\0]/.test(raw)||new TextEncoder().encode(raw).byteLength>8192)return false;
+  return /(?:^| )\d{1,10},\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,9})?,[^,]{0,64},(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION|GTP|IPTAG|SCTP|TUNNEL|URL|DATA|WILDFIRE)(?:,|$)/.test(raw);
+}
+
 function looksLikePanosBody(text:string):boolean{
   const values=positionalCsvValues(text);
   if(!values||values.length<4)return false;
   return /^\d{1,10}$/.test(values[0]??'')&&
     /^\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}/.test(values[1]??'')&&
-    /^[A-Za-z0-9_.:-]{4,64}$/.test(values[2]??'')&&
+    /^(?:[A-Za-z0-9_.:-]{4,64})?$/.test(values[2]??'')&&
     /^[A-Z][A-Z0-9_]{2,31}$/.test(values[3]??'');
 }
 
@@ -841,13 +851,67 @@ function panosPositionalCsvBody(text:string):Record<string,unknown>|null{
   if(!received||!validIsoPriClock(
     received[1]+'-'+received[2]+'-'+received[3],received[4]!,'Z'
   ))return null;
-  if(!/^[A-Za-z0-9_.:-]{4,64}$/.test(values[2]??''))return null;
+  if(!/^(?:[A-Za-z0-9_.:-]{4,64})?$/.test(values[2]??''))return null;
   if(!/^(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION|GTP|IPTAG|SCTP|TUNNEL|URL|DATA|WILDFIRE)$/.test(values[3]??''))return null;
   const columns:Record<string,string>={};
   values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
   return columns;
 }
 
+
+function panosAuditPositionalCsvBody(text:string):Record<string,string>|null{
+  if(new TextEncoder().encode(text).byteLength>8192)return null;
+  const values=positionalCsvValues(text);
+  if(!values||values.length!==8||!/^[0-9]{8,20}$/.test(values[0]??'')||
+     values[2]!=='audit'||!/^[0-9]{1,10}$/.test(values[3]??'')||
+     !/^[a-z][a-z0-9-]{1,63}$/.test(values[4]??'')||
+     !(values[5]&&values[6])||!/^(?:success|failed|none)$/.test(values[7]??''))return null;
+  const timestamp=/^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(values[1]??'');
+  if(!timestamp||!validIsoPriClock(
+    timestamp[1]+'-'+timestamp[2]+'-'+timestamp[3],timestamp[4]!,'Z'
+  ))return null;
+  const columns:Record<string,string>={};
+  values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
+  return columns;
+}
+
+function standalonePanosCsv(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||/[\r\n\0]/.test(raw))return null;
+  if(!looksLikePanosBody(raw))return null;
+  const columns=panosPositionalCsvBody(raw);
+  return columns?{
+    generic:{mode:'standalone_positional_csv',profile:'panos',delimiter:',',source_raw:raw,columns},
+  }:null;
+}
+
+function standalonePanosAuditCsv(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||/[\r\n\0]/.test(raw))return null;
+  const columns=panosAuditPositionalCsvBody(raw);
+  return columns?{
+    generic:{mode:'standalone_positional_csv',profile:'panos_audit',delimiter:',',source_raw:raw,columns},
+  }:null;
+}
+
+function standaloneUnlabeledCsv(raw:string):Record<string,unknown>|null{
+  const parsed=parseRfc4180SingleDataRow(raw);
+  if(!parsed||parsed.values.length<7||parsed.values.length>150)return null;
+  const {values,quotedFields}=parsed;
+  const firstTimestamp=/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(values[0]??'');
+  const secondTimestamp=/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(values[1]??'');
+  const timestamp=firstTimestamp??(
+    quotedFields===values.length&&/^\d{6,24}$/.test(values[0]??'')?secondTimestamp:null
+  );
+  if(!timestamp||!validIsoPriClock(timestamp[1]!,timestamp[2]!,'Z'))return null;
+  if(quotedFields===0){
+    if(values.length<12||values.filter(ipToken).length<2)return null;
+  }else if(quotedFields!==values.length)return null;
+  const columns:Record<string,string>={};
+  values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
+  return {generic:{
+    mode:quotedFields===values.length?'quoted_csv_unlabeled':'csv_unlabeled_row',
+    delimiter:',',source_raw:raw,columns,
+  }};
+}
 
 function decodeDelimitedEqualsValue(raw:string,delimiter:string):string|null{
   let value=raw.trim();
@@ -1242,12 +1306,26 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
   };
   if(message.trimStart().startsWith('<'))return null;
 
-  if(looksLikePanosBody(message)){
-    const panos=panosPositionalCsvBody(message);
+  const auditColumns=panosAuditPositionalCsvBody(message);
+  if(auditColumns)return {
+    syslog,
+    generic:{
+      mode:'syslog_envelope_positional_csv',profile:'panos_audit',delimiter:',',
+      source_raw:raw,message_raw:messageRaw,columns:auditColumns,
+    },
+  };
+
+  const panosMessage=message.startsWith('- ')?message.slice(2):message;
+  if(looksLikePanosBody(panosMessage)){
+    const panos=panosPositionalCsvBody(panosMessage);
     if(!panos)return null;
     return {
       syslog,
-      generic:{mode:'syslog_envelope_positional_csv',profile:'panos',delimiter:',',source_raw:raw,message_raw:messageRaw,columns:panos},
+      generic:{
+        mode:'syslog_envelope_positional_csv',profile:'panos',delimiter:',',
+        ...(panosMessage!==message?{source_prefix:'-'}:{}),
+        source_raw:raw,message_raw:messageRaw,columns:panos,
+      },
     };
   }
 
@@ -1315,6 +1393,7 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     },
   };
 
+  if(claimsPanosSignature(raw))return null;
   const positional=securityPositionalCsvBody(message);
   if(positional)return {
     syslog,
@@ -1444,10 +1523,10 @@ function explicitHostlessBodyCandidate(message:string):boolean{
   return false;
 }
 
-function hostlessTimestampPrefix(raw:string):{pri:string;prefix:string;message:string}|null{
+function hostlessTimestampPrefix(raw:string):{pri?:string;prefix:string;message:string}|null{
   const pri=/^<(\d{1,3})>(.*)$/.exec(raw);
-  if(!pri)return null;
-  const rest=pri[2]!.trimStart();
+  if(!pri&&raw.startsWith('<'))return null;
+  const rest=(pri?pri[2]!:raw).trimStart();
   const patterns=[
     /^([A-Z][a-z]{2} +\d{1,2} +(?:\d{4} +)?\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?: +\d{4})?(?: +(?:Z|[+-]\d{2}:?\d{2}))?) +(.+)$/,
     /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?) +(.+)$/,
@@ -1456,8 +1535,9 @@ function hostlessTimestampPrefix(raw:string):{pri:string;prefix:string;message:s
   ] as const;
   for(const pattern of patterns){
     const match=pattern.exec(rest);
-    if(match&&explicitHostlessBodyCandidate(match[2]!))
-      return {pri:pri[1]!,prefix:match[1]!,message:match[2]!};
+    if(match&&explicitHostlessBodyCandidate(match[2]!)&&
+       (pri!==null||looksLikePanosBody(match[2]!)))
+      return {...(pri?{pri:pri[1]!}:{}),prefix:match[1]!,message:match[2]!};
   }
   return null;
 }
@@ -1477,7 +1557,7 @@ function rewriteSyntheticSource(value:unknown,synthetic:string,original:string):
 function hostlessStructuredSyslog(raw:string):Record<string,unknown>|null{
   const candidate=hostlessTimestampPrefix(raw);
   if(!candidate)return null;
-  const synthetic='<'+candidate.pri+'>'+candidate.prefix+' __HOSTLESS__ '+candidate.message;
+  const synthetic=(candidate.pri!==undefined?'<'+candidate.pri+'>':'')+candidate.prefix+' __HOSTLESS__ '+candidate.message;
   const envelope=parseSyslogEnvelope(synthetic);
   if(!envelope||envelope.hostname!=='__HOSTLESS__')return null;
   const parsed=extractGenericStructuralUnframed(synthetic);
@@ -1495,6 +1575,7 @@ function hostlessStructuredSyslog(raw:string):Record<string,unknown>|null{
 }
 
 function knownVendorStructuredFailure(raw:string):boolean{
+  if(claimsPanosSignature(raw)||looksLikePanosBody(raw)||/^\d{8,20},\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2},audit,/.test(raw))return true;
   if(/^%?(?:ASA|FTD)-[0-7]-\d{6}:/.test(raw))return true;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(raw)&&/\bdevname=/.test(raw)&&/\bdevid=/.test(raw))return true;
   if(/^device="SFW"\s+date=/.test(raw)&&/\blog_type=/.test(raw))return true;
@@ -1517,7 +1598,7 @@ function knownVendorStructuredFailure(raw:string):boolean{
 function extractGenericStructuralUnframed(raw:string):GenericStructuralExtraction{
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
-    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
+    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??standalonePanosCsv(raw)??standalonePanosAuditCsv(raw)??standaloneUnlabeledCsv(raw)??
     extractCiscoFirewallEnvelope(raw)??parseBindQueryLog(raw)??standaloneBindQueryProfile(raw)??
     parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseApacheErrorLog(raw)??parseSquidAccessLog(raw)??parseWindowsFirewallLog(raw)??
     standaloneFortinetProfile(raw)??standaloneSophosProfile(raw)??sophosUtmColonProfile(raw)??

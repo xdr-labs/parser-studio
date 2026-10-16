@@ -78,6 +78,55 @@ function parseRows(raw:string):{rows:string[][];lineEnding:'lf'|'crlf'|'none'}|n
   return rows.length?{rows,lineEnding}:null;
 }
 
+export interface Rfc4180SingleDataRow{
+  values:string[];
+  quotedFields:number;
+}
+
+export function parseRfc4180SingleDataRow(raw:string):Rfc4180SingleDataRow|null{
+  if(!raw||raw.includes('\0')||/[\r\n]/.test(raw)||bytes(raw)>64*1024)return null;
+  const values:string[]=[];let quotedFields=0,cursor=0;
+  while(cursor<raw.length){
+    if(values.length>0)while(raw[cursor]===' ')cursor++;
+    let value='';
+    if(raw[cursor]==='"'){
+      quotedFields++;
+      cursor++;
+      let closed=false;
+      while(cursor<raw.length){
+        const ch=raw[cursor]!;
+        if(ch==='"'){
+          if(raw[cursor+1]==='"'){value+='"';cursor+=2;continue;}
+          cursor++;closed=true;break;
+        }
+        value+=ch;cursor++;
+      }
+      if(!closed)return null;
+      while(raw[cursor]===' ')cursor++;
+      if(cursor<raw.length&&raw[cursor]!==',')return null;
+    }else{
+      while(cursor<raw.length&&raw[cursor]!==','){
+        if(raw[cursor]==='"')return null;
+        value+=raw[cursor]!;
+        cursor++;
+      }
+    }
+    if(bytes(value)>MAX_FIELD_BYTES)return null;
+    values.push(value);
+    if(values.length>MAX_COLUMNS)return null;
+    if(cursor===raw.length)break;
+    if(raw[cursor]!==',')return null;
+    cursor++;
+    if(cursor===raw.length){values.push('');break;}
+  }
+  return values.length?{values,quotedFields}:null;
+}
+
+export function parseRfc4180SingleQuotedRow(raw:string):string[]|null{
+  const parsed=parseRfc4180SingleDataRow(raw);
+  return parsed&&parsed.quotedFields===parsed.values.length?parsed.values:null;
+}
+
 export function parseRfc4180HeaderCsv(raw:string):Rfc4180CsvResult{
   if(!raw||raw.includes('\0')||bytes(raw)>MAX_BYTES)
     return {ok:false,error:'Invalid or oversized CSV input'};

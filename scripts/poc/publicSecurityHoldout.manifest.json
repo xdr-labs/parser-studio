@@ -1,0 +1,180 @@
+{
+  "repository": "https://github.com/elastic/integrations",
+  "revision": "ee918d03f4a90dacd32673546c64a633308796ef",
+  "files": [
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-audit-sample.log",
+      "sha256": "b5a28bde86dc4f7f52b2370242e88603955cc2ff306813bd9ceb9797016abc9c",
+      "records": 9,
+      "bytes": 1356
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-authentication-sample.log",
+      "sha256": "d700c07a75c6ea31976ed1a4d515889854f49020ae90d6ac11b5a2ec0eba1588",
+      "records": 2,
+      "bytes": 936
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-config-sample.log",
+      "sha256": "d8a1ca2c99ec29b4e5b2906eb3b24ab06206cdb142019de33dcc936a49d11c48",
+      "records": 6,
+      "bytes": 1860
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-correlated-events-sample.log",
+      "sha256": "eab4cedac4607bdadcd17b514bc5ee0c19ed665433751b8e3035b078da04f134",
+      "records": 1,
+      "bytes": 179
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-decryption-sample.log",
+      "sha256": "c35174f784b4f71913c6985768b069469ff5d9258df56d5037f39ef996f77433",
+      "records": 4,
+      "bytes": 3126
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-globalprotect-sample.log",
+      "sha256": "37aa409f231e873d22f562247d3f391f24661baa10ea220e6af02533f2a08e64",
+      "records": 12,
+      "bytes": 4458
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-gtp-sample.log",
+      "sha256": "9e3eec35c21fb6237099fc0040ed36d2e47bf1ecbcaa168cb5d3b952e8d879e3",
+      "records": 1,
+      "bytes": 569
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-hipmatch-sample.log",
+      "sha256": "80547ebd749d32c1d79e8441b6752c711b700715164f553dea3a910eb44031cc",
+      "records": 2,
+      "bytes": 554
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-inc-other-sample.log",
+      "sha256": "56284dedd86cb88492ff9718626d244a573984a38108f7e7dcb4bb83244637ff",
+      "records": 35,
+      "bytes": 6656
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-inc-threat-sample.log",
+      "sha256": "c2672bd6b5eb80000dc49bfef7602988da57420485f64e65ddb6accee9137492",
+      "records": 104,
+      "bytes": 42568
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-inc-traffic-sample.log",
+      "sha256": "c1d723315a2b81b681697e63ad26c32ab3a6c332a31239c7eb2b37aa0959e5fd",
+      "records": 100,
+      "bytes": 36230
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-ip-tag-sample.log",
+      "sha256": "8ffb5c07b527183c028c6944269c97c99020769a42cb676b4f74e0c1406c0cce",
+      "records": 1,
+      "bytes": 238
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-sctp-sample.log",
+      "sha256": "a653229352cbd3971fe40525824bc6b68288f97b8fe145108f76ab566850d562",
+      "records": 1,
+      "bytes": 443
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-system-sample.log",
+      "sha256": "6f1507184443a187e8e933f87b571e8fa530ea986612a8b214c20a4cac7a1d93",
+      "records": 5,
+      "bytes": 1301
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-threat-sample.log",
+      "sha256": "b697b9a427b9d5b248d68d35eaa1713cf93c8f578a948d55c352d9119c38c7fe",
+      "records": 219,
+      "bytes": 142954
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-time-sample.log",
+      "sha256": "7d7be3485112c5911faedcf8df212c46b32c73e788d123865f15d18d40892679",
+      "records": 2,
+      "bytes": 1000
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-traffic-sample.log",
+      "sha256": "496ba1b7a1d9804ea5453f9b1a54de7c72063b380bc8783da7d65602984f45ef",
+      "records": 208,
+      "bytes": 96927
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-tunnel-inspection-sample.log",
+      "sha256": "301672d640ce22b22337e86b3609835eeb5b0a834310a1e185139c24d3e2a78c",
+      "records": 1,
+      "bytes": 500
+    },
+    {
+      "path": "panw/data_stream/panos/_dev/test/pipeline/test-panw-panos-userid-sample.log",
+      "sha256": "93e2e75d5153a6ac38a640eceb4b9e78cf49662ee7546aee5a3da4489a5a4653",
+      "records": 17,
+      "bytes": 3921
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-auditlogs.log",
+      "sha256": "d01bf5499040894fb51baf332173a41fa0bd978350bb504011464cb0a668aacd",
+      "records": 3,
+      "bytes": 874
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-cloudfirewalllogs.log",
+      "sha256": "5836d59e5eee11fd3cc1e06b9fc344a54e577589650297310fb1f05879a76fa1",
+      "records": 4,
+      "bytes": 761
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-dlplogs.log",
+      "sha256": "f6c2ddf781f8cb79a10481547ad63fcd5a375c8a58f1c33865a5cda47d7800f9",
+      "records": 2,
+      "bytes": 731
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-dnslogs.log",
+      "sha256": "fdb4d5d09a1c81d527134925b310a42245b7cc2958d775387642792ccd03992c",
+      "records": 16,
+      "bytes": 5343
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-intrusionlogs.log",
+      "sha256": "69d8695f583dc668d5fa1c455f18ca9c307f6b81fbe325241ce2cf2c75b06345",
+      "records": 2,
+      "bytes": 684
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-iplogs.log",
+      "sha256": "9c453093993815e6affbe93b76d9e13ceed873ea5e58cb5519936e6c85e7a000",
+      "records": 2,
+      "bytes": 182
+    },
+    {
+      "path": "cisco_umbrella/data_stream/log/_dev/test/pipeline/test-umbrella-proxylogs.log",
+      "sha256": "eee8072d3e56e7bcb2182541a5d2ef3b5ac12d297c3a52cdf08536dd7fde9fea",
+      "records": 14,
+      "bytes": 7425
+    },
+    {
+      "path": "microsoft_defender_endpoint/data_stream/log/_dev/test/pipeline/test-defenderatp.log",
+      "sha256": "4a0a2bfd0aa0263d24d77da62824683cda9832d9f7ff9edb898905e105897d6e",
+      "records": 6,
+      "bytes": 8200
+    },
+    {
+      "path": "microsoft_defender_endpoint/data_stream/machine/_dev/test/pipeline/test-machine.log",
+      "sha256": "26cbb1471ea2c043c52203d91facabd478384613880408f488fb13238bffeb89",
+      "records": 6,
+      "bytes": 6764
+    },
+    {
+      "path": "m365_defender/data_stream/alert/_dev/test/pipeline/test-alert.log",
+      "sha256": "e48eae1d1a4d84f13d506d0a4cf9f879fb52e9dc6d1d93f462286cc0b7fd31c4",
+      "records": 5,
+      "bytes": 22670
+    }
+  ]
+}
