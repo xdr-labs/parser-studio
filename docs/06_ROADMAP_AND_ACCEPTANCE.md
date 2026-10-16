@@ -386,3 +386,32 @@ Obsolete UI experimental worktrees were consolidated to the original main worktr
 - For WatchGuard: 416/416 bounded source-structure extraction, not 416 native/target verified events.
 - Prioritize generalized bounded structural grouping/Parser Set, false-complete prevention, explanation of unparsed spans, beginner action clarity, and preservation of exact source regions.
 - Continue real Chromium click/input flows, not just API/unit tests. Do not run real DP writes, sensor traffic, credentials or target changes without separate owner approval.
+
+
+## NEXT_CHAT_START — 2026-10-16 broad E2E and algorithm continuation
+
+**Owner instruction:** continue actual novice Chromium Web UI E2E with diverse security logs and implement verified algorithm/UI fixes. Do not create a scheduler. Do not repeat finished cases or restart the roadmap.
+
+**Exact current working state at handoff:**
+- Repository: `xdr-labs/parser-studio`, development host `dev-atlas`.
+- Primary UI worktree: `/home/aella/parser-studio-novice-e2e-cumulative-ui-20261016`, branch `fix/novice-e2e-cumulative-ui-20261016`, HEAD `02c9305712b678d0437740be55e2d47706e8d4cc`, pushed. Tracked clean; untracked `node_modules` and local test-result directories preserved.
+- Backend worktree: `/home/aella/parser-studio-novice-e2e-cumulative-backend-20261016`, branch `fix/novice-e2e-cumulative-backend-20261016`, HEAD `14385351d65c9732ba9c35cd8688b8c9f223a90d`, pushed. Tracked clean; untracked backend/node_modules preserved.
+- **Concurrent dirty worktree detected:** `/home/aella/parser-studio-beginner-parser-set-e2e-20261016`, branch `fix/beginner-parser-set-e2e-20261016`, HEAD `f30ce70`, dirty `src/guided/AutoParser.tsx`, `src/guided/localPatternMining.ts`, `src/guided/localPatternMining.test.ts`, `tests/beginner-analysis.spec.ts`. Preserve it; inspect actual changes/test status before consolidating. No other agent is assumed active, but never overwrite this work.
+- Local UI/backend test listeners observed at `127.0.0.1:6388`, `:6292`, `:4795`. These are local-only and not external Stellar DP.
+- Current roadmap includes P0-LIVE-STELLAR gated target qualification; no external writes/sensor traffic authorized.
+
+**Completed recent verified units:**
+- `cff6821`: beginner UI selects bounded same-column CSV row groups and restores original source; `c496e3b`: Chromium Playwright regression for group selection/restore.
+- `02c9305`: distinguish CSV temporary-name approval from verified parser-rule compilation. Focused unit tests 30/30 PASS; real Chromium Cisco Umbrella Proxy 23-column sample correctly remained blocked with clear message.
+- Prior broad novice E2E: Pulse Admin/System/VPN 31/31 local-guided DRAFT; Barracuda Audit/Network/System 15/15 local-guided DRAFT; Cisco AMP, FortiClient, Claroty, Cloudflare, Proofpoint additional variants. Microsoft Defender 6/6 browser extraction but DRAFT compiler gate blocked.
+- Cisco Umbrella CSV: DNS 8/8, IP 2/2, Audit 3/3 via temporary-name approval; CloudFW 14-column 2/2; mixed Proxy/DLP/Intrusion/CloudFW fail closed. Do not count structural extraction as native/DP verification.
+- Junos 100-event corpus: 95 distinct grouped Chromium recovery successes; #20, #52, #84 fail no-loss gate; #69, #82 malformed/underconstrained. Parser Set native routing is not yet qualified.
+
+**Immediate next execution (do not stop at reporting):**
+1. Inspect and preserve the dirty `parser-studio-beginner-parser-set-e2e-20261016` changes and test output. If valid, run focused unit tests and actual Chromium beginner E2E; fix regressions and commit/push this workstream without overwriting cumulative UI.
+2. Investigate Cisco Umbrella Proxy quoted CSV: same width is insufficient; distinguish source extraction from browser preview rule reproduction and native backend compilation. Add generalized safe tests/fixes only if measured improvement without source loss.
+3. Continue diverse EDR/XDR/NDR/EPP/AWS/WAF/IPS/VPN log families in actual Web UI, logging Auto-only, local guided, ChatGPT independent holdout, safe abstention separately.
+4. Consolidate reviewed UI/backend candidate when verified; update Issue #1, exact HEAD, test/CI evidence, roadmap. Preserve untracked dependencies/evidence.
+5. Keep external DP/sensor writes, auth/credential changes, merge/release/production disabled pending separate approval.
+
+**Completion gates:** source span/no-loss preservation, no false-complete, real Chromium `Analyze -> Review -> Create Parser Files` for DRAFT, native Ruby/Fluentd separate proof, exact-head CI and release gates. No synthetic E2E PASS claims for actual Stellar target.
