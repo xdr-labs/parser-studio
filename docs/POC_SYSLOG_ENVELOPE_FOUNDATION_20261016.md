@@ -754,3 +754,56 @@ Follow-up evidence:
 - production build: PASS.
 
 Linux Audit records in the Round-6 residual corpus now produce a dedicated `linux_audit` structure rather than only a generic KV result.
+
+## Expansion round 7 — unified event breaking and input pipeline
+
+Round 7 moved the PoC one level higher: instead of adding another single-line parser, it unified bounded multi-event containers and then reused the existing single-event family parsers on each logical record.
+
+### Added event-breaking grammars
+
+- systemd journal text export: blank-line entry boundaries, text `FIELD=value` preservation, duplicate field preservation, strict rejection of binary-field markers in this text-only parser;
+- RFC 7464 JSON text sequences: record-separator framing with required LF termination, multiline JSON texts, object-only security records;
+- GELF 1.1 over TCP: NUL-delimited JSON messages with required `version`, `host`, and `short_message` validation;
+- W3C/IIS/CloudFront log blocks: directives plus one authoritative `#Fields:` schema with either uniform space or uniform tab-delimited rows.
+
+These join the previously qualified RFC6587 Syslog stream, NDJSON, JSON object batches, Zeek TSV blocks, Linux Audit event streams, and RFC4180 header CSV.
+
+### Top-level security event breaker
+
+`breakSecurityInput()` now dispatches ten bounded multi-event container families without caller-provided format hints:
+
+`RFC6587 Syslog, JSON batch, RFC7464 JSON sequence, GELF TCP, NDJSON, journal export, W3C log, Zeek TSV, Linux Audit, RFC4180 CSV`
+
+Strong container signatures are terminal: if input clearly resembles one of these formats but strict validation fails, the breaker does not fall through into an unrelated container grammar.
+
+### Canonical security input pipeline
+
+A single canonical `securityInputPipeline` now composes:
+
+`container detection -> event breaking -> logical events -> reviewed single-event family dispatch`
+
+Single-event fallback supports the qualified Generic Structural families plus standalone CEF, LEEF, and bounded JSON objects. Journal entries preserve their journal metadata while structured `MESSAGE` values can be independently parsed again; for example an auditd journal message becomes a `linux_audit` structure and a CEF journal message becomes reviewed CEF fields.
+
+Schema-bearing containers such as Zeek, W3C, and RFC4180 preserve the explicit source field names rather than inventing semantic names. Linux Audit streams remain grouped by audit event ID instead of being flattened into unrelated records.
+
+### Round-7 deterministic evidence
+
+- full repository unit suite: 131 / 131 test files PASS;
+- full repository assertions: 882 / 882 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- top-level event breaker: 10 / 10 container families dispatched in focused tests;
+- malformed strong-signature containers: fail closed;
+- systemd journal export focused suite: 3 / 3 PASS, invalid 8 / 8 rejected;
+- RFC7464 JSON sequence focused suite: 3 / 3 PASS, invalid 9 / 9 rejected;
+- GELF TCP focused suite: 3 / 3 PASS, invalid 9 / 9 rejected;
+- W3C block focused suite: 3 / 3 PASS, invalid 7 / 7 rejected;
+- canonical security input pipeline focused suite: 6 / 6 PASS.
+
+### Architectural result
+
+The PoC now has a concrete reusable hierarchy rather than a collection of unrelated vendor rules:
+
+`transport/file container -> event breaker -> logical event -> envelope/body/schema parser -> source-specific refinement -> semantic mapping -> normalization`
+
+Multi-event framing and single-event parsing are now separate contracts. This prevents a malformed container from being partially reinterpreted as a valid single event and prevents a valid container from forcing vendor-specific parsing into the framing layer.
