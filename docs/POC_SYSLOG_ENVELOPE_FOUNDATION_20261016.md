@@ -734,3 +734,23 @@ The strongest architecture continues to be:
 `stream/file framing -> event breaking -> logical record -> transport/envelope -> deterministic body grammar -> optional explicit schema -> source-specific refinement -> semantic mapping -> normalization`
 
 The recurring engineering rule is to widen coverage by adding a reusable boundary or grammar only when that boundary can be validated independently. Recall improvements that rely on guessing hostname, field meaning, or vendor semantics are not counted as parser improvements.
+
+### Round-6 follow-up — named BSD zones and Linux Audit correlation
+
+Two additional reusable boundaries were qualified after the initial Round-6 closure.
+
+- RFC3164-like BSD envelopes can preserve a small explicit allowlist of common named timezone identifiers such as UTC, GMT, KST, JST, CET/CEST, EET/EEST, and North American standard/daylight abbreviations. Unknown uppercase tokens are not guessed as timezones; ambiguous forms continue to be interpreted using the normal hostname/app boundary.
+- Linux Audit records now have a dedicated source-preserving grammar for the common `type=... msg=audit(epoch:serial): ...` envelope. The parser preserves type, epoch, serial/event ID, source fields, and AVC decision/permissions without normalizing semantics prematurely.
+- A bounded Linux Audit stream grouper correlates interleaved records by exact `epoch:serial` event ID instead of adjacency. This supports SYSCALL/CWD/PATH/PROCTITLE/AVC event reconstruction without assuming records arrive contiguously.
+
+Follow-up evidence:
+
+- RFC3164 named-timezone focused suite: 4 / 4 tests PASS;
+- Linux Audit record focused suite: 4 / 4 tests PASS;
+- Linux Audit event grouping focused suite: 2 / 2 tests PASS;
+- malformed Linux Audit records: 8 / 8 rejected;
+- full repository qualification after these additions: 125 / 125 test files PASS, 861 / 861 assertions PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+Linux Audit records in the Round-6 residual corpus now produce a dedicated `linux_audit` structure rather than only a generic KV result.

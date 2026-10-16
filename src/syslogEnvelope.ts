@@ -67,6 +67,15 @@ function validZone(value:string):boolean{
   return !!match&&Number(match[2])<=23&&Number(match[3])<=59;
 }
 
+const BSD_NAMED_ZONES=new Set([
+  'UTC','GMT','KST','JST','CET','CEST','EET','EEST',
+  'PST','PDT','MST','MDT','CST','CDT','EST','EDT',
+]);
+
+function validBsdZone(value:string):boolean{
+  return validZone(value)||BSD_NAMED_ZONES.has(value);
+}
+
 function validBsdTimestamp(month:string,dayText:string,time:string):boolean{
   const day=Number(dayText);
   return !!MONTH_DAYS[month]&&Number.isInteger(day)&&day>=1&&day<=MONTH_DAYS[month]!&&validClock(time);
@@ -250,10 +259,20 @@ function withPri(pri:string|undefined):Pick<SyslogEnvelope,'pri'|'facility'|'sev
 }
 
 function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
+  const yearBeforeNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([A-Z]{2,8}) +([A-Za-z0-9][A-Za-z0-9_.-]{0,254})(?: +(.*))?$/.exec(rest);
+  if(yearBeforeNamed&&BSD_NAMED_ZONES.has(yearBeforeNamed[5]!)&&
+     validBsdTimestampWithYear(yearBeforeNamed[1]!,yearBeforeNamed[2]!,yearBeforeNamed[3]!,yearBeforeNamed[4]!)){
+    return decorateMessage({
+      variant:'rfc3164_year_before_time_tz',confidence:'strong',...withPri(pri),
+      month:yearBeforeNamed[1],day:yearBeforeNamed[2],year:yearBeforeNamed[3],time:yearBeforeNamed[4],
+      timezone:yearBeforeNamed[5],hostname:yearBeforeNamed[6],message:yearBeforeNamed[7]??'',
+    });
+  }
+
   const yearBeforeTz=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{2}:?\d{2}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
   if(yearBeforeTz){
     if(!validBsdTimestampWithYear(yearBeforeTz[1]!,yearBeforeTz[2]!,yearBeforeTz[3]!,yearBeforeTz[4]!)||
-       !validZone(yearBeforeTz[5]!))return null;
+       !validBsdZone(yearBeforeTz[5]!))return null;
     return decorateMessage({
       variant:'rfc3164_year_before_time_tz',confidence:'strong',...withPri(pri),
       month:yearBeforeTz[1],day:yearBeforeTz[2],year:yearBeforeTz[3],time:yearBeforeTz[4],
@@ -261,10 +280,20 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
+  const yearAfterNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +([A-Z]{2,8}) +([A-Za-z0-9][A-Za-z0-9_.-]{0,254})(?: +(.*))?$/.exec(rest);
+  if(yearAfterNamed&&BSD_NAMED_ZONES.has(yearAfterNamed[5]!)&&
+     validBsdTimestampWithYear(yearAfterNamed[1]!,yearAfterNamed[2]!,yearAfterNamed[4]!,yearAfterNamed[3]!)){
+    return decorateMessage({
+      variant:'rfc3164_year_after_time_tz',confidence:'strong',...withPri(pri),
+      month:yearAfterNamed[1],day:yearAfterNamed[2],time:yearAfterNamed[3],year:yearAfterNamed[4],
+      timezone:yearAfterNamed[5],hostname:yearAfterNamed[6],message:yearAfterNamed[7]??'',
+    });
+  }
+
   const yearAfterTz=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(Z|[+-]\d{2}:?\d{2}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
   if(yearAfterTz){
     if(!validBsdTimestampWithYear(yearAfterTz[1]!,yearAfterTz[2]!,yearAfterTz[4]!,yearAfterTz[3]!)||
-       !validZone(yearAfterTz[5]!))return null;
+       !validBsdZone(yearAfterTz[5]!))return null;
     return decorateMessage({
       variant:'rfc3164_year_after_time_tz',confidence:'strong',...withPri(pri),
       month:yearAfterTz[1],day:yearAfterTz[2],time:yearAfterTz[3],year:yearAfterTz[4],
@@ -272,10 +301,20 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
+  const classicNamed=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([A-Z]{2,8}) +([A-Za-z0-9][A-Za-z0-9_.-]{0,254})(?: +(.*))?$/.exec(rest);
+  if(classicNamed&&BSD_NAMED_ZONES.has(classicNamed[4]!)&&
+     validBsdTimestamp(classicNamed[1]!,classicNamed[2]!,classicNamed[3]!)){
+    return decorateMessage({
+      variant:'rfc3164_tz',confidence:'strong',...withPri(pri),
+      month:classicNamed[1],day:classicNamed[2],time:classicNamed[3],timezone:classicNamed[4],
+      hostname:classicNamed[5],message:classicNamed[6]??'',
+    });
+  }
+
   const classicTz=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{2}:?\d{2}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
   if(classicTz){
     if(!validBsdTimestamp(classicTz[1]!,classicTz[2]!,classicTz[3]!)||
-       !validZone(classicTz[4]!))return null;
+       !validBsdZone(classicTz[4]!))return null;
     return decorateMessage({
       variant:'rfc3164_tz',confidence:'strong',...withPri(pri),
       month:classicTz[1],day:classicTz[2],time:classicTz[3],timezone:classicTz[4],

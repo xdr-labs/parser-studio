@@ -4,6 +4,7 @@ import {unwrapSingleSyslogRecord} from './syslogFraming';
 import {extractVpcFlowStructural,parseVpcFlowLogV2} from './awsVpcFlow';
 import {extractAlbStructural,parseAlbAccessLog} from './awsAlbAccess';
 import {parseBindQueryMessage,parseCiscoIosMessage,parseCiscoIosSequenceSyslog,parseHttpAccessLog,parseLegacyOriginatorMessage,parseSquidAccessLog} from './commonSecurityProfiles';
+import {extractLinuxAuditStructural,parseLinuxAuditRecord} from './linuxAudit';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -1043,6 +1044,13 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     return null;
   }
 
+  const audit=parseLinuxAuditRecord(message);
+  if(audit)return {
+    syslog,
+    linux_audit:{...audit,source_raw:raw,message_raw:messageRaw},
+    generic:{mode:'syslog_envelope_linux_audit_record',source_raw:raw,message_raw:messageRaw},
+  };
+
   const wrappedHttp=parseHttpAccessLog(message);
   if(wrappedHttp?.http_access&&typeof wrappedHttp.http_access==='object'){
     const generic=wrappedHttp.generic&&typeof wrappedHttp.generic==='object'
@@ -1363,7 +1371,7 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
-    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseSquidAccessLog(raw)??
+    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseSquidAccessLog(raw)??extractLinuxAuditStructural(raw)??
     standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??extractVpcFlowStructural(raw)??extractAlbStructural(raw)??
     nestedRelayStructuredSyslog(raw)??hostlessStructuredSyslog(raw)??syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
   if(strict)return {fields:strict,errors:[]};
