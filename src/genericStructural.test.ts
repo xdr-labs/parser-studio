@@ -253,6 +253,22 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect(extractGenericStructural(alarm.replace('3000-0152','bad-id')).fields).toEqual({});
   });
 
+  it('extracts bounded dual-timestamp session envelopes without vendor-specific semantics',()=>{
+    const raw='Oct 19 09:11:55 edge-node 1 2026-10-19T09:11:55+02:00 192.0.2.3 SecureAccess: - - - 2026-10-19 09:11:55 - edge-node - [198.51.100.10] user.name(REALM)[ROLE] - Session established successfully';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{month:'Oct',day:'19',time:'09:11:55',hostname:'edge-node',version:'1',
+        timestamp:'2026-10-19T09:11:55+02:00',source:'192.0.2.3',app_tag:'SecureAccess'},
+      session_envelope:{source_raw:raw,event_date:'2026-10-19',event_time:'09:11:55',
+        node:'edge-node',client:'198.51.100.10',identity:'user.name(REALM)[ROLE]',
+        message:'Session established successfully'},
+    });
+    expect(extractGenericStructural(raw.replace('Oct 19 09:11:55','Oct 32 09:11:55')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('2026-10-19 09:11:55','2026-02-30 09:11:55')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace(' - - - ',' - x - ')).fields).toEqual({});
+  });
+
   it('extracts the bounded Juniper legacy RT_FLOW profile as source tokens',()=>{
     const raw='Apr 29 01:14:45 10.9.9.1 RT_FLOW: RT_FLOW_SESSION_CREATE: session created 192.168.83.99/40275->192.168.32.1/161 None 192.168.83.99/40275->192.168.32.1/161 None None 17 allow-all-out ICTNet StaffNet 23228 N/A(N/A) vlan.255';
     const result=extractGenericStructural(raw);

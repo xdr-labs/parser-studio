@@ -439,6 +439,19 @@ function watchguardMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+function dualTimestampSessionProfile(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const match=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)$/.exec(raw);
+  if(!match||!validBsdClock(match[1]!,match[2]!,match[3]!))return null;
+  if(Number.isNaN(Date.parse(match[5]!))||!validIsoPriClock(match[8]!,match[9]!,'Z'))return null;
+  return {
+    syslog:{month:match[1],day:match[2],time:match[3],hostname:match[4],
+      version:'1',timestamp:match[5],source:match[6],app_tag:match[7]},
+    session_envelope:{source_raw:raw,event_date:match[8],event_time:match[9],
+      node:match[10],client:match[11],identity:match[12],message:match[13]},
+  };
+}
+
 function juniperLegacyProfile(raw:string):Record<string,unknown>|null{
   const head=/^([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.exec(raw);
   if(!head||head[5]!=='RT_FLOW'||!validBsdClock(head[1]!,head[2]!,head[3]!))return null;
@@ -544,7 +557,7 @@ function asa(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
-  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??
+  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
     rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:
