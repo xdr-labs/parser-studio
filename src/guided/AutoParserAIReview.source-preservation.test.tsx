@@ -4,6 +4,35 @@ import {createHash,webcrypto} from 'node:crypto';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import AutoParserAIReview from './AutoParserAIReview';
+import type {MultiPassBatchPreview} from './multipassPreviewClient';
+
+
+function batchEvidence(source:string,valuesByEvent:string[][]):MultiPassBatchPreview{
+ const lines=source.split('\n');let cursor=0;
+ const events=lines.map((raw,index)=>{
+  const startByte=cursor,endByte=startByte+new TextEncoder().encode(raw).byteLength;
+  cursor=endByte+(index<lines.length-1?1:0);
+  const spans=(valuesByEvent[index]??[]).map((value,position)=>{
+   const charStart=raw.indexOf(value);
+   if(charStart<0)throw new Error('test evidence value missing');
+   const byteStart=new TextEncoder().encode(raw.slice(0,charStart)).byteLength;
+   const byteEnd=byteStart+new TextEncoder().encode(value).byteLength;
+   return {path:'field_'+position,startByte:byteStart,endByte:byteEnd};
+  });
+  return {index,startByte,endByte,preview:{
+   contract:'parser-studio.multipass-source-preview.v0.1' as const,status:'PARTIAL' as const,
+   syntax:'TEST_EVIDENCE',sourceSha256:'0'.repeat(64),sourceBytes:endByte-startByte,
+   fields:{},spans,residuals:[],issues:[],nativeVerified:false as const,targetVerified:false as const,
+  }};
+ });
+ const separators=events.slice(0,-1).map(event=>({
+  startByte:event.endByte,endByte:event.endByte+1,kind:'WHITESPACE' as const,
+ }));
+ return {contract:'parser-studio.multipass-source-batch-preview.v0.1',
+  sourceSha256:'0'.repeat(64),sourceBytes:new TextEncoder().encode(source).byteLength,
+  eventCount:events.length,events,separators,nativeVerified:false,targetVerified:false};
+}
+
 
 it('accepts source values preserved by reviewed enrichment outputs',async()=>{
  vi.stubGlobal('crypto',webcrypto);
@@ -25,7 +54,9 @@ it('accepts source values preserved by reviewed enrichment outputs',async()=>{
  };
  render(<AutoParserAIReview raw={source} status="unsupported" onChatGPT={vi.fn()}
   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
-  protectedSourceValuesByEvent={[['allow','198.51.100.10'],['deny','203.0.113.4']]}/>);
+  protectedSourceValuesByEvent={[['allow','198.51.100.10'],['deny','203.0.113.4']]}
+  holdoutEvidenceRequester={async()=>batchEvidence(holdout,
+   [['allow','192.0.2.10'],['deny','192.0.2.11']])}/>);
  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
@@ -34,6 +65,38 @@ it('accepts source values preserved by reviewed enrichment outputs',async()=>{
  fireEvent.click(screen.getByRole('checkbox',{name:'Approve tested fix'}));
  fireEvent.click(screen.getByRole('button',{name:'Apply Verified Fix'}));
  await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
+ vi.unstubAllGlobals();
+});
+
+it('rejects recovery when Funnel holdout values would disappear despite browser holdout success',async()=>{
+ vi.stubGlobal('crypto',webcrypto);
+ const source='allow,198.51.100.10';
+ const holdout='allow,192.0.2.10\ndeny,192.0.2.11';
+ const draft=createDraft(),apply=vi.fn();
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'regex',bodyFormat:'regex',
+  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_regex',pattern:'^(?<action>[^,]+),(?<src_ip>[^,]+)$'},
+   {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ render(<AutoParserAIReview raw={source} status="unsupported" onChatGPT={vi.fn()}
+  source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
+  protectedSourceValuesByEvent={[['allow']]}
+  holdoutEvidenceRequester={async()=>batchEvidence(holdout,
+   [['allow','192.0.2.10'],['deny','192.0.2.11']])}/>);
+ fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+ fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+ fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+ fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+ expect(await screen.findByText(/holdout event 1 would drop 1 of 2 Funnel source value occurrences/)).toBeTruthy();
+ expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+ expect(apply).not.toHaveBeenCalled();
  vi.unstubAllGlobals();
 });
 
@@ -88,7 +151,9 @@ it('allows explicit empty string source spans to follow backend ignore semantics
  };
  render(<AutoParserAIReview raw={source} status="unsupported" onChatGPT={vi.fn()}
   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
-  protectedSourceValuesByEvent={[['allow','198.51.100.10','""']]}/>);
+  protectedSourceValuesByEvent={[['allow','198.51.100.10','""']]}
+  holdoutEvidenceRequester={async()=>batchEvidence(holdout,
+   [['allow','192.0.2.10'],['deny','192.0.2.11']])}/>);
  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));

@@ -83,6 +83,12 @@ describe('safe, version-neutral browser preview', () => {
     }
   });
 
+  it('does not misclassify BSD repeated-message prose with commas as CSV', () => {
+    const raw='Nov 30 00:21:57 SNMP_TRAP_LINK_DOWN message repeated [7368]: ngelit: ifIndex 4197, ifAdminStatus ons, ifOperStatus unknown, ifName lo3193';
+    expect(detectFormat(raw)).toMatchObject({format:'unknown',
+      reason:'BSD repeated-message text requires the local Multi-Pass source engine'});
+  });
+
   it('fails closed on unsupported CSV delimiters or malformed quoted cells', () => {
     const bad = { ...createDraft(), csvColumns: 'action,detail', csvDelimiter: '|' as unknown as ',' };
     expect(extractFields('deny|message', 'csv', bad).errors.length).toBeGreaterThan(0);

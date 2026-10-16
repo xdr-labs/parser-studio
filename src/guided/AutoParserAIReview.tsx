@@ -8,8 +8,10 @@ import {buildReviewableRecipe} from './parserRecipeV2';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
+import {requestMultiPassBatchPreview,type MultiPassBatchPreview} from './multipassPreviewClient';
 
-interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void;importOnly?:boolean;protectedSourceValuesByEvent?:string[][];protectedResidualTextByEvent?:string[][]}
+type HoldoutEvidenceRequester=(source:string)=>Promise<MultiPassBatchPreview>;
+interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void;importOnly?:boolean;protectedSourceValuesByEvent?:string[][];protectedResidualTextByEvent?:string[][];holdoutEvidenceRequester?:HoldoutEvidenceRequester}
 const completeSuite=(value:SuiteResult)=>value.counts.total>0&&value.counts.matched===value.counts.total&&
  value.counts.extracted===value.counts.total&&value.counts.normalized===value.counts.total&&value.counts.failures===0;
 function scalarValues(value:unknown):string[]{
@@ -66,7 +68,25 @@ function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:st
  }
  return null;
 }
-export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate,importOnly=false,protectedSourceValuesByEvent,protectedResidualTextByEvent}:Props){
+
+function multiPassProtection(source:string,batch:MultiPassBatchPreview):{
+ values:string[][];residuals:string[][];
+}{
+ const bytes=new TextEncoder().encode(source);
+ const decoder=new TextDecoder('utf-8',{fatal:true});
+ const decode=(startByte:number,endByte:number)=>decoder.decode(bytes.slice(startByte,endByte));
+ return {
+  values:batch.events.map(event=>event.preview.spans
+   .filter(span=>span.endByte>span.startByte)
+   .map(span=>decode(event.startByte+span.startByte,event.startByte+span.endByte))),
+  residuals:batch.events.map(event=>event.preview.residuals
+   .filter(region=>region.endByte>region.startByte)
+   .map(region=>decode(event.startByte+region.startByte,event.startByte+region.endByte))
+   .filter(text=>text.trim().length>0)),
+ };
+}
+
+export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,suite,initialByteRange,selectionContext,onApplyCandidate,importOnly=false,protectedSourceValuesByEvent,protectedResidualTextByEvent,holdoutEvidenceRequester}:Props){
  const [mode,setMode]=useState<'entire'|'selection'>(status==='unsupported'?'entire':'selection');
  const [range,setRange]=useState<[number,number]>([0,0]);
  const [goal,setGoal]=useState('');
@@ -78,7 +98,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [importBusy,setImportBusy]=useState(false);
  const [holdout,setHoldout]=useState('');
  const [holdoutAttested,setHoldoutAttested]=useState(false);
- const [approvedCandidate,setApprovedCandidate]=useState<{draft:ParserDraft;mode:'mapping'|'correction'|'enrichment'|'recovery';scope?:{oldTarget:string;newTarget:string}}|null>(null);
+ const [approvedCandidate,setApprovedCandidate]=useState<{draft:ParserDraft;mode:'mapping'|'correction'|'enrichment'|'recovery';scope?:{oldTarget:string;newTarget:string};holdoutProtectedValues?:string[][];holdoutProtectedResiduals?:string[][]}|null>(null);
  const [approval,setApproval]=useState(false);
  const [validatedEvidence,setValidatedEvidence]=useState('');
  const evidenceFingerprint=()=>JSON.stringify([source??'',draft??null,holdout,recipeText]);
@@ -154,6 +174,8 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    if(!holdoutAttested){setImportResult('Confirm that the additional test logs are different from the examples used to create this fix. No parser rules were changed.');return;}
    let report:ReturnType<typeof compareCandidate>;
    let candidateSuite:SuiteResult,candidateHoldout:SuiteResult;
+   let holdoutProtectedValues:string[][]|undefined;
+   let holdoutProtectedResiduals:string[][]|undefined;
    try{
     candidateSuite=preview(source,proposal.candidate);candidateHoldout=preview(holdout,proposal.candidate);
     const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
@@ -165,7 +187,26 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     const residualRegression=candidateMode==='recovery'?
      protectedResidualRegression(candidateSuite,protectedResidualTextByEvent):null;
     if(residualRegression){
-     setImportResult(`Fix not applied: event ${residualRegression.event} would leave ${residualRegression.missing} of ${residualRegression.required} previously unparsed source regions outside the final parser output. Preserve the remaining source text before applying the fix.`);return;
+     setImportResult('Fix not applied: event '+residualRegression.event+' would leave '+residualRegression.missing+' of '+residualRegression.required+' previously unparsed source regions outside the final parser output. Preserve the remaining source text before applying the fix.');return;
+    }
+    const requireFunnelHoldout=candidateMode==='recovery'&&
+     (protectedSourceValuesByEvent!==undefined||protectedResidualTextByEvent!==undefined);
+    if(requireFunnelHoldout){
+     try{
+      const batch=await (holdoutEvidenceRequester??requestMultiPassBatchPreview)(holdout);
+      const evidence=multiPassProtection(holdout,batch);
+      holdoutProtectedValues=evidence.values;holdoutProtectedResiduals=evidence.residuals;
+     }catch{
+      setImportResult('Fix not applied: the additional test logs could not be verified by the local Multi-Pass source engine. No changes were made.');return;
+     }
+     const holdoutValueRegression=protectedValueRegression(candidateHoldout,holdoutProtectedValues,true);
+     if(holdoutValueRegression){
+      setImportResult('Fix not applied: holdout event '+holdoutValueRegression.event+' would drop '+holdoutValueRegression.missing+' of '+holdoutValueRegression.required+' Funnel source value occurrences from the final parser output. No changes were made.');return;
+     }
+     const holdoutResidualRegression=protectedResidualRegression(candidateHoldout,holdoutProtectedResiduals);
+     if(holdoutResidualRegression){
+      setImportResult('Fix not applied: holdout event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' Funnel residual source regions outside the final parser output. No changes were made.');return;
+     }
     }
     const comparisonInput={source,baseline:suite,candidate:candidateSuite,
      holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
@@ -184,7 +225,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
     setImportResult('The proposed fix did not pass both the original logs and the additional test logs. No parser rules were changed.');return;
    }
-   setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope});setValidatedEvidence(evidenceFingerprint());
+   setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope,holdoutProtectedValues,holdoutProtectedResiduals});setValidatedEvidence(evidenceFingerprint());
    const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':candidateMode==='enrichment'?'one bounded split/merge rule':'one added mapping';
    setImportResult(`Fix passed: ${description}; ${report.holdout?.sourceCount??0} additional test log${(report.holdout?.sourceCount??0)===1?'':'s'} checked with no regressions. Ready to apply.`);
   }catch{setImportResult('Parser Studio could not test the ChatGPT result. No changes were made.');}
@@ -231,7 +272,19 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
        protectedResidualRegression(candidateSuite,protectedResidualTextByEvent):null;
       if(residualRegression){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-       setImportResult(`The fix is no longer safe: event ${residualRegression.event} would leave ${residualRegression.missing} of ${residualRegression.required} previously unparsed source regions outside the candidate fields. No changes were made.`);return;
+       setImportResult('The fix is no longer safe: event '+residualRegression.event+' would leave '+residualRegression.missing+' of '+residualRegression.required+' previously unparsed source regions outside the candidate fields. No changes were made.');return;
+      }
+      const holdoutValueRegression=approvedCandidate.mode==='recovery'?
+       protectedValueRegression(candidateHoldout,approvedCandidate.holdoutProtectedValues,true):null;
+      if(holdoutValueRegression){
+       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+       setImportResult('The fix is no longer safe: holdout event '+holdoutValueRegression.event+' would drop '+holdoutValueRegression.missing+' of '+holdoutValueRegression.required+' Funnel source value occurrences from the final parser output. No changes were made.');return;
+      }
+      const holdoutResidualRegression=approvedCandidate.mode==='recovery'?
+       protectedResidualRegression(candidateHoldout,approvedCandidate.holdoutProtectedResiduals):null;
+      if(holdoutResidualRegression){
+       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
+       setImportResult('The fix is no longer safe: holdout event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' Funnel residual source regions outside the final parser output. No changes were made.');return;
       }
       const recheckInput={source,baseline:suite,candidate:candidateSuite,
        holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};

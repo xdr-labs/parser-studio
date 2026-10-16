@@ -29,6 +29,13 @@ export function detectFormat(raw: string): Detection {
     return { format: 'unknown', confidence: 0,
       reason: 'Cisco ASA/FTD message requires the local Multi-Pass source engine' };
   }
+  // Plain BSD repeated-message syslog can contain comma-separated prose that
+  // looks like CSV. Keep this well-known syslog idiom out of browser CSV/KV
+  // heuristics and let the authoritative Multi-Pass engine decide its structure.
+  if (/^[A-Z][a-z]{2}\s+\d{1,2}\s+\d\d:\d\d:\d\d\s+.*\bmessage repeated(?:\s+\[\d+\])?:/.test(value)) {
+    return { format: 'unknown', confidence: 0,
+      reason: 'BSD repeated-message text requires the local Multi-Pass source engine' };
+  }
   if (/^<\d{1,3}>(?:\d\s|[A-Z][a-z]{2}\s|\d{4}-)/.test(value)) {
     return { format: 'syslog', confidence: 0.87, reason: 'Syslog priority and header detected' };
   }
