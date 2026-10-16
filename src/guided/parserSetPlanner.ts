@@ -116,17 +116,24 @@ export function materializeParserSetFamily(
   source:string,frames:readonly ParserSetFrame[],group:ParserSetFamilyGroup,
 ):ParserSetMaterialization{
   const bytes=new TextEncoder().encode(source);
-  if(!bytes.length||bytes.length>64*1024||!group.eventIndexes.length)
+  if(!bytes.length||bytes.length>64*1024)
     return {ok:false,reason:'SOURCE_LIMIT'};
+  if(!group.eventIndexes.length||group.count!==group.eventIndexes.length||
+     group.eventIndexes.some((index,position)=>!Number.isSafeInteger(index)||index<0||
+       (position>0&&index<=group.eventIndexes[position-1]!)))
+    return {ok:false,reason:'SOURCE_MISMATCH'};
   const decoder=new TextDecoder('utf-8',{fatal:true});
   const selected:string[]=[];
+  let previousEnd=-1;
   try{
     for(const index of group.eventIndexes){
       const frame=frames[index];
       if(!frame||!Number.isSafeInteger(frame.startByte)||!Number.isSafeInteger(frame.endByte)||
-         frame.startByte<0||frame.endByte>bytes.length||frame.startByte>=frame.endByte)
+         frame.startByte<0||frame.endByte>bytes.length||frame.startByte>=frame.endByte||
+         frame.startByte<previousEnd)
         return {ok:false,reason:'SOURCE_MISMATCH'};
       selected.push(decoder.decode(bytes.slice(frame.startByte,frame.endByte)));
+      previousEnd=frame.endByte;
     }
   }catch{return {ok:false,reason:'SOURCE_MISMATCH'};}
   const grouped=selected.join('\n');
