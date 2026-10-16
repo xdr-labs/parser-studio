@@ -24,6 +24,17 @@ describe('parser set planner',()=>{
     expect(plan.groups.map(group=>[group.family,group.count])).toEqual([
       ['TRAFFIC',2],['THREAT',1],
     ]);
+    expect(plan.groups.map(group=>group.label)).toEqual([
+      'Palo Alto Networks · TRAFFIC','Palo Alto Networks · THREAT',
+    ]);
+  });
+
+  it('does not invent a Palo Alto label from a generic TRAFFIC token alone',()=>{
+    const plan=planParserSet([
+      {startByte:0,endByte:1,preview:preview('TRAFFIC','GENERIC_VENDOR_TRAFFIC')},
+    ]);
+    expect(plan.status).toBe('SINGLE_FAMILY');
+    expect(plan.groups[0]?.label).toBe('TRAFFIC · GENERIC VENDOR TRAFFIC');
   });
 
   it('does not claim a parser set when any event lacks family evidence',()=>{
