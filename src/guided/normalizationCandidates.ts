@@ -22,7 +22,7 @@ export interface NormalizationCandidate {
 
 const ALIASES:Record<string,string>={
   src_ip:'srcip',source_ip:'srcip','source.ip':'srcip','source.address':'srcip',
-  client_ip:'srcip','client.ip':'srcip',
+  client_ip:'srcip','client.ip':'srcip',sourceipaddress:'srcip','httprequest.clientip':'srcip',
   dst_ip:'dstip',destination_ip:'dstip',dest_ip:'dstip','destination.ip':'dstip',
   'destination.address':'dstip',server_ip:'dstip','server.ip':'dstip',
   src_port:'srcport',source_port:'srcport','source.port':'srcport',client_port:'srcport',

@@ -26,6 +26,12 @@ describe('official-catalog normalization candidates',()=>{
       source:'src_ip',confidence:'REVIEW',observed:2,total:2,safeForBulk:false,
     });
   });
+  it('covers common AWS CloudTrail and WAF source address names without broad semantic guessing',()=>{
+    expect(suggestNormalizationCandidates({sourceIPAddress:'198.51.100.10'},[])[0])
+      .toMatchObject({source:'sourceIPAddress',target:'srcip',confidence:'HIGH'});
+    expect(suggestNormalizationCandidates({httpRequest:{clientIp:'203.0.113.7'}},[])[0])
+      .toMatchObject({source:'httpRequest.clientIp',target:'srcip',confidence:'HIGH'});
+  });
   it('abstains when another mapping owns the official destination',()=>{
     expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},[
       {id:'1',source:'x',target:'srcip',type:'ip'},

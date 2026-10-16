@@ -373,6 +373,6 @@ Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retai
 - [x] NORM-04: selected-event plus whole-sample raw/extracted/normalized comparison, changes-only view, type/timestamp/collision/missing-field and catalog diagnostics; mapping changes continue to revoke prior generated verification evidence through draft identity.
 - [x] NORM-05: reviewed official and custom mappings persist in browser revision/portable draft and the existing backend adapter. Uncertain targets remain `custom.*`/vendor fields; no unverified 1:N target mapping was added, and bounded split/merge remains a separately reviewed enrichment contract.
 - [ ] NORM-06: actual native Ruby/CONF and separately authorized Stellar DP ingestion/index comparison, with source and normalized output hashes and fail-closed export readiness.
-- [ ] NORM-07: beginner Full User E2E across EDR/XDR/NDR/EPP/AWS/WAF/IPS/VPN, accessibility, holdouts, exact-head CI and acceptance.
+- [~] NORM-07: browser Full User E2E now covers EDR/XDR/NDR/EPP/AWS CloudTrail/AWS WAF/IPS/VPN with 8/8 normalization journeys PASS, plus the current generic Chromium suite 42 PASS / 28 backend-gated SKIP / 0 FAIL and existing mobile/accessibility/privacy regressions. Exact-head CI and final acceptance evidence remain before closure.
 
 Implementation order NORM-02 conservative local preview foundation → NORM-03 → NORM-04 → NORM-01 official catalog qualification → NORM-05/06/07. No production/DP write or release without separate authorization.
