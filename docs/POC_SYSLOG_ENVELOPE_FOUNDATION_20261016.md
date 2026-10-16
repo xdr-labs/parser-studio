@@ -1130,3 +1130,81 @@ The event hierarchy is now more explicit:
 `strong container/framing -> heterogeneous reviewed line framing -> single event -> envelope -> body/source grammar -> preservation -> semantic mapping -> normalization`
 
 The heterogeneous line layer does not guess event meaning. It only provides a safe boundary when every constituent line is already independently parseable by a qualified grammar.
+
+## Expansion round 14 — file preambles and shared network primitives
+
+Round 14 removed two cross-cutting sources of format-specific exceptions: file-level UTF-8 BOM handling and duplicated network-token validation.
+
+### File-level UTF-8 BOM preamble
+
+A single leading UTF-8 BOM is now handled once at the security-input pipeline boundary rather than inside individual JSON, CSV, Syslog, or other parsers.
+
+- exactly one leading BOM is stripped before container/single-event dispatch;
+- the original top-level `source_raw` remains unchanged;
+- `context.utf8_bom=true` records that the preamble was present;
+- existing JSON, NDJSON, RFC4180 CSV, Syslog, and heterogeneous line-event parsers are reused unchanged;
+- duplicate BOMs, BOM-only input, and a BOM appearing inside a line-event stream are rejected.
+
+This preserves the layering rule: file encoding/preamble concerns belong above event framing and source grammar.
+
+### Shared IP/port token primitive
+
+An audit found separate IPv4/IPv6/port validators in Generic Structural, common security profiles, appliance profiles, AWS VPC Flow, ALB, legacy ELB/S3, and the field type-conversion path. Even though most copies were similar, keeping them separate could make the same address parse successfully in one source grammar and fail in another.
+
+Round 14 introduced one reviewed `networkTokens` primitive for:
+
+- IPv4;
+- standard and compressed IPv6;
+- IPv4-embedded IPv6 such as `::ffff:192.0.2.10`;
+- ports 0..65535;
+- IP:port endpoints, including bracketed IPv6 where the source grammar permits that representation.
+
+Source-format rules remain separate from token validity. For example, ALB can accept a bracketed IPv6 endpoint, while Classic ELB continues to reject brackets because its existing source tokenizer reserves brackets for a different source construct. The underlying address validation is nevertheless shared.
+
+The shared primitive is now used by:
+
+- Generic Structural network/flow parsing;
+- common authentication/security source grammars;
+- FortiGate/Sophos/F5 appliance refinements;
+- AWS VPC Flow;
+- AWS ALB;
+- Classic ELB and S3 access logs;
+- parser field type conversion for `ip` and `port`.
+
+### Cross-parser consistency evidence
+
+The same IPv4-mapped IPv6 source was injected into seven independent parsing paths:
+
+- Juniper RT_FLOW tuple;
+- sshd authentication;
+- FortiGate KV;
+- AWS VPC Flow;
+- AWS ALB;
+- Classic ELB;
+- AWS S3 access.
+
+All 7 / 7 accepted the valid mapped address. Replacing its embedded IPv4 portion with an invalid address caused all 7 / 7 to reject it. Field type conversion uses the same primitive and therefore no longer disagrees with extraction about mapped IPv6 validity.
+
+### Round-14 evidence
+
+- UTF-8 BOM focused pipeline suite: 4 / 4 PASS;
+- BOM + line-event + security-input focused suites: 15 / 15 PASS;
+- shared network-token primitive suite: 4 / 4 PASS;
+- cross-parser mapped-IPv6 integration suite: 4 / 4 PASS;
+- mapped IPv6 valid matrix: 7 / 7 accepted;
+- invalid embedded-IPv4 mapped IPv6 matrix: 7 / 7 rejected;
+- network/AWS/common/appliance focused qualification: 10 / 10 files PASS, 67 / 67 tests PASS;
+- fixed Syslog corpus remains 48 / 49 structured with malformed acceptance 0;
+- deterministic Syslog matrix remains 210 / 210 structured;
+- full repository unit suite: 153 / 153 test files PASS;
+- full repository assertions: 950 / 950 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+### Architectural implication
+
+Parser correctness primitives should be centralized when their semantics are source-independent, while source-format grammar must remain local to each parser.
+
+`file preamble -> framing/container -> event boundary -> envelope -> source grammar -> shared token validation -> source preservation -> semantic mapping -> normalization`
+
+This reduces the chance that new source parsers reintroduce inconsistent IP/port behavior while still keeping source-specific acceptance rules fail-closed.
