@@ -14,7 +14,7 @@ test("capability response matches reviewed schema, not future unimplemented tran
   assert.equal(authoring.multiline, false);
   assert.equal(authoring.arbitraryRuby, false);
   assert.equal(authoring.formatCoverage, "reviewed-bounded-subset");
-  assert.equal(authoring.genericStructuralGrammar, "GENERIC_STRUCTURAL_ULTRA_COMPILER_V12");
+  assert.equal(authoring.genericStructuralGrammar, "GENERIC_STRUCTURAL_ULTRA_COMPILER_V13");
   assert.equal(authoring.rfc5424AdjacentStructuredDataSubset, true);
   assert.equal(authoring.rfc5424StructuredDataMaxBytes, 1024);
   assert.deepEqual(authoring.rfc5424BodyFormats,

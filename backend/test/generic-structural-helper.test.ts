@@ -60,6 +60,18 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
+test("Generic Structural V13 Ruby helper parses bounded ISO PRI positional messages",{skip:!rubyAvailable},()=>{
+  const raw='<134>2026-10-16 03:11:07.915 +0200 edge SYS APS INFO 19034 Num clients to walk : 0';
+  const parsed=runRuby("parserstudio_generic_structural",raw) as any;
+  assert.deepEqual(parsed.syslog,{pri:"134",date:"2026-10-16",time:"03:11:07.915",timezone:"+0200"});
+  assert.equal(parsed.generic.mode,"iso_pri_positional");
+  assert.equal(parsed.generic.source_raw,raw);
+  assert.deepEqual(parsed.generic.tokens.slice(0,5),["edge","SYS","APS","INFO","19034"]);
+  assert.equal(runRuby("parserstudio_generic_iso_pri_positional",raw.replace("<134>","<192>")),null);
+  assert.equal(runRuby("parserstudio_generic_iso_pri_positional",raw.replace("+0200","+2500")),null);
+  assert.equal(runRuby("parserstudio_generic_iso_pri_positional",raw.replace("SYS","system")),null);
+});
+
 test("Generic Structural V12 Ruby helper parses bounded WatchGuard free-form messages",{skip:!rubyAvailable},()=>{
   const alarm='<142>May 10 15:19:05 WatchGuard-Firebox (2024-05-10T09:49:05) firewall: msg_id="3000-0152" IPv4 source route attack from 10.0.1.34 detected. (IPS)';
   const diagnostic='<142>May 10 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-05-10T09:49:05) firewall[10]: msg_id="3000-0006" Application control settings updated';

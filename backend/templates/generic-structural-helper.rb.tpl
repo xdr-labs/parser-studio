@@ -10,6 +10,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_iso_pri_mixed(text)
   return result if result
+  result = parserstudio_generic_iso_pri_positional(text)
+  return result if result
   result = parserstudio_generic_asa(text)
   return result if result
   result = parserstudio_generic_watchguard(text)
@@ -531,6 +533,38 @@ def parserstudio_generic_iso_pri_mixed(text)
   {
     'syslog'=>{'pri'=>match[1],'date'=>match[2],'time'=>match[3],'timezone'=>match[4]},
     'generic'=>body
+  }
+rescue StandardError
+  nil
+end
+
+def parserstudio_generic_iso_pri_positional(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
+  return nil unless match
+  pri = Integer(match[1], 10)
+  return nil unless pri.between?(0, 191)
+  normalized_zone = match[4] == 'Z' ? 'Z' :
+    (match[4].include?(':') ? match[4] : match[4][0, 3] + ':' + match[4][3, 2])
+  begin
+    Time.iso8601("#{match[2]}T#{match[3]}#{normalized_zone}")
+  rescue StandardError
+    return nil
+  end
+  body = parserstudio_generic_profile_tokens(text, match.end(0))
+  return nil unless body && body['tokens'].length.between?(8, 64)
+  anchors = body['tokens'].first(5)
+  return nil unless anchors.length == 5 &&
+    anchors.all? { |value| value.match?(/\A[A-Za-z0-9_.:\/-]{1,128}\z/) } &&
+    body['tokens'][1].match?(/\A[A-Z][A-Z0-9_]{1,15}\z/)
+  port_like = lambda { |value| value.is_a?(String) && value.match?(/\A\d{1,5}\z/) }
+  if body['tokens'].length >= 16 && port_like.call(body['tokens'][5]) && port_like.call(body['tokens'][7])
+    return nil unless parserstudio_generic_ip_token(body['tokens'][4]) &&
+      parserstudio_generic_ip_token(body['tokens'][6])
+  end
+  {
+    'syslog'=>{'pri'=>match[1],'date'=>match[2],'time'=>match[3],'timezone'=>match[4]},
+    'generic'=>{'mode'=>'iso_pri_positional','source_raw'=>text, **body}
   }
 rescue StandardError
   nil
