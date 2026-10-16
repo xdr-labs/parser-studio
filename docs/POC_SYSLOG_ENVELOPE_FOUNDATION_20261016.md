@@ -1030,3 +1030,55 @@ Strong known-source signatures remain fail-closed: a malformed FortiGate, Cisco 
 - production build: PASS.
 
 Independent Logstash and Wazuh holdouts remained qualified after these changes, confirming that the refinement did not trade one ecosystem's coverage for another.
+
+## Expansion round 12 — RFC5424 downgrade hardening and F5 ASM source refinement
+
+Round 12 continued the same fail-closed architecture at two different layers: the common Syslog envelope and a source-specific leaf grammar.
+
+### RFC5424 NILVALUE and malformed-header downgrade guard
+
+RFC5424 permits NILVALUE (`-`) for TIMESTAMP, HOSTNAME, APP-NAME, PROCID, MSGID, and STRUCTURED-DATA. Focused coverage now verifies:
+
+- all header metadata set to NILVALUE while CEF, LEEF, or JSON remains structurally parseable in MSG;
+- partial NILVALUE mixed with valid header fields and multiple structured-data elements;
+- duplicate structured-data parameter names remain source-preserving arrays;
+- a strict RFC5424 envelope with no MSG remains envelope-valid but is not falsely counted as a structured body success.
+
+The focused test found a boundary defect: when an input started with a PRI and an RFC5424-like numeric VERSION token but failed strict RFC5424 validation, `parseSyslogEnvelope()` could continue into another envelope variant. The parser now treats `PRI + 1–3 digit version-position token` as a strong RFC5424 signature. Strict RFC5424 failure is terminal instead of being downgraded into BSD, loose timestamp, or PRI-only parsing.
+
+Malformed NILVALUE/header examples, bad structured-data syntax, unsafe SD names, invalid version zero, and invalid token boundaries are rejected at both envelope and structured-extraction layers.
+
+### F5 BIG-IP ASM body refinement
+
+A separate public raw holdout covering F5 ASM, Zscaler JSON, and Cisco endpoint JSON initially parsed 9 / 9 events. The F5 events, however, only reached a generic comma-KV structure.
+
+F5 ASM now uses a bounded source grammar behind the existing Syslog envelope:
+
+`Syslog envelope -> appname ASM -> quote-aware comma KV -> validated ASM source fields`
+
+The parser preserves quoted values containing commas (for example X-Forwarded-For lists) and validates strong source boundaries including client/destination IPs, ports, HTTP method/protocol, request status, duplicate keys, and unsafe keys. A malformed `ASM:unit_hostname=...` body is terminal and cannot fall through to generic comma-KV parsing.
+
+The Zscaler and Cisco endpoint samples remain handled by the existing bounded JSON grammar; no vendor-specific JSON parser was added because their source object structure is already preserved losslessly.
+
+### Round-12 evidence
+
+- F5/Zscaler/Cisco external raw holdout: 9 / 9 parsed;
+- F5 ASM source refinement: 3 / 3 events now emit `f5_bigip` structure;
+- appliance/F5 focused suite: 9 / 9 PASS;
+- RFC5424 NILVALUE focused suite: 4 / 4 PASS;
+- malformed RFC5424 NILVALUE/header cases: 7 / 7 rejected at both envelope and structural layers;
+- existing RFC5424 envelope suite: 63 / 63 PASS;
+- deterministic Syslog matrix: 210 / 210 structured, invalid matrix 16 / 16 rejected;
+- fixed 49-event corpus: 48 / 49 structured, malformed acceptance 0;
+- full repository unit suite: 147 / 147 test files PASS;
+- full repository assertions: 930 / 930 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+### Architectural implication
+
+The same rule now applies consistently from framing through source refinement:
+
+`strong format signature -> strict parser -> success OR terminal failure`
+
+A strong signature must never be used only to select a permissive generic parser. This prevents recall gains from being purchased with format confusion or silent downgrade acceptance.
