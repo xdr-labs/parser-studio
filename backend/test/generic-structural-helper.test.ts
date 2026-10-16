@@ -75,12 +75,15 @@ test("Generic Structural common firewall wrappers cover year-bearing ASA and RFC
   const pan='<14>Oct 15 00:03:21 PA-FW01 1,2026/10/15 00:03:21,012345678901,TRAFFIC,end,2561,2026/10/15 00:03:20,10.10.20.15,8.8.8.8,203.0.113.10,8.8.8.8,allow-web,,,ssl,vsys1,trust,untrust,ethernet1/1,ethernet1/2,forward-all,2026/10/15 00:03:21,123456,1,51234,443,45001,443,0x400000,tcp,allow,1480,720,760,12,2026/10/15 00:02:55,25,any,0,0x0,10.0.0.0-10.255.255.255,United States,,6,6,tcp-fin,0,0,0,0,,PA-FW01,from-policy';
   const parsedPan=runRuby("parserstudio_generic_structural",pan) as any;
   assert.deepEqual(parsedPan.syslog,{pri:"14",month:"Oct",day:"15",time:"00:03:21",hostname:"PA-FW01"});
-  assert.equal(parsedPan.generic.mode,"rfc3164_positional_csv");
+  assert.equal(parsedPan.generic.mode,"panos_traffic_csv");
   assert.equal(parsedPan.generic.source_raw,pan);
-  assert.equal(parsedPan.generic.columns.column_0,"1");
-  assert.equal(parsedPan.generic.columns.column_3,"TRAFFIC");
-  assert.equal(parsedPan.generic.columns.column_7,"10.10.20.15");
-  assert.equal(parsedPan.generic.columns.column_52,"from-policy");
+  assert.equal(parsedPan.generic.fields.domain,"1");
+  assert.equal(parsedPan.generic.fields.type,"TRAFFIC");
+  assert.equal(parsedPan.generic.fields.src,"10.10.20.15");
+  assert.equal(parsedPan.generic.fields.sport,"51234");
+  assert.equal(parsedPan.generic.fields.dport,"443");
+  assert.equal(parsedPan.generic.fields.action,"allow");
+  assert.equal(parsedPan.generic.fields.action_source,"from-policy");
 });
 
 test("Generic Structural V15 Ruby helper parses bounded BSD bracket-id messages",{skip:!rubyAvailable},()=>{

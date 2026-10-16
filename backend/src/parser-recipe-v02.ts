@@ -107,7 +107,7 @@ function expectedMappings(project:ParserProject):MapStage[]{
     data_type:rule.data_type,group});
   }
  }
- if(items.length<1||items.length>50)throw new Error("UNSUPPORTED_MAPPING_COUNT");
+ if(items.length<1||items.length>60)throw new Error("UNSUPPORTED_MAPPING_COUNT");
  return items;
 }
 function expectedEnrichment(project:ParserProject):EnrichmentStage[]{

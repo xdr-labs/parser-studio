@@ -739,6 +739,40 @@ def parserstudio_generic_rfc3164_delimited_comma_kv(text)
   {'syslog'=>syslog, 'generic'=>body['generic']}
 end
 
+def parserstudio_generic_panos_traffic_fields(values)
+  return nil unless values.length >= 53 && values[3].to_s == 'TRAFFIC'
+  values = values.map { |value| value.to_s }
+  datetime = /\A\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\z/
+  ip = /\A(?:\d{1,3}\.){3}\d{1,3}\z/
+  valid_ip = lambda { |value|
+    value.match?(ip) && value.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
+  rescue ArgumentError
+    false
+  }
+  return nil unless [1,6,21,35].all? { |index| values[index].to_s.match?(datetime) }
+  return nil unless [7,8,9,10].all? { |index| valid_ip.call(values[index].to_s) }
+  return nil unless [24,25,26,27].all? { |index|
+    value=values[index].to_s
+    value.match?(/\A\d{1,5}\z/) && Integer(value,10).between?(0,65_535)
+  }
+  return nil unless values[29].to_s.match?(/\A[A-Za-z0-9_.-]{1,24}\z/) &&
+    values[30].to_s.match?(/\A[A-Za-z0-9_. -]{1,64}\z/)
+  names=[
+    'domain','receive_time','serial','type','subtype','config_version','time_generated',
+    'src','dst','natsrc','natdst','rule','srcuser','dstuser','app','vsys','from','to',
+    'inbound_if','outbound_if','logset','time_received','sessionid','repeatcnt','sport',
+    'dport','natsport','natdport','flags','protocol','action','bytes','bytes_sent',
+    'bytes_received','packets','start_time','elapsed','category','seqno','actionflags',
+    'srcloc','dstloc','cpadding','pkts_sent','pkts_received','session_end_reason',
+    'dg_hier_level_1','dg_hier_level_2','dg_hier_level_3','dg_hier_level_4',
+    'vsys_name','device_name','action_source'
+  ]
+  names=names[0...38]+['padding']+names[38..-1] if values.length >= 54
+  fields={}
+  values.each_with_index { |value,index| fields[names[index] || "field_#{index}"] = value }
+  fields
+end
+
 def parserstudio_generic_rfc3164_positional_csv(text)
   return nil if text.bytesize > 8192
   head = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +/.match(text)
@@ -761,12 +795,16 @@ def parserstudio_generic_rfc3164_positional_csv(text)
   end
   category = /\A(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION)\z/
   return nil unless ips >= 2 && values.any? { |value| value.to_s.match?(category) }
+  values=values.map { |value| value.to_s }
+  panos=parserstudio_generic_panos_traffic_fields(values)
   columns={}
-  values.each_with_index { |value,index| columns["column_#{index}"] = value.to_s }
+  values.each_with_index { |value,index| columns["column_#{index}"] = value }
   syslog={'month'=>head[2],'day'=>head[3],'time'=>head[4],'hostname'=>head[5]}
   syslog['pri']=head[1] if head[1]
   {'syslog'=>syslog,
-   'generic'=>{'mode'=>'rfc3164_positional_csv','delimiter'=>',','source_raw'=>text,'columns'=>columns}}
+   'generic'=>panos ?
+     {'mode'=>'panos_traffic_csv','delimiter'=>',','source_raw'=>text,'fields'=>panos} :
+     {'mode'=>'rfc3164_positional_csv','delimiter'=>',','source_raw'=>text,'columns'=>columns}}
 end
 
 def parserstudio_generic_asa(text)

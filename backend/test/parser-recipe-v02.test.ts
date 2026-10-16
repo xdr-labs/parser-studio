@@ -36,6 +36,21 @@ function candidate(format:ParserProject['extraction']['format']='json'){
  return {recipe,legacyProject:project};
 }
 
+
+test('P0-AP3 bounded mapping budget keeps sixty source fields but rejects sixty-one',()=>{
+ const project=candidate('generic_structural').legacyProject;
+ project.normalization.topFields={};project.normalization.nsFields={};project.normalization.vendorFields={};
+ for(let i=0;i<60;i++)project.normalization.vendorFields['field_'+i]={
+  normalized_name:'field_'+i,data_type:'string',
+ };
+ project.classification.rules=[];
+ const recipe=recipeFromLegacyProject(project,'c'.repeat(64),1);
+ assert.equal(recipe.stages.filter(stage=>stage.op==='map_field').length,60);
+ assert.equal(validateRecipePair({recipe,legacyProject:project}).ok,true);
+ project.normalization.vendorFields.field_60={normalized_name:'field_60',data_type:'string'};
+ assert.throws(()=>recipeFromLegacyProject(project,'c'.repeat(64),1),/UNSUPPORTED_MAPPING_COUNT/);
+});
+
 test('P0-AP3 v0.2 compiles same native-qualified Ruby + CONF bytes for allowed families',()=>{
  for(const format of ['json','kv','csv','cef','leef','syslog_rfc5424','generic_structural'] as const){
   const input=candidate(format);
