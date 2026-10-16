@@ -861,7 +861,9 @@ export default function AutoParser({
            I Confirm These CSV Column Names
          </button>}
          <p role="status">{csvApproved?
-           'Field names are ready. Continue to Review Fields.':
+           (!browserExtractionComplete
+             ?'Temporary field names are approved, but the current parser rule has not reproduced every event. Review the highlighted events or test a separate rule; file generation remains blocked.'
+             :'Field names are ready. Continue to Review Fields.'):
            !csvConsistentShapeAvailable?
              'These rows need to be separated into matching positional shapes before one CSV parser can be created.':
            !neutralCsvColumnCount?
