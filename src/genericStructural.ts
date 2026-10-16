@@ -3,6 +3,7 @@ import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {unwrapSingleSyslogRecord} from './syslogFraming';
 import {extractVpcFlowStructural,parseVpcFlowLogV2} from './awsVpcFlow';
 import {extractAlbStructural,parseAlbAccessLog} from './awsAlbAccess';
+import {parseBindQueryMessage,parseCiscoIosMessage,parseCiscoIosSequenceSyslog,parseHttpAccessLog,parseLegacyOriginatorMessage,parseSquidAccessLog} from './commonSecurityProfiles';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -1015,6 +1016,51 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     return null;
   }
 
+  if(/^%[A-Z0-9_]+-\d-[A-Z0-9_]+:/.test(message)){
+    const cisco=parseCiscoIosMessage(message);
+    if(cisco)return {
+      syslog,
+      cisco_ios:{...cisco,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
+  if(envelope.appname?.toLowerCase()==='named'&&message.startsWith('client ')){
+    const bind=parseBindQueryMessage(message);
+    if(bind)return {
+      syslog,
+      bind_query:{...bind,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
+  if(['hostd','vpxd'].includes(envelope.appname?.toLowerCase()??'')&&message.startsWith('[Originator@')){
+    const originator=parseLegacyOriginatorMessage(message);
+    if(originator)return {
+      syslog,
+      legacy_originator:{...originator,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
+  const wrappedHttp=parseHttpAccessLog(message);
+  if(wrappedHttp?.http_access&&typeof wrappedHttp.http_access==='object'){
+    const generic=wrappedHttp.generic&&typeof wrappedHttp.generic==='object'
+      ? wrappedHttp.generic as Record<string,unknown>:{};
+    return {
+      syslog,
+      http_access:{...(wrappedHttp.http_access as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
+      generic:{...generic,mode:'syslog_envelope_'+String(generic.mode??'http_access'),source_raw:raw,message_raw:messageRaw},
+    };
+  }
+
+  const wrappedSquid=parseSquidAccessLog(message);
+  if(wrappedSquid?.squid_access&&typeof wrappedSquid.squid_access==='object')return {
+    syslog,
+    squid_access:{...(wrappedSquid.squid_access as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
+    generic:{mode:'syslog_envelope_squid_native_access',source_raw:raw,message_raw:messageRaw},
+  };
+
   const snort=snortAlertBody(message);
   if(snort)return {
     syslog,
@@ -1216,6 +1262,93 @@ function asa(raw:string):Record<string,unknown>|null{
   return {syslog,asa:fields};
 }
 
+function nestedRelayStructuredSyslog(raw:string):Record<string,unknown>|null{
+  const outer=parseSyslogEnvelope(raw);
+  if(!outer||!outer.message.startsWith('<'))return null;
+  const innerRaw=outer.message;
+  const innerEnvelope=parseSyslogEnvelope(innerRaw);
+  if(!innerEnvelope||innerEnvelope.message.startsWith('<'))return null;
+  const inner=syslogEnvelopeStructuredFallback(innerRaw);
+  if(!inner)return null;
+  const fields=JSON.parse(JSON.stringify(inner)) as Record<string,unknown>;
+  rewriteSyntheticSource(fields,innerRaw,raw);
+  if(!fields.syslog||typeof fields.syslog!=='object'||Array.isArray(fields.syslog))return null;
+  return {
+    ...fields,
+    relay:{
+      depth:1,
+      outer_syslog:envelopeToSyslogFields(outer),
+      outer_message_raw:innerRaw,
+      source_raw:raw,
+    },
+  };
+}
+
+function explicitHostlessBodyCandidate(message:string):boolean{
+  if(/^CEF:|^LEEF:|^@cee:|^\{|^</.test(message))return true;
+  if(/^%(?:ASA|FTD)-/.test(message)||/^RT_FLOW:/.test(message))return true;
+  if(looksLikePanosBody(message))return true;
+  if(parseVpcFlowLogV2(message)||parseAlbAccessLog(message)||zeekConnTsvBody(message))return true;
+  if(boundedXmlBody(message))return true;
+  for(const delimiter of ['\t','|',';']){
+    if(delimitedEqualsKvBody(message,delimiter))return true;
+  }
+  if(shortEnvelopeSpaceKvBody(message))return true;
+  const strictKv=strictKeyValues(message);
+  if(!strictKv.errors.length&&Object.keys(strictKv.fields).length>=3)return true;
+  return false;
+}
+
+function hostlessTimestampPrefix(raw:string):{pri:string;prefix:string;message:string}|null{
+  const pri=/^<(\d{1,3})>(.*)$/.exec(raw);
+  if(!pri)return null;
+  const rest=pri[2]!.trimStart();
+  const patterns=[
+    /^([A-Z][a-z]{2} +\d{1,2} +(?:\d{4} +)?\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?: +\d{4})?(?: +(?:Z|[+-]\d{2}:?\d{2}))?) +(.+)$/,
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?) +(.+)$/,
+    /^(\d{4}[-/]\d{2}[-/]\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?: +(?:Z|[+-]\d{2}:?\d{2}))?) +(.+)$/,
+    /^(\d{4}:\d{2}:\d{2}-\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(.+)$/,
+  ] as const;
+  for(const pattern of patterns){
+    const match=pattern.exec(rest);
+    if(match&&explicitHostlessBodyCandidate(match[2]!))
+      return {pri:pri[1]!,prefix:match[1]!,message:match[2]!};
+  }
+  return null;
+}
+
+function rewriteSyntheticSource(value:unknown,synthetic:string,original:string):void{
+  if(Array.isArray(value)){
+    value.forEach(item=>rewriteSyntheticSource(item,synthetic,original));return;
+  }
+  if(!value||typeof value!=='object')return;
+  const object=value as Record<string,unknown>;
+  for(const [key,item] of Object.entries(object)){
+    if(key==='source_raw'&&item===synthetic)object[key]=original;
+    else rewriteSyntheticSource(item,synthetic,original);
+  }
+}
+
+function hostlessStructuredSyslog(raw:string):Record<string,unknown>|null{
+  const candidate=hostlessTimestampPrefix(raw);
+  if(!candidate)return null;
+  const synthetic='<'+candidate.pri+'>'+candidate.prefix+' __HOSTLESS__ '+candidate.message;
+  const envelope=parseSyslogEnvelope(synthetic);
+  if(!envelope||envelope.hostname!=='__HOSTLESS__')return null;
+  const parsed=extractGenericStructuralUnframed(synthetic);
+  if(parsed.errors.length)return null;
+  const fields=JSON.parse(JSON.stringify(parsed.fields)) as Record<string,unknown>;
+  const syslog=fields.syslog;
+  if(!syslog||typeof syslog!=='object'||Array.isArray(syslog))return null;
+  delete (syslog as Record<string,unknown>).hostname;
+  (syslog as Record<string,unknown>).hostname_missing=true;
+  rewriteSyntheticSource(fields,synthetic,raw);
+  const generic=fields.generic;
+  if(generic&&typeof generic==='object'&&!Array.isArray(generic))
+    (generic as Record<string,unknown>).hostless_syslog=true;
+  return fields;
+}
+
 function knownVendorStructuredFailure(raw:string):boolean{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope)return false;
@@ -1230,9 +1363,12 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
+    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseSquidAccessLog(raw)??
     standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??extractVpcFlowStructural(raw)??extractAlbStructural(raw)??
-    syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
+    nestedRelayStructuredSyslog(raw)??hostlessStructuredSyslog(raw)??syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
   if(strict)return {fields:strict,errors:[]};
+  if(hostlessTimestampPrefix(raw))
+    return {fields:{},errors:['Hostless structured Syslog body failed strict validation']};
   if(knownVendorStructuredFailure(raw))
     return {fields:{},errors:['Known vendor structure failed strict validation']};
   const loose=commaKv(raw)??delimitedCommaKv(raw)??spaceKv(raw)??

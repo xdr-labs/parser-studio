@@ -652,3 +652,85 @@ The PoC has progressively replaced complete-line special cases with reusable bou
 `stream/file framing -> logical record -> envelope -> deterministic body grammar -> optional authoritative schema -> source refinement -> semantic mapping -> normalization`
 
 An important recurring acceptance rule is now explicit: a parser must not improve recall by silently weakening validation. When a known dialect is detected, strict validation failure must not fall through into an unrelated generic parser that would reclassify malformed input as success.
+
+## Expansion round 6 — relay tolerance, batch event breaking, and common security residuals
+
+Round 6 targeted two remaining classes of gaps: real-world transport/envelope deviations that could still cause false field boundaries, and common security/infrastructure log families that were not yet represented in the deterministic corpus.
+
+### Hostless structured Syslog
+
+A bounded hostless Syslog path now handles PRI + validated timestamp + a clearly structured body when the producer omitted HOSTNAME. This path never invents a hostname. Instead, the extracted Syslog metadata records `hostname_missing=true`.
+
+The hostless path is deliberately narrow:
+
+- the body must begin with a deterministic grammar such as CEF, LEEF, JSON, XML, PAN-OS positional CSV, validated KV, VPC Flow, ALB access, or Zeek TSV;
+- arbitrary free text is rejected;
+- one- or two-field ambiguous KV is rejected;
+- invalid timestamps and malformed known dialects are terminal failures;
+- arbitrary-prefix embedded JSON is not used for hostless detection, preventing a normal `hostname app: ... {json}` event from being reclassified as hostless.
+
+Testing found and corrected a real boundary error where a hostless year+KV event could previously treat the first `date=...` token as HOSTNAME.
+
+Focused evidence: 6 / 6 valid hostless variants PASS and 7 / 7 malformed or ambiguous variants rejected.
+
+### Bounded nested Syslog relay
+
+RFC3164 explicitly documents relay behavior in which a relay can prepend PRI/TIMESTAMP/HOSTNAME and treat the received packet as message content. The PoC therefore adds one bounded nested-envelope layer:
+
+`outer Syslog -> inner Syslog -> structured body`
+
+The inner source envelope remains the primary `syslog` object while the outer relay envelope is preserved separately under `relay.outer_syslog`. Only one nested layer is accepted; a second nested Syslog layer fails closed rather than recursing without a bound.
+
+Focused evidence: RFC3164-over-RFC3164 CEF, RFC3339-over-RFC5424 JSON, and RFC3164-over-RFC3339 KV PASS; malformed inner envelopes, malformed CEF, and double nesting are rejected.
+
+### JSON batch event breaking
+
+Single-event JSON remains object-only. File-level JSON batching is handled separately so arrays do not weaken the event parser.
+
+The batch breaker supports:
+
+- top-level arrays containing only JSON objects;
+- CloudTrail-style `Records` object arrays;
+- preservation of wrapper metadata separately from records;
+- bounded stream bytes, object count, object depth/nodes, key size, and string size.
+
+Mixed/scalar arrays, empty batches, malformed JSON, unknown wrapper-only arrays, and prototype-bearing source keys are rejected.
+
+### Common security source grammars
+
+A new bounded common-source layer covers the remaining representative formats in the Round-6 residual corpus:
+
+- Cisco IOS/IOS-XE sequence + BSD timestamp + `%FACILITY-SEVERITY-MNEMONIC` messages;
+- classic Cisco IOS message bodies behind a normal Syslog envelope;
+- Apache/Nginx common and combined access logs with IPv4/IPv6 clients;
+- Squid native access logs;
+- BIND query messages behind Syslog;
+- ESXi/VMware legacy `Originator@...` structured prefixes;
+- existing Generic Structural paths continue to cover Linux audit key/value records;
+- Suricata fast-format alerts continue to use the strict Snort-compatible alert grammar.
+
+The Cisco sequence PoC found a concrete validation defect: numeric timezone `+2500` was accepted. Numeric offsets are now range-checked consistently with the common Syslog timestamp layer.
+
+Round-6 residual corpus result: 15 / 15 structured, 0 failures.
+
+### Round-6 regression evidence
+
+- full repository unit suite: 122 / 122 test files PASS;
+- full repository assertions: 851 / 851 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- fixed 49-event security corpus remains 48 / 49 structured with zero malformed fixed-corpus acceptance;
+- hostless structured Syslog: 6 / 6 valid PASS, 7 / 7 invalid rejected;
+- one-level nested relay cases: PASS, malformed/double-nested cases rejected;
+- CloudTrail/JSON batch event breaker: PASS, invalid batch cases 10 / 10 rejected;
+- common-security residual corpus: 15 / 15 structured;
+- Cisco invalid sequence cases: 7 / 7 rejected;
+- previous Snort downgrade guard remains PASS after hostless logic was added.
+
+### Cumulative design direction after six rounds
+
+The strongest architecture continues to be:
+
+`stream/file framing -> event breaking -> logical record -> transport/envelope -> deterministic body grammar -> optional explicit schema -> source-specific refinement -> semantic mapping -> normalization`
+
+The recurring engineering rule is to widen coverage by adding a reusable boundary or grammar only when that boundary can be validated independently. Recall improvements that rely on guessing hostname, field meaning, or vendor semantics are not counted as parser improvements.
