@@ -17,7 +17,7 @@ import {checkNativeProjectVerificationAvailability,verifyNativeProject,
   NativeProjectVerificationUnavailable,type NativeProjectVerificationReport}
   from './nativeProjectVerificationClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
-import type {StructuralMiningReport} from './localPatternMining';
+import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
@@ -59,6 +59,10 @@ const STEPS=['Add Logs','Review Fields','Create Parser'] as const;
 type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
+type ParserSetOrigin={
+ source:string;datasetName:string;sourceCount:number;draft:ParserDraft;
+ fingerprint:string;groupCount:number;groupSource:string;
+};
 type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
  report?:NativeProjectVerificationReport;message:string};
 type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>};
@@ -128,6 +132,8 @@ export default function AutoParser({
  const [nativeAvailability,setNativeAvailability]=useState<'UNCHECKED'|'AVAILABLE'|'UNAVAILABLE'|'ERROR'>('UNCHECKED');
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
+ const [parserSetOrigin,setParserSetOrigin]=useState<ParserSetOrigin|null>(null);
+ const parserSetOriginRef=useRef<ParserSetOrigin|null>(null);
  const [drainAvailability,setDrainAvailability]=useState<'UNCHECKED'|'ERROR'|Drain3Availability>('UNCHECKED');
  const [drainConsent,setDrainConsent]=useState(false);
  const [drainHoldout,setDrainHoldout]=useState('');
@@ -266,6 +272,9 @@ export default function AutoParser({
  const currentNativeEvidence=nativeEvidence?.key===identity?nativeEvidence:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
+ const parserSetCandidates=currentStructural?.status==='CANDIDATES'?
+   currentStructural.groups.filter(group=>group.count>=3):[];
+ const parserSetCovered=parserSetCandidates.reduce((sum,group)=>sum+group.count,0);
  const currentDrain=drainResult?.key===identity&&
    drainResult.holdout===drainHoldout?drainResult.value:null;
  const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
@@ -537,6 +546,31 @@ export default function AutoParser({
        setMessage('Local structural grouping was unavailable; no source was uploaded.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
+ function useParserSetGroup(group:StructuralHint){
+   if(parserSetOrigin||busy||pending)return;
+   const selectedGroup=materializeStructuralGroupSource(sample,group);
+   if(!selectedGroup.ok){
+     setMessage(selectedGroup.reason==='HOLDOUT_REQUIRED'
+       ?'This structural group needs at least three events so a repair can use one training event and two independent holdouts.'
+       :'Parser Studio could not reproduce this structural group from the unchanged source. No logs were selected.');
+     return;
+   }
+   const origin:ParserSetOrigin={source:sample,datasetName,sourceCount:report.sourceCount,draft,
+     fingerprint:group.fingerprint,groupCount:selectedGroup.count,groupSource:selectedGroup.source};
+   parserSetOriginRef.current=origin;setParserSetOrigin(origin);
+   setSample(selectedGroup.source);
+   setDatasetName((datasetName||'Logs')+' · Parser Set group');
+   setStep(0);setSelected(0);setMultiPass(null);setMultiPassEvent(0);
+   setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
+ }
+ function restoreParserSetSource(){
+   const origin=parserSetOrigin??parserSetOriginRef.current;
+   if(!origin)return;
+   parserSetOriginRef.current=null;setParserSetOrigin(null);
+   setSample(origin.source);setDatasetName(origin.datasetName);
+   setDraft(origin.draft);setStep(0);setSelected(0);setMultiPass(null);setMultiPassEvent(0);
+   setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
+ }
  async function previewRecipe(){
    if(!suite||busy||pending)return;
    const token=++epoch.current,expected=identity;
@@ -612,11 +646,11 @@ export default function AutoParser({
    if(file.size>MAX_LOCAL_TEXT){setMessage('The selected file exceeds 64 KiB. Reduce the file first.');return;}
    try{
      const value=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());
-     setSample(value);setDatasetName(file.name);setSelected(0);setStep(0);
+     parserSetOriginRef.current=null;setParserSetOrigin(null);setSample(value);setDatasetName(file.name);setSelected(0);setStep(0);
    }catch{setMessage('Only bounded, valid UTF-8 text files can be opened locally.');}
  }
  function restoreExistingProject(next:ParserDraft,label:string){
-   setDraft(next);setSample('');setDatasetName(label);setSelected(0);setStep(0);
+   parserSetOriginRef.current=null;setParserSetOrigin(null);setDraft(next);setSample('');setDatasetName(label);setSelected(0);setStep(0);
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
@@ -666,6 +700,12 @@ export default function AutoParser({
  const currentMultiPassCounts=multiPassDerived.counts;
  const protectedSourceValuesByEvent=multiPassDerived.protectedValues;
  const protectedResidualTextByEvent=multiPassDerived.protectedResiduals;
+ useEffect(()=>{
+   if(advanced||parserSetOrigin||report.unsupported<3||!currentMultiPassReview||
+      currentStructural||busy||pending||!suite)return;
+   void mineUnknownShapes();
+ },[advanced,parserSetOrigin,report.unsupported,currentMultiPassReview,currentStructural,
+   busy,pending,suite,identity]);
  return <main className={'auto-parser-workspace '+(advanced?'advanced-mode':'beginner-mode')} aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
      <span className="pane-index">AUTO PARSER · BEGINNER MODE</span>
@@ -702,11 +742,23 @@ export default function AutoParser({
          </label>
          <small>{datasetName} · Maximum 64 KiB / 500 events</small>
        </div>
-         {csvOriginalSample!==null&&<button type="button" disabled={pending} onClick={()=>{setSample(csvOriginalSample);setCsvOriginalSample(null);setStep(0);setSelected(0);}}>Restore original CSV sample</button>}
+       {csvOriginalSample!==null&&<button type="button" disabled={pending} onClick={()=>{setSample(csvOriginalSample);setCsvOriginalSample(null);setStep(0);setSelected(0);}}>Restore original CSV sample</button>}
+       {parserSetOrigin&&<div className="auto-parser-note beginner-essential-note" aria-label="Parser Set group context">
+         <strong>Parser Set group · {parserSetOrigin.groupCount} events</strong>
+         <p>{parserSetOrigin.fingerprint}. This is an exact event subset of the original
+           {' '}{parserSetOrigin.sourceCount} logs. Run Analyze Logs and create a parser for
+           this shape only; Parser Studio will not merge the other shapes into this parser.</p>
+         <button type="button" onClick={restoreParserSetSource}>
+           Return to all {parserSetOrigin.sourceCount} logs
+         </button>
+       </div>}
        <textarea spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
          placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
-         value={sample} onChange={e=>{setSample(e.target.value);
-           setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
+         value={sample} onChange={e=>{const value=e.target.value;
+           if(parserSetOriginRef.current?.groupSource!==value){
+             parserSetOriginRef.current=null;setParserSetOrigin(null);
+           }
+           setSample(value);setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
        <div className="beginner-analyze-action">
          <button type="button" className="auto-parser-primary" disabled={!sample.trim()||multiPassBusy}
            onClick={()=>void previewMultiPass()}>
@@ -729,6 +781,26 @@ export default function AutoParser({
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
+       {!advanced&&!parserSetOrigin&&parserSetCandidates.length>0&&currentStructural&&
+         <div className="auto-parser-warning" aria-label="Parser Set candidates">
+           <strong>Multiple repeatable log shapes found</strong>
+           <p>Parser Studio grouped {parserSetCovered} of {currentStructural.unknownCount}
+             {' '}unresolved events into {parserSetCandidates.length} repeatable shape
+             {parserSetCandidates.length===1?'':'s'} with enough examples to test safely.
+             Analyze one group at a time instead of forcing one broad parser across different shapes.</p>
+           <div className="stellar-span-actions">
+             {parserSetCandidates.map((group,index)=><button type="button"
+               key={group.fingerprint} aria-label={'Analyze structural group '+(index+1)}
+               onClick={()=>useParserSetGroup(group)}>
+               Analyze {group.count}-event group · {group.fingerprint}
+             </button>)}
+           </div>
+           {currentStructural.unknownCount>parserSetCovered&&
+             <small>{currentStructural.unknownCount-parserSetCovered} unresolved event
+               {currentStructural.unknownCount-parserSetCovered===1?'':'s'} remain outside these
+               safe groups. Small or unique shapes are not auto-selected because verified recovery
+               needs one training example plus at least two independent holdouts.</small>}
+         </div>}
        {advanced&&<div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}

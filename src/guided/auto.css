@@ -96,7 +96,7 @@
 .beginner-mode [aria-label="Add Logs stage"]>.stellar-multipass-panel,
 .beginner-mode [aria-label="Add Logs stage"]>.auto-parser-ledger,
 .beginner-mode [aria-label="Add Logs stage"]>.stellar-ai-unrecognized,
-.beginner-mode [aria-label="Add Logs stage"]>.auto-parser-note,
+.beginner-mode [aria-label="Add Logs stage"]>.auto-parser-note:not(.beginner-essential-note),
 .beginner-mode [aria-label="Add Logs stage"]>[aria-label="Existing parser review and import"],
 .beginner-mode [aria-label="Add Logs stage"]>[aria-label="Local logical boundary review"],
 .beginner-mode [aria-label="Add Logs stage"]>[aria-label="Optional isolated Drain3 mining"],

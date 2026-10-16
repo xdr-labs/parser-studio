@@ -64,6 +64,58 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toBeVisible();
 });
 
+test('beginner mode offers reversible Parser Set groups for repeated unknown shapes',async({page})=>{
+ const groupA=[
+  'Jan 29 06:09:59 EVENT_ALPHA_LONG message repeated [100]: private one',
+  'Feb 12 13:12:33 EVENT_BETA_LONG message repeated [200]: private two',
+  'Mar 26 10:20:16 EVENT_GAMMA_LONG message repeated [300]: private three',
+ ];
+ const groupB=[
+  'Apr 24 00:25:25 host-a EVENT_DELTA_LONG: private four',
+  'May 08 07:27:59 host-b EVENT_EPSILON_LONG: private five',
+  'Jun 09 08:28:59 host-c EVENT_ZETA_LONG: private six',
+ ];
+ const source=[...groupA,...groupB].join('\n');
+ const rows=source.split('\n');let cursor=0;
+ const events=rows.map((event,index)=>{
+  const startByte=cursor,endByte=startByte+Buffer.byteLength(event);
+  cursor=endByte+(index<rows.length-1?1:0);
+  return {index,startByte,endByte,preview:{
+   contract:'parser-studio.multipass-source-preview.v0.1',status:'RAW_ONLY',
+   syntax:'BSD_SYSLOG+UNKNOWN',sourceSha256:sha(event),sourceBytes:Buffer.byteLength(event),
+   fields:{},spans:[],residuals:[{startByte:0,endByte:Buffer.byteLength(event)}],
+   issues:['UNSUPPORTED_BSD_BODY'],nativeVerified:false,targetVerified:false,
+  }};
+ });
+ const batch={
+  contract:'parser-studio.multipass-source-batch-preview.v0.1',
+  sourceSha256:sha(source),sourceBytes:Buffer.byteLength(source),eventCount:rows.length,
+  events,separators:events.slice(0,-1).map(event=>({
+   startByte:event.endByte,endByte:event.endByte+1,kind:'WHITESPACE',
+  })),nativeVerified:false,targetVerified:false,
+ };
+ await page.route('**/api/v1/multipass/preview-batch',route=>
+  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(batch)}));
+ await page.goto('/');
+ const input=page.getByLabel('Auto Parser raw logs');
+ await input.fill(source);
+ await page.getByRole('button',{name:'Analyze Logs'}).click();
+ const parserSet=page.getByLabel('Parser Set candidates');
+ await expect(parserSet).toBeVisible({timeout:10000});
+ await expect(parserSet).toContainText('6 of 6 unresolved events');
+ await expect(parserSet.getByRole('button')).toHaveCount(2);
+ await expect(parserSet.getByRole('button',{name:'Analyze structural group 1'})).toBeVisible();
+ await expect(parserSet.getByRole('button',{name:'Analyze structural group 2'})).toBeVisible();
+ await parserSet.getByRole('button',{name:'Analyze structural group 1'}).click();
+ const context=page.getByLabel('Parser Set group context');
+ await expect(context).toContainText('exact event subset of the original 6 logs');
+ const selected=await input.inputValue();
+ expect([groupA.join('\n'),groupB.join('\n')]).toContain(selected);
+ await context.getByRole('button',{name:'Return to all 6 logs'}).click();
+ await expect(input).toHaveValue(source);
+ await expect(page.getByLabel('Parser Set group context')).toHaveCount(0);
+});
+
 test('complete structured logs get a simple success result without technical status language',async({page})=>{
  const one=first+'\n'+first.replace('192.0.2.1','192.0.2.2');
  const a=first,b=first.replace('192.0.2.1','192.0.2.2');
