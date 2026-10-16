@@ -18,6 +18,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_watchguard_message(text)
   return result if result
+  result = parserstudio_generic_dual_timestamp_session(text)
+  return result if result
   result = parserstudio_generic_juniper_legacy(text)
   return result if result
   result = parserstudio_generic_junos_rfc5424_sd(text)
@@ -614,6 +616,29 @@ def parserstudio_generic_watchguard_message(text)
   {
     'watchguard_header'=>header,
     'watchguard_message'=>{'source_raw'=>text, 'msg_id'=>match[9], 'message'=>match[10]}
+  }
+rescue StandardError
+  nil
+end
+
+def parserstudio_generic_dual_timestamp_session(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)\z/.match(text)
+  return nil unless match
+  return nil unless parserstudio_generic_valid_bsd_clock(match[1], match[2], match[3])
+  begin
+    Time.iso8601(match[5])
+    Time.iso8601("#{match[8]}T#{match[9]}Z")
+  rescue StandardError
+    return nil
+  end
+  {
+    'syslog'=>{'month'=>match[1],'day'=>match[2],'time'=>match[3],
+      'hostname'=>match[4],'version'=>'1','timestamp'=>match[5],
+      'source'=>match[6],'app_tag'=>match[7]},
+    'session_envelope'=>{'source_raw'=>text,'event_date'=>match[8],
+      'event_time'=>match[9],'node'=>match[10],'client'=>match[11],
+      'identity'=>match[12],'message'=>match[13]}
   }
 rescue StandardError
   nil

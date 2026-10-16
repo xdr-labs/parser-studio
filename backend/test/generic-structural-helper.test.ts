@@ -60,6 +60,18 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
+test("Generic Structural V14 Ruby helper parses bounded dual timestamp session envelopes",{skip:!rubyAvailable},()=>{
+  const raw='Oct 19 09:11:55 edge-node 1 2026-10-19T09:11:55+02:00 192.0.2.3 SecureAccess: - - - 2026-10-19 09:11:55 - edge-node - [198.51.100.10] user.name(REALM)[ROLE] - Session established successfully';
+  const parsed=runRuby("parserstudio_generic_structural",raw) as any;
+  assert.equal(parsed.syslog.timestamp,"2026-10-19T09:11:55+02:00");
+  assert.equal(parsed.syslog.app_tag,"SecureAccess");
+  assert.equal(parsed.session_envelope.client,"198.51.100.10");
+  assert.equal(parsed.session_envelope.identity,"user.name(REALM)[ROLE]");
+  assert.equal(parsed.session_envelope.source_raw,raw);
+  assert.equal(runRuby("parserstudio_generic_dual_timestamp_session",raw.replace("Oct 19 09:11:55","Oct 32 09:11:55")),null);
+  assert.equal(runRuby("parserstudio_generic_dual_timestamp_session",raw.replace(" - - - "," - x - ")),null);
+});
+
 test("Generic Structural V13 Ruby helper parses bounded ISO PRI positional messages",{skip:!rubyAvailable},()=>{
   const raw='<134>2026-10-16 03:11:07.915 +0200 edge SYS APS INFO 19034 Num clients to walk : 0';
   const parsed=runRuby("parserstudio_generic_structural",raw) as any;
