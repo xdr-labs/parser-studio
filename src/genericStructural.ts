@@ -1,6 +1,7 @@
 import {extractStructuredFamily,strictKeyValues} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {unwrapSingleSyslogRecord} from './syslogFraming';
+import {extractVpcFlowStructural,parseVpcFlowLogV2} from './awsVpcFlow';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -1108,6 +1109,13 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     },
   };
 
+  const vpcFlow=parseVpcFlowLogV2(message);
+  if(vpcFlow)return {
+    syslog,
+    aws_vpc_flow:vpcFlow,
+    generic:{mode:'syslog_envelope_aws_vpc_flow_v2',source_raw:raw,message_raw:messageRaw},
+  };
+
   const shortKv=envelope.confidence==='partial'?null:shortEnvelopeSpaceKvBody(message);
   if(shortKv)return {
     syslog,
@@ -1214,7 +1222,7 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
-    standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??
+    standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??extractVpcFlowStructural(raw)??
     syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
   if(strict)return {fields:strict,errors:[]};
   if(knownVendorStructuredFailure(raw))

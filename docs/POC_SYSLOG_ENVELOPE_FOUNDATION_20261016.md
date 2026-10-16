@@ -554,3 +554,43 @@ F5 BIG-IP/ASM research in this round did not justify another vendor-specific par
 - Zeek schema handling now also consumes `#types`, `#path`, unset/empty markers, and bounded multi-row blocks; it no longer assumes that valid Zeek logs require six or more columns.
 - W3C/IIS schema handling now accepts the authoritative `#Fields:` list without an arbitrary minimum column count, matching the customizable W3C field selection model.
 - Final qualification after these schema changes remains 112 / 112 unit files and 818 / 818 assertions PASS, with typecheck and production build PASS.
+
+## Expansion round 4 — cloud telemetry and schema-driven delivery logs
+
+Round 4 extended the same source-preserving parser architecture to common cloud telemetry rather than adding cloud-vendor full-line regexes.
+
+### Added capabilities
+
+- AWS VPC Flow Log version 2 default field order as a bounded structural grammar;
+- IPv4 and IPv6 VPC endpoints;
+- ACCEPT/REJECT and OK/NODATA/SKIPDATA state validation;
+- timestamp ordering, protocol number, port, account ID, and ENI validation;
+- standalone VPC Flow records and records nested behind a validated Syslog envelope;
+- W3C schema mapping extended to tab-delimited rows so explicit CloudFront `#Fields:` schemas can be reused without guessing column meaning.
+
+The VPC parser preserves the documented source field names:
+
+`version, account-id, interface-id, srcaddr, dstaddr, srcport, dstport, protocol, packets, bytes, start, end, action, log-status`
+
+Values are not coerced into normalized semantics at this stage. The parser only validates the bounded source structure and preserves source values for later semantic mapping.
+
+### Round-4 evidence
+
+- AWS VPC Flow valid IPv4, IPv6, and NODATA records: PASS;
+- Syslog-wrapped VPC Flow record: PASS;
+- malformed VPC Flow cases: 10 / 10 rejected;
+- CloudFront-style 33-field W3C tab schema: PASS;
+- W3C tab row cardinality mismatch: rejected;
+- full repository unit suite after cloud expansion: 113 / 113 files PASS, 821 / 821 tests PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+### Cumulative architecture after four rounds
+
+The evidence now supports a parser pipeline that is broader than the original Generic Structural implementation while retaining fail-closed behavior:
+
+`stream framing -> logical record -> envelope -> deterministic body dialect -> optional explicit schema -> vendor/cloud source refinement -> semantic mapping -> normalization`
+
+Reusable structural grammars now cover Syslog, JSON, embedded JSON/CEE, XML, CEF, LEEF, multiple KV delimiters, positional CSV, Zeek TSV, W3C schema rows, Snort alerts, PAN-OS, ASA/FTD, Juniper RT_FLOW, WatchGuard, Check Point-style KV, RFC6587 streams, and AWS VPC Flow records.
+
+The remaining fixed-corpus free-text RFC5424 event is intentionally not counted as a structured extraction success because it contains no deterministic body structure to extract.

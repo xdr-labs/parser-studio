@@ -2,20 +2,21 @@ const UNSAFE_W3C_FIELDS=new Set(['__proto__','constructor','prototype']);
 
 export interface W3cSchema{
   fields:string[];
-  delimiter:'space';
+  delimiter:'space'|'tab';
 }
 
 function safeField(value:string):boolean{
   return /^[A-Za-z][A-Za-z0-9_.()\/-]{0,127}$/.test(value)&&!UNSAFE_W3C_FIELDS.has(value);
 }
 
-export function parseW3cFieldsHeader(raw:string):W3cSchema|null{
+export function parseW3cFieldsHeader(raw:string,delimiter:W3cSchema['delimiter']='space'):W3cSchema|null{
   if(!raw.startsWith('#Fields: ')||raw.includes('\0')||/[\r\n]/.test(raw))return null;
   if(new TextEncoder().encode(raw).byteLength>8192)return null;
   const fields=raw.slice(9).trim().split(/ +/);
   if(fields.length<1||fields.length>128||fields.some(field=>!safeField(field)))return null;
   if(new Set(fields).size!==fields.length)return null;
-  return {fields,delimiter:'space'};
+  if(delimiter!=='space'&&delimiter!=='tab')return null;
+  return {fields,delimiter};
 }
 
 function splitQuotedSpaceRow(raw:string):string[]|null{
@@ -42,9 +43,9 @@ function splitQuotedSpaceRow(raw:string):string[]|null{
 
 export function mapW3cRow(raw:string,schema:W3cSchema):Record<string,string>|null{
   if(raw.startsWith('#')||raw.includes('\0')||/[\r\n]/.test(raw)||new TextEncoder().encode(raw).byteLength>8192)return null;
-  if(schema.delimiter!=='space'||schema.fields.length<1||schema.fields.length>128||
+  if(!['space','tab'].includes(schema.delimiter)||schema.fields.length<1||schema.fields.length>128||
      schema.fields.some(field=>!safeField(field))||new Set(schema.fields).size!==schema.fields.length)return null;
-  const values=splitQuotedSpaceRow(raw);
+  const values=schema.delimiter==='tab'?raw.split('\t'):splitQuotedSpaceRow(raw);
   if(!values||values.length!==schema.fields.length)return null;
   const fields:Record<string,string>=Object.create(null);
   for(let index=0;index<schema.fields.length;index++){
