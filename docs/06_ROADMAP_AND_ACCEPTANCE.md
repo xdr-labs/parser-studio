@@ -350,14 +350,44 @@ This section is the current evidence-based continuation checkpoint. The original
 - Focused UI tests: 45/45 PASS for structural clustering/capabilities/extraction, followed by 5/5 PASS for distinct BSD host-label shape.
 - Focused backend tests: 17 PASS, 8 Ruby-runtime-dependent SKIP, 0 FAIL; missing Ruby runtime means native parity is not yet qualified.
 
-### Remaining acceptance work (ordered)
+### Owner scope override — exclude Stellar DP / sensor closure gates (2026-10-16)
 
-1. **R1 contract evidence:** reconcile actual owner-supplied parser artifacts and version-specific Stellar/native compatibility evidence. Do not infer compatibility from browser extraction.
-2. **R2 parser coverage:** measure Juniper Junos 100-event structural clusters and Pulse Connect Secure repeated shapes with independent holdouts and Funnel source-span/no-loss preservation. Only admit bounded Parser Set behavior if measured coverage improves without false-complete. Continue long-tail variants with explicit Auto-only / local-guided / ChatGPT-assisted / safe-abstention counters.
-3. **R2/R3 integrated candidate:** combine the qualified UI/backend/Funnel changes onto one reviewed candidate, test actual Chromium novice click/input flow through `Create Parser Files`, and validate artifact bytes and supported native Ruby execution.
-4. **R3 native and release evidence:** establish the pinned Ruby/Fluentd environment and exact-head native test results, record remaining optional skips and compatibility limitations.
-5. **R4 UX and safety:** repeat beginner recovery, mixed family, accessibility, performance and privacy regressions on that exact candidate. Preserve no-loss, protected spans, raw, and false-complete gates.
-6. **R5 acceptance:** browser scenarios, full novice/operator E2E, HEAD freeze, exact-head CI/provenance/public smoke, then separate owner acceptance before any merge/release/production change.
+The owner removed real Stellar target execution from Parser Studio product-completion criteria. The following are **out of this roadmap** and must not block product completion:
+
+- real Stellar DP parser upload/import/activation;
+- DP syslog/traffic/Interflow index readback as a product acceptance gate;
+- sensor packet send/receive verification;
+- sensor binding, target listener inventory or target-port reservation;
+- production/tenant target mutation.
+
+Those activities may be handled later as a separate target-integration project. Parser Studio continues to use the public Stellar metadata dictionary for normalization authoring and the pinned local Ruby/Fluentd environment for parser artifact verification.
+
+### Remaining product work after that scope change (ordered)
+
+1. **R1 — Long-tail parser closure (P0):**
+   - Juniper Junos: current recorded grouped-assisted recovery is 95/100. Resolve the residual 5 events only with bounded structural/Parser Set logic; otherwise classify them as explicit safe-abstention. Never force one broad Regex.
+   - Defender-style endpoint logs: source extraction is proven, but the compiler/generation gate still needs the same no-loss path to `Create Parser Files`.
+   - Cisco Umbrella Proxy quoted 23-column CSV: extraction/grouping works; close the remaining compiler reproduction gate for the homogeneous quoted shape.
+   - Pulse Connect Secure and Barracuda are no longer remaining roadmap items: their guided/local DRAFT paths were already demonstrated.
+
+2. **R2 — Large-batch beginner UX (P1):**
+   preserve the current accuracy-first behavior but improve perceived progress for large 100–400 event analyses; no timeout-based accuracy shortcuts. Keep source/no-loss, holdout and false-complete gates unchanged.
+
+3. **R3 — Owner visual acceptance (P0):**
+   owner reviews the deployed development UI, especially Review Fields → Map Fields → Create Parser, automatic official mapping suggestions, manual override/unmap, collision/type diagnostics and mobile readability. Fix only defects actually found in this review.
+
+4. **R4 — Closure / merge decision (owner gate):**
+   after R1–R3 are green, freeze the exact HEAD, retain exact-head CI evidence, then request separate owner approval for PR/merge/release. No DP/sensor work is part of this gate.
+
+### Already complete and not remaining
+
+- integrated Auto Parser + bounded Funnel/Generic Structural candidate;
+- official public Stellar 7.0.xs normalization catalog and mapping review UI;
+- 89 files / 663 unit tests PASS and production build PASS on the normalization candidate;
+- generic Chromium 50 PASS / 28 live-backend-gated SKIP / 0 FAIL;
+- security-family normalization E2E 8/8 PASS;
+- pinned backend live Chromium/HTTP integration 29/29 PASS;
+- final exact-head GitHub Actions run #38843728978 SUCCESS on `7f2015de6ead10ad5bdaa1641ae30c92ec9c822c`.
 
 ### Worktree preservation
 
@@ -367,12 +397,12 @@ Obsolete UI experimental worktrees were consolidated to the original main worktr
 
 Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retain the two top-level creation methods. Parsing and normalization must remain independently measurable; preserve original extracted values, and never infer target verification from browser previews.
 
-- [~] NORM-01: public-catalog portion complete — the 2026-10-16 implementation pins the official public Stellar Cyber 7.0.xs Metadata Dictionary by source URL and SHA-256, distinguishes scalar/non-scalar/ambiguous/reserved fields, and separates public-document catalog evidence from target runtime verification. **Still pending:** owner-authorized live target evidence for actual DP/import/index behavior before this item can close.
+- [x] NORM-01: official public Stellar Cyber 7.0.xs Metadata Dictionary is revision-pinned by source URL/SHA with scalar/non-scalar/ambiguous/reserved-field fail-closed behavior. Real target-runtime evidence is outside the revised product scope.
 - [x] NORM-02: deterministic, explainable field-name/value/type candidate engine with whole-sample confidence, abstention, collision protection, safe replacement of untouched generated custom defaults, and no silent remapping or original-value loss.
-- [x] NORM-03: dedicated beginner Map Fields stage shows source values, proposed official destinations, approval/override/unmap, searchable revision-pinned catalog, responsive/keyboard-accessible controls, and explicit public-doc versus runtime verification state.
-- [x] NORM-04: selected-event plus whole-sample raw/extracted/normalized comparison, changes-only view, type/timestamp/collision/missing-field and catalog diagnostics; mapping changes continue to revoke prior generated verification evidence through draft identity.
+- [x] NORM-03: dedicated beginner Map Fields stage shows source values, proposed official destinations, approval/override/unmap, searchable revision-pinned catalog, responsive/keyboard-accessible controls, and explicit catalog provenance.
+- [x] NORM-04: selected-event plus whole-sample raw/extracted/normalized comparison, changes-only view, type/timestamp/collision/missing-field and catalog diagnostics; mapping changes revoke prior generated verification evidence through draft identity.
 - [x] NORM-05: reviewed official and custom mappings persist in browser revision/portable draft and the existing backend adapter. Uncertain targets remain `custom.*`/vendor fields; no unverified 1:N target mapping was added, and bounded split/merge remains a separately reviewed enrichment contract.
-- [~] NORM-06: local native authoring portion complete — exact pinned backend `14385351d65c9732ba9c35cd8688b8c9f223a90d` passed 29/29 live Chromium/HTTP integration scenarios including Ruby/CONF DRAFT generation, SHA/ZIP verification, mixed security formats and fail-closed mapping collisions. **Still pending:** separately authorized real Stellar DP ingestion/index comparison with source/normalized output evidence.
-- [~] NORM-07: browser Full User E2E covers EDR/XDR/NDR/EPP/AWS CloudTrail/AWS WAF/IPS/VPN with 8/8 normalization journeys PASS. Latest local evidence: 89 files / 663 unit tests PASS; production build PASS; generic Chromium 50 PASS / 28 live-backend-gated SKIP / 0 FAIL; exact pinned live-backend suite 29/29 PASS. GitHub Actions quality run **#38843250893 SUCCESS** on exact code HEAD `f002ba672669db38e152645b14c97a5d18307c5c`, including unit/build/browser and pinned-backend integration. Final owner acceptance remains before closure.
+- [x] NORM-06: local native authoring/integration is complete for product scope — exact pinned backend `14385351d65c9732ba9c35cd8688b8c9f223a90d` passed 29/29 live Chromium/HTTP integration scenarios including Ruby/CONF DRAFT generation, SHA/ZIP verification, mixed security formats and fail-closed mapping collisions. DP/sensor execution is excluded by owner scope.
+- [x] NORM-07: browser Full User E2E covers EDR/XDR/NDR/EPP/AWS CloudTrail/AWS WAF/IPS/VPN with 8/8 normalization journeys PASS. Evidence: 89 files / 663 unit tests PASS; production build PASS; generic Chromium 50 PASS / 28 live-backend-gated SKIP / 0 FAIL; exact pinned live-backend suite 29/29 PASS; final exact-head GitHub Actions run **#38843728978 SUCCESS** on `7f2015de6ead10ad5bdaa1641ae30c92ec9c822c`.
 
-Implementation order NORM-02 conservative local preview foundation → NORM-03 → NORM-04 → NORM-01 official catalog qualification → NORM-05/06/07. No production/DP write or release without separate authorization.
+**P0-NORM engineering scope: COMPLETE.** Owner visual acceptance is tracked separately under R3; real Stellar DP/sensor execution is not part of this roadmap.
