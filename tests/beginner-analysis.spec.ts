@@ -266,6 +266,27 @@ test('comma-bearing ASA recovery clears stale CSV review and enables Review Fiel
  };
  await page.route('**/api/v1/multipass/preview',route=>
   route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
+ await page.route('**/api/v1/multipass/preview-batch',route=>{
+  const requested=(route.request().postDataJSON() as {raw:string}).raw;
+  const rows=requested.split('\n');let cursor=0;
+  const events=rows.map((event,index)=>{
+   const startByte=cursor,endByte=startByte+Buffer.byteLength(event);
+   cursor=endByte+(index<rows.length-1?1:0);
+   return {index,startByte,endByte,preview:{
+    ...response,sourceSha256:sha(event),sourceBytes:Buffer.byteLength(event),
+    fields:{asa:{product:'ASA',severity:'4',message_id:'106023',action:'Deny',
+      protocol:event.includes(' tcp ')?'tcp':'udp'}},
+    residuals:[{startByte:0,endByte:Buffer.byteLength(event)}],
+   }};
+  });
+  return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+   contract:'parser-studio.multipass-source-batch-preview.v0.1',
+   sourceSha256:sha(requested),sourceBytes:Buffer.byteLength(requested),eventCount:rows.length,
+   events,separators:events.slice(0,-1).map(event=>({
+    startByte:event.endByte,endByte:event.endByte+1,kind:'WHITESPACE',
+   })),nativeVerified:false,targetVerified:false,
+  })});
+ });
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
