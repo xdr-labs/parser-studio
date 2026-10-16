@@ -69,4 +69,27 @@ describe('automatic robustness variants',()=>{
       passed:false,reason:'OUTPUT_CHANGED',
     });
   });
+
+  it('still compares mapped fields named source_raw outside parserstudio_source',()=>{
+    const original=baseEvent('{"a":1,"b":2}','json',{a:1,b:2});
+    const variant=buildRobustnessVariants([original],createDraft())[0]!;
+    original.normalized={
+      vendor:{source_raw:'mapped-value'},
+      parserstudio_source:{source_raw:'original-source',message_raw:'original-message'},
+    };
+    const preservedRawOnlyChanged={...original,normalized:{
+      vendor:{source_raw:'mapped-value'},
+      parserstudio_source:{source_raw:'mutated-source',message_raw:'mutated-message'},
+    }};
+    expect(compareRobustnessOutcome(variant,original,preservedRawOnlyChanged)).toMatchObject({
+      passed:true,reason:'SAME_NORMALIZED_OUTPUT',
+    });
+    const mappedValueChanged={...preservedRawOnlyChanged,normalized:{
+      vendor:{source_raw:'different-mapped-value'},
+      parserstudio_source:{source_raw:'mutated-source',message_raw:'mutated-message'},
+    }};
+    expect(compareRobustnessOutcome(variant,original,mappedValueChanged)).toMatchObject({
+      passed:false,reason:'OUTPUT_CHANGED',
+    });
+  });
 });
