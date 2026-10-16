@@ -31,28 +31,28 @@ function Harness(){
 describe('normalization mapping review UI',()=>{
   it('bulk-applies only high-confidence official Stellar mappings and previews results',()=>{
     render(<Harness/>);
-    expect(screen.getByLabelText('Normalization mapping summary')).toHaveTextContent('Official mappings0');
-    const bulk=screen.getByRole('button',{name:/Apply 3 high-confidence suggestions/});
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Matched to Stellar0');
+    const bulk=screen.getByRole('button',{name:/Apply 3 recommended matches/});
     fireEvent.click(bulk);
-    expect(screen.getByLabelText('Normalization mapping summary')).toHaveTextContent('Official mappings3');
-    expect(screen.getByLabelText('Normalization validation')).toHaveTextContent('No local mapping issues detected');
-    expect(screen.getByLabelText('Normalization changes only')).toHaveTextContent('srcip');
-    expect(screen.getByLabelText('Normalization changes only')).toHaveTextContent('192.0.2.10');
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Matched to Stellar3');
+    expect(screen.getByLabelText('Field mapping checks')).toHaveTextContent('All current field mappings passed the sample checks');
+    expect(screen.getByLabelText('Field changes only')).toHaveTextContent('srcip');
+    expect(screen.getByLabelText('Field changes only')).toHaveTextContent('192.0.2.10');
   });
 
   it('blocks an unknown non-custom target and lets the user search the official catalog',()=>{
     render(<Harness/>);
-    const firstTarget=screen.getByLabelText('Normalized destination 0');
+    const firstTarget=screen.getByLabelText('Stellar field 0');
     fireEvent.change(firstTarget,{target:{value:'not_a_stellar_field'}});
-    expect(screen.getByLabelText('Normalization validation')).toHaveTextContent('UNVERIFIED_TARGET');
+    expect(screen.getByLabelText('Field mapping checks')).toHaveTextContent('This destination is not in the checked Stellar field list');
     expect(screen.getByRole('button',{name:'Create Parser'})).toBeDisabled();
 
-    fireEvent.click(screen.getAllByRole('button',{name:'Find Stellar field'})[0]!);
-    const search=screen.getByLabelText('Search Stellar metadata catalog');
+    fireEvent.click(screen.getAllByRole('button',{name:'Choose Stellar field'})[0]!);
+    const search=screen.getByLabelText('Search Stellar field list');
     fireEvent.change(search,{target:{value:'srcip'}});
-    const catalog=screen.getByLabelText('Search official Stellar metadata catalog');
+    const catalog=screen.getByLabelText('Stellar field chooser');
     expect(catalog).toHaveTextContent('srcip');
     fireEvent.click(catalog.getElementsByTagName('button')[1]!);
-    expect(screen.getByLabelText('Normalized destination 0')).toHaveValue('srcip');
+    expect(screen.getByLabelText('Stellar field 0')).toHaveValue('srcip');
   });
 });

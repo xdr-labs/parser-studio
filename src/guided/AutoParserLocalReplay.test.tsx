@@ -18,26 +18,26 @@ describe('Auto Parser local-only synthetic replay result',()=>{
     const {getByRole,getByLabelText,rerender,unmount}=render(
       <AutoParserLocalReplay sample={sample} draft={draft}/>);
     fireEvent.change(getByLabelText('Replay preview rate'),{target:{value:'10'}});
-    fireEvent.click(getByRole('button',{name:'Start Local Replay'}));
-    expect(getByRole('status').textContent).toContain('Running locally');
-    expect(getByRole('status').textContent).toContain('Source 1/2');
+    fireEvent.click(getByRole('button',{name:'Start Local Preview'}));
+    expect(getByRole('status').textContent).toContain('Preview running');
+    expect(getByRole('status').textContent).toContain('Based on source event 1/2');
     const text=getByLabelText('Local synthetic replay output').textContent??'';
     expect(text).toContain('example.test/replay/');
     expect(text).toContain('demo_user_');
     expect(text).not.toContain('10.0.0.4');
     expect(text).not.toContain('sensitive.internal.example');
     act(()=>vi.advanceTimersByTime(150));
-    expect(getByRole('status').textContent).toContain('Source 2/2');
-    expect(getByRole('status').textContent).toContain('Locally generated 2 events');
-    fireEvent.click(getByRole('button',{name:'Stop Local Replay'}));
+    expect(getByRole('status').textContent).toContain('Based on source event 2/2');
+    expect(getByRole('status').textContent).toContain('2 synthetic events generated locally');
+    fireEvent.click(getByRole('button',{name:'Stop Preview'}));
     expect(vi.getTimerCount()).toBe(0);
     act(()=>vi.advanceTimersByTime(500));
-    expect(getByRole('status').textContent).toContain('Locally generated 2 events');
-    fireEvent.click(getByRole('button',{name:'Start Local Replay'}));
+    expect(getByRole('status').textContent).toContain('2 synthetic events generated locally');
+    fireEvent.click(getByRole('button',{name:'Start Local Preview'}));
     expect(vi.getTimerCount()).toBe(1);
     rerender(<AutoParserLocalReplay sample={sample+'\n'+first} draft={draft}/>);
-    expect(getByRole('status').textContent).toContain('Locally generated 0 events');
-    expect(getByRole('status').textContent).toContain('Stopped');
+    expect(getByRole('status').textContent).toContain('0 synthetic events generated locally');
+    expect(getByRole('status').textContent).toContain('Preview stopped');
     expect(vi.getTimerCount()).toBe(0);
     unmount();
     expect(vi.getTimerCount()).toBe(0);
@@ -47,12 +47,12 @@ describe('Auto Parser local-only synthetic replay result',()=>{
     const draft=createDraft();draft.format='mixed';
     const {getByRole,getByLabelText,queryByLabelText}=render(
       <AutoParserLocalReplay sample={'action=deny\\nsrc_ip,action'} draft={draft}/>);
-    expect((getByRole('button',{name:'Start Local Replay'}) as HTMLButtonElement).disabled).toBe(true);
+    expect((getByRole('button',{name:'Start Local Preview'}) as HTMLButtonElement).disabled).toBe(true);
     expect((getByLabelText('Replay preview rate') as HTMLSelectElement).disabled).toBe(true);
     expect(getByLabelText('Local replay unsupported format notice').textContent)
-      .toContain('unavailable for this compiled mixed or multiline format');
+      .toContain('not available for mixed or multi-line parser formats');
     expect(getByLabelText('Local synthetic replay status').textContent)
-      .toContain('Sensor deliveries 0 events');
+      .toContain('Nothing sent');
     expect(queryByLabelText('Local synthetic replay output')).toBeNull();
   });
 
@@ -61,9 +61,9 @@ describe('Auto Parser local-only synthetic replay result',()=>{
     const draft=createDraft();draft.format='json';
     const {getByRole,queryByLabelText,unmount}=render(
       <AutoParserLocalReplay sample={'{"action":"allow"}\naction=deny'} draft={draft}/>);
-    fireEvent.click(getByRole('button',{name:'Start Local Replay'}));
+    fireEvent.click(getByRole('button',{name:'Start Local Preview'}));
     expect(getByRole('alert').textContent).toContain('Cannot start local replay');
-    expect(getByRole('status').textContent).toContain('Locally generated 0 events');
+    expect(getByRole('status').textContent).toContain('0 synthetic events generated locally');
     expect(queryByLabelText('Local synthetic replay output')).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
     unmount();

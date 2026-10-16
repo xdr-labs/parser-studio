@@ -14,7 +14,7 @@ test('Auto Parser reviews the CSV subset of a mixed structured sample without tr
      unsafePosts.push(req.url());
  });
  await page.goto('/');
- await expect(page.getByRole('complementary',{name:'Parser creation methods'}))
+ await expect(page.getByRole('complementary',{name:'Parser Studio navigation'}))
    .toHaveCount(1);
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
  await expect(page.getByRole('button',{name:/Wizard|Workbench|Expert Mode|Edit Details/i}))
@@ -38,4 +38,26 @@ test('Auto Parser reviews the CSV subset of a mixed structured sample without tr
  await expect(csv).toContainText('Field names are ready. Continue to Review Fields.');
  await expect(review).toBeEnabled();
  expect(unsafePosts).toEqual([]);
+});
+
+
+test('quoted CSV with equals signs inside URL fields remains one CSV family',async({page})=>{
+ const quoted=[
+  '"2026-10-16 00:00:00","host-a","https://example.test/path?ext_id=one","allow"',
+  '"2026-10-16 00:00:01","host-b","https://example.test/path?ext_id=two","deny"',
+  '"2026-10-16 00:00:02","host-c","https://example.test/path","allow"',
+ ].join('\n');
+ await page.goto('/');
+ await page.getByLabel('Auto Parser raw logs').fill(quoted);
+ await expect(page.getByLabel('Automatic event accounting'))
+   .toContainText('3/3 events analyzed locally');
+ const csv=page.getByLabel('Review CSV column names');
+ await expect(csv).toBeVisible();
+ await expect(csv).not.toContainText('CSV column review applies only to event');
+ await expect(csv).toContainText('4 consistent columns detected');
+ const keep=csv.getByRole('button',{name:'Keep all 4 values with temporary names'});
+ await expect(keep).toBeEnabled();
+ await keep.click();
+ await expect(csv).toContainText('Field names are ready. Continue to Review Fields.');
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });

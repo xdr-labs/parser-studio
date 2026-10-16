@@ -23,7 +23,7 @@ test('Advanced local Project JSON review restores exact draft and clears raw sam
   name:'parser-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project())),
  });
  const local=page.getByLabel('Offline Project JSON review');
- await expect(local).toContainText('EXACT PROJECT JSON · LOCAL REVIEW PASS');
+ await expect(local).toContainText('Project file checked · Ready to reopen');
  await expect(local).toContainText('Imported Synthetic Parser');
  await local.getByRole('button',{name:'Restore Reviewed Project into Auto Parser'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue('');
@@ -47,13 +47,13 @@ test('opaque Ruby CONF pair stays read-only and never echoes source code',async(
   })});
  });
  await page.goto('/');await page.getByRole('button',{name:'Advanced'}).click();await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
- await page.getByLabel('Existing Parser Ruby fragment').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
- await page.getByLabel('Existing Parser CONF file').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
+ await page.getByLabel('Existing parser logic file').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
+ await page.getByLabel('Existing parser listener configuration').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
  expect(posts).toBe(0);
  await page.getByRole('button',{name:'Inspect Pair Read-only'}).click();
  const review=page.getByLabel('Existing parser pair review');
- await expect(review).toContainText('OPAQUE_LEGACY_PAIR · READ-ONLY');
- await expect(review).toContainText('PAIR_NOT_REPRODUCIBLE');
+ await expect(review).toContainText('Existing parser is available for inspection only');
+ await expect(review).toContainText('Exact byte reproduction from a supported backend project was not established');
  await expect(review).not.toContainText('PRIVATE_BACKEND_TEXT');
  await expect(review).not.toContainText('STELLAR_PARSE_BEGIN');
  await expect(review.getByRole('button',{name:'Restore Exact Pair into Auto Parser'})).toHaveCount(0);
@@ -73,11 +73,12 @@ test('exact inspected pair requires explicit restore and clears current sample',
  });
  await page.goto('/');await page.getByRole('button',{name:'Advanced'}).click();await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();await page.getByLabel('Auto Parser raw logs').fill('{"private":"sample"}');
  const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
- await page.getByLabel('Existing Parser Ruby fragment').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
- await page.getByLabel('Existing Parser CONF file').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
+ await page.getByLabel('Existing parser logic file').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
+ await page.getByLabel('Existing parser listener configuration').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
  await page.getByRole('button',{name:'Inspect Pair Read-only'}).click();
  const review=page.getByLabel('Existing parser pair review');
- await expect(review).toContainText('EXACT_BACKEND_PAIR · EXACT RESTORE AVAILABLE');
+ await expect(review).toContainText('Existing parser can be reopened safely');
+ await expect(review).toContainText('Technical file checks');
  await review.getByRole('button',{name:'Restore Exact Pair into Auto Parser'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue('');
  await expect(page.getByText('Imported exact Ruby/CONF project · samples cleared',{exact:false})).toBeVisible();

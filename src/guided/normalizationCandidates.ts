@@ -1,5 +1,6 @@
 import type {MappingRule,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
+import {convertValue} from '../parser';
 import type {FieldGroup} from './contract';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 
@@ -21,18 +22,32 @@ export interface NormalizationCandidate {
 }
 
 const ALIASES:Record<string,string>={
-  src_ip:'srcip',source_ip:'srcip','source.ip':'srcip','source.address':'srcip',
-  client_ip:'srcip','client.ip':'srcip',sourceipaddress:'srcip','httprequest.clientip':'srcip',
-  dst_ip:'dstip',destination_ip:'dstip',dest_ip:'dstip','destination.ip':'dstip',
-  'destination.address':'dstip',server_ip:'dstip','server.ip':'dstip',
-  src_port:'srcport',source_port:'srcport','source.port':'srcport',client_port:'srcport',
-  dst_port:'dstport',destination_port:'dstport',dest_port:'dstport',
+  // Common vendor/CEF/LEEF source address spellings. Value/type evidence must
+  // still agree with the official Stellar destination before HIGH confidence.
+  src:'srcip',src_ip:'srcip',source_ip:'srcip',sourceip:'srcip',
+  sourceipaddress:'srcip',sourceaddress:'srcip',srcaddress:'srcip',
+  'source.ip':'srcip','source.address':'srcip','source.ipaddress':'srcip',
+  client_ip:'srcip',clientip:'srcip','client.ip':'srcip','client.ipaddress':'srcip',
+  'httprequest.clientip':'srcip',
+  'body.src':'srcip','body.src_ip':'srcip','body.source_ip':'srcip',
+  dst:'dstip',dst_ip:'dstip',destination_ip:'dstip',destinationip:'dstip',
+  dest_ip:'dstip',destip:'dstip',destinationaddress:'dstip',dstaddress:'dstip',
+  'destination.ip':'dstip','destination.address':'dstip','destination.ipaddress':'dstip',
+  server_ip:'dstip','server.ip':'dstip',
+  'body.dst':'dstip','body.dst_ip':'dstip','body.destination_ip':'dstip',
+  spt:'srcport',src_port:'srcport',source_port:'srcport',sourceport:'srcport',
+  srcport:'srcport','source.port':'srcport',client_port:'srcport',
+  'body.spt':'srcport','body.srcport':'srcport','body.src_port':'srcport',
+  dpt:'dstport',dst_port:'dstport',destination_port:'dstport',destinationport:'dstport',
+  dest_port:'dstport',destport:'dstport',dstport:'dstport',
   'destination.port':'dstport',server_port:'dstport',
-  event_action:'action','event.action':'action',
-  event_time:'timestamp','event.time':'timestamp','event.timestamp':'timestamp',
-  '@timestamp':'timestamp',
-  host_name:'hostname','host.name':'hostname',device_name:'hostname',
-  'device.hostname':'hostname',
+  'body.dpt':'dstport','body.dstport':'dstport','body.dst_port':'dstport',
+  act:'action',event_action:'action',eventaction:'action','event.action':'action',
+  'body.act':'action','body.action':'action',
+  event_time:'timestamp',eventtime:'timestamp','event.time':'timestamp','event.timestamp':'timestamp',
+  '@timestamp':'timestamp',syslog_timestamp:'timestamp',
+  host_name:'hostname',hostname:'hostname','host.name':'hostname',device_name:'hostname',
+  devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',
 };
 
 function overlaps(a:string,b:string):boolean{
@@ -43,16 +58,26 @@ function ignored(value:unknown):boolean{
 }
 export function valueFitsMappingType(type:MappingRule['type'],value:unknown):boolean{
   if(ignored(value))return true;
-  if(type==='string')return typeof value==='string'||typeof value==='number'||typeof value==='boolean';
-  if(type==='ip')return typeof value==='string'&&/^(?:\d{1,3}\.){3}\d{1,3}$/.test(value)&&
-    value.split('.').every(part=>Number(part)<=255);
-  if(type==='port')return /^\d+$/.test(String(value))&&Number(value)>=0&&Number(value)<=65535;
-  if(type==='integer')return /^-?\d+$/.test(String(value))&&Number.isSafeInteger(Number(value));
-  if(type==='number')return String(value).trim()!==''&&Number.isFinite(Number(value));
-  if(type==='boolean')return typeof value==='boolean'||['true','false'].includes(String(value).toLowerCase());
-  if(type==='timestamp')return typeof value==='string'&&/^\d{4}-\d\d-\d\d[T ]/.test(value)&&
-    Number.isFinite(Date.parse(value));
-  return false;
+  // Candidate confidence and whole-sample validation must use the same type
+  // semantics as the actual browser/runtime normalization path. This keeps
+  // IPv6 and explicit-timezone timestamps from diverging.
+  return convertValue(value,type).error===undefined;
+}
+export function valueFitsNormalizationTarget(
+  target:string,type:MappingRule['type'],value:unknown,
+):boolean{
+  if(ignored(value))return true;
+  // Stellar documents L4 ports as integer fields, but their semantic range
+  // remains 0..65535. Keep the documented target type while applying the
+  // stricter field constraint before a HIGH-confidence mapping is offered.
+  if(target==='srcport'||target==='dstport')
+    return convertValue(value,'port').error===undefined;
+  if(target==='severity'){
+    const converted=convertValue(value,'integer');
+    return converted.error===undefined&&typeof converted.value==='number'&&
+      converted.value>=0&&converted.value<=100;
+  }
+  return valueFitsMappingType(type,value);
 }
 function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[]):NormalizationCandidate|null{
   const exact=findStellarMetadataField(source);
@@ -65,7 +90,8 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   if(existing.some(rule=>rule.id!==current?.id&&overlaps(rule.target,target)))return null;
   const values=events.map(fields=>lookupFieldValue(fields,source)).filter(result=>result.found);
   if(values.length===0)return null;
-  const compatible=values.filter(result=>result.found&&valueFitsMappingType(catalog.mappingType!,result.value)).length;
+  const compatible=values.filter(result=>result.found&&
+    valueFitsNormalizationTarget(target,catalog.mappingType!,result.value)).length;
   const method:NormalizationCandidate['method']=target===source?'EXACT_DICTIONARY_NAME':'DOCUMENTED_ALIAS';
   const high=compatible===values.length;
   const defaultGenerated=new Map([

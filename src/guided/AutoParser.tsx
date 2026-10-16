@@ -19,6 +19,7 @@ import {checkNativeProjectVerificationAvailability,verifyNativeProject,
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
 import NormalizationMappingReview from './NormalizationMappingReview';
+import {HelpTip,StageGuide} from './BeginnerHelp';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
@@ -53,10 +54,16 @@ interface Props {
  activeSession:ApprovedTestLabStatus|null;
  onSessionUpdate:(next:ApprovedTestLabStatus|null)=>void;
  onChatGPT:()=>void;
- advanced:boolean;onAdvancedChange:(value:boolean)=>void;
+ advanced:boolean;
 }
 const MAX_LOCAL_TEXT=64*1024;
 const STEPS=['Add Logs','Review Fields','Map Fields','Create Parser'] as const;
+const STEP_HELP=[
+  'Paste or upload representative logs, then let Parser Studio find the structure and fields.',
+  'Check that Parser Studio found the values you expect. You do not need to understand parser syntax.',
+  'Match the fields that were found to Stellar Cyber field names. High-confidence matches can be applied together.',
+  'Test every sample again and create downloadable parser files. Nothing is deployed automatically.',
+] as const;
 type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
@@ -79,14 +86,24 @@ const readable:Record<string,string>={
  SOURCE_CHANGED:'The log source changed. Review the current events again.',
  MIXED_OR_UNKNOWN:'The sample contains an unsupported family combination, malformed, or unrecognized events. Only explicitly allowed one-line JSON/KV/CEF/LEEF can share a parser; no log line will be discarded.',
  BOUNDARY_REVIEW:'The record boundaries are ambiguous. Review explicit event framing or use ChatGPT Assisted Parser.',
- COMPILER_UNSUPPORTED:'The backend cannot safely compile the detected envelope and body.',
- COLUMNS_REQUIRED:'CSV requires named columns; use ChatGPT Assisted Parser if the format cannot be recognized.',
- BACKEND_UNAVAILABLE:'The local backend capabilities are unavailable. No parser is generated.',
- BACKEND_UNTRUSTED:'The backend returned an untrusted capability or verification claim.',
+ COMPILER_UNSUPPORTED:'Parser Studio can read this log, but it cannot safely create parser files for this structure yet. Review the detected fields or use ChatGPT Assisted Parser.',
+ COLUMNS_REQUIRED:'These positional values need field names before parser files can be created. Keep temporary names if you do not know the meanings yet.',
+ BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
+ BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
  MODEL_REVIEW_REQUIRED:'Review the detected field mappings on this screen before generating.',
 };
 function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
+function friendlyEventStatus(status:string){
+ return status==='pass'?'Ready':status==='warning'?'Check details':'Needs attention';
+}
+function sourceAnalysisLabel(status:string){
+  if(status==='SOURCE_PARSED')return 'Fields found';
+  if(status==='PARTIAL')return 'Needs review';
+  if(status==='RAW_ONLY')return 'Not yet understood';
+  if(status==='STRUCTURED_EMPTY')return 'Structure found, no fields yet';
+  return 'Needs review';
+}
 function backendReviewMessage(error:unknown){
  const detail=error instanceof Error?error.message:'';
  if(/HTTP|request failed|fetch|network|unavailable/i.test(detail))
@@ -97,9 +114,11 @@ function backendReviewMessage(error:unknown){
 }
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,activeSession,onSessionUpdate,onChatGPT,advanced,onAdvancedChange,
+ runPreview,activeSession,onSessionUpdate,onChatGPT,advanced,
 }:Props){
  const [step,setStep]=useState<0|1|2|3>(0);
+ const [furthestStep,setFurthestStep]=useState<0|1|2|3>(0);
+ const [navigationHint,setNavigationHint]=useState('');
  const [selected,setSelected]=useState(0);
  const [multiPass,setMultiPass]=useState<MultiPassReview|null>(null);
  const [multiPassNotice,setMultiPassNotice]=useState('');
@@ -164,6 +183,7 @@ export default function AutoParser({
    setSaveAfterApproval(false);
    setBusy(false);setMessage('');
  },[identity]);
+ useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
  // A local suggestion only: explicit source-framing confirmation is required.
  // Never promote arbitrary newline grouping or silently rewrite edited mappings.
  const javaFramedCandidate=useMemo(()=>{
@@ -265,6 +285,20 @@ export default function AutoParser({
      nativeVerified:false as const,targetVerified:false as const,
    }:localAssessment;
  const currentReview=reviewed?.source===sample?reviewed:null;
+ function navigateToStep(target:0|1|2|3){
+   if(target===0){setNavigationHint('');setStep(0);return;}
+   if(!currentReview){
+     setNavigationHint('Start with Add Logs. Analyze the sample and review the detected fields before moving to later steps.');
+     setStep(0);return;
+   }
+   if(target===3&&furthestStep<3){
+     setNavigationHint('Review the Stellar field mappings first. Parser Studio moved you to Map Fields instead of skipping the required review.');
+     setFurthestStep(old=>Math.max(old,2) as 0|1|2|3);setStep(2);return;
+   }
+   setNavigationHint('');
+   setFurthestStep(old=>Math.max(old,target) as 0|1|2|3);
+   setStep(target);
+ }
  const currentPair=pair?.key===identity?pair.value:null;
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
@@ -337,7 +371,7 @@ export default function AutoParser({
        }
        assertBackendProjectSupported(translated.project,cap);
        setReviewed({source:sample,mappingCount:draft.mappings.length,requiresApproval:false});
-       setStep(1);setSelected(0);return;
+       setFurthestStep(1);setStep(1);setSelected(0);return;
      }
      const baseline=assessEnvelopeCompilation(report,cap);
      const compiler=csvReviewActive&&csvApproved&&report.families.length===1&&
@@ -351,7 +385,7 @@ export default function AutoParser({
        source:sample,mappingCount:next.automaticMappingCount,
        requiresApproval:next.requiresApproval,
      });
-     setStep(1);setSelected(0);
+     setFurthestStep(1);setStep(1);setSelected(0);
    }catch(error){
      if(token===epoch.current)setMessage(backendReviewMessage(error));
    }finally{if(token===epoch.current)setBusy(false);}
@@ -669,7 +703,7 @@ export default function AutoParser({
      startByte:0,endByte:new TextEncoder().encode(original).byteLength,preview:result,
     }]});
    }
-  }catch{setMultiPassNotice('Local Multi-Pass service unavailable or untrusted. Browser preview remains separate.');}
+  }catch{setMultiPassNotice('Deeper local analysis is unavailable right now. Your logs were not changed; continue with the normal analysis or try again later.');}
   finally{setMultiPassBusy(false);}
  }
  const multiPassDerived=useMemo(()=>{
@@ -709,33 +743,43 @@ export default function AutoParser({
    busy,pending,suite,identity]);
  return <main className={'auto-parser-workspace '+(advanced?'advanced-mode':'beginner-mode')} aria-label="Auto Parser v2">
    <header className="auto-parser-intro">
-     <span className="pane-index">AUTO PARSER · BEGINNER MODE</span>
-     <h1>Paste security logs. Parser Studio will show what works and what needs fixing.</h1>
-     <p>You do not need to know JSON, CEF, Regex, Grok or Ruby. Start with representative
-       logs, run one analysis, then follow the fix shown beside any unresolved event.</p>
+     <span className="pane-index">AUTO PARSER · GUIDED MODE</span>
+     <h1>Paste security logs. Parser Studio will guide you to a parser step by step.</h1>
+     <p>You do not need to know parser formats or write code. Start with a few representative
+       logs, use the main button on each screen, and Parser Studio will tell you when something needs review.</p>
      <div className="auto-parser-links">
-       <button type="button" aria-pressed={advanced} onClick={()=>onAdvancedChange(!advanced)}>
-         {advanced?'Return to Beginner Mode':'Advanced'}
-       </button>
-       <button type="button" onClick={onChatGPT}>Ask ChatGPT for Help</button>
+       <button type="button" onClick={onChatGPT}>Ask ChatGPT about an unfamiliar log</button>
+       <HelpTip label="ChatGPT help"
+         text="Use this when Parser Studio shows that part of a log still needs help. Review the proposed fix before applying it."/>
      </div>
    </header>
    <nav aria-label="Auto Parser steps" className="auto-parser-steps">
-     {STEPS.map((label,index)=><button type="button" key={label}
-       aria-current={index===step?'step':undefined}
-       disabled={index>0&&!currentReview}
-       className={index===step?'active':''}
-       onClick={()=>setStep(index as 0|1|2|3)}>
-       <span>{index+1}</span>{label}
-     </button>)}
+     {STEPS.map((label,index)=>{
+       const locked=index>furthestStep;
+       return <button type="button" key={label}
+         aria-current={index===step?'step':undefined}
+         aria-label={locked?label+' — locked until the current step is finished':undefined}
+         title={locked?'Click to see what must be completed first.':STEP_HELP[index]}
+         className={(index===step?'active ':'')+(locked?'locked':'')}
+         onClick={()=>navigateToStep(index as 0|1|2|3)}>
+         <span>{index+1}</span><span className="step-copy">{label}
+           {locked&&<small className="step-lock">Next after current step</small>}</span>
+       </button>;
+     })}
    </nav>
+   {navigationHint&&<p className="beginner-navigation-hint" role="status">{navigationHint}</p>}
    <div className="auto-parser-body">
      {step===0&&<section aria-label="Add Logs stage">
-       <h2>Add Logs</h2>
-       <p>Paste or upload a few representative security events. You do not need to identify
-         the format first. Analysis starts only when you press <b>Analyze Logs</b>.</p>
+       <h2>Add Logs <HelpTip label="Add Logs"
+         text="Use logs from the same product and event family when possible. Two or more examples help Parser Studio tell changing values from fixed text."/></h2>
+       <StageGuide title="Start here">
+         Paste or upload representative logs, then click Analyze Logs. Do not choose a format or write a parsing rule first.
+       </StageGuide>
+       <p>Paste or upload a few representative security events. Parser Studio will try to identify
+         the structure and fields for you. Nothing changes until you press <b>Analyze Logs</b>.</p>
        <div className="auto-parser-source-toolbar">
-         <label>Local UTF-8 file
+         <label>Upload a log file <HelpTip label="Upload a log file"
+           text="Optional. Use this instead of paste when you already have a small text, log, JSON, or CSV sample. The file is read into this browser session."/>
            <input type="file" aria-label="Auto Parser file upload"
              accept=".txt,.log,.json,.csv,text/plain"
              onChange={e=>{const file=e.currentTarget.files?.[0];
@@ -743,11 +787,12 @@ export default function AutoParser({
          </label>
          <small>{datasetName} · Maximum 64 KiB / 500 events</small>
        </div>
-       {parserSetOrigin&&<div className="auto-parser-note beginner-essential-note" aria-label="Parser Set group context">
-         <strong>Parser Set group · {parserSetOrigin.groupCount} events</strong>
-         <p>{parserSetOrigin.fingerprint}. This is an exact event subset of the original
-           {' '}{parserSetOrigin.sourceCount} logs. Run Analyze Logs and create a parser for
-           this shape only; Parser Studio will not merge the other shapes into this parser.</p>
+       {parserSetOrigin&&<div className="auto-parser-note beginner-essential-note" aria-label="Separate log group context">
+         <strong>Working on one matching log group · {parserSetOrigin.groupCount} events
+           <HelpTip label="Why is this a separate group?"
+             text="These events repeat the same basic structure. Parser Studio separated them so a parser for one shape does not accidentally break different-looking events."/></strong>
+         <p>This is an exact subset of the original {parserSetOrigin.sourceCount} logs.
+           Analyze this group and create its parser separately; the other log shapes remain unchanged.</p>
          <button type="button" onClick={restoreParserSetSource}>
            Return to all {parserSetOrigin.sourceCount} logs
          </button>
@@ -767,7 +812,7 @@ export default function AutoParser({
          <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
        </div>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
-         Parser Studio could not complete local analysis. Your source was preserved. Open Advanced only if you need diagnostic details.
+         Parser Studio could not complete local analysis. Your source was preserved. Open troubleshooting tools only if you need more diagnostic detail.
        </p>}
        {currentMultiPassReview&&<BeginnerAnalysisPanel source={sample}
          events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
@@ -782,49 +827,63 @@ export default function AutoParser({
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
        {!advanced&&!parserSetOrigin&&parserSetCandidates.length>0&&currentStructural&&
-         <div className="auto-parser-warning" aria-label="Parser Set candidates">
-           <strong>Multiple repeatable log shapes found</strong>
-           <p>Parser Studio grouped {parserSetCovered} of {currentStructural.unknownCount}
-             {' '}unresolved events into {parserSetCandidates.length} repeatable shape
-             {parserSetCandidates.length===1?'':'s'} with enough examples to test safely.
-             Analyze one group at a time instead of forcing one broad parser across different shapes.</p>
+         <div className="auto-parser-warning" aria-label="Similar log groups">
+           <strong>Different log shapes were found
+             <HelpTip label="Why are there multiple groups?"
+               text="Some products send several different-looking event types. Parser Studio keeps those shapes separate instead of forcing one rule to fit everything."/></strong>
+           <p>Parser Studio found {parserSetCandidates.length} repeatable group
+             {parserSetCandidates.length===1?'':'s'} covering {parserSetCovered} of {currentStructural.unknownCount}
+             {' '}events that still need help. Work on one group at a time.</p>
            <div className="stellar-span-actions">
              {parserSetCandidates.map((group,index)=><button type="button"
                key={group.fingerprint} aria-label={'Analyze structural group '+(index+1)}
                onClick={()=>useParserSetGroup(group)}>
-               Analyze {group.count}-event group · {group.fingerprint}
+               Analyze group {index+1} · {group.count} similar events
              </button>)}
            </div>
            {currentStructural.unknownCount>parserSetCovered&&
-             <small>{currentStructural.unknownCount-parserSetCovered} unresolved event
-               {currentStructural.unknownCount-parserSetCovered===1?'':'s'} remain outside these
-               safe groups. Small or unique shapes are not auto-selected because verified recovery
-               needs one training example plus at least two independent holdouts.</small>}
+             <small>{currentStructural.unknownCount-parserSetCovered} event
+               {currentStructural.unknownCount-parserSetCovered===1?'':'s'} do not have enough similar examples yet.
+               Parser Studio leaves them for separate review instead of guessing.</small>}
          </div>}
-       {advanced&&<div className="stellar-multipass-panel" aria-label="Local Multi-Pass source engine">
+       {advanced&&<div className="beginner-tools-intro" aria-label="Troubleshooting tools guidance">
+         <strong>Troubleshooting tools</strong>
+         <p>Most users can ignore everything in this section. Use a tool only when the normal Analyze Logs result tells you that a log still needs help. Opening a tool does not change your parser automatically.</p>
+       </div>}
+       {advanced&&<div className="stellar-multipass-panel" aria-label="Deeper local log analysis">
+         <div className="beginner-tool-summary">
+           <strong>Deeper local log analysis</strong>
+           <HelpTip label="Deeper local log analysis"
+             text="Use this only when normal analysis cannot fully identify a difficult log. It tries additional local parsing paths and shows which values were recognized. It does not install or certify a parser."/>
+         </div>
+         <span className="beginner-tool-when">Use when: Analyze Logs says one or more events still need review.</span>
          <button type="button" disabled={!sample.trim()||multiPassBusy} onClick={()=>void previewMultiPass()}>
-           {multiPassBusy?'Running local Multi-Pass…':'Run Local Multi-Pass Source Preview'}
+           {multiPassBusy?'Running deeper analysis…':'Re-analyze difficult logs'}
          </button>
-         <small>Explicit local request only · Source extraction, not native Ruby/CONF verification</small>
+         <small>This checks only the sample on this development server. It does not deploy anything or prove that final parser files work on a live Stellar system.</small>
          {multiPassNotice&&<p role="status">{multiPassNotice}</p>}
-         {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Multi-Pass event accounting">
-           <strong>{currentMultiPassReview.events.length} event{currentMultiPassReview.events.length===1?'':'s'} framed losslessly</strong>
-           <span>{currentMultiPassCounts.SOURCE_PARSED??0} source parsed · {currentMultiPassCounts.PARTIAL??0} partial · {currentMultiPassCounts.RAW_ONLY??0} raw only · {currentMultiPassCounts.STRUCTURED_EMPTY??0} structured empty</span>
-           <span>Source extraction only · Native parser and Stellar target NOT VERIFIED</span>
-           {currentMultiPassReview.events.length>1&&<label>Review a framed event
-             <select aria-label="Multi-Pass review event" value={multiPassEvent}
+         {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Detailed event accounting">
+           <strong>{currentMultiPassReview.events.length} event{currentMultiPassReview.events.length===1?'':'s'} checked without dropping source text</strong>
+           <span>{currentMultiPassCounts.SOURCE_PARSED??0} fields found · {currentMultiPassCounts.PARTIAL??0} need review · {currentMultiPassCounts.RAW_ONLY??0} not yet understood · {currentMultiPassCounts.STRUCTURED_EMPTY??0} structure only</span>
+           <span>Diagnostic check only · final parser files are tested later</span>
+           {currentMultiPassReview.events.length>1&&<label>Choose an event to inspect
+             <select aria-label="Detailed analysis event" value={multiPassEvent}
                onChange={e=>{setMultiPassEvent(Number(e.target.value));setSelectedMultiPass(null);}}>
                {currentMultiPassReview.events.map((event,index)=><option key={index} value={index}>
-                 Event {index+1} · {event.preview.status} · {event.preview.syntax}
+                 Event {index+1} · {sourceAnalysisLabel(event.preview.status)}
                </option>)}
              </select>
            </label>}
-           {currentMultiPassFrame&&<small>Selected source bytes {currentMultiPassFrame.startByte}–{currentMultiPassFrame.endByte} · correction chips below use event-local UTF-8 byte offsets.</small>}
          </div>}
          {currentMultiPass&&<div role="status">
-           <strong>{currentMultiPass.status} · {currentMultiPass.syntax}</strong>
-           <p>Extracted fields and source byte spans are shown below. Residuals remain available for AI correction.</p>
+           <strong>{sourceAnalysisLabel(currentMultiPass.status)}</strong>
+           <p>These are the values Parser Studio found in the selected event. Click a highlighted value only when you want to correct it.</p>
            <pre>{JSON.stringify(currentMultiPass.fields,null,2)}</pre>
+           <details className="beginner-technical-details">
+             <summary>Technical detection details</summary>
+             <code>{currentMultiPass.status} · {currentMultiPass.syntax}</code>
+             {currentMultiPassFrame&&<small>Source byte range {currentMultiPassFrame.startByte}–{currentMultiPassFrame.endByte}. Internal correction ranges use UTF-8 byte offsets.</small>}
+           </details>
            {currentMultiPass.redaction&&<div className="stellar-redaction-review" aria-label="Visible masking and redaction assessment">
              <strong>Visible redaction review · {currentMultiPass.redaction.explicitMaskOccurrences} explicit marker{currentMultiPass.redaction.explicitMaskOccurrences===1?'':'s'}</strong>
              <p>{currentMultiPass.redaction.assessment==='EXPLICIT_VISIBLE_MASKS'
@@ -840,32 +899,40 @@ export default function AutoParser({
              </div>}
              <small>{currentMultiPass.redaction.unassessedVisibleOccurrences} other visible source occurrence{currentMultiPass.redaction.unassessedVisibleOccurrences===1?'':'s'} remain unassessed · Source extraction preserved · Hidden-value reconstruction OFF</small>
            </div>}
-           {currentMultiPass.dictionary&&<div className="stellar-dictionary-review" aria-label="Stellar Dictionary normalization suggestions">
-             <strong>Stellar Dictionary review · {currentMultiPass.dictionary.mapped.length} mapped · {currentMultiPass.dictionary.unmappedCount} preserved unmapped</strong>
-             <p>Authoritative exact-name or standardized CEF guidance only. No source values are copied into this metadata, no generic aliases are inferred, and unmapped vendor fields remain unchanged.</p>
+           {currentMultiPass.dictionary&&<div className="stellar-dictionary-review" aria-label="Stellar field name suggestions">
+             <strong>Suggested Stellar Cyber field names · {currentMultiPass.dictionary.mapped.length} found · {currentMultiPass.dictionary.unmappedCount} kept unchanged
+               <HelpTip label="Suggested Stellar field names"
+                 text="This compares field names with Stellar Cyber's published metadata list. A suggestion changes only the destination name; the original source value is preserved."/></strong>
+             <p>Only documented field names or known standard aliases are shown here. Fields without a safe match stay unchanged for later review.</p>
              <div className="stellar-dictionary-grid">{currentMultiPass.dictionary.mapped.map((item,i)=><span key={i}>
-               <b>{item.sourcePath}</b> → {item.targetField} <small>{item.documentedType} · {item.mappingClass==='CEF_STANDARD_ALIAS'?'CEF standard alias':'Exact Dictionary name'} · bytes {item.startByte}–{item.endByte}</small>
+               <b>{item.sourcePath}</b> → {item.targetField} <small>{item.documentedType}</small>
              </span>)}</div>
              {!!currentMultiPass.dictionary.issues.length&&<small>{currentMultiPass.dictionary.issues.join(' · ')}</small>}
-             <small>Evidence {currentMultiPass.dictionary.dictionaryRevision} · Review only · Source extraction preserved · Native parser and Stellar target NOT VERIFIED</small>
+             <details className="beginner-technical-details"><summary>Technical field-list evidence</summary>
+               <small>{currentMultiPass.dictionary.dictionaryRevision} · source values preserved · live target not tested</small>
+             </details>
            </div>}
-           {currentMultiPassHighlights?.ok&&<div className="stellar-source-map" aria-label="Multi-Pass source highlights">
+           {currentMultiPassHighlights?.ok&&<div className="stellar-source-map" aria-label="Highlighted source values">
              {currentMultiPassHighlights.segments.map((segment,i)=>segment.kind==='plain'?
                <span key={i}>{segment.text}</span>:
                <button type="button" key={i}
                  className={'stellar-source-segment '+segment.kind+(selectedMultiPass?.startByte===segment.selection.startByte&&selectedMultiPass.endByte===segment.selection.endByte?' selected':'')}
-                 aria-label={segment.kind==='field'?`Correct extracted field ${segment.selection.path} bytes ${segment.selection.startByte}-${segment.selection.endByte}`:`Improve unparsed bytes ${segment.selection.startByte}-${segment.selection.endByte}`}
+                 aria-label={segment.kind==='field'
+                   ?`Correct extracted field ${segment.selection.path}`
+                   :segment.text.trim()
+                     ?`Review unparsed text: ${segment.text.trim().slice(0,36)}`
+                     :'Review unparsed whitespace'}
                  onClick={()=>setSelectedMultiPass(segment.selection)}>{segment.text}</button>)}</div>}
            {currentMultiPassHighlights&&!currentMultiPassHighlights.ok&&<p className="auto-parser-warning">
-             Exact source highlighting is unavailable because the engine returned ambiguous byte ranges. No source selection was accepted.</p>}
+             Parser Studio cannot highlight the exact text safely for this event, so no correction target was selected.</p>}
            <div className="stellar-span-actions">{currentMultiPass.spans.filter(span=>span.endByte>span.startByte).map((span,i)=><button type="button" key={'f'+i} className="stellar-span-chip"
              onClick={()=>{const item=currentMultiPassHighlights?.ok?currentMultiPassHighlights.selectable.find(x=>x.kind==='field'&&x.path===span.path&&x.startByte===span.startByte&&x.endByte===span.endByte):undefined;if(item)setSelectedMultiPass(item);}}>
-             Correct {span.path} [{span.startByte}–{span.endByte}]</button>)}</div>
+             Correct field: {span.path}</button>)}</div>
            <div className="stellar-span-actions">{currentMultiPass.residuals.map((span,i)=><button type="button" key={'r'+i}
              className="stellar-residual-chip" onClick={()=>{const item=currentMultiPassHighlights?.ok?currentMultiPassHighlights.selectable.find(x=>x.kind==='residual'&&x.startByte===span.startByte&&x.endByte===span.endByte):undefined;if(item)setSelectedMultiPass(item);}}>
-             Improve Unparsed [{span.startByte}–{span.endByte}]</button>)}</div>
+             Review unparsed text</button>)}</div>
            {selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<div className="stellar-selected-source" role="status">
-             {selectedMultiPass.kind==='field'?`Selected extracted field: ${selectedMultiPass.path}`:'Selected unparsed source region'} · UTF-8 bytes {selectedMultiPass.startByte}–{selectedMultiPass.endByte}
+             {selectedMultiPass.kind==='field'?`Selected field: ${selectedMultiPass.path}`:'Selected text that was not parsed'}
            </div>}
            {advanced&&selectedMultiPass&&currentMultiPass.status!=='RAW_ONLY'&&<AutoParserAIReview raw={currentMultiPassRaw} status="partial" onChatGPT={onChatGPT}
              initialByteRange={selectedMultiPass} selectionContext={{kind:selectedMultiPass.kind,path:selectedMultiPass.path}}
@@ -879,20 +946,28 @@ export default function AutoParser({
 
          </div>}
        </div>}
-       <div className="auto-parser-ledger" aria-label="Automatic event accounting">
-         <strong>{report.accounted}/{report.sourceCount} events analyzed locally</strong>
-         <span>{report.unsupported} require review · Native parser NOT VERIFIED</span>
-         {report.families.map(x=><span key={x.envelope+'/'+x.body}>
+       {report.status==='SOURCE_LIMIT'&&<div className="auto-parser-warning" role="alert"
+         aria-label="Auto Parser sample limit">
+         <ShieldAlert size={16}/>
+         <div><strong>Sample limit exceeded</strong>
+           <p>Use at most 500 logical events and 64 KiB in one analysis. Split this sample into smaller representative batches; Parser Studio will not silently drop the extra events.</p>
+         </div>
+       </div>}
+       {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
+         <strong>{report.accounted}/{report.sourceCount} events checked</strong>
+         <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally</span>
+         <span>{report.unsupported} event{report.unsupported===1?'':'s'} need attention · Local analysis only</span>
+         {advanced&&report.families.map(x=><span key={x.envelope+'/'+x.body}>
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
-       </div>
+       </div>}
        {csvReviewActive&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
          <strong>{csvConsistentShapeAvailable
-           ?'Positional values found — choose field names'
-           :'Positional rows have different column counts'}</strong>
+           ?'Values found, but this log does not include field names'
+           :'These rows contain different numbers of values'}</strong>
          <p>{csvConsistentShapeAvailable
-           ?'Parser Studio extracted the values, but these rows do not contain trustworthy field names. Keep temporary names now or enter names you know, then choose the data separator. Parser Studio will test every CSV row before generating files.'
-           :'Parser Studio extracted source values, but the CSV rows do not share one consistent column count using comma, semicolon or tab. One column list cannot safely parse all of them. Analyze matching CSV row shapes separately before creating a parser.'}</p>
+           ?'Parser Studio found each value but cannot safely guess what the columns mean. The safest choice is to keep every value with temporary names, then rename or map them after you confirm the meaning.'
+           :'The rows do not all have the same number of values. One parser would shift values into the wrong fields, so Parser Studio asks you to handle matching row shapes separately.'}</p>
          {csvReviewEventNumbers.length>0&&csvReviewEventNumbers.length<report.sourceCount&&
            <p className="auto-parser-note" role="note">
              CSV column review applies only to event {formatCsvEventNumbers(csvReviewEventNumbers)}.
@@ -908,7 +983,8 @@ export default function AutoParser({
                <p><b>Not safe CSV:</b> event {formatCsvEventNumbers(csvSelectedShapeInspection.invalidEventNumbers)} could not be tokenized with this separator and needs separate review.</p>}
              <p>Use these event numbers to make one parser sample per matching row shape. No source event is discarded automatically.</p>
            </div>}
-         <label>Column names, separated by commas
+         <label>Names to give each value <HelpTip label="Names to give each value"
+           text="These names describe the values from left to right. If you do not know what they mean yet, use the temporary-name button instead of guessing."/>
            <input aria-label="Reviewed CSV column names" value={draft.csvColumns}
              maxLength={4096}
              onChange={e=>setDraft(old=>({...old,csvColumns:e.target.value}))}/>
@@ -922,7 +998,8 @@ export default function AutoParser({
              Keep all {neutralCsvColumnCount} values with temporary names
            </button>
          </div>}
-         <label>Separator in your CSV rows
+         <label>Character between the values <HelpTip label="Character between the values"
+           text="Choose the character that separates one value from the next in each row. Comma is most common; some products use semicolon or tab."/>
            <select aria-label="Reviewed CSV data separator"
              value={draft.csvDelimiter??','}
              onChange={e=>setDraft(old=>({...old,
@@ -949,13 +1026,14 @@ export default function AutoParser({
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">
-         <strong>Java exception stack traces detected locally</strong>
-         <p>Only supported when the sender transmits complete bounded Java
-           exceptions via TCP, each followed by LF LF (an empty line).
-           This is not automatic stream reassembly. Confirm the transport
-           contract before generating a DRAFT parser.</p>
-         <button type="button" onClick={adoptFramedJava}>
-           I Confirm TCP Java Events Are Separated by LF LF
+         <strong>These look like Java error stack traces</strong>
+         <p>Parser Studio can handle this sample when each complete error is separated from the next one by a blank line.
+           Confirm that your real log sender uses the same boundary before continuing.
+           <HelpTip label="Blank-line event boundary"
+             text="Technically, the sender must deliver complete events over TCP with two line-feed characters between events. Parser Studio will not guess where a partial stream should be split."/></p>
+         <button type="button" aria-label="I Confirm TCP Java Events Are Separated by LF LF"
+           onClick={adoptFramedJava}>
+           I Confirm Each Java Error Is Separated by a Blank Line
          </button>
        </div>}
        {advanced&&sample.trim()&&report.unsupported>0&&<div className="stellar-ai-unrecognized" aria-label="Unsupported log AI fallback">
@@ -965,18 +1043,20 @@ export default function AutoParser({
            protectedSourceValuesByEvent={protectedSourceValuesByEvent}
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>
        </div>}
-       <p className="auto-parser-note">Unknown, malformed, unsupported RFC3164 variants and multiline events
-         cannot be silently dropped or marked compiler-ready.</p>
+       {report.unsupported>0&&<p className="auto-parser-note beginner-essential-note">
+         Some events could not be understood safely. Parser Studio keeps those events unchanged and will not let you continue until they are reviewed.
+         <HelpTip label="Why are some events blocked?"
+           text="Security logs can contain unusual headers, broken timestamps, several lines per event, or vendor-specific text. Parser Studio stops instead of guessing when that could lose data or create the wrong fields."/>
+       </p>}
        <ExistingParserReviewPanel onRestore={restoreExistingProject}/>
-       <details className="auto-parser-recipe" aria-label="Local logical boundary review">
-         <summary>Optional · Review multiline log boundaries (browser only)</summary>
-         <p>Preview potential multiline JSON objects and Java stack traces using
-           physical source line numbers. Every nonempty line is accounted for;
-           no observed log values, stack frames or JSON fields are returned.
-           This review alone does not configure a Fluentd multiline event
-           breaker, change input or enable native parser generation.
-           Only the separate explicitly confirmed TCP LF LF Java subset can
-           create a reviewed Native-capable DRAFT parser.</p>
+       <details className="auto-parser-recipe" aria-label="Multi-line event boundary tool">
+         <summary className="beginner-tool-summary">Check where multi-line events begin and end
+           <HelpTip label="Multi-line event help"
+             text="Use this when one security event is spread across several lines, such as a Java stack trace or formatted JSON. Skip it when each log event is already on one line."/>
+         </summary>
+         <span className="beginner-tool-when">Use when: Analyze Logs says event boundaries are unclear, or your sample visibly spans several lines per event.</span>
+         <p>This check groups physical lines into possible events without changing your source.
+           It is a review aid only; it does not create or install a parser by itself.</p>
          <button type="button" disabled={!sample.trim()||busy||pending}
            onClick={()=>setLogicalReview({
              key:identity,value:reviewLogicalBoundaries(sample)
@@ -985,9 +1065,8 @@ export default function AutoParser({
            <strong>{currentLogicalReview.status} ·
              {currentLogicalReview.accountedNonEmptyLines}/{currentLogicalReview.nonEmptyLines}
              nonempty physical lines accounted</strong>
-           <span>{currentLogicalReview.multilineEventCount} candidate multiline events ·
-             {currentLogicalReview.ambiguousCount} unresolved boundaries ·
-             Native and DP target NOT VERIFIED</span>
+           <span>{currentLogicalReview.multilineEventCount} possible multi-line event{currentLogicalReview.multilineEventCount===1?'':'s'} ·
+             {currentLogicalReview.ambiguousCount} still need review · This check does not test a live Stellar system</span>
            {currentLogicalReview.groups.slice(0,12).map((group,i)=><span key={i}>
              Lines {group.firstLine}–{group.lastLine} ·
              {group.kind} · {group.status}
@@ -997,29 +1076,27 @@ export default function AutoParser({
              included in source accounting
            </span>}
            {currentLogicalReview.status!=='NO_MULTILINE'&&<span>
-             Logical boundary analysis alone cannot qualify a native parser.
-             Only separately reviewed TCP LF LF Java or JSON source framing
-             can be compiled into a DRAFT parser.
+             Review the proposed event boundaries before continuing. This check only helps Parser Studio decide which lines belong to the same event.
            </span>}
          </div>}
        </details>
-       <details className="auto-parser-recipe" aria-label="Optional isolated Drain3 mining">
-         <summary>Optional · Real Drain3 pattern mining (private backend)</summary>
-         <p>Unlike the browser-only structural hints, this optional feature transfers
-           your selected raw training and holdout records to a separately authenticated,
-           same-origin private Parser Studio backend. No external LLM, vendor service,
-           automatic parser edit, storage or DP deployment is involved.
-           You must separately confirm consent. Review the source before sending.</p>
+       <details className="auto-parser-recipe" aria-label="Private text grouping tool">
+         <summary className="beginner-tool-summary">Group similar text logs
+           <HelpTip label="Group similar text logs"
+             text="Use this when you have many free-form text logs that look similar but Parser Studio cannot find stable fields. The private service groups repeated text shapes so you can decide whether they should share one parser."/>
+         </summary>
+         <span className="beginner-tool-when">Use when: many unresolved text logs repeat the same general shape. Skip it for JSON, key/value, CEF, LEEF, or other logs that already parse cleanly.</span>
+         <p>This optional tool can send only the sample you approve to your private Parser Studio analysis service.
+           It does not send data to an external AI service, edit your parser automatically, or deploy anything.</p>
          <button type="button" disabled={busy||pending}
            onClick={()=>{void probeDrain3();}}>
-           Check Private Drain3 Availability (No Sample Transfer)
+           Check whether private grouping is available
          </button>
          {drainAvailability==='DISABLED'&&<p role="status">
-           Private Drain3 is disabled or not authorized. Browser-only structural hints
-           remain available without raw log transfer.
+           Private text grouping is not available. You can continue using the normal local analysis.
          </p>}
          {drainAvailability==='ERROR'&&<p role="status">
-           The private backend returned an unverified Drain3 capability.
+           Parser Studio could not verify the private grouping service. No sample was sent.
          </p>}
          {drainAvailability==='AVAILABLE'&&<>
            <label className="auto-parser-persist-label">
@@ -1028,11 +1105,12 @@ export default function AutoParser({
                  setDrainConsent(e.target.checked);
                  setDrainResult(null);setDrainNotice('');
                }}/>
-             I explicitly approve sending my current raw log sample and optional
-             holdout to this private same-origin backend for one-time Drain3 analysis.
+             I approve sending this sample to my private Parser Studio service for this one grouping check.
            </label>
-           <label>Optional independent holdout log lines (not used for training)
-             <textarea aria-label="Drain3 independent holdout logs" rows={3}
+           <label>Optional different examples for a second check
+             <HelpTip label="Different examples"
+               text="Paste a few different logs from the same source. Parser Studio uses them only to see whether the discovered text groups also fit examples that were not used to form the groups."/>
+             <textarea aria-label="Different example logs" rows={3}
                spellCheck={false} maxLength={MAX_LOCAL_TEXT}
                value={drainHoldout}
                onChange={e=>{
@@ -1043,49 +1121,52 @@ export default function AutoParser({
            <button type="button" disabled={!drainConsent||busy||pending||
              !sample.trim()||!suite}
              onClick={()=>{void runApprovedDrain3();}}>
-             Analyze with Approved Private Drain3
+             Group Similar Logs
            </button>
          </>}
          {drainNotice&&<p role="status">{drainNotice}</p>}
-         {currentDrain&&<div role="status" aria-label="Verified private Drain3 review">
-           <strong>{currentDrain.engine} · REVIEW ONLY ·
-             {currentDrain.accounted}/{currentDrain.sourceCount} events accounted</strong>
-           <span>{currentDrain.groupCount} clusters ·
-             {currentDrain.holdoutMatched}/{currentDrain.holdoutCount} independent
-             holdout records matched (user-selected, independence not verified)</span>
-           {currentDrain.groups.map(group=><span key={group.clusterId}>
-             {group.clusterId}: {group.shape} ·
-             {group.trainingCount} training records ·
-             {group.holdoutMatches} holdout matches
+         {currentDrain&&<div role="status" aria-label="Private text grouping results">
+           <strong>{currentDrain.accounted}/{currentDrain.sourceCount} events checked · {currentDrain.groupCount} similar-text group{currentDrain.groupCount===1?'':'s'}</strong>
+           <span>{currentDrain.holdoutMatched}/{currentDrain.holdoutCount} different example{currentDrain.holdoutCount===1?'':'s'} matched the discovered groups</span>
+           {currentDrain.groups.map((group,index)=><span key={group.clusterId}>
+             Group {index+1}: {group.trainingCount} sample event{group.trainingCount===1?'':'s'} ·
+             {group.holdoutMatches} different example match{group.holdoutMatches===1?'':'es'}
            </span>)}
-           <span>No raw fields returned · No native parser or DP target verification</span>
+           <span>This is a grouping hint only. Review the groups before using them to create parser rules.</span>
+           <details><summary>Technical details</summary><span>{currentDrain.engine}</span></details>
          </div>}
        </details>
-       <details className="auto-parser-recipe" aria-label="Public synthetic parser fingerprints">
-         <summary>Optional · Match familiar log patterns</summary>
-         <p>Compare all event field names against reviewed public-synthetic starter shapes.
-           Results are local hints only: no log values leave the browser, no template is
-           automatically applied, and no native parser compatibility is implied.</p>
+       <details className="auto-parser-recipe" aria-label="Known log shape matcher">
+         <summary className="beginner-tool-summary">Find a similar known log shape
+           <HelpTip label="Find a similar known log shape"
+             text="Use this when you are unsure what kind of log you pasted. Parser Studio compares field names and structure with safe built-in examples. It never applies a parser automatically."/>
+         </summary>
+         <span className="beginner-tool-when">Use when: the log looks unfamiliar and normal analysis has not given you a clear next step.</span>
+         <p>This check compares only the shape and field names with reviewed example patterns.
+           It does not send log values anywhere and does not change your parser.</p>
          <button type="button" disabled={busy||pending||!suite}
-           onClick={findKnownTemplates}>Find Reviewed Pattern Hints</button>
+           onClick={findKnownTemplates}>Find Similar Known Shapes</button>
          <button type="button" disabled={busy||pending||!suite}
-           onClick={()=>{void mineUnknownShapes();}}>Group Unknown Text Locally</button>
-         {currentStructural&&<div role="status" aria-label="Local structural hints">
-           <strong>{currentStructural.unknownCount} unknown events ·
-             {currentStructural.groupedCount} grouped · Browser worker only</strong>
+           onClick={()=>{void mineUnknownShapes();}}>Group Similar Unknown Shapes</button>
+         {currentStructural&&<div role="status" aria-label="Similar-shape grouping results">
+           <strong>{currentStructural.unknownCount} unfamiliar event{currentStructural.unknownCount===1?'':'s'} ·
+             {currentStructural.groupedCount} placed into similar-shape groups</strong>
            {currentStructural.groups.map((group,i)=><span key={i}>
-             {group.count} events · {group.fingerprint} · REVIEW ONLY
+             Group {i+1}: {group.count} event{group.count===1?'':'s'}
            </span>)}
-           <span>Structural hints are not regex expressions or native parsers.</span>
+           <span>These groups are suggestions only. No parser rule was created or applied automatically.</span>
+           <details><summary>Technical shape identifiers</summary>
+             {currentStructural.groups.map((group,i)=><span key={i}>{group.fingerprint}</span>)}
+           </details>
          </div>}
-         {currentFingerprints&&<div role="status" aria-label="Reviewed pattern hints">
-           <strong>{currentFingerprints.status} · {currentFingerprints.sourceCount} original events</strong>
+         {currentFingerprints&&<div role="status" aria-label="Known shape comparison results">
+           <strong>{currentFingerprints.sourceCount} event{currentFingerprints.sourceCount===1?'':'s'} compared with known examples</strong>
            {currentFingerprints.hints.length===0&&
-             <span>No safe single-family public-synthetic pattern was matched.</span>}
+             <span>No close known shape was found. Nothing was changed.</span>}
            {currentFingerprints.hints.map(hint=><span key={hint.id}>
-             {hint.label}: {hint.matchedFieldCount}/{hint.expectedFieldCount} required fields
-             consistently seen · Review only, not automatically applied
+             Similar to {hint.label}: {hint.matchedFieldCount}/{hint.expectedFieldCount} expected field names were present consistently
            </span>)}
+           <span>Use this only as a clue about the log family; review the actual extracted fields before continuing.</span>
          </div>}
        </details>
        {!advanced&&sample.trim()&&!currentMultiPassReview&&
@@ -1100,8 +1181,12 @@ export default function AutoParser({
        </button>
      </section>}
      {step===1&&<section aria-label="Review Fields stage">
-       <h2>Review Fields</h2>
-       <p>Confirm the fields Parser Studio found. You can adjust names or types before creating the parser.</p>
+       <h2>Review Fields <HelpTip label="Review Fields"
+         text="A field is one value Parser Studio found in the log, such as a source IP, username, action, or port. Check that the values were separated correctly before deciding their Stellar Cyber names."/></h2>
+       <StageGuide title="What to do here">
+         Pick a few events and check that the important values were found correctly. If they look right, continue to Map Fields. You do not need to edit parser syntax.
+       </StageGuide>
+       <p>Confirm the values Parser Studio found. You can adjust a field only when the detected result is not what you expect.</p>
        <div className="auto-parser-summary">
          <span>{advanced?'Browser events':'Log events'} <strong>{report.sourceCount}</strong></span>
          <span>Need review <strong>{report.unsupported}</strong></span>
@@ -1109,26 +1194,27 @@ export default function AutoParser({
        </div>
        {report.events.some(event=>event.timePolicy==='YEAR_AND_ZONE_UNKNOWN')&&
          <p className="auto-parser-warning" role="note">
-           RFC3164 header has no year or timezone. It is preserved as text;
-           no event timestamp is inferred. Review the actual source time
-           before mapping any event-time field.
-         </p>}
+           This log's header does not include a year or timezone, so Parser Studio kept the time as text instead of guessing.
+           Review the original time before mapping it to an event timestamp.
+           <HelpTip label="Why was the time not converted?"
+             text="Some older syslog headers contain only month, day, and clock time. Without a year and timezone, converting them to an exact timestamp could be wrong."/></p>}
        {!!currentReview?.mappingCount&&<p className="auto-parser-note">
-         {currentReview.mappingCount} conservative custom-field suggestions were prepared
-         from safe source names. They are not an official Stellar dictionary.</p>}
+         Parser Studio prepared {currentReview.mappingCount} starting field mapping{currentReview.mappingCount===1?'':'s'}.
+         Review the actual values first; the next step will suggest Stellar Cyber field names.</p>}
        {currentReview?.requiresApproval&&<p className="auto-parser-note">
          Your edited field mappings were preserved. Check them below before generating.</p>}
        <label>Choose a source event
          <select aria-label="Auto Parser review event" value={chosen?.id??''}
            onChange={e=>setSelected(Math.max(0,records.findIndex(x=>x.id===e.target.value)))}>
            {records.map((entry)=><option key={entry.id} value={entry.id}>
-             Event {entry.line} · {entry.status.toUpperCase()}</option>)}
+             Event {entry.line} · {friendlyEventStatus(entry.status)}</option>)}
          </select></label>
        <div className="stellar-review-columns">
        {chosen&&<div className="auto-parser-preview" aria-label="Browser-only event inspector">
-         <div><h3>Original · Browser only</h3><pre>{chosen.raw}</pre></div>
-         <div><h3>Extracted</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
-         <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
+         <div><h3>Original log</h3><pre>{chosen.raw}</pre></div>
+         <div><h3>Fields Parser Studio found</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
+         <div><h3>Current output preview <HelpTip label="Current output preview"
+           text="This is only a local preview using the current field names. The next step lets you choose the Stellar Cyber field names before parser files are created."/></h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
        </div>}
        <details className="auto-parser-recipe" open={advanced}
          aria-label="Optional AI field correction">
@@ -1142,16 +1228,17 @@ export default function AutoParser({
        </details>
        </div>
        <div className="auto-parser-note beginner-essential-note" aria-label="Normalization mapping handoff">
-         <strong>Next: map extracted fields to Stellar Cyber metadata</strong>
-         <p>Continue to Map Fields to review official catalog matches, current custom fields, sample values, type checks and before/after output. No source value is discarded when a mapping changes.</p>
+         <strong>Next: choose where each value belongs in Stellar Cyber</strong>
+         <p>Continue to Map Fields. Parser Studio will suggest Stellar field names, show example values, and warn you if a value does not fit. Changing a mapping never deletes the original extracted value.</p>
        </div>
        <details className="auto-parser-recipe beginner-field-summary" open={advanced}
          aria-label="Suggested field mappings">
-         <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} mapped · {draft.format==='generic_structural'?'Extracted source fields are preserved automatically':'Open only if you want to inspect names and types'}</summary>
+         <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} prepared · Open only if you want to inspect the current names</summary>
+         <p>These are starting names for the fields Parser Studio found. You will choose Stellar Cyber destinations in the next step.</p>
          <div className="auto-parser-map-list">
            {draft.mappings.map((rule)=><div key={rule.id}>
              <strong>{rule.source}</strong> <ArrowRight size={13}/>
-             <span>{rule.target}</span><small>{rule.type} · User-custom field, not official catalog</small>
+             <span>{rule.target}</span><small>{rule.type} · temporary/custom output name</small>
            </div>)}
          </div>
        </details>
@@ -1161,25 +1248,28 @@ export default function AutoParser({
            <span>{rule.operator==='split_field'
              ?`${rule.source} by ${JSON.stringify(rule.delimiter)} → ${(rule.targets??[]).join(', ')}`
              :`${(rule.sources??[]).join(' + ')} with ${JSON.stringify(rule.delimiter)} → ${rule.target}`}</span>
-           <small>Bounded declarative refinement · No Regex or code</small>
+           <small>Reviewed field adjustment · no custom code required</small>
          </div>)}
        </div>}
        <details className="auto-parser-recipe" aria-label="Adjust detected field mapping">
-         <summary>Need to change a field? Review mappings here</summary>
-         <p>Only supported, reviewable field names and data types can generate parser files.
-           Changing a mapping clears generated evidence until you test again.</p>
+         <summary>Need to correct a field name or value type?
+           <HelpTip label="Edit fields manually" text="Use this only when Parser Studio separated the value correctly but gave it the wrong field name or value type. Most users can leave this closed and continue."/></summary>
+         <p>Changing a field here affects the parser draft, so Parser Studio will test the samples again before it creates files.</p>
          {draft.mappings.map((mapping,index)=><div className="two-path-mapping-editor" key={mapping.id}>
-           <label>Source field
+           <label>Field found in the log <HelpTip label="Field found in the log"
+             text="The field name Parser Studio extracted from the source. Change this only if the extraction itself used the wrong name."/>
              <input aria-label={'Mapping source '+index} value={mapping.source} maxLength={128}
                onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
                  {...m,source:e.target.value}:m)}))}/>
            </label>
-           <label>Output field
+           <label>Current output field name <HelpTip label="Current output field name"
+             text="The temporary or current destination name used by the parser draft. The next Map Fields step is the recommended place to choose Stellar Cyber standard names."/>
              <input aria-label={'Mapping target '+index} value={mapping.target} maxLength={128}
                onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
                  {...m,target:e.target.value}:m)}))}/>
            </label>
-           <label>Data type
+           <label>Value type <HelpTip label="Value type"
+             text="Choose what kind of value this field contains, such as text, an IP address, a port, a whole number, or a timestamp."/>
              <select aria-label={'Mapping type '+index} value={mapping.type}
                onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
                  {...m,type:e.target.value as typeof m.type}:m)}))}>
@@ -1195,7 +1285,7 @@ export default function AutoParser({
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(0)}><ArrowLeft size={15}/> Back to Logs</button>
          <button type="button" className="auto-parser-primary" disabled={pending||!suite}
-           onClick={()=>setStep(2)}>
+           onClick={()=>{setNavigationHint('');setFurthestStep(2);setStep(2);}}>
            {pending?'Preparing…':'Map Fields'} <ArrowRight size={16}/>
          </button>
        </div>
@@ -1203,20 +1293,20 @@ export default function AutoParser({
      {step===2&&<NormalizationMappingReview
        draft={draft} setDraft={setDraft} suite={suite}
        selected={selected} setSelected={setSelected} pending={pending}
-       onBack={()=>setStep(1)} onContinue={()=>setStep(3)}/>}
+       onBack={()=>setStep(1)} onContinue={()=>{setNavigationHint('');setFurthestStep(3);setStep(3);}}/>}
      {step===3&&<section aria-label="Create Parser stage">
-       <h2>{advanced?'Test & Create':'Create Parser'}</h2>
-       <p>{advanced
-         ?<>Run every sample through the local Web Worker, then validate the typed
-           authoring contract with the real backend and verify both DRAFT file SHA-256 hashes.
-           No parser deployment or sensor test occurs.</>
-         :<>Parser Studio will test every sample again. If they pass, it creates the parser
-           files for download. Nothing is deployed to a DP or sensor automatically.</>}</p>
+       <h2>Create Parser <HelpTip label="Create Parser"
+         text="This is the final local step. Parser Studio tests the current sample again and, if everything still passes, creates the files you can download. It does not install them automatically."/></h2>
+       <StageGuide title="Final step">
+         Run the final test, then download the parser files. If Parser Studio finds a problem, go back to Review Fields or Map Fields and correct only the item it highlights.
+       </StageGuide>
+       <p>Parser Studio will test every sample again before it creates downloadable files.
+         Nothing is installed in a live Stellar system from this screen.</p>
        <div className="auto-parser-summary">
-         <span>Log events <strong>{report.sourceCount}</strong></span>
-         <span>{advanced?'Locally matched':'Parsed'} <strong>{suite?.counts.matched??0}</strong></span>
-         <span>{advanced?'Normalized':'Ready'} <strong>{suite?.counts.normalized??0}</strong></span>
-         <span>{advanced?'Errors':'Issues'} <strong>{suite?.counts.failures??0}</strong></span>
+         <span>Sample logs <strong>{report.sourceCount}</strong></span>
+         <span>Parsed successfully <strong>{suite?.counts.matched??0}</strong></span>
+         <span>Ready to output <strong>{suite?.counts.normalized??0}</strong></span>
+         <span>Need fixing <strong>{suite?.counts.failures??0}</strong></span>
        </div>
        {!confirmed()&&<p className="auto-parser-warning" role="note">
          Not all sample events passed. Review detected fields and mappings above
@@ -1224,7 +1314,7 @@ export default function AutoParser({
        <button type="button" className="auto-parser-primary"
          aria-label="Create Parser Files"
          disabled={!canGenerate||!confirmed()} onClick={()=>{void generate();}}>
-         {busy?'Testing the full sample…':advanced?'Run Tests & Generate DRAFT Files':'Create Parser Files'}
+         {busy?'Testing every sample…':'Run Final Test & Create Files'}
        </button>
        {currentEvidence&&<div className="auto-parser-result" aria-label="Auto Parser test evidence">
          <strong>{currentEvidence.status==='PASS'?'All sample logs passed the final test':'Parser creation stopped'}</strong>
@@ -1238,26 +1328,25 @@ export default function AutoParser({
            Stellar target import not verified.
          </small>}
        </div>}
-       {currentPair&&<div className="auto-parser-download" aria-label="Generated Auto Parser DRAFT pair">
-         <strong><CheckCircle2 size={17}/> {advanced
-           ?<>Two DRAFT files verified for SHA-256 integrity ·
-             {currentNativeEvidence?.status==='PASS'?' Native VERIFIED':' Native NOT VERIFIED'}</>
-           :'Parser files created successfully'}</strong>
-         {!advanced&&<span>{currentNativeEvidence?.status==='PASS'
-           ?'Local parser runtime verification passed. A real Stellar DP/sensor test has not been run.'
-           :'All current samples passed. A real Stellar DP/sensor test has not been run yet.'}</span>}
-         {!advanced&&<details className="auto-parser-recipe" aria-label="Parser file verification details">
-           <summary>Verification details</summary>
-           <span>Two DRAFT files verified for SHA-256 integrity ·
-             {currentNativeEvidence?.status==='PASS'?' Native VERIFIED':' Native NOT VERIFIED'}</span>
-         </details>}
+       {currentPair&&<div className="auto-parser-download" aria-label="Generated parser files">
+         <strong><CheckCircle2 size={17}/> Parser files created successfully</strong>
+         <span>{currentNativeEvidence?.status==='PASS'
+           ?'All current samples passed, and an additional local parser-file compatibility check passed. The files have not been installed in a live Stellar system.'
+           :'All current samples passed. The files have not been installed in a live Stellar system.'}</span>
+         <details className="auto-parser-recipe" aria-label="Parser file verification details">
+           <summary>Technical verification details</summary>
+           <span>File integrity checked · {currentNativeEvidence?.status==='PASS'?'Local parser-runtime check passed':'Local parser-runtime check not run'}</span>
+           {advanced&&<span>Two generated files have matching recorded SHA-256 integrity evidence. Live Stellar import remains a separate test.</span>}
+         </details>
          {currentPair.files.map(file=><button key={file.name} type="button"
            onClick={()=>download(file.name,file.content)}>
-           <FileText size={15}/>{advanced?file.name:file.name.endsWith('.conf')?'Download listener configuration':'Download parser logic'} <Download size={15}/>
+           <FileText size={15}/>{file.name.endsWith('.conf')?'Download listener configuration':'Download parser logic'} <Download size={15}/>
          </button>)}
          <button type="button" disabled={busy}
-           onClick={()=>{void zipPair();}}><FileArchive size={16}/> {advanced?'Download Verified DRAFT ZIP':'Download Parser Package'}</button>
-         {advanced&&currentZip&&<small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>}
+           onClick={()=>{void zipPair();}}><FileArchive size={16}/> Download Parser Package</button>
+         {advanced&&currentZip&&<details className="beginner-technical-details">
+           <summary>Package checksum</summary><small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>
+         </details>}
        </div>}
        {currentPair&&<ArtifactRevisionHistoryPanel
          projectId={currentPair.manifest.projectId}
@@ -1273,34 +1362,41 @@ export default function AutoParser({
          sourceFormat={draft.format}
          activeSession={activeSession} onSessionUpdate={onSessionUpdate}
        />}
-       <details className="auto-parser-recipe" aria-label="Whole-sample regression and holdout review">
-         <summary>Review safe repair · Full-sample and holdout regression</summary>
-         <p>Compare one suggested missing-field mapping against the entire original sample.
-           Supply independent log events as holdout input to enable approval. Every
-           event and field-shape change is audited locally. Nothing is auto-applied,
-           stored, or sent to the backend.</p>
-         <label>Independent holdout events (optional for comparison; required for approval)
-           <textarea aria-label="Independent holdout logs" rows={4}
+       <details className="auto-parser-recipe" aria-label="Manual field fix test">
+         <summary className="beginner-tool-summary">Test a manual field fix against different examples
+           <HelpTip label="Test a manual field fix"
+             text="Use this after you manually change a field mapping and want extra confidence that the change does not break other logs. Provide different examples that were not used to make the fix."/>
+         </summary>
+         <span className="beginner-tool-when">Use when: you changed a field mapping yourself and have fresh logs from the same source to test it against.</span>
+         <p>Parser Studio compares one proposed field change with every current sample and with the different examples you provide.
+           Nothing is applied automatically or uploaded to another service.</p>
+         <label>Different examples not used to make the fix
+           <HelpTip label="Different examples"
+             text="These are fresh log events from the same product that were not part of the original sample. They help reveal a fix that works only for the examples you already saw."/>
+           <textarea aria-label="Different example logs for field fix" rows={4}
              value={holdout} onChange={e=>{setHoldout(e.target.value);setRepair(null);setRepairNotice('');}}
-             placeholder="Paste fresh events not used to suggest fields; kept in browser memory." />
+             placeholder="Paste a few fresh events from the same source; kept in browser memory." />
          </label>
          <button type="button" disabled={busy||pending||!suite}
-           onClick={()=>{void compareRepair();}}>Compare One Safe Repair</button>
+           onClick={()=>{void compareRepair();}}>Test One Proposed Field Fix</button>
          {repairNotice&&<p role="status">{repairNotice}</p>}
-         {currentRepair&&<div aria-label="Candidate regression comparison" role="status">
-           <strong>Candidate only · Approval required · Native NOT VERIFIED</strong>
-           <span>{currentRepair.source} → {currentRepair.target} (one proposed mapping)</span>
-           <span>Original events: {currentRepair.comparison.baseline.accounted}/
-             {currentRepair.comparison.baseline.sourceCount} accounted ·
-             Previous passes: {currentRepair.comparison.baseline.positiveBefore} ·
-             Candidate passes: {currentRepair.comparison.baseline.positiveAfter}</span>
-           <span>Regressions: {currentRepair.comparison.baseline.regressions} ·
-             Added field shapes: {currentRepair.comparison.baseline.fieldAdditions} ·
-             Removed: {currentRepair.comparison.baseline.fieldRemovals} ·
-             Type changes: {currentRepair.comparison.baseline.typeChanges}</span>
-           <span>Holdout: {currentRepair.comparison.holdoutStatus} ·
+         {currentRepair&&<div aria-label="Proposed field fix comparison" role="status">
+           <strong>{currentRepair.comparison.acceptedWithoutRegression&&currentRepair.comparison.holdoutStatus==='TESTED'
+             ?'This field fix passed the current and different examples'
+             :'Review this field fix before applying it'}</strong>
+           <span>{currentRepair.source} → {currentRepair.target}</span>
+           <span>Current sample: {currentRepair.comparison.baseline.accounted}/
+             {currentRepair.comparison.baseline.sourceCount} checked ·
+             Passed before {currentRepair.comparison.baseline.positiveBefore} ·
+             Passed after {currentRepair.comparison.baseline.positiveAfter}</span>
+           <span>Problems introduced by this fix: {currentRepair.comparison.baseline.regressions}</span>
+           <span>Different examples: {currentRepair.comparison.holdoutStatus==='TESTED'?'tested':'not tested yet'} ·
              {currentRepair.comparison.holdout?.sourceCount??0} events ·
-             {currentRepair.comparison.holdout?.regressions??0} regressions</span>
+             {currentRepair.comparison.holdout?.regressions??0} problems introduced</span>
+           <details className="beginner-technical-details"><summary>Technical comparison details</summary>
+             <span>Added field shapes: {currentRepair.comparison.baseline.fieldAdditions} · Removed: {currentRepair.comparison.baseline.fieldRemovals} · Type changes: {currentRepair.comparison.baseline.typeChanges}</span>
+             <span>Holdout status: {currentRepair.comparison.holdoutStatus}</span>
+           </details>
            {currentRepair.comparison.baseline.families.map(f=><span key={f.family}>
              {f.family}: {f.count} events · Passed {f.beforePassed} → {f.afterPassed}
            </span>)}
@@ -1320,19 +1416,21 @@ export default function AutoParser({
              Approve Reviewed Mapping
            </button>
            {currentRepair.comparison.holdoutStatus!=='TESTED'&&
-             <p>Holdout NOT TESTED — approval requires new independent events.</p>}
+             <p>Add different examples before applying this fix.</p>}
            {!currentRepair.comparison.acceptedWithoutRegression&&
-             <p>Regression detected — approval blocked. Previous passing events must not regress.</p>}
+             <p>This fix caused a previously working sample to fail, so Parser Studio will not apply it.</p>}
          </div>}
        </details>
-       <details className="auto-parser-recipe" aria-label="Reusable approved mapping patterns">
-         <summary>Optional · Reuse previously approved mapping</summary>
-         <p>Only explicitly stored source/target names, types and anonymized
-           regression counts are kept in this browser. Reuse requires the same
-           source family, a new full-sample comparison and a fresh independent
-           holdout. Nothing is silently applied or uploaded.</p>
-         <label>Select browser-local reviewed mapping
-           <select aria-label="Approved mapping pattern" value={selectedPattern}
+       <details className="auto-parser-recipe" aria-label="Reusable approved field matches">
+         <summary className="beginner-tool-summary">Reuse a field match you approved earlier
+           <HelpTip label="Reuse an approved field match"
+             text="Use this only when the same kind of log appears again and you previously chose a field match that worked. Parser Studio retests it before allowing reuse."/>
+         </summary>
+         <span className="beginner-tool-when">Use when: the same log family returns and you want to try a field match you previously approved.</span>
+         <p>Only field names, value types, and anonymous test counts are stored in this browser.
+           No raw log values are saved. Reused matches must pass the current sample and different examples again.</p>
+         <label>Previously approved field match
+           <select aria-label="Approved field match" value={selectedPattern}
              onChange={e=>setSelectedPattern(e.target.value)}>
              <option value="">Choose a saved mapping</option>
              {approvedPatterns.map(item=><option key={item.id} value={item.id}>
@@ -1341,89 +1439,92 @@ export default function AutoParser({
            </select>
          </label>
          <button type="button" disabled={!selectedPattern||busy||pending||!suite}
-           onClick={()=>{void compareStoredPattern();}}>Compare Saved Pattern with Holdout</button>
+           onClick={()=>{void compareStoredPattern();}}>Test Saved Match with Different Examples</button>
          <button type="button" disabled={!selectedPattern||busy}
            onClick={()=>{
-             if(!window.confirm('Forget the selected browser-local mapping signature? This does not change current parser rules.'))return;
+             if(!window.confirm('Forget the selected saved field match? This does not change current parser rules.'))return;
              if(forgetApprovedPattern(selectedPattern)){
                setApprovedPatterns(readApprovedPatterns());setSelectedPattern('');
-             }else setRepairNotice('Unable to remove the selected browser-local mapping.');
-           }}>Forget Selected Saved Pattern</button>
-         <span>{approvedPatterns.length} approved browser-local mapping signatures</span>
+             }else setRepairNotice('Unable to remove the selected saved field match.');
+           }}>Forget Selected Match</button>
+         <span>{approvedPatterns.length} approved field match{approvedPatterns.length===1?'':'es'} saved in this browser</span>
        </details>
        <div className="auto-parser-note" aria-label="Local review session metrics">
          Session-only review counts: {reviewMetrics.compared} compared ·
          {reviewMetrics.approved} user approved · {reviewMetrics.blocked} regression blocks.
          Not a measured human usability study; no telemetry or raw samples are sent.
        </div>
-       <details className="auto-parser-recipe" aria-label="ParserRecipe v0.2 review">
-         <summary>Advanced · Review and validate ParserRecipe v0.2 stages</summary>
-         <p>Review is local-only. On explicit request, a supporting backend can
-           validate these allowlisted stages against the unchanged ParserProject
-           v0.1 and prove that both generated DRAFT file hashes are identical.
-           Native user-parser or Stellar target compatibility is NOT VERIFIED.
-           Unknown operators, unsupported RFC3164 variants, mixed formats and multiline remain unsupported.</p>
-         <button type="button" disabled={busy||pending||!suite}
-           onClick={()=>{void previewRecipe();}}>Review Staged Recipe</button>
+       <details className="auto-parser-recipe" aria-label="Parser-building steps review">
+         <summary className="beginner-tool-summary">Inspect how Parser Studio will build the parser
+           <HelpTip label="Parser-building steps"
+             text="This is a technical troubleshooting view. Use it only when you need to inspect the internal sequence Parser Studio plans to use before creating the parser files."/>
+         </summary>
+         <span className="beginner-tool-when">Use when: you are troubleshooting parser generation or need technical evidence for the exact build steps. Normal users can skip this.</span>
+         <p>This view checks the planned parser-building steps locally. It does not install the parser or prove that it works in a live Stellar system.</p>
+         <button type="button" aria-label="Review Staged Recipe" disabled={busy||pending||!suite}
+           onClick={()=>{void previewRecipe();}}>Inspect Parser-Building Steps</button>
          {currentRecipe&&(currentRecipe.ok
-           ? <div role="status" aria-label="Review-only staged recipe">
-             <strong>REVIEW_ONLY · Native and target NOT VERIFIED</strong>
-             <span>{currentRecipe.recipe.stages.length} allowlisted stages ·
-               {currentRecipe.recipe.sample.events} events ·
-               Source SHA-256 {currentRecipe.recipe.sample.sha256.slice(0,12)}…</span>
-             <span>v0.1 snapshot: {currentRecipe.lossReport.status} ·
-               v0.2 restricted compilation needs backend capability verification</span>
+           ? <div role="status" aria-label="Parser-building steps">
+             <strong>Parser-building steps are ready for technical review</strong>
+             <span>{currentRecipe.recipe.stages.length} planned step{currentRecipe.recipe.stages.length===1?'':'s'} ·
+               {currentRecipe.recipe.sample.events} sample event{currentRecipe.recipe.sample.events===1?'':'s'}</span>
              <p>{currentRecipe.recipe.stages.map(stage=>stage.op).join(' → ')}</p>
-             <button type="button" disabled={!currentPair||busy||pending}
+             <details className="beginner-technical-details"><summary>Technical evidence</summary>
+               <span>REVIEW_ONLY · Native and target NOT VERIFIED</span>
+               <span>Source SHA-256 {currentRecipe.recipe.sample.sha256.slice(0,12)}…</span>
+               <span>v0.1 snapshot: {currentRecipe.lossReport.status} · v0.2 restricted compilation needs backend capability verification</span>
+             </details>
+             <button type="button" aria-label="Validate and Compile Strict v0.2 DRAFT Pair"
+               disabled={!currentPair||busy||pending}
                onClick={()=>{void compileReviewedRecipe();}}>
-               Validate and Compile Strict v0.2 DRAFT Pair
+               Validate These Build Steps
              </button>
-             {!currentPair&&<span>First generate the v0.1 DRAFT pair to compare exact hashes.</span>}
+             {!currentPair&&<span>Create the parser files first so Parser Studio can compare the exact generated result.</span>}
            </div>
            : <p role="status">Review cannot be generated safely: {statusMessage(currentRecipe.reason)}</p>)}
          {recipeCompilerError&&<p role="status">{recipeCompilerError}</p>}
-         {currentRecipeCompiled&&<div role="status" aria-label="v0.2 exact compiler evidence">
-           <strong>v0.2 STRICT COMPILER PASS · v0.1 pair SHA MATCHED</strong>
-           <span>Stages: {currentRecipeCompiled.receipt.stageCount} ·
-             Events claimed: {currentRecipeCompiled.receipt.sampleEventCount} ·
-             Recipe SHA-256 {currentRecipeCompiled.receipt.recipeSha256.slice(0,16)}…</span>
-           <span>Native user parser NOT VERIFIED by compiler receipt ·
-             Stellar DP import NOT VERIFIED</span>
-           <p>Optional Native verification is a separate explicit action. It sends this
-             bounded current sample to the configured same-origin private backend only;
-             no LLM, DP install or sensor send occurs.</p>
+         {currentRecipeCompiled&&<div role="status" aria-label="Parser-building step verification result">
+           <strong>Parser-building steps matched the generated files</strong>
+           <span>{currentRecipeCompiled.receipt.stageCount} build step{currentRecipeCompiled.receipt.stageCount===1?'':'s'} ·
+             {currentRecipeCompiled.receipt.sampleEventCount} sample event{currentRecipeCompiled.receipt.sampleEventCount===1?'':'s'}</span>
+           <details className="beginner-technical-details"><summary>Technical compiler evidence</summary>
+             <span>v0.2 STRICT COMPILER PASS · v0.1 pair SHA MATCHED</span>
+             <span>Recipe SHA-256 {currentRecipeCompiled.receipt.recipeSha256.slice(0,16)}… · Native user parser NOT VERIFIED by compiler receipt · Stellar DP import NOT VERIFIED</span>
+           </details>
+           <p>You can optionally run a private local compatibility check on the generated parser files. This still does not install anything in Stellar Cyber.</p>
            {nativeAvailability==='AVAILABLE'
-             ? <button type="button" disabled={busy||pending||!suite}
+             ? <button type="button" aria-label="Run private parser-file compatibility check"
+                 disabled={busy||pending||!suite}
                  onClick={()=>{void verifyCurrentNativeProject();}}>
-                 {busy?'Verifying…':'Run Private Native Ruby/CONF Verification'}
+                 {busy?'Checking parser files…':'Run Private Parser-File Compatibility Check'}
                </button>
              : nativeAvailability==='UNAVAILABLE'
-               ? <span>Private Native verifier is not configured on this backend. DRAFT remains Native NOT VERIFIED.</span>
+               ? <span>The private parser-file checker is not configured. You can still download the files after the normal sample test passes.</span>
                : nativeAvailability==='ERROR'
-                 ? <span>Private Native verifier capability could not be trusted. DRAFT remains Native NOT VERIFIED.</span>
-                 : <span>Checking private Native verifier availability…</span>}
+                 ? <span>Parser Studio could not verify the private parser-file checker. No compatibility result is claimed.</span>
+                 : <span>Checking whether the private parser-file checker is available…</span>}
            {currentNativeEvidence&&<div className="auto-parser-result"
-             aria-label="Native Ruby and CONF verification evidence">
+             aria-label="Private parser-file compatibility result">
              <strong>{currentNativeEvidence.status==='PASS'?
-               'NATIVE RUBY/CONF VERIFIED · TARGET NOT VERIFIED':
-               currentNativeEvidence.status==='UNAVAILABLE'?'NATIVE VERIFIER UNAVAILABLE':
-               'NATIVE VERIFICATION FAILED'}</strong>
-             <span>{currentNativeEvidence.message}</span>
-             {currentNativeEvidence.report&&<>
-               <span>{currentNativeEvidence.report.eventsPassed}/
-                 {currentNativeEvidence.report.eventCount} events exact ·
-                 Ruby {currentNativeEvidence.report.ruby} ·
-                 Fluentd {currentNativeEvidence.report.fluentd}</span>
-               <span>Source/event hashes verified · CONF AST verified · Parser callback verified ·
-                 Stellar DP target import NOT VERIFIED</span>
-             </>}
+               'Private parser-file compatibility check passed':
+               currentNativeEvidence.status==='UNAVAILABLE'?'Private parser-file checker unavailable':
+               'Private parser-file compatibility check failed'}</strong>
+             <span>{currentNativeEvidence.status==='PASS'
+               ?'The generated files worked in the configured private local parser runtime. This still does not mean they were installed in Stellar Cyber.'
+               :currentNativeEvidence.message}</span>
+             {currentNativeEvidence.report&&<details className="beginner-technical-details">
+               <summary>Technical runtime evidence</summary>
+               <span>NATIVE RUBY/CONF VERIFIED · TARGET NOT VERIFIED</span>
+               <span>{currentNativeEvidence.report.eventsPassed}/{currentNativeEvidence.report.eventCount} events exact · Ruby {currentNativeEvidence.report.ruby} · Fluentd {currentNativeEvidence.report.fluentd}</span>
+               <span>Source/event hashes verified · CONF AST verified · Parser callback verified · Stellar DP target import NOT VERIFIED</span>
+             </details>}
            </div>}
          </div>}
        </details>
-       <p className="auto-parser-note"><LockKeyhole size={14}/> No API key, DP install or sensor send.
+       <p className="auto-parser-note"><LockKeyhole size={14}/> Parser Studio does not install or activate anything on a live Stellar system from this screen.
          {currentNativeEvidence?.status==='PASS'
-           ?' Current source-bound Ruby/CONF passed the pinned Native Fluentd runtime; real Stellar Cyber import remains unverified.'
-           :' Native Fluentd compatibility and real Stellar Cyber import remain unverified.'}</p>
+           ?' The optional private parser-file compatibility check passed.'
+           :' The optional private parser-file compatibility check has not established live-system compatibility.'}</p>
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(2)}><ArrowLeft size={14}/> Map Fields</button>
          <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>

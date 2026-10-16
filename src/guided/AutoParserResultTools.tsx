@@ -8,6 +8,7 @@ import {startApprovedSyntheticSession,fetchApprovedSessionStatus,controlApproved
   assertApprovedSessionReady,type ApprovedTestLabStatus} from './approvedTestLabSession';
 import {queryApprovedInterflowReadback,assertInterflowReadbackCapability,
   type InterflowReadbackResult,type InterflowIndex} from './approvedInterflowReadback';
+import {HelpTip} from './BeginnerHelp';
 
 interface Props {
   projectId:string;
@@ -197,10 +198,13 @@ export default function AutoParserResultTools({
     }finally{if(current===epoch.current)setReadPending(false);}
   }
   return <details className="auto-parser-recipe" aria-label="Authorized test and Interflow verification">
-    <summary><Activity size={16}/> Receiving Port, Sensor Test &amp; Interflow · Separate Approval</summary>
-    <p>Only after both DRAFT parser files have passed backend schema and SHA checks.
-      These checks do not install a parser or prove a real sensor. The shared sensor destination
-      and generated CONF listener use port <strong>{listenerPort}</strong>.</p>
+    <summary className="beginner-tool-summary"><Activity size={16}/> Live-system test tools · Separate approval
+      <HelpTip label="Live-system test tools"
+        text="Use these only after parser files are created and you have separate authorization for a test environment. These tools are not part of the normal parser-creation path."/>
+    </summary>
+    <span className="beginner-tool-when">Use when: an administrator has approved a specific test environment and you need to check a receiving port, run a synthetic test session, or read back one expected field.</span>
+    <p>These are optional post-creation checks. Opening this section does not install the parser or send any event automatically.
+      The current generated listener port is <strong>{listenerPort}</strong>.</p>
     <div aria-label="Read-only parser port review">
       <button type="button" disabled={portBusy} onClick={()=>{void checkPort();}}>
         <ShieldCheck size={15}/> {portBusy?'Checking…':'Check Receiving Port Inventory (Read-only)'}

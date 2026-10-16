@@ -42,7 +42,7 @@ test('beginner uses the bounded local Cisco FTD rule before unnecessary ChatGPT 
  await expect(summary).toContainText('0 of 2 log events parsed completely');
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('Recommended fix · Use the extracted fields');
- await expect(problem).toContainText('bounded local rule for this exact structure');
+ await expect(problem).toContainText('built-in safe rule for this structure');
  const useExtracted=problem.getByRole('button',{name:'Use extracted fields'});
  await expect(useExtracted).toBeEnabled();
  await useExtracted.click();
@@ -57,7 +57,7 @@ test('beginner uses the bounded local Cisco FTD rule before unnecessary ChatGPT 
   await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
   await expect(page.getByLabel('Create Parser stage')).toBeVisible();
   await page.getByRole('button',{name:'Create Parser Files'}).click();
-  const generated=page.getByLabel('Generated Auto Parser DRAFT pair');
+  const generated=page.getByLabel('Generated parser files');
   await expect(generated).toContainText('Parser files created successfully');
   await expect(generated.getByLabel('Parser file verification details'))
     .toContainText('Two DRAFT files verified');

@@ -73,12 +73,12 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Create Parser Files'}).click();
  expect((await generatedResponse).status()).toBe(200);
- const generated=page.getByLabel('Generated Auto Parser DRAFT pair');
+ const generated=page.getByLabel('Generated parser files');
  await expect(generated).toContainText('Two DRAFT files verified for SHA-256 integrity · Native NOT VERIFIED');
 
- await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+ await page.getByLabel('Parser-building steps review').locator('summary').click();
  await page.getByRole('button',{name:'Review Staged Recipe'}).click();
- const reviewed=page.getByLabel('Review-only staged recipe');
+ const reviewed=page.getByLabel('Parser-building steps');
  await expect(reviewed).toContainText('split_field');
  await expect(reviewed).toContainText('merge_fields');
  await expect(reviewed).not.toContainText('198.51.100.10');
@@ -87,7 +87,7 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
    r.request().method()==='POST');
  await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
  expect((await recipeGenerated).status()).toBe(200);
- const evidence=page.getByLabel('v0.2 exact compiler evidence');
+ const evidence=page.getByLabel('Parser-building step verification result');
  await expect(evidence).toContainText('v0.1 pair SHA MATCHED');
  await expect(evidence).toContainText('Native user parser NOT VERIFIED');
  await expect(evidence).toContainText('Stellar DP import NOT VERIFIED');

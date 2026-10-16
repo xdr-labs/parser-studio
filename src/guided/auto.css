@@ -7,7 +7,7 @@
 .auto-parser-links{display:flex;gap:9px;flex-wrap:wrap;}
 .auto-parser-links button{background:#ffffff11;border:1px solid #ffffff40;color:#eaf7fc;padding:9px 13px;border-radius:7px;font-size:11px;font-weight:700;}
 .auto-parser-links button:hover{background:#ffffff25;}
-.auto-parser-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:17px 0;}
+.auto-parser-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:17px 0;}
 .auto-parser-steps button{border:1px solid #d3e2e7;background:#fff;color:#5b7888;border-radius:9px;padding:13px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;text-align:left;}
 .auto-parser-steps button.active{border-color:#14a4a4;background:#e9f7f4;color:#126b70;}
 .auto-parser-steps button span{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#e3eff1;color:#477784;font-size:12px;flex-shrink:0;}
@@ -99,8 +99,8 @@
 .beginner-mode [aria-label="Add Logs stage"]>.auto-parser-note:not(.beginner-essential-note),
 .beginner-mode [aria-label="Add Logs stage"]>[aria-label="Existing parser review and import"],
 .beginner-mode [aria-label="Add Logs stage"]>[aria-label="Local logical boundary review"],
-.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Optional isolated Drain3 mining"],
-.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Public synthetic parser fingerprints"]{display:none}
+.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Private text grouping tool"],
+.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Known log shape matcher"]{display:none}
 .advanced-mode .beginner-analysis{border-bottom:1px dashed #d4e0e4;padding-bottom:15px}
 @media(max-width:760px){.beginner-problem-details{grid-template-columns:1fr}.beginner-fix-actions button{width:100%;justify-content:center}}
 
@@ -125,3 +125,38 @@
 .beginner-mode [aria-label="Local review session metrics"],
 .beginner-mode [aria-label="ParserRecipe v0.2 review"],
 .beginner-mode [aria-label="Native Ruby and CONF verification evidence"]{display:none!important}
+
+/* Beginner guidance and contextual help. */
+.beginner-help-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;margin-left:5px;color:#66808b;vertical-align:middle;cursor:help;outline:none}
+.beginner-help-tip>svg{pointer-events:none}
+.beginner-help-tip:focus-visible{outline:2px solid #16858d;outline-offset:2px;border-radius:50%}
+.beginner-help-popover{display:none;position:absolute;z-index:30;left:50%;top:calc(100% + 8px);transform:translateX(-50%);width:min(310px,80vw);padding:10px 11px;border:1px solid #cad9de;border-radius:8px;background:#fff;box-shadow:0 8px 24px rgba(26,52,65,.16);font-size:11px;font-weight:500;line-height:1.5;color:#405965;text-align:left;white-space:normal}
+.beginner-help-tip:hover .beginner-help-popover,.beginner-help-tip:focus .beginner-help-popover,.beginner-help-tip:focus-within .beginner-help-popover,.beginner-help-tip.open .beginner-help-popover{display:block}
+.beginner-stage-guide{display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;padding:11px 12px;border:1px solid #cfe0e5;border-radius:9px;background:#f5fafb;color:#2e6370}
+.beginner-stage-guide>svg{flex:0 0 auto;margin-top:1px}.beginner-stage-guide strong{font-size:12px}.beginner-stage-guide p{margin:3px 0 0;font-size:11px;line-height:1.55;color:#5e7680}
+.beginner-tools-intro{display:grid;gap:7px;margin:12px 0 14px;padding:12px 14px;border:1px solid #ded8ca;border-radius:9px;background:#fffaf0}
+.beginner-tools-intro strong{font-size:12px;color:#6d542f}.beginner-tools-intro p{margin:0;font-size:11px;line-height:1.55;color:#716b60}
+.beginner-tool-summary{display:flex!important;align-items:center;gap:5px}
+.beginner-tool-summary .beginner-help-tip{margin-left:2px}
+.beginner-tool-when{display:block;margin:6px 0 10px;padding:7px 9px;border-radius:7px;background:#f6f9fa;color:#5c747d;font-size:10px;line-height:1.5}
+.auto-parser-steps button .step-copy{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;width:auto;height:auto;border-radius:0;background:transparent;color:inherit;font-size:inherit;line-height:1.35;overflow-wrap:anywhere;place-items:initial}.auto-parser-steps button.active .step-copy{background:transparent;color:inherit}.auto-parser-steps button{min-width:0;min-height:64px}.auto-parser-steps button .step-lock{display:block;width:auto;height:auto;border-radius:0;background:transparent;white-space:normal;overflow-wrap:anywhere}.auto-parser-steps button.active .step-lock{background:transparent;color:#547c82}
+.auto-parser-steps button .step-lock{font-size:9px;color:#86979d;font-weight:600;line-height:1.25}
+.auto-parser-steps button.locked{border-style:dashed;background:#fbfcfd;color:#738893;cursor:pointer}
+.auto-parser-steps button.locked:hover{border-color:#9fc6cf;background:#f4f9fa}
+.beginner-navigation-hint{margin:-7px 0 14px;padding:9px 12px;border:1px solid #e5cba7;border-radius:8px;background:#fff8ee;color:#76562e;font-size:11px;line-height:1.55}
+.beginner-technical-details{margin-top:8px;border:1px solid #dbe6ea;border-radius:7px;background:#fbfdfe;padding:7px 9px;color:#617985;font-size:10px}
+.beginner-technical-details summary{cursor:pointer;font-weight:700;color:#496b78}
+.beginner-technical-details :is(code,small,span){display:block;margin-top:6px;white-space:normal;overflow-wrap:anywhere}
+.advanced-mode .auto-parser-ledger{margin-top:10px}
+@media(max-width:650px){.beginner-help-popover{left:auto;right:0;transform:none;width:min(280px,78vw)}.auto-parser-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.auto-parser-intro .beginner-help-tip{color:#d8f4f3}
+.auto-parser-links{align-items:center}
+.auto-parser-steps button.locked{border-style:dashed;background:#f7f9fa;color:#84949b}
+.auto-parser-steps button.locked>span:first-child{background:#edf1f2;color:#84949b}
+.auto-parser-steps button.locked:hover{border-color:#9db4bc;background:#f2f7f8}
+.beginner-navigation-hint{margin:-7px 0 14px;padding:10px 12px;border:1px solid #d8c89e;border-radius:8px;background:#fff9eb;color:#6f5b2e;font-size:11px;line-height:1.55}
+.auto-parser-link-with-help{display:inline-flex;align-items:center;gap:2px}
+.auto-parser-note .beginner-help-tip{margin-left:6px}
+@media(max-width:850px){.auto-parser-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.auto-parser-steps{grid-template-columns:1fr}.auto-parser-steps button{justify-content:flex-start}}

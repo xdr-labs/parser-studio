@@ -109,27 +109,27 @@ for(const scenario of cases){
       route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
 
     const map=await openMapping(page,scenario.sample);
-    const suggestions=map.getByLabel('Automatic normalization suggestions');
+    const suggestions=map.getByLabel('Recommended field matches');
     await expect(suggestions,scenario.family+' suggestions').toBeVisible();
     for(const target of scenario.expectTargets)
       await expect(suggestions,scenario.family+' '+target).toContainText(target);
 
-    const bulk=map.getByRole('button',{name:/Apply \d+ high-confidence suggestion/});
+    const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
     await expect(bulk,scenario.family+' bulk apply').toBeEnabled();
-    const before=await map.getByLabel('Normalization mapping summary').textContent();
-    expect(before,scenario.family+' starts with generated custom mappings').toContain('Custom mappings');
+    const before=await map.getByLabel('Field mapping summary').textContent();
+    expect(before,scenario.family+' starts with generated custom mappings').toContain('Kept as custom');
     await bulk.click();
 
-    await expect(map.getByLabel('Normalization mapping summary'),scenario.family+' official mappings')
-      .not.toContainText('Official mappings0');
-    await expect(map.getByLabel('Normalization validation'),scenario.family+' validation')
-      .toContainText('No local mapping issues detected');
-    await expect(map.getByLabel('Normalization changes only'),scenario.family+' before/after')
+    await expect(map.getByLabel('Field mapping summary'),scenario.family+' official mappings')
+      .not.toContainText('Matched to Stellar0');
+    await expect(map.getByLabel('Field mapping checks'),scenario.family+' validation')
+      .toContainText('All current field mappings passed the sample checks');
+    await expect(map.getByLabel('Field changes only'),scenario.family+' before/after')
       .toBeVisible();
-    await expect(map).toContainText('Catalog verified · target runtime not verified');
+    await expect(map).toContainText('Nothing is sent to a Stellar Cyber system from this screen.');
 
     // Result remains editable instead of auto-promoted to a target-verified state.
-    await expect(map.getByRole('button',{name:'Find Stellar field'}).first()).toBeEnabled();
+    await expect(map.getByRole('button',{name:'Choose Stellar field'}).first()).toBeEnabled();
     await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
   });
 }

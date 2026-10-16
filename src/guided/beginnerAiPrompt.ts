@@ -77,7 +77,15 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     }
   }
 
-  const metadataReview=recommendation.label==='Review source metadata';
+  // Metadata-only source anomalies must never become parser-rule requests.
+  // Detect this from source evidence, not from mutable UI wording.
+  const issueText=preview.issues.join(' ').toUpperCase();
+  const metadataReview=preview.residuals.length===0&&(
+    issueText.includes('SOURCE_TIMESTAMP_INVALID')||
+    issueText.includes('RFC5424_TIMESTAMP_INVALID')||
+    issueText.includes('RFC5424_DUPLICATE_SD_KEY')||
+    issueText.includes('RFC5424_SD_TRAILING_SPACE_NONSTANDARD')
+  );
   lines.push('','Required output:');
   if(metadataReview){
     lines.push(

@@ -19,10 +19,10 @@ test('source extraction success is not falsely called parser-ready when the DRAF
  await page.getByRole('button',{name:'Analyze Logs'}).click();
 
  const summary=page.getByLabel('Beginner analysis summary');
- await expect(summary).toContainText('1 of 1 source event extracted');
- await expect(summary).toContainText('one additional rule before it can create the parser');
+ await expect(summary).toContainText('Values found in 1 of 1 log event');
+ await expect(summary).toContainText('one more parsing step for this log shape before it can create files');
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Fields found — one more rule is needed');
+ await expect(problem).toContainText('Fields found — one more parsing step is needed');
  await expect(problem).toContainText('No source text is missing');
  await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();

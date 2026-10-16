@@ -32,30 +32,31 @@ test('beginner can review official Stellar mappings, compare output and correct 
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
   const map=page.getByLabel('Map Fields stage');
   await expect(map).toBeVisible();
-  await expect(map).toContainText('Stellar metadata 7.0.xs');
-  await expect(map.getByLabel('Automatic normalization suggestions')).toContainText('src_ip');
-  await expect(map.getByLabel('Automatic normalization suggestions')).toContainText('srcip');
-  await expect(map.getByLabel('Automatic normalization suggestions')).toContainText('dstport');
+  await expect(map).toContainText('Stellar field dictionary 7.0.xs');
+  await expect(map.getByLabel('Recommended field matches')).toContainText('src_ip');
+  await expect(map.getByLabel('Recommended field matches')).toContainText('srcip');
+  await expect(map.getByLabel('Recommended field matches')).toContainText('dstport');
 
-  await map.getByRole('button',{name:/Apply 3 high-confidence suggestions/}).click();
-  await expect(map.getByLabel('Normalization mapping summary')).toContainText('Official mappings3');
-  await expect(map.getByLabel('Normalization validation')).toContainText('No local mapping issues detected');
-  await expect(map.getByLabel('Normalization changes only')).toContainText('198.51.100.10');
-  await expect(map.getByLabel('Normalization changes only')).toContainText('srcip');
+  await map.getByRole('button',{name:/Apply 3 recommended matches/}).click();
+  await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar3');
+  await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
+  await expect(map.getByLabel('Field changes only')).toContainText('198.51.100.10');
+  await expect(map.getByLabel('Field changes only')).toContainText('srcip');
 
-  const firstTarget=map.getByLabel('Normalized destination 0');
+  const firstTarget=map.getByLabel('Stellar field 0');
   await firstTarget.fill('not_a_stellar_field');
-  await expect(map.getByLabel('Normalization validation')).toContainText('UNVERIFIED_TARGET');
+  await expect(map.getByLabel('Field mapping checks'))
+    .toContainText('This destination is not in the checked Stellar field list');
   await expect(map.getByRole('button',{name:'Create Parser'})).toBeDisabled();
 
   await firstTarget.fill('srcip');
-  await expect(map.getByLabel('Normalization validation')).toContainText('No local mapping issues detected');
+  await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
   await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
 
-  await map.getByRole('button',{name:'Find Stellar field'}).first().click();
-  const catalog=page.getByLabel('Search official Stellar metadata catalog');
+  await map.getByRole('button',{name:'Choose Stellar field'}).first().click();
+  const catalog=page.getByLabel('Stellar field chooser');
   await expect(catalog).toBeVisible();
-  await catalog.getByLabel('Search Stellar metadata catalog').fill('timestamp');
+  await catalog.getByLabel('Search Stellar field list').fill('timestamp');
   await expect(catalog).toContainText('timestamp');
   await catalog.getByRole('button',{name:'Close'}).click();
 

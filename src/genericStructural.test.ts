@@ -115,6 +115,34 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect(extractGenericStructural(collision).fields).toEqual({});
   });
 
+  it('extracts bounded classic BSD app[pid] and tagged free-form messages losslessly',()=>{
+    const pid='Oct 26 19:58:50 undeomni.exe[4938]: RPD_ISIS_LSPCKSUM: : IS-IS 715 LSP checksum error, interface enp0s1965, LSP id tasun, sequence 3203, checksum eratv, lifetime ipsa';
+    const tagged='Jan 27 05:21:06 ssb FLOW_REASSEMBLE_SUCCEED: : Packet merged source 10.102.228.136 destination 10.151.136.250 ipid upt succeed';
+    expect(extractGenericStructural(pid)).toMatchObject({errors:[],fields:{
+      syslog:{month:'Oct',day:'26',time:'19:58:50',hostname:'undeomni.exe',app_tag:'RPD_ISIS_LSPCKSUM'},
+      generic:{mode:'bsd_classic_pid_message',source_raw:pid,pid:'4938',
+        message:': IS-IS 715 LSP checksum error, interface enp0s1965, LSP id tasun, sequence 3203, checksum eratv, lifetime ipsa'},
+    }});
+    expect(extractGenericStructural(tagged)).toMatchObject({errors:[],fields:{
+      syslog:{month:'Jan',day:'27',time:'05:21:06',hostname:'ssb',app_tag:'FLOW_REASSEMBLE_SUCCEED'},
+      generic:{mode:'bsd_tagged_message',source_raw:tagged,
+        message:': Packet merged source 10.102.228.136 destination 10.151.136.250 ipid upt succeed'},
+    }});
+    const draft=createDraft();draft.format='generic_structural';
+    draft.mappings=[{id:'mode',source:'generic.mode',target:'custom.mode',type:'string'}];
+    const suite=preview(pid+'\n'+tagged,draft);
+    expect(suite.counts).toMatchObject({total:2,matched:2,extracted:2,normalized:2,failures:0});
+    expect(suite.events.map(event=>(event.normalized.parserstudio_source as
+      {generic:{source_raw:string}}).generic.source_raw)).toEqual([pid,tagged]);
+  });
+
+  it('keeps malformed Junos-like BSD residuals as safe abstentions',()=>{
+    const brokenBracket='Sep 27 05:04:49 userro oree nimadmi7341.www.home RT_FLOW - kmd [';
+    const emptyBody='Apr 1 00:38:14 /kmd: ';
+    expect(extractGenericStructural(brokenBracket).fields).toEqual({});
+    expect(extractGenericStructural(emptyBody).fields).toEqual({});
+  });
+
   it('extracts bounded bracket colon-KV and preserves the unzoned timestamp as source text',()=>{
     const raw='<134>1 2020-03-30T07:20:35 gw CheckPoint 8363 - [action:"Accept"; src:"192.0.2.1"; product:"VPN-1 & FireWall-1"; group:"ops"; group:"admins"; sys_message::"risk"; note:"x;y"]';
     const result=extractGenericStructural(raw);

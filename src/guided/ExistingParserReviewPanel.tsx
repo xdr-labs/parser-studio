@@ -3,6 +3,7 @@ import type {ParserDraft} from '../model';
 import {MAX_PROJECT_JSON_BYTES,reviewLocalProjectJson} from './localProjectImport';
 import {inspectParserPair,type PairInspectionSummary} from './pairInspection';
 import {buildPairImportReview,type PairImportReview} from './pairImportReview';
+import {HelpTip} from './BeginnerHelp';
 
 interface Props{onRestore:(draft:ParserDraft,label:string)=>void}
 const PAIR_LIMIT=2*1024*1024;
@@ -58,46 +59,58 @@ export default function ExistingParserReviewPanel({onRestore}:Props){
  }
 
  return <details className="auto-parser-recipe" aria-label="Existing parser review and import">
-  <summary>Advanced · Review Existing Parser or Project</summary>
-  <p>This does not add another creation method. Exact Parser Studio Project JSON can be reviewed locally.
-    Ruby/CONF inspection is explicit, same-origin and read-only: the backend never executes imported Ruby and
-    opaque legacy pairs remain read-only. Restoring always clears current raw samples and never saves automatically.</p>
+  <summary className="beginner-tool-summary">Open or inspect an existing parser
+    <HelpTip label="Open or inspect an existing parser"
+      text="Use this only when you already have a Parser Studio project or existing parser files. It is not needed when creating a new parser from logs."/>
+  </summary>
+  <span className="beginner-tool-when">Use when: you want to continue work from an existing parser instead of starting from raw logs.</span>
+  <p>Parser Studio can reopen its own project file or inspect an existing parser pair without running it.
+    Importing here never deploys, activates, or saves anything automatically. If the files cannot be safely edited,
+    Parser Studio keeps them read-only and explains why.</p>
   <div className="two-path-mapping-editor" aria-label="Offline Project JSON review">
    <label>Parser Studio Project JSON
     <input type="file" accept=".json,application/json" aria-label="Existing Parser Project JSON"
      onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value='';void reviewProject(file);}}/>
    </label>
    {projectDraft&&<div role="status" className="auto-parser-result">
-    <strong>EXACT PROJECT JSON · LOCAL REVIEW PASS</strong>
-    <span>{projectName} · {projectDraft.name} · {projectDraft.format.toUpperCase()} · {projectDraft.mappings.length} mappings</span>
-    <span>No raw samples were imported · Native and Stellar target NOT VERIFIED</span>
-    <button type="button" onClick={()=>onRestore(projectDraft,'Imported Project JSON · samples cleared')}>
-      Restore Reviewed Project into Auto Parser
+    <strong>Project file checked · Ready to reopen</strong>
+    <span>{projectName} · {projectDraft.name} · {projectDraft.mappings.length} field mapping{projectDraft.mappings.length===1?'':'s'}</span>
+    <span>The project structure was checked locally. No sample logs were imported and nothing was tested against a live Stellar system.</span>
+    <button type="button" aria-label="Restore Reviewed Project into Auto Parser"
+      onClick={()=>onRestore(projectDraft,'Imported Project JSON · samples cleared')}>
+      Open This Project in Auto Parser
     </button>
    </div>}
    {projectError&&<p role="alert">{projectError}</p>}
   </div>
-  <div className="two-path-mapping-editor" aria-label="Ruby and CONF pair inspection">
-   <label>Extensionless Ruby fragment
-    <input type="file" aria-label="Existing Parser Ruby fragment"
+  <div className="two-path-mapping-editor" aria-label="Existing parser file inspection">
+   <label>Parser logic file <HelpTip label="Parser logic file"
+     text="This is the extensionless customized_<name> file from an existing Stellar custom parser. Choose it only when you already have these parser files."/>
+    <input type="file" aria-label="Existing parser logic file"
      onChange={e=>{setFragment(e.currentTarget.files?.[0]??null);resetPair();}}/>
    </label>
-   <label>Matching CONF file
-    <input type="file" accept=".conf,text/plain" aria-label="Existing Parser CONF file"
+   <label>Matching listener configuration (.conf) <HelpTip label="Listener configuration"
+     text="Choose the .conf file that belongs to the parser logic file above. Parser Studio checks the pair without executing it."/>
+    <input type="file" accept=".conf,text/plain" aria-label="Existing parser listener configuration"
      onChange={e=>{setConf(e.currentTarget.files?.[0]??null);resetPair();}}/>
    </label>
-   <button type="button" disabled={!fragment||!conf||pairBusy} onClick={()=>void inspectPair()}>
-    {pairBusy?'Inspecting Read-only…':'Inspect Pair Read-only'}
+   <button type="button" aria-label="Inspect Pair Read-only"
+    disabled={!fragment||!conf||pairBusy} onClick={()=>void inspectPair()}>
+    {pairBusy?'Checking files…':'Inspect files without running them'}
    </button>
    {review&&inspection&&<div role="status" className="auto-parser-result" aria-label="Existing parser pair review">
-    <strong>{review.classification} · {review.guidedImportAvailable?'EXACT RESTORE AVAILABLE':'READ-ONLY'}</strong>
-    <span>{inspection.protocols.join(' + ')||'No supported receiver'} · ports {inspection.ports.join(', ')||'none'} · {inspection.sourceCount} sources</span>
-    <span>CONF SHA-256 {inspection.confSha256.slice(0,16)}… · Ruby SHA-256 {inspection.fragmentSha256.slice(0,16)}…</span>
-    {review.findings.map(item=><span key={item.code}>{item.code} · {item.explanation}</span>)}
+    <strong>{pairDraft?'Existing parser can be reopened safely':'Existing parser is available for inspection only'}</strong>
+    <span>{inspection.sourceCount} input section{inspection.sourceCount===1?'':'s'} · listener port{inspection.ports.length===1?'':'s'} {inspection.ports.join(', ')||'not found'}</span>
+    {review.findings.map(item=><span key={item.code}>{item.explanation}</span>)}
     <span>{review.advice}</span>
-    <span>Imported Ruby is never executed · Native parser / sensor / Stellar target NOT VERIFIED</span>
-    {pairDraft&&<button type="button" onClick={()=>onRestore(pairDraft,'Imported exact Ruby/CONF project · samples cleared')}>
-      Restore Exact Pair into Auto Parser
+    <span>The files were inspected, not executed. Nothing was deployed or tested against a live Stellar system.</span>
+    <details><summary>Technical file checks</summary>
+      <span>Classification: {review.classification}</span>
+      <span>Configuration SHA-256 {inspection.confSha256.slice(0,16)}… · Parser logic SHA-256 {inspection.fragmentSha256.slice(0,16)}…</span>
+    </details>
+    {pairDraft&&<button type="button" aria-label="Restore Exact Pair into Auto Parser"
+      onClick={()=>onRestore(pairDraft,'Imported exact Ruby/CONF project · samples cleared')}>
+      Open This Parser in Auto Parser
     </button>}
    </div>}
    {pairError&&<p role="alert">{pairError}</p>}

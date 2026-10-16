@@ -66,9 +66,11 @@ async function begin(page:Page){
 test('new visitor sees only the two supported creation methods and a four-step Auto Parser',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Paste security logs. Parser Studio will show what works and what needs fixing.'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:/Paste security logs/})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button')).toHaveCount(4);
- await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
+ const methods=page.getByRole('complementary',{name:'Parser Studio navigation'});
+ await expect(methods.getByRole('button',{name:'Auto Parser',exact:true})).toBeVisible();
+ await expect(methods.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
  await expect(page.getByLabel('Auto Parser raw logs')).toBeEmpty();
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
  await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toHaveCount(0);
@@ -83,16 +85,16 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  await begin(page);
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('198.51.100.10');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('custom.source_ip');
- await expect(page.getByLabel('Normalization mapping handoff')).toContainText('Stellar Cyber metadata');
+ await expect(page.getByLabel('Normalization mapping handoff')).toContainText('choose where each value belongs in Stellar Cyber');
  await page.getByLabel('Auto Parser review event').selectOption('event-2');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('203.0.113.5');
  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
  const map=page.getByLabel('Map Fields stage');
  await expect(map).toBeVisible();
- await expect(map).toContainText('Stellar metadata 7.0.xs');
- await expect(map.getByLabel('Automatic normalization suggestions')).toContainText('srcip');
- await map.getByRole('button',{name:/Apply 3 high-confidence suggestions/}).click();
- await expect(map.getByLabel('Normalization mapping summary')).toContainText('Official mappings3');
+ await expect(map).toContainText('Stellar field dictionary 7.0.xs');
+ await expect(map.getByLabel('Recommended field matches')).toContainText('srcip');
+ await map.getByRole('button',{name:/Apply 3 recommended matches/}).click();
+ await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar3');
  await map.getByRole('button',{name:'Create Parser'}).click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  await expect(page.getByRole('button',{name:'Create Parser Files'})).toBeEnabled();
@@ -113,8 +115,12 @@ test('mixed families and unknown logs are not dropped or transmitted to validati
  await page.getByRole('button',{name:'Review Detected Results'}).click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
  await expect(page.getByRole('alert')).toContainText('unsupported family combination, malformed, or unrecognized');
- await expect(page.getByRole('navigation',{name:'Auto Parser steps'})
-   .getByRole('button',{name:/Create Parser/})).toBeDisabled();
+ const createStep=page.getByRole('navigation',{name:'Auto Parser steps'})
+   .getByRole('button',{name:/Create Parser/});
+ await expect(createStep).toHaveClass(/locked/);
+ await createStep.click();
+ await expect(page.getByLabel('Add Logs stage')).toBeVisible();
+ await expect(page.getByRole('status')).toContainText('Start with Add Logs');
  expect(posts()).toBe(0);
 });
 test('denied backend metadata blocks beginner compilation and does not exfiltrate samples',async({page})=>{

@@ -50,26 +50,26 @@ test('P1 user explicitly probes auth-only availability then consents before priv
  await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(logs);
- const block=page.getByLabel('Optional isolated Drain3 mining');
+ const block=page.getByLabel('Private text grouping tool');
  await expect(block).toBeVisible();
  await block.locator('summary').click();
  await expect(block.getByRole('checkbox')).toHaveCount(0);
  expect(probes).toBe(0);expect(posts).toBe(0);
- await block.getByRole('button',{name:/Check Private Drain3 Availability/}).click();
+ await block.getByRole('button',{name:/Check whether private grouping is available/}).click();
  await expect(block.getByRole('checkbox')).toBeVisible();
  expect(probes).toBe(1);expect(posts).toBe(0);
- const action=block.getByRole('button',{name:'Analyze with Approved Private Drain3'});
+ const action=block.getByRole('button',{name:'Group Similar Logs'});
  await expect(action).toBeDisabled();
- await block.getByLabel('Drain3 independent holdout logs').fill(held);
+ await block.getByLabel('Different example logs').fill(held);
  expect(posts).toBe(0);
  await block.getByRole('checkbox').check();
  await expect(action).toBeEnabled();
  await action.click();
- const report=page.getByLabel('Verified private Drain3 review');
- await expect(report).toContainText('2/2 events accounted');
- await expect(report).toContainText('1/1 independent');
- await expect(report).toContainText('ERROR LOGIN');
- await expect(report).toContainText('No raw fields returned');
+ const report=page.getByLabel('Private text grouping results');
+ await expect(report).toContainText('2/2 events checked');
+ await expect(report).toContainText('1/1 different example');
+ await expect(report).toContainText('grouping hint only');
+ await expect(report.getByText('Drain3 0.9.11')).not.toBeVisible();
  for(const sensitive of ['PRIVATE_ALICE','PRIVATE_BOB','PRIVATE_CAROL','192.0.2.11'])
    expect(await report.innerText()).not.toContain(sensitive);
  expect(posts).toBe(1);
@@ -89,17 +89,17 @@ test('P1 disabled private Drain3 never presents consent or posts a source; brows
  await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(logs);
- const block=page.getByLabel('Optional isolated Drain3 mining');
+ const block=page.getByLabel('Private text grouping tool');
  await expect(block).toBeVisible();
  await block.locator('summary').click();
- await block.getByRole('button',{name:/Check Private Drain3 Availability/}).click();
- await expect(block).toContainText('disabled or not authorized');
+ await block.getByRole('button',{name:/Check whether private grouping is available/}).click();
+ await expect(block).toContainText('not available');
  await expect(block.getByRole('checkbox')).toHaveCount(0);
- await expect(block.getByRole('button',{name:'Analyze with Approved Private Drain3'}))
+ await expect(block.getByRole('button',{name:'Group Similar Logs'}))
    .toHaveCount(0);
- const offline=page.getByLabel('Public synthetic parser fingerprints');
+ const offline=page.getByLabel('Known log shape matcher');
  await offline.locator('summary').click();
- await expect(offline.getByRole('button',{name:'Group Unknown Text Locally'}))
+ await expect(offline.getByRole('button',{name:'Group Similar Unknown Shapes'}))
    .toBeVisible();
  expect(probes).toBe(1);expect(posts).toBe(0);
 });

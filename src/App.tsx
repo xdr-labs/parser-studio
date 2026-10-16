@@ -5,6 +5,7 @@ import AutoParser from './guided/AutoParser';
 import {controlApprovedSession,fetchApprovedSessionStatus,reconcileApprovedSession,
   type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
 import ChatGPTAssist from './guided/ChatGPTAssist';
+import {HelpTip} from './guided/BeginnerHelp';
 import TestLabEvidencePanel from './guided/TestLabEvidencePanel';
 import {MAX_DATASET_BYTES} from './parser';
 
@@ -26,7 +27,7 @@ function runInWorker(raw:string,draft:ParserDraft):Promise<SuiteResult>{
     const end=()=>{finished=true;window.clearTimeout(deadline);worker.terminate();};
     const deadline=window.setTimeout(()=>{
       if(!finished){end();reject(new Error('The local parser preview timed out.'));}
-    },2000);
+    },15000);
     worker.onmessage=(event:MessageEvent<{suite?:SuiteResult;error?:string}>)=>{
       if(finished)return;
       end();
@@ -147,21 +148,29 @@ export default function App(){
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
   return <div className="app-shell two-path-shell">
-    <aside className="nav-rail two-path-nav" aria-label="Parser creation methods">
+    <aside className="nav-rail two-path-nav" aria-label="Parser Studio navigation">
       <div className="brand-symbol" aria-label="Parser Studio"><FileText size={23}/></div>
-      <div className="rail-group">
-        <button type="button" className={'rail-link '+(workspace==='auto'?'selected':'')}
-          aria-current={workspace==='auto'?'page':undefined}
-          onClick={()=>setWorkspace('auto')}>
-          <WandSparkles size={20}/><span>Auto Parser</span>
-        </button>
-        <button type="button" className={'rail-link '+(workspace==='chatgpt'?'selected':'')}
-          aria-current={workspace==='chatgpt'?'page':undefined}
-          onClick={()=>setWorkspace('chatgpt')}>
-          <Bot size={20}/><span>ChatGPT Assisted Parser</span>
-        </button>
+      <div className="rail-group" aria-label="Parser creation menu and help">
+        <div className="rail-item-with-help">
+          <button type="button" className={'rail-link '+(workspace==='auto'?'selected':'')}
+            aria-current={workspace==='auto'?'page':undefined}
+            onClick={()=>setWorkspace('auto')}>
+            <WandSparkles size={20}/><span>Auto Parser</span>
+          </button>
+          <HelpTip label="Automatic parsing help"
+            text="Use this for almost every new parser. Paste representative logs and follow the four guided steps. Parser Studio will ask for help only when a log cannot be handled safely."/>
+        </div>
+        <div className="rail-item-with-help">
+          <button type="button" className={'rail-link '+(workspace==='chatgpt'?'selected':'')}
+            aria-current={workspace==='chatgpt'?'page':undefined}
+            onClick={()=>setWorkspace('chatgpt')}>
+            <Bot size={20}/><span>ChatGPT Assisted Parser</span>
+          </button>
+          <HelpTip label="AI-assisted parsing help"
+            text="Use this when Auto Parser says a log still needs a parsing rule or when you want help understanding an unfamiliar format. You copy and paste the proposed fix; nothing is sent automatically."/>
+        </div>
       </div>
-      <div className="rail-footer"><LockKeyhole size={17}/><span>LOCAL PREVIEW</span></div>
+      <div className="rail-footer"><LockKeyhole size={17}/><span>LOCAL WORKSPACE</span></div>
     </aside>
     <div className="app-main">
       <header className="topbar two-path-header">
@@ -173,24 +182,35 @@ export default function App(){
           </div>
         </div>
         <div className="topbar-actions">
-          <span className="context-flag"><span className="status-dot"/> Browser-private samples</span>
-          <button type="button" className="button secondary" aria-pressed={advanced}
-            onClick={()=>setAdvanced(value=>!value)}>
-            {advanced?'Hide Tools':'Tools & Diagnostics'}
-          </button>
-          <button type="button" className="button secondary" onClick={reset}>
-            <Plus size={16}/> New Parser
-          </button>
+          <span className="context-flag"><span className="status-dot"/> Logs stay in this browser by default
+            <HelpTip label="Local workspace privacy"
+              text="Auto Parser analysis happens locally unless you explicitly choose a feature that says it will send data elsewhere. ChatGPT Assisted uses manual copy and paste."/></span>
+          <span className="topbar-help-action">
+            <button type="button" className="button secondary"
+              aria-label={advanced?'Return to Beginner Mode – hide Tools & Diagnostics':'Advanced Tools & Diagnostics'}
+              aria-pressed={advanced} onClick={()=>setAdvanced(value=>!value)}>
+              {advanced?'Hide Tools':'Tools & Diagnostics'}
+            </button>
+            <HelpTip label="When should I open Tools & Diagnostics?"
+              text="Open this only when normal Auto Parser guidance is not enough, or when you need to inspect an existing parser, multi-line boundaries, repeated text patterns, or technical evidence."/>
+          </span>
+          <span className="topbar-help-action">
+            <button type="button" className="button secondary" onClick={reset}>
+              <Plus size={16}/> New Parser
+            </button>
+            <HelpTip label="What does New Parser do?"
+              text="Starts over with a clean parser draft. If you already pasted logs, Parser Studio asks before clearing them."/>
+          </span>
         </div>
       </header>
       {advanced&&<details className="two-path-recovery" aria-label="Authorized Test Lab session recovery">
-        <summary>Recover an approved Test Lab run after refresh</summary>
-        <p>A page reload does not stop an already-authorized backend run.
-          Enter the exact run ID and request an independently owner-authorized,
-          read-only status check. Nothing is looked up automatically.
-          A run ID alone never grants access.</p>
+        <summary>Recover a previous parser test session
+          <HelpTip label="Recover a previous test session"
+            text="Use this only if you started a test session earlier, refreshed the page, and need to see that same session again. It does not start a new parser test."/></summary>
+        <p>A page refresh can hide a test session that is still running on the local Parser Studio service.
+          Enter its run ID to check that same session again. Parser Studio does not search for sessions automatically.</p>
         <div className="two-path-recovery-controls">
-          <label>Existing authorized Test Lab run ID
+          <label>Previous test run ID
             <input type="text" aria-label="Existing authorized Test Lab run ID"
               value={recoveryId} maxLength={41} autoComplete="off" spellCheck={false}
               placeholder="test_run_0123456789abcdef0123456789abcdef"
@@ -202,7 +222,7 @@ export default function App(){
           <button type="button" className="button secondary"
             disabled={!runIdSafe||recoverBusy||Boolean(sessionRunning)}
             onClick={()=>{void recoverApprovedSession();}}>
-            {recoverBusy?'Checking Owner Authorization…':'Look Up My Authorized Run'}
+            {recoverBusy?'Checking previous run…':'Check Previous Run'}
           </button>
         </div>
         {sessionRunning&&<p role="status">
@@ -246,7 +266,7 @@ export default function App(){
         runPreview={preview}
         activeSession={activeSession} onSessionUpdate={updateSessionSafely}
         onChatGPT={()=>setWorkspace('chatgpt')}
-        advanced={advanced} onAdvancedChange={setAdvanced}
+        advanced={advanced}
       />:<ChatGPTAssist
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{
           setSample(value);setDatasetName('ChatGPT local samples');

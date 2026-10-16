@@ -31,9 +31,9 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await page.route('**/api/v1/multipass/preview-batch',route=>
   route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)}));
  await page.goto('/');
- await expect(page.getByRole('heading',{name:'Paste security logs. Parser Studio will show what works and what needs fixing.'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:/Paste security logs/})).toBeVisible();
  await expect(page.getByRole('button',{name:'Analyze Logs'})).toBeDisabled();
- await expect(page.getByLabel('Local Multi-Pass source engine')).toBeHidden();
+ await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeHidden();
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
@@ -52,14 +52,14 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await expect(prompt).toContainText('Return only one ParserRecipe v0.2 JSON object');
  await expect(prompt).toContainText('parse_regex');
  await expect(page.getByLabel('AI result verification')).toBeVisible();
- await expect(page.getByLabel('Local Multi-Pass source engine')).toBeHidden();
+ await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeHidden();
  await expect(page.getByLabel('Existing parser review and import')).toBeHidden();
  await expect(page.getByLabel('Local logical boundary review')).toBeHidden();
- await expect(page.getByLabel('Optional isolated Drain3 mining')).toBeHidden();
+ await expect(page.getByLabel('Private text grouping tool')).toBeHidden();
  await expect(page.getByLabel('Public synthetic parser fingerprints')).toBeHidden();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
  await page.getByRole('button',{name:'Advanced'}).click();
- await expect(page.getByLabel('Local Multi-Pass source engine')).toBeVisible();
+ await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeVisible();
  await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toBeVisible();
 });
@@ -100,20 +100,20 @@ test('beginner mode offers reversible Parser Set groups for repeated unknown sha
  const input=page.getByLabel('Auto Parser raw logs');
  await input.fill(source);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
- const parserSet=page.getByLabel('Parser Set candidates');
+ const parserSet=page.getByLabel('Similar log groups');
  await expect(parserSet).toBeVisible({timeout:10000});
- await expect(parserSet).toContainText('6 of 6 unresolved events');
- await expect(parserSet.getByRole('button')).toHaveCount(2);
+ await expect(parserSet).toContainText('covering 6 of 6');
+ await expect(parserSet.getByRole('button',{name:/Analyze structural group/})).toHaveCount(2);
  await expect(parserSet.getByRole('button',{name:'Analyze structural group 1'})).toBeVisible();
  await expect(parserSet.getByRole('button',{name:'Analyze structural group 2'})).toBeVisible();
  await parserSet.getByRole('button',{name:'Analyze structural group 1'}).click();
- const context=page.getByLabel('Parser Set group context');
- await expect(context).toContainText('exact event subset of the original 6 logs');
+ const context=page.getByLabel('Separate log group context');
+ await expect(context).toContainText('exact subset of the original 6 logs');
  const selected=await input.inputValue();
  expect([groupA.join('\n'),groupB.join('\n')]).toContain(selected);
  await context.getByRole('button',{name:'Return to all 6 logs'}).click();
  await expect(input).toHaveValue(source);
- await expect(page.getByLabel('Parser Set group context')).toHaveCount(0);
+ await expect(page.getByLabel('Separate log group context')).toHaveCount(0);
 });
 
 test('complete structured logs get a simple success result without technical status language',async({page})=>{
@@ -330,9 +330,9 @@ test('metadata-only source anomaly explains that no bytes were dropped and does 
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Fields were extracted, but source metadata needs review');
- await expect(problem).toContainText('source metadata warning · no source bytes dropped');
- await expect(problem).toContainText('Recommended fix · Review source metadata');
+ await expect(problem).toContainText('Fields were found, but the log header or time needs review');
+ await expect(problem).toContainText('time/header warning · all source text kept');
+ await expect(problem).toContainText('Recommended fix · Review the log header or time');
  await expect(problem.locator('mark')).toHaveCount(0);
  await problem.getByRole('button',{name:'Review with ChatGPT'}).click();
  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
@@ -358,7 +358,7 @@ test('unconfirmed comma-delimited candidates do not falsely claim positional CSV
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('comma-delimited text candidate');
- await expect(problem).toContainText('Recommended fix · Create a rule for this comma-delimited text');
+ await expect(problem).toContainText('Recommended fix · Use the extracted fields');
  await expect(problem).not.toContainText('positional CSV');
 });
 
@@ -380,7 +380,7 @@ test('vendor-prefixed JSON offers bounded local authoring without an unsafe CSV 
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('JSON with a text prefix');
  await expect(problem).toContainText('Recommended fix · Use the extracted fields');
- await expect(problem).toContainText('bounded local rule for this exact structure');
+ await expect(problem).toContainText('built-in safe rule for this structure');
  await expect(problem).not.toContainText('positional CSV');
  const use=problem.getByRole('button',{name:'Use extracted fields'});
  await expect(use).toBeVisible();

@@ -105,6 +105,13 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
     return {body:'leef',status:extractStructuredFamily(value,'leef').errors.length===0?
       'RECOGNIZED':'BODY_MALFORMED'};
   }
+  // A strongly quoted CSV row can legitimately contain '=' inside URL/query
+  // fields. Recognize that bounded shape before the generic KV hint so those
+  // embedded characters cannot turn an otherwise valid CSV event into
+  // BODY_MALFORMED. Unquoted key=value records still keep KV precedence.
+  if(value.startsWith('"')&&csvValid(value)){
+    return {body:'csv',status:'RECOGNIZED'};
+  }
   if(value.includes('=')){
     return {body:'kv',status:kvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
   }

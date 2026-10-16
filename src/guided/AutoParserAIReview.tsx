@@ -213,15 +213,15 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
       const evidence=multiPassProtection(holdout,batch);
       holdoutProtectedValues=evidence.values;holdoutProtectedResiduals=evidence.residuals;
      }catch{
-      setImportResult('Fix not applied: the additional test logs could not be verified by the local Multi-Pass source engine. No changes were made.');return;
+      setImportResult('Fix not applied: Parser Studio could not safely verify the additional test logs. No changes were made.');return;
      }
      const holdoutValueRegression=protectedValueRegression(candidateHoldout,holdoutProtectedValues,true);
      if(holdoutValueRegression){
-      setImportResult('Fix not applied: holdout event '+holdoutValueRegression.event+' would drop '+holdoutValueRegression.missing+' of '+holdoutValueRegression.required+' Funnel source value occurrences from the final parser output. No changes were made.');return;
+      setImportResult('Fix not applied: additional test event '+holdoutValueRegression.event+' would lose '+holdoutValueRegression.missing+' of '+holdoutValueRegression.required+' source values that must be preserved. No changes were made.');return;
      }
      const holdoutResidualRegression=protectedResidualRegression(candidateHoldout,holdoutProtectedResiduals);
      if(holdoutResidualRegression){
-      setImportResult('Fix not applied: holdout event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' Funnel residual source regions outside the final parser output. No changes were made.');return;
+      setImportResult('Fix not applied: additional test event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' original source regions unaccounted for. No changes were made.');return;
      }
     }
     const comparisonInput={source,baseline:suite,candidate:candidateSuite,
@@ -294,13 +294,13 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
        protectedValueRegression(candidateHoldout,approvedCandidate.holdoutProtectedValues,true):null;
       if(holdoutValueRegression){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-       setImportResult('The fix is no longer safe: holdout event '+holdoutValueRegression.event+' would drop '+holdoutValueRegression.missing+' of '+holdoutValueRegression.required+' Funnel source value occurrences from the final parser output. No changes were made.');return;
+       setImportResult('The fix is no longer safe: additional test event '+holdoutValueRegression.event+' would lose '+holdoutValueRegression.missing+' of '+holdoutValueRegression.required+' source values that must be preserved. No changes were made.');return;
       }
       const holdoutResidualRegression=approvedCandidate.mode==='recovery'?
        protectedResidualRegression(candidateHoldout,approvedCandidate.holdoutProtectedResiduals):null;
       if(holdoutResidualRegression){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
-       setImportResult('The fix is no longer safe: holdout event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' Funnel residual source regions outside the final parser output. No changes were made.');return;
+       setImportResult('The fix is no longer safe: additional test event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' original source regions unaccounted for. No changes were made.');return;
       }
       const recheckInput={source,baseline:suite,candidate:candidateSuite,
        holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
@@ -318,7 +318,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      onApplyCandidate(approvedCandidate.draft);setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
      setImportResult('Fix applied to the parser draft. Continue to Review Fields, then create the parser.');
     }} aria-label="Apply Verified Fix">
-      Apply Verified Fix
+      Apply Tested Fix
     </button>
    </div>}
   </details></>;
@@ -338,7 +338,12 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   <label className="stellar-ai-label">{mode==='entire'?'Review the entire log before copying':'Select exact source text below'}</label>
   {mode==='selection'&&<textarea aria-label="Select source text for AI correction" readOnly spellCheck={false} rows={5} value={raw}
    onSelect={e=>{const el=e.currentTarget;setRange([el.selectionStart,el.selectionEnd]);setReviewedExcerpt('');setApproved(false);}}/>}
-  {mode==='selection'&&sourceRange&&<p role="status">UTF-8 bytes {sourceRange.startByte}–{sourceRange.endByte}</p>}
+  {mode==='selection'&&sourceRange&&<div role="status" className="stellar-selected-source">
+    Selected text is ready for review.
+    <details className="beginner-technical-details"><summary>Technical selection details</summary>
+      <small>UTF-8 byte range {sourceRange.startByte}–{sourceRange.endByte}</small>
+    </details>
+  </div>}
   {mode==='selection'&&selectionContext&&<p className="stellar-selected-source">
     {selectionContext.kind==='field'?`Editing extracted field: ${selectionContext.path??'Unknown field'}. Accepted fields outside this exact range are preserved.`:'Editing an unparsed source region. Accepted fields outside this exact range are preserved.'}
   </p>}

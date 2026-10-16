@@ -96,7 +96,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       expect(sha(f.content)).toBe(f.sha256);
       expect(pair.manifest.fileHashes[f.name]).toBe(f.sha256);
       const download=page.waitForEvent('download');
-      await page.getByLabel('Generated Auto Parser DRAFT pair')
+      await page.getByLabel('Generated parser files')
         .getByRole('button',{name:f.name,exact:true}).click();
       expect(sha(await readFile(await (await download).path()))).toBe(f.sha256);
     }
@@ -115,7 +115,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await returnToReviewFields(page);
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"deny"}');
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
   });
 
   test('invalid projects, malformed HTTP and foreign owner reads cannot fake an artifact PASS',async({request})=>{
@@ -157,7 +157,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     await expect(page.getByLabel('Auto Parser test evidence'))
       .toContainText('Parser creation stopped');
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
     expect(attempts).toBe(1);
   });
 
@@ -191,28 +191,28 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     const generated=page.waitForResponse(r=>r.url().endsWith('/generate')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     expect((await generated).status()).toBe(200);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await expect(page.getByLabel('Generated parser files')).toContainText('Two DRAFT files verified');
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    const reviewed=page.getByLabel('Review-only staged recipe');
+    const reviewed=page.getByLabel('Parser-building steps');
     await expect(reviewed).toContainText('REVIEW_ONLY');
     await expect(reviewed).toContainText('v0.2 restricted compilation needs backend capability verification');
     const recipeGenerated=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await recipeGenerated).status()).toBe(200);
-    const nativeBounded=page.getByLabel('v0.2 exact compiler evidence');
+    const nativeBounded=page.getByLabel('Parser-building step verification result');
     await expect(nativeBounded).toContainText('v0.1 pair SHA MATCHED');
     await expect(nativeBounded).toContainText('Native user parser NOT VERIFIED');
     await expect(nativeBounded).toContainText('Private Native verifier is not configured on this backend');
-    await expect(page.getByRole('button',{name:'Run Private Native Ruby/CONF Verification'})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Run private parser-file compatibility check'})).toHaveCount(0);
     await expect(nativeBounded).not.toContainText('198.51.100.10');
     await expect(reviewed).toContainText('parse_json');
     await expect(reviewed).not.toContainText('198.51.100.10');
     await expect(reviewed).not.toContainText('203.0.113.5');
     for(const filename of ['customized_demo_firewall.conf','customized_demo_firewall']){
       const download=page.waitForEvent('download');
-      await page.getByLabel('Generated Auto Parser DRAFT pair').getByRole('button',{name:filename,exact:true}).click();
+      await page.getByLabel('Generated parser files').getByRole('button',{name:filename,exact:true}).click();
       const result=await download;
       expect(result.suggestedFilename()).toBe(filename);
       const bytes=await readFile(await result.path());
@@ -257,18 +257,18 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     expect((await generated).status()).toBe(200);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('dispatch_family');
+    await expect(page.getByLabel('Parser-building steps')).toContainText('dispatch_family');
     const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await staged).status()).toBe(200);
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('v0.1 pair SHA MATCHED');
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('Native user parser NOT VERIFIED');
     expect(actualBodies.length).toBeGreaterThanOrEqual(4);
   });
@@ -303,18 +303,18 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     expect((await generated).status()).toBe(200);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    await expect(page.getByLabel('Parser-building steps')).toContainText('REVIEW_ONLY');
     const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await staged).status()).toBe(200);
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('v0.1 pair SHA MATCHED');
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('Native user parser NOT VERIFIED');
     const reviewedRequests=payloads
       .map(body=>JSON.parse(body) as {recipe?:{stages?:Array<{op:string;families?:string[]}>}})
@@ -355,18 +355,18 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     expect((await generated).status()).toBe(200);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    await expect(page.getByLabel('Parser-building steps')).toContainText('REVIEW_ONLY');
     const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await staged).status()).toBe(200);
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('v0.1 pair SHA MATCHED');
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('Native user parser NOT VERIFIED');
     const actual=payloads.map(body=>JSON.parse(body) as {
       recipe?:{stages?:Array<{op:string;families?:string[]}>}}).filter(x=>x.recipe?.stages?.length);
@@ -408,18 +408,18 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     expect((await generated).status()).toBe(200);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    await expect(page.getByLabel('Parser-building steps')).toContainText('REVIEW_ONLY');
     const staged=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await staged).status()).toBe(200);
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('v0.1 pair SHA MATCHED');
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('Native user parser NOT VERIFIED');
     const requests=bodies.map(body=>JSON.parse(body) as {
       recipe?:{stages?:Array<{op:string;families?:string[]}>}}).filter(x=>x.recipe?.stages?.length);
@@ -475,18 +475,18 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       r.url().endsWith('/parser-pairs/generate')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     expect((await generated).status()).toBe(200);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    await expect(page.getByLabel('Parser-building steps')).toContainText('REVIEW_ONLY');
     const staged=page.waitForResponse(r=>
       r.url().includes('/recipe/v0.2/generate')&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await staged).status()).toBe(200);
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('v0.1 pair SHA MATCHED');
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('Native user parser NOT VERIFIED');
     const req=bodyLog.map(x=>JSON.parse(x) as {recipe?:{
       sourceFormat:string;stages:Array<{op:string;boundary?:string}>};
@@ -570,7 +570,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
  await page.getByRole('button',{name:'Review Detected Results'}).click();
     await enterCreateParser(page);
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     await expect(page.getByLabel('Offline parser revision history')).toHaveCount(1);
     const tools=page.getByLabel('Authorized test and Interflow verification');
@@ -635,7 +635,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       status:'DRAFT',engineVerified:false,targetImportVerified:false,
     });
     for(const f of pair.files)expect(sha(f.content)).toBe(f.sha256);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     const preview=page.getByLabel('Local synthetic replay preview');
     await preview.locator('summary').click();
@@ -655,16 +655,16 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       format:'mixed',mixedFormats:['csv','json','kv'],
       csvColumns:['src_ip','action','dst_port'],csvDelimiter:';',
     });
-    await page.getByLabel('ParserRecipe v0.2 review').locator('summary').click();
+    await page.getByLabel('Parser-building steps review').locator('summary').click();
     await page.getByRole('button',{name:'Review Staged Recipe'}).click();
-    await expect(page.getByLabel('Review-only staged recipe')).toContainText('REVIEW_ONLY');
+    await expect(page.getByLabel('Parser-building steps')).toContainText('REVIEW_ONLY');
     const stagedResponse=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
       r.request().method()==='POST');
     await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
     expect((await stagedResponse).status()).toBe(200);
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('v0.1 pair SHA MATCHED');
-    await expect(page.getByLabel('v0.2 exact compiler evidence'))
+    await expect(page.getByLabel('Parser-building step verification result'))
       .toContainText('Native user parser NOT VERIFIED');
     const requests=outgoing.map(x=>JSON.parse(x.body) as {
       recipe?:{stages?:Array<{op:string;families?:string[]}>}
@@ -687,7 +687,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
  await page.getByRole('button',{name:'Review Detected Results'}).click();
     await enterCreateParser(page);
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     await page.route('**/api/v1/parser-pairs/package',async route=>{
       archiveRequests++;
@@ -705,14 +705,14 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     });
     await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
     await expect(page.getByRole('alert')).toContainText('ZIP verification failed');
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .not.toContainText('ZIP SHA-256:');
     expect(downloaded).toEqual([]);
     expect(archiveRequests).toBe(1);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
   test('migrated legacy ZIP: missing package capability fails closed before any backend ZIP POST',async({page})=>{
@@ -736,12 +736,12 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
  await page.getByRole('button',{name:'Review Detected Results'}).click();
     await enterCreateParser(page);
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
     await expect(page.getByRole('alert')).toContainText('ZIP verification failed');
     expect(archiveRequests).toBe(0);
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
   });
 
@@ -769,7 +769,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByLabel('Create Parser stage')).toBeVisible();
     await expect(page.getByRole('button',{name:'Create Parser Files'}))
       .toBeDisabled();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
     expect(operations).toEqual([]);
     await returnToReviewFields(page);
     await page.getByLabel('Adjust detected field mapping').locator('summary').click();
@@ -778,11 +778,11 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByRole('button',{name:'Create Parser Files'}))
       .toBeEnabled();
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     expect(operations.filter(path=>path.endsWith('/generate')).length).toBe(1);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
 
@@ -813,20 +813,20 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
     const map=page.getByLabel('Map Fields stage');
     await expect(map).toBeVisible();
-    await expect(map.getByLabel('Normalization validation')).toContainText('TARGET_COLLISION');
+    await expect(map.getByLabel('Field mapping checks')).toContainText('TARGET_COLLISION');
     await expect(map.getByRole('button',{name:'Create Parser'})).toBeDisabled();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
+    await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
     expect(outgoing).toEqual([]);
-    await map.getByLabel('Normalized destination 1').fill(original);
-    await expect(map.getByLabel('Normalization validation')).toContainText('No local mapping issues detected');
+    await map.getByLabel('Stellar field 1').fill(original);
+    await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
     await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
     await map.getByRole('button',{name:'Create Parser'}).click();
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     expect(outgoing.filter(path=>path.endsWith('/generate'))).toHaveLength(1);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
 
@@ -846,7 +846,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
  await page.getByRole('button',{name:'Review Detected Results'}).click();
     await enterCreateParser(page);
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
     const history=page.getByLabel('Offline parser revision history');
     await history.locator('summary').click();
@@ -876,8 +876,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect(await history.innerText()).not.toContain(secret);
     expect(foreignResponses).toBe(1);
     expect(unsafe).toEqual([]);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
 
@@ -913,7 +913,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     });
     await page.goto('/?workspace=chatgpt');
     await page.reload();
-    await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+    await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
     await expect(page.getByLabel('Active Test Lab session indicator')).toHaveCount(0);
     expect(requests).toEqual([]);
     await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
@@ -930,10 +930,10 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await expect(page.getByLabel('Active Test Lab session indicator'))
       .toContainText('Sensor ingest NOT VERIFIED');
     await expect(button).toBeDisabled();
-    await page.getByRole('complementary',{name:'Parser creation methods'})
+    await page.getByRole('complementary',{name:'Parser Studio navigation'})
       .getByRole('button',{name:'Auto Parser',exact:true}).click();
     await expect(page.getByLabel('Active Test Lab session indicator')).toBeVisible();
-    await page.getByRole('complementary',{name:'Parser creation methods'})
+    await page.getByRole('complementary',{name:'Parser Studio navigation'})
       .getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
     await page.getByLabel('Active Test Lab session indicator')
       .getByRole('button',{name:'Stop Server Session Now'}).click();
@@ -943,8 +943,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       '/api/v1/test-lab/sessions/status',
       '/api/v1/test-lab/sessions/stop',
     ]);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
   test('migrated owner denial: invalid, foreign, and forged run replies never restore a session or leak raw data',async({page})=>{
@@ -998,8 +998,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       expect(await panel.innerText()).not.toContain('PRIVATE_RUN_VALUE_NEVER_ECHO');
     }
     expect(calls).toHaveLength(4);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
   test('migrated recovery race: editing a run ID while lookup is pending cannot restore a stale session',async({page})=>{
@@ -1099,7 +1099,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
  await page.getByRole('button',{name:'Review Detected Results'}).click();
     await enterCreateParser(page);
     await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
+    await expect(page.getByLabel('Generated parser files'))
       .toContainText('Two DRAFT files verified');
 
     // Interception is installed only AFTER actual backend compilation. This is
@@ -1265,8 +1265,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect(reads).toBe(3);
     await expect(page.getByLabel('Active Test Lab session indicator'))
       .toContainText('Changing screens does not stop server delivery');
-    await page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
+    await page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
     await expect(page.getByLabel('Authorized test and Interflow verification')).toHaveCount(0);
     await expect(page.getByLabel('Active Test Lab session indicator'))
       .toContainText('RUNNING');
@@ -1291,8 +1291,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       '/api/v1/test-lab/sessions/stop',
       '/api/v1/test-lab/sessions/stop',
     ]);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 
   test('migrated legacy replay: reviewed Auto Parser result rotates local-only synthetic events and stops on navigation',async({page})=>{
@@ -1311,7 +1311,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
    await expect(page.getByLabel('Review Fields stage')).toBeVisible();
    await enterCreateParser(page);
    await page.getByRole('button',{name:'Create Parser Files'}).click();
-   await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toContainText('Two DRAFT files verified');
+   await expect(page.getByLabel('Generated parser files')).toContainText('Two DRAFT files verified');
    const sentBefore=calls.length;
    const panel=page.getByLabel('Local synthetic replay preview');
    await panel.locator('summary').click();
@@ -1337,8 +1337,8 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
    await expect(page.getByLabel('Local synthetic replay preview')).toHaveCount(0);
    await page.getByRole('button',{name:'Back to Logs'}).click();
    await page.getByLabel('Auto Parser raw logs').fill(replaySource+'\n{"action":"allow"}');
-   await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
-   await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
+   await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
+   await expect(page.getByRole('complementary',{name:'Parser Studio navigation'}).locator('button.rail-link')).toHaveCount(2);
   });
 
 });

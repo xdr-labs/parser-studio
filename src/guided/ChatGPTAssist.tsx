@@ -14,6 +14,7 @@ import {fetchBackendCapabilities,assertBackendProjectSupported} from './backendC
 import {validateBackendProject,generateBackendPair,type GeneratedPair} from './backendClient';
 import {verifyGeneratedPair} from './artifactPackageClient';
 import {compileReviewedRecipeV02} from './recipeV2BackendClient';
+import {HelpTip,StageGuide} from './BeginnerHelp';
 
 interface Props {
   draft:ParserDraft;
@@ -218,7 +219,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         recipe:review.candidate,legacyProject:adapted.project,
       },pair);
       setGenerated({pair,draft:candidate});
-      setNotice('Parser files created and verified. Nothing was deployed to a DP or sensor.');
+      setNotice('Parser files created after the local sample checks passed. Nothing was installed automatically.');
     }catch{
       setNotice('Parser Studio could not safely create files from this ChatGPT result. No files were released and no parser rules were changed.');
     }finally{setBusy(false);}
@@ -241,20 +242,25 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     </header>
     <div className="auto-parser-body">
       <section aria-label="ChatGPT preparation">
-        <h2>1. Prepare log examples</h2>
-        <p>Source events are used for local identity checks only. They are never automatically
-          included in the ChatGPT prompt or sent to an external AI service.</p>
+        <h2>1. Prepare examples <HelpTip label="Prepare examples"
+          text="Paste the original logs for Parser Studio to test locally, then separately paste only the redacted examples you are comfortable copying to ChatGPT."/></h2>
+        <StageGuide title="Use ChatGPT only for the part Auto Parser could not solve">
+          Keep the original logs here for local testing. Create a separate redacted example for ChatGPT, then review the prompt before copying it.
+        </StageGuide>
+        <p>Your original logs stay in Parser Studio. They are not added to the ChatGPT prompt automatically.</p>
         <label>Original local logs
           <textarea aria-label="ChatGPT local sample logs" rows={6} spellCheck={false}
             maxLength={MAX_SAMPLE} value={sample}
             placeholder="Paste the logs you want to parse."
             onChange={e=>setSample(e.target.value)}/>
         </label>
-        <label>What should be extracted?
+        <label>What do you want Parser Studio to find? <HelpTip label="What should be extracted?"
+          text="Describe the values you care about in plain language, for example: source IP, destination IP, username, action, URL, process name, or event ID. You do not need to know Stellar field names yet."/>
           <input aria-label="ChatGPT desired fields" maxLength={512} type="text"
             value={goal} onChange={e=>setGoal(e.target.value)}/>
         </label>
-        <label>Reviewed redacted log examples for ChatGPT
+        <label>Redacted example to copy to ChatGPT <HelpTip label="Redacted example"
+          text="Paste one or more representative logs with secrets, credentials, personal data, and sensitive identifiers removed or replaced. Parser Studio will include only this reviewed text in the prompt."/>
           <textarea aria-label="ChatGPT redacted examples" rows={5} spellCheck={false}
             maxLength={MAX_REDACTED} value={redacted}
             placeholder="Manually paste examples with credentials, identifiers and personal data removed."
@@ -299,7 +305,8 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             <span>{review.report.addedMappings} suggested mappings · {review.report.changedStageCount} changed stages ·
               {review.report.mode==='FULL_RECOVERY'?' full parser recovery':' baseline-safe edit'}</span>
           </details>
-          <label>Additional test logs (use different examples)
+          <label>Different examples to test the fix <HelpTip label="Different test examples"
+            text="Use logs from the same product and event type that were not used in the ChatGPT prompt. Parser Studio checks whether the proposed fix works beyond the examples that created it."/>
             <textarea aria-label="Additional ChatGPT test logs" rows={4}
               maxLength={MAX_SAMPLE} value={holdout} onChange={e=>{
                 setHoldout(e.target.value);setHoldoutAttested(false);setCandidateApproval(false);setComparison(null);setGenerated(null);
@@ -330,10 +337,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           {generated&&<div className="auto-parser-download"
              aria-label="ChatGPT created parser files">
             <strong>Parser files created successfully</strong>
-            <span>Nothing was deployed to a DP or sensor.</span>
+            <span>The current logs and additional examples passed the Parser Studio checks. Nothing was installed automatically.</span>
             <details className="auto-parser-recipe">
-              <summary>Verification details</summary>
-              <span>Two SHA-verified parser files · Native and target verification not yet performed.</span>
+              <summary>Technical verification details</summary>
+              <span>Two parser files passed integrity checks before download.</span>
             </details>
             {generated.pair.files.map(file=><button type="button" key={file.name}
               onClick={()=>download(file.name,file.content)}>

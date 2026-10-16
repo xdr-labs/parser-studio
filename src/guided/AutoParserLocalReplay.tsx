@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {ParserDraft} from '../model';
 import {createLocalReplayPlan,synthesizeFromReplayPlan,type LocalReplayPlan,
   type ReplayMutation} from './replayPreview';
+import {HelpTip} from './BeginnerHelp';
 
 interface Props {
   sample:string;
@@ -70,11 +71,13 @@ export default function AutoParserLocalReplay({sample,draft}:Props){
   }
 
   return <details className="auto-parser-recipe" aria-label="Local synthetic replay preview">
-    <summary>Synthetic Replay Preview · Browser Only</summary>
-    <p>Repeatedly generate current timestamps, documentation-only IP addresses,
-      synthetic usernames and example.test URLs from reviewed single-line logs.
-      Other source field values may remain unchanged in this local display.
-      Nothing is uploaded, stored or delivered to a sensor.</p>
+    <summary className="beginner-tool-summary">Preview changing test logs
+      <HelpTip label="Preview changing test logs"
+        text="Use this after a parser is created when you want to see how the same log shape behaves with changing timestamps, example IPs, usernames, and URLs. It runs only in this browser and sends nothing to a sensor."/>
+    </summary>
+    <span className="beginner-tool-when">Use when: you want a quick local sanity check with changing example values before any separately approved live test.</span>
+    <p>Parser Studio creates safe synthetic variations from your reviewed sample and displays them locally.
+      It does not upload, store, or transmit these events.</p>
     <div className="two-path-mapping-editor">
       <label>Preview rate
         <select aria-label="Replay preview rate" value={rate} disabled={running||!supported}
@@ -85,18 +88,17 @@ export default function AutoParserLocalReplay({sample,draft}:Props){
       </label>
       <div>
         <button type="button" disabled={!running&&!supported} onClick={running?stop:start}>
-          {running?'Stop Local Replay':'Start Local Replay'}
+          {running?'Stop Preview':'Start Local Preview'}
         </button>
       </div>
     </div>
     {!supported&&<p role="status" aria-label="Local replay unsupported format notice">
-      Browser-only replay is unavailable for this compiled mixed or multiline format.
-      The verified DRAFT parser remains available; no events have been sent.
+      This local preview is not available for mixed or multi-line parser formats. Your generated parser files are unchanged and nothing was sent.
     </p>}
     <p role="status" aria-label="Local synthetic replay status">
-      Locally generated {count} events · Sensor deliveries 0 events ·
-      {running?' Running locally':' Stopped'}
-      {output&&<span> · Source {output.sourceEvent}/{output.sourceTotal}
+      {count} synthetic event{count===1?'':'s'} generated locally · Nothing sent ·
+      {running?' Preview running':' Preview stopped'}
+      {output&&<span> · Based on source event {output.sourceEvent}/{output.sourceTotal}
         {' '}(line {output.sourceLine})</span>}
     </p>
     {error&&<p role="alert">{error}</p>}
@@ -104,8 +106,6 @@ export default function AutoParserLocalReplay({sample,draft}:Props){
       <p>Latest synthetic log · Changed fields: {output.mutations.join(', ')||'none'}</p>
       <pre aria-label="Local synthetic replay output">{output.log}</pre>
     </div>}
-    <small>No target Apply, backend Test Lab session, UDP/TCP sensor send or
-      Interflow read happens from this browser preview. Supported mixed-family
-      parsers require independent replay review.</small>
+    <small>This preview stays in the browser. It does not contact a live Stellar system, start a test session, or send network traffic.</small>
   </details>;
 }

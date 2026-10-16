@@ -389,9 +389,9 @@ Those activities may be handled later as a separate target-integration project. 
 - pinned backend live Chromium/HTTP integration 29/29 PASS;
 - final exact-head GitHub Actions run #38843728978 SUCCESS on `7f2015de6ead10ad5bdaa1641ae30c92ec9c822c`.
 
-### Worktree preservation
+### Worktree cleanup
 
-Obsolete UI experimental worktrees were consolidated to the original main worktree plus one cumulative UI worktree. Historical dirty patches and isolated E2E scripts are preserved outside Git under `/home/aella/parser-studio-worktree-preservation-20261016/`; do not publish raw private logs or diagnostic scripts. Untracked dependency directories and test-results may remain as local build artifacts and are not Git code changes.
+Parser Studio development is consolidated to one standalone active repository: `/home/aella/parser-studio-beginner-parser-set-e2e-20261016`. Obsolete Parser Studio worktrees, experimental runtime directories, stale Playwright/Chromium/Vite processes, and prior test-result directories were removed on 2026-10-16. The owner-private `/home/aella/.parser-studio-secrets` credential store is intentionally preserved. The active UI/backend/Multi-Pass development runtime is kept under the active repository as local excluded runtime state and is not Git product content.
 
 ## P0-NORM — Stellar Cyber normalization mapping review (owner decision 2026-10-16)
 

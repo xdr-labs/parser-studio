@@ -2,7 +2,9 @@
 .two-path-nav {width: 182px;align-items: stretch;padding-left:14px;padding-right:14px}
 .two-path-nav .brand-symbol{margin:0 auto}
 .two-path-nav .rail-group{align-items:stretch;gap:11px;margin-top:37px}
-.two-path-nav .rail-link{width:100%;min-height:65px;flex-direction:row;justify-content:flex-start;gap:11px;padding:10px 12px;text-align:left;font-size:12px;letter-spacing:0;line-height:1.4}
+.two-path-nav .rail-item-with-help{position:relative;display:flex;align-items:stretch}
+.two-path-nav .rail-item-with-help>.beginner-help-tip{position:absolute;right:7px;top:7px;margin:0;z-index:3;color:#d8ecef}
+.two-path-nav .rail-link{width:100%;min-height:65px;flex-direction:row;justify-content:flex-start;gap:11px;padding:10px 32px 10px 12px;text-align:left;font-size:12px;letter-spacing:0;line-height:1.4}
 .two-path-nav .rail-link svg{flex:none}
 .two-path-nav .rail-link span{overflow-wrap:anywhere}
 .two-path-nav .rail-footer{align-self:center;font-size:10px;text-align:center}
@@ -10,6 +12,8 @@
 .two-path-shell .auto-parser-workspace{width:min(100%,1160px);margin-inline:auto}
 .two-path-shell .auto-parser-body>section{max-width:100%}
 .two-path-header{min-height:85px}
+.topbar-help-action{display:inline-flex;align-items:center;gap:3px}
+.topbar-help-action>.beginner-help-tip,.context-flag>.beginner-help-tip{margin-left:2px}
 .two-path-mapping-editor{display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.25fr) minmax(120px,.6fr);gap:12px;margin:12px 0;align-items:end}
 .two-path-mapping-editor label{display:flex;flex-direction:column;gap:5px;color:#56677c;font-size:12px;font-weight:600}
 .two-path-mapping-editor input,.two-path-mapping-editor select{min-width:0;width:100%;border:1px solid #d2dfe6;background:#fff;color:#253347;padding:9px 10px;border-radius:7px}

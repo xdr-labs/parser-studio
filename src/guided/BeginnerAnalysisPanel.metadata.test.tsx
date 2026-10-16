@@ -25,7 +25,8 @@ describe('Beginner metadata preservation review',()=>{
       events={[{startByte:0,endByte:source.length,preview}]}
       onOpenAssisted={()=>{}}
       csvReviewRequired csvConsistentShapeAvailable={false}/>);
-    expect(screen.getByText('1 of 1 source event extracted')).toBeInTheDocument();
+    expect(screen.getByLabelText('Beginner analysis summary'))
+      .toHaveTextContent('Values found in 1 of 1 log event');
     expect(screen.queryByText(/parsed completely/)).not.toBeInTheDocument();
     expect(screen.getByText(/do not share one consistent CSV shape/)).toBeInTheDocument();
   });
@@ -46,7 +47,7 @@ describe('Beginner metadata preservation review',()=>{
     render(<BeginnerAnalysisPanel source={source}
       events={[{startByte:0,endByte:preview.sourceBytes,preview}]}
       onOpenAssisted={vi.fn()} draft={draft} onApplyCandidate={apply}/>);
-    const preserve=screen.getByRole('button',{name:'Preserve source metadata as text'});
+    const preserve=screen.getByRole('button',{name:'Keep the affected header/time value as text'});
     expect(preserve).toBeTruthy();
     fireEvent.click(preserve);
     expect(apply).toHaveBeenCalledTimes(1);
@@ -72,9 +73,9 @@ describe('Beginner metadata preservation review',()=>{
     render(<BeginnerAnalysisPanel source={source}
       events={[{startByte:0,endByte:preview.sourceBytes,preview}]}
       onOpenAssisted={vi.fn()} draft={createDraft()} onApplyCandidate={vi.fn()}/>);
-    expect(screen.queryByRole('button',{name:'Preserve source metadata as text'})).toBeNull();
-    expect(screen.getByText(/Correct the source metadata before creating the parser/)).toBeTruthy();
-    expect(screen.getByText(/ChatGPT review is explanation-only and cannot be applied as a parser fix/)).toBeTruthy();
+    expect(screen.queryByRole('button',{name:'Keep the affected header/time value as text'})).toBeNull();
+    expect(screen.getByText(/cannot safely create parser files while this header or time issue remains/)).toBeTruthy();
+    expect(screen.getByText(/ChatGPT can explain the problem, but Parser Studio will not guess/)).toBeTruthy();
     expect(screen.getByRole('button',{name:'Review with ChatGPT'})).toBeTruthy();
   });
 });

@@ -37,5 +37,5 @@ test('Multi-Pass shows visible mask metadata without reconstructing or leaking h
  await expect(review).toContainText('hidden content is never reconstructed');
  await expect(review).toContainText('Hidden-value reconstruction OFF');
  await expect(review).not.toContainText('PRIVATE_VISIBLE');
- await expect(page.getByLabel('Local Multi-Pass source engine')).toContainText('PRIVATE_VISIBLE');
+ await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toContainText('PRIVATE_VISIBLE');
 });

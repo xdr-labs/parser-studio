@@ -464,6 +464,37 @@ function bsdBracketPidMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+function bsdClassicPidMessageProfile(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  // Bounded legacy shape seen in device logs:
+  // "Mon DD HH:MM:SS app[pid]: TAG: message". There is no separate host token,
+  // so preserve the app token as the source hostname instead of letting the
+  // looser tagged-message grammar absorb "app[pid]:" as a hostname.
+  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);
+  if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
+  if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
+  return {
+    syslog:{...(match[1]!==undefined?{pri:match[1]}:{}),month:match[2],day:match[3],
+      time:match[4],hostname:match[5],app_tag:match[7]},
+    generic:{mode:'bsd_classic_pid_message',source_raw:raw,pid:match[6],message:match[8]},
+  };
+}
+
+function bsdTaggedMessageProfile(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);
+  if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
+  if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
+  // Do not let malformed bracket-id messages bypass the stricter bracket-id
+  // profile by falling through to this generic tagged-message grammar.
+  if(/^\[\d+\]:/.test(match[7]!))return null;
+  return {
+    syslog:{...(match[1]!==undefined?{pri:match[1]}:{}),month:match[2],day:match[3],
+      time:match[4],hostname:match[5],app_tag:match[6]},
+    generic:{mode:'bsd_tagged_message',source_raw:raw,message:match[7]},
+  };
+}
+
 function juniperLegacyProfile(raw:string):Record<string,unknown>|null{
   const head=/^([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.exec(raw);
   if(!head||head[5]!=='RT_FLOW'||!validBsdClock(head[1]!,head[2]!,head[3]!))return null;
@@ -571,7 +602,8 @@ function asa(raw:string):Record<string,unknown>|null{
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
   const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
-    rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
+    rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw)??
+    bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw);
   return fields?{fields,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
 }

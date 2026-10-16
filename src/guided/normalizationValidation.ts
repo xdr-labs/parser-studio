@@ -1,7 +1,7 @@
 import type {MappingRule,SuiteResult} from '../model';
 import {lookupFieldValue} from '../fieldPaths';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
-import {valueFitsMappingType} from './normalizationCandidates';
+import {valueFitsNormalizationTarget} from './normalizationCandidates';
 
 export type NormalizationFindingCode=
   'TARGET_COLLISION'|'TYPE_ERROR'|'SOURCE_NOT_FOUND'|'UNVERIFIED_TARGET'|
@@ -12,6 +12,14 @@ export interface NormalizationFinding {
   source:string;
   target:string;
   event:number|null;
+}
+
+const BLOCKING_CODES=new Set<NormalizationFindingCode>([
+  'TARGET_COLLISION','TYPE_ERROR','UNVERIFIED_TARGET','CATALOG_TYPE_MISMATCH',
+  'TARGET_RESERVED','BACKEND_TYPE_UNSUPPORTED',
+]);
+export function isBlockingNormalizationFinding(code:NormalizationFindingCode):boolean{
+  return BLOCKING_CODES.has(code);
 }
 
 function overlaps(a:string,b:string):boolean{
@@ -43,7 +51,7 @@ export function validateNormalizationMappings(
     for(const mapping of mappings){
       const found=lookupFieldValue(fields,mapping.source);
       if(!found.found)findings.push({code:'SOURCE_NOT_FOUND',source:mapping.source,target:mapping.target,event:i+1});
-      else if(!valueFitsMappingType(mapping.type,found.value))
+      else if(!valueFitsNormalizationTarget(mapping.target,mapping.type,found.value))
         findings.push({code:'TYPE_ERROR',source:mapping.source,target:mapping.target,event:i+1});
     }
   }

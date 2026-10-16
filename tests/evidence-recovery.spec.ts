@@ -68,8 +68,8 @@ test.describe('approved offline evidence after run recovery; no target sender',(
     const panel=scope.getByLabel('Redacted Test Lab evidence review');
     await expect(panel).toBeVisible();
     await panel.locator('summary').click();
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
     return panel;
   }
 
@@ -183,7 +183,7 @@ test.describe('approved offline evidence after run recovery; no target sender',(
     await expect(panel.getByRole('status')).toHaveCount(0);
     expect(downloads).toBe(0);
     expect(summaries).toBe(4);expect(exports).toBe(1);
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
   });
 });

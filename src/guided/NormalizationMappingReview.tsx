@@ -5,7 +5,9 @@ import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
 import {suggestNormalizationCandidatesFromSuite,type NormalizationCandidate} from './normalizationCandidates';
-import {validateNormalizationMappings,type NormalizationFindingCode} from './normalizationValidation';
+import {isBlockingNormalizationFinding,validateNormalizationMappings,
+  type NormalizationFindingCode} from './normalizationValidation';
+import {HelpTip,StageGuide} from './BeginnerHelp';
 import {
   findStellarMetadataField,searchStellarMetadataCatalog,STELLAR_METADATA_CATALOG,
   STELLAR_METADATA_CATALOG_PROVENANCE,
@@ -23,10 +25,15 @@ interface Props {
 }
 
 const TYPES:MappingRule['type'][]=['string','integer','number','boolean','ip','port','timestamp'];
-const BLOCKING=new Set<NormalizationFindingCode>([
-  'TARGET_COLLISION','TYPE_ERROR','UNVERIFIED_TARGET','CATALOG_TYPE_MISMATCH',
-  'TARGET_RESERVED','BACKEND_TYPE_UNSUPPORTED',
-]);
+const TYPE_LABEL:Record<MappingRule['type'],string>={
+  string:'Text',integer:'Whole number',number:'Number',boolean:'Yes / No',
+  ip:'IP address',port:'Network port',timestamp:'Date & time',
+};
+function eventStatusLabel(status:string){
+  if(status==='pass')return 'Looks good';
+  if(status==='warning')return 'Check details';
+  return 'Needs attention';
+}
 
 function displayValue(value:unknown):string{
   if(value===undefined)return '—';
@@ -45,11 +52,20 @@ function sourceValues(suite:SuiteResult|undefined,source:string):string[]{
   return values;
 }
 function catalogState(mapping:MappingRule){
-  if(mapping.target.startsWith('custom.'))return {label:'Custom field',kind:'custom' as const};
+  if(mapping.target.startsWith('custom.'))return {label:'Kept as custom',kind:'custom' as const};
   const entry=findStellarMetadataField(mapping.target);
-  if(entry?.mappable&&entry.mappingType===mapping.type)return {label:'Official catalog',kind:'verified' as const};
-  return {label:'Needs review',kind:'review' as const};
+  if(entry?.mappable&&entry.mappingType===mapping.type)return {label:'Matched to Stellar',kind:'verified' as const};
+  return {label:'Check this mapping',kind:'review' as const};
 }
+const FINDING_LABEL:Record<NormalizationFindingCode,string>={
+  TARGET_COLLISION:'Two fields use the same Stellar destination',
+  TYPE_ERROR:'A sample value does not fit the selected value type',
+  SOURCE_NOT_FOUND:'This source field is missing from some sample logs',
+  UNVERIFIED_TARGET:'This destination is not in the checked Stellar field list',
+  CATALOG_TYPE_MISMATCH:'The selected value type does not match the Stellar field',
+  TARGET_RESERVED:'This Stellar field is managed by the system',
+  BACKEND_TYPE_UNSUPPORTED:'This Stellar field cannot be mapped directly here',
+};
 
 export default function NormalizationMappingReview({
   draft,setDraft,suite,selected,setSelected,pending,onBack,onContinue,
@@ -68,7 +84,7 @@ export default function NormalizationMappingReview({
   const mappedSources=new Set(draft.mappings.map(mapping=>mapping.source));
   const officialCount=draft.mappings.filter(mapping=>catalogState(mapping).kind==='verified').length;
   const customCount=draft.mappings.filter(mapping=>mapping.target.startsWith('custom.')).length;
-  const blocking=findings.filter(finding=>BLOCKING.has(finding.code));
+  const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
   const candidateView=candidates.filter(candidate=>{
     const needle=search.trim().toLowerCase();
     return !needle||candidate.source.toLowerCase().includes(needle)||candidate.target.toLowerCase().includes(needle);
@@ -146,35 +162,42 @@ export default function NormalizationMappingReview({
   return <section aria-label="Map Fields stage" className="normalization-review">
     <div className="normalization-title-row">
       <div>
-        <h2>Map Fields</h2>
-        <p>Review how extracted source fields become Stellar Cyber normalized fields. Source values remain unchanged and available for comparison.</p>
+        <h2>Map Fields <HelpTip label="Map Fields"
+          text="This step connects the field names found in your log to Stellar Cyber's standard field names. Your original values are kept; only the destination field name changes."/></h2>
+        <p>Match the fields Parser Studio found to the Stellar Cyber field names you want to use.</p>
       </div>
       <span className="normalization-catalog-badge"><ShieldCheck size={15}/>
-        Stellar metadata {STELLAR_METADATA_CATALOG_PROVENANCE.release} · public vendor documentation
+        Stellar field dictionary {STELLAR_METADATA_CATALOG_PROVENANCE.release}
       </span>
     </div>
+    <StageGuide title="Recommended path">
+      Apply the recommended matches first, check a few sample results below, and edit only the fields that do not match what you expect.
+    </StageGuide>
 
     <div className="normalization-runtime-note" role="note">
-      <strong>Catalog verified · target runtime not verified</strong>
-      <span>The field names and documented types below are pinned to the public Stellar Cyber metadata dictionary. A real DP/sensor ingestion test is still a separate gate.</span>
+      <strong>Suggestions come from Stellar Cyber's published field list</strong>
+      <span>This step only prepares field names inside Parser Studio. Nothing is sent to a Stellar Cyber system from this screen.</span>
     </div>
 
-    <div className="normalization-kpis" aria-label="Normalization mapping summary">
-      <div><span>Extracted fields</span><strong>{sourceFields.length}</strong></div>
-      <div><span>Official mappings</span><strong>{officialCount}</strong></div>
-      <div><span>Custom mappings</span><strong>{customCount}</strong></div>
-      <div><span>Unmapped source fields</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length}</strong></div>
-      <div className={blocking.length?'attention':''}><span>Blocking issues</span><strong>{blocking.length}</strong></div>
+    <div className="normalization-kpis" aria-label="Field mapping summary">
+      <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
+      <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
+      <div><span>Kept as custom</span><strong>{customCount}</strong></div>
+      <div><span>Not mapped yet</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length}</strong></div>
+      <div className={blocking.length?'attention':''}><span>Must fix before continuing</span><strong>{blocking.length}</strong></div>
     </div>
 
-    <section className="normalization-suggestions" aria-label="Automatic normalization suggestions">
+    <section className="normalization-suggestions" aria-label="Recommended field matches">
       <div className="normalization-section-head">
         <div>
-          <h3>Automatic suggestions</h3>
-          <p>Only official scalar destinations with compatible observed values are suggested. Ambiguous, reserved, object and unsupported fields are skipped.</p>
+          <h3>Recommended matches <HelpTip label="Recommended matches"
+            text="Parser Studio compares field names and sample values with Stellar Cyber's published field dictionary. A recommendation is automatic only when the observed values fit the expected kind of data."/></h3>
+          <p>Start with the recommended matches. Fields that are ambiguous or system-managed are left alone for you to review.</p>
         </div>
-        <button type="button" className="auto-parser-primary" disabled={!highBulk.length||pending}
-          onClick={applyHighConfidence}><WandSparkles size={14}/>Apply {highBulk.length} high-confidence suggestion{highBulk.length===1?'':'s'}</button>
+        <button type="button" className="auto-parser-primary"
+          aria-label={'Apply '+highBulk.length+' recommended match'+(highBulk.length===1?'':'es')}
+          disabled={!highBulk.length||pending}
+          onClick={applyHighConfidence}><WandSparkles size={14}/>Apply {highBulk.length} recommended match{highBulk.length===1?'':'es'}</button>
       </div>
       <label className="normalization-search"><Search size={14}/><span className="sr-only">Search mapping suggestions</span>
         <input aria-label="Search normalization suggestions" value={search}
@@ -191,21 +214,26 @@ export default function NormalizationMappingReview({
             <ArrowRight size={17} aria-hidden="true"/>
             <div className="normalization-target">
               <strong>{candidate.target}</strong>
-              <span>{candidate.type} · Official standard field</span>
-              <small>{candidate.method==='EXACT_DICTIONARY_NAME'?'Exact catalog name':'Reviewed alias'} · seen in {candidate.observed}/{candidate.total} event{candidate.total===1?'':'s'}</small>
+              <span>{candidate.type} · Stellar field</span>
+              <small>{candidate.method==='EXACT_DICTIONARY_NAME'?'Same name as Stellar field':'Common security-log name'} · value seen in {candidate.observed}/{candidate.total} event{candidate.total===1?'':'s'}</small>
             </div>
-            <span className={'normalization-confidence '+candidate.confidence.toLowerCase()}>{candidate.confidence}</span>
+            <span className={'normalization-confidence '+candidate.confidence.toLowerCase()}>
+              {candidate.confidence==='HIGH'?'Recommended':'Check first'}
+            </span>
             <button type="button" aria-label={'Apply official mapping '+candidate.source}
-              onClick={()=>applyCandidate(candidate)}>Use mapping</button>
-            <p>{candidate.explanation}</p>
+              onClick={()=>applyCandidate(candidate)}>Use this match</button>
+            <p>{candidate.confidence==='HIGH'
+              ?'The field name and all observed sample values fit this Stellar field.'
+              :'The name looks related, but at least one sample value needs your review before this mapping is applied.'}</p>
           </article>)}
         </div>}
     </section>
 
-    <section className="normalization-editor" aria-label="Normalization mapping editor">
+    <section className="normalization-editor" aria-label="Field mapping editor">
       <div className="normalization-section-head">
-        <div><h3>Review mappings</h3>
-          <p>Edit a destination or type, or remove a mapping. Removing it never deletes the extracted source field.</p></div>
+        <div><h3>Review field matches <HelpTip label="Review field matches"
+          text="Left is the field Parser Studio found in your log. Right is the field name that will be used in Stellar Cyber. Change the right side only when the suggested destination is wrong for your data."/></h3>
+          <p>You can change a Stellar field, value type, or remove only the mapping. The original extracted value is never deleted.</p></div>
       </div>
       <datalist id="stellar-metadata-field-list">
         {STELLAR_METADATA_CATALOG.filter(entry=>entry.mappable).map(entry=><option value={entry.name} key={entry.name}/>)}
@@ -214,49 +242,54 @@ export default function NormalizationMappingReview({
         const state=catalogState(mapping);
         const group=draft.guided?.groups[mapping.id]??'vendor_fields';
         return <article className={'normalization-map-row '+state.kind} key={mapping.id}
-          aria-label={'Normalization mapping '+(index+1)}>
+          aria-label={'Field mapping '+(index+1)}>
           <div className="normalization-map-status">
             {state.kind==='verified'?<CheckCircle2 size={16}/>:state.kind==='review'?<CircleAlert size={16}/>:<ShieldCheck size={16}/>}
             <span>{state.label}</span>
           </div>
-          <label>Source field
-            <input aria-label={'Normalized source '+index} value={mapping.source}
+          <label>Field found in the log <HelpTip label="Field found in the log"
+            text="This is the field name Parser Studio extracted from your source log. Change it only if the extraction itself used the wrong field name."/>
+            <input aria-label={'Source field '+index} value={mapping.source}
               onChange={event=>updateMapping(mapping.id,'source',event.target.value)}/>
           </label>
           <ArrowRight size={16} className="normalization-row-arrow" aria-hidden="true"/>
-          <label>Stellar / output field
-            <input aria-label={'Normalized destination '+index} list="stellar-metadata-field-list"
+          <label>Stellar field name <HelpTip label="Stellar field name"
+            text="This is where the value will appear in the normalized Stellar Cyber event. Use Choose Stellar field if you are unsure which name to use."/>
+            <input aria-label={'Stellar field '+index} list="stellar-metadata-field-list"
               value={mapping.target} onChange={event=>updateMapping(mapping.id,'target',event.target.value)}/>
           </label>
-          <label>Type
-            <select aria-label={'Normalized type '+index} value={mapping.type}
+          <label>Value type <HelpTip label="Value type"
+            text="The kind of value expected here, such as IP address, port, whole number, text, or timestamp. Parser Studio checks your sample values against this choice."/>
+            <select aria-label={'Value type '+index} value={mapping.type}
               onChange={event=>updateMapping(mapping.id,'type',event.target.value)}>
-              {TYPES.map(type=><option value={type} key={type}>{type}</option>)}
+              {TYPES.map(type=><option value={type} key={type}>{TYPE_LABEL[type]}</option>)}
             </select>
           </label>
           <div className="normalization-map-meta">
-            <span>{state.kind==='verified'?'Official standard field':group==='vendor_fields'?'Custom/vendor field':'Reviewed output field'}</span>
-            <span>{sourceValues(suite,mapping.source).length} sample value{sourceValues(suite,mapping.source).length===1?'':'s'} shown</span>
+            <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Keeps the value under a custom field':'Needs your review'}</span>
+            <span>{sourceValues(suite,mapping.source).length} example value{sourceValues(suite,mapping.source).length===1?'':'s'} shown</span>
           </div>
           <div className="normalization-map-actions">
-            <button type="button" onClick={()=>{setActiveMappingId(mapping.id);setCatalogQuery(mapping.target.startsWith('custom.')?'':mapping.target);}}>
-              Find Stellar field
+            <button type="button" aria-label="Choose Stellar field"
+              onClick={()=>{setActiveMappingId(mapping.id);setCatalogQuery(mapping.target.startsWith('custom.')?'':mapping.target);}}>
+              Choose Stellar field
             </button>
             <button type="button" aria-label={'Remove normalization '+index} onClick={()=>removeMapping(mapping.id)}>
-              <X size={14}/>Unmap
+              <X size={14}/>Remove mapping
             </button>
           </div>
         </article>;
       })}
     </section>
 
-    {activeMappingId&&<section className="normalization-catalog-search" aria-label="Search official Stellar metadata catalog">
-      <div className="normalization-section-head"><div><h3>Official metadata catalog</h3>
-        <p>{STELLAR_METADATA_CATALOG.length} fields pinned from {STELLAR_METADATA_CATALOG_PROVENANCE.release}. Non-scalar and reserved fields remain visible but cannot be selected.</p></div>
+    {activeMappingId&&<section className="normalization-catalog-search" aria-label="Stellar field chooser">
+      <div className="normalization-section-head"><div><h3>Choose a Stellar field <HelpTip label="Stellar field list"
+        text="Search Stellar Cyber's published field names. Some system-managed or grouped fields are shown for reference but cannot be selected directly."/></h3>
+        <p>Search the published Stellar field list by name or description, then choose the field that best matches your source value.</p></div>
         <button type="button" onClick={()=>setActiveMappingId(null)}><X size={14}/>Close</button>
       </div>
-      <label><Search size={14}/><span className="sr-only">Search Stellar metadata catalog</span>
-        <input autoFocus aria-label="Search Stellar metadata catalog" value={catalogQuery}
+      <label><Search size={14}/><span className="sr-only">Search Stellar field list</span>
+        <input autoFocus aria-label="Search Stellar field list" value={catalogQuery}
           placeholder="srcip, action, timestamp…" onChange={event=>setCatalogQuery(event.target.value)}/></label>
       <div className="normalization-catalog-results">
         {catalogResults.map(entry=><div key={entry.name}>
@@ -268,34 +301,36 @@ export default function NormalizationMappingReview({
       </div>
     </section>}
 
-    <section className="normalization-validation" aria-label="Normalization validation" role="status">
-      <div className="normalization-section-head"><div><h3>Whole-sample checks</h3>
-        <p>Every mapping is checked against every current sample event. Mapping edits automatically invalidate prior generated evidence.</p></div>
+    <section className="normalization-validation" aria-label="Field mapping checks" role="status">
+      <div className="normalization-section-head"><div><h3>Check all sample logs <HelpTip label="Check all sample logs"
+        text="Parser Studio checks every current sample against every mapping, not just the event you are viewing. This catches missing fields, wrong value types, and duplicate destinations before parser files are created."/></h3>
+        <p>Each field match is checked across the full sample so a single unusual event cannot be hidden by the others.</p></div>
         <span className={blocking.length?'normalization-confidence review':'normalization-confidence high'}>
-          {blocking.length?blocking.length+' blocking issue'+(blocking.length===1?'':'s'):'READY FOR LOCAL TEST'}
+          {blocking.length?'Fix '+blocking.length+' issue'+(blocking.length===1?'':'s')+' to continue':'No mapping problems found'}
         </span>
       </div>
-      {findings.length===0?<p className="normalization-pass"><CheckCircle2 size={15}/>No local mapping issues detected.</p>:
+      {findings.length===0?<p className="normalization-pass"><CheckCircle2 size={15}/>All current field mappings passed the sample checks.</p>:
         <div className="normalization-finding-summary">
           {[...findingCounts.entries()].map(([code,count])=><div key={code}>
-            <strong>{code}</strong><span>{count}</span>
+            <strong>{FINDING_LABEL[code]}</strong><span>{count}</span>
             <small>{findings.filter(item=>item.code===code).slice(0,4).map(item=>
               (item.event?'event '+item.event+' · ':'')+item.source+' → '+item.target).join(' | ')}</small>
           </div>)}
         </div>}
     </section>
 
-    {chosen&&<section className="normalization-comparison" aria-label="Normalization comparison">
+    {chosen&&<section className="normalization-comparison" aria-label="Field mapping comparison">
       <div className="normalization-section-head">
-        <div><h3>Result preview</h3><p>Compare the selected event before and after normalization, then switch events to review more samples.</p></div>
+        <div><h3>See what will change <HelpTip label="Result preview"
+          text="This preview shows the value found in the source log and the Stellar field where that value will appear. Switch events to make sure the mapping works for more than one example."/></h3><p>Check a few events before continuing, especially when the product sends several event types.</p></div>
         <label>Review event
           <select aria-label="Normalization review event" value={chosen.id}
             onChange={event=>setSelected(Math.max(0,(suite?.events??[]).findIndex(item=>item.id===event.target.value)))}>
-            {(suite?.events??[]).map(entry=><option value={entry.id} key={entry.id}>Event {entry.line} · {entry.status}</option>)}
+            {(suite?.events??[]).map(entry=><option value={entry.id} key={entry.id}>Event {entry.line} · {eventStatusLabel(entry.status)}</option>)}
           </select>
         </label>
       </div>
-      <div className="normalization-diff-list" aria-label="Normalization changes only">
+      <div className="normalization-diff-list" aria-label="Field changes only">
         {draft.mappings.map(mapping=>{
           const found=lookupFieldValue(chosen.fields,mapping.source);
           const after=chosen.normalized[mapping.target];
@@ -307,11 +342,11 @@ export default function NormalizationMappingReview({
         })}
       </div>
       <details className="auto-parser-recipe">
-        <summary>Full selected-event comparison</summary>
+        <summary>See original, fields found, and Stellar output · Full selected-event comparison</summary>
         <div className="auto-parser-preview normalization-full-preview">
-          <div><h3>Original · Browser only</h3><pre>{chosen.raw}</pre></div>
-          <div><h3>Extracted source</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
-          <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
+          <div><h3>Original log</h3><pre>{chosen.raw}</pre></div>
+          <div><h3>Fields Parser Studio found</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
+          <div><h3>Stellar output preview</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
         </div>
       </details>
     </section>}

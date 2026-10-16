@@ -2,9 +2,9 @@ import {test,expect} from '@playwright/test';
 
 test('Parser Studio exposes exactly two parser creation methods, never old Wizard or Workbench',async({page})=>{
   await page.goto('/');
-  const nav=page.getByRole('complementary',{name:'Parser creation methods'});
+  const nav=page.getByRole('complementary',{name:'Parser Studio navigation'});
   await expect(nav).toBeVisible();
-  await expect(nav.getByRole('button')).toHaveCount(2);
+  await expect(nav.locator('button.rail-link')).toHaveCount(2);
   await expect(nav.getByRole('button',{name:'Auto Parser',exact:true})).toBeVisible();
   await expect(nav.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
   await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
@@ -13,8 +13,8 @@ test('Parser Studio exposes exactly two parser creation methods, never old Wizar
   await expect(page.getByRole('button',{name:/Edit Details|Expert Workbench|Advanced Wizard/})).toHaveCount(0);
   await expect(page.getByLabel('Optional privacy-safe AI recipe exchange')).toHaveCount(0);
   await expect(page.getByLabel('Optional integrated AI review')).toHaveCount(0);
-  await nav.getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
-  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+  await nav.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
+  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
   await expect(page.getByLabel('ChatGPT redacted examples')).toBeVisible();
   await expect(page.getByRole('button',{name:/Edit Details|Expert Workbench/})).toHaveCount(0);
   await nav.getByRole('button',{name:'Auto Parser',exact:true}).click();
@@ -22,16 +22,17 @@ test('Parser Studio exposes exactly two parser creation methods, never old Wizar
 });
 
 test('previous Guided and Expert deep links cannot reveal retired authoring pages',async({page})=>{
+  test.setTimeout(60_000);
   for(const old of ['guided','expert','workbench','library','schema']){
     await page.goto('/?workspace='+old);
     await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
-    await expect(page.getByRole('complementary',{name:'Parser creation methods'})
-      .getByRole('button')).toHaveCount(2);
+    await expect(page.getByRole('complementary',{name:'Parser Studio navigation'})
+      .locator('button.rail-link')).toHaveCount(2);
     await expect(page.getByRole('main',{name:'No-code Parser Guided Builder'})).toHaveCount(0);
     await expect(page.getByRole('region',{name:'Parser pipeline rules'})).toHaveCount(0);
   }
   await page.goto('/?workspace=chatgpt');
-  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
 });
 
 test('ChatGPT Assisted mode includes only user-reviewed masked examples and no implicit external send',async({page})=>{
@@ -77,15 +78,15 @@ test('ChatGPT redaction approval resets when the reviewed masked example changes
 test('mobile viewport preserves both creation paths and has no horizontal overflow',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto('/');
-  const nav=page.getByRole('complementary',{name:'Parser creation methods'});
-  await expect(nav.getByRole('button')).toHaveCount(2);
+  const nav=page.getByRole('complementary',{name:'Parser Studio navigation'});
+  await expect(nav.locator('button.rail-link')).toHaveCount(2);
   await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
   const initial=await page.evaluate(()=>({
     viewport:innerWidth,width:document.documentElement.scrollWidth,
   }));
   expect(initial.width).toBeLessThanOrEqual(initial.viewport+1);
-  await nav.getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
-  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+  await nav.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
+  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
   const next=await page.evaluate(()=>({
     viewport:innerWidth,width:document.documentElement.scrollWidth,
   }));

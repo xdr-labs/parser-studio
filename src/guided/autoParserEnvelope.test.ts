@@ -47,6 +47,15 @@ describe('P0-AP1 value-free envelope/body and compiler parity',()=>{
       noValues(r);
     }
   });
+  it('keeps strongly quoted CSV as CSV when a field contains an equals sign',()=>{
+    const quoted='"2026-10-16 00:00:00","host","https://example.test/path?ext_id=demo","allow"';
+    const r=analyzeLogEnvelopes(quoted,'single-line');
+    expect(r.events[0]).toMatchObject({envelope:'none',body:'csv',status:'RECOGNIZED'});
+    expect(assessEnvelopeCompilation(r,cap).status).toBe('COLUMNS_REQUIRED');
+    const kvWithCommas='action=allow note=a,b,c';
+    expect(analyzeLogEnvelopes(kvWithCommas,'single-line').events[0])
+      .toMatchObject({envelope:'none',body:'kv',status:'RECOGNIZED'});
+  });
   it('accepts wide bounded JSON up to the engine leaf budget without weakening depth safety',()=>{
     const wide=JSON.stringify(Object.fromEntries(
       Array.from({length:146},(_,index)=>['field_'+String(index+1),index])));

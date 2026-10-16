@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {Download,FileArchive,GitCompare,History,RotateCcw,ShieldCheck} from 'lucide-react';
 import type {GeneratedPair} from './backendClient';
 import MockTargetApplyPanel from './MockTargetApplyPanel';
+import {HelpTip} from './BeginnerHelp';
 import {registerArtifactRevision,listArtifactRevisions,compareArtifactRevisions,
   retrieveRevisionZip,type RevisionSummary,type RevisionDiff,type VerifiedRevisionZip,
 } from './artifactRevisionClient';
@@ -107,23 +108,27 @@ export default function ArtifactRevisionHistoryPanel({
     finally{if(token===epoch.current)setBusy(false);}
   };
   return <details className="guided-revision-history" aria-label="Offline parser revision history">
-    <summary><History size={16}/> Offline Version History (Owner Scoped · Opt In)</summary>
-    <p>Optional temporary server-side history of exact DRAFT Ruby + CONF packages.
-      Every operation requires the backend to authorize the current owner and tenant.
-      Nothing is saved or queried automatically. Never enter an API key or customer logs.</p>
-    <small className="guided-revision-boundary">Not persistent storage, production rollback, DP deployment, live verification, or automatic activation. Revisions can expire or disappear when the backend restarts.</small>
+    <summary className="beginner-tool-summary"><History size={16}/> Save and compare parser versions
+      <HelpTip label="Save and compare parser versions"
+        text="Use this after you have generated parser files and want a temporary checkpoint before making more edits. It is optional and does not deploy or activate anything."/>
+    </summary>
+    <span className="beginner-tool-when">Use when: you want to compare two generated versions or re-download an earlier package during this development session.</span>
+    <p>This optional history stores only generated parser-package metadata for your authorized project.
+      Nothing is saved automatically, and no customer log sample is stored here.</p>
+    <small className="guided-revision-boundary">This is temporary development history, not production backup or rollback. Entries can disappear when the backend restarts.</small>
     <div className="guided-revision-toolbar">
-      <label className="guided-field"><span>Immutable Snapshot Version</span>
+      <label className="guided-field"><span>Version label <HelpTip label="Version label"
+        text="A short name such as 1.0.0 or review-2 so you can recognize this checkpoint later."/></span>
         <input aria-label="Offline revision version" value={version}
           maxLength={64} autoComplete="off" onChange={event=>setVersion(event.target.value)}/>
       </label>
       <button className="guided-cta-secondary" type="button"
         disabled={!canRegister||busy} onClick={()=>{void register();}}>
-        <ShieldCheck size={14}/> Register Current DRAFT (Opt In)
+        <ShieldCheck size={14}/> Save Current Version
       </button>
       <button className="guided-cta-secondary" type="button"
         disabled={!safeProject||busy} onClick={()=>{void load();}}>
-        <History size={14}/> {busy?'Checking…':'Load My Revision List'}
+        <History size={14}/> {busy?'Checking…':'Load Saved Versions'}
       </button>
     </div>
     {!pair&&<small>Generate and verify a parser pair to register a new snapshot.

@@ -94,7 +94,7 @@ it('rejects recovery when Funnel holdout values would disappear despite browser 
  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
- expect(await screen.findByText(/holdout event 1 would drop 1 of 2 Funnel source value occurrences/)).toBeTruthy();
+ expect(await screen.findByText(/additional test event 1 would lose 1 of 2 source values that must be preserved/)).toBeTruthy();
  expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
  expect(apply).not.toHaveBeenCalled();
  vi.unstubAllGlobals();
