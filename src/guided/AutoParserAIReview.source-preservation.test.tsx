@@ -100,6 +100,40 @@ it('rejects recovery when Funnel holdout values would disappear despite browser 
  vi.unstubAllGlobals();
 });
 
+it('accepts exact lossless Generic Structural source projection for protected values and residuals',async()=>{
+ vi.stubGlobal('crypto',webcrypto);
+ const source='<142>May 10 15:19:05 WatchGuard-Firebox (2024-05-10T09:49:05) firewall: msg_id="3000-0152" IPv4 source route attack from 10.0.1.34 detected. (IPS)';
+ const holdout='<142>May 10 15:19:06 WatchGuard-Firebox (2024-05-10T09:49:06) firewall: msg_id="3000-0153" IPv4 source route attack from 10.0.1.35 detected. (IPS)\n<142>May 10 15:19:07 WatchGuard-Firebox (2024-05-10T09:49:07) firewall: msg_id="3000-0154" IPv4 source route attack from 10.0.1.36 detected. (IPS)';
+ const draft=createDraft(),apply=vi.fn();
+ const recipe={
+  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+  projectId:'draft-demo_firewall',sourceFormat:'generic_structural',bodyFormat:'generic_structural',
+  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:1},
+  stages:[
+   {op:'split_event',boundary:'single-line'},
+   {op:'parse_generic_structural'},
+   {op:'map_field',source:'watchguard_message.msg_id',target:'custom.msg_id',data_type:'string',group:'vendor_fields'},
+   {op:'classify',defaultIndex:'syslog',rules:[]},
+   {op:'fallback_unparsed',mode:'retain_unparsed'},
+  ],nativeVerified:false,targetVerified:false,
+ };
+ render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
+  source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}
+  protectedSourceValuesByEvent={[['3000-0152','10.0.1.34']]}
+  protectedResidualTextByEvent={[['May 10 15:19:05 WatchGuard-Firebox','IPv4 source route attack']]}
+  holdoutEvidenceRequester={async()=>batchEvidence(holdout,
+   [['3000-0153','10.0.1.35'],['3000-0154','10.0.1.36']])}/>);
+ fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+ fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+ fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+ fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+ expect(await screen.findByText(/Fix passed: full parser recovery/)).toBeTruthy();
+ fireEvent.click(screen.getByRole('checkbox',{name:'Approve tested fix'}));
+ fireEvent.click(screen.getByRole('button',{name:'Apply Verified Fix'}));
+ await waitFor(()=>expect(apply).toHaveBeenCalledTimes(1));
+ vi.unstubAllGlobals();
+});
+
 it('rejects full recovery when extracted source values would be omitted from final parser output',async()=>{
  vi.stubGlobal('crypto',webcrypto);
  const source='allow,198.51.100.10';

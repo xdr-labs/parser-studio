@@ -27,6 +27,19 @@ function sourceAlternatives(value:string):string[]{
  }else if(value.length>=2&&value[0]==="'"&&value.at(-1)==="'")out.push(value.slice(1,-1));
  return [...new Set(out)];
 }
+function containsExactSourceRaw(value:unknown,raw:string,depth=0):boolean{
+ if(depth>8||value===null||value===undefined)return false;
+ if(Array.isArray(value))return value.some(item=>containsExactSourceRaw(item,raw,depth+1));
+ if(typeof value!=='object')return false;
+ const record=value as Record<string,unknown>;
+ if(Object.prototype.hasOwnProperty.call(record,'source_raw')&&record.source_raw===raw)return true;
+ return Object.values(record).some(item=>containsExactSourceRaw(item,raw,depth+1));
+}
+function hasLosslessSourceProjection(event:SuiteResult['events'][number]|undefined):boolean{
+ if(!event)return false;
+ const projection=event.normalized?.parserstudio_source;
+ return projection!==undefined&&containsExactSourceRaw(projection,event.raw);
+}
 function protectedValueRegression(candidate:SuiteResult,protectedValues:string[][]|undefined,
  normalizedOnly=false):{event:number;missing:number;required:number;available:number}|null{
  if(!protectedValues?.some(values=>values.length))return null;
@@ -39,6 +52,7 @@ function protectedValueRegression(candidate:SuiteResult,protectedValues:string[]
    observed.filter(source=>!sourceAlternatives(source).includes('')):observed;
   if(!required.length)continue;
   const event=candidate.events[index];
+  if(normalizedOnly&&hasLosslessSourceProjection(event))continue;
   const pool=normalizedOnly?scalarValues(event?.normalized):
    [...scalarValues(event?.fields),...scalarValues(event?.normalized)];
   const used=new Array(pool.length).fill(false);let missing=0;
@@ -59,7 +73,9 @@ function protectedResidualRegression(candidate:SuiteResult,protectedResiduals:st
   if(!required.length)continue;
   // Recovery residuals must survive into the final parser output, not only
   // an intermediate extraction object that normalization can discard.
-  const pool=scalarValues(candidate.events[index]?.normalized);
+  const event=candidate.events[index];
+  if(hasLosslessSourceProjection(event))continue;
+  const pool=scalarValues(event?.normalized);
   let missing=0;
   for(const residual of required){
    if(!pool.some(value=>value.includes(residual)))missing++;
