@@ -29,7 +29,7 @@ describe('P1-AP5 isolated bounded privacy-safe structural hints',()=>{
    expect(result).toMatchObject({status:'CANDIDATES',sourceCount:6,unknownCount:6,
     groupedCount:6,customerValuesIncluded:false});
    expect(result.groups.map(group=>group.fingerprint).sort()).toEqual([
-    'BSD <HOST> <PROCESS> <TAG> <MESSAGE>',
+    'BSD <HOST> <LABEL> <MESSAGE>',
     'BSD <HOST> <PROCESS> <TAG> <MESSAGE>',
     'BSD <HOST> <TAG> <MESSAGE>',
     'BSD <LABEL> <MESSAGE>',
