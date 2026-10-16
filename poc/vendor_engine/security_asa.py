@@ -20,6 +20,32 @@ ASA_DENY_FULL=re.compile(
     rf'\A(?P<action>Deny) (?P<protocol>tcp|udp|icmp) src '
     rf'(?P<src_interface>[A-Za-z0-9_.:-]{{1,64}}):(?P<src_ip>{ASA_ADDRESS})/(?P<src_port>{ASA_PORT}) dst '
     rf'(?P<dst_interface>[A-Za-z0-9_.:-]{{1,64}}):(?P<dst_ip>{ASA_ADDRESS})/(?P<dst_port>{ASA_PORT})\Z')
+ASA_SYSLOG_PREFIX=re.compile(
+    r'\A(?:<(?P<pri>[0-9]{1,3})>)?(?P<month>[A-Z][a-z]{2}) +'
+    r'(?P<day>[0-9]{1,2}) +(?:(?P<year>[0-9]{4}) +)?'
+    r'(?P<time>[0-9]{2}:[0-9]{2}:[0-9]{2}) +'
+    r'(?P<hostname>[^\s:]{1,255})'
+    r'(?: +(?P<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[[0-9]{1,8}\])?))? *:? *\Z'
+)
+MONTH_DAYS={'Jan':31,'Feb':29,'Mar':31,'Apr':30,'May':31,'Jun':30,
+            'Jul':31,'Aug':31,'Sep':30,'Oct':31,'Nov':30,'Dec':31}
+
+def _syslog_prefix(raw:str,end:int)->tuple[dict,list[ValueSpan]]|None:
+    if end<=0:return ({},[])
+    match=ASA_SYSLOG_PREFIX.match(raw[:end])
+    if match is None:return None
+    fields={k:v for k,v in match.groupdict().items() if v is not None}
+    pri=fields.get('pri')
+    if pri is not None and int(pri)>191:return None
+    day=int(fields['day']);hh,mm,ss=(int(x) for x in fields['time'].split(':'))
+    if day<1 or day>MONTH_DAYS.get(fields['month'],0) or hh>23 or mm>59 or ss>59:return None
+    if fields.get('year') is not None and not 1<=int(fields['year'])<=9999:return None
+    spans=[]
+    for name in ('pri','month','day','year','time','hostname','tag'):
+        if match.groupdict().get(name) is None:continue
+        a,b=match.span(name)
+        spans.append(ValueSpan('syslog.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('syslog',name)))
+    return fields,spans
 
 def parse_asa_message(raw:str)->SourceEvent|None:
     if not isinstance(raw,str):return None
@@ -70,10 +96,15 @@ def parse_asa_message(raw:str)->SourceEvent|None:
                 a,b=deny.span(name);a+=match.end();b+=match.end()
                 tree[name]=deny.group(name)
                 spans.append(ValueSpan('asa.'+name,len(raw[:a].encode()),len(raw[:b].encode()),('asa',name)))
-    event.vendor_fields={'asa':tree}
+    prefix=_syslog_prefix(raw,match.start())
+    if prefix is not None and prefix[0]:
+        event.vendor_fields={'syslog':prefix[0],'asa':tree}
+        spans=prefix[1]+spans
+    else:
+        event.vendor_fields={'asa':tree}
     event.value_spans=spans
     event.primitive_fields=len(spans)
-    event.covered=[(match.start(),len(raw) if full is not None else match.end())]
+    event.covered=[(0 if prefix is not None else match.start(),len(raw) if full is not None else match.end())]
     event.issues=[] if full is not None else ['ASA_MESSAGE_BODY_UNPARSED']
     event.syntax='CISCO_ASA_FTD_MESSAGE_ID_FULL' if full is not None else event.syntax
     event=_close(event)

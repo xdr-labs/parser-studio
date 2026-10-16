@@ -10,6 +10,7 @@ class CiscoAsaConservativeTests(unittest.TestCase):
         self.assertEqual({'product':'ASA','severity':'4','message_id':'113029'},event.vendor_fields['asa'])
         self.assertEqual('PARTIAL',event.status)
         for span in event.value_spans:
+            if span.source_segments[0]!='asa':continue
             key=span.source_segments[-1]
             self.assertEqual(event.vendor_fields['asa'][key],raw.encode()[span.start_byte:span.end_byte].decode())
         assert_source_accounting(event)
@@ -47,6 +48,21 @@ class CiscoAsaConservativeTests(unittest.TestCase):
         self.assertEqual('192.168.2.2',event.vendor_fields['asa']['dst_ip'])
         self.assertIn('syslog',event.vendor_fields)
         self.assertEqual([],event.unparsed)
+        assert_source_accounting(event)
+
+    def test_year_bearing_pri_wrapper_is_fully_accounted_for_known_connection(self):
+        raw=('<166>Oct 15 2026 00:05:03 ASA-EDGE01 : %ASA-6-302013: '
+             'Built outbound TCP connection 18745213 for outside:203.0.113.50/443 '
+             '(203.0.113.50/443) to inside:10.1.15.27/51822 (198.51.100.15/51822)')
+        event=parse_security_multipass(raw)
+        self.assertEqual('SOURCE_PARSED',event.status)
+        self.assertEqual([],event.unparsed)
+        self.assertEqual('166',event.vendor_fields['syslog']['pri'])
+        self.assertEqual('2026',event.vendor_fields['syslog']['year'])
+        self.assertEqual('ASA-EDGE01',event.vendor_fields['syslog']['hostname'])
+        self.assertEqual('18745213',event.vendor_fields['asa']['connection_id'])
+        self.assertEqual('203.0.113.50',event.vendor_fields['asa']['src_ip'])
+        self.assertEqual('10.1.15.27',event.vendor_fields['asa']['dst_ip'])
         assert_source_accounting(event)
 
     def test_no_inference_from_json_or_ambiguous_multiple_ids(self):

@@ -324,6 +324,8 @@ def parse_security_once(raw:str)->SourceEvent:
     from security_asa import parse_asa_message
     asa=parse_asa_message(raw)
     if asa is not None and asa.syntax=='CISCO_ASA_FTD_MESSAGE_ID_FULL':
+        if asa.status=='SOURCE_PARSED':
+            return asa
         if base.vendor_fields:
             merged=merge_source_events(raw,{'security.base':base,'cisco.asa':asa},
                                        ('security.base','cisco.asa'))
