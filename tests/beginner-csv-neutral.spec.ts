@@ -107,7 +107,7 @@ test('source-complete variable-width positional CSV explains that one schema can
  const groups=csvReview.getByLabel('CSV row shape groups');
  await expect(groups).toContainText('5 columns · 1 event · event 1');
  await expect(groups).toContainText('6 columns · 1 event · event 2');
- await expect(groups).toContainText('No source event is discarded automatically');
+ await expect(groups).toContainText('Other source events remain available through Restore original CSV sample');
  await expect(csvReview.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
  await expect(csvReview.getByRole('status')).toContainText('separated into matching positional shapes');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
