@@ -113,7 +113,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     lines.push('No compiler-ready baseline exists. A FULL_RECOVERY recipe is allowed only for a supported declarative grammar.',
      `Recovery identity: projectId=draft-${opts.slug}; sourceSha256=${hash}; events=${records.length}.`,
      'Supported recovery grammars are JSON, strict key/value, explicit-column CSV, CEF, LEEF, bounded RFC3164/RFC5424 bodies, allowlisted mixed families, bounded Java stack traces, and bounded named-capture Regex for otherwise unresolved one-line text.',
-     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, and no backreferences/lookbehind/unsafe nested repetition. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
+     'If a Regex is required, use parse_regex with a pattern no longer than 256 visible characters, at least one named capture, no backreferences/lookbehind/unsafe nested repetition, and no {m,n} repetition bound above 128. Grok, scripting, executable Ruby and guessed semantics remain unsupported.');
    }
   }
   lines.push('User-reviewed excerpt follows (may contain sensitive source values):',

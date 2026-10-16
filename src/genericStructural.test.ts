@@ -88,6 +88,19 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect(suite.events[0]!.normalized).not.toHaveProperty('custom.ad_ou');
   });
 
+  it('extracts bounded SonicWall IPv4-host KV without weakening plain KV',()=>{
+    const raw='192.0.2.10 id=firewall sn=ABC123 time="2026-10-15 10:11:12" fw=fw01 pri=6 src=198.51.100.10 dst=203.0.113.20 proto=tcp';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      sonicwall:{host:'192.0.2.10'},
+      body:{id:'firewall',sn:'ABC123',fw:'fw01',pri:'6',
+        src:'198.51.100.10',dst:'203.0.113.20',proto:'tcp'},
+    });
+    expect(extractGenericStructural(raw.replace('id=firewall','id=router')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('192.0.2.10','999.0.2.10')).fields).toEqual({});
+  });
+
   it('extracts bounded short RFC5424-style JSON',()=>{
     const raw='<5>1 2021-03-08T18:24:49Z VAULT {"format":"elastic","syslog":{"audit_record":{"Action":"Add File"}}}';
     const result=extractGenericStructural(raw);

@@ -116,7 +116,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           'No compiler-ready baseline exists. You may propose a FULL_RECOVERY recipe only when the reviewed examples fit one supported grammar:',
           'JSON, strict key/value, CSV with explicit columns, CEF, LEEF, bounded RFC3164/RFC5424 with a supported body, mixed allowlisted families, bounded Java stack traces, or bounded named-capture Regex for otherwise unresolved one-line text.',
           `Use projectId draft-${(next.guided??draft.guided)?.slug??'demo_firewall'} and preserve the exact source SHA and event count from the metadata above.`,
-          'Use only declarative stages accepted by ParserRecipe v0.2. If Regex is needed, use parse_regex with <=256 visible characters, named captures, no backreferences/lookbehind/unsafe nested repetition. Grok, scripting and guessed semantics remain unsupported.',
+          'Use only declarative stages accepted by ParserRecipe v0.2. If Regex is needed, use parse_regex with <=256 visible characters, named captures, no backreferences/lookbehind/unsafe nested repetition, and no {m,n} repetition bound above 128. Grok, scripting and guessed semantics remain unsupported.',
         ]),
         'Return only your JSON recipe, with nativeVerified and targetVerified false.',
       ].join('\n');

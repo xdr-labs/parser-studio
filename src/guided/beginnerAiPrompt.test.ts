@@ -19,4 +19,5 @@ it('tells recovery AI to map residual source text into final parser output',asyn
  });
  expect(prompt).toContain('preserve every unparsed source region listed above in the final parser output too');
  expect(prompt).toContain('Capturing a region as raw_event is not enough unless that capture is mapped into final output');
+ expect(prompt).toContain('repetition bound above 128');
 });

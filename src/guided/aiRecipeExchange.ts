@@ -65,7 +65,7 @@ export async function createPrivacySafeAIPrompt(
   'Allow only stages: split_event(single-line), optional unwrap_syslog(version 1, strict_header),',
   'one parse_json/parse_kv/parse_cef/parse_leef/parse_csv/parse_generic_structural or bounded parse_regex, map_field, adjacent cast_type, bounded split_field/merge_fields, classify, fallback_unparsed.',
   'parse_generic_structural is allowed only for Parser Studio Generic Structural Ultra source-complete recovery and uses the fixed bounded compiler grammar; do not invent vendor grammar.',
-  'parse_regex is allowed only for a <=256-character named-capture pattern without backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
+  'parse_regex is allowed only for a <=256-character named-capture pattern without backreferences, lookbehind, unsafe nested repetition, or any {m,n} repetition bound above 128.',
   'Never provide Ruby, Grok, JSONata execution, arbitrary code, credentials, API requests or deployment instructions.',
   'Refuse to assert a supported grammar when family metadata is insufficient or mixed.',
   'All rules require local user review. Native Fluentd and Stellar target import are NOT VERIFIED.',

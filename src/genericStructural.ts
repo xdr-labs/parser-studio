@@ -331,6 +331,18 @@ function ipToken(value:string):boolean{
   return value.includes(':')&&/^[0-9A-Fa-f:]+$/.test(value)&&value.split(':').length>=3;
 }
 
+function sonicwallIpv4Kv(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes(' '))return null;
+  const head=/^((?:[0-9]{1,3}\.){3}[0-9]{1,3})[ 	]+(?=id=firewall(?:[ 	]|$))/.exec(raw);
+  if(!head||!ipToken(head[1]!))return null;
+  const parsed=spaceKv(raw.slice(head[0].length));
+  if(!parsed||!parsed.generic||typeof parsed.generic!=='object')return null;
+  const kv=(parsed.generic as Record<string,unknown>).kv;
+  if(!kv||typeof kv!=='object'||Array.isArray(kv)||
+     (kv as Record<string,unknown>).id!=='firewall')return null;
+  return {sonicwall:{host:head[1]},body:kv as Record<string,unknown>};
+}
+
 function watchguardProfile(raw:string):Record<string,unknown>|null{
   const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
@@ -453,7 +465,7 @@ function asa(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
-  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??asa(raw)??watchguardProfile(raw)??
+  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??asa(raw)??sonicwallIpv4Kv(raw)??watchguardProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
     rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:

@@ -52,7 +52,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
   lines.push('',
     'ParserRecipe safety contract:',
     'Use only Parser Studio declarative stages: JSON/KV/CEF/LEEF/CSV, supported Syslog wrappers, reviewed parse_generic_structural only when the local backend advertises GENERIC_STRUCTURAL_ULTRA_COMPILER_V10 and the event matches that bounded grammar, bounded split/merge, or bounded parse_regex for otherwise unresolved one-line text.',
-    'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition or excessive repetition bounds.',
+    'For parse_regex: pattern must be at most 256 visible characters, contain one or more unique named captures (?<field>...), and must not use backreferences, lookbehind, unsafe nested repetition, or any {m,n} repetition bound above 128.',
     'Grok, JSONata execution, scripting and executable Ruby are not ParserRecipe stages.',
     'For JSON, prefer direct field paths. If reshaping is needed, prefer supported declarative split/merge rather than inventing executable JSONata.');
 
