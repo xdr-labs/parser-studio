@@ -77,6 +77,17 @@ function lineEventStream(raw:string):SecurityPipelineResult|null{
 }
 
 export function parseSecurityInput(raw:string):SecurityPipelineResult{
+  if(raw.startsWith('\uFEFF')){
+    if(raw.startsWith('\uFEFF\uFEFF'))
+      return {ok:false,error:'Input contains more than one UTF-8 BOM preamble'};
+    const parsed=parseSecurityInput(raw.slice(1));
+    if(!parsed.ok)return parsed;
+    return {
+      ...parsed,
+      source_raw:raw,
+      context:{...(parsed.context??{}),utf8_bom:true},
+    };
+  }
   const broken=breakSecurityInput(raw);
   if(!broken.ok){
     if(broken.claimed)return {ok:false,error:broken.error};
