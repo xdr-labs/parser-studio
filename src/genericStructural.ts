@@ -653,11 +653,97 @@ function securityPositionalCsvBody(text:string):Record<string,unknown>|null{
   return columns;
 }
 
+function bracketColonKvBody(text:string):Record<string,unknown>|null{
+  if(!text.startsWith('[')||!text.endsWith(']')||new TextEncoder().encode(text).byteLength>8192)return null;
+  const inner=text.slice(1,-1);
+  const segments=splitEscaped(inner,';');
+  if(!segments)return null;
+  const body:Record<string,unknown>={};
+  for(const rawSegment of segments){
+    const segment=rawSegment.trim();
+    if(!segment)continue;
+    const delimiter=/:\s*"/.exec(segment);
+    if(!delimiter||delimiter.index<=0)return null;
+    const key=segment.slice(0,delimiter.index).trim();
+    if(!/^[A-Za-z_][A-Za-z0-9_.#:-]{0,127}$/.test(key)||!sourceKeySafe(key))return null;
+    const encoded=segment.slice(delimiter.index+1).trim();
+    if(encoded.length<2||!encoded.startsWith('"')||!encoded.endsWith('"'))return null;
+    const value=encoded.slice(1,-1),previous=body[key];
+    body[key]=previous===undefined?value:Array.isArray(previous)?[...previous,value]:[previous,value];
+    if(Object.keys(body).length>100)return null;
+  }
+  return Object.keys(body).length>=2?body:null;
+}
+
+function juniperRtFlowBody(text:string):Record<string,unknown>|null{
+  const event=/^(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.exec(text);
+  if(!event)return null;
+  const body=scanProfileTokens(text,event[0].length);
+  if(!body||!body.tokens.some(value=>/^[^/\s]+\/[0-9]{1,5}->[^/\s]+\/[0-9]{1,5}$/.test(value)))return null;
+  return {event:event[1],...body};
+}
+
+function watchguardTrafficBody(text:string):{
+  header:Record<string,unknown>;
+  body:{tokens:string[];kv:Record<string,unknown>;groups:string[]};
+}|null{
+  const head=/^(?:([A-Za-z0-9.-]{2,64}) +)?(?:\(([0-9T:+-]{19,35})\) +)?(firewall(?:\[\d{1,8}\])?): +/.exec(text);
+  if(!head)return null;
+  if(head[2]!==undefined&&Number.isNaN(Date.parse(head[2]!)))return null;
+  const body=scanProfileTokens(text,head[0].length);
+  if(!body||!body.tokens.length||!['Allow','Deny','Drop'].includes(body.tokens[0]!))return null;
+  const msgId=body.kv.msg_id;
+  if(typeof msgId!=='string'||!/^[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}$/.test(msgId))return null;
+  if(body.tokens.filter(ipToken).length<2)return null;
+  return {
+    header:{
+      ...(head[1]?{serial:head[1]}:{}),
+      ...(head[2]?{device_time:head[2]}:{}),
+      app_tag:head[3],
+    },
+    body,
+  };
+}
+
 function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|null{
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope||envelope.variant==='colon_date')return null;
   const syslog=envelopeToSyslogFields(envelope);
   const message=envelope.message;
+
+  if(/^%(?:ASA|FTD)-/.test(message)){
+    const parsed=asa(message);
+    if(parsed?.asa&&typeof parsed.asa==='object'){
+      const vendorSyslog=parsed.syslog&&typeof parsed.syslog==='object'
+        ? parsed.syslog as Record<string,unknown>:{};
+      return {
+        syslog:{...syslog,...vendorSyslog},
+        asa:{...(parsed.asa as Record<string,unknown>),source_raw:raw,message_raw:message},
+      };
+    }
+  }
+
+  if(envelope.appname==='RT_FLOW'){
+    const juniper=juniperRtFlowBody(message);
+    if(juniper)return {
+      syslog,
+      juniper:{...juniper,source_raw:raw,message_raw:message},
+    };
+  }
+
+  const bracket=bracketColonKvBody(message);
+  if(bracket)return {
+    syslog,
+    body:bracket,
+    generic:{mode:'syslog_envelope_bracket_colon_kv',source_raw:raw,message_raw:message},
+  };
+
+  const watchguard=watchguardTrafficBody(message);
+  if(watchguard)return {
+    syslog,
+    watchguard_header:watchguard.header,
+    watchguard:{...watchguard.body,source_raw:raw,message_raw:message},
+  };
 
   if(/^CEF:0\|/.test(message)){
     const parsed=extractStructuredFamily(message,'cef');
