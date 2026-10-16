@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {extractGenericStructural} from './genericStructural';
-import {parseCiscoIseBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
+import {parseCiscoIseBody,parseF5AsmBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
 
 describe('appliance security source refinement PoC',()=>{
   it('parses FortiGate KV bodies with source anchors and network validation',()=>{
@@ -82,5 +82,35 @@ describe('appliance security source refinement PoC',()=>{
       xg.replace('device="SFW"','device="OTHER"'),
     ];
     expect(invalid.filter(raw=>parseSophosKvBody(raw)!==null)).toEqual([]);
+  });
+
+  it('parses F5 ASM comma KV with quoted commas and validates source boundaries',()=>{
+    const body='unit_hostname="f5qa",management_ip_address="10.52.34.33",policy_name="/Common/asmpolicy",request_status="passed",response_code="200",ip_client="10.43.24.23",method="HEAD",protocol="HTTPS",x_forwarded_for_header_value="10.43.24.23, 10.43.24.24",severity="Informational",src_port="50668",dest_port="443",dest_ip="10.30.4.56",uri="/repository/file.jar"';
+    const parsed=parseF5AsmBody(body);
+    expect(parsed).toMatchObject({fields:{
+      unit_hostname:'f5qa',management_ip_address:'10.52.34.33',request_status:'passed',
+      ip_client:'10.43.24.23',method:'HEAD',protocol:'HTTPS',dest_port:'443',
+      x_forwarded_for_header_value:'10.43.24.23, 10.43.24.24',
+    }});
+    const wrapped=extractGenericStructural('<134>Aug  6 12:03:36 f5qa ASM:'+body);
+    expect(wrapped.errors).toEqual([]);
+    expect(wrapped.fields.f5_bigip).toMatchObject({module:'ASM',fields:{uri:'/repository/file.jar'}});
+  });
+
+  it('rejects malformed F5 ASM bodies instead of downgrading into generic comma KV',()=>{
+    const body='unit_hostname="f5qa",management_ip_address="10.52.34.33",policy_name="/Common/asmpolicy",request_status="blocked",ip_client="10.43.24.23",method="POST",protocol="HTTPS",src_port="50668",dest_port="443",dest_ip="10.30.4.56",uri="/login"';
+    const invalid=[
+      body.replace('10.43.24.23','999.43.24.23'),
+      body.replace('dest_port="443"','dest_port="70000"'),
+      body.replace('method="POST"','method="post"'),
+      body.replace('protocol="HTTPS"','protocol="bad protocol"'),
+      body.replace('request_status="blocked"','request_status="maybe"'),
+      body+',constructor="bad"',
+      body+',dest_ip="192.0.2.9"',
+      body.replace('uri="/login"','uri="unterminated'),
+    ];
+    expect(invalid.filter(raw=>parseF5AsmBody(raw)!==null)).toEqual([]);
+    const wrapped=invalid.map(raw=>'<134>Jul 14 09:12:05 f5-asm ASM:'+raw);
+    expect(wrapped.filter(raw=>extractGenericStructural(raw).errors.length===0)).toEqual([]);
   });
 });

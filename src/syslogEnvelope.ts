@@ -403,6 +403,7 @@ export function parseSyslogEnvelope(raw:string):SyslogEnvelope|null{
 
   const rfc5424=parseRfc5424(split.pri,rest);
   if(rfc5424)return rfc5424;
+  if(split.pri!==undefined&&/^\d{1,3} +/.test(rest))return null;
 
   const bsd=parseBsd(split.pri,rest);
   if(bsd)return bsd;

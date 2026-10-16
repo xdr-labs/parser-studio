@@ -123,3 +123,76 @@ export function parseCiscoIseBody(text:string):Record<string,unknown>|null{
   if(!Object.keys(fields).length)return null;
   return {header,message,fields};
 }
+
+function splitQuotedCommaPairs(text:string):string[]|null{
+  const parts:string[]=[];let current='',quoted=false,escaped=false;
+  for(const ch of text){
+    if(escaped){current+=ch;escaped=false;continue;}
+    if(ch==='\\'&&quoted){current+=ch;escaped=true;continue;}
+    if(ch==='"'){current+=ch;quoted=!quoted;continue;}
+    if(ch===','&&!quoted){parts.push(current.trim());current='';continue;}
+    current+=ch;
+  }
+  if(escaped||quoted)return null;
+  parts.push(current.trim());
+  return parts;
+}
+
+function decodeQuotedSource(value:string):string|null{
+  const trimmed=value.trim();
+  if(!trimmed.startsWith('"'))return bytes(trimmed)<=8192?trimmed:null;
+  if(trimmed.length<2||!trimmed.endsWith('"'))return null;
+  let out='';
+  for(let i=1;i<trimmed.length-1;i++){
+    const ch=trimmed[i]!;
+    if(ch!=='\\'){out+=ch;continue;}
+    const next=trimmed[++i];
+    if(next===undefined)return null;
+    if(next==='"'||next==='\\'||next===','){out+=next;continue;}
+    out+='\\'+next;
+  }
+  return bytes(out)<=8192?out:null;
+}
+
+export function parseF5AsmBody(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>MAX_BYTES)return null;
+  const parts=splitQuotedCommaPairs(text);
+  if(!parts||parts.length<8||parts.length>256)return null;
+  const fields:Record<string,string>=Object.create(null);
+  for(const part of parts){
+    const eq=part.indexOf('=');
+    if(eq<=0)return null;
+    const key=part.slice(0,eq).trim(),rawValue=part.slice(eq+1);
+    if(!/^[A-Za-z_][A-Za-z0-9_.-]{0,127}$/.test(key)||UNSAFE.has(key)||Object.prototype.hasOwnProperty.call(fields,key))return null;
+    const value=decodeQuotedSource(rawValue);
+    if(value===null)return null;
+    fields[key]=value;
+  }
+  if(!fields.unit_hostname||!fields.request_status||!fields.ip_client||!fields.method||!fields.protocol||!fields.dest_ip||!fields.dest_port||!fields.uri)return null;
+  if(!ip(fields.ip_client)||!ip(fields.dest_ip)||!port(fields.dest_port))return null;
+  if(fields.src_port!==undefined&&!port(fields.src_port))return null;
+  if(!/^[A-Z][A-Z0-9_-]{1,15}$/.test(fields.method))return null;
+  if(!/^[A-Z][A-Z0-9_.-]{1,15}$/.test(fields.protocol))return null;
+  if(!/^(?:passed|blocked|alerted|staged|unknown)$/i.test(fields.request_status))return null;
+  if(fields.response_code!==undefined&&!/^(?:\d{3}|0)$/.test(fields.response_code))return null;
+  return {fields};
+}
+
+export function refineF5AsmFields(input:Record<string,unknown>):Record<string,unknown>|null{
+  if(!safeRecord(input))return null;
+  const f=input as Record<string,string>;
+  if(!f.unit_hostname||
+     (!f.policy_name&&!f.request_status)||
+     (!f.ip_client&&!f.management_ip_address))return null;
+  for(const key of ['management_ip_address','management_ip_address_2','ip_client','dest_ip']){
+    const value=f[key];
+    if(value!==undefined&&value!==''&&value!=='N/A'&&!ip(value))return null;
+  }
+  for(const key of ['src_port','dest_port']){
+    const value=f[key];
+    if(value!==undefined&&value!==''&&value!=='N/A'&&!port(value))return null;
+  }
+  if(f.method!==undefined&&!/^[A-Z][A-Z0-9_-]{1,15}$/.test(f.method))return null;
+  if(f.protocol!==undefined&&!/^[A-Z][A-Z0-9_.-]{1,15}$/.test(f.protocol))return null;
+  return {fields:f};
+}

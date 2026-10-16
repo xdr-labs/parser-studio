@@ -8,7 +8,7 @@ import {extractLinuxAuditStructural,parseLinuxAuditRecord} from './linuxAudit';
 import {extractCiscoFirewallEnvelope,parseCiscoFirewallEnvelope} from './ciscoFirewallEnvelope';
 import {parseBindQueryLog} from './bindQueryLog';
 import {extractClassicElbAccess,extractS3Access} from './awsLegacyAccess';
-import {parseCiscoIseBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
+import {parseCiscoIseBody,parseF5AsmBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -1350,11 +1350,20 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     generic:{mode:'syslog_envelope_positional_csv',delimiter:',',source_raw:raw,message_raw:messageRaw,columns:positional},
   };
 
+  if(envelope.appname?.toUpperCase()==='ASM'&&/^unit_hostname=/.test(message)){
+    const f5=parseF5AsmBody(message);
+    if(f5)return {
+      syslog,
+      f5_bigip:{module:'ASM',...f5,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
   const comma=delimitedCommaKv(message);
-  if(comma?.generic&&typeof comma.generic==='object')return {
-    syslog,
-    generic:{...(comma.generic as Record<string,unknown>),source_raw:raw,message_raw:messageRaw},
-  };
+  if(comma?.generic&&typeof comma.generic==='object'){
+    const generic={...(comma.generic as Record<string,unknown>),source_raw:raw,message_raw:messageRaw};
+    return {syslog,generic};
+  }
 
   const spaced=spaceKv(message);
   if(spaced?.generic&&typeof spaced.generic==='object')return {
@@ -1526,6 +1535,7 @@ function knownVendorStructuredFailure(raw:string):boolean{
   if(/^%(?:ASA|FTD)-\d-\d{6}:/.test(message))return true;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(message)&&/\bdevname=/.test(message)&&/\bdevid=/.test(message))return true;
   if(message.startsWith('CISE_'))return true;
+  if(envelope.appname?.toUpperCase()==='ASM'&&/^unit_hostname=/.test(message))return true;
   if((/\bdevice="SFW"\b/.test(message)&&/\blog_type=/.test(message))||/\bsys="SecureNet"\b/.test(message))return true;
   if(envelope.appname?.toLowerCase()==='sudo'&&/^[A-Za-z0-9_.@-]+ +: +/.test(message))return true;
   if(message.startsWith('[')&&message.includes('[UFW '))return true;
