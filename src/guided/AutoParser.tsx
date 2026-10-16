@@ -19,6 +19,7 @@ import {checkNativeProjectVerificationAvailability,verifyNativeProject,
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
 import {suggestNormalizationCandidates} from './normalizationCandidates';
+import {validateNormalizationMappings} from './normalizationValidation';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
@@ -1215,6 +1216,13 @@ export default function AutoParser({
                source:candidate.source,target:candidate.target,type:candidate.type,
              }]}))}>Apply suggestion</button>
          </div>)}
+       </div>
+       <div aria-label="Normalization validation" role="status">
+         {validateNormalizationMappings(suite,draft.mappings).length===0
+           ?'No local mapping errors detected. Stellar target verification is still pending.'
+           :validateNormalizationMappings(suite,draft.mappings).slice(0,20).map((finding,index)=><p key={index}>
+             Event {finding.event} · {finding.code} · {finding.source} → {finding.target}
+           </p>)}
        </div>
        <div aria-label="Normalization mapping editor">
          {draft.mappings.map((mapping,index)=><div className="two-path-mapping-editor" key={mapping.id}>
