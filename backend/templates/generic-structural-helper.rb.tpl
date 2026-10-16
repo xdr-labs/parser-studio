@@ -20,6 +20,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_dual_timestamp_session(text)
   return result if result
+  result = parserstudio_generic_bsd_bracket_pid_message(text)
+  return result if result
   result = parserstudio_generic_juniper_legacy(text)
   return result if result
   result = parserstudio_generic_junos_rfc5424_sd(text)
@@ -640,6 +642,21 @@ def parserstudio_generic_dual_timestamp_session(text)
       'event_time'=>match[9],'node'=>match[10],'client'=>match[11],
       'identity'=>match[12],'message'=>match[13]}
   }
+rescue StandardError
+  nil
+end
+
+def parserstudio_generic_bsd_bracket_pid_message(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +\[(\d{1,8})\]: +(.+)\z/.match(text)
+  return nil unless match && parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
+  return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
+  syslog={'month'=>match[2],'day'=>match[3],'time'=>match[4],
+          'hostname'=>match[5],'app_tag'=>match[6]}
+  syslog['pri']=match[1] if match[1]
+  {'syslog'=>syslog,
+   'generic'=>{'mode'=>'bsd_bracket_pid_message','source_raw'=>text,
+               'pid'=>match[7],'message'=>match[8]}}
 rescue StandardError
   nil
 end

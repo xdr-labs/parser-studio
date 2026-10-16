@@ -60,6 +60,17 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
+test("Generic Structural V15 Ruby helper parses bounded BSD bracket-id messages",{skip:!rubyAvailable},()=>{
+  const raw='Mar 26 10:20:16 ssb SNMPD_CONTEXT_ERROR: [7400]: emq: isiu: success in 6237 context 5367';
+  const parsed=runRuby("parserstudio_generic_structural",raw) as any;
+  assert.deepEqual(parsed.syslog,{month:"Mar",day:"26",time:"10:20:16",hostname:"ssb",app_tag:"SNMPD_CONTEXT_ERROR"});
+  assert.equal(parsed.generic.mode,"bsd_bracket_pid_message");
+  assert.equal(parsed.generic.source_raw,raw);
+  assert.equal(parsed.generic.pid,"7400");
+  assert.equal(runRuby("parserstudio_generic_bsd_bracket_pid_message",raw.replace("Mar 26","Mar 32")),null);
+  assert.equal(runRuby("parserstudio_generic_bsd_bracket_pid_message",raw.replace("[7400]","[123456789]")),null);
+});
+
 test("Generic Structural V14 Ruby helper parses bounded dual timestamp session envelopes",{skip:!rubyAvailable},()=>{
   const raw='Oct 19 09:11:55 edge-node 1 2026-10-19T09:11:55+02:00 192.0.2.3 SecureAccess: - - - 2026-10-19 09:11:55 - edge-node - [198.51.100.10] user.name(REALM)[ROLE] - Session established successfully';
   const parsed=runRuby("parserstudio_generic_structural",raw) as any;
