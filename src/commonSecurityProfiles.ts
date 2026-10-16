@@ -202,3 +202,147 @@ export function parseApacheErrorLog(raw:string):Record<string,unknown>|null{
     generic:{mode:'apache_error_log',source_raw:raw},
   };
 }
+
+function safeIdentity(value:string):boolean{
+  return /^[A-Za-z0-9_.@-]{1,128}$/.test(value);
+}
+
+export function parsePamMessage(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>8192)return null;
+  let service:string|undefined,module='pam_unix',phase:string|undefined,pid:string|undefined;
+  let body=text;
+  const prefixed=/^([A-Za-z0-9_.-]+)\(pam_unix\)(?:\[(\d{1,10})\])?: +(.+)$/.exec(body);
+  if(prefixed){service=prefixed[1];pid=prefixed[2];body=prefixed[3]!;}
+  const header=/^pam_unix\(([^):]{1,64}):([^)\r\n]{1,64})\): +(.+)$/.exec(body);
+  if(header){
+    service=header[1];phase=header[2];body=header[3]!;
+  }else if(!prefixed)return null;
+
+  const opened=/^session +(opened|closed) +for +user +([A-Za-z0-9_.@-]{1,128})(?:\(uid=(\d{1,10})\))?(?: +by +(?:([A-Za-z0-9_.@-]{1,128})\(uid=(\d{1,10})\)|\(uid=(\d{1,10})\)))?$/.exec(body);
+  if(opened)return {
+    module,service,...(phase?{phase}:{}),...(pid?{pid}:{}),
+    event:'session_'+opened[1],user:opened[2],...(opened[3]?{uid:opened[3]}:{}),
+    ...(opened[4]?{actor:opened[4]}:{}),...(opened[5]?{actor_uid:opened[5]}:{}),
+    ...(opened[6]?{actor_uid:opened[6]}:{}),
+  };
+
+  const changed=/^password +changed +for +([A-Za-z0-9_.@-]{1,128})$/.exec(body);
+  if(changed)return {module,service,...(phase?{phase}:{}),...(pid?{pid}:{}),event:'password_changed',user:changed[1]};
+
+  const failure=/^authentication failure;(?: +(.*))?$/.exec(body);
+  if(failure){
+    const fields:Record<string,unknown>={};
+    if(failure[1]){
+      const tokens=failure[1].split(/ +/);
+      if(tokens.length>64)return null;
+      for(const token of tokens){
+        const pair=/^([A-Za-z_][A-Za-z0-9_.-]{0,63})=(.*)$/.exec(token);
+        if(!pair||UNSAFE_KEYS.has(pair[1]!)||Object.prototype.hasOwnProperty.call(fields,pair[1]!))return null;
+        if(bytes(pair[2]!)>512||/[\r\n\0]/.test(pair[2]!))return null;
+        fields[pair[1]!]=pair[2]!;
+      }
+    }
+    return {module,service,...(phase?{phase}:{}),...(pid?{pid}:{}),event:'authentication_failure',fields};
+  }
+  return null;
+}
+
+export function parseSshdMessage(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>8192)return null;
+  let match=/^(Accepted|Failed) +(password|publickey) +for +(invalid user +)?([A-Za-z0-9_.@-]{1,128}) +from +(\S+) +port +(\d{1,5}) +ssh2(?: +.*)?$/.exec(text);
+  if(match){
+    if(!ip(match[5]!)||!port(match[6]!))return null;
+    return {event:match[1]==='Accepted'?'authentication_success':'authentication_failure',method:match[2],user:match[4],src_ip:match[5],src_port:match[6],...(match[3]?{invalid_user:true}:{})};
+  }
+  match=/^Invalid +user +([A-Za-z0-9_.@-]{1,128}) +from +(\S+)$/.exec(text);
+  if(match)return ip(match[2]!)?{event:'invalid_user',user:match[1],src_ip:match[2]}:null;
+  match=/^Connection +closed +by +(\S+)(?: +port +(\d{1,5}))?.*$/.exec(text);
+  if(match){if(!ip(match[1]!)||(match[2]&&!port(match[2]!)))return null;return {event:'connection_closed',src_ip:match[1],...(match[2]?{src_port:match[2]}:{})};}
+  match=/^Received +disconnect +from +(\S+): +(\d{1,3}): +(.{1,512})$/.exec(text);
+  if(match)return ip(match[1]!)?{event:'disconnect',src_ip:match[1],code:match[2],reason:match[3]}:null;
+  match=/^reverse mapping checking getaddrinfo for +([A-Za-z0-9_.:-]{1,255}) +failed - POSSIBLE BREAKIN ATTEMPT!$/.exec(text);
+  if(match)return {event:'reverse_mapping_failure',peer:match[1]};
+  match=/^User +([A-Za-z0-9_.@-]{1,128}) +not allowed because listed in +(DenyUsers|DenyGroups)$/.exec(text);
+  if(match)return {event:'access_denied_by_policy',user:match[1],policy:match[2]};
+  match=/^error: +Bind to port +(\d{1,5}) +on +(\S+) +failed: +(.{1,512})$/.exec(text);
+  if(match){if(!port(match[1]!)||!ip(match[2]!))return null;return {event:'bind_failure',port:match[1],address:match[2],reason:match[3]};}
+  return null;
+}
+
+export function parseBindSecurityMessage(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>8192)return null;
+  const match=/^client(?: +@0x([0-9A-Fa-f]+))? +(\S+)#(\d{1,5}): +(update|query) +'([^'\r\n]{1,255})' +(denied|approved|refused)$/.exec(text);
+  if(!match||!ip(match[2]!)||!port(match[3]!))return null;
+  const target=match[5]!.split('/');
+  if(target.length<1||target.length>2||!target[0]||bytes(target[0]!)>255)return null;
+  const zone=target[0]!,queryClass=target[1];
+  if(queryClass!==undefined&&!/^(?:IN|CH|HS)$/.test(queryClass))return null;
+  return {
+    ...(match[1]?{client_handle:match[1]}:{}),client_ip:match[2],client_port:match[3],
+    operation:match[4],zone,...(queryClass?{query_class:queryClass}:{}),action:match[6],
+  };
+}
+
+export function parseWindowsFirewallLog(raw:string):Record<string,unknown>|null{
+  if(!raw||raw.includes('\0')||/[\r\n\t]/.test(raw)||bytes(raw)>8192)return null;
+  const parts=raw.trim().split(/ +/);
+  if(parts.length!==17)return null;
+  const date=/^(\d{4})-(\d{2})-(\d{2})$/.exec(parts[0]!);
+  if(!date||!calendar(Number(date[1]),Number(date[2]),Number(date[3]))||!clock(parts[1]!))return null;
+  if(!/^(?:OPEN|CLOSE|DROP|INFO|OPEN-INBOUND)$/.test(parts[2]!))return null;
+  if(!/^(?:TCP|UDP|ICMP|ICMPV6|GRE|ESP|AH|\d{1,3})$/i.test(parts[3]!))return null;
+  if(!ip(parts[4]!)||!ip(parts[5]!))return null;
+  for(const index of [6,7])if(parts[index]!=='-'&&!port(parts[index]!))return null;
+  const names=['date','time','action','protocol','src_ip','dst_ip','src_port','dst_port','size','tcp_flags','tcp_syn','tcp_ack','tcp_win','icmp_type','icmp_code','info','path'] as const;
+  const fields:Record<string,string>=Object.create(null);
+  names.forEach((name,index)=>{fields[name]=parts[index]!;});
+  return {windows_firewall:fields,generic:{mode:'windows_firewall_log',source_raw:raw}};
+}
+
+function parseSpaceKvAllowEmpty(text:string):Record<string,string>|null{
+  const fields:Record<string,string>=Object.create(null);
+  const tokens=text.trim().split(/ +/);
+  if(!tokens.length||tokens.length>128)return null;
+  for(const token of tokens){
+    const match=/^([A-Za-z_][A-Za-z0-9_.-]{0,63})=(.*)$/.exec(token);
+    if(!match||UNSAFE_KEYS.has(match[1]!)||Object.prototype.hasOwnProperty.call(fields,match[1]!))return null;
+    if(bytes(match[2]!)>2048||/[\r\n\0]/.test(match[2]!))return null;
+    fields[match[1]!]=match[2]!;
+  }
+  return fields;
+}
+
+export function parseSudoMessage(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>8192)return null;
+  const head=/^([A-Za-z0-9_.@-]{1,128}) +: +(.+)$/.exec(text);
+  if(!head||!safeIdentity(head[1]!))return null;
+  let body=head[2]!,attempts:string|undefined;
+  const failed=/^(\d{1,4}) +incorrect password attempts? +; +(.+)$/.exec(body);
+  if(failed){attempts=failed[1];body=failed[2]!;}
+  const segments=body.split(/ +; +/);
+  if(segments.length<2||segments.length>32)return null;
+  const fields:Record<string,string>=Object.create(null);
+  for(const segment of segments){
+    const eq=segment.indexOf('=');
+    if(eq<=0)return null;
+    const key=segment.slice(0,eq),value=segment.slice(eq+1);
+    if(!/^[A-Z][A-Z0-9_]{0,31}$/.test(key)||UNSAFE_KEYS.has(key)||Object.prototype.hasOwnProperty.call(fields,key))return null;
+    if(bytes(value)>4096||/[\r\n\0]/.test(value))return null;
+    fields[key]=value;
+  }
+  if(!fields.USER||!fields.COMMAND)return null;
+  return {event:attempts?'authentication_failure':'command',actor:head[1],...(attempts?{attempts}:{}),fields};
+}
+
+export function parseUfwMessage(text:string):Record<string,unknown>|null{
+  if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>8192)return null;
+  const match=/^\[([0-9]{1,12}(?:\.[0-9]{1,9})?)\] +\[UFW +(BLOCK|ALLOW|AUDIT|LIMIT)\] +(.+)$/.exec(text);
+  if(!match)return null;
+  const fields=parseSpaceKvAllowEmpty(match[3]!);
+  if(!fields||Object.keys(fields).length<5)return null;
+  if(fields.SRC!==undefined&&!ip(fields.SRC))return null;
+  if(fields.DST!==undefined&&!ip(fields.DST))return null;
+  for(const key of ['SPT','DPT'])if(fields[key]!==undefined&&!port(fields[key]!))return null;
+  if(fields.PROTO!==undefined&&!/^[A-Za-z0-9_-]{1,16}$/.test(fields.PROTO))return null;
+  return {kernel_timestamp:match[1],action:match[2],fields};
+}

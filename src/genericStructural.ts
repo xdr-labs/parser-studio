@@ -3,7 +3,7 @@ import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {unwrapSingleSyslogRecord} from './syslogFraming';
 import {extractVpcFlowStructural,parseVpcFlowLogV2} from './awsVpcFlow';
 import {extractAlbStructural,parseAlbAccessLog} from './awsAlbAccess';
-import {parseApacheErrorLog,parseBindQueryMessage,parseCiscoIosMessage,parseCiscoIosSequenceSyslog,parseHttpAccessLog,parseLegacyOriginatorMessage,parseSquidAccessLog} from './commonSecurityProfiles';
+import {parseApacheErrorLog,parseBindQueryMessage,parseBindSecurityMessage,parseCiscoIosMessage,parseCiscoIosSequenceSyslog,parseHttpAccessLog,parseLegacyOriginatorMessage,parsePamMessage,parseSshdMessage,parseSquidAccessLog,parseSudoMessage,parseUfwMessage,parseWindowsFirewallLog} from './commonSecurityProfiles';
 import {extractLinuxAuditStructural,parseLinuxAuditRecord} from './linuxAudit';
 import {extractCiscoFirewallEnvelope,parseCiscoFirewallEnvelope} from './ciscoFirewallEnvelope';
 import {parseBindQueryLog} from './bindQueryLog';
@@ -1080,6 +1080,42 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
       syslog,
       bind_query:{...bind,source_raw:raw,message_raw:messageRaw},
     };
+    const security=parseBindSecurityMessage(message);
+    if(security)return {
+      syslog,
+      bind_security:{...security,source_raw:raw,message_raw:messageRaw},
+    };
+    return null;
+  }
+
+  if(envelope.appname?.toLowerCase()==='sshd'){
+    const ssh=parseSshdMessage(message);
+    if(ssh)return {
+      syslog,
+      sshd:{...ssh,source_raw:raw,message_raw:messageRaw},
+    };
+  }
+
+  const pam=parsePamMessage(message);
+  if(pam)return {
+    syslog,
+    pam:{...pam,source_raw:raw,message_raw:messageRaw},
+  };
+
+  if(envelope.appname?.toLowerCase()==='sudo'){
+    const sudo=parseSudoMessage(message);
+    if(sudo)return {
+      syslog,
+      sudo:{...sudo,source_raw:raw,message_raw:messageRaw},
+    };
+  }
+
+  if(message.startsWith('[')&&message.includes('[UFW ')){
+    const ufw=parseUfwMessage(message);
+    if(ufw)return {
+      syslog,
+      ufw:{...ufw,source_raw:raw,message_raw:messageRaw},
+    };
     return null;
   }
 
@@ -1421,6 +1457,8 @@ function knownVendorStructuredFailure(raw:string):boolean{
   const message=normalizedEnvelopeMessage(envelope);
   if(envelope.appname==='RT_FLOW'&&/^RT_FLOW_SESSION_[A-Z_]+:/.test(message))return true;
   if(/^%(?:ASA|FTD)-\d-\d{6}:/.test(message))return true;
+  if(envelope.appname?.toLowerCase()==='sudo'&&/^[A-Za-z0-9_.@-]+ +: +/.test(message))return true;
+  if(message.startsWith('[')&&message.includes('[UFW '))return true;
   if(looksLikePanosBody(message))return true;
   return false;
 }
@@ -1430,7 +1468,7 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
     extractCiscoFirewallEnvelope(raw)??parseBindQueryLog(raw)??standaloneBindQueryProfile(raw)??
-    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseApacheErrorLog(raw)??parseSquidAccessLog(raw)??
+    parseCiscoIosSequenceSyslog(raw)??parseHttpAccessLog(raw)??parseApacheErrorLog(raw)??parseSquidAccessLog(raw)??parseWindowsFirewallLog(raw)??
     extractClassicElbAccess(raw)??extractS3Access(raw)??extractLinuxAuditStructural(raw)??
     standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??extractVpcFlowStructural(raw)??extractAlbStructural(raw)??
     nestedRelayStructuredSyslog(raw)??hostlessStructuredSyslog(raw)??syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);

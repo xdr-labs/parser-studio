@@ -882,3 +882,68 @@ The observed fixes continue to support the same product architecture:
 `container/framing -> event breaker -> logical event -> envelope -> body/source grammar -> source preservation -> semantic mapping -> normalization`
 
 Future holdouts should come from different public ecosystems rather than adding more samples from the same Logstash source, so new measurements remain useful tests of generalization.
+
+## Expansion round 9 — independent Wazuh holdout and common authentication/security grammars
+
+Round 9 used a different public ecosystem from the earlier Logstash holdout: examples adapted/redacted from Wazuh decoder/rule documentation and ruleset examples. The initial 20-event selection was measured before adding any Wazuh-driven grammar.
+
+### Independent baseline
+
+- total: 20 events;
+- initially parsed: 6 / 20 (30.0%);
+- initial failures clustered into reusable families rather than isolated samples: PAM session/password events, sshd authentication/security events, one Windows Firewall positional record, and one BIND denied/update record;
+- already-covered families included sudo generic KV, UFW generic KV, HTTP access, Suricata JSON, and one PAM authentication-failure KV shape.
+
+### Reusable improvements
+
+Round 9 added bounded leaf grammars under the existing envelope/body architecture rather than one full-line regex per sample:
+
+- PAM `pam_unix(...)` session/authentication/password-change messages, including empty source values such as `rhost=`;
+- sshd authentication success/failure, invalid user, disconnect/close, reverse-map warning, policy denial, and bind failure bodies;
+- BIND denied/update security messages sharing the existing validated client IP/port boundary;
+- classic Windows Firewall positional text with calendar/IP/port/action validation;
+- sudo command/authentication-failure bodies with semicolon-delimited explicit source fields;
+- UFW kernel messages with source-preserving key/value fields including empty values.
+
+Strict malformed cases were added for each family so recall does not depend on weakening validation. Known sudo/UFW signatures fail closed instead of falling through into a looser generic parser when their strict grammar fails.
+
+### Holdout progression
+
+| Measurement point | Parsed | Coverage |
+| --- | ---: | ---: |
+| Wazuh external baseline | 6 / 20 | 30.0% |
+| After PAM/sshd/BIND/Windows Firewall common grammars | 20 / 20 | 100% |
+| After sudo/UFW source refinement | 20 / 20 | 100% |
+
+After qualification the Wazuh set was converted from a measurement-only holdout into a regression test so future changes cannot silently lose the qualified coverage.
+
+### Source-preservation audit
+
+A separate preservation test checks representative PAM, sshd, sudo, UFW, Windows Firewall, BIND denied, HTTP access, and Suricata JSON events. Required source values are searched in the final structured result rather than accepting shallow parser success.
+
+- preservation samples: 8;
+- samples with missing required source values: 0.
+
+### Cross-holdout regression evidence
+
+The Wazuh-driven changes were re-run against the previously qualified independent Logstash sets:
+
+- first Logstash external holdout: 15 / 15 PASS;
+- second Logstash variant holdout: 15 / 15 PASS;
+- Logstash source-preservation audit: 0 missing values;
+- external residual/envelope focused suites: PASS.
+
+Final repository qualification before documenting this round:
+
+- unit suite: 139 / 139 test files PASS;
+- assertions: 905 / 905 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+### Architectural conclusion
+
+The external Wazuh failures again collapsed into a small set of reusable body/source grammars. The parser did not require changes to the Syslog timestamp/envelope layer for these cases, confirming that the earlier envelope/body separation is working as intended.
+
+The stable hierarchy remains:
+
+`container/framing -> event breaker -> logical event -> envelope -> reusable body/source grammar -> source preservation -> semantic mapping -> normalization`
