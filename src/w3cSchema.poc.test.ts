@@ -21,6 +21,9 @@ describe('W3C/IIS schema-aware log PoC',()=>{
   });
 
   it('preserves unset values and quoted fields',()=>{
+    const single=parseW3cFieldsHeader('#Fields: sc-status');
+    expect(single).not.toBeNull();
+    if(single)expect(mapW3cRow('403',single)).toMatchObject({'sc-status':'403'});
     const schema=parseW3cFieldsHeader('#Fields: date time c-ip cs-method cs-uri-stem sc-status');
     expect(schema).not.toBeNull();
     if(!schema)return;
@@ -32,7 +35,7 @@ describe('W3C/IIS schema-aware log PoC',()=>{
 
   it('rejects unsafe headers, duplicate fields, malformed quoting, and cardinality mismatches',()=>{
     const invalidHeaders=[
-      '#Fields: date time method',
+      '#Fields:',
       '#Fields: date time a b constructor',
       '#Fields: date time a b a',
       '#Fields date time a b c',

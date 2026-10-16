@@ -31,7 +31,7 @@ describe('Zeek #fields schema-aware TSV PoC',()=>{
 
   it('rejects unsafe, duplicate, malformed, and cardinality-mismatched schemas',()=>{
     const invalidHeaders=[
-      '#fields\tts\tuid\tip',
+      '#fields\tts',
       '#fields\tts\tuid\ta\tb\tc\tconstructor',
       '#fields\tts\tuid\ta\tb\tc\ta',
       '#fields ts uid a b c d',

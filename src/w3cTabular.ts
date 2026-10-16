@@ -13,7 +13,7 @@ export function parseW3cFieldsHeader(raw:string):W3cSchema|null{
   if(!raw.startsWith('#Fields: ')||raw.includes('\0')||/[\r\n]/.test(raw))return null;
   if(new TextEncoder().encode(raw).byteLength>8192)return null;
   const fields=raw.slice(9).trim().split(/ +/);
-  if(fields.length<4||fields.length>128||fields.some(field=>!safeField(field)))return null;
+  if(fields.length<1||fields.length>128||fields.some(field=>!safeField(field)))return null;
   if(new Set(fields).size!==fields.length)return null;
   return {fields,delimiter:'space'};
 }
@@ -42,7 +42,7 @@ function splitQuotedSpaceRow(raw:string):string[]|null{
 
 export function mapW3cRow(raw:string,schema:W3cSchema):Record<string,string>|null{
   if(raw.startsWith('#')||raw.includes('\0')||/[\r\n]/.test(raw)||new TextEncoder().encode(raw).byteLength>8192)return null;
-  if(schema.delimiter!=='space'||schema.fields.length<4||schema.fields.length>128||
+  if(schema.delimiter!=='space'||schema.fields.length<1||schema.fields.length>128||
      schema.fields.some(field=>!safeField(field))||new Set(schema.fields).size!==schema.fields.length)return null;
   const values=splitQuotedSpaceRow(raw);
   if(!values||values.length!==schema.fields.length)return null;

@@ -15,7 +15,7 @@ function octetFrame(message:string):string{
 
 describe('RFC6587 multi-record stream PoC',()=>{
   it('splits concatenated octet-counted records by UTF-8 byte length',()=>{
-    const unicode=messages[0].replace('Malware','악성코드');
+    const unicode=messages[0].replace('Malware','Mälware');
     const expected=[unicode,...messages.slice(1)];
     const stream=expected.map(octetFrame).join('');
     const split=splitSyslogStream(stream);

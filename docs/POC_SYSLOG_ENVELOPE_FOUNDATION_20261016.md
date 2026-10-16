@@ -524,9 +524,9 @@ RFC6587 stream parsing uses UTF-8 octet lengths rather than JavaScript character
 
 ### Round-3 deterministic evidence
 
-- Round-3 focused suites: 5 / 5 files PASS, 14 / 14 tests PASS;
-- all Syslog/security PoC suites: 22 / 22 files PASS, 145 / 145 tests PASS;
-- full repository unit suite: 111 / 111 files PASS, 816 / 816 tests PASS;
+- Round-3 focused suites: 6 / 6 files PASS, 16 / 16 tests PASS;
+- all Syslog/security PoC suites: 23 / 23 files PASS, 147 / 147 tests PASS;
+- full repository unit suite: 112 / 112 files PASS, 818 / 818 tests PASS;
 - TypeScript typecheck: PASS;
 - production build: PASS;
 - Windows Event XML: 5 / 5 valid variants PASS;
@@ -548,3 +548,9 @@ The parser boundary should be widened one level above a single event:
 This avoids forcing TCP/TLS stream framing, Windows XML, Zeek TSV, and W3C schema handling into vendor-specific complete-line regexes. It also preserves explicit source schemas where available instead of guessing field names.
 
 F5 BIG-IP/ASM research in this round did not justify another vendor-specific parser. Its documented remote output options overlap the already-qualified CEF, CSV, and key/value body dialects, so adding an F5-only full-line grammar would reduce reuse rather than improve the engine architecture.
+
+### Round-3 schema follow-up
+
+- Zeek schema handling now also consumes `#types`, `#path`, unset/empty markers, and bounded multi-row blocks; it no longer assumes that valid Zeek logs require six or more columns.
+- W3C/IIS schema handling now accepts the authoritative `#Fields:` list without an arbitrary minimum column count, matching the customizable W3C field selection model.
+- Final qualification after these schema changes remains 112 / 112 unit files and 818 / 818 assertions PASS, with typecheck and production build PASS.
