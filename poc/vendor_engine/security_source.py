@@ -110,6 +110,9 @@ def parse_security_source(raw:str)->SourceEvent:
         outer,start=tagless
         body_raw=raw[start:]
         body=_cee(body_raw) if body_raw.startswith('@cee:') else parse_source(body_raw)
+        if 'CSV' in body.syntax:
+            from security_panos import promote_panos_traffic_csv
+            body=promote_panos_traffic_csv(body) or body
         result=SourceEvent(raw,syntax='SECURITY_SYSLOG_ENVELOPE+'+body.syntax)
         result.vendor_fields={**outer.fields,'body':body.vendor_fields}
         result.primitive_fields=outer.primitive_fields+body.primitive_fields
