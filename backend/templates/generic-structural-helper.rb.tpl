@@ -28,15 +28,17 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_bracket_colon_kv(text)
   return result if result
-  result = parserstudio_generic_comma_kv(text)
-  return result if result
   result = parserstudio_generic_rfc3164_delimited_comma_kv(text)
   return result if result
   result = parserstudio_generic_rfc3164_positional_csv(text)
   return result if result
-  result = parserstudio_generic_delimited_comma_kv(text)
-  return result if result
   result = parserstudio_generic_pri_space_kv(text)
+  return result if result
+  result = parserstudio_generic_syslog_envelope_structured(text)
+  return result if result
+  result = parserstudio_generic_comma_kv(text)
+  return result if result
+  result = parserstudio_generic_delimited_comma_kv(text)
   return result if result
   result = parserstudio_generic_space_kv(text)
   return result if result
@@ -438,7 +440,7 @@ def parserstudio_generic_profile_tokens(text, start)
       begin_value = cursor
       closed = false
       while cursor < text.length
-        if text[cursor] == '\' && cursor + 1 < text.length
+        if text[cursor] == '\\' && cursor + 1 < text.length
           cursor += 2
           next
         end
@@ -805,6 +807,360 @@ def parserstudio_generic_rfc3164_positional_csv(text)
    'generic'=>panos ?
      {'mode'=>'panos_traffic_csv','delimiter'=>',','source_raw'=>text,'fields'=>panos} :
      {'mode'=>'rfc3164_positional_csv','delimiter'=>',','source_raw'=>text,'columns'=>columns}}
+end
+
+
+def parserstudio_generic_envelope_pri(pri_text)
+  return {} if pri_text.nil?
+  priority=Integer(pri_text,10)
+  return nil unless priority.between?(0,191)
+  {'pri'=>pri_text,'facility'=>priority/8,'severity'=>priority%8}
+rescue StandardError
+  nil
+end
+
+def parserstudio_generic_envelope_calendar(year,month,day,time,zone='+00:00')
+  match=/\A(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?\z/.match(time)
+  return false unless match
+  Time.new(Integer(year,10),Integer(month,10),Integer(day,10),
+           Integer(match[1],10),Integer(match[2],10),Integer(match[3],10),zone)
+  true
+rescue StandardError
+  false
+end
+
+def parserstudio_generic_envelope_decorate(syslog,message)
+  tag=/\A([A-Za-z0-9_.@\/-]{1,128})(?:\[(\d{1,10})\])?:[ \t]*(.*)\z/m.match(message)
+  if tag && !['CEF','LEEF'].include?(tag[1])
+    syslog=syslog.merge('appname'=>tag[1])
+    syslog['procid']=tag[2] if tag[2]
+    message=tag[3].to_s
+  end
+  [syslog,message]
+end
+
+def parserstudio_generic_syslog_envelope(text)
+  return nil if text.empty? || text.bytesize>8192 || text.include?("\x00") ||
+    text.include?("\r") || text.include?("\n")
+  pri=nil
+  rest=text
+  if text.start_with?('<')
+    head=/\A<(\d{1,3})>/.match(text)
+    return nil unless head
+    pri=head[1]
+    return nil unless parserstudio_generic_envelope_pri(pri)
+    rest=text[head.end(0)..-1].to_s
+  end
+  rest=rest.lstrip
+  return nil if rest.empty?
+  pri_fields=parserstudio_generic_envelope_pri(pri)
+  return nil unless pri_fields
+
+  if pri
+    rfc=/\A(1) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
+    if rfc
+      timestamp=rfc[2]
+      return nil unless timestamp=='-' ||
+        (timestamp.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})\z/) &&
+         begin Time.iso8601(timestamp); true rescue false end)
+      [[rfc[3],255],[rfc[4],48],[rfc[5],128],[rfc[6],32]].each do |pair|
+        token,maximum=pair
+        return nil unless token.bytesize<=maximum && token.match?(/\A[!-~]+\z/)
+      end
+      begin
+        structured,message=parserstudio_rfc5424_sd(rfc[7])
+      rescue StandardError
+        return nil
+      end
+      syslog={'variant'=>'rfc5424','confidence'=>'strict',**pri_fields,'version'=>'1'}
+      syslog['timestamp']=timestamp unless timestamp=='-'
+      syslog['hostname']=rfc[3] unless rfc[3]=='-'
+      syslog['appname']=rfc[4] unless rfc[4]=='-'
+      syslog['procid']=rfc[5] unless rfc[5]=='-'
+      syslog['msgid']=rfc[6] unless rfc[6]=='-'
+      syslog['structuredData']=structured
+      return [syslog,message.to_s]
+    end
+  end
+
+  month_days={'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
+              'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
+  before=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  if before && parserstudio_generic_valid_bsd_clock(before[1],before[2],before[4]) &&
+     Integer(before[3],10).between?(1900,9999)
+    syslog={'variant'=>'rfc3164_year_before_time','confidence'=>'strong',**pri_fields,
+            'month'=>before[1],'day'=>before[2],'year'=>before[3],
+            'time'=>before[4],'hostname'=>before[5]}
+    return parserstudio_generic_envelope_decorate(syslog,before[6].to_s)
+  end
+  after=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  if after && parserstudio_generic_valid_bsd_clock(after[1],after[2],after[3]) &&
+     Integer(after[4],10).between?(1900,9999)
+    syslog={'variant'=>'rfc3164_year_after_time','confidence'=>'strong',**pri_fields,
+            'month'=>after[1],'day'=>after[2],'time'=>after[3],
+            'year'=>after[4],'hostname'=>after[5]}
+    return parserstudio_generic_envelope_decorate(syslog,after[6].to_s)
+  end
+  classic=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  if classic && parserstudio_generic_valid_bsd_clock(classic[1],classic[2],classic[3])
+    syslog={'variant'=>'rfc3164','confidence'=>'strict',**pri_fields,
+            'month'=>classic[1],'day'=>classic[2],'time'=>classic[3],
+            'hostname'=>classic[4]}
+    return parserstudio_generic_envelope_decorate(syslog,classic[5].to_s)
+  end
+
+  rfc3339=/\A(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  if rfc3339
+    begin
+      Time.iso8601(rfc3339[1])
+      syslog={'variant'=>'rfc3339_loose','confidence'=>'strong',**pri_fields,
+              'timestamp'=>rfc3339[1],'hostname'=>rfc3339[2]}
+      return parserstudio_generic_envelope_decorate(syslog,rfc3339[3].to_s)
+    rescue StandardError
+      return nil
+    end
+  end
+
+  iso=/\A(\d{4})-(\d{2})-(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(?: +(Z|[+-]\d{2}:?\d{2}))? +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  if iso && parserstudio_generic_envelope_calendar(iso[1],iso[2],iso[3],iso[4],iso[5]||'+00:00')
+    syslog={'variant'=>'iso_space','confidence'=>'strong',**pri_fields,
+            'year'=>iso[1],'timestamp'=>"#{iso[1]}-#{iso[2]}-#{iso[3]} #{iso[4]}",
+            'time'=>iso[4],'hostname'=>iso[6]}
+    syslog['timezone']=iso[5] if iso[5]
+    return parserstudio_generic_envelope_decorate(syslog,iso[7].to_s)
+  end
+
+  slash=/\A(\d{4})\/(\d{2})\/(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(?: +(Z|[+-]\d{2}:?\d{2}))? +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  if slash && parserstudio_generic_envelope_calendar(slash[1],slash[2],slash[3],slash[4],slash[5]||'+00:00')
+    syslog={'variant'=>'slash_date','confidence'=>'strong',**pri_fields,
+            'year'=>slash[1],'timestamp'=>"#{slash[1]}/#{slash[2]}/#{slash[3]} #{slash[4]}",
+            'time'=>slash[4],'hostname'=>slash[6]}
+    syslog['timezone']=slash[5] if slash[5]
+    return parserstudio_generic_envelope_decorate(syslog,slash[7].to_s)
+  end
+
+  return [{'variant'=>'pri_only','confidence'=>'partial',**pri_fields},rest] if pri
+  nil
+rescue StandardError
+  nil
+end
+
+def parserstudio_generic_envelope_json_safe(value,depth=0,state=nil)
+  state ||= {'nodes'=>0}
+  state['nodes'] += 1
+  return false if depth>8 || state['nodes']>2048
+  if value.is_a?(Hash)
+    value.each do |key,item|
+      return false unless key.is_a?(String) && key.bytesize<=256 &&
+        parserstudio_generic_source_key_safe(key) &&
+        parserstudio_generic_envelope_json_safe(item,depth+1,state)
+    end
+  elsif value.is_a?(Array)
+    return false if value.length>1024
+    return false unless value.all? { |item| parserstudio_generic_envelope_json_safe(item,depth+1,state) }
+  end
+  true
+end
+
+def parserstudio_generic_envelope_bracket_kv(text)
+  return nil unless text.start_with?('[') && text.end_with?(']') && text.bytesize<=8192
+  parts=parserstudio_split_escaped(text[1...-1],';')
+  return nil unless parts
+  fields={}
+  parts.each do |raw_segment|
+    segment=raw_segment.strip
+    next if segment.empty?
+    delimiter=/:\s*"/.match(segment)
+    return nil unless delimiter && delimiter.begin(0)>0
+    key=segment[0...delimiter.begin(0)].strip
+    return nil unless key.match?(/\A[A-Za-z_][A-Za-z0-9_.#:-]{0,127}\z/) &&
+      parserstudio_generic_source_key_safe(key)
+    encoded=segment[(delimiter.begin(0)+1)..-1].to_s.strip
+    return nil unless encoded.length>=2 && encoded.start_with?('"') && encoded.end_with?('"')
+    value=encoded[1...-1]
+    previous=fields[key]
+    fields[key]=previous.nil? ? value : previous.is_a?(Array) ? previous+[value] : [previous,value]
+    return nil if fields.length>100
+  end
+  fields.length>=2 ? fields : nil
+end
+
+def parserstudio_generic_envelope_juniper(text)
+  event=/\A(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.match(text)
+  return nil unless event
+  body=parserstudio_generic_profile_tokens(text,event[0].length)
+  return nil unless body && body['tokens'].any? {
+    |value| value.match?(/\A[^\/\s]+\/[0-9]{1,5}->[^\/\s]+\/[0-9]{1,5}\z/)
+  }
+  {'event'=>event[1],**body}
+end
+
+def parserstudio_generic_envelope_watchguard(text)
+  head=/\A(?:([A-Za-z0-9.-]{2,64}) +)?(?:\(([0-9T:+-]{19,35})\) +)?(firewall(?:\[\d{1,8}\])?): +/.match(text)
+  return nil unless head
+  begin
+    Time.iso8601(head[2]) if head[2]
+  rescue StandardError
+    return nil
+  end
+  body=parserstudio_generic_profile_tokens(text,head[0].length)
+  return nil unless body && !body['tokens'].empty? &&
+    ['Allow','Deny','Drop'].include?(body['tokens'][0])
+  msg_id=body['kv']['msg_id']
+  return nil unless msg_id.is_a?(String) && msg_id.match?(/\A[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}\z/)
+  ip=/\A(?:\d{1,3}\.){3}\d{1,3}\z/
+  ips=body['tokens'].count { |value| value.match?(ip) &&
+    value.split('.').all? { |part| Integer(part,10).between?(0,255) rescue false } }
+  return nil if ips<2
+  header={'app_tag'=>head[3]}
+  header['serial']=head[1] if head[1]
+  header['device_time']=head[2] if head[2]
+  [header,body]
+end
+
+def parserstudio_generic_envelope_csv(text)
+  CSV.parse_line(text,col_sep:',',liberal_parsing:false,strip:false)
+rescue CSV::MalformedCSVError
+  nil
+end
+
+def parserstudio_generic_envelope_panos(values)
+  return nil unless values && values.length.between?(7,150)
+  values=values.map { |value| value.to_s }
+  return nil unless values[0].match?(/\A\d{0,10}\z/)
+  received=/\A(\d{4})\/(\d{2})\/(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)\z/.match(values[1])
+  return nil unless received &&
+    parserstudio_generic_envelope_calendar(received[1],received[2],received[3],received[4])
+  return nil unless values[2].match?(/\A[A-Za-z0-9_.:-]{4,64}\z/)
+  return nil unless values[3].match?(/\A(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION|GTP|IPTAG|SCTP|TUNNEL|URL|DATA|WILDFIRE)\z/)
+  columns={}
+  values.each_with_index { |value,index| columns["column_#{index}"]=value }
+  [values,columns]
+end
+
+def parserstudio_generic_envelope_security_csv(values)
+  return nil unless values && values.length.between?(12,150)
+  values=values.map { |value| value.to_s }
+  ip=/\A(?:\d{1,3}\.){3}\d{1,3}\z/
+  valid=lambda { |value| value.match?(ip) &&
+    value.split('.').all? { |part| Integer(part,10).between?(0,255) rescue false } }
+  return nil if values.count { |value| valid.call(value) }<2
+  columns={}
+  values.each_with_index { |value,index| columns["column_#{index}"]=value }
+  columns
+end
+
+def parserstudio_generic_syslog_envelope_structured(text)
+  parsed=parserstudio_generic_syslog_envelope(text)
+  return nil unless parsed
+  syslog,message=parsed
+  return nil if message.nil?
+
+  if message.match?(/\A%(?:ASA|FTD)-/)
+    asa=parserstudio_generic_asa(message)
+    return nil unless asa && asa['asa'].is_a?(Hash)
+    vendor_syslog=asa['syslog'].is_a?(Hash) ? asa['syslog'] : {}
+    fields=asa['asa'].dup
+    fields['source_raw']=text
+    fields['message_raw']=message
+    return {'syslog'=>syslog.merge(vendor_syslog),'asa'=>fields}
+  end
+
+  if syslog['appname']=='RT_FLOW'
+    juniper=parserstudio_generic_envelope_juniper(message)
+    return nil unless juniper
+    juniper=juniper.merge('source_raw'=>text,'message_raw'=>message)
+    return {'syslog'=>syslog,'juniper'=>juniper}
+  end
+
+  if message.start_with?('[')
+    bracket=parserstudio_generic_envelope_bracket_kv(message)
+    return nil unless bracket
+    return {'syslog'=>syslog,'body'=>bracket,
+      'generic'=>{'mode'=>'syslog_envelope_bracket_colon_kv',
+                  'source_raw'=>text,'message_raw'=>message}}
+  end
+
+  watchguard=parserstudio_generic_envelope_watchguard(message)
+  if watchguard
+    header,body=watchguard
+    body=body.merge('source_raw'=>text,'message_raw'=>message)
+    return {'syslog'=>syslog,'watchguard_header'=>header,'watchguard'=>body}
+  end
+  return nil if message.match?(/\bfirewall(?:\[\d{1,8}\])?: +msg_id=/)
+
+  if message.start_with?('CEF:')
+    return nil unless message.start_with?('CEF:0|')
+    begin
+      body=parserstudio_cef(message)
+    rescue StandardError
+      return nil
+    end
+    return {'syslog'=>syslog,'body'=>body,
+      'generic'=>{'mode'=>'syslog_envelope_cef','source_raw'=>text,'message_raw'=>message}}
+  end
+
+  if message.start_with?('LEEF:')
+    return nil unless message.match?(/\ALEEF:(?:1\.0|2\.0)\|/)
+    begin
+      body=parserstudio_leef(message)
+    rescue StandardError
+      return nil
+    end
+    return {'syslog'=>syslog,'body'=>body,
+      'generic'=>{'mode'=>'syslog_envelope_leef','source_raw'=>text,'message_raw'=>message}}
+  end
+
+  if message.start_with?('{')
+    begin
+      body=parserstudio_json_object(message)
+    rescue StandardError
+      return nil
+    end
+    return nil unless parserstudio_generic_envelope_json_safe(body)
+    return {'syslog'=>syslog,'body'=>body,
+      'generic'=>{'mode'=>'syslog_envelope_json','source_raw'=>text,'message_raw'=>message}}
+  end
+
+  values=parserstudio_generic_envelope_csv(message)
+  panos_like=values && values.length>=7 &&
+    values[0].to_s.match?(/\A\d{0,10}\z/) &&
+    values[1].to_s.match?(/\A\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\z/) &&
+    values[2].to_s.match?(/\A[A-Za-z0-9_.:-]{4,64}\z/) &&
+    values[3].to_s.match?(/\A[A-Z][A-Z0-9_]{2,31}\z/)
+  panos=parserstudio_generic_envelope_panos(values)
+  if panos
+    panos_values,columns=panos
+    named=parserstudio_generic_panos_traffic_fields(panos_values)
+    generic=named ?
+      {'mode'=>'panos_traffic_csv','profile'=>'panos','delimiter'=>',',
+       'source_raw'=>text,'message_raw'=>message,'fields'=>named} :
+      {'mode'=>'syslog_envelope_positional_csv','profile'=>'panos','delimiter'=>',',
+       'source_raw'=>text,'message_raw'=>message,'columns'=>columns}
+    return {'syslog'=>syslog,'generic'=>generic}
+  end
+  return nil if panos_like
+
+  positional=parserstudio_generic_envelope_security_csv(values)
+  if positional
+    return {'syslog'=>syslog,
+      'generic'=>{'mode'=>'syslog_envelope_positional_csv','delimiter'=>',',
+                  'source_raw'=>text,'message_raw'=>message,'columns'=>positional}}
+  end
+
+  comma=parserstudio_generic_delimited_comma_kv(message)
+  if comma && comma['generic'].is_a?(Hash)
+    generic=comma['generic'].merge('source_raw'=>text,'message_raw'=>message)
+    return {'syslog'=>syslog,'generic'=>generic}
+  end
+
+  spaced=parserstudio_generic_space_kv(message)
+  if spaced && spaced['generic'].is_a?(Hash)
+    generic=spaced['generic'].merge('source_raw'=>text,'message_raw'=>message)
+    return {'syslog'=>syslog,'generic'=>generic}
+  end
+
+  nil
 end
 
 def parserstudio_generic_asa(text)

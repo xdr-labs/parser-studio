@@ -18,6 +18,20 @@ function runRuby(method:string,raw:string):unknown{
   return JSON.parse(out.stdout);
 }
 
+
+test("Generic Structural helper keeps Syslog envelope parsing ahead of weak generic fallbacks",()=>{
+  assert.match(helper,/def parserstudio_generic_syslog_envelope\(text\)/);
+  assert.match(helper,/def parserstudio_generic_syslog_envelope_structured\(text\)/);
+  assert.match(helper,/rfc3164_year_before_time/);
+  assert.match(helper,/rfc3164_year_after_time/);
+  assert.match(helper,/syslog_envelope_positional_csv/);
+  assert.match(helper,/panos_traffic_csv/);
+  const envelope=helper.indexOf("result = parserstudio_generic_syslog_envelope_structured(text)");
+  const comma=helper.indexOf("result = parserstudio_generic_comma_kv(text)");
+  const delimited=helper.indexOf("result = parserstudio_generic_delimited_comma_kv(text)");
+  assert.ok(envelope>=0&&comma>envelope&&delimited>envelope);
+});
+
 test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and secure-email grammars",{skip:!rubyAvailable},()=>{
   const watchguard='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
   const wg=runRuby("parserstudio_generic_structural",watchguard) as any;
