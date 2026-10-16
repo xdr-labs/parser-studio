@@ -7,6 +7,7 @@ test('Parser Studio exposes exactly two parser creation methods, never old Wizar
   await expect(nav.locator('button.rail-link')).toHaveCount(2);
   await expect(nav.getByRole('button',{name:'Auto Parser',exact:true})).toBeVisible();
   await expect(nav.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Ask ChatGPT about an unfamiliar log'})).toHaveCount(0);
   await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
   await expect(page.getByLabel('Auto Parser raw logs')).toBeVisible();
   await expect(page.getByLabel('No-code Parser Guided Builder')).toHaveCount(0);
