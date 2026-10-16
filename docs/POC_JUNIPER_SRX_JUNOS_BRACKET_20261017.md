@@ -130,3 +130,20 @@ The 571-event dataset was used to tune this candidate. **93.7% is in-sample
 qualification on these public fixtures**, not an unbiased future
 generalization estimate. Structural success, exact source-field fidelity and
 semantic normalization are distinct acceptance dimensions.
+
+## Residual source-dialect review (2026-10-17)
+
+Among the 19 remaining Juniper records, **13** are source-native free-text
+system events with no certifiable structured body; **six** are `junos@`
+bracket records containing typographic smart-quoted values (five flow
+examples, one ATP example), which violate the current independent
+ASCII-quote tokenizer. These six cannot be called source-exact by replacing
+smart quotes or letting partial KV fields rescue the event. The synthetic
+Junos smart-quote guard in `src/residualMalformedSafety.poc.test.ts` covers
+this fail-closed policy without committing published raw fixture lines.
+
+The certified Juniper counts remain **86/105 structurally successful**:
+69 exact `junos_sd`, five exact bare `juniper_flow_kv`, and 12 generic-only
+structural successes without independent exact-value evidence. A future
+source-certifiable quoting dialect requires a separately reviewed oracle
+and strict negative controls before updating any pass gate.

@@ -166,3 +166,40 @@ before claiming a generalized improvement.
 The product worktree remains untouched. Product adoption, actual parser
 creation, normalization, browser user E2E, and native Stellar compatibility
 are separate acceptance gates.
+
+## Post-qualification audit of the 36 remaining source records (2026-10-17)
+
+A read-only analysis of **all 36** unsuccessful input records at the
+independently qualified bare-bracket HEAD `37b5ea8f40a676a427011513241f8ab13e3c460c`
+found the following disjoint classes. The analysis consulted only the pinned
+private source corpus; raw source lines were not added to Git.
+
+| Family | Residual class | Records | Decision |
+| --- | --- | ---: | --- |
+| Juniper SRX | System free-text without a source-certified structured body | 13 | Leave unstructured; no invented attributes |
+| Juniper SRX | `junos@` attribute segments with typographic smart quotes rather than strict ASCII quotation (5 flow, 1 ATP) | 6 | Leave unstructured until the source quoting dialect is independently certified |
+| Sophos XG | Cannot tokenize a complete source KV sequence: non-KV segments/field-boundary ambiguity | 12 | Preserve raw; require source grammar evidence |
+| Sophos XG | Unterminated quoted source value | 2 | Reject fail-closed |
+| Sophos XG | Quote unexpectedly embedded in a bare token | 1 | Reject fail-closed |
+| Check Point | RFC5424 timestamp containing the invalid timezone `--5:00` | 2 | Reject invalid timestamp |
+| **Total** | | **36** | |
+
+The **15 Sophos residual records** are not independently source-field
+certifiable with the existing strict Python KV tokenizer. This does *not*
+prove every record is inherently invalid; some could require an additional,
+independently documented vendor dialect. The six Juniper smart-quoted records
+likewise cannot be promoted by simply stripping Unicode punctuation.
+An unsupported original is not an extracted-field correctness success.
+
+`src/residualMalformedSafety.poc.test.ts` adds synthetic adversarial controls
+for Junos smart-quoted values, malformed Sophos quotation, invalid Check Point
+timezone and Juniper prose, alongside a valid ASCII-quoted Junos control.
+These guards protect the qualified source parser against generic-downgrade
+false positives. No extra accepted event is claimed from this audit.
+
+**Next safe research gate:** obtain credible source-level expectations for a
+currently unsupported but complete vendor dialect, define an independent
+field/value oracle plus malformed controls, then evaluate it in the isolated
+PoC before changing the structural acceptance counts. Keep all three
+dimensions separate: structural extraction, exact source-field preservation
+and semantic/target mapping.
