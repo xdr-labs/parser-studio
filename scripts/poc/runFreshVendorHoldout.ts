@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {parseSecurityInput} from '../../src/securityInputPipeline';
+import {parseSyslogEnvelope} from '../../src/syslogEnvelope';
 
 type Sample={id:string;source:string;raw:string};
 const root=process.env.PARSER_STUDIO_FRESH_HOLDOUT_DIR ??
@@ -21,13 +22,22 @@ function sourceScalars(input:unknown):string[]{
 
 let accepted=0,jsonEvents=0,expectedScalars=0,recoveredScalars=0,jsonFailed=0;
 let jsonMalformedAccepted=0,knownInvalidAccepted=0;
+let residualEnvelopeRecognized=0,residualEnvelopeUnknown=0,residualWithThreeKvPairs=0;
 for(const sample of events){
   const family=sample.source.split('/').slice(0,2).join('/');
   const group=familyStats[family]??={events:0,parsed:0,failedIds:[]};
   group.events++;
   const result=parseSecurityInput(sample.raw);
   if(result.ok){accepted++;group.parsed++;}
-  else if(group.failedIds.length<8)group.failedIds.push(sample.id);
+  else {
+    if(group.failedIds.length<8)group.failedIds.push(sample.id);
+    const envelope=parseSyslogEnvelope(sample.raw);
+    if(envelope)residualEnvelopeRecognized++;
+    else residualEnvelopeUnknown++;
+    const body=envelope?.message??sample.raw;
+    const kvPairs=(body.match(/(?:^|[ \t])[A-Za-z_][A-Za-z0-9_-]{1,64}=/g)??[]).length;
+    if(kvPairs>=3)residualWithThreeKvPairs++;
+  }
 
   if(family==='crowdstrike/falcon'){
     const original=JSON.parse(sample.raw);
@@ -54,6 +64,7 @@ for(const sample of knownInvalid){
 const summary={
   record_sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'records.json'))).digest('hex'),
   events:events.length,accepted,failures:events.length-accepted,
+  residualEnvelopeRecognized,residualEnvelopeUnknown,residualWithThreeKvPairs,
   jsonEvents,expectedScalars,recoveredScalars,jsonFailed,
   malformedJsonTests:jsonEvents*2,malformedJsonAccepted:jsonMalformedAccepted,
   knownInvalidControls:knownInvalid.length,knownInvalidAccepted,
@@ -66,5 +77,6 @@ const good=events.length===571&&accepted===497&&
   familyStats['sophos/xg']?.events===271&&familyStats['sophos/xg']?.parsed===232&&
   familyStats['crowdstrike/falcon']?.events===84&&familyStats['crowdstrike/falcon']?.parsed===84&&
   jsonEvents===84&&expectedScalars===3092&&recoveredScalars===3092&&jsonFailed===0&&
-  jsonMalformedAccepted===0&&knownInvalid.length===1&&knownInvalidAccepted===0;
+  jsonMalformedAccepted===0&&knownInvalid.length===1&&knownInvalidAccepted===0&&
+  residualEnvelopeRecognized===24&&residualEnvelopeUnknown===50&&residualWithThreeKvPairs===61;
 if(!good){process.exitCode=1;console.error('Fresh vendor holdout did not meet recorded qualification');}

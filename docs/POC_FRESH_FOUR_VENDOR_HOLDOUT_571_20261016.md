@@ -102,13 +102,38 @@ verified private fixture directory. The runner requires 571 / 497,
 84 / 84 CrowdStrike, 3,092 / 3,092 scalar occurrences, and zero accepted
 negative controls. It exits nonzero on qualification drift.
 
-## Residuals and next research
+## Residual classification and next research
 
-There are 74 unresolved structural failures: Juniper 33, Check Point 2,
-and Sophos 39. They require classification by envelope, structured data,
-source-body grammar, and intentional safe abstention **before** attempting
-any narrower source-family rule. Do not patch them with a larger full-line
-vendor regex or permit a known-source failure to downgrade to generic success.
+There are 74 unresolved structural failures: **Juniper 33, Check Point 2,
+Sophos 39**. A separate, read-only classification using the existing envelope
+parser found:
+
+- 24 / 74 had a recognizable outer Syslog envelope but an unsupported or
+  intentionally unstructured residual body.
+- 50 / 74 were not recognized as a Syslog envelope; many are source-native
+  KV records, which are not necessarily supposed to have Syslog headers.
+- 61 / 74 contain at least three textual `key=value` candidates, suggesting
+  a possible bounded body-grammar path. This is not validation that their
+  quoting, timestamps, or source identifiers are correct.
+- The two Check Point failures show the malformed time-zone token
+  `2023-01-13T10:10:16--5:00` (or the same shape with another clock);
+  rejecting them is preferable to weakening the RFC 5424 timestamp boundary.
+- Some Juniper failures include RFC 5424-like headers without a qualified
+  time zone, whereas others have valid envelopes and free-text messages.
+  Analyze these separately before proposing new source-body grammar.
+- Sophos XG failures are predominantly standalone `device="SFW"`
+  KV records whose optional fields or source identifiers differ from
+  the reviewed leaf. Do not infer source correctness from the mere number
+  of equals signs.
+
+The offline evaluation runner asserts the 24/50/61 classification alongside
+the extraction metrics so a subsequent change cannot quietly relabel residuals
+as success.
+
+Do not patch the residuals with a larger full-line vendor regex or permit
+a known-source failure to downgrade to generic success. Additional unseen
+holdout data and independently reviewed expected source values are required
+before claiming a generalized improvement.
 
 The product worktree remains untouched. Product adoption, actual parser
 creation, normalization, browser user E2E, and native Stellar compatibility
