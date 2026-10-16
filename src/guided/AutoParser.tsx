@@ -980,12 +980,14 @@ export default function AutoParser({
          <button type="button" disabled={busy||pending||!suite}
            onClick={()=>{void mineUnknownShapes();}}>Group Unknown Text Locally</button>
          {currentStructural&&<div role="status" aria-label="Local structural hints">
-           <strong>{currentStructural.unknownCount} unknown events ·
-             {currentStructural.groupedCount} grouped · Browser worker only</strong>
+           <strong>{currentStructural.unknownCount+' unknown events · '+
+             currentStructural.groupedCount+' grouped · Browser worker only'}</strong>
            {currentStructural.groups.map((group,i)=><span key={i}>
-             {group.count} events · {group.fingerprint} · REVIEW ONLY
+             {group.count} events · {group.fingerprint} ·
+             {' '}Events {group.sourceLines.slice(0,12).join(', ')}
+             {group.sourceLines.length>12?' +'+(group.sourceLines.length-12)+' more':''} · REVIEW ONLY
            </span>)}
-           <span>Structural hints are not regex expressions or native parsers.</span>
+           <span>Structural hints are review-only Parser Set candidates, not regex expressions or native parsers.</span>
          </div>}
          {currentFingerprints&&<div role="status" aria-label="Reviewed pattern hints">
            <strong>{currentFingerprints.status} · {currentFingerprints.sourceCount} original events</strong>
