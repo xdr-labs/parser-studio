@@ -1,3 +1,5 @@
+import {isIpPortToken,isIpToken} from './networkTokens';
+
 interface Token{value:string;quoted:boolean;bracketed:boolean;}
 
 function bytes(value:string):number{return new TextEncoder().encode(value).byteLength;}
@@ -54,22 +56,6 @@ function apacheTime(value:string):boolean{
   return month>0&&validCalendar(Number(m[3]),month,Number(m[1]))&&Number(m[4])<=23&&Number(m[5])<=59&&Number(m[6])<=59&&Number(m[8])<=23&&Number(m[9])<=59;
 }
 
-function ipv4(value:string):boolean{
-  const p=value.split('.');return p.length===4&&p.every(x=>/^\d{1,3}$/.test(x)&&Number(x)<=255);
-}
-function ipv6(value:string):boolean{
-  if(!value.includes(':')||!/^[0-9A-Fa-f:]+$/.test(value)||value.indexOf('::')!==value.lastIndexOf('::'))return false;
-  const sides=value.split('::');if(sides.length>2)return false;
-  const groups=sides.flatMap(s=>s?s.split(':'):[]);
-  if(groups.some(g=>!/^[0-9A-Fa-f]{1,4}$/.test(g)))return false;
-  return sides.length===2?groups.length<8:groups.length===8;
-}
-function endpoint(value:string,allowDash:boolean):boolean{
-  if(allowDash&&value==='-')return true;
-  const colon=value.lastIndexOf(':');if(colon<=0)return false;
-  const host=value.slice(0,colon),port=value.slice(colon+1);
-  return (ipv4(host)||ipv6(host))&&/^\d{1,5}$/.test(port)&&Number(port)<=65535;
-}
 function decimal(value:string):boolean{return value==='-1'||/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value);}
 function uintDash(value:string):boolean{return value==='-'||/^\d+$/.test(value);}
 function statusDash(value:string):boolean{return value==='-'||/^\d{3}$/.test(value);}
@@ -80,7 +66,7 @@ export function parseClassicElbAccessLog(raw:string):ClassicElbAccessRecord|null
   if(!raw||raw.includes('\0')||/[\r\n]/.test(raw)||bytes(raw)>32768)return null;
   const t=splitFields(raw);if(!t||t.length<12||t.length>32)return null;
   if(t[0]!.quoted||t[1]!.quoted||!isoUtc(t[0]!.value)||!/^[A-Za-z0-9_.-]{1,255}$/.test(t[1]!.value))return null;
-  if(!endpoint(t[2]!.value,false)||!endpoint(t[3]!.value,true))return null;
+  if(!isIpPortToken(t[2]!.value,false)||!isIpPortToken(t[3]!.value,true))return null;
   if(!decimal(t[4]!.value)||!decimal(t[5]!.value)||!decimal(t[6]!.value))return null;
   if(!statusDash(t[7]!.value)||!statusDash(t[8]!.value)||!uintDash(t[9]!.value)||!uintDash(t[10]!.value))return null;
   if(!t[11]!.quoted)return null;
@@ -105,7 +91,7 @@ export function parseS3AccessLog(raw:string):S3AccessRecord|null{
   const t=splitFields(raw);if(!t||t.length<17||t.length>40)return null;
   if(!/^[A-Za-z0-9_-]{1,128}$/.test(t[0]!.value)||!/^[A-Za-z0-9][A-Za-z0-9.-]{0,255}$/.test(t[1]!.value))return null;
   if(!t[2]!.bracketed||!apacheTime(t[2]!.value))return null;
-  if(!(ipv4(t[3]!.value)||ipv6(t[3]!.value)||t[3]!.value==='-'))return null;
+  if(!(isIpToken(t[3]!.value)||t[3]!.value==='-'))return null;
   if(!/^[^\s]{1,512}$/.test(t[4]!.value)||!/^[A-Za-z0-9-]{8,128}$/.test(t[5]!.value)||!/^[A-Z0-9.]+$/.test(t[6]!.value))return null;
   if(t[7]!.value!=='-'&&bytes(t[7]!.value)>4096)return null;
   if(!t[8]!.quoted)return null;

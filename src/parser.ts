@@ -5,6 +5,7 @@ import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
+import {isIpToken,isPortToken} from './networkTokens';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -288,12 +289,6 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
   }
 }
 
-function asIP(value: string): boolean {
-  if (value.includes(':')) return /^[0-9a-fA-F:]+$/.test(value) && value.split(':').length >= 3 && value.length <= 39;
-  const parts = value.split('.');
-  return parts.length === 4 && parts.every((part) => /^(?:0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255);
-}
-
 export function convertValue(raw: unknown, type: FieldType): { value?: unknown; error?: string } {
   if (raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim())) return { error: 'Missing value' };
   const value = typeof raw === 'string' ? raw.trim() : String(raw);
@@ -309,9 +304,9 @@ export function convertValue(raw: unknown, type: FieldType): { value?: unknown; 
       if (/^(?:false|0)$/i.test(value)) return { value: false };
       return { error: 'Expected boolean (true/false/1/0)' };
     case 'port':
-      return /^\d+$/.test(value) && Number(value) <= 65535 ? { value: Number(value) } : { error: 'Expected port 0..65535' };
+      return isPortToken(value) ? { value: Number(value) } : { error: 'Expected port 0..65535' };
     case 'ip':
-      return asIP(value) ? { value } : { error: 'Expected valid IP address' };
+      return isIpToken(value) ? { value } : { error: 'Expected valid IP address' };
     case 'timestamp':
       return /(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value))
         ? { value: new Date(value).toISOString() } : { error: 'Expected ISO timestamp with explicit timezone' };

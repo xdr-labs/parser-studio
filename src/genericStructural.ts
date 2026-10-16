@@ -9,6 +9,7 @@ import {extractCiscoFirewallEnvelope,parseCiscoFirewallEnvelope} from './ciscoFi
 import {parseBindQueryLog} from './bindQueryLog';
 import {extractClassicElbAccess,extractS3Access} from './awsLegacyAccess';
 import {parseCiscoIseBody,parseF5AsmBody,parseFortinetKvBody,parseSophosKvBody} from './applianceSecurityProfiles';
+import {isIpToken as ipToken,isIpv4Token as ipv4Token,isIpv6Token as ipv6Token,isPortToken as validPortToken} from './networkTokens';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -358,36 +359,6 @@ function scanProfileTokens(raw:string,start:number):{tokens:string[];kv:Record<s
     tokens.push(raw.slice(begin,pos));
   }
   return {tokens,kv,groups};
-}
-
-function ipv4Token(value:string):boolean{
-  const parts=value.split('.');
-  return parts.length===4&&parts.every(part=>
-    /^\d{1,3}$/.test(part)&&Number(part)>=0&&Number(part)<=255
-  );
-}
-
-function ipv6Token(value:string):boolean{
-  if(!value.includes(':')||!/^[0-9A-Fa-f:]+$/.test(value))return false;
-  if(value.indexOf('::')!==value.lastIndexOf('::'))return false;
-  const compressed=value.includes('::');
-  const sides=value.split('::');
-  if(sides.length>2)return false;
-  const left=sides[0]?sides[0]!.split(':'):[];
-  const right=sides.length===2&&sides[1]?sides[1]!.split(':'):[];
-  const groups=[...left,...right];
-  if(groups.some(group=>!/^[0-9A-Fa-f]{1,4}$/.test(group)))return false;
-  return compressed?groups.length<8:groups.length===8;
-}
-
-function ipToken(value:string):boolean{
-  return ipv4Token(value)||ipv6Token(value);
-}
-
-function validPortToken(value:string):boolean{
-  if(!/^\d{1,5}$/.test(value))return false;
-  const port=Number(value);
-  return Number.isInteger(port)&&port>=0&&port<=65535;
 }
 
 function flowTupleToken(value:string):boolean{

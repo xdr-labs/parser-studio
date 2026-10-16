@@ -1,3 +1,5 @@
+import {isIpPortToken,isIpToken} from './networkTokens';
+
 export const ALB_ACCESS_FIELDS=[
   'type','time','elb','client_port','target_port',
   'request_processing_time','target_processing_time','response_processing_time',
@@ -46,27 +48,6 @@ function splitQuoted(raw:string):Token[]|null{
   return output;
 }
 
-function ipv4(value:string):boolean{
-  const parts=value.split('.');
-  return parts.length===4&&parts.every(part=>/^\d{1,3}$/.test(part)&&Number(part)<=255);
-}
-
-function ipv6(value:string):boolean{
-  if(!value.includes(':')||!/^[0-9A-Fa-f:]+$/.test(value)||value.indexOf('::')!==value.lastIndexOf('::'))return false;
-  const sides=value.split('::');
-  const groups=sides.flatMap(side=>side?side.split(':'):[]);
-  if(groups.some(group=>!/^[0-9A-Fa-f]{1,4}$/.test(group)))return false;
-  return sides.length===2?groups.length<8:groups.length===8;
-}
-
-function endpoint(value:string,allowDash:boolean):boolean{
-  if(allowDash&&value==='-')return true;
-  const colon=value.lastIndexOf(':');
-  if(colon<=0)return false;
-  const host=value.slice(0,colon),port=value.slice(colon+1);
-  return (ipv4(host)||ipv6(host))&&/^\d{1,5}$/.test(port)&&Number(port)<=65535;
-}
-
 function iso(value:string):boolean{
   const match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?Z$/.exec(value);
   if(!match)return false;
@@ -97,7 +78,7 @@ export function parseAlbAccessLog(raw:string):AlbAccessRecord|null{
   }
   if(!/^(?:http|https|h2|grpcs|ws|wss)$/.test(tokens[0]!.value))return null;
   if(!iso(tokens[1]!.value)||!/^app\/[A-Za-z0-9_.\/-]{3,255}$/.test(tokens[2]!.value))return null;
-  if(!endpoint(tokens[3]!.value,false)||!endpoint(tokens[4]!.value,true))return null;
+  if(!isIpPortToken(tokens[3]!.value,false)||!isIpPortToken(tokens[4]!.value,true))return null;
   if(!decimal(tokens[5]!.value)||!decimal(tokens[6]!.value)||!decimal(tokens[7]!.value))return null;
   if(!status(tokens[8]!.value,false)||!status(tokens[9]!.value,true))return null;
   if(!unsigned(tokens[10]!.value)||!unsigned(tokens[11]!.value))return null;
@@ -109,7 +90,7 @@ export function parseAlbAccessLog(raw:string):AlbAccessRecord|null{
   if(tokens[16]!.value!=='-'&&!/^arn:aws[a-z-]*:elasticloadbalancing:[^\s]{10,}$/.test(tokens[16]!.value))return null;
   if(!iso(tokens[21]!.value))return null;
   if(!/^(?:-|-1|\d+)$/.test(tokens[20]!.value))return null;
-  if(tokens[33]!.value!=='-'&&!ipv4(tokens[33]!.value)&&!ipv6(tokens[33]!.value))return null;
+  if(tokens[33]!.value!=='-'&&!isIpToken(tokens[33]!.value))return null;
   for(const index of [34,35]){
     if(!/^(?:-|0x[0-9A-Fa-f]+)$/.test(tokens[index]!.value))return null;
   }

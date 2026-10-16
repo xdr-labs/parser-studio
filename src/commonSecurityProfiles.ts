@@ -1,26 +1,10 @@
 import {strictKeyValues} from './structuredFamilies';
+import {isIpToken as ip,isPortToken as port} from './networkTokens';
 
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] as const;
 const UNSAFE_KEYS=new Set(['__proto__','constructor','prototype']);
 
 function bytes(value:string):number{return new TextEncoder().encode(value).byteLength;}
-
-function ipv4(value:string):boolean{
-  const parts=value.split('.');
-  return parts.length===4&&parts.every(part=>/^\d{1,3}$/.test(part)&&Number(part)<=255);
-}
-
-function ipv6(value:string):boolean{
-  if(!value.includes(':')||!/^[0-9A-Fa-f:]+$/.test(value)||value.indexOf('::')!==value.lastIndexOf('::'))return false;
-  const sides=value.split('::');
-  if(sides.length>2)return false;
-  const groups=sides.flatMap(side=>side?side.split(':'):[]);
-  if(groups.some(group=>!/^[0-9A-Fa-f]{1,4}$/.test(group)))return false;
-  return sides.length===2?groups.length<8:groups.length===8;
-}
-
-function ip(value:string):boolean{return ipv4(value)||ipv6(value);}
-function port(value:string):boolean{return /^\d{1,5}$/.test(value)&&Number(value)<=65535;}
 
 function leap(year:number):boolean{return year%4===0&&(year%100!==0||year%400===0);}
 
