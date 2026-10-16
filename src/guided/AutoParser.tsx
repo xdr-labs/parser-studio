@@ -196,6 +196,11 @@ export default function AutoParser({
    setBusy(false);setMessage('');
  },[identity]);
  useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
+ useEffect(()=>{
+   if(!sample.trim()&&datasetName==='No sample selected'&&
+      draft.vendor==='Demo / local draft'&&draft.name==='Untitled parser')
+     setExtensionBase(null);
+ },[sample,datasetName,draft.vendor,draft.name]);
  // A local suggestion only: explicit source-framing confirmation is required.
  // Never promote arbitrary newline grouping or silently rewrite edited mappings.
  const javaFramedCandidate=useMemo(()=>{
