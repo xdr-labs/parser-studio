@@ -90,8 +90,13 @@ export function breakSecurityInput(raw:string):SecurityEventBreakResult{
       if(ndjson.ok)return {ok:true,kind:'ndjson',count:ndjson.stream.records.length,payload:ndjson};
     }
     const trimmed=raw.trimStart();
-    if(trimmed.startsWith('[')||raw.includes('\n{'))
+    if(trimmed.startsWith('['))
       return {ok:false,claimed:true,error:'Input resembles a multi-event JSON container but failed strict validation'};
+    if(raw.includes('\n{')){
+      const single=parseJsonObjectBatch('['+raw+']');
+      if(!single.ok||single.batch.records.length!==1)
+        return {ok:false,claimed:true,error:'Input resembles a multi-event JSON container but failed strict validation'};
+    }
   }
 
   if((raw.startsWith('#Version:')||raw.startsWith('#Software:')||raw.startsWith('#Fields:'))&&raw.includes('#Fields:')){

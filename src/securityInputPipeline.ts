@@ -91,6 +91,12 @@ export function parseSecurityInput(raw:string):SecurityPipelineResult{
   const broken=breakSecurityInput(raw);
   if(!broken.ok){
     if(broken.claimed)return {ok:false,error:broken.error};
+    if(raw.trimStart().startsWith('{')&&/[\r\n]/.test(raw)){
+      const completeJson=genericEvent(0,raw);
+      if(completeJson)return {
+        ok:true,kind:'single_event',container:false,source_raw:raw,events:[completeJson],
+      };
+    }
     const lines=lineEventStream(raw);
     if(lines)return lines;
     const single=genericEvent(0,raw);

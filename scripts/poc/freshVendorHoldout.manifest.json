@@ -1,0 +1,354 @@
+{
+  "repository": "https://github.com/elastic/integrations",
+  "revision": "ee918d03f4a90dacd32673546c64a633308796ef",
+  "files": [
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-atp.log",
+      "sha256": "030650c611387aceab426ff7a4167edea3b8538d24a4a5e3be8643b141e28e15",
+      "bytes": 2946,
+      "records": 6
+    },
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-flow.log",
+      "sha256": "44681891ec7aaa2ac122ba8cc39b2b79b3ad34d2bace307b7988ce5857174085",
+      "bytes": 25996,
+      "records": 31
+    },
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-idp.log",
+      "sha256": "f80d55018a4003718d54f7a4060f7e83200ccd165e10209e8ba2db9b8411e9e6",
+      "bytes": 7248,
+      "records": 9
+    },
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-ids.log",
+      "sha256": "06832f891eabea3b99b927a8e35c0951ff863d477b50ff67aec63dbdbefbc877",
+      "bytes": 3903,
+      "records": 14
+    },
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-secintel.log",
+      "sha256": "4ffcbcd9ead6f532bce9a0220a688e1a8c5408a82dcabedd045b42dedcfacf74",
+      "bytes": 1734,
+      "records": 3
+    },
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-system.log",
+      "sha256": "824899cdba53292e9788ba89a47e4bcb44fa6b7908f37056b3c758e3cec4847e",
+      "bytes": 7282,
+      "records": 29
+    },
+    {
+      "path": "packages/juniper_srx/data_stream/log/_dev/test/pipeline/test-utm.log",
+      "sha256": "fbb52595fc5a63584585a32be372075af688564873ee71800bfbfcee6e9ce98c",
+      "bytes": 5034,
+      "records": 13
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint-audit.log",
+      "sha256": "d5d5828da36e393f09c2fed079358a29bff6bb6da9ad7a59a134f18c1962e2b7",
+      "bytes": 12009,
+      "records": 12
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint-authentication.log",
+      "sha256": "36f10d1d7b71383cbfc45c5d768b174cbb98533bb7022dc618d6b4b4bf6203d6",
+      "bytes": 6308,
+      "records": 12
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint-with-time.log",
+      "sha256": "225391aab93dfea2ff51517f406d4a70e6d3d4202b813bae59806c8d579fa7ac",
+      "bytes": 3678,
+      "records": 4
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-checkpoint.log",
+      "sha256": "2240390d90756f5160f34fd02ecb2670965a29594b3fa20e34dcb159b505cf3c",
+      "bytes": 53572,
+      "records": 53
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-packet-drop.log",
+      "sha256": "c6e2da64fea257491f9a716cc8d45cc54db6a9840c624bf1713243e0678e8e14",
+      "bytes": 4388,
+      "records": 6
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-r80x.log",
+      "sha256": "5f6e7c985cd4387f45a758300ea0277e55df205790587379f8b7f42dbd807aaf",
+      "bytes": 1172,
+      "records": 2
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-r81x.log",
+      "sha256": "8a4496f0ba850d2d85dc8434bf3fe0266b98829cfc1c0d56a14603caf5856ad4",
+      "bytes": 18734,
+      "records": 21
+    },
+    {
+      "path": "packages/checkpoint/data_stream/firewall/_dev/test/pipeline/test-trailing-space.log",
+      "sha256": "4d599754ac207ed0bbfb9775bf6198acb8f30f5703d5ee9c4da39a066d44bdb0",
+      "bytes": 780,
+      "records": 1
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-spam.log",
+      "sha256": "81036ed0708c315e1b23af59e43fef25043378091d485e9cfc1169b88664d588",
+      "bytes": 13684,
+      "records": 19
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-virus-ftp.log",
+      "sha256": "c8a37525b81838f55a74097973c3c3cf5d7307ea1c572751cc3818beb88c33fa",
+      "bytes": 1282,
+      "records": 2
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-virus-smtp.log",
+      "sha256": "b4714eec4df003c2f7abed24c04602c0107c4462c7750c3fbcec82c2b0d1b29e",
+      "bytes": 2135,
+      "records": 3
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-anti-virus-web.log",
+      "sha256": "f4c83355c7b25507dfbeedf90580528c08731a913342accb51fecb26acc8a4f4",
+      "bytes": 984,
+      "records": 2
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-atp-firewall.log",
+      "sha256": "46f2ff4fdac4a0ead7f0debd304bd84f1c3fb226c7fa235e1702eecddec31674",
+      "bytes": 948,
+      "records": 2
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-authentication.log",
+      "sha256": "d37c56478c39510b3cad66dcf18621580ecc632bbe2df58b587675225bfa49f5",
+      "bytes": 1506,
+      "records": 3
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-content-filtering-http.log",
+      "sha256": "5ceb7a440f36bff5db39456f21b8fc4cf18b059de5145ad665b558439df1ddb4",
+      "bytes": 5338,
+      "records": 8
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-content-filtering-web-content-policy.log",
+      "sha256": "0ee72a99c11019d676791aa8d04bee8e3fc511f4bc66bbd09e0754480918eb7c",
+      "bytes": 495,
+      "records": 1
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-firewall.log",
+      "sha256": "0f2c1e1bbeabee2996e9b7b4ae4c3238b21607a23c7771b030df5d2a624c04fc",
+      "bytes": 13791,
+      "records": 16
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-idp.log",
+      "sha256": "18c2e63198d89e8d11821bc27c3aa039bea2db69183850d08b28486deb9677da",
+      "bytes": 2340,
+      "records": 4
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-sandstorm.log",
+      "sha256": "03a19155b5c3f2ee293b9c5b9d76be59e6fd1dadb6929ff467ac28bc13192095",
+      "bytes": 2134,
+      "records": 5
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-systemhealth.log",
+      "sha256": "04dfafb13af7690383487e8c80c27277114c2388317ba2cba0c2111d33c6d615",
+      "bytes": 1395,
+      "records": 5
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-18-5-wireless.log",
+      "sha256": "9df2440747b8059c77bad0939985ed37ca3ae293515197ef48718d8aadfc676e",
+      "bytes": 587,
+      "records": 2
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-sophos-xg.log",
+      "sha256": "2fa4c23733b2a24ed4af32fbcaf89c69774483152d307dd9bc110c095114a33a",
+      "bytes": 63284,
+      "records": 95
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-xg-cfilter-new.log",
+      "sha256": "7e57987b3a5db0b51104891c9a3193aaf291151c8fa8d6c91d1b79ba9c7259e7",
+      "bytes": 38485,
+      "records": 51
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-xg-event-new.log",
+      "sha256": "eca399bfcbaae7c85a1dcb7bd508a5c7441c0fe315d68fa8a59b3b6442b9fdc2",
+      "bytes": 1374,
+      "records": 3
+    },
+    {
+      "path": "packages/sophos/data_stream/xg/_dev/test/pipeline/test-xg-firewall-new.log",
+      "sha256": "d45c19ac090e93c845a8edac5b2b570e16bc2dc935606bced72fee20623f09c1",
+      "bytes": 45876,
+      "records": 50
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-automated-lead-summary.log",
+      "sha256": "70003e22cee579f1989b902eb39a9a4aa71cb92abed93a462fc103b4428a4509",
+      "bytes": 1495,
+      "records": 1
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-event-stream.log",
+      "sha256": "11a654da24a80a1450bb2ff5a7897a1aedca222e16516b9c320bf0b91b569587",
+      "bytes": 12442,
+      "records": 10
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-api-activity-audit.log",
+      "sha256": "e1c85264e793d4d5fef3ee70293f33aa49114e8f158ccddad6ea2579070dd8da",
+      "bytes": 2929,
+      "records": 2
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-audit-events.log",
+      "sha256": "a84b593fed2197e22c3e9f776962196674422d6404628d5c85594647e09caf95",
+      "bytes": 8094,
+      "records": 277
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-auth-activity.log",
+      "sha256": "93227993e873738708b57f42e334a20fece050d41eecb76e4d24f77e90292ec7",
+      "bytes": 2455,
+      "records": 92
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-cspmioa-streaming.log",
+      "sha256": "122bb43613466cf5d0faa7ca3ca2c7920061681246f5513d840d9ecfb04cbcf6",
+      "bytes": 705,
+      "records": 26
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-cspmsearch-streaming.log",
+      "sha256": "5e7329c2a846d76835f834b2669e8a5dcf935a195b8b21963ed8a7f6c375a7d5",
+      "bytes": 1885,
+      "records": 51
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-customer-ioc-event.log",
+      "sha256": "af8bce525f1d36bb30283a88c3c6bbcb6ba5c8d57c9bfe599c3a1745afc6356b",
+      "bytes": 2803,
+      "records": 6
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-data-protection-detection-summary.log",
+      "sha256": "0717145690569065b1505390d6c1050a21d0ccbe0c25a787be82be93d203324c",
+      "bytes": 3921,
+      "records": 2
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-detection-summary.log",
+      "sha256": "80b32d49d283c42de0ea175acc8e444d9538102d26e064d67760da96b4260e2c",
+      "bytes": 7715,
+      "records": 197
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-epp-detection-summary.log",
+      "sha256": "186f81f19312f831609eca0de7d3744ecc21c4719d81a26d8e1db919877a2b75",
+      "bytes": 53295,
+      "records": 16
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-events.log",
+      "sha256": "060547415a0489c71a2eca4e865176c8b250f6d206cb798c938b322d709b515d",
+      "bytes": 5849,
+      "records": 160
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-firewall.log",
+      "sha256": "e3dc43d46c06ad268f482d3a89114a5687759e67fd5615495af056fd57fc5399",
+      "bytes": 1502,
+      "records": 46
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-identity-protection-incident.log",
+      "sha256": "b177f6ef9ffaeaf4b80d551976c6d4b8b19576243d5f1a8bd6a2fb73f7a7696e",
+      "bytes": 904,
+      "records": 26
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-incident-summary.log",
+      "sha256": "d98047fd6e44078bae9a4ab9a6a2a5780ff1a9550dedbeaeda033eabef5db254",
+      "bytes": 723,
+      "records": 25
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-ipd-summary.log",
+      "sha256": "a978060b4327e57a69710d04254401247060b8c8b112607b931878fd26dc23e3",
+      "bytes": 3209,
+      "records": 75
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-mobile-detection-summary.log",
+      "sha256": "04db318083f3cc57203e4ade877ba4aa59afb6d7a285c2bc21e384446a50aea6",
+      "bytes": 3012,
+      "records": 80
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-non-object-dropped.log",
+      "sha256": "e4df891c484d7abb985dadf539fa1883a646dab6337af5cae4159c587b7050cc",
+      "bytes": 4,
+      "records": 1
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-overwatch-generic-detection-summary-event.log",
+      "sha256": "a1d5e82c2e642beb2b0028d5a7274c4e111da3cf20688e96923b6d292fe7db7c",
+      "bytes": 985,
+      "records": 1
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-recon-notification.log",
+      "sha256": "41ce03eaf7b85b70a15ac78a8a93d69ade00a907c9adc289c087033c0221da46",
+      "bytes": 858,
+      "records": 23
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-remote-response.log",
+      "sha256": "40adfa216a1935892c1a2a85b80189b6ce83317a06c5149b915150b2f1d979b3",
+      "bytes": 893,
+      "records": 30
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-sample.log",
+      "sha256": "c8b8b6c8bbc7bcb5c1a774e85b2aeea34ed580c23db1f0f7e80c603eac62acdf",
+      "bytes": 13696,
+      "records": 345
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-tags-list.log",
+      "sha256": "b7c88a7fc50c54fdb8c349c708d514c03048327cef08f158ed2011fecd876e96",
+      "bytes": 1462,
+      "records": 30
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-tags.log",
+      "sha256": "114a50c9136b62187d61a86ab082edbb28f0029b47be0140dcc628f0d6dbd8eb",
+      "bytes": 1427,
+      "records": 30
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-user-activity.log",
+      "sha256": "db0be24c059a993b2d6caccc8a97c1d5a6d73cacb892d6ff47d33c8a7db4b0ec",
+      "bytes": 683,
+      "records": 25
+    },
+    {
+      "path": "packages/crowdstrike/data_stream/falcon/_dev/test/pipeline/test-falcon-xdr-detection-summary.log",
+      "sha256": "f5a9a062eb1ae5da029f4ec3f8010e1345c4b359021e60d984f26dfac715df7c",
+      "bytes": 2533,
+      "records": 74
+    }
+  ]
+}
