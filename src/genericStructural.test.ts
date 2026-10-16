@@ -269,6 +269,19 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect(extractGenericStructural(raw.replace(' - - - ',' - x - ')).fields).toEqual({});
   });
 
+  it('extracts bounded BSD bracket-id messages without treating the id as JSON',()=>{
+    const raw='Mar 26 10:20:16 ssb SNMPD_CONTEXT_ERROR: [7400]: emq: isiu: success in 6237 context 5367';
+    expect(extractGenericStructural(raw)).toMatchObject({errors:[],fields:{
+      syslog:{month:'Mar',day:'26',time:'10:20:16',hostname:'ssb',app_tag:'SNMPD_CONTEXT_ERROR'},
+      generic:{mode:'bsd_bracket_pid_message',source_raw:raw,pid:'7400',
+        message:'emq: isiu: success in 6237 context 5367'},
+    }});
+    expect(extractGenericStructural('<142>'+raw)).toMatchObject({errors:[],fields:{syslog:{pri:'142'}}});
+    expect(extractGenericStructural(raw.replace('Mar 26','Mar 32')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('[7400]','[123456789]')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('SNMPD_CONTEXT_ERROR','bad/tag')).fields).toEqual({});
+  });
+
   it('extracts the bounded Juniper legacy RT_FLOW profile as source tokens',()=>{
     const raw='Apr 29 01:14:45 10.9.9.1 RT_FLOW: RT_FLOW_SESSION_CREATE: session created 192.168.83.99/40275->192.168.32.1/161 None 192.168.83.99/40275->192.168.32.1/161 None None 17 allow-all-out ICTNet StaffNet 23228 N/A(N/A) vlan.255';
     const result=extractGenericStructural(raw);

@@ -26,6 +26,35 @@ export interface StructuralMiningReport{
  algorithm:'BOUNDED_BROWSER_TOKEN_CLASSES';
  nativeVerified:false;targetVerified:false;customerValuesIncluded:false;
 }
+type BsdShape={seen:boolean;shape:string|null};
+function bsdStructuralShape(raw:string):BsdShape{
+ const match=/^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+(.+)$/.exec(raw);
+ if(!match)return {seen:false,shape:null};
+ const body=match[1]!;
+ const tag='[A-Z][A-Z0-9_]{3,}';
+ const process='[^\\s:]+(?:\\.exe)?(?:\\[\\d+\\])?';
+ const patterns:Array<[RegExp,string]>=[
+  [new RegExp('^('+tag+')\\s+message repeated(?:\\s+\\[\\d+\\])?\\s*:\\s*.+$'),
+   'BSD <TAG> MESSAGE_REPEATED <MESSAGE>'],
+  [new RegExp('^('+process+')\\s*:\\s*('+tag+')\\s*:?\\s+.+$'),
+   'BSD <PROCESS> <TAG> <MESSAGE>'],
+  [new RegExp('^(.+?)\\s*:\\s*('+process+')\\s*:\\s*('+tag+')\\s*:?\\s+.+$'),
+   'BSD <HOST> <PROCESS> <TAG> <MESSAGE>'],
+  [new RegExp('^(\\S+)\\s+('+tag+')\\s*:\\s*.+$'),
+   'BSD <HOST> <TAG> <MESSAGE>'],
+  [new RegExp('^('+tag+')\\s*:?\\s+.+$'),
+   'BSD <TAG> <MESSAGE>'],
+  [/^([^\s:]+)\s+message repeated(?:\s+\[\d+\])?\s*:\s*.+$/,
+   'BSD <LABEL> MESSAGE_REPEATED <MESSAGE>'],
+  [/^(.+?)\s*:\s*([^\s:]{1,64})\s*:\s*.+$/,
+   'BSD <HOST> <LABEL> <MESSAGE>'],
+  [/^([^\s:]{1,64})\s*:\s*.+$/,
+   'BSD <LABEL> <MESSAGE>'],
+ ];
+ for(const [pattern,shape] of patterns)if(pattern.test(body))return {seen:true,shape};
+ return {seen:true,shape:null};
+}
+
 function classOf(token:string):string{
  if(/^\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?$/.test(token))return '<IP>';
  if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token))return '<UUID>';
@@ -61,7 +90,9 @@ export function mineLocalStructuralHints(source:string):StructuralMiningReport{
    if(!record||record.line!==event.line)continue;
    const tokens=record.raw.trim().split(/\s+/);
    if(tokens.length===0||tokens.length>MAX_TOKENS)continue;
-   const shape=tokens.map(classOf).join(' ');
+   const bsd=bsdStructuralShape(record.raw);
+   if(bsd.seen&&!bsd.shape)continue;
+   const shape=bsd.shape??tokens.map(classOf).join(' ');
    if(shape.length>1024)continue;
    let entry=groups.get(shape);
    if(!entry){

@@ -16,6 +16,29 @@ describe('P1-AP5 isolated bounded privacy-safe structural hints',()=>{
    expect(JSON.stringify(result)).not.toMatch(/customerAlice|customerBob|secretAccount|198\.51\.100\.10|203\.0\.113\.11/);
    expect(result.groups.reduce((sum,x)=>sum+x.count,0)).toBe(3);
  });
+ it('clusters BSD structural prefixes without retaining host, process, tag or message values',()=>{
+   const data=[
+    'Jan 29 06:09:59 procA.exe[100]: EVENT_ALPHA_LONG: private message one',
+    'Feb 12 13:12:33 EVENT_BETA_LONG message repeated [700]: private message two',
+    'Mar 26 10:20:16 host-a EVENT_GAMMA_LONG: private message three',
+    'Apr 24 00:25:25 host-b: procB.exe[200]: EVENT_DELTA_LONG: private message four',
+    'May 08 07:27:59 host-c: label-x: private message five',
+    'Jun 09 08:28:59 label-y: private message six',
+   ].join('\n');
+   const result=mineLocalStructuralHints(data);
+   expect(result).toMatchObject({status:'CANDIDATES',sourceCount:6,unknownCount:6,
+    groupedCount:6,customerValuesIncluded:false});
+   expect(result.groups.map(group=>group.fingerprint).sort()).toEqual([
+    'BSD <HOST> <PROCESS> <TAG> <MESSAGE>',
+    'BSD <HOST> <PROCESS> <TAG> <MESSAGE>',
+    'BSD <HOST> <TAG> <MESSAGE>',
+    'BSD <LABEL> <MESSAGE>',
+    'BSD <PROCESS> <TAG> <MESSAGE>',
+    'BSD <TAG> MESSAGE_REPEATED <MESSAGE>',
+   ].sort());
+   expect(JSON.stringify(result)).not.toMatch(/procA|procB|host-a|host-b|host-c|EVENT_|private message|label-x|label-y/);
+ });
+
  it('rejects too many rows and oversized inputs without publishing any sample',()=>{
    const many=Array.from({length:501},(_,i)=>`PRIVATE_NAME_${i} started`).join('\n');
    expect(mineLocalStructuralHints(many)).toMatchObject({status:'UNSUPPORTED_OR_LIMIT',groups:[]});
