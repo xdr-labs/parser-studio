@@ -44,6 +44,7 @@ export interface PairProjectContract {
   slug: string;
   vendor: string;
   product: string;
+  productVersion?: string;
   receiver: {
     protocols: Transport[];
     port: number;
@@ -116,6 +117,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
 
   if (!/^[a-z][a-z0-9_]{2,47}$/.test(options.slug)) errors.push('Parser ID: 3–48 lowercase letters, digits and underscores, starting with a letter');
   if (!draft.vendor.trim() || !draft.name.trim()) errors.push('Set a product name and vendor');
+  if (draft.version!==undefined&&(!draft.version.trim()||draft.version.length>64||/[\r\n\u0000-\u001f\u007f]/.test(draft.version))) errors.push('Product version must be 1–64 visible characters');
   if (!options.receiver.protocols.length || new Set(options.receiver.protocols).size !== options.receiver.protocols.length) errors.push('Choose one or more unique UDP/TCP receiver protocols');
   if (!Number.isInteger(options.receiver.port) || options.receiver.port < 1024 || options.receiver.port > 65535) errors.push('Receiving port must be an integer in 1024–65535');
   // One shared sensor ingress / generated CONF <source> port. The backend
@@ -291,6 +293,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
       slug: options.slug,
       vendor: draft.vendor,
       product: draft.name,
+      ...(draft.version?.trim()?{productVersion:draft.version.trim()}:{}),
       receiver: options.receiver,
       input: { format: draft.format as 'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'generic_structural' | 'regex' },
       normalization,

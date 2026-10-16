@@ -42,6 +42,7 @@ export function reconstructExactBackendDraft(
       pairName!=='customized_'+p.slug ||
       typeof p.vendor!=='string' || typeof p.product!=='string' ||
       !p.vendor.trim() || !p.product.trim() ||
+      (p.productVersion!==undefined&&(typeof p.productVersion!=='string'||!p.productVersion.trim())) ||
       !isObject(p.extraction) || !isObject(p.receiver) ||
       !isObject(p.normalization) || !isObject(p.classification))return null;
     const options=defaultGuidedOptions();
@@ -112,7 +113,7 @@ export function reconstructExactBackendDraft(
     }
     const e=p.extraction;
     const draft:ParserDraft={
-      name:p.product,vendor:p.vendor,format:e.format,
+      name:p.product,vendor:p.vendor,version:p.productVersion,format:e.format,
       pattern:'',csvColumns:e.format==='csv'?e.csvColumns.join(','):'',
       csvDelimiter:e.format==='csv'?e.csvDelimiter:',',
       syslogBodyFormat:e.format==='syslog_rfc5424'?e.syslogBodyFormat??'raw':'raw',

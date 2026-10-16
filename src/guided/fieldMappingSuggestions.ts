@@ -1,6 +1,7 @@
 import type { MappingRule, ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 import { listSafeLeafPaths } from '../fieldPaths';
+import { findStellarMetadataField } from './stellarMetadataCatalog';
 
 export interface SuggestedFieldMapping {
   source: string;
@@ -31,12 +32,12 @@ export function suggestUnmappedFields(
   const found = new Set<string>();
   const proposals: SuggestedFieldMapping[] = [];
 
-  // Do not let one wide JSON event consume the entire 50-mapping budget.
+  // Do not let one wide JSON event consume the entire 60-mapping budget.
   // Mixed security samples often have disjoint JSON/KV/CEF/LEEF field names;
   // round-robin candidates across events so every represented family can keep
   // at least some source-backed output without raising the global safety cap.
   const queues = samples.map(fields => listSafeLeafPaths(fields));
-  while (proposals.length < 50) {
+  while (proposals.length < 60) {
     let addedThisRound = false;
     let candidatesRemain = false;
     for (const queue of queues) {
@@ -46,19 +47,22 @@ export function suggestUnmappedFields(
         if (found.has(source) || existingSources.has(source) || !SAFE_PATH.test(source)) continue;
         found.add(source);
         if (source.split('.').some(segment => DANGEROUS.has(segment) || !segment)) continue;
-        const normalized = 'custom.' + source.replace(/\./g, '_');
+        // Fields absent from the Stellar dictionary remain vendor fields.
+        // Their normalized name is vendor-local; the backend writes it under
+        // the parser vendor namespace instead of inventing a custom.* Stellar field.
+        const normalized = source.replace(/\./g, '_');
         if (SYSTEM.has(source.split('.')[0]) || normalized.length > 128) continue;
         if (taken.some(target => conflicts(target, normalized))) continue;
         const proposal: SuggestedFieldMapping = {
           source, target: normalized, type: 'string',
-          group: classifierFields.has(source) ? 'top_fields' : 'vendor_fields',
+          group: classifierFields.has(source)&&findStellarMetadataField(normalized)?.mappable ? 'top_fields' : 'vendor_fields',
         };
         proposals.push(proposal);
         taken.push(normalized);
         addedThisRound = true;
         break;
       }
-      if (proposals.length >= 50) break;
+      if (proposals.length >= 60) break;
     }
     if (!candidatesRemain || !addedThisRound) break;
   }

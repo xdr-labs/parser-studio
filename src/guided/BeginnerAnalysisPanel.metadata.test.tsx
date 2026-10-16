@@ -54,7 +54,7 @@ describe('Beginner metadata preservation review',()=>{
     const candidate=apply.mock.calls[0]![0];
     expect(candidate.format).toBe('generic_structural');
     expect(candidate.mappings).toEqual([
-      {id:'metadata-source-pri',source:'syslog.pri',target:'custom.source_pri',type:'string'},
+      {id:'metadata-source-pri',source:'syslog.pri',target:'source_pri',type:'string'},
     ]);
     expect(candidate.guided.classification).toEqual({defaultIndex:'Syslog',rules:[]});
     expect(candidate.mappings.some((item:{source:string;type:string})=>

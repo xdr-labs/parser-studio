@@ -28,7 +28,14 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(result).toMatchObject({ok:true});
    if(!result.ok)return;
    expect(result.draft.format).toBe('json');
-   expect(result.draft.mappings).toEqual(createDraft().mappings);
+   expect(result.draft.mappings).toEqual(expect.arrayContaining([
+     expect.objectContaining({source:'action',target:'action',type:'string'}),
+     expect.objectContaining({source:'src_ip',target:'srcip',type:'ip'}),
+     expect.objectContaining({source:'dst_port',target:'dstport',type:'integer'}),
+     expect.objectContaining({source:'user',target:'user',type:'string'}),
+   ]));
+   expect(result.draft.guided?.groups[result.draft.mappings.find(m=>m.source==='src_ip')!.id]).toBe('top_fields');
+   expect(result.draft.guided?.groups[result.draft.mappings.find(m=>m.source==='user')!.id]).toBe('vendor_fields');
    expect(result.draft.guided?.receiver.port).toBe(7501);
    expect(toBackendProject(result.draft)).toMatchObject({ok:true});
    expect(result.requiresApproval).toBe(false);
@@ -36,13 +43,14 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(JSON.stringify(result)).not.toContain('PRIVATE_OWNER');
    expect(JSON.stringify(result)).not.toContain('198.51.100.10');
  });
- it('suggests only conservative custom paths from a different sample with no fabricated Stellar official fields',()=>{
+ it('keeps unfamiliar fields vendor-local without fabricating Stellar dictionary fields',()=>{
    const result=prepare(sample2);
    expect(result.ok).toBe(true);
    if(!result.ok)return;
    expect(result.draft.format).toBe('json');
    expect(result.draft.mappings.map(m=>m.source).sort()).toEqual(['account.user','ip','operation']);
-   expect(result.draft.mappings.every(m=>m.target.startsWith('custom.'))).toBe(true);
+   expect(result.draft.mappings.every(m=>!m.target.startsWith('custom.'))).toBe(true);
+   expect(result.draft.mappings.every(m=>result.draft.guided?.groups[m.id]==='vendor_fields')).toBe(true);
    expect(result.draft.mappings.find(m=>m.source==='ip')?.type).toBe('ip');
    expect(result.draft.guided?.classification.rules).toEqual([]);
    expect(toBackendProject(result.draft).ok).toBe(true);

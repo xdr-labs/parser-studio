@@ -27,6 +27,7 @@ export interface BackendParserProject {
   slug: string;
   vendor: string;
   product: string;
+  productVersion?: string;
   sourceCategory: SourceCategory;
   receiver: {
     protocols: ('udp' | 'tcp')[];
@@ -147,6 +148,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     slug: options.slug,
     vendor: draft.vendor,
     product: draft.name,
+    ...(draft.version?.trim()?{productVersion:draft.version.trim()}:{}),
     sourceCategory: category,
     receiver: {
       protocols: options.receiver.protocols,

@@ -6,6 +6,7 @@ import {splitEvents,MAX_DATASET_BYTES,MAX_EVENTS} from '../parser';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {suggestUnmappedFields} from './fieldMappingSuggestions';
 import {suggestMappingType} from './typeSuggestions';
+import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {defaultGuidedOptions} from './contract';
 import {toBackendProject} from './backendAdapter';
 import {analyzeLogEnvelopes,type EnvelopeLedger,type CompilerAssessment}
@@ -82,10 +83,8 @@ export function prepareAutoParserDraft(
     same(draft.mappings,base.mappings)&&
     same(opts.groups,defaultGuidedOptions().groups)&&
     same(opts.classification,defaultGuidedOptions().classification);
-  const mappingsCoverSource=next.mappings.every(m=>allFields.has(m.source));
   // Do not override any modified or user-accepted rules.
-  const replaceDefaults=unchangedDefaults&&
-    (next.format==='mixed'||!mappingsCoverSource);
+  const replaceDefaults=unchangedDefaults;
   if(replaceDefaults){
     const blank:ParserDraft={
       ...next,mappings:[],
@@ -115,6 +114,22 @@ export function prepareAutoParserDraft(
     next.mappings=mappings;
     next.guided={...opts,groups:Object.fromEntries(suggestions.map((s,i)=>['auto-'+String(i+1),s.group])),
       classification:{defaultIndex:'Syslog',rules:[]}};
+    // Apply only whole-sample, dictionary-backed matches to generated mappings.
+    // The user still reviews them in Map Fields; ambiguous candidates stay vendor-only.
+    const official=suggestNormalizationCandidatesFromSuite(
+      suite,next.mappings,next.guided.groups,
+    ).filter(candidate=>candidate.confidence==='HIGH'&&candidate.safeForBulk);
+    if(official.length){
+      const bySource=new Map(official.map(candidate=>[candidate.source,candidate]));
+      const groups={...next.guided.groups};
+      next.mappings=next.mappings.map(mapping=>{
+        const candidate=bySource.get(mapping.source);
+        if(!candidate)return mapping;
+        groups[mapping.id]=candidate.group;
+        return {...mapping,target:candidate.target,type:candidate.type};
+      });
+      next.guided={...next.guided,groups};
+    }
   }
   // All paths must be safe for the actual R1.5 backend translator. A browser
   // preview alone must NEVER upgrade an unsupported parser into DRAFT-ready.

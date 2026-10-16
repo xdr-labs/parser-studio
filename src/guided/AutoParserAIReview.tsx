@@ -109,6 +109,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const [reviewedExcerpt,setReviewedExcerpt]=useState('');
  const [approved,setApproved]=useState(false);
  const [notice,setNotice]=useState('');
+ const [copied,setCopied]=useState(false);
  const [recipeText,setRecipeText]=useState('');
  const [importResult,setImportResult]=useState('');
  const [importBusy,setImportBusy]=useState(false);
@@ -120,7 +121,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  const evidenceFingerprint=()=>JSON.stringify([source??'',draft??null,holdout,recipeText]);
  useEffect(()=>{
   const initial=initialByteRange?fromSourceByteRange(raw,initialByteRange.startByte,initialByteRange.endByte):null;
-  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setRecipeText('');setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');
+  setRange(initial??[0,0]);setReviewedExcerpt('');setApproved(false);setNotice('');setCopied(false);setRecipeText('');setImportResult('');setApprovedCandidate(null);setApproval(false);setHoldoutAttested(false);setValidatedEvidence('');
   setMode(initial?'selection':status==='unsupported'?'entire':'selection');
  },[raw,status,initialByteRange?.startByte,initialByteRange?.endByte,selectionContext?.kind,selectionContext?.path]);
  const sourceRange=toSourceByteRange(raw,range[0],range[1]);
@@ -159,8 +160,12 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
  }
  async function copyPrompt(){
   if(!canCopy)return;
-  try{await navigator.clipboard.writeText(await prompt());setNotice('Reviewed prompt copied. Paste it into ChatGPT manually.');}
-  catch{setNotice('Clipboard unavailable. No log data was transferred.');}
+  try{
+   await navigator.clipboard.writeText(await prompt());
+   setCopied(true);setNotice('Reviewed prompt copied. Paste it into ChatGPT manually.');
+  }catch{
+   setCopied(false);setNotice('Clipboard unavailable. No log data was transferred.');
+  }
  }
  async function reviewImport(){
   if(!source||!draft||!suite||!recipeText.trim()||importBusy)return;
@@ -332,12 +337,12 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   <h3>Improve with AI</h3>
   <p>Use AI only where the automatic parser needs help. No log data is sent automatically.</p>
   <div className="stellar-ai-tabs" role="group" aria-label="AI recovery scope">
-   <button type="button" aria-pressed={mode==='entire'} onClick={()=>{setMode('entire');setReviewedExcerpt('');setApproved(false);}}>Entire Log</button>
-   <button type="button" aria-pressed={mode==='selection'} onClick={()=>{setMode('selection');setReviewedExcerpt('');setApproved(false);}}>Selected Area</button>
+   <button type="button" aria-pressed={mode==='entire'} onClick={()=>{setMode('entire');setReviewedExcerpt('');setApproved(false);setCopied(false);}}>Entire Log</button>
+   <button type="button" aria-pressed={mode==='selection'} onClick={()=>{setMode('selection');setReviewedExcerpt('');setApproved(false);setCopied(false);}}>Selected Area</button>
   </div>
   <label className="stellar-ai-label">{mode==='entire'?'Review the entire log before copying':'Select exact source text below'}</label>
   {mode==='selection'&&<textarea aria-label="Select source text for AI correction" readOnly spellCheck={false} rows={5} value={raw}
-   onSelect={e=>{const el=e.currentTarget;setRange([el.selectionStart,el.selectionEnd]);setReviewedExcerpt('');setApproved(false);}}/>}
+   onSelect={e=>{const el=e.currentTarget;setRange([el.selectionStart,el.selectionEnd]);setReviewedExcerpt('');setApproved(false);setCopied(false);}}/>}
   {mode==='selection'&&sourceRange&&<div role="status" className="stellar-selected-source">
     Selected text is ready for review.
     <details className="beginner-technical-details"><summary>Technical selection details</summary>
@@ -350,15 +355,16 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   <div className="stellar-ai-excerpt" aria-live="polite">{excerpt||'Select a portion of the source log to repair.'}</div>
   <label className="stellar-ai-label" htmlFor="stellar-ai-reviewed">Redact the excerpt before sharing with AI</label>
   <textarea id="stellar-ai-reviewed" aria-label="Reviewed and redacted AI excerpt" rows={4} maxLength={65536}
-   value={reviewedExcerpt} onChange={e=>{setReviewedExcerpt(e.target.value);setApproved(false);}}
+   value={reviewedExcerpt} onChange={e=>{setReviewedExcerpt(e.target.value);setApproved(false);setCopied(false);}}
    placeholder="Paste only reviewed, redacted source text here. Nothing is sent automatically."/>
   <label className="stellar-ai-label" htmlFor="stellar-ai-goal">What should be extracted or corrected?</label>
   <textarea id="stellar-ai-goal" aria-label="AI correction request" rows={3} maxLength={500} value={goal}
-   onChange={e=>{setGoal(e.target.value);setApproved(false);}} placeholder="For example: split the selected source address into IP and port."/>
-  <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm reviewed AI excerpt" checked={approved} onChange={e=>setApproved(e.target.checked)}/>
+   onChange={e=>{setGoal(e.target.value);setApproved(false);setCopied(false);}} placeholder="For example: split the selected source address into IP and port."/>
+  <label className="stellar-ai-consent"><input type="checkbox" aria-label="Confirm reviewed AI excerpt" checked={approved} onChange={e=>{setApproved(e.target.checked);setCopied(false);}}/>
    I reviewed the editable excerpt and removed sensitive information before copying.</label>
   <div className="stellar-ai-actions">
-   <button type="button" className="stellar-ai-primary" disabled={!canCopy} onClick={()=>void copyPrompt()}>Copy AI Prompt</button>
+   <button type="button" className={'stellar-ai-primary '+(copied?'copied':'')} disabled={!canCopy}
+    aria-live="polite" onClick={()=>void copyPrompt()}>{copied?'Copied ✓':'Copy AI Prompt'}</button>
    <button type="button" onClick={onChatGPT}>Open Assisted Parser</button>
   </div>
   {notice&&<p role="status">{notice}</p>}

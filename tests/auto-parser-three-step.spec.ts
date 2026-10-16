@@ -84,7 +84,7 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  const posts=await mockBackend(page);
  await begin(page);
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('198.51.100.10');
- await expect(page.getByLabel('Browser-only event inspector')).toContainText('custom.source_ip');
+ await expect(page.getByLabel('Browser-only event inspector')).toContainText('srcip');
  await expect(page.getByLabel('Normalization mapping handoff')).toContainText('choose where each value belongs in Stellar Cyber');
  await page.getByLabel('Auto Parser review event').selectOption('event-2');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('203.0.113.5');
@@ -92,9 +92,8 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  const map=page.getByLabel('Map Fields stage');
  await expect(map).toBeVisible();
  await expect(map).toContainText('Stellar field dictionary 7.0.xs');
- await expect(map.getByLabel('Recommended field matches')).toContainText('srcip');
- await map.getByRole('button',{name:/Apply 3 recommended matches/}).click();
  await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar3');
+ await expect(map.getByLabel('Recommended field matches')).toContainText('Apply 0 recommended matches');
  await map.getByRole('button',{name:'Create Parser'}).click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  await expect(page.getByRole('button',{name:'Create Parser Files'})).toBeEnabled();

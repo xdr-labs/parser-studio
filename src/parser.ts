@@ -12,6 +12,31 @@ export const MAX_EVENTS = 500;
 // The dataset is already hard-bounded to 64 KiB, so do not reject one valid record earlier.
 export const MAX_LINE_CHARS = MAX_DATASET_BYTES;
 const VALID_TARGET = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
+const UNSAFE_OUTPUT_SEGMENTS=new Set(['__proto__','constructor','prototype']);
+
+function ownSet(record:Record<string,unknown>,key:string,value:unknown):void{
+  Object.defineProperty(record,key,{value,writable:true,enumerable:true,configurable:true});
+}
+function assignNormalizedPath(record:Record<string,unknown>,path:string,value:unknown):boolean{
+  if(!VALID_TARGET.test(path))return false;
+  const parts=path.split('.');
+  if(parts.some(part=>UNSAFE_OUTPUT_SEGMENTS.has(part)))return false;
+  let current=record;
+  for(let i=0;i<parts.length-1;i++){
+    const part=parts[i]!;
+    const existing=Object.prototype.hasOwnProperty.call(current,part)?current[part]:undefined;
+    if(existing!==undefined&&(!existing||typeof existing!=='object'||Array.isArray(existing)))return false;
+    if(existing===undefined){
+      const next:Record<string,unknown>={};
+      ownSet(current,part,next);current=next;
+    }else current=existing as Record<string,unknown>;
+  }
+  ownSet(current,parts.at(-1)!,value);
+  return true;
+}
+function normalizedPathExists(record:Record<string,unknown>,path:string):boolean{
+  return lookupFieldValue(record,path).found;
+}
 
 export function detectFormat(raw: string): Detection {
   const value = raw.trim();
@@ -374,12 +399,9 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   for (const mapping of draft.mappings) {
     const source = mapping.source.trim();
     const target = mapping.target.trim();
-    if (!source || !VALID_TARGET.test(target)) {
+    if (!source || !VALID_TARGET.test(target) ||
+        target.split('.').some(part=>UNSAFE_OUTPUT_SEGMENTS.has(part))) {
       error('normalize', 'INVALID_MAPPING', 'Invalid source or output field', mapping.id);
-      continue;
-    }
-    if (Object.prototype.hasOwnProperty.call(normalized, target)) {
-      error('normalize', 'TARGET_COLLISION', 'Output field is mapped more than once: ' + target, target);
       continue;
     }
     const sourceValue = lookupFieldValue(fields, source);
@@ -396,19 +418,46 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     }
     mapped.add(source);
     const converted = convertValue(sourceValue.value, mapping.type);
-    if (converted.error) error('normalize', 'TYPE_ERROR', source + ': ' + converted.error, source);
-    else normalized[target] = converted.value;
+    if (converted.error) {
+      error('normalize', 'TYPE_ERROR', source + ': ' + converted.error, source);
+      continue;
+    }
+    const group=draft.guided?.groups[mapping.id]??'vendor_fields';
+    let container=normalized;
+    if(group==='vendor_fields'){
+      const vendor=draft.vendor.trim()||'vendor';
+      const existing=Object.prototype.hasOwnProperty.call(normalized,vendor)?normalized[vendor]:undefined;
+      if(existing!==undefined&&(!existing||typeof existing!=='object'||Array.isArray(existing))){
+        error('normalize','TARGET_COLLISION','Vendor namespace collides with an existing output: '+vendor,target);
+        continue;
+      }
+      if(existing===undefined){
+        const vendorObject:Record<string,unknown>={};
+        ownSet(normalized,vendor,vendorObject);
+        container=vendorObject;
+      }else container=existing as Record<string,unknown>;
+    }
+    if(normalizedPathExists(container,target)){
+      error('normalize', 'TARGET_COLLISION', 'Output field is mapped more than once: ' + target, target);
+      continue;
+    }
+    if(!assignNormalizedPath(container,target,converted.value)){
+      error('normalize','INVALID_MAPPING','Could not assign output field: '+target,target);
+    }
   }
   // Preview the reviewed declarative enrichment steps in order, never Ruby.
+  // Dotted paths use the same nested lookup/assignment semantics as the
+  // generated backend parser instead of creating literal "a.b" object keys.
   for (const [index, rule] of (draft.guided?.enrichment ?? []).entries()) {
     const step=index+1;
     const safeOutput=(target:string)=>VALID_TARGET.test(target)&&
-      !Object.prototype.hasOwnProperty.call(normalized,target)&&
-      !target.split('.').some((part)=>['__proto__','constructor','prototype'].includes(part));
+      !normalizedPathExists(normalized,target)&&
+      !target.split('.').some((part)=>UNSAFE_OUTPUT_SEGMENTS.has(part));
     const validDelimiter=(value:string|undefined)=>typeof value==='string'&&value.length>=1&&value.length<=8&&
       !/[\u0000-\u001f\u007f]/.test(value);
     if(rule.operator==='split_field'){
-      const source=normalized[rule.source],targets=rule.targets??[];
+      const sourceResult=lookupFieldValue(normalized,rule.source),targets=rule.targets??[];
+      const source=sourceResult.found?sourceResult.value:undefined;
       if(typeof source!=='string'){
         error('normalize','ENRICHMENT_SOURCE','Split source must be an existing string field at step '+step);continue;
       }
@@ -420,7 +469,10 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       if(parts.length!==targets.length){
         error('normalize','ENRICHMENT_TYPE','Split field count mismatch at step '+step);continue;
       }
-      targets.forEach((target,i)=>{normalized[target]=parts[i]!;});continue;
+      if(targets.some((target,i)=>!assignNormalizedPath(normalized,target,parts[i]!))){
+        error('normalize','ENRICHMENT_TARGET','Could not assign split output at step '+step);
+      }
+      continue;
     }
     if(rule.operator==='merge_fields'){
       const sources=rule.sources??[],target=rule.target.trim();
@@ -428,11 +480,16 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
          new Set(sources).size!==sources.length||!safeOutput(target)){
         error('normalize','ENRICHMENT_TARGET','Unsafe merge rule at step '+step);continue;
       }
-      const values=sources.map(source=>normalized[source]);
+      const values=sources.map(source=>{
+        const found=lookupFieldValue(normalized,source);
+        return found.found?found.value:undefined;
+      });
       if(values.some(value=>typeof value!=='string')){
         error('normalize','ENRICHMENT_SOURCE','Merge sources must be existing string fields at step '+step);continue;
       }
-      normalized[target]=(values as string[]).join(rule.delimiter!);continue;
+      if(!assignNormalizedPath(normalized,target,(values as string[]).join(rule.delimiter!)))
+        error('normalize','ENRICHMENT_TARGET','Could not assign merge output at step '+step);
+      continue;
     }
     const target = rule.target.trim();
     if (!safeOutput(target)) {
@@ -440,21 +497,27 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       continue;
     }
     if (rule.operator === 'set_const') {
-      normalized[target] = rule.value;
+      if(!assignNormalizedPath(normalized,target,rule.value))
+        error('normalize','ENRICHMENT_TARGET','Could not assign constant output at step '+step);
       continue;
     }
-    if (!Object.prototype.hasOwnProperty.call(normalized, rule.source)) {
+    const sourceResult=lookupFieldValue(normalized,rule.source);
+    if (!sourceResult.found) {
       error('normalize', 'ENRICHMENT_SOURCE', 'Source field unavailable at step ' + step);
       continue;
     }
-    const source = normalized[rule.source];
-    if (rule.operator === 'copy') normalized[target] = source;
-    else if (rule.operator === 'lowercase' || rule.operator === 'uppercase') {
+    const source = sourceResult.value;
+    if (rule.operator === 'copy') {
+      if(!assignNormalizedPath(normalized,target,source))
+        error('normalize','ENRICHMENT_TARGET','Could not assign copied output at step '+step);
+    } else if (rule.operator === 'lowercase' || rule.operator === 'uppercase') {
       if (typeof source !== 'string') {
         error('normalize', 'ENRICHMENT_TYPE', 'Text transform requires a string source');
         continue;
       }
-      normalized[target] = rule.operator === 'lowercase' ? source.toLowerCase() : source.toUpperCase();
+      const value=rule.operator === 'lowercase' ? source.toLowerCase() : source.toUpperCase();
+      if(!assignNormalizedPath(normalized,target,value))
+        error('normalize','ENRICHMENT_TARGET','Could not assign transformed output at step '+step);
     } else error('normalize', 'ENRICHMENT_UNSUPPORTED', 'Unsupported enrichment operator');
   }
   const unmapped = Object.keys(fields).filter((field) => !mapped.has(field));

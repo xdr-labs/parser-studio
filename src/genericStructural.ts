@@ -558,6 +558,93 @@ function rfc3164DelimitedCommaKv(raw:string):Record<string,unknown>|null{
   return {syslog,...body};
 }
 
+function positionalCsvValues(text:string):string[]|null{
+  if(!text||text.includes('\0'))return null;
+  const values:string[]=[];let token='';let quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i]!;
+    if(quoted){
+      if(ch==='"'){
+        if(text[i+1]==='"'){token+='"';i++;continue;}
+        quoted=false;continue;
+      }
+      token+=ch;continue;
+    }
+    if(ch==='"'){quoted=true;continue;}
+    if(ch===','){values.push(token);token='';continue;}
+    token+=ch;
+  }
+  if(quoted)return null;
+  values.push(token);
+  return values;
+}
+
+const PANOS_TRAFFIC_53=[
+  'domain','receive_time','serial','type','subtype','config_version','time_generated',
+  'src','dst','natsrc','natdst','rule','srcuser','dstuser','app','vsys','from','to',
+  'inbound_if','outbound_if','logset','time_received','sessionid','repeatcnt','sport',
+  'dport','natsport','natdport','flags','protocol','action','bytes','bytes_sent',
+  'bytes_received','packets','start_time','elapsed','category','seqno','actionflags',
+  'srcloc','dstloc','cpadding','pkts_sent','pkts_received','session_end_reason',
+  'dg_hier_level_1','dg_hier_level_2','dg_hier_level_3','dg_hier_level_4',
+  'vsys_name','device_name','action_source',
+] as const;
+const PANOS_TRAFFIC_54=[
+  ...PANOS_TRAFFIC_53.slice(0,38),'padding',...PANOS_TRAFFIC_53.slice(38),
+] as const;
+
+function panosTrafficFields(values:string[]):Record<string,string>|null{
+  if(values.length<53||values[3]!=='TRAFFIC')return null;
+  const datetime=/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/;
+  const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
+  const validIp=(value:string)=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255);
+  if(!datetime.test(values[1]??'')||!datetime.test(values[6]??'')||
+     !datetime.test(values[21]??'')||!datetime.test(values[35]??'')||
+     !validIp(values[7]??'')||!validIp(values[8]??'')||
+     !validIp(values[9]??'')||!validIp(values[10]??''))return null;
+  for(const index of [24,25,26,27]){
+    const value=values[index]??'';
+    if(!/^\d{1,5}$/.test(value)||Number(value)>65535)return null;
+  }
+  if(!/^[A-Za-z0-9_.-]{1,24}$/.test(values[29]??'')||
+     !/^[A-Za-z0-9_. -]{1,64}$/.test(values[30]??''))return null;
+  const names=values.length>=54?PANOS_TRAFFIC_54:PANOS_TRAFFIC_53;
+  const fields:Record<string,string>={};
+  values.forEach((value,index)=>{
+    fields[names[index]??('field_'+String(index))]=value;
+  });
+  return fields;
+}
+
+function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192)return null;
+  const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +/.exec(raw);
+  if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
+  if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
+  const body=raw.slice(head[0].length);
+  if(/^[A-Za-z_][A-Za-z0-9_.-]*=/.test(body))return null;
+  const values=positionalCsvValues(body);
+  if(!values||values.length<12||values.length>100||!/^[0-9]{1,10}$/.test(values[0]??''))return null;
+  const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
+  const ips=values.filter(value=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255)).length;
+  const securityCategory=values.some(value=>
+    /^(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION)$/.test(value));
+  if(ips<2||!securityCategory)return null;
+  const panos=panosTrafficFields(values);
+  const columns:Record<string,string>={};
+  values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
+  const syslog:Record<string,unknown>={
+    month:head[2],day:head[3],time:head[4],hostname:head[5],
+  };
+  if(head[1]!==undefined)syslog.pri=head[1];
+  return {
+    syslog,
+    generic:panos
+      ?{mode:'panos_traffic_csv',delimiter:',',source_raw:raw,fields:panos}
+      :{mode:'rfc3164_positional_csv',delimiter:',',source_raw:raw,columns},
+  };
+}
+
 function asa(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const id=/%(ASA|FTD)-(\d)-(\d{6}):[ \t]*/.exec(raw);
@@ -581,13 +668,21 @@ function asa(raw:string):Record<string,unknown>|null{
   const syslog:Record<string,unknown>={app_tag:`%${id[1]}-${id[2]}-${id[3]}`};
   const prefix=raw.slice(0,id.index);
   if(prefix){
-    const header=prefix.match(/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}):(\d{2}):(\d{2}) +([!-~]{1,255}) *$/);
+    const header=prefix.match(/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(?:(\d{4}) +)?(\d{2}):(\d{2}):(\d{2}) +([^\s:]{1,255})(?: +([A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?))? *:? *$/);
     if(header){
       const monthDays:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
-      const day=Number(header[2]),hour=Number(header[3]),minute=Number(header[4]),second=Number(header[5]);
-      if(!monthDays[header[1]!]||day<1||day>monthDays[header[1]!]!||
+      const pri=header[1]===undefined?undefined:Number(header[1]);
+      const day=Number(header[3]),year=header[4]===undefined?undefined:Number(header[4]);
+      const hour=Number(header[5]),minute=Number(header[6]),second=Number(header[7]);
+      if((pri!==undefined&&(pri<0||pri>191))||!monthDays[header[2]!]||day<1||day>monthDays[header[2]!]!||
+         (year!==undefined&&(year<1||year>9999))||
          hour<0||hour>23||minute<0||minute>59||second<0||second>59)return null;
-      Object.assign(syslog,{month:header[1],day:header[2],time:`${header[3]}:${header[4]}:${header[5]}`,hostname:header[6]});
+      Object.assign(syslog,{
+        ...(pri!==undefined?{pri:String(pri)}:{}),month:header[2],day:header[3],
+        ...(year!==undefined?{year:header[4]}:{}),
+        time:header[5]+':'+header[6]+':'+header[7],hostname:header[8],
+        ...(header[9]?{source_tag:header[9]}:{}),
+      });
     }else{
       const facility=prefix.match(/^([A-Z0-9]{2,16})\.([A-Z]{2,16}): +([!-~]{1,255}) +$/);
       const hostOnly=prefix.match(/^([!-~]{1,255}) +: +$/);
@@ -602,7 +697,7 @@ function asa(raw:string):Record<string,unknown>|null{
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
   const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
-    rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw)??
+    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw)??
     bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw);
   return fields?{fields,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};

@@ -23,7 +23,7 @@ describe('no-code safe normalization enrichment', () => {
     const sample = '{"action":"ALLOW","src_ip":"198.51.100.10","dst_port":443}';
     const parsed = preview(sample, draft);
     expect(parsed.events[0].normalized).toMatchObject({
-      'custom.site':'kr', 'custom.action_lower':'allow', 'custom.action_copy':'allow',
+      custom:{site:'kr',action_lower:'allow',action_copy:'allow'},
     });
     if (result.ok) expect(JSON.stringify(result.project)).not.toContain('198.51.100.10');
   });
@@ -48,8 +48,8 @@ describe('no-code safe normalization enrichment', () => {
     const parsed=preview('{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"endpoint":"192.0.2.10:8443"}',draft);
     expect(parsed.counts).toMatchObject({total:1,matched:1,extracted:1,normalized:1,failures:0});
     expect(parsed.events[0]?.normalized).toMatchObject({
-      'custom.endpoint':'192.0.2.10:8443','custom.endpoint_host':'192.0.2.10',
-      'custom.endpoint_port_text':'8443','custom.endpoint_joined':'192.0.2.10:8443',
+      custom:{endpoint:'192.0.2.10:8443',endpoint_host:'192.0.2.10',
+        endpoint_port_text:'8443',endpoint_joined:'192.0.2.10:8443'},
     });
     const mismatch=preview('{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"endpoint":"no-delimiter"}',draft);
     expect(mismatch.counts.failures).toBe(1);

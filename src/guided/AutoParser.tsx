@@ -26,6 +26,8 @@ import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVE
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
+import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
+import {parserIdentitySlug} from './parserIdentity';
 
 
 import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
@@ -692,16 +694,30 @@ export default function AutoParser({
   const original=sample;setMultiPass(null);setMultiPassEvent(0);setSelectedMultiPass(null);
   setMultiPassNotice('');setMultiPassBusy(true);
   try{
+   let review:MultiPassReview;
    if(original.includes('\n')||original.includes('\r')){
     const result=await requestMultiPassBatchPreview(original);
-    setMultiPass({raw:original,events:result.events.map(item=>({
+    review={raw:original,events:result.events.map(item=>({
      startByte:item.startByte,endByte:item.endByte,preview:item.preview,
-    }))});
+    }))};
    }else{
     const result=await requestMultiPassPreview(original);
-    setMultiPass({raw:original,events:[{
+    review={raw:original,events:[{
      startByte:0,endByte:new TextEncoder().encode(original).byteLength,preview:result,
-    }]});
+    }]};
+   }
+   setMultiPass(review);
+   // Beginner mode must not stop at a second "Use extracted fields" click when
+   // the deeper parser already has a complete bounded compiler grammar.
+   if(!advanced&&draft.format==='auto'&&report.unsupported>0&&
+      review.events.length>0&&review.events.every(event=>event.preview.status==='SOURCE_PARSED')){
+     const automatic=buildAutomaticGenericStructuralDraft(original,draft);
+     if(automatic){
+       setDraft(automatic.draft);
+       // The main parsed-completely summary is the single beginner status.
+       // Do not add a second success/error-looking notice for the same action.
+       setMultiPassNotice('');
+     }
    }
   }catch{setMultiPassNotice('Deeper local analysis is unavailable right now. Your logs were not changed; continue with the normal analysis or try again later.');}
   finally{setMultiPassBusy(false);}
@@ -735,6 +751,20 @@ export default function AutoParser({
  const currentMultiPassCounts=multiPassDerived.counts;
  const protectedSourceValuesByEvent=multiPassDerived.protectedValues;
  const protectedResidualTextByEvent=multiPassDerived.protectedResiduals;
+ const parserIdentityIsDefault=draft.vendor==='Demo / local draft'&&draft.name==='Untitled parser';
+ const parserArtifactName=parserIdentityIsDefault
+   ?'customized_<manufacturer>_<product>'
+   :'customized_'+(draft.guided?.slug??parserIdentitySlug(draft.vendor,draft.name));
+ const updateParserIdentity=(field:'vendor'|'name'|'version',value:string)=>{
+  setDraft(old=>{
+   const vendor=field==='vendor'?value:old.vendor;
+   const name=field==='name'?value:old.name;
+   const version=field==='version'?value:(old.version??'');
+   const opts=old.guided??defaultGuidedOptions();
+   return {...old,vendor,name,version,
+    guided:{...opts,slug:parserIdentitySlug(vendor,name)}};
+  });
+ };
  useEffect(()=>{
    if(advanced||parserSetOrigin||report.unsupported<3||!currentMultiPassReview||
       currentStructural||busy||pending||!suite)return;
@@ -770,6 +800,35 @@ export default function AutoParser({
    {navigationHint&&<p className="beginner-navigation-hint" role="status">{navigationHint}</p>}
    <div className="auto-parser-body">
      {step===0&&<section aria-label="Add Logs stage">
+       <div className="parser-identity-card" aria-label="Parser product identity">
+         <div className="parser-identity-copy">
+           <strong>Parser identity</strong>
+           <span>Enter the source product before creating files. Parser Studio uses these values in the parser metadata and file name.</span>
+         </div>
+         <div className="parser-identity-fields">
+           <label>Manufacturer
+             <input aria-label="Parser manufacturer" value={draft.vendor}
+               placeholder="e.g. Fortinet"
+               onChange={e=>updateParserIdentity('vendor',e.target.value)}/>
+           </label>
+           <label>Product
+             <input aria-label="Parser product" value={draft.name}
+               placeholder="e.g. FortiGate"
+               onChange={e=>updateParserIdentity('name',e.target.value)}/>
+           </label>
+           <label>Version
+             <input aria-label="Parser product version" value={draft.version??''}
+               placeholder="e.g. 7.4.5"
+               onChange={e=>updateParserIdentity('version',e.target.value)}/>
+           </label>
+         </div>
+         <div className="parser-identity-filename">
+           <span>Generated parser files</span>
+           <code>{parserArtifactName}</code>
+           <code>{parserArtifactName}.conf</code>
+           <small>Stellar custom parsers use the <b>customized_&lt;vendor&gt;_&lt;product&gt;</b> naming convention. Version is stored in the parser metadata rather than appended to the file name.</small>
+         </div>
+       </div>
        <h2>Add Logs <HelpTip label="Add Logs"
          text="Use logs from the same product and event family when possible. Two or more examples help Parser Studio tell changing values from fixed text."/></h2>
        <StageGuide title="Start here">
@@ -1043,13 +1102,13 @@ export default function AutoParser({
            protectedSourceValuesByEvent={protectedSourceValuesByEvent}
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>
        </div>}
-       {report.unsupported>0&&<p className="auto-parser-note beginner-essential-note">
+       {report.unsupported>0&&!beginnerResolved&&<p className="auto-parser-note beginner-essential-note">
          Some events could not be understood safely. Parser Studio keeps those events unchanged and will not let you continue until they are reviewed.
          <HelpTip label="Why are some events blocked?"
            text="Security logs can contain unusual headers, broken timestamps, several lines per event, or vendor-specific text. Parser Studio stops instead of guessing when that could lose data or create the wrong fields."/>
        </p>}
        <ExistingParserReviewPanel onRestore={restoreExistingProject}/>
-       <details className="auto-parser-recipe" aria-label="Multi-line event boundary tool">
+       {advanced&&<details className="auto-parser-recipe" aria-label="Multi-line event boundary tool">
          <summary className="beginner-tool-summary">Check where multi-line events begin and end
            <HelpTip label="Multi-line event help"
              text="Use this when one security event is spread across several lines, such as a Java stack trace or formatted JSON. Skip it when each log event is already on one line."/>
@@ -1062,11 +1121,14 @@ export default function AutoParser({
              key:identity,value:reviewLogicalBoundaries(sample)
            })}>Review Logical Event Boundaries</button>
          {currentLogicalReview&&<div role="status" aria-label="Reviewed logical boundaries">
-           <strong>{currentLogicalReview.status} ·
+           <strong>{currentLogicalReview.status==='NO_MULTILINE'?'No multi-line boundary review is needed':
+             currentLogicalReview.status==='REVIEWABLE_MULTILINE'?'Multi-line event boundaries found':
+             currentLogicalReview.status==='REVIEW_REQUIRED'?'Multi-line boundaries need review':currentLogicalReview.status} ·
              {currentLogicalReview.accountedNonEmptyLines}/{currentLogicalReview.nonEmptyLines}
              nonempty physical lines accounted</strong>
-           <span>{currentLogicalReview.multilineEventCount} possible multi-line event{currentLogicalReview.multilineEventCount===1?'':'s'} ·
-             {currentLogicalReview.ambiguousCount} still need review · This check does not test a live Stellar system</span>
+           <span>{currentLogicalReview.status==='NO_MULTILINE'
+             ?'Each current event is already on one physical line. This does not change or contradict the parser result above.'
+             :currentLogicalReview.multilineEventCount+' possible multi-line event'+(currentLogicalReview.multilineEventCount===1?'':'s')+' · '+currentLogicalReview.ambiguousCount+' still need review · This check does not test a live Stellar system'}</span>
            {currentLogicalReview.groups.slice(0,12).map((group,i)=><span key={i}>
              Lines {group.firstLine}–{group.lastLine} ·
              {group.kind} · {group.status}
@@ -1079,7 +1141,7 @@ export default function AutoParser({
              Review the proposed event boundaries before continuing. This check only helps Parser Studio decide which lines belong to the same event.
            </span>}
          </div>}
-       </details>
+       </details>}
        <details className="auto-parser-recipe" aria-label="Private text grouping tool">
          <summary className="beginner-tool-summary">Group similar text logs
            <HelpTip label="Group similar text logs"
@@ -1231,17 +1293,6 @@ export default function AutoParser({
          <strong>Next: choose where each value belongs in Stellar Cyber</strong>
          <p>Continue to Map Fields. Parser Studio will suggest Stellar field names, show example values, and warn you if a value does not fit. Changing a mapping never deletes the original extracted value.</p>
        </div>
-       <details className="auto-parser-recipe beginner-field-summary" open={advanced}
-         aria-label="Suggested field mappings">
-         <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} prepared · Open only if you want to inspect the current names</summary>
-         <p>These are starting names for the fields Parser Studio found. You will choose Stellar Cyber destinations in the next step.</p>
-         <div className="auto-parser-map-list">
-           {draft.mappings.map((rule)=><div key={rule.id}>
-             <strong>{rule.source}</strong> <ArrowRight size={13}/>
-             <span>{rule.target}</span><small>{rule.type} · temporary/custom output name</small>
-           </div>)}
-         </div>
-       </details>
        {!!draft.guided?.enrichment?.length&&<div className="auto-parser-map-list" aria-label="Applied normalization refinements">
          {draft.guided.enrichment.map((rule,index)=><div key={rule.id}>
            <strong>{rule.operator==='split_field'?'Split':'Merge'} #{index+1}</strong>
@@ -1251,34 +1302,6 @@ export default function AutoParser({
            <small>Reviewed field adjustment · no custom code required</small>
          </div>)}
        </div>}
-       <details className="auto-parser-recipe" aria-label="Adjust detected field mapping">
-         <summary>Need to correct a field name or value type?
-           <HelpTip label="Edit fields manually" text="Use this only when Parser Studio separated the value correctly but gave it the wrong field name or value type. Most users can leave this closed and continue."/></summary>
-         <p>Changing a field here affects the parser draft, so Parser Studio will test the samples again before it creates files.</p>
-         {draft.mappings.map((mapping,index)=><div className="two-path-mapping-editor" key={mapping.id}>
-           <label>Field found in the log <HelpTip label="Field found in the log"
-             text="The field name Parser Studio extracted from the source. Change this only if the extraction itself used the wrong name."/>
-             <input aria-label={'Mapping source '+index} value={mapping.source} maxLength={128}
-               onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
-                 {...m,source:e.target.value}:m)}))}/>
-           </label>
-           <label>Current output field name <HelpTip label="Current output field name"
-             text="The temporary or current destination name used by the parser draft. The next Map Fields step is the recommended place to choose Stellar Cyber standard names."/>
-             <input aria-label={'Mapping target '+index} value={mapping.target} maxLength={128}
-               onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
-                 {...m,target:e.target.value}:m)}))}/>
-           </label>
-           <label>Value type <HelpTip label="Value type"
-             text="Choose what kind of value this field contains, such as text, an IP address, a port, a whole number, or a timestamp."/>
-             <select aria-label={'Mapping type '+index} value={mapping.type}
-               onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?
-                 {...m,type:e.target.value as typeof m.type}:m)}))}>
-               {(['string','integer','boolean','ip','port','timestamp'] as const)
-                 .map(type=><option key={type} value={type}>{type}</option>)}
-             </select>
-           </label>
-         </div>)}
-       </details>
        {pending&&<p className="beginner-next-step" role="status">
          Parsed fields are ready. Parser Studio is refreshing the local preview before the final test.
        </p>}
@@ -1339,8 +1362,12 @@ export default function AutoParser({
            {advanced&&<span>Two generated files have matching recorded SHA-256 integrity evidence. Live Stellar import remains a separate test.</span>}
          </details>
          {currentPair.files.map(file=><button key={file.name} type="button"
-           onClick={()=>download(file.name,file.content)}>
-           <FileText size={15}/>{file.name.endsWith('.conf')?'Download listener configuration':'Download parser logic'} <Download size={15}/>
+           aria-label={file.name} onClick={()=>download(file.name,file.content)}>
+           <FileText size={15}/>
+           <span>{file.name.endsWith('.conf')?'Download listener configuration':'Download parser logic'}
+             <small>{file.name}</small>
+           </span>
+           <Download size={15}/>
          </button>)}
          <button type="button" disabled={busy}
            onClick={()=>{void zipPair();}}><FileArchive size={16}/> Download Parser Package</button>

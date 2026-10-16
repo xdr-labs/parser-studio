@@ -138,7 +138,7 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
   if(!split.ok)return;
   const splitSuite=preview(raw,split.candidate);
   expect(splitSuite.events[0]?.normalized).toMatchObject({
-   'custom.action_kind':'allow','custom.action_detail':'http',
+   custom:{action_kind:'allow',action_detail:'http'},
   });
   const splitRecipe=await buildReviewableRecipe(raw,split.candidate,splitSuite);
   expect(splitRecipe.ok).toBe(true);if(!splitRecipe.ok)return;
@@ -151,7 +151,7 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
   expect(merge).toMatchObject({ok:true,operator:'merge_fields',replacement:'ONE_ENRICHMENT'});
   if(!merge.ok)return;
   const final=preview(raw,merge.candidate);
-  expect(final.events[0]?.normalized['custom.action_joined']).toBe('allow/http');
+  expect((final.events[0]?.normalized.custom as Record<string,unknown>)?.action_joined).toBe('allow/http');
   expect(toBackendProject(merge.candidate)).toMatchObject({ok:true,project:{enrichment:[
    {operator:'split_field'},{operator:'merge_fields'},
   ]}});

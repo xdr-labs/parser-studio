@@ -51,8 +51,8 @@ function sourceValues(suite:SuiteResult|undefined,source:string):string[]{
   }
   return values;
 }
-function catalogState(mapping:MappingRule){
-  if(mapping.target.startsWith('custom.'))return {label:'Kept as custom',kind:'custom' as const};
+function catalogState(mapping:MappingRule,group:string){
+  if(group==='vendor_fields')return {label:'Vendor field',kind:'custom' as const};
   const entry=findStellarMetadataField(mapping.target);
   if(entry?.mappable&&entry.mappingType===mapping.type)return {label:'Matched to Stellar',kind:'verified' as const};
   return {label:'Check this mapping',kind:'review' as const};
@@ -73,17 +73,19 @@ export default function NormalizationMappingReview({
   const [search,setSearch]=useState('');
   const [catalogQuery,setCatalogQuery]=useState('');
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
-  const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings),[suite,draft.mappings]);
-  const findings=useMemo(()=>validateNormalizationMappings(suite,draft.mappings),[suite,draft.mappings]);
+  const groups=draft.guided?.groups??{};
+  const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
+  const findings=useMemo(()=>validateNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const chosen=suite?.events[selected]??suite?.events[0];
+  const sourceDisplay=(source:string)=>draft.format==='generic_structural'?'parserstudio_source.'+source:source;
   const sourceFields=useMemo(()=>{
     const result=new Set<string>();
     for(const event of suite?.events??[])for(const path of listSafeLeafPaths(event.fields))result.add(path);
     return [...result];
   },[suite]);
   const mappedSources=new Set(draft.mappings.map(mapping=>mapping.source));
-  const officialCount=draft.mappings.filter(mapping=>catalogState(mapping).kind==='verified').length;
-  const customCount=draft.mappings.filter(mapping=>mapping.target.startsWith('custom.')).length;
+  const officialCount=draft.mappings.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
+  const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
   const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
   const candidateView=candidates.filter(candidate=>{
     const needle=search.trim().toLowerCase();
@@ -136,7 +138,7 @@ export default function NormalizationMappingReview({
           groups[id]=catalog.group;
           return {...mapping,target:value,type:catalog.mappingType};
         }
-        if(value.startsWith('custom.'))groups[id]='vendor_fields';
+        groups[id]='vendor_fields';
         return {...mapping,target:value};
       });
       return {...old,mappings,guided:{...options,groups}};
@@ -182,7 +184,7 @@ export default function NormalizationMappingReview({
     <div className="normalization-kpis" aria-label="Field mapping summary">
       <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
       <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
-      <div><span>Kept as custom</span><strong>{customCount}</strong></div>
+      <div><span>Vendor-only fields</span><strong>{vendorCount}</strong></div>
       <div><span>Not mapped yet</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length}</strong></div>
       <div className={blocking.length?'attention':''}><span>Must fix before continuing</span><strong>{blocking.length}</strong></div>
     </div>
@@ -207,7 +209,7 @@ export default function NormalizationMappingReview({
         <div className="normalization-candidate-list">
           {candidateView.map(candidate=><article key={candidate.source} className={'normalization-candidate '+candidate.confidence.toLowerCase()}>
             <div className="normalization-source">
-              <strong>{candidate.source}</strong>
+              <strong>{sourceDisplay(candidate.source)}</strong>
               <small>{sourceValues(suite,candidate.source).join(' · ')||'No displayable sample value'}</small>
               {candidate.currentTarget&&<span>Current: {candidate.currentTarget}</span>}
             </div>
@@ -239,8 +241,8 @@ export default function NormalizationMappingReview({
         {STELLAR_METADATA_CATALOG.filter(entry=>entry.mappable).map(entry=><option value={entry.name} key={entry.name}/>)}
       </datalist>
       {draft.mappings.map((mapping,index)=>{
-        const state=catalogState(mapping);
         const group=draft.guided?.groups[mapping.id]??'vendor_fields';
+        const state=catalogState(mapping,group);
         return <article className={'normalization-map-row '+state.kind} key={mapping.id}
           aria-label={'Field mapping '+(index+1)}>
           <div className="normalization-map-status">
@@ -249,12 +251,21 @@ export default function NormalizationMappingReview({
           </div>
           <label>Field found in the log <HelpTip label="Field found in the log"
             text="This is the field name Parser Studio extracted from your source log. Change it only if the extraction itself used the wrong field name."/>
-            <input aria-label={'Source field '+index} value={mapping.source}
-              onChange={event=>updateMapping(mapping.id,'source',event.target.value)}/>
+            <input aria-label={'Source field '+index} value={sourceDisplay(mapping.source)}
+              onChange={event=>{
+                const value=event.target.value;
+                const prefix='parserstudio_source.';
+                updateMapping(mapping.id,'source',
+                  draft.format==='generic_structural'&&value.startsWith(prefix)
+                    ?value.slice(prefix.length):value);
+              }}/>
           </label>
           <ArrowRight size={16} className="normalization-row-arrow" aria-hidden="true"/>
-          <label>Stellar field name <HelpTip label="Stellar field name"
-            text="This is where the value will appear in the normalized Stellar Cyber event. Use Choose Stellar field if you are unsure which name to use."/>
+          <label>{group==='vendor_fields'?'Vendor field name':'Stellar field name'} <HelpTip
+            label={group==='vendor_fields'?'Vendor field name':'Stellar field name'}
+            text={group==='vendor_fields'
+              ?'This field is not mapped to the published Stellar dictionary. The generated parser keeps it under the '+(draft.vendor||'vendor')+' vendor namespace instead of inventing a Stellar field name.'
+              :'This is where the value will appear in the normalized Stellar Cyber event. Use Choose Stellar field if you are unsure which name to use.'}/>
             <input aria-label={'Stellar field '+index} list="stellar-metadata-field-list"
               value={mapping.target} onChange={event=>updateMapping(mapping.id,'target',event.target.value)}/>
           </label>
@@ -266,12 +277,12 @@ export default function NormalizationMappingReview({
             </select>
           </label>
           <div className="normalization-map-meta">
-            <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Keeps the value under a custom field':'Needs your review'}</span>
+            <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Generated as '+(draft.vendor||'vendor')+'.'+mapping.target:'Needs your review'}</span>
             <span>{sourceValues(suite,mapping.source).length} example value{sourceValues(suite,mapping.source).length===1?'':'s'} shown</span>
           </div>
           <div className="normalization-map-actions">
             <button type="button" aria-label="Choose Stellar field"
-              onClick={()=>{setActiveMappingId(mapping.id);setCatalogQuery(mapping.target.startsWith('custom.')?'':mapping.target);}}>
+              onClick={()=>{setActiveMappingId(mapping.id);setCatalogQuery(group==='vendor_fields'?'':mapping.target);}}>
               Choose Stellar field
             </button>
             <button type="button" aria-label={'Remove normalization '+index} onClick={()=>removeMapping(mapping.id)}>
@@ -333,10 +344,16 @@ export default function NormalizationMappingReview({
       <div className="normalization-diff-list" aria-label="Field changes only">
         {draft.mappings.map(mapping=>{
           const found=lookupFieldValue(chosen.fields,mapping.source);
-          const after=chosen.normalized[mapping.target];
+          const group=draft.guided?.groups[mapping.id]??'vendor_fields';
+          const vendorRoot=chosen.normalized[draft.vendor];
+          const afterResult=group==='vendor_fields'&&vendorRoot&&typeof vendorRoot==='object'&&!Array.isArray(vendorRoot)
+            ?lookupFieldValue(vendorRoot as Record<string,unknown>,mapping.target)
+            :lookupFieldValue(chosen.normalized,mapping.target);
+          const after=afterResult.found?afterResult.value:undefined;
+          const displayTarget=group==='vendor_fields'?(draft.vendor||'vendor')+'.'+mapping.target:mapping.target;
           return <div key={mapping.id}>
-            <strong>{mapping.source}</strong><span>{found.found?displayValue(found.value):'Not present'}</span>
-            <ArrowRight size={14}/><strong>{mapping.target}</strong>
+            <strong>{sourceDisplay(mapping.source)}</strong><span>{found.found?displayValue(found.value):'Not present'}</span>
+            <ArrowRight size={14}/><strong>{displayTarget}</strong>
             <span>{after===undefined?(pending?'Refreshing preview…':'Not emitted'):displayValue(after)}</span>
           </div>;
         })}

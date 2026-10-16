@@ -26,7 +26,7 @@ describe('P0-AP4 exact source, full coverage and holdout candidate regression',(
    const draft=fixture(),old=structuredClone(draft);
    const base=preview(train,draft);
    const p=proposeReviewableMapping(train,draft,base);
-   expect(p).toMatchObject({ok:true,approvalRequired:true,mapping:{source:'user',target:'custom.user'}});
+   expect(p).toMatchObject({ok:true,approvalRequired:true,mapping:{source:'user',target:'user'}});
    if(!p.ok)return;
    expect(draft).toEqual(old);
    expect(p.candidate.mappings).toHaveLength(draft.mappings.length+1);

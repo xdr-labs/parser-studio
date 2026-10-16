@@ -4,8 +4,7 @@ import type {MultiPassSourcePreview} from './multipassPreviewClient';
 import type {ParserDraft,SuiteResult} from '../model';
 import AutoParserAIReview from './AutoParserAIReview';
 import {buildBeginnerRepairPrompt} from './beginnerAiPrompt';
-import {extractGenericStructural} from '../genericStructural';
-import {listSafeLeafPaths} from '../fieldPaths';
+import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 
 export interface BeginnerAnalysisEvent {
   startByte:number;
@@ -38,18 +37,6 @@ function utf8Slice(source:string,startByte:number,endByte:number):string{
 }
 function eventRaw(source:string,event:BeginnerAnalysisEvent){
   return utf8Slice(source,event.startByte,event.endByte);
-}
-function genericStructuralAnchor(source:string,events:BeginnerAnalysisEvent[]):string|null{
-  const pathSets=events.map(event=>{
-    const extracted=extractGenericStructural(eventRaw(source,event));
-    if(extracted.errors.length)return null;
-    return new Set(listSafeLeafPaths(extracted.fields));
-  });
-  if(!pathSets.length||pathSets.some(paths=>paths===null))return null;
-  const [first,...rest]=pathSets as Set<string>[];
-  const common=[...first].filter(path=>rest.every(paths=>paths.has(path)));
-  for(const preferred of ['syslog.pri','generic.mode'])if(common.includes(preferred))return preferred;
-  return common[0]??null;
 }
 function prefixedJson(raw:string):boolean{
   const open=raw.indexOf('{');
@@ -221,25 +208,21 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const recipeImportEligible=!!rec&&rec.kind!=='metadata'&&rec.kind!=='split';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
-  const genericStructuralSourcePath=current&&draft?.guided&&onApplyCandidate?
-    genericStructuralAnchor(source,events):null;
-  const genericStructuralPreserveEligible=Boolean(genericStructuralSourcePath&&draft&&onApplyCandidate);
+  const genericStructuralCandidate=current&&draft&&onApplyCandidate?
+    buildAutomaticGenericStructuralDraft(source,draft):null;
+  const genericStructuralPreserveEligible=Boolean(genericStructuralCandidate&&draft&&onApplyCandidate);
   const useExtractedGenericStructural=()=>{
-    if(!genericStructuralSourcePath||!draft||!onApplyCandidate||!draft.guided)return;
-    onApplyCandidate({...draft,format:'generic_structural',
-      mappings:[{id:'generic-structural-source',source:genericStructuralSourcePath,
-        target:'custom.source_field_001',type:'string'}],
-      guided:{...draft.guided,enrichment:[],groups:{'generic-structural-source':'vendor_fields'},
-        classification:{defaultIndex:'Syslog',rules:[]}}});
+    if(!genericStructuralCandidate||!onApplyCandidate)return;
+    onApplyCandidate(genericStructuralCandidate.draft);
     setPromptOpen(false);setPromptText('');
-    setCopyStatus('Parser Studio will use its built-in safe rule and preserve the extracted source fields.');
+    setCopyStatus('Parser Studio used the complete built-in structure and prepared the extracted fields for mapping.');
   };
   const preserveSourceMetadata=()=>{
     if(!metadataPreserveEligible||!draft||!onApplyCandidate)return;
     const opts=draft.guided;
     if(!opts)return;
     onApplyCandidate({...draft,format:'generic_structural',
-      mappings:[{id:'metadata-source-pri',source:'syslog.pri',target:'custom.source_pri',type:'string'}],
+      mappings:[{id:'metadata-source-pri',source:'syslog.pri',target:'source_pri',type:'string'}],
       guided:{...opts,enrichment:[],groups:{'metadata-source-pri':'vendor_fields'},
         classification:{defaultIndex:'Syslog',rules:[]}}});
     setPromptOpen(false);setPromptText('');setCopyStatus('Source metadata will be preserved as text. No timestamp value was inferred.');

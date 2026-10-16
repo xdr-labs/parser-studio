@@ -30,6 +30,26 @@ interface Props {
 const MAX_SAMPLE=64*1024;
 const MAX_REDACTED=4096;
 const MAX_RECIPE=32768;
+
+function redactedExampleTemplate(source:string):string{
+  const text=source.trim();
+  if(/^\{/.test(text)){
+    return '{"timestamp":"2026-10-15T00:00:00Z","action":"blocked","src_ip":"192.0.2.10","dst_ip":"198.51.100.20","dst_port":443,"device":"EXAMPLE-FW","user":"[REDACTED]"}';
+  }
+  if(/CEF:\d+\|/.test(text)){
+    return 'CEF:0|Example Vendor|Example Product|1.0|1001|Example event|5|src=192.0.2.10 dst=198.51.100.20 dpt=443 act=blocked suser=[REDACTED]';
+  }
+  if(/LEEF:(?:1\.0|2\.0)\|/.test(text)){
+    return 'LEEF:2.0|Example Vendor|Example Product|1.0|1001|0x09|src=192.0.2.10\tdst=198.51.100.20\tdstPort=443\taction=blocked';
+  }
+  if(/^<\d{1,3}>[A-Z][a-z]{2} .*?,/.test(text)){
+    return '<14>Oct 15 00:03:21 EXAMPLE-FW 1,2026/10/15 00:03:21,123456789,TRAFFIC,end,2561,2026/10/15 00:03:20,192.0.2.10,198.51.100.20,203.0.113.10,198.51.100.20,example-policy';
+  }
+  if(/[A-Za-z_][A-Za-z0-9_.-]*=/.test(text)){
+    return 'date=2026-10-15 time=00:04:12 devname="EXAMPLE-FW" action="blocked" srcip=192.0.2.10 dstip=198.51.100.20 dstport=443 user="[REDACTED]"';
+  }
+  return '<134>Oct 15 00:00:00 example-host app: action=blocked src_ip=192.0.2.10 dst_ip=198.51.100.20 dst_port=443 user=[REDACTED]';
+}
 const completeSuite=(value:SuiteResult)=>value.counts.total>0&&
   value.counts.matched===value.counts.total&&value.counts.extracted===value.counts.total&&
   value.counts.normalized===value.counts.total&&value.counts.failures===0;
@@ -40,7 +60,8 @@ const completeSuite=(value:SuiteResult)=>value.counts.total>0&&
 export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   pending,runPreview,onAutoParser}:Props){
   const [goal,setGoal]=useState('Extract event time, action, source and destination IP, user and URL when present.');
-  const [redacted,setRedacted]=useState('');
+  const [redacted,setRedacted]=useState(()=>redactedExampleTemplate(sample));
+  const [redactedFromTemplate,setRedactedFromTemplate]=useState(true);
   const [consent,setConsent]=useState(false);
   const [prompt,setPrompt]=useState('');
   const [promptError,setPromptError]=useState('');
@@ -58,11 +79,13 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   }|null>(null);
   const [generated,setGenerated]=useState<{pair:GeneratedPair;draft:ParserDraft}|null>(null);
   const sourceKey=useMemo(()=>JSON.stringify([sample,draft]),[sample,draft]);
+  const safeExample=useMemo(()=>redactedExampleTemplate(sample),[sample]);
   useEffect(()=>{
     setPrompt('');setPromptError('');setCopied(false);setReview(null);
     setComparison(null);setNotice('');setContext(null);setGenerated(null);
     setHoldoutAttested(false);setCandidateApproval(false);
-  },[sourceKey]);
+    if(redactedFromTemplate){setRedacted(safeExample);setConsent(false);}
+  },[sourceKey,safeExample,redactedFromTemplate]);
   useEffect(()=>{
     setPrompt('');setCopied(false);setReview(null);setComparison(null);
     setNotice('');setContext(null);setGenerated(null);setHoldoutAttested(false);setCandidateApproval(false);
@@ -263,8 +286,14 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           text="Paste one or more representative logs with secrets, credentials, personal data, and sensitive identifiers removed or replaced. Parser Studio will include only this reviewed text in the prompt."/>
           <textarea aria-label="ChatGPT redacted examples" rows={5} spellCheck={false}
             maxLength={MAX_REDACTED} value={redacted}
-            placeholder="Manually paste examples with credentials, identifiers and personal data removed."
-            onChange={e=>{setRedacted(e.target.value);setConsent(false);}}/>
+            placeholder="A safe synthetic example is provided here. Edit it to match your log shape without restoring sensitive values."
+            onChange={e=>{setRedacted(e.target.value);setRedactedFromTemplate(false);setConsent(false);}}/>
+          <div className="chatgpt-redacted-template-help">
+            <span>This is a synthetic example with documentation-range IPs and placeholder identities. Replace only the structure and field names you need.</span>
+            <button type="button" onClick={()=>{setRedacted(safeExample);setRedactedFromTemplate(true);setConsent(false);}}>
+              Reset to safe example
+            </button>
+          </div>
         </label>
         <label className="auto-parser-persist-label">
           <input aria-label="Confirm redacted example review" type="checkbox"

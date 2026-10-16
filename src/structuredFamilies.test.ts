@@ -107,8 +107,8 @@ describe('reviewed standalone structured log families in local no-code preview',
     const result=preview(raw,draft);
     expect(result.counts).toMatchObject({total:1,matched:1,extracted:1,normalized:1,failures:0});
     expect(result.events[0].normalized).toMatchObject({
-      'custom.connection_id':111,'custom.source_ip':'10.10.10.10','custom.source_port':53500,
-      'custom.destination_ip':'192.168.2.2','custom.destination_port':443,
+      custom:{connection_id:111,source_ip:'10.10.10.10',source_port:53500,
+        destination_ip:'192.168.2.2',destination_port:443},
     });
     const converted=toBackendProject(draft);
     expect(converted.ok).toBe(true);

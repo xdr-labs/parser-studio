@@ -109,6 +109,22 @@ export function reviewLogicalBoundaries(source:string):LogicalBoundaryReport{
  if(!nonEmpty)return report('NO_SAMPLES',lines.length,0);
  if(lines.length>MAX_PHYSICAL_LINES||lines.some(x=>x.length>MAX_LINE_CHARS))
    return report('LIMIT_EXCEEDED',lines.length,nonEmpty);
+ // With exactly one non-empty physical line there is no boundary ambiguity to
+ // resolve: this tool answers only the multi-line grouping question, not
+ // whether the parser grammar itself is valid.
+ if(nonEmpty===1){
+   const lineIndex=lines.findIndex(line=>line.trim()!=='');
+   const only=lines[lineIndex]!.trim();
+   // A JSON opener may be a truncated pretty-printed object, so keep the
+   // bounded JSON scanner for that one case. Other one-line logs cannot have
+   // a multi-line grouping ambiguity in the current sample.
+   if(!only.startsWith('{')&&!only.startsWith('[')){
+     return report('NO_MULTILINE',lines.length,1,[{
+       kind:'UNRECOGNIZED',status:'ALREADY_SINGLE_LINE',
+       firstLine:lineIndex+1,lastLine:lineIndex+1,physicalLines:1,nonEmptyLines:1,
+     }]);
+   }
+ }
  const groups:LogicalBoundaryGroup[]=[];
  let index=0;
  const add=(kind:BoundaryKind,status:BoundaryStatus,first:number,last:number)=>{

@@ -66,6 +66,15 @@ describe('P0-AP1 bounded logical event boundary review (no native multiline clai
   expect(result.groups.map(x=>x.firstLine)).toEqual([1,2,5]);
   expect(JSON.stringify(result)).not.toContain('CUSTOMER_UNRECOGNIZED');
  });
+ it('treats one physical log line as already single-line even when its grammar is unrelated to the boundary checker',()=>{
+  const raw='date=2026-10-15 time=00:04:12 devname=FGT-EDGE01 action=blocked';
+  const result=reviewLogicalBoundaries(raw);
+  expect(result).toMatchObject({status:'NO_MULTILINE',sourceLines:1,nonEmptyLines:1,
+    accountedNonEmptyLines:1,multilineEventCount:0,ambiguousCount:0});
+  expect(result.groups).toEqual([expect.objectContaining({
+    kind:'UNRECOGNIZED',status:'ALREADY_SINGLE_LINE',firstLine:1,lastLine:1,
+  })]);
+ });
  it('returns no multiline claim for ordinary JSON Lines or blank input',()=>{
   const result=reviewLogicalBoundaries('{"action":"allow"}\n{"action":"deny"}');
   expect(result).toMatchObject({status:'NO_MULTILINE',sourceLines:2,

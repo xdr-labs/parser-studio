@@ -63,6 +63,55 @@ describe('official-catalog normalization candidates',()=>{
     expect(suggestNormalizationCandidates({severity:100},[])[0])
       .toMatchObject({source:'severity',target:'severity',confidence:'HIGH',safeForBulk:true});
   });
+  it('uses the final segment of nested source paths while preserving the full source path',()=>{
+    const suggestions=suggestNormalizationCandidates({
+      parserstudio_source:{
+        syslog:{host:'bigip-waf01',time:'00:14:27'},
+        generic:{fields:{ip_client:'203.0.113.210',dest_ip:'10.20.1.25',dest_port:'443',protocol:'HTTPS'}},
+      },
+    },[]);
+    expect(suggestions).toEqual(expect.arrayContaining([
+      expect.objectContaining({source:'parserstudio_source.syslog.host',target:'hostname',confidence:'HIGH'}),
+      expect.objectContaining({source:'parserstudio_source.generic.fields.ip_client',target:'srcip',confidence:'HIGH'}),
+      expect.objectContaining({source:'parserstudio_source.generic.fields.dest_ip',target:'dstip',confidence:'HIGH'}),
+      expect.objectContaining({source:'parserstudio_source.generic.fields.dest_port',target:'dstport',confidence:'HIGH'}),
+      expect.objectContaining({source:'parserstudio_source.generic.fields.protocol',target:'proto_name',confidence:'HIGH'}),
+      expect.objectContaining({source:'parserstudio_source.syslog.time',target:'timestamp',confidence:'REVIEW'}),
+    ]));
+  });
+
+  it('maps common EDR/XDR leaf names to documented Stellar scalar fields while leaving unknown semantics alone',()=>{
+    const suggestions=suggestNormalizationCandidates({
+      timestamp:'2026-10-15T00:07:33.425+09:00',
+      eventType:'DetectionSummaryEvent',
+      severity:80,
+      severityName:'High',
+      hostname:'WS-FINANCE-023',
+      localIP:'10.30.5.23',
+      userName:'CORP\\jsmith',
+      processName:'powershell.exe',
+      commandLine:'powershell.exe -NoProfile -EncodedCommand REDACTED',
+      parentProcess:'WINWORD.EXE',
+      sha256:'6f5902ac237024bdd0c176cb93063dc4',
+      tactic:'Execution',technique:'PowerShell',techniqueId:'T1059.001',
+      action:'Detection',
+    },[]);
+    expect(suggestions).toEqual(expect.arrayContaining([
+      expect.objectContaining({source:'timestamp',target:'timestamp',confidence:'HIGH'}),
+      expect.objectContaining({source:'eventType',target:'event_type',confidence:'HIGH'}),
+      expect.objectContaining({source:'severity',target:'severity',confidence:'HIGH'}),
+      expect.objectContaining({source:'hostname',target:'hostname',confidence:'HIGH'}),
+      expect.objectContaining({source:'localIP',target:'hostip',confidence:'HIGH'}),
+      expect.objectContaining({source:'userName',target:'username',confidence:'HIGH'}),
+      expect.objectContaining({source:'processName',target:'process_name',confidence:'HIGH'}),
+      expect.objectContaining({source:'commandLine',target:'command',confidence:'HIGH'}),
+      expect.objectContaining({source:'parentProcess',target:'parent_proc_name',confidence:'HIGH'}),
+      expect.objectContaining({source:'sha256',target:'sha256',confidence:'HIGH'}),
+      expect.objectContaining({source:'action',target:'action',confidence:'HIGH'}),
+    ]));
+    expect(suggestions.some(item=>['severityName','tactic','technique','techniqueId'].includes(item.source))).toBe(false);
+  });
+
   it('abstains when another mapping owns the official destination',()=>{
     expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},[
       {id:'1',source:'x',target:'srcip',type:'ip'},

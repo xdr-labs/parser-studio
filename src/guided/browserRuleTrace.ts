@@ -64,7 +64,7 @@ export function traceBrowserMappingRules(
       const present=lookupFieldValue(event.fields,source).found;
       if(!present){
         status='SOURCE_MISSING';
-      }else if(Object.prototype.hasOwnProperty.call(event.normalized,target)){
+      }else if(lookupFieldValue(event.normalized,target).found){
         status='MAPPED';
       }else if(event.diagnostics.some(diag=>diag?.code==='TYPE_ERROR'&&
           diag.field===source&&diag.stage==='normalize')){

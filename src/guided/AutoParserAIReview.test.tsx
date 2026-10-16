@@ -47,6 +47,8 @@ describe('AI recovery review safety',()=>{
   fireEvent.click(screen.getByRole('checkbox',{name:'Confirm reviewed AI excerpt'}));
   fireEvent.click(screen.getByRole('button',{name:'Copy AI Prompt'}));
   await waitFor(()=>expect(writeText).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole('button',{name:'Copied ✓'})).toBeTruthy();
+  expect(screen.getByRole('status')).toHaveTextContent('Reviewed prompt copied');
   const copied=String(writeText.mock.calls[0]![0]);
   expect(copied).toContain('BEGIN CANONICAL PARSER RECIPE');
   expect(copied).toContain('custom.source_ip');

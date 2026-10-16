@@ -15,6 +15,8 @@ export interface MappingRule {
 export interface ParserDraft {
   name: string;
   vendor: string;
+  /** Product/parser version entered by the author. Kept optional for old saved drafts. */
+  version?: string;
   format: Format;
   pattern: string;
   csvColumns: string;
@@ -91,6 +93,7 @@ export function createDraft(): ParserDraft {
   return {
     name: 'Untitled parser',
     vendor: 'Demo / local draft',
+    version: '1.0.0',
     format: 'auto',
     pattern: '(?<action>\\w+)\\s+src=(?<src_ip>\\S+)',
     csvColumns: 'time,action,src_ip,dst_port',

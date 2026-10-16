@@ -35,19 +35,24 @@ const ALIASES:Record<string,string>={
   'destination.ip':'dstip','destination.address':'dstip','destination.ipaddress':'dstip',
   server_ip:'dstip','server.ip':'dstip',
   'body.dst':'dstip','body.dst_ip':'dstip','body.destination_ip':'dstip',
-  spt:'srcport',src_port:'srcport',source_port:'srcport',sourceport:'srcport',
+  spt:'srcport',sport:'srcport',src_port:'srcport',source_port:'srcport',sourceport:'srcport',
   srcport:'srcport','source.port':'srcport',client_port:'srcport',
   'body.spt':'srcport','body.srcport':'srcport','body.src_port':'srcport',
-  dpt:'dstport',dst_port:'dstport',destination_port:'dstport',destinationport:'dstport',
+  dpt:'dstport',dport:'dstport',dst_port:'dstport',destination_port:'dstport',destinationport:'dstport',
   dest_port:'dstport',destport:'dstport',dstport:'dstport',
   'destination.port':'dstport',server_port:'dstport',
   'body.dpt':'dstport','body.dstport':'dstport','body.dst_port':'dstport',
   act:'action',event_action:'action',eventaction:'action','event.action':'action',
   'body.act':'action','body.action':'action',
   event_time:'timestamp',eventtime:'timestamp','event.time':'timestamp','event.timestamp':'timestamp',
-  '@timestamp':'timestamp',syslog_timestamp:'timestamp',
-  host_name:'hostname',hostname:'hostname','host.name':'hostname',device_name:'hostname',
-  devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',
+  '@timestamp':'timestamp',syslog_timestamp:'timestamp',date_time:'timestamp',time:'timestamp',
+  host_name:'hostname',hostname:'hostname',host:'hostname','host.name':'hostname',device_name:'hostname',
+  devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',unit_hostname:'hostname',
+  ip_client:'srcip',protocol:'proto_name',
+  uri:'url',request_status:'action',
+  localip:'hostip',username:'username',processname:'process_name',
+  commandline:'command',parentprocess:'parent_proc_name',
+  eventtype:'event_type',
 };
 
 function overlaps(a:string,b:string):boolean{
@@ -79,14 +84,21 @@ export function valueFitsNormalizationTarget(
   }
   return valueFitsMappingType(type,value);
 }
-function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[]):NormalizationCandidate|null{
+function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[],
+ existingGroups:Record<string,FieldGroup>):NormalizationCandidate|null{
+  const leaf=source.split('.').at(-1)??source;
   const exact=findStellarMetadataField(source);
-  const target=exact?.mappable?source:ALIASES[source.toLowerCase()];
+  const leafExact=findStellarMetadataField(leaf);
+  const target=exact?.mappable?source:
+    leafExact?.mappable?leaf:
+    ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
   if(!target)return null;
   const catalog=findStellarMetadataField(target);
   if(!catalog?.mappable||!catalog.mappingType||!catalog.group)return null;
   const current=existing.find(rule=>rule.source===source);
-  if(current&&current.target===target&&current.type===catalog.mappingType)return null;
+  const currentGroup=current?(existingGroups[current.id]??'vendor_fields'):undefined;
+  if(current&&current.target===target&&current.type===catalog.mappingType&&
+     currentGroup===catalog.group)return null;
   if(existing.some(rule=>rule.id!==current?.id&&overlaps(rule.target,target)))return null;
   const values=events.map(fields=>lookupFieldValue(fields,source)).filter(result=>result.found);
   if(values.length===0)return null;
@@ -97,8 +109,9 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   const defaultGenerated=new Map([
     ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
   ]);
-  const replaceIsGenerated=Boolean(current&&current.target.startsWith('custom.')&&(
-    current.id.startsWith('auto-')||defaultGenerated.get(current.id)===current.target
+  const replaceIsGenerated=Boolean(current&&(
+    (current.id.startsWith('auto-')&&currentGroup==='vendor_fields')||
+    (current.target.startsWith('custom.')&&defaultGenerated.get(current.id)===current.target)
   ));
   return {
     source,target,type:catalog.mappingType,group:catalog.group,
@@ -114,18 +127,28 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   };
 }
 export function suggestNormalizationCandidatesFromSuite(
-  suite:SuiteResult|undefined,existing:MappingRule[],
+  suite:SuiteResult|undefined,existing:MappingRule[],existingGroups:Record<string,FieldGroup>={},
 ):NormalizationCandidate[]{
   if(!suite?.events.length)return [];
   const fields=suite.events.map(event=>event.fields);
   const sources=new Set<string>();
   for(const event of fields)for(const path of listSafeLeafPaths(event))sources.add(path);
   const proposed:NormalizationCandidate[]=[];
-  const targets=new Set<string>();
+  const targetIndex=new Map<string,number>();
   for(const source of [...sources].slice(0,100)){
-    const candidate=candidateForSource(source,fields,existing);
-    if(!candidate||targets.has(candidate.target))continue;
-    proposed.push(candidate);targets.add(candidate.target);
+    const candidate=candidateForSource(source,fields,existing,existingGroups);
+    if(!candidate)continue;
+    const priorIndex=targetIndex.get(candidate.target);
+    if(priorIndex===undefined){
+      targetIndex.set(candidate.target,proposed.length);
+      proposed.push(candidate);
+      continue;
+    }
+    const prior=proposed[priorIndex]!;
+    // For one official destination, prefer whole-sample compatible evidence
+    // over an earlier ambiguous leaf-name match.
+    if(prior.confidence==='REVIEW'&&candidate.confidence==='HIGH')
+      proposed[priorIndex]=candidate;
   }
   return proposed;
 }

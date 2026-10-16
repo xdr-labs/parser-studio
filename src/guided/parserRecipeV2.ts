@@ -165,7 +165,7 @@ export function validateReviewableRecipe(raw:unknown):raw is ParserRecipeV2{
      i++;
    }
  }
- if(mapCount>50)return false;
+ if(mapCount>60)return false;
  let enrichmentCount=0;
  while(true){
    const stage=stages[i];

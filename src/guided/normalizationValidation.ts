@@ -1,4 +1,5 @@
 import type {MappingRule,SuiteResult} from '../model';
+import type {FieldGroup} from './contract';
 import {lookupFieldValue} from '../fieldPaths';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 import {valueFitsNormalizationTarget} from './normalizationCandidates';
@@ -27,13 +28,15 @@ function overlaps(a:string,b:string):boolean{
 }
 export function validateNormalizationMappings(
   suite:SuiteResult|undefined,mappings:MappingRule[],
+  groups:Record<string,FieldGroup>={},
 ):NormalizationFinding[]{
   if(!suite)return [];
   const findings:NormalizationFinding[]=[];
   for(const mapping of mappings){
     if(mappings.some(other=>other.id!==mapping.id&&overlaps(other.target,mapping.target)))
       findings.push({code:'TARGET_COLLISION',source:mapping.source,target:mapping.target,event:null});
-    if(!mapping.target.startsWith('custom.')){
+    const group=groups[mapping.id];
+    if(group!=='vendor_fields'&&!mapping.target.startsWith('custom.')){
       const catalog=findStellarMetadataField(mapping.target);
       if(!catalog){
         findings.push({code:'UNVERIFIED_TARGET',source:mapping.source,target:mapping.target,event:null});

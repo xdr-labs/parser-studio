@@ -40,12 +40,13 @@ describe('normalization mapping review UI',()=>{
     expect(screen.getByLabelText('Field changes only')).toHaveTextContent('192.0.2.10');
   });
 
-  it('blocks an unknown non-custom target and lets the user search the official catalog',()=>{
+  it('keeps a non-dictionary target as a vendor field and still lets the user search the official catalog',()=>{
     render(<Harness/>);
     const firstTarget=screen.getByLabelText('Stellar field 0');
     fireEvent.change(firstTarget,{target:{value:'not_a_stellar_field'}});
-    expect(screen.getByLabelText('Field mapping checks')).toHaveTextContent('This destination is not in the checked Stellar field list');
-    expect(screen.getByRole('button',{name:'Create Parser'})).toBeDisabled();
+    expect(screen.getByLabelText('Field mapping checks')).toHaveTextContent('No mapping problems found');
+    expect(screen.getByLabelText('Field mapping 1')).toHaveTextContent('Vendor field');
+    expect(screen.getByRole('button',{name:'Create Parser'})).not.toBeDisabled();
 
     fireEvent.click(screen.getAllByRole('button',{name:'Choose Stellar field'})[0]!);
     const search=screen.getByLabelText('Search Stellar field list');

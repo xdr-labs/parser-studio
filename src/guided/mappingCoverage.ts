@@ -19,7 +19,7 @@ export function mappingCoverage(suite: SuiteResult | undefined, mapping: Mapping
   };
   for (const event of events) {
     const present = lookupFieldValue(event.fields, mapping.source).found;
-    const converted = Object.prototype.hasOwnProperty.call(event.normalized, mapping.target);
+    const converted = lookupFieldValue(event.normalized, mapping.target).found;
     if (present) result.sourcePresent += 1;
     else result.missing += 1;
     if (converted) result.normalized += 1;

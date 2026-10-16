@@ -7,6 +7,7 @@ function withMethod() {
   const draft = createDraft();
   draft.format = 'json';
   draft.mappings.push({ id: 'httpmethod', source: 'http.request.method', target: 'custom.http_method', type: 'string' });
+  draft.guided={...draft.guided!,groups:{...draft.guided!.groups,httpmethod:'top_fields'}};
   return draft;
 }
 
@@ -16,7 +17,7 @@ describe('browser nested JSON field mapping parity with backend dotted lookup', 
     const sample = '{"action":"allow","src_ip":"198.51.100.21","dst_port":443,"http":{"request":{"method":"GET"}}}';
     const result = preview(sample, draft);
     expect(result.counts).toMatchObject({ total: 1, matched: 1, normalized: 1, failures: 0 });
-    expect(result.events[0].normalized['custom.http_method']).toBe('GET');
+    expect((result.events[0].normalized.custom as Record<string,unknown>).http_method).toBe('GET');
     const project = toBackendProject(draft);
     expect(project.ok).toBe(true);
     if (project.ok) expect(JSON.stringify(project.project)).not.toContain('198.51.100.21');
@@ -28,7 +29,7 @@ describe('browser nested JSON field mapping parity with backend dotted lookup', 
       action:'allow',src_ip:'198.51.100.22',dst_port:443,
       'http.request.method':'FLAT', http:{request:{method:'NESTED'}},
     });
-    expect(preview(sample, draft).events[0].normalized['custom.http_method']).toBe('FLAT');
+    expect((preview(sample, draft).events[0].normalized.custom as Record<string,unknown>).http_method).toBe('FLAT');
   });
 
   it('rejects traversal of prototype keys and array-index paths', () => {

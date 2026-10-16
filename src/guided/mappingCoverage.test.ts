@@ -22,6 +22,7 @@ describe('privacy-safe per-field mapping coverage for browser-only sample previe
     const draft = createDraft(); draft.format = 'json';
     const field = {id:'nested',source:'http.request.method',target:'custom.method',type:'string' as const};
     draft.mappings.push(field);
+    draft.guided={...draft.guided!,groups:{...draft.guided!.groups,nested:'top_fields'}};
     const data = [
       '{"src_ip":"198.51.100.10","dst_port":443,"action":"allow","http":{"request":{"method":"GET"}}}',
       '{"src_ip":"198.51.100.11","dst_port":443,"action":"deny","http":{"request":{}}}',

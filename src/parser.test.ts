@@ -136,6 +136,7 @@ describe('safe, version-neutral browser preview', () => {
     const suite = preview('{"action":"allow","src_ip":"198.51.100.2","dst_port":80}', {
       ...draft,
       mappings: [...draft.mappings, { id: 'dupe', source: 'action', target: 'custom.action', type: 'string' }],
+      guided:{...draft.guided!,groups:{...draft.guided!.groups,dupe:'top_fields'}},
     });
     expect(suite.events[0].diagnostics.some((x) => x.code === 'TARGET_COLLISION')).toBe(true);
     expect(suite.events[0].normalizedOk).toBe(false);

@@ -94,8 +94,9 @@ function backendValue(value:unknown,rule:BackendField):unknown{
  }
 }
 function browserValue(normalized:Record<string,unknown>,target:string,rule:BackendField):unknown{
- if(!Object.prototype.hasOwnProperty.call(normalized,target))untrusted();
- return backendValue(normalized[target],rule);
+ const value=lookup(normalized,target);
+ if(value===undefined)untrusted();
+ return backendValue(value,rule);
 }
 function expectedRecord(normalized:Record<string,unknown>,project:BackendParserProject):
  {record:Record<string,unknown>;eventTimeMs:number|null}{
@@ -107,9 +108,14 @@ function expectedRecord(normalized:Record<string,unknown>,project:BackendParserP
  const vendorRules=Object.values(project.normalization.vendorFields);
  if(vendorRules.length){
   if(UNSAFE.has(project.vendor))untrusted();
+  const browserVendor=normalized[project.vendor];
+  if(!browserVendor||typeof browserVendor!=='object'||Array.isArray(browserVendor))untrusted();
   const vendor=blank();
-  for(const rule of vendorRules)
-   assign(vendor,rule.normalized_name,browserValue(normalized,rule.normalized_name,rule));
+  for(const rule of vendorRules){
+   const value=lookup(browserVendor as Record<string,unknown>,rule.normalized_name);
+   if(value===undefined)untrusted();
+   assign(vendor,rule.normalized_name,backendValue(value,rule));
+  }
   if(Object.prototype.hasOwnProperty.call(record,project.vendor))untrusted();
   record[project.vendor]=vendor;
  }
@@ -117,8 +123,9 @@ function expectedRecord(normalized:Record<string,unknown>,project:BackendParserP
  for(const rule of project.enrichment??[]){
   const targets=rule.operator==='split_field'?rule.targets:[rule.target];
   for(const target of targets){
-   if(!Object.prototype.hasOwnProperty.call(normalized,target))untrusted();
-   assign(record,target,normalized[target]);
+   const value=lookup(normalized,target);
+   if(value===undefined)untrusted();
+   assign(record,target,value);
   }
  }
 

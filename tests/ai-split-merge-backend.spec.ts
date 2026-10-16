@@ -74,7 +74,7 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  await page.getByRole('button',{name:'Create Parser Files'}).click();
  expect((await generatedResponse).status()).toBe(200);
  const generated=page.getByLabel('Generated parser files');
- await expect(generated).toContainText('Two DRAFT files verified for SHA-256 integrity · Native NOT VERIFIED');
+ await expect(generated).toContainText('Two generated files have matching recorded SHA-256 integrity evidence');
 
  await page.getByLabel('Parser-building steps review').locator('summary').click();
  await page.getByRole('button',{name:'Review Staged Recipe'}).click();
