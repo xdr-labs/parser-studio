@@ -39,6 +39,18 @@ class SecurityEnvelopeTests(unittest.TestCase):
                 self.assertTrue(all(s.source_segments[0]=='body' for s in out.value_spans if s.path.startswith('body.') and s.source_segments))
                 assert_source_accounting(out)
 
+    def test_year_bearing_bsd_security_header_is_separated_before_structured_body(self):
+        prefix='<166>Oct 15 2026 00:05:03 EDGE-FW01 '
+        for payload in (CEF,LEEF,'action=deny src_ip=192.0.2.10 dst_port=443'):
+            with self.subTest(payload=payload[:8]):
+                out=parse_security_source(prefix+payload)
+                self.assertEqual('SOURCE_PARSED',out.status)
+                self.assertEqual('166',out.vendor_fields['syslog']['pri'])
+                self.assertEqual('2026',out.vendor_fields['syslog']['year'])
+                self.assertEqual('EDGE-FW01',out.vendor_fields['syslog']['hostname'])
+                self.assertIn('body',out.vendor_fields)
+                assert_source_accounting(out)
+
     def test_pri_csv_body_is_preserved_but_no_column_meaning_claim(self):
         payload='1,2026/11/14 10:11:12,THREAT,"name, a=b",,'
         out=parse_security_source('<134>'+payload)

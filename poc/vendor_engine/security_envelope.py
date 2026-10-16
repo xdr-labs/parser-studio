@@ -14,6 +14,12 @@ BSD_HEADER=re.compile(
     r'(?P<day>[0-9]{1,2}) (?P<time>[0-9]{2}:[0-9]{2}:[0-9]{2}) +'
     r'(?P<hostname>[!-~]{1,255}) +'
 )
+BSD_YEAR_HEADER=re.compile(
+    r'^(?:<(?P<pri>[0-9]{1,3})>)?(?P<month>[A-Z][a-z]{2}) +'
+    r'(?P<day>[0-9]{1,2}) +(?P<year>[0-9]{4}) +'
+    r'(?P<time>[0-9]{2}:[0-9]{2}:[0-9]{2}) +'
+    r'(?P<hostname>[!-~]{1,255}) +'
+)
 SHORT_IETF_CSV_HEADER=re.compile(r'^<(?P<pri>[0-9]{1,3})>(?P<version>1) (?P<timestamp>[^ \t\r\n]{1,64}) (?P<hostname>[!-~]{1,255}) +(?=[0-9]{1,10},)')
 PRI_HEADER=re.compile(r'^<(?P<pri>[0-9]{1,3})>[ \t]*')
 ARRAY_START=re.compile(r'\[\s*(?:[\[{}\]"0-9-]|true\b|false\b|null\b)')
@@ -38,12 +44,13 @@ def extract_security_envelope(raw:str)->tuple[Fragment,int]|None:
         except ValueError:return None
         fields=short.groupdict()
         return Fragment(fields={'syslog':fields},spans=[('syslog.'+k,*short.span(k)) for k in fields],covered=[(0,short.end())],primitive_fields=len(fields)),short.end()
-    match=BSD_HEADER.match(raw)
+    match=BSD_YEAR_HEADER.match(raw) or BSD_HEADER.match(raw)
     if match is not None:
         values=match.groupdict()
         hh,mm,ss=map(int,values['time'].split(':'))
         if (not 1<=int(values['day'])<=MONTHS.get(values['month'],0)
             or hh>23 or mm>59 or ss>59
+            or values.get('year') is not None and not 1<=int(values['year'])<=9999
             or values['pri'] is not None and int(values['pri'])>191):
             return None
     else:
