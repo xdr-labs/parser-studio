@@ -108,3 +108,27 @@ export function mineLocalStructuralHints(source:string):StructuralMiningReport{
    status:grouped?'CANDIDATES':'UNSUPPORTED_OR_LIMIT',algorithm:'BOUNDED_BROWSER_TOKEN_CLASSES',
    nativeVerified:false,targetVerified:false,customerValuesIncluded:false};
 }
+
+export type StructuralGroupSelection=
+ |{ok:true;source:string;count:number;sourceLines:number[]}
+ |{ok:false;reason:'HOLDOUT_REQUIRED'|'SOURCE_MISMATCH'|'SOURCE_LIMIT'};
+
+export function materializeStructuralGroupSource(
+ source:string,group:StructuralHint):StructuralGroupSelection{
+ if(group.status!=='REVIEW_ONLY'||group.count<3||group.sourceLines.length!==group.count)
+   return {ok:false,reason:group.count<3?'HOLDOUT_REQUIRED':'SOURCE_MISMATCH'};
+ if(group.sourceLines.some((line,index)=>!Number.isInteger(line)||line<1||
+   (index>0&&line<=group.sourceLines[index-1]!)))
+   return {ok:false,reason:'SOURCE_MISMATCH'};
+ const records=splitEvents(source,'single-line',MAX_EVENTS+1);
+ if(!records.length||records.length>MAX_EVENTS)
+   return {ok:false,reason:'SOURCE_LIMIT'};
+ const byLine=new Map(records.map(record=>[record.line,record.raw] as const));
+ const selected=group.sourceLines.map(line=>byLine.get(line));
+ if(selected.some(value=>value===undefined))
+   return {ok:false,reason:'SOURCE_MISMATCH'};
+ const groupedSource=(selected as string[]).join('\n');
+ if(new TextEncoder().encode(groupedSource).byteLength>MAX_DATASET_BYTES)
+   return {ok:false,reason:'SOURCE_LIMIT'};
+ return {ok:true,source:groupedSource,count:selected.length,sourceLines:[...group.sourceLines]};
+}

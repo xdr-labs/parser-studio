@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {mineLocalStructuralHints} from './localPatternMining';
+import {materializeStructuralGroupSource,mineLocalStructuralHints} from './localPatternMining';
 
 describe('P1-AP5 isolated bounded privacy-safe structural hints',()=>{
  it('clusters only unknown records without retaining arbitrary words or identifiers',()=>{
@@ -57,5 +57,16 @@ describe('P1-AP5 isolated bounded privacy-safe structural hints',()=>{
    const report=mineLocalStructuralHints(values);
    expect(report.groups.length).toBeLessThanOrEqual(12);
    expect(report.groups.every(x=>!x.fingerprint.includes('PRIVATE_NAME'))).toBe(true);
+ });
+ it('materializes only an explicitly selected group with enough independent examples',()=>{
+   const source=['alpha one','skip me','alpha two','alpha three'].join('\n');
+   const eligible={fingerprint:'TEST <WORD>',count:3,tokenCount:2,
+     sourceLines:[1,3,4],status:'REVIEW_ONLY' as const};
+   expect(materializeStructuralGroupSource(source,eligible)).toEqual({
+     ok:true,source:'alpha one\nalpha two\nalpha three',count:3,sourceLines:[1,3,4]});
+   expect(materializeStructuralGroupSource(source,{...eligible,count:2,sourceLines:[1,3]}))
+     .toEqual({ok:false,reason:'HOLDOUT_REQUIRED'});
+   expect(materializeStructuralGroupSource(source,{...eligible,sourceLines:[1,3,5]}))
+     .toEqual({ok:false,reason:'SOURCE_MISMATCH'});
  });
 });
