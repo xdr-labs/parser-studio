@@ -262,3 +262,173 @@ The hypothesis is validated.
 The measured gain is large enough to justify product integration, and the successful design preserves the existing fail-closed regression behavior.
 
 The next product task should be a small, reviewable integration of the envelope stage into the existing multi-pass Funnel pipeline, followed by the existing broad Full User E2E corpus. The active development worktree should not be replaced by this PoC branch.
+
+
+## Extended ecosystem survey
+
+The initial convergence was checked against a broader set of implementation families rather than relying on one collector or one SIEM.
+
+### Protocol and collector layer
+
+- RFC 3164 defines PRI, then a HEADER containing timestamp and hostname, then the remaining MSG/content. It also documents real-world timestamp/header deviations seen in relays and devices.
+- RFC 5424 makes the boundary explicit as HEADER + STRUCTURED-DATA + optional MSG.
+- OpenTelemetry Collector's Syslog operator supports RFC 3164, RFC 5424, and a framing-only `none` mode; in that mode the payload remains message data and a leading PRI can still be decoded.
+- Vector explicitly attempts best-effort parsing across RFC 6587, RFC 5424, RFC 3164, and common deviations.
+- rsyslog's RFC3164 parser has compatibility controls such as `detect.YearAfterTimestamp` and headerless detection rather than requiring every producer to emit one exact header shape.
+- `StephenWakely/syslog-loose` contains the explicit implementation strategy "attempt to parse 5424 first, if this fails move on to 3164."
+
+These are independent confirmations that transport/framing and Syslog envelope recognition should be upstream of product-specific payload parsing.
+
+### Security analytics / SIEM layer
+
+- Wazuh decoder `prematch` evaluates the content after a Syslog-like header, which is the same header/body separation used by this PoC.
+- Splunk Connect for Syslog identifies PAN-OS with an MSG-format-based filter, then assigns product/log-family sourcetypes such as `pan:traffic`, `pan:threat`, `pan:system`, and `pan:config`. Splunk's PAN-OS field/classification pipeline also explicitly removes the Syslog header before field extraction.
+- Microsoft Sentinel ASIM uses source-specific parsers beneath unifying parsers and normalizes the results into common schemas. Its parser-development guidance is explicitly Filter -> Parse -> Prepare fields and recommends representative samples and separate handling for parsing variants.
+- Google Security Operations transforms source-specific raw logs into UDM, keeps parser identity tied to a log type, and supports parser extensions for `SYSLOG + JSON`, `SYSLOG + XML`, and `SYSLOG + CSV`. That is direct evidence for treating Syslog and the nested body format as composable layers rather than one complete-line regex.
+- Elastic Dissect recommends delimiter-based extraction for reliably repeated structured text and reserves Grok/regex for shapes that actually need regex flexibility.
+
+The common architecture is therefore:
+
+`framing -> envelope -> source/body parser -> semantic mapping -> normalized schema`
+
+rather than:
+
+`one vendor-specific full-line regex -> normalized fields`.
+
+### Vendor evidence
+
+Palo Alto Networks' official Traffic log documentation defines an ordered positional body beginning with FUTURE_USE, Receive Time, Serial Number, Type, subtype, Generated Time, source/destination addresses, and subsequent fields. The product documentation also distinguishes multiple PAN-OS log families.
+
+Splunk independently classifies PAN-OS message bodies into the same broad families after Syslog ingestion. Together these sources justify:
+
+1. validating a PAN-OS structural signature at the body layer;
+2. preserving every CSV value first;
+3. selecting semantic field dictionaries only after the log type is known;
+4. not duplicating the PAN body parser for every outer timestamp variant.
+
+### Research and template mining
+
+The Drain paper evaluates an online fixed-depth parse-tree approach on more than 10 million raw log messages and reports strong parsing accuracy and improved online runtime versus the compared online parser.
+
+Drain3's maintained implementation adds a directly relevant operational recommendation: template-mining accuracy can improve when structured fields such as timestamp, hostname, and severity are removed before the free-text portion is mined.
+
+That supports using template mining only as a late fallback for residual free text. It should not replace deterministic Syslog, JSON, CEF, LEEF, KV, CSV, or known vendor-body grammars.
+
+No third-party parser code was copied into this PoC. The external implementations were used as architecture and behavior references; the candidate code is independently implemented and covered by local deterministic tests.
+
+## Stage 2 — decouple vendor bodies from the outer Syslog wrapper
+
+The first envelope candidate exposed a second architectural coupling: several existing vendor parsers still embedded the outer RFC3164 timestamp/hostname directly inside their vendor grammar.
+
+A dedicated cross-wrapper test applied six existing security body families to five valid outer timestamp variants:
+
+- Cisco ASA
+- Juniper RT_FLOW
+- Check Point bracket/colon KV
+- Cisco ISE comma/KV
+- WatchGuard
+- Sophos KV
+
+Before body/header decoupling, only 16 / 30 combinations were structurally extracted even though all 30 envelopes were valid.
+
+The PoC then extracted bounded body-only helpers and invoked them only after a validated Syslog envelope. The same test became:
+
+| Cross-wrapper metric | Stage 1 | Stage 2 |
+| --- | ---: | ---: |
+| Valid envelope combinations | 30 / 30 | 30 / 30 |
+| Structurally extracted vendor combinations | 16 / 30 (53.3%) | 30 / 30 (100%) |
+| Cisco ASA | 3 / 5 | 5 / 5 |
+| Juniper RT_FLOW | 1 / 5 | 5 / 5 |
+| Check Point bracket/colon KV | 0 / 5 | 5 / 5 |
+| Cisco ISE comma/KV | 5 / 5 | 5 / 5 |
+| WatchGuard | 2 / 5 | 5 / 5 |
+| Sophos KV | 5 / 5 | 5 / 5 |
+
+This confirms that the timestamp problem and vendor-body problem are the same architectural issue at two different layers: grammars were coupled across boundaries that should be composable.
+
+## Large deterministic matrix
+
+A generated deterministic matrix crosses:
+
+- 5 valid PRI values;
+- 6 body families: PAN-OS CSV, Fortinet KV, JSON, CEF, LEEF, pfSense CSV;
+- 7 outer wrappers: RFC3164, year-before-time, year-after-time, RFC3339 Z, RFC3339 with offset/fraction, separated ISO date/time/timezone, and slash-date.
+
+Result:
+
+- 210 / 210 envelope parses
+- 210 / 210 structured body parses
+- 0 structural failures
+
+A separate RFC5424 matrix exercises JSON, CEF, and LEEF after RFC5424 structured-data boundaries.
+
+Boundary-invalid matrix inputs include invalid PRI, day, hour, minute, second, leap date, timezone, RFC5424 version, structured data, newline, and NUL cases. None were accepted by the envelope layer.
+
+## Adversarial fail-closed findings
+
+Broadening acceptance initially exposed an important failure mode: a malformed known vendor record could fail its strict parser and then be accidentally accepted by a looser generic CSV/message parser.
+
+Examples found by the adversarial suite included:
+
+- PAN-OS-like CSV with an impossible Receive Time;
+- PAN-OS-like CSV with an unknown log type;
+- Juniper RT_FLOW with an unsupported event name;
+- malformed ASA variants;
+- malformed Check Point bracket KV;
+- malformed CEF/LEEF/JSON/KV bodies.
+
+The final PoC adds a negative guard:
+
+- when a body has a strong known-vendor signature, strict validation failure is terminal for that structural path;
+- the event must not silently fall through and become a weaker generic "success";
+- preserving an incomplete payload as a message is allowed only when the output is explicitly a message/partial result rather than structured traffic fields.
+
+After the guard:
+
+- adversarial suite: 31 / 31 PASS;
+- cross-wrapper malformed-vendor suite: 9 / 9 rejected as structured successes;
+- matrix-invalid suite: 16 / 16 rejected;
+- fixed 12-event malformed corpus: 0 accepted.
+
+## Final implementation recommendation
+
+The PoC now supports a stronger product architecture than the original proposal:
+
+1. **Event framing** — RFC6587/newline/multiline belongs here.
+2. **Syslog envelope** — PRI/facility/severity, timestamp family, hostname, app/procid/msgid, structured data.
+3. **Body dialect** — JSON, CEF, LEEF, KV, CSV, residual text.
+4. **Vendor/log-family body grammar** — PAN-OS, ASA, Juniper, WatchGuard, Check Point, and future families, independent from the outer wrapper.
+5. **Source-preserving extraction** — retain every source value before semantics.
+6. **Semantic mapping** — apply official vendor dictionaries or reviewed mappings.
+7. **Normalization** — map to Stellar/portable normalized fields only after extraction succeeds.
+8. **Residual free-text fallback** — optional Drain-style/template mining after deterministic structure has been removed.
+
+The product should keep separate result states for:
+
+- envelope recognized;
+- body structure recognized;
+- vendor family recognized;
+- source values preserved;
+- semantic mapping complete;
+- normalization complete.
+
+This prevents "header parsed" from being reported as "event fully parsed" and prevents a malformed known vendor message from becoming a generic false positive.
+
+
+## Final local qualification
+
+Final candidate validation on the isolated PoC clone:
+
+- full Vitest suite: 94 test files PASS;
+- full Vitest assertions: 772 / 772 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- deterministic Syslog matrix: 210 / 210 structured combinations PASS;
+- vendor cross-wrapper matrix: 30 / 30 PASS;
+- adversarial Syslog suite: 31 / 31 PASS;
+- malformed vendor-body suite: 9 / 9 does not become a structured success;
+- original Generic Structural focused regression: 29 / 29 PASS.
+
+The Vite production build reports only the repository's existing large-chunk advisory; it is not a parser correctness failure.
+
+This remains a PoC branch. It is intentionally not merged into the active product development worktree. Product integration should cherry-pick/reimplement the small architectural units into the active Funnel pipeline after reviewing the active branch's concurrent changes.
