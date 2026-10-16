@@ -406,3 +406,16 @@ Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retai
 - [x] NORM-07: browser Full User E2E covers EDR/XDR/NDR/EPP/AWS CloudTrail/AWS WAF/IPS/VPN with 8/8 normalization journeys PASS. Evidence: 89 files / 663 unit tests PASS; production build PASS; generic Chromium 50 PASS / 28 live-backend-gated SKIP / 0 FAIL; exact pinned live-backend suite 29/29 PASS; final exact-head GitHub Actions run **#38843728978 SUCCESS** on `7f2015de6ead10ad5bdaa1641ae30c92ec9c822c`.
 
 **P0-NORM engineering scope: COMPLETE.** Owner visual acceptance is tracked separately under R3; real Stellar DP/sensor execution is not part of this roadmap.
+
+
+## 2026-10-16 Competitive parser workflow increment
+
+A focused comparison against commercial parser workflows and public parser/normalization projects produced five bounded product changes. These changes extend the existing accuracy-first Multi-Pass / Generic Structural base; they do not replace it and they do not create a native Fluentd or live Stellar verification claim.
+
+- [x] **Vendor schema registry with drift preservation.** Ordered PAN-OS TRAFFIC recognition is separated from the generic Syslog/CSV layer. Recognition uses reviewed timestamp/IP/port/type/sequence/action-flag anchors instead of an exact total column count. Known columns retain semantic names while later unreviewed columns are preserved as vendor_extra_NNN. A numeric padding position cannot be mistaken for the core sequence/action-flags pair.
+- [x] **Explainable parser path.** Review Fields shows Event boundary → Syslog envelope → Message format → Source extraction → Destination mapping → Verification scope. The panel can show the bounded Multi-Pass engine path as technical evidence and explicitly keeps native Fluentd / Stellar target verification separate.
+- [x] **Automatic Parser Set for explicit mixed families.** When every Multi-Pass event is source-parsed but explicit family evidence shows incompatible event families, beginner mode blocks one-parser completion and offers exact source-accounted family subsets instead. Any unaccounted event fails closed to insufficient evidence.
+- [x] **Mapping-only parser extension artifact.** Reopened Parser Studio projects can package source-stable mapping additions or target/type/group corrections as a base-SHA-bound review artifact instead of rewriting extraction logic. Mapping removals, source rewrites, parser-structure changes, unsafe groups/paths and base revision mismatch are rejected.
+- [x] **Bounded synthetic robustness checks.** Create Parser can locally generate syntax-equivalent JSON key-order, simple KV token-order, safe CSV quoting and RFC3164 one-digit-day-spacing variants. Results compare normalized output while excluding preserved raw copies. These checks are optional browser diagnostics and never substitute for the normal whole-sample final regression or native verification.
+
+Acceptance remains accuracy-first and fail-closed: every source event must stay accounted for, original extracted values remain preserved, mixed families are not coerced into one rule, generated synthetic variants never alter the user sample, and no local browser success is labeled as target verification.

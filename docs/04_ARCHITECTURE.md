@@ -88,3 +88,16 @@ A formal JSON Schema is an M1 deliverable after inspecting owner-provided real p
 - Unsupported operators cannot be exported with Verified status.
 - Every regression result is tied to project revision, fixture hash, runtime profile and actual output.
 - No user-controlled sample or regex can access host files/secrets/network outside runner permissions.
+
+
+## 10. Bounded schema, family and extension layers
+
+The accuracy-first parser path uses three separate concepts that must not be collapsed into one vendor-specific parser:
+
+1. **Envelope/extraction layer:** Syslog and structural framing parse transport/header structure before vendor payload interpretation.
+2. **Vendor schema registry:** reviewed ordered layouts can assign semantic source names only after bounded anchor checks. Later unreviewed columns remain preserved vendor fields; total column count alone is not a schema identity.
+3. **Parser-set routing:** when explicitly source-parsed events identify different families, each family is handled as an exact source-accounted subset instead of widening one extractor across incompatible shapes.
+
+A mapping-only extension is a separate overlay bound to the exact base draft SHA-256. It may add a mapping or change destination/type/group for an unchanged source field, but it cannot remove mappings, rebind source paths, change extraction structure, or imply native/target compatibility.
+
+Browser-generated robustness variants are diagnostic fixtures, not new training data and not vendor truth. They are restricted to syntax-equivalent transformations with bounded size and compare normalized outputs while ignoring preserved raw copies. Their PASS state never changes native Fluentd or Stellar target evidence.

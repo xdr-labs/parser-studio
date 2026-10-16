@@ -176,3 +176,23 @@
 .parser-identity-filename small{font-size:9px;line-height:1.45;color:#72868e}
 @media(max-width:1000px){.parser-identity-card{grid-template-columns:1fr}.parser-identity-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.parser-identity-fields{grid-template-columns:1fr}}
+
+.parser-explain{margin:14px 0;border:1px solid #d6e5e9;border-radius:9px;background:#fbfdfe;padding:10px 12px}
+.parser-explain>summary{cursor:pointer;font-weight:700;color:#245f70;font-size:12px;display:flex;align-items:center;gap:6px}
+.parser-explain>p{font-size:11px;color:#657f89;background:transparent;line-height:1.55;margin:8px 0 10px}
+.parser-explain-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.parser-explain-step{border:1px solid #dce8eb;border-radius:7px;padding:9px;background:#fff;min-width:0}
+.parser-explain-step.pass{border-left:3px solid #3f8f80}
+.parser-explain-step.review{border-left:3px solid #b98835}
+.parser-explain-step.info{border-left:3px solid #718b98}
+.parser-explain-step-heading{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.parser-explain-step-heading strong{font-size:11px;color:#2d5967}
+.parser-explain-step-heading span{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#728994;white-space:nowrap}
+.parser-explain-step>p{font-size:10px;line-height:1.45;color:#4e6c78;margin:7px 0;background:transparent;padding:0}
+.parser-explain-details{display:grid;gap:4px}
+.parser-explain-details code{font-size:9px;line-height:1.35;white-space:normal;overflow-wrap:anywhere;background:#f2f6f7;border-radius:4px;padding:4px 6px;color:#45636e}
+
+.parser-extension-panel{margin:14px 0;border:1px solid #d7e4e8;border-radius:9px;background:#f9fcfd;padding:12px;display:grid;gap:10px}
+.parser-extension-panel>div>strong{font-size:12px;color:#285f70}
+.parser-extension-panel>div>p,.parser-extension-panel>p{font-size:10px;line-height:1.5;color:#5d7782;margin:5px 0 0}
+.parser-extension-panel>button,.parser-extension-panel .auto-parser-result button{justify-self:start}

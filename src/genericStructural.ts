@@ -1,5 +1,6 @@
 import {extractStructuredFamily} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
+import {matchOrderedVendorSchema} from './vendorSchemaRegistry';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -581,41 +582,8 @@ function positionalCsvValues(text:string):string[]|null{
   return values;
 }
 
-const PANOS_TRAFFIC_53=[
-  'domain','receive_time','serial','type','subtype','config_version','time_generated',
-  'src','dst','natsrc','natdst','rule','srcuser','dstuser','app','vsys','from','to',
-  'inbound_if','outbound_if','logset','time_received','sessionid','repeatcnt','sport',
-  'dport','natsport','natdport','flags','protocol','action','bytes','bytes_sent',
-  'bytes_received','packets','start_time','elapsed','category','seqno','actionflags',
-  'srcloc','dstloc','cpadding','pkts_sent','pkts_received','session_end_reason',
-  'dg_hier_level_1','dg_hier_level_2','dg_hier_level_3','dg_hier_level_4',
-  'vsys_name','device_name','action_source',
-] as const;
-const PANOS_TRAFFIC_54=[
-  ...PANOS_TRAFFIC_53.slice(0,38),'padding',...PANOS_TRAFFIC_53.slice(38),
-] as const;
-
 function panosTrafficFields(values:string[]):Record<string,string>|null{
-  if(values.length<53||values[3]!=='TRAFFIC')return null;
-  const datetime=/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/;
-  const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
-  const validIp=(value:string)=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255);
-  if(!datetime.test(values[1]??'')||!datetime.test(values[6]??'')||
-     !datetime.test(values[21]??'')||!datetime.test(values[35]??'')||
-     !validIp(values[7]??'')||!validIp(values[8]??'')||
-     !validIp(values[9]??'')||!validIp(values[10]??''))return null;
-  for(const index of [24,25,26,27]){
-    const value=values[index]??'';
-    if(!/^\d{1,5}$/.test(value)||Number(value)>65535)return null;
-  }
-  if(!/^[A-Za-z0-9_.-]{1,24}$/.test(values[29]??'')||
-     !/^[A-Za-z0-9_. -]{1,64}$/.test(values[30]??''))return null;
-  const names=values.length>=54?PANOS_TRAFFIC_54:PANOS_TRAFFIC_53;
-  const fields:Record<string,string>={};
-  values.forEach((value,index)=>{
-    fields[names[index]??('field_'+String(index))]=value;
-  });
-  return fields;
+  return matchOrderedVendorSchema(values)?.fields??null;
 }
 
 function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{

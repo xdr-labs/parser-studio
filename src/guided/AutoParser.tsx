@@ -39,6 +39,10 @@ import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
+import ParserExplainPanel from './ParserExplainPanel';
+import ParserExtensionPanel from './ParserExtensionPanel';
+import {materializeParserSetFamily,planParserSet,type ParserSetFamilyGroup} from './parserSetPlanner';
+import {buildRobustnessVariants,compareRobustnessOutcome,type RobustnessOutcome} from './robustnessChecks';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 
@@ -71,7 +75,8 @@ type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
 type ParserSetOrigin={
  source:string;datasetName:string;sourceCount:number;draft:ParserDraft;
- fingerprint:string;groupCount:number;groupSource:string;
+ kind:'STRUCTURAL'|'FAMILY';label:string;fingerprint:string;
+ groupCount:number;groupSource:string;
 };
 type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
  report?:NativeProjectVerificationReport;message:string};
@@ -155,6 +160,10 @@ export default function AutoParser({
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [parserSetOrigin,setParserSetOrigin]=useState<ParserSetOrigin|null>(null);
  const parserSetOriginRef=useRef<ParserSetOrigin|null>(null);
+ const [extensionBase,setExtensionBase]=useState<{draft:ParserDraft;label:string}|null>(null);
+ const [robustnessResult,setRobustnessResult]=useState<{key:string;outcomes:RobustnessOutcome[]}|null>(null);
+ const [robustnessBusy,setRobustnessBusy]=useState(false);
+ const [robustnessNotice,setRobustnessNotice]=useState('');
  const [drainAvailability,setDrainAvailability]=useState<'UNCHECKED'|'ERROR'|Drain3Availability>('UNCHECKED');
  const [drainConsent,setDrainConsent]=useState(false);
  const [drainHoldout,setDrainHoldout]=useState('');
@@ -183,6 +192,7 @@ export default function AutoParser({
    setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
    setSaveAfterApproval(false);
+   setRobustnessResult(null);setRobustnessBusy(false);setRobustnessNotice('');
    setBusy(false);setMessage('');
  },[identity]);
  useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
@@ -304,6 +314,7 @@ export default function AutoParser({
  const currentPair=pair?.key===identity?pair.value:null;
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
+ const currentRobustness=robustnessResult?.key===identity?robustnessResult.outcomes:null;
  const currentRecipe=recipe?.key===identity?recipe.value:null;
  const currentRecipeCompiled=recipeCompiled?.key===identity?recipeCompiled.value:null;
  const currentNativeEvidence=nativeEvidence?.key===identity?nativeEvidence:null;
@@ -319,6 +330,11 @@ export default function AutoParser({
  const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
+ const robustnessVariants=useMemo(()=>buildRobustnessVariants(suite?.events??[],draft),[suite,draft]);
+ const explainMultiPassSyntax=multiPass?.raw===sample?multiPass.events[selected]?.preview.syntax:undefined;
+ const parserSetPlan=useMemo(()=>multiPass?.raw===sample?planParserSet(multiPass.events):null,
+   [multiPass,sample]);
+ const multiFamilySetRequired=!advanced&&!parserSetOrigin&&parserSetPlan?.status==='MULTI_FAMILY';
  const multiPassSourceComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
    multiPass.events.every(event=>event.preview.status==='SOURCE_PARSED');
  const parserRuleReviewEventIndexes=report.events.map((event,index)=>
@@ -335,7 +351,8 @@ export default function AutoParser({
    suite.counts.total>0&&suite.counts.matched===suite.counts.total&&
    suite.counts.extracted===suite.counts.total&&suite.counts.failures===0;
  const neutralCsvComplete=csvReviewActive&&csvApproved&&csvNamesValid&&browserExtractionComplete;
- const beginnerResolved=beginnerAuthoritativeComplete||reviewedCandidateComplete||neutralCsvComplete;
+ const beginnerResolved=!multiFamilySetRequired&&
+   (beginnerAuthoritativeComplete||reviewedCandidateComplete||neutralCsvComplete);
  const explicitBackendProject=useMemo(()=>draft.format==='auto'?null:toBackendProject(draft),[draft]);
  const explicitDraftCompilable=useMemo(()=>{
    if(!browserSuiteComplete||!explicitBackendProject?.ok||capability?.source!==sample)return false;
@@ -391,6 +408,30 @@ export default function AutoParser({
    }catch(error){
      if(token===epoch.current)setMessage(backendReviewMessage(error));
    }finally{if(token===epoch.current)setBusy(false);}
+ }
+ async function runSyntheticRobustnessChecks(){
+   if(robustnessBusy||busy||pending||!suite||!robustnessVariants.length)return;
+   const token=++epoch.current,expected=identity;
+   setRobustnessBusy(true);setRobustnessResult(null);setRobustnessNotice('');
+   try{
+     const outcomes:RobustnessOutcome[]=[];
+     for(const variant of robustnessVariants){
+       if(token!==epoch.current||currentRef.current!==expected)return;
+       const original=suite.events.find(event=>event.line===variant.eventLine);
+       if(!original)throw new Error('SOURCE_EVENT_MISSING');
+       const candidate=await runPreview(draft,variant.source);
+       if(token!==epoch.current||currentRef.current!==expected)return;
+       const mutated=candidate.events.length===1?candidate.events[0]:undefined;
+       outcomes.push(compareRobustnessOutcome(variant,original,mutated));
+     }
+     if(token===epoch.current&&currentRef.current===expected)
+       setRobustnessResult({key:expected,outcomes});
+   }catch{
+     if(token===epoch.current&&currentRef.current===expected)
+       setRobustnessNotice('Synthetic robustness checks could not finish. The current parser and source logs were not changed.');
+   }finally{
+     if(token===epoch.current&&currentRef.current===expected)setRobustnessBusy(false);
+   }
  }
  async function generate(){
    if(!canGenerate||!confirmed()||!suite)return;
@@ -593,7 +634,8 @@ export default function AutoParser({
      return;
    }
    const origin:ParserSetOrigin={source:sample,datasetName,sourceCount:report.sourceCount,draft,
-     fingerprint:group.fingerprint,groupCount:selectedGroup.count,groupSource:selectedGroup.source};
+     kind:'STRUCTURAL',label:'Similar structural shape',fingerprint:group.fingerprint,
+     groupCount:selectedGroup.count,groupSource:selectedGroup.source};
    parserSetOriginRef.current=origin;setParserSetOrigin(origin);
    setSample(selectedGroup.source);
    setDatasetName((datasetName||'Logs')+' · Parser Set group');
@@ -606,6 +648,22 @@ export default function AutoParser({
    parserSetOriginRef.current=null;setParserSetOrigin(null);
    setSample(origin.source);setDatasetName(origin.datasetName);
    setDraft(origin.draft);setStep(0);setSelected(0);setMultiPass(null);setMultiPassEvent(0);
+   setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
+ }
+ function useParserFamilyGroup(group:ParserSetFamilyGroup){
+   if(parserSetOrigin||busy||pending||!multiPass||multiPass.raw!==sample)return;
+   const selectedGroup=materializeParserSetFamily(sample,multiPass.events,group);
+   if(!selectedGroup.ok){
+     setMessage('Parser Studio could not reproduce this event-family group from the unchanged source.');
+     return;
+   }
+   const origin:ParserSetOrigin={source:sample,datasetName,sourceCount:report.sourceCount,draft,
+     kind:'FAMILY',label:group.label,fingerprint:group.id,
+     groupCount:selectedGroup.count,groupSource:selectedGroup.source};
+   parserSetOriginRef.current=origin;setParserSetOrigin(origin);
+   setSample(selectedGroup.source);
+   setDatasetName((datasetName||'Logs')+' · '+group.family+' parser');
+   setStep(0);setSelected(0);setMultiPass(null);setMultiPassEvent(0);
    setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
  }
  async function previewRecipe(){
@@ -687,7 +745,9 @@ export default function AutoParser({
    }catch{setMessage('Only bounded, valid UTF-8 text files can be opened locally.');}
  }
  function restoreExistingProject(next:ParserDraft,label:string){
-   parserSetOriginRef.current=null;setParserSetOrigin(null);setDraft(next);setSample('');setDatasetName(label);setSelected(0);setStep(0);
+   parserSetOriginRef.current=null;setParserSetOrigin(null);
+   setExtensionBase({draft:structuredClone(next),label});
+   setDraft(next);setSample('');setDatasetName(label);setSelected(0);setStep(0);
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
@@ -709,7 +769,9 @@ export default function AutoParser({
    setMultiPass(review);
    // Beginner mode must not stop at a second "Use extracted fields" click when
    // the deeper parser already has a complete bounded compiler grammar.
+   const familyPlan=planParserSet(review.events);
    if(!advanced&&draft.format==='auto'&&report.unsupported>0&&
+      familyPlan.status!=='MULTI_FAMILY'&&
       review.events.length>0&&review.events.every(event=>event.preview.status==='SOURCE_PARSED')){
      const automatic=buildAutomaticGenericStructuralDraft(original,draft);
      if(automatic){
@@ -842,7 +904,7 @@ export default function AutoParser({
          <small>{datasetName} · Maximum 64 KiB / 500 events</small>
        </div>
        {parserSetOrigin&&<div className="auto-parser-note beginner-essential-note" aria-label="Separate log group context">
-         <strong>Working on one matching log group · {parserSetOrigin.groupCount} events
+         <strong>Working on one parser-set group · {parserSetOrigin.label} · {parserSetOrigin.groupCount} events
            <HelpTip label="Why is this a separate group?"
              text="These events repeat the same basic structure. Parser Studio separated them so a parser for one shape does not accidentally break different-looking events."/></strong>
          <p>This is an exact subset of the original {parserSetOrigin.sourceCount} logs.
@@ -880,6 +942,23 @@ export default function AutoParser({
          onUseNeutralCsvColumns={suggestNeutralCsvColumns}
          protectedSourceValuesByEvent={protectedSourceValuesByEvent}
            protectedResidualTextByEvent={protectedResidualTextByEvent}/>}
+       {!advanced&&!parserSetOrigin&&parserSetPlan?.status==='MULTI_FAMILY'&&
+         <div className="auto-parser-warning" aria-label="Automatic parser set">
+           <strong>Multiple event families detected — create a parser set
+             <HelpTip label="Why create a parser set?"
+               text="These events have different explicit parser families. Parser Studio keeps them in separate parsers instead of forcing one rule to fit incompatible log shapes."/></strong>
+           <p>Parser Studio accounted for all {parserSetPlan.eventCount} events and found {parserSetPlan.groups.length}
+             {' '}distinct families. Choose one family, finish its parser, then return to the original sample for the others.</p>
+           <div className="stellar-span-actions">
+             {parserSetPlan.groups.map(group=><button type="button" key={group.id}
+               aria-label={'Analyze parser-set family '+group.family}
+               onClick={()=>useParserFamilyGroup(group)}>
+               {group.label} · {group.count} event{group.count===1?'':'s'}
+             </button>)}
+           </div>
+           {parserSetPlan.groups.some(group=>group.count<2)&&
+             <small>One or more families have only one example. Parser Studio can isolate them now, but add more examples before final qualification when possible.</small>}
+         </div>}
        {!advanced&&!parserSetOrigin&&parserSetCandidates.length>0&&currentStructural&&
          <div className="auto-parser-warning" aria-label="Similar log groups">
            <strong>Different log shapes were found
@@ -1266,6 +1345,7 @@ export default function AutoParser({
            {records.map((entry)=><option key={entry.id} value={entry.id}>
              Event {entry.line} · {friendlyEventStatus(entry.status)}</option>)}
          </select></label>
+       {chosen&&<ParserExplainPanel event={chosen} draft={draft} multiPassSyntax={explainMultiPassSyntax}/>}
        <div className="stellar-review-columns">
        {chosen&&<div className="auto-parser-preview" aria-label="Browser-only event inspector">
          <div><h3>Original log</h3><pre>{chosen.raw}</pre></div>
@@ -1308,10 +1388,14 @@ export default function AutoParser({
          </button>
        </div>
      </section>}
-     {step===2&&<NormalizationMappingReview
-       draft={draft} setDraft={setDraft} suite={suite}
-       selected={selected} setSelected={setSelected} pending={pending}
-       onBack={()=>setStep(1)} onContinue={()=>{setNavigationHint('');setFurthestStep(3);setStep(3);}}/>}
+     {step===2&&<>
+       <NormalizationMappingReview
+         draft={draft} setDraft={setDraft} suite={suite}
+         selected={selected} setSelected={setSelected} pending={pending}
+         onBack={()=>setStep(1)} onContinue={()=>{setNavigationHint('');setFurthestStep(3);setStep(3);}}/>
+       {extensionBase&&<ParserExtensionPanel baseDraft={extensionBase.draft}
+         currentDraft={draft} baseLabel={extensionBase.label}/>}
+     </>}
      {step===3&&<section aria-label="Create Parser stage">
        <h2>Create Parser <HelpTip label="Create Parser"
          text="This is the final local step. Parser Studio tests the current sample again and, if everything still passes, creates the files you can download. It does not install them automatically."/></h2>
@@ -1329,9 +1413,34 @@ export default function AutoParser({
        {!confirmed()&&<p className="auto-parser-warning" role="note">
          Not all sample events passed. Review detected fields and mappings above
          before generating your parser.</p>}
+       <details className="auto-parser-recipe" open aria-label="Synthetic robustness checks">
+         <summary className="beginner-tool-summary">Check common format variations
+           <HelpTip label="Common format variations"
+             text="Parser Studio creates a few safe, syntax-equivalent local variations such as JSON key order, simple key/value order, CSV quoting, or RFC3164 day spacing. It checks whether the current parser still produces the same normalized output."/></summary>
+         <span className="beginner-tool-when">Optional confidence check · generated locally from the current reviewed sample.</span>
+         <p>These checks do not change your source logs or parser. They are diagnostic browser tests only and do not prove vendor, Fluentd, or live Stellar compatibility.</p>
+         {robustnessVariants.length
+           ?<button type="button" disabled={robustnessBusy||busy||pending}
+             onClick={()=>{void runSyntheticRobustnessChecks();}}>
+             {robustnessBusy?'Checking format variations…':
+               'Run '+robustnessVariants.length+' Synthetic Robustness Check'+(robustnessVariants.length===1?'':'s')}
+           </button>
+           :<small>No safe syntax-equivalent variation is available for this sample. Final sample regression still runs below.</small>}
+         {robustnessNotice&&<p role="status">{robustnessNotice}</p>}
+         {currentRobustness&&<div className="auto-parser-result" role="status"
+           aria-label="Synthetic robustness check results">
+           <strong>{currentRobustness.filter(item=>item.passed).length}/{currentRobustness.length}
+             {' '}syntax-equivalent check{currentRobustness.length===1?'':'s'} preserved the current normalized output</strong>
+           {currentRobustness.map(item=><span key={item.id}>
+             Event {item.eventLine} · {item.label} · {item.passed?'Passed':
+               item.reason==='PARSER_REJECTED'?'Parser rejected the variation':'Output changed'}
+           </span>)}
+           <small>Browser-only diagnostic · no source values are included in this result · native and Stellar target verification remain separate.</small>
+         </div>}
+       </details>
        <button type="button" className="auto-parser-primary"
          aria-label="Create Parser Files"
-         disabled={!canGenerate||!confirmed()} onClick={()=>{void generate();}}>
+         disabled={!canGenerate||!confirmed()||robustnessBusy} onClick={()=>{void generate();}}>
          {busy?'Testing every sample…':'Run Final Test & Create Files'}
        </button>
        {currentEvidence&&<div className="auto-parser-result" aria-label="Auto Parser test evidence">
