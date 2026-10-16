@@ -357,8 +357,32 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     const result=extractGenericStructural(raw);
     expect(result.errors).toEqual([]);
     expect(result.fields).toMatchObject({
-      syslog:{app_tag:'%FTD-6-302013',hostname:'dev01:'},
+      syslog:{app_tag:'%FTD-6-302013',hostname:'dev01'},
       asa:{action:'Built',protocol:'TCP',src_ip:'10.10.10.10',dst_ip:'192.168.2.2',dst_port:'443'},
+    });
+  });
+
+  it('extracts common year-bearing ASA syslog wrappers without leaving the header unparsed',()=>{
+    const raw='<166>Oct 15 2026 00:05:03 ASA-EDGE01 : %ASA-6-302013: Built outbound TCP connection 18745213 for outside:203.0.113.50/443 (203.0.113.50/443) to inside:10.1.15.27/51822 (198.51.100.15/51822)';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'166',month:'Oct',day:'15',year:'2026',time:'00:05:03',hostname:'ASA-EDGE01',app_tag:'%ASA-6-302013'},
+      asa:{action:'Built',direction:'outbound',protocol:'TCP',connection_id:'18745213',
+        src_ip:'203.0.113.50',src_port:'443',dst_ip:'10.1.15.27',dst_port:'51822',
+        mapped_dst_ip:'198.51.100.15',mapped_dst_port:'51822'},
+    });
+  });
+
+  it('extracts RFC3164-wrapped positional firewall CSV losslessly without inventing column meaning',()=>{
+    const raw='<14>Oct 15 00:03:21 PA-FW01 1,2026/10/15 00:03:21,012345678901,TRAFFIC,end,2561,2026/10/15 00:03:20,10.10.20.15,8.8.8.8,203.0.113.10,8.8.8.8,allow-web,,,ssl,vsys1,trust,untrust,ethernet1/1,ethernet1/2,forward-all,2026/10/15 00:03:21,123456,1,51234,443,45001,443,0x400000,tcp,allow,1480,720,760,12,2026/10/15 00:02:55,25,any,0,0x0,10.0.0.0-10.255.255.255,United States,,6,6,tcp-fin,0,0,0,0,,PA-FW01,from-policy';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'14',month:'Oct',day:'15',time:'00:03:21',hostname:'PA-FW01'},
+      generic:{mode:'rfc3164_positional_csv',delimiter:',',source_raw:raw,
+        columns:{column_0:'1',column_3:'TRAFFIC',column_7:'10.10.20.15',
+          column_24:'51234',column_25:'443',column_52:'from-policy'}},
     });
   });
 
