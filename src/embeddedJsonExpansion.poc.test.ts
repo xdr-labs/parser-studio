@@ -48,7 +48,7 @@ describe('bounded embedded JSON expansion PoC',()=>{
       'prefix {"event":"alert"} trailing',
       '@cee: {"event":"alert"} trailing',
       '@cee: [1,2,3]',
-      'CEF:1|Vendor|EDR|1.0|42|Bad|9|payload={"event":"alert"}',
+      'CEF:2|Vendor|EDR|1.0|42|Bad|9|payload={"event":"alert"}',
       'LEEF:9.0|Vendor|NDR|1.0|dns|payload={"event":"alert"}',
       'prefix {not-json}',
     ];

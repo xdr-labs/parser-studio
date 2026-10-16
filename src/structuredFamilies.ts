@@ -212,7 +212,7 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   }
   if (format === 'cef') {
     const match = /^CEF:(\d+)\|(.*)$/.exec(input);
-    if (!match || match[1] !== '0') return failure('Only standalone CEF version zero events are supported');
+    if (!match || !/^[01]$/.test(match[1]!)) return failure('Only standalone CEF versions 0 and 1 are supported');
     const parts = splitEscaped(match[2], '|', 6);
     if (!parts) return failure('CEF requires six header fields and an extension slot');
     const record: Record<string, unknown> = {
@@ -235,9 +235,24 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
   if (!parts) return failure('LEEF header or declared delimiter is incomplete');
-  const hex = isV2 ? /^0x([0-9a-fA-F]{1,2})$/.exec(parts[4]) : null;
-  const delimiter = isV2 ? (hex ? String.fromCharCode(parseInt(hex[1], 16)) : parts[4]) : '\t';
-  if (!(delimiter === '\t' || (/^[!-~]$/.test(delimiter) && delimiter !== '=' && delimiter !== '\\'))) {
+  const hex = isV2 ? /^(?:0x|x)([0-9a-fA-F]{1,4})$/.exec(parts[4]!) : null;
+  let delimiter='\t';
+  if(isV2){
+    if(hex){
+      const codePoint=parseInt(hex[1]!,16);
+      if(codePoint===0||codePoint===10||codePoint===13||
+         (codePoint>=0xD800&&codePoint<=0xDFFF)||codePoint>0x10FFFF)
+        return failure('Unsupported LEEF 2.0 data delimiter');
+      delimiter=String.fromCodePoint(codePoint);
+    }else{
+      delimiter=parts[4]!;
+    }
+  }
+  const delimiterPoints=Array.from(delimiter);
+  if (!(delimiter === '\t' || (
+    delimiterPoints.length===1&&delimiterPoints[0]!=='='&&delimiterPoints[0]!=='\\'&&
+    !/[\u0000-\u001f\u007f]/.test(delimiterPoints[0]!)
+  ))) {
     return failure('Unsupported LEEF 2.0 data delimiter');
   }
   const record: Record<string, unknown> = {
@@ -249,6 +264,7 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
       const location = part.indexOf('=');
       const key = part.slice(0, location);
       if (location < 0 || !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(key) ||
+          ['__proto__','constructor','prototype'].includes(key) ||
           Object.prototype.hasOwnProperty.call(record, key)) return failure('Unsupported or duplicate LEEF extension token');
       record[key] = part.slice(location + 1);
     }

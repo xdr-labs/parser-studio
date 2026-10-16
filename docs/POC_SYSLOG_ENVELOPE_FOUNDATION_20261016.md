@@ -594,3 +594,61 @@ The evidence now supports a parser pipeline that is broader than the original Ge
 Reusable structural grammars now cover Syslog, JSON, embedded JSON/CEE, XML, CEF, LEEF, multiple KV delimiters, positional CSV, Zeek TSV, W3C schema rows, Snort alerts, PAN-OS, ASA/FTD, Juniper RT_FLOW, WatchGuard, Check Point-style KV, RFC6587 streams, and AWS VPC Flow records.
 
 The remaining fixed-corpus free-text RFC5424 event is intentionally not counted as a structured extraction success because it contains no deterministic body structure to extract.
+
+## Expansion round 5 — standards compatibility and file/event stream grammars
+
+Round 5 tested compatibility gaps that remained after the Syslog, XML, tabular, and cloud-telemetry rounds. The focus was standards-driven behavior rather than additional vendor-specific full-line patterns.
+
+### CEF compatibility
+
+The previous bounded CEF parser accepted only CEF version 0. The ArcSight/OpenText CEF documentation describes version 0.x and version 1.x forms, so the reviewed subset was expanded to versions 0 and 1 while continuing to reject version 2 and later values.
+
+The PoC also exercises escaped header delimiters/backslashes and extension escaping for newline, equals, and backslash. Duplicate extension keys, prototype-bearing keys, reserved-field collisions, malformed escapes, and incomplete extension boundaries remain fail-closed.
+
+### LEEF 2.0 delimiter compatibility and hardening
+
+LEEF 2.0 delimiter parsing now accepts both `x...` and `0x...` hexadecimal delimiter declarations with one to four hexadecimal digits, as documented by IBM. The parser still rejects NUL, CR, LF, equals, backslash, surrogate code points, malformed hexadecimal tokens, duplicate attribute keys, and unsafe source keys.
+
+The expansion found a concrete hardening defect: `constructor` was previously accepted as a LEEF attribute key even though other Generic Structural grammars reject prototype-bearing source keys. The same unsafe-key guard is now applied to LEEF.
+
+### AWS ALB access logs
+
+A bounded ALB access-log grammar was added as a source-preserving positional parser. It supports documented quoted fields, IPv4/IPv6 client endpoints, no-target/WAF-blocked records, and forward-compatible trailing fields while retaining known-field positions.
+
+ALB testing exposed another concrete correctness defect in the initial PoC: JavaScript `Date.parse()` normalized impossible dates such as February 30 instead of rejecting them. ALB ISO timestamps now use explicit calendar/leap-year validation, consistent with the Syslog timestamp hardening performed in earlier rounds.
+
+### NDJSON event streams
+
+A bounded NDJSON event-breaker/parser now supports LF and CRLF object streams while preserving both parsed objects and exact raw record strings. It limits total stream size, per-record size, record count, object depth/node count, and source-key size. Empty records, mixed line endings, non-object JSON texts, malformed JSON, NUL input, and prototype-bearing keys are rejected.
+
+### RFC4180 header-bearing CSV
+
+Header-bearing CSV now has a separate bounded table parser rather than being treated like headerless positional CSV. The parser supports quoted commas, doubled quotes, empty values, multiline quoted fields, uniform LF or CRLF records, and an optional final line terminator.
+
+When an explicit header is present, safe unique header names become source field names with exact row-width validation. Unsafe/duplicate headers, malformed quoting, mixed record line endings, header-only input, and cardinality drift are rejected. Headerless security CSV continues to use the source-preserving positional path.
+
+### Round-5 deterministic evidence
+
+- full repository unit suite: 117 / 117 test files PASS;
+- full repository assertions: 835 / 835 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- fixed security corpus remains 48 / 49 structured with 0 / 12 malformed fixed-corpus records accepted;
+- CEF versions 0 and 1: PASS standalone and behind Syslog;
+- unsupported/malformed CEF cases: 8 / 8 rejected;
+- expanded LEEF delimiter forms: PASS;
+- unsafe/malformed LEEF cases: 10 / 10 rejected;
+- AWS ALB normal, WAF/no-target, IPv6, and future trailing-field cases: PASS;
+- malformed ALB core/quote/calendar cases: 10 / 10 rejected;
+- NDJSON LF/CRLF object streams and nested values: PASS;
+- malformed/unsafe NDJSON cases: 10 / 10 rejected;
+- RFC4180 header CSV quoting, multiline fields, empty values, LF/CRLF behavior: PASS;
+- malformed/unsafe RFC4180 cases: 10 / 10 rejected.
+
+### Cumulative direction
+
+The PoC has progressively replaced complete-line special cases with reusable boundaries:
+
+`stream/file framing -> logical record -> envelope -> deterministic body grammar -> optional authoritative schema -> source refinement -> semantic mapping -> normalization`
+
+An important recurring acceptance rule is now explicit: a parser must not improve recall by silently weakening validation. When a known dialect is detected, strict validation failure must not fall through into an unrelated generic parser that would reclassify malformed input as success.

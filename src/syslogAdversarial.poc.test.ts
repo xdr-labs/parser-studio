@@ -35,7 +35,7 @@ const hardRejects:HardRejectCase[]=[
   {id:'json-array-not-object',raw:'<134>Oct 16 15:44:21 IDS01 [1,2,3]',envelopeExpected:true},
   {id:'json-prototype-key',raw:'<134>Oct 16 15:44:21 IDS01 {"constructor":"bad","src":"10.0.0.1"}',envelopeExpected:true},
   {id:'json-truncated',raw:'<134>Oct 16 15:44:21 IDS01 {"src":"10.0.0.1"',envelopeExpected:true},
-  {id:'cef-invalid-version',raw:'<134>Oct 16 15:44:21 EDR01 CEF:1|Vendor|Product|1|100|Name|5|src=10.0.0.1',envelopeExpected:true},
+  {id:'cef-invalid-version',raw:'<134>Oct 16 15:44:21 EDR01 CEF:2|Vendor|Product|1|100|Name|5|src=10.0.0.1',envelopeExpected:true},
   {id:'cef-truncated-header',raw:'<134>Oct 16 15:44:21 EDR01 CEF:0|Vendor|Product|1|100',envelopeExpected:true},
   {id:'leef-missing-delimiter',raw:'<134>Oct 16 15:44:21 NDR01 LEEF:2.0|Vendor|NDR|1|event|src=10.0.0.1',envelopeExpected:true},
   {id:'kv-constructor',raw:'<134>Oct 16 15:44:21 FGT01 date=2026-10-16 time=15:44:21 constructor=bad type=traffic subtype=forward action=accept',envelopeExpected:true},
