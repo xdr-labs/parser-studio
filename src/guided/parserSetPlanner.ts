@@ -74,7 +74,7 @@ function syntaxFamily(preview:MultiPassSourcePreview):string|null{
 }
 
 function labelFor(family:string,syntax:string):string{
-  if(family==='TRAFFIC')return 'Palo Alto Networks · TRAFFIC';
+  if(syntax.includes('PANOS_'))return 'Palo Alto Networks · '+family.replaceAll('_',' ');
   if(family.startsWith('ASA-'))return 'Cisco ASA / FTD · '+family.slice(4);
   return family.replaceAll('_',' ')+' · '+syntax.replaceAll('_',' ');
 }
