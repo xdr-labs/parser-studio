@@ -33,19 +33,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: xdr-labs/parser-studio
-          ref: 10a58c12cd0de5fe0579c14d3943ddf1ba928406
+          ref: 14385351d65c9732ba9c35cd8688b8c9f223a90d
           path: .integration-backend-src
           sparse-checkout: backend
       - name: Build pinned loopback backend
         run: |
-          test "$(git -C .integration-backend-src rev-parse HEAD)" = 10a58c12cd0de5fe0579c14d3943ddf1ba928406
+          test "$(git -C .integration-backend-src rev-parse HEAD)" = 14385351d65c9732ba9c35cd8688b8c9f223a90d
           npm ci --prefix .integration-backend-src/backend --no-audit --no-fund
           npm run build --prefix .integration-backend-src/backend
       - name: Real Chromium and HTTP integration over localhost
         env:
           PARSER_STUDIO_LIVE_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
-          PARSER_STUDIO_BACKEND_HEAD: 10a58c12cd0de5fe0579c14d3943ddf1ba928406
+          PARSER_STUDIO_BACKEND_HEAD: 14385351d65c9732ba9c35cd8688b8c9f223a90d
           PARSER_STUDIO_BACKEND_PORT: '4191'
         run: npx playwright test tests/integrated-backend.spec.ts tests/evidence-recovery.spec.ts tests/chatgpt-full-recovery.spec.ts tests/ai-split-merge-backend.spec.ts tests/beginner-regex-recovery.spec.ts --project=chromium --workers=1
       - name: Upload failure artifacts

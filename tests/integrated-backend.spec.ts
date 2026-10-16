@@ -16,6 +16,12 @@ async function enterCreateParser(page:Page){
   await expect(page.getByLabel('Map Fields stage')).toBeVisible();
   await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
 }
+async function returnToReviewFields(page:Page){
+  await page.getByLabel('Create Parser stage').getByRole('button',{name:'Map Fields'}).click();
+  await expect(page.getByLabel('Map Fields stage')).toBeVisible();
+  await page.getByLabel('Map Fields stage').getByRole('button',{name:'Back to Review Fields'}).click();
+  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+}
 
 test.describe('actual Chromium UI ↔ exact pinned authoring backend; target APIs isolated',()=>{
   test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',
@@ -106,8 +112,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect(bytes.subarray(0,4).toString('hex')).toBe('504b0304');
     expect(sha(bytes)).toBe(zip.headers()['x-parser-zip-sha256']);
     expect(calls).toEqual(['validate','generate','package']);
-    await page.getByLabel('Create Parser stage')
-      .getByRole('button',{name:'Review Fields',exact:true}).click();
+    await returnToReviewFields(page);
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"deny"}');
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
@@ -214,7 +219,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       expect(bytes.byteLength).toBeGreaterThan(0);
     }
     expect(actions).toEqual(['validate','generate','validate','generate']);
-    await page.getByLabel('Create Parser stage').getByRole('button',{name:'Review Fields',exact:true}).click();
+    await returnToReviewFields(page);
     await page.getByRole('button',{name:'Back to Logs'}).click();
     await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(sample);
     await page.getByLabel('Auto Parser raw logs').fill(sample+'\n{"action":"allow","src_ip":"192.0.2.8","dst_port":80}');
@@ -766,8 +771,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
       .toBeDisabled();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
     expect(operations).toEqual([]);
-    await page.getByLabel('Create Parser stage')
-      .getByRole('button',{name:'Review Fields',exact:true}).click();
+    await returnToReviewFields(page);
     await page.getByLabel('Adjust detected field mapping').locator('summary').click();
     await page.getByLabel('Mapping target 0').fill(original);
     await enterCreateParser(page);
@@ -806,19 +810,17 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect(original).toMatch(/^custom\./);
     expect(first).not.toBe(original);
     await second.fill(first+'.child');
-    await enterCreateParser(page);
-    await expect(page.getByRole('button',{name:'Create Parser Files'}))
-      .toBeEnabled();
-    await page.getByRole('button',{name:'Create Parser Files'}).click();
-    await expect(page.getByLabel('Auto Parser test evidence'))
-      .toContainText('Parser creation stopped');
+    await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+    const map=page.getByLabel('Map Fields stage');
+    await expect(map).toBeVisible();
+    await expect(map.getByLabel('Normalization validation')).toContainText('TARGET_COLLISION');
+    await expect(map.getByRole('button',{name:'Create Parser'})).toBeDisabled();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair')).toHaveCount(0);
     expect(outgoing).toEqual([]);
-    await page.getByLabel('Create Parser stage')
-      .getByRole('button',{name:'Review Fields',exact:true}).click();
-    await page.getByLabel('Adjust detected field mapping').locator('summary').click();
-    await page.getByLabel('Mapping target 1').fill(original);
-    await enterCreateParser(page);
+    await map.getByLabel('Normalized destination 1').fill(original);
+    await expect(map.getByLabel('Normalization validation')).toContainText('No local mapping issues detected');
+    await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
+    await map.getByRole('button',{name:'Create Parser'}).click();
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     await expect(page.getByLabel('Generated Auto Parser DRAFT pair'))
       .toContainText('Two DRAFT files verified');
@@ -1331,7 +1333,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
    expect(Number(/Locally generated (\d+) events/.exec(
      await panel.getByRole('status').innerText())?.[1]??0)).toBe(count);
    expect(calls.length).toBe(sentBefore);
-   await page.getByLabel('Create Parser stage').getByRole('button',{name:'Review Fields',exact:true}).click();
+   await returnToReviewFields(page);
    await expect(page.getByLabel('Local synthetic replay preview')).toHaveCount(0);
    await page.getByRole('button',{name:'Back to Logs'}).click();
    await page.getByLabel('Auto Parser raw logs').fill(replaySource+'\n{"action":"allow"}');

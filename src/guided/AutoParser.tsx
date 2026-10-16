@@ -210,15 +210,28 @@ export default function AutoParser({
    csvColumns.every(x=>/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(x))&&
    new Set(csvColumns).size===csvColumns.length&&
    [',',';','\t'].includes(draft.csvDelimiter??'INVALID');
+ const csvSourceRecords=csvReviewActive?splitEvents(sample,report.boundary,MAX_EVENTS+1):[];
+ const reportCsvEventNumbers=report.events.map((event,index)=>event.body==='csv'?index+1:-1)
+   .filter(index=>index>0);
+ const csvReviewEventNumbers=reportCsvEventNumbers.length?reportCsvEventNumbers:
+   (multiPassCsvEvidence?csvSourceRecords.map((_,index)=>index+1):[]);
+ const csvReviewSample=csvReviewEventNumbers.map(eventNumber=>csvSourceRecords[eventNumber-1]?.raw)
+   .filter((value):value is string=>typeof value==='string').join('\n');
  const csvSupportedShapeCounts=csvReviewActive?
-   ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(sample,delimiter))
+   ([',',';','\t'] as const).map(delimiter=>inferConsistentCsvColumnCount(csvReviewSample,delimiter))
      .filter((count):count is number=>count!==null):[];
  const csvConsistentShapeAvailable=!csvReviewActive||csvSupportedShapeCounts.length>0;
- const csvSelectedShapeInspection=csvReviewActive?
-   inspectCsvColumnShapes(sample,draft.csvDelimiter??','):{groups:[],invalidEventNumbers:[]};
+ const csvSubsetInspection=csvReviewActive?
+   inspectCsvColumnShapes(csvReviewSample,draft.csvDelimiter??','):{groups:[],invalidEventNumbers:[]};
+ const csvSelectedShapeInspection={
+   groups:csvSubsetInspection.groups.map(group=>({...group,
+     eventNumbers:group.eventNumbers.map(number=>csvReviewEventNumbers[number-1]??number)})),
+   invalidEventNumbers:csvSubsetInspection.invalidEventNumbers.map(
+     number=>csvReviewEventNumbers[number-1]??number),
+ };
  const csvSelectedShapeGroups=csvSelectedShapeInspection.groups;
  const neutralCsvColumnCount=csvReviewActive?
-   inferConsistentCsvColumnCount(sample,draft.csvDelimiter??','):null;
+   inferConsistentCsvColumnCount(csvReviewSample,draft.csvDelimiter??','):null;
  const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
    csvColumns.length===neutralCsvColumnCount);
  const formatCsvEventNumbers=(numbers:number[]):string=>{
@@ -878,8 +891,13 @@ export default function AutoParser({
            ?'Positional values found — choose field names'
            :'Positional rows have different column counts'}</strong>
          <p>{csvConsistentShapeAvailable
-           ?'Parser Studio extracted the values, but these rows do not contain trustworthy field names. Keep temporary names now or enter names you know, then choose the data separator. Parser Studio will test every row before generating files.'
-           :'Parser Studio extracted source values, but the rows do not share one consistent column count using comma, semicolon or tab. One column list cannot safely parse all of them. Analyze matching row shapes separately before creating a parser.'}</p>
+           ?'Parser Studio extracted the values, but these rows do not contain trustworthy field names. Keep temporary names now or enter names you know, then choose the data separator. Parser Studio will test every CSV row before generating files.'
+           :'Parser Studio extracted source values, but the CSV rows do not share one consistent column count using comma, semicolon or tab. One column list cannot safely parse all of them. Analyze matching CSV row shapes separately before creating a parser.'}</p>
+         {csvReviewEventNumbers.length>0&&csvReviewEventNumbers.length<report.sourceCount&&
+           <p className="auto-parser-note" role="note">
+             CSV column review applies only to event {formatCsvEventNumbers(csvReviewEventNumbers)}.
+             The other {report.sourceCount-csvReviewEventNumbers.length} recognized event{report.sourceCount-csvReviewEventNumbers.length===1?'':'s'} keep their own detected parser families.
+           </p>}
          {!csvConsistentShapeAvailable&&
            (csvSelectedShapeGroups.length>0||csvSelectedShapeInspection.invalidEventNumbers.length>0)&&
            <div className="auto-parser-note" aria-label="CSV row shape groups">
