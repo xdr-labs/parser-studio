@@ -26,6 +26,8 @@ test("Generic Structural helper keeps Syslog envelope parsing ahead of weak gene
   assert.match(helper,/rfc3164_year_after_time/);
   assert.match(helper,/syslog_envelope_positional_csv/);
   assert.match(helper,/panos_traffic_csv/);
+  assert.match(helper,/vendor_extra_/);
+  assert.match(helper,/values\[38\]\.to_s\.empty\?/);
   const envelope=helper.indexOf("result = parserstudio_generic_syslog_envelope_structured(text)");
   const comma=helper.indexOf("result = parserstudio_generic_comma_kv(text)");
   const delimited=helper.indexOf("result = parserstudio_generic_delimited_comma_kv(text)");
@@ -98,6 +100,39 @@ test("Generic Structural common firewall wrappers cover year-bearing ASA and RFC
   assert.equal(parsedPan.generic.fields.dport,"443");
   assert.equal(parsedPan.generic.fields.action,"allow");
   assert.equal(parsedPan.generic.fields.action_source,"from-policy");
+
+  const extended=pan+",future-one,future-two";
+  const parsedExtended=runRuby("parserstudio_generic_structural",extended) as any;
+  assert.equal(parsedExtended.generic.mode,"panos_traffic_csv");
+  assert.equal(parsedExtended.generic.fields.action_source,"from-policy");
+  assert.equal(parsedExtended.generic.fields.vendor_extra_001,"future-one");
+  assert.equal(parsedExtended.generic.fields.vendor_extra_002,"future-two");
+
+  const prefix="<14>Oct 15 00:03:21 PA-FW01 ";
+  const values=pan.slice(prefix.length).split(",");
+  const paddedValues=[...values];
+  paddedValues.splice(38,0,"");
+  paddedValues.push("future-padding");
+  const padded=prefix+paddedValues.join(",");
+  const parsedPadded=runRuby("parserstudio_generic_structural",padded) as any;
+  assert.equal(parsedPadded.generic.mode,"panos_traffic_csv");
+  assert.equal(parsedPadded.generic.fields.padding,"");
+  assert.equal(parsedPadded.generic.fields.seqno,"0");
+  assert.equal(parsedPadded.generic.fields.actionflags,"0x0");
+  assert.equal(parsedPadded.generic.fields.action_source,"from-policy");
+  assert.equal(parsedPadded.generic.fields.vendor_extra_001,"future-padding");
+
+  const numericPaddingValues=[...values];
+  numericPaddingValues.splice(38,0,"0");
+  const numericPadding=prefix+numericPaddingValues.join(",");
+  const parsedNumericPadding=runRuby("parserstudio_generic_structural",numericPadding) as any;
+  assert.notEqual(parsedNumericPadding?.generic?.mode,"panos_traffic_csv");
+
+  const shiftedValues=[...values];
+  shiftedValues.splice(37,0,"unexpected-shift");
+  const shifted=prefix+shiftedValues.join(",");
+  const parsedShifted=runRuby("parserstudio_generic_structural",shifted) as any;
+  assert.notEqual(parsedShifted?.generic?.mode,"panos_traffic_csv");
 });
 
 test("Generic Structural V15 Ruby helper parses bounded BSD bracket-id messages",{skip:!rubyAvailable},()=>{

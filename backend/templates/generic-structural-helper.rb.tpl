@@ -744,7 +744,7 @@ end
 def parserstudio_generic_panos_traffic_fields(values)
   return nil unless values.length >= 53 && values[3].to_s == 'TRAFFIC'
   values = values.map { |value| value.to_s }
-  datetime = /\A\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\z/
+  datetime = /\A\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\z/
   ip = /\A(?:\d{1,3}\.){3}\d{1,3}\z/
   valid_ip = lambda { |value|
     value.match?(ip) && value.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
@@ -759,7 +759,8 @@ def parserstudio_generic_panos_traffic_fields(values)
   }
   return nil unless values[29].to_s.match?(/\A[A-Za-z0-9_.-]{1,24}\z/) &&
     values[30].to_s.match?(/\A[A-Za-z0-9_. -]{1,64}\z/)
-  names=[
+
+  core_names=[
     'domain','receive_time','serial','type','subtype','config_version','time_generated',
     'src','dst','natsrc','natdst','rule','srcuser','dstuser','app','vsys','from','to',
     'inbound_if','outbound_if','logset','time_received','sessionid','repeatcnt','sport',
@@ -769,9 +770,24 @@ def parserstudio_generic_panos_traffic_fields(values)
     'dg_hier_level_1','dg_hier_level_2','dg_hier_level_3','dg_hier_level_4',
     'vsys_name','device_name','action_source'
   ]
-  names=names[0...38]+['padding']+names[38..-1] if values.length >= 54
+  padding_names=core_names[0...38]+['padding']+core_names[38..-1]
+  sequence=/\A\d{1,20}\z/
+  action_flags=/\A0x[0-9A-Fa-f]+\z/
+  names=
+    if values[38].to_s.match?(sequence) && values[39].to_s.match?(action_flags)
+      core_names
+    elsif values.length >= 54 && values[38].to_s.empty? &&
+          values[39].to_s.match?(sequence) && values[40].to_s.match?(action_flags)
+      padding_names
+    else
+      return nil
+    end
+
   fields={}
-  values.each_with_index { |value,index| fields[names[index] || "field_#{index}"] = value }
+  values.each_with_index do |value,index|
+    name=names[index] || "vendor_extra_#{(index-names.length+1).to_s.rjust(3,'0')}"
+    fields[name]=value
+  end
   fields
 end
 
