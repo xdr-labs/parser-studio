@@ -60,6 +60,23 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
 });
 
+test("Generic Structural V12 Ruby helper parses bounded WatchGuard free-form messages",{skip:!rubyAvailable},()=>{
+  const alarm='<142>May 10 15:19:05 WatchGuard-Firebox (2024-05-10T09:49:05) firewall: msg_id="3000-0152" IPv4 source route attack from 10.0.1.34 detected. (IPS)';
+  const diagnostic='<142>May 10 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-05-10T09:49:05) firewall[10]: msg_id="3000-0006" Application control settings updated';
+  const a=runRuby("parserstudio_generic_structural",alarm) as any;
+  assert.equal(a.watchguard_header.pri,"142");
+  assert.equal(a.watchguard_header.app_tag,"firewall");
+  assert.equal(a.watchguard_message.msg_id,"3000-0152");
+  assert.equal(a.watchguard_message.message,"IPv4 source route attack from 10.0.1.34 detected. (IPS)");
+  assert.equal(a.watchguard_message.source_raw,alarm);
+  const d=runRuby("parserstudio_generic_structural",diagnostic) as any;
+  assert.equal(d.watchguard_header.serial,"FVE6035FD3AE3");
+  assert.equal(d.watchguard_header.app_tag,"firewall[10]");
+  assert.equal(d.watchguard_message.source_raw,diagnostic);
+  assert.equal(runRuby("parserstudio_generic_watchguard_message",alarm.replace("<142>","<192>")),null);
+  assert.equal(runRuby("parserstudio_generic_watchguard_message",alarm.replace("3000-0152","bad-id")),null);
+});
+
 test("Generic Structural V11 Ruby helper parses bounded ISO PRI mixed positional logs",{skip:!rubyAvailable},()=>{
   const raw='<129>2026-10-15 14:54:44.502 +0100 edge WAF ALERT CODE 192.0.2.1 61507 198.51.100.2 443 app policy LOG NONE token1 token2 token3 token4 "-" "multi word positional value" token7 token8';
   const parsed=runRuby("parserstudio_generic_structural",raw) as any;

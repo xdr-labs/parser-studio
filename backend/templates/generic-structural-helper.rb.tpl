@@ -14,6 +14,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_watchguard(text)
   return result if result
+  result = parserstudio_generic_watchguard_message(text)
+  return result if result
   result = parserstudio_generic_juniper_legacy(text)
   return result if result
   result = parserstudio_generic_junos_rfc5424_sd(text)
@@ -558,6 +560,29 @@ def parserstudio_generic_watchguard(text)
   header['serial'] = match[6] if match[6]
   header['device_time'] = match[7] if match[7]
   {'watchguard_header'=>header, 'watchguard'=>body}
+end
+
+def parserstudio_generic_watchguard_message(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)\z/.match(text)
+  return nil unless match
+  return nil unless parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
+  return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
+  begin
+    Time.iso8601(match[7])
+  rescue StandardError
+    return nil
+  end
+  header = {'month'=>match[2], 'day'=>match[3], 'time'=>match[4],
+            'hostname'=>match[5], 'device_time'=>match[7], 'app_tag'=>match[8]}
+  header['pri'] = match[1] if match[1]
+  header['serial'] = match[6] if match[6]
+  {
+    'watchguard_header'=>header,
+    'watchguard_message'=>{'source_raw'=>text, 'msg_id'=>match[9], 'message'=>match[10]}
+  }
+rescue StandardError
+  nil
 end
 
 def parserstudio_generic_juniper_legacy(text)
