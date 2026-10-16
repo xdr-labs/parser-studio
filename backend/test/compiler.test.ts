@@ -43,6 +43,30 @@ test("files share identity, expected conf sections, and deterministic SHA-256", 
  assert.match(conf,/key stellar_log_index/);
  assert.match(conf,/pattern \/\^session\$\//);assert.match(conf,/pattern \/\^threat\$\//);
 });
+test("manufacturer, product and version drive filenames, CONF identity and embedded parser metadata", () => {
+ const p=sampleProject();
+ p.vendor="Fortinet";p.product="FortiGate";p.productVersion="7.4.5";p.slug="fortinet_fortigate";
+ p.projectId="draft-fortinet_fortigate";
+ const result=compilePair(p);
+ assert.deepEqual(result.files.map(x=>x.name),[
+  "customized_fortinet_fortigate.conf","customized_fortinet_fortigate"
+ ]);
+ const conf=result.files[0]!.content;
+ assert.match(conf,/# Vendor: Fortinet/);
+ assert.match(conf,/# Product: FortiGate/);
+ assert.match(conf,/# Product version: 7\.4\.5/);
+ assert.match(conf,/# Parser name: customized_fortinet_fortigate/);
+ assert.match(conf,/tag customized_fortinet_fortigate/);
+ assert.match(conf,/@type customized_fortinet_fortigate/);
+ const ruby=result.files[1]!.content;
+ const payload=ruby.match(/Base64\.strict_decode64\('([A-Za-z0-9+/=]+)'\)/)?.[1];
+ assert.ok(payload);
+ const embedded=JSON.parse(Buffer.from(payload!,"base64").toString("utf8"));
+ assert.equal(embedded.vendor,"Fortinet");
+ assert.equal(embedded.product,"FortiGate");
+ assert.equal(embedded.productVersion,"7.4.5");
+});
+
 test("fragment includes only one set of markers, safe literal payload, and Ruby callback", () => {
  const p=sampleProject();p.vendor="Pretend #{Kernel.exit} 'vendor'";
  const ruby=compilePair(p).files[1]!.content;

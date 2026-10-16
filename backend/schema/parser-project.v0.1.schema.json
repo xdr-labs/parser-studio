@@ -46,6 +46,12 @@
       "minLength": 1,
       "maxLength": 128
     },
+    "productVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[^\r\n\u0000-\u001f\u007f]+$"
+    },
     "sourceCategory": {
       "type": "string",
       "enum": [

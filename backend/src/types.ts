@@ -14,6 +14,7 @@ export interface ParserProject {
   slug: string;
   vendor: string;
   product: string;
+  productVersion?: string;
   sourceCategory: "network" | "endpoint" | "cloud" | "application" | "other";
   receiver: {
     protocols: ("udp" | "tcp")[];

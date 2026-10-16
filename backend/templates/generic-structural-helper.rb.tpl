@@ -32,6 +32,8 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_rfc3164_delimited_comma_kv(text)
   return result if result
+  result = parserstudio_generic_rfc3164_positional_csv(text)
+  return result if result
   result = parserstudio_generic_delimited_comma_kv(text)
   return result if result
   result = parserstudio_generic_pri_space_kv(text)
@@ -737,6 +739,36 @@ def parserstudio_generic_rfc3164_delimited_comma_kv(text)
   {'syslog'=>syslog, 'generic'=>body['generic']}
 end
 
+def parserstudio_generic_rfc3164_positional_csv(text)
+  return nil if text.bytesize > 8192
+  head = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +/.match(text)
+  return nil unless head && parserstudio_generic_valid_bsd_clock(head[2], head[3], head[4])
+  return nil if head[1] && !Integer(head[1], 10).between?(0, 191)
+  body = text[head.end(0)..-1].to_s
+  return nil if body.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
+  begin
+    values = CSV.parse_line(body, col_sep: ',', liberal_parsing: false, strip: false)
+  rescue CSV::MalformedCSVError
+    return nil
+  end
+  return nil unless values && values.length.between?(12, 100) && values[0].to_s.match?(/\A[0-9]{1,10}\z/)
+  ip = /\A(?:\d{1,3}\.){3}\d{1,3}\z/
+  ips = values.count do |value|
+    candidate=value.to_s
+    candidate.match?(ip) && candidate.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
+  rescue ArgumentError
+    false
+  end
+  category = /\A(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION)\z/
+  return nil unless ips >= 2 && values.any? { |value| value.to_s.match?(category) }
+  columns={}
+  values.each_with_index { |value,index| columns["column_#{index}"] = value.to_s }
+  syslog={'month'=>head[2],'day'=>head[3],'time'=>head[4],'hostname'=>head[5]}
+  syslog['pri']=head[1] if head[1]
+  {'syslog'=>syslog,
+   'generic'=>{'mode'=>'rfc3164_positional_csv','delimiter'=>',','source_raw'=>text,'columns'=>columns}}
+end
+
 def parserstudio_generic_asa(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
   id_pattern = /%(ASA|FTD)-(\d)-(\d{6}):[ \t]*/
@@ -764,20 +796,27 @@ def parserstudio_generic_asa(text)
   syslog = {'app_tag' => "%#{id[1]}-#{id[2]}-#{id[3]}"}
   prefix = text[0...id.begin(0)]
   unless prefix.empty?
-    header = /\A([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]*\z/.match(prefix)
+    header = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(?:(\d{4})[ ]+)?(\d{2}):(\d{2}):(\d{2})[ ]+([^\s:]{1,255})(?:[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?))?[ ]*:?[ ]*\z/.match(prefix)
     if header
       month_days = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
         'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
-      day = Integer(header[2], 10)
-      hour = Integer(header[3], 10)
-      minute = Integer(header[4], 10)
-      second = Integer(header[5], 10)
-      return nil unless month_days[header[1]] && day.between?(1, month_days[header[1]]) &&
+      priority = header[1] ? Integer(header[1], 10) : nil
+      day = Integer(header[3], 10)
+      year = header[4] ? Integer(header[4], 10) : nil
+      hour = Integer(header[5], 10)
+      minute = Integer(header[6], 10)
+      second = Integer(header[7], 10)
+      return nil unless (!priority || priority.between?(0,191)) &&
+        month_days[header[2]] && day.between?(1, month_days[header[2]]) &&
+        (!year || year.between?(1,9999)) &&
         hour.between?(0, 23) && minute.between?(0, 59) && second.between?(0, 59)
-      syslog['month'] = header[1]
-      syslog['day'] = header[2]
-      syslog['time'] = "#{header[3]}:#{header[4]}:#{header[5]}"
-      syslog['hostname'] = header[6]
+      syslog['pri'] = header[1] if header[1]
+      syslog['month'] = header[2]
+      syslog['day'] = header[3]
+      syslog['year'] = header[4] if header[4]
+      syslog['time'] = "#{header[5]}:#{header[6]}:#{header[7]}"
+      syslog['hostname'] = header[8]
+      syslog['source_tag'] = header[9] if header[9]
     else
       facility = /\A([A-Z0-9]{2,16})\.([A-Z]{2,16}): +([!-~]{1,255}) +\z/.match(prefix)
       host_only = /\A([!-~]{1,255}) +: +\z/.match(prefix)
