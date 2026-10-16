@@ -117,7 +117,8 @@ export async function buildMappingExtension(
 export async function applyMappingExtension(
   base:ParserDraft,extension:ParserMappingExtension,
 ):Promise<ParserDraft|null>{
-  if(extension.contract!=='parser-studio.mapping-extension.v0.1'||
+  if(!safeMappingSet(base)||
+     extension.contract!=='parser-studio.mapping-extension.v0.1'||
      extension.sourceValuesIncluded!==false||extension.extractionChanged!==false||
      extension.nativeVerified!==false||extension.targetVerified!==false||
      extension.baseDraftSha256!==await sha256Utf8Hex(canonicalDraft(base))||
@@ -128,14 +129,21 @@ export async function applyMappingExtension(
      extension.changes.length>MAX_EXTENSION_MAPPINGS)return null;
   const options=base.guided?{...base.guided,groups:{...base.guided.groups}}:undefined;
   const mappings=base.mappings.map(mapping=>({...mapping}));
+  const changeIds=new Set<string>();
   for(const change of extension.changes){
-    if(!safeChange(change))return null;
+    if(!safeChange(change)||changeIds.has(change.mappingId))return null;
+    changeIds.add(change.mappingId);
     const index=mappings.findIndex(mapping=>mapping.id===change.mappingId);
     if(index>=0){
       if(mappings[index]!.source!==change.source)return null;
       mappings[index]={id:change.mappingId,source:change.source,target:change.target,type:change.type};
-    }else mappings.push({id:change.mappingId,source:change.source,target:change.target,type:change.type});
+    }else{
+      if(mappings.length>=MAX_EXTENSION_MAPPINGS)return null;
+      mappings.push({id:change.mappingId,source:change.source,target:change.target,type:change.type});
+    }
     if(options)options.groups[change.mappingId]=change.group as never;
+    else if(change.group!=='vendor_fields')return null;
   }
-  return {...base,mappings,guided:options};
+  const candidate={...base,mappings,guided:options};
+  return safeMappingSet(candidate)?candidate:null;
 }
