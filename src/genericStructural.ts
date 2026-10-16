@@ -271,6 +271,13 @@ function spaceKv(raw:string):Record<string,unknown>|null{
   return {generic};
 }
 
+function claimsSophosXgShape(raw:string):boolean{
+  const text=raw.replace(/^<\d{1,3}>/,'');
+  return /^device="[A-Za-z0-9_.-]{1,64}"[ \t]+date=\d{4}-\d{2}-\d{2}[ \t]+time=/.test(text)&&
+    /(?:^|[ \t])device_name=/.test(text)&&/(?:^|[ \t])log_id=/.test(text)&&
+    /(?:^|[ \t])log_type=/.test(text);
+}
+
 function priSpaceKv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const match=/^<(\d{1,3})>(.+)$/.exec(raw);
@@ -280,6 +287,7 @@ function priSpaceKv(raw:string):Record<string,unknown>|null{
   const body=match[2]!;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(body)&&/\bdevname=/.test(body)&&/\bdevid=/.test(body)&&
      !parseFortinetKvBody(body))return null;
+  if(claimsSophosXgShape(body)&&!parseSophosKvBody(body))return null;
   const parsed=spaceKv(body);
   if(!parsed||!parsed.generic||typeof parsed.generic!=='object')return null;
   return {
@@ -1124,7 +1132,7 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     syslog,
     sophos:{...sophos,source_raw:raw,message_raw:messageRaw},
   };
-  if(/\b(?:device="SFW"|sys="SecureNet")\b/.test(message))return null;
+  if(claimsSophosXgShape(message)||/\bsys="SecureNet"(?:\s|$)/.test(message))return null;
 
   if(/^%(?:ASA|FTD)-/.test(message)){
     const parsed=asa(message);
@@ -1578,7 +1586,7 @@ function knownVendorStructuredFailure(raw:string):boolean{
   if(claimsPanosSignature(raw)||looksLikePanosBody(raw)||/^\d{8,20},\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2},audit,/.test(raw))return true;
   if(/^%?(?:ASA|FTD)-[0-7]-\d{6}:/.test(raw))return true;
   if(/^date=\d{4}-\d{2}-\d{2}\s+time=/.test(raw)&&/\bdevname=/.test(raw)&&/\bdevid=/.test(raw))return true;
-  if(/^device="SFW"\s+date=/.test(raw)&&/\blog_type=/.test(raw))return true;
+  if(claimsSophosXgShape(raw))return true;
   if(/^(?:<\d{1,3}>)?\d{4}:\d{2}:\d{2}-\d{2}:\d{2}:\d{2}(?:\.\d+)?\s+\S+\s+ulogd\[\d+\]:/.test(raw))return true;
   const envelope=parseSyslogEnvelope(raw);
   if(!envelope)return false;

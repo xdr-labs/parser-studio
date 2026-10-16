@@ -40,15 +40,20 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
   return output.length === splits + 1 ? output : null;
 }
 
-export function strictKeyValues(input: string): StructuredExtraction {
+export function strictKeyValues(input: string, options?:{allowEmptyUnquoted?:boolean}): StructuredExtraction {
   const values: Record<string, unknown> = Object.create(null);
-  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
+  const pattern = options?.allowEmptyUnquoted
+    ? /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])*))/y
+    : /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
   let cursor = 0;
   while (cursor < input.length) {
     if (!input.slice(cursor).trim()) break;
     pattern.lastIndex = cursor;
     const token = pattern.exec(input);
     if (!token || token.index !== cursor) return failure('Unsupported or malformed extension key=value segment');
+    if(options?.allowEmptyUnquoted&&pattern.lastIndex<input.length&&
+      !/[ \t]/.test(input[pattern.lastIndex]!))
+      return failure('Missing field separator after key=value segment');
     const key = token[1];
     if (Object.prototype.hasOwnProperty.call(values, key)) return failure('Duplicate extension field');
     values[key] = (token[2] ?? token[3] ?? token[4] ?? '').replace(/\\(.)/gs, '$1');

@@ -45,15 +45,17 @@ export function parseFortinetKvBody(text:string):Record<string,unknown>|null{
 
 export function parseSophosKvBody(text:string):Record<string,unknown>|null{
   if(!text||text.includes('\0')||/[\r\n]/.test(text)||bytes(text)>MAX_BYTES)return null;
-  const parsed=strictKeyValues(text);
+  const parsed=strictKeyValues(text,{allowEmptyUnquoted:text.startsWith('device="SFW" ')});
   if(parsed.errors.length||!safeRecord(parsed.fields))return null;
   const f=parsed.fields as Record<string,string>;
   const xg=f.device==='SFW'&&date(f.date??'')&&clock(f.time??'')&&!!f.device_name&&!!f.log_type;
   const utm=f.sys==='SecureNet'&&!!f.sub&&!!f.id&&!!f.severity;
   if(!xg&&!utm)return null;
   if(xg&&f.timezone!==undefined&&!validZone(f.timezone))return null;
-  for(const key of ['src_ip','dst_ip','srcip','dstip'])if(f[key]!==undefined&&!ip(f[key]!))return null;
-  for(const key of ['src_port','dst_port','srcport','dstport'])if(f[key]!==undefined&&!port(f[key]!))return null;
+  for(const key of ['src_ip','dst_ip','srcip','dstip'])
+    if(f[key]!==undefined&&!(xg&&f[key]==='')&&!ip(f[key]!))return null;
+  for(const key of ['src_port','dst_port','srcport','dstport'])
+    if(f[key]!==undefined&&!(xg&&f[key]==='')&&!port(f[key]!))return null;
   return {variant:xg?'xg':'utm',fields:f};
 }
 

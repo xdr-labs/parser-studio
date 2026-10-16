@@ -34,13 +34,13 @@ exact original whitespace, or Stellar normalization.
 
 ## True baseline and candidate
 
-| Source family | Before this round | After this round |
-| --- | ---: | ---: |
-| Juniper SRX | 72 / 105 | 72 / 105 |
-| Check Point | 109 / 111 | 109 / 111 |
-| Sophos XG | 232 / 271 | 232 / 271 |
-| CrowdStrike Falcon | 38 / 84 | 84 / 84 |
-| **Total** | **451 / 571 (79.0%)** | **497 / 571 (87.0%)** |
+| Source family | Before JSON fix | After JSON fix | After Sophos qualification |
+| --- | ---: | ---: | ---: |
+| Juniper SRX | 72 / 105 | 72 / 105 | 72 / 105 |
+| Check Point | 109 / 111 | 109 / 111 | 109 / 111 |
+| Sophos XG | 232 / 271 | 232 / 271 | 256 / 271 |
+| CrowdStrike Falcon | 38 / 84 | 84 / 84 | 84 / 84 |
+| **Total** | **451 / 571 (79.0%)** | **497 / 571 (87.0%)** | **521 / 571 (91.2%)** |
 
 These counts represent structural success only. They do not establish the
 accuracy of semantic field naming, user-authored parser generation,
@@ -98,9 +98,11 @@ npm run build
 ```
 
 An offline rerun can set `PARSER_STUDIO_FRESH_HOLDOUT_DIR` to an already
-verified private fixture directory. The runner requires 571 / 497,
+verified private fixture directory. The runner requires 571 / 521,
 84 / 84 CrowdStrike, 3,092 / 3,092 scalar occurrences, and zero accepted
-negative controls. It exits nonzero on qualification drift.
+negative controls. The separate Sophos source-accuracy oracle is defined in
+`docs/POC_SOPHOS_XG_OPTIONAL_EMPTY_KV_20261016.md`.
+Both runners exit nonzero on qualification drift.
 
 ## Residual classification and next research
 
@@ -126,9 +128,12 @@ parser found:
   the reviewed leaf. Do not infer source correctness from the mere number
   of equals signs.
 
-The offline evaluation runner asserts the 24/50/61 classification alongside
-the extraction metrics so a subsequent change cannot quietly relabel residuals
-as success.
+The initial 24/50/61 classification was measured before Sophos hardening.
+The current candidate leaves **50** structural failures (Juniper 33,
+Check Point 2, Sophos 15): **31** with an envelope, **19** without, and
+**37** containing at least three textual KV candidates. These metrics are
+asserted by the offline evaluation runner, which also distinguishes source-
+verified Sophos extraction from generic structural matches.
 
 Do not patch the residuals with a larger full-line vendor regex or permit
 a known-source failure to downgrade to generic success. Additional unseen
