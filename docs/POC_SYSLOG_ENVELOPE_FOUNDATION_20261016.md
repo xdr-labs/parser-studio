@@ -501,3 +501,50 @@ The parser is now materially less dependent on enumerating vendor-specific compl
 `framing -> envelope -> deterministic body dialect -> vendor refinement -> semantic mapping`
 
 This is preferable to adding another full-line vendor rule whenever a timestamp, timezone, relay wrapper, or transport framing changes.
+
+## Expansion round 3 — XML, schema-aware tabular logs, and multi-record streams
+
+Round 3 targeted common security-log structures that do not fit the JSON/KV/CSV-only path and transport behavior that occurs before individual event parsing.
+
+### Added parser capabilities
+
+- bounded XML body extraction for standalone XML and XML nested inside RFC3164/RFC3339/RFC5424 Syslog envelopes;
+- Windows Event XML leaf/attribute preservation, including `Data Name="..."` values;
+- Zeek `conn.log`-style TSV candidate extraction with IPv4/IPv6 endpoint validation;
+- Zeek `#fields` schema parsing and exact-cardinality row mapping;
+- W3C/IIS `#Fields:` schema parsing with bounded quoted-space row mapping;
+- RFC6587 multi-record stream splitting for concatenated octet-counted frames;
+- RFC6587 non-transparent multi-record splitting for LF, CRLF, and NUL delimiters.
+
+XML handling is deliberately bounded. DTD/entity declarations, XML stylesheets, parser errors, unsafe field names, deep/large trees, mixed text/child content, and shallow ambiguous XML are rejected rather than promoted to a structured success.
+
+Zeek/W3C schema helpers preserve explicit source schema names when a header is provided. Headerless Zeek conn candidates remain source-preserving positional `column_N` output rather than inventing semantic names.
+
+RFC6587 stream parsing uses UTF-8 octet lengths rather than JavaScript character counts. The PoC found and fixed a CRLF stream-boundary bug during testing.
+
+### Round-3 deterministic evidence
+
+- Round-3 focused suites: 5 / 5 files PASS, 14 / 14 tests PASS;
+- all Syslog/security PoC suites: 22 / 22 files PASS, 145 / 145 tests PASS;
+- full repository unit suite: 111 / 111 files PASS, 816 / 816 tests PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS;
+- Windows Event XML: 5 / 5 valid variants PASS;
+- unsafe/malformed XML: 6 / 6 rejected;
+- Zeek conn TSV: 5 / 5 standalone/wrapped variants PASS;
+- malformed or metadata-only Zeek TSV: 6 / 6 rejected;
+- Zeek `#fields` schema mapping: PASS, including exact-cardinality and unsafe/duplicate-field rejection;
+- W3C/IIS `#Fields:` schema mapping: PASS, including quoted values and invalid schema/row rejection;
+- RFC6587 multi-record octet-counted stream: PASS with UTF-8 multibyte payload;
+- RFC6587 LF/CRLF/NUL multi-record streams: PASS;
+- malformed/mixed/truncated RFC6587 streams: 10 / 10 rejected.
+
+### Round-3 design conclusion
+
+The parser boundary should be widened one level above a single event:
+
+`stream framing -> logical record -> Syslog envelope -> nested body dialect -> optional explicit schema -> vendor refinement -> semantic mapping`
+
+This avoids forcing TCP/TLS stream framing, Windows XML, Zeek TSV, and W3C schema handling into vendor-specific complete-line regexes. It also preserves explicit source schemas where available instead of guessing field names.
+
+F5 BIG-IP/ASM research in this round did not justify another vendor-specific parser. Its documented remote output options overlap the already-qualified CEF, CSV, and key/value body dialects, so adding an F5-only full-line grammar would reduce reuse rather than improve the engine architecture.

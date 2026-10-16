@@ -740,6 +740,79 @@ function boundedEmbeddedJsonBody(text:string):{
   return null;
 }
 
+function boundedXmlBody(text:string):{root:string;fields:Record<string,unknown>}|null{
+  if(new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
+  const source=text.trim();
+  if(!source.startsWith('<')||/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet/i.test(source))return null;
+  let document:Document;
+  try{document=new DOMParser().parseFromString(source,'application/xml');}catch{return null;}
+  if(document.getElementsByTagName('parsererror').length)return null;
+  const root=document.documentElement;
+  if(!root)return null;
+  const safeSegment=(value:string)=>/^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/.test(value)&&sourceKeySafe(value);
+  if(!safeSegment(root.localName))return null;
+  const fields:Record<string,unknown>={};let nodes=0;
+  const add=(key:string,value:string):boolean=>{
+    if(!key||value.length>4096||value.includes('\0'))return false;
+    const previous=fields[key];
+    fields[key]=previous===undefined?value:Array.isArray(previous)?[...previous,value]:[previous,value];
+    return Object.keys(fields).length<=256;
+  };
+  const walk=(element:Element,parentPath:string,depth:number):boolean=>{
+    if(depth>16||++nodes>256||!safeSegment(element.localName))return false;
+    const semanticName=element.localName==='Data'?element.getAttribute('Name'):null;
+    if(semanticName!==null&&(!safeSegment(semanticName)||semanticName.length>128))return false;
+    const path=semanticName&&parentPath?parentPath+'.'+semanticName:
+      parentPath?parentPath+'.'+element.localName:element.localName;
+    for(const attribute of Array.from(element.attributes)){
+      if(attribute.name==='xmlns'||attribute.prefix==='xmlns')continue;
+      const name=attribute.localName;
+      if(!safeSegment(name)||new TextEncoder().encode(attribute.value).byteLength>2048)return false;
+      if(semanticName&&name==='Name')continue;
+      if(!add(path+'.@'+name,attribute.value))return false;
+    }
+    const children=Array.from(element.children);
+    if(!children.length){
+      const value=element.textContent??'';
+      if(value.trim()&&!add(path,value))return false;
+      return true;
+    }
+    const direct=Array.from(element.childNodes)
+      .filter(node=>node.nodeType===Node.TEXT_NODE)
+      .map(node=>node.textContent??'').join('');
+    if(direct.trim())return false;
+    return children.every(child=>walk(child,path,depth+1));
+  };
+  if(!walk(root,'',0)||Object.keys(fields).length<3)return null;
+  return {root:root.localName,fields};
+}
+
+function zeekConnTsvBody(text:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(text).byteLength>8192||text.includes('\0')||/[\r\n]/.test(text))return null;
+  const values=text.split('\t');
+  if(values.length<7||values.length>64)return null;
+  if(!/^\d{9,12}(?:\.\d{1,9})?$/.test(values[0]??'')||
+     !/^[A-Za-z0-9]{8,32}$/.test(values[1]??'')||
+     !ipToken(values[2]??'')||!validPortToken(values[3]??'')||
+     !ipToken(values[4]??'')||!validPortToken(values[5]??'')||
+     !/^(?:tcp|udp|icmp|icmp6)$/.test(values[6]??''))return null;
+  const columns:Record<string,string>={};
+  values.forEach((value,index)=>{
+    if(new TextEncoder().encode(value).byteLength<=2048)columns['column_'+String(index)]=value;
+  });
+  return Object.keys(columns).length===values.length?columns:null;
+}
+
+function standaloneXmlProfile(raw:string):Record<string,unknown>|null{
+  const xml=boundedXmlBody(raw);
+  return xml?{xml,generic:{mode:'bounded_xml',source_raw:raw}}:null;
+}
+
+function standaloneZeekTsvProfile(raw:string):Record<string,unknown>|null{
+  const columns=zeekConnTsvBody(raw);
+  return columns?{generic:{mode:'zeek_conn_tsv',profile:'zeek_conn_candidate',delimiter:'\t',source_raw:raw,columns}}:null;
+}
+
 function looksLikePanosBody(text:string):boolean{
   const values=positionalCsvValues(text);
   if(!values||values.length<4)return false;
@@ -987,6 +1060,13 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     generic:{mode:'syslog_envelope_json',source_raw:raw,message_raw:messageRaw},
   };
 
+  const xml=boundedXmlBody(message);
+  if(xml)return {
+    syslog,xml,
+    generic:{mode:'syslog_envelope_xml',source_raw:raw,message_raw:messageRaw},
+  };
+  if(message.trimStart().startsWith('<'))return null;
+
   if(looksLikePanosBody(message)){
     const panos=panosPositionalCsvBody(message);
     if(!panos)return null;
@@ -1018,6 +1098,15 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
       },
     };
   }
+
+  const zeekColumns=zeekConnTsvBody(message);
+  if(zeekColumns)return {
+    syslog,
+    generic:{
+      mode:'syslog_envelope_zeek_tsv',profile:'zeek_conn_candidate',delimiter:'\t',
+      source_raw:raw,message_raw:messageRaw,columns:zeekColumns,
+    },
+  };
 
   const shortKv=envelope.confidence==='partial'?null:shortEnvelopeSpaceKvBody(message);
   if(shortKv)return {
@@ -1125,6 +1214,7 @@ function extractGenericStructuralUnframed(raw:string):GenericStructuralExtractio
   const strict=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??
+    standaloneXmlProfile(raw)??standaloneZeekTsvProfile(raw)??
     syslogEnvelopeStructuredFallback(raw)??priSpaceKv(raw);
   if(strict)return {fields:strict,errors:[]};
   if(knownVendorStructuredFailure(raw))
