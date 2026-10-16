@@ -56,7 +56,7 @@ interface Props {
  advanced:boolean;onAdvancedChange:(value:boolean)=>void;
 }
 const MAX_LOCAL_TEXT=64*1024;
-const STEPS=['Add Logs','Review Fields','Create Parser'] as const;
+const STEPS=['Add Logs','Review Fields','Map Fields','Create Parser'] as const;
 type Evidence={key:string;status:'PASS'|'FAILED';total:number;issues:string[]};
 type Pair={key:string;value:GeneratedPair};
 type Zip={key:string;filename:string;sha256:string};
@@ -99,7 +99,7 @@ export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
  runPreview,activeSession,onSessionUpdate,onChatGPT,advanced,onAdvancedChange,
 }:Props){
- const [step,setStep]=useState<0|1|2>(0);
+ const [step,setStep]=useState<0|1|2|3>(0);
  const [selected,setSelected]=useState(0);
  const [multiPass,setMultiPass]=useState<MultiPassReview|null>(null);
  const [multiPassNotice,setMultiPassNotice]=useState('');
@@ -296,7 +296,7 @@ export default function AutoParser({
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
    report.complete&&report.sourceCount>0&&!busy&&csvApproved&&
    (advanced||beginnerResolved);
- const canGenerate=step===2&&!!currentReview&&!!suite&&!pending&&
+ const canGenerate=step===3&&!!currentReview&&!!suite&&!pending&&
    !busy&&(assessment.status==='DRAFT_COMPILABLE'||explicitDraftCompilable);
  const confirmed=()=>{
    const record=suite;
@@ -710,9 +710,9 @@ export default function AutoParser({
    <nav aria-label="Auto Parser steps" className="auto-parser-steps">
      {STEPS.map((label,index)=><button type="button" key={label}
        aria-current={index===step?'step':undefined}
-       disabled={index===1&&!currentReview||index===2&&!currentReview}
+       disabled={index>0&&!currentReview}
        className={index===step?'active':''}
-       onClick={()=>setStep(index as 0|1|2)}>
+       onClick={()=>setStep(index as 0|1|2|3)}>
        <span>{index+1}</span>{label}
      </button>)}
    </nav>
@@ -1192,11 +1192,56 @@ export default function AutoParser({
          <button type="button" onClick={()=>setStep(0)}><ArrowLeft size={15}/> Back to Logs</button>
          <button type="button" className="auto-parser-primary" disabled={pending||!suite}
            onClick={()=>setStep(2)}>
-           {pending?'Preparing…':'Create Parser'} <ArrowRight size={16}/>
+           {pending?'Preparing…':'Map Fields'} <ArrowRight size={16}/>
          </button>
        </div>
      </section>}
-     {step===2&&<section aria-label="Create Parser stage">
+     {step===2&&<section aria-label="Map Fields stage">
+       <h2>Map Fields</h2>
+       <p>Review suggested destinations and compare local normalized output. Official Stellar Cyber catalog and target runtime are NOT VERIFIED.</p>
+       <label>Review event
+         <select aria-label="Normalization review event" value={chosen?.id??''}
+           onChange={e=>setSelected(Math.max(0,records.findIndex(x=>x.id===e.target.value)))}>
+           {records.map(entry=><option key={entry.id} value={entry.id}>Event {entry.line}</option>)}
+         </select>
+       </label>
+       <div aria-label="Normalization candidates">
+         {chosen&&suggestNormalizationCandidates(chosen.fields,draft.mappings).map(candidate=><div className="two-path-mapping-editor" key={candidate.source}>
+           <span>{candidate.source} → {candidate.target} · {candidate.type} · {candidate.confidence}</span>
+           <small>{candidate.explanation}</small>
+           <button type="button" aria-label={'Apply candidate '+candidate.source}
+             onClick={()=>setDraft(old=>({...old,mappings:[...old.mappings,{
+               id:'normalization-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_'),
+               source:candidate.source,target:candidate.target,type:candidate.type,
+             }]}))}>Apply suggestion</button>
+         </div>)}
+       </div>
+       <div aria-label="Normalization mapping editor">
+         {draft.mappings.map((mapping,index)=><div className="two-path-mapping-editor" key={mapping.id}>
+           <label>Source <input aria-label={'Normalized source '+index} value={mapping.source}
+             onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?{...m,source:e.target.value}:m)}))}/></label>
+           <label>Destination <input aria-label={'Normalized destination '+index} value={mapping.target}
+             onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?{...m,target:e.target.value}:m)}))}/></label>
+           <label>Type <select aria-label={'Normalized type '+index} value={mapping.type}
+             onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?{...m,type:e.target.value as typeof m.type}:m)}))}>
+             {(['string','integer','number','boolean','ip','port','timestamp'] as const).map(type=><option key={type}>{type}</option>)}
+           </select></label>
+           <button type="button" aria-label={'Remove normalization '+index}
+             onClick={()=>setDraft(old=>({...old,mappings:old.mappings.filter(m=>m.id!==mapping.id)}))}>Remove</button>
+         </div>)}
+       </div>
+       {chosen&&<div className="auto-parser-preview" aria-label="Normalization comparison">
+         <div><h3>Extracted source values</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
+         <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
+         <div><h3>Diagnostics</h3><pre>{JSON.stringify(chosen.diagnostics.filter(x=>x.stage==='normalize'||x.stage==='validate'),null,2)}</pre></div>
+       </div>}
+       <div className="auto-parser-actions">
+         <button type="button" onClick={()=>setStep(1)}>Back to Review Fields</button>
+         <button type="button" className="auto-parser-primary" disabled={pending||!suite}
+           onClick={()=>setStep(3)}>Create Parser <ArrowRight size={16}/></button>
+       </div>
+     </section>}
+     {step===3&&<section aria-label="Create Parser stage">
        <h2>{advanced?'Test & Create':'Create Parser'}</h2>
        <p>{advanced
          ?<>Run every sample through the local Web Worker, then validate the typed
@@ -1417,7 +1462,7 @@ export default function AutoParser({
            ?' Current source-bound Ruby/CONF passed the pinned Native Fluentd runtime; real Stellar Cyber import remains unverified.'
            :' Native Fluentd compatibility and real Stellar Cyber import remain unverified.'}</p>
        <div className="auto-parser-actions">
-         <button type="button" onClick={()=>setStep(1)}><ArrowLeft size={14}/> Review Fields</button>
+         <button type="button" onClick={()=>setStep(2)}><ArrowLeft size={14}/> Map Fields</button>
          <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>
        </div>
      </section>}
