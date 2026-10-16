@@ -55,6 +55,35 @@ export function parseSecurityInput(raw:string):SecurityPipelineResult{
   }
 
   switch(broken.kind){
+    case 'cri_log': {
+      const events=broken.payload.events.map((entry,index)=>{
+        const nested=extractSingleEvent(entry.content);
+        const fields:Record<string,unknown>={
+          cri:{
+            stream:entry.stream,first_timestamp:entry.first_timestamp,last_timestamp:entry.last_timestamp,
+            fragments:entry.fragments,raw_lines:entry.raw_lines,
+          },
+          generic:{mode:'cri_log_event',source_index:index},
+        };
+        if(!nested.errors.length)fields.message_structured=nested.fields;
+        else fields.message=entry.content;
+        return {index,raw:entry.raw_lines.join('\n'),fields};
+      });
+      return {ok:true,kind:broken.kind,container:true,source_raw:raw,events};
+    }
+    case 'docker_json_log': {
+      const events=broken.payload.events.map((entry,index)=>{
+        const nested=extractSingleEvent(entry.content);
+        const fields:Record<string,unknown>={
+          docker:{stream:entry.stream,time:entry.time,log:entry.log,extra:entry.extra},
+          generic:{mode:'docker_json_log_event',source_index:index},
+        };
+        if(!nested.errors.length)fields.message_structured=nested.fields;
+        else fields.message=entry.content;
+        return {index,raw:entry.raw,fields};
+      });
+      return {ok:true,kind:broken.kind,container:true,source_raw:raw,events};
+    }
     case 'rfc6587_syslog': {
       const events:SecurityPipelineEvent[]=[];
       for(let index=0;index<broken.payload.records.length;index++){

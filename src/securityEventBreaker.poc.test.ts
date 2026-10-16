@@ -6,6 +6,12 @@ const syslogB='<134>Oct 16 15:44:22 edge02 app: {"event":"alert","src":"192.0.2.
 const frame=(message:string)=>new TextEncoder().encode(message).byteLength+' '+message;
 
 const containers=[
+  {kind:'cri_log',count:2,raw:
+    '2026-10-16T15:44:20Z stdout F '+syslogA+'\n'+
+    '2026-10-16T15:44:21Z stderr F '+syslogB+'\n'},
+  {kind:'docker_json_log',count:2,raw:
+    JSON.stringify({log:syslogA+'\n',stream:'stdout',time:'2026-10-16T15:44:20Z'})+'\n'+
+    JSON.stringify({log:syslogB+'\n',stream:'stderr',time:'2026-10-16T15:44:21Z'})+'\n'},
   {kind:'rfc6587_syslog',count:2,raw:frame(syslogA)+frame(syslogB)},
   {kind:'json_batch',count:2,raw:JSON.stringify({Records:[{event:'a'},{event:'b'}]})},
   {kind:'json_seq',count:2,raw:'\u001e'+JSON.stringify({event:'a'})+'\n\u001e'+JSON.stringify({event:'b'})+'\n'},
@@ -57,6 +63,8 @@ describe('top-level bounded security event breaker PoC',()=>{
       'type=SYSCALL msg=audit(bad:420): syscall=59\n',
       '__REALTIME_TIMESTAMP=1\nMESSAGE=one\n\nBAD BINARY MARKER\n\n',
       JSON.stringify({Records:[{event:'ok'},42]}),
+      '2026-10-16T15:44:21Z stdout P dangling\n',
+      JSON.stringify({log:'ok\n',stream:'console',time:'2026-10-16T15:44:21Z'})+'\n',
     ];
     const accepted=invalid.filter(raw=>breakSecurityInput(raw).ok);
     console.log('SECURITY_EVENT_BREAKER_INVALID '+JSON.stringify({total:invalid.length,accepted:accepted.length}));

@@ -8,8 +8,11 @@ import {parseRfc4180HeaderCsv} from './rfc4180Csv';
 import {parseZeekTsvBlock} from './zeekTabular';
 import {parseW3cLogBlock} from './w3cTabular';
 import {groupLinuxAuditStream} from './linuxAudit';
+import {looksLikeDockerJsonLogStream,parseCriLogStream,parseDockerJsonLogStream} from './containerLogFraming';
 
 export type SecurityEventBreakResult=
+  |{ok:true;kind:'cri_log';count:number;payload:ReturnType<typeof parseCriLogStream> & {ok:true}}
+  |{ok:true;kind:'docker_json_log';count:number;payload:ReturnType<typeof parseDockerJsonLogStream> & {ok:true}}
   |{ok:true;kind:'rfc6587_syslog';count:number;payload:ReturnType<typeof splitSyslogStream> & {ok:true}}
   |{ok:true;kind:'json_batch';count:number;payload:ReturnType<typeof parseJsonObjectBatch> & {ok:true}}
   |{ok:true;kind:'json_seq';count:number;payload:ReturnType<typeof parseJsonTextSequence> & {ok:true}}
@@ -41,6 +44,18 @@ export function breakSecurityInput(raw:string):SecurityEventBreakResult{
 
   // Use strong container signatures first. A successful lower-level parser is
   // still required; signatures only select which bounded grammar may run.
+  if(/^\d{4}-\d{2}-\d{2}T\S+ +(?:stdout|stderr) +[PF] +/.test(raw)){
+    const cri=parseCriLogStream(raw);
+    if(cri.ok)return {ok:true,kind:'cri_log',count:cri.events.length,payload:cri};
+    return {ok:false,claimed:true,error:'Input resembles a Kubernetes CRI log stream but failed strict framing'};
+  }
+
+  if(looksLikeDockerJsonLogStream(raw)){
+    const docker=parseDockerJsonLogStream(raw);
+    if(docker.ok)return {ok:true,kind:'docker_json_log',count:docker.events.length,payload:docker};
+    return {ok:false,claimed:true,error:'Input resembles a Docker json-file stream but failed strict framing'};
+  }
+
   if(raw.trimStart().startsWith('{')&&raw.includes('\0')){
     const gelf=parseGelfTcpStream(raw);
     if(gelf.ok)return {ok:true,kind:'gelf_tcp',count:gelf.messages.length,payload:gelf};

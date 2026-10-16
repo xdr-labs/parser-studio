@@ -947,3 +947,44 @@ The external Wazuh failures again collapsed into a small set of reusable body/so
 The stable hierarchy remains:
 
 `container/framing -> event breaker -> logical event -> envelope -> reusable body/source grammar -> source preservation -> semantic mapping -> normalization`
+
+## Expansion round 10 — container runtime framing
+
+Round 10 moved one level further up the ingestion stack and treated Kubernetes/container runtime wrappers as framing rather than as vendor event grammars.
+
+### Kubernetes CRI log framing
+
+The PoC adds a bounded CRI stream parser for the standard:
+
+`RFC3339Nano timestamp + stdout|stderr + P|F + content`
+
+`P` fragments are reassembled until the matching stream receives an `F` record. stdout and stderr keep independent bounded partial state, so interleaved streams do not corrupt one another. A stream ending with an unfinished partial record fails closed rather than emitting a truncated event.
+
+After reassembly, the content is passed back through the existing reviewed single-event dispatcher. JSON, CEF, LEEF, Syslog, and other qualified body/source grammars are therefore reused without adding container-specific vendor rules. Unstructured text remains preserved as an explicit message.
+
+### Docker json-file framing
+
+The Docker json-file path validates newline-delimited objects containing `log`, `stream`, and `time`. The original log string and extra source fields are preserved while one trailing payload newline is removed only for nested structural parsing.
+
+Strong CRI/Docker signatures are terminal at the event-breaker layer: malformed container framing is not allowed to downgrade into NDJSON or another unrelated parser.
+
+### Round-10 evidence
+
+- CRI/Docker framing focused suite: 5 / 5 PASS;
+- malformed CRI cases: 7 / 7 rejected;
+- malformed Docker json-file cases: 7 / 7 rejected;
+- container-to-structural-pipeline focused suite: 3 / 3 PASS;
+- top-level event breaker now dispatches 12 container families without caller hints;
+- top-level malformed strong-signature cases: 7 / 7 rejected;
+- full repository unit suite: 142 / 142 test files PASS;
+- full repository assertions: 914 / 914 PASS;
+- TypeScript typecheck: PASS;
+- production build: PASS.
+
+The event-breaker/container list now includes CRI and Docker json-file in addition to RFC6587 Syslog, JSON batch, RFC7464 JSON sequence, GELF TCP, NDJSON, journal export, W3C, Zeek TSV, Linux Audit, and RFC4180 CSV.
+
+### Architectural result
+
+Container-runtime support required no change to PAN-OS, CEF, LEEF, JSON, or other body parsers. That is the desired behavior of the layered architecture:
+
+`container runtime framing -> logical payload -> existing single-event dispatcher -> source grammar -> preservation -> semantic mapping`
