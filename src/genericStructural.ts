@@ -381,6 +381,29 @@ function isoPriMixed(raw:string):Record<string,unknown>|null{
   };
 }
 
+function isoPriPositional(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
+  const head=/^<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.exec(raw);
+  if(!head)return null;
+  const pri=Number(head[1]);
+  if(!Number.isInteger(pri)||pri<0||pri>191||!validIsoPriClock(head[2]!,head[3]!,head[4]!))return null;
+  const body=scanProfileTokens(raw,head[0].length);
+  if(!body||body.tokens.length<8||body.tokens.length>64)return null;
+  const anchors=body.tokens.slice(0,5);
+  if(anchors.length<5||anchors.some(value=>!/^[A-Za-z0-9_.:/-]{1,128}$/.test(value))||
+     !/^[A-Z][A-Z0-9_]{1,15}$/.test(body.tokens[1]!))return null;
+  const portLike=(value:string|undefined)=>!!value&&/^\d{1,5}$/.test(value);
+  // Do not let this source-only positional fallback mask a failed strict
+  // network tuple. Long records with IP/port/IP/port positions belong to the
+  // stronger isoPriMixed grammar and must fail closed if either IP is invalid.
+  if(body.tokens.length>=16&&portLike(body.tokens[5])&&portLike(body.tokens[7])&&
+     (!ipToken(body.tokens[4]!)||!ipToken(body.tokens[6]!)))return null;
+  return {
+    syslog:{pri:head[1],date:head[2],time:head[3],timezone:head[4]},
+    generic:{mode:'iso_pri_positional',source_raw:raw,...body},
+  };
+}
+
 function watchguardProfile(raw:string):Record<string,unknown>|null{
   const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
@@ -521,7 +544,7 @@ function asa(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
-  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??
+  const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
     rfc3164DelimitedCommaKv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw);
   return fields?{fields,errors:[]}:

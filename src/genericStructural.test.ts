@@ -207,6 +207,21 @@ describe('bounded Generic Structural browser compiler twin',()=>{
     expect(extractGenericStructural(raw.replace('198.51.100.2','not-an-ip')).fields).toEqual({});
   });
 
+  it('extracts bounded ISO PRI positional messages without guessing field semantics',()=>{
+    const raw='<134>2026-10-16 03:11:07.915 +0200 edge SYS APS INFO 19034 Num clients to walk : 0';
+    const result=extractGenericStructural(raw);
+    expect(result.errors).toEqual([]);
+    expect(result.fields).toMatchObject({
+      syslog:{pri:'134',date:'2026-10-16',time:'03:11:07.915',timezone:'+0200'},
+      generic:{mode:'iso_pri_positional',source_raw:raw,
+        tokens:['edge','SYS','APS','INFO','19034','Num','clients','to','walk',':','0']},
+    });
+    expect(extractGenericStructural(raw.replace('<134>','<192>')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('+0200','+2500')).fields).toEqual({});
+    expect(extractGenericStructural(raw.replace('SYS','system')).fields).toEqual({});
+    expect(extractGenericStructural('<134>2026-10-16 03:11:07.915 +0200 edge SYS APS INFO 19034 short').fields).toEqual({});
+  });
+
   it('extracts the bounded WatchGuard Firebox traffic profile without semantic guessing',()=>{
     const raw='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
     const result=extractGenericStructural(raw);
