@@ -180,25 +180,32 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
   '<134>May 5 17:52:18 dev02 %FTD-6-302015: Built outbound UDP connection 212 for dmz:10.20.10.11/44401 (81.2.69.147/44401) to inside:192.168.3.3/53 (81.2.69.147/53)',
  ].join('\n');
  const pattern='^(?<raw>%FTD-\\d-\\d+: Built \\w+ \\w+ connection (?<connection_id>\\d+) for [^:]+:(?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<src_port>\\d+).{0,80} to [^:]+:(?<dst_ip>\\d+\\.\\d+\\.\\d+\\.\\d+)/(?<dst_port>\\d+).{0,80})$';
- const trainingRows=training.split('\n');
- const fullBytes=Buffer.byteLength(training);
- let cursor=0;
- const events=trainingRows.map((event,index)=>{
-  const start=cursor,end=start+Buffer.byteLength(event);cursor=end+(index<trainingRows.length-1?1:0);
-  const messageStart=Buffer.byteLength(event.slice(0,event.indexOf('%FTD')));
-  return {index,startByte:start,endByte:end,preview:{
-   contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',syntax:'BSD_SYSLOG+UNKNOWN',
-   sourceSha256:sha(event),sourceBytes:Buffer.byteLength(event),fields:{syslog_hostname:index?'dev01':'dev01'},
-   spans:[],residuals:[{startByte:messageStart,endByte:Buffer.byteLength(event)}],
-   issues:['UNSUPPORTED_BSD_BODY'],nativeVerified:false,targetVerified:false,
-  }};
+ const makeBatch=(raw:string)=>{
+  const rows=raw.split('\n');
+  let cursor=0;
+  const events=rows.map((event,index)=>{
+   const startByte=cursor,endByte=startByte+Buffer.byteLength(event);
+   cursor=endByte+(index<rows.length-1?1:0);
+   const marker=event.indexOf('%FTD');
+   const messageStart=Buffer.byteLength(event.slice(0,marker<0?0:marker));
+   return {index,startByte,endByte,preview:{
+    contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',syntax:'BSD_SYSLOG+UNKNOWN',
+    sourceSha256:sha(event),sourceBytes:Buffer.byteLength(event),
+    fields:{syslog_hostname:event.includes('dev02')?'dev02':'dev01'},
+    spans:[],residuals:[{startByte:messageStart,endByte:Buffer.byteLength(event)}],
+    issues:['UNSUPPORTED_BSD_BODY'],nativeVerified:false,targetVerified:false,
+   }};
+  });
+  return {contract:'parser-studio.multipass-source-batch-preview.v0.1',
+   sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),eventCount:rows.length,events,
+   separators:events.slice(0,-1).map(event=>({
+    startByte:event.endByte,endByte:event.endByte+1,kind:'WHITESPACE',
+   })),nativeVerified:false,targetVerified:false};
+ };
+ await page.route('**/api/v1/multipass/preview-batch',route=>{
+  const requested=(route.request().postDataJSON() as {raw:string}).raw;
+  return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(makeBatch(requested))});
  });
- const batch={contract:'parser-studio.multipass-source-batch-preview.v0.1',
-  sourceSha256:sha(training),sourceBytes:fullBytes,eventCount:2,events,
-  separators:[{startByte:events[0]!.endByte,endByte:events[0]!.endByte+1,kind:'WHITESPACE'}],
-  nativeVerified:false,targetVerified:false};
- await page.route('**/api/v1/multipass/preview-batch',route=>
-  route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(batch)}));
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(training);
  await page.getByRole('button',{name:'Analyze Logs'}).click();

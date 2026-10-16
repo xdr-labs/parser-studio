@@ -18,8 +18,7 @@ import {checkNativeProjectVerificationAvailability,verifyNativeProject,
   from './nativeProjectVerificationClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
-import {suggestNormalizationCandidates} from './normalizationCandidates';
-import {validateNormalizationMappings} from './normalizationValidation';
+import NormalizationMappingReview from './NormalizationMappingReview';
 import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
@@ -1124,24 +1123,10 @@ export default function AutoParser({
           </div>}
        </details>
        </div>
-       <section className="auto-parser-note beginner-essential-note" aria-label="Normalization mapping review">
-         <h3>Suggested normalization mappings</h3>
-         <p>Browser-only alias suggestions. Official Stellar Cyber metadata dictionary NOT VERIFIED.
-           Nothing is applied until you choose a suggestion. Existing source values remain intact.</p>
-         {chosen&&suggestNormalizationCandidates(chosen.fields,draft.mappings).map(candidate=><div
-           className="two-path-mapping-editor" key={candidate.source}>
-           <span>{candidate.source} → {candidate.target} · {candidate.type} · {candidate.confidence}</span>
-           <small>{candidate.explanation}</small>
-           <button type="button" aria-label={'Use normalization suggestion '+candidate.source}
-             onClick={()=>setDraft(old=>({...old,mappings:[...old.mappings,{
-               id:'normalization-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_'),
-               source:candidate.source,target:candidate.target,type:candidate.type,
-             }]}))}>Use suggestion</button>
-         </div>)}
-         {chosen&&<details><summary>Extracted and normalized output</summary>
-           <pre>{JSON.stringify({extracted:chosen.fields,normalized:chosen.normalized},null,2)}</pre>
-         </details>}
-       </section>
+       <div className="auto-parser-note beginner-essential-note" aria-label="Normalization mapping handoff">
+         <strong>Next: map extracted fields to Stellar Cyber metadata</strong>
+         <p>Continue to Map Fields to review official catalog matches, current custom fields, sample values, type checks and before/after output. No source value is discarded when a mapping changes.</p>
+       </div>
        <details className="auto-parser-recipe beginner-field-summary" open={advanced}
          aria-label="Suggested field mappings">
          <summary>{draft.mappings.length} field{draft.mappings.length===1?'':'s'} mapped · {draft.format==='generic_structural'?'Extracted source fields are preserved automatically':'Open only if you want to inspect names and types'}</summary>
@@ -1197,58 +1182,10 @@ export default function AutoParser({
          </button>
        </div>
      </section>}
-     {step===2&&<section aria-label="Map Fields stage">
-       <h2>Map Fields</h2>
-       <p>Review suggested destinations and compare local normalized output. Official Stellar Cyber catalog and target runtime are NOT VERIFIED.</p>
-       <label>Review event
-         <select aria-label="Normalization review event" value={chosen?.id??''}
-           onChange={e=>setSelected(Math.max(0,records.findIndex(x=>x.id===e.target.value)))}>
-           {records.map(entry=><option key={entry.id} value={entry.id}>Event {entry.line}</option>)}
-         </select>
-       </label>
-       <div aria-label="Normalization candidates">
-         {chosen&&suggestNormalizationCandidates(chosen.fields,draft.mappings).map(candidate=><div className="two-path-mapping-editor" key={candidate.source}>
-           <span>{candidate.source} → {candidate.target} · {candidate.type} · {candidate.confidence}</span>
-           <small>{candidate.explanation}</small>
-           <button type="button" aria-label={'Apply candidate '+candidate.source}
-             onClick={()=>setDraft(old=>({...old,mappings:[...old.mappings,{
-               id:'normalization-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_'),
-               source:candidate.source,target:candidate.target,type:candidate.type,
-             }]}))}>Apply suggestion</button>
-         </div>)}
-       </div>
-       <div aria-label="Normalization validation" role="status">
-         {validateNormalizationMappings(suite,draft.mappings).length===0
-           ?'No local mapping errors detected. Stellar target verification is still pending.'
-           :validateNormalizationMappings(suite,draft.mappings).slice(0,20).map((finding,index)=><p key={index}>
-             Event {finding.event} · {finding.code} · {finding.source} → {finding.target}
-           </p>)}
-       </div>
-       <div aria-label="Normalization mapping editor">
-         {draft.mappings.map((mapping,index)=><div className="two-path-mapping-editor" key={mapping.id}>
-           <label>Source <input aria-label={'Normalized source '+index} value={mapping.source}
-             onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?{...m,source:e.target.value}:m)}))}/></label>
-           <label>Destination <input aria-label={'Normalized destination '+index} value={mapping.target}
-             onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?{...m,target:e.target.value}:m)}))}/></label>
-           <label>Type <select aria-label={'Normalized type '+index} value={mapping.type}
-             onChange={e=>setDraft(old=>({...old,mappings:old.mappings.map(m=>m.id===mapping.id?{...m,type:e.target.value as typeof m.type}:m)}))}>
-             {(['string','integer','number','boolean','ip','port','timestamp'] as const).map(type=><option key={type}>{type}</option>)}
-           </select></label>
-           <button type="button" aria-label={'Remove normalization '+index}
-             onClick={()=>setDraft(old=>({...old,mappings:old.mappings.filter(m=>m.id!==mapping.id)}))}>Remove</button>
-         </div>)}
-       </div>
-       {chosen&&<div className="auto-parser-preview" aria-label="Normalization comparison">
-         <div><h3>Extracted source values</h3><pre>{JSON.stringify(chosen.fields,null,2)}</pre></div>
-         <div><h3>Normalized · Browser only</h3><pre>{JSON.stringify(chosen.normalized,null,2)}</pre></div>
-         <div><h3>Diagnostics</h3><pre>{JSON.stringify(chosen.diagnostics.filter(x=>x.stage==='normalize'||x.stage==='validate'),null,2)}</pre></div>
-       </div>}
-       <div className="auto-parser-actions">
-         <button type="button" onClick={()=>setStep(1)}>Back to Review Fields</button>
-         <button type="button" className="auto-parser-primary" disabled={pending||!suite}
-           onClick={()=>setStep(3)}>Create Parser <ArrowRight size={16}/></button>
-       </div>
-     </section>}
+     {step===2&&<NormalizationMappingReview
+       draft={draft} setDraft={setDraft} suite={suite}
+       selected={selected} setSelected={setSelected} pending={pending}
+       onBack={()=>setStep(1)} onContinue={()=>setStep(3)}/>}
      {step===3&&<section aria-label="Create Parser stage">
        <h2>{advanced?'Test & Create':'Create Parser'}</h2>
        <p>{advanced

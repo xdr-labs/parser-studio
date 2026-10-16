@@ -367,11 +367,11 @@ Obsolete UI experimental worktrees were consolidated to the original main worktr
 
 Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retain the two top-level creation methods. Parsing and normalization must remain independently measurable; preserve original extracted values, and never infer target verification from browser previews.
 
-- [ ] NORM-01: obtain and revision-pin the official Stellar Cyber metadata dictionary and validate top-level, namespace, `msg_origin`, type and target-field constraints against owner-supplied target evidence. Until then, mark catalog UNVERIFIED and never represent illustrative aliases as official fields.
-- [ ] NORM-02: deterministic, explainable field-name/value/type candidate engine with confidence and abstention, collision protection, and no silent remapping or original-value loss.
-- [ ] NORM-03: dedicated beginner Map Fields stage showing source values, proposed destinations, approval/override/unmap, searchable verified catalog when available, and keyboard-accessible controls.
-- [ ] NORM-04: selected-event and whole-sample raw/extracted/normalized comparison with per-event type, timestamp, collision and missing-field diagnostics; candidate changes revoke prior verification evidence.
-- [ ] NORM-05: explicit reviewed mapping persistence in the portable draft, support 1:N only where verified by target adapter, and keep custom fields when target mapping is uncertain.
+- [ ] NORM-01: qualify the official Stellar Cyber metadata dictionary against owner-supplied target evidence. Public-doc portion complete: the 2026-10-16 implementation pins the public 7.0.xs Metadata Dictionary by source URL and SHA-256, distinguishes scalar/non-scalar/ambiguous/reserved fields, and marks public-document catalog evidence separately from target runtime verification. Live target evidence is still required before this item can close.
+- [x] NORM-02: deterministic, explainable field-name/value/type candidate engine with whole-sample confidence, abstention, collision protection, safe replacement of untouched generated custom defaults, and no silent remapping or original-value loss.
+- [x] NORM-03: dedicated beginner Map Fields stage shows source values, proposed official destinations, approval/override/unmap, searchable revision-pinned catalog, responsive/keyboard-accessible controls, and explicit public-doc versus runtime verification state.
+- [x] NORM-04: selected-event plus whole-sample raw/extracted/normalized comparison, changes-only view, type/timestamp/collision/missing-field and catalog diagnostics; mapping changes continue to revoke prior generated verification evidence through draft identity.
+- [x] NORM-05: reviewed official and custom mappings persist in browser revision/portable draft and the existing backend adapter. Uncertain targets remain `custom.*`/vendor fields; no unverified 1:N target mapping was added, and bounded split/merge remains a separately reviewed enrichment contract.
 - [ ] NORM-06: actual native Ruby/CONF and separately authorized Stellar DP ingestion/index comparison, with source and normalized output hashes and fail-closed export readiness.
 - [ ] NORM-07: beginner Full User E2E across EDR/XDR/NDR/EPP/AWS/WAF/IPS/VPN, accessibility, holdouts, exact-head CI and acceptance.
 

@@ -7,7 +7,7 @@ const sample=[
  '"203.0.113.19";allow;8443',
 ].join('\n');
 
-test('Auto Parser requires explicit CSV columns and delimiter confirmation without exposing Wizard or Workbench',async({page})=>{
+test('Auto Parser blocks one-schema confirmation for mixed positional CSV shapes without exposing Wizard or Workbench',async({page})=>{
  const unsafePosts:string[]=[];
  page.on('request',req=>{
    if(req.method()==='POST'&&/\/api\/v1\/parser-pairs\/.*(generate|apply)/.test(req.url()))
@@ -30,15 +30,12 @@ test('Auto Parser requires explicit CSV columns and delimiter confirmation witho
  await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,dst_port');
  await page.getByLabel('Reviewed CSV data separator').selectOption(';');
  await expect(review).toBeDisabled();
- await page.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
+ await expect(page.getByRole('button',{name:'I Confirm These CSV Column Names'})).toBeDisabled();
  await expect(page.getByLabel('Review CSV column names'))
-   .toContainText('Field names are ready. Continue to Review Fields.');
- await expect(review).toBeEnabled();
- await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,port');
- await expect(review).toBeDisabled();
- await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,dst_port');
- await expect(review).toBeDisabled();
- await page.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
- await expect(review).toBeEnabled();
+   .toContainText('Positional rows have different column counts');
+ await expect(page.getByLabel('Review CSV column names'))
+   .toContainText('3 columns · 2 events · event 3–4');
+ await expect(page.getByLabel('Review CSV column names'))
+   .toContainText('event 1–2 could not be tokenized with this separator');
  expect(unsafePosts).toEqual([]);
 });

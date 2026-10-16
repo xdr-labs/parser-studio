@@ -27,6 +27,43 @@ Evidence key: **D** = official current workflow documentation; **S** = official 
 
 **Review limits:** This table describes documented capabilities and visible public screenshots, not lab-measured usability, performance, or vendor feature parity across releases. Reassess vendor documentation before implementation if it changes. Distinguish published screenshots from actual product session captures.
 
+## 1A. Normalization / mapping UX follow-up (2026-10-16)
+
+This follow-up specifically re-audits the field-normalization review problem now that source extraction is substantially stronger. Public vendor documentation was rechecked before implementation. The product decision is to keep normalization inside the current **Add Logs → Review Fields → Map Fields → Create Parser** flow rather than restore a Wizard, Workbench, or node canvas.
+
+| Product | Mapping / review behavior confirmed in current public docs | Parser Studio adoption |
+|---|---|---|
+| Stellar Cyber Parser Studio 7.0.xs | Normalization has Vendor, Ignore Values and Field Mapping tabs; Field Mapping opens the Standard Metadata Dictionary; Output Preview surfaces validation errors. 7.0 release notes explicitly added the Metadata Dictionary link in the normalization step. | **Direct target contract.** Pin the public dictionary revision, show target type, preserve custom/vendor fields, expose validation separately from real DP verification. |
+| Cribl Stream | Pipeline functions are ordered and Data Preview shows the impact of each processing step. | Show source → target changes and selected-event output without hiding the original source. |
+| New Relic Logs | No-code parsing detects patterns; users can highlight substrings, edit detected patterns, preview multiple samples with green checks, and save draft vs active rule. | Suggestions require explicit apply; review across the sample set; do not auto-promote an unreviewed mapping. |
+| IBM QRadar DSM Editor | Event/property parsing workflows emphasize test events, parsed properties, mapping/category review, and visible diagnostics. | Keep event-level diagnosis adjacent to mapping decisions and make failures actionable. |
+| Google SecOps | Parser extensions support no-code Map Data Fields and Preview/Show UDM Output; key UDM fields affect downstream security features. | Searchable schema destination selection plus before/after normalized preview; schema mapping is treated as a downstream semantic contract, not extraction success. |
+| Datadog Logs | Grok Parser retains multiple samples; each sample is Match, Match with warning, or No Match and the selected sample shows parsed output. | Whole-sample status and selected-event preview; never infer success from one sample. |
+| Elastic | Grok Debugger and ingest pipeline Simulate run representative samples; verbose simulation can expose per-processor output. | Keep normalization simulation inspectable and deterministic; advanced trace remains optional. |
+| Microsoft Sentinel ASIM | Schema tester reports missing mandatory/recommended/optional fields and type mismatches; data tester validates sample output values and keeps extra unnormalized fields visible for review. | Type mismatch, missing source and extra/unmapped fields are distinct states. Unmapped originals are preserved, not discarded. |
+| Splunk Field Extractor | Guided extraction starts from a representative event and chooses regex vs delimiter based on data shape. | Preserve beginner-friendly source-first review, especially for positional CSV. |
+| Panther | Custom log type schemas and tests use representative examples/golden expectations. | Mapping changes remain subject to deterministic regression evidence before release. |
+
+### Resulting Map Fields interaction contract
+
+1. **Automatic candidates** are deterministic and explainable. High-confidence mappings require an official pinned Stellar field plus compatible values across the current sample. Ambiguous or unsupported destinations abstain.
+2. **Explicit review** shows source name, representative source values, current output, proposed official destination, documented type, mapping class and evidence count.
+3. **Bulk apply is conservative.** It may replace only untouched system-generated `custom.*` defaults. A user-edited custom mapping is never silently overwritten.
+4. **Searchable official dictionary** lets the user override a destination. Object, ambiguous, reserved runtime fields and backend-unsupported scalar types remain visible for reference but cannot be selected as safe direct mappings.
+5. **Whole-sample validation** distinguishes target collision, absent source, value/type error, unknown target, catalog type mismatch, reserved runtime target and currently unsupported catalog types.
+6. **Before/after review** shows mapping-level source → normalized changes for a selected event and keeps full Original / Extracted / Normalized detail available.
+7. **No false target green.** Public documentation establishes a catalog contract only. Real Stellar DP/sensor ingestion and index comparison remain a separate authorized gate.
+
+### Stellar public dictionary provenance used by the implementation
+
+- Documentation release: `7.0.xs`
+- Source: `https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm`
+- Retrieved: `2026-10-16`
+- Retrieved HTML SHA-256: `6577a72da962561ad9c0cfb726e1dc0bdf1a95e17df3ebfe63a0156e3c408053`
+- Parsed unique metadata names: **287** (288 recognized rows; `host` is documented with more than one type and therefore fails closed as ambiguous).
+- Runtime-managed/reserved destinations such as `msg_origin` and parser error fields are not exposed as safe direct user mappings.
+- This provenance proves the public documentation snapshot only. It is **not** DP import, sensor ingestion, Interflow indexing, proprietary loader, or release evidence.
+
 ## 2. License / reuse constraints
 
 | Candidate source | Observed code license / distribution | Decision |

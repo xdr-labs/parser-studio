@@ -63,11 +63,11 @@ async function begin(page:Page){
  await page.getByRole('button',{name:'Review Detected Results'}).click();
  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 }
-test('new visitor sees only the two supported creation methods and a three-step Auto Parser',async({page})=>{
+test('new visitor sees only the two supported creation methods and a four-step Auto Parser',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Paste security logs. Parser Studio will show what works and what needs fixing.'})).toBeVisible();
- await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button')).toHaveCount(3);
+ await expect(page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button')).toHaveCount(4);
  await expect(page.getByRole('complementary',{name:'Parser creation methods'}).getByRole('button')).toHaveCount(2);
  await expect(page.getByLabel('Auto Parser raw logs')).toBeEmpty();
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
@@ -83,14 +83,22 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  await begin(page);
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('198.51.100.10');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('custom.source_ip');
- await expect(page.getByLabel('Suggested field mappings')).toContainText('not official catalog');
+ await expect(page.getByLabel('Normalization mapping handoff')).toContainText('Stellar Cyber metadata');
  await page.getByLabel('Auto Parser review event').selectOption('event-2');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('203.0.113.5');
- await page.getByRole('button',{name:'Create Parser',exact:false}).last().click();
+ await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+ const map=page.getByLabel('Map Fields stage');
+ await expect(map).toBeVisible();
+ await expect(map).toContainText('Stellar metadata 7.0.xs');
+ await expect(map.getByLabel('Automatic normalization suggestions')).toContainText('srcip');
+ await map.getByRole('button',{name:/Apply 3 high-confidence suggestions/}).click();
+ await expect(map.getByLabel('Normalization mapping summary')).toContainText('Official mappings3');
+ await map.getByRole('button',{name:'Create Parser'}).click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  await expect(page.getByRole('button',{name:'Create Parser Files'})).toBeEnabled();
- await page.getByRole('button',{name:'Review Fields',exact:true}).last().click();
- await page.getByRole('button',{name:'Back to Logs'}).click();
+ await page.getByLabel('Create Parser stage').getByRole('button',{name:'Map Fields',exact:true}).click();
+ await page.getByLabel('Map Fields stage').getByRole('button',{name:'Back to Review Fields'}).click();
+ await page.getByLabel('Review Fields stage').getByRole('button',{name:'Back to Logs'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
  expect(posts()).toBe(0);
 });

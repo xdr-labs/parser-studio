@@ -53,7 +53,8 @@ test('beginner uses the bounded local Cisco FTD rule before unnecessary ChatGPT 
  if(process.env.PARSER_STUDIO_LIVE_BACKEND==='1'){
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
-  await page.getByLabel('Review Fields stage').getByRole('button',{name:/Create Parser/}).click();
+  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+  await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
   await expect(page.getByLabel('Create Parser stage')).toBeVisible();
   await page.getByRole('button',{name:'Create Parser Files'}).click();
   const generated=page.getByLabel('Generated Auto Parser DRAFT pair');

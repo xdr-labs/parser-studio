@@ -67,7 +67,8 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  await qualifyAndApply(page,recipe(true,false),'Apply Verified Fix','Split #1');
  await qualifyAndApply(page,recipe(true,true),'Apply Verified Fix','Merge #2');
 
- await page.getByLabel('Review Fields stage').getByRole('button',{name:/Create Parser/}).click();
+ await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+  await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Create Parser Files'}).click();

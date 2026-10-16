@@ -1,15 +1,34 @@
 import {describe,it,expect} from 'vitest';
-import {suggestNormalizationCandidates} from './normalizationCandidates';
-describe('unverified browser-only normalization hints',()=>{
- it('recommends source-backed aliases without claiming official dictionary support',()=>{
-  expect(suggestNormalizationCandidates({src_ip:'192.0.2.1',dst_port:443},[])).toEqual([
-   expect.objectContaining({source:'src_ip',target:'srcip',confidence:'HIGH',catalogVerified:false}),
-   expect.objectContaining({source:'dst_port',target:'dstport',confidence:'HIGH',catalogVerified:false}),
-  ]);
- });
- it('abstains on ambiguous or conflicting destinations and flags invalid values',()=>{
-  expect(suggestNormalizationCandidates({src_ip:'999.0.0.1',source_ip:'192.0.2.2',risk_score:78},[]))
-   .toEqual([expect.objectContaining({source:'src_ip',confidence:'REVIEW'})]);
-  expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},[{id:'1',source:'x',target:'srcip',type:'ip'}])).toEqual([]);
- });
+import type {SuiteResult} from '../model';
+import {suggestNormalizationCandidates,suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
+
+describe('official-catalog normalization candidates',()=>{
+  it('recommends documented Stellar destinations with compatible source values',()=>{
+    expect(suggestNormalizationCandidates({src_ip:'192.0.2.1',dst_port:443},[])).toEqual([
+      expect.objectContaining({source:'src_ip',target:'srcip',type:'ip',confidence:'HIGH',
+        catalogVerified:true,catalogRelease:'7.0.xs',group:'top_fields'}),
+      expect.objectContaining({source:'dst_port',target:'dstport',type:'integer',confidence:'HIGH',
+        catalogVerified:true,catalogRelease:'7.0.xs',group:'top_fields'}),
+    ]);
+  });
+  it('proposes replacing generated custom mappings instead of duplicating their source',()=>{
+    const existing=[{id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'string' as const}];
+    expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},existing)).toEqual([
+      expect.objectContaining({source:'src_ip',target:'srcip',replacesMappingId:'auto-1',
+        currentTarget:'custom.src_ip',safeForBulk:true}),
+    ]);
+  });
+  it('uses whole-sample type evidence and lowers confidence when one value disagrees',()=>{
+    const suite={events:[
+      {fields:{src_ip:'192.0.2.1'}},{fields:{src_ip:'not-an-ip'}},
+    ]} as unknown as SuiteResult;
+    expect(suggestNormalizationCandidatesFromSuite(suite,[])[0]).toMatchObject({
+      source:'src_ip',confidence:'REVIEW',observed:2,total:2,safeForBulk:false,
+    });
+  });
+  it('abstains when another mapping owns the official destination',()=>{
+    expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},[
+      {id:'1',source:'x',target:'srcip',type:'ip'},
+    ])).toEqual([]);
+  });
 });
