@@ -24,6 +24,20 @@ describe('automatic robustness variants',()=>{
     ]));
   });
 
+  it('does not reorder JSON when duplicate top-level keys make source order significant',()=>{
+    const draft=createDraft();
+    const json=baseEvent('{"a":1,"a":2,"b":3}','json',{a:2,b:3});
+    expect(buildRobustnessVariants([json],draft)
+      .some(item=>item.transformation==='JSON_KEY_ORDER')).toBe(false);
+  });
+
+  it('does not reorder simple KV when duplicate keys make order semantically significant',()=>{
+    const draft=createDraft();
+    const kv=baseEvent('a=1 a=2','kv',{a:'2'});
+    expect(buildRobustnessVariants([kv],draft)
+      .some(item=>item.transformation==='KV_TOKEN_ORDER')).toBe(false);
+  });
+
   it('generates safe CSV quoting for a PAN-OS Syslog body',()=>{
     const raw='<14>Oct 15 00:03:21 PA-FW01 1,2026/10/15 00:03:21,012345678901,TRAFFIC,end';
     const event=baseEvent(raw,'generic_structural',{

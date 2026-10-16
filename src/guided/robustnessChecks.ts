@@ -31,8 +31,41 @@ function stableWithoutRaw(value:unknown):unknown{
     ['source_raw','message_raw'].includes(key)?[]:[[key,stableWithoutRaw(object[key])]]));
 }
 
+function hasDuplicateTopLevelJsonKeys(raw:string):boolean{
+  let depth=0,inString=false,escaped=false,stringStart=-1;
+  const keys=new Set<string>();
+  for(let index=0;index<raw.length;index++){
+    const char=raw[index]!;
+    if(inString){
+      if(escaped){escaped=false;continue;}
+      if(char==='\\'){escaped=true;continue;}
+      if(char==='"'){
+        if(depth===1&&stringStart>=0){
+          let next=index+1;
+          while(/\s/.test(raw[next]??''))next++;
+          if(raw[next]===':'){
+            try{
+              const key=JSON.parse(raw.slice(stringStart,index+1));
+              if(typeof key==='string'){
+                if(keys.has(key))return true;
+                keys.add(key);
+              }
+            }catch{return true;}
+          }
+        }
+        inString=false;stringStart=-1;
+      }
+      continue;
+    }
+    if(char==='"'){inString=true;stringStart=index;continue;}
+    if(char==='{'||char==='[')depth++;
+    else if(char==='}'||char===']')depth--;
+  }
+  return false;
+}
+
 function reverseJson(raw:string):string|null{
-  if(!raw.trimStart().startsWith('{'))return null;
+  if(!raw.trimStart().startsWith('{')||hasDuplicateTopLevelJsonKeys(raw))return null;
   try{
     const parsed=JSON.parse(raw);
     const object=objectValue(parsed);
@@ -48,6 +81,8 @@ function reverseSimpleKv(raw:string):string|null{
   if(tokens.length<2||tokens.length>64||
      !tokens.every(token=>/^[A-Za-z_][A-Za-z0-9_.-]{0,63}=[^\s"']{1,512}$/.test(token)))
     return null;
+  const keys=tokens.map(token=>token.slice(0,token.indexOf('=')));
+  if(new Set(keys).size!==keys.length)return null;
   const next=[...tokens].reverse().join(' ');
   return next!==raw?next:null;
 }

@@ -582,6 +582,36 @@ function positionalCsvValues(text:string):string[]|null{
   return values;
 }
 
+export function panosCsvValues(text:string):string[]|null{
+  if(!text||text.includes('\0'))return null;
+  const values:string[]=[];let token='';let quoted=false,braceDepth=0;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i]!;
+    if(quoted){
+      if(ch==='"'){
+        if(text[i+1]==='"'){token+='"';i++;continue;}
+        quoted=false;continue;
+      }
+      token+=ch;continue;
+    }
+    if(ch==='"'){quoted=true;continue;}
+    if(ch==='{'){
+      braceDepth++;
+      if(braceDepth>4)return null;
+      token+=ch;continue;
+    }
+    if(ch==='}'){
+      if(braceDepth===0)return null;
+      braceDepth--;token+=ch;continue;
+    }
+    if(ch===','&&braceDepth===0){values.push(token);token='';continue;}
+    token+=ch;
+  }
+  if(quoted||braceDepth!==0)return null;
+  values.push(token);
+  return values.length<=200?values:null;
+}
+
 function panosTrafficFields(values:string[]):Record<string,string>|null{
   return matchOrderedVendorSchema(values)?.fields??null;
 }
@@ -593,13 +623,15 @@ function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
   const body=raw.slice(head[0].length);
   if(/^[A-Za-z_][A-Za-z0-9_.-]*=/.test(body))return null;
-  const values=positionalCsvValues(body);
-  if(!values||values.length<12||values.length>100||!/^[0-9]{1,10}$/.test(values[0]??''))return null;
-  const panosLike=values.length>=7&&
-    /^\d{0,10}$/.test(values[0]??'')&&
-    /^\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?$/.test(values[1]??'')&&
-    /^[A-Za-z0-9_.:-]{4,64}$/.test(values[2]??'')&&
-    /^[A-Z][A-Z0-9_]{2,31}$/.test(values[3]??'');
+  const strictValues=positionalCsvValues(body);
+  if(!strictValues||strictValues.length<12||!/^[0-9]{1,10}$/.test(strictValues[0]??''))return null;
+  const panosLike=strictValues.length>=7&&
+    /^\d{0,10}$/.test(strictValues[0]??'')&&
+    /^\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?$/.test(strictValues[1]??'')&&
+    /^[A-Za-z0-9_.:-]{4,64}$/.test(strictValues[2]??'')&&
+    /^[A-Z][A-Z0-9_]{2,31}$/.test(strictValues[3]??'');
+  const values=panosLike?panosCsvValues(body):strictValues;
+  if(!values||values.length>(panosLike?200:100))return null;
   if(panosLike&&!panosPositionalCsvBody(body))return null;
   const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
   const ips=values.filter(value=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255)).length;
@@ -642,8 +674,8 @@ function boundedEnvelopeJson(text:string):Record<string,unknown>|null{
 }
 
 function panosPositionalCsvBody(text:string):Record<string,unknown>|null{
-  const values=positionalCsvValues(text);
-  if(!values||values.length<7||values.length>150)return null;
+  const values=panosCsvValues(text);
+  if(!values||values.length<7||values.length>200)return null;
   if(!/^\d{0,10}$/.test(values[0]??''))return null;
   const received=/^(\d{4})\/(\d{2})\/(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)$/.exec(values[1]??'');
   if(!received||!validIsoPriClock(
@@ -791,7 +823,7 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
     };
   }
 
-  const panosValues=positionalCsvValues(message);
+  const panosValues=panosCsvValues(message);
   const panosLike=!!panosValues&&panosValues.length>=7&&
     /^\d{0,10}$/.test(panosValues[0]??'')&&
     /^\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?$/.test(panosValues[1]??'')&&

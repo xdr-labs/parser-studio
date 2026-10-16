@@ -41,9 +41,22 @@ describe('vendor schema registry',()=>{
     expect(match?.fields.vendor_extra_001).toBe('future');
   });
 
-  it('does not treat an arbitrary numeric inserted field as reviewed padding',()=>{
-    const padded=[...BASE.slice(0,38),'0',...BASE.slice(38)];
-    expect(matchOrderedVendorSchema(padded)).toBeNull();
+  it('recognizes the documented FUTURE_USE slot when it contains a numeric placeholder',()=>{
+    const modern=[...BASE.slice(0,38),'0','32091208',...BASE.slice(39)];
+    const match=matchOrderedVendorSchema(modern);
+    expect(match?.profile).toBe('panos.traffic.padding54');
+    expect(match?.fields.padding).toBe('0');
+    expect(match?.fields.seqno).toBe('32091208');
+    expect(match?.fields.actionflags).toBe('0x0');
+  });
+
+  it('accepts zero as a bounded FUTURE_USE and sequence pair',()=>{
+    const modern=[...BASE.slice(0,38),'0',...BASE.slice(38)];
+    const match=matchOrderedVendorSchema(modern);
+    expect(match?.profile).toBe('panos.traffic.padding54');
+    expect(match?.fields.padding).toBe('0');
+    expect(match?.fields.seqno).toBe('0');
+    expect(match?.fields.actionflags).toBe('0x0');
   });
 
   it('fails closed for lookalikes with invalid or shifted core anchors',()=>{

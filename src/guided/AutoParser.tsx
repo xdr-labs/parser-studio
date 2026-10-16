@@ -651,7 +651,11 @@ export default function AutoParser({
    setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
  }
  function useParserFamilyGroup(group:ParserSetFamilyGroup){
-   if(parserSetOrigin||busy||pending||!multiPass||multiPass.raw!==sample)return;
+   // Family isolation is source-bound to the exact multipass byte frames and does
+   // not depend on the debounced browser preview. Changing the sample cancels
+   // that preview in App, so do not make this beginner action a silent no-op
+   // merely because the old full-sample preview is still pending.
+   if(parserSetOrigin||busy||!multiPass||multiPass.raw!==sample)return;
    const selectedGroup=materializeParserSetFamily(sample,multiPass.events,group);
    if(!selectedGroup.ok){
      setMessage('Parser Studio could not reproduce this event-family group from the unchanged source.');

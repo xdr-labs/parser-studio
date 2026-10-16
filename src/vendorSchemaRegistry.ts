@@ -73,10 +73,13 @@ function looksSequence(value:string):boolean{
 }
 
 function looksActionFlags(value:string):boolean{
-  // PAN-OS actionflags is represented as a hexadecimal flag token. Requiring
-  // the 0x prefix prevents a numeric padding column followed by a numeric
-  // sequence number from being mistaken for the core layout.
   return /^0x[0-9a-f]+$/i.test(value);
+}
+
+function looksFutureUse(value:string):boolean{
+  // PAN-OS documentation labels this slot FUTURE_USE. Observed traffic logs
+  // use either an empty value or a bounded decimal placeholder such as 0.
+  return value===''||/^\d{1,20}$/.test(value);
 }
 
 function buildFields(values:string[],names:readonly string[]):Record<string,string>{
@@ -109,7 +112,7 @@ export function matchOrderedVendorSchema(values:readonly string[]):OrderedVendor
   let names:readonly string[];
   if(looksSequence(values[38]??'')&&looksActionFlags(values[39]??'')){
     profile='panos.traffic.core53';names=PANOS_TRAFFIC_CORE_53;
-  }else if(values.length>=54&&(values[38]??'')===''&&
+  }else if(values.length>=54&&looksFutureUse(values[38]??'')&&
            looksSequence(values[39]??'')&&looksActionFlags(values[40]??'')){
     profile='panos.traffic.padding54';names=PANOS_TRAFFIC_PADDING_54;
   }else return null;
