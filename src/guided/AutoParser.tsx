@@ -1121,6 +1121,9 @@ export default function AutoParser({
          <span>{advanced?'Normalized':'Ready'} <strong>{suite?.counts.normalized??0}</strong></span>
          <span>{advanced?'Errors':'Issues'} <strong>{suite?.counts.failures??0}</strong></span>
        </div>
+       {confirmed()&&!canGenerate&&<p className="auto-parser-warning" role="note">
+         The browser extracted these events, but the current parser draft is not yet supported by the backend compiler. Review the parser format and backend capabilities before creating files. No files have been generated.
+       </p>}
        {!confirmed()&&<p className="auto-parser-warning" role="note">
          Not all sample events passed. Review detected fields and mappings above
          before generating your parser.</p>}
