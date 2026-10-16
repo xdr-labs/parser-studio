@@ -23,12 +23,16 @@ function objectValue(value:unknown):Record<string,unknown>|null{
     ?value as Record<string,unknown>:null;
 }
 
-function stableWithoutRaw(value:unknown):unknown{
-  if(Array.isArray(value))return value.map(stableWithoutRaw);
+function stableWithoutRaw(value:unknown,path:readonly string[]=[]):unknown{
+  if(Array.isArray(value))return value.map((item,index)=>
+    stableWithoutRaw(item,[...path,String(index)]));
   const object=objectValue(value);
   if(!object)return value;
-  return Object.fromEntries(Object.keys(object).sort().flatMap(key=>
-    ['source_raw','message_raw'].includes(key)?[]:[[key,stableWithoutRaw(object[key])]]));
+  return Object.fromEntries(Object.keys(object).sort().flatMap(key=>{
+    const preservedRaw=path[0]==='parserstudio_source'&&
+      ['source_raw','message_raw'].includes(key);
+    return preservedRaw?[]:[[key,stableWithoutRaw(object[key],[...path,key])]];
+  }));
 }
 
 function hasDuplicateTopLevelJsonKeys(raw:string):boolean{
