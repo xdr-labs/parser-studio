@@ -15,7 +15,7 @@ const bodies={
   sonicwall:'firewall: id=firewall sn=0017C5001234 time="2026-10-16 15:44:21" fw=192.0.2.1 pri=6 c=1024 m=537 msg="Connection opened" src=10.1.1.10 dst=198.51.100.50',
   suricata:'suricata[445]: {"timestamp":"2026-10-16T15:44:21.123456+0900","event_type":"alert","src_ip":"10.1.1.10","dest_ip":"198.51.100.20","alert":{"signature":"ET TEST"}}',
   cef:'edr: CEF:0|ExampleEDR|Endpoint|1.0|1001|Malware detected|8|src=10.1.1.10 dst=198.51.100.20 suser=alice',
-  leef:'proxy: LEEF:2.0|ExampleProxy|Cloud|1.0|blocked|devTime=2026-10-16T15:44:21Z\tsrc=10.1.1.10\tdst=198.51.100.20',
+  leef:'proxy: LEEF:2.0|ExampleProxy|Cloud|1.0|blocked|^|devTime=2026-10-16T15:44:21Z^src=10.1.1.10^dst=198.51.100.20',
   snort:'snort[771]: [1:1000001:1] TEST TCP scan [Classification: Attempted Information Leak] [Priority: 2] {TCP} 10.1.1.10:51514 -> 198.51.100.20:443',
   pfsense:'filterlog[882]: 5,,,1000000103,igb1,match,block,in,4,0x0,,64,41301,0,none,6,tcp,60,10.1.1.10,198.51.100.20,51514,443,0,S,12345,,64240,,mss',
 };
@@ -74,7 +74,7 @@ cases.push(
   },
   {
     id:'rfc5424-leef',family:'proxy-leef',bodyKind:'leef',
-    raw:'<134>1 2026-10-16T15:44:21+09:00 proxy01 nss - BLOCK - LEEF:2.0|Vendor|Proxy|1.0|block|src=10.0.0.8\tdst=198.51.100.8',
+    raw:'<134>1 2026-10-16T15:44:21+09:00 proxy01 nss - BLOCK - LEEF:2.0|Vendor|Proxy|1.0|block|^|src=10.0.0.8^dst=198.51.100.8',
     expectedPri:'134',expectedHost:'proxy01',
   },
   {
@@ -89,7 +89,7 @@ cases.push(
   },
   {
     id:'pri-only-leef',family:'leef',bodyKind:'leef',
-    raw:'<134>LEEF:2.0|Vendor|NDR|1.0|dns|src=10.0.0.9\tdst=198.51.100.53',
+    raw:'<134>LEEF:2.0|Vendor|NDR|1.0|dns|^|src=10.0.0.9^dst=198.51.100.53',
     expectedPri:'134',
   },
   {

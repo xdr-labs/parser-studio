@@ -1,4 +1,5 @@
 import {extractStructuredFamily} from './structuredFamilies';
+import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -605,6 +606,107 @@ function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
   };
 }
 
+
+function boundedEnvelopeJson(text:string):Record<string,unknown>|null{
+  if(!text.startsWith('{')||new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
+  let parsed:unknown;
+  try{parsed=JSON.parse(text);}catch{return null;}
+  if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')return null;
+  let nodes=0;
+  function safe(value:unknown,depth:number):boolean{
+    if(depth>8||++nodes>2048)return false;
+    if(Array.isArray(value))return value.length<=1024&&value.every(item=>safe(item,depth+1));
+    if(value&&typeof value==='object'){
+      for(const [key,item] of Object.entries(value as Record<string,unknown>)){
+        if(!sourceKeySafe(key)||new TextEncoder().encode(key).byteLength>256||!safe(item,depth+1))return false;
+      }
+    }
+    return true;
+  }
+  return safe(parsed,0)?parsed as Record<string,unknown>:null;
+}
+
+function panosPositionalCsvBody(text:string):Record<string,unknown>|null{
+  const values=positionalCsvValues(text);
+  if(!values||values.length<7||values.length>150)return null;
+  if(!/^\d{0,10}$/.test(values[0]??''))return null;
+  const received=/^(\d{4})\/(\d{2})\/(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)$/.exec(values[1]??'');
+  if(!received||!validIsoPriClock(
+    received[1]+'-'+received[2]+'-'+received[3],received[4]!,'Z'
+  ))return null;
+  if(!/^[A-Za-z0-9_.:-]{4,64}$/.test(values[2]??''))return null;
+  if(!/^(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION|GTP|IPTAG|SCTP|TUNNEL|URL|DATA|WILDFIRE)$/.test(values[3]??''))return null;
+  const columns:Record<string,string>={};
+  values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
+  return columns;
+}
+
+
+function securityPositionalCsvBody(text:string):Record<string,unknown>|null{
+  const values=positionalCsvValues(text);
+  if(!values||values.length<12||values.length>150)return null;
+  const ip=/^(?:\d{1,3}\.){3}\d{1,3}$/;
+  const validIp=(value:string)=>ip.test(value)&&value.split('.').every(part=>Number(part)<=255);
+  if(values.filter(validIp).length<2)return null;
+  const columns:Record<string,string>={};
+  values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
+  return columns;
+}
+
+function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|null{
+  const envelope=parseSyslogEnvelope(raw);
+  if(!envelope||envelope.variant==='colon_date')return null;
+  const syslog=envelopeToSyslogFields(envelope);
+  const message=envelope.message;
+
+  if(/^CEF:0\|/.test(message)){
+    const parsed=extractStructuredFamily(message,'cef');
+    if(!parsed.errors.length)return {
+      syslog,body:parsed.fields,
+      generic:{mode:'syslog_envelope_cef',source_raw:raw,message_raw:message},
+    };
+  }
+  if(/^LEEF:(?:1\.0|2\.0)\|/.test(message)){
+    const parsed=extractStructuredFamily(message,'leef');
+    if(!parsed.errors.length)return {
+      syslog,body:parsed.fields,
+      generic:{mode:'syslog_envelope_leef',source_raw:raw,message_raw:message},
+    };
+  }
+
+  const json=boundedEnvelopeJson(message);
+  if(json)return {
+    syslog,body:json,
+    generic:{mode:'syslog_envelope_json',source_raw:raw,message_raw:message},
+  };
+
+  const panos=panosPositionalCsvBody(message);
+  if(panos)return {
+    syslog,
+    generic:{mode:'syslog_envelope_positional_csv',profile:'panos',delimiter:',',source_raw:raw,message_raw:message,columns:panos},
+  };
+
+  const positional=securityPositionalCsvBody(message);
+  if(positional)return {
+    syslog,
+    generic:{mode:'syslog_envelope_positional_csv',delimiter:',',source_raw:raw,message_raw:message,columns:positional},
+  };
+
+  const comma=delimitedCommaKv(message);
+  if(comma?.generic&&typeof comma.generic==='object')return {
+    syslog,
+    generic:{...(comma.generic as Record<string,unknown>),source_raw:raw,message_raw:message},
+  };
+
+  const spaced=spaceKv(message);
+  if(spaced?.generic&&typeof spaced.generic==='object')return {
+    syslog,
+    generic:{...(spaced.generic as Record<string,unknown>),source_raw:raw,message_raw:message},
+  };
+
+  return null;
+}
+
 function asa(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const id=/%(ASA|FTD)-(\d)-(\d{6}):[ \t]*/.exec(raw);
@@ -656,8 +758,9 @@ function asa(raw:string):Record<string,unknown>|null{
 
 export function extractGenericStructural(raw:string):GenericStructuralExtraction{
   const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
-    juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??commaKv(raw)??
-    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??delimitedCommaKv(raw)??priSpaceKv(raw)??spaceKv(raw)??
+    juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
+    rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??priSpaceKv(raw)??
+    syslogEnvelopeStructuredFallback(raw)??commaKv(raw)??delimitedCommaKv(raw)??spaceKv(raw)??
     bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw);
   return fields?{fields,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};

@@ -13,11 +13,13 @@ function structuredBodyParsed(fields:Record<string,unknown>):boolean{
   const mode=(generic as {mode?:unknown}).mode;
   return typeof mode==='string'&&[
     'space_kv','delimited_kv','rfc3164_positional_csv','prefixed_json',
+    'syslog_envelope_positional_csv','syslog_envelope_cef',
+    'syslog_envelope_leef','syslog_envelope_json',
   ].includes(mode);
 }
 
-describe('syslog foundation PoC baseline',()=>{
-  it('records the current engine coverage without changing acceptance behavior',()=>{
+describe('syslog foundation PoC coverage',()=>{
+  it('records the candidate engine coverage without changing acceptance behavior',()=>{
     const positive=SYSLOG_POC_POSITIVE.map(sample=>{
       const parsed=extractGenericStructural(sample.raw);
       return {
@@ -40,7 +42,18 @@ describe('syslog foundation PoC baseline',()=>{
       negativeAccepted:negatives.filter(item=>item.accepted).length,
       negativeAcceptedSamples:negatives.filter(item=>item.accepted).map(item=>item.raw),
     };
-    console.log('SYSLOG_POC_BASELINE '+JSON.stringify(summary));
-    expect(positive.length).toBeGreaterThan(40);
+    console.log('SYSLOG_POC_COVERAGE '+JSON.stringify(summary));
+    expect(positive).toHaveLength(49);
+    expect(summary.parsed).toBe(43);
+    expect(summary.structuredBody).toBe(43);
+    expect(summary.negativeAccepted).toBe(0);
+    expect(summary.failures).toEqual([
+      'snort-rfc3164',
+      'snort-rfc3164-year-before-time',
+      'snort-rfc3164-year-after-time',
+      'snort-rfc3339-loose',
+      'snort-iso-space-zone',
+      'rfc5424-general-text',
+    ]);
   });
 });
