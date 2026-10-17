@@ -1,3 +1,4 @@
+import {readCsvSourceCells} from './csvSourceCells';
 export interface Rfc4180CsvTable{
   header:string[];
   rows:Array<Record<string,string>>;
@@ -83,43 +84,14 @@ export interface Rfc4180SingleDataRow{
   quotedFields:number;
 }
 
-export function parseRfc4180SingleDataRow(raw:string):Rfc4180SingleDataRow|null{
-  if(!raw||raw.includes('\0')||/[\r\n]/.test(raw)||bytes(raw)>64*1024)return null;
-  const values:string[]=[];let quotedFields=0,cursor=0;
-  while(cursor<raw.length){
-    if(values.length>0)while(raw[cursor]===' ')cursor++;
-    let value='';
-    if(raw[cursor]==='"'){
-      quotedFields++;
-      cursor++;
-      let closed=false;
-      while(cursor<raw.length){
-        const ch=raw[cursor]!;
-        if(ch==='"'){
-          if(raw[cursor+1]==='"'){value+='"';cursor+=2;continue;}
-          cursor++;closed=true;break;
-        }
-        value+=ch;cursor++;
-      }
-      if(!closed)return null;
-      while(raw[cursor]===' ')cursor++;
-      if(cursor<raw.length&&raw[cursor]!==',')return null;
-    }else{
-      while(cursor<raw.length&&raw[cursor]!==','){
-        if(raw[cursor]==='"')return null;
-        value+=raw[cursor]!;
-        cursor++;
-      }
-    }
-    if(bytes(value)>MAX_FIELD_BYTES)return null;
-    values.push(value);
-    if(values.length>MAX_COLUMNS)return null;
-    if(cursor===raw.length)break;
-    if(raw[cursor]!==',')return null;
-    cursor++;
-    if(cursor===raw.length){values.push('');break;}
-  }
-  return values.length?{values,quotedFields}:null;
+export function parseRfc4180SingleDataRow(raw:string,
+  options?:{declaredPaddingAfterDelimiter?:boolean}):Rfc4180SingleDataRow|null{
+  if(!raw||raw.includes('\0')||/[\r\n]/.test(raw)||bytes(raw)>64*1024)
+    return null;
+  const cells=readCsvSourceCells(raw,',',false,options);
+  if(!cells||cells.some(x=>bytes(x.value??'')>MAX_FIELD_BYTES))return null;
+  return {values:cells.map(x=>x.value??''),
+    quotedFields:cells.filter(x=>x.quoted).length};
 }
 
 export function parseRfc4180SingleQuotedRow(raw:string):string[]|null{

@@ -32,12 +32,18 @@ describe('safe, version-neutral browser preview', () => {
   });
 
 
-  it('accepts bounded field-edge whitespace before and after quoted CSV cells', () => {
+  it('preserves RFC4180 field whitespace and refuses nonstandard quote padding', () => {
     const draft = { ...createDraft(), csvColumns: 'id,action,detail', csvDelimiter: ',' as const };
-    expect(extractFields(' 1 , "allow" , "quoted, detail" ', 'csv', draft))
-      .toEqual({ fields: { id: '1', action: 'allow', detail: 'quoted, detail' }, errors: [] });
+    // Space after a closing quote or before an opening quote is not RFC4180.
+    expect(extractFields(' 1 , "allow" , "quoted, detail" ', 'csv', draft).errors.length)
+      .toBeGreaterThan(0);
+    expect(extractFields(' 1 ,"allow","quoted, detail"', 'csv', draft))
+      .toEqual({ fields: { id: ' 1 ', action: 'allow', detail: 'quoted, detail' }, errors: [] });
     expect(inferConsistentCsvColumnCount(
       '"1", "allow", "quoted, detail"\n"2", "deny", "other, detail"', ','
+    )).toBeNull();
+    expect(inferConsistentCsvColumnCount(
+      '"1","allow","quoted, detail"\n"2","deny","other, detail"', ','
     )).toBe(3);
   });
 

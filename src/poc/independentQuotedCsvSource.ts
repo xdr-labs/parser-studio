@@ -1,5 +1,6 @@
 import {arbitrateIndependentLeef} from './independentLeefSource';
 import {type IndependentReviewVeto} from './boundedSourceBodyArbiter';
+import {readCsvSourceCells} from '../csvSourceCells';
 
 /** Source byte extraction is allowed only when single-record CSV framing is independently established. */
 export interface CsvRecordContext {
@@ -36,10 +37,9 @@ export interface CsvSourceResult {
   independentOracleCertified:false;
   nativeVerified:false;
 }
-type Cell={start:number;end:number;value:string|null;quoted:boolean};
+import type {CsvSourceCell as Cell} from '../csvSourceCells';
 const encoder=new TextEncoder();
 const MAX_INPUT_BYTES=16*1024;
-const MAX_COLUMNS=256;
 const UNSAFE_NAMES=new Set(['__proto__','prototype','constructor']);
 const length=(raw:string)=>encoder.encode(raw).length;
 function wellFormed(raw:string):boolean{
@@ -52,50 +52,6 @@ function wellFormed(raw:string):boolean{
     }else if(c>=0xdc00&&c<=0xdfff)return false;
   }
   return true;
-}
-function readCells(raw:string,nullable:boolean):Cell[]|null{
-  if(raw.length===0)return null;
-  const result:Cell[]=[];
-  let pos=0;
-  while(pos<=raw.length){
-    if(result.length>=MAX_COLUMNS)return null;
-    const start=pos,quoted=raw[pos]==='"';
-    let value:string|null='';
-    if(quoted){
-      pos++;let decoded='',closed=false;
-      while(pos<raw.length){
-        const char=raw[pos]!;
-        if(char==='"'){
-          if(raw[pos+1]==='"'){decoded+='"';pos+=2;continue;}
-          pos++;closed=true;break;
-        }
-        const code=char.charCodeAt(0);
-        if(code===0||code===127||(code<32&&char!=='\n'&&char!=='\r'&&char!=='\t'))
-          return null;
-        decoded+=char;pos++;
-      }
-      if(!closed||(pos<raw.length&&raw[pos]!==','))return null;
-      value=decoded;
-    }else{
-      while(pos<raw.length&&raw[pos]!==','){
-        const char=raw[pos]!;
-        const code=char.charCodeAt(0);
-        if(char==='"'||char==='\r'||char==='\n'||code===0||code===127||
-           (code<32&&char!=='\t'))return null;
-        pos++;
-      }
-      value=start===pos&&nullable?null:raw.slice(start,pos);
-    }
-    result.push({start,end:pos,value,quoted});
-    if(pos===raw.length)break;
-    pos++;
-    if(pos===raw.length){
-      if(result.length>=MAX_COLUMNS)return null;
-      result.push({start:pos,end:pos,value:nullable?null:'',quoted:false});
-      break;
-    }
-  }
-  return result;
 }
 function replay(raw:string,cells:Cell[]):CsvPositionalClaim[]|null{
   const bytes=encoder.encode(raw);
@@ -138,7 +94,7 @@ export function inspectIndependentQuotedCsv(
      (header!==undefined&&(!wellFormed(header)||!header||length(header)>MAX_INPUT_BYTES)))
     return {...fallback,disposition:'ABSTAIN_UNSAFE',
       reason:'CSV_OUTSIDE_BOUNDED_UTF8_SOURCE'};
-  const row=readCells(raw,context.treatUnquotedEmptyAsNull===true);
+  const row=readCsvSourceCells(raw,',',context.treatUnquotedEmptyAsNull===true);
   if(!row)return {...fallback,disposition:'ABSTAIN_UNSAFE',branchAttempts:1,
     reason:'UNSAFE_OR_INDETERMINATE_CSV_RECORD'};
   const positional=replay(raw,row);
@@ -148,7 +104,7 @@ export function inspectIndependentQuotedCsv(
     positionalClaims:positional,branchAttempts:1,
     reviewEvidence:'EXPLICIT_FRAMING_LEXICAL_ONLY',
     reason:'CSV_POSITIONAL_ONLY_NO_SOURCE_COLUMN_NAMES'};
-  const h=readCells(header,false);
+  const h=readCsvSourceCells(header,',',false);
   if(!h||h.length!==positional.length)
     return {...fallback,disposition:'ABSTAIN_UNSAFE',branchAttempts:2,
       reason:'CSV_HEADER_DATA_COLUMN_COUNT_MISMATCH'};
