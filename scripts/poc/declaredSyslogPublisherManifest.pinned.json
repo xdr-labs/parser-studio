@@ -1,0 +1,95 @@
+{
+  "completeEventOracle": false,
+  "files": [
+    {
+      "bytes": 3752,
+      "sha256": "da2a963dd4bdd5fbb91ea0c7506eabea40129ec14e3734d887e0962a94078989",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-ad-connector.log"
+    },
+    {
+      "bytes": 32696,
+      "sha256": "ca80de6ad7a0ef93e0e6b89576f6441774f7e7d58f29cbec13958c071e9a4d5f",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-ad-connector.log-expected.json"
+    },
+    {
+      "bytes": 5060,
+      "sha256": "db3e3fceaf0867ffa813fe592212deab77e19d5095a34d152b993d5159ee007c",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-cise-alarm.log"
+    },
+    {
+      "bytes": 40062,
+      "sha256": "6c03ac9d83afdfef79554763c57d7cfa3b55bcac39a5341fb6adbf9dab9fcc88",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-cise-alarm.log-expected.json"
+    },
+    {
+      "bytes": 1561,
+      "sha256": "711ffa0134220c75af23a4fc7134bcda11c4ca91ad92eab42d3ba9e2fd837ed5",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-guest.log"
+    },
+    {
+      "bytes": 15886,
+      "sha256": "7029710fde4e231b322c9fe7d910614e9fb1df90731616752f84d38bf6af41d0",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-guest.log-expected.json"
+    },
+    {
+      "bytes": 3760,
+      "sha256": "4d44d8f40759ef7e9f93cda6e56babc5cac5fcd41fb73d0e39501034641874fd",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-policy-diagnostics.log"
+    },
+    {
+      "bytes": 30566,
+      "sha256": "509743ed1dde9bfae5761e99f7bfa826f57f00c6dbd088592220cbb4257b38f8",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-policy-diagnostics.log-expected.json"
+    },
+    {
+      "bytes": 6326,
+      "sha256": "eecc44a5d9c1102b2b121d4eeebdb1b96aac82bf95133702c9408905ee20def0",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-system-statistics.log"
+    },
+    {
+      "bytes": 37187,
+      "sha256": "ea370f0578288a15b2c1459ccdf254d777a85280d8c3b22e807037ad2298b299",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-system-statistics.log-expected.json"
+    },
+    {
+      "bytes": 11769,
+      "sha256": "3dcd4613cf4d686fd386feaa7d375064caab97e53490fb6d557346fc0a0a9ba3",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-tacacs-accounting.log"
+    },
+    {
+      "bytes": 71353,
+      "sha256": "a9a209751f749dd448c1aa7489145893054b797782fe0776753bcd36dc001f55",
+      "upstreamPath": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-tacacs-accounting.log-expected.json"
+    }
+  ],
+  "licenseSha256": "1ab1ac1cf67b4360986b5cd0448bfa320f9b34cacf46abce32b36b0c7fc71ed6",
+  "manufacturerFieldOrderSource": "https://www.cisco.com/c/en/us/td/docs/security/ise/syslog/Cisco_ISE_Syslogs/m_IntrotoSyslogs.html",
+  "oracle": {
+    "caveat": "field names manufacturer documented; expected values publisher ECS; byte offsets evaluator-generated",
+    "counts": {
+      "allPublisherLines": 69,
+      "expectedSourceTuples": 245,
+      "partialScorable": 41,
+      "unscorable": 28,
+      "withEscapesButUnqualified": 2,
+      "withSyntacticEmptiesButUnqualified": 1
+    },
+    "privateFile": "declared-cisco-source-oracle.v1.json",
+    "sha256": "64b4ababf7c701c8226575dde2e4e4690cb1c6c8f69c6981bd47d9a2b41a0e2f"
+  },
+  "originalOrExpectedDataCommitted": false,
+  "publisher": "elastic/integrations",
+  "publisherLicense": "Elastic License 2.0, private evaluation only",
+  "publisherProvidedExactByteOffsets": false,
+  "publisherRevision": "615252c0910be1b8dc4dbe8f70acabe02ea8757e",
+  "sourceSchema": [
+    "pri",
+    "timestamp",
+    "hostname",
+    "cat_name",
+    "msg_id",
+    "total_seg",
+    "seg_num",
+    "payload"
+  ]
+}
