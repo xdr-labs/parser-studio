@@ -172,3 +172,89 @@ claiming a universal accuracy improvement. Cisco ASA sentence events need
 real source semantics/templates rather than anonymous comma-count success.
 Only after that should product UI review, parser generation, native Stellar
 runtime testing and Full User E2E be attempted under their own gates.
+
+## Continued research: explicit independent source-evidence gate
+
+`src/poc/sourceEvidence.ts` now defines a **fixture-level, provenance-bound
+source-field contract**. A source candidate can receive only the
+`source_value_exact` label after all of the following:
+
+1. The candidate passes the bounded second-pass raw-span/value replay and
+   retains **source-named** fields rather than invented positional columns.
+2. A reviewed independent source oracle identifies the original record's
+   SHA-256, pinned 40-character upstream commit, fixture ID, original optional
+   prefix, and ordered source field names/values.
+3. The independently calculated source bytes hash and all field occurrences
+   match exactly. Duplicate names must retain their original order; a lost
+   repeated value is a mismatch.
+4. The resulting certificate still sets `mappingVerified: false`,
+   `nativeRuntimeVerified: false`, `productPromotionAllowed: false`, and
+   `requiresHumanReview: true`.
+
+Five deterministic tests cover source identity mismatch, altered field values,
+wrong order, untrusted provenance, manipulated token replay, anonymous CSV
+non-certification, and source-exact but still partial repeated/prefixed fields.
+
+An *independent source oracle* is provenance evidence supplied by a reviewer,
+not something the parser is allowed to invent or construct from its own
+candidate. Even a perfect byte/value match does not establish which Stellar
+normalized field should receive the value, or whether a native parser
+executable will reproduce this output.
+
+## Further unopened-file public evaluation: 222 records
+
+After freezing and comparing the first 265-event corpus, a **different set
+of nine previously unused public upstream files** was selected and frozen to
+private state before its first parser evaluation. They are pinned in
+`scripts/poc/losslessGrammarBlind.manifest.json`.
+
+- Same published upstream revision:
+  `ee918d03f4a90dacd32673546c64a633308796ef`.
+- Logical event corpus SHA-256:
+  `153572acc1edbfbd4933fbedfafd4696ee11a68d398651dfea7081c2a87fcb32`.
+- Six families, 222 records; **217/222** baseline structurally parsed and
+  **217/217** original event raws retained exactly.
+- Remaining **5** Cisco ASA events stayed unparsed. The common lexer
+  proposed **0** independently source-qualified additional fields on this
+  dataset, and promoted **0** events.
+- The independent Python source-field tokenizer found **zero** complete flat
+  or prefixed KV rows that it could certify from these *original complete
+  records*. This is an explicit **NOT SCORABLE** source-field oracle gate for
+  this particular corpus: **do not report 0/0 as PASS**, or use 217/222 as
+  a field accuracy estimate.
+- This further evaluation illustrates conservative abstention and unchanged
+  original parser behavior on new source files. It does not demonstrate a
+  statistically unbiased future deployment success rate or improvement in
+  native/Stellar mapping.
+
+Reproduction, with all raw source bytes remaining in private state:
+
+```sh
+python3 scripts/poc/fetchLosslessBlindCorpus.py
+python3 scripts/poc/createLosslessBlindOracle.py
+npx vite-node scripts/poc/runLosslessBlindEvaluation.ts
+npx vitest run src/poc/sourceEvidence.poc.test.ts
+```
+
+## Acceptance interpretation and roadmap
+
+The bounded lossless scan, independent source-value replay and conservative
+candidate diagnostics are implementable core components. The two source
+corpora together contain 487 public example records, but only 145 original
+source-field sets in the first corpus have matched independent source-value
+oracles; the second corpus does not provide field-oracle evidence. Never
+combine the different denominators into one all-vendor field accuracy
+percentage.
+
+Remaining work before *product-level* parser adoption:
+
+- An independently trusted source grammar registry and explicit content
+  ownership/provenance beyond developer fixture scripts.
+- Verified normalization field mappings (using the actual supported Stellar
+  dictionary) and collision/missing-source-field policies.
+- True novel/vendor-unseen source-field precision **and recall**, including
+  scored unsupported/free-text abstentions and a separately verified native
+  parser path, without continuously tuning the holdout.
+- Feature-gated integration into the existing bounded Multi-Pass Funnel,
+  browser/Full User E2E, and native Stellar export/DP validations where
+  authorized. This PoC does none of those and must not be silently merged.

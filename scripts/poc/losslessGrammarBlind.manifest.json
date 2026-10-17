@@ -1,0 +1,62 @@
+{
+  "revision": "ee918d03f4a90dacd32673546c64a633308796ef",
+  "files": [
+    {
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-2.log",
+      "sha256": "f70ceda157b17dc9151dc7bc58eccff13a197b0356fbde356947dfad13c6774f",
+      "bytes": 7672,
+      "events": 7
+    },
+    {
+      "path": "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-unicode.json",
+      "sha256": "0743852413c47cd993e868dad4cbda2c3cc599a544932ae3e6c02c4443c34b6b",
+      "bytes": 2437,
+      "events": 1
+    },
+    {
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-small.log",
+      "sha256": "8e414e50831f96340502f0cf52d2983dfe0fd64f87db2377c5c10126b38cec15",
+      "bytes": 9253,
+      "events": 14
+    },
+    {
+      "path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-106023-iface-with-prefix.log",
+      "sha256": "f7b07468fe99a16c725148d39a6bc1518d91123060de602ccdd90dfeba11a213",
+      "bytes": 1389,
+      "events": 10
+    },
+    {
+      "path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-302020-direction.log",
+      "sha256": "61fa006c0baec1500c0c4a796b573109fc40768a16d6707e723601e69a99e198",
+      "bytes": 863,
+      "events": 5
+    },
+    {
+      "path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-sonicos70-aws.log",
+      "sha256": "7bf2450fb105f4181374a7875cec4c6eaf9322479c0147643064ff017a169ef4",
+      "bytes": 51729,
+      "events": 146
+    },
+    {
+      "path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-drizzthacker.log",
+      "sha256": "237b3459f461b97466fda48264b6b388ced8d37073188279cb900f695ba539c8",
+      "bytes": 8630,
+      "events": 32
+    },
+    {
+      "path": "packages/aws/data_stream/cloudtrail/_dev/test/pipeline/test-attach-group-policy-json.log",
+      "sha256": "f87002115ebf26efccd1e6d46ece40ff83505162283b77359dd5a31c73e1fd44",
+      "bytes": 1103,
+      "events": 1
+    },
+    {
+      "path": "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-firewall-http-endpoint.log",
+      "sha256": "49326df25eec7eb45f8f5509fe4b67e57dfc086d880ce40ffac7f10cf9f8e671",
+      "bytes": 11115,
+      "events": 6
+    }
+  ],
+  "events": 222,
+  "record_sha256": "153572acc1edbfbd4933fbedfafd4696ee11a68d398651dfea7081c2a87fcb32",
+  "frozen_before": "first-blind-evaluation"
+}
