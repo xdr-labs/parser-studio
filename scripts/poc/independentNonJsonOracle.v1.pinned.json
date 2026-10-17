@@ -1,0 +1,30 @@
+{
+  "case_count": 30,
+  "excluded_from_rates": [
+    "UPSTREAM_INVALID_CONTROL",
+    "DUPLICATE_SOURCE_EXCLUDED",
+    "UNSCORABLE"
+  ],
+  "independent_expectation": "Java upstream asserted header fields, CEF extension names and fixture original lexical value; FluentBit asserted message",
+  "license_scope": "Apache-2.0 private evaluation; no source originals or values committed",
+  "no_candidate_scored_before_freeze": true,
+  "oracle_sha256": "95812711db0ec614f7001e4a7b0a716563c64fe26e05ed6c89e37c4471c828da",
+  "schema": "independent-nonjson-original-goldens-v1",
+  "scorable_originals": 16,
+  "scorable_source_triples": 145,
+  "scoring_definitions": "name, publisher-backed original lexical value and UTF8 source byte range; type and normalization separate",
+  "source_only_not_native_or_vendor_truth": true,
+  "source_pin_sha256": "1998fd42a079cd87f059acc1052d1da57b4beee809f9dc11b7a1ebf18a3d7d1d",
+  "stage": "FROZEN_BEFORE_ANY_BASELINE_OR_CANDIDATE_SCORE",
+  "status_counts": {
+    "DUPLICATE_SOURCE_EXCLUDED": 9,
+    "SCORABLE_SOURCE_ONLY": 16,
+    "UNSCORABLE": 1,
+    "UPSTREAM_INVALID_CONTROL": 4
+  },
+  "subgroup_declarations": [
+    "cef",
+    "csv",
+    "syslog"
+  ]
+}

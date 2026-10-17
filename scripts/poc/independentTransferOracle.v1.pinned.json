@@ -1,0 +1,21 @@
+{
+  "additional_publisher": "apache/metron",
+  "field_triples": 19,
+  "independent_assertions": "Metron Java assertEquals and CyberArk upstream JSON original_string",
+  "license": "Apache-2.0; original and expected private 0600",
+  "logstash_and_schema_only": "UNSCORABLE",
+  "never_use_parser_output_as_truth": true,
+  "nonmetron_CEF_input_holdout_missing": true,
+  "oracle_sha256": "6944e92d0e5f0f8c4db9fe96a7d05ea0a07a68cb111db2e9bb17c97ddfb2a07b",
+  "original_cases": 9,
+  "schema": "cross-publisher-independent-source-transfer-v1",
+  "scope": "source-only; bounded evidence; no native/vendor verification",
+  "scorable_originals": 3,
+  "source_pin_sha256": "310a97c50cddb49ce914dbfe43baa321d4ee512c8e62cdd53f176c650b2e8fe3",
+  "stage": "TRANSFER_ORACLE_FROZEN_BEFORE_ANY_CANDIDATE_SCORING",
+  "status_counts": {
+    "NEGATIVE_CONTROL": 1,
+    "SCORABLE_SOURCE_ONLY": 3,
+    "UNSCORABLE": 5
+  }
+}

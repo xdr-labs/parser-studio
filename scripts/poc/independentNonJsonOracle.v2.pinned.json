@@ -1,0 +1,23 @@
+{
+  "never_count_unscorable_as_correct": true,
+  "original_events": 30,
+  "parent_oracle_v1_sha256": "95812711db0ec614f7001e4a7b0a716563c64fe26e05ed6c89e37c4471c828da",
+  "publisher_invalid_eligible_controls": [
+    "nifi:18-misformatted-row.txt:1",
+    "nifi:19-single-row-with-incorrect-header-field.txt:0"
+  ],
+  "qualified_oracle_v2_sha256": "18c25739376c4bd7289066e147ac73fc5e55344385b0312e7c0e6cab00cea17b",
+  "redistribution": "private only; no raw log or expected field values in Git",
+  "schema": "independent-nonjson-original-goldens-v2",
+  "scorable_originals": 16,
+  "source_only_not_native_certification": true,
+  "source_triples": 145,
+  "stage": "QUALIFIED_AND_FROZEN_BEFORE_ANY_CANDIDATE_OR_BASELINE_SCORE",
+  "status_counts": {
+    "DUPLICATE_SOURCE_EXCLUDED": 9,
+    "SCORABLE_SOURCE_ONLY": 16,
+    "UNSCORABLE": 3,
+    "UPSTREAM_INVALID_CONTROL": 2
+  },
+  "upstream_sources_sha256": "1998fd42a079cd87f059acc1052d1da57b4beee809f9dc11b7a1ebf18a3d7d1d"
+}

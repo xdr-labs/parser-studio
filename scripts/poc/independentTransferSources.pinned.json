@@ -1,0 +1,128 @@
+{
+  "expected_truth": "publisher-authored explicit assertions only; otherwise UNSCORABLE",
+  "private_originals": true,
+  "schema": "independent-cross-publisher-transfer-source-pin-v1",
+  "source_files": [
+    {
+      "bytes": 11975,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "00-CEFParserTest.java",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/java/org/apache/metron/parsers/cef/CEFParserTest.java",
+      "repo": "apache/metron",
+      "sha256": "77e15d2a1c3749fa8ca35e23f02c07bc21102c9088a72902fe7ae52711d23644"
+    },
+    {
+      "bytes": 530,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "01-adallom.cef",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/adallom.cef",
+      "repo": "apache/metron",
+      "sha256": "7a84efa783c60a34164fa6c3687bed0e6487d1a45f1aaa3acb034900295de766"
+    },
+    {
+      "bytes": 599,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "02-adallom.schema",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/adallom.schema",
+      "repo": "apache/metron",
+      "sha256": "02fbf613b5fc25fce61e1e85608faaa09cc8362a8285df480c79ba801d5a7a91"
+    },
+    {
+      "bytes": 545,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "03-cyberark.cef",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/cyberark.cef",
+      "repo": "apache/metron",
+      "sha256": "5cb3b4fdb7e1dab125c884e497165b2619321ac1cb90c3bc179a646f03776393"
+    },
+    {
+      "bytes": 1300,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "04-cyberark.json",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/cyberark.json",
+      "repo": "apache/metron",
+      "sha256": "4ba69a80bf8fc4827893deaaae943b7c14890b1747f7883da7e8b98dd48fa684"
+    },
+    {
+      "bytes": 628,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "05-cyberark.schema",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/cyberark.schema",
+      "repo": "apache/metron",
+      "sha256": "7a226de2fe46891f0c9e733deb2711f8d51d2a1427c049fca03d11224ed249e5"
+    },
+    {
+      "bytes": 903,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "06-palo.cef",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/palo.cef",
+      "repo": "apache/metron",
+      "sha256": "0ca785dce0c3010bc31aaf63455341bbea1d02de11212278b03e89d4fb657d05"
+    },
+    {
+      "bytes": 628,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "07-palo.schema",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/palo.schema",
+      "repo": "apache/metron",
+      "sha256": "f8dad1dfc3bedffea39ba0a9d210ded36ef601301bdd9f096c24d67769065a76"
+    },
+    {
+      "bytes": 398,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "08-waf.cef",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/waf.cef",
+      "repo": "apache/metron",
+      "sha256": "86d85c89c694fb56c74ffb7cf2bb2d90376c3e6f5c4a710cbcde0b5f47198c74"
+    },
+    {
+      "bytes": 1150,
+      "commit": "1252573eab087e87fb2938f8651c5b0b393aca9e",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "09-waf.schema",
+      "path": "metron-platform/metron-parsing/metron-parsers/src/test/resources/org/apache/metron/parsers/cef/waf.schema",
+      "repo": "apache/metron",
+      "sha256": "7ed93a80d4d3df6700cc6cff452a1f05a32f24c8352480bab12f889407819b67"
+    },
+    {
+      "bytes": 72343,
+      "commit": "b37023884a8ed069ca2b9df239b9dfc8dce3a075",
+      "family": "cef",
+      "license": "Apache-2.0",
+      "local": "10-cef_spec.rb",
+      "path": "spec/codecs/cef_spec.rb",
+      "repo": "logstash-plugins/logstash-codec-cef",
+      "sha256": "e59d93955c7bfc0be6bbf0f995b17d5a7b50554725b3b444676c0071bf1022cb"
+    },
+    {
+      "bytes": 40797,
+      "commit": "71c7b8a0d38d092afe0b756ea1ba9dacc9300d0c",
+      "family": "kv",
+      "license": "Apache-2.0",
+      "local": "11-kv_spec.rb",
+      "path": "spec/filters/kv_spec.rb",
+      "repo": "logstash-plugins/logstash-filter-kv",
+      "sha256": "a5b000118a58c7a96a508b066dd1015143a0df8958efe0fbbcecfadf92cff040"
+    }
+  ],
+  "stage": "SOURCE_PINNED_BEFORE_EXPECTED_EXTRACTION_OR_CANDIDATE_SCORING"
+}
