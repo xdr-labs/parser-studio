@@ -1,0 +1,46 @@
+{
+  "schema": "blind-generalization-oracle-v1",
+  "status": "FROZEN_BEFORE_BASELINE_OR_CANDIDATE_SCORING",
+  "independent_semantics": "python_json_standard_decoder_crosschecked_with_independent_raw_byte_tokenizer",
+  "source_manifest_sha256": "46cc04ac899bc4e7c610b6ce9ec4796fb553ba1766fc7b6462fa7faa3aeec0c4",
+  "private_oracle_sha256": "1918c4da2e4c6b5dd5dd6381e976cc31fd82d337da4a25f32ce7f3eecbed2881",
+  "source_files": 18,
+  "all_events": 765,
+  "scorable_events": 588,
+  "leaf_fields": 15655,
+  "unscorable_events": 177,
+  "groups": {
+    "suricata_pcap": {
+      "all_events": 548,
+      "scorable_events": 548,
+      "source_leaf_fields": 14353,
+      "unscorable_events": 0,
+      "holdout": true
+    },
+    "converter_upstream": {
+      "all_events": 198,
+      "scorable_events": 36,
+      "source_leaf_fields": 1223,
+      "unscorable_events": 162,
+      "holdout": false
+    },
+    "log_zoo": {
+      "all_events": 4,
+      "scorable_events": 0,
+      "source_leaf_fields": 0,
+      "unscorable_events": 4,
+      "holdout": true
+    },
+    "siem_examples": {
+      "all_events": 15,
+      "scorable_events": 4,
+      "source_leaf_fields": 79,
+      "unscorable_events": 11,
+      "holdout": false
+    }
+  },
+  "split_policy": "suricata_pcap_and_log_zoo_sealed_all_others_development",
+  "candidate_access_to_sealed_truth": "prohibited_until_candidate_frozen",
+  "nonjson_status": "UNSCORABLE_UNTIL_INDEPENDENT_FIELD_ORACLE",
+  "claim_limit": "JSON_structural_source_fidelity_not_vendor_native_semantics"
+}
