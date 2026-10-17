@@ -1,0 +1,99 @@
+{
+  "contract": "parser-studio.source-trust-registry.v0.1",
+  "upstreamRepository": "https://github.com/elastic/integrations",
+  "upstreamRevision": "ee918d03f4a90dacd32673546c64a633308796ef",
+  "recordSetSha256": "70fb8f5e9e0753c763c66936880d3ca2b8e590cbadeabf0c8c7a674b7e858039",
+  "reviewState": "NOT_HUMAN_REVIEWED",
+  "entries": [
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#27",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "583c146752699bcb7886c72384cbc93d404973e52ad24bc736eb61ac778ca5c3",
+      "orderedFieldsSha256": "5556dbccff1e64fc4f78ac49bd6183414a4200da2285d1d0bfa5bb39b277275d",
+      "prefixSha256": "f8822cf520d2eddb839bad11ff4ac6397f58b8e2db91176bdd67c5f2f370c196",
+      "expectedFieldCount": 21,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#28",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "0e76731ad105d3f3dbea89fed954bdc030de81237afbff28cc25028f3fe9e310",
+      "orderedFieldsSha256": "f11d6626100083b5427a3c6e1f1f97be18a13621ba4bd38ba80cb23a80791c4b",
+      "prefixSha256": "f8822cf520d2eddb839bad11ff4ac6397f58b8e2db91176bdd67c5f2f370c196",
+      "expectedFieldCount": 30,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#29",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "b50bf874a000a6ddf5db00c63ca69332118b21197990ceddc0dcae3e11d57364",
+      "orderedFieldsSha256": "d5e06acabd40e654cc6866aa2b2a18d81478d353682605f52434a2a2dbff39dd",
+      "prefixSha256": "f8822cf520d2eddb839bad11ff4ac6397f58b8e2db91176bdd67c5f2f370c196",
+      "expectedFieldCount": 31,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#30",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "201e5e0582c5d80c7d9c30280b750814147966a5b65e9060b41bc858748b65f9",
+      "orderedFieldsSha256": "a18510fd69da6d68d218c49fe59119e5573315da5863d6eb0d5c14a9bed0be7d",
+      "prefixSha256": "02ec784c98ef343c9530c8c85bbe02f6576cf336a5bb84667e8a21825c9cd0cf",
+      "expectedFieldCount": 31,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#31",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "87eab1667ef41ee34616be6ef9f486971d82c18a8b5158e80f0830c1efb4cd54",
+      "orderedFieldsSha256": "9e06becb4b1ab9f9d50f02d1d349e17fcfaa8f05aa374dfb2b0e19f1e9c9556c",
+      "prefixSha256": "02ec784c98ef343c9530c8c85bbe02f6576cf336a5bb84667e8a21825c9cd0cf",
+      "expectedFieldCount": 31,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#32",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "b4b76d201cb13971e405a3442dc4b27882d62ccf97651b74b019c023c61210ed",
+      "orderedFieldsSha256": "e553d9031e382de9ae06cb0c85b8b9e447e2b8ae7f567f3a09be0dbd4f534c9b",
+      "prefixSha256": "02ec784c98ef343c9530c8c85bbe02f6576cf336a5bb84667e8a21825c9cd0cf",
+      "expectedFieldCount": 21,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#33",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "1848886eedbfd5579b5dccb9cdce337628d36a41eb4181e27300b348993b6047",
+      "orderedFieldsSha256": "b9c759113afc6d62f737799260952af15c0df077c738f930edb530d646bc5990",
+      "prefixSha256": "02ec784c98ef343c9530c8c85bbe02f6576cf336a5bb84667e8a21825c9cd0cf",
+      "expectedFieldCount": 17,
+      "expectedDuplicateCount": 1,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "sonicwall_firewall/test-general.log#34",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "b41a282458542add63ce725c08e2753fb491bf79d93644f2db133f5bf40da688",
+      "orderedFieldsSha256": "247387768717625b01ce01429fca1764a84822c0a35082757de8e554ad02e121",
+      "prefixSha256": "f8822cf520d2eddb839bad11ff4ac6397f58b8e2db91176bdd67c5f2f370c196",
+      "expectedFieldCount": 35,
+      "expectedDuplicateCount": 0,
+      "oracleStage": "INDEPENDENT_LEXICAL_UNREVIEWED"
+    },
+    {
+      "fixtureId": "synthetic/test-prefix-repeated#1",
+      "grammar": "prefixed_kv_space",
+      "sourceSha256": "0f621cb45215c8d9a6e61d36fa0e40f2e6bed73c411f8f0294a77f02f055f833",
+      "orderedFieldsSha256": "516a77435628265936ed95000210dddb73069a36f06e1a0d35286697612d514c",
+      "prefixSha256": "82693c076bd81c3dbb552c1b4ef9702132dba4193b873df6e31bc0aae7386769",
+      "expectedFieldCount": 4,
+      "expectedDuplicateCount": 1,
+      "oracleStage": "SYNTHETIC_CONTROL_ONLY"
+    }
+  ]
+}
