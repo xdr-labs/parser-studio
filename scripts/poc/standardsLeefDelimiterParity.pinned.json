@@ -1,0 +1,506 @@
+{
+  "authority": "IBM LEEF event components official published grammar",
+  "truth": "independently authored synthetic; no native or publisher-captured log accuracy",
+  "cases": [
+    {
+      "id": "LEEF-X5E",
+      "wire": "LEEF:2.0|Example|Sensor|1|E42|x5E|src=192.0.2.1^dst=198.51.100.2",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "delimiter",
+          "value": "x5E",
+          "startByte": 30,
+          "endByte": 33
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 38,
+          "endByte": 47
+        },
+        {
+          "name": "dst",
+          "value": "198.51.100.2",
+          "startByte": 52,
+          "endByte": 64
+        }
+      ],
+      "sourceBytes": 64,
+      "delimiterToken": "x5E",
+      "delimiter": "^"
+    },
+    {
+      "id": "LEEF-0X5E",
+      "wire": "LEEF:2.0|Example|Sensor|1|E42|0x5E|src=192.0.2.1^msg=hello world",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "delimiter",
+          "value": "0x5E",
+          "startByte": 30,
+          "endByte": 34
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 39,
+          "endByte": 48
+        },
+        {
+          "name": "msg",
+          "value": "hello world",
+          "startByte": 53,
+          "endByte": 64
+        }
+      ],
+      "sourceBytes": 64,
+      "delimiterToken": "0x5E",
+      "delimiter": "^"
+    },
+    {
+      "id": "LEEF-XA6-UTF8",
+      "wire": "LEEF:2.0|보안Vendor|Sensor|1|E42|xa6|msg=€😀¦src=192.0.2.1",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "보안Vendor",
+          "startByte": 9,
+          "endByte": 21
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 22,
+          "endByte": 28
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 29,
+          "endByte": 30
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 31,
+          "endByte": 34
+        },
+        {
+          "name": "delimiter",
+          "value": "xa6",
+          "startByte": 35,
+          "endByte": 38
+        },
+        {
+          "name": "msg",
+          "value": "€😀",
+          "startByte": 43,
+          "endByte": 50
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 56,
+          "endByte": 65
+        }
+      ],
+      "sourceBytes": 65,
+      "delimiterToken": "xa6",
+      "delimiter": "¦"
+    },
+    {
+      "id": "LEEF-LITERAL-A6",
+      "wire": "LEEF:2.0|Example|Sensor|1|E42|¦|src=192.0.2.1¦act=allow",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "delimiter",
+          "value": "¦",
+          "startByte": 30,
+          "endByte": 32
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 37,
+          "endByte": 46
+        },
+        {
+          "name": "act",
+          "value": "allow",
+          "startByte": 52,
+          "endByte": 57
+        }
+      ],
+      "sourceBytes": 57,
+      "delimiterToken": "¦",
+      "delimiter": "¦"
+    },
+    {
+      "id": "LEEF-X09",
+      "wire": "LEEF:2.0|Example|Sensor|1|E42|x09|src=192.0.2.1\tdst=198.51.100.2",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "delimiter",
+          "value": "x09",
+          "startByte": 30,
+          "endByte": 33
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 38,
+          "endByte": 47
+        },
+        {
+          "name": "dst",
+          "value": "198.51.100.2",
+          "startByte": 52,
+          "endByte": 64
+        }
+      ],
+      "sourceBytes": 64,
+      "delimiterToken": "x09",
+      "delimiter": "\t"
+    },
+    {
+      "id": "LEEF-0X09",
+      "wire": "LEEF:2.0|Example|Sensor|1|E42|0x09|src=192.0.2.1\tmsg=multilingual €",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "delimiter",
+          "value": "0x09",
+          "startByte": 30,
+          "endByte": 34
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 39,
+          "endByte": 48
+        },
+        {
+          "name": "msg",
+          "value": "multilingual €",
+          "startByte": 53,
+          "endByte": 69
+        }
+      ],
+      "sourceBytes": 69,
+      "delimiterToken": "0x09",
+      "delimiter": "\t"
+    },
+    {
+      "id": "LEEF-0X3A",
+      "wire": "LEEF:2.0|Example|Sensor|1|E42|0x3A|src=192.0.2.1:severity=high",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "2.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "delimiter",
+          "value": "0x3A",
+          "startByte": 30,
+          "endByte": 34
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 39,
+          "endByte": 48
+        },
+        {
+          "name": "severity",
+          "value": "high",
+          "startByte": 58,
+          "endByte": 62
+        }
+      ],
+      "sourceBytes": 62,
+      "delimiterToken": "0x3A",
+      "delimiter": ":"
+    },
+    {
+      "id": "LEEF-1.0-TAB",
+      "wire": "LEEF:1.0|Example|Sensor|1|E42|src=192.0.2.1\tdst=198.51.100.2",
+      "valid": true,
+      "fields": [
+        {
+          "name": "version",
+          "value": "1.0",
+          "startByte": 5,
+          "endByte": 8
+        },
+        {
+          "name": "vendor",
+          "value": "Example",
+          "startByte": 9,
+          "endByte": 16
+        },
+        {
+          "name": "product",
+          "value": "Sensor",
+          "startByte": 17,
+          "endByte": 23
+        },
+        {
+          "name": "product_version",
+          "value": "1",
+          "startByte": 24,
+          "endByte": 25
+        },
+        {
+          "name": "event_id",
+          "value": "E42",
+          "startByte": 26,
+          "endByte": 29
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "startByte": 34,
+          "endByte": 43
+        },
+        {
+          "name": "dst",
+          "value": "198.51.100.2",
+          "startByte": 48,
+          "endByte": 60
+        }
+      ],
+      "sourceBytes": 60,
+      "delimiterToken": null,
+      "delimiter": "\t"
+    },
+    {
+      "id": "LEEF-NUL",
+      "wire": "LEEF:2.0|Vendor|Product|1|E42|x00|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 47
+    },
+    {
+      "id": "LEEF-NEWLINE",
+      "wire": "LEEF:2.0|Vendor|Product|1|E42|0x0A|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 48
+    },
+    {
+      "id": "LEEF-SURROGATE",
+      "wire": "LEEF:2.0|Vendor|Product|1|E42|xD800|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 49
+    },
+    {
+      "id": "LEEF-BAD-HEX",
+      "wire": "LEEF:2.0|Vendor|Product|1|E42|0xGG|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 48
+    },
+    {
+      "id": "LEEF-EQUALS",
+      "wire": "LEEF:2.0|Vendor|Product|1|E42|=|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 45
+    },
+    {
+      "id": "LEEF-ESCAPE-CHAR",
+      "wire": "LEEF:2.0|Vendor|Product|1|E42|0x5C|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 48
+    }
+  ]
+}
