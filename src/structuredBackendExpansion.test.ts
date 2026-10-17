@@ -39,13 +39,20 @@ describe('new backend RFC5424/CEF/LEEF reviewed subset browser parity', () => {
   it.each([
     '[meta@32473 name=unquoted]',
     '[meta@32473 name="unterminated]',
-    '[meta@32473 name="invalid\\q"]',
-    '[meta@32473 name="one" name="two"]',
     '[meta@32473][meta@32473]',
     '[meta@32473]junk',
   ])('fails closed on malformed RFC5424 SD: %s', (sd)=>{
     const draft=createDraft();draft.format='syslog_rfc5424';
     expect(extractFields(head+sd,'syslog_rfc5424',draft).errors.length).toBeGreaterThan(0);
+  });
+
+  it('preserves RFC5424 repeated PARAM-NAME and unknown backslash escapes literally',()=>{
+    const draft=createDraft();draft.format='syslog_rfc5424';draft.syslogBodyFormat='raw';
+    const sd='[meta@32473 name="a\\qb" name="second"]';
+    const result=extractFields(head+sd+' body text','syslog_rfc5424',draft);
+    expect(result.errors).toEqual([]);
+    expect(result.fields.syslog_structured_data).toBe(sd);
+    expect(result.fields.message).toBe('body text');
   });
 
   it.each([
