@@ -1,0 +1,19 @@
+{
+  "external_semantics": "never certified",
+  "native_verified": false,
+  "negative_controls": 3,
+  "oracle_sha256": "7c66600785630316ec29ae936048a78119def5060cceadb4276aa9cecbf41aff",
+  "originals": 6,
+  "privacy": "private original messages/expected fields mode 0600; no logs in Git",
+  "publishers": [
+    "aipd506/syslog-siem-correlator",
+    "cwccie/slogparse",
+    "marirs/leef2hashmap-rs"
+  ],
+  "schema": "new-independent-leef-originals-v1",
+  "scorable_events": 3,
+  "scoring_scope": "only independently publisher-asserted field values, UTF8 source literal byte ranges",
+  "source_pin_sha256": "5a7643ebd377ae6f3d73fd3553bf7007bc7435528be2088a88580a5c9347d02d",
+  "source_triples": 23,
+  "stage": "INDEPENDENT_EXPECTED_GOLDENS_FROZEN_BEFORE_BASELINE_OR_CANDIDATE_SCORING"
+}

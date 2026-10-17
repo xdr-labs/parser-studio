@@ -1,0 +1,49 @@
+{
+  "historical_overlap": "distinct from PR #29-#47 upstream source projects",
+  "original_data_handling": "private 0600",
+  "publisher_license": "MIT",
+  "schema": "new-leef-publisher-source-pin-v1",
+  "source_files": [
+    {
+      "bytes": 3439,
+      "file": "tests/conftest.py",
+      "license": "MIT",
+      "local_file": "00-conftest.py",
+      "publisher": "cwccie/slogparse",
+      "revision": "6da59de84d4684a9dacb0c31f3263d3e2f7b0095",
+      "source_role": "publisher-authored expected fields and original sample bytes",
+      "source_sha256": "de6e4ed9e33bed8aec021deb4e30bf8eaad176025f335449c588b54001f289ac"
+    },
+    {
+      "bytes": 1904,
+      "file": "tests/test_leef.py",
+      "license": "MIT",
+      "local_file": "01-test_leef.py",
+      "publisher": "cwccie/slogparse",
+      "revision": "6da59de84d4684a9dacb0c31f3263d3e2f7b0095",
+      "source_role": "publisher-authored expected fields and original sample bytes",
+      "source_sha256": "fa642c8da9b8a22af4afb470444c47bbcd572591ebf9ebf677a56ad318955ae1"
+    },
+    {
+      "bytes": 2952,
+      "file": "tests/test_parsers.py",
+      "license": "MIT",
+      "local_file": "02-test_parsers.py",
+      "publisher": "aipd506/syslog-siem-correlator",
+      "revision": "a2ef7f177f7296990eb58ba9ba699d8cb8fe908f",
+      "source_role": "publisher-authored expected fields and original sample bytes",
+      "source_sha256": "a050913a3b4e34b2ddb4b0803331414d42276cf67849b292c6a296816714bc37"
+    },
+    {
+      "bytes": 7634,
+      "file": "src/tests.rs",
+      "license": "MIT",
+      "local_file": "03-tests.rs",
+      "publisher": "marirs/leef2hashmap-rs",
+      "revision": "bb806946312eeb96d46a52d14129ee7526a3c244",
+      "source_role": "publisher-authored expected fields and original sample bytes",
+      "source_sha256": "9132d1ab5af8120b8a87dda11f63b76680257e39582e4efd87a30c9047c3af58"
+    }
+  ],
+  "stage": "PINNED_BEFORE_GOLDENS_OR_ANY_CANDIDATE_SCORING"
+}
