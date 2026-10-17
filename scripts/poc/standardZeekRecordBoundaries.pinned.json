@@ -1,0 +1,276 @@
+{
+  "authoritativePinnedZeekRevision": "63f863c6a4d5cc95a724863ab31237c02eda0eac",
+  "scope": "synthetic declared table schema and physical record / #close state. Never vendor/native certified.",
+  "cases": [
+    {
+      "id": "ZEEK-ONE-ROW-CLOSED",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n#close\t2026-10-18-12-35-00\n",
+      "valid": true,
+      "path": "conn",
+      "fields": [
+        "ts",
+        "uid",
+        "msg"
+      ],
+      "rows": [
+        "1.0\tC1\tallow"
+      ],
+      "closed": true,
+      "claims": [
+        {
+          "row": 0,
+          "name": "ts",
+          "rawLexeme": "1.0",
+          "startByte": 151,
+          "endByte": 154
+        },
+        {
+          "row": 0,
+          "name": "uid",
+          "rawLexeme": "C1",
+          "startByte": 155,
+          "endByte": 157
+        },
+        {
+          "row": 0,
+          "name": "msg",
+          "rawLexeme": "allow",
+          "startByte": 158,
+          "endByte": 163
+        }
+      ],
+      "sourceBytes": 191
+    },
+    {
+      "id": "ZEEK-UTF8-ROWS-CLOSED",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n2.0\tC2\t€😀\n#close\t2026-10-18-12-35-00\n",
+      "valid": true,
+      "path": "conn",
+      "fields": [
+        "ts",
+        "uid",
+        "msg"
+      ],
+      "rows": [
+        "1.0\tC1\tallow",
+        "2.0\tC2\t€😀"
+      ],
+      "closed": true,
+      "claims": [
+        {
+          "row": 0,
+          "name": "ts",
+          "rawLexeme": "1.0",
+          "startByte": 151,
+          "endByte": 154
+        },
+        {
+          "row": 0,
+          "name": "uid",
+          "rawLexeme": "C1",
+          "startByte": 155,
+          "endByte": 157
+        },
+        {
+          "row": 0,
+          "name": "msg",
+          "rawLexeme": "allow",
+          "startByte": 158,
+          "endByte": 163
+        },
+        {
+          "row": 1,
+          "name": "ts",
+          "rawLexeme": "2.0",
+          "startByte": 164,
+          "endByte": 167
+        },
+        {
+          "row": 1,
+          "name": "uid",
+          "rawLexeme": "C2",
+          "startByte": 168,
+          "endByte": 170
+        },
+        {
+          "row": 1,
+          "name": "msg",
+          "rawLexeme": "€😀",
+          "startByte": 171,
+          "endByte": 178
+        }
+      ],
+      "sourceBytes": 206
+    },
+    {
+      "id": "ZEEK-ROW-UNCLOSED-REVIEW",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n2.0\tC2\t€😀\n",
+      "valid": true,
+      "path": "conn",
+      "fields": [
+        "ts",
+        "uid",
+        "msg"
+      ],
+      "rows": [
+        "2.0\tC2\t€😀"
+      ],
+      "closed": false,
+      "claims": [
+        {
+          "row": 0,
+          "name": "ts",
+          "rawLexeme": "2.0",
+          "startByte": 151,
+          "endByte": 154
+        },
+        {
+          "row": 0,
+          "name": "uid",
+          "rawLexeme": "C2",
+          "startByte": 155,
+          "endByte": 157
+        },
+        {
+          "row": 0,
+          "name": "msg",
+          "rawLexeme": "€😀",
+          "startByte": 158,
+          "endByte": 165
+        }
+      ],
+      "sourceBytes": 166
+    },
+    {
+      "id": "ZEEK-EMPTY-UNSET-LITERAL",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n3.0\tC3\t(empty)\n4.0\tC4\t-\n#close\t2026-10-18-12-35-00\n",
+      "valid": true,
+      "path": "conn",
+      "fields": [
+        "ts",
+        "uid",
+        "msg"
+      ],
+      "rows": [
+        "3.0\tC3\t(empty)",
+        "4.0\tC4\t-"
+      ],
+      "closed": true,
+      "claims": [
+        {
+          "row": 0,
+          "name": "ts",
+          "rawLexeme": "3.0",
+          "startByte": 151,
+          "endByte": 154
+        },
+        {
+          "row": 0,
+          "name": "uid",
+          "rawLexeme": "C3",
+          "startByte": 155,
+          "endByte": 157
+        },
+        {
+          "row": 0,
+          "name": "msg",
+          "rawLexeme": "(empty)",
+          "startByte": 158,
+          "endByte": 165
+        },
+        {
+          "row": 1,
+          "name": "ts",
+          "rawLexeme": "4.0",
+          "startByte": 166,
+          "endByte": 169
+        },
+        {
+          "row": 1,
+          "name": "uid",
+          "rawLexeme": "C4",
+          "startByte": 170,
+          "endByte": 172
+        },
+        {
+          "row": 1,
+          "name": "msg",
+          "rawLexeme": "-",
+          "startByte": 173,
+          "endByte": 174
+        }
+      ],
+      "sourceBytes": 202
+    },
+    {
+      "id": "ZEEK-DATA-BEFORE-FIELDS",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n1.0\tC1\tallow\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 191
+    },
+    {
+      "id": "ZEEK-DATA-BEFORE-TYPES",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n1.0\tC1\tallow\n#types\ttime\tstring\tstring\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 191
+    },
+    {
+      "id": "ZEEK-DATA-AFTER-CLOSE",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n#close\t2026-10-18-12-35-00\n2.0\tC2\t€😀\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 206
+    },
+    {
+      "id": "ZEEK-PATH-ROTATION-WITHOUT-NEW-SCHEMA",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n#path\tchanged\n2.0\tC2\t€😀\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 220
+    },
+    {
+      "id": "ZEEK-UNKNOWN-DIRECTIVE",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n#not_a_zeek_default\tvalue\n1.0\tC1\tallow\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 217
+    },
+    {
+      "id": "ZEEK-DUPLICATE-SEPARATOR",
+      "wire": "#separator \\x09\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 207
+    },
+    {
+      "id": "ZEEK-CLOSE-BEFORE-DATA",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n#close\t2026-10-18-12-35-00\n1.0\tC1\tallow\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 191
+    },
+    {
+      "id": "ZEEK-INTERNAL-BLANK-LINE",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n\n2.0\tC2\t€😀\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 207
+    },
+    {
+      "id": "ZEEK-UNSET-MARKER-AFTER-DATA",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n#unset_field\t?\n2.0\tC2\t€😀\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 221
+    },
+    {
+      "id": "ZEEK-OPEN-AFTER-DATA",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-34-56\n#fields\tts\tuid\tmsg\n#types\ttime\tstring\tstring\n1.0\tC1\tallow\n#open\t2026-10-18-12-35-01\n2.0\tC2\t€😀\n#close\t2026-10-18-12-35-00\n",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 232
+    }
+  ]
+}
