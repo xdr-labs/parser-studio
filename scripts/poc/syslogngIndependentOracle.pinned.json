@@ -1,0 +1,18 @@
+{
+  "schema": "syslogng-external-partial-field-oracle-v1",
+  "stage": "FROZEN_BEFORE_ANY_CANDIDATE_SCORING",
+  "source_manifest_sha256": "5cef3f95db02ec0bbc605313b95498f4bda54909c7927af155acdcdf01f0d595",
+  "original_sha256": "bf392e459cf0dbedbf99222c744cea69f9523610b1c3223ad45f8dd398044a66",
+  "private_oracle_sha256": "3d39c8fecb9a89fef56eacb5f42319771be342fa59ade90453661a73b2e4e7fd",
+  "qualification": "THIRD_REPOSITORY_UPSTREAM_C_ASSERTIONS_PARTIAL_ONLY",
+  "unsupported_field_fp": "NOT_SCORABLE_NO_COMPLETE_TREE",
+  "event_exactness": "NOT_SCORABLE_NO_COMPLETE_TREE",
+  "manufacturer_and_native": "NOT_VERIFIED",
+  "stats": {
+    "cases": 36,
+    "scorable_partial": 7,
+    "unscorable": 29,
+    "scoped_field_triples": 19,
+    "missing_raw_input": 18
+  }
+}

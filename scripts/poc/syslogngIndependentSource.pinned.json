@@ -1,0 +1,14 @@
+{
+  "schema": "new-independent-syslog-ng-source-v1",
+  "stage": "PINNED_BEFORE_CANDIDATE_SCORING",
+  "repo": "syslog-ng/syslog-ng",
+  "revision": "fddad8aaad25f008d49e8fb30d018946941c2414",
+  "source_path": "modules/syslogformat/tests/test_syslog_format.c",
+  "byte_count": 21230,
+  "original_sha256": "bf392e459cf0dbedbf99222c744cea69f9523610b1c3223ad45f8dd398044a66",
+  "licensing": "PUBLIC_TEST_SOURCE_LICENSE_NOT_INDEPENDENTLY_CERTIFIED",
+  "distinct_from_prior_repos": true,
+  "holdout_source_data": "private_0600_not_in_git",
+  "source_expected_values": "upstream_C_assertions_only_if_unambiguous",
+  "original_hardware_packet": false
+}
