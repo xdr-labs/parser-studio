@@ -1,0 +1,37 @@
+{
+  "limitations": [
+    "no authenticated device wire capture",
+    "no decoded escape oracle",
+    "no empty string vs null type proof",
+    "no semantic proof outside documented custom config"
+  ],
+  "manufacturer": "Fortinet",
+  "manufacturerMeaning": "empty marker indicates a present-but-empty source field only in configured custom mode",
+  "mode": "custom Syslog KV with explicitly configured empty-value-indicator %",
+  "oracleSha256": "24779a777bcfad3d25293e480d82f7b10d61516b377144485ef92b3feaa726b1",
+  "pageUrl": "https://docs.fortinet.com/document/fortigate/8.0.0/administration-guide/779135",
+  "privateDocument": "fortios8-custom-syslog-page.html",
+  "privateOracle": "manufacturer-empty-source-oracle.v1.json",
+  "rawOrExpectedValuesStoredInGit": false,
+  "referenceFields": 12,
+  "sourceDocumentLicense": "Fortinet copyrighted documentation; retained privately for evaluation only",
+  "sourceExampleSha256": [
+    "f602a5b04b74e9ef90198f13a44b6e93d4c5b6fd1a42d1813c0bcf1c4050a17f",
+    "231e63269ca986cd64d676f40de7569872c6e14a668eb5cf1971f8b01d5d2409"
+  ],
+  "sourceExamples": 2,
+  "sourceFieldNames": [
+    "eve_type",
+    "eve_msg",
+    "eve_vdom",
+    "eve_level",
+    "eve_status",
+    "eve_profile"
+  ],
+  "sourcePageSha256": "b9ef7ca4e86f416415fa9c850fd738376f59a2808fa8f3ea289d3270a4d9bcd8",
+  "sourceReferenceStatusCounts": {
+    "PRESENT_EMPTY_DOCUMENTED": 3,
+    "PRESENT_NONEMPTY_LEXICAL": 9
+  },
+  "version": "FortiOS 8.0.0"
+}
