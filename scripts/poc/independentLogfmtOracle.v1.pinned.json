@@ -1,0 +1,19 @@
+{
+  "case_count": 16,
+  "missing_or_null_expected_slots_excluded_not_fabricated": 7,
+  "multi_record_source_event_framing_not_auto_verified": true,
+  "native_verified": false,
+  "oracle_sha256": "1dc71e3d28513c9f8a46f918c2d8b938406942a18a45e4faca203908283ec4d8",
+  "private_originals_and_values": "0700/0600; no upstream literals in Git",
+  "schema": "upstream-independent-logfmt-source-oracle-v1",
+  "scorable_partial_messages": 10,
+  "source_name_value_utf8_triples": 23,
+  "source_pin_sha256": "ca5024b95a7fdfa1f0633c8d6e26ff9004eefb91f2ad62f8efc0cc8ebcee6fdb",
+  "stage": "SEALED_BEFORE_ANY_CANDIDATE_SCORING",
+  "status_counts": {
+    "SCORABLE_PARTIAL": 10,
+    "UNSCORABLE_DYNAMIC_INPUT": 1,
+    "UNSCORABLE_NO_EXACT_SOURCE_VALUE": 3,
+    "UNSCORABLE_NO_INDEPENDENT_EXPECTED_TRIPLES": 2
+  }
+}

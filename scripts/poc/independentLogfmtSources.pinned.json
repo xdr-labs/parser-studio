@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "bytes": 6916,
+      "license": "MIT",
+      "local_original": "00-decode_test.go",
+      "repo": "go-logfmt/logfmt",
+      "revision": "804e98fff868b206344991c57a8182172e5ba41e",
+      "sha256": "0bb0885343a889fbf2b86eb176dc0852bf049616bfb19eabafbdeebb2c67078e",
+      "source_file": "decode_test.go"
+    },
+    {
+      "bytes": 1931,
+      "license": "MIT",
+      "local_original": "01-decode_test.go",
+      "repo": "kr/logfmt",
+      "revision": "19f9bcb100e6bcb308b5db29c682de01e9b3f2e6",
+      "sha256": "2973bd2b75ddaca3860eb690aa1eccd40467c897d895814556ed3060810d6c1a",
+      "source_file": "decode_test.go"
+    }
+  ],
+  "previous_poc_overlap": "distinct third-party publisher projects",
+  "scorable_expected": "NOT_YET_QUALIFIED",
+  "stage": "UPSTREAM_SOURCES_FROZEN_BEFORE_EXPECTED_OR_PARSER_SCORING"
+}
