@@ -1,0 +1,118 @@
+{
+  "noRawVendorFixturesCommitted": true,
+  "privateDirectory": "~/.local/state/parserstudio-p0-standards-audit-20261018",
+  "purpose": "AUTHORITATIVE_GRAMMAR_SOURCE_PIN_NOT_NATIVE_OR_PRODUCT_CERTIFICATION",
+  "sources": [
+    {
+      "authorityClass": "informational_historic",
+      "bytes": 72951,
+      "id": "RFC3164",
+      "privateSourceFile": "RFC3164.source",
+      "scope": "header/relay/legacy",
+      "sha256": "cbb277a5ceb723d07a4791f3b4fd892424516c76945eb17a7431ac4d024977b2",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc3164.txt"
+    },
+    {
+      "authorityClass": "standards_track",
+      "bytes": 85162,
+      "id": "RFC5424",
+      "privateSourceFile": "RFC5424.source",
+      "scope": "section 6 header/SD/MSG",
+      "sha256": "24d91f90a05d2536730ada929c296f45ae9cd72226e22b6775ad8c04cae37a53",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc5424.txt"
+    },
+    {
+      "authorityClass": "informational_historic",
+      "bytes": 21006,
+      "id": "RFC6587",
+      "privateSourceFile": "RFC6587.source",
+      "scope": "3.4 framing",
+      "sha256": "83281c1791d508d02d10f917db148a0dada21140d88319176146c4f6d2da4ff3",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc6587.txt"
+    },
+    {
+      "authorityClass": "standards_track",
+      "bytes": 28159,
+      "id": "RFC5425",
+      "privateSourceFile": "RFC5425.source",
+      "scope": "TLS/transport",
+      "sha256": "a807ec7024fb200e9cf91590cfe41ac06029fb48bf9ddba088862bc134647639",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc5425.txt"
+    },
+    {
+      "authorityClass": "standards_track",
+      "bytes": 28360,
+      "id": "RFC8259",
+      "privateSourceFile": "RFC8259.source",
+      "scope": "JSON grammar",
+      "sha256": "61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc8259.txt"
+    },
+    {
+      "authorityClass": "standards_track",
+      "bytes": 16132,
+      "id": "RFC7464",
+      "privateSourceFile": "RFC7464.source",
+      "scope": "JSON text sequence",
+      "sha256": "a8eadbcdce5fc508b9e014299621562da041232af13848632092164d50b3f482",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc7464.txt"
+    },
+    {
+      "authorityClass": "informational",
+      "bytes": 12931,
+      "id": "RFC4180",
+      "privateSourceFile": "RFC4180.source",
+      "scope": "CSV baseline",
+      "sha256": "5d9ec035aa40c0108362cb767c9e2d08c30f7225cb2a4715f484cb13c29b5f21",
+      "sourceRedistributed": false,
+      "uri": "https://www.rfc-editor.org/rfc/rfc4180.txt"
+    },
+    {
+      "authorityClass": "industry_vendor_spec",
+      "bytes": 31332,
+      "id": "CEF26",
+      "privateSourceFile": "CEF26.source",
+      "scope": "header/extension/encoding",
+      "sha256": "a1f5fa6638ba32ad140b8e1a73eba809985faf93e86066aca1a32d77318f3ca7",
+      "sourceRedistributed": false,
+      "uri": "https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.3/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm"
+    },
+    {
+      "authorityClass": "industry_vendor_spec",
+      "bytes": 14569,
+      "id": "LEEF20",
+      "privateSourceFile": "LEEF20.source",
+      "scope": "header/attribute/delimiter",
+      "sha256": "f820c63158a2ca10cf78abbd94d0c2d28ef2682965f02cbf495ce7703de9c490",
+      "sourceRedistributed": false,
+      "uri": "https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components"
+    },
+    {
+      "authorityClass": "w3c_working_draft",
+      "bytes": 14896,
+      "id": "W3CLOG",
+      "privateSourceFile": "W3CLOG.source",
+      "scope": "extended log format",
+      "sha256": "50c89e2584857346a4187b51848b52538342f37ba9e9abcfa4dc2338d502a105",
+      "sourceRedistributed": false,
+      "uri": "https://www.w3.org/TR/WD-logfile.html"
+    },
+    {
+      "authorityClass": "project_spec",
+      "bytes": 39881,
+      "id": "ZEEK",
+      "privateSourceFile": "ZEEK.source",
+      "scope": "logger defaults / delimiter / empty / unset definitions",
+      "sha256": "03f1926501caf800b101665f20d5aa104a40f64932112b77de6b55e192a14625",
+      "sourceRedistributed": false,
+      "uri": "https://raw.githubusercontent.com/zeek/zeek/63f863c6a4d5cc95a724863ab31237c02eda0eac/scripts/base/frameworks/logging/main.zeek"
+    }
+  ],
+  "unavailable": []
+}

@@ -1,0 +1,40 @@
+{
+  "contract": "parserstudio.standards-grammar-audit.v0.1",
+  "scope": "STANDARDS_DERIVED_SYNTHETIC_CONFORMANCE_NOT_EXTERNAL_HOLDOUT",
+  "frozenBeforeCandidate": true,
+  "claim": "Only narrow structural conformance. These are not producer-original completeness or Stellar-native goldens.",
+  "sourceRevisions": {
+    "CEF": "ArcSight CEF Implementation Standard version 26 static reference / version 27 source revision checked separately",
+    "LEEF": "IBM QRadar LEEF Event Components v2",
+    "RFC5424": "RFC5424 section 6",
+    "RFC6587": "RFC6587 section 3.4",
+    "JSON": "RFC8259 sections 4-8",
+    "JSONSEQ": "RFC7464 section 2",
+    "CSV": "RFC4180 section 2"
+  },
+  "cases": [
+    {"id":"CEF-HEADER-ESCAPED-PIPE","family":"cef","spec":"CEF header character encoding","raw":"CEF:0|ACME|IPS|1|E1|blocked a \\| pipe|5|src=192.0.2.1","mustHave":{"cef_name":"blocked a | pipe","src":"192.0.2.1"}},
+    {"id":"CEF-HEADER-ESCAPED-SLASH","family":"cef","spec":"CEF header character encoding","raw":"CEF:0|ACME|IPS|1|E1|blocked a \\\\ slash|5|src=192.0.2.1","mustHave":{"cef_name":"blocked a \\ slash","src":"192.0.2.1"}},
+    {"id":"CEF-EXTENSION-ESCAPED-EQUALS","family":"cef","spec":"CEF extension character encoding","raw":"CEF:0|ACME|IPS|1|E1|blocked|5|cs1=http://example.invalid/a?q\\=1 act=blocked","mustHave":{"cs1":"http://example.invalid/a?q=1","act":"blocked"}},
+    {"id":"CEF-EXTENSION-ESCAPED-NEWLINE","family":"cef","spec":"CEF extension escaped newlines","raw":"CEF:0|ACME|IPS|1|E1|blocked|5|msg=first\\nsecond src=192.0.2.1","mustHave":{"msg":"first\nsecond","src":"192.0.2.1"}},
+    {"id":"CEF-EXTENSION-ESCAPED-SLASH","family":"cef","spec":"CEF extension escaped backslash","raw":"CEF:0|ACME|IPS|1|E1|blocked|5|cs1=C:\\\\path\\\\item dst=198.51.100.1","mustHave":{"cs1":"C:\\path\\item","dst":"198.51.100.1"}},
+    {"id":"CEF-EXTENSION-SPACES","family":"cef","spec":"CEF extension spaces are content","raw":"CEF:0|ACME|IPS|1|E1|blocked|5|filePath=/opt/sample/name with spaces.txt src=192.0.2.1","mustHave":{"filePath":"/opt/sample/name with spaces.txt","src":"192.0.2.1"}},
+    {"id":"CEF-HEADER-ONLY","family":"cef","spec":"CEF extension optional","raw":"CEF:0|ACME|IPS|1|E1|blocked|5|","mustHave":{"cef_name":"blocked","cef_severity":"5"}},
+    {"id":"LEEF-HEX-X5E","family":"leef","spec":"LEEF2 custom delimiter hex xHH","raw":"LEEF:2.0|ACME|IDS|1|E1|x5E|src=192.0.2.1^dst=198.51.100.1","mustHave":{"src":"192.0.2.1","dst":"198.51.100.1"}},
+    {"id":"LEEF-HEX-0X5E","family":"leef","spec":"LEEF2 custom delimiter hex 0xHH","raw":"LEEF:2.0|ACME|IDS|1|E1|0x5E|src=192.0.2.1^dst=198.51.100.1","mustHave":{"src":"192.0.2.1","dst":"198.51.100.1"}},
+    {"id":"LEEF-HEX-XA6","family":"leef","spec":"LEEF2 custom delimiter non-ascii","raw":"LEEF:2.0|ACME|IDS|1|E1|xa6|src=192.0.2.1¦dst=198.51.100.1","mustHave":{"src":"192.0.2.1","dst":"198.51.100.1"}},
+    {"id":"LEEF-TAB-10","family":"leef","spec":"LEEF1 default tab","raw":"LEEF:1.0|ACME|IDS|1|E1|src=192.0.2.1\tdst=198.51.100.1","mustHave":{"src":"192.0.2.1","dst":"198.51.100.1"}},
+    {"id":"JSON-NORMAL-OBJECT","family":"json","spec":"RFC8259 JSON object","raw":"{\"who\":\"alice\",\"count\":2}","mustHave":{"who":"alice","count":2}},
+    {"id":"JSON-DUPLICATE-MEMBERS","family":"json","spec":"RFC8259 section 4 non-interoperable duplicates / lossless claims","raw":"{\"who\":\"alice\",\"who\":\"bob\"}","requireReview":"DUPLICATE_MEMBER_SILENT_OVERWRITE"},
+    {"id":"JSON-EXTREME-EXPONENT","family":"json","spec":"RFC8259 number interoperability / representation","raw":"{\"score\":1e999}","requireReview":"NONFINITE_NUMBER_OR_LOSS_OF_PRECISION"},
+    {"id":"JSON-UNPAIRED-SURROGATE","family":"json","spec":"RFC8259 section 8.2 unicode string interoperability","raw":"{\"value\":\"\\uD800\"}","requireReview":"UNPAIRED_UNICODE_SURROGATE"},
+    {"id":"KV-TRAILING-BARE","family":"kv","spec":"No universal KV grammar; completeness safety","raw":"src=192.0.2.1 dst=198.51.100.1 trailing-garbage","requireReview":"UNCONSUMED_TRAILING_RAW"},
+    {"id":"KV-UNSUPPORTED-ESCAPE","family":"kv","spec":"No producer grammar; do not infer vendor escape","raw":"src=192.0.2.1 msg=\"hello\\qworld\"","requireReview":"UNKNOWN_PRODUCER_ESCAPE"},
+    {"id":"CSV-QUOTED-COMMA","family":"csv","spec":"RFC4180 quoted comma","raw":"\"hello,world\",alice,deny","csvColumns":"msg,user,action","mustHave":{"msg":"hello,world","user":"alice","action":"deny"}},
+    {"id":"CSV-DOUBLE-QUOTE","family":"csv","spec":"RFC4180 double-quote escaping","raw":"\"alice \"\"admin\"\"\",bob,deny","csvColumns":"msg,user,action","mustHave":{"msg":"alice \"admin\"","user":"bob","action":"deny"}},
+    {"id":"CSV-EMPTY-CELL","family":"csv","spec":"RFC4180 empty positional field","raw":"alice,,deny","csvColumns":"user,host,action","mustHave":{"user":"alice","host":"","action":"deny"}},
+    {"id":"CSV-BAD-QUOTE","family":"csv","spec":"RFC4180 malformed quotation","raw":"alice,\"unterminated,deny","csvColumns":"user,host,action","requireReview":"MALFORMED_CSV_QUOTE"},
+    {"id":"SYSLOG-RFC5424-NIL","family":"syslog5424","spec":"RFC5424 NILVALUE and SD","raw":"<34>1 2026-10-18T12:34:56Z host app 123 E1 - payload","mustHave":{"timestamp":"2026-10-18T12:34:56Z","hostname":"host"}},
+    {"id":"SYSLOG-RFC5424-UNESCAPED-SD","family":"syslog5424","spec":"RFC5424 SD grammar","raw":"<34>1 2026-10-18T12:34:56Z host app 123 E1 [id@123 key=\"test\"] payload","mustHave":{"hostname":"host","structured_data_raw":"[id@123 key=\"test\"]"}}
+  ]
+}
