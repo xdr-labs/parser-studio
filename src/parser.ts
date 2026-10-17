@@ -77,20 +77,9 @@ function extractJSON(raw: string): Extraction {
 }
 
 function extractKV(raw: string): Extraction {
-  const fields: Record<string, unknown> = {};
-  const errors: string[] = [];
-  const pattern = /(?:^|\s)([A-Za-z_][\w.-]*)=(?:"((?:\\.|[^"\\])*)"|'([^']*)'|([^\s]+))/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(raw)) !== null) {
-    const key = match[1];
-    if (Object.prototype.hasOwnProperty.call(fields, key)) {
-      errors.push('Duplicate key: ' + key);
-      continue;
-    }
-    fields[key] = match[2] !== undefined ? match[2].replace(/\\"/g, '"') : match[3] ?? match[4];
-  }
-  if (!Object.keys(fields).length) errors.push('No key=value fields matched');
-  return { fields, errors };
+  // Reuse one bounded lossless scanner, rather than a best-effort regex
+  // that silently ignores trailing text or producer-unknown escapes.
+  return strictKeyValues(raw);
 }
 
 function tokenizeCSV(raw: string, delimiter: string): string[] | null {
