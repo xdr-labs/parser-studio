@@ -1,0 +1,402 @@
+{
+  "evidence": "authored CEF v26 format grammar; synthetic only; no device/native scoring",
+  "cases": [
+    {
+      "id": "CEF-UTF8-PIPE",
+      "wire": "CEF:0|Exämple|IPS|1|E1|blocked a \\| pipe|5|src=192.0.2.1",
+      "valid": true,
+      "extension": "src=192.0.2.1",
+      "fields": [
+        {
+          "name": "cefVersion",
+          "lexeme": "0",
+          "decoded": "0",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "deviceVendor",
+          "lexeme": "Exämple",
+          "decoded": "Exämple",
+          "startByte": 6,
+          "endByte": 14
+        },
+        {
+          "name": "deviceProduct",
+          "lexeme": "IPS",
+          "decoded": "IPS",
+          "startByte": 15,
+          "endByte": 18
+        },
+        {
+          "name": "deviceVersion",
+          "lexeme": "1",
+          "decoded": "1",
+          "startByte": 19,
+          "endByte": 20
+        },
+        {
+          "name": "deviceEventClassId",
+          "lexeme": "E1",
+          "decoded": "E1",
+          "startByte": 21,
+          "endByte": 23
+        },
+        {
+          "name": "name",
+          "lexeme": "blocked a \\| pipe",
+          "decoded": "blocked a | pipe",
+          "startByte": 24,
+          "endByte": 41
+        },
+        {
+          "name": "severity",
+          "lexeme": "5",
+          "decoded": "5",
+          "startByte": 42,
+          "endByte": 43
+        }
+      ],
+      "sourceBytes": 57
+    },
+    {
+      "id": "CEF-BACKSLASH",
+      "wire": "CEF:1|Vendor|EDR|2|E2|a\\\\b|Unknown|src=198.51.100.8",
+      "valid": true,
+      "extension": "src=198.51.100.8",
+      "fields": [
+        {
+          "name": "cefVersion",
+          "lexeme": "1",
+          "decoded": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "deviceVendor",
+          "lexeme": "Vendor",
+          "decoded": "Vendor",
+          "startByte": 6,
+          "endByte": 12
+        },
+        {
+          "name": "deviceProduct",
+          "lexeme": "EDR",
+          "decoded": "EDR",
+          "startByte": 13,
+          "endByte": 16
+        },
+        {
+          "name": "deviceVersion",
+          "lexeme": "2",
+          "decoded": "2",
+          "startByte": 17,
+          "endByte": 18
+        },
+        {
+          "name": "deviceEventClassId",
+          "lexeme": "E2",
+          "decoded": "E2",
+          "startByte": 19,
+          "endByte": 21
+        },
+        {
+          "name": "name",
+          "lexeme": "a\\\\b",
+          "decoded": "a\\b",
+          "startByte": 22,
+          "endByte": 26
+        },
+        {
+          "name": "severity",
+          "lexeme": "Unknown",
+          "decoded": "Unknown",
+          "startByte": 27,
+          "endByte": 34
+        }
+      ],
+      "sourceBytes": 51
+    },
+    {
+      "id": "CEF-NAMED-HIGH",
+      "wire": "CEF:0|V|P|1|E1|Event|Very-High|",
+      "valid": true,
+      "extension": "",
+      "fields": [
+        {
+          "name": "cefVersion",
+          "lexeme": "0",
+          "decoded": "0",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "deviceVendor",
+          "lexeme": "V",
+          "decoded": "V",
+          "startByte": 6,
+          "endByte": 7
+        },
+        {
+          "name": "deviceProduct",
+          "lexeme": "P",
+          "decoded": "P",
+          "startByte": 8,
+          "endByte": 9
+        },
+        {
+          "name": "deviceVersion",
+          "lexeme": "1",
+          "decoded": "1",
+          "startByte": 10,
+          "endByte": 11
+        },
+        {
+          "name": "deviceEventClassId",
+          "lexeme": "E1",
+          "decoded": "E1",
+          "startByte": 12,
+          "endByte": 14
+        },
+        {
+          "name": "name",
+          "lexeme": "Event",
+          "decoded": "Event",
+          "startByte": 15,
+          "endByte": 20
+        },
+        {
+          "name": "severity",
+          "lexeme": "Very-High",
+          "decoded": "Very-High",
+          "startByte": 21,
+          "endByte": 30
+        }
+      ],
+      "sourceBytes": 31
+    },
+    {
+      "id": "CEF-ZERO",
+      "wire": "CEF:0|V|P|1|E1|Event|0|act=allow",
+      "valid": true,
+      "extension": "act=allow",
+      "fields": [
+        {
+          "name": "cefVersion",
+          "lexeme": "0",
+          "decoded": "0",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "deviceVendor",
+          "lexeme": "V",
+          "decoded": "V",
+          "startByte": 6,
+          "endByte": 7
+        },
+        {
+          "name": "deviceProduct",
+          "lexeme": "P",
+          "decoded": "P",
+          "startByte": 8,
+          "endByte": 9
+        },
+        {
+          "name": "deviceVersion",
+          "lexeme": "1",
+          "decoded": "1",
+          "startByte": 10,
+          "endByte": 11
+        },
+        {
+          "name": "deviceEventClassId",
+          "lexeme": "E1",
+          "decoded": "E1",
+          "startByte": 12,
+          "endByte": 14
+        },
+        {
+          "name": "name",
+          "lexeme": "Event",
+          "decoded": "Event",
+          "startByte": 15,
+          "endByte": 20
+        },
+        {
+          "name": "severity",
+          "lexeme": "0",
+          "decoded": "0",
+          "startByte": 21,
+          "endByte": 22
+        }
+      ],
+      "sourceBytes": 32
+    },
+    {
+      "id": "CEF-TEN",
+      "wire": "CEF:0|V|P|1|E1|Event|10|act=deny",
+      "valid": true,
+      "extension": "act=deny",
+      "fields": [
+        {
+          "name": "cefVersion",
+          "lexeme": "0",
+          "decoded": "0",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "deviceVendor",
+          "lexeme": "V",
+          "decoded": "V",
+          "startByte": 6,
+          "endByte": 7
+        },
+        {
+          "name": "deviceProduct",
+          "lexeme": "P",
+          "decoded": "P",
+          "startByte": 8,
+          "endByte": 9
+        },
+        {
+          "name": "deviceVersion",
+          "lexeme": "1",
+          "decoded": "1",
+          "startByte": 10,
+          "endByte": 11
+        },
+        {
+          "name": "deviceEventClassId",
+          "lexeme": "E1",
+          "decoded": "E1",
+          "startByte": 12,
+          "endByte": 14
+        },
+        {
+          "name": "name",
+          "lexeme": "Event",
+          "decoded": "Event",
+          "startByte": 15,
+          "endByte": 20
+        },
+        {
+          "name": "severity",
+          "lexeme": "10",
+          "decoded": "10",
+          "startByte": 21,
+          "endByte": 23
+        }
+      ],
+      "sourceBytes": 32
+    },
+    {
+      "id": "CEF-NAMED-MEDIUM",
+      "wire": "CEF:0|V|P|1|E1|Event|Medium|spt=443",
+      "valid": true,
+      "extension": "spt=443",
+      "fields": [
+        {
+          "name": "cefVersion",
+          "lexeme": "0",
+          "decoded": "0",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "deviceVendor",
+          "lexeme": "V",
+          "decoded": "V",
+          "startByte": 6,
+          "endByte": 7
+        },
+        {
+          "name": "deviceProduct",
+          "lexeme": "P",
+          "decoded": "P",
+          "startByte": 8,
+          "endByte": 9
+        },
+        {
+          "name": "deviceVersion",
+          "lexeme": "1",
+          "decoded": "1",
+          "startByte": 10,
+          "endByte": 11
+        },
+        {
+          "name": "deviceEventClassId",
+          "lexeme": "E1",
+          "decoded": "E1",
+          "startByte": 12,
+          "endByte": 14
+        },
+        {
+          "name": "name",
+          "lexeme": "Event",
+          "decoded": "Event",
+          "startByte": 15,
+          "endByte": 20
+        },
+        {
+          "name": "severity",
+          "lexeme": "Medium",
+          "decoded": "Medium",
+          "startByte": 21,
+          "endByte": 27
+        }
+      ],
+      "sourceBytes": 35
+    },
+    {
+      "id": "CEF-BLANK-VENDOR",
+      "wire": "CEF:0||IDS|1|E1|Alert|5|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 37
+    },
+    {
+      "id": "CEF-BLANK-SEVERITY",
+      "wire": "CEF:0|V|P|1|E1|Alert||src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 35
+    },
+    {
+      "id": "CEF-SEVERITY-99",
+      "wire": "CEF:0|V|P|1|E1|Alert|99|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 37
+    },
+    {
+      "id": "CEF-UNKNOWN-HEADER-ESCAPE",
+      "wire": "CEF:0|V|P|1|E1|bad \\q|5|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 37
+    },
+    {
+      "id": "CEF-UNSUPPORTED-VERSION",
+      "wire": "CEF:2|V|P|1|E1|Alert|5|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 36
+    },
+    {
+      "id": "CEF-BLANK-EVENT-NAME",
+      "wire": "CEF:0|V|P|1|E1||5|src=192.0.2.1",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 31
+    },
+    {
+      "id": "CEF-MISSING-SEPARATOR",
+      "wire": "CEF:0|V|P|1|E1|Alert|5",
+      "valid": false,
+      "fields": [],
+      "sourceBytes": 22
+    }
+  ]
+}
