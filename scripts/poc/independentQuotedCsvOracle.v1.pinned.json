@@ -1,0 +1,21 @@
+{
+  "cannot_claim_native_parser_or_vendor_semantics": true,
+  "independent_expected_source": "Ruby Test::Unit assert_equal, Logstash RSpec event.get fields, Apache Commons strict duplicate header",
+  "named_source_triples": 3,
+  "oracle_sha256": "21df0514536935d5361e73b5cfbc4a263f8eb796caf27e4214e380d38a29427b",
+  "originals": 45,
+  "positional_events": 28,
+  "positional_value_utf8_span_triples": 73,
+  "raw_and_goldens_private": "0700 dirs / 0600 files, not in repository or CI",
+  "schema": "new-quoted-csv-original-golden-v1",
+  "scope": "decoded lexical value plus original byte span, positional values distinct from source names",
+  "source_named_sessions": 1,
+  "source_pin_sha256": "d0db88056420f6fa7455c6833d5f00be8b6a104c012f374278f681093a8eb049",
+  "stage": "FROZEN_BEFORE_ANY_PRODUCT_BASELINE_OR_POC_SCORE",
+  "status_counts": {
+    "DUPLICATE_ORIGINAL_EXCLUDED": 15,
+    "POSITIONAL_SCORABLE": 28,
+    "SOURCE_NAMED_HEADER_SESSION": 1,
+    "UPSTREAM_INVALID_ONLY_WITH_PROFILE": 1
+  }
+}

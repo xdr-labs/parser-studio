@@ -1,0 +1,38 @@
+{
+  "private_mode": "upstream raw 0600, directory 0700",
+  "schema": "new-quoted-csv-source-pin-v1",
+  "source_files": [
+    {
+      "bytes": 8770,
+      "commit": "7866e8b15788d782b51f4e179e8a784c0dbdeab0",
+      "file": "spec/codecs/csv_spec.rb",
+      "license": "Apache-2.0",
+      "local_file": "00-csv_spec.rb",
+      "original_sha256": "920abc2528dd818844f3f6bbf780d79e88a6427c0dbee8e4a96d95ce441874ef",
+      "publisher": "logstash-plugins/logstash-codec-csv",
+      "separate_expected_assertions_to_audit": true
+    },
+    {
+      "bytes": 11769,
+      "commit": "9255c5e4f916e37de4004b7549dd5ae9354008c1",
+      "file": "test/csv/parse/test_general.rb",
+      "license": "BSD-2-Clause",
+      "local_file": "01-test_general.rb",
+      "original_sha256": "c57fc7ab580e935cf975a34111ecdb2acf41de7b9555547d767b2c3a45492f3b",
+      "publisher": "ruby/csv",
+      "separate_expected_assertions_to_audit": true
+    },
+    {
+      "bytes": 101601,
+      "commit": "e07e3dfed1a73ed2001ce5ef545651ad3b198685",
+      "file": "src/test/java/org/apache/commons/csv/CSVParserTest.java",
+      "license": "Apache-2.0",
+      "local_file": "02-CSVParserTest.java",
+      "original_sha256": "c440e9727ace79f331acac88a03f636f8b9ae730299892f07c76309dd387926e",
+      "publisher": "apache/commons-csv",
+      "separate_expected_assertions_to_audit": true
+    }
+  ],
+  "sources_not_present_in_prior_29_to_48": "distinct third-party original test repositories",
+  "stage": "PINNED_BEFORE_INDEPENDENT_EXPECTED_AND_ANY_CANDIDATE_SCORING"
+}
