@@ -145,8 +145,12 @@ describe('isolated, producer-neutral logfmt source byte evidence',()=>{
   it('bounds input bytes, records, and source claims',()=>{
     const large=sample+'x'.repeat(17000);
     expect(inspectIndependentLogfmt(large,single).disposition).toBe('ABSTAIN_UNSAFE');
-    const manyRecords=new Array(80).fill('code=denied').join('\n');
-    expect(inspectIndependentLogfmt(manyRecords,batch).disposition).toBe('ABSTAIN_UNSAFE');
+    const limit=new Array(64).fill('code=denied').join('\n')+'\n';
+    const atLimit=inspectIndependentLogfmt(limit,batch);
+    expect(atLimit.recordsSeen).toBe(64);
+    expect(atLimit.disposition).toBe('REVIEW_ONLY_PARTIAL');
+    const overLimit=new Array(65).fill('code=denied').join('\n');
+    expect(inspectIndependentLogfmt(overLimit,batch).disposition).toBe('ABSTAIN_UNSAFE');
     const tooManyFields=new Array(260).fill('code=denied').join(' ');
     expect(inspectIndependentLogfmt(tooManyFields,single).disposition).toBe('ABSTAIN_UNSAFE');
   });

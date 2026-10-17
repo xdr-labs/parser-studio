@@ -126,7 +126,11 @@ function lex(raw:string,context:LogfmtContext):{
     fields.push({key,value,start:sourceStart,end:pos,recordIndex});
     if(fields.length>MAX_FIELDS)return null;
   }
-  return {fields,bare,adjacent,records:recordIndex+Number(recordHadData)};
+  const records=recordIndex+Number(recordHadData);
+  // A final unterminated record is still a record. A 64-record stream with a
+  // trailing separator is allowed, but a 65th record must always abstain.
+  if(records>MAX_RECORDS)return null;
+  return {fields,bare,adjacent,records};
 }
 function replay(raw:string,fields:Token[]):LogfmtSourceClaim[]|null{
   const source=utf8.encode(raw),seen=new Map<string,number>();
