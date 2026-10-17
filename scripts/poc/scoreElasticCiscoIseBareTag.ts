@@ -25,12 +25,13 @@ type Counter={originals:number;scorable:number;unscorable:number;expected:number
  oldAssertedNameFp:number;newAssertedNameFp:number;
  oldSpanOrValueMismatch:number;newSpanOrValueMismatch:number;
  addedVerified:number;publisherGated:number;qualifiedAbstain:number;unqualifiedClaims:number;
- sourceByteDrift:number;unsafelyPromoted:number;maxBranches:number;maxDepth:number};
+ sourceByteDrift:number;unsafelyPromoted:number;maxBranches:number;maxDepth:number;
+ unscorableQualifiedReviews:number;unscorableQualifiedClaims:number;};
 const stats:Counter={originals:0,scorable:0,unscorable:0,expected:0,
  oldTp:0,newTp:0,oldFn:0,newFn:0,oldAssertedNameFp:0,newAssertedNameFp:0,
  oldSpanOrValueMismatch:0,newSpanOrValueMismatch:0,addedVerified:0,publisherGated:0,
  qualifiedAbstain:0,unqualifiedClaims:0,sourceByteDrift:0,unsafelyPromoted:0,
- maxBranches:0,maxDepth:0};
+ maxBranches:0,maxDepth:0,unscorableQualifiedReviews:0,unscorableQualifiedClaims:0};
 const match=(arr:Field[],f:Field)=>
  arr.some(x=>x.name===f.name&&x.value===f.value&&
    x.startByte===f.startByte&&x.endByte===f.endByte);
@@ -42,12 +43,16 @@ for(const row of originalRows){
  stats.scorable+=Number(row.fields.length>0);
  stats.unscorable+=Number(row.fields.length===0);
  const old=inspectGeneralSyslogEnvelope(row.raw);
- const withIndependentProfile=row.fields.some(f=>f.name==='appname');
+ // Eligibility is fixed by the publisher fixture cohort, NOT selected from
+ // the expected fields of each row. This prevents oracle-guided dispatch.
  const candidate=inspectPublisherQualifiedBareTag(row.raw,
-   withIndependentProfile?
-     {sourceFraming:'PUBLISHER_ASSERTED_RFC3164_BARE_APP_TAG'}:undefined);
- stats.publisherGated+=Number(withIndependentProfile);
- stats.qualifiedAbstain+=Number(withIndependentProfile&&candidate.disposition!=='REVIEW_ONLY');
+     {sourceFraming:'PUBLISHER_FIXTURE_BARE_TAG_PROFILE'});
+ stats.publisherGated++;
+ stats.qualifiedAbstain+=Number(candidate.disposition!=='REVIEW_ONLY');
+ if(row.fields.length===0){
+   stats.unscorableQualifiedReviews+=Number(candidate.disposition==='REVIEW_ONLY');
+   stats.unscorableQualifiedClaims+=candidate.fields.length;
+ }
  const noProfile=inspectPublisherQualifiedBareTag(row.raw);
  stats.unqualifiedClaims+=noProfile.fields.length+Number(noProfile.disposition==='REVIEW_ONLY');
  stats.maxBranches=Math.max(stats.maxBranches,candidate.branchAttempts);
@@ -80,6 +85,7 @@ const summary={cohort:'ELASTIC_PUBLISHER_CISCO_ISE_ORIGINAL_TEST_FIXTURES',
  ...stats,
  comparison:'IDENTICAL_FROZEN_PARTIAL_ASSERTED_FIELD_DENOMINATOR',
  fpScope:'ASSERTED_SAME_NAME_MISMATCH_ONLY_UNASSERTED_FIELD_FP_UNSCORABLE',
+ selector:'ALL_149_PUBLISHER_FIXTURE_ROWS_NOT_GROUND_TRUTH_PER_ROW',
  wholeEventExact:'UNSCORABLE_INCOMPLETE_PUBLISHER_ORACLE',
  manufacturerEscapeSemantics:'NOT_CERTIFIED',
  manufacturerEmptySemantics:'NOT_CERTIFIED',
@@ -91,4 +97,5 @@ console.log('ELASTIC_PUBLISHER_BARE_SYSLOG_SOURCE '+JSON.stringify(summary));
 if(stats.originals!==149||stats.expected!==590||
  stats.sourceByteDrift||stats.newAssertedNameFp>stats.oldAssertedNameFp||
  stats.unsafelyPromoted||stats.unqualifiedClaims||stats.newTp<stats.oldTp||
- stats.maxBranches>3||stats.maxDepth>1)process.exitCode=1;
+ stats.maxBranches>3||stats.maxDepth>1||stats.unscorableQualifiedClaims||
+ stats.publisherGated!==149||stats.qualifiedAbstain!==1)process.exitCode=1;

@@ -12,7 +12,12 @@
 Upstream: Elastic-maintained Cisco ISE pipeline tests, elastic/integrations, exact
 revision 615252c0910be1b8dc4dbe8f70acabe02ea8757e. Four original
 log files and four independently authored expected JSON files were pinned
-before candidate scoring. The upstream original data are Elastic publisher
+before candidate scoring. This upstream repository was used in older
+PoCs for OTHER products and files; its repository identity is not new.
+The four Cisco ISE fixture paths used here were absent from the prior pinned
+repo manifests and baseline source/docs search. This is a new file-level
+publisher cohort, NOT a genuinely unseen upstream organization nor independent
+Cisco-manufacturer wire evidence. The upstream original data are Elastic publisher
 test fixtures, not proven Cisco device-wire captures.
 
 Upstream license: Elastic License 2.0 (pinned LICENSE.txt; restricted to
@@ -26,12 +31,15 @@ Immutable private oracle SHA-256:
 7453879258705368c551c357fd46c0901f31e23ebee401f1bb424d006787da2c
 
 The private oracle includes 149 physical original lines, 148 partially
-scorable events, 1 UNSCORABLE, 590 externally asserted source name/value/
-exact UTF-8 byte-location triples. Original source assertions map strict
-publisher-expected ECS paths to canonical envelope token names: pri,
-hostname, appname and message_id. This mapping does not certify manufacturer
-native field names or Stellar normalization, and does not enumerate all
-source fields.
+scorable events, 1 UNSCORABLE, and 590 partial validation tuples. Each
+tuple combines a publisher-asserted EXPECTED ECS value, an evaluator-selected
+source token name, and a deterministic UTF-8 byte span derived from that
+asserted value and the original raw message, independently of the candidate
+parser. **The publisher did not independently author the span offsets**.
+In particular, the publisher's category.name is mapped by our evaluator to
+an RFC3164 bare-tag candidate called appname. That mapping is a source-locator
+hypothesis, not manufacturer-certified native field identity or Stellar
+normalization. This oracle is partial and cannot prove whole-event FP=0.
 
 ## Frozen-identical baseline/candidate denominator
 
@@ -39,7 +47,7 @@ source fields.
 | --- | ---: | ---: |
 | Publisher original records | 149 | 149 |
 | Partially source-scorable events | 148 | 148 |
-| Author-asserted exact field triples | 590 | 590 |
+| Publisher-valued / evaluator-byte-located partial tuples | 590 | 590 |
 | Exact TP (name/value/UTF-8 span) | 294 | 442 (+148) |
 | FN on asserted triples | 296 | 148 (-148) |
 | Conflicting assertions of the same expected name | 0 | 0 |
@@ -47,10 +55,13 @@ source fields.
 | Unqualified new field claims | — | 0 |
 | Automatic/native promotion | 0 | 0 |
 
-This is a measured improvement in PARTIAL publisher-asserted source-field
-recall (294/590 to 442/590), not manufacturer-universal parsing success.
-The 148 additional exact assertions are bare APP tag boundaries on publisher
-test inputs. All 148 remaining FNs correspond to source message_id tokens,
+This is a measured improvement in PARTIAL publisher-ECS-aligned source-token
+recall (294/590 to 442/590) with exact byte replay, not independent device-
+wire-name accuracy or manufacturer-universal parsing success.
+The 148 additional matching publisher-value/byte-location tuples identify
+bare APP-tag-like boundaries in the publisher's test inputs. Upstream normalized
+category.name must not be mistaken for an independently certified source
+field label from actual Cisco ISE firmware. All 148 remaining FNs correspond to source message_id tokens,
 which require separate structural evidence before any generalized extraction.
 
 The zero same-name conflicts do NOT establish all-field FP=0. Additional
@@ -61,8 +72,13 @@ partial oracle. Manufacturer decoded values/native success are NOT_CERTIFIED.
 
 - New observer: src/poc/publisherQualifiedBareTag.ts. No Cisco/ISE-specific
   product name matching or unbounded regex branch is introduced.
-- An independently asserted PUBLISHER_ASSERTED_RFC3164_BARE_APP_TAG frame
-  is required; otherwise the new observer returns RAW_ONLY with zero claims.
+- An explicit PUBLISHER_FIXTURE_BARE_TAG_PROFILE context is required;
+  without this fixture-only source profile the observer returns RAW_ONLY.
+  The **entire 149-line frozen publisher source cohort** receives the profile;
+  no decision to apply it is based on expected field names/values per row.
+  With this cohort-level selection 148 examples remain partial REVIEW_ONLY,
+  one unscorable input abstains with zero claims. No candidate success is
+  promoted into a native or complete parsing verdict.
 - Existing general RFC3164 framing validates PRI, clock, host, bounded bytes
   first; only an independently profiled bare APP token may then be separated
   from the raw, unmodified source message.

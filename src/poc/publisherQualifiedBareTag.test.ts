@@ -3,7 +3,7 @@ import {inspectGeneralSyslogEnvelope} from './generalSyslogEnvelopeSpans';
 import {inspectPublisherQualifiedBareTag} from './publisherQualifiedBareTag';
 
 const raw='<181>Mar 2 09:09:13 relay-x CATEGORY_A 0000075134 1 0 2022-03-02T09:09:13Z log=ok';
-const qualified={sourceFraming:'PUBLISHER_ASSERTED_RFC3164_BARE_APP_TAG'} as const;
+const qualified={sourceFraming:'PUBLISHER_FIXTURE_BARE_TAG_PROFILE'} as const;
 
 describe('independently publisher-qualified bare RFC3164 tag (isolated observer)',()=>{
   it('preserves the qualified base header and splits only the APP boundary',()=>{

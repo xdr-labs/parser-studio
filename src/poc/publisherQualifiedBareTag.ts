@@ -5,7 +5,7 @@ import {inspectGeneralSyslogEnvelope,type SyslogSourceInspection,
   type SyslogOriginalField} from './generalSyslogEnvelopeSpans';
 
 export interface QualifiedBareTagContext {
-  sourceFraming:'PUBLISHER_ASSERTED_RFC3164_BARE_APP_TAG';
+  sourceFraming:'PUBLISHER_FIXTURE_BARE_TAG_PROFILE';
 }
 
 const encoder=new TextEncoder();
@@ -33,7 +33,7 @@ function verify(raw:Uint8Array,fields:SyslogOriginalField[]):boolean{
 /** Never infer a publisher framing contract from appearance alone. */
 export function inspectPublisherQualifiedBareTag(raw:string,
   context?:QualifiedBareTagContext):SyslogSourceInspection{
-  if(context?.sourceFraming!=='PUBLISHER_ASSERTED_RFC3164_BARE_APP_TAG')
+  if(context?.sourceFraming!=='PUBLISHER_FIXTURE_BARE_TAG_PROFILE')
     return abstain(raw,'NO_INDEPENDENT_BARE_TAG_FRAMING_ASSERTION');
   const base=inspectGeneralSyslogEnvelope(raw);
   if(base.disposition!=='REVIEW_ONLY'||base.format!=='rfc3164'||
