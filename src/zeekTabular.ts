@@ -40,6 +40,13 @@ export interface ZeekTsvBlock{
   unsetField:string;
   emptyField:string;
   rows:Array<Record<string,string>>;
+  rowFieldSpans:Array<Array<{
+    name:string;rawLexeme:string;startByte:number;endByte:number;
+  }>>;
+  /** Lexical #close seen; does not certify native/event completeness. */
+  closed:boolean;
+  sourceBytes:number;
+  physicalLines:number;
 }
 
 export type ZeekTsvBlockResult=
@@ -48,67 +55,134 @@ export type ZeekTsvBlockResult=
 
 const MAX_ZEEK_BLOCK_BYTES=1024*1024;
 const MAX_ZEEK_ROWS=1000;
-
 function safeType(value:string):boolean{
   return /^[A-Za-z][A-Za-z0-9_\[\],.-]{0,127}$/.test(value);
 }
 
 export function parseZeekTsvBlock(raw:string):ZeekTsvBlockResult{
-  if(!raw||raw.includes('\0')||new TextEncoder().encode(raw).byteLength>MAX_ZEEK_BLOCK_BYTES)
-    return {ok:false,error:'Invalid or oversized Zeek TSV block'};
-  const normalized=raw.replace(/\r\n/g,'\n');
-  if(normalized.includes('\r'))return {ok:false,error:'Unsupported Zeek line ending'};
-  const lines=normalized.split('\n').filter((line,index,array)=>line!==''||index<array.length-1);
+  const enc=new TextEncoder();
+  const bytes=enc.encode(raw), sourceBytes=bytes.length;
+  const fail=(error:string):ZeekTsvBlockResult=>({ok:false,error});
+  if(!raw||raw.includes('\0')||sourceBytes>MAX_ZEEK_BLOCK_BYTES)
+    return fail('Invalid or oversized Zeek TSV block');
+  const hasCrlf=raw.includes('\r\n'), withoutCrlf=raw.replace(/\r\n/g,'');
+  if(withoutCrlf.includes('\r')||(hasCrlf&&withoutCrlf.includes('\n')))
+    return fail('Unsupported or mixed Zeek physical record endings');
+  const eol=hasCrlf?'\r\n':'\n', lines=raw.split(eol);
+  const ended=raw.endsWith(eol);
+  if(ended)lines.pop();
+  if(!lines.length||lines.some(x=>x===''))
+    return fail('Zeek blank physical record cannot be discarded');
+  let cursor=0;
+  const physical=lines.map((line,index)=>{
+    const startByte=cursor;
+    cursor+=enc.encode(line).length+(index<lines.length-1||ended?eol.length:0);
+    return {line,startByte};
+  });
+  if(cursor!==sourceBytes)return fail('Zeek physical source bytes not accounted');
+
   let path:string|undefined,unsetField='-',emptyField='(empty)';
   let schema:ZeekTsvSchema|null=null,types:string[]|null=null;
-  const dataLines:string[]=[];
-  for(const line of lines){
+  const data:Array<{line:string;startByte:number}>=[];
+  let seenSeparator=false,seenSet=false,seenPath=false,seenUnset=false,
+    seenEmpty=false,seenOpen=false,closed=false;
+  for(const entry of physical){
+    const {line}=entry, beforeData=data.length===0;
+    if(closed)return fail('Zeek content after #close physical boundary');
     if(line.startsWith('#separator')){
-      const value=line.slice('#separator'.length).trim();
-      if(value!=='\\x09'&&value!=='\\x 09')return {ok:false,error:'Only tab-separated Zeek blocks are supported'};
-      continue;
+      if(seenSeparator||!beforeData||schema||types)
+        return fail('Repeated or late Zeek separator');
+      const sep=line.slice('#separator'.length).trim();
+      if(sep!=='\\x09'&&sep!=='\\x 09')
+        return fail('Only tab-separated Zeek blocks are supported');
+      seenSeparator=true;continue;
+    }
+    if(line.startsWith('#set_separator')){
+      if(seenSet||!beforeData||schema||types)
+        return fail('Repeated or late Zeek set_separator');
+      const token=line.slice('#set_separator'.length).trim();
+      if(!token||enc.encode(token).length>8||/[\r\n\0]/.test(token))
+        return fail('Unsupported Zeek set separator');
+      seenSet=true;continue;
     }
     if(line.startsWith('#path')){
+      if(seenPath||!beforeData||schema||types)
+        return fail('Zeek source path rotation requires a separate block');
       const value=line.slice('#path'.length).trim();
-      if(!/^[A-Za-z0-9_.-]{1,128}$/.test(value))return {ok:false,error:'Invalid Zeek path'};
-      path=value;continue;
+      if(!/^[A-Za-z0-9_.-]{1,128}$/.test(value))
+        return fail('Invalid Zeek path');
+      seenPath=true;path=value;continue;
     }
     if(line.startsWith('#unset_field')){
+      if(seenUnset||!beforeData)return fail('Late/duplicated Zeek unset field');
       const value=line.slice('#unset_field'.length).trim();
-      if(!value||new TextEncoder().encode(value).byteLength>64)return {ok:false,error:'Invalid Zeek unset marker'};
-      unsetField=value;continue;
+      if(!value||enc.encode(value).length>64)return fail('Invalid Zeek unset marker');
+      seenUnset=true;unsetField=value;continue;
     }
     if(line.startsWith('#empty_field')){
+      if(seenEmpty||!beforeData)return fail('Late/duplicated Zeek empty field');
       const value=line.slice('#empty_field'.length).trim();
-      if(!value||new TextEncoder().encode(value).byteLength>64)return {ok:false,error:'Invalid Zeek empty marker'};
-      emptyField=value;continue;
+      if(!value||enc.encode(value).length>64)return fail('Invalid Zeek empty marker');
+      seenEmpty=true;emptyField=value;continue;
+    }
+    if(line.startsWith('#open')){
+      if(seenOpen||!beforeData||schema||types||
+         !/^#open\t[!-~]{1,128}$/.test(line))
+        return fail('Invalid Zeek open boundary');
+      seenOpen=true;continue;
     }
     if(line.startsWith('#fields')){
-      if(schema)return {ok:false,error:'Duplicate Zeek fields header'};
+      if(schema||!beforeData)return fail('Duplicate/late Zeek fields header');
       schema=parseZeekFieldsHeader(line);
-      if(!schema)return {ok:false,error:'Invalid Zeek fields header'};
+      if(!schema)return fail('Invalid Zeek fields header');
       continue;
     }
     if(line.startsWith('#types')){
-      if(types)return {ok:false,error:'Duplicate Zeek types header'};
-      const values=line.split('\t').slice(1);
-      if(values.length<2||values.length>128||values.some(value=>!safeType(value)))
-        return {ok:false,error:'Invalid Zeek types header'};
-      types=values;continue;
+      if(types||!beforeData)return fail('Duplicate/late Zeek types header');
+      const declared=line.split('\t').slice(1);
+      if(declared.length<2||declared.length>128||
+         declared.some(x=>!safeType(x)))
+        return fail('Invalid Zeek types header');
+      types=declared;continue;
     }
-    if(line.startsWith('#'))continue;
-    if(line==='')continue;
-    dataLines.push(line);
-    if(dataLines.length>MAX_ZEEK_ROWS)return {ok:false,error:'Zeek row limit exceeded'};
+    if(line.startsWith('#close')){
+      if(!schema||!types||!data.length||!/^#close\t[!-~]{1,128}$/.test(line))
+        return fail('Zeek close before complete data');
+      closed=true;continue;
+    }
+    if(line.startsWith('#'))return fail('Unknown/unqualified Zeek directive');
+    if(!schema||!types||schema.fields.length!==types.length)
+      return fail('Zeek physical data before declared schema');
+    data.push(entry);
+    if(data.length>MAX_ZEEK_ROWS)return fail('Zeek row limit exceeded');
   }
   if(!schema||!types||schema.fields.length!==types.length)
-    return {ok:false,error:'Zeek fields/types schema is incomplete'};
-  if(!dataLines.length)return {ok:false,error:'Zeek block contains no data rows'};
+    return fail('Zeek fields/types schema incomplete');
+  if(!data.length)return fail('Zeek block contains no data rows');
+
   const rows:Array<Record<string,string>>=[];
-  for(const line of dataLines){
-    const row=mapZeekTsvRow(line,schema);
-    if(!row)return {ok:false,error:'Zeek row does not match schema'};
-    rows.push(row);
+  const rowFieldSpans:ZeekTsvBlock['rowFieldSpans']=[];
+  const decode=new TextDecoder('utf-8',{fatal:true});
+  for(const {line,startByte} of data){
+    const mapped=mapZeekTsvRow(line,schema);
+    if(!mapped)return fail('Zeek row does not match declared schema');
+    rows.push(mapped);
+    let fieldStartByte=startByte;
+    const spans:ZeekTsvBlock['rowFieldSpans'][number]=[];
+    const values=line.split('\t');
+    for(let index=0;index<values.length;index++){
+      const rawLexeme=values[index]!;
+      const endByte=fieldStartByte+enc.encode(rawLexeme).length;
+      if(decode.decode(bytes.subarray(fieldStartByte,endByte))!==rawLexeme)
+        return fail('Zeek original UTF-8 field byte span drift');
+      spans.push({name:schema.fields[index]!,rawLexeme,
+        startByte:fieldStartByte,endByte});
+      fieldStartByte=endByte+1;
+    }
+    rowFieldSpans.push(spans);
   }
-  return {ok:true,block:{path,fields:schema.fields,types,unsetField,emptyField,rows}};
+  return {ok:true,block:{
+    path,fields:schema.fields,types,unsetField,emptyField,
+    rows,rowFieldSpans,closed,sourceBytes,physicalLines:physical.length,
+  }};
 }
