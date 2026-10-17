@@ -1,0 +1,95 @@
+{
+  "repository": "https://github.com/elastic/integrations",
+  "revision": "ee918d03f4a90dacd32673546c64a633308796ef",
+  "record_set": "frozen-before-tokenizer-development",
+  "files": [
+    {
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-6-2.log",
+      "sha256": "6bc2d9721c7b386ce2c499ab3bb50e08845625b78ae0076730a02ca6929ed8e6",
+      "bytes": 29506,
+      "logical_or_line_records": 57
+    },
+    {
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-4.log",
+      "sha256": "ef04aa4d229c924ee2a0fd44923cbe412392ea40a37b083ba756857d7a671d97",
+      "bytes": 41372,
+      "logical_or_line_records": 82
+    },
+    {
+      "path": "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-json.json",
+      "sha256": "bd452959bfe9098ea9efc871dd06783dc14186798e9040bd08290fbacb288be8",
+      "bytes": 1795,
+      "logical_or_line_records": 1
+    },
+    {
+      "path": "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-firewall.log",
+      "sha256": "841521b04b6c059d6f81a58567e29a58a196687786186195c70747350a446181",
+      "bytes": 10051,
+      "logical_or_line_records": 5
+    },
+    {
+      "path": "packages/zscaler_zia/data_stream/web/_dev/test/pipeline/test-web.log",
+      "sha256": "82ece22e017bef1467f379e328d2414032888c4ad4087471a54ad3200ae07ef7",
+      "bytes": 29433,
+      "logical_or_line_records": 6
+    },
+    {
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-6-0.log",
+      "sha256": "632b6be798370bb1d2a311ca2714e25f3abda89072c8458e303a9dba47e0eb0e",
+      "bytes": 2046,
+      "logical_or_line_records": 3
+    },
+    {
+      "path": "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-alerts.log",
+      "sha256": "9b85e83c8db440cad6811ba77faf2b2081cf514568eba1ddb0869028a334377d",
+      "bytes": 18716,
+      "logical_or_line_records": 22
+    },
+    {
+      "path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-anyconnect-messages.log",
+      "sha256": "71acc080bcebdf7172ab0f5552067e574cbb56756d13630fb591cb36ece8186a",
+      "bytes": 2689,
+      "logical_or_line_records": 16
+    },
+    {
+      "path": "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-asa-fix.log",
+      "sha256": "0e5e2534d34ab90f25b86002a27dd40dbfa89786eca11cb1d0edd799d5e8ca95",
+      "bytes": 4234,
+      "logical_or_line_records": 24
+    },
+    {
+      "path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-general.log",
+      "sha256": "9a5aae68071b97e10e0f4fa694cf36c76ca84a3204b017ab98c88174899eae71",
+      "bytes": 10991,
+      "logical_or_line_records": 38
+    },
+    {
+      "path": "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-nat.log",
+      "sha256": "0fc130e10dc7b30531f90433f5229e9b94875cd5afeda80881f87d1ec0f927cc",
+      "bytes": 1508,
+      "logical_or_line_records": 4
+    },
+    {
+      "path": "packages/aws/data_stream/waf/_dev/test/pipeline/test-waf.log",
+      "sha256": "8852f05a2e00c1e03ed698e5a292dc13c03cb7464e7408cd3eb8c6065ce9dbf4",
+      "bytes": 4638,
+      "logical_or_line_records": 5
+    },
+    {
+      "path": "packages/aws/data_stream/cloudtrail/_dev/test/pipeline/test-assume-role-json.log",
+      "sha256": "8af087018745d3452d6c4c086e85a03b8964fe351288017e45123d48e679adec",
+      "bytes": 5048,
+      "logical_or_line_records": 2
+    }
+  ],
+  "events": 265,
+  "vendors": [
+    "aws",
+    "cisco_asa",
+    "fortinet_fortigate",
+    "sonicwall_firewall",
+    "suricata",
+    "zscaler_zia"
+  ],
+  "records_sha256": "70fb8f5e9e0753c763c66936880d3ca2b8e590cbadeabf0c8c7a674b7e858039"
+}

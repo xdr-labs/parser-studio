@@ -1,0 +1,24 @@
+{
+  "development_files": [
+    "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-6-2.log",
+    "packages/zscaler_zia/data_stream/firewall/_dev/test/pipeline/test-firewall.log",
+    "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-6-0.log",
+    "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-anyconnect-messages.log",
+    "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-general.log",
+    "packages/aws/data_stream/waf/_dev/test/pipeline/test-waf.log"
+  ],
+  "evaluation_files": [
+    "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-7-4.log",
+    "packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline/test-fortinet-json.json",
+    "packages/zscaler_zia/data_stream/web/_dev/test/pipeline/test-web.log",
+    "packages/suricata/data_stream/eve/_dev/test/pipeline/test-eve-alerts.log",
+    "packages/cisco_asa/data_stream/log/_dev/test/pipeline/test-asa-fix.log",
+    "packages/sonicwall_firewall/data_stream/log/_dev/test/pipeline/test-nat.log",
+    "packages/aws/data_stream/cloudtrail/_dev/test/pipeline/test-assume-role-json.log"
+  ],
+  "development_events": 124,
+  "evaluation_events": 141,
+  "dev_baseline_parsed": 112,
+  "eval_baseline_parsed": 117,
+  "events_sha256": "70fb8f5e9e0753c763c66936880d3ca2b8e590cbadeabf0c8c7a674b7e858039"
+}
