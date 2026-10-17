@@ -1,0 +1,75 @@
+{
+  "purpose": "third_party_publisher_asserted_partial_source_spans_only",
+  "publisher": "crowdsecurity/hub",
+  "license": "MIT",
+  "revision": "46df77d6739c41b4e808ef572188f950ba84fecd",
+  "sourceManifestPrivateSha256": "383b53ecd5460406edb0157bfffc70fafd64dd798f09f9a9830327ef2cf3397c",
+  "originalOracleV1Sha256": "e147d816e5ff88f46476d3716e6fe61b10e48852eaa99b025cc0e83ec0d07dee",
+  "correctedSourceV2Sha256": "d5f1766454bab304be4031c47ac136c88e67e6d941f6120260b52da02b3c1e0a",
+  "v2PostBaselineQualificationCorrection": true,
+  "originalPhysicalLines": 17,
+  "independentlyScorableEvents": 4,
+  "partialSourceTriples": 16,
+  "unscorableOriginalPhysicalLines": 13,
+  "completeSourceOracle": false,
+  "manufacturerSemanticsVerified": false,
+  "nativeVerified": false,
+  "files": [
+    {
+      "kind": "upstream_original_log",
+      "path": ".tests/fortinet-vpn-bf/fortinet-vpn-bf.log",
+      "sha256": "3175e89633a46f30ff558a29e519ffc625070a496da72b67415b687141425f9f",
+      "bytes": 3226,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_parser_assertion",
+      "path": ".tests/fortinet-vpn-bf/parser.assert",
+      "sha256": "f69e3b11273f849e1529d4fc73fffe8a31641e6d6d85fbaef670ffad435f60a8",
+      "bytes": 79120,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_original_log",
+      "path": ".tests/palo-alto-threat/palo-alto-threat.log",
+      "sha256": "211d2db612b1c23938113eac87ae2f22b8ed5e680f9b615edc8dc69e7ed6d817",
+      "bytes": 1577,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_parser_assertion",
+      "path": ".tests/palo-alto-threat/parser.assert",
+      "sha256": "996ac84c144c71b6ce16a4fa5c486ed67438e78ebe082498c06d9c746858b486",
+      "bytes": 29667,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_original_log",
+      "path": ".tests/pfsense-rfc5424-nginx/pfsense-rfc5424-nginx.log",
+      "sha256": "ddd59fb0c827234c565ab900b8c112203a612d44888669f69d076d03a9add411",
+      "bytes": 340,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_parser_assertion",
+      "path": ".tests/pfsense-rfc5424-nginx/parser.assert",
+      "sha256": "6cdcc35bc3c300843ae12fbb33d96ba682d4abe8b4959170b60899b37e4bc221",
+      "bytes": 6671,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_original_log",
+      "path": ".tests/syslog-logs/syslog-logs.log",
+      "sha256": "e6a8322f92520eb5a6ef2b44d55c6ea51e6c3009bc836d93cde4249bb791860c",
+      "bytes": 268,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    },
+    {
+      "kind": "upstream_parser_assertion",
+      "path": ".tests/syslog-logs/parser.assert",
+      "sha256": "fb557956c38b6ef60caa6f1f514f8cc5ee71e8bc8c35749dc68b5a2bfa078aa7",
+      "bytes": 2190,
+      "revision": "46df77d6739c41b4e808ef572188f950ba84fecd"
+    }
+  ]
+}
