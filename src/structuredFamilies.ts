@@ -1,4 +1,5 @@
 import { parseRfc5424Subset } from './rfc5424Subset';
+import {scanCefStandardHeaderGrammar} from './cefStandardHeaderGrammar';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -216,24 +217,25 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     return { fields: { ...scanned.fields, ...body }, errors: [] };
   }
   if (format === 'cef') {
-    const match = /^CEF:(\d+)\|(.*)$/.exec(input);
-    if (!match || !/^[01]$/.test(match[1]!)) return failure('Only standalone CEF versions 0 and 1 are supported');
-    const parts = splitEscaped(match[2], '|', 6);
-    if (!parts) return failure('CEF requires six header fields and an extension slot');
+    const header=scanCefStandardHeaderGrammar(input);
+    if(!header.ok)return failure('Unsupported or malformed standard CEF header: '+header.reason);
+    const decoded=header.fields.map(x=>x.decoded);
     const record: Record<string, unknown> = {
-      cef_version: match[1], cef_device_vendor: parts[0],
-      cef_device_product: parts[1], cef_device_version: parts[2],
-      cef_signature_id: parts[3], cef_name: parts[4], cef_severity: parts[5],
+      cef_version:decoded[0], cef_device_vendor:decoded[1],
+      cef_device_product:decoded[2], cef_device_version:decoded[3],
+      cef_signature_id:decoded[4], cef_name:decoded[5], cef_severity:decoded[6],
     };
-    if (parts[6].trim()) {
-      const extension = cefExtensionValues(parts[6]);
-      if (extension.errors.length) return extension;
-      for (const [key, value] of Object.entries(extension.fields)) {
-        if (Object.prototype.hasOwnProperty.call(record, key)) return failure('Extension overrides a reserved CEF header field');
-        record[key] = value;
+    const extensionText=input.slice(header.extensionStart);
+    if(extensionText.trim()){
+      const extension=cefExtensionValues(extensionText);
+      if(extension.errors.length)return extension;
+      for(const [key,value] of Object.entries(extension.fields)){
+        if(Object.prototype.hasOwnProperty.call(record,key))
+          return failure('Extension overrides a reserved CEF header field');
+        record[key]=value;
       }
     }
-    return { fields: record, errors: [] };
+    return {fields:record,errors:[]};
   }
   const match = /^LEEF:(1\.0|2\.0)\|(.*)$/.exec(input);
   if (!match) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');

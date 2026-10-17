@@ -33,7 +33,7 @@ describe('STD-3 required CEF header grammar and false-complete source review',()
   ];
   for(const raw of invalid){
     const browser=extractStructuredFamily(raw,'cef');
-    expect(browser.errors).toEqual([]); // reproducible baseline risk
+    expect(browser.errors.length).toBeGreaterThan(0); // fixed common grammar rejects invalid headers
     const gate=inspectCefStandardHeader(raw);
     expect(gate.disposition).toBe('ABSTAIN_UNSAFE');
     expect(gate.fields).toEqual([]);
