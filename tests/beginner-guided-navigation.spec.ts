@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {createHash} from 'node:crypto';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -46,11 +47,41 @@ test('first-time user is guided back to the required flow after clicking ahead',
     '{"src_ip":"192.0.2.10","dst_ip":"198.51.100.10","dst_port":443,"action":"allow"}',
     '{"src_ip":"192.0.2.11","dst_ip":"198.51.100.11","dst_port":22,"action":"deny"}',
   ].join('\n');
+  // Browser-only navigation must not depend on an unrelated live backend.
+  // Source and event hashes are exact, and all source values are retained.
+  const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
+  const rows=sample.split('\n');
+  let position=0;
+  const events=rows.map((raw,index)=>{
+    const startByte=position,endByte=startByte+Buffer.byteLength(raw);
+    position=endByte+(index<rows.length-1?1:0);
+    return {index,startByte,endByte,preview:{
+      contract:'parser-studio.multipass-source-preview.v0.1',
+      status:'SOURCE_PARSED',syntax:'JSON',
+      sourceSha256:sha(raw),sourceBytes:Buffer.byteLength(raw),
+      fields:JSON.parse(raw) as Record<string,unknown>,
+      spans:[],residuals:[],issues:[],nativeVerified:false,targetVerified:false,
+    }};
+  });
+  const batch={
+    contract:'parser-studio.multipass-source-batch-preview.v0.1',
+    sourceSha256:sha(sample),sourceBytes:Buffer.byteLength(sample),
+    eventCount:rows.length,events,
+    separators:events.slice(0,-1).map(event=>({
+      startByte:event.endByte,endByte:event.endByte+1,kind:'WHITESPACE',
+    })),nativeVerified:false,targetVerified:false,
+  };
+  await page.route('**/api/v1/multipass/preview-batch',route=>{
+    const requested=(route.request().postDataJSON() as {raw:string}).raw;
+    expect(requested).toBe(sample);
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(batch)});
+  });
   await page.getByLabel('Auto Parser raw logs').fill(sample);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeVisible({timeout:15000});
+  await expect(page.getByLabel('Beginner analysis summary'))
+    .toContainText('2 of 2 log events parsed completely');
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
-  await expect(review).toBeEnabled({timeout:15000});
+  await expect(review).toBeEnabled();
   await review.click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 
