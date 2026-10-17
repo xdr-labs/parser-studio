@@ -956,7 +956,14 @@ function standalonePanosAuditCsv(raw:string):Record<string,unknown>|null{
 }
 
 function standaloneUnlabeledCsv(raw:string):Record<string,unknown>|null{
-  const parsed=parseRfc4180SingleDataRow(raw);
+  const strict=parseRfc4180SingleDataRow(raw);
+  // Distinct, explicitly bounded legacy producer layout: a single SP
+  // immediately after a comma is not RFC4180. Try only as an eligible
+  // candidate and retain the wire; signature/calendar checks below still
+  // must qualify it. Never loosen the default browser CSV parser.
+  const parsed=strict??(raw.includes(', ')
+    ?parseRfc4180SingleDataRow(raw,{declaredPaddingAfterDelimiter:true})
+    :null);
   if(!parsed||parsed.values.length<7||parsed.values.length>150)return null;
   const {values,quotedFields}=parsed;
   const firstTimestamp=/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(values[0]??'');
@@ -971,7 +978,9 @@ function standaloneUnlabeledCsv(raw:string):Record<string,unknown>|null{
   const columns:Record<string,string>={};
   values.forEach((value,index)=>{columns['column_'+String(index)]=value;});
   return {generic:{
-    mode:quotedFields===values.length?'quoted_csv_unlabeled':'csv_unlabeled_row',
+    mode:quotedFields===values.length?(
+      strict?'quoted_csv_unlabeled':'quoted_csv_unlabeled_padded_dialect'
+    ):'csv_unlabeled_row',
     delimiter:',',source_raw:raw,columns,
   }};
 }

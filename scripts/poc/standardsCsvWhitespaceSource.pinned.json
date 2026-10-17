@@ -1,0 +1,356 @@
+{
+  "authority": "RFC4180 Section 2 (informational): spaces are part of a field, quotes doubled, single CSV record",
+  "scope": "same source browser and independent claimed UTF-8 offsets; synthetic, not vendor/native",
+  "cases": [
+    {
+      "id": "CSV-UNQUOTED-EDGE-SPACES",
+      "wire": "allow,  blocked  ,204",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "allow",
+          "decoded": "allow",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 5,
+          "nullableSourceValue": "allow"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "  blocked  ",
+          "decoded": "  blocked  ",
+          "quoted": false,
+          "startByte": 6,
+          "endByte": 17,
+          "nullableSourceValue": "  blocked  "
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "204",
+          "decoded": "204",
+          "quoted": false,
+          "startByte": 18,
+          "endByte": 21,
+          "nullableSourceValue": "204"
+        }
+      ],
+      "sourceBytes": 21
+    },
+    {
+      "id": "CSV-FIRST-LEADING-SPACE",
+      "wire": " allow,deny,block",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": " allow",
+          "decoded": " allow",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 6,
+          "nullableSourceValue": " allow"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "deny",
+          "decoded": "deny",
+          "quoted": false,
+          "startByte": 7,
+          "endByte": 11,
+          "nullableSourceValue": "deny"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "block",
+          "decoded": "block",
+          "quoted": false,
+          "startByte": 12,
+          "endByte": 17,
+          "nullableSourceValue": "block"
+        }
+      ],
+      "sourceBytes": 17
+    },
+    {
+      "id": "CSV-QUOTED-EMPTY-UNQUOTED-EMPTY",
+      "wire": "\"\",,tail",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "\"\"",
+          "decoded": "",
+          "quoted": true,
+          "startByte": 0,
+          "endByte": 2,
+          "nullableSourceValue": ""
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "",
+          "decoded": "",
+          "quoted": false,
+          "startByte": 3,
+          "endByte": 3,
+          "nullableSourceValue": null
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "tail",
+          "decoded": "tail",
+          "quoted": false,
+          "startByte": 4,
+          "endByte": 8,
+          "nullableSourceValue": "tail"
+        }
+      ],
+      "sourceBytes": 8
+    },
+    {
+      "id": "CSV-UTF8-SOURCE",
+      "wire": "한글,\"€ 😀\",alpha",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "한글",
+          "decoded": "한글",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 6,
+          "nullableSourceValue": "한글"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "\"€ 😀\"",
+          "decoded": "€ 😀",
+          "quoted": true,
+          "startByte": 7,
+          "endByte": 17,
+          "nullableSourceValue": "€ 😀"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "alpha",
+          "decoded": "alpha",
+          "quoted": false,
+          "startByte": 18,
+          "endByte": 23,
+          "nullableSourceValue": "alpha"
+        }
+      ],
+      "sourceBytes": 23
+    },
+    {
+      "id": "CSV-ESCAPED-DOUBLE-QUOTE",
+      "wire": "a,\"b\"\"c\",d",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "a",
+          "decoded": "a",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 1,
+          "nullableSourceValue": "a"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "\"b\"\"c\"",
+          "decoded": "b\"c",
+          "quoted": true,
+          "startByte": 2,
+          "endByte": 8,
+          "nullableSourceValue": "b\"c"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "d",
+          "decoded": "d",
+          "quoted": false,
+          "startByte": 9,
+          "endByte": 10,
+          "nullableSourceValue": "d"
+        }
+      ],
+      "sourceBytes": 10
+    },
+    {
+      "id": "CSV-QUOTED-DELIMITER",
+      "wire": "a,\"hello, world\",c",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "a",
+          "decoded": "a",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 1,
+          "nullableSourceValue": "a"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "\"hello, world\"",
+          "decoded": "hello, world",
+          "quoted": true,
+          "startByte": 2,
+          "endByte": 16,
+          "nullableSourceValue": "hello, world"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "c",
+          "decoded": "c",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 18,
+          "nullableSourceValue": "c"
+        }
+      ],
+      "sourceBytes": 18
+    },
+    {
+      "id": "CSV-TRAILING-EMPTY",
+      "wire": "allow,deny,",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "allow",
+          "decoded": "allow",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 5,
+          "nullableSourceValue": "allow"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "deny",
+          "decoded": "deny",
+          "quoted": false,
+          "startByte": 6,
+          "endByte": 10,
+          "nullableSourceValue": "deny"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "",
+          "decoded": "",
+          "quoted": false,
+          "startByte": 11,
+          "endByte": 11,
+          "nullableSourceValue": null
+        }
+      ],
+      "sourceBytes": 11
+    },
+    {
+      "id": "CSV-TRAILING-SPACES",
+      "wire": "a,b,  ",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "a",
+          "decoded": "a",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 1,
+          "nullableSourceValue": "a"
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "b",
+          "decoded": "b",
+          "quoted": false,
+          "startByte": 2,
+          "endByte": 3,
+          "nullableSourceValue": "b"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "  ",
+          "decoded": "  ",
+          "quoted": false,
+          "startByte": 4,
+          "endByte": 6,
+          "nullableSourceValue": "  "
+        }
+      ],
+      "sourceBytes": 6
+    },
+    {
+      "id": "CSV-SPACE-INSIDE-QUOTES",
+      "wire": "\"   a  \",b,c",
+      "valid": true,
+      "claims": [
+        {
+          "ordinal": 0,
+          "rawLexeme": "\"   a  \"",
+          "decoded": "   a  ",
+          "quoted": true,
+          "startByte": 0,
+          "endByte": 8,
+          "nullableSourceValue": "   a  "
+        },
+        {
+          "ordinal": 1,
+          "rawLexeme": "b",
+          "decoded": "b",
+          "quoted": false,
+          "startByte": 9,
+          "endByte": 10,
+          "nullableSourceValue": "b"
+        },
+        {
+          "ordinal": 2,
+          "rawLexeme": "c",
+          "decoded": "c",
+          "quoted": false,
+          "startByte": 11,
+          "endByte": 12,
+          "nullableSourceValue": "c"
+        }
+      ],
+      "sourceBytes": 12
+    },
+    {
+      "id": "CSV-UNTERMINATED-QUOTE",
+      "wire": "a,\"bad",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 6
+    },
+    {
+      "id": "CSV-SPACE-AFTER-CLOSE",
+      "wire": "a,\"b\" ,c",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 8
+    },
+    {
+      "id": "CSV-QUOTE-IN-UNQUOTED",
+      "wire": "a,b\"c,d",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 7
+    },
+    {
+      "id": "CSV-TRAILING-JUNK-AFTER-CLOSE",
+      "wire": "a,\"x\"suffix,c",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 13
+    },
+    {
+      "id": "CSV-SPACE-BEFORE-QUOTE",
+      "wire": "a, \"quoted\",c",
+      "valid": false,
+      "claims": [],
+      "sourceBytes": 13
+    }
+  ]
+}

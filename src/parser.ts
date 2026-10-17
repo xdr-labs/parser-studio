@@ -6,6 +6,7 @@ import { validatePreviewRegexPattern } from './regexSafety';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
 import {isIpToken,isPortToken} from './networkTokens';
+import {readCsvSourceCells,type CsvSourceDelimiter} from './csvSourceCells';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -87,43 +88,11 @@ function extractKV(raw: string): Extraction {
   return { fields, errors };
 }
 
-function tokenizeCSV(raw: string, delimiter: string): string[] | null {
-  // The backend compiles Ruby CSV.parse_line with liberal_parsing: false.
-  // This browser subset is intentionally conservative; malformed quoted
-  // cells never become successful evidence for native generation.
-  if (![',', ';', '\t'].includes(delimiter)) return null;
-  const out: string[] = [];
-  let token = '';
-  let state: 'start' | 'plain' | 'quoted' | 'afterQuote' = 'start';
-  for (let i = 0; i < raw.length; i++) {
-    const c = raw[i];
-    if (state === 'quoted') {
-      if (c === '"') {
-        if (raw[i + 1] === '"') { token += '"'; i++; }
-        else state = 'afterQuote';
-      } else token += c;
-    } else if (state === 'afterQuote') {
-      if (c === delimiter) { out.push(token); token = ''; state = 'start'; }
-      else if (c === ' ' || (c === '\t' && delimiter !== '\t')) continue;
-      else return null;
-    } else if (c === delimiter) {
-      out.push(token.trim()); token = ''; state = 'start';
-    } else if (c === '"') {
-      if (state !== 'start') return null;
-      state = 'quoted';
-    } else if (state === 'start' && (c === ' ' || (c === '\t' && delimiter !== '\t'))) {
-      // Match the generated strict CSV parser's bounded field-edge stripping:
-      // whitespace adjacent to a field is ignored, but quotes inside an
-      // already-started unquoted value remain invalid.
-      continue;
-    } else {
-      token += c;
-      state = 'plain';
-    }
-  }
-  if (state === 'quoted') return null;
-  out.push(state === 'afterQuote' ? token : token.trim());
-  return out;
+function tokenizeCSV(raw: string,delimiter: string):string[]|null{
+  if(![',',';','\t'].includes(delimiter)||/[\r\n]/.test(raw)||
+     new TextEncoder().encode(raw).byteLength>MAX_DATASET_BYTES)return null;
+  const cells=readCsvSourceCells(raw,delimiter as CsvSourceDelimiter);
+  return cells?cells.map(cell=>cell.value??''):null;
 }
 
 export interface CsvColumnShape {
