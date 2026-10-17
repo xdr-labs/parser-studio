@@ -1,0 +1,65 @@
+{
+  "files": [
+    {
+      "bytes": 34595,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-failed-attempts.log",
+      "sha256": "b5e16646bf4f5e18fa28a74097a0ab1e408fda84bbaad2ad55ce9d96f3d50952"
+    },
+    {
+      "bytes": 226292,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-failed-attempts.log-expected.json",
+      "sha256": "f910b5c1c52acee1e7129573ddb2534ad644e6362396a2fc2c7fcc5f2bfd5519"
+    },
+    {
+      "bytes": 26709,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-passed-authentications.log",
+      "sha256": "03db2b7ac3b5d78b21ecc448f36f3a7241feccbb3509c2b66c602c8a07fed614"
+    },
+    {
+      "bytes": 149762,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-passed-authentications.log-expected.json",
+      "sha256": "59eaf837ebd96918f34e98262b7525c67d8abeee54b2e79af7f22035ff765505"
+    },
+    {
+      "bytes": 25439,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-administrative-and-operational-audit.log",
+      "sha256": "55a2ff4e9ec2bb89767b2fdaafc071d0cc21b8670e1102fe00b07684c23d0a2c"
+    },
+    {
+      "bytes": 205273,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-administrative-and-operational-audit.log-expected.json",
+      "sha256": "84c0525bcfb2d0c716ed57c9dddb87229836e6d9e8b058b73407a2d356f5d5cd"
+    },
+    {
+      "bytes": 21186,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-radius-diagnostics.log",
+      "sha256": "44c8639de63704e3c3a05640bddf66b4402c8f92f517ceb066451fa5c62072e4"
+    },
+    {
+      "bytes": 136991,
+      "path": "packages/cisco_ise/data_stream/log/_dev/test/pipeline/test-pipeline-radius-diagnostics.log-expected.json",
+      "sha256": "f58f84223c9263a93e8fecd981d5e6e58b49c753baea78b2b6043c8dce94fef3"
+    }
+  ],
+  "license": "Elastic License 2.0 - evaluation fixtures private / not redistributed",
+  "licenseSha256": "1ab1ac1cf67b4360986b5cd0448bfa320f9b34cacf46abce32b36b0c7fc71ed6",
+  "oracle": {
+    "completeEventOracle": false,
+    "counts": {
+      "emptyAssignmentsUnscored": 7,
+      "escapedInputEventsUnscoredSemantics": 13,
+      "events": 149,
+      "eventsWithAssertions": 148,
+      "sourceTriples": 590,
+      "unmatchedExpected": 6,
+      "unscorableEvents": 1
+    },
+    "fullFieldFP": "UNSCORABLE",
+    "nativeParser": "NOT_VERIFIED",
+    "privateFile": "publisher-cisco-ise-oracle.v1.json",
+    "sha256": "7453879258705368c551c357fd46c0901f31e23ebee401f1bb424d006787da2c"
+  },
+  "oracleStatus": "PUBLISHER_PARTIAL_ASSERTIONS_NOT_MANUFACTURER_OR_NATIVE_CERTIFICATION",
+  "repository": "elastic/integrations",
+  "upstreamRevision": "615252c0910be1b8dc4dbe8f70acabe02ea8757e"
+}
