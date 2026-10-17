@@ -1,0 +1,26 @@
+{
+  "claim_limits": "LIBRARY_UNIT_CONFORMANCE_NOT_AUTHENTIC_DEVICE_OR_NATIVE_STELLAR",
+  "freeze": "BEFORE_CANDIDATE_OR_BASELINE_SCORE",
+  "groups": {
+    "RFC3164": {
+      "scorable": 1,
+      "source_triples": 7,
+      "total": 1,
+      "unscorable": 0
+    },
+    "RFC5424": {
+      "scorable": 4,
+      "source_triples": 31,
+      "total": 4,
+      "unscorable": 0
+    }
+  },
+  "independent_events": 5,
+  "negative_handling": "UNSCORABLE_EXCLUDED_NOT_INTERPRETED_AS_FAILURE_OR_SUCCESS",
+  "oracle_sha256": "15197c5b9c029831a4f6e610b0327b2716de3a46d38447948654a5cd82d639f8",
+  "original_events": 5,
+  "schema": "independent-jeromer-conformance-golden-v2",
+  "source_pin_sha256": "f80d0d998f78e95fd6bf5db7af2eb0980f0c0bb286e2df04a16b07562121106a",
+  "source_triples": 38,
+  "unscorable": 0
+}
