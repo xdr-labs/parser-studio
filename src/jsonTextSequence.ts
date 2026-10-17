@@ -1,3 +1,4 @@
+import {jsonSourcePreflightError} from './jsonSourcePreflight';
 export interface JsonTextSequence{
   records:Array<Record<string,unknown>>;
   rawJsonTexts:string[];
@@ -44,6 +45,8 @@ export function parseJsonTextSequence(raw:string):JsonTextSequenceResult{
     const jsonText=framed.slice(0,-1);
     if(!jsonText.trim()||bytes(jsonText)>MAX_RECORD_BYTES)
       return {ok:false,error:'Empty or oversized JSON text sequence record'};
+    const fidelityError=jsonSourcePreflightError(jsonText,MAX_RECORD_BYTES);
+    if(fidelityError)return {ok:false,error:fidelityError};
     let parsed:unknown;
     try{parsed=JSON.parse(jsonText);}catch{return {ok:false,error:'JSON text sequence record is malformed'};}
     if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')

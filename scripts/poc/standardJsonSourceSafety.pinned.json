@@ -1,0 +1,145 @@
+{
+  "standardReferences": [
+    "RFC8259 sections 4, 6, 7, 8",
+    "RFC7464 sections 2.2, 2.4"
+  ],
+  "evidence": "independently authored standards-derived synthetic; not manufacturer/native correctness",
+  "cases": [
+    {
+      "id": "JSON-ORDINARY-UTF8",
+      "wire": "{\"vendor\":\"Example\",\"event\":{\"user\":\"봄\",\"action\":\"allow\"},\"value\":42}",
+      "expectedDisposition": "review_lexical",
+      "issues": [],
+      "sourceBytes": 71,
+      "sourceSha256": "65a865e912c73d4d775e8585f0f39674d7f35c4b37d055d435bab667fbcdcfad",
+      "expectedSourceValue": "Example"
+    },
+    {
+      "id": "JSON-VALID-SURROGATE-PAIR",
+      "wire": "{\"emoji\":\"\\uD83D\\uDE00\",\"number\":1.5}",
+      "expectedDisposition": "review_lexical",
+      "issues": [],
+      "sourceBytes": 37,
+      "sourceSha256": "ea9cddd241f6204557714ac1868637a0d4c7a43d99aba1034de1ee66e8e2495f",
+      "expectedSourceValue": "😀"
+    },
+    {
+      "id": "JSON-DISTINCT-SCOPED-KEYS",
+      "wire": "{\"left\":{\"key\":\"A\"},\"right\":{\"key\":\"B\"}}",
+      "expectedDisposition": "review_lexical",
+      "issues": [],
+      "sourceBytes": 40,
+      "sourceSha256": "3166e50222c044f05399d6b8ce72cdf10dc47947c2610038e5ad3afcf2f7340c",
+      "expectedSourceValue": "A"
+    },
+    {
+      "id": "JSON-ARRAY-IN-OBJECT",
+      "wire": "{\"tags\":[\"a\",\"b\"],\"enabled\":true,\"count\":3}",
+      "expectedDisposition": "review_lexical",
+      "issues": [],
+      "sourceBytes": 43,
+      "sourceSha256": "6b659bfa5acd444456dbe9433738800a59d65706d5e397a3f7f51cd2ec24148d",
+      "expectedSourceValue": "a"
+    },
+    {
+      "id": "JSON-DUPLICATE-ROOT",
+      "wire": "{\"user\":\"alice\",\"user\":\"bob\"}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "DUPLICATE_MEMBER_SILENT_OVERWRITE"
+      ],
+      "sourceBytes": 29,
+      "sourceSha256": "cfe3fe331ff77a42fde30cebc8c6ebcd501dae9d15dbaa45453fdb13e6e1940a"
+    },
+    {
+      "id": "JSON-DUPLICATE-ESCAPED-NESTED",
+      "wire": "{\"event\":{\"user\":\"a\",\"\\u0075ser\":\"b\"}}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "DUPLICATE_MEMBER_SILENT_OVERWRITE"
+      ],
+      "sourceBytes": 38,
+      "sourceSha256": "e69b3d323f985b79bb370122ad9132075d5730bfcd81da237d44e0749b275619"
+    },
+    {
+      "id": "JSON-NONFINITE-EXPONENT",
+      "wire": "{\"score\":1e999}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "NONFINITE_NUMBER_OR_LOSS_OF_PRECISION"
+      ],
+      "sourceBytes": 15,
+      "sourceSha256": "4324c4536674c629fc8a2e2a335c7788fbe78f9178139b87bd6c9e37a36befe1"
+    },
+    {
+      "id": "JSON-UNSAFE-INTEGER",
+      "wire": "{\"counter\":9007199254740993}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "NONFINITE_NUMBER_OR_LOSS_OF_PRECISION"
+      ],
+      "sourceBytes": 28,
+      "sourceSha256": "80fbdff6faf922bc888fd4870b9490cfea4847bef7290a85d65c4cd990de47a1"
+    },
+    {
+      "id": "JSON-UNSAFE-FRACTION-PRECISION",
+      "wire": "{\"number\":1.1234567890123456789}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "NONFINITE_NUMBER_OR_LOSS_OF_PRECISION"
+      ],
+      "sourceBytes": 32,
+      "sourceSha256": "abb42c8e8277fdc5aa220c4dda647a874a084e2da218848cad5e719204867a0e"
+    },
+    {
+      "id": "JSON-UNPAIRED-HIGH-SURROGATE",
+      "wire": "{\"name\":\"\\uD800\"}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "UNPAIRED_UNICODE_SURROGATE"
+      ],
+      "sourceBytes": 17,
+      "sourceSha256": "3ecf0a9f6508c5a233a070c1b24f01169e50ce6f36fe28be3f8c3bcfdb1ae916"
+    },
+    {
+      "id": "JSON-UNPAIRED-LOW-SURROGATE",
+      "wire": "{\"name\":\"\\uDE00\"}",
+      "expectedDisposition": "review_uncertain",
+      "issues": [
+        "UNPAIRED_UNICODE_SURROGATE"
+      ],
+      "sourceBytes": 17,
+      "sourceSha256": "01c7fc8c7baabd8ab4fdceeef1c4ad95cec65d9bbf3cf0f1099ecdc2de892a3b"
+    },
+    {
+      "id": "JSON-INVALID-TRAILING-BYTES",
+      "wire": "{\"name\":\"alice\"}garbage",
+      "expectedDisposition": "abstain",
+      "issues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "sourceBytes": 23,
+      "sourceSha256": "1d7a1d5a3751d859936bcdb37ded90b1e37e1a1d4431cacb8a0f8716f215cf7c"
+    },
+    {
+      "id": "JSON-INVALID-ESCAPE",
+      "wire": "{\"message\":\"bad\\q\"}",
+      "expectedDisposition": "abstain",
+      "issues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "sourceBytes": 19,
+      "sourceSha256": "8ffbd0d19141b6469099852f10deedea94a6d9a443a1ec3c4071611fec038a4c"
+    },
+    {
+      "id": "JSON-TRUNCATED-OBJECT",
+      "wire": "{\"name\":\"alice\"",
+      "expectedDisposition": "abstain",
+      "issues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "sourceBytes": 15,
+      "sourceSha256": "bf356ec1cd5578e1453324d2f40768fcd85451e86e4d29d29b65374b6ad40a88"
+    }
+  ]
+}

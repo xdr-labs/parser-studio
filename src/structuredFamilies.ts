@@ -1,4 +1,5 @@
 import { parseRfc5424Subset } from './rfc5424Subset';
+import {jsonSourcePreflightError} from './jsonSourcePreflight';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -114,6 +115,8 @@ function cefExtensionValues(input:string):StructuredExtraction{
 
 /** Mirror the reviewed backend's bounded JSON object body shape. */
 function boundedJsonObject(text: string): StructuredExtraction {
+  const error=jsonSourcePreflightError(text);
+  if(error)return failure(error);
   try {
     const parsed: unknown = JSON.parse(text);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {

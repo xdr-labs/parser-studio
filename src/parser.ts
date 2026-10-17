@@ -6,6 +6,7 @@ import { validatePreviewRegexPattern } from './regexSafety';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
 import {isIpToken,isPortToken} from './networkTokens';
+import {jsonSourcePreflightError} from './jsonSourcePreflight';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -59,6 +60,11 @@ export interface Extraction {
 }
 
 function extractJSON(raw: string): Extraction {
+  const error=jsonSourcePreflightError(raw);
+  if(error)return {fields:{},errors:[
+    error.startsWith('JSON source syntax is not qualified')?
+      'Invalid JSON object':error,
+  ]};
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
