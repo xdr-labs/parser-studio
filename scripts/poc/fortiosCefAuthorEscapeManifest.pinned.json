@@ -1,0 +1,25 @@
+{
+  "authorCefExamples": 1,
+  "authorDocumentUrl": "https://docs.fortinet.com/document/fortigate/7.4.8/fortios-log-message-reference/807724/antivirus-log-support-for-cef",
+  "cefExampleSha256": "7e259c6a7aac65053adcf5bfdf72cea91b9b7425f91ea1675f36c92b162f4903",
+  "copyright": "Fortinet proprietary documentation retained privately for evaluation",
+  "documentSha256": "d4085e6f7363887a88cff469837828ecaebb6647722dbb5eef8cb82d90987a40",
+  "documentedEscape": "backslash escapes literal equals",
+  "limitations": [
+    "doc samples not verified same physical wire event",
+    "no full event field oracle",
+    "source byte intervals evaluator-derived",
+    "not all FortiOS firmwares or transport modes"
+  ],
+  "manufacturer": "Fortinet",
+  "manufacturerIndependentExpectedDecoder": "original-disk-field-value+explicit-cef-mapping-note",
+  "oracleSha256": "8817ce951365fa3d6291432e3080e8845c9b10dd548070b0d5035b0a8e574d86",
+  "originalBytesInGit": false,
+  "originalDiskExampleSha256": "d590c88f317ca1056460fe6b0b2afc31aec5c59cbcb346a51683e31039f1628f",
+  "originalDiskExamples": 1,
+  "referenceFields": 1,
+  "sourceFieldName": "ref",
+  "sourceSpans": "evaluator-derived before candidate scoring",
+  "version": "FortiOS 7.4.8",
+  "wireFieldName": "FTNTFGTref"
+}
