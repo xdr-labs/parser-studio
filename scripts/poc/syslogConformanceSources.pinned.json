@@ -1,0 +1,45 @@
+{
+  "schema": "syslog-conformance-source-pins-v1",
+  "state": "PINNED_BEFORE_ANY_BASELINE_OR_CANDIDATE_INSPECTION",
+  "files": [
+    {
+      "id": "influx_rfc3164",
+      "repository": "influxdata/go-syslog",
+      "revision": "66067a10754ae90b9540d5312989ae685413c4fe",
+      "path": "rfc3164/machine_test.go",
+      "license": "MIT",
+      "split": "development",
+      "byte_count": 6339,
+      "sha256": "b63a1d51420ce55fe092ab83af02df4c7c0cd0ccfcf49d5fae1542b8abc34224",
+      "upstream_expected_values": true,
+      "manufacturer_device_attested": false
+    },
+    {
+      "id": "influx_rfc5424",
+      "repository": "influxdata/go-syslog",
+      "revision": "66067a10754ae90b9540d5312989ae685413c4fe",
+      "path": "rfc5424/machine_test.go",
+      "license": "MIT",
+      "split": "development",
+      "byte_count": 55307,
+      "sha256": "8d86ba6be3edf326cdc561ab9910db4bcf8a3388ecb7b7646fa7bf805f2a446a",
+      "upstream_expected_values": true,
+      "manufacturer_device_attested": false
+    },
+    {
+      "id": "otel_syslog",
+      "repository": "open-telemetry/opentelemetry-collector-contrib",
+      "revision": "7c913688e177b4f76270b9a04f5eef3f48e5008f",
+      "path": "pkg/stanza/operator/parser/syslog/syslogtest/data.go",
+      "license": "Apache-2.0",
+      "split": "sealed",
+      "byte_count": 17500,
+      "sha256": "068e145de64457dc70201674264b04f0c837f5e5e264b0ced75fa92a3faf862c",
+      "upstream_expected_values": true,
+      "manufacturer_device_attested": false
+    }
+  ],
+  "raw_policy": "private_0600_not_in_git",
+  "comparison": "upstream_expected_source_header_semantics_plus_original_bytes",
+  "experimental_limit": "public_library_unit_fixtures_not_authentic_device_captures"
+}

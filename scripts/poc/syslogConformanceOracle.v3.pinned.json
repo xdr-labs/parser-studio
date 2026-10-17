@@ -1,0 +1,43 @@
+{
+  "schema": "syslog-conformance-golden-v3",
+  "stage": "FROZEN_BEFORE_ANY_BASELINE_OR_CANDIDATE_SCORING",
+  "v1_exclusion_correction": "Exploratory v1 raw-backtick handling and v2 multiline Go method-chaining qualification were incomplete; both frozen snapshots retained",
+  "source_manifest_sha256": "13292cc6d04f0f80f9a377ac0948c06f07c31703e97b99a94391f92e31dc02a2",
+  "private_oracle_sha256": "d801716c40a437f9789b8562b8cf14d5954772f915a1ff441618d3541ded1413",
+  "source_repo_count": 2,
+  "source_files": 3,
+  "all_cases": 204,
+  "scorable": 41,
+  "negative_only": 79,
+  "unscorable": 84,
+  "source_field_triples": 279,
+  "groups": {
+    "influx_rfc3164": {
+      "all": 8,
+      "scorable": 8,
+      "negative": 0,
+      "unscorable": 0,
+      "field_triples": 57,
+      "source_literal": 8
+    },
+    "influx_rfc5424": {
+      "all": 178,
+      "scorable": 31,
+      "negative": 79,
+      "unscorable": 68,
+      "field_triples": 204,
+      "source_literal": 113
+    },
+    "otel_syslog": {
+      "all": 18,
+      "scorable": 2,
+      "negative": 0,
+      "unscorable": 16,
+      "field_triples": 18,
+      "source_literal": 12
+    }
+  },
+  "qualification": "UPSTREAM_LIBRARY_TEST_EXPECTATIONS_NOT_AUTHENTIC_DEVICE",
+  "native_stellar": "NOT_VERIFIED",
+  "manufacturer_semantics": "NOT_CERTIFIED"
+}
