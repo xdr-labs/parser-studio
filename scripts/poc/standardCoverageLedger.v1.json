@@ -1,0 +1,200 @@
+{
+  "contract": "parserstudio.standard-grammar-coverage-ledger.v0.1",
+  "sourceTree": "xdr-labs/parser-studio@492964acf36594be02a6c10f14f43dfa1c90614a",
+  "scope": "INITIAL_CODE_AND_TARGETED_DYNAMIC_AUDIT_NOT_WHOLE_ENGINE_CERTIFICATION",
+  "normativePins": "scripts/poc/normativeGrammarSources.pinned.json",
+  "diagnosticInputs": "scripts/poc/standardGrammarCases.v1.json",
+  "evidenceRules": "A syntactic positive is not exact native extraction. Prior publisher originals are historical until independently requalified.",
+  "entries": [
+    {
+      "id": "STD-1-RFC6587-FRAMING",
+      "sourceIds": ["RFC6587","RFC5425"],
+      "rule": "RFC6587 3.4 octet counting versus nontransparent framing and record limits",
+      "implementationPaths": ["src/syslogFraming.ts","src/securityInputPipeline.ts"],
+      "status": "IMPLEMENTED_BOUNDED_NEEDS_CROSS_SURFACE_CONFIRMATION",
+      "risk": "MEDIUM",
+      "observation": "Stream splitting, UTF-8 length accounting, LF/CRLF/NUL/leading-zero checks exist. Need lossless octet and truncation transfer tests against native receiver.",
+      "next": "STD-1 stream/forwarder exact boundary and native contract verification"
+    },
+    {
+      "id": "STD-2-RFC3164-ENVELOPE",
+      "sourceIds": ["RFC3164"],
+      "rule": "PRI, timestamp, relay and free-form message",
+      "implementationPaths": ["src/syslogEnvelope.ts","src/poc/generalSyslogEnvelopeSpans.ts","src/structuredFamilies.ts"],
+      "status": "IMPLEMENTED_MULTIPLE_BOUNDARY_VARIANTS",
+      "risk": "MEDIUM",
+      "observation": "Multiple qualified original extractors exist. Strict TAG and generic envelope paths intentionally differ. Year/timezone unknown must not be fabricated.",
+      "next": "STD-2 compare exact envelopes and relay attribution in one frozen scope"
+    },
+    {
+      "id": "STD-2-RFC5424-SD",
+      "sourceIds": ["RFC5424"],
+      "rule": "RFC5424 6.3 structured data escaping and NILVALUE",
+      "implementationPaths": ["src/poc/rfc5424SdByteEscapes.ts","src/poc/generalSyslogEnvelopeSpans.ts","src/rfc5424Subset.ts"],
+      "status": "SUPPORTED_BY_SEPARATE_SOURCE_PARSER_WITH_DIVERGENCE",
+      "risk": "MEDIUM",
+      "observation": "Byte scanner preserves unknown SD escapes in its raw source form while general envelope scanner abstains; RFC5424 SD must not be confused with MSG CEF escape.",
+      "next": "STD-2 add same-input/independent-standard expected-value transfer probes"
+    },
+    {
+      "id": "STD-3-CEF-BROWSER-EXT",
+      "sourceIds": ["CEF26"],
+      "rule": "CEF header escaped pipe/backslash and extension escaped equals/backslash/newline, spaces inside values",
+      "implementationPaths": ["src/structuredFamilies.ts"],
+      "status": "CONFIRMED_NARROW_POSITIVES",
+      "risk": "LOW",
+      "observation": "Browser core correctly matched six standards-derived CEF escaping/spacing examples. This does not establish source spans, complete-event precision or native parity.",
+      "next": "STD-3 semantic/source-span/native equivalence, additional counterexamples"
+    },
+    {
+      "id": "STD-3-CEF-SOURCE-BYTE-DIVERGENCE",
+      "sourceIds": ["CEF26"],
+      "rule": "CEF escaped header/extension values and UTF-8 source offsets",
+      "implementationPaths": ["src/poc/independentNonJsonStructural.ts","src/structuredFamilies.ts"],
+      "status": "CONFIRMED_INTENTIONAL_SOURCE_SUBSET_GAP",
+      "risk": "HIGH",
+      "observation": "One source-span observer abstains on standard escaped pipes/backslashes/spaced values that browser core can decode. Do not advertise this as entire product CEF escape failure.",
+      "next": "STD-3 design a shared standard lexer returning separate raw and decoded source intervals"
+    },
+    {
+      "id": "STD-3-CEF-REQUIRED-HEADER",
+      "sourceIds": ["CEF26"],
+      "rule": "All mandatory CEF header fields present/defined and severity constrained to documented enumeration",
+      "implementationPaths": ["src/structuredFamilies.ts"],
+      "status": "CONFIRMED_FALSE_COMPLETE_RISK",
+      "risk": "HIGH",
+      "observation": "Browser extraction returned no errors for empty deviceVendor, blank severity and numeric severity 99. Isolated bounded header audit now abstains on these without vendor-specific rules.",
+      "next": "STD-3 add independent format-level header validation before any success decision"
+    },
+    {
+      "id": "STD-4-LEEF2-CUSTOM-DELIMITER",
+      "sourceIds": ["LEEF20"],
+      "rule": "LEEF 2.0 literal, 0xHH, xHH and Unicode delimiter handling",
+      "implementationPaths": ["src/structuredFamilies.ts","src/poc/independentLeefSource.ts"],
+      "status": "CONFIRMED_SOURCE_OBSERVER_SUBSET_DIVERGENCE",
+      "risk": "HIGH",
+      "observation": "Browser core passed x5E, 0x5E and xa6 synthetic examples; independent source observer abstained on some, preserving raw instead of inventing spans.",
+      "next": "STD-4 cross-check source offsets, duplicate keys and format-level positive/negative paths"
+    },
+    {
+      "id": "STD-5-JSON-DUPLICATE-MEMBER",
+      "sourceIds": ["RFC8259"],
+      "rule": "RFC8259 section 4 recommends unique object member names; duplicate resolution is non-interoperable",
+      "implementationPaths": ["src/parser.ts","src/structuredFamilies.ts","src/jsonTextSequence.ts"],
+      "status": "CONFIRMED_SILENT_SOURCE_LOSS_RISK",
+      "risk": "HIGH",
+      "observation": "Browser JSON.parse silently keeps the last of two same-named fields while returning errors=[]. New isolated bounded source gate preserves REVIEW_ONLY and detects nested/Unicode-escaped duplicate keys.",
+      "next": "STD-5 shared source-loss preflight for JSON objects and native parity"
+    },
+    {
+      "id": "STD-5-JSON-NUMERIC",
+      "sourceIds": ["RFC8259"],
+      "rule": "RFC8259 number interoperability and IEEE754 exponent/precision limits",
+      "implementationPaths": ["src/parser.ts","src/jsonTextSequence.ts"],
+      "status": "CONFIRMED_FALSE_COMPLETE_RISK",
+      "risk": "HIGH",
+      "observation": "A JSON exponent outside finite double range yields JS Infinity with no parser error. The isolated gate reports numeric representation risk.",
+      "next": "STD-5 bounded preflight and typed provenance before normalization"
+    },
+    {
+      "id": "STD-5-JSON-UNICODE",
+      "sourceIds": ["RFC8259"],
+      "rule": "RFC8259 8.2 unpaired Unicode surrogate interoperability",
+      "implementationPaths": ["src/parser.ts","src/jsonTextSequence.ts"],
+      "status": "CONFIRMED_REPRESENTATION_RISK",
+      "risk": "HIGH",
+      "observation": "Escaped unpaired surrogate produces non-interoperable JS Unicode without browser error; isolated gate marks uncertain rather than complete.",
+      "next": "STD-5 byte-level original/decoded code point policy"
+    },
+    {
+      "id": "STD-5-RFC7464-SEQ",
+      "sourceIds": ["RFC7464"],
+      "rule": "RFC7464 record separator, LF and recoverability",
+      "implementationPaths": ["src/jsonTextSequence.ts","src/securityInputPipeline.ts"],
+      "status": "SECURITY_OBJECT_ONLY_SUBSET",
+      "risk": "MEDIUM",
+      "observation": "Bounded parser accepts only JSON object records and requires LF; RFC7464 allows other JSON values. This is a product policy subset, not proof of universal RFC7464 coverage.",
+      "next": "STD-5 verify recovery/truncation and limitations explicitly"
+    },
+    {
+      "id": "STD-6-RFC4180-STRICT",
+      "sourceIds": ["RFC4180"],
+      "rule": "RFC4180 escaped quotes, quoted comma, CRLF, positional empty/trailing columns",
+      "implementationPaths": ["src/rfc4180Csv.ts","src/parser.ts","src/poc/independentQuotedCsvSource.ts"],
+      "status": "CONFIRMED_NARROW_POSITIVES",
+      "risk": "LOW",
+      "observation": "Quoted comma, doubled-quote, empty positional fields and invalid quotation behaved conservatively on four synthetic cases.",
+      "next": "STD-6 native parser source offsets and multiline row membership"
+    },
+    {
+      "id": "STD-6-CSV-EDGE-SPACES",
+      "sourceIds": ["RFC4180"],
+      "rule": "RFC4180 spaces are part of a field and should not be ignored by default",
+      "implementationPaths": ["src/parser.ts","src/rfc4180Csv.ts"],
+      "status": "CONFIRMED_CROSS_SURFACE_SEMANTIC_DIVERGENCE",
+      "risk": "HIGH",
+      "observation": "Browser tokenizeCSV trims ordinary unquoted cell spaces while strict RFC4180 table parser preserves them. Any producer policy that trims must be explicit, not claimed RFC default.",
+      "next": "STD-6 preserve lexical cell values and verify selected normalization policy separately"
+    },
+    {
+      "id": "STD-7-KV-UNCONSUMED-RAW",
+      "sourceIds": [],
+      "rule": "Producer-declared KV completeness, not universal RFC grammar",
+      "implementationPaths": ["src/parser.ts","src/poc/independentLogfmtSource.ts","src/poc/conservativeKvGrammar.ts"],
+      "status": "CONFIRMED_FALSE_COMPLETE_RISK",
+      "risk": "HIGH",
+      "observation": "Browser regex matches good assignments but ignores unmatched trailing garbage with errors=[]. Isolated source gate returns uncertain and no promoted fields.",
+      "next": "STD-7 verify consumed byte coverage before field completeness"
+    },
+    {
+      "id": "STD-7-KV-UNKNOWN-ESCAPE",
+      "sourceIds": [],
+      "rule": "No producer-independent semantics of arbitrary backslash escape",
+      "implementationPaths": ["src/parser.ts","src/structuredFamilies.ts","src/poc/transportEscapeReview.ts"],
+      "status": "CONFIRMED_UNQUALIFIED_SEMANTIC_RISK",
+      "risk": "HIGH",
+      "observation": "Browser regex accepts an escaped string without producer contract. Isolated source gate abstains from asserting decoded values.",
+      "next": "STD-7 bind original bytes, producer profile and explicit typed expectations"
+    },
+    {
+      "id": "STD-7-W3C-ZEEK-DECLARED",
+      "sourceIds": ["W3CLOG","ZEEK"],
+      "rule": "Directive-defined field names, separators, types and absent/empty value tokens",
+      "implementationPaths": ["src/genericStructural.ts","src/securityInputPipeline.ts"],
+      "status": "PARTIAL_AUDIT_NOT_ALL_LOG_FORMATS_QUALIFIED",
+      "risk": "MEDIUM",
+      "observation": "Delimited W3C/Zeek structures exist but official Zeek code default options now pinned to immutable upstream revision; do not claim full directive conformance.",
+      "next": "STD-7 test version-pinned Zeek writer state rotation/close and W3C declared source"
+    },
+    {
+      "id": "STD-8-FUNNEL-CONFLICT",
+      "sourceIds": [],
+      "rule": "Candidate precedence, overlap and residual parse confidence",
+      "implementationPaths": ["src/poc/grammarFunnel.ts","src/securityInputPipeline.ts","src/genericStructural.ts"],
+      "status": "IMPLEMENTED_BOUNDED_NEEDS_CROSS_FAMILY_AUDIT",
+      "risk": "HIGH",
+      "observation": "Generic Structural / bounded Funnel exist, but 23-case source/preview differences are not product-native extraction truth. Need explicit negative-route and false-complete scoring.",
+      "next": "STD-8 pin same-source competing candidates, explain arbitration"
+    },
+    {
+      "id": "STD-9-INDEPENDENT-PROVENANCE",
+      "sourceIds": [],
+      "rule": "Separate normative synthetic tests, upstream publisher source oracles and proprietary firmware/wire evidence",
+      "implementationPaths": ["scripts/poc/standardGrammarCases.v1.json","scripts/poc/normativeGrammarSources.pinned.json"],
+      "status": "INITIATED_REFERENCE_FREEZE",
+      "risk": "HIGH",
+      "observation": "11 authoritative references pinned, including immutable upstream Zeek logging definitions. 23 synthetic standard-derived probes are NOT independent field-value/location or native runtime goldens.",
+      "next": "STD-9 add sealed external multi-producer expected source values and complete-event goldens where available"
+    },
+    {
+      "id": "STD-NATIVE-CONTRACT",
+      "sourceIds": [],
+      "rule": "Native Fluentd/Stellar generated parser and source-stage parity",
+      "implementationPaths": ["src/guided/parserRecipeV2.ts","src/structuredFamilies.ts"],
+      "status": "NOT_VERIFIED_FOR_THIS_STANDARDS_AUDIT",
+      "risk": "HIGH",
+      "observation": "Backend/native plugin has separate execution tests but no equivalent exact-head standard conformance accepted in this isolated source audit.",
+      "next": "STD-11 native baseline comparison without modifying backend or live target"
+    }
+  ]
+}
