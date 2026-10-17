@@ -58,11 +58,11 @@ test.describe('approved offline evidence after run recovery; no target sender',(
     await page.reload();
     await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
     await expect(page.getByLabel('Authorized Test Lab offline evidence')).toHaveCount(0);
-    await page.getByRole('button',{name:'Tools & Diagnostics'}).click();
+    await page.getByRole('button',{name:'Advanced Tools & Diagnostics',exact:true}).click();
     const recovery=page.getByLabel('Authorized Test Lab session recovery');
     await recovery.locator('summary').click();
     await recovery.getByLabel('Existing authorized Test Lab run ID').fill(runId);
-    await recovery.getByRole('button',{name:'Look Up My Authorized Run'}).click();
+    await recovery.getByRole('button',{name:'Check Previous Run'}).click();
     await expect(recovery.getByLabel('Authorized terminal Test Lab session')).toContainText('STOPPED');
     const scope=page.getByLabel('Authorized Test Lab offline evidence');
     const panel=scope.getByLabel('Redacted Test Lab evidence review');

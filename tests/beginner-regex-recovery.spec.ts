@@ -60,6 +60,6 @@ test('beginner uses the bounded local Cisco FTD rule before unnecessary ChatGPT 
   const generated=page.getByLabel('Generated parser files');
   await expect(generated).toContainText('Parser files created successfully');
   await expect(generated.getByLabel('Parser file verification details'))
-    .toContainText('Two DRAFT files verified');
+    .toContainText('File integrity checked');
  }
 });
