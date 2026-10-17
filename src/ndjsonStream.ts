@@ -1,3 +1,4 @@
+import {jsonSourcePreflightError} from './jsonSourcePreflight';
 export interface NdjsonObjectStream{
   records:Array<Record<string,unknown>>;
   rawRecords:string[];
@@ -46,6 +47,8 @@ export function parseNdjsonObjectStream(raw:string):NdjsonStreamResult{
   const records:Array<Record<string,unknown>>=[];
   for(const line of lines){
     if(bytes(line)>MAX_RECORD_BYTES)return {ok:false,error:'NDJSON record exceeds parser limit'};
+    const fidelityError=jsonSourcePreflightError(line,MAX_RECORD_BYTES);
+    if(fidelityError)return {ok:false,error:fidelityError};
     let parsed:unknown;
     try{parsed=JSON.parse(line);}catch{return {ok:false,error:'NDJSON record is not valid JSON'};}
     if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')

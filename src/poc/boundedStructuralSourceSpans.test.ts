@@ -54,8 +54,9 @@ describe('bounded, vendor-agnostic JSON source-span candidate',()=>{
       expect(output.fields).toEqual([]);
       expect(output.autoPromoted).toBe(false);
     }
-    // Control observation: ordinary JS parsing would silently discard an original field.
-    expect(parseSecurityInput('{"a":1,"a":2}').ok).toBe(true);
+    // The shared RFC8259 source gate now rejects the prior silent overwrite.
+    // This is a changed safety policy, not new manufacturer field accuracy.
+    expect(parseSecurityInput('{"a":1,"a":2}').ok).toBe(false);
   });
   it('abstains on unsafe integer, instead of silently rounding the source',()=>{
     const raw='{"event_id":9007199254740993,"user":{"id":7}}';
@@ -63,7 +64,8 @@ describe('bounded, vendor-agnostic JSON source-span candidate',()=>{
     expect(output.disposition).toBe('ABSTAIN_UNSAFE');
     expect(output.cause).toBe('LOSSY_JSON_INTEGER_NEEDS_REVIEW');
     expect(output.fields).toEqual([]);
-    expect(parseSecurityInput(raw).ok).toBe(true);
+    // JavaScript Number would silently round the source integer.
+    expect(parseSecurityInput(raw).ok).toBe(false);
   });
   it('rejects malformed UTF-8 conceptual content, numeric overflow and JSON string',()=>{
     for(const raw of [

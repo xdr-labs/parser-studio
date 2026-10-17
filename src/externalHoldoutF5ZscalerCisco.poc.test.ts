@@ -25,8 +25,22 @@ describe('external F5/Zscaler/Cisco raw holdout',()=>{
     const summary={total:rows.length,parsed:rows.filter(row=>row.parsed).length,failures:rows.filter(row=>!row.parsed).map(row=>row.id),byFamily:Object.fromEntries(families.map(family=>[family,{total:rows.filter(row=>row.family===family).length,parsed:rows.filter(row=>row.family===family&&row.parsed).length}])),successes:rows.filter(row=>row.parsed).map(row=>({id:row.id,keys:row.keys}))};
     console.log('F5_ZSCALER_CISCO_HOLDOUT '+JSON.stringify(summary));
     expect(rows).toHaveLength(samples.length);
-    expect(summary.parsed).toBe(samples.length);
-    expect(summary.failures).toEqual([]);
-    expect(rows.filter(row=>row.family==='f5-raw').every(row=>row.keys.includes('f5_bigip'))).toBe(true);
+    // These Cisco AMP samples embed integer IDs greater than IEEE-754's
+    // exact range. The original in-memory JS Number was already rounded
+    // before JSON.stringify, so no independent original ID oracle remains.
+    // Reject all three as REVIEW_ONLY/UNSCORABLE rather than re-promote
+    // lossy parsed source. Historical denominator stays nine unchanged.
+    const unsafeIdSamples=samples.filter(item=>item.family==='cisco-endpoint-json');
+    expect(unsafeIdSamples).toHaveLength(3);
+    for(const sample of unsafeIdSamples){
+      const id=(JSON.parse(sample.raw) as {data:{id:number}}).data.id;
+      expect(Number.isSafeInteger(id)).toBe(false);
+    }
+    expect(summary.parsed).toBe(6);
+    expect(summary.failures).toEqual([
+      'cisco-amp-detect','cisco-amp-quarantine','cisco-amp-ioc',
+    ]);
+    expect(rows.filter(row=>row.family==='f5-raw').every(row=>row.parsed&&row.keys.includes('f5_bigip'))).toBe(true);
+    expect(rows.filter(row=>row.family==='zscaler-json').every(row=>row.parsed)).toBe(true);
   });
 });

@@ -16,7 +16,8 @@ describe('STD-0 source completeness gate: baseline false-complete counterexample
     (family,raw,expectedIssue)=>{
       // This is an isolated PoC gate, not a change to product code.
       const browser=extractFields(raw,family,{} as ParserDraft);
-      expect(browser.errors).toEqual([]); // baseline defect evidence
+      if(family==='json')expect(browser.errors.length).toBeGreaterThan(0);
+      else expect(browser.errors).toEqual([]); // KV remains a measured unresolved gap
       const result=inspectSourceCompleteness(raw,family);
       expect(result.disposition).toBe('REVIEW_ONLY_UNCERTAIN');
       expect(result.issues).toContain(expectedIssue);

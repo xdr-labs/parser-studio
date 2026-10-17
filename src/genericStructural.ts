@@ -1,3 +1,4 @@
+import {jsonSourcePreflightError} from './jsonSourcePreflight';
 import {extractStructuredFamily,strictKeyValues} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {unwrapSingleSyslogRecord} from './syslogFraming';
@@ -32,6 +33,7 @@ function shortRfc5424Json(raw:string):Record<string,unknown>|null{
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||!validRfc3339(match[3]!))return null;
+  if(jsonSourcePreflightError(match[5]!))return null;
   let body:unknown;
   try{body=JSON.parse(match[5]!);}catch{return null;}
   if(!body||Array.isArray(body)||typeof body!=='object')return null;
@@ -45,6 +47,7 @@ function prefixedJson(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const match=/^([A-Za-z0-9_.:/-]{1,64})[ \t]+(\{.*\})$/.exec(raw);
   if(!match)return null;
+  if(jsonSourcePreflightError(match[2]!))return null;
   let body:unknown;
   try{body=JSON.parse(match[2]!);}catch{return null;}
   if(!body||Array.isArray(body)||typeof body!=='object')return null;
@@ -740,6 +743,7 @@ function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
 
 function boundedEnvelopeJson(text:string):Record<string,unknown>|null{
   if(!text.startsWith('{')||new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
+  if(jsonSourcePreflightError(text))return null;
   let parsed:unknown;
   try{parsed=JSON.parse(text);}catch{return null;}
   if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')return null;

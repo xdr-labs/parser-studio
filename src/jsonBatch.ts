@@ -1,3 +1,4 @@
+import {jsonSourcePreflightError} from './jsonSourcePreflight';
 export interface JsonObjectBatch{
   mode:'top_level_array'|'records_wrapper';
   records:Array<Record<string,unknown>>;
@@ -45,6 +46,8 @@ function objectRecords(value:unknown):Array<Record<string,unknown>>|null{
 export function parseJsonObjectBatch(raw:string):JsonObjectBatchResult{
   if(!raw||raw.includes('\0')||bytes(raw)>MAX_BYTES)
     return {ok:false,error:'Invalid or oversized JSON batch'};
+  const fidelityError=jsonSourcePreflightError(raw,MAX_BYTES);
+  if(fidelityError)return {ok:false,error:fidelityError};
   let parsed:unknown;
   try{parsed=JSON.parse(raw);}catch{return {ok:false,error:'JSON batch is malformed'};}
   if(!safeJson(parsed,0,{nodes:0}))return {ok:false,error:'JSON batch exceeds bounded object limits'};
