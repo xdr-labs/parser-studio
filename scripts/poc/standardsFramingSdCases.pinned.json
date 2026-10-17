@@ -1,0 +1,197 @@
+{
+  "cases": [
+    {
+      "id": "TCP-OCTET-2",
+      "kind": "stream",
+      "records": 2,
+      "valid": true,
+      "wire": "58 <34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.161 <34>1 2026-10-18T12:34:56Z host app 123 E1 - src=198.51.100.1"
+    },
+    {
+      "id": "TCP-OCTET-UNICODE",
+      "kind": "stream",
+      "records": 1,
+      "valid": true,
+      "wire": "53 <34>1 2026-10-18T12:34:56Z host app 123 E1 - msg=😀"
+    },
+    {
+      "id": "TCP-OCTET-TRUNCATED",
+      "kind": "stream",
+      "valid": false,
+      "wire": "58 <34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2."
+    },
+    {
+      "id": "TCP-OCTET-LEADING-ZERO",
+      "kind": "stream",
+      "valid": false,
+      "wire": "058 <34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.1"
+    },
+    {
+      "id": "TCP-OCTET-WRONG-BYTE",
+      "kind": "stream",
+      "valid": false,
+      "wire": "52 <34>1 2026-10-18T12:34:56Z host app 123 E1 - msg=😀"
+    },
+    {
+      "id": "TCP-NONTRANS-LF",
+      "kind": "stream",
+      "records": 2,
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.1\n<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=198.51.100.1\n"
+    },
+    {
+      "id": "TCP-NONTRANS-CRLF",
+      "kind": "stream",
+      "records": 2,
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.1\r\n<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=198.51.100.1\r\n"
+    },
+    {
+      "id": "TCP-NONTRANS-NUL",
+      "kind": "stream",
+      "records": 2,
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.1\u0000<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=198.51.100.1\u0000"
+    },
+    {
+      "id": "TCP-NONTRANS-MISSING-END",
+      "kind": "stream",
+      "valid": false,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.1\n<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=198.51.100.1"
+    },
+    {
+      "id": "TCP-NONTRANS-MIXED",
+      "kind": "stream",
+      "valid": false,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=192.0.2.1\r\n<34>1 2026-10-18T12:34:56Z host app 123 E1 - src=198.51.100.1\n"
+    },
+    {
+      "id": "TCP-OCTET-MULTILINE-MSG",
+      "kind": "stream",
+      "records": 1,
+      "valid": true,
+      "wire": "78 <34>1 2026-10-18T12:34:56Z host app 123 E1 - long text\nstill same framed event"
+    },
+    {
+      "elements": 1,
+      "id": "SD-RFC-ESCAPED-BRACKET",
+      "kind": "sd",
+      "param": [
+        {
+          "decoded": "a]b",
+          "id": "example@32473",
+          "name": "note"
+        }
+      ],
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 note=\"a\\]b\"] msg"
+    },
+    {
+      "elements": 1,
+      "id": "SD-RFC-UNKNOWN-ESCAPE",
+      "kind": "sd",
+      "param": [
+        {
+          "decoded": "a\\qb",
+          "id": "example@32473",
+          "name": "note"
+        }
+      ],
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 note=\"a\\qb\"] msg"
+    },
+    {
+      "elements": 1,
+      "id": "SD-RFC-DUPLICATED-PARAM",
+      "kind": "sd",
+      "param": [
+        {
+          "decoded": "a",
+          "id": "example@32473",
+          "name": "note"
+        },
+        {
+          "decoded": "b",
+          "id": "example@32473",
+          "name": "note"
+        }
+      ],
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 note=\"a\" note=\"b\"] msg"
+    },
+    {
+      "elements": 2,
+      "id": "SD-RFC-TWO-ELEMENTS",
+      "kind": "sd",
+      "param": [
+        {
+          "decoded": "1",
+          "id": "example@32473",
+          "name": "n"
+        },
+        {
+          "decoded": "2",
+          "id": "next@32473",
+          "name": "p"
+        }
+      ],
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 n=\"1\"][next@32473 p=\"2\"] msg"
+    },
+    {
+      "elements": 0,
+      "id": "SD-RFC-NILVALUE",
+      "kind": "sd",
+      "param": [],
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 - msg"
+    },
+    {
+      "id": "SD-RFC-DUPLICATE-ID",
+      "kind": "sd",
+      "valid": false,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 a=\"1\"][example@32473 b=\"2\"] msg"
+    },
+    {
+      "id": "SD-RFC-UNESCAPED-BRACKET",
+      "kind": "sd",
+      "valid": false,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 note=\"a]b\"] msg"
+    },
+    {
+      "id": "SD-RFC-INVALID-DATE",
+      "kind": "sd",
+      "valid": false,
+      "wire": "<34>1 2026-02-29T12:34:56Z host app 123 E1 [example@32473 n=\"1\"] msg"
+    },
+    {
+      "id": "SD-RFC-BROKEN-UTF8",
+      "kind": "sd",
+      "valid": false,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 note=\"unclosed] msg"
+    },
+    {
+      "elements": 1,
+      "id": "SD-RFC-UTF8-VALUES",
+      "kind": "sd",
+      "param": [
+        {
+          "decoded": "€😀",
+          "id": "example@32473",
+          "name": "note"
+        },
+        {
+          "decoded": "next",
+          "id": "example@32473",
+          "name": "other"
+        }
+      ],
+      "valid": true,
+      "wire": "<34>1 2026-10-18T12:34:56Z host app 123 E1 [example@32473 note=\"€😀\" other=\"next\"] msg"
+    }
+  ],
+  "externalOriginalFieldF1": "UNSCORABLE",
+  "source": "AUTHOR_SYNTHETIC_RFC6587_3_4_RFC5424_6_3",
+  "sourceAuthorExpectedBeforeScoring": true,
+  "status": "NOT_PRODUCER_OR_NATIVE_REFERENCE_NOT_BLIND"
+}
