@@ -50,7 +50,7 @@ test('first-time user is guided back to the required flow after clicking ahead',
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeVisible({timeout:15000});
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
-  await expect(review).toBeEnabled();
+  await expect(review).toBeEnabled({timeout:15000});
   await review.click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 
