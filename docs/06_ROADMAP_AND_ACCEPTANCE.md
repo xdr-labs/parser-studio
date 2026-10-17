@@ -30,6 +30,26 @@
 - [ ] Live RAW/EXTRACTED/NORMALIZED stage preview with test runner integration.
 - **Done:** real sample E2E from paste to normalized preview; affected unit/integration/browser tests green.
 
+### P0-ME — Multi-Event Auto Parser: one deployable Stellar parser (owner decision 2026-10-17)
+
+**Status:** PLANNED, not implemented. This is an R1–R4 product-roadmap handoff, **not** authorization to alter the isolated engine PoCs, existing product HEAD, native targets, main, deployment or release.
+
+**Owner-confirmed Stellar capability:** A single Stellar Cyber parser supports multiple event families and family-specific **dynamic conditional normalization across all Stellar versions**. Do not impose a version selector, split one product into one parser per event type, or treat this platform capability as awaiting per-version proof. **Parser Studio's generated artifact and correct runtime behavior** still require native execution evidence before claiming our implementation is verified.
+
+**Required outcome:** One security product may interleave Threat, Alert, User, Asset, Audit and additional/custom event types in the same stream. A user supplies diverse samples once and exports **one Stellar parser artifact**. Internal bounded routing/extraction/normalization variants are allowed; external one-artifact deployment and per-event correctness are mandatory. Event family names are not a hard-coded closed set.
+
+| ID / milestone | Deliverable | Measurable acceptance |
+| --- | --- | --- |
+| **MEP-0 / R1 P0** | Build a **mixed-event-family source corpus and independent golden contract** with representative events from the same product, including unknown, ambiguous, missing-discriminator and malformed cases. | Per-event source bytes, family labels, extraction fields/values/UTF-8 spans and expected normalized fields are independently frozen; no self-generated oracle; denominators and UNSCORABLE recorded. |
+| **MEP-1 / R2 P0** | Reuse the qualified Multi-Pass + Generic Structural + bounded Funnel for **shared envelope and body extraction** before family-specific processing. | Preserve original event/raw bytes, repeated fields, exact source values/spans and explicit unparsed regions; no forced parse success or vendor-by-vendor regex patches. |
+| **MEP-2 / R2 P0** | Add **deterministic event-family classification and routing** using explicit type fields/message IDs first, then independently supported structural signatures and documented precedence. | Each event shows its chosen route and evidence. Conflicting, insufficient and unknown classifications abstain or stay PARTIAL/REVIEW_ONLY; no silent first-match misroute. |
+| **MEP-3 / R2 P0** | Support **one common field map plus conditional family-specific dynamic normalization**, with typed coercion, precedence, collision and manual override rules. | Threat/Alert/User/Asset/Audit samples normalize to their proper target fields within the same project; no cross-family field leakage or silent key loss; unmapped data remains visible. |
+| **MEP-4 / R2–R4 P0** | Add multi-type sample input, automatic family grouping, editable route/mapping review, and per-family RAW → EXTRACTED → NORMALIZED previews. | A beginner can identify and correct the problem family without changing already-correct families. Keep exactly **Auto Parser** and **ChatGPT Assisted Parser** authoring paths; no Wizard/Workbench revival and no automatic raw-log AI transfer. |
+| **MEP-5 / R3 P0** | Compile the mixed family routing and dynamic normalization into **ONE deployable Stellar parser artifact**; no separate exported parser per family. | Native runner/import tests prove the generated single artifact actually chooses and normalizes distinct families. Keep runtime/export evidence separate from the owner-confirmed cross-version platform capability; no Stellar-version selection in authoring. |
+| **MEP-6 / R3–R5 P0** | Run reproducible **single-artifact mixed-stream Full User E2E** with representative families and unknown/malformed controls. | Publish per-family route confusion/abstention, exact source-field/value/span TP/FP/FN, normalized-field accuracy, unknown/unmapped counts, raw-byte retention and false-complete results; preserve passing families when fixing one; pin candidate HEAD, fixture hashes and native artifact digest before owner acceptance. |
+
+**Acceptance gate:** User creates, tests, reviews and exports **one parser for a mixed event stream**; all independently qualified family fixtures use the intended conditional normalization with no silent loss or false-complete. A successful browser preview or source extraction alone **does not** prove the generated native parser. The unresolved work is Parser Studio compilation/testing, **not** whether Stellar supports multi-event conditional normalization.
+
 ### R3 — Native validation, regression and export (P0)
 
 - [ ] Sandboxed pinned Fluentd runner with plugin capability manifest.
@@ -62,6 +82,7 @@ R0 → R1 → R2 → R3 → R4 → R5. Implement within the current runnable mil
 ## Cross-cutting acceptance
 
 - Version-neutral editor can work without a running Stellar instance.
+- **Single mixed-event Stellar parser:** multiple event families and conditional dynamic normalization must be authored and exported in one artifact, with native correctness demonstrated for the generated output; no Stellar version selector or one-parser-per-family requirement.
 - All samples (including minority variants) yield explained statuses.
 - No hidden data loss or unsupported transformations on import/export.
 - Exact artifact/version support explicitly backed by runner or target-import evidence.
