@@ -36,12 +36,13 @@ function scanStructuredData(rest: string): { structured: string; message: string
 
   let pos=0;
   const ids=new Set<string>();
-  // Backend's reviewed ASCII SD-NAME bytes: printable except \",=,[,],backslash.
+  // RFC5424 §6.3.2: printable ASCII except SP, '=', '"' and ']'.
+  // '[' and '\' are permitted inside an SD-NAME; only ']' terminates SD.
   const readName=():string|null=>{
     const start=pos;
     while (pos<rest.length) {
       const c=rest.charCodeAt(pos);
-      if (c<33 || c>126 || [34,61,91,92,93].includes(c)) break;
+      if (c<33 || c>126 || [34,61,93].includes(c)) break;
       pos++;
     }
     return pos-start>=1 && pos-start<=32 ? rest.slice(start,pos) : null;
@@ -51,12 +52,12 @@ function scanStructuredData(rest: string): { structured: string; message: string
     const id=readName();
     if (!id || ids.has(id)) return null;
     ids.add(id);
-    const names=new Set<string>();
+    // RFC5424 §6.3.3 permits repeated PARAM-NAMEs within one SD-ELEMENT.
+    // Preserve their exact ordered wire lexemes in syslog_structured_data.
     while (rest[pos] === ' ') {
       pos++;
       const name=readName();
-      if(!name || names.has(name)) return null;
-      names.add(name);
+      if(!name)return null;
       if(rest[pos++]!=='=' || rest[pos++]!=='"')return null;
       let terminated=false;
       while(pos<rest.length){
@@ -65,7 +66,9 @@ function scanStructuredData(rest: string): { structured: string; message: string
         if (character==='"') {terminated=true;break;}
         if (character==='\\'){
           const escaped=rest[pos++];
-          if(escaped!==']' && escaped!=='"' && escaped!=='\\') return null;
+          // Only \", \\ and \] are decoded by RFC5424. Unknown backslash
+          // sequences must remain literally unchanged (§6.3.3), not rejected.
+          if(escaped===undefined) return null;
         } else if(character===']' || code<32 || code===127) return null;
         if (new TextEncoder().encode(rest.slice(0,pos)).length>1024) return null;
       }

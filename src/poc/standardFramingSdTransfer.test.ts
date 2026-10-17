@@ -55,7 +55,7 @@ describe('STD-1/2 RFC6587 + RFC5424 source conformance transfer (synthetic stand
     const entry=cases.find(x=>x.id===id)!;
     expect(rfc5424SdByteEscapes(new TextEncoder().encode(entry.wire))).not.toBeNull();
     const browser=parseRfc5424Subset(entry.wire);
-    expect(browser.ok).toBe(false); // measured narrow browser subset, not native failure
+    expect(browser.ok).toBe(true); // RFC5424 §6.3.3 valid; source/browser parity
   }
  });
  it('never turns standard packet validity into a full event or native claim',()=>{
