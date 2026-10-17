@@ -1,4 +1,5 @@
 import { parseRfc5424Subset } from './rfc5424Subset';
+import {parseLeefStandardDelimiter} from './leefStandardDelimiter';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -240,26 +241,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
   if (!parts) return failure('LEEF header or declared delimiter is incomplete');
-  const hex = isV2 ? /^(?:0x|x)([0-9a-fA-F]{1,4})$/.exec(parts[4]!) : null;
-  let delimiter='\t';
-  if(isV2){
-    if(hex){
-      const codePoint=parseInt(hex[1]!,16);
-      if(codePoint===0||codePoint===10||codePoint===13||
-         (codePoint>=0xD800&&codePoint<=0xDFFF)||codePoint>0x10FFFF)
-        return failure('Unsupported LEEF 2.0 data delimiter');
-      delimiter=String.fromCodePoint(codePoint);
-    }else{
-      delimiter=parts[4]!;
-    }
-  }
-  const delimiterPoints=Array.from(delimiter);
-  if (!(delimiter === '\t' || (
-    delimiterPoints.length===1&&delimiterPoints[0]!=='='&&delimiterPoints[0]!=='\\'&&
-    !/[\u0000-\u001f\u007f]/.test(delimiterPoints[0]!)
-  ))) {
-    return failure('Unsupported LEEF 2.0 data delimiter');
-  }
+  const delimiter=isV2?parseLeefStandardDelimiter(parts[4]!):'\t';
+  if(delimiter===null)return failure('Unsupported LEEF 2.0 data delimiter');
   const record: Record<string, unknown> = {
     leef_version: match[1], leef_vendor: parts[0], leef_product: parts[1],
     leef_product_version: parts[2], leef_event_id: parts[3],

@@ -1,5 +1,6 @@
 import {arbitrateIndependentNonJson,type IndependentNonJsonResult} from './independentNonJsonStructural';
 import {type BodyArbitration,type IndependentReviewVeto,type SourceFieldClaim} from './boundedSourceBodyArbiter';
+import {parseLeefStandardDelimiter} from '../leefStandardDelimiter';
 
 /**
  * Isolated LEEF source-byte observer beside the unchanged qualified product.
@@ -70,9 +71,8 @@ function parseHeader(raw:string):WireState|null {
   if(stop<cursor||stop<0)return null;
   const delimiterToken=raw.slice(cursor,stop);
   // Only distinct, explicitly delimited LEEF 2.0 source formats.
-  const delimiter=delimiterToken==='0x09'?'\t':
-    /^[\^,:;~]$/.test(delimiterToken)?delimiterToken:'';
-  if(!delimiter)return null;
+  const delimiter=parseLeefStandardDelimiter(delimiterToken);
+  if(delimiter===null)return null;
   const type=field(raw,'delimiter',cursor,stop,'header');
   if(!type)return null;
   headers.push(type);
