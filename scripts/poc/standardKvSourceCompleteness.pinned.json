@@ -1,0 +1,231 @@
+{
+  "reference": "No universal KV RFC. Require explicit producer escape/empty semantics before source completeness.",
+  "evidence": "independently authored synthetic lexical source truth, not native/manufacturer goldens",
+  "cases": [
+    {
+      "id": "KV-SPACE-SEPARATED",
+      "wire": "src=192.0.2.1 action=deny",
+      "disposition": "REVIEW_ONLY_LEXICAL",
+      "issues": [],
+      "claims": [
+        {
+          "name": "src",
+          "rawLexeme": "192.0.2.1",
+          "decoded": "192.0.2.1",
+          "nameStartByte": 0,
+          "nameEndByte": 3,
+          "valueStartByte": 4,
+          "valueEndByte": 13
+        },
+        {
+          "name": "action",
+          "rawLexeme": "deny",
+          "decoded": "deny",
+          "nameStartByte": 14,
+          "nameEndByte": 20,
+          "valueStartByte": 21,
+          "valueEndByte": 25
+        }
+      ],
+      "sourceBytes": 25
+    },
+    {
+      "id": "KV-QUOTED-SPACE",
+      "wire": "msg=\"blocked request\" action=deny",
+      "disposition": "REVIEW_ONLY_LEXICAL",
+      "issues": [],
+      "claims": [
+        {
+          "name": "msg",
+          "rawLexeme": "\"blocked request\"",
+          "decoded": "blocked request",
+          "nameStartByte": 0,
+          "nameEndByte": 3,
+          "valueStartByte": 4,
+          "valueEndByte": 21
+        },
+        {
+          "name": "action",
+          "rawLexeme": "deny",
+          "decoded": "deny",
+          "nameStartByte": 22,
+          "nameEndByte": 28,
+          "valueStartByte": 29,
+          "valueEndByte": 33
+        }
+      ],
+      "sourceBytes": 33
+    },
+    {
+      "id": "KV-QUOTED-EMPTY",
+      "wire": "message=\"\" action=allow",
+      "disposition": "REVIEW_ONLY_LEXICAL",
+      "issues": [],
+      "claims": [
+        {
+          "name": "message",
+          "rawLexeme": "\"\"",
+          "decoded": "",
+          "nameStartByte": 0,
+          "nameEndByte": 7,
+          "valueStartByte": 8,
+          "valueEndByte": 10
+        },
+        {
+          "name": "action",
+          "rawLexeme": "allow",
+          "decoded": "allow",
+          "nameStartByte": 11,
+          "nameEndByte": 17,
+          "valueStartByte": 18,
+          "valueEndByte": 23
+        }
+      ],
+      "sourceBytes": 23
+    },
+    {
+      "id": "KV-UTF8",
+      "wire": "user=보안 action=block",
+      "disposition": "REVIEW_ONLY_LEXICAL",
+      "issues": [],
+      "claims": [
+        {
+          "name": "user",
+          "rawLexeme": "보안",
+          "decoded": "보안",
+          "nameStartByte": 0,
+          "nameEndByte": 4,
+          "valueStartByte": 5,
+          "valueEndByte": 11
+        },
+        {
+          "name": "action",
+          "rawLexeme": "block",
+          "decoded": "block",
+          "nameStartByte": 12,
+          "nameEndByte": 18,
+          "valueStartByte": 19,
+          "valueEndByte": 24
+        }
+      ],
+      "sourceBytes": 24
+    },
+    {
+      "id": "KV-SINGLE-QUOTE",
+      "wire": "action=allow detail='Hello World'",
+      "disposition": "REVIEW_ONLY_LEXICAL",
+      "issues": [],
+      "claims": [
+        {
+          "name": "action",
+          "rawLexeme": "allow",
+          "decoded": "allow",
+          "nameStartByte": 0,
+          "nameEndByte": 6,
+          "valueStartByte": 7,
+          "valueEndByte": 12
+        },
+        {
+          "name": "detail",
+          "rawLexeme": "'Hello World'",
+          "decoded": "Hello World",
+          "nameStartByte": 13,
+          "nameEndByte": 19,
+          "valueStartByte": 20,
+          "valueEndByte": 33
+        }
+      ],
+      "sourceBytes": 33
+    },
+    {
+      "id": "KV-TRAILING-RAW",
+      "wire": "action=allow garbage",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "UNCONSUMED_TRAILING_RAW"
+      ],
+      "claims": [],
+      "sourceBytes": 20
+    },
+    {
+      "id": "KV-MIDDLE-RAW",
+      "wire": "action=allow ??? src=192.0.2.1",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "UNCONSUMED_TRAILING_RAW"
+      ],
+      "claims": [],
+      "sourceBytes": 30
+    },
+    {
+      "id": "KV-DUPLICATE-KEY",
+      "wire": "action=allow action=deny",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "DUPLICATE_SOURCE_KEY"
+      ],
+      "claims": [],
+      "sourceBytes": 24
+    },
+    {
+      "id": "KV-UNKNOWN-ESCAPE",
+      "wire": "msg=\"hello\\qworld\" action=deny",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "UNKNOWN_PRODUCER_ESCAPE"
+      ],
+      "claims": [],
+      "sourceBytes": 30
+    },
+    {
+      "id": "KV-ESCAPED-QUOTE-PRODUCER-UNKNOWN",
+      "wire": "msg=\"hello\\\"there\" action=deny",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "UNKNOWN_PRODUCER_ESCAPE"
+      ],
+      "claims": [],
+      "sourceBytes": 30
+    },
+    {
+      "id": "KV-ESCAPED-EQUAL-PRODUCER-UNKNOWN",
+      "wire": "msg=\"a\\=b\" action=deny",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "UNKNOWN_PRODUCER_ESCAPE"
+      ],
+      "claims": [],
+      "sourceBytes": 22
+    },
+    {
+      "id": "KV-UNQUOTED-EMPTY",
+      "wire": "action=allow optional=",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "EMPTY_ASSIGNMENT_UNQUALIFIED"
+      ],
+      "claims": [],
+      "sourceBytes": 22
+    },
+    {
+      "id": "KV-QUOTED-TRAILING-GARBAGE",
+      "wire": "action=allow msg=\"ok\"junk",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "UNCONSUMED_TRAILING_RAW"
+      ],
+      "claims": [],
+      "sourceBytes": 25
+    },
+    {
+      "id": "KV-UNTERMINATED-QUOTE",
+      "wire": "action=allow msg=\"unterminated",
+      "disposition": "REVIEW_ONLY_UNCERTAIN",
+      "issues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "claims": [],
+      "sourceBytes": 30
+    }
+  ]
+}

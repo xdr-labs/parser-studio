@@ -1,6 +1,7 @@
 import { parseRfc5424Subset } from './rfc5424Subset';
 import {scanCefStandardHeaderGrammar} from './cefStandardHeaderGrammar';
 import {parseLeefStandardDelimiter} from './leefStandardDelimiter';
+import {inspectSourceCompleteness} from './standardSourceCompletenessGate';
 import {jsonSourcePreflightError} from './jsonSourcePreflight';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
@@ -44,6 +45,14 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
 }
 
 export function strictKeyValues(input: string, options?:{allowEmptyUnquoted?:boolean}): StructuredExtraction {
+  // Source grammar and raw-byte consumption are authoritative before
+  // attempting any decoded value extraction. Unknown producer escapes
+  // cannot be inferred from a generic backslash convention.
+  const review=inspectSourceCompleteness(input,'kv');
+  const unresolved=review.issues.filter(issue=>
+    !(options?.allowEmptyUnquoted===true&&issue==='EMPTY_ASSIGNMENT_UNQUALIFIED'));
+  if(review.disposition==='ABSTAIN_UNSAFE'||unresolved.length)
+    return failure('KV source requires review: '+unresolved.join(', '));
   const values: Record<string, unknown> = Object.create(null);
   const pattern = options?.allowEmptyUnquoted
     ? /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])*))/y

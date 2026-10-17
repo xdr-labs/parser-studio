@@ -16,8 +16,8 @@ describe('STD-0 source completeness gate: baseline false-complete counterexample
     (family,raw,expectedIssue)=>{
       // This is an isolated PoC gate, not a change to product code.
       const browser=extractFields(raw,family,{} as ParserDraft);
-      if(family==='json')expect(browser.errors.length).toBeGreaterThan(0);
-      else expect(browser.errors).toEqual([]); // KV remains a measured unresolved gap
+      expect(browser.errors.length).toBeGreaterThan(0);
+      // Both JSON and generic KV now reject previously silent source loss.
       const result=inspectSourceCompleteness(raw,family);
       expect(result.disposition).toBe('REVIEW_ONLY_UNCERTAIN');
       expect(result.issues).toContain(expectedIssue);
