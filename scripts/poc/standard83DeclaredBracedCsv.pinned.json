@@ -1,0 +1,961 @@
+{
+  "authority": "Palo Alto Networks official knowledgebase: SD-WAN link_switches cells can contain commas inside curly braces (PAN-OS 9.1+)",
+  "officialReference": "https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA14u0000004LaOCAU",
+  "publisherSampleContext": "https://github.com/elastic/integrations/issues/16486",
+  "scope": "SYNTHETIC_GENERAL_DECLARED_NON_RFC4180_CELL_GROUPING_NOT_MANUFACTURER_NATIVE",
+  "observedRealDeviceCapturedHere": false,
+  "manufacturerEscapeDecodeCertified": false,
+  "cases": [
+    {
+      "id": "BRACED_INNER_COMMAS",
+      "wire": "E7,{wan0, blue, ethernet, port1, 2026-10-18T12:00:00Z, 100, 120, up, -},deny,EU",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 79,
+      "sha256": "377b17e4cd23d606fe8396b3e60349ac37f0be658957335ec059f3709d69e0cb",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E7",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 2,
+          "rawLexeme": "E7"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{wan0, blue, ethernet, port1, 2026-10-18T12:00:00Z, 100, 120, up, -}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 3,
+          "endByte": 71,
+          "rawLexeme": "{wan0, blue, ethernet, port1, 2026-10-18T12:00:00Z, 100, 120, up, -}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "deny",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 72,
+          "endByte": 76,
+          "rawLexeme": "deny"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "EU",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 77,
+          "endByte": 79,
+          "rawLexeme": "EU"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_NESTED_GROUPS",
+      "wire": "E8,{{link1,up},{link2,down}},allow,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 37,
+      "sha256": "5fab1afdfbe43ccfbbd4edae2def654151518be537108a015033e8592d4379c7",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E8",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 2,
+          "rawLexeme": "E8"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{{link1,up},{link2,down}}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 3,
+          "endByte": 28,
+          "rawLexeme": "{{link1,up},{link2,down}}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 29,
+          "endByte": 34,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 35,
+          "endByte": 37,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_EMPTY_GROUP_NOT_NULL",
+      "wire": "E9,{},allow,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 14,
+      "sha256": "11dc72fb5c670f50e20b004aa7d76c20b1d5864262a664ba90bb29a6aeb2c234",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E9",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 2,
+          "rawLexeme": "E9"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 3,
+          "endByte": 5,
+          "rawLexeme": "{}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 6,
+          "endByte": 11,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 12,
+          "endByte": 14,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "DECLARED_COLUMN_EMPTY_SOURCE",
+      "wire": "E10,,allow,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 13,
+      "sha256": "aa73f704e048159f1b446d96b1fa492a6cff4fdfac90256d75ff5715744191e1",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E10",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E10"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 4,
+          "endByte": 4,
+          "rawLexeme": ""
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 5,
+          "endByte": 10,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 11,
+          "endByte": 13,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "DECLARED_COLUMN_PLAIN_LITERAL",
+      "wire": "E11,none,deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 16,
+      "sha256": "e36618824fd82d3311e7a979f827ba4a769487651e421ce86fe25d5544139aba",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E11",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E11"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "none",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 4,
+          "endByte": 8,
+          "rawLexeme": "none"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "deny",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 9,
+          "endByte": 13,
+          "rawLexeme": "deny"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 14,
+          "endByte": 16,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_QUOTED_NEXT_FIELD",
+      "wire": "E12,{wan1, 1, physical},\"blocked, policy\",APAC",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 46,
+      "sha256": "850603dc512766acf7dbf2d70a0ca457e9a9ba5d6c4fc6bbc0ece00f950d51d2",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E12",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E12"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{wan1, 1, physical}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 4,
+          "endByte": 23,
+          "rawLexeme": "{wan1, 1, physical}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "blocked, policy",
+          "quoted": true,
+          "bracedGroup": false,
+          "startByte": 24,
+          "endByte": 41,
+          "rawLexeme": "\"blocked, policy\""
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "APAC",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 42,
+          "endByte": 46,
+          "rawLexeme": "APAC"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_UTF8_ABSOLUTE_BYTE_OFFSETS",
+      "wire": "\ubcf4\uc548\u20ac\ud83d\ude00,{\ub9c1\ud06c1, \ud0dc\uadf8\ud83d\ude00, port-1},allow,KR",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 52,
+      "sha256": "4dff54014cfa99634505e8116031071763ac3eb3cb23bb78c848609de048fd88",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "\ubcf4\uc548\u20ac\ud83d\ude00",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 13,
+          "rawLexeme": "\ubcf4\uc548\u20ac\ud83d\ude00"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{\ub9c1\ud06c1, \ud0dc\uadf8\ud83d\ude00, port-1}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 14,
+          "endByte": 43,
+          "rawLexeme": "{\ub9c1\ud06c1, \ud0dc\uadf8\ud83d\ude00, port-1}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 44,
+          "endByte": 49,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "KR",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 50,
+          "endByte": 52,
+          "rawLexeme": "KR"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_AT_FIRST_COLUMN",
+      "wire": "{a,b},deny,KR",
+      "declaredColumns": [
+        0
+      ],
+      "headerRaw": "link_switches,action,region",
+      "valid": true,
+      "sourceBytes": 13,
+      "sha256": "97b990fa116c0a6cfa426198777faa491bcf64d9ec0db53fc2cadd28c2347279",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "link_switches",
+          "value": "{a,b}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 0,
+          "endByte": 5,
+          "rawLexeme": "{a,b}"
+        },
+        {
+          "ordinal": 1,
+          "name": "action",
+          "value": "deny",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 6,
+          "endByte": 10,
+          "rawLexeme": "deny"
+        },
+        {
+          "ordinal": 2,
+          "name": "region",
+          "value": "KR",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 11,
+          "endByte": 13,
+          "rawLexeme": "KR"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_AT_LAST_COLUMN",
+      "wire": "E13,deny,{left,right}",
+      "declaredColumns": [
+        2
+      ],
+      "headerRaw": "event_id,action,link_switches",
+      "valid": true,
+      "sourceBytes": 21,
+      "sha256": "d74028a71f97a2009250ee4fbf3e2ec01b2bd52a18006f2f5211d0d7fdb54e34",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E13",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E13"
+        },
+        {
+          "ordinal": 1,
+          "name": "action",
+          "value": "deny",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 4,
+          "endByte": 8,
+          "rawLexeme": "deny"
+        },
+        {
+          "ordinal": 2,
+          "name": "link_switches",
+          "value": "{left,right}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 9,
+          "endByte": 21,
+          "rawLexeme": "{left,right}"
+        }
+      ]
+    },
+    {
+      "id": "TWO_DECLARED_BRACE_COLUMNS",
+      "wire": "E14,{wanA,1},{wanB,2},allow",
+      "declaredColumns": [
+        1,
+        2
+      ],
+      "headerRaw": "event_id,link_primary,link_secondary,action",
+      "valid": true,
+      "sourceBytes": 27,
+      "sha256": "a7beeb59e7d50ef9e699d49618522b7d70bbb86f4957701695d7c98b470d418b",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E14",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E14"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_primary",
+          "value": "{wanA,1}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 4,
+          "endByte": 12,
+          "rawLexeme": "{wanA,1}"
+        },
+        {
+          "ordinal": 2,
+          "name": "link_secondary",
+          "value": "{wanB,2}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 13,
+          "endByte": 21,
+          "rawLexeme": "{wanB,2}"
+        },
+        {
+          "ordinal": 3,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 22,
+          "endByte": 27,
+          "rawLexeme": "allow"
+        }
+      ]
+    },
+    {
+      "id": "BRACED_MULTIPLE_NESTED_WITH_TRAILING_EMPTY",
+      "wire": "E15,{{wanA,one},{wanB,two}},allow,",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 34,
+      "sha256": "fb1cb9c28429d66f77b15fbf9992363fb551b136db3023aeb588cc2af214fe11",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E15",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E15"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{{wanA,one},{wanB,two}}",
+          "quoted": false,
+          "bracedGroup": true,
+          "startByte": 4,
+          "endByte": 27,
+          "rawLexeme": "{{wanA,one},{wanB,two}}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 28,
+          "endByte": 33,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 34,
+          "endByte": 34,
+          "rawLexeme": ""
+        }
+      ]
+    },
+    {
+      "id": "STANDARD_QUOTED_GROUP_NOT_DIALECT",
+      "wire": "E16,\"{quoted, ordinary}\",allow,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 33,
+      "sha256": "9feea607082b6044f25d62ac97ed8d15487e765aacdb2a6afc940feaf43412ce",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E16",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E16"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "{quoted, ordinary}",
+          "quoted": true,
+          "bracedGroup": false,
+          "startByte": 4,
+          "endByte": 24,
+          "rawLexeme": "\"{quoted, ordinary}\""
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 25,
+          "endByte": 30,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 31,
+          "endByte": 33,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "STANDARD_PLAINTEXT_NO_GROUP",
+      "wire": "E17,word,allow,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 17,
+      "sha256": "e161b48fdd93e767d22b0c7bd7d4b22f5f84bc4c6aa3de0c0cf5cf012c266082",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E17",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E17"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "word",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 4,
+          "endByte": 8,
+          "rawLexeme": "word"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 9,
+          "endByte": 14,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 15,
+          "endByte": 17,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "BRACE_IN_SCALAR_NOT_START_OF_CELL",
+      "wire": "E18,pre{not-structural},allow,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": true,
+      "sourceBytes": 32,
+      "sha256": "df22b1521b54fa718a22e03fc4169681186871935f59da7ed809e195fcc293e8",
+      "cells": [
+        {
+          "ordinal": 0,
+          "name": "event_id",
+          "value": "E18",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 0,
+          "endByte": 3,
+          "rawLexeme": "E18"
+        },
+        {
+          "ordinal": 1,
+          "name": "link_switches",
+          "value": "pre{not-structural}",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 4,
+          "endByte": 23,
+          "rawLexeme": "pre{not-structural}"
+        },
+        {
+          "ordinal": 2,
+          "name": "action",
+          "value": "allow",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 24,
+          "endByte": 29,
+          "rawLexeme": "allow"
+        },
+        {
+          "ordinal": 3,
+          "name": "location",
+          "value": "US",
+          "quoted": false,
+          "bracedGroup": false,
+          "startByte": 30,
+          "endByte": 32,
+          "rawLexeme": "US"
+        }
+      ]
+    },
+    {
+      "id": "NO_EXPLICIT_GROUP_DECLARATION",
+      "wire": "E7,{a,b},deny,US",
+      "declaredColumns": [],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 16,
+      "sha256": "ba6cb0aec6ead610bdda511c39af1188c7b4125629f9c0e4bffa1644cced6764",
+      "cells": []
+    },
+    {
+      "id": "GROUP_DECLARED_WRONG_COLUMN",
+      "wire": "E7,{a,b},deny,US",
+      "declaredColumns": [
+        2
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 16,
+      "sha256": "ba6cb0aec6ead610bdda511c39af1188c7b4125629f9c0e4bffa1644cced6764",
+      "cells": []
+    },
+    {
+      "id": "UNCLOSED_GROUP",
+      "wire": "E7,{a,b,deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 15,
+      "sha256": "6d7fdb86c8d8e21f55878d5cce194b90fc68ab9914979c0e912c87be21c59219",
+      "cells": []
+    },
+    {
+      "id": "STRAY_GROUP_CLOSE",
+      "wire": "E7,{a,b}},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 17,
+      "sha256": "828dd0e65508aff8a84da4fe24178efdfd6d6d75d827bea068826445194c99c7",
+      "cells": []
+    },
+    {
+      "id": "TRAILING_TEXT_AFTER_CLOSE",
+      "wire": "E7,{a,b}x,deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 17,
+      "sha256": "533cc8c4b7dabf52b56a5e2a9b3ade99154fcc34f68c225ef774672203197a98",
+      "cells": []
+    },
+    {
+      "id": "TRAILING_SECOND_GROUP",
+      "wire": "E7,{a,b}{c,d},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 21,
+      "sha256": "06d7b349d348d90ef36b0b31b475e2cb028e9391fbef67794bfe885b6db7b6bc",
+      "cells": []
+    },
+    {
+      "id": "NESTING_BEYOND_BOUND",
+      "wire": "E7,{{{{{one,two}}}}},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 28,
+      "sha256": "67662b28ed857366a52cb1d98318b51b73cf182858c384ec05e0f5df78dc4d49",
+      "cells": []
+    },
+    {
+      "id": "UNKNOWN_ESCAPE_IN_BRACED_GROUP",
+      "wire": "E7,{a\\,b},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 17,
+      "sha256": "0075c01e5d09f096cd9ad1eb300304b97e34f2391d613bfb4512b69eb99a58dc",
+      "cells": []
+    },
+    {
+      "id": "AMBIGUOUS_QUOTE_IN_GROUP",
+      "wire": "E7,{a\"b,c},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 18,
+      "sha256": "bae9f75bc3c431d547b47bd4a06cf6bb458d83194bfb2d27c0d249a08a98dc0e",
+      "cells": []
+    },
+    {
+      "id": "NEWLINE_IN_UNQUOTED_GROUP",
+      "wire": "E7,{a\nb,c},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 18,
+      "sha256": "fe518a85345bb94f8e99f95652fffd902c570118f44a7fc54bcafc67a06e55eb",
+      "cells": []
+    },
+    {
+      "id": "CONTROL_IN_GROUP",
+      "wire": "E7,{a\u0001b,c},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 18,
+      "sha256": "7afca47bbbdae4f7604bea2207a6b31b15bc3caa0a14ed22cce4d54cd50410d4",
+      "cells": []
+    },
+    {
+      "id": "NUL_IN_GROUP",
+      "wire": "E7,{a\u0000b,c},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 18,
+      "sha256": "2bc7dfe8086005c2d62a29fcd453a7455c7cc80d7080f9569868e145263712e2",
+      "cells": []
+    },
+    {
+      "id": "COLUMN_COUNT_MISMATCH",
+      "wire": "E7,{a,b},deny,US,extra",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 22,
+      "sha256": "cb180599b204de598225405535e78a895afcf63ed840474f8d3d07f978eaf011",
+      "cells": []
+    },
+    {
+      "id": "DUPLICATE_DECLARATION_COLUMNS",
+      "wire": "E7,{a,b},deny,US",
+      "declaredColumns": [
+        1,
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 16,
+      "sha256": "ba6cb0aec6ead610bdda511c39af1188c7b4125629f9c0e4bffa1644cced6764",
+      "cells": []
+    },
+    {
+      "id": "OUT_OF_RANGE_DECLARED_ORDINAL",
+      "wire": "E7,{a,b},deny,US",
+      "declaredColumns": [
+        1,
+        9
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 16,
+      "sha256": "ba6cb0aec6ead610bdda511c39af1188c7b4125629f9c0e4bffa1644cced6764",
+      "cells": []
+    },
+    {
+      "id": "MALFORMED_HEADER_DUPLICATE",
+      "wire": "E7,{a,b},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,action",
+      "valid": false,
+      "sourceBytes": 16,
+      "sha256": "ba6cb0aec6ead610bdda511c39af1188c7b4125629f9c0e4bffa1644cced6764",
+      "cells": []
+    },
+    {
+      "id": "NO_SOURCE_SCHEMA_NAMES",
+      "wire": "E7,{a,b},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "",
+      "valid": false,
+      "sourceBytes": 16,
+      "sha256": "ba6cb0aec6ead610bdda511c39af1188c7b4125629f9c0e4bffa1644cced6764",
+      "cells": []
+    },
+    {
+      "id": "UNPAIRED_SURROGATE",
+      "wire": "E7,{\ud800,b},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 18,
+      "sha256": "991f15a865fd4f9e86ab0e434eda9c910edb3bf958b36c05981aad26fd062005",
+      "cells": []
+    },
+    {
+      "id": "UNCLOSED_STANDARD_QUOTE",
+      "wire": "E7,\"{one,two},deny,US",
+      "declaredColumns": [
+        1
+      ],
+      "headerRaw": "event_id,link_switches,action,location",
+      "valid": false,
+      "sourceBytes": 21,
+      "sha256": "c6e21a3b111783502b0f79d66ed376b44cc0f814c07d5e72e86a3fe390580dde",
+      "cells": []
+    }
+  ]
+}

@@ -10,12 +10,25 @@ export interface CsvSourceCell {
   end:number;
   value:string|null;
   quoted:boolean;
+  /** Explicitly declared non-RFC4180 protected cell; source value unmodified. */
+  bracedGroup?:true;
 }
 export type CsvSourceDelimiter=','|';'|'\t';
 const MAX_COLUMNS=256;
 export function readCsvSourceCells(raw:string,delimiter:CsvSourceDelimiter,
-  nullable=false,options?:{declaredPaddingAfterDelimiter?:boolean}):CsvSourceCell[]|null {
+  nullable=false,options?:{
+    declaredPaddingAfterDelimiter?:boolean;
+    /** Opt-in zero-based protected-field ordinals, never auto-detected. */
+    declaredBracedGroupColumns?:readonly number[];
+  }):CsvSourceCell[]|null {
   if(raw.length===0)return null;
+  const groups=options?.declaredBracedGroupColumns;
+  if(groups!==undefined){
+    if(!Array.isArray(groups)||groups.length>MAX_COLUMNS||
+       groups.some(c=>!Number.isInteger(c)||c<0||c>=MAX_COLUMNS)||
+       new Set(groups).size!==groups.length)return null;
+  }
+  const protectedOrdinals=new Set(groups??[]);
   const result:CsvSourceCell[]=[];
   let pos=0;
   while(pos<=raw.length){
@@ -25,6 +38,8 @@ export function readCsvSourceCells(raw:string,delimiter:CsvSourceDelimiter,
     if(options?.declaredPaddingAfterDelimiter&&result.length>0)
       while(raw[pos]===' ')pos++;
     const start=pos,quoted=raw[pos]==='"';
+    const isDeclaredGroup=!quoted&&raw[pos]==='{'&&
+      protectedOrdinals.has(result.length);
     let value:string|null='';
     if(quoted){
       pos++;let decoded='',closed=false;
@@ -41,6 +56,29 @@ export function readCsvSourceCells(raw:string,delimiter:CsvSourceDelimiter,
       }
       if(!closed||(pos<raw.length&&raw[pos]!==delimiter))return null;
       value=decoded;
+    }else if(isDeclaredGroup){
+      // A declared, whole-cell balanced group is not RFC4180 quoting.
+      // Only its explicitly marked ordinal can contain separator commas.
+      // Unknown escape/quote semantics MUST abstain, not guess decoding.
+      let depth=0,closed=false;
+      while(pos<raw.length){
+        const ch=raw[pos]!,code=ch.charCodeAt(0);
+        if(code<32||code===127||ch==='\\'||ch==='"'||ch==="'")
+          return null;
+        if(ch==='{'){
+          if(++depth>4)return null;
+        }else if(ch==='}'){
+          if(--depth<0)return null;
+          if(depth===0){
+            pos++;closed=true;
+            if(pos<raw.length&&raw[pos]!==delimiter)return null;
+            break;
+          }
+        }
+        pos++;
+      }
+      if(!closed||depth!==0)return null;
+      value=raw.slice(start,pos);
     }else{
       while(pos<raw.length&&raw[pos]!==delimiter){
         const char=raw[pos]!;
@@ -51,7 +89,8 @@ export function readCsvSourceCells(raw:string,delimiter:CsvSourceDelimiter,
       }
       value=start===pos&&nullable?null:raw.slice(start,pos);
     }
-    result.push({start,end:pos,value,quoted});
+    result.push({start,end:pos,value,quoted,
+      ...(isDeclaredGroup?{bracedGroup:true as const}:{})});
     if(pos===raw.length)break;
     pos++;
     if(pos===raw.length){

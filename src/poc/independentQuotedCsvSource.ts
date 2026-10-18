@@ -7,6 +7,8 @@ export interface CsvRecordContext {
   recordFraming:'CONFIRMED_SINGLE_CSV_RECORD';
   headerRaw?:string;
   treatUnquotedEmptyAsNull?:boolean;
+  /** Explicitly user/publisher-declared brace-field ordinals; NOT RFC4180. */
+  declaredBracedGroupColumns?:readonly number[];
 }
 export interface CsvPositionalClaim {
   ordinal:number;
@@ -15,7 +17,8 @@ export interface CsvPositionalClaim {
   rawValueSpan:string;
   startByte:number;
   endByte:number;
-  evidence:'BOUNDED_SOURCE_BYTE_AND_RFC4180_DECODE';
+  evidence:'BOUNDED_SOURCE_BYTE_AND_RFC4180_DECODE'|
+    'BOUNDED_SOURCE_BYTE_AND_DECLARED_BRACED_GROUP';
 }
 export interface CsvNamedClaim extends CsvPositionalClaim {
   name:string;
@@ -31,7 +34,8 @@ export interface CsvSourceResult {
   namedClaims:CsvNamedClaim[];
   branchAttempts:number;
   maxBranchAttempts:8;
-  reviewEvidence:'EXPLICIT_FRAMING_LEXICAL_ONLY'|'NOT_PROVEN';
+  reviewEvidence:'EXPLICIT_FRAMING_LEXICAL_ONLY'|
+    'EXPLICIT_FRAMING_DECLARED_BRACED_GROUP_DIALECT'|'NOT_PROVEN';
   reason:string;
   autoPromoted:false;
   independentOracleCertified:false;
@@ -70,7 +74,9 @@ function replay(raw:string,cells:Cell[]):CsvPositionalClaim[]|null{
     if(!c.quoted&&c.value===null&&lexical!=='')return null;
     out.push({ordinal:i,value:c.value,valueType:c.value===null?'null':'string',
       rawValueSpan:lexical,startByte,endByte,
-      evidence:'BOUNDED_SOURCE_BYTE_AND_RFC4180_DECODE'});
+      evidence:c.bracedGroup?
+        'BOUNDED_SOURCE_BYTE_AND_DECLARED_BRACED_GROUP':
+        'BOUNDED_SOURCE_BYTE_AND_RFC4180_DECODE'});
   }
   return out;
 }
@@ -90,11 +96,18 @@ export function inspectIndependentQuotedCsv(
     return {...fallback,disposition:'ABSTAIN_UNSAFE',
       reason:'INDEPENDENT_SOURCE_OR_PROFILE_VETO'};
   const header=context.headerRaw;
+  const declared=context.declaredBracedGroupColumns;
+  // A non-RFC dialect must be externally declared with an ordered schema;
+  // a filename, guessed vendor or delimiter-like prose is not qualification.
+  if(declared!==undefined&&header===undefined)
+    return {...fallback,disposition:'ABSTAIN_UNSAFE',
+      reason:'DECLARED_GROUP_REQUIRES_EXPLICIT_SOURCE_COLUMN_SCHEMA'};
   if(!wellFormed(raw)||!raw||fallback.sourceBytes>MAX_INPUT_BYTES||
      (header!==undefined&&(!wellFormed(header)||!header||length(header)>MAX_INPUT_BYTES)))
     return {...fallback,disposition:'ABSTAIN_UNSAFE',
       reason:'CSV_OUTSIDE_BOUNDED_UTF8_SOURCE'};
-  const row=readCsvSourceCells(raw,',',context.treatUnquotedEmptyAsNull===true);
+  const row=readCsvSourceCells(raw,',',context.treatUnquotedEmptyAsNull===true,
+    {declaredBracedGroupColumns:declared});
   if(!row)return {...fallback,disposition:'ABSTAIN_UNSAFE',branchAttempts:1,
     reason:'UNSAFE_OR_INDETERMINATE_CSV_RECORD'};
   const positional=replay(raw,row);
@@ -108,6 +121,9 @@ export function inspectIndependentQuotedCsv(
   if(!h||h.length!==positional.length)
     return {...fallback,disposition:'ABSTAIN_UNSAFE',branchAttempts:2,
       reason:'CSV_HEADER_DATA_COLUMN_COUNT_MISMATCH'};
+  if(declared?.some(column=>column>=h.length))
+    return {...fallback,disposition:'ABSTAIN_UNSAFE',branchAttempts:2,
+      reason:'DECLARED_GROUP_COLUMN_OUTSIDE_SOURCE_SCHEMA'};
   const headerSpans=replay(header,h);
   if(!headerSpans)return {...fallback,disposition:'ABSTAIN_UNSAFE',
     branchAttempts:2,reason:'CSV_HEADER_SOURCE_BYTE_REPLAY_FAILED'};
@@ -127,8 +143,12 @@ export function inspectIndependentQuotedCsv(
   }
   return {...fallback,disposition:'REVIEW_ONLY_NAMED',branchAttempts:2,
     positionalClaims:positional,namedClaims:named,
-    reviewEvidence:'EXPLICIT_FRAMING_LEXICAL_ONLY',
-    reason:'CSV_SOURCE_NAMED_FIELDS_REVIEW_NOT_CERTIFIED'};
+    reviewEvidence:declared?.length?
+      'EXPLICIT_FRAMING_DECLARED_BRACED_GROUP_DIALECT':
+      'EXPLICIT_FRAMING_LEXICAL_ONLY',
+    reason:declared?.length?
+      'CSV_DECLARED_BRACED_FIELD_LEXICAL_ONLY_NOT_NATIVE':
+      'CSV_SOURCE_NAMED_FIELDS_REVIEW_NOT_CERTIFIED'};
 }
 /** Without verified CSV framing this composition is identical to the previous observer. */
 export function arbitrateOptionalIndependentCsv(
