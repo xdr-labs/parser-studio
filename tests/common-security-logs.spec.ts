@@ -184,8 +184,7 @@ test('ChatGPT assist keeps its creation path and novice prompt preparation start
   const example=page.getByLabel('ChatGPT redacted examples');
   await expect(example).toHaveValue(/EXAMPLE-FW/);
   await expect(example).toHaveValue(/192\.0\.2\.10/);
-  await page.getByLabel('Confirm redacted example review').check();
-  const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
+    const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
   await expect(prepare).toBeEnabled({timeout:10_000});
   await prepare.click();
   await expect(page.getByLabel('ChatGPT prepared prompt')).toBeVisible();

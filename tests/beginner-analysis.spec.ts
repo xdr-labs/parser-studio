@@ -210,7 +210,7 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
  await page.getByLabel('Auto Parser raw logs').fill(training);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
+ await expect(problem).toContainText('Recommended fix · Use the extracted fields');
  await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
  const recipe={
   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',

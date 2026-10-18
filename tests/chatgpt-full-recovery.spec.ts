@@ -24,8 +24,7 @@ test('RAW_ONLY ChatGPT recovery reaches verified DRAFT Ruby and CONF through the
  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
  await page.getByLabel('ChatGPT local sample logs').fill(source);
  await page.getByLabel('ChatGPT redacted examples').fill('allow,REDACTED_IP\ndeny,REDACTED_IP');
- await page.getByLabel('Confirm redacted example review').check();
- const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
+  const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
  await expect(prepare).toBeEnabled();
  await prepare.click();
  const prompt=page.getByLabel('ChatGPT copyable prompt');

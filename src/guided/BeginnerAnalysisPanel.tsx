@@ -337,8 +337,13 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
       </div>
       {promptOpen&&<div className="beginner-chatgpt" aria-label="ChatGPT repair prompt">
         <strong>1. Copy this prompt to ChatGPT</strong>
-        <p>Review or redact sensitive values first. Parser Studio never sends the log automatically.</p>
-        <textarea aria-label="Generated ChatGPT repair prompt" value={promptText} readOnly rows={14}/>
+        <p className="auto-parser-warning" role="note">
+          This prompt includes the original log and any unparsed source regions. It may contain
+          sensitive information. Review it and edit or mask any values you do not want to share
+          before copying. Sharing the prompt is your decision; Parser Studio never sends it automatically.
+        </p>
+        <textarea aria-label="Generated ChatGPT repair prompt" value={promptText}
+          onChange={event=>setPromptText(event.target.value)} rows={14}/>
         <button type="button" onClick={()=>void copyPrompt()}><Clipboard size={15}/> Copy Prompt</button>
         {copyStatus&&<p role="status">{copyStatus}</p>}
         {recipeImportEligible&&draft&&suite&&onApplyCandidate&&<>

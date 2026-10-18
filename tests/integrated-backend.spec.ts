@@ -522,8 +522,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.goto('/?workspace=chatgpt');
     await page.getByLabel('ChatGPT local sample logs').fill(source);
     await page.getByLabel('ChatGPT redacted examples').fill(masked);
-    await page.getByLabel('Confirm redacted example review').check();
-    await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
+        await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
     const textarea=page.getByLabel('ChatGPT copyable prompt');
     await expect(textarea).toContainText('Use this structurally valid current JSON recipe');
     const prompt=await textarea.inputValue();
