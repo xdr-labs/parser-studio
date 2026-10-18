@@ -55,7 +55,7 @@ function calendarValid(year:number,month:number,day:number):boolean{
 }
 function validTimestamp(token:string):boolean{
   if(token==='-')return true;
-  const m=/^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,9}))?(Z|[+-][0-9]{2}:[0-9]{2})$/.exec(token);
+  const m=/^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,6}))?(Z|[+-][0-9]{2}:[0-9]{2})$/.exec(token);
   return !!m&&calendarValid(+m[1]!,+m[2]!,+m[3]!)&&
     +m[4]!<=23&&+m[5]!<=59&&+m[6]!<=59&&
     (m[8]==='Z'||(+m[8]!.slice(1,3)<=23&&+m[8]!.slice(4,6)<=59));
@@ -99,7 +99,9 @@ function rfc5424(raw:string,fields:ByteAwareFields):boolean{
     return false;
   let cursor=pri[0].length;
   const version=/^([1-9][0-9]{0,2}) /.exec(raw.slice(cursor));
-  if(!version)return false;
+  // RFC5424 v1 is the only independently reviewed HEADER layout here.
+  // Future IANA-assigned versions must not reuse v1 field positions.
+  if(!version||version[1]!=='1')return false;
   fields.push('pri',1,pri[0].length-1);
   fields.push('version',cursor,cursor+version[1]!.length);
   cursor+=version[0].length;
