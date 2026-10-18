@@ -107,7 +107,7 @@ test('actual generated Ruby branches threat/user/asset and rejects unknown famil
   const script=[
     "require 'json'","require 'base64'","require 'csv'","require 'time'","require 'ipaddr'",
     "klass=Class.new",
-    'klass.class_eval('+JSON.stringify(fragment)+')',
+    "klass.class_eval(Base64.strict_decode64('"+Buffer.from(fragment,'utf8').toString('base64')+"'))",
     'instance=klass.new',
     'results=[]',
     'JSON.parse(STDIN.read).each do |line|',
