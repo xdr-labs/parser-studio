@@ -82,7 +82,8 @@ function sourceBody(project:ParserProject):{source:RecipeSource;body:RecipeBody}
 function legacyAllowed(project:ParserProject):boolean {
  const enrichmentOk=(project.enrichment??[]).every(rule=>
   rule.operator==="split_field"||rule.operator==="merge_fields");
- return enrichmentOk&&!project.unsupportedOpaqueBlocks?.length&&
+ return enrichmentOk&&!project.extraction.forwarder&&
+  !project.normalization.eventProfiles&&!project.unsupportedOpaqueBlocks?.length&&
   (project.receiver.tcpFraming==="line"||
     ((project.receiver.tcpFraming==="blank_line_json"||
       project.receiver.tcpFraming==="blank_line_java")&&

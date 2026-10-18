@@ -27,6 +27,7 @@ export interface ParserProject {
   extraction: {
     format: "json" | "kv" | "csv" | "syslog_rfc3164" | "syslog_rfc5424" | "cef" | "leef" | "mixed" | "java_stacktrace" | "regex" | "generic_structural";
     pattern?: string;
+    forwarder?: { maxHops: 1 | 2 | 3; relayHosts: string[] };
     mixedFormats?: ("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef"|"csv")[];
     csvColumns?: string[];
     csvDelimiter?: "," | ";" | "\t";
@@ -41,6 +42,17 @@ export interface ParserProject {
     topFields: FieldMap;
     nsFields: FieldMap;
     vendorFields: FieldMap;
+    eventProfiles?: {
+      discriminator: string;
+      unknown: "reject";
+      variants: Array<{
+        name: string;
+        equals: string;
+        topFields: FieldMap;
+        nsFields: FieldMap;
+        vendorFields: FieldMap;
+      }>;
+    };
   };
   enrichment?: Array<
     | { operator: "set_const"; target: string; value: string | number | boolean }
