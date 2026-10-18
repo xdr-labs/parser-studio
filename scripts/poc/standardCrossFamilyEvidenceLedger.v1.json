@@ -1,0 +1,197 @@
+{
+  "purpose": "P0-STD-10/11 independently reproducible source/code/test coverage; not full normative conformance",
+  "baseSourceSha": "492964acf36594be02a6c10f14f43dfa1c90614a",
+  "sourceOnly": true,
+  "productIntegrated": false,
+  "nativeVerified": false,
+  "releaseAuthorized": false,
+  "evidence": [
+    {
+      "roadmap": "STD-1/2",
+      "standard": "RFC6587/5424",
+      "pinnedOraclePath": "scripts/poc/standardsFramingSdCases.pinned.json",
+      "pinnedOracleSha256": "15f3d48772dc7b05ee0807c6801d6771efbcf454003feed9f8b2e9b74fed1b7d",
+      "caseCount": 21,
+      "implementationPaths": [
+        "src/syslogFraming.ts",
+        "src/poc/rfc5424SdByteEscapes.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardFramingSdTransfer.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Genuine source-vs-relay timestamps/hostname, RFC5425 TLS transport and native."
+    },
+    {
+      "roadmap": "STD-2",
+      "standard": "RFC5424",
+      "pinnedOraclePath": "scripts/poc/standardsRfc5424BrowserParity.pinned.json",
+      "pinnedOracleSha256": "8e5866687e04ee6f796278a6e7cce0a79e4a42222d7e79f02f67035f9fcdfd26",
+      "caseCount": 10,
+      "implementationPaths": [
+        "src/rfc5424Subset.ts",
+        "src/poc/rfc5424SdByteEscapes.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardRfc5424BrowserParity.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "End-to-end Structured Data decoded occurrence/native and publisher wire."
+    },
+    {
+      "roadmap": "STD-3",
+      "standard": "ArcSight CEF v26/v27 header",
+      "pinnedOraclePath": "scripts/poc/standardCefHeaderParity.pinned.json",
+      "pinnedOracleSha256": "b898bf634b5d4e82676b17c799778c8f0ea5f187c449e70f325269483f1ec0fe",
+      "caseCount": 13,
+      "implementationPaths": [
+        "src/cefStandardHeaderGrammar.ts",
+        "src/poc/standardCefHeaderAudit.ts",
+        "src/structuredFamilies.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardCefSharedHeaderParity.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Full CEF extension decoded source values and native manufacturer version parity."
+    },
+    {
+      "roadmap": "STD-4",
+      "standard": "IBM LEEF v2",
+      "pinnedOraclePath": "scripts/poc/standardsLeefDelimiterParity.pinned.json",
+      "pinnedOracleSha256": "4a30628234e4c5c681fdc73ed2f4215f810d2bf5d094d76503a3af0d65ddb00a",
+      "caseCount": 14,
+      "implementationPaths": [
+        "src/leefStandardDelimiter.ts",
+        "src/poc/independentLeefSource.ts",
+        "src/structuredFamilies.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardLeefDelimiterParity.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Producer-specific duplicate/empty attribute meaning and native target."
+    },
+    {
+      "roadmap": "STD-5",
+      "standard": "RFC8259/RFC7464 JSON",
+      "pinnedOraclePath": "scripts/poc/standardJsonSourceSafety.pinned.json",
+      "pinnedOracleSha256": "e30314ba68ec1165e79eff85f05a1cfa96abeb5ba0a614816e1d405d64e1054c",
+      "caseCount": 14,
+      "implementationPaths": [
+        "src/jsonSourcePreflight.ts",
+        "src/standardSourceCompletenessGate.ts",
+        "src/jsonTextSequence.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardJsonSourceSafetyParity.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Independent publisher source bytes, field spans for all nested values/native."
+    },
+    {
+      "roadmap": "STD-6",
+      "standard": "RFC4180 CSV",
+      "pinnedOraclePath": "scripts/poc/standardsCsvWhitespaceSource.pinned.json",
+      "pinnedOracleSha256": "02ec194375d84f36b9dc78e4c0bb9c8b298c43bbbbeb96809e2eaaa67be9f09e",
+      "caseCount": 14,
+      "implementationPaths": [
+        "src/csvSourceCells.ts",
+        "src/parser.ts",
+        "src/poc/independentQuotedCsvSource.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardCsvWhitespaceSourceParity.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Multiline header/row byte boundaries, ordered producer column names/native."
+    },
+    {
+      "roadmap": "STD-7",
+      "standard": "KV producer-declared semantics",
+      "pinnedOraclePath": "scripts/poc/standardKvSourceCompleteness.pinned.json",
+      "pinnedOracleSha256": "831e755960e47b5b98844080c80f2a76966e9e51e6b291813d2ac18c86cf8127",
+      "caseCount": 14,
+      "implementationPaths": [
+        "src/standardSourceCompletenessGate.ts",
+        "src/structuredFamilies.ts",
+        "src/parser.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardKvSourceCompletenessParity.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Original manufacturer escape/empty field profiles and independently scored value typing."
+    },
+    {
+      "roadmap": "STD-7",
+      "standard": "Zeek pinned logging writer",
+      "pinnedOraclePath": "scripts/poc/standardZeekRecordBoundaries.pinned.json",
+      "pinnedOracleSha256": "7f4b4c4309409dc3e92bf4fb86f1b369f88f0039980db5e63b9cc1d8fb3ac561",
+      "caseCount": 14,
+      "implementationPaths": [
+        "src/zeekTabular.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardZeekRecordBoundaries.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Multi-block Zeek rotation, direct real wire captures, native output."
+    },
+    {
+      "roadmap": "STD-7",
+      "standard": "W3C Extended Log Working Draft",
+      "pinnedOraclePath": "scripts/poc/standardsW3cFieldsAndSpans.pinned.json",
+      "pinnedOracleSha256": "fed289f4d21e22109121875b3d0b5ec6afa470fb9018621a26d8db4b25327071",
+      "caseCount": 15,
+      "implementationPaths": [
+        "src/w3cTabular.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standardW3cFieldsAndSpans.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Directive midstream schema changes and diverse real IIS/CloudFront publisher wire."
+    },
+    {
+      "roadmap": "STD-8",
+      "standard": "Source grammar Funnel conflict",
+      "pinnedOraclePath": "scripts/poc/standard8ConflictingSourceCandidates.pinned.json",
+      "pinnedOracleSha256": "c51b4f4f2dbcd8d2675b2ba7aaae8014467a2f54f3c310b5121d8b246eddbfa6",
+      "caseCount": 14,
+      "implementationPaths": [
+        "src/poc/grammarFunnel.ts",
+        "src/poc/losslessLexer.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standard8ConflictingSourceCandidates.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "Publisher-confirmed competing grammar identity and candidate-native arbitration."
+    },
+    {
+      "roadmap": "STD-9",
+      "standard": "W3C publisher-authored example",
+      "pinnedOraclePath": "scripts/poc/standard9PublisherW3cExample.pinned.json",
+      "pinnedOracleSha256": "76b37af28dee2538121801320269b6152ff8199a169f458021d6d5762a5d64e5",
+      "caseCount": 4,
+      "implementationPaths": [
+        "src/w3cTabular.ts",
+        "scripts/poc/scoreStd9PublisherW3cExample.ts"
+      ],
+      "actualTestPaths": [
+        "src/poc/standard9PublisherW3cOraclePin.test.ts"
+      ],
+      "status": "NARROW_SOURCE_EVIDENCE_ONLY",
+      "stillUnverified": "A published illustrative example is NOT a blind device wire holdout or native qualification."
+    }
+  ],
+  "publisherExampleSourceSha256": "5f687cab7a77ce375051fdb2d24fb63812d470fb68027f776c23fe466e2797da",
+  "publisherOriginalPrivate": true,
+  "legacyReplayOnly": {
+    "originals": 1361,
+    "invalidMutations": 2892,
+    "historicalReviewOnly": 197,
+    "priorIndependentCases": 50
+  }
+}
