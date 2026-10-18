@@ -35,6 +35,7 @@ jobs:
           # The runner provides Ruby; verify the native helper parses before
           # the complete offline authoring test gate.
           ruby -c backend/templates/generic-structural-helper.rb.tpl
+          ruby -c backend/templates/ruby-forwarder-family.rb.tpl
           # Product scope is a finite, explicit list; keep broader historical
           # target/Drain3 regression failures visible in backend documentation.
           npm run test:authoring --prefix backend

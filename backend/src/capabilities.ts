@@ -27,6 +27,12 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     syslogMinimumReceiverPort: 6800,
     strictMixedSingleLineFamilies: ["json","kv","cef","leef","rfc5424_cef","rfc5424_leef","rfc3164_kv","rfc5424_json","rfc5424_kv","rfc3164_cef","rfc3164_leef","csv"] as const,
     strictMixedRequiresExplicitAllowlist: true,
+    conditionalEventProfiles: true,
+    conditionalEventProfilesUnknownPolicy: "reject" as const,
+    declaredForwarderEnvelopeUnwrap: true,
+    declaredForwarderMaximumHops: 3,
+    declaredForwarderFormats: ["rfc3164","rfc5424"] as const,
+
     jsonBlankLineTcpFraming: true,
     jsonBlankLineOtherTransports: false,
     jsonBlankLineDelimiter: "LF_LF" as const,

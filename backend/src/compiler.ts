@@ -5,6 +5,7 @@ import { canonicalJson, validateProject } from "./validate.js";
 
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
+const RUBY_FORWARDER_FAMILY_TEMPLATE = readFileSync(new URL("../templates/ruby-forwarder-family.rb.tpl", import.meta.url), "utf8");
 const GENERIC_STRUCTURAL_HELPER = readFileSync(new URL("../templates/generic-structural-helper.rb.tpl", import.meta.url), "utf8");
 const REGEX_EXTRACTOR_NEEDLE = "  when 'leef'\n    parserstudio_leef(text)\n  else";
 const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'regex'\n    parserstudio_regex(text, settings)\n  else";
@@ -99,8 +100,10 @@ function emitConfiguration(project: ParserProject): string {
 
 function emitRubyFragment(project: ParserProject): string {
   const base64 = Buffer.from(canonicalJson(project), "utf8").toString("base64");
-  if (!RUBY_TEMPLATE.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
-  let fragment=RUBY_TEMPLATE.replace("__PARSER_PROJECT_B64__", base64);
+  const template=(project.extraction.forwarder||project.normalization.eventProfiles)
+    ?RUBY_FORWARDER_FAMILY_TEMPLATE:RUBY_TEMPLATE;
+  if (!template.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
+  let fragment=template.replace("__PARSER_PROJECT_B64__", base64);
   const regexBody=(project.extraction.format==="syslog_rfc3164"||
     project.extraction.format==="syslog_rfc5424")&&
     project.extraction.syslogBodyFormat==="regex";
@@ -167,6 +170,12 @@ export function compilePair(input: unknown): PairExport {
             project.extraction.mixedFormats?.some(f=>f==="rfc5424_cef"||f==="rfc5424_leef")
           ? "Only explicitly allowlisted RFC5424-wrapped CEF/LEEF mixed events are supported; RFC3164 mixing, arbitrary Syslog/CSV mixing and unframed multiline remain unsupported."
           : "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
+        ...(project.extraction.forwarder ? [
+          "Only explicitly declared relay-host Syslog envelopes can be unwrapped; sender identity is not authenticated and arbitrary prefixes/rewritten payloads are not certified."
+        ] : []),
+        ...(project.normalization.eventProfiles ? [
+          "Conditional event-family normalization rejects absent/unknown discriminator values; native runtime execution and real target acceptance are not verified."
+        ] : []),
         "No production deployment or live sensor installation has occurred.",
       ],
     },

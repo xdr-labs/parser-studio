@@ -5,7 +5,8 @@ import type { ParserProject, ValidationIssue, ValidationResult, FieldMap } from 
 export const MAX_PROJECT_BYTES = 256 * 1024;
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validateSchema = ajv.compile(projectSchema);
-const RESERVED = new Set(["stellar_log_index", "parser_err_msg", "msg_origin"]);
+const RESERVED = new Set(["stellar_log_index", "parser_err_msg", "msg_origin",
+  "parserstudio_event_family", "parserstudio_transport"]);
 const UNSAFE_PARTS = new Set(["__proto__", "constructor", "prototype"]);
 
 export function validateBoundedRegexPattern(pattern: unknown): string | null {
@@ -198,8 +199,49 @@ export function validateProject(input: unknown): ValidationResult {
       normalizedTypes.set(output, mapping.data_type);
     }
   }
-  if (destinations.length === 0)
+  if (destinations.length === 0 && !p.normalization.eventProfiles)
     issue(issues, "no_fields", "/normalization", "Map at least one source field before compiling.");
+  const eventProfiles = p.normalization.eventProfiles;
+  if (eventProfiles) {
+    if(eventProfiles.discriminator.split(".").some(part=>UNSAFE_PARTS.has(part)))
+      issue(issues,"unsafe_field","/normalization/eventProfiles/discriminator",
+        "Unsafe event-family selector source path.");
+    const profileNames=new Set<string>(),profileValues=new Set<string>();
+    for (const [index,profile] of eventProfiles.variants.entries()) {
+      const prefix="/normalization/eventProfiles/variants/"+index;
+      if(profileNames.has(profile.name)||profileValues.has(profile.equals))
+        issue(issues,"duplicate_event_family",prefix,"Duplicate event family or discriminator.");
+      profileNames.add(profile.name);profileValues.add(profile.equals);
+      const localDestinations=[...destinations];
+      for(const section of ["topFields","nsFields","vendorFields"] as const) {
+        for(const [source, mapping] of Object.entries(profile[section])) {
+          const path=prefix+"/"+section+"/"+source;
+          if(source.split(".").some(part=>UNSAFE_PARTS.has(part)) ||
+             mapping.normalized_name.split(".").some(part=>UNSAFE_PARTS.has(part)))
+            issue(issues,"unsafe_field",path,"Unsafe event-profile field path.");
+          if(RESERVED.has(mapping.normalized_name.split(".")[0]!))
+            issue(issues,"reserved_field",path,"Event-profile destination is system-managed.");
+          if(mapping.data_type==="date" && mapping.time_format!=="iso8601")
+            issue(issues,"date_format",path,"Date requires ISO8601.");
+          if(mapping.data_type!=="date" && (mapping.time_format || mapping.timezone))
+            issue(issues,"date_format",path,"Only dates may declare timezone.");
+          const output=section==="vendorFields"?
+            p.vendor+"."+mapping.normalized_name:mapping.normalized_name;
+          const other=localDestinations.find(d=>conflicts(d.output,output));
+          if(other)issue(issues,"destination_collision",path,
+            "Event-profile destination collides with "+other.path+".");
+          localDestinations.push({path,output});
+        }
+      }
+    }
+  }
+  if(p.extraction.forwarder){
+    // Do not allow generic-structural/regex modes to silently reinterpret
+    // wrapped bytes under an unsupported source semantics contract.
+    if(!["json","kv","cef","leef","mixed","syslog_rfc3164","syslog_rfc5424"].includes(p.extraction.format))
+      issue(issues,"forwarder_format","/extraction/forwarder",
+        "Forwarder unwrapping requires an explicitly supported source grammar.");
+  }
   for (const [index, entry] of (p.enrichment ?? []).entries()) {
     const path = `/enrichment/${index}`;
     const safeDelimiter = (value: string) => value.length >= 1 && value.length <= 8 && !/[\x00-\x1f\x7f]/.test(value);
