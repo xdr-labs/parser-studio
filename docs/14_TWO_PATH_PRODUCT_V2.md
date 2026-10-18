@@ -206,3 +206,20 @@ Current internal evidence after this UX increment:
 - Backend candidate: 10a58c12cd0de5fe0579c14d3943ddf1ba928406.
 
 Real Stellar DP/sensor/Interflow proof, proprietary parser-loader compatibility, owner human acceptance, merge and release remain separately gated.
+
+
+## Local experiment history (owner scope update, 2026-10-18)
+
+- Add one optional **Local Versions** workspace accessible from both supported
+  parser creation paths, not a third authoring method.
+- Save complete current source sample and portable draft/mapping configuration
+  as a named, browser-only version; retain multiple versions and compare them
+  with each other or the unsaved working copy.
+- Restore one complete version without silently overwriting other versions,
+  with a browser-local safety checkpoint before replacing unsaved work.
+- Use IndexedDB (not the backend artifact revision/history endpoints), with
+  a strict bounded schema, digest, capacity guards and visible storage warnings.
+- No DP parser upload/apply, sensor send or ingest/index result verification;
+  their historical prototype interfaces are not part of the product's scope.
+- The owner decides whether to redact a manually copied ChatGPT prompt;
+  show a warning without a mandatory masking-consent checkbox.

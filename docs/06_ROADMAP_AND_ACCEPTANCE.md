@@ -1,3 +1,34 @@
+# CURRENT OWNER-APPROVED ROADMAP — MAINLINE + BROWSER EXPERIMENT VERSIONS (2026-10-18)
+
+This section supersedes older experimental/release tasks below. Continue with two
+user-facing authoring paths only: **Auto Parser** and **ChatGPT Assisted Parser**.
+
+| ID | Priority | Scope | Acceptance |
+| --- | --- | --- | --- |
+| MAIN-1 | P0 | Consolidate all qualified, product-relevant existing UI/parser/compilation into one verified candidate based on the real main branch | Existing docs-only main is an ancestor of the current 210-commit product. Preserve all Draft PoCs and intentional dirty work; selectively integrate proven features without wholesale merging research-only or non-gating evidence code |
+| LOCAL-1 | P0 | Browser-only named snapshots of current source logs, parser draft/format/CSV columns, normalization mappings and dataset identity | Save V1 and V2, compare against each other/current working copy, restore V1 then V2, delete explicitly, reload page and find same snapshots; no save/list/restore endpoint, no server writes; predictable browser quota/errors and no silent loss |
+| LOCAL-2 | P0 | Safety for browser-local sensitive data | Client-side IndexedDB per browser profile and site origin, SHA-bounded records, reject corrupted/oversized revisions and forged mapping paths, warn that clearing browser storage or changing site origins loses access; no automatic LLM transfer or synchronization |
+| PARSER-1 | P0 | Use qualified generic structural Multi-Pass/Funnel improvements in actual UI/compiler where demonstrably beneficial | Exact same-candidate structural PARSED/PARTIAL/RAW accounting and user review; no false complete; limited finite multi-format representative regression |
+| UX-1 | P0 | Resolve common novice/mapping/CSV/prefix/forwarder gaps found in real local tests | Same browser test logs can be revised through several snapshot versions and converted into a downloadable DRAFT parser |
+| CI-1 | P0 | Reconcile actual browser E2E assumptions and run exact-HEAD local/integration/CI qualification | Do not disable failing scenarios or report green with known CI failure. Existing product #89 CI #39125171427: 52 PASS, 61 FAIL in historical browser suites; pinned backend integration skipped |
+| MAIN-2 | P0 gate | Mainline incorporation | Update main only after exact code/contract comparison, conflicts resolved and required qualification; verify remote main HEAD after merge. No production/release automatically follows a merge |
+| LAB-1 | Outside scope | Real DP upload/apply, sensor event delivery, data-ingestion/index-result checking | Do not show or implement these as current product workflows; preserve prior isolated evidence without product promotion |
+
+**Storage boundary:** LOCAL-1/2 stores raw sample logs only when a user explicitly
+chooses **Save Version**. Raw data is stored unencrypted by the browser's
+origin-scoped IndexedDB and may be readable by others with access to that
+browser profile/site origin. No server persistence, remote revision calls, or
+automatic external AI transmission. Snapshots are not a backup across browsers
+or temporary Cloudflare tunnel domain changes. Explicitly warn about browser
+data clearing, private browsing, quota, and short-lived test domains.
+
+**Product focus:** user takes one log, tries multiple extraction/mapping choices,
+compares results and restores an earlier saved version. The current backend may
+validate/generate a stateless parser DRAFT when the user explicitly requests
+it; that request is NOT local version saving and does not persist raw sample logs.
+
+---
+
 > **OWNER OVERRIDE — 2026-10-13:** Parser Studio 2.0 exposes ONLY Auto Parser and ChatGPT Assisted Parser. The 6-step Wizard and 3-pane Workbench are retired from the product UI; their previously stated retention/entrypoint requirements are superseded. All useful backend parsing, mapping, testing, versioning and result operations remain available for internal reuse or integration as context-sensitive result tools. The authoritative scope, acceptance and next tasks are [the two-path v2.0 specification](14_TWO_PATH_PRODUCT_V2.md) and [GitHub Issue #1](https://github.com/xdr-labs/parser-studio/issues/1). Legacy sections below are retained as historical implementation context, not current user navigation.
 
 # 06. Roadmap, Gates and Next Action
