@@ -176,3 +176,29 @@
 .parser-identity-filename small{font-size:9px;line-height:1.45;color:#72868e}
 @media(max-width:1000px){.parser-identity-card{grid-template-columns:1fr}.parser-identity-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.parser-identity-fields{grid-template-columns:1fr}}
+
+/* Explicit, reversible forwarding wrapper selection; never a compiler gate. */
+.manual-boundary-panel{margin:14px 0!important;}
+.manual-boundary-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0;}
+.manual-boundary-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.manual-boundary-inputs label,.manual-boundary-body label{display:grid;gap:5px;}
+.manual-boundary-inputs input,.manual-boundary-body select,.manual-boundary-body textarea{
+ min-width:0;width:100%;max-width:100%;padding:9px;border:1px solid #cddbe1;border-radius:7px;
+ background:#fff;color:#183f4b;font:inherit;
+}
+.manual-boundary-status{padding:11px;border:1px solid #cbdde7;border-radius:7px;margin:11px 0;
+ display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.manual-boundary-status strong{font-size:12px;}
+.manual-boundary-status span{font-size:11px;}
+.manual-boundary-status small{flex-basis:100%;}
+.manual-boundary-status.ready{border-left:4px solid #228f76;}
+.manual-boundary-status.needs-review{border-left:4px solid #bf7e22;}
+.manual-boundary-body{display:grid;gap:11px;margin:12px 0;}
+.manual-boundary-body textarea{resize:vertical;font-family:monospace;overflow-wrap:anywhere;}
+.manual-boundary-warning{margin:12px 0 0;}
+@media(max-width:680px){.manual-boundary-inputs{grid-template-columns:1fr}}
+
+.manual-relay-review{margin-top:14px;padding:12px;border:1px solid #d4e1e6;border-radius:8px;background:#f6fafb;}
+.manual-relay-review h3{font-size:12px;margin:0 0 5px;}
+.manual-relay-review p{margin:5px 0 11px;}
+.manual-relay-review [role=alert]{border-left:3px solid #bf7e22;padding:8px 10px;background:#fff;}

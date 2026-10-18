@@ -35,6 +35,7 @@ import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourc
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import PythonTestSenderPanel from './PythonTestSenderPanel';
+import ManualBoundaryPanel from './ManualBoundaryPanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
@@ -115,6 +116,7 @@ export default function AutoParser({
  runPreview,onChatGPT,advanced,
 }:Props){
  const [step,setStep]=useState<0|1|2|3>(0);
+ const sourceTextareaRef=useRef<HTMLTextAreaElement>(null);
  const [furthestStep,setFurthestStep]=useState<0|1|2|3>(0);
  const [navigationHint,setNavigationHint]=useState('');
  const [selected,setSelected]=useState(0);
@@ -847,13 +849,14 @@ export default function AutoParser({
            Return to all {parserSetOrigin.sourceCount} logs
          </button>
        </div>}
-       <textarea spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
+       <textarea ref={sourceTextareaRef} spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
          placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
          value={sample} onChange={e=>{const value=e.target.value;
            if(parserSetOriginRef.current?.groupSource!==value){
              parserSetOriginRef.current=null;setParserSetOrigin(null);
            }
            setSample(value);setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
+       <ManualBoundaryPanel source={sample} sourceTextareaRef={sourceTextareaRef}/>
        <div className="beginner-analyze-action">
          <button type="button" className="auto-parser-primary" disabled={!sample.trim()||multiPassBusy}
            onClick={()=>void previewMultiPass()}>
