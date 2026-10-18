@@ -168,6 +168,13 @@ test("Generic Structural IP tokens do not reinterpret decimal ports as addresses
   assert.equal(runRuby("parserstudio_generic_ip_token","2001:db8::1"),true);
 });
 
+test("ISO Syslog variants share a non-normalizing calendar/clock guard",()=>{
+  assert.match(helper,/def parserstudio_generic_iso_calendar_valid\(date, clock, zone\)/);
+  assert.match(helper,/parsed\.strftime\('%Y-%m-%d'\) == date/);
+  assert.match(helper,/parsed\.strftime\('%H:%M:%S'\) == clock\[0, 8\]/);
+  assert.equal((helper.match(/parserstudio_generic_iso_calendar_valid\(match\[2\],match\[3\],normalized_zone\)/g)||[]).length,2);
+});
+
 test("Generic Structural V11 Ruby helper parses bounded ISO PRI mixed positional logs",{skip:!rubyAvailable},()=>{
   const raw='<129>2026-10-15 14:54:44.502 +0100 edge WAF ALERT CODE 192.0.2.1 61507 198.51.100.2 443 app policy LOG NONE token1 token2 token3 token4 "-" "multi word positional value" token7 token8';
   const parsed=runRuby("parserstudio_generic_structural",raw) as any;
@@ -178,6 +185,8 @@ test("Generic Structural V11 Ruby helper parses bounded ISO PRI mixed positional
   assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("<129>","<192>")),/Unsupported generic structural event/);
   assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("+0100","+2500")),/Unsupported generic structural event/);
   assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("2026-10-15","2026-02-30")),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("2026-10-15","2026-02-29")),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("14:54:44","25:54:44")),/Unsupported generic structural event/);
   assert.throws(()=>runRuby("parserstudio_generic_structural",'<129>2026-10-15 14:54:44.502 +0100 edge short 192.0.2.1 198.51.100.2'),/Unsupported generic structural event/);
   assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("198.51.100.2","not-an-ip")),/Unsupported generic structural event/);
 });

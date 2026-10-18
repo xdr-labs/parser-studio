@@ -524,6 +524,19 @@ rescue StandardError
   false
 end
 
+# Time.iso8601 may normalize invalid Gregorian dates on some Ruby runtimes.
+# The source calendar and wall clock must round-trip unchanged. This is a
+# format-level invariant shared by positional and mixed ISO Syslog parsing.
+def parserstudio_generic_iso_calendar_valid(date, clock, zone)
+  return false unless date.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+  return false unless clock.match?(/\A\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\z/)
+  parsed = Time.iso8601("#{date}T#{clock}#{zone}")
+  parsed.strftime('%Y-%m-%d') == date &&
+    parsed.strftime('%H:%M:%S') == clock[0, 8]
+rescue StandardError
+  false
+end
+
 def parserstudio_generic_iso_pri_mixed(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
   match = /\A<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
@@ -532,11 +545,7 @@ def parserstudio_generic_iso_pri_mixed(text)
   return nil unless priority.between?(0, 191)
   zone = match[4]
   normalized_zone = zone == 'Z' ? 'Z' : (zone.include?(':') ? zone : zone[0,3] + ':' + zone[3,2])
-  begin
-    Time.iso8601("#{match[2]}T#{match[3]}#{normalized_zone}")
-  rescue StandardError
-    return nil
-  end
+  return nil unless parserstudio_generic_iso_calendar_valid(match[2],match[3],normalized_zone)
   body = parserstudio_generic_profile_tokens(text, match.end(0))
   return nil unless body && body['tokens'].length >= 16
   values = body['tokens'].dup
@@ -560,11 +569,7 @@ def parserstudio_generic_iso_pri_positional(text)
   return nil unless pri.between?(0, 191)
   normalized_zone = match[4] == 'Z' ? 'Z' :
     (match[4].include?(':') ? match[4] : match[4][0, 3] + ':' + match[4][3, 2])
-  begin
-    Time.iso8601("#{match[2]}T#{match[3]}#{normalized_zone}")
-  rescue StandardError
-    return nil
-  end
+  return nil unless parserstudio_generic_iso_calendar_valid(match[2],match[3],normalized_zone)
   body = parserstudio_generic_profile_tokens(text, match.end(0))
   return nil unless body && body['tokens'].length.between?(8, 64)
   anchors = body['tokens'].first(5)

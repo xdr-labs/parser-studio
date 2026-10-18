@@ -109,3 +109,13 @@ the value, so decimal port tokens can never masquerade as IP hosts.
 This is a shared parser grammar safeguard, not a vendor-specific patch.
 The independently pinned invalid-destination case remains a negative
 acceptance check; do not promote it to PARSED to improve metrics.
+
+## ISO calendar and clock fail-closed validation
+
+The most recent Ruby CI exposed a separate real false-positive: some Ruby
+Time.iso8601 versions normalize invalid dates (such as February 30) rather
+than rejecting them. Both bounded ISO mixed and positional parsers now share
+an explicit Gregorian date and clock round-trip validation. An invalid
+input must remain unsupported; new negative cases cover nonexistent
+February 29/30 and out-of-range clock hours. This is a common standard
+parser rule and does not add any manufacturer-specific exceptions.
