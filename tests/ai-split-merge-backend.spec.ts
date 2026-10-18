@@ -53,7 +53,11 @@ async function qualifyAndApply(page:Page,value:unknown,buttonName:string,expecte
  await expect(page.getByLabel('Improve with AI')).toBeVisible();
 }
 
-test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1','Requires the exact pinned loopback backend integration job.');
+test.skip(
+  process.env.PARSER_STUDIO_LIVE_BACKEND!=='1' &&
+  process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
+  'Requires the explicit exact-pinned or scoped loopback authoring backend.'
+);
 test('selected-area AI approves one bounded split then merge and compiles exact v0.1/v0.2 DRAFT pair',async({page})=>{
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(source);

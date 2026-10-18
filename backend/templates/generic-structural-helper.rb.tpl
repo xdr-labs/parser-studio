@@ -747,9 +747,13 @@ def parserstudio_generic_panos_traffic_fields(values)
   datetime = /\A\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\z/
   ip = /\A(?:\d{1,3}\.){3}\d{1,3}\z/
   valid_ip = lambda { |value|
-    value.match?(ip) && value.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
-  rescue ArgumentError
-    false
+    # A rescue clause needs an explicit begin/end inside a brace-style block.
+    # Do not reject otherwise well-formed PAN-style positional CSV messages.
+    begin
+      value.match?(ip) && value.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
+    rescue ArgumentError
+      false
+    end
   }
   return nil unless [1,6,21,35].all? { |index| values[index].to_s.match?(datetime) }
   return nil unless [7,8,9,10].all? { |index| valid_ip.call(values[index].to_s) }

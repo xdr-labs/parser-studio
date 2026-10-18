@@ -32,6 +32,9 @@ jobs:
           npm ci --prefix backend --no-audit --no-fund
           npm run check --prefix backend
           npm run build --prefix backend
+          # The runner provides Ruby; verify the native helper parses before
+          # the complete offline authoring test gate.
+          ruby -c backend/templates/generic-structural-helper.rb.tpl
           # Product scope is a finite, explicit list; keep broader historical
           # target/Drain3 regression failures visible in backend documentation.
           npm run test:authoring --prefix backend
@@ -90,7 +93,8 @@ jobs:
           PARSER_STUDIO_TEST_PORT=5185 \
           PARSER_STUDIO_TEST_MULTIPASS=1 \
           PARSER_STUDIO_MULTIPASS_PORT=5392 \
-          npx playwright test tests/common-security-logs.spec.ts tests/ai-field-correction.spec.ts --project=chromium --workers=2
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E=1 \
+          npx playwright test tests/common-security-logs.spec.ts tests/ai-field-correction.spec.ts tests/chatgpt-full-recovery.spec.ts tests/ai-split-merge-backend.spec.ts tests/beginner-regex-recovery.spec.ts --project=chromium --workers=2
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

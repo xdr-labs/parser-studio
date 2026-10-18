@@ -19,6 +19,13 @@ function runRuby(method:string,raw:string):unknown{
 }
 
 
+test("Generic Structural brace-style IP validator uses an explicit begin/rescue/end block",()=>{
+  // This source invariant runs even where a local Ruby binary is unavailable.
+  // The GitHub Actions gate additionally runs ruby -c and native Ruby E2E.
+  assert.match(helper,/valid_ip = lambda \{ \|value\|\s+#[^\n]*\n\s*#[^\n]*\n\s*begin\b/);
+  assert.match(helper,/rescue ArgumentError\s+false\s+end\s+\}/);
+});
+
 test("Generic Structural helper keeps Syslog envelope parsing ahead of weak generic fallbacks",()=>{
   assert.match(helper,/def parserstudio_generic_syslog_envelope\(text\)/);
   assert.match(helper,/def parserstudio_generic_syslog_envelope_structured\(text\)/);

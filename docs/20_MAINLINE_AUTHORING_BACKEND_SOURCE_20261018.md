@@ -60,3 +60,23 @@ external AI, native manifest, revision and target/DP operations are not
 advertised as available, and direct requests to their routes still fail
 closed. HTTP tests compare the permitted route set with the advertised
 features so future code cannot silently widen product claims.
+
+## Both user creation methods on the scoped service
+
+The same-HEAD browser acceptance step exercises real local backend HTTP
+through the authoring-only entrypoint for both Auto Parser and ChatGPT
+Assisted Parser, including bounded selected-area split/merge recovery and
+DRAFT generation. The opt-in PARSER_STUDIO_SCOPED_AUTHORING_E2E flag is
+for a locally started, test-only authoring backend, never a target device.
+This does not validate production deployment or Stellar device ingestion.
+
+## Native Ruby syntax regression found in CI
+
+Exact-HEAD Actions on the first scoped backend branch failed in nine
+Generic Structural Ruby helper tests because a brace-style lambda contained
+an invalid unguarded rescue clause. The generic IP validator now uses an
+explicit begin/rescue/end block without changing extraction or source-field
+handling. GitHub CI requires ruby -c of the native helper and still runs its
+Ruby execution assertions. The local dev-atlas environment lacked Ruby;
+source/static checks are **not** represented as native Ruby PASS until
+GitHub exact-HEAD CI confirms them.

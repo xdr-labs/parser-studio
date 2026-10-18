@@ -18,7 +18,11 @@ const recipe=()=>({
  ],nativeVerified:false,targetVerified:false,
 });
 
-test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1','Requires the exact pinned loopback backend integration job.');
+test.skip(
+  process.env.PARSER_STUDIO_LIVE_BACKEND!=='1' &&
+  process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
+  'Requires the explicit exact-pinned or scoped loopback authoring backend.'
+);
 test('RAW_ONLY ChatGPT recovery reaches verified DRAFT Ruby and CONF through the real backend',async({page})=>{
  await page.goto('/?workspace=chatgpt');
  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
