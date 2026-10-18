@@ -53,12 +53,19 @@ const invalidTime=(part:string):boolean=>{
 export function rfc5424SdByteEscapes(source:Uint8Array):SdByteResult|null{
   if(!source.length||source.length>16384)return null;
   const data=Uint8Array.from(source);
-  const full=segment(data,0,data.length);
-  if(full===null)return null;
-  const start=/^<([0-9]{1,3})>1 /.exec(full);
-  if(!start||Number(start[1])>191||
-    (start[1]!.length>1&&start[1]![0]==='0'))return null;
-  let pos=Buffer.byteLength(start[0],'utf8');
+  // Header and SD must qualify independently from MSG. RFC5424 §6.4
+  // permits non-UTF-8 MSG-ANY bytes, so decoding the *whole* record as
+  // UTF-8 before checking the ASCII header would lose legal source data.
+  let pos=0;
+  if(data[pos++]!==60)return null;
+  let pri='';
+  while(pos<data.length&&data[pos]!>=48&&data[pos]!<=57){
+    if(pri.length>=3)return null;
+    pri+=String.fromCharCode(data[pos]!);pos++;
+  }
+  if(pri.length===0||data[pos++]!==62||Number(pri)>191||
+     (pri.length>1&&pri[0]==='0')||
+     data[pos++]!==49||data[pos++]!==32)return null;
   const headerParts:string[]=[];
   // RFC5424: TIMESTAMP HOSTNAME APP-NAME PROCID MSGID (five space-separated tokens).
   for(let i=0;i<5;i++){

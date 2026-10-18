@@ -72,33 +72,76 @@ function decodeUtf8(bytes:Uint8Array):string|null{
   try{return new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{return null;}
 }
 
+/** Exact RFC6587 octet-counted byte boundaries before any UTF-8 decoding.
+ * MSG-ANY may contain arbitrary octets; no source code units are fabricated.
+ */
+export interface Rfc6587OctetSourceFrame {
+  recordStartByte:number;
+  recordEndByte:number;
+  recordBytes:Uint8Array;
+}
+export type Rfc6587OctetByteStream=
+  |{ok:true;frames:Rfc6587OctetSourceFrame[]}
+  |{ok:false;error:string};
+
+export function splitRfc6587OctetStreamBytes(raw:Uint8Array):
+  Rfc6587OctetByteStream{
+  if(raw.length===0||raw.length>MAX_SYSLOG_STREAM_OCTETS)
+    return {ok:false,error:'Empty or oversized RFC6587 source byte stream'};
+  const frames:Rfc6587OctetSourceFrame[]=[];
+  let cursor=0;
+  while(cursor<raw.length){
+    const first=raw[cursor];
+    if(first===undefined||first<49||first>57)
+      return {ok:false,error:'RFC6587 nonzero decimal count required'};
+    let digitCount=0,octets=0;
+    while(cursor<raw.length&&raw[cursor]!>=48&&raw[cursor]!<=57){
+      if(++digitCount>7)return {ok:false,error:'RFC6587 count token too long'};
+      octets=octets*10+raw[cursor]!-48;
+      cursor++;
+    }
+    if(raw[cursor]!==32)
+      return {ok:false,error:'Malformed RFC6587 octet-counted stream'};
+    cursor++;
+    if(octets<1||octets>MAX_SYSLOG_OCTETS)
+      return {ok:false,error:'RFC6587 octet count exceeds parser limit'};
+    if(cursor+octets>raw.length)
+      return {ok:false,error:'Truncated RFC6587 octet-counted stream'};
+    const recordStartByte=cursor;
+    const recordEndByte=cursor+octets;
+    const frame=raw.subarray(recordStartByte,recordEndByte);
+    // Retain previous strong transport-family recognition: full Syslog
+    // HEADER/SD qualification is performed by the next source stage.
+    if(frame[0]!==60)return {ok:false,error:'RFC6587 frame has no PRI'};
+    let at=1,priDigits=0;
+    while(at<frame.length&&frame[at]!>=48&&frame[at]!<=57){
+      if(++priDigits>3)return {ok:false,error:'RFC6587 invalid PRI syntax'};
+      at++;
+    }
+    if(priDigits===0||frame[at]!==62)
+      return {ok:false,error:'RFC6587 frame is not a Syslog record'};
+    frames.push({recordStartByte,recordEndByte,
+      recordBytes:Uint8Array.from(frame)});
+    if(frames.length>MAX_SYSLOG_STREAM_RECORDS)
+      return {ok:false,error:'RFC6587 stream record limit exceeded'};
+    cursor=recordEndByte;
+  }
+  return frames.length?{ok:true,frames}:
+    {ok:false,error:'RFC6587 source stream contains no records'};
+}
+
 function splitOctetCountingStream(raw:string):SyslogStreamSplitResult|null{
   if(!/^[1-9]\d* /.test(raw))return null;
-  const bytes=new TextEncoder().encode(raw);
-  const records:string[]=[];let cursor=0;
-  while(cursor<bytes.length){
-    const start=cursor;let digits='';
-    while(cursor<bytes.length&&bytes[cursor]!>=48&&bytes[cursor]!<=57){
-      if(digits.length>=7)return {ok:false,error:'RFC6587 octet count token is too long'};
-      digits+=String.fromCharCode(bytes[cursor]!);cursor++;
-    }
-    if(!digits||bytes[cursor]!==32)return {ok:false,error:'Malformed RFC6587 octet-counted stream'};
-    if(digits.length>1&&digits.startsWith('0'))return {ok:false,error:'RFC6587 octet count must not have a leading zero'};
-    cursor++;
-    const octets=Number(digits);
-    if(!Number.isSafeInteger(octets)||octets<1||octets>MAX_SYSLOG_OCTETS)
-      return {ok:false,error:'RFC6587 octet count exceeds parser limit'};
-    if(cursor+octets>bytes.length)return {ok:false,error:'Truncated RFC6587 octet-counted stream'};
-    const message=decodeUtf8(bytes.slice(cursor,cursor+octets));
-    if(message===null||!/^<\d{1,3}>/.test(message))
-      return {ok:false,error:'RFC6587 frame is not a valid UTF-8 Syslog record'};
-    records.push(message);
-    if(records.length>MAX_SYSLOG_STREAM_RECORDS)return {ok:false,error:'RFC6587 stream record limit exceeded'};
-    cursor+=octets;
-    if(cursor===start)return {ok:false,error:'RFC6587 parser made no progress'};
+  const split=splitRfc6587OctetStreamBytes(new TextEncoder().encode(raw));
+  if(!split.ok)return {ok:false,error:split.error};
+  const records:string[]=[];
+  for(const source of split.frames){
+    const decoded=decodeUtf8(source.recordBytes);
+    if(decoded===null)
+      return {ok:false,error:'RFC6587 stream source is not valid UTF-8'};
+    records.push(decoded);
   }
-  return records.length?{ok:true,mode:'rfc6587_octet_counting_stream',records}:
-    {ok:false,error:'RFC6587 stream contains no records'};
+  return {ok:true,mode:'rfc6587_octet_counting_stream',records};
 }
 
 function splitNonTransparentStream(raw:string):SyslogStreamSplitResult|null{
