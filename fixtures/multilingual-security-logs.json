@@ -1,0 +1,26 @@
+[
+  {
+    "format": "json",
+    "event_type": "threat",
+    "message": "로그인 실패",
+    "user": "김민수",
+    "location": "서울",
+    "raw": "{\"event_type\":\"threat\",\"message\":\"로그인 실패\",\"user\":\"김민수\",\"location\":\"서울\",\"action\":\"deny\"}"
+  },
+  {
+    "format": "json",
+    "event_type": "user",
+    "message": "認証に失敗しました",
+    "user": "山田太郎",
+    "location": "東京都",
+    "raw": "{\"event_type\":\"user\",\"message\":\"認証に失敗しました\",\"user\":\"山田太郎\",\"location\":\"東京都\",\"action\":\"deny\"}"
+  },
+  {
+    "format": "json",
+    "event_type": "asset",
+    "message": "用户认证失败",
+    "user": "王明",
+    "location": "北京",
+    "raw": "{\"event_type\":\"asset\",\"message\":\"用户认证失败\",\"user\":\"王明\",\"location\":\"北京\",\"action\":\"deny\"}"
+  }
+]
