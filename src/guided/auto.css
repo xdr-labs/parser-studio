@@ -202,3 +202,19 @@
 .manual-relay-review h3{font-size:12px;margin:0 0 5px;}
 .manual-relay-review p{margin:5px 0 11px;}
 .manual-relay-review [role=alert]{border-left:3px solid #bf7e22;padding:8px 10px;background:#fff;}
+/* Optional, read-only field coverage for mixed security event samples. */
+.sample-union-review{margin-block:16px;}
+.sample-union-review label{display:flex;flex-direction:column;gap:6px;max-width:350px;font-weight:600;}
+.sample-union-review input{min-width:0;width:100%;padding:8px;border:1px solid var(--line,#d1dce1);border-radius:7px;}
+.sample-union-stats{display:flex!important;gap:12px!important;flex-wrap:wrap;align-items:center;}
+.sample-union-stats span{display:inline-flex;gap:5px;align-items:center;}
+.sample-union-groups{display:grid;gap:12px;margin-top:12px;}
+.sample-union-group{border:1px solid #dce8ec;border-radius:8px;background:#fff;padding:12px;}
+.sample-union-group h3{margin:0 0 4px;font-size:13px;}
+.sample-union-group p{margin:4px 0 9px;}
+.sample-union-fields{display:grid;gap:5px;max-height:290px;overflow:auto;}
+.sample-union-field{display:grid;grid-template-columns:minmax(100px,1.5fr) repeat(2,minmax(75px,1fr)) minmax(140px,1.5fr);gap:10px;align-items:center;padding:7px;border-bottom:1px solid #e4ebee;overflow-wrap:anywhere;}
+.sample-union-field code{font-size:11px;white-space:normal;overflow-wrap:anywhere;}
+.sample-union-field strong{font-size:11px;color:var(--muted,#627785);}
+.sample-union-scope{margin-top:13px;font-weight:500;}
+@media(max-width:760px){.sample-union-field{grid-template-columns:1fr 1fr;gap:4px}.sample-union-field code,.sample-union-field strong{grid-column:1/-1}}
