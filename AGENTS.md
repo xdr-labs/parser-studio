@@ -14,7 +14,7 @@ Continue the current highest-priority incomplete work, preserve unrelated and di
 
 ## Project language policy (owner directive, 2026-10-12)
 
-**English only:** Write all screens, accessible labels, user-facing errors, code comments, tests, fixtures, documentation, CLI/help output, and future product content in English. Do not add Korean translations or a bilingual UI. Preserve existing API paths, serialized field names, parser syntax, and compatibility contracts when changing presentation text. Run the English-only regression test and browser scenarios before each UI commit.
+**English for authored product and engineering explanations:** Write UI navigation, buttons, accessible labels, help/error descriptions, code comments, test descriptions, fixture metadata, documentation prose, and CLI/help output in English. Do not add Korean-first or bilingual product chrome. **This policy never applies to the language of log data:** raw user logs, log-message values, field values, source identifiers, multilingual log fixtures, and clearly marked log examples may contain any language and must remain unchanged. In particular, preserve UTF-8/Unicode values, offsets, quoting and field boundaries instead of translating or filtering them. An English-language UI is not an English-only log parser. Place multilingual fixture data in dedicated fixtures or fenced log examples where possible; authored descriptions remain English. Preserve existing API paths, serialized field names, parser syntax and compatibility contracts when changing text. Run language-policy and multilingual-log regressions before UI commits.
 
 ## Product invariants
 

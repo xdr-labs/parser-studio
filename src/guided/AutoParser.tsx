@@ -35,6 +35,7 @@ import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourc
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import PythonTestSenderPanel from './PythonTestSenderPanel';
+import SampleUnionReview from './SampleUnionReview';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
@@ -1257,6 +1258,7 @@ export default function AutoParser({
          Review the actual values first; the next step will suggest Stellar Cyber field names.</p>}
        {currentReview?.requiresApproval&&<p className="auto-parser-note">
          Your edited field mappings were preserved. Check them below before generating.</p>}
+       <SampleUnionReview suite={suite}/>
        <label>Choose a source event
          <select aria-label="Auto Parser review event" value={chosen?.id??''}
            onChange={e=>setSelected(Math.max(0,records.findIndex(x=>x.id===e.target.value)))}>
