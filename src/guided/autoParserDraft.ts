@@ -41,7 +41,7 @@ export function prepareAutoParserDraft(
     return failed('SOURCE_CHANGED');
   }
   // Recompute *only the value-free census* to block stale/forged summaries.
-  if(!same(analyzeLogEnvelopes(source,ledger.boundary),ledger))return failed('SOURCE_CHANGED');
+  if(!same(analyzeLogEnvelopes(source,ledger.boundary,draft.forwarder),ledger))return failed('SOURCE_CHANGED');
   if(compiler.status!=='DRAFT_COMPILABLE'||!compiler.format){
     return failed(compiler.status==='DRAFT_COMPILABLE'?'COMPILER_UNSUPPORTED':compiler.status);
   }

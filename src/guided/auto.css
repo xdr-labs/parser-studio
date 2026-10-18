@@ -193,3 +193,12 @@
 .sample-union-field strong{font-size:11px;color:var(--muted,#627785);}
 .sample-union-scope{margin-top:13px;font-weight:500;}
 @media(max-width:760px){.sample-union-field{grid-template-columns:1fr 1fr;gap:4px}.sample-union-field code,.sample-union-field strong{grid-column:1/-1}}
+
+/* User-reviewed, explicit mapping changes inside each event-family profile. */
+.family-mapping-details{display:block;margin:8px 0;padding:6px 10px;border:1px solid #dce8ec;border-radius:7px;max-height:260px;overflow:auto;}
+.family-mapping-details>summary{cursor:pointer;}
+.family-mapping-row{display:grid;grid-template-columns:minmax(95px,1.2fr) minmax(150px,1.6fr) minmax(100px,1fr);gap:9px;align-items:end;border-bottom:1px solid #e7eff2;padding:8px 0;}
+.family-mapping-row label{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:11px;}
+.family-mapping-row input,.family-mapping-row select{min-width:0;max-width:100%;font-size:11px;}
+.family-mapping-row code{white-space:normal;overflow-wrap:anywhere;}
+@media(max-width:720px){.family-mapping-row{grid-template-columns:1fr 1fr;}.family-mapping-row>code{grid-column:1/-1;}}

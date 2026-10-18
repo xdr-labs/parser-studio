@@ -36,6 +36,8 @@ import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './mu
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import PythonTestSenderPanel from './PythonTestSenderPanel';
 import SampleUnionReview from './SampleUnionReview';
+import ReviewedEventProfilesPanel from './ReviewedEventProfilesPanel';
+import DeclaredRelayProfilePanel from './DeclaredRelayProfilePanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
@@ -170,8 +172,8 @@ export default function AutoParser({
  const identity=JSON.stringify([draft,sample]);
  const currentRef=useRef(identity);currentRef.current=identity;
  const report=useMemo(()=>analyzeLogEnvelopes(sample,
-   (draft.guided?.eventBoundary??'single-line') as EventBoundary),
-   [sample,draft.guided?.eventBoundary]);
+   (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder),
+   [sample,draft.guided?.eventBoundary,draft.forwarder]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
    setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);setNativeAvailability('UNCHECKED');
@@ -862,6 +864,7 @@ export default function AutoParser({
          </button>
          <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
        </div>
+       <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
        <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
          Parser Studio could not complete local analysis. Your source was preserved. Open troubleshooting tools only if you need more diagnostic detail.
@@ -1259,6 +1262,9 @@ export default function AutoParser({
        {currentReview?.requiresApproval&&<p className="auto-parser-note">
          Your edited field mappings were preserved. Check them below before generating.</p>}
        <SampleUnionReview suite={suite}/>
+       <ReviewedEventProfilesPanel suite={suite} draft={draft} setDraft={setDraft}
+         source={sample} pending={pending}
+         backendCapabilities={capability?.source===sample?capability.value:undefined}/>
        <label>Choose a source event
          <select aria-label="Auto Parser review event" value={chosen?.id??''}
            onChange={e=>setSelected(Math.max(0,records.findIndex(x=>x.id===e.target.value)))}>

@@ -1,4 +1,6 @@
 import type { ParserDraft } from '../model';
+import {validateEventProfiles} from './multiEventRouting';
+import {validForwarderConfig} from './declaredForwarder';
 import {
   compilerDraftContract, defaultGuidedOptions,
   type EventClass, type FieldGroup, type SourceCategory,
@@ -36,7 +38,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line' | 'blank_line_json' | 'blank_line_java';
   };
-  extraction: { format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' } | {format:'regex';pattern:string} | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';pattern?:string } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' };
+  extraction: ({ format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' } | {format:'regex';pattern:string} | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';pattern?:string } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' }) & {forwarder?:{maxHops:1|2|3;relayHosts:string[]}};
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -45,6 +47,15 @@ export interface BackendParserProject {
     topFields: Record<string, BackendField>;
     nsFields: Record<string, BackendField>;
     vendorFields: Record<string, BackendField>;
+    eventProfiles?:{
+      discriminator:string;unknown:'reject';
+      variants:Array<{
+        name:string;equals:string;
+        topFields:Record<string,BackendField>;
+        nsFields:Record<string,BackendField>;
+        vendorFields:Record<string,BackendField>;
+      }>;
+    };
   };
   enrichment?: BackendEnrichmentRule[];
   classification: {
@@ -140,6 +151,56 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
   if (!SOURCE_CATEGORIES.includes(category)) {
     issues.push({ code: 'SOURCE_CATEGORY_UNSUPPORTED', path: '/sourceCategory', message: 'Unknown source category' });
   }
+  // Explicit, reviewed family mappings are preserved through this adapter.
+  // Never convert an unknown source event into a global default mapping.
+  let eventProfiles:BackendParserProject['normalization']['eventProfiles'];
+  if(draft.eventProfiles){
+    const problem=validateEventProfiles(draft.eventProfiles);
+    if(problem)issues.push({code:'INVALID_EVENT_PROFILES',path:'/eventProfiles',message:problem});
+    else{
+      const variants:NonNullable<typeof eventProfiles>['variants']=[];
+      for(const variant of draft.eventProfiles.variants){
+        const topFields:Record<string,BackendField>=Object.create(null);
+        const nsFields:Record<string,BackendField>=Object.create(null);
+        const vendorFields:Record<string,BackendField>=Object.create(null);
+        const buckets={top_fields:topFields,ns_fields:nsFields,vendor_fields:vendorFields};
+        for(const [index,mapping] of variant.mappings.entries()){
+          const group=options.groups[mapping.id]??'vendor_fields';
+          if(!safeFieldPath(mapping.source)||!safeFieldPath(mapping.target)||
+             !Object.prototype.hasOwnProperty.call(buckets,group)||
+             mapping.type==='number'){
+            issues.push({code:'INVALID_EVENT_MAPPING',
+              path:'/eventProfiles/'+variant.name+'/'+index,
+              message:'Event-specific mapping requires reviewed safe paths and types.'});
+            continue;
+          }
+          const bucket=buckets[group];
+          if(Object.prototype.hasOwnProperty.call(bucket,mapping.source)){
+            issues.push({code:'DUPLICATE_EVENT_SOURCE',
+              path:'/eventProfiles/'+variant.name+'/'+index,
+              message:'Duplicate source field in one event family.'});
+            continue;
+          }
+          const data_type:BackendFieldType=mapping.type==='timestamp'?'date':
+            mapping.type as BackendFieldType;
+          bucket[mapping.source]={
+            normalized_name:mapping.target,data_type,
+            ...(data_type==='date'?{time_format:'iso8601' as const,timezone:'UTC' as const}:{}),
+          };
+        }
+        variants.push({name:variant.name,equals:variant.equals,topFields,nsFields,vendorFields});
+      }
+      eventProfiles={discriminator:draft.eventProfiles.discriminator,
+        unknown:'reject',variants};
+    }
+  }
+  if(draft.forwarder&&!validForwarderConfig(draft.forwarder))
+    issues.push({code:'INVALID_FORWARDER_PROFILE',path:'/forwarder',
+      message:'Declare valid distinct relay hosts and 1–3 hops.'});
+  if(draft.forwarder&&!['json','kv','cef','leef','mixed',
+    'syslog_rfc3164','syslog_rfc5424'].includes(draft.format))
+    issues.push({code:'FORWARDER_FORMAT_UNSUPPORTED',path:'/forwarder',
+      message:'The selected format does not support declared relays.'});
   if (issues.length) return { ok: false, issues };
   const project: BackendParserProject = {
     schemaRevision: '0.1',
@@ -174,6 +235,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
             ...(draft.syslogBodyFormat==='regex'?{pattern:draft.pattern}:{}) }
         : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' },
     normalization: {
+      ...(eventProfiles?{eventProfiles}:{}),
       msgOriginSource: options.slug,
       msgClass: options.slug,
       msgOriginCategory: category,
@@ -193,6 +255,12 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     classification: {
       defaultIndex: indexMap[options.classification.defaultIndex],
       rules,
+    },
+  };
+  if(draft.forwarder)project.extraction={
+    ...project.extraction,forwarder:{
+      maxHops:draft.forwarder.maxHops,
+      relayHosts:[...draft.forwarder.relayHosts],
     },
   };
   return { ok: true, project, issues: [] };
