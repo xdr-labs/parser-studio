@@ -1,3 +1,5 @@
+import {utf8OriginalByteOffsets} from './utf8OriginalByteOffsets';
+
 export type SyslogEnvelopeVariant=
   'rfc5424'|
   'rfc3164'|
@@ -230,7 +232,7 @@ function decorateMessage(envelope:SyslogEnvelope):SyslogEnvelope{
 
 function parseRfc5424(pri:string|undefined,rest:string):SyslogEnvelope|null{
   if(pri===undefined)return null;
-  const match=/^([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/.exec(rest);
+  const match=/^([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([\s\S]*)$/.exec(rest);
   if(!match)return null;
   const version=match[1]!,timestamp=match[2]!,hostname=match[3]!,appname=match[4]!,
     procid=match[5]!,msgid=match[6]!;
@@ -405,15 +407,24 @@ function looksLikeMalformedTimestamp(rest:string):boolean{
     /^\d{1,3} +\d{4}-\d{2}-\d{2}T/.test(rest);
 }
 
-export function parseSyslogEnvelope(raw:string):SyslogEnvelope|null{
-  if(!raw||raw.includes('\0')||utf8Size(raw)>8192||/[\r\n]/.test(raw))return null;
+export function parseSyslogEnvelope(
+  raw:string,options?:{framing?:'RFC6587_OCTET_COUNTING'},
+):SyslogEnvelope|null{
+  const counted=options?.framing==='RFC6587_OCTET_COUNTING';
+  // Only a separately qualified length-delimited record can contain
+  // RFC5424 MSG-ANY newlines or NUL. Unframed safety remains unchanged.
+  if(!raw||utf8Size(raw)>8192||
+    (!counted&&/[\r\n\0]/.test(raw))||
+    (counted&&utf8OriginalByteOffsets(raw)===null))return null;
   const split=splitPri(raw);
   if(!split)return null;
-  const rest=split.rest.trimStart();
+  const rest=counted?split.rest:split.rest.trimStart();
   if(!rest)return null;
 
   const rfc5424=parseRfc5424(split.pri,rest);
   if(rfc5424)return rfc5424;
+  // Framed controls do not authorize RFC3164/PRI-only fallback.
+  if(counted&&/[\r\n\0]/.test(raw))return null;
   if(split.pri!==undefined&&/^\d{1,3} +/.test(rest))return null;
 
   const bsd=parseBsd(split.pri,rest);

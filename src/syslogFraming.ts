@@ -1,3 +1,5 @@
+import {utf8OriginalByteOffsets} from './utf8OriginalByteOffsets';
+
 export type SyslogFramingMode=
   'unframed'|
   'rfc6587_octet_counting'|
@@ -17,6 +19,8 @@ function byteLength(value:string):number{
 
 export function unwrapSingleSyslogRecord(raw:string):SyslogFrameResult{
   if(!raw)return {ok:false,error:'Empty Syslog record'};
+  if(!utf8OriginalByteOffsets(raw))
+    return {ok:false,error:'Unpaired source surrogate cannot be silently replaced'};
 
   const prefix=/^([^\s]+) (.*)$/s.exec(raw);
   if(prefix&&/^\d/.test(prefix[1]!)&&/^<\d{1,3}>/.test(prefix[2]!)){
@@ -122,6 +126,8 @@ function splitNonTransparentStream(raw:string):SyslogStreamSplitResult|null{
 
 export function splitSyslogStream(raw:string):SyslogStreamSplitResult{
   if(!raw)return {ok:false,error:'Empty Syslog stream'};
+  if(utf8OriginalByteOffsets(raw)===null)
+    return {ok:false,error:'Source stream contains an unpaired UTF-16 surrogate'};
   if(byteLength(raw)>MAX_SYSLOG_STREAM_OCTETS)return {ok:false,error:'Syslog stream exceeds parser limit'};
   return splitOctetCountingStream(raw)??splitNonTransparentStream(raw)??
     {ok:false,error:'Input is not a supported multi-record Syslog stream'};

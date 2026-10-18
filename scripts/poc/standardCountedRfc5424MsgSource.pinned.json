@@ -1,0 +1,297 @@
+{
+  "standard": "RFC5424 6.4 MSG-ANY / MSG-UTF8 and RFC6587 3.4.1 octet-counted transport framing",
+  "provenance": "Independently authored standards-derived synthetic, not manufacturer wire or native target evidence",
+  "cases": [
+    {
+      "id": "COUNTED_LF_MSG",
+      "wire": "69 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - deny\nsrc=192.0.2.1",
+      "valid": true,
+      "sha256": "314cfb7eaba26bdaa9033c3bbdbf84bcfbed6f154f8ae7ec5e9479850a817344",
+      "streamBytes": 72,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - deny\nsrc=192.0.2.1",
+          "recordStartByte": 3,
+          "recordEndByte": 72,
+          "msg": "deny\nsrc=192.0.2.1",
+          "msgStartByte": 54,
+          "msgEndByte": 72
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_CRLF_MSG",
+      "wire": "70 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - deny\r\nsrc=192.0.2.1",
+      "valid": true,
+      "sha256": "489ae7a4f6b112a8a323889207fec3c1a5068d8b4cf8d8bfb171252729faeccf",
+      "streamBytes": 73,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - deny\r\nsrc=192.0.2.1",
+          "recordStartByte": 3,
+          "recordEndByte": 73,
+          "msg": "deny\r\nsrc=192.0.2.1",
+          "msgStartByte": 54,
+          "msgEndByte": 73
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_BARE_CR_MSG",
+      "wire": "69 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - deny\rsrc=192.0.2.1",
+      "valid": true,
+      "sha256": "0000ea843d68d903256d4dca8b976697e7bbce7a6d7f267bb49bb9547d7f7e6f",
+      "streamBytes": 72,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - deny\rsrc=192.0.2.1",
+          "recordStartByte": 3,
+          "recordEndByte": 72,
+          "msg": "deny\rsrc=192.0.2.1",
+          "msgStartByte": 54,
+          "msgEndByte": 72
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_MIXED_CONTROL_MSG",
+      "wire": "75 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - part1\npart2\r\npart3\rpart4",
+      "valid": true,
+      "sha256": "77ba0257daf4bbeea08c310a4c0d3775929a9cbc72c7266ea03d2f5d859cb95d",
+      "streamBytes": 78,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - part1\npart2\r\npart3\rpart4",
+          "recordStartByte": 3,
+          "recordEndByte": 78,
+          "msg": "part1\npart2\r\npart3\rpart4",
+          "msgStartByte": 54,
+          "msgEndByte": 78
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_UTF8_BOM_AND_MULTIBYTE_MSG",
+      "wire": "72 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - \ufeffUTF8 \u20ac\ud83d\ude00\nallow",
+      "valid": true,
+      "sha256": "59dde5ab90d9fe7f0704a3eed3b0b48d2037f5b412309fa5d66876e8bdf758fd",
+      "streamBytes": 75,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - \ufeffUTF8 \u20ac\ud83d\ude00\nallow",
+          "recordStartByte": 3,
+          "recordEndByte": 75,
+          "msg": "\ufeffUTF8 \u20ac\ud83d\ude00\nallow",
+          "msgStartByte": 54,
+          "msgEndByte": 75
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_NUL_MSG_ANY",
+      "wire": "62 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - value\u0000after",
+      "valid": true,
+      "sha256": "b2d6b0f2539b91323dc7724f039aca4479aa66f19cffc30ae439b7663655f8df",
+      "streamBytes": 65,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - value\u0000after",
+          "recordStartByte": 3,
+          "recordEndByte": 65,
+          "msg": "value\u0000after",
+          "msgStartByte": 54,
+          "msgEndByte": 65
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_UTF8_SD_MSG",
+      "wire": "95 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\"] UTF8 \u20ac\ud83d\ude00\nallow",
+      "valid": true,
+      "sha256": "735f79fa5f4a79ec3429d341093c331c31946740175b6b6f41b433b61f51cdb9",
+      "streamBytes": 98,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\"] UTF8 \u20ac\ud83d\ude00\nallow",
+          "recordStartByte": 3,
+          "recordEndByte": 98,
+          "msg": "UTF8 \u20ac\ud83d\ude00\nallow",
+          "msgStartByte": 80,
+          "msgEndByte": 98
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_PRESENT_EMPTY_MSG",
+      "wire": "51 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - ",
+      "valid": true,
+      "sha256": "e48ac2a24b204a60997735f5059b4624b64751aacec9a8586c08877dc7e1e329",
+      "streamBytes": 54,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - ",
+          "recordStartByte": 3,
+          "recordEndByte": 54,
+          "msg": "",
+          "msgStartByte": 54,
+          "msgEndByte": 54
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_ABSENT_MSG",
+      "wire": "50 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT -",
+      "valid": true,
+      "sha256": "cb575bdc195a40da2f04d84c81650ae7e849c7715e7f2d5963f49843f84540ee",
+      "streamBytes": 53,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT -",
+          "recordStartByte": 3,
+          "recordEndByte": 53,
+          "msg": null,
+          "msgStartByte": null,
+          "msgEndByte": null
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_TWO_EVENTS_ONE_MULTILINE",
+      "wire": "61 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\nsecond88 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\"] two \u20ac\ud83d\ude00",
+      "valid": true,
+      "sha256": "b082e9ecb250769d47b2618844fcc02a9c018bdb130e3c76d3b39284985b9712",
+      "streamBytes": 155,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\nsecond",
+          "recordStartByte": 3,
+          "recordEndByte": 64,
+          "msg": "one\nsecond",
+          "msgStartByte": 54,
+          "msgEndByte": 64
+        },
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\"] two \u20ac\ud83d\ude00",
+          "recordStartByte": 67,
+          "recordEndByte": 155,
+          "msg": "two \u20ac\ud83d\ude00",
+          "msgStartByte": 144,
+          "msgEndByte": 155
+        }
+      ]
+    },
+    {
+      "id": "COUNTED_TWO_EVENTS_SECOND_MULTILINE",
+      "wire": "82 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\"] first64 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - second\r\nthird",
+      "valid": true,
+      "sha256": "3acca0f2753e50fab3c248524d3f9f1537c449d8dcecde4f736abbf85bc7cf22",
+      "streamBytes": 152,
+      "claims": [
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\"] first",
+          "recordStartByte": 3,
+          "recordEndByte": 85,
+          "msg": "first",
+          "msgStartByte": 80,
+          "msgEndByte": 85
+        },
+        {
+          "record": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - second\r\nthird",
+          "recordStartByte": 88,
+          "recordEndByte": 152,
+          "msg": "second\r\nthird",
+          "msgStartByte": 139,
+          "msgEndByte": 152
+        }
+      ]
+    },
+    {
+      "id": "UNFRAMED_LF_MSG",
+      "wire": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\ntwo",
+      "valid": false,
+      "sha256": "081794af95f93a9095f60a60feb82779e5d784a5b8d20131600e77e5a2641788",
+      "streamBytes": 58,
+      "claims": []
+    },
+    {
+      "id": "NON_TRANSPARENT_UNSAFE_EMBEDDED_LF",
+      "wire": "<134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\ntwo\n",
+      "valid": false,
+      "sha256": "4edb7003480d9d24a54894a4c729be880558d942a0161dc468c82367be55009d",
+      "streamBytes": 59,
+      "claims": []
+    },
+    {
+      "id": "TRUNCATED_OCTET_COUNT",
+      "wire": "60 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\nnext",
+      "valid": false,
+      "sha256": "8d0d2c921b1dd67271f63fdf0fdb527edb8d7cd0228758a371eac8613408d5a7",
+      "streamBytes": 62,
+      "claims": []
+    },
+    {
+      "id": "OCTET_COUNT_WRONG_SHORT",
+      "wire": "58 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\nnext",
+      "valid": false,
+      "sha256": "41121f4311a628ab65b55def65468cc89fc90e0cc2be511eb268295f3e986464",
+      "streamBytes": 62,
+      "claims": []
+    },
+    {
+      "id": "OCTET_COUNT_LEADING_ZERO",
+      "wire": "059 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\nnext",
+      "valid": false,
+      "sha256": "8a0e18987f9b67316e34d927d31604e68a9dc1116af359ba5ae0b16078373280",
+      "streamBytes": 63,
+      "claims": []
+    },
+    {
+      "id": "RFC5424_NEWLINE_IN_HEADER",
+      "wire": "58 <134>1 2026-10-18T12:00:00Z fw01\nsecurity 90 EVT - message",
+      "valid": false,
+      "sha256": "f957c53f9917425fd4af546978f82c7fc0ab1f87ca6a8f4e6adf3090e451b130",
+      "streamBytes": 61,
+      "claims": []
+    },
+    {
+      "id": "RFC5424_NEWLINE_IN_SD_PARAM",
+      "wire": "91 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"broken\nvalue\"] msg",
+      "valid": false,
+      "sha256": "1ae06bfaa5fbb6934733cec4d3ebdb8ff3923661a4b4730bdf866be00c9d12fd",
+      "streamBytes": 94,
+      "claims": []
+    },
+    {
+      "id": "RFC5424_UNSUPPORTED_VERSION",
+      "wire": "59 <134>2 2026-10-18T12:00:00Z fw01 security 90 EVT - msg\nnext",
+      "valid": false,
+      "sha256": "bcd425386c0f5c3dab27ba5e47d889ea51313cc462ee80ec46603e78726a2255",
+      "streamBytes": 62,
+      "claims": []
+    },
+    {
+      "id": "RFC5424_PRI_OUT_OF_RANGE",
+      "wire": "59 <999>1 2026-10-18T12:00:00Z fw01 security 90 EVT - msg\nnext",
+      "valid": false,
+      "sha256": "a50a8cc6a59cd867b7801d60b7774352ae4e8cd6f1905bb9f1ed6cd84a6ef37e",
+      "streamBytes": 62,
+      "claims": []
+    },
+    {
+      "id": "RFC5424_UNCLOSED_SD",
+      "wire": "84 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT [exampleSDID@32473 iut=\"3\" msg\nnext",
+      "valid": false,
+      "sha256": "34e62770a6f85e9d82c949d3c293eb8496ce647bc1c2dad94785b0ba02efc653",
+      "streamBytes": 87,
+      "claims": []
+    },
+    {
+      "id": "COUNTED_EXTRA_TRAILING_GARBAGE",
+      "wire": "59 <134>1 2026-10-18T12:00:00Z fw01 security 90 EVT - one\nnextgarbage",
+      "valid": false,
+      "sha256": "b7742b2b88f8729179c695dafa66f293d6aef8211312a5340da2a049416913eb",
+      "streamBytes": 69,
+      "claims": []
+    }
+  ]
+}

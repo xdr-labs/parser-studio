@@ -1,3 +1,5 @@
+import {utf8OriginalByteOffsets} from './utf8OriginalByteOffsets';
+
 /**
  * Strict, browser-local bounded RFC5424 v1 structural header/SD scanner.
  * Mirrors only the reviewed backend's synthetic qualified subset. It never
@@ -85,9 +87,16 @@ function scanStructuredData(rest: string): { structured: string; message: string
   return {structured,message:trailer.slice(1)};
 }
 
-export function parseRfc5424Subset(text:string):Rfc5424Scan {
-  if (text.includes('\n') || text.includes('\r')) return {ok:false,error:'RFC5424 multi-line message unsupported'};
-  const match=/^<(\d{1,3})>(\d{1,2}) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)$/.exec(text);
+export function parseRfc5424Subset(
+  text:string,options?:{framing?:'RFC6587_OCTET_COUNTING'},
+):Rfc5424Scan {
+  const counted=options?.framing==='RFC6587_OCTET_COUNTING';
+  // Do not infer a multi-line record boundary from arbitrary clipboard text.
+  if((!counted&&/[\r\n\0]/.test(text))||
+     (counted&&(utf8OriginalByteOffsets(text)===null||
+       new TextEncoder().encode(text).length>8192)))
+    return {ok:false,error:'RFC5424 MSG requires verified octet-counted framing'};
+  const match=/^<(\d{1,3})>(\d{1,2}) (\S+) (\S+) (\S+) (\S+) (\S+) ([\s\S]+)$/.exec(text);
   if (!match || Number(match[1])>191 || match[2]!=='1') {
     return {ok:false,error:'Unsupported RFC5424 version or header'};
   }
