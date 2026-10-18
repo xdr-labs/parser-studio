@@ -1,0 +1,494 @@
+{
+  "authority": "RFC5424 6.2.2 v1 IANA VERSION and 6.2.3 TIME-SECFRAC 1..6 decimals, no leap seconds; Official RFC nanoseconds example invalid",
+  "scope": "Independently authored standards synthetics + one RFC-included documented negative timestamp; NOT publisher device/native wire",
+  "cases": [
+    {
+      "id": "TIME-NO-FRACTION",
+      "wire": "<34>1 2026-10-18T12:34:56Z upstream-host app 12 MSGID - body",
+      "validVersion1": true,
+      "wireSha256": "6526fc492f59a44227a563b49e20debbc7b69e02dbc84cfeefbb40c89dcaa02b",
+      "sourceBytes": 60,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "upstream-host",
+          "startByte": 27,
+          "endByte": 40
+        },
+        {
+          "name": "appname",
+          "value": "app",
+          "startByte": 41,
+          "endByte": 44
+        },
+        {
+          "name": "procid",
+          "value": "12",
+          "startByte": 45,
+          "endByte": 47
+        },
+        {
+          "name": "msgid",
+          "value": "MSGID",
+          "startByte": 48,
+          "endByte": 53
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 54,
+          "endByte": 55
+        },
+        {
+          "name": "message",
+          "value": "body",
+          "startByte": 56,
+          "endByte": 60
+        }
+      ],
+      "sdStartByte": 54,
+      "sdEndByte": 55,
+      "messageStartByte": 56
+    },
+    {
+      "id": "TIME-RFC-MICROSECONDS",
+      "wire": "<34>1 2003-08-24T05:14:15.000003-07:00 upstream-host app 12 MSGID - body",
+      "validVersion1": true,
+      "wireSha256": "355d539a2fd3f46e80a2a30ea2760c41f5c706fc67b8cd0e8b466fe4816ed5c9",
+      "sourceBytes": 72,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2003-08-24T05:14:15.000003-07:00",
+          "startByte": 6,
+          "endByte": 38
+        },
+        {
+          "name": "hostname",
+          "value": "upstream-host",
+          "startByte": 39,
+          "endByte": 52
+        },
+        {
+          "name": "appname",
+          "value": "app",
+          "startByte": 53,
+          "endByte": 56
+        },
+        {
+          "name": "procid",
+          "value": "12",
+          "startByte": 57,
+          "endByte": 59
+        },
+        {
+          "name": "msgid",
+          "value": "MSGID",
+          "startByte": 60,
+          "endByte": 65
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 66,
+          "endByte": 67
+        },
+        {
+          "name": "message",
+          "value": "body",
+          "startByte": 68,
+          "endByte": 72
+        }
+      ],
+      "sdStartByte": 66,
+      "sdEndByte": 67,
+      "messageStartByte": 68
+    },
+    {
+      "id": "TIME-RFC-MILLISECONDS",
+      "wire": "<34>1 2003-10-11T22:14:15.003Z upstream-host app 12 MSGID - body",
+      "validVersion1": true,
+      "wireSha256": "e6ff3bfe90864dcc00995ceda01d30887711129f98a9e1bfb1d04c669678edf7",
+      "sourceBytes": 64,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2003-10-11T22:14:15.003Z",
+          "startByte": 6,
+          "endByte": 30
+        },
+        {
+          "name": "hostname",
+          "value": "upstream-host",
+          "startByte": 31,
+          "endByte": 44
+        },
+        {
+          "name": "appname",
+          "value": "app",
+          "startByte": 45,
+          "endByte": 48
+        },
+        {
+          "name": "procid",
+          "value": "12",
+          "startByte": 49,
+          "endByte": 51
+        },
+        {
+          "name": "msgid",
+          "value": "MSGID",
+          "startByte": 52,
+          "endByte": 57
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 58,
+          "endByte": 59
+        },
+        {
+          "name": "message",
+          "value": "body",
+          "startByte": 60,
+          "endByte": 64
+        }
+      ],
+      "sdStartByte": 58,
+      "sdEndByte": 59,
+      "messageStartByte": 60
+    },
+    {
+      "id": "TIME-RFC-OFFSET",
+      "wire": "<34>1 1985-04-12T19:20:50.52-04:00 upstream-host app 12 MSGID - body",
+      "validVersion1": true,
+      "wireSha256": "d54e6c19811ee0aa3b2bbbf568b7321e59c0f5a918c6072ec749704630138ff4",
+      "sourceBytes": 68,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "1985-04-12T19:20:50.52-04:00",
+          "startByte": 6,
+          "endByte": 34
+        },
+        {
+          "name": "hostname",
+          "value": "upstream-host",
+          "startByte": 35,
+          "endByte": 48
+        },
+        {
+          "name": "appname",
+          "value": "app",
+          "startByte": 49,
+          "endByte": 52
+        },
+        {
+          "name": "procid",
+          "value": "12",
+          "startByte": 53,
+          "endByte": 55
+        },
+        {
+          "name": "msgid",
+          "value": "MSGID",
+          "startByte": 56,
+          "endByte": 61
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 62,
+          "endByte": 63
+        },
+        {
+          "name": "message",
+          "value": "body",
+          "startByte": 64,
+          "endByte": 68
+        }
+      ],
+      "sdStartByte": 62,
+      "sdEndByte": 63,
+      "messageStartByte": 64
+    },
+    {
+      "id": "TIME-NILVALUE",
+      "wire": "<34>1 - upstream-host app 12 MSGID - body",
+      "validVersion1": true,
+      "wireSha256": "0701dbb9ad288d825f30d5c5126052bbb881b53afacb4aaee62a6ca6cb0e6944",
+      "sourceBytes": 41,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "-",
+          "startByte": 6,
+          "endByte": 7
+        },
+        {
+          "name": "hostname",
+          "value": "upstream-host",
+          "startByte": 8,
+          "endByte": 21
+        },
+        {
+          "name": "appname",
+          "value": "app",
+          "startByte": 22,
+          "endByte": 25
+        },
+        {
+          "name": "procid",
+          "value": "12",
+          "startByte": 26,
+          "endByte": 28
+        },
+        {
+          "name": "msgid",
+          "value": "MSGID",
+          "startByte": 29,
+          "endByte": 34
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 35,
+          "endByte": 36
+        },
+        {
+          "name": "message",
+          "value": "body",
+          "startByte": 37,
+          "endByte": 41
+        }
+      ],
+      "sdStartByte": 35,
+      "sdEndByte": 36,
+      "messageStartByte": 37
+    },
+    {
+      "id": "TIME-SIX-DIGITS",
+      "wire": "<34>1 2026-02-28T23:59:59.123456+05:30 upstream-host app 12 MSGID - body",
+      "validVersion1": true,
+      "wireSha256": "502db57e2454b9db2ea894c46c1ba2fd96ce4027286bff2242c996f218723f4a",
+      "sourceBytes": 72,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-02-28T23:59:59.123456+05:30",
+          "startByte": 6,
+          "endByte": 38
+        },
+        {
+          "name": "hostname",
+          "value": "upstream-host",
+          "startByte": 39,
+          "endByte": 52
+        },
+        {
+          "name": "appname",
+          "value": "app",
+          "startByte": 53,
+          "endByte": 56
+        },
+        {
+          "name": "procid",
+          "value": "12",
+          "startByte": 57,
+          "endByte": 59
+        },
+        {
+          "name": "msgid",
+          "value": "MSGID",
+          "startByte": 60,
+          "endByte": 65
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 66,
+          "endByte": 67
+        },
+        {
+          "name": "message",
+          "value": "body",
+          "startByte": 68,
+          "endByte": 72
+        }
+      ],
+      "sdStartByte": 66,
+      "sdEndByte": 67,
+      "messageStartByte": 68
+    },
+    {
+      "id": "TIME-SEVEN-DIGITS",
+      "wire": "<34>1 2026-10-18T12:34:56.1234567Z upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "0063fd2ef8434718427d2be8d0fb45607b9d19b130af4b7e1b8f9627c3cb91d0",
+      "sourceBytes": 68,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "TIME-NINE-DIGITS-OFFICIAL-INVALID",
+      "wire": "<34>1 2003-08-24T05:14:15.000000003-07:00 upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "fbd16383e960866950f4085d8661f8ee6973b0b6254006a896eb286f65b7e9dd",
+      "sourceBytes": 75,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "VERSION-2-UNKNOWN-SEMANTICS",
+      "wire": "<34>2 2026-10-18T12:34:56Z upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "0a3632ff5f4f59f88b509a13cc0dbd593604dd0f856776663ad38e08f9f53969",
+      "sourceBytes": 60,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "VERSION-100-UNKNOWN-SEMANTICS",
+      "wire": "<34>100 2026-10-18T12:34:56Z upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "bc1dd010a87913b2d54de99bd227f95fe9624703461236d59dbcce72c936295a",
+      "sourceBytes": 62,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "TIME-LOWERCASE-Z",
+      "wire": "<34>1 2026-10-18T12:34:56z upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "d3a9f9c2db9be16b0458977c4a0b856c15580839e9a330e1a6f17aa4005996cd",
+      "sourceBytes": 60,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "TIME-BAD-CALENDAR",
+      "wire": "<34>1 2026-02-30T12:34:56Z upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "9018731b9c2be26f32c43c918a787ae0769e90aca46ac33631a6ab062d27012b",
+      "sourceBytes": 60,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "TIME-FORBIDDEN-LEAP-SECOND",
+      "wire": "<34>1 2026-10-18T12:34:60Z upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "89642938298b63c11e2e6a96dd17088d8a37ed040a35b14217bdc407044cda09",
+      "sourceBytes": 60,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    },
+    {
+      "id": "TIME-OFFSET-OVER-RANGE",
+      "wire": "<34>1 2026-10-18T12:34:56+24:00 upstream-host app 12 MSGID - body",
+      "validVersion1": false,
+      "wireSha256": "dd7454b247a4851bcd122edcaebfed6af8d842ad1c296b6410ff9970f20b818d",
+      "sourceBytes": 65,
+      "notNative": true,
+      "notDeviceOriginProven": true,
+      "fields": []
+    }
+  ]
+}
