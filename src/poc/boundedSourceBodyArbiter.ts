@@ -163,6 +163,17 @@ export function arbitrateSourceBody(raw:string, review?:IndependentReviewVeto):B
       reason:'OUTSIDE_BOUNDED_ORIGINAL_BYTE_CONTRACT'};
   }
   const envelope=inspectGeneralSyslogEnvelope(raw);
+  // A valid RFC5424 repeated SD-PARAM may have multiple ordered values.
+  // Until the producer provides original field semantics, source-level
+  // grammar acceptance cannot authorize a unique body/header map.
+  // Preserve the original bytes and abstain, rather than increasing
+  // historical malformed-review or false-complete dispositions.
+  if(envelope.disposition==='REVIEW_ONLY'&&envelope.format==='rfc5424'&&
+     (envelope.repeatedSdParamNames??0)>0){
+    return {...fallback,disposition:'ABSTAIN_UNSAFE',
+      envelopeMode:'rfc5424',
+      reason:'RFC5424_REPEATED_SD_PARAM_PRODUCER_SEMANTICS_UNVERIFIED'};
+  }
   const possibleSyslog=/^<[0-9]{1,3}>/.test(raw);
   if(possibleSyslog&&envelope.disposition!=='REVIEW_ONLY'){
     return {...fallback,disposition:'ABSTAIN_UNSAFE',envelopeMode:'unsafe',

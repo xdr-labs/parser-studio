@@ -76,22 +76,28 @@ describe('vendor-agnostic Syslog source field byte-span and abstention PoC',()=>
     const out=source(raw,[['structured_data_raw','[meta value="safe\\]token" path="a\\\\b"]'],['message','body']]);
     expect(out.fields.some(f=>f.name==='value')).toBe(false);
   });
-  it('abstains rather than guessing the meaning of an unrecognized SD escape',()=>{
+  it('retains undefined RFC5424 SD escapes as literal raw, without inferring value semantics',()=>{
     const raw='<1>1 - host app - - [meta value="a\\n"] payload';
-    const observation=inspectGeneralSyslogEnvelope(raw);
-    expect(observation.disposition).toBe('ABSTAIN_UNSAFE');
-    expect(observation.reason).toBe('RFC5424_SD_UNCERTAIN_ESCAPED_VALUE');
+    const out=source(raw,[
+      ['structured_data_raw','[meta value="a\\n"]'],['message','payload'],
+    ]);
+    expect(out.format).toBe('rfc5424');
+    expect(out.fields.some(c=>c.name==='value')).toBe(false);
+    expect(out.nativeParser).toBe('NOT_VERIFIED');
   });
-  it('abstains on repeated SD-ID and duplicate parameter ownership',()=>{
-    for(const raw of [
-      '<1>1 - host app - - [meta a="one"][meta b="two"] body',
-      '<1>1 - host app - - [meta a="one" a="two"] body',
-    ]){
-      const out=inspectGeneralSyslogEnvelope(raw);
-      expect(out.disposition).toBe('ABSTAIN_UNSAFE');
-      expect(out.fields).toEqual([]);
-    }
+  it('rejects repeated SD-ID but preserves RFC5424-permitted repeated parameter names',()=>{
+    const repeatedId='<1>1 - host app - - [meta a="one"][meta b="two"] body';
+    const invalid=inspectGeneralSyslogEnvelope(repeatedId);
+    expect(invalid.disposition).toBe('ABSTAIN_UNSAFE');
+    expect(invalid.fields).toEqual([]);
+    const repeatedParam='<1>1 - host app - - [meta a="one" a="two"] body';
+    const valid=source(repeatedParam,[
+      ['structured_data_raw','[meta a="one" a="two"]'],['message','body'],
+    ]);
+    expect(valid.fields.some(c=>c.name==='a')).toBe(false);
+    expect(valid.nativeParser).toBe('NOT_VERIFIED');
   });
+
   it('rejects malformed PRI/calendar/header and unknown transport',()=>{
     for(const raw of [
       '<192>1 2026-10-17T12:34:56Z host app - - - text',
