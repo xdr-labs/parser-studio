@@ -1,0 +1,530 @@
+{
+  "authority": "Zeek official ASCII writer directives (immutable upstream pinned in previous STD audit)",
+  "scope": "Independently authored synthetic concatenated closed log files, not producer-captured real stream/native verification",
+  "cases": [
+    {
+      "id": "ZEEK-ROTATE-SINGLE",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n",
+      "valid": true,
+      "expected": [
+        {
+          "blockIndex": 0,
+          "path": "conn",
+          "fields": [
+            "ts",
+            "uid",
+            "id.orig_h"
+          ],
+          "sourceStartByte": 0,
+          "sourceEndByte": 199,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "1.0",
+              "startByte": 155,
+              "endByte": 158
+            },
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C1",
+              "startByte": 159,
+              "endByte": 161
+            },
+            {
+              "row": 0,
+              "name": "id.orig_h",
+              "rawLexeme": "192.0.2.1",
+              "startByte": 162,
+              "endByte": 171
+            }
+          ]
+        }
+      ],
+      "sourceBytes": 199,
+      "sourceSha256": "254c08112a1f8e8622c2c44e131f08be6855cdb5abb8aeb78a3931ecac65819a",
+      "eventCount": 1
+    },
+    {
+      "id": "ZEEK-ROTATE-TWO-SAME-SCHEMA",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n2.0\tC2\t198.51.100.2\n#close\t2026-10-18-12-01-00\n",
+      "valid": true,
+      "expected": [
+        {
+          "blockIndex": 0,
+          "path": "conn",
+          "fields": [
+            "ts",
+            "uid",
+            "id.orig_h"
+          ],
+          "sourceStartByte": 0,
+          "sourceEndByte": 199,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "1.0",
+              "startByte": 155,
+              "endByte": 158
+            },
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C1",
+              "startByte": 159,
+              "endByte": 161
+            },
+            {
+              "row": 0,
+              "name": "id.orig_h",
+              "rawLexeme": "192.0.2.1",
+              "startByte": 162,
+              "endByte": 171
+            }
+          ]
+        },
+        {
+          "blockIndex": 1,
+          "path": "conn",
+          "fields": [
+            "ts",
+            "uid",
+            "id.orig_h"
+          ],
+          "sourceStartByte": 199,
+          "sourceEndByte": 401,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "2.0",
+              "startByte": 354,
+              "endByte": 357
+            },
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C2",
+              "startByte": 358,
+              "endByte": 360
+            },
+            {
+              "row": 0,
+              "name": "id.orig_h",
+              "rawLexeme": "198.51.100.2",
+              "startByte": 361,
+              "endByte": 373
+            }
+          ]
+        }
+      ],
+      "sourceBytes": 401,
+      "sourceSha256": "d22e8bff26e481fe0fc924be326a8f3cd7f590cde13b6c5d907fce1f5c4b1fb8",
+      "eventCount": 2
+    },
+    {
+      "id": "ZEEK-ROTATE-SCHEMA-CHANGES",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tdns\n#open\t2026-10-18-12-00-00\n#fields\tts\tquery\trcode_name\n#types\ttime\tstring\tstring\n3.0\texample.test\tNOERROR\n4.0\tother.test\tNXDOMAIN\n#close\t2026-10-18-12-01-00\n",
+      "valid": true,
+      "expected": [
+        {
+          "blockIndex": 0,
+          "path": "conn",
+          "fields": [
+            "ts",
+            "uid",
+            "id.orig_h"
+          ],
+          "sourceStartByte": 0,
+          "sourceEndByte": 199,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "1.0",
+              "startByte": 155,
+              "endByte": 158
+            },
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C1",
+              "startByte": 159,
+              "endByte": 161
+            },
+            {
+              "row": 0,
+              "name": "id.orig_h",
+              "rawLexeme": "192.0.2.1",
+              "startByte": 162,
+              "endByte": 171
+            }
+          ]
+        },
+        {
+          "blockIndex": 1,
+          "path": "dns",
+          "fields": [
+            "ts",
+            "query",
+            "rcode_name"
+          ],
+          "sourceStartByte": 199,
+          "sourceEndByte": 434,
+          "physicalLines": 11,
+          "rowCount": 2,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "3.0",
+              "startByte": 358,
+              "endByte": 361
+            },
+            {
+              "row": 0,
+              "name": "query",
+              "rawLexeme": "example.test",
+              "startByte": 362,
+              "endByte": 374
+            },
+            {
+              "row": 0,
+              "name": "rcode_name",
+              "rawLexeme": "NOERROR",
+              "startByte": 375,
+              "endByte": 382
+            },
+            {
+              "row": 1,
+              "name": "ts",
+              "rawLexeme": "4.0",
+              "startByte": 383,
+              "endByte": 386
+            },
+            {
+              "row": 1,
+              "name": "query",
+              "rawLexeme": "other.test",
+              "startByte": 387,
+              "endByte": 397
+            },
+            {
+              "row": 1,
+              "name": "rcode_name",
+              "rawLexeme": "NXDOMAIN",
+              "startByte": 398,
+              "endByte": 406
+            }
+          ]
+        }
+      ],
+      "sourceBytes": 434,
+      "sourceSha256": "427384332afe616d16c15db80a142cdb78d808dade3a47276db61f701c2c56a5",
+      "eventCount": 3
+    },
+    {
+      "id": "ZEEK-ROTATE-THREE-UTF8",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tdns\n#open\t2026-10-18-12-00-00\n#fields\tts\tquery\trcode_name\n#types\ttime\tstring\tstring\n3.0\texample.test\tNOERROR\n4.0\tother.test\tNXDOMAIN\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tnotice\n#open\t2026-10-18-12-00-00\n#fields\tuid\tts\tmsg\n#types\tstring\ttime\tstring\nC3\t5.0\t€😀\n#close\t2026-10-18-12-01-00\n",
+      "valid": true,
+      "expected": [
+        {
+          "blockIndex": 0,
+          "path": "conn",
+          "fields": [
+            "ts",
+            "uid",
+            "id.orig_h"
+          ],
+          "sourceStartByte": 0,
+          "sourceEndByte": 199,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "1.0",
+              "startByte": 155,
+              "endByte": 158
+            },
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C1",
+              "startByte": 159,
+              "endByte": 161
+            },
+            {
+              "row": 0,
+              "name": "id.orig_h",
+              "rawLexeme": "192.0.2.1",
+              "startByte": 162,
+              "endByte": 171
+            }
+          ]
+        },
+        {
+          "blockIndex": 1,
+          "path": "dns",
+          "fields": [
+            "ts",
+            "query",
+            "rcode_name"
+          ],
+          "sourceStartByte": 199,
+          "sourceEndByte": 434,
+          "physicalLines": 11,
+          "rowCount": 2,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "3.0",
+              "startByte": 358,
+              "endByte": 361
+            },
+            {
+              "row": 0,
+              "name": "query",
+              "rawLexeme": "example.test",
+              "startByte": 362,
+              "endByte": 374
+            },
+            {
+              "row": 0,
+              "name": "rcode_name",
+              "rawLexeme": "NOERROR",
+              "startByte": 375,
+              "endByte": 382
+            },
+            {
+              "row": 1,
+              "name": "ts",
+              "rawLexeme": "4.0",
+              "startByte": 383,
+              "endByte": 386
+            },
+            {
+              "row": 1,
+              "name": "query",
+              "rawLexeme": "other.test",
+              "startByte": 387,
+              "endByte": 397
+            },
+            {
+              "row": 1,
+              "name": "rcode_name",
+              "rawLexeme": "NXDOMAIN",
+              "startByte": 398,
+              "endByte": 406
+            }
+          ]
+        },
+        {
+          "blockIndex": 2,
+          "path": "notice",
+          "fields": [
+            "uid",
+            "ts",
+            "msg"
+          ],
+          "sourceStartByte": 434,
+          "sourceEndByte": 629,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C3",
+              "startByte": 587,
+              "endByte": 589
+            },
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "5.0",
+              "startByte": 590,
+              "endByte": 593
+            },
+            {
+              "row": 0,
+              "name": "msg",
+              "rawLexeme": "€😀",
+              "startByte": 594,
+              "endByte": 601
+            }
+          ]
+        }
+      ],
+      "sourceBytes": 629,
+      "sourceSha256": "a3dc00aabe3ea559a285b50deb545f833934fea5c93fa0c443d2a45d83347bc1",
+      "eventCount": 4
+    },
+    {
+      "id": "ZEEK-ROTATE-TWO-CRLF",
+      "wire": "#separator \\x09\r\n#set_separator\t,\r\n#empty_field\t(empty)\r\n#unset_field\t-\r\n#path\tconn\r\n#open\t2026-10-18-12-00-00\r\n#fields\tts\tuid\tid.orig_h\r\n#types\ttime\tstring\taddr\r\n6.0\tC4\t203.0.113.1\r\n#close\t2026-10-18-12-01-00\r\n#separator \\x09\r\n#set_separator\t,\r\n#empty_field\t(empty)\r\n#unset_field\t-\r\n#path\tdns\r\n#open\t2026-10-18-12-00-00\r\n#fields\tts\tquery\trcode_name\r\n#types\ttime\tstring\tstring\r\n7.0\tname.test\tNXDOMAIN\r\n#close\t2026-10-18-12-01-00\r\n",
+      "valid": true,
+      "expected": [
+        {
+          "blockIndex": 0,
+          "path": "conn",
+          "fields": [
+            "ts",
+            "uid",
+            "id.orig_h"
+          ],
+          "sourceStartByte": 0,
+          "sourceEndByte": 211,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "6.0",
+              "startByte": 163,
+              "endByte": 166
+            },
+            {
+              "row": 0,
+              "name": "uid",
+              "rawLexeme": "C4",
+              "startByte": 167,
+              "endByte": 169
+            },
+            {
+              "row": 0,
+              "name": "id.orig_h",
+              "rawLexeme": "203.0.113.1",
+              "startByte": 170,
+              "endByte": 181
+            }
+          ]
+        },
+        {
+          "blockIndex": 1,
+          "path": "dns",
+          "fields": [
+            "ts",
+            "query",
+            "rcode_name"
+          ],
+          "sourceStartByte": 211,
+          "sourceEndByte": 430,
+          "physicalLines": 10,
+          "rowCount": 1,
+          "claims": [
+            {
+              "row": 0,
+              "name": "ts",
+              "rawLexeme": "7.0",
+              "startByte": 378,
+              "endByte": 381
+            },
+            {
+              "row": 0,
+              "name": "query",
+              "rawLexeme": "name.test",
+              "startByte": 382,
+              "endByte": 391
+            },
+            {
+              "row": 0,
+              "name": "rcode_name",
+              "rawLexeme": "NXDOMAIN",
+              "startByte": 392,
+              "endByte": 400
+            }
+          ]
+        }
+      ],
+      "sourceBytes": 430,
+      "sourceSha256": "332a6db6a17a6068af3c9d843b616c2a2bff2e73ae7e5ba4074a712be1533798",
+      "eventCount": 2
+    },
+    {
+      "id": "ZEEK-ROTATE-TRAILING-ROW-AFTER-CLOSE",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n8.0\tC8\t192.0.2.8\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 216,
+      "sourceSha256": "944a6d2413f6adedc16e23784f5640e198888bd1e158b54dd898ec0af75fc90f",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-MISSING-SECOND-SCHEMA",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#types\ttime\tstring\taddr\n2.0\tC2\t198.51.100.2\n#close\t2026-10-18-12-01-00\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 376,
+      "sourceSha256": "b448f1478fbd5fec125d8a91e6715362a39db3b13f34abc11b6377153374c4dd",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-SECOND-TYPE-COUNT",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tdns\n#open\t2026-10-18-12-00-00\n#fields\tts\tquery\trcode_name\n#types\ttime\tstring\n3.0\texample.test\tNOERROR\n4.0\tother.test\tNXDOMAIN\n#close\t2026-10-18-12-01-00\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 427,
+      "sourceSha256": "df3de934557690d86e5ca4f2c9959ff6995a13278b78f9cfa61dff7a0ad44eaf",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-UNKNOWN-SECOND-DIRECTIVE",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#custom\tunknown\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n2.0\tC2\t198.51.100.2\n#close\t2026-10-18-12-01-00\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 417,
+      "sourceSha256": "f60331fccc1b15bd0f8d6b73f1ffe283b240a13079751c45fece0e1085109e10",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-DANGLING-LAST-BLOCK",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n2.0\tC2\t198.51.100.2\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 374,
+      "sourceSha256": "d949d1b239422a4b74d401ae5b7a8311ad84ec875d2b4167173905f0dec26f32",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-EXTRA-TRAILING-NONBLOCK",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n2.0\tC2\t198.51.100.2\n#close\t2026-10-18-12-01-00\nrandom trailing text\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 422,
+      "sourceSha256": "8303eb3ab1fd6ea9303c76a5987a7875c3f41d54110424a8e7279506badf4c70",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-MIXED-LINE-ENDINGS",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\r\n#set_separator\t,\r\n#empty_field\t(empty)\r\n#unset_field\t-\r\n#path\tdns\r\n#open\t2026-10-18-12-00-00\r\n#fields\tts\tquery\trcode_name\r\n#types\ttime\tstring\tstring\r\n7.0\tname.test\tNXDOMAIN\r\n#close\t2026-10-18-12-01-00\r\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 418,
+      "sourceSha256": "521ff063711153498fce22613ea0ca89b6d4f564fc850e32b87ab523cd147cb2",
+      "eventCount": 0
+    },
+    {
+      "id": "ZEEK-ROTATE-EMPTY-SECOND-BLOCK",
+      "wire": "#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n1.0\tC1\t192.0.2.1\n#close\t2026-10-18-12-01-00\n#separator \\x09\n#set_separator\t,\n#empty_field\t(empty)\n#unset_field\t-\n#path\tconn\n#open\t2026-10-18-12-00-00\n#fields\tts\tuid\tid.orig_h\n#types\ttime\tstring\taddr\n#close\t2026-10-18-12-01-00\n",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 381,
+      "sourceSha256": "d0ec3f175b3f111e4faf452aed5d75ed5d16ee5c920f8e156ff0ca29dd874eaf",
+      "eventCount": 0
+    }
+  ]
+}
