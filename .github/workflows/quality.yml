@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           npx playwright test tests/reviewed-event-family-backend.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-event-family-browser.json
-          node -e "const s=require('fs').readFileSync('/tmp/parser-studio-event-family-browser.json','utf8'); const x=JSON.parse(s).stats; if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('Expected exactly two executed, passing experimental user E2E cases',x);process.exit(1)} console.log('EXACT_HEAD_EVENT_FAMILY_BROWSER_PASS 2/2');"
+          node -e "const s=require('fs').readFileSync('/tmp/parser-studio-event-family-browser.json','utf8'); const x=JSON.parse(s).stats; if(x.expected!==3||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('Expected exactly three executed, passing experimental user E2E cases',x);process.exit(1)} console.log('EXACT_HEAD_EVENT_FAMILY_BROWSER_PASS 3/3');"
 
       - name: Checkout pinned independent parser backend
         uses: actions/checkout@v4

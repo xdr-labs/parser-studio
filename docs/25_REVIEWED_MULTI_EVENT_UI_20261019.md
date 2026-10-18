@@ -32,11 +32,11 @@ sample values. UTF-8 usernames and other event values remain in source data.
 The browser source preview is not proof of proprietary Fluentd/Stellar DP
 compatibility. Native Ruby execution is tested independently on the stacked
 backend CI. A dedicated browser CI step uses this exact PR HEAD, including
-the local authoring-only backend, and rejects falsely green runs unless two
-Chromium user cases actually execute and pass.
+the local authoring-only backend, and rejects falsely green runs unless all three Chromium user cases actually execute and pass,
+including a single generated parser combining relay and event-family routing.
 
 The broad ordinary browser suite retains its independent pinned-backend
-contract. The two specialized cases are explicitly SKIP in that suite
+contract. The three specialized cases are explicitly SKIP in that suite
 because its older backend lacks the new capability; the dedicated gate
 must execute them before CI succeeds.
 
