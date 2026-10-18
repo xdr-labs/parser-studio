@@ -1,0 +1,290 @@
+{
+  "authority": "IBM LEEF event components and custom key guide: repeated attributes may be ignored by QRadar. Empty lexical value alone has no publisher/null semantics.",
+  "evidenceScope": "INDEPENDENTLY_AUTHORED_SYNTHETIC_SOURCE_ONLY_NO_NATIVE",
+  "cases": [
+    {
+      "id": "LEEF1_EMPTY_LAST",
+      "wire": "LEEF:1.0|ExampleOrg|Sensor|3.2|E42|src=192.0.2.1\tmsg=",
+      "sha256": "07d618d15769dcfeeaed9a00132ac17042016f05c101ac31c395fb3918a28eff",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 39,
+          "endByte": 48
+        },
+        {
+          "name": "msg",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 53,
+          "endByte": 53
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF1_EMPTY_FIRST",
+      "wire": "LEEF:1.0|ExampleOrg|Sensor|3.2|E42|msg=\tsrc=192.0.2.1",
+      "sha256": "eb6aaac8275c01d0528b180ae2170e06174651e8e0a22cf71dcd8941662319b0",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "msg",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 39,
+          "endByte": 39
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 44,
+          "endByte": 53
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF1_EMPTY_MIDDLE",
+      "wire": "LEEF:1.0|ExampleOrg|Sensor|3.2|E42|src=192.0.2.1\tnote=\tdst=198.51.100.2",
+      "sha256": "2557d8d1c3d35bfaee5c0e18db6beda192a95d2d6344bff02b8ec6eb522a3164",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 39,
+          "endByte": 48
+        },
+        {
+          "name": "note",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 54,
+          "endByte": 54
+        },
+        {
+          "name": "dst",
+          "value": "198.51.100.2",
+          "occurrence": 0,
+          "startByte": 59,
+          "endByte": 71
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_CARET_EMPTY_LAST",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|src=192.0.2.1^note=",
+      "sha256": "1559b356ab880c6acac7c6d4b7973ce122b05952a50ecffe55dc260135f912f7",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 41,
+          "endByte": 50
+        },
+        {
+          "name": "note",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 56,
+          "endByte": 56
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_CARET_EMPTY_MIDDLE",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|note=^src=192.0.2.1^other=",
+      "sha256": "08a98fe5424221e4910c2f5f5cc519227d3a28dc52ce0d37dce1409d8309c6a1",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "note",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 42,
+          "endByte": 42
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 47,
+          "endByte": 56
+        },
+        {
+          "name": "other",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 63,
+          "endByte": 63
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_HEX_TAB_EMPTY",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|x09|src=192.0.2.1\tnote=",
+      "sha256": "55641646e042f4570eab3c990015ae7b6531862d4ee124d05d278d180c939986",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 43,
+          "endByte": 52
+        },
+        {
+          "name": "note",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 58,
+          "endByte": 58
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_CARET_UTF8",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|event=\u20ac\ud83d\ude00^msg=",
+      "sha256": "95910d4bd41c2c80e70e91f6465cf9cb848a942107b6a5b842055c1199a0792c",
+      "browserAccepted": true,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "event",
+          "value": "\u20ac\ud83d\ude00",
+          "occurrence": 0,
+          "startByte": 43,
+          "endByte": 50
+        },
+        {
+          "name": "msg",
+          "value": "",
+          "occurrence": 0,
+          "startByte": 55,
+          "endByte": 55
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF1_DUPLICATE_KEY_EMPTY",
+      "wire": "LEEF:1.0|ExampleOrg|Sensor|3.2|E42|src=192.0.2.1\tsrc=",
+      "sha256": "9f41bb1b1fd18104ab9af7bdd689e0713fde2716e8cc6d203d3208c49b44947e",
+      "browserAccepted": false,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 39,
+          "endByte": 48
+        },
+        {
+          "name": "src",
+          "value": "",
+          "occurrence": 1,
+          "startByte": 53,
+          "endByte": 53
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_DUPLICATE_IDENTICAL",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|src=192.0.2.1^src=192.0.2.1",
+      "sha256": "64dd65fe3b8538277be6f59894d49477ca2d37eddfc1b1ff49e0a84e57b3f06b",
+      "browserAccepted": false,
+      "sourceLexical": true,
+      "expectedExtensionClaims": [
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 0,
+          "startByte": 41,
+          "endByte": 50
+        },
+        {
+          "name": "src",
+          "value": "192.0.2.1",
+          "occurrence": 1,
+          "startByte": 55,
+          "endByte": 64
+        }
+      ],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF1_EMPTY_HEADER_VENDOR",
+      "wire": "LEEF:1.0||Sensor|3.2|E42|src=192.0.2.1",
+      "sha256": "7c930b021b32207d9f5cfc9bf9498d0d2edd39652c8c23972ed14daafc39c3df",
+      "browserAccepted": false,
+      "sourceLexical": false,
+      "expectedExtensionClaims": [],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF1_UNQUALIFIED_QUOTED",
+      "wire": "LEEF:1.0|ExampleOrg|Sensor|3.2|E42|msg=\"ambiguous\"",
+      "sha256": "b969965ea60f2a53b32f01659a9713a98637ece15d3e86e85ca43bd7db057868",
+      "browserAccepted": true,
+      "sourceLexical": false,
+      "expectedExtensionClaims": [],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_TRAILING_DELIMITER",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|src=192.0.2.1^",
+      "sha256": "bec3a1444101decdfde9628f7115b3fd86127d132c06c59ea7afcec344b4cf4b",
+      "browserAccepted": false,
+      "sourceLexical": false,
+      "expectedExtensionClaims": [],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF1_MISSING_EQUALS",
+      "wire": "LEEF:1.0|ExampleOrg|Sensor|3.2|E42|src=192.0.2.1\tmalformed",
+      "sha256": "d07f35215e424862575c11b35b7b0a244ad1c571fcf72174d08db20beece6c1e",
+      "browserAccepted": false,
+      "sourceLexical": false,
+      "expectedExtensionClaims": [],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_RESERVED_KEY",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|__proto__=evil",
+      "sha256": "2720b60a4029a16b3b3aaa83e79babb37c3a3edb198b8d4dea20b2ed124c8991",
+      "browserAccepted": false,
+      "sourceLexical": false,
+      "expectedExtensionClaims": [],
+      "headerOnly": false
+    },
+    {
+      "id": "LEEF2_MISSING_VALUE_KEY",
+      "wire": "LEEF:2.0|ExampleOrg|Sensor|3.2|E42|^|src=192.0.2.1^=bad",
+      "sha256": "204a891b30a511bf358ff9d6c638e53cb4510c337c09c9d5ebbdd11a3c24fc24",
+      "browserAccepted": false,
+      "sourceLexical": false,
+      "expectedExtensionClaims": [],
+      "headerOnly": false
+    }
+  ]
+}

@@ -38,7 +38,9 @@ function wellFormedUnicode(raw:string):boolean{
 function field(raw:string,name:string,start:number,end:number,
   group:'header'|'extension',occurrence=0):LeefClaim|null {
   const fragment=raw.slice(start,end);
-  if(!fragment||/\0/.test(fragment))return null;
+  // A zero-length value has a valid original zero-byte interval, distinct
+  // from an absent key; publisher/native meaning remains unverified.
+  if((!fragment&&group!=='extension')||/\0/.test(fragment))return null;
   const startByte=encoder.encode(raw.slice(0,start)).length;
   const endByte=encoder.encode(raw.slice(0,end)).length;
   if(decoder.decode(sourceBytes(raw).slice(startByte,endByte))!==fragment)return null;
@@ -90,7 +92,7 @@ function parseExtensions(raw:string,start:number,delimiter:string):
     const end=next<0?raw.length:next;
     const part=raw.slice(cursor,end);
     const split=part.indexOf('=');
-    if(split<=0||split===part.length-1)return null;
+    if(split<=0)return null;
     const key=part.slice(0,split);
     if(!/^[A-Za-z_][A-Za-z0-9_.-]{0,127}$/.test(key)||RESERVED.has(key)||
        RESERVED.has(key.replaceAll('-','_')))return null;

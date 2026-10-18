@@ -218,7 +218,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   if (!match) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
-  if (!parts) return failure('LEEF header or declared delimiter is incomplete');
+  if (!parts || parts.slice(0,4).some(part=>part.trim().length===0))
+    return failure('LEEF header or declared delimiter is incomplete');
   const delimiter=isV2?parseLeefStandardDelimiter(parts[4]!):'\t';
   if(delimiter===null)return failure('Unsupported LEEF 2.0 data delimiter');
   const record: Record<string, unknown> = {
