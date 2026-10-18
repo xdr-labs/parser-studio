@@ -1,0 +1,733 @@
+{
+  "contract": "parserstudio.p0-std-post81-source-evidence-addendum.v1",
+  "sourceBaseExactHead": "309189334fcfd3328c4dc15be11a30c3645de34c",
+  "scope": "PREVIOUSLY_VERIFIED_SOURCE_GRAMMAR_AND_TEST_TRACEABILITY_NOT_ENGINE_COMPLIANCE",
+  "initialAuditLedgerSha256": "33d3ea9be0d98b77119bd199c2deabffd51afdb59f8a6fc57f3d1cbefb5ecc4c",
+  "priorCrossFamilyLedgerSha256": "5de2502812b4e8b8f587a91af825c4e526736f179d26e8b9f28da2016075325e",
+  "normativeSourcePinsSha256": "401ea5dd49f89e9ef96abf894d50237b054a0ae4f54b8a548476ddde03355b12",
+  "priorRows": 11,
+  "initialRiskRows": 19,
+  "initialRiskReconciliation": [
+    {
+      "id": "STD-1-RFC6587-FRAMING",
+      "originalFindingStatus": "IMPLEMENTED_BOUNDED_NEEDS_CROSS_SURFACE_CONFIRMATION",
+      "risk": "MEDIUM",
+      "sourceOnlyFollowupPRs": [
+        80,
+        81
+      ],
+      "currentQualifiedInterpretation": "BYTE_FRAMING_NARROWLY_FIXED_TLS_NATIVE_NOT_VERIFIED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-2-RFC3164-ENVELOPE",
+      "originalFindingStatus": "IMPLEMENTED_MULTIPLE_BOUNDARY_VARIANTS",
+      "risk": "MEDIUM",
+      "sourceOnlyFollowupPRs": [
+        78
+      ],
+      "currentQualifiedInterpretation": "RELAY_ORIGIN_UNATTESTED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-2-RFC5424-SD",
+      "originalFindingStatus": "SUPPORTED_BY_SEPARATE_SOURCE_PARSER_WITH_DIVERGENCE",
+      "risk": "MEDIUM",
+      "sourceOnlyFollowupPRs": [
+        71,
+        72,
+        80,
+        81
+      ],
+      "currentQualifiedInterpretation": "SHARED_SOURCE_SEMANTICS_NARROWLY_GATED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-3-CEF-BROWSER-EXT",
+      "originalFindingStatus": "CONFIRMED_NARROW_POSITIVES",
+      "risk": "LOW",
+      "sourceOnlyFollowupPRs": [
+        70
+      ],
+      "currentQualifiedInterpretation": "ESCAPE_SOURCE_LEXEMES_NARROWLY_VERIFIED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-3-CEF-SOURCE-BYTE-DIVERGENCE",
+      "originalFindingStatus": "CONFIRMED_INTENTIONAL_SOURCE_SUBSET_GAP",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        69,
+        70
+      ],
+      "currentQualifiedInterpretation": "CEF_SOURCE_OBSERVER_NARROWLY_CONVERGED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-3-CEF-REQUIRED-HEADER",
+      "originalFindingStatus": "CONFIRMED_FALSE_COMPLETE_RISK",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [],
+      "currentQualifiedInterpretation": "COVERED_IN_PRIOR_BASE_NO_NATIVE_PROOF",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-4-LEEF2-CUSTOM-DELIMITER",
+      "originalFindingStatus": "CONFIRMED_SOURCE_OBSERVER_SUBSET_DIVERGENCE",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        79
+      ],
+      "currentQualifiedInterpretation": "DECLARED_DELIMITERS_PRIOR_BASE_EMPTY_SEMANTICS_UNVERIFIED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-5-JSON-DUPLICATE-MEMBER",
+      "originalFindingStatus": "CONFIRMED_SILENT_SOURCE_LOSS_RISK",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        76
+      ],
+      "currentQualifiedInterpretation": "LOSSLESS_NESTED_SOURCES_ONLY_PUBLISHER_PENDING",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-5-JSON-NUMERIC",
+      "originalFindingStatus": "CONFIRMED_FALSE_COMPLETE_RISK",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        76
+      ],
+      "currentQualifiedInterpretation": "LOSSLESS_NUMBER_SOURCE_ONLY_PUBLISHER_PENDING",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-5-JSON-UNICODE",
+      "originalFindingStatus": "CONFIRMED_REPRESENTATION_RISK",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        76
+      ],
+      "currentQualifiedInterpretation": "NESTED_UTF8_SOURCE_ONLY_PUBLISHER_PENDING",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-5-RFC7464-SEQ",
+      "originalFindingStatus": "SECURITY_OBJECT_ONLY_SUBSET",
+      "risk": "MEDIUM",
+      "sourceOnlyFollowupPRs": [],
+      "currentQualifiedInterpretation": "OLDER_BOUNDED_JSON_SEQUENCE_NATIVE_NOT_VERIFIED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-6-RFC4180-STRICT",
+      "originalFindingStatus": "CONFIRMED_NARROW_POSITIVES",
+      "risk": "LOW",
+      "sourceOnlyFollowupPRs": [
+        77
+      ],
+      "currentQualifiedInterpretation": "MULTILINE_SOURCE_INTERVALS_NARROWLY_GATED",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-6-CSV-EDGE-SPACES",
+      "originalFindingStatus": "CONFIRMED_CROSS_SURFACE_SEMANTIC_DIVERGENCE",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        77
+      ],
+      "currentQualifiedInterpretation": "STRICT_SPACE_SOURCE_NARROWLY_GATED_PRODUCER_SCHEMA_UNKNOWN",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-7-KV-UNCONSUMED-RAW",
+      "originalFindingStatus": "CONFIRMED_FALSE_COMPLETE_RISK",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [],
+      "currentQualifiedInterpretation": "EARLIER_KV_SOURCE_GATE_PUBLISHER_PENDING",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-7-KV-UNKNOWN-ESCAPE",
+      "originalFindingStatus": "CONFIRMED_UNQUALIFIED_SEMANTIC_RISK",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [],
+      "currentQualifiedInterpretation": "ESCAPE_POLICY_UNVERIFIED_BY_PRODUCER",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-7-W3C-ZEEK-DECLARED",
+      "originalFindingStatus": "PARTIAL_AUDIT_NOT_ALL_LOG_FORMATS_QUALIFIED",
+      "risk": "MEDIUM",
+      "sourceOnlyFollowupPRs": [
+        73,
+        74
+      ],
+      "currentQualifiedInterpretation": "SCHEMA_ROTATION_NARROWLY_GATED_REAL_WIRE_PENDING",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-8-FUNNEL-CONFLICT",
+      "originalFindingStatus": "IMPLEMENTED_BOUNDED_NEEDS_CROSS_FAMILY_AUDIT",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        75
+      ],
+      "currentQualifiedInterpretation": "CONVERGENCE_REGRESSION_ONLY_NATIVE_ARBITRATION_OPEN",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-9-INDEPENDENT-PROVENANCE",
+      "originalFindingStatus": "INITIATED_REFERENCE_FREEZE",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [
+        69,
+        78
+      ],
+      "currentQualifiedInterpretation": "PUBLISHER_DOC_AND_RELAY_SYNTHETIC_NOT_DEVICE_WIRE",
+      "nativeVerified": false
+    },
+    {
+      "id": "STD-NATIVE-CONTRACT",
+      "originalFindingStatus": "NOT_VERIFIED_FOR_THIS_STANDARDS_AUDIT",
+      "risk": "HIGH",
+      "sourceOnlyFollowupPRs": [],
+      "currentQualifiedInterpretation": "NATIVE_TARGET_NOT_VERIFIED",
+      "nativeVerified": false
+    }
+  ],
+  "newRows": 13,
+  "traceableTotalRows": 24,
+  "authoredSyntheticCasesNotDeduplicated": 177,
+  "publisherDocumentationCasesNotDeviceCaptures": 6,
+  "convergenceNewOracleCases": 0,
+  "casesNotDistinctEventsOrGeneralizationAccuracy": true,
+  "regressionHistoryOnly": {
+    "originals": 1361,
+    "invalidMutations": 2892,
+    "unchangedReviewOnly": 197,
+    "priorIndependentOriginals": 50
+  },
+  "flags": {
+    "sourceOnly": true,
+    "productIntegrated": false,
+    "nativeVerified": false,
+    "manufacturerWireCertified": false,
+    "completeEventF1Measured": false,
+    "allStandardsCompliant": false,
+    "releaseAuthorized": false
+  },
+  "rows": [
+    {
+      "pr": 69,
+      "exactHead": "f9542b0bd3f6404de57ab68de0686c318390639a",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-9",
+      "sections": [
+        {
+          "id": "CEF26",
+          "section": "publisher header and extension documentation"
+        }
+      ],
+      "codePaths": [
+        "src/cefStandardHeaderGrammar.ts",
+        "src/cefStandardExtensionGrammar.ts"
+      ],
+      "testPaths": [
+        "src/poc/standard9PublisherCefOraclePin.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standard9PublisherCefExamples.pinned.json",
+      "pinnedOracleSha256": "c4384572021d05515f7a92918c4f00618eb0acf3e15637172be0adceaa4b4882",
+      "frozenCases": 2,
+      "evidenceClass": "PUBLISHER_DOCUMENTATION_ILLUSTRATION_NOT_DEVICE_CAPTURE",
+      "impactRisk": "HIGH",
+      "finding": "Published CEF illustrative source byte expectations pinned separately.",
+      "stillUnverified": "Not manufacturer-produced live wire, escaped producer variants or native parsing.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/cefStandardHeaderGrammar.ts",
+        "symbol": "scanCefStandardHeaderGrammar",
+        "line": 30
+      }
+    },
+    {
+      "pr": 70,
+      "exactHead": "981996fac77c881c5b382db605809ab9cccba617",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-3/9",
+      "sections": [
+        {
+          "id": "CEF26",
+          "section": "extension escaped values and field separators"
+        }
+      ],
+      "codePaths": [
+        "src/cefStandardExtensionGrammar.ts",
+        "src/structuredFamilies.ts",
+        "src/poc/independentNonJsonStructural.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardCefPublisherEscapesPin.test.ts",
+        "src/poc/standardCefExtensionSourceParity.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardCefPublisherEscapes.pinned.json",
+      "pinnedOracleSha256": "ec43bbf61e211e693cff40ce813a289863743396a64b164194cfc65fe16f7309",
+      "frozenCases": 4,
+      "evidenceClass": "PUBLISHER_DOCUMENTATION_ILLUSTRATION_NOT_DEVICE_CAPTURE",
+      "impactRisk": "HIGH",
+      "finding": "Shared CEF extension raw/decoded boundaries avoid quoted and key-looking false splits.",
+      "stillUnverified": "Publisher illustration is not cross-firmware producer-wire or native semantics.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/cefStandardExtensionGrammar.ts",
+        "symbol": "scanCefStandardExtensions",
+        "line": 46
+      }
+    },
+    {
+      "pr": 71,
+      "exactHead": "07403224b8793a2098deae0794e9f7dff1583183",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-2",
+      "sections": [
+        {
+          "id": "RFC5424",
+          "section": "6.3 structured data and source ownership"
+        }
+      ],
+      "codePaths": [
+        "src/syslogEnvelope.ts",
+        "src/poc/rfc5424SdByteEscapes.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardRfc5424OuterObserverParity.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardRfc5424OuterObserverParity.pinned.json",
+      "pinnedOracleSha256": "acc3e484221c9edb48c3952d3c4b7e023c4ecae86433974f80110ea900dee4db",
+      "frozenCases": 14,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Distinguish syntactic SD validity from unverified ownership of the original message.",
+      "stillUnverified": "Actual producer and independently attested source/relay ownership unverified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/syslogEnvelope.ts",
+        "symbol": "parseSyslogEnvelope",
+        "line": 410
+      }
+    },
+    {
+      "pr": 72,
+      "exactHead": "b058f4f2e721251a42353ea699b82b76c510c8b9",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-2",
+      "sections": [
+        {
+          "id": "RFC5424",
+          "section": "6.2.1 VERSION and 6.2.3 TIMESTAMP"
+        }
+      ],
+      "codePaths": [
+        "src/syslogEnvelope.ts",
+        "src/rfc5424Subset.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardRfc5424TimeVersionParity.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardRfc5424TimeVersion.pinned.json",
+      "pinnedOracleSha256": "2a281fccd420261d1387569a1d73ef7a8984b9ab33fb2ff711f0bac6eba0eced",
+      "frozenCases": 14,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Guard invalid RFC5424 version/timestamp and fractional precision at shared boundaries.",
+      "stillUnverified": "Source clocks, producer timezone truth and native interpretation remain unverified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/rfc5424Subset.ts",
+        "symbol": "parseRfc5424Subset",
+        "line": 90
+      }
+    },
+    {
+      "pr": 73,
+      "exactHead": "b998025ad02e2f6411b6be672fabb8ddaaf6b7b9",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-7",
+      "sections": [
+        {
+          "id": "ZEEK",
+          "section": "logging framework #fields/#types/#close and rotation"
+        }
+      ],
+      "codePaths": [
+        "src/zeekTabular.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardZeekRotationSource.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardZeekRotationStream.pinned.json",
+      "pinnedOracleSha256": "6415e09bafa6ecac25889c1a882d5b6c9f9017b47f77a246039d80b4f030e7ee",
+      "frozenCases": 13,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "MEDIUM",
+      "finding": "Close and schema transitions preserve original Zeek source spans.",
+      "stillUnverified": "Captured version-specific publisher stream and native backend proof missing.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/zeekTabular.ts",
+        "symbol": "parseZeekTsvBlock",
+        "line": 62
+      }
+    },
+    {
+      "pr": 74,
+      "exactHead": "20b8aa7a7b1990eeb942aef1c947af6f03b0b672",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-7",
+      "sections": [
+        {
+          "id": "W3CLOG",
+          "section": "Extended Log Format Version and Fields directives"
+        }
+      ],
+      "codePaths": [
+        "src/w3cTabular.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardW3cRequiredDeclarations.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardW3cRequiredDeclarations.pinned.json",
+      "pinnedOracleSha256": "c51f6586c0d74c1bb3d968b5d38cc71131032d435d40eb280c15224ea5350984",
+      "frozenCases": 18,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Prevent data rows without required W3C v1 declarations from passing extraction.",
+      "stillUnverified": "Publisher schema rotation and native fields not fully qualified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/w3cTabular.ts",
+        "symbol": "parseW3cLogBlock",
+        "line": 116
+      }
+    },
+    {
+      "pr": 75,
+      "exactHead": "67e267625b2b73f19a960c08afd5d02033fed406",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-10/11",
+      "sections": [
+        {
+          "id": "RFC5424",
+          "section": "6 source grammar composition"
+        },
+        {
+          "id": "CEF26",
+          "section": "extension composition"
+        },
+        {
+          "id": "W3CLOG",
+          "section": "declared block composition"
+        }
+      ],
+      "codePaths": [
+        "src/poc/standardSourceCompletenessGate.ts",
+        "src/structuredFamilies.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardCrossFamilyConvergence.test.ts"
+      ],
+      "pinnedOracle": null,
+      "pinnedOracleSha256": null,
+      "frozenCases": 0,
+      "evidenceClass": "CROSS_FAMILY_SAFETY_REPLAY_NO_NEW_ORACLE",
+      "impactRisk": "MEDIUM",
+      "finding": "Post-audit CEF, RFC5424, Zeek and W3C changes compose on one source SHA.",
+      "stillUnverified": "Integration tests are not a new independent oracle or native qualification.",
+      "sourceDisposition": "REGRESSION_ONLY",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/structuredFamilies.ts",
+        "symbol": "extractStructuredFamily",
+        "line": 172
+      }
+    },
+    {
+      "pr": 76,
+      "exactHead": "e5f08ac85d9de52e3fc6bccec8d6e5ede4bd2617",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-5",
+      "sections": [
+        {
+          "id": "RFC8259",
+          "section": "4 object members, 6 numbers, 8 strings"
+        },
+        {
+          "id": "RFC7464",
+          "section": "2 JSON text sequences"
+        }
+      ],
+      "codePaths": [
+        "src/standardSourceCompletenessGate.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardJsonNestedOriginalSpans.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardJsonNestedOriginalSpans.pinned.json",
+      "pinnedOracleSha256": "03c6e1ae49a5cfb2c2c034d4ae584e777115acecdb08d006928286ff1db614e0",
+      "frozenCases": 18,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Nested JSON Pointer and raw UTF-8 span tracking without parsed-tree reserialization.",
+      "stillUnverified": "Complete independent manufacturer JSON event values and native arrays unverified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/standardSourceCompletenessGate.ts",
+        "symbol": "inspectSourceCompleteness",
+        "line": 264
+      }
+    },
+    {
+      "pr": 77,
+      "exactHead": "71b19c002b03a3233b3475653dbc1e0e3eddabb1",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-6",
+      "sections": [
+        {
+          "id": "RFC4180",
+          "section": "2 quoted field, escaped quote, CR/LF row grammar"
+        }
+      ],
+      "codePaths": [
+        "src/rfc4180Csv.ts",
+        "src/utf8OriginalByteOffsets.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardCsvMultilineOriginalSpans.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardCsvMultilineOriginalSpans.pinned.json",
+      "pinnedOracleSha256": "25c3f27ff07e13e37bf7ff78ad8fe05bac15143a496db61e5a7e9a95fe4eebff",
+      "frozenCases": 22,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Preserve multiline CSV logical records, raw lexemes, exact original UTF-8 offsets and blanks.",
+      "stillUnverified": "Producer column semantics and actual forwarded CSV native records unverified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/rfc4180Csv.ts",
+        "symbol": "parseRfc4180HeaderCsv",
+        "line": 207
+      }
+    },
+    {
+      "pr": 78,
+      "exactHead": "66c234c6b83800cc9870869690fb254b7951ab67",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-1/2",
+      "sections": [
+        {
+          "id": "RFC5424",
+          "section": "6 header fields and claimed origin"
+        },
+        {
+          "id": "RFC5425",
+          "section": "4 authenticated transport hop"
+        },
+        {
+          "id": "RFC3164",
+          "section": "4 legacy relay/header limitations"
+        }
+      ],
+      "codePaths": [
+        "src/poc/standardRelayProvenanceReview.ts",
+        "src/syslogEnvelope.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardRelayProvenanceReview.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardRelayProvenanceReview.pinned.json",
+      "pinnedOracleSha256": "d22ba4469494deb3394ececb09a075acc8043cbbac7c843681614bb7b064253a",
+      "frozenCases": 17,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Distinguish one-hop lexical byte matches from authenticated source host/time.",
+      "stillUnverified": "Matched upstream and relay device captures, attested clock and TLS peers absent.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/poc/standardRelayProvenanceReview.ts",
+        "symbol": "reviewNestedSyslogProvenance",
+        "line": 78
+      }
+    },
+    {
+      "pr": 79,
+      "exactHead": "0be503d485b8bd235c194d38684d003da7ef29b5",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-4",
+      "sections": [
+        {
+          "id": "LEEF20",
+          "section": "attributes, delimiters and repeated source keys"
+        }
+      ],
+      "codePaths": [
+        "src/poc/independentLeefSource.ts",
+        "src/structuredFamilies.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardLeefEmptySourceSemantics.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardLeefEmptySourceSemantics.pinned.json",
+      "pinnedOracleSha256": "e6b0c14dddb51a67833009e9336c0351dc0558c0306c8b9f7cb69eb9d065918a",
+      "frozenCases": 15,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Keep explicit zero-byte lexical values distinct from missing keys and preserve occurrences.",
+      "stillUnverified": "Producer-specific empty/null and QRadar/Stellar repeated-key meaning unverified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/poc/independentLeefSource.ts",
+        "symbol": "arbitrateIndependentLeef",
+        "line": 118
+      }
+    },
+    {
+      "pr": 80,
+      "exactHead": "615f1f87e86c456dc9bd3897397a09709b5c1e0e",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-1/2",
+      "sections": [
+        {
+          "id": "RFC6587",
+          "section": "3.4.1 octet-counted framing"
+        },
+        {
+          "id": "RFC5424",
+          "section": "6.4 MSG-ANY and MSG-UTF8"
+        }
+      ],
+      "codePaths": [
+        "src/syslogFraming.ts",
+        "src/syslogEnvelope.ts",
+        "src/rfc5424Subset.ts",
+        "src/poc/standardCountedRfc5424MsgSource.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardCountedRfc5424MsgSource.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardCountedRfc5424MsgSource.pinned.json",
+      "pinnedOracleSha256": "c43c7b0f604777f12ce5491206ec0295e3975310e44f1042c6b373fb27011852",
+      "frozenCases": 22,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Allow control octets in RFC5424 MSG only when octet-counted boundary is independently qualified.",
+      "stillUnverified": "Opaque non-UTF8 original bytes and native target remain separate acceptance gates.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/poc/standardCountedRfc5424MsgSource.ts",
+        "symbol": "inspectCountedRfc5424MsgStream",
+        "line": 45
+      }
+    },
+    {
+      "pr": 81,
+      "exactHead": "309189334fcfd3328c4dc15be11a30c3645de34c",
+      "ciObserved": "SUCCESS",
+      "roadmapStage": "STD-1/2",
+      "sections": [
+        {
+          "id": "RFC5424",
+          "section": "6.4 MSG-ANY octets and BOM-tagged MSG-UTF8"
+        },
+        {
+          "id": "RFC6587",
+          "section": "3.4.1 exact frame size in OCTETS"
+        }
+      ],
+      "codePaths": [
+        "src/syslogFraming.ts",
+        "src/poc/rfc5424SdByteEscapes.ts",
+        "src/poc/standardOpaqueRfc5424MsgBytes.ts"
+      ],
+      "testPaths": [
+        "src/poc/standardOpaqueRfc5424MsgBytes.test.ts"
+      ],
+      "pinnedOracle": "scripts/poc/standardOpaqueRfc5424MsgBytes.pinned.json",
+      "pinnedOracleSha256": "60f1234f32bf993aaeab1ff7d09168123cadd6edca63898f33adb3a2780cb902",
+      "frozenCases": 24,
+      "evidenceClass": "INDEPENDENT_STANDARDS_DERIVED_SYNTHETIC",
+      "impactRisk": "HIGH",
+      "finding": "Preserve arbitrary non-UTF8 MSG-ANY bytes; strict valid UTF8 required only when BOM declares it.",
+      "stillUnverified": "Full original device wire, native Fluentd/Stellar and decoded message semantics unverified.",
+      "sourceDisposition": "REVIEW_ONLY_OR_ABSTAIN",
+      "owner": "CHATGPT_CHAT_SOURCE_ONLY",
+      "productIntegrated": false,
+      "manufacturerWireCertified": false,
+      "nativeVerified": false,
+      "autoPromotionAuthorized": false,
+      "functionAnchor": {
+        "path": "src/poc/standardOpaqueRfc5424MsgBytes.ts",
+        "symbol": "inspectOpaqueCountedRfc5424Source",
+        "line": 40
+      }
+    }
+  ]
+}
