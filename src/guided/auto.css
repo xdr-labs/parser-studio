@@ -193,3 +193,16 @@
 .sample-union-field strong{font-size:11px;color:var(--muted,#627785);}
 .sample-union-scope{margin-top:13px;font-weight:500;}
 @media(max-width:760px){.sample-union-field{grid-template-columns:1fr 1fr;gap:4px}.sample-union-field code,.sample-union-field strong{grid-column:1/-1}}
+
+/* Exact, user-marked source wrapper inspection; not a compiler setting. */
+.declared-source-boundaries{margin-block:14px;}
+.declared-source-boundary-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0;}
+.declared-source-boundary-inputs label{display:flex;flex-direction:column;gap:5px;min-width:0;font-weight:600;}
+.declared-source-boundary-inputs input{width:100%;min-width:0;padding:8px 10px;border:1px solid #bfd7de;border-radius:7px;font-size:12px;}
+.declared-source-boundary-result{display:flex!important;flex-direction:column;gap:5px;margin-top:10px;}
+.declared-source-payloads{margin:12px 0;display:grid;gap:8px;}
+.declared-source-payloads>div{padding:8px;background:#fff;border:1px solid #d3e6e2;border-radius:7px;display:grid;gap:5px;}
+.declared-source-payloads span{color:#476b7c;}
+.declared-source-payloads pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:90px;overflow:auto;}
+.declared-source-export-warning{border-left:3px solid #cc8900;padding:8px 12px;background:#fff;}
+@media(max-width:700px){.declared-source-boundary-inputs{grid-template-columns:1fr;}}
