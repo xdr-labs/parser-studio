@@ -122,3 +122,15 @@ Additional legacy E2E:
   assumptions are no longer user-visible; this exact file remains unchanged.
   The mobile responsive and source accounting assertions are explicitly
   migrated to tests/two-path.spec.ts, and type/privacy tests stay in Vitest.
+
+## October 18 owner scope exclusion (not counted as PASS)
+
+Server-side Test Lab session recovery, evidence retrieval, remote revision
+history, sensor transmission and Interflow operations are outside the current
+downloadable-parser beta. The earlier six synthetic authorization scenarios
+remain preserved as explicit `test.skip` cases in
+`tests/integrated-backend.spec.ts`; they do not contribute to current PASS
+counts. The current `tests/evidence-recovery.spec.ts` independently tests
+absence of these controls and backend default-deny behavior over the
+SHA-pinned localhost compiler, without invoking any sensor or tenant action.
+Browser-local versions and browser-only synthetic replay remain in scope.
