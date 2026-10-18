@@ -149,10 +149,14 @@ describe('two-pass, accuracy-first candidate funnel',()=>{
     expect(guarded.selected).toBeNull();
   });
 
-  it('prefers exact source-named columns over temporary positional CSV when interpretations agree',()=>{
+  it('leaves named KV versus positional CSV ambiguous without declared producer schema',()=>{
     const outcome=inspectGrammarFunnel('src=192.0.2.1,dst=198.51.100.2,action=allow');
-    expect(outcome.disposition).toBe('candidate_only');
-    expect(outcome.selected).toMatchObject({grammar:'kv_comma',naming:'source',fieldCount:3});
+    expect(outcome.disposition).toBe('ambiguous');
+    expect(outcome.selected).toBeNull();
+    expect(outcome.candidates).toEqual(expect.arrayContaining([
+      expect.objectContaining({grammar:'kv_comma',naming:'source',fieldCount:3}),
+      expect.objectContaining({grammar:'csv_comma',naming:'positional',fieldCount:3}),
+    ]));
   });
 
   it('abstains when two bounded named grammars produce contradictory fields',()=>{
