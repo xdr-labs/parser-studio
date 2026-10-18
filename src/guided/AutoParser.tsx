@@ -30,12 +30,9 @@ import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft
 import {parserIdentitySlug} from './parserIdentity';
 
 
-import ArtifactRevisionHistoryPanel from './ArtifactRevisionHistoryPanel';
 import AutoParserAIReview from './AutoParserAIReview';
 import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
-import AutoParserResultTools from './AutoParserResultTools';
-import type {ApprovedTestLabStatus} from './approvedTestLabSession';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
@@ -53,8 +50,6 @@ interface Props {
  datasetName:string;setDatasetName:(name:string)=>void;
  suite?:SuiteResult;pending:boolean;
  runPreview:(candidate:ParserDraft,raw?:string)=>Promise<SuiteResult>;
- activeSession:ApprovedTestLabStatus|null;
- onSessionUpdate:(next:ApprovedTestLabStatus|null)=>void;
  onChatGPT:()=>void;
  advanced:boolean;
 }
@@ -116,7 +111,7 @@ function backendReviewMessage(error:unknown){
 }
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,activeSession,onSessionUpdate,onChatGPT,advanced,
+ runPreview,onChatGPT,advanced,
 }:Props){
  const [step,setStep]=useState<0|1|2|3>(0);
  const [furthestStep,setFurthestStep]=useState<0|1|2|3>(0);
@@ -1370,20 +1365,7 @@ export default function AutoParser({
            <summary>Package checksum</summary><small>ZIP SHA-256: {currentZip.sha256} · {currentZip.filename}</small>
          </details>}
        </div>}
-       {currentPair&&<ArtifactRevisionHistoryPanel
-         projectId={currentPair.manifest.projectId}
-         draftKey={identity}
-         pair={currentPair}
-         listenerPort={draft.guided?.receiver.port??null}
-         onDownload={(filename,bytes)=>download(filename,bytes,true)}
-       />}
        {currentPair&&<AutoParserLocalReplay sample={sample} draft={draft}/>}
-       {currentPair&&<AutoParserResultTools
-         projectId={currentPair.manifest.projectId??''}
-         listenerPort={draft.guided?.receiver.port??0}
-         sourceFormat={draft.format}
-         activeSession={activeSession} onSessionUpdate={onSessionUpdate}
-       />}
        <details className="auto-parser-recipe" aria-label="Manual field fix test">
          <summary className="beginner-tool-summary">Test a manual field fix against different examples
            <HelpTip label="Test a manual field fix"

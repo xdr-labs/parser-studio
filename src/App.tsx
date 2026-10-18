@@ -1,12 +1,11 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
-import {Bot,FileText,LockKeyhole,Plus,WandSparkles} from 'lucide-react';
+import {useEffect,useMemo,useState} from 'react';
+import {Bot,FileText,History,LockKeyhole,Plus,WandSparkles} from 'lucide-react';
 import {createDraft,type ParserDraft,type SuiteResult} from './model';
 import AutoParser from './guided/AutoParser';
-import {controlApprovedSession,fetchApprovedSessionStatus,reconcileApprovedSession,
-  type ApprovedTestLabStatus} from './guided/approvedTestLabSession';
 import ChatGPTAssist from './guided/ChatGPTAssist';
+import LocalVersionsPanel from './guided/LocalVersionsPanel';
+import type {LocalVersion} from './guided/localWorkspaceHistory';
 import {HelpTip} from './guided/BeginnerHelp';
-import TestLabEvidencePanel from './guided/TestLabEvidencePanel';
 import {MAX_DATASET_BYTES} from './parser';
 
 type Workspace='auto'|'chatgpt';
@@ -68,66 +67,17 @@ export default function App(){
   const [draft,setDraft]=useState<ParserDraft>(()=>createDraft());
   const [sample,setSample]=useState('');
   const [advanced,setAdvanced]=useState(false);
-  // Owned run state survives switching either parser authoring method.
-  // An active audited backend sender NEVER stops merely by changing screens.
-  const [activeSession,setActiveSession]=useState<ApprovedTestLabStatus|null>(null);
-  const updateSessionSafely=(next:ApprovedTestLabStatus|null)=>
-    setActiveSession(previous=>reconcileApprovedSession(previous,next));
-  const [stopBusy,setStopBusy]=useState(false);
-  const [stopError,setStopError]=useState('');
-  const [recoveryId,setRecoveryId]=useState('');
-  const [recoverBusy,setRecoverBusy]=useState(false);
-  const [recoverError,setRecoverError]=useState('');
-  const [recoverNotice,setRecoverNotice]=useState('');
-  const runIdSafe=/^test_run_[0-9a-f]{32}$/.test(recoveryId);
-  const recoveryEpoch=useRef(0);
-  const latestRun=useRef(activeSession);
-  latestRun.current=activeSession;
-  const sessionRunning=activeSession&&
-    (activeSession.state==='RUNNING'||activeSession.state==='PAUSED');
-  useEffect(()=>()=>{recoveryEpoch.current++;},[]);
-
-  // Refresh deliberately never resumes or queries a session automatically.
-  // An ID is a locator, not a grant: the backend must reauthorize this GET.
-  const recoverApprovedSession=async()=>{
-    if(!runIdSafe||recoverBusy||sessionRunning)return;
-    const requestedId=recoveryId, ticket=++recoveryEpoch.current;
-    setRecoverBusy(true);setRecoverError('');setRecoverNotice('');
-    try{
-      const status=await fetchApprovedSessionStatus(requestedId);
-      const current=latestRun.current;
-      if(ticket!==recoveryEpoch.current||
-         (current&&['RUNNING','PAUSED'].includes(current.state)))return;
-      if((status.state==='RUNNING'||status.state==='PAUSED')&&
-        Date.parse(status.leaseExpiresAt)<=Date.now())
-        setRecoverNotice('The reported lease deadline has passed. Stop remains available until the backend confirms termination.');
-      else if(['EXPIRED','STOPPED','FAILED','COMPLETED'].includes(status.state))
-        setRecoverNotice('The backend reports a finished run. No active delivery is verified; there is no Stop action to issue.');
-      else setRecoverNotice('Owned run verified for this browser session. Real sensor ingestion remains NOT VERIFIED.');
-      setActiveSession(status);
-    }catch{
-      if(ticket===recoveryEpoch.current)
-        setRecoverError('Run lookup denied, expired, or returned untrusted metadata. Ownership was not verified and no session was recovered.');
-    }finally{if(ticket===recoveryEpoch.current)setRecoverBusy(false);}
-  };
-  useEffect(()=>setStopError(''),[activeSession?.runId]);
-
-  const stopApprovedSession=async()=>{
-    if(!sessionRunning||stopBusy)return;
-    const expectedRunId=activeSession.runId;
-    setStopBusy(true);setStopError('');
-    try{
-      const result=await controlApprovedSession(expectedRunId,'stop');
-      setActiveSession(prev=>prev?.runId===expectedRunId?result:prev);
-      if(!['RUNNING','PAUSED'].includes(result.state))
-        setRecoverNotice('The backend confirmed a finished session. No active delivery is verified.');
-      if(result.state==='RUNNING'||result.state==='PAUSED')
-        setStopError('Stop is not yet confirmed by the backend. The session may still be active.');
-    }catch{
-      setStopError('Backend Stop is unconfirmed. Check session ownership and retry before leaving the test.');
-    }finally{setStopBusy(false);}
-  };
+  const [versionsOpen,setVersionsOpen]=useState(false);
+  const [restoredEpoch,setRestoredEpoch]=useState(0);
   const [datasetName,setDatasetName]=useState('No sample selected');
+  const workingCopy=useMemo(()=>({datasetName,source:sample,draft}),
+    [datasetName,sample,draft]);
+  const restoreLocalVersion=(version:LocalVersion)=>{
+    // All derivable previews/approvals must be rerun after restoring a snapshot.
+    setSample(version.source);setDraft(structuredClone(version.draft));
+    setDatasetName(version.datasetName);setWorkspace('auto');
+    setAdvanced(false);setRestoredEpoch(old=>old+1);
+  };
   const live=useLivePreview(sample,draft);
   const reset=()=>{
     if(sample.trim()&&!window.confirm('Clear the current sample and create a new parser?'))return;
@@ -135,18 +85,6 @@ export default function App(){
     setWorkspace('auto');setAdvanced(false);
   };
   const preview=(candidate:ParserDraft,source?:string)=>runInWorker(source??sample,candidate);
-  const downloadSafeEvidence=(filename:string,content:string,mediaType:string)=>{
-    if(!/^testlab-evidence-test_run_[0-9a-f]{32}\.json$/.test(filename)||
-       mediaType!=='application/json;charset=utf-8'||
-       new TextEncoder().encode(content).byteLength>1024*1024)
-      throw new Error('The approved evidence download contract is invalid.');
-    const blob=new Blob([content],{type:mediaType});
-    const url=URL.createObjectURL(blob);
-    const link=document.createElement('a');
-    link.href=url;link.download=filename;document.body.append(link);
-    link.click();link.remove();
-    window.setTimeout(()=>URL.revokeObjectURL(url),1000);
-  };
   return <div className="app-shell two-path-shell">
     <aside className="nav-rail two-path-nav" aria-label="Parser Studio navigation">
       <div className="brand-symbol" aria-label="Parser Studio"><FileText size={23}/></div>
@@ -195,6 +133,15 @@ export default function App(){
               text="Open this only when normal Auto Parser guidance is not enough, or when you need to inspect an existing parser, multi-line boundaries, repeated text patterns, or technical evidence."/>
           </span>
           <span className="topbar-help-action">
+            <button type="button" className="button secondary" aria-expanded={versionsOpen}
+              aria-controls="local-version-workspace"
+              onClick={()=>setVersionsOpen(value=>!value)}>
+              <History size={16}/> Local Versions
+            </button>
+            <HelpTip label="Local Versions"
+              text="Save logs, parser settings and field mappings only inside this browser. Compare multiple experiments or restore any saved version. No server storage or automatic external transfer."/>
+          </span>
+          <span className="topbar-help-action">
             <button type="button" className="button secondary" onClick={reset}>
               <Plus size={16}/> New Parser
             </button>
@@ -203,71 +150,21 @@ export default function App(){
           </span>
         </div>
       </header>
-      {advanced&&<details className="two-path-recovery" aria-label="Authorized Test Lab session recovery">
-        <summary>Recover a previous parser test session
-          <HelpTip label="Recover a previous test session"
-            text="Use this only if you started a test session earlier, refreshed the page, and need to see that same session again. It does not start a new parser test."/></summary>
-        <p>A page refresh can hide a test session that is still running on the local Parser Studio service.
-          Enter its run ID to check that same session again. Parser Studio does not search for sessions automatically.</p>
-        <div className="two-path-recovery-controls">
-          <label>Previous test run ID
-            <input type="text" aria-label="Existing authorized Test Lab run ID"
-              value={recoveryId} maxLength={41} autoComplete="off" spellCheck={false}
-              placeholder="test_run_0123456789abcdef0123456789abcdef"
-              onChange={event=>{
-                recoveryEpoch.current++;setRecoverBusy(false);
-                setRecoveryId(event.target.value);setRecoverError('');setRecoverNotice('');
-              }}/>
-          </label>
-          <button type="button" className="button secondary"
-            disabled={!runIdSafe||recoverBusy||Boolean(sessionRunning)}
-            onClick={()=>{void recoverApprovedSession();}}>
-            {recoverBusy?'Checking previous run…':'Check Previous Run'}
-          </button>
-        </div>
-        {sessionRunning&&<p role="status">
-          An active session is already displayed above. Stop it before looking up another run.
-        </p>}
-        {recoverError&&<p role="alert">{recoverError}</p>}
-        {recoverNotice&&<p role="status" aria-label="Recovered Test Lab result">
-          {recoverNotice}
-        </p>}
-        {activeSession&&!sessionRunning&&<p role="status"
-          aria-label="Authorized terminal Test Lab session">
-          Backend status: {activeSession.state} · No verified sensor ingestion.
-          A terminal run cannot be resumed by this screen.
-        </p>}
-      </details>}
-      {sessionRunning&&<div role="status" className="two-path-session-banner"
-        aria-label="Active Test Lab session indicator">
-        <div>
-          <strong>Approved synthetic Test Lab · {activeSession.state}</strong>
-          <p>Changing screens does not stop server delivery.
-            Run {activeSession.runId} · Sensor ingest NOT VERIFIED.</p>
-          {stopError&&<p role="alert">{stopError}</p>}
-        </div>
-        <button type="button" className="button secondary"
-          disabled={stopBusy} onClick={()=>{void stopApprovedSession();}}>
-          {stopBusy?'Confirming Stop…':'Stop Server Session Now'}
-        </button>
+      {versionsOpen&&<div id="local-version-workspace">
+        <LocalVersionsPanel working={workingCopy}
+          onRestore={restoreLocalVersion} onClose={()=>setVersionsOpen(false)}/>
       </div>}
-      {activeSession&&<section className="two-path-session-evidence"
-        aria-label="Authorized Test Lab offline evidence">
-        <TestLabEvidencePanel runId={activeSession.runId}
-          onDownload={downloadSafeEvidence}/>
-      </section>}
       {live.error&&<p role="alert" className="auto-parser-warning">
         Local preview: {live.error}. Check the sample before generating a parser.
       </p>}
-      {workspace==='auto'?<AutoParser
+      {workspace==='auto'?<AutoParser key={restoredEpoch}
         draft={draft} setDraft={setDraft} sample={sample} setSample={setSample}
         datasetName={datasetName} setDatasetName={setDatasetName}
         suite={live.suite} pending={live.pending}
         runPreview={preview}
-        activeSession={activeSession} onSessionUpdate={updateSessionSafely}
         onChatGPT={()=>setWorkspace('chatgpt')}
         advanced={advanced}
-      />:<ChatGPTAssist
+      />:<ChatGPTAssist key={restoredEpoch}
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{
           setSample(value);setDatasetName('ChatGPT local samples');
         }}
