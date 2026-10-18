@@ -69,6 +69,14 @@ test("shipping backend accepts only true offline authoring HTTP methods",async()
   });
 });
 
+test("the historical server CLI cannot bypass the shipping authoring-only route boundary",async()=>{
+  const source=await import("node:fs/promises");
+  const path=await import("node:path");
+  const code=await source.readFile(path.resolve("src/server.ts"),"utf8");
+  assert.match(code,/createMainlineAuthoringServer\(\)\.listen\(/);
+  assert.doesNotMatch(code,/createBackendServer\(\)\.listen\(/);
+});
+
 test("target, Test Lab, revision, optional AI and Interflow routes remain unreachable",async()=>{
   await withServer(async base=>{
     const raw="SHOULD_NEVER_APPEAR_12345";

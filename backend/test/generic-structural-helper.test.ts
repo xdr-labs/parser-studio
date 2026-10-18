@@ -39,6 +39,8 @@ test("Generic Structural helper keeps Syslog envelope parsing ahead of weak gene
   assert.ok(envelope>=0&&comma>envelope&&delimited>envelope);
 });
 
+// Individual grammar probes return nil for unsupported records. The top-level
+// dispatcher instead raises ArgumentError and must never silently complete.
 test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and secure-email grammars",{skip:!rubyAvailable},()=>{
   const watchguard='<139>Jan 16 15:19:05 WatchGuard-Firebox FVE6035FD3AE3 (2024-01-19T08:48:15) firewall: msg_id="1BFF-000F" Allow 1-Trusted 0-External tcp 10.0.1.2 175.16.199.1 39398 25 msg="SMTP request" proxy_act="SMTP-Outgoing.1" rcvd_bytes="272" sent_bytes="282" sender="tester@testnet.com" recipients="wg@localhost" (SMTP-proxy-00)';
   const wg=runRuby("parserstudio_generic_structural",watchguard) as any;
@@ -78,7 +80,7 @@ test("Generic Structural V9 Ruby helper matches bounded WatchGuard, Juniper and 
   const cp=runRuby("parserstudio_generic_structural",checkpoint) as any;
   assert.equal(cp.body.flags,"1");
   assert.equal(cp.body["sys_message:"],"risk");
-  assert.equal(runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),null);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",checkpoint+"unexpected"),/Unsupported generic structural event/);
 });
 
 
@@ -166,11 +168,11 @@ test("Generic Structural V11 Ruby helper parses bounded ISO PRI mixed positional
   assert.deepEqual(parsed.generic.tokens.slice(0,8),["edge","WAF","ALERT","CODE","192.0.2.1","61507","198.51.100.2","443"]);
   assert.ok(parsed.generic.tokens.includes("-"));
   assert.ok(parsed.generic.tokens.includes("multi word positional value"));
-  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("<129>","<192>")),null);
-  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("+0100","+2500")),null);
-  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("2026-10-15","2026-02-30")),null);
-  assert.equal(runRuby("parserstudio_generic_structural",'<129>2026-10-15 14:54:44.502 +0100 edge short 192.0.2.1 198.51.100.2'),null);
-  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("198.51.100.2","not-an-ip")),null);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("<129>","<192>")),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("+0100","+2500")),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("2026-10-15","2026-02-30")),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",'<129>2026-10-15 14:54:44.502 +0100 edge short 192.0.2.1 198.51.100.2'),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("198.51.100.2","not-an-ip")),/Unsupported generic structural event/);
 });
 
 test("Generic Structural V10 Ruby helper parses bounded PRI-prefixed space KV",{skip:!rubyAvailable},()=>{
@@ -183,9 +185,9 @@ test("Generic Structural V10 Ruby helper parses bounded PRI-prefixed space KV",{
   assert.equal(parsed.generic.kv.desc,"User login successful");
   assert.equal(parsed.generic.kv.msg,"inner status=embedded value");
   assert.equal(parsed.generic.kv.status,"success");
-  assert.equal(runRuby("parserstudio_generic_structural",raw.replace("<134>","<192>")),null);
-  assert.equal(runRuby("parserstudio_generic_structural",'<134>date=2023-02-23 time=22:49:29 type=event subtype=system'),null);
-  assert.equal(runRuby("parserstudio_generic_structural",raw.replace('desc="User login successful"','desc="User login successful')),null);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace("<134>","<192>")),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",'<134>date=2023-02-23 time=22:49:29 type=event subtype=system'),/Unsupported generic structural event/);
+  assert.throws(()=>runRuby("parserstudio_generic_structural",raw.replace('desc="User login successful"','desc="User login successful')),/Unsupported generic structural event/);
 });
 
 test("Generic Structural V10 Ruby helper rejects prototype-bearing keys",{skip:!rubyAvailable},()=>{

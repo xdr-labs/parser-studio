@@ -80,3 +80,21 @@ handling. GitHub CI requires ruby -c of the native helper and still runs its
 Ruby execution assertions. The local dev-atlas environment lacked Ruby;
 source/static checks are **not** represented as native Ruby PASS until
 GitHub exact-HEAD CI confirms them.
+
+## Historical CLI entrypoint fail-closed
+
+Both backend CLI source entrypoints now instantiate the same restricted
+HTTP authoring-only server. Direct execution of the earlier server.js
+filename cannot silently re-enable historical target/Test Lab routes.
+This is defense in depth; no historic API handlers are authorized for
+production use, and the complete integrated artifact remains a Draft PR.
+
+## Explicit native negative-oracle semantics
+
+Native CI showed three test failures after repairing Ruby syntax: the
+top-level Generic Structural dispatcher correctly raised ArgumentError for
+unsupported input, while nine historical negative checks incorrectly
+expected nil (the contract for *individual grammar probe* functions).
+Their assertions now require the specific failure. This preserves the
+existing fail-closed parser behavior and does not promote any unsupported
+input to successful parsing. New Ruby CI remains the authoritative check.
