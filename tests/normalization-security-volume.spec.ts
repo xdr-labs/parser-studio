@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {verifyOfficialMappings} from './normalizationAcceptance';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -92,13 +93,6 @@ async function mapBatch(page:Page,rows:readonly string[]){
 for(const batch of batches){
   test('normalization volume E2E · '+batch.name,async({page})=>{
     const map=await mapBatch(page,batch.rows);
-    const suggestions=map.getByLabel('Recommended field matches');
-    for(const target of batch.targets)await expect(suggestions).toContainText(target);
-    const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
-    await expect(bulk).toBeEnabled();
-    await bulk.click();
-    await expect(map.getByLabel('Field mapping checks'))
-      .toContainText('All current field mappings passed the sample checks',{timeout:15000});
-    await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
+    await verifyOfficialMappings(map,batch.targets,batch.name);
   });
 }

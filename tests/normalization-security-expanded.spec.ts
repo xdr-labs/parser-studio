@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {verifyOfficialMappings} from './normalizationAcceptance';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -174,19 +175,6 @@ for(const scenario of cases){
       route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
 
     const map=await openMapping(page,scenario.rows);
-    const suggestions=map.getByLabel('Recommended field matches');
-    await expect(suggestions,scenario.family+' suggestions').toBeVisible();
-    for(const target of scenario.expectTargets)
-      await expect(suggestions,scenario.family+' '+target).toContainText(target);
-
-    const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
-    await expect(bulk,scenario.family+' bulk apply').toBeEnabled();
-    await bulk.click();
-    await expect(map.getByLabel('Field mapping checks'),scenario.family+' validation')
-      .toContainText('All current field mappings passed the sample checks');
-    await expect(map.getByLabel('Field changes only'),scenario.family+' comparison')
-      .toBeVisible();
-    await expect(map.getByRole('button',{name:'Create Parser'}),scenario.family+' create')
-      .toBeEnabled();
+    await verifyOfficialMappings(map,scenario.expectTargets,scenario.family);
   });
 }

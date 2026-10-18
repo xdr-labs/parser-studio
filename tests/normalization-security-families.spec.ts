@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {verifyOfficialMappings} from './normalizationAcceptance';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -109,23 +110,7 @@ for(const scenario of cases){
       route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
 
     const map=await openMapping(page,scenario.sample);
-    const suggestions=map.getByLabel('Recommended field matches');
-    await expect(suggestions,scenario.family+' suggestions').toBeVisible();
-    for(const target of scenario.expectTargets)
-      await expect(suggestions,scenario.family+' '+target).toContainText(target);
-
-    const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
-    await expect(bulk,scenario.family+' bulk apply').toBeEnabled();
-    const before=await map.getByLabel('Field mapping summary').textContent();
-    expect(before,scenario.family+' starts with generated custom mappings').toContain('Kept as custom');
-    await bulk.click();
-
-    await expect(map.getByLabel('Field mapping summary'),scenario.family+' official mappings')
-      .not.toContainText('Matched to Stellar0');
-    await expect(map.getByLabel('Field mapping checks'),scenario.family+' validation')
-      .toContainText('All current field mappings passed the sample checks');
-    await expect(map.getByLabel('Field changes only'),scenario.family+' before/after')
-      .toBeVisible();
+    await verifyOfficialMappings(map,scenario.expectTargets,scenario.family);
     await expect(map).toContainText('Nothing is sent to a Stellar Cyber system from this screen.');
 
     // Result remains editable instead of auto-promoted to a target-verified state.
