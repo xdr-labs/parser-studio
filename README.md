@@ -1,43 +1,137 @@
-# Parser Studio 2.0
+<h1 align="center">Parser Studio</h1>
 
-**Status:** English-only Parser Studio with exactly two user-facing creation methods, a strict backend-generated Ruby + CONF draft path, and independent approval gates. No proprietary Stellar target import or real DP/sensor E2E is claimed.
+<p align="center">
+  <strong>Turn security logs into reviewed parser drafts—without starting with parser syntax.</strong>
+</p>
 
-## Only two parser creation methods
+<p align="center">
+  Analyze representative events, check extracted fields, review Stellar Cyber normalization mappings, and download validated parser artifacts through a guided Web UI.
+</p>
 
-**Auto Parser:** Paste or upload representative logs → automatically recognize supported formats → review extracted/normalized fields → optionally adjust the mappings in the same review screen → test the complete sample → generate the extensionless Ruby and CONF DRAFT files with SHA-256 verification.
+<p align="center">
+  <strong>English</strong> · <a href="https://github.com/xdr-labs/parser-studio-docs">User Guide</a> · <a href="https://github.com/xdr-labs/parser-studio-docs/blob/main/scenarios/index.mdx">Scenario Playbooks</a>
+</p>
 
-**ChatGPT Assisted Parser:** Enter source logs locally and desired fields → manually redact and approve the examples for ChatGPT → copy the privacy-reviewed prompt yourself → paste the suggested ParserRecipe v0.2 JSON back into Parser Studio → validate its source digest, schema and safe operations → compare any single added mapping against independent holdout data → explicitly approve → generate the same SHA-verified Ruby and CONF DRAFT pair.
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Web-2563EB?style=flat-square" alt="Web">
+  <img src="https://img.shields.io/badge/UI-React%20%2B%20TypeScript-7C3AED?style=flat-square" alt="React and TypeScript">
+  <img src="https://img.shields.io/badge/workflows-Auto%20%2B%20ChatGPT-16A34A?style=flat-square" alt="Auto Parser and ChatGPT Assisted">
+  <img src="https://img.shields.io/badge/output-Ruby%20%2B%20CONF-0891B2?style=flat-square" alt="Ruby and CONF drafts">
+</p>
 
-**The old six-step Wizard, three-pane Workbench, and their entry points are retired from the v2.0 product UI.** Legacy workspace URLs do not reopen them. Their safe extraction, field mapping, browser worker, revision and code-generation libraries can still be reused internally. No Expert Mode or Advanced Wizard is presented as a third authoring path.
+---
 
-The current ChatGPT path can compile an unchanged canonical supported recipe or **one independently verified additive field mapping**. Arbitrary Ruby, Regex/JSONata execution, unsupported transformations and source formats without a native parser remain rejected rather than misrepresented as deployable outputs. The user sees a review/unsupported message in these cases.
+## What it does
 
-### Data privacy and authorization
+Parser Studio is an independent, browser-based workspace for building custom security log parsers.
 
-Raw source logs stay in the browser during standard analysis. The ChatGPT prompt contains fixed source metadata (event count, source digest and reviewed format labels), an optional declarative schema-owned reference recipe, and **only log examples that the user manually redacted and explicitly approved**. There is no automatic prompt transfer, OpenAI API credential collection, or provider call. Inspect the copyable prompt before sharing it.
+The guided workflow helps you:
 
-Files are DRAFTs and not evidence of a running parser. Version history, ZIP download and mock-only apply appear after a verified generation, not as separate creation methods. Real DP Apply, Sensor Replay and Interflow verification require independent backend authorization and target evidence and remain NOT VERIFIED. The protected development preview blocks unsafe target-mutating routes.
+- paste or upload representative security event samples
+- identify supported record structures and inspect event boundaries
+- review extracted fields, original values, and incomplete records
+- assign and correct normalized field names using the available Stellar Cyber field catalog
+- verify the complete sample instead of accepting partial matches
+- create an integrity-checked **Ruby parser logic + CONF** draft pair, with optional package download
+- compare browser-local working versions and investigate difficult cases using additional diagnostic tools
+- download a standalone Python test sender that creates time-adjusted, synthetic variations of the sample
 
-### Backend and tests
+## Parser creation methods
 
-The backend owns the validated ParserProject v0.1 compiler, the strict ParserRecipe v0.2 staged equivalence, source-bound SHA receipts, and bounded Ruby3.2/Fluentd1.17.1 public-synthetic Native qualifications, including explicitly TCP-framed Java exception traces. Mixed parser routing is limited to 2–4 chosen reviewed families, and sensor/CONF listener ports are the same. Syslog ports are at least 6800.
+Parser Studio provides **two** user-facing creation methods.
 
-A single ChatGPT Chat session owns Web UI, backend, integration tests, the roadmap and two Draft PRs.
+| Method | Best for | Workflow |
+| --- | --- | --- |
+| **Auto Parser** | Most new samples, including logs whose format you do not know | Add Logs → Review Fields → Map Fields → Create Parser |
+| **ChatGPT Assisted Parser** | A record or mapping that still needs a carefully reviewed suggestion | Review and mask an example → copy a prompt manually → import a constrained JSON recipe → validate and approve |
 
-- [Final two-path UI and acceptance](docs/14_TWO_PATH_PRODUCT_V2.md)
-- [Original roadmap and acceptance; overridden for UI by v2.0](docs/06_ROADMAP_AND_ACCEPTANCE.md)
-- [Issue #1 and ACTIVE Work Packet](https://github.com/xdr-labs/parser-studio/issues/1)
-- [Web UI Draft PR #7](https://github.com/xdr-labs/parser-studio/pull/7)
-- [Backend Draft PR #4](https://github.com/xdr-labs/parser-studio/pull/4)
+Advanced diagnostics support these methods; they are not a separate creation workflow.
 
-Development commands: npm ci; npm run dev; npm test; npm run build; npm run test:browser.
+## Quick start
 
-Historical Chromium suites relying on the retired Wizard/Workbench are preserved under tests/legacy-removed-ui as a migration inventory; **they are not reported as green/current tests**. The updated Chromium suite exercises the two real user methods, and the backend's independent synthetic Native tests protect generation.
+1. Open the Parser Studio Web UI and select **Auto Parser**.
+2. Paste or upload a few complete records from the same source.
+3. Choose **Analyze Logs**, then proceed through **Review Fields** and **Map Fields**.
+4. Confirm that important values, record counts, and output mappings are correct.
+5. Open **Create Parser** and select **Create Parser Files** when the sample passes the required checks.
+6. Download the verified parser logic and companion configuration files.
 
-## English-only Parser Studio
+To practice without customer data, follow the [first-parser walkthrough](https://github.com/xdr-labs/parser-studio-docs/blob/main/quickstart.mdx).
 
-All UI text, source, documentation, comments and tests must be written in English.
+## Supported source review
 
-## Release boundary
+Parser Studio includes format recognition and review paths for commonly encountered security log structures:
 
-No actual sensor traffic, production DP change, external AI provider connection, PR merge or release without separate operator authorization and target-specific evidence.
+- JSON, including nested fields
+- key/value (KV) records
+- CEF and LEEF events
+- Syslog envelopes and structured message bodies
+- CSV with explicitly reviewed column names and delimiters
+- bounded mixed-format and explicitly framed multiline cases
+
+**Recognition is not the same as successful generation.** Actual draft support depends on the precise source structure, reviewed mappings, event boundaries, and connected compiler capabilities. Unsupported or ambiguous records remain visible for review.
+
+## Generated files
+
+When all required checks pass, the application can offer:
+
+| Artifact | Purpose |
+| --- | --- |
+| **Ruby parser logic** (extensionless) | Parsing rules generated for the reviewed source |
+| **CONF** | Companion parser configuration for the same draft |
+| **Package archive** (when available) | A bundled copy of the generated artifacts |
+
+Returned artifacts undergo SHA-256 integrity checks. Keep the two files from the same generation together. A successful download validates the reviewed draft and its checks; it does not guarantee correct behavior for unseen log variations.
+
+## Privacy and review safeguards
+
+- Standard source previews run in the browser; do not assume that private logs are safe to share merely because they appear in a sample.
+- The ChatGPT-assisted method requires **manual review, redaction, copying, and pasting**. There is no automatic ChatGPT submission.
+- Proposed changes are constrained to the supported structured recipe and may require independent holdout events before approval.
+- The downloadable Python test sender contains the source sample in **base64, not encryption**. Mask sensitive content before distributing the file.
+- Treat all output files as reviewed drafts and verify them against representative source records.
+
+## Development
+
+For contributors with access to the repository, start the local Web UI with Node.js and npm:
+
+```bash
+git clone https://github.com/xdr-labs/parser-studio.git
+cd parser-studio
+npm ci
+npm run dev
+```
+
+The default development UI binds to `127.0.0.1`. Some generation and advanced analysis operations require a compatible local parser backend; starting the UI alone does not establish compiler availability.
+
+Common checks:
+
+```bash
+npm test
+npm run build
+npm run test:browser
+```
+
+## Documentation
+
+The maintained user manual is in **[Parser Studio Docs](https://github.com/xdr-labs/parser-studio-docs)**. Start with:
+
+- [Create your first parser](https://github.com/xdr-labs/parser-studio-docs/blob/main/quickstart.mdx)
+- [Choose a workflow](https://github.com/xdr-labs/parser-studio-docs/blob/main/choose-workflow.mdx)
+- [Auto Parser guide](https://github.com/xdr-labs/parser-studio-docs/blob/main/workflows/auto-parser.mdx)
+- [ChatGPT Assisted Parser guide](https://github.com/xdr-labs/parser-studio-docs/blob/main/workflows/chatgpt-assisted.mdx)
+- [Scenario playbooks](https://github.com/xdr-labs/parser-studio-docs/blob/main/scenarios/index.mdx)
+- [Troubleshooting](https://github.com/xdr-labs/parser-studio-docs/blob/main/reference/troubleshooting.mdx)
+
+Technical design and ongoing engineering decisions are maintained separately in this product repository.
+
+## Related projects
+
+- [Parser Studio Docs](https://github.com/xdr-labs/parser-studio-docs) — user manual and scenario playbooks
+- [XDR Labs Portal](https://xdr.ooo/) — XDR Labs project portal
+
+---
+
+<p align="center">
+  <strong>Add logs. Review fields. Map accurately. Create with confidence.</strong>
+</p>
