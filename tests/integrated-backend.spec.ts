@@ -105,7 +105,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     const packageResponse=page.waitForResponse(r=>
       r.url().endsWith('/parser-pairs/package')&&r.request().method()==='POST');
     const packageDownload=page.waitForEvent('download');
-    await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
+    await page.getByRole('button',{name:'Download Parser Package'}).click();
     const zip=await packageResponse;
     expect(zip.status()).toBe(200);
     const bytes=await readFile(await (await packageDownload).path());
@@ -547,7 +547,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     expect((await compiled).status()).toBe(200);
     const created=page.getByLabel('ChatGPT created parser files');
     await expect(created).toContainText('Parser files created successfully');
-    await expect(created).toContainText('Two SHA-verified parser files');
+    await expect(created).toContainText('Two parser files passed integrity checks before download.');
     const files=page.getByLabel('ChatGPT created parser files').getByRole('button',{name:/Download/});
     await expect(files).toHaveCount(2);
     expect(posts.filter(x=>x.endsWith('/generate')).length).toBeGreaterThanOrEqual(2);
@@ -703,7 +703,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
         ...original,'x-parser-zip-sha256':'0'.repeat(64),
       }});
     });
-    await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
+    await page.getByRole('button',{name:'Download Parser Package'}).click();
     await expect(page.getByRole('alert')).toContainText('ZIP verification failed');
     await expect(page.getByLabel('Generated parser files'))
       .toContainText('Parser files created successfully');
@@ -738,7 +738,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     await page.getByRole('button',{name:'Create Parser Files'}).click();
     await expect(page.getByLabel('Generated parser files'))
       .toContainText('Parser files created successfully');
-    await page.getByRole('button',{name:'Download Verified DRAFT ZIP'}).click();
+    await page.getByRole('button',{name:'Download Parser Package'}).click();
     await expect(page.getByRole('alert')).toContainText('ZIP verification failed');
     expect(archiveRequests).toBe(0);
     await expect(page.getByLabel('Generated parser files'))
