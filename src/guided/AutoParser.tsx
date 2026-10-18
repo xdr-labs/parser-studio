@@ -34,6 +34,7 @@ import AutoParserAIReview from './AutoParserAIReview';
 import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourcePreview} from './multipassPreviewClient';
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
+import PythonTestSenderPanel from './PythonTestSenderPanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
@@ -860,6 +861,7 @@ export default function AutoParser({
          </button>
          <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
        </div>
+       <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
          Parser Studio could not complete local analysis. Your source was preserved. Open troubleshooting tools only if you need more diagnostic detail.
        </p>}

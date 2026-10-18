@@ -23,6 +23,8 @@ jobs:
         run: npm test
       - name: Typecheck and build
         run: npm run build
+      - name: Offline Python standard-library sender grammar
+        run: python3 -m unittest discover -s tests -p 'test_python_sender_formats.py' -v
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
       - name: Browser user scenarios
