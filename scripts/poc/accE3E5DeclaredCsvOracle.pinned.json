@@ -1,0 +1,1092 @@
+{
+  "cases": [
+    {
+      "case_id": "bare_seven",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 60,
+      "expected": [
+        {
+          "end_byte": 4,
+          "name": "action",
+          "ordinal": 0,
+          "source_value": "deny",
+          "source_value_lexeme": "deny",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 7,
+          "name": "severity",
+          "ordinal": 1,
+          "source_value": "10",
+          "source_value_lexeme": "10",
+          "start_byte": 5
+        },
+        {
+          "end_byte": 17,
+          "name": "source_ip",
+          "ordinal": 2,
+          "source_value": "192.0.2.8",
+          "source_value_lexeme": "192.0.2.8",
+          "start_byte": 8
+        },
+        {
+          "end_byte": 35,
+          "name": "source_mac",
+          "ordinal": 3,
+          "source_value": "00:10:8B:A7:EF:AA",
+          "source_value_lexeme": "00:10:8B:A7:EF:AA",
+          "start_byte": 18
+        },
+        {
+          "end_byte": 46,
+          "name": "component",
+          "ordinal": 4,
+          "source_value": "IPS Sensor",
+          "source_value_lexeme": "IPS Sensor",
+          "start_byte": 36
+        },
+        {
+          "end_byte": 50,
+          "name": "rule_id",
+          "ordinal": 5,
+          "source_value": "214",
+          "source_value_lexeme": "214",
+          "start_byte": 47
+        },
+        {
+          "end_byte": 60,
+          "name": "signature",
+          "ordinal": 6,
+          "source_value": "signature",
+          "source_value_lexeme": "signature",
+          "start_byte": 51
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "action",
+        "severity",
+        "source_ip",
+        "source_mac",
+        "component",
+        "rule_id",
+        "signature"
+      ],
+      "ordered_names_sha256": "af5f7988be042b7cf406bafa01eb2de565eff633b4d8ebf4a4f4eeecd5bb4512",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "f87be2c487853a508657b1346299f34c381523438fe1df26cd02a4ec5ef9dff6",
+      "source": "deny,10,192.0.2.8,00:10:8B:A7:EF:AA,IPS Sensor,214,signature",
+      "source_sha256": "f87be2c487853a508657b1346299f34c381523438fe1df26cd02a4ec5ef9dff6",
+      "start_byte": 0
+    },
+    {
+      "case_id": "declared_syslog_prefix",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 66,
+      "expected": [
+        {
+          "end_byte": 27,
+          "name": "sequence",
+          "ordinal": 0,
+          "source_value": "1",
+          "source_value_lexeme": "1",
+          "start_byte": 26
+        },
+        {
+          "end_byte": 47,
+          "name": "receive_time",
+          "ordinal": 1,
+          "source_value": "2026/10/18 12:30:03",
+          "source_value_lexeme": "2026/10/18 12:30:03",
+          "start_byte": 28
+        },
+        {
+          "end_byte": 54,
+          "name": "serial",
+          "ordinal": 2,
+          "source_value": "000123",
+          "source_value_lexeme": "000123",
+          "start_byte": 48
+        },
+        {
+          "end_byte": 62,
+          "name": "event_type",
+          "ordinal": 3,
+          "source_value": "TRAFFIC",
+          "source_value_lexeme": "TRAFFIC",
+          "start_byte": 55
+        },
+        {
+          "end_byte": 66,
+          "name": "subtype",
+          "ordinal": 4,
+          "source_value": "end",
+          "source_value_lexeme": "end",
+          "start_byte": 63
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "sequence",
+        "receive_time",
+        "serial",
+        "event_type",
+        "subtype"
+      ],
+      "ordered_names_sha256": "d4b02dbe81fe47588cf49a3749c79be8c8f72476ff292346e77dc960b284d075",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "109b793d5c156a6c83e412f20ccd1616730b2d518af35766997523da3c1403a2",
+      "source": "<190>Oct 18 12:30:03 fw01 1,2026/10/18 12:30:03,000123,TRAFFIC,end",
+      "source_sha256": "dbc93283b860e90ee1c9add3d783d75f21f25480bfc31372eb5929fce3641ebb",
+      "start_byte": 26
+    },
+    {
+      "case_id": "reporter_prefix_and_unreviewed_suffix",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 45,
+      "expected": [
+        {
+          "end_byte": 30,
+          "name": "action",
+          "ordinal": 0,
+          "source_value": "allow",
+          "source_value_lexeme": "allow",
+          "start_byte": 25
+        },
+        {
+          "end_byte": 32,
+          "name": "severity",
+          "ordinal": 1,
+          "source_value": "3",
+          "source_value_lexeme": "3",
+          "start_byte": 31
+        },
+        {
+          "end_byte": 45,
+          "name": "source_ip",
+          "ordinal": 2,
+          "source_value": "198.51.100.1",
+          "source_value_lexeme": "198.51.100.1",
+          "start_byte": 33
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "action",
+        "severity",
+        "source_ip"
+      ],
+      "ordered_names_sha256": "1778768666a62889dd7f5cd1b823e829d413955ce8d0feaf113644cae81ed680",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "d575a1854a15ba7ab3301517668e6bbbc924eec63d88c4468debe3dd16f27077",
+      "source": "Receiver: <190>Oct 18 fw allow,3,198.51.100.1 [relay footer]",
+      "source_sha256": "3be3f7daf16f1917c270b7260029395bf8305d0f1a8fab996a657e851ab2e78f",
+      "start_byte": 25
+    },
+    {
+      "case_id": "utf8_supplementary_value",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 38,
+      "expected": [
+        {
+          "end_byte": 16,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 15
+        },
+        {
+          "end_byte": 36,
+          "name": "details",
+          "ordinal": 1,
+          "source_value": "source 😀 value",
+          "source_value_lexeme": "\"source 😀 value\"",
+          "start_byte": 17
+        },
+        {
+          "end_byte": 38,
+          "name": "last",
+          "ordinal": 2,
+          "source_value": "z",
+          "source_value_lexeme": "z",
+          "start_byte": 37
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "details",
+        "last"
+      ],
+      "ordered_names_sha256": "8e6cecff3fc87bee2050cdd12b3cc3b926670090954df379fd0a3a256c0e882a",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "3f5b22b5e625cffde1b99d5cec15c669c90e25ce073eaeecbc32251b10590631",
+      "source": "forwarder 🔥 a,\"source 😀 value\",z tail",
+      "source_sha256": "7ebe1be327b4c22fe44be8df0512112944c5305cfc06ab141d5d365e1f1dff29",
+      "start_byte": 15
+    },
+    {
+      "case_id": "quoted_comma",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 24,
+      "expected": [
+        {
+          "end_byte": 1,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 22,
+          "name": "details",
+          "ordinal": 1,
+          "source_value": "exact, quoted cell",
+          "source_value_lexeme": "\"exact, quoted cell\"",
+          "start_byte": 2
+        },
+        {
+          "end_byte": 24,
+          "name": "last",
+          "ordinal": 2,
+          "source_value": "z",
+          "source_value_lexeme": "z",
+          "start_byte": 23
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "details",
+        "last"
+      ],
+      "ordered_names_sha256": "8e6cecff3fc87bee2050cdd12b3cc3b926670090954df379fd0a3a256c0e882a",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "d489711800db26f6fe1b2e2960741faf566bd207e71c61bf20c5941a48e0d383",
+      "source": "a,\"exact, quoted cell\",z",
+      "source_sha256": "d489711800db26f6fe1b2e2960741faf566bd207e71c61bf20c5941a48e0d383",
+      "start_byte": 0
+    },
+    {
+      "case_id": "escaped_double_quotes",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 19,
+      "expected": [
+        {
+          "end_byte": 1,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 17,
+          "name": "details",
+          "ordinal": 1,
+          "source_value": "say \"hello\"",
+          "source_value_lexeme": "\"say \"\"hello\"\"\"",
+          "start_byte": 2
+        },
+        {
+          "end_byte": 19,
+          "name": "last",
+          "ordinal": 2,
+          "source_value": "z",
+          "source_value_lexeme": "z",
+          "start_byte": 18
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "details",
+        "last"
+      ],
+      "ordered_names_sha256": "8e6cecff3fc87bee2050cdd12b3cc3b926670090954df379fd0a3a256c0e882a",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "b6e8b122182170b1be26671715bc94c20b24549aaffae1e33fc6c34613fde59d",
+      "source": "a,\"say \"\"hello\"\"\",z",
+      "source_sha256": "b6e8b122182170b1be26671715bc94c20b24549aaffae1e33fc6c34613fde59d",
+      "start_byte": 0
+    },
+    {
+      "case_id": "empty_unquoted_value",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 4,
+      "expected": [
+        {
+          "end_byte": 1,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 2,
+          "name": "middle",
+          "ordinal": 1,
+          "source_value": "",
+          "source_value_lexeme": "",
+          "start_byte": 2
+        },
+        {
+          "end_byte": 4,
+          "name": "last",
+          "ordinal": 2,
+          "source_value": "z",
+          "source_value_lexeme": "z",
+          "start_byte": 3
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "middle",
+        "last"
+      ],
+      "ordered_names_sha256": "a25c389673fad20d93b9b50417d5520514bfff3d8ec489bd3bfe2d71c7356a12",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "33465a93e242a06340376f9ad0267380b76c2a10a887d6da1d1227596104cf2e",
+      "source": "a,,z",
+      "source_sha256": "33465a93e242a06340376f9ad0267380b76c2a10a887d6da1d1227596104cf2e",
+      "start_byte": 0
+    },
+    {
+      "case_id": "empty_quoted_value",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 6,
+      "expected": [
+        {
+          "end_byte": 1,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 4,
+          "name": "middle",
+          "ordinal": 1,
+          "source_value": "",
+          "source_value_lexeme": "\"\"",
+          "start_byte": 2
+        },
+        {
+          "end_byte": 6,
+          "name": "last",
+          "ordinal": 2,
+          "source_value": "z",
+          "source_value_lexeme": "z",
+          "start_byte": 5
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "middle",
+        "last"
+      ],
+      "ordered_names_sha256": "a25c389673fad20d93b9b50417d5520514bfff3d8ec489bd3bfe2d71c7356a12",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "bc876d7bd495c75f060b3e1cf604e612fa564eafb347fcc8805205027b702460",
+      "source": "a,\"\",z",
+      "source_sha256": "bc876d7bd495c75f060b3e1cf604e612fa564eafb347fcc8805205027b702460",
+      "start_byte": 0
+    },
+    {
+      "case_id": "one_column",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 6,
+      "expected": [
+        {
+          "end_byte": 6,
+          "name": "value",
+          "ordinal": 0,
+          "source_value": "source",
+          "source_value_lexeme": "source",
+          "start_byte": 0
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "value"
+      ],
+      "ordered_names_sha256": "7f9c352fcf30fb536f10b56edf3e276c33b828a000d9fcd4bc9ec58d6fa11586",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+      "source": "source",
+      "source_sha256": "41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d",
+      "start_byte": 0
+    },
+    {
+      "case_id": "source_values_repeat_distinct_names",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [
+        {
+          "end_byte": 1,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 3,
+          "name": "second",
+          "ordinal": 1,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 2
+        },
+        {
+          "end_byte": 5,
+          "name": "third",
+          "ordinal": 2,
+          "source_value": "a",
+          "source_value_lexeme": "a",
+          "start_byte": 4
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "4216a47bd38694c2ba04837130980dc8da4f1749186564b892390bd2f0fb8cfc",
+      "source": "a,a,a",
+      "source_sha256": "4216a47bd38694c2ba04837130980dc8da4f1749186564b892390bd2f0fb8cfc",
+      "start_byte": 0
+    },
+    {
+      "case_id": "string_numeric_and_bool_lexemes",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 14,
+      "expected": [
+        {
+          "end_byte": 6,
+          "name": "incident_id",
+          "ordinal": 0,
+          "source_value": "000123",
+          "source_value_lexeme": "000123",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 8,
+          "name": "risk",
+          "ordinal": 1,
+          "source_value": "0",
+          "source_value_lexeme": "0",
+          "start_byte": 7
+        },
+        {
+          "end_byte": 14,
+          "name": "enabled",
+          "ordinal": 2,
+          "source_value": "false",
+          "source_value_lexeme": "false",
+          "start_byte": 9
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "incident_id",
+        "risk",
+        "enabled"
+      ],
+      "ordered_names_sha256": "40f6f15097b68f6e17124e4618e9383f9c9ddd5335b2e18ccafc7a61bd82412e",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "06c30be500f5d1126de333a13716d06ca27ac2bc19616633ce2b59c798f8b6a5",
+      "source": "000123,0,false",
+      "source_sha256": "06c30be500f5d1126de333a13716d06ca27ac2bc19616633ce2b59c798f8b6a5",
+      "start_byte": 0
+    },
+    {
+      "case_id": "unreviewed_named_prefix_stays_residual",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 23,
+      "expected": [
+        {
+          "end_byte": 21,
+          "name": "first",
+          "ordinal": 0,
+          "source_value": "x",
+          "source_value_lexeme": "x",
+          "start_byte": 20
+        },
+        {
+          "end_byte": 23,
+          "name": "second",
+          "ordinal": 1,
+          "source_value": "y",
+          "source_value_lexeme": "y",
+          "start_byte": 22
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second"
+      ],
+      "ordered_names_sha256": "f5ca319099f6b777b72517eb1fd6c40d5fd45f43acd86c0ce687aed7b8a7a0f9",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "968e772cf168b7f17f3fbd00e6e1c8b4afb8db2f0c1548d9928f3c3d7a758a75",
+      "source": "trace_id=not_scored x,y",
+      "source_sha256": "12a8a5def3a87bb4183009dd4481e9bef5027c0ef038da663902dc2e8ad2ab67",
+      "start_byte": 20
+    },
+    {
+      "case_id": "newline_only_within_quoted_field",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 26,
+      "expected": [
+        {
+          "end_byte": 4,
+          "name": "action",
+          "ordinal": 0,
+          "source_value": "deny",
+          "source_value_lexeme": "deny",
+          "start_byte": 0
+        },
+        {
+          "end_byte": 19,
+          "name": "description",
+          "ordinal": 1,
+          "source_value": "first\nsecond",
+          "source_value_lexeme": "\"first\nsecond\"",
+          "start_byte": 5
+        },
+        {
+          "end_byte": 26,
+          "name": "state",
+          "ordinal": 2,
+          "source_value": "review",
+          "source_value_lexeme": "review",
+          "start_byte": 20
+        }
+      ],
+      "expected_disposition": "REVIEW_ONLY_EXTERNAL_CSV_SCHEMA",
+      "mutate": "none",
+      "ordered_names": [
+        "action",
+        "description",
+        "state"
+      ],
+      "ordered_names_sha256": "b38018995fc68629cafa9546a07850698247fe4e2544b93ecebb177633a2231a",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "147a52415d2c104304a558a9051c909e2842588275386845250a304e39d0eb83",
+      "source": "deny,\"first\nsecond\",review",
+      "source_sha256": "147a52415d2c104304a558a9051c909e2842588275386845250a304e39d0eb83",
+      "start_byte": 0
+    },
+    {
+      "case_id": "framing_unconfirmed",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "RAW_ONLY",
+      "mutate": "no_framing",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "wrong_source_sha",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "bad_source_sha",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "wrong_source_slice_sha",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "bad_slice_sha",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "wrong_schema_sha",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "bad_schema_sha",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "invalid_source_offset",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "negative_start",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "mid_codepoint_slice",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 15,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "mid_utf8",
+      "ordered_names": [
+        "first",
+        "second"
+      ],
+      "ordered_names_sha256": "f5ca319099f6b777b72517eb1fd6c40d5fd45f43acd86c0ce687aed7b8a7a0f9",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "1eb7c54d52831bbfe8942af0b1c56b7409523a59ed6ca99c1174fef7eb32c1b5",
+      "source": "prefix 😀 a,b",
+      "source_sha256": "ef5a49643ee6d36d1c53fad967bb5ae084857ba22accd52572c7ab34009b2a31",
+      "start_byte": 12
+    },
+    {
+      "case_id": "out_of_range_slice",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "end_out_of_range",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "empty_slice",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "empty_slice",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "wrong_declared_format",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "wrong_format",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "unsupported_schema_provenance",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "wrong_provenance",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "duplicate_schema_name",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "field",
+        "Field",
+        "third"
+      ],
+      "ordered_names_sha256": "2022c0cdc95af33e82e9acce66a03360baf958f54159bf08e70d6797dcab4540",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "unsafe_schema_name",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "__proto__",
+        "third"
+      ],
+      "ordered_names_sha256": "450d897fcc294136b7cda1f630efafaf09e843f301ca6454c000cddd2339c973",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "malformed_schema_name",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "has space",
+        "third"
+      ],
+      "ordered_names_sha256": "366db29a79c5b7c3d10a0e08cc31a62684020e157457dfe4443ff17d7746e18b",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "schema_width_mismatch",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "third"
+      ],
+      "ordered_names_sha256": "1f7267abf87b04adeac30116e222b5f822f184f165bf82ad9d15593e71eec6ba",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "missing_schema_columns",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [],
+      "ordered_names_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "unclosed_quote",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 12,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "3cbd9f140a234330370a9c6edd5239c5c131cb86e02d9f2d4dfd150b97a0077f",
+      "source": "a,\"missing,z",
+      "source_sha256": "3cbd9f140a234330370a9c6edd5239c5c131cb86e02d9f2d4dfd150b97a0077f",
+      "start_byte": 0
+    },
+    {
+      "case_id": "quote_mid_unquoted",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 11,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "3bca9cbb8a65477ed42028145812723d310cdfbcd9c3e25890c6c1a50ddd507e",
+      "source": "a,abc\"def,z",
+      "source_sha256": "3bca9cbb8a65477ed42028145812723d310cdfbcd9c3e25890c6c1a50ddd507e",
+      "start_byte": 0
+    },
+    {
+      "case_id": "extra_record_line",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 11,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "18ad670de06146da075ad2ecbf65d0388c3caad3f6f9262dac6bee1a5c2c842f",
+      "source": "a,b,c\nd,e,f",
+      "source_sha256": "18ad670de06146da075ad2ecbf65d0388c3caad3f6f9262dac6bee1a5c2c842f",
+      "start_byte": 0
+    },
+    {
+      "case_id": "embedded_nul",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "9f8a03ab3a753edde51f1b0216319ce837257ffc0bf8e7f87c1d0fdeb4ce5fbe",
+      "source": "a,\u0000,c",
+      "source_sha256": "9f8a03ab3a753edde51f1b0216319ce837257ffc0bf8e7f87c1d0fdeb4ce5fbe",
+      "start_byte": 0
+    },
+    {
+      "case_id": "oversized_source",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "oversized_source",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "oversized_slice",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "oversized_slice",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "oversized_schema",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "oversized_schema",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "invalid_utf8_bytes",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 5,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "invalid_utf8",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "a,b,c",
+      "source_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "start_byte": 0
+    },
+    {
+      "case_id": "utf8_bom_source",
+      "declared_format": "rfc4180_comma_csv",
+      "end_byte": 8,
+      "expected": [],
+      "expected_disposition": "ABSTAIN_UNSAFE",
+      "mutate": "none",
+      "ordered_names": [
+        "first",
+        "second",
+        "third"
+      ],
+      "ordered_names_sha256": "ee122432ce1906316c1c0bfc9ca874fcb492ce561af465fc3d39a80456688813",
+      "record_framing": "EXPLICIT_SINGLE_DISPLAYED_RECORD",
+      "schema_provenance": "PUBLISHER_DOCUMENTED_ORDER",
+      "slice_sha256": "205830ca5b23bbe39ab510cfddc1dff2d9842e38b5fa7b7c48cd4ca7e44f92a1",
+      "source": "﻿a,b,c",
+      "source_sha256": "aabc2bc4d09858ec9d665bb89d3c8e6cf137717a90c0ec44317ac95cdebddd18",
+      "start_byte": 3
+    }
+  ],
+  "evidence": "AUTHOR_SYNTHETIC_NOT_DEVICE_OR_NATIVE",
+  "schema_version": "independent_synthetic_source_v1"
+}
