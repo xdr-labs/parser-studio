@@ -25,9 +25,14 @@ jobs:
         run: npm run build
       - name: Offline Python standard-library sender grammar
         run: python3 -m unittest discover -s tests -p 'test_python_sender_formats.py' -v
+      - name: Embedded Multi-Pass standard-library structural service
+        run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
       - name: Browser user scenarios
+        env:
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+          PARSER_STUDIO_MULTIPASS_PORT: '5292'
         run: npm run test:browser
       # Integration tests use an exact, separately reviewed backend commit,
       # not a PR merge, live DP credential, sensor, or customer fixture.
@@ -49,6 +54,8 @@ jobs:
           PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
           PARSER_STUDIO_BACKEND_HEAD: 429b179fc674eb07f3e2250e78aea7883a71b433
           PARSER_STUDIO_BACKEND_PORT: '4191'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+          PARSER_STUDIO_MULTIPASS_PORT: '5292'
         run: npx playwright test tests/integrated-backend.spec.ts tests/evidence-recovery.spec.ts tests/chatgpt-full-recovery.spec.ts tests/ai-split-merge-backend.spec.ts tests/beginner-regex-recovery.spec.ts --project=chromium --workers=1
       - name: Upload failure artifacts
         if: failure()

@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 const candidatePort=Number(process.env.PARSER_STUDIO_BACKEND_PORT || 4179);
 if(!Number.isSafeInteger(candidatePort)||candidatePort<1024||candidatePort>65535)
   throw new Error('Invalid isolated backend loopback port');
+const multiPassPort=Number(process.env.PARSER_STUDIO_MULTIPASS_PORT || 4292);
+if(!Number.isSafeInteger(multiPassPort)||multiPassPort<1024||multiPassPort>65535||multiPassPort===candidatePort)
+  throw new Error('Invalid isolated Multi-Pass loopback port');
 const backendOrigin='http://127.0.0.1:'+candidatePort;
 const loopbackProxy={target:backendOrigin,changeOrigin:false};
 export default defineConfig({
@@ -15,7 +18,7 @@ export default defineConfig({
     '/api/v1/parser-pairs': loopbackProxy,
     '/api/v1/test-lab': loopbackProxy,
     '/api/v1/multipass': {
-      target:'http://127.0.0.1:4292',changeOrigin:false,
+      target:'http://127.0.0.1:'+multiPassPort,changeOrigin:false,
       configure(proxy){
         proxy.on('proxyReq',request=>request.setHeader('Origin','http://127.0.0.1:5180'));
       },
