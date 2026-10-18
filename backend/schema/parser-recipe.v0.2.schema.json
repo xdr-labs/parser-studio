@@ -1,0 +1,530 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:xdr-labs:parser-recipe:v0.2",
+  "title": "Parser Studio reviewed ParserRecipe v0.2 (allowlisted compiler subset)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "schemaRevision",
+    "compilerMode",
+    "projectId",
+    "sourceFormat",
+    "bodyFormat",
+    "sample",
+    "stages",
+    "nativeVerified",
+    "targetVerified"
+  ],
+  "properties": {
+    "contract": {
+      "const": "parser-studio.recipe.v0.2"
+    },
+    "schemaRevision": {
+      "const": "0.2"
+    },
+    "compilerMode": {
+      "const": "REVIEW_ONLY"
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^draft-[a-z][a-z0-9_]{2,47}$"
+    },
+    "sourceFormat": {
+      "enum": [
+        "json",
+        "kv",
+        "csv",
+        "cef",
+        "leef",
+        "syslog_rfc3164",
+        "syslog_rfc5424",
+        "mixed",
+        "java_stacktrace",
+        "regex",
+        "generic_structural"
+      ]
+    },
+    "bodyFormat": {
+      "enum": [
+        "json",
+        "kv",
+        "csv",
+        "cef",
+        "leef",
+        "mixed",
+        "java_stacktrace",
+        "regex",
+        "generic_structural"
+      ]
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "events"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        }
+      }
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 125,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "boundary"
+            ],
+            "properties": {
+              "op": {
+                "const": "split_event"
+              },
+              "boundary": {
+                "enum": [
+                  "single-line",
+                  "blank-line"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "version",
+              "mode"
+            ],
+            "properties": {
+              "op": {
+                "const": "unwrap_syslog"
+              },
+              "version": {
+                "enum": [
+                  1,
+                  3164
+                ]
+              },
+              "mode": {
+                "const": "strict_header"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "families",
+              "mode"
+            ],
+            "properties": {
+              "op": {
+                "const": "dispatch_family"
+              },
+              "families": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 4,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "json",
+                    "kv",
+                    "cef",
+                    "leef",
+                    "rfc5424_cef",
+                    "rfc5424_leef",
+                    "rfc3164_kv",
+                    "rfc5424_json",
+                    "rfc5424_kv",
+                    "rfc3164_cef",
+                    "rfc3164_leef",
+                    "csv"
+                  ]
+                }
+              },
+              "mode": {
+                "const": "strict_prefix"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_json"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_kv"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_cef"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_leef"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_java_stacktrace"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_generic_structural"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "pattern"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_regex"
+              },
+              "pattern": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]{1,256}$"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "columns",
+              "delimiter"
+            ],
+            "properties": {
+              "op": {
+                "const": "parse_csv"
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 100,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$"
+                }
+              },
+              "delimiter": {
+                "enum": [
+                  ",",
+                  ";",
+                  "\t"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "source",
+              "target",
+              "data_type",
+              "group"
+            ],
+            "properties": {
+              "op": {
+                "const": "map_field"
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+              },
+              "data_type": {
+                "enum": [
+                  "string",
+                  "integer",
+                  "ip",
+                  "port",
+                  "boolean",
+                  "date"
+                ]
+              },
+              "group": {
+                "enum": [
+                  "top_fields",
+                  "ns_fields",
+                  "vendor_fields"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "target",
+              "data_type"
+            ],
+            "properties": {
+              "op": {
+                "const": "cast_type"
+              },
+              "target": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+              },
+              "data_type": {
+                "enum": [
+                  "integer",
+                  "ip",
+                  "port",
+                  "boolean",
+                  "date"
+                ]
+              },
+              "timezone": {
+                "const": "UTC"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "source",
+              "delimiter",
+              "targets"
+            ],
+            "properties": {
+              "op": {
+                "const": "split_field"
+              },
+              "source": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "delimiter": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]{1,8}$"
+              },
+              "targets": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 8,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "sources",
+              "delimiter",
+              "target"
+            ],
+            "properties": {
+              "op": {
+                "const": "merge_fields"
+              },
+              "sources": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 8,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "delimiter": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]{1,8}$"
+              },
+              "target": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "defaultIndex",
+              "rules"
+            ],
+            "properties": {
+              "op": {
+                "const": "classify"
+              },
+              "defaultIndex": {
+                "enum": [
+                  "session",
+                  "threat",
+                  "syslog",
+                  "winlogevent"
+                ]
+              },
+              "rules": {
+                "type": "array",
+                "maxItems": 24,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "field",
+                    "operator",
+                    "value",
+                    "index"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+                    },
+                    "operator": {
+                      "const": "equals"
+                    },
+                    "value": {
+                      "type": "string",
+                      "maxLength": 128,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+                    },
+                    "index": {
+                      "enum": [
+                        "session",
+                        "threat",
+                        "syslog",
+                        "winlogevent"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "mode"
+            ],
+            "properties": {
+              "op": {
+                "const": "fallback_unparsed"
+              },
+              "mode": {
+                "const": "retain_unparsed"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "nativeVerified": {
+      "const": false
+    },
+    "targetVerified": {
+      "const": false
+    }
+  }
+}

@@ -1,0 +1,358 @@
+{
+  "kind": "parser-studio.synthetic-golden-events.v0.1",
+  "origin": "independently-authored-public-synthetic",
+  "cases": [
+    {
+      "id": "json-threat",
+      "slug": "sample_firewall",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.17\"},\"destination\":{\"ip\":\"198.51.100.81\",\"port\":\"443\"},\"action\":\"deny\",\"event\":{\"id\":\"301\"}}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "dstip": "198.51.100.81",
+        "dstport": 443,
+        "action": "deny",
+        "log": {
+          "event_id": 301
+        },
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "json-invalid-port",
+      "slug": "sample_firewall",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.10\"},\"destination\":{\"ip\":\"198.51.100.20\",\"port\":\"65536\"},\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "MappedFieldError",
+        "parser_err_stage": "normalization",
+        "parser_err_field": "destination.port"
+      }
+    },
+    {
+      "id": "kv-session",
+      "slug": "sample_kv",
+      "raw": "src_ip=192.0.2.11 dst_port=80 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 80,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "extended-timestamp",
+      "slug": "sample_extended",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.9\"},\"destination\":{\"ip\":\"198.51.100.7\",\"port\":\"443\"},\"action\":\"allow\",\"event_time\":\"2026-10-12T12:34:56Z\",\"username\":\"synthetic-user\"}",
+      "expectedTime": "2026-10-12T12:34:56Z",
+      "expectedRecord": {
+        "srcip": "192.0.2.9",
+        "dstip": "198.51.100.7",
+        "dstport": 443,
+        "action": "allow",
+        "timestamp": 1791808496000,
+        "Synthetic": {
+          "username": "synthetic-user"
+        },
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "csv-threat",
+      "slug": "sample_csv",
+      "raw": "192.0.2.9,443,\"deny\"",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.9",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "csv-invalid-column-count",
+      "slug": "sample_csv",
+      "raw": "192.0.2.1,443",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-threat",
+      "slug": "sample_syslog",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - src_ip=198.51.100.5 action=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "198.51.100.5",
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "cef-threat",
+      "slug": "sample_cef",
+      "raw": "CEF:0|Synthetic|FW|1|42|Denied\\|Policy|8|src=192.0.2.7 dst=198.51.100.1 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.7",
+        "dstip": "198.51.100.1",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "leef-session",
+      "slug": "sample_leef",
+      "raw": "LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=443^act=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 443,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "enriched-threat",
+      "slug": "sample_enriched",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.15\"},\"destination\":{\"ip\":\"198.51.100.55\",\"port\":443},\"action\":\"DeNy\",\"endpoint\":\"192.0.2.15:443\",\"event\":{\"id\":\"789\"}}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.15",
+        "dstip": "198.51.100.55",
+        "dstport": 443,
+        "action": "DeNy",
+        "endpoint": "192.0.2.15:443",
+        "log": {
+          "event_id": 789,
+          "source_label": "synthetic",
+          "action_lower": "deny",
+          "original_srcip": "192.0.2.15",
+          "action_upper": "DENY",
+          "endpoint_host": "192.0.2.15",
+          "endpoint_port": "443",
+          "endpoint_joined": "192.0.2.15:443"
+        },
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-cef-threat",
+      "slug": "sample_syslog_cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-leef-session",
+      "slug": "sample_syslog_leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 80,
+        "action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-cef-invalid",
+      "slug": "sample_syslog_cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 malformed",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "MappedFieldError",
+        "parser_err_stage": "normalization",
+        "parser_err_field": "body.src"
+      }
+    },
+    {
+      "id": "rfc5424-leef-invalid",
+      "slug": "sample_syslog_leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - LEEF:2.0|Synthetic|FW|1|501|::|src=203.0.113.8",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "leef-hex-pipe-session",
+      "slug": "sample_leef",
+      "raw": "LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.23|dstPort=80|act=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.23",
+        "dstport": 80,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-leef-hex-session",
+      "slug": "sample_syslog_leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 1 ID - LEEF:2.0|Synthetic|FW|1|501|0x7C|src=203.0.113.24|dstPort=80|act=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "203.0.113.24",
+        "dstport": 80,
+        "action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-timestamp-invalid",
+      "slug": "sample_syslog",
+      "raw": "<165>1 invalid-timestamp synthetic-edge01 synthetic-fw 123 ID42 - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "cef-unsupported-version",
+      "slug": "sample_cef",
+      "raw": "CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.10 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-cef-unsupported-version",
+      "slug": "sample_syslog_cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z synthetic-edge01 synthetic-fw 123 ID42 - CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.10 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-version-two",
+      "slug": "sample_syslog",
+      "raw": "<165>2 2026-10-12T01:02:03Z edge fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-header-overlength",
+      "slug": "sample_syslog",
+      "raw": "<165>1 2026-10-12T01:02:03Z hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "rfc5424-nonascii-header",
+      "slug": "sample_syslog",
+      "raw": "<165>1 2026-10-12T01:02:03Z 테스트 fw 1 ID - src_ip=192.0.2.10 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    },
+    {
+      "id": "leef-incomplete-escape",
+      "slug": "sample_leef",
+      "raw": "LEEF:1.0|Synthetic|FW|1|500|src=203.0.113.7\\",
+      "expectedTime": null,
+      "expectedRecord": {
+        "stellar_log_index": "syslog",
+        "parser_err_msg": "ArgumentError",
+        "parser_err_stage": "extraction"
+      }
+    }
+  ]
+}
