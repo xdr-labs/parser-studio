@@ -6,6 +6,9 @@ import { join, resolve } from 'node:path';
 const port = Number(process.env.PARSER_STUDIO_TEST_PORT || 5180);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid isolated browser test port');
 const liveBackend=process.env.PARSER_STUDIO_LIVE_BACKEND==='1';
+// Ordinary browser regression must use the same pinned, built loopback compiler
+// as the dedicated native/HTTP acceptance suite. Do not silently proxy 4179.
+const browserBackend=liveBackend||process.env.PARSER_STUDIO_BROWSER_BACKEND==='1';
 const backendPort=Number(process.env.PARSER_STUDIO_BACKEND_PORT || (liveBackend?4191:4179));
 if(!Number.isInteger(backendPort)||backendPort<1024||backendPort>65535||backendPort===port)
   throw new Error('Invalid isolated backend port');
@@ -17,8 +20,8 @@ if(!Number.isInteger(multiPassPort)||multiPassPort<1024||multiPassPort>65535||
 const multiPassServerFile=resolve('runtime/multipass/multipass_preview_api.py');
 if(isolatedMultiPass&&!existsSync(multiPassServerFile))
   throw new Error('Pinned in-repository Multi-Pass service is required for isolated browser tests.');
-const backendRoot=liveBackend?resolve(process.env.PARSER_STUDIO_BACKEND_ROOT||''):null;
-if(liveBackend){
+const backendRoot=browserBackend?resolve(process.env.PARSER_STUDIO_BACKEND_ROOT||''):null;
+if(browserBackend){
   if(!process.env.PARSER_STUDIO_BACKEND_ROOT||
     !/^[a-f0-9]{40}$/.test(process.env.PARSER_STUDIO_BACKEND_HEAD||'')||
     !backendRoot||!existsSync(join(backendRoot,'dist/src/server.js')))
@@ -41,7 +44,7 @@ const multiPassServer={
   timeout:30_000,reuseExistingServer:false,
 };
 const webServer=[
-  ...(liveBackend?[{
+  ...(browserBackend?[{
     command:'node '+quote(join(backendRoot!,'dist/src/server.js')),
     url:'http://127.0.0.1:'+backendPort+'/health',
     env:{PARSER_BACKEND_PORT:String(backendPort)},

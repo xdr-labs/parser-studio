@@ -29,13 +29,11 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
-      - name: Browser user scenarios
-        env:
-          PARSER_STUDIO_TEST_MULTIPASS: '1'
-          PARSER_STUDIO_MULTIPASS_PORT: '5292'
-        run: npm run test:browser
-      # Integration tests use an exact, separately reviewed backend commit,
-      # not a PR merge, live DP credential, sensor, or customer fixture.
+      # Historical browser tests require an actual local parser compiler for
+      # map/review/create; without it they fail on backend-unavailable states
+      # unrelated to the logged security event. Reuse the exact pinned backend
+      # for the ordinary browser suite and separately run the integrated E2E.
+      # No DP, sensor, credential, target integration or deployment is enabled.
       - name: Checkout pinned independent parser backend
         uses: actions/checkout@v4
         with:
@@ -48,6 +46,15 @@ jobs:
           test "$(git -C .integration-backend-src rev-parse HEAD)" = 429b179fc674eb07f3e2250e78aea7883a71b433
           npm ci --prefix .integration-backend-src/backend --no-audit --no-fund
           npm run build --prefix .integration-backend-src/backend
+      - name: Browser user scenarios
+        env:
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
+          PARSER_STUDIO_BACKEND_HEAD: 429b179fc674eb07f3e2250e78aea7883a71b433
+          PARSER_STUDIO_BACKEND_PORT: '4191'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+          PARSER_STUDIO_MULTIPASS_PORT: '5292'
+        run: npm run test:browser
       - name: Real Chromium and HTTP integration over localhost
         env:
           PARSER_STUDIO_LIVE_BACKEND: '1'
