@@ -1,0 +1,379 @@
+{
+  "reference": "https://www.w3.org/TR/logfile/ W3C Extended Log File Format (Working Draft); bounded one-header security profile",
+  "scope": "Author-derived narrow syntax; UTF-8 example measures source offsets only, not normative ASCII certification",
+  "cases": [
+    {
+      "id": "W3C_SPACE_QUOTED",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 \"Mozilla/5.0 Test Agent\" 403\n",
+      "valid": true,
+      "delimiter": "space",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 85,
+            "endByte": 95
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:34:56",
+            "decoded": "12:34:56",
+            "startByte": 96,
+            "endByte": 104
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"Mozilla/5.0 Test Agent\"",
+            "decoded": "Mozilla/5.0 Test Agent",
+            "startByte": 105,
+            "endByte": 129
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "403",
+            "decoded": "403",
+            "startByte": 130,
+            "endByte": 133
+          }
+        ]
+      ],
+      "sourceBytes": 134,
+      "physicalLines": 4,
+      "rowCount": 1
+    },
+    {
+      "id": "W3C_DOUBLED_QUOTES",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:57 \"Browser \"\"QA\"\"\" 200\n",
+      "valid": true,
+      "delimiter": "space",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 85,
+            "endByte": 95
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:34:57",
+            "decoded": "12:34:57",
+            "startByte": 96,
+            "endByte": 104
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"Browser \"\"QA\"\"\"",
+            "decoded": "Browser \"QA\"",
+            "startByte": 105,
+            "endByte": 121
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "200",
+            "decoded": "200",
+            "startByte": 122,
+            "endByte": 125
+          }
+        ]
+      ],
+      "sourceBytes": 126,
+      "physicalLines": 4,
+      "rowCount": 1
+    },
+    {
+      "id": "W3C_BACKSLASH_LITERAL",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:58 \"domain\\user\" 200\n",
+      "valid": true,
+      "delimiter": "space",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 85,
+            "endByte": 95
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:34:58",
+            "decoded": "12:34:58",
+            "startByte": 96,
+            "endByte": 104
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"domain\\user\"",
+            "decoded": "domain\\user",
+            "startByte": 105,
+            "endByte": 118
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "200",
+            "decoded": "200",
+            "startByte": 119,
+            "endByte": 122
+          }
+        ]
+      ],
+      "sourceBytes": 123,
+      "physicalLines": 4,
+      "rowCount": 1
+    },
+    {
+      "id": "W3C_TAB_UNSET",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18\t12:34:59\t-\t401\n",
+      "valid": true,
+      "delimiter": "tab",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 85,
+            "endByte": 95
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:34:59",
+            "decoded": "12:34:59",
+            "startByte": 96,
+            "endByte": 104
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "-",
+            "decoded": "-",
+            "startByte": 105,
+            "endByte": 106
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "401",
+            "decoded": "401",
+            "startByte": 107,
+            "endByte": 110
+          }
+        ]
+      ],
+      "sourceBytes": 111,
+      "physicalLines": 4,
+      "rowCount": 1
+    },
+    {
+      "id": "W3C_CRLF_QUOTED",
+      "wire": "#Software: Example Service\r\n#Version: 1.0\r\n#Fields: date time cs(User-Agent) sc-status\r\n2026-10-18 12:35:00 \"curl/8.0 client\" 404\r\n",
+      "valid": true,
+      "delimiter": "space",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 88,
+            "endByte": 98
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:35:00",
+            "decoded": "12:35:00",
+            "startByte": 99,
+            "endByte": 107
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"curl/8.0 client\"",
+            "decoded": "curl/8.0 client",
+            "startByte": 108,
+            "endByte": 125
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "404",
+            "decoded": "404",
+            "startByte": 126,
+            "endByte": 129
+          }
+        ]
+      ],
+      "sourceBytes": 131,
+      "physicalLines": 4,
+      "rowCount": 1
+    },
+    {
+      "id": "W3C_MULTIPLE_ROWS",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:35:01 \"bot client\" 500\n2026-10-18 12:35:02 \"human client\" 200\n",
+      "valid": true,
+      "delimiter": "space",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 85,
+            "endByte": 95
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:35:01",
+            "decoded": "12:35:01",
+            "startByte": 96,
+            "endByte": 104
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"bot client\"",
+            "decoded": "bot client",
+            "startByte": 105,
+            "endByte": 117
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "500",
+            "decoded": "500",
+            "startByte": 118,
+            "endByte": 121
+          }
+        ],
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 122,
+            "endByte": 132
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:35:02",
+            "decoded": "12:35:02",
+            "startByte": 133,
+            "endByte": 141
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"human client\"",
+            "decoded": "human client",
+            "startByte": 142,
+            "endByte": 156
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "200",
+            "decoded": "200",
+            "startByte": 157,
+            "endByte": 160
+          }
+        ]
+      ],
+      "sourceBytes": 161,
+      "physicalLines": 5,
+      "rowCount": 2
+    },
+    {
+      "id": "W3C_UTF8_SOURCE_EXTENSION",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:35:03 \"€😀 sample\" 201\n",
+      "valid": true,
+      "delimiter": "space",
+      "expected": [
+        [
+          {
+            "name": "date",
+            "rawLexeme": "2026-10-18",
+            "decoded": "2026-10-18",
+            "startByte": 85,
+            "endByte": 95
+          },
+          {
+            "name": "time",
+            "rawLexeme": "12:35:03",
+            "decoded": "12:35:03",
+            "startByte": 96,
+            "endByte": 104
+          },
+          {
+            "name": "cs(User-Agent)",
+            "rawLexeme": "\"€😀 sample\"",
+            "decoded": "€😀 sample",
+            "startByte": 105,
+            "endByte": 121
+          },
+          {
+            "name": "sc-status",
+            "rawLexeme": "201",
+            "decoded": "201",
+            "startByte": 122,
+            "endByte": 125
+          }
+        ]
+      ],
+      "sourceBytes": 126,
+      "physicalLines": 4,
+      "rowCount": 1
+    },
+    {
+      "id": "W3C_UNTERMINATED_QUOTE",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 \"missing 403\n",
+      "valid": false,
+      "sourceBytes": 118,
+      "expected": []
+    },
+    {
+      "id": "W3C_UNQUOTED_EMBEDDED_QUOTE",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 Mozil\"la 403\n",
+      "valid": false,
+      "sourceBytes": 118,
+      "expected": []
+    },
+    {
+      "id": "W3C_INVALID_QUOTED_TRAILING_JUNK",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 \"client\"junk 403\n",
+      "valid": false,
+      "sourceBytes": 122,
+      "expected": []
+    },
+    {
+      "id": "W3C_UNKNOWN_CONTROL_BYTE",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 bad\u0001thing 403\n",
+      "valid": false,
+      "sourceBytes": 119,
+      "expected": []
+    },
+    {
+      "id": "W3C_MIXED_DELIMITERS",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18\t12:34:56\tclient\t403\n2026-10-18 12:34:57 client 401\n",
+      "valid": false,
+      "sourceBytes": 147,
+      "expected": []
+    },
+    {
+      "id": "W3C_FIELD_COUNT_DRIFT",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 browser\n",
+      "valid": false,
+      "sourceBytes": 113,
+      "expected": []
+    },
+    {
+      "id": "W3C_SCHEMA_ROTATION_WITHOUT_BLOCK",
+      "wire": "#Software: Example Service\n#Version: 1.0\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:56 client 403\n#Fields: date sc-status\n2026-10-18 200\n",
+      "valid": false,
+      "sourceBytes": 155,
+      "expected": []
+    },
+    {
+      "id": "W3C_DATA_BEFORE_FIELDS",
+      "wire": "#Software: Example Service\n#Version: 1.0\n2026-10-18 12:34:56 client 200\n#Fields: date time cs(User-Agent) sc-status\n2026-10-18 12:34:57 client 200\n",
+      "valid": false,
+      "sourceBytes": 147,
+      "expected": []
+    }
+  ]
+}
