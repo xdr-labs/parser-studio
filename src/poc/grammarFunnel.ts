@@ -174,7 +174,11 @@ export function replayCandidate(candidate:LexicalCandidate):GrammarEvidence|null
 }
 
 function fingerprint(candidate:LexicalCandidate):string{
-  return JSON.stringify(candidate.fields.map(f=>[f.key,f.value]));
+  // Identity/value alone cannot prove byte-compatible source ownership.
+  return JSON.stringify(candidate.fields.map(f=>[
+    f.key,f.value,f.keySpan?.startByte??null,f.keySpan?.endByte??null,
+    f.rawValueSpan.startByte,f.rawValueSpan.endByte,
+  ]));
 }
 
 /**
@@ -210,9 +214,17 @@ export function inspectGrammarFunnel(raw:string,baselineOk=false):GrammarInspect
     bodyStart:start,passes:2,note:'Qualified baseline preserved; suggestions cannot replace it'};
   if(checked.length===0)return {disposition:'raw_only',selected:null,candidates:[],
     bodyStart:start,passes:2,note:'No fully consumed bounded grammar'};
-  // Explicit named source keys are stronger evidence than anonymous CSV columns.
-  const mostSpecific=checked.some(item=>item.evidence.naming==='source')?
-    checked.filter(item=>item.evidence.naming==='source'):checked;
+  // A three-column comma/TSV record containing '=' in every cell is valid
+  // as both source-named KV and anonymous CSV/TSV. Without a publisher
+  // declaration, field names are a hypothesis, not an authoritative schema.
+  // Do not apply first-match-wins or favor the named candidate on count.
+  const namingKinds=new Set(checked.map(item=>item.evidence.naming));
+  if(namingKinds.size>1){
+    return {disposition:'ambiguous',selected:null,candidates:evidence,
+      bodyStart:start,passes:2,
+      note:'Competing named and positional interpretations require an explicit source schema'};
+  }
+  const mostSpecific=checked;
   const meanings=new Set(mostSpecific.map(item=>fingerprint(item.candidate)));
   if(meanings.size!==1)return {disposition:'ambiguous',selected:null,candidates:evidence,
     bodyStart:start,passes:2,note:'Competing interpretations disagree on exact field values'};

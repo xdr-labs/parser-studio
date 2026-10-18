@@ -1,0 +1,157 @@
+{
+  "evidence": "Independently authored source ambiguity/ownership synthetic, no manufacturer-independent goldens",
+  "decisionRule": "When both named and positional grammar fully explain the same unqualified bytes, remain ambiguous until producer schema is supplied.",
+  "denominator": "14 records, candidate conflict/abstention gate only. No field accuracy F1 claim.",
+  "cases": [
+    {
+      "id": "S8-COMMA-KV-OR-CSV",
+      "raw": "src=192.0.2.1,dst=198.51.100.2,action=allow",
+      "expectedDisposition": "ambiguous",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_comma",
+        "csv_comma"
+      ],
+      "sourceBytes": 43,
+      "sourceSha256": "f602de377ecf3704cda8d44b5d98c7698530b7155674dde82702a1a79aae709c"
+    },
+    {
+      "id": "S8-TAB-KV-OR-TSV",
+      "raw": "a=1\tb=2\tc=3",
+      "expectedDisposition": "ambiguous",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_tab",
+        "csv_tab"
+      ],
+      "sourceBytes": 11,
+      "sourceSha256": "323185184cbe209e1108e6b8b7f6d7a58cde1aaba11a943f2f94c8208ee503a5"
+    },
+    {
+      "id": "S8-UTF8-COMMA-MULTIGRAMMAR",
+      "raw": "user=보안,act=deny,event=로그",
+      "expectedDisposition": "ambiguous",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_comma",
+        "csv_comma"
+      ],
+      "sourceBytes": 33,
+      "sourceSha256": "6a9af74a4145657f28558c55ab097fdb0693665e1878e11306984a4026175976"
+    },
+    {
+      "id": "S8-COMPETING-NAMED-INTERPRETATIONS",
+      "raw": "a=1|b=2;c=3",
+      "expectedDisposition": "ambiguous",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_pipe",
+        "kv_semicolon"
+      ],
+      "sourceBytes": 11,
+      "sourceSha256": "a09172a18f9c33c32817d86674d5d4bdb7237a03207e68b16baa7881188f550d"
+    },
+    {
+      "id": "S8-DUPLICATE-SOURCE-KEY",
+      "raw": "msg=first msg=second action=deny",
+      "expectedDisposition": "partial_candidate",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_space"
+      ],
+      "sourceBytes": 32,
+      "sourceSha256": "1c4df799d2a213171f81a8c0ab7d9df8a1e3f78ce91b4f21add8857f51ced249"
+    },
+    {
+      "id": "S8-UNQUALIFIED-FORWARDER-PREFIX",
+      "raw": "gateway user=alice action=deny target=app",
+      "expectedDisposition": "partial_candidate",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "prefixed_kv_space"
+      ],
+      "sourceBytes": 41,
+      "sourceSha256": "fbd580db3781b9ec0c1e90b8ca9bdf0f19d32150af1438646aec28c8a836edaa"
+    },
+    {
+      "id": "S8-PLAIN-KV",
+      "raw": "a=1 b=2 c=3",
+      "expectedDisposition": "candidate_only",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_space"
+      ],
+      "sourceBytes": 11,
+      "sourceSha256": "f759710363086ef3d7fc91872855ec15f8baa725d8314c12948dbdf1fd0ad9d5"
+    },
+    {
+      "id": "S8-PLAIN-POSITIONAL-CSV",
+      "raw": "allow,deny,192.0.2.1",
+      "expectedDisposition": "candidate_only",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "csv_comma"
+      ],
+      "sourceBytes": 20,
+      "sourceSha256": "a39df0e53199c6f757a04a4fdd68591c3d8ed374a56c7e84a565b45be876e625"
+    },
+    {
+      "id": "S8-RFC5424-KV",
+      "raw": "<14>1 2026-10-17T08:01:02Z secgw app - - - src=192.0.2.1 dst=198.51.100.9 action=allow",
+      "expectedDisposition": "candidate_only",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [
+        "kv_space"
+      ],
+      "sourceBytes": 86,
+      "sourceSha256": "bce5690113e0a5a9e63a94e3ca0d6dc2a732eb5d6381b613c054edd6cf32d0be"
+    },
+    {
+      "id": "S8-JSON-FORMAT-OWNERSHIP",
+      "raw": "{\"src\":\"192.0.2.1\",\"action\":\"allow\"}",
+      "expectedDisposition": "raw_only",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [],
+      "sourceBytes": 36,
+      "sourceSha256": "9e94ffe73219251044ce59a1bf3a434e64fce0bbd221503f22b4f34ea2956bba"
+    },
+    {
+      "id": "S8-CEF-FORMAT-OWNERSHIP",
+      "raw": "CEF:0|Vendor|FW|1|E7|Alert|5|src=192.0.2.1",
+      "expectedDisposition": "raw_only",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [],
+      "sourceBytes": 42,
+      "sourceSha256": "ff0b52d1abe7c4f7d9d3480d7b90000ff05e77e050e8d96fda4bc753d45bf7c5"
+    },
+    {
+      "id": "S8-UNSTRUCTURED-PROSE",
+      "raw": "unstructured narrative with no source fields",
+      "expectedDisposition": "raw_only",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [],
+      "sourceBytes": 44,
+      "sourceSha256": "ee1785160a744bd6bf60517cfffe33919218d1f11038a428095a790abba0aa2c"
+    },
+    {
+      "id": "S8-MALFORMED-SYSLOG",
+      "raw": "<85>1 2023-01-13T10:10:16--5:00 fw app - - - src=1 dst=2",
+      "expectedDisposition": "invalid_envelope",
+      "baselineOk": false,
+      "expectedCandidateFamilies": [],
+      "sourceBytes": 56,
+      "sourceSha256": "5ce25e6ea70da23f9858a21098d484d0632e71dc754ee3278ec383cc7ba7f61e"
+    },
+    {
+      "id": "S8-BASELINE-FIELD-OWNERSHIP",
+      "raw": "a=1 b=2 c=3",
+      "expectedDisposition": "baseline_preserved",
+      "baselineOk": true,
+      "expectedCandidateFamilies": [
+        "kv_space"
+      ],
+      "sourceBytes": 11,
+      "sourceSha256": "f759710363086ef3d7fc91872855ec15f8baa725d8314c12948dbdf1fd0ad9d5"
+    }
+  ]
+}
