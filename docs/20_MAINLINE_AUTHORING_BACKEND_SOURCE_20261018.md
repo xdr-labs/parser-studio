@@ -98,3 +98,14 @@ expected nil (the contract for *individual grammar probe* functions).
 Their assertions now require the specific failure. This preserves the
 existing fail-closed parser behavior and does not promote any unsupported
 input to successful parsing. New Ruby CI remains the authoritative check.
+
+## Generalized IP host lexical boundary
+
+Follow-up Ruby CI found one genuine false-complete path: an invalid
+address in a positional security event could still satisfy a permissive
+IP-token count. The common IP validator now accepts only a full four-octet
+IPv4 lexical form or a colon-bearing IPv6 form **before** IPAddr validates
+the value, so decimal port tokens can never masquerade as IP hosts.
+This is a shared parser grammar safeguard, not a vendor-specific patch.
+The independently pinned invalid-destination case remains a negative
+acceptance check; do not promote it to PARSED to improve metrics.

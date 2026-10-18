@@ -161,6 +161,13 @@ test("Generic Structural V12 Ruby helper parses bounded WatchGuard free-form mes
   assert.equal(runRuby("parserstudio_generic_watchguard_message",alarm.replace("3000-0152","bad-id")),null);
 });
 
+test("Generic Structural IP tokens do not reinterpret decimal ports as addresses",{skip:!rubyAvailable},()=>{
+  assert.equal(runRuby("parserstudio_generic_ip_token","61507"),false);
+  assert.equal(runRuby("parserstudio_generic_ip_token","443"),false);
+  assert.equal(runRuby("parserstudio_generic_ip_token","192.0.2.1"),true);
+  assert.equal(runRuby("parserstudio_generic_ip_token","2001:db8::1"),true);
+});
+
 test("Generic Structural V11 Ruby helper parses bounded ISO PRI mixed positional logs",{skip:!rubyAvailable},()=>{
   const raw='<129>2026-10-15 14:54:44.502 +0100 edge WAF ALERT CODE 192.0.2.1 61507 198.51.100.2 443 app policy LOG NONE token1 token2 token3 token4 "-" "multi word positional value" token7 token8';
   const parsed=runRuby("parserstudio_generic_structural",raw) as any;

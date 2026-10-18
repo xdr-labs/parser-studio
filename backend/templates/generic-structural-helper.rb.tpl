@@ -512,6 +512,12 @@ def parserstudio_generic_profile_tokens(text, start)
 end
 
 def parserstudio_generic_ip_token(value)
+  # A port/decimal integer is not an IP host, even when an IP library
+  # accepts abbreviated integer notation. Require a full IPv4 lexical
+  # address or an IPv6 colon form before semantic address validation.
+  return false unless value.is_a?(String)
+  ipv4 = value.match?(/\A(?:[0-9]{1,3}\.){3}[0-9]{1,3}\z/)
+  return false unless ipv4 || value.include?(':')
   IPAddr.new(value)
   true
 rescue StandardError
