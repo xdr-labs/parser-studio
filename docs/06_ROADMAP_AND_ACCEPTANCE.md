@@ -10,9 +10,31 @@ user-facing authoring paths only: **Auto Parser** and **ChatGPT Assisted Parser*
 | LOCAL-2 | P0 | Safety for browser-local sensitive data | Client-side IndexedDB per browser profile and site origin, SHA-bounded records, reject corrupted/oversized revisions and forged mapping paths, warn that clearing browser storage or changing site origins loses access; no automatic LLM transfer or synchronization |
 | PARSER-1 | P0 | Use qualified generic structural Multi-Pass/Funnel improvements in actual UI/compiler where demonstrably beneficial | Exact same-candidate structural PARSED/PARTIAL/RAW accounting and user review; no false complete; limited finite multi-format representative regression |
 | UX-1 | P0 | Resolve common novice/mapping/CSV/prefix/forwarder gaps found in real local tests | Same browser test logs can be revised through several snapshot versions and converted into a downloadable DRAFT parser |
+| SCRIPT-1 | P0, after LOCAL-1 | Generate a downloadable standalone Python 3 standard-library-only synthetic log emitter from the current browser-reviewed logs | User downloads a Python script, runs it on their own machine, enters destination sensor IP/hostname and port at runtime, explicitly selects UDP/TCP with UDP default, and sends exactly one log event per second; no server-stored source logs or Parser Studio-initiated sensor network connection |
+| SCRIPT-2 | P0, after SCRIPT-1 | Preserve structure while generating changing test fields | At each send, refresh recognized timestamps to the then-current time (preserve supported RFC3164/RFC5424/ISO/epoch time dialects); randomize supported IP address, location, user name, email address and other recognized fields using safe plausible values while preserving delimiters, quoting, escapes, field order and event boundaries; unsupported ambiguous transformations remain unchanged with a visible warning |
+| SCRIPT-3 | P0, after SCRIPT-1 | User-controlled offline execution safety and compatibility | Generated script uses only Python built-in libraries; requires user-initiated execution and explicit destination input, validates destination and port, makes no connection before user confirmation, sends at 1-event/second maximum, defaults to a bounded event count and supports Ctrl-C, reports results accurately; no pip or app backend/sensor management API |
 | CI-1 | P0 | Reconcile actual browser E2E assumptions and run exact-HEAD local/integration/CI qualification | Do not disable failing scenarios or report green with known CI failure. Existing product #89 CI #39125171427: 52 PASS, 61 FAIL in historical browser suites; pinned backend integration skipped |
 | MAIN-2 | P0 gate | Mainline incorporation | Update main only after exact code/contract comparison, conflicts resolved and required qualification; verify remote main HEAD after merge. No production/release automatically follows a merge |
-| LAB-1 | Outside scope | Real DP upload/apply, sensor event delivery, data-ingestion/index-result checking | Do not show or implement these as current product workflows; preserve prior isolated evidence without product promotion |
+| LAB-1 | Outside scope | Parser Studio-initiated DP parser upload/apply, server-side sensor sends and ingestion/index-result queries | No real device operations in web/backend product. The downloaded, manually executed SCRIPT-1 script is a separate explicitly in-scope user utility, not a Parser Studio live sensor connection |
+
+**Downloaded test emitter boundary (SCRIPT-1/2/3):** Users explicitly choose
+Generate Python Test Sender for the current browser sample and download a
+self-contained Python 3 script; the browser constructs the file without
+uploading log source to Parser Studio or external AI. Launching that script
+on the user's own machine interactively requests destination sensor
+IP/hostname and port (UDP default, optional TCP); the script, not the app,
+sends exactly one synthetically updated log event per second. Prefer a finite
+default count and Ctrl-C, no silent infinite network load; confirm the
+destination before any socket send. Scripts must preserve log grammar,
+supported time dialects and field boundaries, and distinguish values
+regenerated versus retained. Each emitted event has a current timestamp
+at transmission and fresh values in recognized IP, geographic location,
+username, email and similar supported fields. Ambiguous unsupported values
+remain unchanged with an explanation instead of broken parsing. The
+downloaded Python file contains the source sample in plain text; warn the
+user of its sensitivity before download. No native target validation,
+server-side log sending, DP API or ingest result checking is part of
+this feature. Test using only synthetic fixtures and loopback receivers.
 
 **Storage boundary:** LOCAL-1/2 stores raw sample logs only when a user explicitly
 chooses **Save Version**. Raw data is stored unencrypted by the browser's

@@ -208,6 +208,41 @@ Current internal evidence after this UX increment:
 Real Stellar DP/sensor/Interflow proof, proprietary parser-loader compatibility, owner human acceptance, merge and release remain separately gated.
 
 
+## Downloadable Python synthetic log sender (owner scope update, 2026-10-18)
+
+This is an optional utility inside the existing Auto Parser test/results
+path, not a third authoring mode and not a live sensor API integration.
+
+After reviewing representative logs, offer Generate Python Test Sender.
+Generate and download a self-contained Python 3 script directly from the
+browser using no third-party packages, credentials, backend log storage or
+automatic sensor connection. On launch, prompt for the destination sensor
+IP/hostname and port; validate them, default to UDP with explicit TCP
+choice, confirm before connecting, and emit one event per second.
+Default to a bounded event count, report progress and stop on Ctrl-C.
+
+For each emitted event replace supported timestamp formats with the
+current local/UTC time at transmission and independently randomize
+recognized source/destination IP, location, username, email and other
+structurally identified field values. Preserve RFC syslog/CEF/LEEF/
+JSON/KV/CSV dialects, quoting, escaped delimiters, record boundaries
+and constant IDs. Do not blindly substitute unrelated numbers or infer
+vendor-specific semantics; unsupported ambiguous values remain
+unchanged and are explicitly disclosed.
+
+Only the downloaded Python script, running under user's control on
+their machine, sends logs; Parser Studio/browser/backend never
+connects to a sensor as a side effect of this feature. The script may
+contain user-provided logs in plain text, so show a privacy warning.
+This scoped opt-in user utility is distinct from the excluded
+server-operated sensor sender, DP parser upload and ingest checking.
+
+Acceptance: stdlib-only Python 3, interactive validated target IP/port,
+explicit confirmation, deterministic one-per-second maximum rate,
+bounded count/interrupt stop, current timestamps and safe value
+randomization, no network API on generator creation, and independent
+loopback UDP/TCP listener validation without any real sensor.
+
 ## Local experiment history (owner scope update, 2026-10-18)
 
 - Add one optional **Local Versions** workspace accessible from both supported
