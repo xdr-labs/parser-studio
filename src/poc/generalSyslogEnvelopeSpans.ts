@@ -23,6 +23,8 @@ export interface SyslogSourceInspection{
   autoPromoted:false;
   manufacturerSemantics:'NOT_CERTIFIED';
   nativeParser:'NOT_VERIFIED';
+  /** Valid RFC5424 syntax, but repeated member meaning needs producer truth. */
+  repeatedSdParamNames?:number;
 }
 const utf8=new TextEncoder();
 const decoder=new TextDecoder('utf-8',{fatal:true});
@@ -63,6 +65,7 @@ function sdNameChar(code:number):boolean{
 }
 class ByteAwareFields{
   readonly fields:SyslogOriginalField[]=[];
+  repeatedSdParamNames=0;
   constructor(readonly raw:string){}
   push(name:string,start:number,end:number){
     if(start<0||end<start||end>this.raw.length)
@@ -129,7 +132,10 @@ function rfc5424(raw:string,fields:ByteAwareFields):boolean{
       if(!id||id.length>32||SD_UNSAFE.has(id)||sdIds.has(id))
         throw new Invalid('RFC5424_SD_DUPLICATE_OR_UNSAFE_ID');
       sdIds.add(id);
-      const paramKeys=new Set<string>();
+      // RFC 5424 §6.3.3 permits repeated SD-PARAM names in one SD element.
+      // Count occurrences for later independent semantic qualification.
+      // They remain valid source syntax but are not a unique decoded map.
+      const seenParamNames=new Set<string>();
       while(raw[cursor]===' '){
         if(++paramCount>256)throw new Invalid('RFC5424_SD_PARAMETER_LIMIT');
         cursor++;
@@ -137,9 +143,10 @@ function rfc5424(raw:string,fields:ByteAwareFields):boolean{
         while(cursor<raw.length&&sdNameChar(raw.charCodeAt(cursor))&&
           cursor-start<=32)cursor++;
         const name=raw.slice(start,cursor);
-        if(!name||name.length>32||SD_UNSAFE.has(name)||paramKeys.has(name))
-          throw new Invalid('RFC5424_SD_DUPLICATE_OR_UNSAFE_PARAM');
-        paramKeys.add(name);
+        if(!name||name.length>32||SD_UNSAFE.has(name))
+          throw new Invalid('RFC5424_SD_INVALID_OR_UNSAFE_PARAM_NAME');
+        if(seenParamNames.has(name))fields.repeatedSdParamNames++;
+        else seenParamNames.add(name);
         if(raw.slice(cursor,cursor+2)!=='="')
           throw new Invalid('RFC5424_SD_INVALID_PARAMETER_DELIMITER');
         cursor+=2;
@@ -150,10 +157,10 @@ function rfc5424(raw:string,fields:ByteAwareFields):boolean{
             const next=raw[cursor+1];
             if(next===undefined||next==='\n'||next==='\r'||next==='\0')
               throw new Invalid('RFC5424_SD_TRUNCATED_ESCAPE');
-            // An unknown SD-PARAM escape has transport-dependent interpretations.
-            // Keep the narrower, independently scorable standard subset only.
-            if(!['"','\\',']'].includes(next))
-              throw new Invalid('RFC5424_SD_UNCERTAIN_ESCAPED_VALUE');
+            // RFC5424 §6.3.3 requires undefined escape sequences to remain
+            // unchanged in the original wire. Do not reinterpret them as
+            // CEF or vendor KV escape sequences or reject standard syntax.
+            // This observer preserves the entire SD lexical source span.
             cursor+=2;continue;
           }
           if(char===']')throw new Invalid('RFC5424_SD_UNESCAPED_RIGHT_BRACKET');
@@ -235,8 +242,12 @@ export function inspectGeneralSyslogEnvelope(raw:string):SyslogSourceInspection{
     const matched=isVersioned?rfc5424(raw,attempt):rfc3164(raw,attempt);
     if(!matched)return make('ABSTAIN_UNSAFE',kind,'AMBIGUOUS_OR_UNSUPPORTED_ENVELOPE',[],2);
     attempt.check();
-    return make('REVIEW_ONLY',kind,'EXACT_SOURCE_LEXER_NOT_INDEPENDENTLY_CERTIFIED',
-      attempt.fields,2);
+    const observed=make(
+      'REVIEW_ONLY',kind,'EXACT_SOURCE_LEXER_NOT_INDEPENDENTLY_CERTIFIED',
+      attempt.fields,2,
+    );
+    return attempt.repeatedSdParamNames>0?
+      {...observed,repeatedSdParamNames:attempt.repeatedSdParamNames}:observed;
   }catch(error){
     return make('ABSTAIN_UNSAFE',kind,
       error instanceof Invalid?error.code:'SOURCE_ENVELOPE_VERIFICATION_FAILED',[],2);

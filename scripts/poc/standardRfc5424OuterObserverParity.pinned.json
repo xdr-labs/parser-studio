@@ -1,0 +1,604 @@
+{
+  "authority": "RFC5424 §§6.3.2/6.3.3 original outer SD grammar; RFC3164 relay attribution never inferred",
+  "sourceTruth": "Independently authored standards-derived synthetics, no real relay/device/native source",
+  "cases": [
+    {
+      "id": "SD-REPEATED-SAME-PARAM",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [example@32473 name=\"alice\" name=\"bob\"] source=firewall",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[example@32473 name=\"alice\" name=\"bob\"]",
+          "startByte": 55,
+          "endByte": 94
+        },
+        {
+          "name": "message",
+          "value": "source=firewall",
+          "startByte": 95,
+          "endByte": 110
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 94,
+      "messageStartByte": 95,
+      "sourceBytes": 110,
+      "sourceSha256": "272c688b321a1ac6582b00e425bbf0c594ca08e29c28cf39d7f5479c163c9ddc",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-UNKNOWN-ESCAPE-UTF8",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [example@32473 note=\"a\\q€😀\"] record",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[example@32473 note=\"a\\q€😀\"]",
+          "startByte": 55,
+          "endByte": 88
+        },
+        {
+          "name": "message",
+          "value": "record",
+          "startByte": 89,
+          "endByte": 95
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 88,
+      "messageStartByte": 89,
+      "sourceBytes": 95,
+      "sourceSha256": "22e8af80566dc2dd41bda93b3eff08585a1b685b54f77f251282d46e46a6afef",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-DEFINED-ESCAPES",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [example@32473 path=\"a\\]b\\\\c\\\"d\"] message",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[example@32473 path=\"a\\]b\\\\c\\\"d\"]",
+          "startByte": 55,
+          "endByte": 88
+        },
+        {
+          "name": "message",
+          "value": "message",
+          "startByte": 89,
+          "endByte": 96
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 88,
+      "messageStartByte": 89,
+      "sourceBytes": 96,
+      "sourceSha256": "cda53eb01ebb77372a8948f183a5b2d07cbf455d524356d18559f902ec0e2a1e",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-ADJACENT-ELEMENTS",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [example@32473 one=\"1\"][other@32473 two=\"2\"] message",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[example@32473 one=\"1\"][other@32473 two=\"2\"]",
+          "startByte": 55,
+          "endByte": 99
+        },
+        {
+          "name": "message",
+          "value": "message",
+          "startByte": 100,
+          "endByte": 107
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 99,
+      "messageStartByte": 100,
+      "sourceBytes": 107,
+      "sourceSha256": "25f5e5b19e3e2d299db820087d0ad86ad1f04ae1806ff1aec0cf00251702ebd4",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-NIL-VALUE",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 - message",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "-",
+          "startByte": 55,
+          "endByte": 56
+        },
+        {
+          "name": "message",
+          "value": "message",
+          "startByte": 57,
+          "endByte": 64
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 56,
+      "messageStartByte": 57,
+      "sourceBytes": 64,
+      "sourceSha256": "10f731709e186e8c8b0d10a7917bd67d4648a825fad437fa36fe2edee6b40881",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-EMPTY-PARAM",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [example@32473 name=\"\"] message",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[example@32473 name=\"\"]",
+          "startByte": 55,
+          "endByte": 78
+        },
+        {
+          "name": "message",
+          "value": "message",
+          "startByte": 79,
+          "endByte": 86
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 78,
+      "messageStartByte": 79,
+      "sourceBytes": 86,
+      "sourceSha256": "5940d81d5303bcdcfe963c988db4153a4545eafde0aea2912e4b4aa608ac8e39",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-OUTER-RELAY-UNVERIFIED",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [origin@32473 device=\"inner-host\"] <13>Oct 18 12:34:56 inner-host app: event=deny",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[origin@32473 device=\"inner-host\"]",
+          "startByte": 55,
+          "endByte": 89
+        },
+        {
+          "name": "message",
+          "value": "<13>Oct 18 12:34:56 inner-host app: event=deny",
+          "startByte": 90,
+          "endByte": 136
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 89,
+      "messageStartByte": 90,
+      "sourceBytes": 136,
+      "sourceSha256": "a150b5d8bd7b793c9b2645f7406a7634978e97aac9b70d82574f6b1be8fe56b5",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-NAME-PERMITTED-BRACKET",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [unit[test@32473 prop\\name=\"value\"] message",
+      "valid": true,
+      "expected": [
+        {
+          "name": "pri",
+          "value": "34",
+          "startByte": 1,
+          "endByte": 3
+        },
+        {
+          "name": "version",
+          "value": "1",
+          "startByte": 4,
+          "endByte": 5
+        },
+        {
+          "name": "timestamp",
+          "value": "2026-10-18T12:34:56Z",
+          "startByte": 6,
+          "endByte": 26
+        },
+        {
+          "name": "hostname",
+          "value": "edge-relay",
+          "startByte": 27,
+          "endByte": 37
+        },
+        {
+          "name": "appname",
+          "value": "security",
+          "startByte": 38,
+          "endByte": 46
+        },
+        {
+          "name": "procid",
+          "value": "42",
+          "startByte": 47,
+          "endByte": 49
+        },
+        {
+          "name": "msgid",
+          "value": "ID47",
+          "startByte": 50,
+          "endByte": 54
+        },
+        {
+          "name": "structured_data_raw",
+          "value": "[unit[test@32473 prop\\name=\"value\"]",
+          "startByte": 55,
+          "endByte": 90
+        },
+        {
+          "name": "message",
+          "value": "message",
+          "startByte": 91,
+          "endByte": 98
+        }
+      ],
+      "sdStartByte": 55,
+      "sdEndByte": 90,
+      "messageStartByte": 91,
+      "sourceBytes": 98,
+      "sourceSha256": "693bf454b65fc6e43c77564a42c1eefa3a0c015402bf25d810ff25aad6b143cc",
+      "originAttribution": "UNSCORABLE",
+      "outerHeaderProvenance": "LEXICALLY_REPLAYED_NOT_SOURCE_CERTIFIED"
+    },
+    {
+      "id": "SD-DUPLICATE-ELEMENT-ID",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [x@32473 a=\"1\"][x@32473 b=\"2\"] message",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 93,
+      "sourceSha256": "e575f74232957c38880c1ff5046ebe195f4aca398f05a72596ba83be154e0ab7",
+      "originAttribution": "UNSCORABLE"
+    },
+    {
+      "id": "SD-UNESCAPED-CLOSE-BRACKET",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [x@32473 a=\"bad]value\"] message",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 86,
+      "sourceSha256": "0e18fdcc04daa14c990fedc78d4493cb14504df643c8ce5645273ab7ec11dbda",
+      "originAttribution": "UNSCORABLE"
+    },
+    {
+      "id": "SD-MISSING-QUOTE",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [x@32473 a=value] message",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 80,
+      "sourceSha256": "d200ddf4dea90c2115a7e527f6ccb8058a84ae4b916161be4e763c0772260ca5",
+      "originAttribution": "UNSCORABLE"
+    },
+    {
+      "id": "SD-UNTERMINATED-QUOTE",
+      "wire": "<34>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 [x@32473 a=\"bad] message",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 79,
+      "sourceSha256": "6fcdbc41290215828d701f6a51abc6e48c094005eb17d5d364bcd7d3e721a1ae",
+      "originAttribution": "UNSCORABLE"
+    },
+    {
+      "id": "SD-INVALID-TIMESTAMP",
+      "wire": "<34>1 2026-02-30T12:34:56Z edge-relay security 42 ID47 - body",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 61,
+      "sourceSha256": "81db6d0af932407f4109d70849df3fdd5a54232d23908037766afa20e0beadd0",
+      "originAttribution": "UNSCORABLE"
+    },
+    {
+      "id": "SD-INVALID-PRI",
+      "wire": "<192>1 2026-10-18T12:34:56Z edge-relay security 42 ID47 - body",
+      "valid": false,
+      "expected": [],
+      "sourceBytes": 62,
+      "sourceSha256": "9a835cba77cccc8f8affc52d9b730a6a45068920ea0b55147ba73d37d37cda7a",
+      "originAttribution": "UNSCORABLE"
+    }
+  ]
+}
