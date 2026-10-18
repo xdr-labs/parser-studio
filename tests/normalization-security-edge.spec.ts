@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {verifyOfficialMappings,requireUnappliedSourceMapping} from './normalizationAcceptance';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -38,11 +39,8 @@ test('RFC5424 wrapped CEF maps body fields plus host/time without flattening sou
     '<165>1 2026-10-16T03:10:02Z edge-03 security 12 EV03 - CEF:0|Vendor|NGFW|1|102|Blocked|9|src=192.0.2.12 dst=198.51.100.12 spt=51002 dpt=22 act=deny',
   ];
   const map=await openMap(page,rows);
-  const suggestions=map.getByLabel('Recommended field matches');
-  for(const target of ['srcip','dstip','srcport','dstport','action','hostname','timestamp'])
-    await expect(suggestions).toContainText(target);
-  await map.getByRole('button',{name:/Apply \d+ recommended match/}).click();
-  await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
+  await verifyOfficialMappings(map,
+    ['srcip','dstip','srcport','dstport','action','hostname','timestamp'],'wrapped CEF');
   await expect(map.getByLabel('Field changes only')).toContainText('192.0.2.10');
 });
 
@@ -53,11 +51,8 @@ test('RFC5424 wrapped LEEF maps standard body aliases',async({page})=>{
     '<165>1 2026-10-16T03:11:02Z edge-13 security 12 EV13 - LEEF:2.0|Vendor|Firewall|1|102|^|src=192.0.2.22^dst=198.51.100.22^srcPort=52002^dstPort=53^action=allow',
   ];
   const map=await openMap(page,rows);
-  const suggestions=map.getByLabel('Recommended field matches');
-  for(const target of ['srcip','dstip','srcport','dstport','action'])
-    await expect(suggestions).toContainText(target);
-  await map.getByRole('button',{name:/Apply \d+ recommended match/}).click();
-  await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
+  await verifyOfficialMappings(map,
+    ['srcip','dstip','srcport','dstport','action'],'wrapped LEEF');
 });
 
 test('IPv6 addresses are high-confidence when runtime conversion accepts them',async({page})=>{
@@ -66,11 +61,7 @@ test('IPv6 addresses are high-confidence when runtime conversion accepts them',a
     '{"src_ip":"2001:db8::11","dst_ip":"2001:db8:1::11","action":"deny"}',
     '{"src_ip":"2001:db8::12","dst_ip":"2001:db8:1::12","action":"allow"}',
   ]);
-  const suggestions=map.getByLabel('Recommended field matches');
-  await expect(suggestions.filter({hasText:'src_ip'})).toContainText('Recommended');
-  await expect(suggestions.filter({hasText:'dst_ip'})).toContainText('Recommended');
-  await map.getByRole('button',{name:/Apply \d+ recommended match/}).click();
-  await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
+  await verifyOfficialMappings(map,['srcip','dstip','action'],'IPv6 address aliases');
 });
 
 test('timezone-less timestamp stays REVIEW and is never bulk-applied',async({page})=>{
@@ -82,11 +73,12 @@ test('timezone-less timestamp stays REVIEW and is never bulk-applied',async({pag
   const suggestions=map.getByLabel('Recommended field matches');
   await expect(suggestions.filter({hasText:'event_time'})).toContainText('Check first');
   const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
-  await expect(bulk).toBeEnabled();
-  await bulk.click();
+  await expect(bulk).toBeDisabled();
   await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar1');
+  await requireUnappliedSourceMapping(map,'event_time','timestamp');
   await expect(map.getByLabel('Source field 0')).toHaveValue('event_time');
-  await expect(map.getByLabel('Stellar field 0')).toHaveValue(/^custom\./);
+  await expect(map.getByLabel('Stellar field 0')).toHaveValue('event_time');
+  await expect(map.getByLabel('Field mapping 1')).toHaveClass(/custom/);
 });
 
 test('out-of-range L4 destination port stays REVIEW',async({page})=>{
@@ -129,8 +121,8 @@ test('duplicate source aliases do not create duplicate official destinations',as
     '{"src":"192.0.2.71","source_ip":"192.0.2.71","action":"deny"}',
     '{"src":"192.0.2.72","source_ip":"192.0.2.72","action":"allow"}',
   ]);
-  const suggestions=map.getByLabel('Recommended field matches');
-  await expect(suggestions.getByText('srcip',{exact:true})).toHaveCount(1);
-  await map.getByRole('button',{name:/Apply \d+ recommended match/}).click();
-  await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
+  await verifyOfficialMappings(map,['srcip','action'],'duplicate aliases');
+  const targets=await map.locator('input[aria-label^="Stellar field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  expect(targets.filter(target=>target==='srcip')).toHaveLength(1);
 });

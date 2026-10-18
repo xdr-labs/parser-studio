@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {verifyOfficialMappings} from './normalizationAcceptance';
 
 const input=[
   '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
@@ -33,23 +34,31 @@ test('beginner can review official Stellar mappings, compare output and correct 
   const map=page.getByLabel('Map Fields stage');
   await expect(map).toBeVisible();
   await expect(map).toContainText('Stellar field dictionary 7.0.xs');
-  await expect(map.getByLabel('Recommended field matches')).toContainText('src_ip');
-  await expect(map.getByLabel('Recommended field matches')).toContainText('srcip');
-  await expect(map.getByLabel('Recommended field matches')).toContainText('dstport');
-
-  await map.getByRole('button',{name:/Apply 3 recommended matches/}).click();
+  await verifyOfficialMappings(map,['srcip','dstport','action'],'first-time mapping review');
   await expect(map.getByLabel('Field mapping summary')).toContainText('Matched to Stellar3');
   await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
   await expect(map.getByLabel('Field changes only')).toContainText('198.51.100.10');
   await expect(map.getByLabel('Field changes only')).toContainText('srcip');
 
-  const firstTarget=map.getByLabel('Stellar field 0');
+  // Edit an actual official-mapped row, not a vendor namespace row.
+  const firstVerified=map.locator('.normalization-map-row.verified').first();
+  const stableLabel=await firstVerified.getAttribute('aria-label');
+  expect(stableLabel).toBeTruthy();
+  const officialRow=map.getByLabel(stableLabel!);
+  const firstTarget=officialRow.locator('input[aria-label^="Stellar field "]');
+  const originalTarget=await firstTarget.inputValue();
+  expect(originalTarget).not.toMatch(/^custom\./);
   await firstTarget.fill('not_a_stellar_field');
+  // A non-dictionary destination is explicitly demoted to the vendor namespace,
+  // not silently retained as a verified Stellar mapping.
+  await expect(officialRow).toHaveClass(/custom/);
+  await expect(officialRow).toContainText('Vendor field');
+  await expect(map.getByLabel('Field changes only')).toContainText('.not_a_stellar_field');
+  await expect(map.getByLabel('Field mapping summary')).toContainText('Vendor-only fields');
   await expect(map.getByLabel('Field mapping checks'))
-    .toContainText('This destination is not in the checked Stellar field list');
-  await expect(map.getByRole('button',{name:'Create Parser'})).toBeDisabled();
+    .toContainText('All current field mappings passed the sample checks');
 
-  await firstTarget.fill('srcip');
+  await firstTarget.fill(originalTarget);
   await expect(map.getByLabel('Field mapping checks')).toContainText('All current field mappings passed the sample checks');
   await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
 

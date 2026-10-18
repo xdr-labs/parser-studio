@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {verifyOfficialMappings} from './normalizationAcceptance';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -36,10 +37,7 @@ test('exact 500-event normalization batch remains reviewable with no truncation'
   await review.click();
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
   const map=page.getByLabel('Map Fields stage');
-  await expect(map.getByLabel('Recommended field matches')).toContainText('srcip');
-  await map.getByRole('button',{name:/Apply \d+ recommended match/}).click();
-  await expect(map.getByLabel('Field mapping checks'))
-    .toContainText('All current field mappings passed the sample checks',{timeout:20000});
+  await verifyOfficialMappings(map,['srcip','dstport','action'],'500-event limit');
 });
 
 test('501 events fail closed with an explicit beginner-readable limit explanation',async({page})=>{

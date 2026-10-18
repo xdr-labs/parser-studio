@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {verifyOfficialMappings,requireSourceMapping,requireUnappliedSourceMapping} from './normalizationAcceptance';
 
 const cap={
   contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
@@ -32,11 +33,7 @@ test('IPv6 source addresses remain HIGH-confidence and bulk-applicable',async({p
     '{"src_ip":"2001:db8::10","dst_ip":"2001:db8:1::10","dst_port":443,"action":"allow"}',
     '{"src_ip":"2001:db8::11","dst_ip":"2001:db8:1::11","dst_port":8443,"action":"deny"}',
   ]);
-  const suggestions=map.getByLabel('Recommended field matches');
-  await expect(suggestions).toContainText('srcip');
-  await expect(suggestions).toContainText('dstip');
-  await expect(suggestions).toContainText('Recommended');
-  await expect(map.getByRole('button',{name:/Apply \d+ recommended match/})).toBeEnabled();
+  await verifyOfficialMappings(map,['srcip','dstip','dstport','action'],'IPv6 boundary');
 });
 
 test('out-of-range L4 port is REVIEW-only and not silently bulk mapped',async({page})=>{
@@ -47,12 +44,12 @@ test('out-of-range L4 port is REVIEW-only and not silently bulk mapped',async({p
   const suggestions=map.getByLabel('Recommended field matches');
   await expect(suggestions).toContainText('dstport');
   await expect(suggestions).toContainText('Check first');
-  const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
-  await expect(bulk).toBeEnabled();
-  await bulk.click();
-  // The invalid destination-port proposal remains unapplied; valid source/action
-  // mappings can still be accepted without promoting the bad value.
-  await expect(map.getByLabel('Recommended field matches')).toContainText('dstport');
+  // Trusted source/action aliases are already auto-applied, but one bad port
+  // value must stay review-only even when the rest of the event is valid.
+  await expect(map.getByRole('button',{name:'Apply 0 recommended matches'})).toBeDisabled();
+  await requireSourceMapping(map,'src_ip','srcip');
+  await requireUnappliedSourceMapping(map,'dst_port','dstport');
+  await expect(suggestions).toContainText('dstport');
 });
 
 test('timestamp without explicit timezone is REVIEW-only, Z timestamps are HIGH',async({page})=>{
@@ -62,14 +59,15 @@ test('timestamp without explicit timezone is REVIEW-only, Z timestamps are HIGH'
   ]);
   await expect(mixed.getByLabel('Recommended field matches')).toContainText('timestamp');
   await expect(mixed.getByLabel('Recommended field matches')).toContainText('Check first');
+  await requireUnappliedSourceMapping(mixed,'event_time','timestamp');
 
   await page.reload();
   const good=await openMapping(page,[
     '{"event_time":"2026-10-16T12:30:00Z","src_ip":"192.0.2.20"}',
     '{"event_time":"2026-10-16T12:31:00+09:00","src_ip":"192.0.2.21"}',
   ]);
-  await expect(good.getByLabel('Recommended field matches')).toContainText('timestamp');
-  await expect(good.getByLabel('Recommended field matches')).toContainText('Recommended');
+  await verifyOfficialMappings(good,['timestamp','srcip'],'timezone-qualified timestamps');
+  await requireSourceMapping(good,'event_time','timestamp');
 });
 
 test('CEF alias with a non-IP value is REVIEW-only rather than falsely normalized',async({page})=>{
@@ -80,5 +78,6 @@ test('CEF alias with a non-IP value is REVIEW-only rather than falsely normalize
   const suggestions=map.getByLabel('Recommended field matches');
   await expect(suggestions).toContainText('srcip');
   await expect(suggestions).toContainText('Check first');
-  await expect(suggestions).toContainText('dstip');
+  await requireUnappliedSourceMapping(map,'src','srcip');
+  await requireSourceMapping(map,'dst','dstip');
 });

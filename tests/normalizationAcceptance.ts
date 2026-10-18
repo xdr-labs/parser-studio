@@ -33,3 +33,30 @@ export async function verifyOfficialMappings(
   await expect(map.getByLabel('Field changes only')).toBeVisible();
   await expect(map.getByRole('button',{name:'Create Parser'})).toBeEnabled();
 }
+
+
+/** Inspect the actual accepted destination, not only a recommendation label. */
+export async function requireSourceMapping(
+  map:Locator,
+  source:string,
+  target:string,
+):Promise<void>{
+  const names=await map.locator('input[aria-label^="Source field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  const index=names.indexOf(source);
+  expect(index, 'source field '+source+' must be retained for review').toBeGreaterThanOrEqual(0);
+  await expect(map.getByLabel('Stellar field '+index)).toHaveValue(target);
+}
+
+/** Negative boundary: a risky suggestion must never be silently accepted. */
+export async function requireUnappliedSourceMapping(
+  map:Locator,
+  source:string,
+  unsafeTarget:string,
+):Promise<void>{
+  const names=await map.locator('input[aria-label^="Source field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  const index=names.indexOf(source);
+  expect(index, 'source field '+source+' must be retained for manual review').toBeGreaterThanOrEqual(0);
+  await expect(map.getByLabel('Stellar field '+index)).not.toHaveValue(unsafeTarget);
+}
