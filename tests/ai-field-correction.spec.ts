@@ -1,5 +1,4 @@
 import {test,expect} from '@playwright/test';
-import {createHash} from 'node:crypto';
 
 const source=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443}',
@@ -22,25 +21,36 @@ const cap={
   requiresApiKey:false,autoDeploys:false,exactArtifactRevision:true},
  limits:{maxProjectBodyBytes:262144,maxInspectBodyBytes:2097152},
 };
-function correctionRecipe(){
- return {
-  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
-  projectId:'draft-demo_firewall',sourceFormat:'json',bodyFormat:'json',
-  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:2},
-  stages:[
-   {op:'split_event',boundary:'single-line'},{op:'parse_json'},
-   {op:'map_field',source:'src_ip',target:'custom.source_address',data_type:'ip',group:'top_fields'},
-   {op:'cast_type',target:'custom.source_address',data_type:'ip'},
-   {op:'map_field',source:'dst_port',target:'custom.destination_port',data_type:'port',group:'ns_fields'},
-   {op:'cast_type',target:'custom.destination_port',data_type:'port'},
-   {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
-   {op:'classify',defaultIndex:'syslog',rules:[
-    {field:'custom.action',operator:'equals',value:'deny',index:'threat'},
-    {field:'custom.action',operator:'equals',value:'allow',index:'session'},
-   ]},
-   {op:'fallback_unparsed',mode:'retain_unparsed'},
-  ],nativeVerified:false,targetVerified:false,
- };
+type EditableRecipe={
+  stages:Array<{op:string;source?:string;target?:string;data_type?:string;group?:string}>;
+};
+/** Use the actual product-generated baseline, never an obsolete guessed mapping. */
+async function baselineRecipeFromReview(page:import('@playwright/test').Page):Promise<EditableRecipe>{
+  await page.context().grantPermissions(['clipboard-read','clipboard-write']);
+  await page.getByRole('button',{name:'Entire Log'}).click();
+  await page.getByLabel('Reviewed and redacted AI excerpt').fill('{"src_ip":"192.0.2.10"}');
+  await page.getByLabel('AI correction request').fill('Change only the src_ip mapping; preserve all unrelated parsing and mapping rules.');
+  await page.getByLabel('Confirm reviewed AI excerpt').check();
+  await page.getByRole('button',{name:'Copy AI Prompt'}).click();
+  const prompt=await page.evaluate(()=>navigator.clipboard.readText());
+  const begin='BEGIN CANONICAL PARSER RECIPE\n';
+  const end='\nEND CANONICAL PARSER RECIPE';
+  const left=prompt.indexOf(begin),right=prompt.indexOf(end,left+begin.length);
+  expect(left,'canonical baseline present in manually copied review prompt').toBeGreaterThanOrEqual(0);
+  expect(right,'canonical baseline terminated').toBeGreaterThan(left);
+  return JSON.parse(prompt.slice(left+begin.length,right)) as EditableRecipe;
+}
+function oneMappingCorrection(canonical:EditableRecipe){
+  const copy=structuredClone(canonical);
+  const mapping=copy.stages.find(stage=>stage.op==='map_field'&&stage.source==='src_ip');
+  expect(mapping,'src_ip mapping available for a single correction').toBeTruthy();
+  const oldTarget=mapping!.target!;
+  expect(oldTarget).not.toBe('custom.source_address');
+  mapping!.target='custom.source_address';
+  const cast=copy.stages.find(stage=>stage.op==='cast_type'&&stage.target===oldTarget);
+  expect(cast,'single source mapping type cast exists').toBeTruthy();
+  cast!.target='custom.source_address';
+  return copy;
 }
 async function reachReview(page:import('@playwright/test').Page){
  await page.route('**/api/v1/parser-pairs/capabilities',route=>
@@ -55,7 +65,8 @@ async function reachReview(page:import('@playwright/test').Page){
 test('already parsed field correction can be rejected or explicitly applied without changing unrelated mappings',async({page})=>{
  await reachReview(page);
  await page.getByText('Paste ChatGPT Result').click();
- const recipe=JSON.stringify(correctionRecipe());
+ const canonical=await baselineRecipeFromReview(page);
+ const recipe=JSON.stringify(oneMappingCorrection(canonical));
  const recipeBox=page.getByLabel('ChatGPT JSON result');
  const holdoutBox=page.getByLabel('Additional test logs');
  await recipeBox.fill(recipe);await holdoutBox.fill(holdout);
@@ -64,27 +75,32 @@ test('already parsed field correction can be rejected or explicitly applied with
  await expect(page.getByText(/Fix passed: one corrected mapping/)).toBeVisible();
  await page.getByRole('button',{name:'Discard Fix'}).click();
  await expect(page.getByText(/Fix discarded/)).toBeVisible();
- await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_ip');
- await expect(page.getByLabel('Suggested field mappings')).not.toContainText('custom.source_address');
+ await expect(page.getByLabel('Review Fields stage').getByText('Current output preview')).toBeVisible();
+ await expect(page.getByLabel('Review Fields stage')).toContainText('srcip');
+ await expect(page.getByLabel('Review Fields stage').getByText('Current output preview').locator('..').locator('pre')).not.toContainText('custom.source_address');
 
  await recipeBox.fill(recipe);await holdoutBox.fill(holdout);
  await page.getByLabel('Confirm different test examples').check();
  await page.getByRole('button',{name:'Test Proposed Fix'}).click();
  await page.getByLabel('Approve tested fix').check();
  await page.getByRole('button',{name:'Apply Verified Fix'}).click();
- await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_address');
- await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.destination_port');
- await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.action');
+ const normalized=page.getByText('Current output preview').locator('..').locator('pre');
+ await expect(normalized).toContainText('\"source_address\"');
+ await expect(normalized).toContainText('\"custom\"');
+ await expect(normalized).not.toContainText('\"srcip\"');
+ await expect(normalized).toContainText('\"dstport\"');
+ await expect(normalized).toContainText('\"action\"');
 });
 
 test('unsupported split or merge AI operators fail closed and never create a candidate',async({page})=>{
  await reachReview(page);
  await page.getByText('Paste ChatGPT Result').click();
- const unsafe=correctionRecipe();
+ const unsafe=await baselineRecipeFromReview(page);
  unsafe.stages.splice(2,0,{op:'split_field',source:'src_ip',delimiter:':',targets:['custom.ip','custom.port']} as never);
  await page.getByLabel('ChatGPT JSON result').fill(JSON.stringify(unsafe));
  await page.getByRole('button',{name:'Test Proposed Fix'}).click();
  await expect(page.getByText(/ChatGPT result rejected: UNTRUSTED_RECIPE/)).toBeVisible();
  await expect(page.getByRole('button',{name:'Discard Fix'})).toHaveCount(0);
- await expect(page.getByLabel('Suggested field mappings')).toContainText('custom.source_ip');
+ await expect(page.getByLabel('Review Fields stage')).toContainText('srcip');
+ await expect(page.getByLabel('Review Fields stage')).toContainText('dstport');
 });

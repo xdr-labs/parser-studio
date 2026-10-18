@@ -61,7 +61,7 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeVisible();
  await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
- await expect(page.getByLabel('Authorized Test Lab session recovery')).toBeVisible();
+ await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
 });
 
 test('beginner mode offers reversible Parser Set groups for repeated unknown shapes',async({page})=>{
