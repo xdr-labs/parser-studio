@@ -1,0 +1,379 @@
+{
+  "authority": "W3C Extended Log File Format Working Draft WD-logfile-960323 Sections Format/Entries",
+  "rule": "Version 1.0 and Fields must precede all entries; single W3C document source only",
+  "evidence": "Independently authored synthetic expected outcome, NOT publisher device/native wire",
+  "cases": [
+    {
+      "id": "W3C-REQUIRED-VERSION-AND-FIELDS",
+      "wire": "#Version: 1.0\n#Fields: time cs-method cs-uri\n12:34:56 GET /login\n",
+      "validV1": true,
+      "claims": [
+        {
+          "rowIndex": 0,
+          "name": "time",
+          "rawLexeme": "12:34:56",
+          "decodedValue": "12:34:56",
+          "startByte": 45,
+          "endByte": 53
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-method",
+          "rawLexeme": "GET",
+          "decodedValue": "GET",
+          "startByte": 54,
+          "endByte": 57
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-uri",
+          "rawLexeme": "/login",
+          "decodedValue": "/login",
+          "startByte": 58,
+          "endByte": 64
+        }
+      ],
+      "expectedRows": 1,
+      "expectedFields": [
+        "time",
+        "cs-method",
+        "cs-uri"
+      ],
+      "lineEnding": "lf",
+      "sourceBytes": 65,
+      "sourceSha256": "1ae97a6690ee0b757fddfc6edfd58d995e6fa990c6ee7eea2e96243b1451f4df"
+    },
+    {
+      "id": "W3C-FIELDS-BEFORE-VERSION-BOTH-PRECEDE-DATA",
+      "wire": "#Fields: time cs-method cs-uri\n#Version: 1.0\n12:34:57 POST /upload\n",
+      "validV1": true,
+      "claims": [
+        {
+          "rowIndex": 0,
+          "name": "time",
+          "rawLexeme": "12:34:57",
+          "decodedValue": "12:34:57",
+          "startByte": 45,
+          "endByte": 53
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-method",
+          "rawLexeme": "POST",
+          "decodedValue": "POST",
+          "startByte": 54,
+          "endByte": 58
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-uri",
+          "rawLexeme": "/upload",
+          "decodedValue": "/upload",
+          "startByte": 59,
+          "endByte": 66
+        }
+      ],
+      "expectedRows": 1,
+      "expectedFields": [
+        "time",
+        "cs-method",
+        "cs-uri"
+      ],
+      "lineEnding": "lf",
+      "sourceBytes": 67,
+      "sourceSha256": "81790434b27ac05c74d2ffd219a93a591a21ec7ea2205076810e38030d597cc6"
+    },
+    {
+      "id": "W3C-EXTRA-WRITER-DIRECTIVES-BEFORE-ENTRY",
+      "wire": "#Software: ExampleServer 1.2\n#Version: 1.0\n#Start-Date: 2026-10-18 12:00:00\n#Fields: time cs-method cs-uri\n12:34:58 GET /image\n",
+      "validV1": true,
+      "claims": [
+        {
+          "rowIndex": 0,
+          "name": "time",
+          "rawLexeme": "12:34:58",
+          "decodedValue": "12:34:58",
+          "startByte": 107,
+          "endByte": 115
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-method",
+          "rawLexeme": "GET",
+          "decodedValue": "GET",
+          "startByte": 116,
+          "endByte": 119
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-uri",
+          "rawLexeme": "/image",
+          "decodedValue": "/image",
+          "startByte": 120,
+          "endByte": 126
+        }
+      ],
+      "expectedRows": 1,
+      "expectedFields": [
+        "time",
+        "cs-method",
+        "cs-uri"
+      ],
+      "lineEnding": "lf",
+      "sourceBytes": 127,
+      "sourceSha256": "4d10e5a81ecde0fc11b6b3a04d7cc8c444dcb22df044bd2bc458d7027712b988"
+    },
+    {
+      "id": "W3C-TAB-CRLF",
+      "wire": "#Version: 1.0\r\n#Fields: time cs-method cs-uri\r\n12:34:59\tGET\t/api\r\n",
+      "validV1": true,
+      "claims": [
+        {
+          "rowIndex": 0,
+          "name": "time",
+          "rawLexeme": "12:34:59",
+          "decodedValue": "12:34:59",
+          "startByte": 47,
+          "endByte": 55
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-method",
+          "rawLexeme": "GET",
+          "decodedValue": "GET",
+          "startByte": 56,
+          "endByte": 59
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-uri",
+          "rawLexeme": "/api",
+          "decodedValue": "/api",
+          "startByte": 60,
+          "endByte": 64
+        }
+      ],
+      "expectedRows": 1,
+      "expectedFields": [
+        "time",
+        "cs-method",
+        "cs-uri"
+      ],
+      "lineEnding": "crlf",
+      "sourceBytes": 66,
+      "sourceSha256": "9ea477c9c78e921982c0a73a697532cc507be77ed1fbc94c52bd0e5a83f7670f"
+    },
+    {
+      "id": "W3C-DOUBLE-QUOTE-DECODING",
+      "wire": "#Version: 1.0\n#Fields: time cs-method cs-uri\n12:35:00 GET \"/path\"\"quote\"\n",
+      "validV1": true,
+      "claims": [
+        {
+          "rowIndex": 0,
+          "name": "time",
+          "rawLexeme": "12:35:00",
+          "decodedValue": "12:35:00",
+          "startByte": 45,
+          "endByte": 53
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-method",
+          "rawLexeme": "GET",
+          "decodedValue": "GET",
+          "startByte": 54,
+          "endByte": 57
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-uri",
+          "rawLexeme": "\"/path\"\"quote\"",
+          "decodedValue": "/path\"quote",
+          "startByte": 58,
+          "endByte": 72
+        }
+      ],
+      "expectedRows": 1,
+      "expectedFields": [
+        "time",
+        "cs-method",
+        "cs-uri"
+      ],
+      "lineEnding": "lf",
+      "sourceBytes": 73,
+      "sourceSha256": "a7ced2ced373f144348daf9fdff41f2e8be0aece3305bd2bed3b37560a70063b"
+    },
+    {
+      "id": "W3C-MULTIROW-AND-REMARK",
+      "wire": "#Version: 1.0\n#Fields: time cs-method cs-uri\n12:35:01 GET /one\n12:35:02 POST -\n",
+      "validV1": true,
+      "claims": [
+        {
+          "rowIndex": 0,
+          "name": "time",
+          "rawLexeme": "12:35:01",
+          "decodedValue": "12:35:01",
+          "startByte": 45,
+          "endByte": 53
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-method",
+          "rawLexeme": "GET",
+          "decodedValue": "GET",
+          "startByte": 54,
+          "endByte": 57
+        },
+        {
+          "rowIndex": 0,
+          "name": "cs-uri",
+          "rawLexeme": "/one",
+          "decodedValue": "/one",
+          "startByte": 58,
+          "endByte": 62
+        },
+        {
+          "rowIndex": 1,
+          "name": "time",
+          "rawLexeme": "12:35:02",
+          "decodedValue": "12:35:02",
+          "startByte": 63,
+          "endByte": 71
+        },
+        {
+          "rowIndex": 1,
+          "name": "cs-method",
+          "rawLexeme": "POST",
+          "decodedValue": "POST",
+          "startByte": 72,
+          "endByte": 76
+        },
+        {
+          "rowIndex": 1,
+          "name": "cs-uri",
+          "rawLexeme": "-",
+          "decodedValue": "-",
+          "startByte": 77,
+          "endByte": 78
+        }
+      ],
+      "expectedRows": 2,
+      "expectedFields": [
+        "time",
+        "cs-method",
+        "cs-uri"
+      ],
+      "lineEnding": "lf",
+      "sourceBytes": 79,
+      "sourceSha256": "cc71eeee6ecd8aeb07010d63db143528b178663b253c917b3b4e03dbec13425a"
+    },
+    {
+      "id": "W3C-MISSING-VERSION",
+      "wire": "#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 50,
+      "sourceSha256": "12453473b94d4738dfaab95bfafbd37e2eb1039559686e48f66af2eec76f7f00"
+    },
+    {
+      "id": "W3C-VERSION-2-NOT-QUALIFIED",
+      "wire": "#Version: 2.0\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 64,
+      "sourceSha256": "b372c7e0a4a472f6b3c023b5a773c55222a97b76ef4f64fc89cad16c60a8e27c"
+    },
+    {
+      "id": "W3C-VERSION-1-1-NOT-QUALIFIED",
+      "wire": "#Version: 1.1\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 64,
+      "sourceSha256": "ad048b5e806a6bc48d17a1eaf4b48538ee2326512d3b47a9fc70a55abf690393"
+    },
+    {
+      "id": "W3C-DUPLICATE-VERSION",
+      "wire": "#Version: 1.0\n#Version: 1.0\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 78,
+      "sourceSha256": "3f6c00851283bb9a1c47b4561806bf63fff999327c75322d273841f8f2d2d5e7"
+    },
+    {
+      "id": "W3C-LATE-VERSION",
+      "wire": "#Fields: time cs-method cs-uri\n12:34:56 GET /page\n#Version: 1.0\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 64,
+      "sourceSha256": "e734b38f4488775f2831506165d3b8bee7371d0772b0c6bb906e2d28dada70a9"
+    },
+    {
+      "id": "W3C-MISSING-FIELDS",
+      "wire": "#Version: 1.0\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 33,
+      "sourceSha256": "af7044fd474e7b3897e95b46d87eb153a91411cd291cca4b8e693dd69fb98ec1"
+    },
+    {
+      "id": "W3C-LATE-FIELDS",
+      "wire": "#Version: 1.0\n12:34:56 GET /page\n#Fields: time cs-method cs-uri\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 64,
+      "sourceSha256": "d4632dc15c3c6cdbbee46d6e3d0d98a5103b522c8f50b15ba567580975dbcab7"
+    },
+    {
+      "id": "W3C-REPEATED-FIELDS",
+      "wire": "#Version: 1.0\n#Fields: time cs-method cs-uri\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 95,
+      "sourceSha256": "c8687f45e081a53904ed863ea70e7d37a42b83c0ca89ae4abd428ad9e2b8bf40"
+    },
+    {
+      "id": "W3C-BLANK-VERSION",
+      "wire": "#Version:\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 60,
+      "sourceSha256": "acdbff105c43c9b70f201d3824e2e7eb14cf79db61ce3b0e9f5ea4488cadc220"
+    },
+    {
+      "id": "W3C-MALFORMED-VERSION",
+      "wire": "#Version: 1.invalid\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 70,
+      "sourceSha256": "288b06bc5be74afd124929b8c0b67be78d6ee3c947280e448ef7c8420bb838c4"
+    },
+    {
+      "id": "W3C-LOWERCASE-VERSION-UNQUALIFIED",
+      "wire": "#version: 1.0\n#Fields: time cs-method cs-uri\n12:34:56 GET /page\n",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 64,
+      "sourceSha256": "69d102d5d8869e091ec37fe366ed7782158ba64f7857a07c7612073b9182c5e3"
+    },
+    {
+      "id": "W3C-UNTERMINATED-LAST-ROW",
+      "wire": "#Version: 1.0\n#Fields: time cs-method cs-uri\n12:34:56 GET /page",
+      "validV1": false,
+      "claims": [],
+      "expectedRows": 0,
+      "sourceBytes": 63,
+      "sourceSha256": "68b992269ac9e787d319e944a4d51fd97c3eadb7c627b3c4b10ce5fb4cc7a08e"
+    }
+  ]
+}

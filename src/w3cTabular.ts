@@ -120,6 +120,10 @@ export function parseW3cLogBlock(raw:string):W3cLogBlockResult{
   const withoutCrlf=raw.replace(/\r\n/g,'');
   if(withoutCrlf.includes('\r'))return {ok:false,error:'Unsupported W3C line ending'};
   if(hasCrlf&&withoutCrlf.includes('\n'))return {ok:false,error:'Mixed W3C line endings are unsupported'};
+  // The W3C Extended Log draft requires a physical line terminator for
+  // every entry. Do not call a truncated final source row complete.
+  if(!raw.endsWith(hasCrlf?'\r\n':'\n'))
+    return {ok:false,error:'W3C final source row has no record terminator'};
   const lineEnding:'lf'|'crlf'=hasCrlf?'crlf':'lf';
   const normalized=hasCrlf?raw.replace(/\r\n/g,'\n'):raw;
   const endsWithEol=normalized.endsWith('\n');
@@ -139,11 +143,23 @@ export function parseW3cLogBlock(raw:string):W3cLogBlockResult{
     return {ok:false,error:'W3C physical source bytes not accounted'};
 
   let fieldsHeader:string|undefined;
+  let versionHeader:'1.0'|undefined;
   const directives:Record<string,string|string[]> = Object.create(null);
   const dataLines:Array<{line:string;startByte:number}>=[];
   for(const {line,startByte} of physicalLines){
+    if(line.startsWith('#Version:')){
+      // W3C Working Draft: Version and Fields are required and must
+      // precede all original entries. Only v1 is qualified here.
+      if(versionHeader||dataLines.length||line!=='#Version: 1.0')
+        return {ok:false,error:'W3C Version directive is repeated, late, or unsupported'};
+      versionHeader='1.0';
+      if(!addDirective(directives,'Version',versionHeader))
+        return {ok:false,error:'Unsupported W3C Version directive'};
+      continue;
+    }
     if(line.startsWith('#Fields:')){
-      if(fieldsHeader)return {ok:false,error:'Duplicate W3C Fields header'};
+      if(fieldsHeader||dataLines.length)
+        return {ok:false,error:'W3C Fields header is repeated or late'};
       fieldsHeader=line;continue;
     }
     if(line.startsWith('#')){
@@ -156,7 +172,8 @@ export function parseW3cLogBlock(raw:string):W3cLogBlockResult{
     dataLines.push({line,startByte});
     if(dataLines.length>MAX_W3C_ROWS)return {ok:false,error:'W3C row limit exceeded'};
   }
-  if(!fieldsHeader||!dataLines.length)return {ok:false,error:'W3C block requires a Fields header and data rows'};
+  if(!versionHeader||!fieldsHeader||!dataLines.length)
+    return {ok:false,error:'W3C v1 source requires Version, Fields, and data rows'};
 
   const headerFields=fieldsHeader.slice(9).trim().split(/ +/);
   const tabMode=dataLines.every(entry=>entry.line.includes('\t'));
