@@ -1,0 +1,485 @@
+{
+  "authority": [
+    "RFC8259 source JSON grammar",
+    "RFC6901 JSON Pointer name/array reference tokens"
+  ],
+  "evidence": "Independently authored synthetics with original lexical source claims, not native publisher goldens",
+  "cases": [
+    {
+      "id": "JSON-NESTED-FIELDS",
+      "wire": "{\"event\":{\"actor\":\"alice\",\"action\":\"allow\"},\"score\":12}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/event",
+          "nameRawLexeme": "\"event\"",
+          "nameStartByte": 1,
+          "nameEndByte": 8,
+          "valueRawLexeme": "{\"actor\":\"alice\",\"action\":\"allow\"}",
+          "valueStartByte": 9,
+          "valueEndByte": 43
+        },
+        {
+          "pointer": "/event/actor",
+          "nameRawLexeme": "\"actor\"",
+          "nameStartByte": 10,
+          "nameEndByte": 17,
+          "valueRawLexeme": "\"alice\"",
+          "valueStartByte": 18,
+          "valueEndByte": 25
+        },
+        {
+          "pointer": "/event/action",
+          "nameRawLexeme": "\"action\"",
+          "nameStartByte": 26,
+          "nameEndByte": 34,
+          "valueRawLexeme": "\"allow\"",
+          "valueStartByte": 35,
+          "valueEndByte": 42
+        },
+        {
+          "pointer": "/score",
+          "nameRawLexeme": "\"score\"",
+          "nameStartByte": 44,
+          "nameEndByte": 51,
+          "valueRawLexeme": "12",
+          "valueStartByte": 52,
+          "valueEndByte": 54
+        }
+      ],
+      "sourceBytes": 55,
+      "sourceSha256": "b329da3f046996e97494963ad0437112ab799b159d8be797e7edb89b0d67b0c6"
+    },
+    {
+      "id": "JSON-NESTED-ARRAY-OBJECTS",
+      "wire": "{\"events\":[{\"uid\":\"u1\"},{\"uid\":\"u2\"}],\"active\":true}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/events",
+          "nameRawLexeme": "\"events\"",
+          "nameStartByte": 1,
+          "nameEndByte": 9,
+          "valueRawLexeme": "[{\"uid\":\"u1\"},{\"uid\":\"u2\"}]",
+          "valueStartByte": 10,
+          "valueEndByte": 37
+        },
+        {
+          "pointer": "/events/0",
+          "nameRawLexeme": null,
+          "nameStartByte": null,
+          "nameEndByte": null,
+          "valueRawLexeme": "{\"uid\":\"u1\"}",
+          "valueStartByte": 11,
+          "valueEndByte": 23
+        },
+        {
+          "pointer": "/events/0/uid",
+          "nameRawLexeme": "\"uid\"",
+          "nameStartByte": 12,
+          "nameEndByte": 17,
+          "valueRawLexeme": "\"u1\"",
+          "valueStartByte": 18,
+          "valueEndByte": 22
+        },
+        {
+          "pointer": "/events/1",
+          "nameRawLexeme": null,
+          "nameStartByte": null,
+          "nameEndByte": null,
+          "valueRawLexeme": "{\"uid\":\"u2\"}",
+          "valueStartByte": 24,
+          "valueEndByte": 36
+        },
+        {
+          "pointer": "/events/1/uid",
+          "nameRawLexeme": "\"uid\"",
+          "nameStartByte": 25,
+          "nameEndByte": 30,
+          "valueRawLexeme": "\"u2\"",
+          "valueStartByte": 31,
+          "valueEndByte": 35
+        },
+        {
+          "pointer": "/active",
+          "nameRawLexeme": "\"active\"",
+          "nameStartByte": 38,
+          "nameEndByte": 46,
+          "valueRawLexeme": "true",
+          "valueStartByte": 47,
+          "valueEndByte": 51
+        }
+      ],
+      "sourceBytes": 52,
+      "sourceSha256": "526f6dd3f1da28464aed56c80ba00f7050e05fca5575d8007f511314858285cd"
+    },
+    {
+      "id": "JSON-POINTER-KEY-ESCAPING",
+      "wire": "{\"a/b\":{\"m~n\":3},\"\":false,\"z\\u0065ro\":0}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/a~1b",
+          "nameRawLexeme": "\"a/b\"",
+          "nameStartByte": 1,
+          "nameEndByte": 6,
+          "valueRawLexeme": "{\"m~n\":3}",
+          "valueStartByte": 7,
+          "valueEndByte": 16
+        },
+        {
+          "pointer": "/a~1b/m~0n",
+          "nameRawLexeme": "\"m~n\"",
+          "nameStartByte": 8,
+          "nameEndByte": 13,
+          "valueRawLexeme": "3",
+          "valueStartByte": 14,
+          "valueEndByte": 15
+        },
+        {
+          "pointer": "/",
+          "nameRawLexeme": "\"\"",
+          "nameStartByte": 17,
+          "nameEndByte": 19,
+          "valueRawLexeme": "false",
+          "valueStartByte": 20,
+          "valueEndByte": 25
+        },
+        {
+          "pointer": "/zero",
+          "nameRawLexeme": "\"z\\u0065ro\"",
+          "nameStartByte": 26,
+          "nameEndByte": 37,
+          "valueRawLexeme": "0",
+          "valueStartByte": 38,
+          "valueEndByte": 39
+        }
+      ],
+      "sourceBytes": 40,
+      "sourceSha256": "21c43734d8665a9f30eb290b7326520bd47fad57148a9669ea8248c794b837a8"
+    },
+    {
+      "id": "JSON-UNICODE-LEXICAL",
+      "wire": "{\"message\":\"€😀\",\"accent\":\"naïve\",\"emoji\":\"\\uD83D\\uDE00\"}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/message",
+          "nameRawLexeme": "\"message\"",
+          "nameStartByte": 1,
+          "nameEndByte": 10,
+          "valueRawLexeme": "\"€😀\"",
+          "valueStartByte": 11,
+          "valueEndByte": 20
+        },
+        {
+          "pointer": "/accent",
+          "nameRawLexeme": "\"accent\"",
+          "nameStartByte": 21,
+          "nameEndByte": 29,
+          "valueRawLexeme": "\"naïve\"",
+          "valueStartByte": 30,
+          "valueEndByte": 38
+        },
+        {
+          "pointer": "/emoji",
+          "nameRawLexeme": "\"emoji\"",
+          "nameStartByte": 39,
+          "nameEndByte": 46,
+          "valueRawLexeme": "\"\\uD83D\\uDE00\"",
+          "valueStartByte": 47,
+          "valueEndByte": 61
+        }
+      ],
+      "sourceBytes": 62,
+      "sourceSha256": "fb0ad8fe899ff57685e11dc0d41e8dc6e56980be9ece730ebfd907205881d0e0"
+    },
+    {
+      "id": "JSON-EMPTY-CONTAINERS-NULL",
+      "wire": "{\"emptyObj\":{},\"emptyArr\":[],\"nullVal\":null,\"neg\":-12.5}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/emptyObj",
+          "nameRawLexeme": "\"emptyObj\"",
+          "nameStartByte": 1,
+          "nameEndByte": 11,
+          "valueRawLexeme": "{}",
+          "valueStartByte": 12,
+          "valueEndByte": 14
+        },
+        {
+          "pointer": "/emptyArr",
+          "nameRawLexeme": "\"emptyArr\"",
+          "nameStartByte": 15,
+          "nameEndByte": 25,
+          "valueRawLexeme": "[]",
+          "valueStartByte": 26,
+          "valueEndByte": 28
+        },
+        {
+          "pointer": "/nullVal",
+          "nameRawLexeme": "\"nullVal\"",
+          "nameStartByte": 29,
+          "nameEndByte": 38,
+          "valueRawLexeme": "null",
+          "valueStartByte": 39,
+          "valueEndByte": 43
+        },
+        {
+          "pointer": "/neg",
+          "nameRawLexeme": "\"neg\"",
+          "nameStartByte": 44,
+          "nameEndByte": 49,
+          "valueRawLexeme": "-12.5",
+          "valueStartByte": 50,
+          "valueEndByte": 55
+        }
+      ],
+      "sourceBytes": 56,
+      "sourceSha256": "3bfcc9b882a6428bd1616916fe4f7faaeee00a70ad912d3f96394673a0cf9880"
+    },
+    {
+      "id": "JSON-ROOT-ARRAY",
+      "wire": "[{\"a\":1},{\"b\":2},3]",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/0",
+          "nameRawLexeme": null,
+          "nameStartByte": null,
+          "nameEndByte": null,
+          "valueRawLexeme": "{\"a\":1}",
+          "valueStartByte": 1,
+          "valueEndByte": 8
+        },
+        {
+          "pointer": "/0/a",
+          "nameRawLexeme": "\"a\"",
+          "nameStartByte": 2,
+          "nameEndByte": 5,
+          "valueRawLexeme": "1",
+          "valueStartByte": 6,
+          "valueEndByte": 7
+        },
+        {
+          "pointer": "/1",
+          "nameRawLexeme": null,
+          "nameStartByte": null,
+          "nameEndByte": null,
+          "valueRawLexeme": "{\"b\":2}",
+          "valueStartByte": 9,
+          "valueEndByte": 16
+        },
+        {
+          "pointer": "/1/b",
+          "nameRawLexeme": "\"b\"",
+          "nameStartByte": 10,
+          "nameEndByte": 13,
+          "valueRawLexeme": "2",
+          "valueStartByte": 14,
+          "valueEndByte": 15
+        },
+        {
+          "pointer": "/2",
+          "nameRawLexeme": null,
+          "nameStartByte": null,
+          "nameEndByte": null,
+          "valueRawLexeme": "3",
+          "valueStartByte": 17,
+          "valueEndByte": 18
+        }
+      ],
+      "sourceBytes": 19,
+      "sourceSha256": "1ffb2029b0d0e90c9d75de2355abea07a7019592a476eab0785f30c7e522fb93"
+    },
+    {
+      "id": "JSON-ESCAPED-KEY-NAMES",
+      "wire": "{\"\\u0061\":1,\"a\\/b\":\"value\"}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/a",
+          "nameRawLexeme": "\"\\u0061\"",
+          "nameStartByte": 1,
+          "nameEndByte": 9,
+          "valueRawLexeme": "1",
+          "valueStartByte": 10,
+          "valueEndByte": 11
+        },
+        {
+          "pointer": "/a~1b",
+          "nameRawLexeme": "\"a\\/b\"",
+          "nameStartByte": 12,
+          "nameEndByte": 18,
+          "valueRawLexeme": "\"value\"",
+          "valueStartByte": 19,
+          "valueEndByte": 26
+        }
+      ],
+      "sourceBytes": 27,
+      "sourceSha256": "694ce1fffa7186908b111eaca33ac575c944487600101b09ce122da901a97684"
+    },
+    {
+      "id": "JSON-SAFE-NUMBER-BOOLEAN",
+      "wire": "{\"negative\":-0.125,\"zero\":0,\"on\":true,\"off\":false}",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [
+        {
+          "pointer": "/negative",
+          "nameRawLexeme": "\"negative\"",
+          "nameStartByte": 1,
+          "nameEndByte": 11,
+          "valueRawLexeme": "-0.125",
+          "valueStartByte": 12,
+          "valueEndByte": 18
+        },
+        {
+          "pointer": "/zero",
+          "nameRawLexeme": "\"zero\"",
+          "nameStartByte": 19,
+          "nameEndByte": 25,
+          "valueRawLexeme": "0",
+          "valueStartByte": 26,
+          "valueEndByte": 27
+        },
+        {
+          "pointer": "/on",
+          "nameRawLexeme": "\"on\"",
+          "nameStartByte": 28,
+          "nameEndByte": 32,
+          "valueRawLexeme": "true",
+          "valueStartByte": 33,
+          "valueEndByte": 37
+        },
+        {
+          "pointer": "/off",
+          "nameRawLexeme": "\"off\"",
+          "nameStartByte": 38,
+          "nameEndByte": 43,
+          "valueRawLexeme": "false",
+          "valueStartByte": 44,
+          "valueEndByte": 49
+        }
+      ],
+      "sourceBytes": 50,
+      "sourceSha256": "6f3af4ffa6d1445c906a48f9c1b61d3dbe53f69722e572b5ca4c0ef88ee78ae3"
+    },
+    {
+      "id": "JSON-ROOT-STRING",
+      "wire": "\"hello\"",
+      "expectedDisposition": "REVIEW_ONLY_LEXICAL",
+      "expectedIssues": [],
+      "claims": [],
+      "sourceBytes": 7,
+      "sourceSha256": "5aa762ae383fbb727af3c7a36d4940a5b8c40a989452d2304fc958ff3f354e7a"
+    },
+    {
+      "id": "JSON-SAME-SCOPE-DUPLICATE",
+      "wire": "{\"a\":1,\"a\":2}",
+      "expectedDisposition": "REVIEW_ONLY_UNCERTAIN",
+      "expectedIssues": [
+        "DUPLICATE_MEMBER_SILENT_OVERWRITE"
+      ],
+      "claims": [],
+      "sourceBytes": 13,
+      "sourceSha256": "1c53ee0df7b12fd4d65b976120c7fa6b847dc41dffd7f0331c3237a1ceab1756"
+    },
+    {
+      "id": "JSON-ESCAPED-ALIAS-DUPLICATE",
+      "wire": "{\"a\":1,\"\\u0061\":2}",
+      "expectedDisposition": "REVIEW_ONLY_UNCERTAIN",
+      "expectedIssues": [
+        "DUPLICATE_MEMBER_SILENT_OVERWRITE"
+      ],
+      "claims": [],
+      "sourceBytes": 18,
+      "sourceSha256": "c95ba945b310a34906bbfc28ce1346b87741d5a2b3066d1d3ecfa0acbd86392c"
+    },
+    {
+      "id": "JSON-UNSAFE-INTEGER",
+      "wire": "{\"id\":9007199254740993}",
+      "expectedDisposition": "REVIEW_ONLY_UNCERTAIN",
+      "expectedIssues": [
+        "NONFINITE_NUMBER_OR_LOSS_OF_PRECISION"
+      ],
+      "claims": [],
+      "sourceBytes": 23,
+      "sourceSha256": "2185812179ffd2b19c8154d2d409599d231fb75ef4968df59b7f02b435c094fa"
+    },
+    {
+      "id": "JSON-EXPONENT-OVERFLOW",
+      "wire": "{\"risk\":1e999}",
+      "expectedDisposition": "REVIEW_ONLY_UNCERTAIN",
+      "expectedIssues": [
+        "NONFINITE_NUMBER_OR_LOSS_OF_PRECISION"
+      ],
+      "claims": [],
+      "sourceBytes": 14,
+      "sourceSha256": "8378cf2f52b24762a9693ea512809800a4041d1ead14424443d70e50941f8653"
+    },
+    {
+      "id": "JSON-UNPAIRED-SURROGATE",
+      "wire": "{\"broken\":\"\\uD800\"}",
+      "expectedDisposition": "REVIEW_ONLY_UNCERTAIN",
+      "expectedIssues": [
+        "UNPAIRED_UNICODE_SURROGATE"
+      ],
+      "claims": [],
+      "sourceBytes": 19,
+      "sourceSha256": "1b8823882d52b9c805f24b0d9b7a5d1e190f2c40d733673818e310a7ca968a79"
+    },
+    {
+      "id": "JSON-INVALID-ESCAPE",
+      "wire": "{\"bad\":\"\\q\"}",
+      "expectedDisposition": "ABSTAIN_UNSAFE",
+      "expectedIssues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "claims": [],
+      "sourceBytes": 12,
+      "sourceSha256": "c965d7207aca3d9b38854f9dd0f8c12576be864171b07088c6661feaad35708a"
+    },
+    {
+      "id": "JSON-TRAILING-GARBAGE",
+      "wire": "{\"value\":1}junk",
+      "expectedDisposition": "ABSTAIN_UNSAFE",
+      "expectedIssues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "claims": [],
+      "sourceBytes": 15,
+      "sourceSha256": "fec151a3a938c81c3d7dbc3fa9953b48af52d451845aa4c95eba9bc4fe1d7872"
+    },
+    {
+      "id": "JSON-TRUNCATED-NESTING",
+      "wire": "{\"a\":{\"b\":1}",
+      "expectedDisposition": "ABSTAIN_UNSAFE",
+      "expectedIssues": [
+        "INVALID_SOURCE_LEXICAL_GRAMMAR"
+      ],
+      "claims": [],
+      "sourceBytes": 12,
+      "sourceSha256": "b63316ae31688d25c260923550ac4df814cb522577dd66dd9e0a2d4b9dade715"
+    },
+    {
+      "id": "JSON-RESOURCE-DEPTH",
+      "wire": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+      "expectedDisposition": "ABSTAIN_UNSAFE",
+      "expectedIssues": [
+        "RESOURCE_BOUNDS"
+      ],
+      "claims": [],
+      "sourceBytes": 69,
+      "sourceSha256": "afe82d317ffec17b64d315dcac87c4aad708708fa7a7b155300d785f49011c86"
+    }
+  ]
+}

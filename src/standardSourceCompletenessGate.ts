@@ -7,6 +7,22 @@
  * otherwise silently overwrite or ignore.
  */
 export type SourceCompletenessFamily='json'|'kv';
+
+/**
+ * Original lexical JSON member/array value intervals with RFC6901 pointer
+ * identities, NOT a JavaScript/native decoded typed-value claim.
+ * Member names retain original quoted source lexemes; positional array
+ * elements have no original member name (null).
+ */
+export interface JsonRawSourceSpan {
+  pointer:string;
+  nameRawLexeme:string|null;
+  nameStartByte:number|null;
+  nameEndByte:number|null;
+  valueRawLexeme:string;
+  valueStartByte:number;
+  valueEndByte:number;
+}
 export type SourceCompletenessIssue=
   'DUPLICATE_MEMBER_SILENT_OVERWRITE'|
   'NONFINITE_NUMBER_OR_LOSS_OF_PRECISION'|
@@ -24,6 +40,8 @@ export type SourceCompletenessInspection={
   issues:SourceCompletenessIssue[];
   namedRawFields:Array<{name:string;rawLexeme:string;nameStartByte:number;
     nameEndByte:number;valueStartByte:number;valueEndByte:number}>;
+  /** Source-only nested JSON spans; empty for ambiguous/malformed records. */
+  jsonRawSpans:JsonRawSourceSpan[];
   branchAttempts:1;maxDepth:number;
   sourceFieldValuesDecoded:false;nativeStellar:'NOT_VERIFIED';
   autoPromoted:false;completeSourceClaim:false;
@@ -41,22 +59,52 @@ function unicodeValid(input:string):boolean{
   }
   return true;
 }
+interface JsonCharacterClaim {
+  pointer:string;
+  nameStart:number|null;
+  nameEnd:number|null;
+  valueStart:number;
+  valueEnd:number;
+}
+function escapeJsonPointerToken(key:string):string{
+  // RFC6901: replace tilde first, then slash; key itself is JSON-decoded.
+  return key.replaceAll('~','~0').replaceAll('/','~1');
+}
+/** UTF-16 code-unit offsets -> exact original UTF-8 byte starts in O(n). */
+function utf8Index(raw:string):Uint32Array{
+  const offsets=new Uint32Array(raw.length+1);
+  let total=0;
+  for(let i=0;i<raw.length;i++){
+    const unit=raw.charCodeAt(i);
+    if(unit>=0xd800&&unit<=0xdbff){
+      // Malformed surrogate sources are rejected by unicodeValid first.
+      offsets[i+1]=total; // middle of surrogate pair is not a token boundary
+      total+=4;i++;
+      offsets[i+1]=total;
+    }else{
+      total+=unit<=0x7f?1:unit<=0x7ff?2:3;
+      offsets[i+1]=total;
+    }
+  }
+  return offsets;
+}
 class JsonBoundedAudit{
   pos=0;nodes=0;maxDepth=0;issues=new Set<SourceCompletenessIssue>();
+  readonly claims:JsonCharacterClaim[]=[];
   constructor(readonly raw:string){}
   skip(){while(/[ \t\r\n]/.test(this.raw[this.pos]??'\0'))this.pos++;}
   bad(message:SourceCompletenessIssue='INVALID_SOURCE_LEXICAL_GRAMMAR'):never{
     this.issues.add(message);throw Error('SOURCE_LEXICAL_NOT_CERTIFIED');
   }
-  visit(depth:number):void{
+  visit(depth:number,pointer=''):void{
     if(++this.nodes>10000||depth>32)
       this.bad('RESOURCE_BOUNDS');
     this.maxDepth=Math.max(depth,this.maxDepth);
     this.skip();
     const c=this.raw[this.pos];
     if(c==='"'){this.string();return;}
-    if(c==='{'){this.object(depth);return;}
-    if(c==='['){this.array(depth);return;}
+    if(c==='{'){this.object(depth,pointer);return;}
+    if(c==='['){this.array(depth,pointer);return;}
     for(const word of ['null','true','false']){
       if(this.raw.startsWith(word,this.pos)){
         this.pos+=word.length;return;
@@ -97,30 +145,50 @@ class JsonBoundedAudit{
     if(!unicodeValid(decoded))this.issues.add('UNPAIRED_UNICODE_SURROGATE');
     return decoded;
   }
-  object(depth:number):void{
+  object(depth:number,pointer:string):void{
     this.pos++;this.skip();
     const keys=new Set<string>();
     if(this.raw[this.pos]==='}'){this.pos++;return;}
     for(let i=0;i<4096;i++){
       this.skip();
       if(this.raw[this.pos]!=='"')this.bad();
+      const nameStart=this.pos;
       const key=this.string();
+      const nameEnd=this.pos;
       if(keys.has(key))this.issues.add('DUPLICATE_MEMBER_SILENT_OVERWRITE');
       keys.add(key);
       this.skip();
       if(this.raw[this.pos++]!==':')this.bad();
-      this.visit(depth+1);this.skip();
+      this.skip();
+      const pointerValue=pointer+'/'+escapeJsonPointerToken(key);
+      const claim:JsonCharacterClaim={
+        pointer:pointerValue,nameStart,nameEnd,
+        valueStart:this.pos,valueEnd:this.pos,
+      };
+      this.claims.push(claim);
+      this.visit(depth+1,pointerValue);
+      claim.valueEnd=this.pos;
+      this.skip();
       const next=this.raw[this.pos++];
       if(next==='}')return;
       if(next!==',')this.bad();
     }
     this.bad('RESOURCE_BOUNDS');
   }
-  array(depth:number):void{
+  array(depth:number,pointer:string):void{
     this.pos++;this.skip();
     if(this.raw[this.pos]===']'){this.pos++;return;}
     for(let i=0;i<4096;i++){
-      this.visit(depth+1);this.skip();
+      this.skip();
+      const pointerValue=pointer+'/'+String(i);
+      const claim:JsonCharacterClaim={
+        pointer:pointerValue,nameStart:null,nameEnd:null,
+        valueStart:this.pos,valueEnd:this.pos,
+      };
+      this.claims.push(claim);
+      this.visit(depth+1,pointerValue);
+      claim.valueEnd=this.pos;
+      this.skip();
       const next=this.raw[this.pos++];
       if(next===']')return;
       if(next!==',')this.bad();
@@ -199,7 +267,7 @@ export function inspectSourceCompleteness(raw:string,
   const sourceBytes=utf8.encode(raw).length;
   const base:SourceCompletenessInspection={
     family,disposition:'ABSTAIN_UNSAFE',raw,sourceBytes,issues:[],
-    namedRawFields:[],branchAttempts:1,maxDepth:0,
+    namedRawFields:[],jsonRawSpans:[],branchAttempts:1,maxDepth:0,
     sourceFieldValuesDecoded:false,nativeStellar:'NOT_VERIFIED',
     autoPromoted:false,completeSourceClaim:false,
   };
@@ -214,8 +282,41 @@ export function inspectSourceCompleteness(raw:string,
       return {...base,maxDepth:parsed.maxDepth,issues};
     }
     const issues=[...parsed.issues];
-    return {...base,maxDepth:parsed.maxDepth,issues,
-      disposition:issues.length?'REVIEW_ONLY_UNCERTAIN':'REVIEW_ONLY_LEXICAL'};
+    if(issues.length)return {...base,maxDepth:parsed.maxDepth,issues,
+      disposition:'REVIEW_ONLY_UNCERTAIN'};
+    // The original JSON source must fully parse BEFORE any field claim
+    // escapes this scanner. Ambiguous number/Unicode/duplicate inputs
+    // never expose partially plausible original-value spans.
+    const map=utf8Index(raw);
+    if(map[raw.length]!==sourceBytes)
+      return {...base,maxDepth:parsed.maxDepth,issues:['INVALID_SOURCE_LEXICAL_GRAMMAR']};
+    const original=utf8.encode(raw);
+    const decoded=new TextDecoder('utf8',{fatal:true});
+    const jsonRawSpans:JsonRawSourceSpan[]=[];
+    for(const claim of parsed.claims){
+      const nameStartByte=claim.nameStart===null?null:map[claim.nameStart]!;
+      const nameEndByte=claim.nameEnd===null?null:map[claim.nameEnd]!;
+      const valueStartByte=map[claim.valueStart]!;
+      const valueEndByte=map[claim.valueEnd]!;
+      const valueRawLexeme=raw.slice(claim.valueStart,claim.valueEnd);
+      const nameRawLexeme=claim.nameStart===null?null:
+        raw.slice(claim.nameStart,claim.nameEnd!);
+      if(valueEndByte<valueStartByte||valueEndByte>sourceBytes||
+        decoded.decode(original.subarray(valueStartByte,valueEndByte))!==valueRawLexeme||
+        (nameRawLexeme!==null&&(
+          nameStartByte===null||nameEndByte===null||
+          decoded.decode(original.subarray(nameStartByte,nameEndByte))!==nameRawLexeme))){
+        return {...base,maxDepth:parsed.maxDepth,
+          issues:['INVALID_SOURCE_LEXICAL_GRAMMAR']};
+      }
+      jsonRawSpans.push({
+        pointer:claim.pointer,
+        nameRawLexeme,nameStartByte,nameEndByte,
+        valueRawLexeme,valueStartByte,valueEndByte,
+      });
+    }
+    return {...base,maxDepth:parsed.maxDepth,
+      issues:[],disposition:'REVIEW_ONLY_LEXICAL',jsonRawSpans};
   }
   if(/[\r\n]/.test(raw))return {...base,issues:['INVALID_SOURCE_LEXICAL_GRAMMAR']};
   const res=parseKV(raw);
