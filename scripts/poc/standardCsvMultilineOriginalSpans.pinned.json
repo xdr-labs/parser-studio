@@ -1,0 +1,1511 @@
+{
+  "sourceAuthority": "RFC4180 section 2 quoted fields can contain CRLF and escaped quotes; explicit LF compatibility is separate",
+  "provenance": "Independently authored format synthetic, NOT native or manufacturer publisher wire",
+  "cases": [
+    {
+      "id": "CSV-MULTILINE-RFC-CRLF",
+      "wire": "timestamp,action,message,flag\r\n2026-10-18T10:00:00Z,deny,\"line1\r\nline2\",true\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "2026-10-18T10:00:00Z",
+          "decodedValue": "2026-10-18T10:00:00Z",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 51
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "deny",
+          "decodedValue": "deny",
+          "quoted": false,
+          "startByte": 52,
+          "endByte": 56
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"line1\r\nline2\"",
+          "decodedValue": "line1\r\nline2",
+          "quoted": true,
+          "startByte": 57,
+          "endByte": 71
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "true",
+          "decodedValue": "true",
+          "quoted": false,
+          "startByte": 72,
+          "endByte": 76
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 76,
+          "terminatorBytes": 2,
+          "physicalLines": 2
+        }
+      ],
+      "sourceBytes": 78,
+      "sourceSha256": "719bc5d9637915bc9b774f42664d60e1f2c58d6d427411e66fafa88eb5bba976"
+    },
+    {
+      "id": "CSV-MULTIROW-EMBEDDED-CRLF",
+      "wire": "timestamp,action,message,flag\r\n1,allow,\"one,\r\ntwo\",yes\r\n2,block,\"three\r\nfour\r\nfive\",no\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 2,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "1",
+          "decodedValue": "1",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 32
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "allow",
+          "decodedValue": "allow",
+          "quoted": false,
+          "startByte": 33,
+          "endByte": 38
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"one,\r\ntwo\"",
+          "decodedValue": "one,\r\ntwo",
+          "quoted": true,
+          "startByte": 39,
+          "endByte": 50
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "yes",
+          "decodedValue": "yes",
+          "quoted": false,
+          "startByte": 51,
+          "endByte": 54
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "2",
+          "decodedValue": "2",
+          "quoted": false,
+          "startByte": 56,
+          "endByte": 57
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "block",
+          "decodedValue": "block",
+          "quoted": false,
+          "startByte": 58,
+          "endByte": 63
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"three\r\nfour\r\nfive\"",
+          "decodedValue": "three\r\nfour\r\nfive",
+          "quoted": true,
+          "startByte": 64,
+          "endByte": 83
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "no",
+          "decodedValue": "no",
+          "quoted": false,
+          "startByte": 84,
+          "endByte": 86
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 54,
+          "terminatorBytes": 2,
+          "physicalLines": 2
+        },
+        {
+          "rowIndex": 1,
+          "startByte": 56,
+          "endByte": 86,
+          "terminatorBytes": 2,
+          "physicalLines": 3
+        }
+      ],
+      "sourceBytes": 88,
+      "sourceSha256": "abb6b7d47a7c43f65b0d716b719a870124f65d245d0afd6dbf2ea7e442811d6f"
+    },
+    {
+      "id": "CSV-QUOTED-BARE-CR",
+      "wire": "timestamp,action,message,flag\r\n12,allow,\"value\rnext\",yes\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "12",
+          "decodedValue": "12",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 33
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "allow",
+          "decodedValue": "allow",
+          "quoted": false,
+          "startByte": 34,
+          "endByte": 39
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"value\rnext\"",
+          "decodedValue": "value\rnext",
+          "quoted": true,
+          "startByte": 40,
+          "endByte": 52
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "yes",
+          "decodedValue": "yes",
+          "quoted": false,
+          "startByte": 53,
+          "endByte": 56
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 56,
+          "terminatorBytes": 2,
+          "physicalLines": 2
+        }
+      ],
+      "sourceBytes": 58,
+      "sourceSha256": "bd3b895be5e46f5a79e075adb3173537ecb9d7affc892769bbd05d54e68abe51"
+    },
+    {
+      "id": "CSV-QUOTE-EMBEDDED-CRLF-LF-CR",
+      "wire": "timestamp,action,message,flag\r\n13,deny,\"one\r\ntwo\nthree\rfour\",no\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "13",
+          "decodedValue": "13",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 33
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "deny",
+          "decodedValue": "deny",
+          "quoted": false,
+          "startByte": 34,
+          "endByte": 38
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"one\r\ntwo\nthree\rfour\"",
+          "decodedValue": "one\r\ntwo\nthree\rfour",
+          "quoted": true,
+          "startByte": 39,
+          "endByte": 60
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "no",
+          "decodedValue": "no",
+          "quoted": false,
+          "startByte": 61,
+          "endByte": 63
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 63,
+          "terminatorBytes": 2,
+          "physicalLines": 4
+        }
+      ],
+      "sourceBytes": 65,
+      "sourceSha256": "1e778fc3e01ba8a98c57bfbcb2f719862eff5cd4a8aa19dcc94dd6d50127dfef"
+    },
+    {
+      "id": "CSV-ESCAPED-QUOTE",
+      "wire": "timestamp,action,message,flag\r\n3,alert,\"He said \"\"stop\"\"\",yes\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "3",
+          "decodedValue": "3",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 32
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "alert",
+          "decodedValue": "alert",
+          "quoted": false,
+          "startByte": 33,
+          "endByte": 38
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"He said \"\"stop\"\"\"",
+          "decodedValue": "He said \"stop\"",
+          "quoted": true,
+          "startByte": 39,
+          "endByte": 57
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "yes",
+          "decodedValue": "yes",
+          "quoted": false,
+          "startByte": 58,
+          "endByte": 61
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 61,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        }
+      ],
+      "sourceBytes": 63,
+      "sourceSha256": "41d8e4ca81c5029a6076c3135df6f1b59f154250be0abb9272fa1285cf5724e4"
+    },
+    {
+      "id": "CSV-UTF8-SOURCE-SPANS",
+      "wire": "timestamp,action,message,flag\r\n4,deny,\"UTF8 €😀\",yes\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "4",
+          "decodedValue": "4",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 32
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "deny",
+          "decodedValue": "deny",
+          "quoted": false,
+          "startByte": 33,
+          "endByte": 37
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"UTF8 €😀\"",
+          "decodedValue": "UTF8 €😀",
+          "quoted": true,
+          "startByte": 38,
+          "endByte": 52
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "yes",
+          "decodedValue": "yes",
+          "quoted": false,
+          "startByte": 53,
+          "endByte": 56
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 56,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        }
+      ],
+      "sourceBytes": 58,
+      "sourceSha256": "3571feed84f3300bcd7d4eb07971f1ef5487205239dbb09d9272469d7f290696"
+    },
+    {
+      "id": "CSV-EMPTY-QUOTED-VS-UNQUOTED",
+      "wire": "timestamp,action,message,flag\r\n5,allow,\"\",\r\n6,deny,,\"\"\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 2,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "5",
+          "decodedValue": "5",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 32
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "allow",
+          "decodedValue": "allow",
+          "quoted": false,
+          "startByte": 33,
+          "endByte": 38
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"\"",
+          "decodedValue": "",
+          "quoted": true,
+          "startByte": 39,
+          "endByte": 41
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "",
+          "decodedValue": "",
+          "quoted": false,
+          "startByte": 42,
+          "endByte": 42
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "6",
+          "decodedValue": "6",
+          "quoted": false,
+          "startByte": 44,
+          "endByte": 45
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "deny",
+          "decodedValue": "deny",
+          "quoted": false,
+          "startByte": 46,
+          "endByte": 50
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "",
+          "decodedValue": "",
+          "quoted": false,
+          "startByte": 51,
+          "endByte": 51
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "\"\"",
+          "decodedValue": "",
+          "quoted": true,
+          "startByte": 52,
+          "endByte": 54
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 42,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 1,
+          "startByte": 44,
+          "endByte": 54,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        }
+      ],
+      "sourceBytes": 56,
+      "sourceSha256": "bdb22fb515973ce12bc9b65e72f415a1bbb02e8092f3a20557ef4c20e238a20e"
+    },
+    {
+      "id": "CSV-UNQUOTED-EDGE-SPACES",
+      "wire": "timestamp,action,message,flag\r\n 7 , allow , padded source ,true\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": " 7 ",
+          "decodedValue": " 7 ",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 34
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": " allow ",
+          "decodedValue": " allow ",
+          "quoted": false,
+          "startByte": 35,
+          "endByte": 42
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": " padded source ",
+          "decodedValue": " padded source ",
+          "quoted": false,
+          "startByte": 43,
+          "endByte": 58
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "true",
+          "decodedValue": "true",
+          "quoted": false,
+          "startByte": 59,
+          "endByte": 63
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 63,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        }
+      ],
+      "sourceBytes": 65,
+      "sourceSha256": "b7ec194670f5911452d01f9ef43e4671e69c2ba49f2cd2817464edb43938d7ba"
+    },
+    {
+      "id": "CSV-LF-COMPAT-NO-LAST-TERMINATOR",
+      "wire": "timestamp,action,message,flag\n8,allow,\"line1\nline2\",true",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "lf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "8",
+          "decodedValue": "8",
+          "quoted": false,
+          "startByte": 30,
+          "endByte": 31
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "allow",
+          "decodedValue": "allow",
+          "quoted": false,
+          "startByte": 32,
+          "endByte": 37
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"line1\nline2\"",
+          "decodedValue": "line1\nline2",
+          "quoted": true,
+          "startByte": 38,
+          "endByte": 51
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "true",
+          "decodedValue": "true",
+          "quoted": false,
+          "startByte": 52,
+          "endByte": 56
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 1,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 30,
+          "endByte": 56,
+          "terminatorBytes": 0,
+          "physicalLines": 2
+        }
+      ],
+      "sourceBytes": 56,
+      "sourceSha256": "c4e2d23c6b1a8a8aef34b2794dce2fb7d65d75e55ae86fb10167553600602505"
+    },
+    {
+      "id": "CSV-CRLF-LAST-NO-TERMINATOR",
+      "wire": "timestamp,action,message,flag\r\n9,deny,message,true\r\n10,alert,final,false",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 2,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "timestamp",
+          "decodedValue": "timestamp",
+          "quoted": false,
+          "startByte": 0,
+          "endByte": 9
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 10,
+          "endByte": 16
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 17,
+          "endByte": 24
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 25,
+          "endByte": 29
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "9",
+          "decodedValue": "9",
+          "quoted": false,
+          "startByte": 31,
+          "endByte": 32
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "deny",
+          "decodedValue": "deny",
+          "quoted": false,
+          "startByte": 33,
+          "endByte": 37
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "message",
+          "decodedValue": "message",
+          "quoted": false,
+          "startByte": 38,
+          "endByte": 45
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "true",
+          "decodedValue": "true",
+          "quoted": false,
+          "startByte": 46,
+          "endByte": 50
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "10",
+          "decodedValue": "10",
+          "quoted": false,
+          "startByte": 52,
+          "endByte": 54
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "alert",
+          "decodedValue": "alert",
+          "quoted": false,
+          "startByte": 55,
+          "endByte": 60
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "final",
+          "decodedValue": "final",
+          "quoted": false,
+          "startByte": 61,
+          "endByte": 66
+        },
+        {
+          "rowIndex": 1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "false",
+          "decodedValue": "false",
+          "quoted": false,
+          "startByte": 67,
+          "endByte": 72
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 29,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 31,
+          "endByte": 50,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 1,
+          "startByte": 52,
+          "endByte": 72,
+          "terminatorBytes": 0,
+          "physicalLines": 1
+        }
+      ],
+      "sourceBytes": 72,
+      "sourceSha256": "abe56ae13d5a4c56965caadfb0a9c2592bdb0ec0bb8453cf7bfbffe5dc840e5f"
+    },
+    {
+      "id": "CSV-QUOTED-HEADER",
+      "wire": "\"timestamp\",action,\"message\",flag\r\n11,allow,\"reported, by firewall\",yes\r\n",
+      "valid": true,
+      "header": [
+        "timestamp",
+        "action",
+        "message",
+        "flag"
+      ],
+      "dataRows": 1,
+      "lineEnding": "crlf",
+      "originalClaims": [
+        {
+          "rowIndex": -1,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "\"timestamp\"",
+          "decodedValue": "timestamp",
+          "quoted": true,
+          "startByte": 0,
+          "endByte": 11
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "action",
+          "decodedValue": "action",
+          "quoted": false,
+          "startByte": 12,
+          "endByte": 18
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"message\"",
+          "decodedValue": "message",
+          "quoted": true,
+          "startByte": 19,
+          "endByte": 28
+        },
+        {
+          "rowIndex": -1,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "flag",
+          "decodedValue": "flag",
+          "quoted": false,
+          "startByte": 29,
+          "endByte": 33
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 0,
+          "columnName": "timestamp",
+          "rawLexeme": "11",
+          "decodedValue": "11",
+          "quoted": false,
+          "startByte": 35,
+          "endByte": 37
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 1,
+          "columnName": "action",
+          "rawLexeme": "allow",
+          "decodedValue": "allow",
+          "quoted": false,
+          "startByte": 38,
+          "endByte": 43
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 2,
+          "columnName": "message",
+          "rawLexeme": "\"reported, by firewall\"",
+          "decodedValue": "reported, by firewall",
+          "quoted": true,
+          "startByte": 44,
+          "endByte": 67
+        },
+        {
+          "rowIndex": 0,
+          "columnIndex": 3,
+          "columnName": "flag",
+          "rawLexeme": "yes",
+          "decodedValue": "yes",
+          "quoted": false,
+          "startByte": 68,
+          "endByte": 71
+        }
+      ],
+      "records": [
+        {
+          "rowIndex": -1,
+          "startByte": 0,
+          "endByte": 33,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        },
+        {
+          "rowIndex": 0,
+          "startByte": 35,
+          "endByte": 71,
+          "terminatorBytes": 2,
+          "physicalLines": 1
+        }
+      ],
+      "sourceBytes": 73,
+      "sourceSha256": "51796ef8a579a59fdb21414a1feb7e70aa795ddec7d5bdf35ef11407b706ab33"
+    },
+    {
+      "id": "CSV-UNTERMINATED-QUOTED-MULTILINE",
+      "wire": "timestamp,action,message,flag\r\n1,deny,\"unfinished\r\nstill open,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 69,
+      "sourceSha256": "d8596bd51f478a7bc94dd214c5f568992e7d7200372dd8134e5b587fae4d4faf"
+    },
+    {
+      "id": "CSV-UNKNOWN-CHAR-AFTER-QUOTE",
+      "wire": "timestamp,action,message,flag\r\n1,deny,\"closed\"junk,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 58,
+      "sourceSha256": "58f05db135f5d8c4e191296c94f4e98d3442cd45b88bd39a44ac8ae89d63eddd"
+    },
+    {
+      "id": "CSV-SPACE-AFTER-QUOTED-CLOSE",
+      "wire": "timestamp,action,message,flag\r\n1,deny,\"closed\" ,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 55,
+      "sourceSha256": "4db86dcfad4288bb3dfc347105a4d50d78b9a14d16bc40031e291a08010ba75b"
+    },
+    {
+      "id": "CSV-QUOTE-INSIDE-UNQUOTED",
+      "wire": "timestamp,action,message,flag\r\n1,deny,unquoted\"bad,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 58,
+      "sourceSha256": "d526e5e3ca0f12d9349d5de3f41bed78f28166cefc0a804c3483ec55bc5da183"
+    },
+    {
+      "id": "CSV-ROW-COLUMN-DRIFT",
+      "wire": "timestamp,action,message,flag\r\n1,deny,\"quoted\r\nline\"\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 54,
+      "sourceSha256": "901fc6c1460807f59801c7bd74e785126848439f95cd73bb13477dfb321533be"
+    },
+    {
+      "id": "CSV-DUPLICATE-COLUMN",
+      "wire": "timestamp,action,message,message\r\n1,deny,hello,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 54,
+      "sourceSha256": "9189356ae29d699c5ab20f6c19f33ebd7092cef1ddfe6fed63bf295b70bbaad1"
+    },
+    {
+      "id": "CSV-MIXED-OUTER-RECORD-TERMINATORS",
+      "wire": "timestamp,action,message,flag\r\n1,deny,foo,false\n2,allow,bar,true\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 66,
+      "sourceSha256": "c18b0ca656c31347829beca657825d18b9835e8acd5c31cd80a64f591218ea18"
+    },
+    {
+      "id": "CSV-UNQUOTED-TAB-DISALLOWED",
+      "wire": "timestamp,action,message,flag\r\n1,deny,contains\tTAB,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 58,
+      "sourceSha256": "5dbc4d48bd434bf711e11a9579989209cf1df215fc422da7e8b6c5183f0c3427"
+    },
+    {
+      "id": "CSV-QUOTED-TAB-DISALLOWED",
+      "wire": "timestamp,action,message,flag\r\n1,deny,\"contains\tTAB\",false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 60,
+      "sourceSha256": "0ae3db050d9dbb276e0cf561683b17495ac4ac05a94b146b896339767ccda650"
+    },
+    {
+      "id": "CSV-UNQUOTED-C0-DISALLOWED",
+      "wire": "timestamp,action,message,flag\r\n1,deny,bad\u0001value,false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 55,
+      "sourceSha256": "6254e7b50e4894eaf6fb1258cf58e3cc05d19e5d544debe96910f7b4feeeeeb0"
+    },
+    {
+      "id": "CSV-QUOTED-DEL-DISALLOWED",
+      "wire": "timestamp,action,message,flag\r\n1,deny,\"badvalue\",false\r\n",
+      "valid": false,
+      "header": [],
+      "dataRows": 0,
+      "originalClaims": [],
+      "records": [],
+      "sourceBytes": 57,
+      "sourceSha256": "ce395fca95b292918be92fb13fd5ef15ea70108b24d927e055d4a3ba4e1b8f04"
+    }
+  ]
+}
