@@ -33,9 +33,11 @@ and expected claim digests only.
 
 ## Exact local evidence
 
-On the composed source tree, 11 focused standards tests files and
-155 focused tests PASS. Full Vitest: **197 files / 1,398 tests PASS**,
-TypeScript + Vite build PASS. New machine ledger focused test PASS.
+On the source-composed candidate, the original 11 focused standards
+test files and 155 tests PASS. A new dedicated cross-format regression
+suite checks ten integrated source safety routes plus the existing
+SHA/traceability ledger test: 11/11 PASS. Updated full Vitest:
+**199 files / 1,409 tests PASS**, TypeScript + Vite build PASS.
 Original safety replay: 1,361 historical originals + 2,892 mutated
 invalid records (197 REVIEW_ONLY unchanged), plus 50 previously
 independent source examples: zero changed results, original byte drift
@@ -45,6 +47,27 @@ not a newly scored holdout.
 The new Draft PR still requires exact-HEAD GitHub quality CI, including
 Chromium scenarios and independent loopback HTTP integration. Do not
 claim CI success before it is observed.
+
+## Cross-family false-complete and source boundary convergence
+
+A separate source-stage test,
+src/poc/standardCrossFamilyConvergence.test.ts, guards shared behavior
+after all standalone grammar patches are composed. Ten direct invariants
+use independent source text and check RFC6587 original byte framing,
+RFC5424 legal repeated SD-PARAM/unknown escapes, CEF required header
+and severity, LEEF declared delimiters, RFC8259 duplicate/overflow/
+surrogate rejection, RFC4180 source field-edge spaces, KV complete
+consumption/unknown escaping, Zeek terminal #close, declared W3C
+quoted source fields, and ambiguous KV-vs-positional CSV nonpromotion.
+Those are **compatibility regression assertions**, not ten new
+manufacturer accuracy goldens. The immutable SHA ledger is checked
+separately and its evidence categories are never upgraded by these
+synthetic cases.
+
+The exact full-suite test count and GitHub Actions status for the
+updated HEAD must be recorded after these extra regression assertions
+are committed and verified. The earlier 197-file/1,398-test count
+describes the prior source-composed HEAD only.
 
 ## Remaining qualification
 
