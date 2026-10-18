@@ -1,0 +1,248 @@
+{
+  "contract": "parser-studio.legacy-ui-migration.v1",
+  "legacySuiteCount": 48,
+  "ownerDecision": "Exactly two public creation methods: Auto Parser and ChatGPT Assisted Parser",
+  "releaseRule": "Archived suites never count as current PASS; every archived behavior is migrated, owner-superseded, or externally gated.",
+  "entries": [
+    {
+      "legacySuite": "ai-integrated-review.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Owner selected manual ChatGPT copy/paste; integrated provider UI is intentionally retired"
+    },
+    {
+      "legacySuite": "all-family-audit.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Explicit audit workspace replaced by Multi-Pass source accounting and residual review"
+    },
+    {
+      "legacySuite": "approved-testlab-rate.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts plus AutoParserResultTools rate and quota controls"
+    },
+    {
+      "legacySuite": "approved-testlab-session.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts recovery session and Test Lab scenarios"
+    },
+    {
+      "legacySuite": "artifact-revision-history.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts owner history plus ArtifactRevisionHistoryPanel"
+    },
+    {
+      "legacySuite": "auto-parser-envelope.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/auto-parser-three-step.spec.ts plus integrated mixed and syslog scenarios"
+    },
+    {
+      "legacySuite": "backend-bridge.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts real validate generate SHA and ZIP"
+    },
+    {
+      "legacySuite": "backend-expanded-formats.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts RFC5424 RFC3164 and mixed Native-qualified families"
+    },
+    {
+      "legacySuite": "backend-recovery.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts in-place mapping repair"
+    },
+    {
+      "legacySuite": "backend-schema-guide.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Expert schema-guide screen removed; automatic compiler and Dictionary contracts replace it"
+    },
+    {
+      "legacySuite": "backend-synthetic-preview.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "AutoParserLocalReplay plus approved Test Lab current result flow"
+    },
+    {
+      "legacySuite": "browser-evidence-comparison.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/evidence-recovery.spec.ts plus browser evidence unit contracts"
+    },
+    {
+      "legacySuite": "browser-evidence.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/evidence-recovery.spec.ts plus TestLabEvidencePanel"
+    },
+    {
+      "legacySuite": "browser-rule-trace.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Current Review Results source highlights plus browserRuleTrace unit contracts"
+    },
+    {
+      "legacySuite": "browser.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Three-pane Workbench UI retired by owner; useful parsing and generation behaviors migrated"
+    },
+    {
+      "legacySuite": "csv-delimiters.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/auto-parser-csv-review.spec.ts plus integrated mixed CSV"
+    },
+    {
+      "legacySuite": "dotted-routing.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Backend classification contracts retained and current Auto Parser compilation covers exact mapped classification"
+    },
+    {
+      "legacySuite": "e2e-workbench.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Workbench route retired; current two-path mobile and Native journeys replace it"
+    },
+    {
+      "legacySuite": "english-interface.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/two-path.spec.ts plus src/language-policy.test.ts"
+    },
+    {
+      "legacySuite": "enrichment.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/ai-split-merge-backend.spec.ts plus backend declarative enrichment contracts"
+    },
+    {
+      "legacySuite": "exact-parser-import.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/existing-parser-review.spec.ts + ExistingParserReviewPanel exact Ruby/CONF restore"
+    },
+    {
+      "legacySuite": "expanded-starters.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Starter creation catalog would add a third creation path; Auto Parser is the onboarding path"
+    },
+    {
+      "legacySuite": "family-coverage.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Auto Parser event accounting plus mixed-family integrated scenarios"
+    },
+    {
+      "legacySuite": "family-isolation.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Explicit split-family workspace removed; Multi-Pass adjudication keeps source regions accounted"
+    },
+    {
+      "legacySuite": "field-chip-mapping.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/ai-field-correction.spec.ts plus current extracted-field correction"
+    },
+    {
+      "legacySuite": "field-path-validation.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts migrated field-safety scenarios"
+    },
+    {
+      "legacySuite": "field-suggestions.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "AI mapping correction plus Dictionary review current UI"
+    },
+    {
+      "legacySuite": "guided.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Six-step Wizard retired; useful contracts migrated into three-stage Auto Parser result tools"
+    },
+    {
+      "legacySuite": "interflow-readback.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts approved Test Lab and Interflow scenario"
+    },
+    {
+      "legacySuite": "keyboard-raw-selection.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Current button-based field and residual selection plus source byte selection tests"
+    },
+    {
+      "legacySuite": "legacy-preflight.spec.ts",
+      "status": "GATED_EXTERNAL",
+      "replacement": "Real legacy target operations remain a separate owner-authorized DP gate; current mock Apply is non-production"
+    },
+    {
+      "legacySuite": "local-format-advisor.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Manual format-advisor workflow removed; Auto Parser detects and qualifies without format knowledge"
+    },
+    {
+      "legacySuite": "mapping-coverage.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Review Results mapping status plus mappingCoverage unit contracts"
+    },
+    {
+      "legacySuite": "mobile-guided-expanded.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/two-path.spec.ts responsive paths plus current Pixel 7 Chromium qualification"
+    },
+    {
+      "legacySuite": "nested-json-mapping.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Nested mapping unit contracts plus current Auto Parser field review"
+    },
+    {
+      "legacySuite": "official-metadata.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/multipass-dictionary.spec.ts plus verified Dictionary review"
+    },
+    {
+      "legacySuite": "offline-project-json-import.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/existing-parser-review.spec.ts + ExistingParserReviewPanel local Project JSON restore"
+    },
+    {
+      "legacySuite": "offline-synthetic-scenario.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Current approved synthetic Test Lab result tools plus integrated backend scenario"
+    },
+    {
+      "legacySuite": "package-download.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts migrated ZIP capability and tamper cases"
+    },
+    {
+      "legacySuite": "pair-inspection.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/existing-parser-review.spec.ts + ExistingParserReviewPanel read-only Ruby/CONF inspection"
+    },
+    {
+      "legacySuite": "port-proposal.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "AutoParserResultTools read-only receiving-port review plus integrated browser"
+    },
+    {
+      "legacySuite": "regex-safety.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Public arbitrary-regex authoring removed; unsafe regex is not accepted in current two-path compiler"
+    },
+    {
+      "legacySuite": "replay-preview.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "tests/integrated-backend.spec.ts migrated local replay scenario"
+    },
+    {
+      "legacySuite": "sample-templates.spec.ts",
+      "status": "SUPERSEDED_TWO_PATH",
+      "replacement": "Template creation entry removed to preserve exactly two creation methods"
+    },
+    {
+      "legacySuite": "structured-families.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Auto Parser structured family tests plus integrated backend families"
+    },
+    {
+      "legacySuite": "syslog-body-formats.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Integrated RFC5424 and RFC3164 body-family scenarios"
+    },
+    {
+      "legacySuite": "testlab-evidence-report.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "App TestLabEvidencePanel plus integrated approved session evidence"
+    },
+    {
+      "legacySuite": "type-suggestions.spec.ts",
+      "status": "MIGRATED_CURRENT",
+      "replacement": "Typed mapping review plus Dictionary and type rejection contracts"
+    }
+  ]
+}

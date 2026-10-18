@@ -1,0 +1,360 @@
+# 10 — No-code Guided Builder ↔ Backend R1.5 Integration
+
+**UI lane:** Draft PR #3 plus independent `feat/r2-guided-backend-api-bridge` stacked branch. **Backend lane:** independent Draft PR #4 (`e7455e3`), owned by the other session. **Roadmap:** Issue #1; canonical no-code design: docs PR #2.
+
+## 1. What exists and what does not
+
+- Default Guided Builder has six steps: input logs → extraction → typed mapping → receiver/classification → test/fix → generate. Original 3-pane Expert Workbench remains available and shares a version-neutral rule draft.
+- The UI uses a **same-origin development proxy** for the separate backend's `POST /api/v1/parser-pairs/validate` and `POST /api/v1/parser-pairs/generate` endpoints. Backend binds `127.0.0.1:4179` only.
+- The user explicitly clicks **Validate Backend Input**, runs the current browser suite, and then explicitly requests **DRAFT pair generation**. Nothing sends customer raw sample text when typing, moving steps or performing browser-only preview.
+- The currently supported backend output is `customized_<slug>.conf` + extensionless `customized_<slug>` Ruby fragment. It is a **host-reference DRAFT**, not a vendor portal `.json`, installed Fluentd plugin, or proven Stellar import format.
+- **No native Fluentd/plugin validation, active-target import verification, production installation, deployment, or credential changes** have been performed. Both DRAFT downloads clearly retain that boundary.
+
+## 2. Actual API contract and zero-loss translation
+
+Source files: `src/guided/contract.ts` (legacy UI authoring), `src/guided/backendAdapter.ts` (strict translation), `src/guided/backendClient.ts` (loopback same-origin API), `src/guided/GuidedBuilder.tsx` (explicit user interaction). PR #4 backend schema and its README remain authoritative for the server.
+
+Backend project `0.1` is a **different wire shape** from the old `PairProjectContract` UI JSON. `toBackendProject(draft)` adds the required `projectId`, `revision`, `sourceCategory`, `msgOriginSource`, `msgClass`, `msgOriginCategory`, and `ignoreValues`. It converts receiver `bindPolicy`→`bindAddress`, `messageLimit`→`messageLengthLimit`, `framing`→`tcpFraming`, and authoring `input.format`→`extraction.format`.
+
+Source/target mapping lists are converted to backend `topFields`, `nsFields`, `vendorFields` source-keyed maps with typed `normalized_name` metadata. The UI `timestamp` type becomes a backend `date` rule with explicit `iso8601` and `UTC`. Object-prototype paths, invalid source identifiers, duplicate source map entries, ambiguous target destinations, and unsupported casts must **fail closed**, never disappear silently.
+
+The backend's classification rules address **normalized top/namespace fields**, not raw source fields. UI `sourceField=action` is translated to its mapped output `custom.action`, and category `Threat`/`Session`/`Syslog`/`Winlogevent` becomes lowercase. Classification references confined to vendor-only groups are reported as unsupported until the backend explicitly supports them. Default `action` now belongs to `top_fields` for the backend-supported subset.
+
+Backend DRAFT authoring now accepts explicit JSON, KV, comma CSV, bounded RFC5424 (raw body), standalone CEF and LEEF only when GET /capabilities confirms that format. The browser's format-specific checks remain an approximation, not the pinned native Fluentd golden fixture test. Generic Syslog, Regex, multiline, Syslog-prefixed CEF and arbitrary LEEF extensions remain blocked; no raw samples are sent to validate/generate requests.
+
+## 3. Safety, test evidence and download qualification
+
+- Backend schema validation is HTTP 200/422 with per-field `{code,path,message}` diagnostics. Missing/contradictory API responses and unreachable backend keep Generate disabled.
+- DRAFT generation is available only with **the same draft and sample key**, an explicit current browser test with every event matched/normalized and zero failures, and a successful backend validation. Editing rules or samples invalidates the evidence and hides stale downloads.
+- The returned payload must have exactly two filenames derived from the safe slug, correct UTF-8 byte counts, correct SHA-256 hashes of **both contents**, matching manifest hashes, status `DRAFT`, contract `host-customized-pair.v0.1`, and explicit `engineVerified=false`/`targetImportVerified=false`. Any mismatch blocks download.
+- Each artifact download requires a separate user click. It is an unverified host-reference Ruby fragment and `.conf`, not an instruction to modify `rickmodular` or deploy to a running Stellar platform.
+- The development proxy is **loopback only**. The backend has no multi-user authentication; never expose it publicly. Production/multiuser use requires a separate authenticated/authorized API design.
+
+## 4. Verification matrix and test instructions
+
+- `src/guided/backendAdapter.test.ts`: safe schema translation, normalization grouping, class references, unsupported operators and security.
+- `src/guided/backendClient.test.ts`: HTTP 200/422, refusal of malformed manifests or tampered SHA-256, exact two-file pair, no raw log in requests.
+- `tests/backend-bridge.spec.ts`: browser mock positive/negative cases plus an opt-in live backend test. Set `PARSER_STUDIO_LIVE_BACKEND=1` only while an isolated backend PR #4 service is running on `127.0.0.1:4179`.
+- Normal CI uses mocked browser API cases; the live test is skipped without opt-in. Local exact-HEAD integration is recorded in PR evidence and must never be called native Fluentd qualification.
+
+### Actual dev-atlas proof (2026-10-12)
+
+- Backend PR #4 SHA `e7455e3c95f914555bc636b088df5d919200c8a2` was cloned to an isolated **unchanged** directory; Node check, 8 tests, and build passed.
+- The separate Web UI integration candidate passed **39/39 Vitest**, TypeScript/Vite build, and the **four backend-bridge Chromium scenarios with a real loopback backend** (including live two-file download, SHA-256 verification, corrupted response refusal and privacy check). Overall browser regression and exact new PR CI are to be recorded from their own executions.
+
+## 5. Handoff / remaining priority
+
+Keep the current PRs and worktrees isolated: PR #3 Guided Builder, PR #5 field-highlighting UX, PR #6 multiline **preview only**, PR #4 independent backend. Integrate them only after reconciling schema/capability contracts. Next UI work: usability/regression and safe multi-variant workflow. Backend owns Ruby compiler, native Fluentd runner, plugin/wrapper semantics, proprietary portal adapter and actual target qualification.
+
+No production writes, live td-agent reloads, credentials/permissions changes, or unverified success claims.
+**UI addition (2026-10-12):** field proposal review highlights the selected source token and structural capture positions in up to 20 sample events, including unmatched variants. The browser Web Worker remains authoritative for full-sample denominators. Highlighting is not native runtime evidence. See `src/guided/fieldHighlights.ts`, `src/guided/fieldHighlights.test.ts` and `tests/guided.spec.ts`.
+
+**Next UI-only backlog:** deeper field dictionary/schema guidance, exact browser/native parity evidence for unusual format variants, accessible correction workflows, saved revisions and same-HEAD full user E2E. Explicit RFC5424, standalone CEF/LEEF, safe enrichment, field validation recovery, comma CSV and preview-only multiline are implemented, not Stellar target verified.
+
+**Do not work on** Ruby fragment templates, native td-agent/Fluentd runner, IR schema/compiler implementation or deployment from this UI lane. The separate backend session owns those deliverables.
+
+### 2026-10-12 — Opt-in legacy pair inspection
+
+The Step 6 advanced inspector accepts a matching customized_<slug>.conf plus extensionless customized_<slug> pair. File selection alone performs no upload or persistence. On explicit user action, the client validates names, size and strict UTF-8, verifies server-advertised read-only inspection support, then POSTs the pair through the loopback same-origin API. The local client cross-checks SHA-256 of both original files, rejects inconsistent editable flags and unrecognized diagnostics, and displays **code-only** structural observations without original Ruby/CONF bodies or server-supplied diagnostic messages.
+
+EDITABLE_EXACT means a byte-identical internal generator output; it does NOT import the IR into the current Guided editor or prove Stellar Cyber target compatibility. Unknown Ruby stays OPAQUE_READ_ONLY. No Ruby execution or host loader changes are requested. Unit tests cover hashing, opaque status, tampering, invalid filenames and oversized inputs; browser checks cover explicit submission and no raw source in results.
+
+### 2026-10-12 — Synthetic, no-code starter templates (R4)
+
+The Step 1 starter selector offers six **entirely synthetic** fixtures: JSON, KV, comma CSV, bounded RFC5424, standalone CEF and standalone LEEF. Selecting a template does nothing by itself; a separate **Apply synthetic example** click explicitly replaces the current draft rules and in-session sample. The UI describes the replacement before the click and resets stale backend validation/generation evidence. Each fresh template includes ordered sample events, matching extraction format, safe source/target mapping, classification defaults and source group metadata. RFC5424 uses header fields and an explicit Syslog fallback; other families use the reviewed action/IP/port demo mapping. No raw customer logs, proprietary example bodies or third-party network calls are bundled. Templates are onboarding aids **not** vendor/native compatibility evidence, saved customer state, deployed parser presets or verified Stellar target imports. Deterministic fixture tests cover the six families and their backend DRAFT IR mapping; Browser E2E covers user-initiated selection and unverified export locks.
+
+### 2026-10-12 — Keyboard focus after validation recovery
+
+Step changes triggered by the six-stage navigation, sample inspector, or backend field-error correction now programmatically focus the destination stage heading **only when the step actually changes**, not on the first render. The heading is programmatically focusable via tabIndex=-1 and the browser E2E recovery scenario verifies the keyboard focus is not lost when the original correction button unmounts. This is a UI accessibility check, not user acceptance of native parser behavior.
+
+### 2026-10-12 — Conservative bulk mapping for nondevelopers
+
+The Guided mapping stage offers an explicit one-click suggestion for up to 50 safe **unmapped source field names** seen across the current local browser sample events. Only field identifiers are inspected; sample **values are never copied into mapping rules** or sent to any endpoint. Candidate names with invalid syntax or prototype-related segments are excluded; destination collisions with existing mappings are skipped. Suggested output targets use the independent `custom.<source_name>` namespace and default to the conservative **string** type (not an unverified official Interflow dictionary). Fields referenced by existing no-code classification rules use a routable top-level group; all other candidates remain vendor-specific. Existing mappings are preserved; no action occurs without clicking. Each suggestion is still user-editable and must pass the same compiler contract, local sample regression and explicit backend validation as a manual mapping.
+
+### 2026-10-12 — Live v0.1 backend authoring schema guidance (R2/R4)
+
+The Guided field-mapping step now has a collapsed, explicit **GET /api/v1/parser-pairs/schema** control. This is for the current loopback backend's ParserProject JSON Schema, **not** an official Stellar Cyber Interflow field dictionary or evidence of actual target loader acceptance. The client checks the exact schema ID/revision, reviewed format/type/category/protocol subsets, fixed identifier grammar, and safe size/port bounds before showing a reduced static guidance summary. It never executes schema-provided regex, renders arbitrary untrusted schema description strings, or sends raw event or mapping values in the request. Unsupported/newer or contradictory schema structures fail closed and show an error instead of verified labels. Backend validate/generate remain independently capability-gated and unchanged; merely opening this guidance never enables exports.
+
+Tests: `src/guided/backendSchemaGuide.test.ts` covers normal and fail-closed shapes; `tests/backend-schema-guide.spec.ts` covers opt-in same-origin GET, visible supported types and bad revision handling. The UI implementation is `src/guided/backendSchemaGuide.ts` plus Step 3 of `src/guided/GuidedBuilder.tsx`. Isolated real backend GET /schema with head 2945c06 verified 6 extraction formats, 6 normalized field types, 128-character identifier limit and bounded receiver port. No native/production verification is implied.
+
+### 2026-10-12 — Field-path preflight alignment
+
+The local Guided contract now rejects malformed dotted field paths (including repeated/trailing periods), unsafe prototype/constructor segments, reserved system-managed output roots and overlapping parent/child destination names **before** presenting a UI validation success or contacting the backend. The accepted name syntax is a conservative subset of the reviewed ParserProject 0.1 schema; backend `/validate` remains authoritative for final compilation, and the UI does not claim an official Interflow field dictionary. The unsupported floating-point `number` conversion remains possible in Expert browser-only preview but is disabled in the Guided export editor. RED→GREEN unit tests in `contract-field-paths.test.ts` and negative Chromium tests in `field-path-validation.spec.ts` protect against ambiguous output and unsafe export.
+
+### 2026-10-12 — Nested JSON field parity and safe path suggestions
+
+The browser's local source lookup now follows the reviewed backend dotted-field convention: check a literal flat key first, then traverse own properties of nested JSON objects using a bounded, safe path. It never follows inherited object keys, `__proto__`, `constructor`, array indices or unreviewed source syntax. Nondeveloper field suggestions and the Step 2 extracted-field name chips/datalist now display safe scalar **leaf paths**, such as `http.request.method`, rather than suggesting a parent object that cannot be mapped consistently. Candidate names are derived from local sample structure only; values stay in the browser. This prevents misleading local normalization failures on valid nested JSON rules and never implies a proprietary parser has accepted the event. Browser regression: `tests/nested-json-mapping.spec.ts`; unit tests: `src/nestedMapping.test.ts` and `src/guided/nestedSuggestions.test.ts`. The selector-only CI failure on option-disabled status in `tests/field-path-validation.spec.ts` was corrected to assert the actual disabled HTML attribute without weakening the no-code export block.
+
+### 2026-10-12 — Field-by-field local sample diagnostics
+
+Each Guided field mapping card now shows sample count, source-field presence, successful browser normalization count, missing field count and typed-conversion failure count. All evidence is local, derived from the existing browser preview output and contains **no original log values**. A user can jump directly to the first problematic sample to correct the extraction mapping without leaving the six-step no-code flow. Nested dotted JSON fields are looked up with the same guarded local traversal as their normalized mapping. The indicator explicitly says browser-preview only and never upgrades an unverified native/Stellar status. `src/guided/mappingCoverage.ts` has deterministic positive/missing/type-failure unit tests, and `tests/mapping-coverage.spec.ts` exercises the visual error-to-sample journey.
+
+### 2026-10-12 — Conservative, opt-in type recommendation from local events
+
+The Guided field-mapping card can recommend a data type only after **at least two nonempty, consistent local sample values**. Supported suggestions are IPv4, port (port-named sources), explicit true/false boolean, timezone-bearing ISO timestamp and integer for clearly count/size-named sources. Ambiguous numeric IDs, `0/1` booleans, mixed or missing values and unsupported IPv6 structures are never automatically promoted. User must click **Apply suggested type** for a specific field; the recommendation itself never changes saved rules or sends log values to a backend or AI service. The displayed evidence consists of the type and event counts, **not source values**, and explicitly remains browser-preview/heuristic guidance rather than an official Interflow dictionary or native Fluentd acceptance. `src/guided/typeSuggestions.ts` supplies the safe projections and `tests/type-suggestions.spec.ts` exercises the opt-in browser path.
+
+### 2026-10-12 — Public Standard Metadata Dictionary reference (curated facts, no target guarantee)
+
+Public Stellar Cyber documentation at https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm contains actual standard metadata field names, types and descriptions, and the Parser Studio 7.0 Normalization workflow explicitly points to the Metadata Dictionary. The Guided mapping editor now exposes a **small curated list of 19 scalar entries** with a direct source link, not a copied entire dictionary or an unverified version-independent schema. All field-name/type pairs are factual, from public 7.0 documentation; the summary labels are concise. UI supports only types reviewed by our own backend IR. For example, `srcip` is documented as IP, while `dstport` is documented as integer but the local backend's narrower `port` cast is used to validate port ranges. Object/list/float fields and system-managed reserved paths are omitted.
+
+Selecting a candidate for an existing field mapping is a **manual explicit action**. It adjusts only the corresponding normalized target, type and top_fields group; validates against duplicate/overlapping targets and never changes source values or sends samples anywhere. Actual availability on older or different Stellar Cyber versions, the host-reference .conf/Ruby loader, per-tenant metadata behavior and target import status remain separately unverified. Browser test `tests/official-metadata.spec.ts`, unit test `src/guided/officialMetadata.test.ts`.
+
+### 2026-10-12 — Two published metadata dictionary versions cross-check
+
+The curated list of scalar standard metadata names/types has been compared against **both** the official [6.5 Standard Metadata Dictionary](https://docs.stellarcyber.ai/6.5.xs/Common/Metadata-Dictionary.htm) and [7.0 Standard Metadata Dictionary](https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm). The no-code field selector links to both source documents and refines event/host/process labels where the published meaning is context-specific. This public reference is **not** target-release compatibility, confirmation that a customer tenant accepts these fields, or permission to overwrite reserved metadata. Existing manual collision handling and DRAFT-only export gates remain unchanged.
+
+### 2026-10-12 — Explicit CSV data-record delimiter negotiation (R2)
+
+The reviewed backend ParserProject v0.1 schema supports three CSV record delimiters: comma (default), semicolon, and TAB. The Guided Builder and Expert Workbench now both expose a controlled CSV **data delimiter** selector while keeping column names explicitly comma-separated. The selected delimiter is encoded in the declarative `extraction.csvDelimiter` used for exact backend capability-gated validation and two-file DRAFT generation, without including sample values. Saved projects from the older model that omit `csvDelimiter` resolve to comma; unknown delimiters fail closed. Browser CSV parsing supports strict single-line quote/doubled-quote handling and conservatively rejects malformed trailing quoted cells rather than claiming Ruby CSV/native equivalence. Fixture tests cover comma, semicolon, TAB, unsupported delimiters and quote failures; `tests/csv-delimiters.spec.ts` covers full Guided preview → schema validation handoff for synthetic logs without private sample upload. Multiline CSV and actual Stellar import remain unsupported/unverified.
+
+### 2026-10-12 — RFC5424 body dialect selection (R2)
+
+The reviewed backend's `syslog_rfc5424` extractor supports **raw**, **JSON object** or strict **Key/Value** message-body modes. The independent Guided Builder and Expert Workbench now expose the same opt-in `syslogBodyFormat` selection in the persisted UI draft. The backward-compatible default is `raw`; its `extraction` can omit the option to preserve the prior reviewed generator shape. Choosing `json` or `kv` sends a declarative `extraction:{format:'syslog_rfc5424',syslogBodyFormat:...}` only after backend capability gating and local project validation. The browser preview conservatively requires single-line RFC5424 headers, JSON object-root body with bounded nesting, or well-formed key/value pairs, and exposes structured content under `body.*` for normal field mapping; malformed bodies fail closed. This remains a browser approximation, not native Fluentd or proprietary target evidence. Unit and browser regressions cover positive JSON/KV, legacy raw and negative malformed bodies; no raw samples are included in validate/generate requests.
+
+### 2026-10-12 — Browser regex complexity preflight for P0-B
+
+Advanced regex remains **browser-only** and cannot be exported as an authenticated/native parser without a reviewed backend compiler capability. The preview now applies a separate fail-closed regex safety preflight with a 256-character limit, required named capture, rejection of backreferences/lookbehind, repeated ambiguous alternatives, repeated quantified groups/optional terms, adjacent identical literal quantifiers and excessive bounded repetitions. This is a conservative **heuristic**, not a proof of linear-time semantics or a Ruby/Fluentd compiler; all preview execution still stays in the existing isolated Web Worker with a deadline. The visual JSON/KV field proposal builder continues to produce allowed patterns. Deterministic safety/negative tests cover specific dangerous constructs without evaluating catastrophic samples, and Browser E2E verifies that rejection occurs without backend requests.
+
+### 2026-10-12 — Dotted source key routing preview parity (P0-B)
+
+The local six-step event classification preview now resolves ordered rule `sourceField` identifiers with the same bounded, safe **exact literal key first → nested own-property path** lookup used by normalization. This corrects a behavioral divergence for Key/Value records whose extracted source field name literally contains dots (for example, `event.action=deny`): previous preview fell back even when the user-defined condition matched the literal field. Prototype keys and unsupported field paths remain unreadable. The user sees the actual matched rule number or fallback reason, while the view continues to state native Fluentd `stellar_log_index` routing is unverified. RED→GREEN unit test `src/guided/classify.test.ts` and browser regression `tests/dotted-routing.spec.ts` protect the change.
+
+### 2026-10-12 — Backend capability expansion reconciliation (UI lane)
+
+Backend Draft PR #4 remote commit `460840ea01f8bf2cf31857b9b5cb9d233e0d7459` advertises the reviewed v0.1 extensions `authoring.rfc5424BodyFormats` (raw, json, kv, cef, leef), bounded adjacent RFC5424 Structured Data (1024 UTF-8 bytes), and a LEEF hexadecimal separator subset. The UI remains compatible with older backend feature payloads for existing modes, but requires the **explicit new capability declarations** before allowing the new RFC5424 nested CEF/LEEF authoring mode to pass `/validate`. Unrecognized or contradictory extended capability options fail closed; `nativeSyntheticProfile` and related synthetic tests do not become target import or per-project native verified status.
+
+Both Guided and Expert interfaces now offer opt-in `syslogBodyFormat=cef|leef`. The browser-only RFC5424 subset validates version 1, timestamp with explicit zone or NILVALUE, printable/size-bounded header tokens, limited adjacent SD elements with escaped quotes/brackets and bounded structural parameter names; it rejects malformed/duplicate SD elements and invalid trailers rather than reporting a misleading parse. Nested CEF or LEEF fields appear under `body.*` and still require explicit mappings. The same conservative browser code rejects unsupported CEF versions, malformed nested envelopes, unsafe/incomplete LEEF extensions and unsupported hexadecimal control delimiters. No arbitrary Grok/Ruby parsing or native execution is performed.
+
+Unit tests `src/guided/backendNewCapabilities.test.ts` and `src/structuredBackendExpansion.test.ts` cover version-safe old/new capability negotiation, exact schema mode, positive structural parsing and negative malformed formats. `tests/backend-expanded-formats.spec.ts` covers browser navigation, bounded sample diagnostics, explicit capability negotiation and refusal to validate new modes on an older backend. Isolated **test-only** backend `460840e...` loopback on 127.0.0.1:4184: UI generated RFC5424+CEF and RFC5424+LEEF projects each passed real `/capabilities`, `/validate` and `/generate` with SHA-256 verified two-file output and **DRAFT** manifest; no sample events or proprietary credentials sent, and no live Stellar Cyber loader/import verified.
+
+### 2026-10-12 — RFC5424-enveloped CEF/LEEF synthetic starter flows
+
+Following the capability-gated nested-envelope UI, two additional opt-in **synthetic** starters now cover RFC5424 v1 with embedded CEF:0 or LEEF 2.0 (hexadecimal single-byte separator). Each has two documentation-address sample events and supplies the exact source mappings `body.src`, `body.dpt`/ `body.dstPort`, and `body.act`, compatible safe typed destinations, classifier conditions referencing the nested action and a single-line event boundary. The RFC5424+CEF starter includes bounded adjacent Structured Data to exercise the reviewed SD path; the LEEF variant demonstrates 0x5E without requiring a user to write Ruby/regex. Selecting a template does nothing until the user clicks Apply; the action resets prior validation/download evidence. Native/parser capabilities and real target import remain separately gated; client-side sample bytes are never sent to `/validate` or `/generate`. Unit tests and `tests/expanded-starters.spec.ts` pin the complete six-step user journey. The existing six synthetic format starters remain available and unchanged.
+
+### 2026-10-12 — Multi-family sample diagnosis (R2/P0-B)
+
+The Guided format-selection stage now shows a **browser-only per-format event distribution**, including unknown events and the count of detected formats that differ from the explicit selected parser. Users may jump to the first mismatched sample without losing the draft. When Auto is selected, the UI explains Auto is local preview-only and cannot produce a multi-family DRAFT compiler contract; for mixed JSON/KV/CEF/etc. events, users are advised to create **separate parser drafts** rather than being promised a native multi-branch Fluentd parser. The display contains only family names and counts, never raw event values. `src/guided/familyCoverage.test.ts` includes mixed, unknown, single and Auto cases; `tests/family-coverage.spec.ts` verifies the user journey, no incorrect export-ready status and no network upload of the sample.
+
+### 2026-10-12 — R3 browser test evidence export (safe local-only report)
+
+The Guided **Step 5** offers an explicit, downloadable deterministic JSON report after the user runs the current browser sample suite. It is **not** native Fluentd, target loader or sensor-replay evidence. The report declares `engine=browser-preview`, `artifactStatus=DRAFT_ONLY`, `nativeFluentdVerified=false` and `stellarTargetVerified=false`, includes summary counters and per-event status/stage/whitelisted diagnostic code, and binds the exact browser fixture and current authoring draft by their SHA-256 hashes. Neither raw event strings, extracted/normalized field values, arbitrary diagnostic messages, customer filenames or event IDs are exported. Unknown diagnostic codes are replaced by a static `UNSPECIFIED` token. The hash is an offline integrity fingerprint only; never use it as proof of actual vendor import. The report has no variable timestamp, so identical draft/sample/suite inputs yield identical bytes. It is computed on click only (never automatic upload) using secure WebCrypto, and prior evidence is disabled when draft or sample changes invalidate the executed suite. `src/guided/browserEvidence.ts` + its unit tests and `tests/browser-evidence.spec.ts` cover positive redacted evidence, invalid data/cryptographic context, explicit download and stale evidence invalidation. This supports R3 test/regression documentation without altering the separately owned backend native runner.
+
+### 2026-10-12 — Offline browser regression evidence comparison (R3)
+
+Step 5 now has a collapsed, explicit previous-evidence comparison flow. A user selects a **previous** `parser-studio.browser-test-evidence.v0.1` JSON file and clicks Compare only after running the **current** exact draft/sample browser suite. Parsing uses bounded, strict UTF-8 + JSON, rejects extra unsafe keys, arbitrary diagnostic text, altered compatibility flags, malformed event numbering and mismatched original fixture SHA-256 or event line segmentation. The feature compares only per-event normalized success and whitelisted diagnostic codes: **improved, regressed, unchanged, changed-diagnostics**. It never stores or uploads customer log bodies, imported file contents, normalized values or arbitrary errors; only event ordinals/lines and aggregate counts are rendered. Draft edits and sample changes invalidate comparison evidence using the existing run key; a different sample cannot be compared falsely. This is browser-preview evidence only and **not** native Fluentd or actual Stellar sensor validation. Unit tests: `src/guided/browserEvidenceComparison.test.ts`; E2E: `tests/browser-evidence-comparison.spec.ts`.
+
+### 2026-10-12 — Local synthetic replay preview, not sensor transmission
+
+A collapsed Step 6 **local-only** replay preview generates bounded synthetic variations of a fully preflighted collection of single-line sample records at a selectable 1/2/5/10 events per second, cycling every source record in order until explicitly stopped, changed, or the Guided UI exits Step 6/unmounts. It replaces existing ISO timestamp fields/header values with the current UTC time, IPv4 addresses with RFC 5737 documentation IPs, user identifiers with `demo_user_*`, and supported URLs with `https://example.test/replay/*`. The JSON and declared CSV variants preserve their structural extraction contracts (including semicolon/TAB CSV and quoted cells); single-line CEF/LEEF/RFC5424 preserve the conservative browser-parsed subset. Browser crypto entropy is used for normal preview, while pure unit tests inject deterministic entropy. Unknown or malformed formats, non-UTF-8/oversized/multiline records, and failures to preserve the selected extraction contract stop the preview visibly.
+
+The UI holds **only the most recent** generated event plus a bounded counter/source line index in component state, with the private replay source list held only in a browser-memory ref. The entire input (maximum 500 source records and 64 KiB) is validated before a timer starts; an unsupported or malformed *later* event stops the entire operation before producing any synthetic output. No multiline boundary mode or implicit mixed-family authoring is accepted. The timer stops on explicit Stop, change of parser rules/sample, navigation away from Step 6, or component unmount. No sensor IP, UDP/TCP sender, DP API key or network upload is used by the preview. The user sees an explicit permanent label **actual sensor sends: zero** even while the local timer is running, and the output is never written to project/revision storage. This is preparation for a future separately authorized runtime streaming API, not a substitute for actual Stellar Cyber target upload or live parser validation. Other sensitive values in the original event **may remain** and should not be shared merely because IP/user/URL were replaced. Unit regressions live in `src/guided/replayPreview.test.ts` and browser stop/negative/invalidated tests in `tests/replay-preview.spec.ts`.
+
+### 2026-10-12 — Complete multi-sample replay preview and safe lifecycle
+
+The optional Step 6 **LOCAL_PREVIEW_ONLY** synthesizer now preflights the **entire** bounded, single-line dataset rather than repeatedly using only the first event. The generator cycles all records in their original order and shows the current source index and physical source line, with RFC 5737 documentation IPs, \`demo_user_*\`, \`example.test\` URLs, and UTC timestamps. No telemetry is sent, no DP credentials are read, no sensor is contacted, and raw source plans stay only in a browser-memory reference. A malformed, unsupported or 501st record fails the complete preflight before any output, and editing the sample, switching draft, navigating away, stopping or unmounting cancels the local timer and resets/disposes the private source plan. Event rate stays capped at 10/s. Unknown sensitive fields may remain in a local preview; this is **not a redaction/export service**. RED→GREEN unit regressions in \`src/guided/replayPreview.test.ts\` cover ordering/wrap-around, physical line reporting, later-event failures, dataset/event bounds, and invalid cursors. Browser regression in \`tests/replay-preview.spec.ts\` exercises user Start/Stop/navigation and rejects mixed formats before transmission. Future real sensor replay is backend-owned and **not** implemented here.
+
+### 2026-10-12 — Exact SHA-256 verified DRAFT ZIP with manifest
+
+Backend Draft PR #4 now provides a **stateless local-only** `POST /api/v1/parser-pairs/package` accepting `{pair,version}` for already generated, byte-identical reviewed Ruby/CONF output. The Guided file generation step offers a **separate explicit** DRAFT ZIP download with an input version label (1–64 safe characters). First, `GET /capabilities` must advertise `downloads.zipWithManifest=true`, `exactArtifactRevision=true`, `requiresDpConnection=false`, `requiresApiKey=false`, `autoDeploys=false`. A missing/old/contradictory capability fails closed without packaging. The client validates the original two artifact SHA-256 hashes, filenames, sizes, manifest revision and **the current selected receiver port** before sending only the generated pair (never raw sample logs, sensor traffic or credentials). The local backend independently verifies exact compiler reproduction and returns ZIP STORE containing the extensionless Ruby, matching .conf and `manifest.json`. Before downloading, the browser checks Content-Type, expected deterministic ZIP filename, body length and magic, listener-port header, artifact revision ID and ZIP SHA-256. A failed integrity check never triggers a download and leaves individual file exports intact. The UI labels the ZIP as **DRAFT · not deployed · native/target unverified** and shows hash/revision metadata. Filename and version are not allowed to contain paths. Unit tests `src/guided/artifactPackageClient.test.ts` and browser tests `tests/package-download.spec.ts` cover positives, unsupported old servers, tampering, and no sample/API-key transfer. Packaging is not a production target write, deployment or any version-specific importer certification.
+
+### 2026-10-12 — Trusted parser-listener port candidate UI (P0-LIVE-1, read-only)
+
+The Step 4 receiver editor now has a **separate user-triggered read-only** check of the backend-authorized `GET /api/v1/stellar/legacy/port-proposal` and `?port=N` manual override paths. No customer DP URL, API Key, raw logs, port reservations, production mutation or sensor traffic are submitted by this UI. The server uses authorized tenant parser/catalogue inventories and optionally trusted backend-injected sensor bindings/reservations. The response is accepted only with its exact `stellar-parser-listener-port-proposal.v0.1` contract, nonprivileged unoccupied candidate, proper known/incomplete evidence markers, and **candidateOnly=true, deployableNow=false, verifiedIngestPort=false, sensorIngestPort=null, needsFinalRecheck=true**; contradictory or unknown metadata is rejected rather than claiming availability. The UI shows the missing evidence categories and known occupancy count, not an “available” badge. It never changes a selected port from a GET alone: the user must explicitly click **Set suggested candidate on draft**. This updates the editable parser-listener port and thus invalidates prior generated files/validation under the existing draft key. Sensor **ingest destination port is separate** and is never invented from this parser-listener candidate. If backend auth/inventory is unavailable (403/503), manual port editing remains operational with a clear warning. All candidate ports require final deployment-time recheck and separate owner-approved deployment. Unit tests `src/guided/portProposalClient.test.ts` and browser tests `tests/port-proposal.spec.ts` cover read-only query, manual override, incomplete evidence and denied/unconfigured backend. No real POC or production port availability was confirmed by these synthetic tests.
+
+### 2026-10-12 — Optional read-only Stellar Legacy upload-file preflight (no deployment)
+
+Generated DRAFT Ruby + CONF may now be checked through an **explicit** Step 6 `POST /api/v1/stellar/legacy/prepare` action. The backend operation only builds a hash-validated, metadata-only Legacy upload plan; it **does not connect to DP, call the Stellar API, install a parser, start a listener, or activate anything**. The user enters a safe tenant identifier and version label (not a password/API Key); the UI sends only the already-generated exact pair, tenant and version over the local same-origin API. It verifies both original local SHA-256 file hashes, safe filenames and expected receiver port *before* the request. Backend response fields must match exact source hashes/names/port/tenant/version, DRAFT status and false `apiRegistrationVerified`, `runtimeParsingVerified` and `targetImportVerified`; unknown response properties or contradictory claims fail closed. A `testOnlyWriteEligible=true` response is **only** a limited synthetic POC backend suitability annotation and never triggers create/update/delete or implies general deployment permission. Missing/invalid/unconfigured or rejected endpoints leave individual/ZIP downloads intact and display an honest warning. Any draft edit or tenant/version change invalidates displayed dry-run evidence; no raw sample or DP credential is stored/transmitted. Frontend tests in `src/guided/legacyPreflightClient.test.ts` and `tests/legacy-preflight.spec.ts` cover explicit opt-in, response tampering, local hash/port integrity, invalid tenant/version and zero mutation endpoints. Actual real Stellar Cyber target import remains an independent owner-controlled gate.
+
+### 2026-10-12 — Backend-authorized, fixed public synthetic preview (Test Lab, offline)
+
+Step 6 has a **distinct user-initiated, same-origin backend synthetic-only preview** separate from the existing browser-local multi-sample replay. The UI sends `GET /api/v1/parser-pairs/capabilities` and checks `testLab.offlineJsonPreview=true`, `requiresBackendPreviewAuthorization=true`, `liveSensorSenderEnabled=false`, `sensorIngestVerified=false` and `runtimeParsingVerified=false`. Only on explicit click does it POST the **hardcoded public synthetic JSON fixture** (RFC 5737 IP, `example.invalid` URL, placeholder identity) with fixed seed/sequence and whitelisted IP/user/URL mutation fields to `/api/v1/test-lab/preview`. No uploaded/customer log, parser draft, DP URL, API key, approval ID, run ID, sensor address or raw customer event is supplied. Backend authorization is mandatory: a default/unconfigured server returning 403 results in a non-success warning, not a simulated success. The response is accepted only when its contract/format/sequence, known changed paths and synthetic identity/value grammar exactly match and all sensor/runtime verification flags remain false; any unsupported extra response property, secret field or false verification claim is rejected. The displayed preview is clearly **not sendable to a sensor**, is in-memory only and never starts a network listener or a test session. Client-side tests in `src/guided/backendSyntheticPreview.test.ts` and Chromium tests in `tests/backend-synthetic-preview.spec.ts` cover gating, explicit opt-in, exact static public-only payload, denied authorization and data/flag spoofing. Real sensor sessions and Interflow readback remain separately owner-authorized and cannot be inferred from this preview.
+
+### 2026-10-12 — Separate approved Test Lab backend session control UI (default disabled)
+
+After the statically synthetic, authorized preview was integrated, Step 6 gained a **separate owner-approved server session** section. It is **not** part of local simulation or automatic parser deployment. The user must explicitly query backend capability metadata. The UI exposes Start only if the backend advertises a **currently enabled liveSender**, server-injected UDP/TCP sink, independently authenticated session control, IP-literal allowlist, per-delivery audit/policy, finite lease with mandatory separate renewal approval, non-durable session state and verified maximum quotas. The stock dev backend reports `liveSensorSenderEnabled=false`, so **the Start controls remain blocked**. Even a server claiming supported delivery cannot be accepted without the complete reviewed capability tuple.
+
+If a trusted server is separately configured and the user has independently obtained actual owner target approval, they must supply a transient approval ID and check an explicit confirmation box before Start. Only an embedded **public, synthetic JSON event** (RFC 5737 documentation IP, placeholder account, run-marker field) is passed via same-origin `POST /api/v1/test-lab/sessions/start`, fixed to **60,000 ms / max 100 events**, at a requested rate of 1, 2, or 5/sec. The browser cannot choose target hostname/IP, attach any DP URL or API key, override server-side sink configuration, or supply raw customer logs. The backend generates a random run ID and independently approves and audits the start. Session status shows trusted backend `sentCount` (a delivery-callback count, **not** proof of ingest or parsing), `runId`, lease expiry and rate. Manual GET Status and POST Pause/Resume/Stop use only the backend-owned run ID with server-side user ownership enforcement. Optional Renewal requires **a separate explicit approval ID**, 60-second lease and an additional 20 event quota; no automatic renewal or infinite loop is allowed. Unconfigured/denied/misleading backend responses stay blocked or produce an error; UI never claims sensor ingress or Stellar parsing verified. If the browser is closed before Stop, server lease expiry/quota is the authoritative fail-safe, so the UI deliberately does **not** promise that client-side unmount guarantees Stop. Backend source and actual network sink remain exclusively owned by PR #4 / authorized operators.
+
+`src/guided/approvedTestLabSession.ts` and `src/guided/approvedTestLabSession.test.ts` verify exact approval limits, immutable synthetic-only request body, required trusted sink/audit capabilities, strict response metadata, independently approved renewal, Stop controls, run ownership ID grammar, all false vendor verification flags and denial handling. `tests/approved-testlab-session.spec.ts` verifies enabled/disabled mock user journeys; these mock tests do **not** transmit packets. Real customer-tenant DP activation or sensor traffic remains gated behind verified owner credentials, network reachability and Full User E2E.
+
+### 2026-10-12 — Keep Test Lab Stop control visible across Guided stage navigation
+
+If an owner-authorized backend Test Lab session is still RUNNING or PAUSED while the user moves away from Step 6, a distinct warning appears in the persistent Guided footer, stating that **navigating the UI does not itself stop a backend sender**. It displays the bounded count and an explicit Stop action that uses the same server-authorized `POST /sessions/stop` request (the browser never creates a sink or sends packets directly). The warning disappears only after the backend confirms a terminal session state. It is not an automatic side-effect of changing a draft, and it does not claim that browser closing guarantees immediate cancellation; server lease/finite quota remains the authoritative fallback. Chromium regression `tests/approved-testlab-session.spec.ts` verifies the warning, explicit stop, and the absence of any extra Start call.
+
+### 2026-10-12 — Recover the owner's existing Test Lab session after a browser refresh
+
+The Test Lab controls now offer an **explicit status-only recovery** path for an existing `test_run_<32hex>` session identifier, independent of Start and live-sink feature readiness. The UI sends only same-origin `GET /api/v1/test-lab/sessions/status?runId=...`, and the backend checks the authenticated owner for that run; the ID **is not** an authorization token. Wrong syntax is rejected locally and unknown/foreign/unauthorized (403/404) results fail closed without revealing source content or activating any sender. Only a verified owned RUNNING or PAUSED session exposes authenticated Pause/Resume/Stop controls. No session identifiers, approvals, raw samples or credentials are stored in browser persistence. This helps a user recover control of an approved bounded session after losing the local React state, while acknowledging server lease/quota is still the fail-safe on unexpected browser exit. Mock Chromium tests cover recovery, owner denial, Stop and no Start requests.
+
+### 2026-10-12 — Complete synthetic variable set in owner-approved sessions
+
+The fixed, publicly synthetic JSON Test Lab fixture used for owner-approved bounded server sessions now contains a documentation-only URL (`https://example.invalid/synthetic`) and includes `{path:'url',kind:'url'}` in its declared variable transforms, alongside the previously reviewed timestamp, `src_ip`, username and server-generated `test.run_id` marker. The backend synthesizer rewrites the URL per event under its approved seed/sequence; no customer URL, DP endpoint, tenant or user-provided sample is used. RED→GREEN unit and mocked Chromium tests require this explicit URL field. Session delivery remains server-authorized and **off** on stock development servers.
+
+### 2026-10-12 — English-only UI and authorized Interflow field comparison
+
+The six-stage Guided Builder, advanced Workbench, frontend diagnostics, source-code comments, tests, and UI handoff documentation use **English only**. The locale is `en` and `src/language-policy.test.ts` rejects non-English scripts in project-authored frontend content. English browser regressions now use explicit navigation roles and stable element labels rather than legacy translated strings. This language decision supersedes earlier bilingual UI proposals.
+
+The Step 6 Test Lab has an **explicit, one-shot, audited read-only Interflow field comparison** for a previously owner-authenticated `test_run_<32hex>` session. It does **not** create a session, send UDP/TCP traffic, or install a parser. The requester must check a separate data-read authorization acknowledgement. A typed request to `POST /api/v1/test-lab/interflow/search` contains only the run ID, one of the vendor-supported indexes (`session`, `threat`, `syslog`, `winlogevent`), a safe run-marker field (default `test.run_id`), a single validated expected scalar field/value (default `action=allow`), an explicit 1/5/10-minute UTC window, and `limit:20`. No DP URL, API key, JWT, tenant ID, target host, parser files, or raw log bytes are included. The backend must independently verify run ownership, grant tenant data-read permission, record each search through its audit sink, and use its own server-held vendor token. Its default configuration replies HTTP 403, which the UI displays as denial (never `NO_MATCH`).
+
+The response is strictly validated against the reviewed `MATCHED_RESPONSE_FIELDS`, `FIELD_MISMATCH`, `NO_MATCH` contract with field status `MATCH`, `MISMATCH`, or `MISSING` and **all** sensor receipt, native parsing, target-import and E2E verification flags `false`. No vendor event/raw fields are rendered. A scalar field match only means the bounded query found matching values; it is not evidence of live sensor ingress or parser correctness. The UI never automatically polls or widens the search range. The exported verifier `src/guided/approvedInterflowReadback.ts`, 24 dedicated Vitest scenarios and `tests/interflow-readback.spec.ts` mock Chromium scenarios implement this contract. Actual target queries require an owner-configured authenticated and audited backend; the separately password-protected dev-atlas public preview proxy intentionally blocks all Test Lab and Interflow endpoints.
+
+### 2026-10-12 — Authorized offline multi-event synthetic scenario (no sender)
+
+The Guided Builder Step 6 now includes a separately user-initiated, backend-authorized, **offline-only** scenario preview using the reviewed `POST /api/v1/test-lab/scenario/preview` backend contract. It never sends customer sample logs, parser artifacts, credentials, tenant IDs, sensor addresses, chosen run IDs or operator approval tokens. The only two permitted event families are **fixed public synthetic JSON** allow/deny records with documentation IPv4 addresses, public placeholder usernames/URLs, an old placeholder marker and a generated current-time timestamp. All preview events use the synthetic backend marker `test_run_00000000000000000000000000000000`, never an actual run ID.
+
+The user may explicitly select either an exactly bounded `constant-rate` plan (2 records/second, 500 ms next-event interval) or a reviewed `original-gaps` example (two explicit 600 ms gaps within a 1,200 ms cycle). The browser permits only sequence 0–3 and requires a separate button click for each event; changing mode or event does not create an HTTP request, start a loop or send UDP/TCP traffic. The backend requires `authorizeTestLabPreview` for this endpoint; the development backend and temporary externally protected preview default to denial. The result is rendered only when the scenario sample ID, sequence, mode, family count, next-delay, exact response shape, JSON field names, documentation-only values, generated run marker and *all no-sensor/no-runtime evidence flags* pass strict validation. Unexpected fields, injected private values or assertions of real parsing/ingestion are rejected without rendering customer records.
+
+The typed frontend client is `src/guided/syntheticScenarioPreview.ts`, with capability/denial/anti-leakage unit regressions in `src/guided/syntheticScenarioPreview.test.ts`, and explicit click, two timing modes, no network sender and HTTP403 browser cases in `tests/offline-synthetic-scenario.spec.ts`. The team tested the fixture directly against the pure backend `selectScenarioPreview` implementation in isolated dev-atlas checkout `cf1a813`: sequences 0–3 cycle allow/deny at correct 500/600 ms intervals, update timestamp, source IP, username, URL and run marker, and do not open any network socket. A successful synthetic offline preview is NOT a native Fluentd, Stellar target or sensor E2E pass.
+
+### 2026-10-12 — Syslog sensor/CONF shared-port contract (owner confirmed)
+
+The Guided Builder and backend's real RFC5424 Syslog schema use **one shared port**: the Modular Sensor log-receiving destination and the generated parser CONF \`<source> port\` must be exactly the same. The UI no longer suggests they are independent. This is a single user-editable value. The RFC5424 Syslog format requires port **6800–65535** and displays an immediate fail-closed warning for smaller inputs; other reviewed formats retain their existing 1024–65535 limit. Client schema validation and the Stage 4 completion indicator enforce this minimum before DRAFT file generation. The candidate lookup sends explicit \`format=syslog_rfc5424\` to the backend for Syslog and rejects any response below 6800, mismatched \`sensorIngestPort\`, forged verified binding or deployment-ready state. \`sensorIngestPort\` in the proposal is the chosen *same port*, while \`verifiedIngestPort=false\`, \`deployableNow=false\` and the final collision/binding recheck remain mandatory. These checks **do not send logs, bind a port, upload a parser or prove sensor runtime connectivity**.
+
+
+### 2026-10-12 — Non-destructive mixed-family browser test (R2 P0-B)
+
+The Step 2 Guided format distribution now offers an explicit **Review One Event
+Family Separately** browser-only preview for detected JSON, KV, CSV, bounded
+RFC5424, standalone CEF and LEEF. This addresses the common user journey in
+which a single pasted sample has several log formats and no single DRAFT parser
+can safely implement native mixed routing. It is not automatic export or a
+mechanism for silently dropping unsupported minority events.
+
+The module src/guided/familyIsolation.ts rechecks source event count and exact
+original line/content identity against the active browser test, prohibits
+unsupported blank-line grouping and dataset limits, and constructs a temporary
+single-family fixture for one Web Worker test. The source dataset and parser
+draft are **never modified or saved**; a sample edit invalidates prior isolation
+reports. The result object is a **value-free projection** with full aggregate
+counts, at most twelve visually listed original line numbers/diagnostic codes,
+and explicit browser-only/not-native/not-Stellar verification flags. It does not
+include raw event bytes or normalized values, and has no backend endpoint.
+The remaining families and unknown records stay in the original sample.
+
+Unit regression src/guided/familyIsolation.test.ts covers mixed JSON/KV,
+non-destructive source preservation, per-event diagnostics, stale/truncated or
+unsupported source rejection, and data-leak prevention. Browser regression
+tests/family-isolation.spec.ts covers explicit user selection, local-only
+network behavior, retained mixed source and authoring format, stale evidence
+invalidation, absence on single-family samples and unknown-only refusal.
+This is a preview-to-correction aid, not a native routing or release claim.
+
+
+### 2026-10-12 — Explicit safe source-field chip to mapping navigation
+
+Previously selecting an extracted-field chip in Step 2 only navigated to Step 3
+without selecting the mapping or creating the requested source rule. The
+explicit field-chip buttons now distinguish **Review mapping for X** for a
+previously mapped source from **Add draft mapping for X** when the reviewed,
+value-free unmapped-source suggestion list provides a safe candidate. The
+addition is a single conservative string mapping with a collision-screened
+custom destination and an appropriate reviewed group. No value inference,
+source event body or API request occurs. Unsafe/unavailable suggestions are
+never silently imported; the user receives an explanation to review manually.
+A highlighted, accessible mapping card is shown after navigation. Direct
+keyboard Enter works because every chip is a real button. A browser regression
+tests duplicate prevention, unmapped source mapping, unsafe prototype names,
+local-only sample privacy and keyboard operation. This feature does not claim
+native parsing or target import compatibility.
+
+
+### 2026-10-12 — Keyboard alternative for source-event value selection
+
+Guided Step 2 now offers an optional collapsed panel for users who cannot or
+do not want to drag-select a value inside the raw-event code view. An editable,
+accessible input is constrained to 80 characters; a separate explicit button
+accepts the value only if it is present verbatim in the currently selected
+browser event. This reuses the same existing field proposal, regex safety and
+all-sample browser review path used for mouse selection. The proposal is not
+silently applied and cannot unlock native draft export by itself. The input
+resets when source event or sample changes and is never serialized, logged,
+uploaded to a backend, or included in redacted test evidence.
+
+Browser E2E tests in tests/keyboard-raw-selection.spec.ts cover keyboard
+focus/Enter, invalid source refusal, stale value clearing, local-only privacy
+and 390px layout. This supplements accessible one-click safe field-name mapping
+chips, without equating browser regex previews with native Fluentd validation.
+
+
+### 2026-10-12 — Read-only parser-pair import compatibility and loss review
+
+After explicit inspection of a user-selected matching \`customized_<slug>.conf\` and
+extensionless Ruby fragment, the UI displays a **metadata-only** import/loss
+assessment, based strictly on the backend's structural metadata and the
+**browser-reverified SHA-256 hashes of the exact selected files**. It
+distinguishes an exact backend-reproducible pair from opaque vendor/legacy Ruby.
+Unknown or lossy cases are not imported or executed by the Guided Builder.
+Specifically, an exact backend pair is NOT presented as directly editable
+without a validated reverse adapter; an opaque original requires manual
+migration and cannot safely claim to reconstruct fields, routing, conversion
+semantics or a lossless mapping.
+
+The optional **Download Safe Import Review JSON** action exports an English,
+deterministic, versioned \`parser-studio.import-review.v0.1\` with verified
+hashes, structural protocol/port/source counts, whitelisted diagnostic codes
+and fixed explanations. No original CONF, Ruby code, raw log, backend diagnostic
+message, data values, credentials or target configuration are included.
+The report sets Guided import availability to TRUE only for exact
+byte-verified **and** independently reversible projects; an explicit user
+confirmation is still required to replace the unsaved draft and clear all
+sample logs. The reverse action never executes original Ruby, never saves
+automatically and never contacts DP or sensors. All native parsing,
+sensor ingestion and target-loading verification flags remain FALSE.
+No automatic mutation, browser draft replacement or backend write occurs.
+
+\`src/guided/pairImportReview.ts\` and \`src/guided/pairImportReview.test.ts\`
+define and verify the safe report; \`tests/pair-inspection.spec.ts\` exercises
+the English visual warning, user-initiated JSON export and source-code exclusion
+with Chromium. Real owner-provided legacy parser files remain a separate
+acceptance/compatibility evidence gate.
+
+### 2026-10-12 — Exact pair → unsaved Guided draft (manually reviewed)
+
+After a backend-verified byte-for-byte pair inspection with browser-confirmed
+file hashes, the frontend can restore **only** exact projects whose entire
+portable model round-trips through the existing Guided Builder adapter without
+loss or coercion. Any difference (unsupported project ID, receiver protocol,
+source field, normalization target/group, classification rule, enrichment,
+unknown property, unsafe prototype field, non-representable condition) disables
+the restore button while retaining the read-only safe import report. The
+conversion never evaluates Ruby, and there is no attempt to guess arbitrary
+legacy parser meaning. The user must separately tick a confirmation that the
+current **unsaved draft** will be replaced and **all sample logs cleared**;
+the action does not submit a DP write, start a sensor sender or save a revision.
+The replacement immediately opens the normalization/mapping screen for review.
+A stale in-flight inspection is discarded when either selected file changes,
+so an old inspected pair cannot replace a newer user selection.
+
+### 2026-10-12 — Offline ParserProject JSON review and explicit unsaved restoration
+
+Guided Step 6 now accepts a previously downloaded `ParserProject` JSON file via
+**browser-local review**; selecting it makes no network request or draft change.
+The user must explicitly press **Validate Local Project JSON**. The importer
+rejects empty files, files above 256 KiB, unsupported file extensions, malformed
+UTF-8 and JSON, unsafe slugs, unsupported groups/operators/format/receiver
+settings, foreign project IDs and every field that cannot be reconstructed with
+perfect equality. It uses `reconstructExactBackendDraft` and the existing
+UI-to-backend adapter for a full semantic round-trip before marking a project
+eligible. It never evaluates Ruby or arbitrary scripts and never sends the JSON
+to the backend or target DP.
+
+Only after a separate checkbox confirmation does **Restore Validated JSON as
+Unsaved Draft** replace the current unsaved UI draft, clear all original sample
+logs and navigate to mapping review. This action neither autosaves a local
+revision nor invokes sensor, target, deployment or Interflow APIs. Local file
+read operations use a per-selection token to discard stale replies after a
+different file is chosen. The original file remains unchanged. Unit regressions
+cover UTF-8, 256 KiB bounds, ignored/unsupported fields and exact round-trip;
+`tests/offline-project-json-import.spec.ts` verifies explicit confirmation,
+zero backend API calls, clearing sample logs and rejection without mutation.
+
+### 2026-10-12 — Review every supported format family without excluding unknown source records
+
+A new opt-in Step 2 `Audit All Detected Families Locally` action composes the existing bounded `planFamilyIsolation` and `summarizeIsolatedFamilyPreview` contracts through `src/guided/familyAudit.ts`. It runs each recognized JSON/KV/CSV/RFC5424/CEF/LEEF family **sequentially** through the browser Web Worker, rather than simulating unreviewed native mixed-format routing. The original dataset, unsaved draft, prior checks, and backend payloads are never modified. A private, ephemeral in-memory plan may contain raw sample bytes, but the public audit result holds only family identifiers, source/selected/unsupported counts, original source line numbers, sanitized diagnostic codes, and explicit false vendor/native validation flags. Unsupported or unknown events are always listed as not reviewed; their contents never appear in evidence. The sum of reviewed and unsupported counts must equal the complete source event count. The UI discards a review when the source or draft changes, and no API calls, downloads, persistence or sensor transport are performed. E2E Chromium scenarios cover source preservation, unknown lines, raw-data redaction, keyboard operation, and stale evidence.
+
+### 2026-10-12 — SHA-256-bound, redacted all-family audit download
+
+The explicit `Download Redacted Family Audit JSON` action on the all-family local audit produces `parser-studio.browser-family-audit-evidence.v0.1` without any API calls. The pure `createAllFamilyAuditEvidence` function rechecks the complete source/suite identity, family count/line allocation, allowed format IDs, read-only diagnostic codes and each false native/target verification flag. It reuses the reviewed secure-browser SHA-256 helper to hash sample/draft bytes. Export only includes sample/draft digests and byte count, per-family aggregate counts and original line numbers, and an explicit unsupported-format ledger; the complete raw sample stays in memory. The evidence file can be shared as **browser-only DRAFT metadata**, not native parsing or target-ingestion proof. The new regression suite rejects forged source values and claims, and the Chromium test inspects downloaded JSON for customer values and confirms zero backend calls.
+
+### 2026-10-12 — All-family per-event diagnostics allowlist
+
+After exact-head browser CI succeeded, a separate adversarial regression detected a potential private value disclosure if an arbitrary diagnostic identifier from the local worker happened to match the old `[A-Z0-9_]` grammar. `src/guided/familyIsolation.ts` now uses a fixed known diagnostic-code allowlist and maps all others to `DIAGNOSTIC_UNAVAILABLE`, covering both single-family and all-family views. The all-family UI now displays a maximum of eight source-line/status/allowlisted-code combinations per family, while retaining full totals and the explicit unknown-event ledger. The optional downloadable JSON still contains only hashes, aggregate counts and original line numbers; diagnostic messages, values, code strings and raw customer data are excluded.

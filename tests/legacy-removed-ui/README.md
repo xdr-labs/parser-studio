@@ -1,0 +1,136 @@
+# Retired Wizard/Workbench Chromium Tests (preserved, not current PASS)
+
+These unchanged historical tests exercise the six-stage Guided Wizard, Expert
+three-pane Workbench, and navigation destinations removed by the Parser Studio
+2.0 two-method UI decision on October 13, 2026. They are archived in Git,
+not deleted or falsely reported as current passing tests.
+
+Original archived suites currently present: **48 files**. Their behavioral disposition is enforced by `migration-manifest.json` and `src/guided/legacyMigrationManifest.test.ts`; archived suites themselves never count as current PASS.
+
+The manifest has no undispositioned legacy behavior. Existing Project JSON review, Ruby/CONF inspection, and exact pair restore are now migrated into the Auto Parser Advanced existing-parser panel; legacy target preflight stays a separately authorized external gate.
+
+Feature-contract coverage retained outside retired screens:
+- Existing Vitest source/algorithm tests still run without modification.
+- tests/auto-parser-three-step.spec.ts: 3-stage source/review/generate.
+- tests/integrated-backend.spec.ts: actual generated Ruby, CONF, ZIP and
+  SHA-validation, two user methods, metadata and authorization gates.
+- tests/two-path.spec.ts: exact two-choice navigation, privacy, no legacy paths.
+- tests/private-drain3.spec.ts and ai-integrated-review.spec.ts: gated optional AI.
+- New Auto Parser result-specific revision/Apply/Replay/Interflow tests must
+  replace applicable sections of these old suites as those tools are
+  separately integrated without adding additional creation menus.
+
+Current incremental migration: tests/integrated-backend.spec.ts now
+includes actual Auto Parser/browser/backend ZIP SHA-tamper denial and
+missing-package-capability denial from package-download.spec.ts, plus
+invalid output-mapping / safe correction and prefix-overlapping output denial from field-path-validation.spec.ts; and default-denied/foreign-owner
+revision history responses from artifact-revision-history.spec.ts.
+
+New tests/integrated-backend.spec.ts additionally migrates one supported
+local synthetic replay contract from replay-preview.spec.ts: bounded local
+mutation, ordered source replay, explicit stop, and source/navigation teardown;
+no backend/sensor send. The unchanged archived replay test still contains
+unmigrated unsupported-input and source-safety scenarios.
+
+The actual backend Chromium suite also includes an independently gated
+**simulated** Test Lab + Interflow scenario: fixed public source only, separate
+operator and tenant approvals, denied/forged readback rejected, bounded
+non-E2E evidence accepted and explicit Stop. All /test-lab HTTP requests are
+intercepted by Playwright; the authoring backend remains real and exact-SHA pinned.
+No sensor packets or tenant read are attempted.
+
+This is **seven migrated behavior groups**, NOT seven entire retired suites. The
+original archived test files remain unchanged and excluded from CI.
+
+The two-method app also migrates three archived reload/recovery behavior
+groups into the pinned authoring-backend Chromium suite: manual (never
+automatic) authorized run-ID status lookup and Stop after refresh; invalid,
+foreign-owner, forged and mismatched status denial without raw log leakage;
+and EXPIRED terminal state without a false active sender or Stop action.
+Target session/status calls are intercepted by Playwright using public
+synthetic fixtures; backend authoring remains actual SHA-pinned HTTP.
+
+The synthetic Test Lab integration scenario also migrates distinct, per-action
+session rate and renewal approval rules: two independent 403 denials, fresh
+approval references for retry, metadata-only requests, a verified rate change
+that preserves quota/lease, and one verified bounded 60s/20-event extension.
+No rate change, renewal, or sensor traffic occurs without the explicit operator
+action and independent backend authorization.
+
+These archived files must not be used in release PASS totals. Do not restore
+old route access solely to make historical tests green. Explicitly migrate the
+functional assertions instead.
+
+Archived files:
+- all-family-audit.spec.ts
+- approved-testlab-rate.spec.ts
+- approved-testlab-session.spec.ts
+- artifact-revision-history.spec.ts
+- auto-parser-envelope.spec.ts
+- backend-bridge.spec.ts
+- backend-expanded-formats.spec.ts
+- backend-recovery.spec.ts
+- backend-schema-guide.spec.ts
+- backend-synthetic-preview.spec.ts
+- browser-evidence-comparison.spec.ts
+- browser-evidence.spec.ts
+- browser-rule-trace.spec.ts
+- browser.spec.ts
+- csv-delimiters.spec.ts
+- dotted-routing.spec.ts
+- english-interface.spec.ts
+- enrichment.spec.ts
+- exact-parser-import.spec.ts
+- expanded-starters.spec.ts
+- family-coverage.spec.ts
+- family-isolation.spec.ts
+- field-chip-mapping.spec.ts
+- field-path-validation.spec.ts
+- field-suggestions.spec.ts
+- guided.spec.ts
+- interflow-readback.spec.ts
+- keyboard-raw-selection.spec.ts
+- legacy-preflight.spec.ts
+- local-format-advisor.spec.ts
+- mapping-coverage.spec.ts
+- mobile-guided-expanded.spec.ts
+- nested-json-mapping.spec.ts
+- official-metadata.spec.ts
+- offline-project-json-import.spec.ts
+- offline-synthetic-scenario.spec.ts
+- package-download.spec.ts
+- pair-inspection.spec.ts
+- port-proposal.spec.ts
+- regex-safety.spec.ts
+- replay-preview.spec.ts
+- sample-templates.spec.ts
+- structured-families.spec.ts
+- syslog-body-formats.spec.ts
+- testlab-evidence-report.spec.ts
+- type-suggestions.spec.ts
+
+Additional retired AI creation UI regression:
+- ai-integrated-review.spec.ts tested an optional integrated external-provider
+  branch embedded inside Auto Parser. The user selected MANUAL ChatGPT
+  copy/paste as the only AI creation method, so that extra public entry has
+  been retired. Backend metadata-only provider safety logic and its Vitest
+  contracts remain preserved as internal code, disabled by default.
+
+Additional legacy E2E:
+- e2e-workbench.spec.ts (original: e2e/workbench.spec.ts), 4 historical
+  three-pane/regex/Run Suite/Local Library/mobile tests. Its old route and
+  assumptions are no longer user-visible; this exact file remains unchanged.
+  The mobile responsive and source accounting assertions are explicitly
+  migrated to tests/two-path.spec.ts, and type/privacy tests stay in Vitest.
+
+## October 18 owner scope exclusion (not counted as PASS)
+
+Server-side Test Lab session recovery, evidence retrieval, remote revision
+history, sensor transmission and Interflow operations are outside the current
+downloadable-parser beta. The earlier six synthetic authorization scenarios
+remain preserved as explicit `test.skip` cases in
+`tests/integrated-backend.spec.ts`; they do not contribute to current PASS
+counts. The current `tests/evidence-recovery.spec.ts` independently tests
+absence of these controls and backend default-deny behavior over the
+SHA-pinned localhost compiler, without invoking any sensor or tenant action.
+Browser-local versions and browser-only synthetic replay remain in scope.

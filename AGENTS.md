@@ -12,6 +12,10 @@ Follow: (1) explicit owner instruction, (2) current ACTIVE Work Packet, (3) Engi
 
 Continue the current highest-priority incomplete work, preserve unrelated and dirty changes, implement and test affected behavior, and commit/push verified units. Reports are not a reason to stop. A blocker is only verified owner action or an environmental/permission impossibility; repair solvable issues directly.
 
+## Project language policy (owner directive, 2026-10-12)
+
+**English only:** Write all screens, accessible labels, user-facing errors, code comments, tests, fixtures, documentation, CLI/help output, and future product content in English. Do not add Korean translations or a bilingual UI. Preserve existing API paths, serialized field names, parser syntax, and compatibility contracts when changing presentation text. Run the English-only regression test and browser scenarios before each UI commit.
+
 ## Product invariants
 
 - Build an independent Web UI; do not add features to Stellar Cyber's own Parser Studio.

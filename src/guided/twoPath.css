@@ -1,0 +1,56 @@
+/* Parser Studio v2.0: exactly two user-facing creation methods. */
+.two-path-nav {width: 182px;align-items: stretch;padding-left:14px;padding-right:14px}
+.two-path-nav .brand-symbol{margin:0 auto}
+.two-path-nav .rail-group{align-items:stretch;gap:11px;margin-top:37px}
+.two-path-nav .rail-item-with-help{position:relative;display:flex;align-items:stretch}
+.two-path-nav .rail-item-with-help>.beginner-help-tip{position:absolute;right:7px;top:7px;margin:0;z-index:3;color:#d8ecef}
+.two-path-nav .rail-link{width:100%;min-height:65px;flex-direction:row;justify-content:flex-start;gap:11px;padding:10px 32px 10px 12px;text-align:left;font-size:12px;letter-spacing:0;line-height:1.4}
+.two-path-nav .rail-link svg{flex:none}
+.two-path-nav .rail-link span{overflow-wrap:anywhere}
+.two-path-nav .rail-footer{align-self:center;font-size:10px;text-align:center}
+.two-path-shell .app-main{max-width:100%;overflow-x:hidden}
+.two-path-shell .auto-parser-workspace{width:min(100%,1160px);margin-inline:auto}
+.two-path-shell .auto-parser-body>section{max-width:100%}
+.two-path-header{min-height:85px}
+.topbar-help-action{display:inline-flex;align-items:center;gap:3px}
+.topbar-help-action>.beginner-help-tip,.context-flag>.beginner-help-tip{margin-left:2px}
+.two-path-mapping-editor{display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,1.25fr) minmax(120px,.6fr);gap:12px;margin:12px 0;align-items:end}
+.two-path-mapping-editor label{display:flex;flex-direction:column;gap:5px;color:#56677c;font-size:12px;font-weight:600}
+.two-path-mapping-editor input,.two-path-mapping-editor select{min-width:0;width:100%;border:1px solid #d2dfe6;background:#fff;color:#253347;padding:9px 10px;border-radius:7px}
+.two-path-shell .auto-parser-body textarea{max-width:100%;font-family:inherit}
+@media(max-width:850px){
+  .two-path-nav{width:112px;padding:15px 7px}
+  .two-path-nav .rail-link{flex-direction:column;justify-content:center;font-size:10px;text-align:center;gap:6px}
+  .two-path-header{padding:13px;flex-wrap:wrap}
+  .two-path-header .header-title{white-space:normal}
+  .two-path-mapping-editor{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .two-path-shell{flex-direction:column}
+  .two-path-nav{position:static;width:100%;height:auto;flex-direction:row;align-items:center;padding:7px 10px;gap:8px}
+  .two-path-nav .brand-symbol{margin:0;width:38px;height:38px;border-radius:10px}
+  .two-path-nav .rail-group{flex:1;flex-direction:row;margin:0;gap:6px;min-width:0}
+  .two-path-nav .rail-link{flex:1;width:auto;min-width:0;min-height:44px;padding:6px 4px;font-size:9px}
+  .two-path-nav .rail-link.selected:before{left:0}
+  .two-path-nav .rail-footer{display:none}
+}
+
+/* A backend-run Stop remains reachable when the authoring view changes. */
+.two-path-session-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:12px 18px;padding:12px 16px;border:1px solid #b0c7d8;border-radius:10px;background:#f1f8fc;color:#1c374e}
+.two-path-session-banner strong{font-size:13px}
+.two-path-session-banner p{font-size:12px;margin:5px 0;overflow-wrap:anywhere}
+.two-path-session-banner button{min-height:38px}
+
+/* Recovery is a context action, not a third parser-creation navigation path. */
+.two-path-recovery{margin:10px 18px;padding:10px 14px;border:1px solid #d2dfe6;border-radius:9px;background:#fff;color:#32465c}
+.two-path-recovery summary{font-weight:600;font-size:13px;cursor:pointer}
+.two-path-recovery p{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.two-path-recovery-controls{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:10px 0}
+.two-path-recovery-controls label{display:flex;flex-direction:column;gap:5px;flex:1 1 275px;font-size:12px}
+.two-path-recovery-controls input{width:100%;min-width:0;border:1px solid #ccd7e3;border-radius:7px;padding:10px;font-family:monospace;color:#22344a}
+.two-path-recovery-controls button{min-height:39px}
+
+/* Global, explicitly requested owner-only evidence remains a result action. */
+.two-path-session-evidence{margin:10px 18px}
+.two-path-session-evidence>details{padding:10px 14px;border:1px solid #d2dfe6;border-radius:9px;background:#fff}
+.two-path-session-evidence summary{cursor:pointer}

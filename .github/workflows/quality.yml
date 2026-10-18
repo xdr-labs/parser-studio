@@ -1,0 +1,75 @@
+name: Parser Studio quality
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Deterministic unit tests
+        run: npm test
+      - name: Typecheck and build
+        run: npm run build
+      - name: Offline Python standard-library sender grammar
+        run: python3 -m unittest discover -s tests -p 'test_python_sender_formats.py' -v
+      - name: Embedded Multi-Pass standard-library structural service
+        run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
+      - name: Install isolated Chromium and dependencies
+        run: npx playwright install --with-deps chromium
+      # Historical browser tests require an actual local parser compiler for
+      # map/review/create; without it they fail on backend-unavailable states
+      # unrelated to the logged security event. Reuse the exact pinned backend
+      # for the ordinary browser suite and separately run the integrated E2E.
+      # No DP, sensor, credential, target integration or deployment is enabled.
+      - name: Checkout pinned independent parser backend
+        uses: actions/checkout@v4
+        with:
+          repository: xdr-labs/parser-studio
+          ref: 429b179fc674eb07f3e2250e78aea7883a71b433
+          path: .integration-backend-src
+          sparse-checkout: backend
+      - name: Build pinned loopback backend
+        run: |
+          test "$(git -C .integration-backend-src rev-parse HEAD)" = 429b179fc674eb07f3e2250e78aea7883a71b433
+          npm ci --prefix .integration-backend-src/backend --no-audit --no-fund
+          npm run build --prefix .integration-backend-src/backend
+      - name: Browser user scenarios
+        env:
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
+          PARSER_STUDIO_BACKEND_HEAD: 429b179fc674eb07f3e2250e78aea7883a71b433
+          PARSER_STUDIO_BACKEND_PORT: '4191'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+          PARSER_STUDIO_MULTIPASS_PORT: '5292'
+        run: npm run test:browser
+      - name: Real Chromium and HTTP integration over localhost
+        env:
+          PARSER_STUDIO_LIVE_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
+          PARSER_STUDIO_BACKEND_HEAD: 429b179fc674eb07f3e2250e78aea7883a71b433
+          PARSER_STUDIO_BACKEND_PORT: '4191'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+          PARSER_STUDIO_MULTIPASS_PORT: '5292'
+        run: npx playwright test tests/integrated-backend.spec.ts tests/evidence-recovery.spec.ts tests/chatgpt-full-recovery.spec.ts tests/ai-split-merge-backend.spec.ts tests/beginner-regex-recovery.spec.ts --project=chromium --workers=1
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-browser-debug
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore

@@ -1,3 +1,5 @@
+> **OWNER OVERRIDE — 2026-10-13:** Parser Studio 2.0 exposes ONLY Auto Parser and ChatGPT Assisted Parser. The 6-step Wizard and 3-pane Workbench are retired from the product UI; their previously stated retention/entrypoint requirements are superseded. All useful backend parsing, mapping, testing, versioning and result operations remain available for internal reuse or integration as context-sensitive result tools. The authoritative scope, acceptance and next tasks are [the two-path v2.0 specification](14_TWO_PATH_PRODUCT_V2.md) and [GitHub Issue #1](https://github.com/xdr-labs/parser-studio/issues/1). Legacy sections below are retained as historical implementation context, not current user navigation.
+
 # 02. Web UI / UX Specification
 
 **Design baseline:** Cribl-like pipeline preview + Datadog-like sample testing + no-code field mapping + precise per-event diagnostics. Build an original visual language and components.
@@ -81,7 +83,7 @@ Persistent top bar: Project / parser name; Dirty status; Undo/Redo; Dataset; Run
 ## 5. UX behavior / accessibility
 
 - Use a desktop-first workbench with a minimum practical viewport around 1280 px; at smaller widths panes become tabs. Mobile supports browsing/results, not a promise of full dense editor equivalence.
-- Korean / English-ready labels; monospace editor, readable large datasets, keyboard focus, non-color-only error indicators.
+- English-only labels; monospace editor, readable large datasets, keyboard focus, non-color-only error indicators.
 - Autosave local draft is optional; explicit persisted Save Revision is always identifiable.
 - Undo/redo per editing session; Warn before navigating away with unpersisted rules.
 - Preserve editor scroll, selected event and error focus between test runs.

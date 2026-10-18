@@ -1,0 +1,47 @@
+import {describe,it,expect} from 'vitest';
+import {createDraft} from '../model';
+import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
+
+describe('beginner automatic Generic Structural handoff',()=>{
+  it('automatically prepares named BIG-IP fields and maps nested leaf aliases to Stellar fields',()=>{
+    const raw='Oct 15 00:14:27 bigip-waf01 ASM: unit_hostname="bigip-waf01",management_ip_address="10.1.1.10",request_status="blocked",ip_client="203.0.113.210",protocol="HTTPS",date_time="2026-10-15T00:14:27+09:00",dest_port="443",dest_ip="10.20.1.25",uri="/api/login"';
+    const result=buildAutomaticGenericStructuralDraft(raw,createDraft());
+    expect(result).not.toBeNull();
+    const draft=result!.draft;
+    expect(draft.format).toBe('generic_structural');
+    expect(draft.mappings.find(x=>x.source==='generic.fields.dest_ip')).toMatchObject({target:'dstip',type:'ip'});
+    expect(draft.mappings.find(x=>x.source==='generic.fields.dest_port')).toMatchObject({target:'dstport'});
+    expect(draft.mappings.find(x=>x.source==='generic.fields.ip_client')).toMatchObject({target:'srcip',type:'ip'});
+    expect(draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'proto_name',type:'string'});
+    expect(draft.mappings.find(x=>x.source==='generic.fields.date_time')).toMatchObject({target:'timestamp',type:'timestamp'});
+    expect(draft.mappings.find(x=>x.source==='syslog.host')).toMatchObject({target:'hostname'});
+  });
+
+  it('auto-adopts RFC3164-wrapped positional firewall CSV without requiring a repair click',()=>{
+    const raw='<14>Oct 15 00:03:21 PA-FW01 1,2026/10/15 00:03:21,012345678901,TRAFFIC,end,2561,2026/10/15 00:03:20,10.10.20.15,8.8.8.8,203.0.113.10,8.8.8.8,allow-web,,,ssl,vsys1,trust,untrust,ethernet1/1,ethernet1/2,forward-all,2026/10/15 00:03:21,123456,1,51234,443,45001,443,0x400000,tcp,allow,1480,720,760,12,2026/10/15 00:02:55,25,any,0,0x0,10.0.0.0-10.255.255.255,United States,,6,6,tcp-fin,0,0,0,0,,PA-FW01,from-policy';
+    const result=buildAutomaticGenericStructuralDraft(raw,createDraft());
+    expect(result).not.toBeNull();
+    expect(result!.draft.format).toBe('generic_structural');
+    expect(result!.suite.counts.failures).toBe(0);
+    expect(result!.suite.events[0]!.fields).toMatchObject({
+      syslog:{pri:'14',hostname:'PA-FW01'},
+      generic:{mode:'panos_traffic_csv',fields:{type:'TRAFFIC',src:'10.10.20.15',dport:'443',action:'allow'}},
+    });
+    expect(result!.draft.mappings.find(x=>x.source==='generic.fields.src')).toMatchObject({target:'srcip',type:'ip'});
+    expect(result!.draft.mappings.find(x=>x.source==='generic.fields.dst')).toMatchObject({target:'dstip',type:'ip'});
+    expect(result!.draft.mappings.find(x=>x.source==='generic.fields.sport')).toMatchObject({target:'srcport'});
+    expect(result!.draft.mappings.find(x=>x.source==='generic.fields.dport')).toMatchObject({target:'dstport'});
+    expect(result!.draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'proto_name'});
+    expect(result!.draft.mappings.find(x=>x.source==='generic.fields.action')).toMatchObject({target:'action'});
+    expect(result!.draft.mappings.length).toBeLessThanOrEqual(60);
+  });
+
+  it('auto-adopts common year-bearing ASA wrappers as a fully parsed known structure',()=>{
+    const raw='<166>Oct 15 2026 00:05:03 ASA-EDGE01 : %ASA-6-302013: Built outbound TCP connection 18745213 for outside:203.0.113.50/443 (203.0.113.50/443) to inside:10.1.15.27/51822 (198.51.100.15/51822)';
+    const result=buildAutomaticGenericStructuralDraft(raw,createDraft());
+    expect(result).not.toBeNull();
+    expect(result!.draft.mappings.find(x=>x.source==='asa.src_ip')).toMatchObject({target:'srcip',type:'ip'});
+    expect(result!.draft.mappings.find(x=>x.source==='asa.dst_ip')).toMatchObject({target:'dstip',type:'ip'});
+    expect(result!.draft.mappings.find(x=>x.source==='asa.protocol')).toMatchObject({target:'proto_name'});
+  });
+});

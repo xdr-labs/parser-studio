@@ -1,0 +1,178 @@
+/* Auto Parser 2.0: sample-first novice surface, not native/DP certification. */
+.auto-parser-workspace{padding:25px clamp(12px,3.6vw,45px) 55px;max-width:1390px;width:100%;margin:0 auto;color:#172f42;flex:1;}
+.auto-parser-intro{background:linear-gradient(110deg,#132d41,#164f5a);padding:26px 30px;color:#e8faf9;border-radius:14px;}
+.auto-parser-intro .pane-index{color:#77e5d8;}
+.auto-parser-intro h1{font-size:clamp(20px,2.6vw,31px);letter-spacing:-.6px;line-height:1.25;margin:9px 0 8px;color:#f5fbfd;}
+.auto-parser-intro p{font-size:13px;line-height:1.65;max-width:690px;color:#c8e1e8;margin:9px 0 18px;}
+.auto-parser-links{display:flex;gap:9px;flex-wrap:wrap;}
+.auto-parser-links button{background:#ffffff11;border:1px solid #ffffff40;color:#eaf7fc;padding:9px 13px;border-radius:7px;font-size:11px;font-weight:700;}
+.auto-parser-links button:hover{background:#ffffff25;}
+.auto-parser-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:17px 0;}
+.auto-parser-steps button{border:1px solid #d3e2e7;background:#fff;color:#5b7888;border-radius:9px;padding:13px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;text-align:left;}
+.auto-parser-steps button.active{border-color:#14a4a4;background:#e9f7f4;color:#126b70;}
+.auto-parser-steps button span{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#e3eff1;color:#477784;font-size:12px;flex-shrink:0;}
+.auto-parser-steps button.active span{background:#0f9494;color:#fff;}
+.auto-parser-body{border:1px solid #d6e4eb;border-radius:13px;background:#fff;box-shadow:0 5px 22px rgba(18,54,68,.05);padding:clamp(16px,2.7vw,28px);}
+.auto-parser-body h2{font-size:23px;color:#173e51;letter-spacing:-.6px;margin:0 0 6px;}
+.auto-parser-body section>p{color:#55707f;font-size:12px;line-height:1.65;margin:8px 0 15px;}
+.auto-parser-body :is(label){font-size:11px;font-weight:700;color:#3a697a;display:block;margin:12px 0;}
+.auto-parser-body :is(input,select,textarea){border:1px solid #cbdce3;border-radius:7px;background:#fcfefe;color:#183449;padding:9px;min-height:36px;max-width:100%;}
+.auto-parser-body textarea{display:block;width:100%;min-height:180px;font:12px/1.65 var(--mono);resize:vertical;}
+.auto-parser-body select{display:block;width:min(100%,460px);margin-top:7px;}
+.auto-parser-body :is(button,textarea,input,select):focus-visible{outline:2px solid #0e9c98;outline-offset:3px;}
+.auto-parser-source-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;}
+.auto-parser-source-toolbar small{font-size:10px;color:#708693;}
+.auto-parser-ledger{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:15px 0;}
+.auto-parser-ledger strong{font-size:12px;color:#1f7d78;flex:1 1 210px;}
+.auto-parser-ledger span{background:#f0f5f7;border:1px solid #dae8ea;border-radius:6px;padding:6px 10px;font-size:10px;color:#396175;}
+.auto-parser-body .auto-parser-primary{border:1px solid #078f90;color:#fff;border-radius:7px;background:#079c9d;font-size:12px;font-weight:800;padding:11px 17px;display:inline-flex;align-items:center;gap:8px;}
+.auto-parser-body .auto-parser-primary:hover:not(:disabled){background:#078082;}
+.auto-parser-note{font-size:11px;color:#67818a;background:#f5f9fa;border:1px solid #dce7ec;padding:10px 12px;border-radius:7px;line-height:1.65;}
+.auto-parser-warning{border:1px solid #ebcdaa;background:#fff7ee;padding:11px 12px;border-radius:7px;display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.6;color:#875b29;margin:14px 0;}
+.auto-parser-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:17px 0;}
+.auto-parser-summary span{font-size:11px;color:#547485;background:#f1f7f8;border:1px solid #d9e7e9;border-radius:8px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.auto-parser-summary strong{font-size:18px;color:#256478;}
+.auto-parser-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0;}
+.auto-parser-preview>div{min-width:0;border:1px solid #d9e4e9;background:#f9fbfd;border-radius:8px;overflow:hidden;}
+.auto-parser-preview h3{color:#427181;font-size:11px;margin:0;padding:10px 12px;border-bottom:1px solid #dbe6eb;background:#eff5f7;}
+.auto-parser-preview pre{padding:11px;margin:0;min-height:140px;overflow:auto;overflow-wrap:anywhere;white-space:pre-wrap;font:11px/1.6 var(--mono);color:#263d4e;}
+.auto-parser-map-list{display:grid;gap:7px;margin:14px 0;max-height:255px;overflow:auto;}
+.auto-parser-map-list>div{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#f8fbfd;border:1px solid #dce8ec;padding:9px;border-radius:7px;font-size:11px;}
+.auto-parser-map-list strong{color:#255f70;overflow-wrap:anywhere;}
+.auto-parser-map-list span{color:#316d73;overflow-wrap:anywhere;}
+.auto-parser-map-list small{margin-left:auto;color:#78909b;}
+.auto-parser-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;align-items:center;}
+.auto-parser-actions button{border:1px solid #c9dce2;background:#fff;color:#21677a;border-radius:7px;font-size:11px;font-weight:700;min-height:37px;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;}
+.auto-parser-actions button.auto-parser-primary{border-color:#078f90;color:#fff;background:#079c9d;}
+.auto-parser-result,.auto-parser-download{padding:14px;border:1px solid #d0e4e2;background:#f5faf9;border-radius:8px;margin:14px 0;display:grid;gap:9px;}
+.auto-parser-result strong,.auto-parser-download strong{font-size:12px;color:#226f71;}
+.auto-parser-result span,.auto-parser-download small{font-size:11px;color:#587582;overflow-wrap:anywhere;}
+.auto-parser-download strong{display:flex;gap:7px;align-items:center;}
+.auto-parser-download button{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid #cfdfdf;background:#fff;border-radius:6px;font-size:11px;color:#256476;padding:9px 10px;max-width:100%;overflow-wrap:anywhere;}
+.auto-parser-download button>span{display:grid;gap:2px;flex:1;text-align:left;min-width:0}.auto-parser-download button>span small{font:9px/1.35 var(--mono);overflow-wrap:anywhere;color:#6d818a}
+.auto-parser-recipe{margin:15px 0;border:1px solid #d6e4eb;border-radius:8px;padding:12px 14px;background:#f8fbfc;color:#476b7c;font-size:11px;line-height:1.6;}
+.auto-parser-recipe summary{cursor:pointer;font-weight:700;color:#285c70;}
+.auto-parser-recipe summary:focus-visible{outline:2px solid #0e9c98;outline-offset:3px;}
+.auto-parser-recipe p{font-size:11px;line-height:1.65;}
+.auto-parser-recipe button{border:1px solid #bfd7de;border-radius:6px;background:#fff;color:#22687a;padding:8px 12px;font-size:11px;font-weight:700;}
+.auto-parser-recipe [role=status]{border:1px solid #d3e6e2;border-radius:6px;background:#fff;display:grid;gap:6px;padding:10px;margin-top:11px;overflow-wrap:anywhere;}
+.auto-parser-recipe [role=status] strong{color:#256d6b;}
+
+@media(max-width:850px){.auto-parser-preview{grid-template-columns:1fr;}.auto-parser-intro{padding:22px;}}
+@media(max-width:540px){.auto-parser-workspace{padding:12px 8px 35px;}.auto-parser-steps{gap:4px;}.auto-parser-steps button{font-size:10px;padding:7px 5px;gap:5px;flex-wrap:wrap;justify-content:center;text-align:center;}.auto-parser-steps button span{width:22px;height:22px;}.auto-parser-body{padding:14px 11px;}.auto-parser-actions button{width:100%;justify-content:center;}}
+
+/* Beginner-first Parser Studio UX. Advanced diagnostics stay available but are not the default surface. */
+.beginner-analyze-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 16px}
+.beginner-analyze-action span{font-size:11px;color:#68808d}
+.beginner-analysis-error{border:1px solid #e0bfa0;background:#fff7ed;color:#80542e;border-radius:8px;padding:11px 13px;font-size:12px;line-height:1.55}
+.beginner-analysis{margin:16px 0 18px;display:grid;gap:13px}
+.beginner-analysis-head{display:flex;gap:12px;align-items:flex-start;padding:15px 16px;border-radius:10px;border:1px solid #d2e6e1;background:#f4fbf9}
+.beginner-analysis-head.complete{color:#226d62}
+.beginner-analysis-head.needs-attention{border-color:#ead5b8;background:#fff9ef;color:#795a2e}
+.beginner-analysis-head strong{display:block;font-size:15px;margin-bottom:4px}
+.beginner-analysis-head p{margin:0;font-size:12px;line-height:1.55;color:#5f7480}
+.beginner-problem{border:1px solid #e2d7c7;border-radius:10px;padding:16px;background:#fffdf9}
+.beginner-problem h3{margin:8px 0 5px;font-size:18px;color:#4a3b2b}
+.beginner-problem>p{margin:4px 0 13px;font-size:12px;color:#657783;line-height:1.55}
+.beginner-problem label{max-width:560px}
+.beginner-problem-source{border:1px solid #d9e3e8;border-radius:8px;overflow:hidden;background:#f8fbfc}
+.beginner-problem-source>span{display:block;padding:8px 10px;border-bottom:1px solid #d9e3e8;font-size:10px;font-weight:800;color:#526d79;background:#eef5f7}
+.beginner-problem-source pre{margin:0;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.6 var(--mono);max-height:220px;overflow:auto;color:#253c4b}
+.beginner-problem-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.beginner-problem-details>div{border:1px solid #e1e8eb;border-radius:8px;padding:11px;background:#fff}
+.beginner-problem-details strong{font-size:11px;color:#405e6d}
+.beginner-problem-details :is(p,li){font-size:11px;line-height:1.55;color:#617780}
+.beginner-problem-details ul{padding-left:18px;margin:8px 0 0}
+.beginner-problem-details code{display:block;margin-top:8px;padding:8px;background:#fff3ea;border:1px solid #f0d6c0;border-radius:6px;white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.5 var(--mono);color:#74472b}
+.beginner-fix{display:flex;gap:10px;align-items:flex-start;border:1px solid #cde0e5;background:#f4fafb;border-radius:8px;padding:12px;margin-top:11px}
+.beginner-fix strong{font-size:12px;color:#245c6b}
+.beginner-fix p{margin:4px 0 0;font-size:11px;line-height:1.55;color:#5d7580}
+.beginner-fix-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.beginner-fix-actions button:not(.auto-parser-primary),.beginner-chatgpt button{border:1px solid #c8dce2;background:#fff;color:#23697a;border-radius:7px;padding:9px 12px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:7px}
+.beginner-chatgpt{margin-top:12px;border:1px solid #d4e1e7;border-radius:9px;padding:13px;background:#f8fbfd}
+.beginner-chatgpt>strong{font-size:12px;color:#2c5f71}
+.beginner-chatgpt>p{font-size:11px;color:#687d88;line-height:1.55}
+.beginner-chatgpt textarea{min-height:260px;font:10px/1.55 var(--mono)}
+/* Keep diagnostics and research tools out of the first-time Add Logs path. */
+.beginner-mode [aria-label="Add Logs stage"]>.stellar-multipass-panel,
+.beginner-mode [aria-label="Add Logs stage"]>.auto-parser-ledger,
+.beginner-mode [aria-label="Add Logs stage"]>.stellar-ai-unrecognized,
+.beginner-mode [aria-label="Add Logs stage"]>.auto-parser-note:not(.beginner-essential-note),
+.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Existing parser review and import"],
+.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Local logical boundary review"],
+.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Private text grouping tool"],
+.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Known log shape matcher"]{display:none}
+.advanced-mode .beginner-analysis{border-bottom:1px dashed #d4e0e4;padding-bottom:15px}
+@media(max-width:760px){.beginner-problem-details{grid-template-columns:1fr}.beginner-fix-actions button{width:100%;justify-content:center}}
+
+.beginner-problem-source pre mark{background:#ffe2d1;color:#6e351c;border-bottom:2px solid #d97143;padding:1px 2px;border-radius:2px}
+.beginner-problem-source pre span{white-space:pre-wrap}
+.beginner-ai-result-review{margin-top:14px}
+.beginner-ai-result-review details{margin-top:10px}
+
+.beginner-next-step{margin:12px 0;padding:10px 12px;border-radius:8px;border:1px solid #d5e3e7;background:#f6fafb;color:#55707d;font-size:11px;line-height:1.55}
+.beginner-next-step.needs-fix{border-color:#e4c9a8;background:#fff8ef;color:#79582e}
+
+.beginner-inline-step{margin-top:14px;padding-top:12px;border-top:1px solid #d8e6ea}
+.beginner-inline-step strong,.beginner-inline-wait strong{font-size:12px;color:#245f6e}
+.beginner-inline-step p,.beginner-inline-wait p{margin:5px 0 0;font-size:11px;line-height:1.55;color:#647b86}
+.beginner-inline-wait{margin-top:12px;padding:12px;border:1px solid #d5e4e8;background:#f7fbfc;border-radius:8px}
+.beginner-secondary-link{margin-top:10px}
+.beginner-mode [aria-label="Offline parser revision history"],
+.beginner-mode [aria-label="Local synthetic replay preview"],
+.beginner-mode [aria-label="Authorized test and Interflow verification"],
+.beginner-mode [aria-label="Whole-sample regression and holdout review"],
+.beginner-mode [aria-label="Reusable approved mapping patterns"],
+.beginner-mode [aria-label="Local review session metrics"],
+.beginner-mode [aria-label="ParserRecipe v0.2 review"],
+.beginner-mode [aria-label="Native Ruby and CONF verification evidence"]{display:none!important}
+
+/* Beginner guidance and contextual help. */
+.beginner-help-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;margin-left:5px;color:#66808b;vertical-align:middle;cursor:help;outline:none}
+.beginner-help-tip>svg{pointer-events:none}
+.beginner-help-tip:focus-visible{outline:2px solid #16858d;outline-offset:2px;border-radius:50%}
+.beginner-help-popover{display:none;position:absolute;z-index:30;left:50%;top:calc(100% + 8px);transform:translateX(-50%);width:min(310px,80vw);padding:10px 11px;border:1px solid #cad9de;border-radius:8px;background:#fff;box-shadow:0 8px 24px rgba(26,52,65,.16);font-size:11px;font-weight:500;line-height:1.5;color:#405965;text-align:left;white-space:normal}
+.beginner-help-tip:hover .beginner-help-popover,.beginner-help-tip:focus .beginner-help-popover,.beginner-help-tip:focus-within .beginner-help-popover,.beginner-help-tip.open .beginner-help-popover{display:block}
+.beginner-stage-guide{display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;padding:11px 12px;border:1px solid #cfe0e5;border-radius:9px;background:#f5fafb;color:#2e6370}
+.beginner-stage-guide>svg{flex:0 0 auto;margin-top:1px}.beginner-stage-guide strong{font-size:12px}.beginner-stage-guide p{margin:3px 0 0;font-size:11px;line-height:1.55;color:#5e7680}
+.beginner-tools-intro{display:grid;gap:7px;margin:12px 0 14px;padding:12px 14px;border:1px solid #ded8ca;border-radius:9px;background:#fffaf0}
+.beginner-tools-intro strong{font-size:12px;color:#6d542f}.beginner-tools-intro p{margin:0;font-size:11px;line-height:1.55;color:#716b60}
+.beginner-tool-summary{display:flex!important;align-items:center;gap:5px}
+.beginner-tool-summary .beginner-help-tip{margin-left:2px}
+.beginner-tool-when{display:block;margin:6px 0 10px;padding:7px 9px;border-radius:7px;background:#f6f9fa;color:#5c747d;font-size:10px;line-height:1.5}
+.auto-parser-steps button .step-copy{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;width:auto;height:auto;border-radius:0;background:transparent;color:inherit;font-size:inherit;line-height:1.35;overflow-wrap:anywhere;place-items:initial}.auto-parser-steps button.active .step-copy{background:transparent;color:inherit}.auto-parser-steps button{min-width:0;min-height:64px}.auto-parser-steps button .step-lock{display:block;width:auto;height:auto;border-radius:0;background:transparent;white-space:normal;overflow-wrap:anywhere}.auto-parser-steps button.active .step-lock{background:transparent;color:#547c82}
+.auto-parser-steps button .step-lock{font-size:9px;color:#86979d;font-weight:600;line-height:1.25}
+.auto-parser-steps button.locked{border-style:dashed;background:#fbfcfd;color:#738893;cursor:pointer}
+.auto-parser-steps button.locked:hover{border-color:#9fc6cf;background:#f4f9fa}
+.beginner-navigation-hint{margin:-7px 0 14px;padding:9px 12px;border:1px solid #e5cba7;border-radius:8px;background:#fff8ee;color:#76562e;font-size:11px;line-height:1.55}
+.beginner-technical-details{margin-top:8px;border:1px solid #dbe6ea;border-radius:7px;background:#fbfdfe;padding:7px 9px;color:#617985;font-size:10px}
+.beginner-technical-details summary{cursor:pointer;font-weight:700;color:#496b78}
+.beginner-technical-details :is(code,small,span){display:block;margin-top:6px;white-space:normal;overflow-wrap:anywhere}
+.advanced-mode .auto-parser-ledger{margin-top:10px}
+@media(max-width:650px){.beginner-help-popover{left:auto;right:0;transform:none;width:min(280px,78vw)}.auto-parser-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.auto-parser-intro .beginner-help-tip{color:#d8f4f3}
+.auto-parser-links{align-items:center}
+.auto-parser-steps button.locked{border-style:dashed;background:#f7f9fa;color:#84949b}
+.auto-parser-steps button.locked>span:first-child{background:#edf1f2;color:#84949b}
+.auto-parser-steps button.locked:hover{border-color:#9db4bc;background:#f2f7f8}
+.beginner-navigation-hint{margin:-7px 0 14px;padding:10px 12px;border:1px solid #d8c89e;border-radius:8px;background:#fff9eb;color:#6f5b2e;font-size:11px;line-height:1.55}
+.auto-parser-link-with-help{display:inline-flex;align-items:center;gap:2px}
+.auto-parser-note .beginner-help-tip{margin-left:6px}
+@media(max-width:850px){.auto-parser-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.auto-parser-steps{grid-template-columns:1fr}.auto-parser-steps button{justify-content:flex-start}}
+
+/* Parser identity shown before Add Logs so generated artifacts cannot hide behind demo names. */
+.parser-identity-card{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(420px,1.7fr) minmax(230px,1fr);gap:14px;align-items:end;margin:0 0 18px;padding:14px 16px;border:1px solid #d7e3e7;border-radius:10px;background:#fbfcfd}
+.parser-identity-copy{display:grid;gap:5px;align-self:center}
+.parser-identity-copy strong{font-size:13px;color:#2b5666}
+.parser-identity-copy span{font-size:10px;line-height:1.5;color:#6d8089}
+.parser-identity-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.parser-identity-fields label{display:grid;gap:5px;font-size:10px;font-weight:800;color:#526d78}
+.parser-identity-fields input{min-width:0;border:1px solid #cfdde2;border-radius:7px;background:#fff;padding:9px 10px;font-size:12px;color:#243943}
+.parser-identity-filename{display:grid;gap:4px;padding:10px 11px;border:1px solid #dce7ea;border-radius:8px;background:#f6fafb}
+.parser-identity-filename>span{font-size:10px;font-weight:800;color:#53707a}
+.parser-identity-filename code{display:block;font:10px/1.4 var(--mono);color:#255f71;overflow-wrap:anywhere}
+.parser-identity-filename small{font-size:9px;line-height:1.45;color:#72868e}
+@media(max-width:1000px){.parser-identity-card{grid-template-columns:1fr}.parser-identity-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.parser-identity-fields{grid-template-columns:1fr}}

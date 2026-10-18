@@ -19,3 +19,10 @@ coverage/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Pinned backend checkout used only during isolated CI integration
+/.integration-backend-src/
+# Local caches and browser-test output
+tsconfig.tsbuildinfo
+test-results/
+playwright-report/
