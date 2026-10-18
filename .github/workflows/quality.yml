@@ -27,6 +27,14 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_python_sender_formats.py' -v
       - name: Embedded Multi-Pass standard-library structural service
         run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
+      - name: Mainline offline authoring backend build and HTTP security gate
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm run check --prefix backend
+          npm run build --prefix backend
+          # Product scope is a finite, explicit list; keep broader historical
+          # target/Drain3 regression failures visible in backend documentation.
+          npm run test:authoring --prefix backend
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
       # Historical browser tests require an actual local parser compiler for
@@ -64,6 +72,25 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
           PARSER_STUDIO_MULTIPASS_PORT: '5292'
         run: npx playwright test tests/integrated-backend.spec.ts tests/evidence-recovery.spec.ts tests/chatgpt-full-recovery.spec.ts tests/ai-split-merge-backend.spec.ts tests/beginner-regex-recovery.spec.ts --project=chromium --workers=1
+      # The deployed mainline entrypoint must never be replaced by the older
+      # external pinned compiler used in compatibility-only tests above.
+      - name: Same-HEAD authoring-only HTTP and beginner Chromium acceptance
+        run: |
+          set -euo pipefail
+          PARSER_BACKEND_PORT=4395 node backend/dist/src/mainline-authoring-server.js >/tmp/parser-studio-mainline-authoring.log 2>&1 &
+          scoped_pid=$!
+          trap 'kill "$scoped_pid" 2>/dev/null || true; wait "$scoped_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 25); do
+            if curl --fail --silent http://127.0.0.1:4395/health >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          PARSER_STUDIO_BACKEND_PORT=4395 \
+          PARSER_STUDIO_TEST_PORT=5185 \
+          PARSER_STUDIO_TEST_MULTIPASS=1 \
+          PARSER_STUDIO_MULTIPASS_PORT=5392 \
+          npx playwright test tests/common-security-logs.spec.ts tests/ai-field-correction.spec.ts --project=chromium --workers=2
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4

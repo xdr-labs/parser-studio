@@ -18,3 +18,45 @@ This historical backend tree includes **legacy Test Lab, target, sensor, Interfl
 Before including a backend runtime in `main`, keep the authoring-only API surface, explicitly retire or isolate historical target-capable routes, reconcile current product scope, and qualify the *combined exact product/backend HEAD* with deterministic tests, full Chromium user flows, and real loopback HTTP DRAFT creation. The existing CI's pinned external-backend check is a separate integration proof, **not** proof that this newly copied subtree is productized or permitted for target use.
 
 Do **not** merge this candidate automatically, silently enable target operations, or relabel any historical native/sensor accuracy as verified.
+
+## Scoped shipping runtime after source import
+
+The originally imported 187 files came from the byte-identical pinned
+backend tree. This later candidate adds an **authoring-only HTTP wrapper**
+plus regression tests and changes the default npm start command. Consequently
+the current derived backend tree has new additions and is no longer identical
+to the frozen source snapshot; the unchanged original importer commit is
+preserved in Git history for reproducible comparison.
+
+The backend package's default entrypoint is now
+dist/src/mainline-authoring-server.js. It delegates only explicitly allowlisted
+offline compiler/schema/validation/inspect/package/ParserRecipe HTTP routes
+to the existing qualified compiler handlers. The historical target, Test Lab,
+sensor, tenant-revision, automated AI and Interflow operations are unreachable
+through this executable: they return a non-reflecting HTTP 404 without
+dispatch. The executable binds 127.0.0.1 only. No access credentials, DP
+configuration, target authorization or production instance is modified.
+
+This is a candidate for mainline after same-HEAD native and browser/HTTP
+qualification, not a completed release or target runtime verification.
+
+## Honest backend regression scope
+
+Before product-scope isolation, the original whole-backend Node runner
+returned **361 tests / 340 pass / 12 fail**. Every observed failure came
+from four retained historical target/optional Drain3 suites. The complete
+historical backend is therefore **NOT FULLY GREEN**. The new
+test:authoring command explicitly names those non-product suites,
+validates that the scope file inventory exists, and runs every other
+backend test without skipped hidden suites. The excluded tests are
+preserved and remain runnable but are never reported as passing. The
+backend scoped HTTP authorization boundary has its own focused tests.
+
+## Capability projection
+
+The exact offline authoring entrypoint returns only a capability document
+accepted by the existing strict Parser Studio client. Legacy Test Lab,
+external AI, native manifest, revision and target/DP operations are not
+advertised as available, and direct requests to their routes still fail
+closed. HTTP tests compare the permitted route set with the advertised
+features so future code cannot silently widen product claims.

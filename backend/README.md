@@ -304,3 +304,13 @@ and no actual Stellar Cyber loader, DP, sensor, Interflow or customer-data E2E
 claim. SHA checks detect accidental corruption but do not attest to an
 independently trusted or signed operator. Genuine owner-supplied fixtures
 and vendor verification remain separately gated.
+
+## Mainline scope: offline authoring-only entrypoint
+
+The mainline candidate's npm start command runs
+dist/src/mainline-authoring-server.js on 127.0.0.1 only. It provides
+offline parser schema, validation, DRAFT creation, inspection and packaging.
+The historical target/Test Lab/Interflow modules in this repository are not
+available over this executable. Unsupported endpoints fail closed with 404.
+The older server.js is a historical test harness, not the mainline product
+entrypoint. No DP or sensor connection is a prerequisite for authoring.

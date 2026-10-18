@@ -10,7 +10,8 @@
     "test": "tsx --test test/*.test.ts",
     "check": "tsc --noEmit",
     "build": "tsc && mkdir -p dist/templates && cp templates/ruby-fragment.rb.tpl templates/generic-structural-helper.rb.tpl dist/templates/ && mkdir -p dist/scripts && cp scripts/drain3_offline_worker.py dist/scripts/drain3_offline_worker.py && mkdir -p dist/test_native && cp test_native/project_native_runner.rb dist/test_native/project_native_runner.rb",
-    "start": "node dist/src/server.js"
+    "start": "node dist/src/mainline-authoring-server.js",
+    "test:authoring": "node scripts/run-authoring-tests.mjs"
   },
   "dependencies": {
     "ajv": "8.17.1"
