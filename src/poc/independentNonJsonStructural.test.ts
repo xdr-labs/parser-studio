@@ -49,7 +49,6 @@ describe('isolated independent non-JSON structural source observer',()=>{
   it.each([
     'CEF:Unknown|Acme|Gateway|1.1|block|Denied access|5|',
     'CEF:0|Acme|Gateway|1.1|',
-    'CEF:0|Acme\\|Injected|Gateway|1.1|block|Denied access|5|',
     'Oct 12 04:16:11 localhost CEF:0|Acme|Gateway|1.1|',
     'CEF:0|Acme|Gateway|1.1|block|Denied access|5|src=x\u0000dst=y',
   ])('abstains on unqualified or incomplete CEF grammar: %s',raw=>{
@@ -57,6 +56,18 @@ describe('isolated independent non-JSON structural source observer',()=>{
     expect(result.disposition).toBe('ABSTAIN_UNSAFE');
     expect(result.bodyClaims).toEqual([]);
     expect(result.raw).toBe(raw);
+  });
+
+  it('reviews valid escaped CEF header values without inventing body fields',()=>{
+    const raw='CEF:0|Acme\\|Injected|Gateway|1.1|block|Denied access|5|';
+    const result=arbitrateIndependentNonJson(raw);
+    expect(result.disposition).toBe('REVIEW_ONLY_UNFRAMED');
+    expect(result.selectedBodyGrammar).toBe('none');
+    expect(result.bodyClaims).toHaveLength(7);
+    expect(result.bodyClaims.find(x=>x.name==='deviceVendor')?.value)
+      .toBe('Acme|Injected');
+    expect(result.autoPromoted).toBe(false);
+    expect(result.nativeVerified).toBe(false);
   });
 
   it('avoids supplying speculative body claims when extension boundaries are unsafe',()=>{

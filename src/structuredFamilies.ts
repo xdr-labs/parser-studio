@@ -1,5 +1,6 @@
 import { parseRfc5424Subset } from './rfc5424Subset';
 import {scanCefStandardHeaderGrammar} from './cefStandardHeaderGrammar';
+import {scanCefStandardExtensions} from './cefStandardExtensionGrammar';
 import {parseLeefStandardDelimiter} from './leefStandardDelimiter';
 import {inspectSourceCompleteness} from './standardSourceCompletenessGate';
 import {jsonSourcePreflightError} from './jsonSourcePreflight';
@@ -75,52 +76,15 @@ export function strictKeyValues(input: string, options?:{allowEmptyUnquoted?:boo
   return { fields: values, errors: [] };
 }
 
-const CEF_KEY=/[A-Za-z_][A-Za-z0-9_.-]{0,127}=/y;
 function cefExtensionValues(input:string):StructuredExtraction{
-  const values:Record<string,unknown>=Object.create(null);
-  let cursor=0,count=0;
-  while(cursor<input.length){
-    while(cursor<input.length&&(input[cursor]===' '||input[cursor]==='\t'))cursor++;
-    if(cursor===input.length)break;
-    if(count++>=1024)return failure('CEF extension field limit exceeded');
-    CEF_KEY.lastIndex=cursor;
-    const match=CEF_KEY.exec(input);
-    if(!match||match.index!==cursor)return failure('Unsupported CEF extension key boundary');
-    const key=match[0].slice(0,-1);
-    if(['__proto__','constructor','prototype'].includes(key)||
-       Object.prototype.hasOwnProperty.call(values,key))
-      return failure('Unsupported or duplicate CEF extension field');
-    let pos=CEF_KEY.lastIndex;
-    let decoded='';
-    let boundary=input.length;
-    while(pos<input.length){
-      const ch=input[pos]!;
-      if(ch==='\\'){
-        if(pos+1>=input.length)return failure('Truncated CEF escape');
-        const next=input[pos+1]!;
-        decoded+=next==='n'?'\n':next==='r'?'\r':
-          next==='='?'=':next==='\\'?'\\':'\\'+next;
-        pos+=2;continue;
-      }
-      if(ch===' '||ch==='\t'){
-        let runEnd=pos;
-        while(runEnd<input.length&&(input[runEnd]===' '||input[runEnd]==='\t'))runEnd++;
-        CEF_KEY.lastIndex=runEnd;
-        const next=CEF_KEY.exec(input);
-        if(next&&next.index===runEnd){
-          if(runEnd-pos>1)decoded+=input.slice(pos,runEnd-1);
-          boundary=runEnd-1;
-          pos=runEnd;
-          break;
-        }
-      }
-      decoded+=ch;pos++;
-    }
-    if(boundary===input.length)decoded=decoded.replace(/[ \t]+$/,'');
-    values[key]=decoded;
-    cursor=boundary===input.length?input.length:boundary+1;
+  const parsed=scanCefStandardExtensions(input);
+  if(!parsed.ok){
+    return failure(parsed.reason==='DUPLICATE_CEF_EXTENSION_FIELD'?
+      'Unsupported or duplicate CEF extension field':
+      'Unsupported CEF extension source: '+parsed.reason);
   }
-  if(!Object.keys(values).length)return failure('No CEF extension fields parsed');
+  const values:Record<string,unknown>=Object.create(null);
+  for(const field of parsed.fields)values[field.name]=field.decodedValue;
   return {fields:values,errors:[]};
 }
 

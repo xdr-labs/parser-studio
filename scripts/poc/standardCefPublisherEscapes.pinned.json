@@ -1,0 +1,406 @@
+{
+  "provenance": "Publisher-authored ArcSight CEF implementation standard v26 encoding examples, NOT live device wire, NOT native.",
+  "publisherUri": "https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.3/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm",
+  "publisherHtmlSha256": "e5403a0362d8534af933c3038d15c4b847c70d9fab75a282f91097e27489a994",
+  "canonicalization": "Exact four complete displayed source lines; surrounding HTML layout whitespace excluded.",
+  "cases": [
+    {
+      "id": "CEF-PUBLISHER-ESCAPE-0",
+      "privateFile": "cef-encoding-0.raw",
+      "originalSha256": "807102045bd1ccaaebb43244ad14a1bd8b07d4fd22cd192c4c043e65b57dd289",
+      "originalBytes": 126,
+      "cefMarkerByte": 21,
+      "originalPrefixSha256": "12da13a40080577b3de951058aa7aeac3574b358da238a3400c87a00355312e1",
+      "claimCount": 10,
+      "claims": [
+        {
+          "name": "version",
+          "ordinal": 0,
+          "category": "header",
+          "startByte": 25,
+          "endByte": 26,
+          "rawSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+          "decodedSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "deviceVendor",
+          "ordinal": 1,
+          "category": "header",
+          "startByte": 27,
+          "endByte": 35,
+          "rawSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43",
+          "decodedSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43"
+        },
+        {
+          "name": "deviceProduct",
+          "ordinal": 2,
+          "category": "header",
+          "startByte": 36,
+          "endByte": 49,
+          "rawSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c",
+          "decodedSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c"
+        },
+        {
+          "name": "deviceVersion",
+          "ordinal": 3,
+          "category": "header",
+          "startByte": 50,
+          "endByte": 53,
+          "rawSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
+          "decodedSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6"
+        },
+        {
+          "name": "deviceEventClassId",
+          "ordinal": 4,
+          "category": "header",
+          "startByte": 54,
+          "endByte": 57,
+          "rawSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+          "decodedSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+        },
+        {
+          "name": "name",
+          "ordinal": 5,
+          "category": "header",
+          "startByte": 58,
+          "endByte": 82,
+          "rawSha256": "576f74a09275b526738df04f1ba6faeb740e08d2d66c92345a047aca2a221b71",
+          "decodedSha256": "2070bdbff93cc426c160ff10c85303d61d9fd84a76e4be9a1c97b856e661f5a3"
+        },
+        {
+          "name": "severity",
+          "ordinal": 6,
+          "category": "header",
+          "startByte": 83,
+          "endByte": 85,
+          "rawSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5",
+          "decodedSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5"
+        },
+        {
+          "name": "src",
+          "ordinal": 7,
+          "category": "extension",
+          "startByte": 90,
+          "endByte": 98,
+          "rawSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d",
+          "decodedSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d"
+        },
+        {
+          "name": "act",
+          "ordinal": 8,
+          "category": "extension",
+          "startByte": 103,
+          "endByte": 114,
+          "rawSha256": "be059cee20b4db22f18f46a2910feefb5d5ac45129150a57e55b65265b9e4fc7",
+          "decodedSha256": "be059cee20b4db22f18f46a2910feefb5d5ac45129150a57e55b65265b9e4fc7"
+        },
+        {
+          "name": "dst",
+          "ordinal": 9,
+          "category": "extension",
+          "startByte": 119,
+          "endByte": 126,
+          "rawSha256": "f1412386aa8db2579aff2636cb9511cacc5fd9880ecab60c048508fbe26ee4d9",
+          "decodedSha256": "f1412386aa8db2579aff2636cb9511cacc5fd9880ecab60c048508fbe26ee4d9"
+        }
+      ]
+    },
+    {
+      "id": "CEF-PUBLISHER-ESCAPE-1",
+      "privateFile": "cef-encoding-1.raw",
+      "originalSha256": "e543fe43b906591a37ad2627e919582f31c79b8f3f5cb16d7c215ac4213f4ca8",
+      "originalBytes": 126,
+      "cefMarkerByte": 21,
+      "originalPrefixSha256": "12da13a40080577b3de951058aa7aeac3574b358da238a3400c87a00355312e1",
+      "claimCount": 10,
+      "claims": [
+        {
+          "name": "version",
+          "ordinal": 0,
+          "category": "header",
+          "startByte": 25,
+          "endByte": 26,
+          "rawSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+          "decodedSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "deviceVendor",
+          "ordinal": 1,
+          "category": "header",
+          "startByte": 27,
+          "endByte": 35,
+          "rawSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43",
+          "decodedSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43"
+        },
+        {
+          "name": "deviceProduct",
+          "ordinal": 2,
+          "category": "header",
+          "startByte": 36,
+          "endByte": 49,
+          "rawSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c",
+          "decodedSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c"
+        },
+        {
+          "name": "deviceVersion",
+          "ordinal": 3,
+          "category": "header",
+          "startByte": 50,
+          "endByte": 53,
+          "rawSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
+          "decodedSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6"
+        },
+        {
+          "name": "deviceEventClassId",
+          "ordinal": 4,
+          "category": "header",
+          "startByte": 54,
+          "endByte": 57,
+          "rawSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+          "decodedSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+        },
+        {
+          "name": "name",
+          "ordinal": 5,
+          "category": "header",
+          "startByte": 58,
+          "endByte": 81,
+          "rawSha256": "eafa743d7b7908bbfb4476f84cf6b3d6508cdee833d1a9920464daf8215044b0",
+          "decodedSha256": "ea00bdaf14e8d1c9eb910a3a6ca133052e9a1024f97e830a2134f62116ffd901"
+        },
+        {
+          "name": "severity",
+          "ordinal": 6,
+          "category": "header",
+          "startByte": 82,
+          "endByte": 84,
+          "rawSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5",
+          "decodedSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5"
+        },
+        {
+          "name": "src",
+          "ordinal": 7,
+          "category": "extension",
+          "startByte": 89,
+          "endByte": 97,
+          "rawSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d",
+          "decodedSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d"
+        },
+        {
+          "name": "act",
+          "ordinal": 8,
+          "category": "extension",
+          "startByte": 102,
+          "endByte": 114,
+          "rawSha256": "66423e8d9bcff15417ac6fa82095e1c3c9a23783224d22c0a62a5f4f1739b660",
+          "decodedSha256": "fe1f85202c35633ae55f1f1ecd563b52bc14e18dc4819e0ff31987db1157bd84"
+        },
+        {
+          "name": "dst",
+          "ordinal": 9,
+          "category": "extension",
+          "startByte": 119,
+          "endByte": 126,
+          "rawSha256": "f1412386aa8db2579aff2636cb9511cacc5fd9880ecab60c048508fbe26ee4d9",
+          "decodedSha256": "f1412386aa8db2579aff2636cb9511cacc5fd9880ecab60c048508fbe26ee4d9"
+        }
+      ]
+    },
+    {
+      "id": "CEF-PUBLISHER-ESCAPE-2",
+      "privateFile": "cef-encoding-2.raw",
+      "originalSha256": "7c5f617991c10658a91fa386d921efc28339c0055b118018a8b38155677c8eb0",
+      "originalBytes": 126,
+      "cefMarkerByte": 21,
+      "originalPrefixSha256": "12da13a40080577b3de951058aa7aeac3574b358da238a3400c87a00355312e1",
+      "claimCount": 10,
+      "claims": [
+        {
+          "name": "version",
+          "ordinal": 0,
+          "category": "header",
+          "startByte": 25,
+          "endByte": 26,
+          "rawSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+          "decodedSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "deviceVendor",
+          "ordinal": 1,
+          "category": "header",
+          "startByte": 27,
+          "endByte": 35,
+          "rawSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43",
+          "decodedSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43"
+        },
+        {
+          "name": "deviceProduct",
+          "ordinal": 2,
+          "category": "header",
+          "startByte": 36,
+          "endByte": 49,
+          "rawSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c",
+          "decodedSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c"
+        },
+        {
+          "name": "deviceVersion",
+          "ordinal": 3,
+          "category": "header",
+          "startByte": 50,
+          "endByte": 53,
+          "rawSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
+          "decodedSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6"
+        },
+        {
+          "name": "deviceEventClassId",
+          "ordinal": 4,
+          "category": "header",
+          "startByte": 54,
+          "endByte": 57,
+          "rawSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+          "decodedSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+        },
+        {
+          "name": "name",
+          "ordinal": 5,
+          "category": "header",
+          "startByte": 58,
+          "endByte": 81,
+          "rawSha256": "b9c86c3bd2dcbfb161a50e8866a71708ad5938c9d3660edde0c68c65c1bb9ca9",
+          "decodedSha256": "b9c86c3bd2dcbfb161a50e8866a71708ad5938c9d3660edde0c68c65c1bb9ca9"
+        },
+        {
+          "name": "severity",
+          "ordinal": 6,
+          "category": "header",
+          "startByte": 82,
+          "endByte": 84,
+          "rawSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5",
+          "decodedSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5"
+        },
+        {
+          "name": "src",
+          "ordinal": 7,
+          "category": "extension",
+          "startByte": 89,
+          "endByte": 97,
+          "rawSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d",
+          "decodedSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d"
+        },
+        {
+          "name": "act",
+          "ordinal": 8,
+          "category": "extension",
+          "startByte": 102,
+          "endByte": 114,
+          "rawSha256": "482158294a30b89c6bb6448e504f9f5b27fc757d04130ac04e9c2c141a8363c5",
+          "decodedSha256": "a7de8518587862d0a1de5ed7e691d117126ea51a9febdc258d43d4b855558a4d"
+        },
+        {
+          "name": "dst",
+          "ordinal": 9,
+          "category": "extension",
+          "startByte": 119,
+          "endByte": 126,
+          "rawSha256": "f1412386aa8db2579aff2636cb9511cacc5fd9880ecab60c048508fbe26ee4d9",
+          "decodedSha256": "f1412386aa8db2579aff2636cb9511cacc5fd9880ecab60c048508fbe26ee4d9"
+        }
+      ]
+    },
+    {
+      "id": "CEF-PUBLISHER-ESCAPE-3",
+      "privateFile": "cef-encoding-3.raw",
+      "originalSha256": "1e69eed429a297bcc4755a64b7cb24c98d4c67a54d91f47b916e2f57fea2822d",
+      "originalBytes": 152,
+      "cefMarkerByte": 21,
+      "originalPrefixSha256": "12da13a40080577b3de951058aa7aeac3574b358da238a3400c87a00355312e1",
+      "claimCount": 9,
+      "claims": [
+        {
+          "name": "version",
+          "ordinal": 0,
+          "category": "header",
+          "startByte": 25,
+          "endByte": 26,
+          "rawSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+          "decodedSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "deviceVendor",
+          "ordinal": 1,
+          "category": "header",
+          "startByte": 27,
+          "endByte": 35,
+          "rawSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43",
+          "decodedSha256": "5d2d3ceb7abe552344276d47d36a8175b7aeb250a9bf0bf00e850cd23ecf2e43"
+        },
+        {
+          "name": "deviceProduct",
+          "ordinal": 2,
+          "category": "header",
+          "startByte": 36,
+          "endByte": 49,
+          "rawSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c",
+          "decodedSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c"
+        },
+        {
+          "name": "deviceVersion",
+          "ordinal": 3,
+          "category": "header",
+          "startByte": 50,
+          "endByte": 53,
+          "rawSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
+          "decodedSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6"
+        },
+        {
+          "name": "deviceEventClassId",
+          "ordinal": 4,
+          "category": "header",
+          "startByte": 54,
+          "endByte": 57,
+          "rawSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+          "decodedSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+        },
+        {
+          "name": "name",
+          "ordinal": 5,
+          "category": "header",
+          "startByte": 58,
+          "endByte": 94,
+          "rawSha256": "081192f4e59ee1d126ee3f8056a03e7583fdbf9dad58e32889d6f1e43378e797",
+          "decodedSha256": "081192f4e59ee1d126ee3f8056a03e7583fdbf9dad58e32889d6f1e43378e797"
+        },
+        {
+          "name": "severity",
+          "ordinal": 6,
+          "category": "header",
+          "startByte": 95,
+          "endByte": 97,
+          "rawSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5",
+          "decodedSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5"
+        },
+        {
+          "name": "src",
+          "ordinal": 7,
+          "category": "extension",
+          "startByte": 102,
+          "endByte": 110,
+          "rawSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d",
+          "decodedSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d"
+        },
+        {
+          "name": "msg",
+          "ordinal": 8,
+          "category": "extension",
+          "startByte": 115,
+          "endByte": 152,
+          "rawSha256": "bc3ae84816fb4f79c2c65bf4822570f2d1912d50b6cd8b4127d7631444b41d9a",
+          "decodedSha256": "fea44ab135549b0492bbfd9b55561f8c62872c0cbc35f9c1f58fc950134c2064"
+        }
+      ]
+    }
+  ],
+  "sourceOnly": true,
+  "nativeTarget": "NOT_VERIFIED",
+  "historicalCasesRelabeled": false
+}

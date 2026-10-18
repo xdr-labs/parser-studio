@@ -1,5 +1,7 @@
 import {arbitrateSourceBody,type BodyArbitration,type SourceFieldClaim,
   type IndependentReviewVeto} from './boundedSourceBodyArbiter';
+import {scanCefStandardHeaderGrammar} from '../cefStandardHeaderGrammar';
+import {scanCefStandardExtensions} from '../cefStandardExtensionGrammar';
 
 /** Independent standard-format source observer; never a native/product parser. */
 type CefField=Omit<SourceFieldClaim,'grammar'> & {grammar:'cef'};
@@ -12,15 +14,11 @@ export type IndependentNonJsonResult=
   });
 const byteLength=(raw:string)=>new TextEncoder().encode(raw).length;
 const MAX_CEF_BYTES=8192;
-const HEADER=['version','deviceVendor','deviceProduct','deviceVersion',
-  'deviceEventClassId','name','severity'] as const;
 /**
  * An unqualified RFC3164-shaped preamble is not treated as a certified
  * envelope. It only allows an explicitly delimited CEF token to be inspected.
  */
 const CEF_BOUNDARY=/^(?:[A-Z][a-z]{2} +(?:[1-9]|[12][0-9]|3[01]) (?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9] [A-Za-z0-9_.-]{1,255} )?CEF:/;
-const EXTENSION_KEY=/(?:^|[ \t])([A-Za-z_][A-Za-z0-9_.-]{0,127})=/g;
-const UNSAFE=new Set(['__proto__','prototype','constructor']);
 function hasOnlyValidUnicode(raw:string):boolean {
   for(let i=0;i<raw.length;i++){
     const unit=raw.charCodeAt(i);
@@ -30,71 +28,50 @@ function hasOnlyValidUnicode(raw:string):boolean {
   }
   return true;
 }
-function claim(raw:string,name:string,value:string,start:number,end:number,
-  section:'header'|'extension',occurrence=0):CefField|null {
-  if(raw.slice(start,end)!==value||!value&&name!=='extension_empty')return null;
-  const startByte=byteLength(raw.slice(0,start));
-  const endByte=byteLength(raw.slice(0,end));
-  if(new TextDecoder('utf-8',{fatal:true}).decode(
-    new TextEncoder().encode(raw).slice(startByte,endByte))!==value)return null;
+function claimFromOriginal(
+  raw:string,name:string,decoded:string,rawLexeme:string,
+  startByte:number,endByte:number,
+  section:'header'|'extension',occurrence=0,
+):CefField|null{
+  const bytes=new TextEncoder().encode(raw);
+  if(startByte<0||endByte<startByte||endByte>bytes.length)return null;
+  if(new TextDecoder('utf8',{fatal:true}).decode(
+    bytes.subarray(startByte,endByte))!==rawLexeme)return null;
   return {layer:'body',grammar:'cef',path:'/body/cef/'+
-    section+'/'+
-    name.replaceAll('~','~0').replaceAll('/','~1')+'#'+occurrence,
-    name,value,valueType:'string',startByte,endByte,rawSpanValue:value,
-    evidence:'EXACT_RAW_SLICE',occurrence};
+    section+'/'+name.replaceAll('~','~0').replaceAll('/','~1')+
+    '#'+String(occurrence),
+    name,value:decoded,valueType:'string',startByte,endByte,
+    rawSpanValue:rawLexeme,evidence:'EXACT_RAW_SLICE',occurrence};
 }
-function readHeaders(raw:string,start:number):{claims:CefField[];ext:number}|null {
-  let cursor=start+4;
+function readHeaders(raw:string,start:number):{claims:CefField[];ext:number}|null{
+  const parsed=scanCefStandardHeaderGrammar(raw,start);
+  if(!parsed.ok)return null;
   const claims:CefField[]=[];
-  for(let index=0;index<HEADER.length;index++){
-    const begin=cursor;
-    while(cursor<raw.length&&raw[cursor]!=='|'){
-      if(raw[cursor]==='\\'){
-        // Unknown CEF header escape semantics must not be guessed.
-        return null;
-      }
-      const code=raw.charCodeAt(cursor);
-      if(code<32||code===127||cursor-begin>1024)return null;
-      cursor++;
-    }
-    if(cursor===raw.length||cursor===begin)return null;
-    const value=raw.slice(begin,cursor),name=HEADER[index]!;
-    if(index===0&&(!/^(0|[1-9][0-9]{0,2})$/.test(value)||+value>255))
-      return null;
-    const field=claim(raw,name,value,begin,cursor,'header');
-    if(field===null)return null;
-    claims.push(field);
-    cursor++;
+  for(const entry of parsed.fields){
+    const key=entry.name==='cefVersion'?'version':entry.name;
+    const claim=claimFromOriginal(raw,key,entry.decoded,entry.sourceLexeme,
+      entry.startByte,entry.endByte,'header');
+    if(claim===null)return null;
+    claims.push(claim);
   }
-  return {claims,ext:cursor};
+  return {claims,ext:parsed.extensionStart};
 }
-function readExtensions(raw:string,start:number):CefField[]|null {
+function readExtensions(raw:string,start:number):CefField[]|null{
   if(start===raw.length)return [];
-  const body=raw.slice(start);
-  if(/[\r\n\0]/.test(body))return null;
-  const names=[...body.matchAll(EXTENSION_KEY)];
-  if(!names.length||names[0]!.index!==0||names.length>256)return null;
-  const seen=new Map<string,number>();
+  const parsed=scanCefStandardExtensions(raw,start,
+    {preserveRepeatedForReview:true});
+  if(!parsed.ok)return null;
   const claims:CefField[]=[];
-  for(let i=0;i<names.length;i++){
-    const match=names[i]!;
-    const name=match[1]!;
-    if(UNSAFE.has(name)||UNSAFE.has(name.replaceAll('-','_')))return null;
-    const valueStart=start+match.index!+match[0].length;
-    const next=names[i+1];
-    const rawEnd=next?start+next.index!:raw.length;
-    let valueEnd=rawEnd;
-    if(next)while(valueEnd>valueStart&&/[ \t]/.test(raw[valueEnd-1]!))valueEnd--;
-    const value=raw.slice(valueStart,valueEnd);
-    // A value containing unquoted whitespace, quotes or unspecified escapes
-    // is not a trustworthy source token. Preserve the complete raw input.
-    if(value.length>8192||/\s/u.test(value)||value.includes(String.fromCharCode(92))||value.includes(String.fromCharCode(34))||value.includes(String.fromCharCode(39)))return null;
-    const occurrence=seen.get(name)??0;
-    seen.set(name,occurrence+1);
-    if(value.length===0)continue; // Empty CEF extension may mean null.
-    const field=claim(raw,name,value,valueStart,valueEnd,'extension',occurrence);
-    if(field===null)return null;
-    claims.push(field);
+  for(const entry of parsed.fields){
+    // Without a producer contract, empty CEF may mean absent or null.
+    // Preserve original record but do not invent a typed field claim.
+    if(!entry.rawValueLexeme)continue;
+    const claim=claimFromOriginal(
+      raw,entry.name,entry.decodedValue,entry.rawValueLexeme,
+      entry.valueStartByte,entry.valueEndByte,'extension',entry.occurrence,
+    );
+    if(claim===null)return null;
+    claims.push(claim);
   }
   return claims;
 }
