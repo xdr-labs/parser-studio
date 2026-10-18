@@ -1,0 +1,216 @@
+{
+  "authorityClass": "ARCSIGHT_PUBLISHER_AUTHORED_CEF_STANDARD_ILLUSTRATIONS",
+  "originalUri": "https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.3/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm",
+  "htmlSha256": "e5403a0362d8534af933c3038d15c4b847c70d9fab75a282f91097e27489a994",
+  "canonicalization": "Exact published one-line example from HTML visible text; exclude layout-only surrounding whitespace.",
+  "sourceScope": "Publisher manual illustrations, not independent device or native wire, nor blinded holdout.",
+  "cases": [
+    {
+      "id": "CEF-PUBLISHER-EXAMPLE-0",
+      "privateFile": "cef-publisher-example-0.raw",
+      "sourceSha256": "1c2e9c28f971903e292ee903b41bc2f3ce7655c743b1a73cfeebb7e8b0822ca3",
+      "sourceBytes": 120,
+      "cefBodyStartByte": 21,
+      "syslogPrefixSha256": "12da13a40080577b3de951058aa7aeac3574b358da238a3400c87a00355312e1",
+      "syslogPrefixBytes": 21,
+      "claimCount": 10,
+      "claims": [
+        {
+          "name": "version",
+          "ordinal": 0,
+          "category": "header",
+          "startByte": 25,
+          "endByte": 26,
+          "rawValueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+          "decodedValueSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "deviceVendor",
+          "ordinal": 1,
+          "category": "header",
+          "startByte": 27,
+          "endByte": 35,
+          "rawValueSha256": "8f6fb4eb7f42c0e245e29e63f5b82cc3ba19852681d1ed9aed291f59cf75ec0e",
+          "decodedValueSha256": "8f6fb4eb7f42c0e245e29e63f5b82cc3ba19852681d1ed9aed291f59cf75ec0e"
+        },
+        {
+          "name": "deviceProduct",
+          "ordinal": 2,
+          "category": "header",
+          "startByte": 36,
+          "endByte": 49,
+          "rawValueSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c",
+          "decodedValueSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c"
+        },
+        {
+          "name": "deviceVersion",
+          "ordinal": 3,
+          "category": "header",
+          "startByte": 50,
+          "endByte": 53,
+          "rawValueSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
+          "decodedValueSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6"
+        },
+        {
+          "name": "deviceEventClassId",
+          "ordinal": 4,
+          "category": "header",
+          "startByte": 54,
+          "endByte": 57,
+          "rawValueSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+          "decodedValueSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+        },
+        {
+          "name": "name",
+          "ordinal": 5,
+          "category": "header",
+          "startByte": 58,
+          "endByte": 83,
+          "rawValueSha256": "fe20b708835068aa99c0f43f0cdfef1fb3e8debd4bb3c5d5b2bbc2517324cfe8",
+          "decodedValueSha256": "fe20b708835068aa99c0f43f0cdfef1fb3e8debd4bb3c5d5b2bbc2517324cfe8"
+        },
+        {
+          "name": "severity",
+          "ordinal": 6,
+          "category": "header",
+          "startByte": 84,
+          "endByte": 86,
+          "rawValueSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5",
+          "decodedValueSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5"
+        },
+        {
+          "name": "src",
+          "ordinal": 7,
+          "category": "extension",
+          "startByte": 91,
+          "endByte": 99,
+          "rawValueSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d",
+          "decodedValueSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d"
+        },
+        {
+          "name": "dst",
+          "ordinal": 8,
+          "category": "extension",
+          "startByte": 104,
+          "endByte": 111,
+          "rawValueSha256": "654c0edc150f84743aad159f226d9a4aeac9656dd9b7647ceb237b58069c7b77",
+          "decodedValueSha256": "654c0edc150f84743aad159f226d9a4aeac9656dd9b7647ceb237b58069c7b77"
+        },
+        {
+          "name": "spt",
+          "ordinal": 9,
+          "category": "extension",
+          "startByte": 116,
+          "endByte": 120,
+          "rawValueSha256": "b6602f58690ca41488e97cd28153671356747c951c55541b6c8d8b8493eb7143",
+          "decodedValueSha256": "b6602f58690ca41488e97cd28153671356747c951c55541b6c8d8b8493eb7143"
+        }
+      ]
+    },
+    {
+      "id": "CEF-PUBLISHER-EXAMPLE-1",
+      "privateFile": "cef-publisher-example-1.raw",
+      "sourceSha256": "d28e4e7bef1393c00d278a8bf01842c478685d7585ab5df26e9abf52e9740ba5",
+      "sourceBytes": 120,
+      "cefBodyStartByte": 21,
+      "syslogPrefixSha256": "5e12954ea80bb4d44b3ebc69251f2b5d61ba1e3e45d6c820b750120afb36204f",
+      "syslogPrefixBytes": 21,
+      "claimCount": 10,
+      "claims": [
+        {
+          "name": "version",
+          "ordinal": 0,
+          "category": "header",
+          "startByte": 25,
+          "endByte": 26,
+          "rawValueSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+          "decodedValueSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "deviceVendor",
+          "ordinal": 1,
+          "category": "header",
+          "startByte": 27,
+          "endByte": 35,
+          "rawValueSha256": "8f6fb4eb7f42c0e245e29e63f5b82cc3ba19852681d1ed9aed291f59cf75ec0e",
+          "decodedValueSha256": "8f6fb4eb7f42c0e245e29e63f5b82cc3ba19852681d1ed9aed291f59cf75ec0e"
+        },
+        {
+          "name": "deviceProduct",
+          "ordinal": 2,
+          "category": "header",
+          "startByte": 36,
+          "endByte": 49,
+          "rawValueSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c",
+          "decodedValueSha256": "4beea8b77f7a8d316c992acbbfd3e47429e83f5d01659bf2da95f159c22cdb4c"
+        },
+        {
+          "name": "deviceVersion",
+          "ordinal": 3,
+          "category": "header",
+          "startByte": 50,
+          "endByte": 53,
+          "rawValueSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
+          "decodedValueSha256": "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6"
+        },
+        {
+          "name": "deviceEventClassId",
+          "ordinal": 4,
+          "category": "header",
+          "startByte": 54,
+          "endByte": 57,
+          "rawValueSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+          "decodedValueSha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+        },
+        {
+          "name": "name",
+          "ordinal": 5,
+          "category": "header",
+          "startByte": 58,
+          "endByte": 83,
+          "rawValueSha256": "fe20b708835068aa99c0f43f0cdfef1fb3e8debd4bb3c5d5b2bbc2517324cfe8",
+          "decodedValueSha256": "fe20b708835068aa99c0f43f0cdfef1fb3e8debd4bb3c5d5b2bbc2517324cfe8"
+        },
+        {
+          "name": "severity",
+          "ordinal": 6,
+          "category": "header",
+          "startByte": 84,
+          "endByte": 86,
+          "rawValueSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5",
+          "decodedValueSha256": "4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5"
+        },
+        {
+          "name": "src",
+          "ordinal": 7,
+          "category": "extension",
+          "startByte": 91,
+          "endByte": 99,
+          "rawValueSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d",
+          "decodedValueSha256": "f5047344122f0dee9974ba6761e61c6b8649e1f3968d13a635ebbf7be53a3a0d"
+        },
+        {
+          "name": "dst",
+          "ordinal": 8,
+          "category": "extension",
+          "startByte": 104,
+          "endByte": 111,
+          "rawValueSha256": "654c0edc150f84743aad159f226d9a4aeac9656dd9b7647ceb237b58069c7b77",
+          "decodedValueSha256": "654c0edc150f84743aad159f226d9a4aeac9656dd9b7647ceb237b58069c7b77"
+        },
+        {
+          "name": "spt",
+          "ordinal": 9,
+          "category": "extension",
+          "startByte": 116,
+          "endByte": 120,
+          "rawValueSha256": "b6602f58690ca41488e97cd28153671356747c951c55541b6c8d8b8493eb7143",
+          "decodedValueSha256": "b6602f58690ca41488e97cd28153671356747c951c55541b6c8d8b8493eb7143"
+        }
+      ]
+    }
+  ],
+  "sourceOnly": true,
+  "nativeVerified": false,
+  "manufacturerOperationalSamples": 0
+}
