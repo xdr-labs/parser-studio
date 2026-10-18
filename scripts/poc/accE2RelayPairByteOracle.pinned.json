@@ -1,0 +1,165 @@
+{
+  "provenance": "INDEPENDENT_STANDARDS_AUTHORED_SYNTHETIC_NOT_DEVICE",
+  "frozenBeforeCandidateImplementation": true,
+  "pairs": [
+    {
+      "id": "unchanged_ascii",
+      "upstreamHex": "3c3133343e3120323032362d31302d31385430303a30303a30305a2073726320617070202d202d202d20626f64793d6f6b",
+      "collectorHex": "3c3133343e3120323032362d31302d31385430303a30303a30305a2073726320617070202d202d202d20626f64793d6f6b",
+      "upstreamSha256": "3237ef1950e4db3cbd308a5a5369468031e166b490562de32763a0c5c73436ae",
+      "collectorSha256": "3237ef1950e4db3cbd308a5a5369468031e166b490562de32763a0c5c73436ae",
+      "expectedDisposition": "REVIEW_ONLY_EQUAL_BYTES",
+      "expectedCommonPrefixBytes": 49,
+      "expectedFirstDifferenceByte": null,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "unchanged_utf8",
+      "upstreamHex": "6669656c643df09f9880206d73673d6f6b",
+      "collectorHex": "6669656c643df09f9880206d73673d6f6b",
+      "upstreamSha256": "d858c65a286433e3977883794d02fa790e232aab10db849bc1bf86d74bdb830e",
+      "collectorSha256": "d858c65a286433e3977883794d02fa790e232aab10db849bc1bf86d74bdb830e",
+      "expectedDisposition": "REVIEW_ONLY_EQUAL_BYTES",
+      "expectedCommonPrefixBytes": 17,
+      "expectedFirstDifferenceByte": null,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "truncated_ascii",
+      "upstreamHex": "7072656669782d6669656c643d787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "collectorHex": "7072656669782d6669656c643d7878787878787878787878787878787878787878787878",
+      "upstreamSha256": "04acb33d8fb0c0c082dabdaa8fd2727b37cb975057a2b928a30cd19614cf1170",
+      "collectorSha256": "c7ae28b7a644e4b28c37580e77d560fc85d35d14f7b3986aa43bfc7444f768e0",
+      "expectedDisposition": "REVIEW_ONLY_COLLECTOR_STRICT_PREFIX",
+      "expectedCommonPrefixBytes": 36,
+      "expectedFirstDifferenceByte": 36,
+      "expectedLostUpstreamTail": [
+        36,
+        73
+      ],
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "truncated_multibyte",
+      "upstreamHex": "6669656c643df09f9880207461696c3d646f6e65",
+      "collectorHex": "6669656c643df09f",
+      "upstreamSha256": "11f8796257f3d75a3b868ec3cf028ff5e78b40028c95f76e0bcaafc81daf238c",
+      "collectorSha256": "fdc73e04225312e095e9a6903e94857eef4b2569b323d77eec22ef9317ea8f5d",
+      "expectedDisposition": "REVIEW_ONLY_COLLECTOR_STRICT_PREFIX",
+      "expectedCommonPrefixBytes": 8,
+      "expectedFirstDifferenceByte": 8,
+      "expectedLostUpstreamTail": [
+        8,
+        20
+      ],
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "trailing_space",
+      "upstreamHex": "6576656e743d3120646f6e653d74727565",
+      "collectorHex": "6576656e743d3120646f6e653d7472756520",
+      "upstreamSha256": "c05915f50c3e648bc7e58efab1476c4c217ff710eee1715334db8b3565ea0adb",
+      "collectorSha256": "dd753decb1007999db800cc462eb01c370071d48c530d7e4ec747fb0d82c9596",
+      "expectedDisposition": "REVIEW_ONLY_COLLECTOR_APPEND_ONLY",
+      "expectedCommonPrefixBytes": 17,
+      "expectedFirstDifferenceByte": 17,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": [
+        17,
+        18
+      ]
+    },
+    {
+      "id": "trailing_tag",
+      "upstreamHex": "6576656e743d3220646f6e653d74727565",
+      "collectorHex": "6576656e743d3220646f6e653d747275652072656c61793d736563",
+      "upstreamSha256": "b0d13d7033f8ac11dc80b28b75f228a08b09fcd6ee7fafc1bc13c04ff5274dc7",
+      "collectorSha256": "4b9ba426544b229c904ebcf791798e45872a935b06f0ac91e6dbd117355a7490",
+      "expectedDisposition": "REVIEW_ONLY_COLLECTOR_APPEND_ONLY",
+      "expectedCommonPrefixBytes": 17,
+      "expectedFirstDifferenceByte": 17,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": [
+        17,
+        27
+      ]
+    },
+    {
+      "id": "interior_replacement",
+      "upstreamHex": "61626331323378797a",
+      "collectorHex": "61626334353678797a",
+      "upstreamSha256": "604365fa1146d17e81aa41ef72ef03b07a5d3c2e44cfa6f9b817606779eccae6",
+      "collectorSha256": "f75c96ec11c45f6cfdff29bb9d7b0e716931ad6bbdc848464e9394e1e0e67049",
+      "expectedDisposition": "REVIEW_ONLY_NON_PREFIX_CHANGE",
+      "expectedCommonPrefixBytes": 3,
+      "expectedFirstDifferenceByte": 3,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "first_byte_replacement",
+      "upstreamHex": "616263313233",
+      "collectorHex": "5a6263313233",
+      "upstreamSha256": "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090",
+      "collectorSha256": "025ac49f495574804a6357415acc30f292fc00bc6c83f9b90027a662560bea86",
+      "expectedDisposition": "REVIEW_ONLY_NON_PREFIX_CHANGE",
+      "expectedCommonPrefixBytes": 0,
+      "expectedFirstDifferenceByte": 0,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "shortened_with_replacement",
+      "upstreamHex": "61626331323358595a",
+      "collectorHex": "616263303030",
+      "upstreamSha256": "2fdd330a7315dcca1280fc383f30920c3d6e47ada357765d7816a15cd961e267",
+      "collectorSha256": "8224b8e566ef89f147c58d6b07739a74cf05e2a56ce4bc4b227bd59858e9b6e9",
+      "expectedDisposition": "REVIEW_ONLY_NON_PREFIX_CHANGE",
+      "expectedCommonPrefixBytes": 3,
+      "expectedFirstDifferenceByte": 3,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "extended_with_replacement",
+      "upstreamHex": "61626331323358595a",
+      "collectorHex": "61626330303058595a6578747261",
+      "upstreamSha256": "2fdd330a7315dcca1280fc383f30920c3d6e47ada357765d7816a15cd961e267",
+      "collectorSha256": "965cee16550cb7e7623680a2bc323d44d25fc974c955a5807f6b3af7325f9fe3",
+      "expectedDisposition": "REVIEW_ONLY_NON_PREFIX_CHANGE",
+      "expectedCommonPrefixBytes": 3,
+      "expectedFirstDifferenceByte": 3,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "opaque_equal_binary",
+      "upstreamHex": "00ff801f",
+      "collectorHex": "00ff801f",
+      "upstreamSha256": "d39d83e27614feff21c76e46a035a07553a259d6cafddddee787c8fa01b42c7d",
+      "collectorSha256": "d39d83e27614feff21c76e46a035a07553a259d6cafddddee787c8fa01b42c7d",
+      "expectedDisposition": "REVIEW_ONLY_EQUAL_BYTES",
+      "expectedCommonPrefixBytes": 4,
+      "expectedFirstDifferenceByte": null,
+      "expectedLostUpstreamTail": null,
+      "expectedAddedCollectorTail": null
+    },
+    {
+      "id": "opaque_binary_prefix",
+      "upstreamHex": "f09f92a9ff",
+      "collectorHex": "f09f92",
+      "upstreamSha256": "d29023675a92b422a423d9bf5c4e510934ecccc8077f74c07f37fbca4b41080a",
+      "collectorSha256": "f746fa15da32d029aa90d8f573b35d5947499ab4f05ba8e86a742a9520f04cbb",
+      "expectedDisposition": "REVIEW_ONLY_COLLECTOR_STRICT_PREFIX",
+      "expectedCommonPrefixBytes": 3,
+      "expectedFirstDifferenceByte": 3,
+      "expectedLostUpstreamTail": [
+        3,
+        5
+      ],
+      "expectedAddedCollectorTail": null
+    }
+  ]
+}
