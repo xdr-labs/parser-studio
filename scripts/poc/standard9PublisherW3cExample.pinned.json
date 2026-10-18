@@ -1,0 +1,136 @@
+{
+  "sourceClass": "PUBLISHER_AUTHORED_STANDARDS_EXAMPLE_NOT_PRODUCTION_WIRE",
+  "uri": "https://www.w3.org/TR/logfile/",
+  "htmlSha256": "4d05a8d6da5b574bdcc9a4aeebc2df146140ece850e239e150069d15c4206175",
+  "canonicalization": "Remove exactly one leading layout LF from the published <pre> example",
+  "canonicalSourceSha256": "5f687cab7a77ce375051fdb2d24fb63812d470fb68027f776c23fe466e2797da",
+  "canonicalSourceBytes": 172,
+  "physicalLines": 7,
+  "rows": 4,
+  "fieldClaims": 12,
+  "fieldNames": [
+    "time",
+    "cs-method",
+    "cs-uri"
+  ],
+  "publisherExpectedFields": [
+    [
+      {
+        "rowIndex": 0,
+        "ordinal": 0,
+        "name": "time",
+        "startByte": 64,
+        "endByte": 72,
+        "lexemeSha256": "a1ef00bace1110eabafcc6dac81d6008732b55a8e3a833b80edb577f92a09419",
+        "decodedSha256": "a1ef00bace1110eabafcc6dac81d6008732b55a8e3a833b80edb577f92a09419"
+      },
+      {
+        "rowIndex": 0,
+        "ordinal": 1,
+        "name": "cs-method",
+        "startByte": 73,
+        "endByte": 76,
+        "lexemeSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8",
+        "decodedSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8"
+      },
+      {
+        "rowIndex": 0,
+        "ordinal": 2,
+        "name": "cs-uri",
+        "startByte": 77,
+        "endByte": 90,
+        "lexemeSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc",
+        "decodedSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc"
+      }
+    ],
+    [
+      {
+        "rowIndex": 1,
+        "ordinal": 0,
+        "name": "time",
+        "startByte": 91,
+        "endByte": 99,
+        "lexemeSha256": "baf7d2966cd822a34126bb60df4ea468ec47fa4ab2ea888bf67af97c58136e55",
+        "decodedSha256": "baf7d2966cd822a34126bb60df4ea468ec47fa4ab2ea888bf67af97c58136e55"
+      },
+      {
+        "rowIndex": 1,
+        "ordinal": 1,
+        "name": "cs-method",
+        "startByte": 100,
+        "endByte": 103,
+        "lexemeSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8",
+        "decodedSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8"
+      },
+      {
+        "rowIndex": 1,
+        "ordinal": 2,
+        "name": "cs-uri",
+        "startByte": 104,
+        "endByte": 117,
+        "lexemeSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc",
+        "decodedSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc"
+      }
+    ],
+    [
+      {
+        "rowIndex": 2,
+        "ordinal": 0,
+        "name": "time",
+        "startByte": 118,
+        "endByte": 126,
+        "lexemeSha256": "435403d116b845d7980cfd08fb85fcd7bb02b0e95740744d2af44a3270078781",
+        "decodedSha256": "435403d116b845d7980cfd08fb85fcd7bb02b0e95740744d2af44a3270078781"
+      },
+      {
+        "rowIndex": 2,
+        "ordinal": 1,
+        "name": "cs-method",
+        "startByte": 127,
+        "endByte": 130,
+        "lexemeSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8",
+        "decodedSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8"
+      },
+      {
+        "rowIndex": 2,
+        "ordinal": 2,
+        "name": "cs-uri",
+        "startByte": 131,
+        "endByte": 144,
+        "lexemeSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc",
+        "decodedSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc"
+      }
+    ],
+    [
+      {
+        "rowIndex": 3,
+        "ordinal": 0,
+        "name": "time",
+        "startByte": 145,
+        "endByte": 153,
+        "lexemeSha256": "dab56e84b4c9f72bf954e31d470fe5e305031e2f158c59b7fbd2ab417a0987c8",
+        "decodedSha256": "dab56e84b4c9f72bf954e31d470fe5e305031e2f158c59b7fbd2ab417a0987c8"
+      },
+      {
+        "rowIndex": 3,
+        "ordinal": 1,
+        "name": "cs-method",
+        "startByte": 154,
+        "endByte": 157,
+        "lexemeSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8",
+        "decodedSha256": "14e30cd163c732912e048c4c837e15c4e90c062ebb795ab947d57706e2d10dd8"
+      },
+      {
+        "rowIndex": 3,
+        "ordinal": 2,
+        "name": "cs-uri",
+        "startByte": 158,
+        "endByte": 171,
+        "lexemeSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc",
+        "decodedSha256": "dbab05913ac5f4211ca4a8b988dee056487080a37c65f64519f0a74a2fae37dc"
+      }
+    ]
+  ],
+  "nativeTarget": "NOT_VERIFIED",
+  "notBlind": "Publisher example is published and available in advance; not manufacturer blind holdout"
+}
