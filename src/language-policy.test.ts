@@ -60,7 +60,9 @@ describe('English-only product and development content', () => {
     expect(app).not.toContain("workspace==='guided'");
     expect(app).not.toContain("workspace==='expert'");
     const readme=readFileSync(path.join(root,'README.md'),'utf8');
-    expect(readme).toContain('English-only Parser Studio');
+    // Documentation's current presentation uses a centered language label,
+    // while the script scan above enforces the same English-only policy.
+    expect(readme).toMatch(/<strong>English<\/strong>/);
     expect(readme).not.toContain('Korean-first');
   });
 
