@@ -1,7 +1,7 @@
 import {defineConfig,devices} from '@playwright/test';
 export default defineConfig({
   testDir:'tests',
-  testMatch:'rfc5424-msg-real-browser-20261019.isolated.ts',
+  testMatch:['rfc5424-msg-real-browser-20261019.isolated.ts','rfc3164-content-real-browser-20261020.isolated.ts'],
   outputDir:'/tmp/parser-rfc5424-msg-chromium-artifacts-20261019',
   reporter:'list',
   workers:1,

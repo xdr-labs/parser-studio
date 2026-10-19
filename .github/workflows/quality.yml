@@ -31,6 +31,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_audit_cri_docker_framing_20261019.py' -v
       - name: Strict RFC 5424 free-form MSG and original UTF-8 byte offsets
         run: python3 -m unittest discover -s tests -p 'test_rfc5424_msg_source_20261019.py' -v
+      - name: RFC 3164 and BSD message grammar with original value no-loss gate
+        run: python3 -m unittest discover -s tests -p 'test_rfc3164_freeform_content_20261020.py' -v
       - name: Mainline offline authoring backend build and HTTP security gate
         run: |
           npm ci --prefix backend --no-audit --no-fund
@@ -73,7 +75,7 @@ jobs:
       # Python Multi-Pass + authoring backend, without external HTTP mocks.
       # The isolated .isolated.ts spec is deliberately excluded from the
       # evergreen *.spec.ts suite and its independent compiler pin.
-      - name: Exact-head RFC 5424 MSG source and honest draft-review Chromium
+      - name: Exact-head RFC 3164 and 5424 MSG source and draft-review Chromium
         run: |
           set -euo pipefail
           python3 runtime/multipass/multipass_preview_api.py --port 4297 >/tmp/parser-rfc5424-msg-multipass-ci.log 2>&1 &
@@ -92,7 +94,7 @@ jobs:
           done
           test "$ready" = 1
           npx playwright test --config playwright.rfc5424-msg-isolated-20261019.config.ts --project=chromium --workers=1 --reporter=json >/tmp/parser-rfc5424-msg-chromium-ci.json
-          node -e "const x=JSON.parse(require('fs').readFileSync('/tmp/parser-rfc5424-msg-chromium-ci.json','utf8')).stats; if(x.expected!==3||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('All three RFC5424 real browser tests must execute and pass',x);process.exit(1)} console.log('RFC5424_REAL_HTTP_CHROMIUM_PASS 3/3');"
+          node -e "const x=JSON.parse(require('fs').readFileSync('/tmp/parser-rfc5424-msg-chromium-ci.json','utf8')).stats; if(x.expected!==6||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('All six RFC 3164 and 5424 real browser tests must execute and pass',x);process.exit(1)} console.log('SYSLOG_STANDARD_REAL_HTTP_CHROMIUM_PASS 6/6');"
 
       - name: Real Chromium source-container beginner review (same HEAD)
         run: |
