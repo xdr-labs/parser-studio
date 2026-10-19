@@ -1,9 +1,8 @@
-"""Unprivileged, isolated Nginx TLS/auth/CSRF routing acceptance.
+"""Unprivileged, isolated Nginx TLS/no-login/CSRF routing acceptance.
 
 No privileged site changes and no public network operations are performed.
 """
 from __future__ import annotations
-import base64
 import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -20,7 +19,6 @@ from urllib.request import Request, build_opener, HTTPSHandler
 
 ROOT=Path(__file__).resolve().parents[1]
 TEMPLATE=(ROOT/'ops/preview-domain/nginx-app.parser.xdr.ooo.conf').read_text()
-TEST_PASS='local-fixture-only-168-char'
 
 def port():
     with socket.socket() as s:
@@ -43,7 +41,15 @@ class UpstreamHandler(BaseHTTPRequestHandler):
         pass
 
 class SecurePreviewHost(unittest.TestCase):
-    def test_nginx_private_https_and_post_origin_gate(self):
+    def test_no_site_login_or_credential_setup_is_configured(self):
+        for directive in ('auth_basic', 'auth_basic_user_file', 'auth_request'):
+            self.assertNotIn(directive, TEMPLATE)
+        installer=(ROOT/'ops/preview-domain/install-private-preview.sh').read_text()
+        for credential in ('PASSFILE', 'htpasswd', 'read -r -s', 'preview username',
+                           'preview password', 'openssl passwd'):
+            self.assertNotIn(credential, installer)
+
+    def test_nginx_public_no_login_https_and_post_origin_gate(self):
         with tempfile.TemporaryDirectory(prefix='parser-studio-vhost-') as temp:
             root=Path(temp)
             static=root/'www'
@@ -56,12 +62,6 @@ class SecurePreviewHost(unittest.TestCase):
                 '-keyout',str(key),'-out',str(cert),'-nodes','-days','1',
                 '-subj','/CN=app.parser.xdr.ooo'],check=True,
                 stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=20)
-            encrypted=subprocess.check_output(
-                ['openssl','passwd','-6','-stdin'],input=TEST_PASS.encode(),
-                timeout=8).decode().strip()
-            password_file=root/'htpasswd'
-            password_file.write_text('localtester:'+encrypted+'\n')
-            password_file.chmod(0o600)
             backend=ThreadingHTTPServer(('127.0.0.1',0),UpstreamHandler)
             multipass=ThreadingHTTPServer(('127.0.0.1',0),UpstreamHandler)
             servers=[backend,multipass]
@@ -82,7 +82,6 @@ class SecurePreviewHost(unittest.TestCase):
                     ('/etc/letsencrypt/live/app.parser.xdr.ooo/privkey.pem',str(key)),
                     ('    include /etc/letsencrypt/options-ssl-nginx.conf;',''),
                     ('    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;',''),
-                    ('/etc/nginx/parser-studio-private.htpasswd',str(password_file)),
                     ('/var/www/parser-studio-app',str(static)),
                     ('/var/www/parser-studio-acme',str(root/'acme')),
                     ('127.0.0.1:4305',f'127.0.0.1:{backend.server_port}'),
@@ -122,22 +121,21 @@ class SecurePreviewHost(unittest.TestCase):
 
                     client=build_opener(HTTPSHandler(context=ssl._create_unverified_context()))
                     base=f'https://127.0.0.1:{https_port}'
-                    def request(path,method='GET',origin=None,credentials=True):
+                    def request(path,method='GET',origin=None):
                         headers={'Host':'app.parser.xdr.ooo'}
-                        if credentials:
-                            encoded=base64.b64encode(('localtester:'+TEST_PASS).encode()).decode()
-                            headers['Authorization']='Basic '+encoded
                         if origin is not None:
                             headers['Origin']=origin
                         raw=b'{"raw":"{\"action\":\"allow\"}"}' if method=='POST' else None
                         req=Request(base+path,headers=headers,data=raw,method=method)
                         try:
                             with client.open(req,timeout=5) as response:
-                                return response.status,response.read()
+                                return response.status,response.read(),dict(response.headers)
                         except HTTPError as error:
-                            return error.code,error.read()
-                    self.assertEqual(request('/',credentials=False)[0],401)
-                    self.assertIn(b'Parser Studio isolated verification',request('/')[1])
+                            return error.code,error.read(),dict(error.headers)
+                    status,body,headers=request('/')
+                    self.assertEqual(status,200)
+                    self.assertNotIn('WWW-Authenticate',headers)
+                    self.assertIn(b'Parser Studio isolated verification',body)
                     self.assertEqual(request('/api/v1/test-lab/session')[0],404)
                     self.assertEqual(request('/api/v1/multipass/preview','POST','https://evil.example')[0],403)
                     self.assertEqual(request('/api/v1/parser-pairs/generate','POST','https://evil.example')[0],403)

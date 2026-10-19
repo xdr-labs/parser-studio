@@ -54,4 +54,4 @@ printf '%s\n' "$HEAD" > "$ROOT/dist/.parser-studio-built-head"
 mv -- "$STAGE" "$PACKAGE"
 trap - EXIT
 printf 'Offline preview package ready: %s\nExact HEAD: %s\n' "$PACKAGE" "$HEAD"
-printf 'No privileged Nginx, systemd, TLS, authentication or network change performed.\n'
+printf 'No Nginx, systemd, TLS or public-network configuration was changed.\n'

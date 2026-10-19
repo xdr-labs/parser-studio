@@ -1,31 +1,25 @@
-# Parser Studio — private domain preview
+# Parser Studio — no-login HTTPS domain
 
-## Purpose
+## Scope and confirmed diagnosis
 
-Serve the **existing beta candidate** at `https://app.parser.xdr.ooo` on **dev-atlas**, behind newly created password-protected HTTPS Nginx routing. This is **not a production release**, a Stellar Cyber native import claim, or permission to send data to devices.
+Serve Parser Studio at **https://app.parser.xdr.ooo/** on dev-atlas **without any login page, preview account, or HTTP Basic authentication**. The owner specifically requires a no-login tool. Preserve the existing `exporter.xdr.ooo` service and its configuration.
 
-Current confirmed baseline (2026-10-19):
-- `app.parser.xdr.ooo` DNS -> `221.139.249.116`.
-- HTTP `http://app.parser.xdr.ooo/` returns **404**, because Nginx only enables the unrelated `exporter.xdr.ooo` virtual host.
-- HTTPS returns the **existing Exporter 401**, not Parser Studio.
-- Local Parser Studio UI and offline compiler already exist as separate local services. The existing 6571 compiler was started from an older candidate, so **do not expose 6571**.
-- No owner-approved public domain routing, TLS issuance, credentials, installation or Full User E2E has taken place.
+The DNS A record already resolves to `221.139.249.116`. Previously, HTTP returned Nginx **404** because only the `exporter.xdr.ooo` site was configured; HTTPS returned **401** from the unrelated Exporter host. These responses are not fixed until the site is actually installed and externally verified.
 
-## Delivery topology
+## Bounded site topology
 
-| Component | Address | Boundary |
+| Component | Address | Purpose |
 | --- | --- | --- |
-| Nginx `app.parser.xdr.ooo` | 80 -> 443, HTTPS with HTTP Basic auth | New independent site, never edit `exporter.xdr.ooo` |
-| Browser static Web UI | `/var/www/parser-studio-app` | Exact SHA built `web/` package, no Vite development server |
-| Offline authoring API | `127.0.0.1:4305` | New exact-SHA systemd service; only `/api/v1/parser-pairs/` |
-| Multi-Pass source parser | `127.0.0.1:4304` | New exact-SHA Python systemd service; explicit HTTPS Origin allowlist |
-| Authenticated browser | `https://app.parser.xdr.ooo/` | No app-originated DP upload/sensor send or automatic AI log transfer |
+| Nginx | `app.parser.xdr.ooo:80,443` | HTTP 301 to HTTPS, no login, separate virtual host |
+| Web UI | `/var/www/parser-studio-app` | Pinned production Vite build, not the development server |
+| Offline authoring API | `127.0.0.1:4305` | New same-HEAD service, only offline parser-pairs API |
+| Multi-Pass source engine | `127.0.0.1:4304` | New same-HEAD source analysis service, no native DP/sensor access |
 
-Nginx rejects cross-origin/missing-Origin POST requests before the local backend and denies any `/api/` path outside the stated allowlist. Both services bind localhost. The user supplies the preview password directly in the administrator shell; it is **not** written to Git, logged, or forwarded to the assistant. HTTPS remains the only browsing entrypoint. TLS certificate issuance and password creation constitute separate privileged approval gates.
+The previous `6571` server may be running an older build; it is **not** used by this installation. Both new services bind to loopback; Nginx allows only `/api/v1/parser-pairs/` plus the two bounded `/api/v1/multipass/preview*` routes. Unmatched `/api/` paths return 404. Nginx rejects unwanted POST `Origin` values; it does **not** introduce any user authentication. HTTPS, payload limits and service isolation remain enabled.
 
-## Nonprivileged qualification and packaging
+This is a public, no-login, stateless authoring endpoint. Do not paste confidential customer log content without authorization. No automatic LLM transfer, application-initiated sensor forwarding, or DP upload/readback is provided.
 
-From the isolated `/home/aella/parser-studio-secure-domain-20261019` worktree at a committed, clean exact HEAD:
+## Completed nonprivileged verification
 
 ```bash
 cd /home/aella/parser-studio-secure-domain-20261019
@@ -34,37 +28,41 @@ bash -n ops/preview-domain/prepare-private-preview.sh
 python3 tests/test_preview_nginx_routing_20261019.py -v
 python3 -m unittest discover -s tests -p test_embedded_multipass_service.py -v
 python3 -m unittest discover -s tests -p test_csv_logical_framing_20261019.py -v
+```
+
+The Nginx test creates an isolated unprivileged HTTPS server with a **temporary test-only certificate**. It checks unauthenticated UI/API HTTP 200, no WWW-Authenticate header, 301 redirect, blocked routes, and rejected cross-origin POST. It does **not** prove external-domain deployment.
+
+The package is built from a clean exact Git HEAD with:
+
+```bash
 bash ops/preview-domain/prepare-private-preview.sh
 git rev-parse HEAD
 ```
 
-The prepare script compiles Web UI and backend, prepares **production-only AJV dependencies**, records an exact Git SHA, and writes a checksummed package under the ignored `dist/private-preview/`. It does not modify Nginx, systemd, TLS, credentials, or running services. Do not use an uncommitted or stale source build. Each new candidate SHA must have its own qualified package; do not overwrite an existing package implicitly.
+The ignored `dist/private-preview` package contains exact-HEAD frontend/backend/source-engine files and SHA-256 hashes. Never reuse a package from another HEAD. Previously built packages are preserved rather than overwritten automatically.
 
-## Privileged installation — **owner action and separate authorization required**
+## Apply on dev-atlas
 
-Only after explicit owner authorization to **create this private development host**, and after inspecting all generated files, the owner uses an already authorized root/admin session on dev-atlas:
+The owner has approved configuring the no-login domain. The connected remote terminal cannot execute privileged `sudo` operations; an administrator must run the final installer from an already authorized dev-atlas shell:
 
 ```bash
 cd /home/aella/parser-studio-secure-domain-20261019
-git rev-parse HEAD
 sudo bash ops/preview-domain/install-private-preview.sh "$(git rev-parse HEAD)"
 ```
 
-The installer validates SHA/checksums, existing file/port collisions, DNS, required binaries, and separate virtual-host boundaries before it can proceed. It **interactively** asks for `DEPLOY-PARSER-STUDIO`, a Let's Encrypt contact email, and a newly chosen *private preview* username/password. It requests the certificate through HTTP-01 webroot, installs the static/UI/backend/Multi-Pass package under new paths, creates two loopback-only systemd services, tests `nginx -t`, and finally reloads Nginx. The pre-existing Exporter host config is neither edited nor replaced. If a step fails, the installer removes its Nginx routing and disables its new service units; newly copied preview files and any issued certificate remain for review rather than automatically deleting data.
+The installer requires only the existing server's sudo permission and a **Let's Encrypt certificate contact email**. It does **not** request, create or store a Parser Studio username or password. It creates the dedicated Nginx site, requests the domain TLS certificate through Certbot webroot, installs the exact-HEAD build plus two independent loopback services, validates `nginx -t`, then reloads Nginx. The old Exporter virtual host is not edited. On an installation error, it restores Nginx routing and disables the new systemd services; copied staging artifacts remain for review.
 
-## Owner and browser acceptance — not yet PASS
+## Real-domain acceptance (not automatically satisfied by deployment scripts)
 
-Verify the **actual external** response, not just the isolated tests:
+1. Unauthenticated `http://app.parser.xdr.ooo/` redirects 301 to HTTPS.
+2. Unauthenticated `https://app.parser.xdr.ooo/` returns HTTP **200**, shows the **Parser Studio** UI, and never prompts for a preview login. CSS/JS load successfully.
+3. The `/api/v1/parser-pairs/capabilities` endpoint works without authentication; JSON/CEF/Syslog/Zeek bounded analysis and DRAFT creation work after real user clicks.
+4. A cross-origin browser POST is rejected (403); unused target/sensor/Test Lab routes are absent (404).
+5. The pre-existing `exporter.xdr.ooo` response remains unchanged.
+6. Run Playwright Chromium with the real domain and review the full beginner flow before claiming user acceptance.
 
-1. `http://app.parser.xdr.ooo/` redirects **301** to `https://app.parser.xdr.ooo/`.
-2. Unauthenticated HTTPS returns **401** for Parser Studio, not the `Stellar Data Exporter` Basic realm.
-3. After the owner enters the new preview password, the real Parser Studio Auto Parser and ChatGPT Assisted Parser pages load with HTTP **200**, scripts/CSS load, and no browser exceptions.
-4. Verify 1 JSON, 1 CEF/LEEF, 1 wrapped Syslog, multi-event JSON, and Zeek prepared TAB CSV with confirmation. Check raw text/source accounting, field mapping, browser-only versions, ChatGPT manual redaction, and downloadable DRAFT; no Stellar/DP installation.
-5. Run blocked-route tests (`/api/v1/test-lab/`, `/api/v1/targets/`): **404**. Anonymous API: **401**. Unauthorized-origin POST: **403**.
-6. Confirm Exporter still answers identically to its pre-change baseline and record the exact candidate SHA, Browser PASS/FAIL and Nginx access results. Owner visual acceptance is distinct from synthetic Chromium test PASS.
-
-The isolated test at `tests/test_preview_nginx_routing_20261019.py` runs Nginx on temporary unprivileged ports with a throwaway local certificate and test-only password. That isolated green result **does not establish public-domain deployment, Let's Encrypt validity, or owner acceptance**.
+A passing local Nginx fixture is not a successful public HTTPS deployment, and a successful structural parser result is not proof of native Stellar target compatibility.
 
 ## Rollback
 
-If the actual domain acceptance fails, an approved administrator should disable only the new `app.parser.xdr.ooo` site and stop the two `parser-studio-preview-*.service` units, run `nginx -t`, reload Nginx, and verify that `exporter.xdr.ooo` is unchanged. Preserve site/certificate/auth files until the failure is understood. Never replace the existing Exporter virtual host or bypass SSH/OS privilege, TLS certificate verification, origin checks, or browser authentication to force a PASS.
+If acceptance fails, disable **only** the new `app.parser.xdr.ooo` site, stop the two `parser-studio-preview-*.service` units, run `nginx -t`, reload, and verify that `exporter.xdr.ooo` remains available. Do not disable TLS, loosen source-size bounds, or bypass operating-system privileges.

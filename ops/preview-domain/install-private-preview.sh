@@ -15,7 +15,6 @@ WWW=/var/www/parser-studio-app
 BACKEND=/opt/parser-studio-preview/backend
 MULTIPASS=/opt/parser-studio-preview/multipass
 ACME=/var/www/parser-studio-acme
-PASSFILE=/etc/nginx/parser-studio-private.htpasswd
 
 die(){ printf 'FAILED: %s\n' "$*" >&2; exit 1; }
 [[ "$(id -u)" == 0 ]] || die 'Run as root using an already authorized administrator session.'
@@ -23,7 +22,7 @@ die(){ printf 'FAILED: %s\n' "$*" >&2; exit 1; }
 [[ ! -e "$STAGED" && ! -e "$ENABLED" ]] || die 'Domain virtual host already exists; do not overwrite it.'
 [[ ! -e "/etc/systemd/system/$SVC" && ! -e "/etc/systemd/system/$BACKEND_SVC" ]] ||
   die 'Preview service already exists; review before changing it.'
-[[ ! -e "$WWW" && ! -e "$BACKEND" && ! -e "$MULTIPASS" && ! -e "$PASSFILE" ]] ||
+[[ ! -e "$WWW" && ! -e "$BACKEND" && ! -e "$MULTIPASS" ]] ||
   die 'Existing preview artifacts found; review before changing anything.'
 [[ -f "$PKG/web/index.html" && -f "$PKG/backend/dist/src/mainline-authoring-server.js" ]] ||
   die 'Exact-HEAD deployable web/backend package missing; run prepare-private-preview.sh first.'
@@ -42,7 +41,7 @@ die(){ printf 'FAILED: %s\n' "$*" >&2; exit 1; }
 if find "$PKG" -type l -print -quit | grep -q .; then
   die 'Deployment package contains symlinks; copy refused.'
 fi
-for bin in nginx certbot curl openssl systemctl git; do
+for bin in nginx certbot curl systemctl git; do
   command -v "$bin" >/dev/null || die "Required command missing: $bin"
 done
 getent hosts "$SITE" | grep -q 221.139.249.116 || die 'DNS does not resolve to this authorized development server.'
@@ -50,24 +49,11 @@ if ss -ltn | grep -Eq '127\.0\.0\.1:(4304|4305)[[:space:]]'; then
   die 'Private preview port 4304 or 4305 is already occupied.'
 fi
 
-printf '\nThis installs a NEW, password-protected HTTPS Nginx virtual host for %s.\n' "$SITE"
-printf 'It requests one TLS certificate, installs a loopback-only parser worker and reloads Nginx.\n'
-printf 'It will not modify exporter.xdr.ooo or any application credentials.\n'
-read -r -p 'Type DEPLOY-PARSER-STUDIO to authorize this host change: ' approval
-[[ "$approval" == DEPLOY-PARSER-STUDIO ]] || die 'Operator did not approve.'
-read -r -p "Let's Encrypt contact email: " email
+printf '\nThis installs a NEW no-login HTTPS Nginx virtual host for %s.\n' "$SITE"
+printf 'It requests a TLS certificate, installs loopback-only parser services and reloads Nginx.\n'
+printf 'The existing exporter.xdr.ooo configuration is preserved.\n'
+read -r -p "Let's Encrypt certificate contact email: " email
 [[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || die 'Invalid email.'
-read -r -p 'New PRIVATE preview username (letters, digits, _ or -): ' username
-[[ "$username" =~ ^[A-Za-z][A-Za-z0-9_-]{2,31}$ ]] || die 'Invalid username.'
-read -r -s -p 'New private preview password (at least 12 characters): ' password
-printf '\n'
-read -r -s -p 'Repeat private preview password: ' again
-printf '\n'
-[[ "$password" == "$again" && -n "$password" ]] || die 'Passwords do not match.'
-[[ "$password" =~ .{12,} ]] || die 'Password too short.'
-unset again
-encrypted=$(printf '%s' "$password" | openssl passwd -6 -stdin)
-unset password
 
 # In a failure, restore the old Nginx set of enabled sites. Never touch the
 # existing Exporter virtual host; certbot files can remain for manual review.
@@ -113,11 +99,6 @@ cp -a "$PKG/backend/." "$BACKEND/"
 cp -a "$PKG/multipass/." "$MULTIPASS/"
 chmod -R a+rX "$WWW" "$BACKEND" "$MULTIPASS"
 
-printf '%s:%s\n' "$username" "$encrypted" > "$PASSFILE"
-chown root:www-data "$PASSFILE"
-chmod 0640 "$PASSFILE"
-unset encrypted
-
 install -m 0644 "$ROOT/ops/preview-domain/parser-studio-preview-multipass.service" "/etc/systemd/system/$SVC"
 install -m 0644 "$ROOT/ops/preview-domain/parser-studio-preview-authoring.service" "/etc/systemd/system/$BACKEND_SVC"
 systemctl daemon-reload
@@ -133,10 +114,9 @@ systemctl reload nginx
 
 http_status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$SITE:80:127.0.0.1" "http://$SITE/" --max-time 8)
 https_status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$SITE:443:127.0.0.1" "https://$SITE/" --max-time 10)
-[[ "$http_status" == 301 && "$https_status" == 401 ]] ||
-  die "Unexpected HTTP/HTTPS unauthenticated status: $http_status/$https_status."
+[[ "$http_status" == 301 && "$https_status" == 200 ]] ||
+  die "Unexpected HTTP/HTTPS no-login status: $http_status/$https_status."
 completed=1
-printf '\nHTTPS setup complete. HTTP redirects to HTTPS and HTTPS is protected by Basic authentication.\n'
-printf 'Domain: https://%s/\nAccess username: %s\n' "$SITE" "$username"
-printf 'Enter the password you just configured in your browser. No credential was printed or logged.\n'
-printf 'The application is still a PRIVATE development preview; this does not approve production or Stellar DP installation.\n'
+printf '\nHTTPS setup complete. HTTP redirects to HTTPS; no site login is required.\n'
+printf 'Open https://%s/ in a browser.\n' "$SITE"
+printf 'No Stellar DP parser installation or sensor transmission was performed.\n'
