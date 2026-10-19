@@ -13,7 +13,11 @@ async function requireCompilerBlock(page:Page,raw:string){
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Beginner analysis summary')).toBeVisible();
   const review=page.getByRole('button',{name:'Review Detected Results'});
-  if(await review.isEnabled())await review.click();
+  // Analyze Logs may finish rendering its summary before the asynchronous
+  // source preview and compiler readiness checks settle. Wait for the button
+  // to be actionable; one immediate isEnabled() sample races that transition.
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
   await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
   const blocked=page.getByLabel('Parser draft not ready');
   await expect(blocked).toBeVisible();
