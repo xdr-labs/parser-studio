@@ -42,24 +42,32 @@ export function originalContainerCompilerGate(
       code.startsWith('SCHEMA_'))))
     return {kind:'SOURCE_REVIEW_ONLY',proof:'QUALIFIED_SOURCE_PREVIEW'};
 
+  // Original transport evidence may appear after a different first log
+  // type. Inspect bounded physical record starts, not only the very first
+  // source character. This never removes or changes any original source byte.
   const raw=source.startsWith('\ufeff')?source.slice(1):source;
-  if(raw.startsWith('\x1e'))
-    return {kind:'JSON_TEXT_SEQUENCE',proof:'BOUNDED_LOCAL_SIGNATURE'};
   if(raw.includes('\x00'))
     return {kind:'NUL_DELIMITED_SOURCE',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(/^(?:node=\S+[ \t]+)?type=[A-Z][A-Z0-9_]*[ \t]+msg=audit\(/.test(raw))
-    return {kind:'LINUX_AUDIT',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(/^\d{4}-\d\d-\d\dT\S+[ \t]+(?:stdout|stderr)[ \t]+[PF][ \t]/.test(raw))
-    return {kind:'KUBERNETES_CRI',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(/^(?:#Version:|#Software:|#Fields:)/.test(raw))
-    return {kind:'W3C_DECLARED',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(/^(?:#separator[ \t]|#fields\t)/.test(raw))
-    return {kind:'ZEEK_DECLARED',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(/^[1-9]\d{0,5} (?:<\d{1,3}>|\{|\[)/.test(raw))
-    return {kind:'RFC6587_OCTETS',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(/^(?:__CURSOR=|_BOOT_ID=|MESSAGE=)/.test(raw)&&raw.includes('\n\n'))
-    return {kind:'JOURNAL_EXPORT',proof:'BOUNDED_LOCAL_SIGNATURE'};
-  if(dockerFileMarker(raw))
-    return {kind:'DOCKER_JSON_FILE',proof:'BOUNDED_LOCAL_SIGNATURE'};
+  for(const originalLine of raw.split('\n')){
+    const line=originalLine.endsWith('\r')?
+      originalLine.slice(0,-1):originalLine;
+    if(!line)continue;
+    if(line.startsWith('\x1e'))
+      return {kind:'JSON_TEXT_SEQUENCE',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(/^(?:node=\S+[ \t]+)?type=[A-Z][A-Z0-9_]*[ \t]+msg=audit\(/.test(line))
+      return {kind:'LINUX_AUDIT',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(/^\d{4}-\d\d-\d\dT\S+[ \t]+(?:stdout|stderr)[ \t]+[PF][ \t]/.test(line))
+      return {kind:'KUBERNETES_CRI',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(/^(?:#Version:|#Software:|#Fields:)/.test(line))
+      return {kind:'W3C_DECLARED',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(/^(?:#separator[ \t]|#fields\t)/.test(line))
+      return {kind:'ZEEK_DECLARED',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(/^[1-9]\d{0,5} (?:<\d{1,3}>|\{|\[)/.test(line))
+      return {kind:'RFC6587_OCTETS',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(/^(?:__CURSOR=|_BOOT_ID=|MESSAGE=)/.test(line)&&raw.includes('\n\n'))
+      return {kind:'JOURNAL_EXPORT',proof:'BOUNDED_LOCAL_SIGNATURE'};
+    if(dockerFileMarker(line))
+      return {kind:'DOCKER_JSON_FILE',proof:'BOUNDED_LOCAL_SIGNATURE'};
+  }
   return null;
 }
