@@ -5,6 +5,7 @@ Never claim native Fluentd or target verification. Do not log source values.
 from __future__ import annotations
 import hashlib
 import json
+import os
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlsplit
 from multipass_adjudicator import parse_security_multipass
@@ -107,10 +108,21 @@ def allowed_origin(origin:str|None)->bool:
     if origin is None:return True
     try:
         parsed=urlsplit(origin)
-        return (parsed.scheme=='http' and parsed.hostname in ('127.0.0.1','localhost') and
+        if (parsed.scheme=='http' and parsed.hostname in ('127.0.0.1','localhost') and
                 parsed.port is not None and 1024<=parsed.port<=65535 and
                 parsed.path in ('','/') and not parsed.query and not parsed.fragment and
-                parsed.username is None and parsed.password is None)
+                parsed.username is None and parsed.password is None):
+            return True
+        # An explicitly configured, exact HTTPS origin is allowed only when a
+        # separately authenticated reverse proxy gates browser/API traffic.
+        # Never use suffix matching, wildcard hosts or forwarded headers here.
+        trusted=os.environ.get('PARSER_STUDIO_TRUSTED_ORIGIN','')
+        configured=urlsplit(trusted) if trusted else None
+        return bool(configured and origin==trusted and
+                    configured.scheme=='https' and configured.hostname and
+                    configured.port is None and configured.path in ('','/') and
+                    not configured.query and not configured.fragment and
+                    configured.username is None and configured.password is None)
     except (ValueError,TypeError):
         return False
 
