@@ -80,7 +80,7 @@ jobs:
           mp_pid=$!
           PARSER_BACKEND_PORT=4187 node backend/dist/src/server.js >/tmp/parser-rfc5424-msg-authoring-ci.log 2>&1 &
           author_pid=$!
-          PARSER_STUDIO_BACKEND_PORT=4187 PARSER_STUDIO_MULTIPASS_PORT=4297 npm run dev -- --port 5180 --strictPort >/tmp/parser-rfc5424-msg-web-ci.log 2>&1 &
+          PARSER_STUDIO_BACKEND_PORT=4187 PARSER_STUDIO_MULTIPASS_PORT=4297 ./node_modules/.bin/vite --host 127.0.0.1 --port 5180 --strictPort >/tmp/parser-rfc5424-msg-web-ci.log 2>&1 &
           vite_pid=$!
           trap 'kill "$mp_pid" "$author_pid" "$vite_pid" 2>/dev/null || true; wait "$mp_pid" "$author_pid" "$vite_pid" 2>/dev/null || true' EXIT
           ready=0
