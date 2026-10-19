@@ -1,0 +1,20 @@
+{
+  "contract": "parserstudio.publisher-w3c-private-original-score.v1",
+  "source_class": "PUBLISHER_AUTHORED_STANDARDS_EXAMPLE_NOT_PRODUCTION_WIRE",
+  "oracle_pin_verified": true,
+  "source_sha256_verified": true,
+  "event_rows_expected": 4,
+  "event_rows_observed": 4,
+  "field_claims": 12,
+  "exact_name_value_utf8_span": 12,
+  "native_verified": false,
+  "stellar_target_verified": false,
+  "source_bytes": 172,
+  "source_reprinted": false,
+  "full_vendor_f1": "UNSCORABLE",
+  "complete_original_stream_compilation": "NOT_VERIFIED",
+  "source_status_counts": {
+    "PARTIAL": 4
+  },
+  "all_source_bytes_accounted": true
+}

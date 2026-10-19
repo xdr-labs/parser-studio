@@ -12,6 +12,8 @@ from array import array
 import re
 from source_parse import SourceEvent,assert_source_accounting
 from security_source import parse_security_source
+from source_schema_stream import parse_declared_schema_stream
+from source_container_stream import parse_transport_container
 from security_envelope import extract_security_envelope
 from engine import MAX_RAW_BYTES
 from structured_source import extract_rfc3164,extract_rfc5424,extract_plain_bsd
@@ -215,6 +217,27 @@ def parse_security_batch(raw:str,*,max_events:int=1000,
     offsets=array('I',[0])
     for char in raw:offsets.append(offsets[-1]+len(char.encode('utf8')))
     result=SecurityBatch(raw)
+    # Shared metadata-aware stream framing for W3C/Zeek. Never strip headers:
+    # they remain explicit, validated source partitions in the batch contract.
+    declared=parse_declared_schema_stream(raw,max_events)
+    if declared is not None:
+        for kind,start,end,event in declared:
+            if kind=='EVENT':
+                result.frames.append(SecurityFrame(raw[start:end],offsets[start],offsets[end],event))
+            else:
+                result.separators.append(Separator(offsets[start],offsets[end],kind))
+        assert_batch_accounting(result)
+        return result
+    # Transport framing is authoritative before line-oriented heuristics.
+    transport=parse_transport_container(raw,max_events,parser)
+    if transport is not None:
+        for kind,start,end,event in transport:
+            if kind=='EVENT':
+                result.frames.append(SecurityFrame(raw[start:end],offsets[start],offsets[end],event))
+            else:
+                result.separators.append(Separator(offsets[start],offsets[end],kind))
+        assert_batch_accounting(result)
+        return result
     pos=0
     if raw.startswith('\ufeff'):
         result.separators.append(Separator(0,offsets[1],'UTF8_BOM'));pos=1
@@ -264,6 +287,14 @@ def assert_batch_accounting(batch:SecurityBatch)->None:
         text=data[separator.start_byte:separator.end_byte].decode('utf8')
         if separator.kind=='UTF8_BOM':
             if separator.start_byte!=0 or text!='\ufeff':raise AssertionError('INVALID_SOURCE_BOM')
+        elif separator.kind=='SOURCE_FRAMING':
+            if not (text in ('\0','\x1e','\n\n','\r\n\r\n')
+                    or (text.endswith(' ') and text[:-1].isdigit()
+                        and len(text)<8)):
+                raise AssertionError('INVALID_SOURCE_FRAMING')
+        elif separator.kind=='SOURCE_METADATA':
+            if not text.startswith('#') or text.count('\n')>1 or len(text.encode('utf8'))>MAX_RAW_BYTES:
+                raise AssertionError('INVALID_SCHEMA_SOURCE_METADATA')
         elif not text or any(c not in WHITESPACE for c in text):
             raise AssertionError('NON_WHITESPACE_SOURCE_SEPARATOR')
         partitions.append((separator.start_byte,separator.end_byte))
