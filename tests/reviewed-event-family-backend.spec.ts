@@ -166,3 +166,51 @@ test('declared relay source review must match all events, never one sample only'
   await expect(relay.getByRole('button',{name:'Apply declared relay profile'})).toBeDisabled();
   await expect(sourceArea).toHaveValue(stale);
 });
+
+
+test('reviewed mapping collisions and oversized event schemas fail closed in the novice UI',async({page})=>{
+  test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
+    'Requires the actual current offline backend, not an unsupported pinned compiler.');
+  await page.goto('/');
+  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
+  const raw=page.getByLabel('Auto Parser raw logs');
+  const source=[
+    '{"event_type":"threat","indicator":"198.51.100.1","confidence":"high","action":"deny"}',
+    '{"event_type":"user","username":"홍길동","action":"login"}',
+    '{"event_type":"asset","hostname":"asset-01","action":"found"}',
+  ].join('\n');
+  await raw.fill(source);
+  await expect(page.getByLabel('Automatic event accounting'))
+    .toContainText('3/3 events analyzed locally');
+  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  const config=page.locator('details[aria-label="Configure one parser for event types"]');
+  await config.locator('summary').first().click();
+  const threat=config.locator('details[aria-label="Type-specific mappings for threat"]');
+  await threat.locator('summary').click();
+  await threat.getByLabel('threat output for indicator').fill('custom.duplicate');
+  await threat.getByLabel('threat output for confidence').fill('custom.duplicate.child');
+  await config.getByLabel('Approve explicit family routing changes').check();
+  await config.getByRole('button',{name:'Apply reviewed event types to this parser'}).click();
+  await expect(config).toContainText('same or overlapping output');
+  await expect(config.getByLabel('Configured event profiles')).toHaveCount(0);
+  await threat.getByLabel('threat output for confidence').fill('custom.confidence');
+  await config.getByLabel('Approve explicit family routing changes').check();
+  await config.getByRole('button',{name:'Apply reviewed event types to this parser'}).click();
+  await expect(config.getByLabel('Configured event profiles')).toContainText('3 explicit event types');
+  await page.getByRole('button',{name:/Add Logs/}).first().click();
+  await expect(raw).toHaveValue(source);
+  const wide=Object.fromEntries(Array.from({length:101},(_,i)=>['wide_'+i,'v']));
+  const wideSource=[
+    JSON.stringify({event_type:'threat',...wide}),
+    JSON.stringify({event_type:'user',username:'demo'}),
+  ].join('\n');
+  await raw.fill(wideSource);
+  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  const wideConfig=page.locator('details[aria-label="Configure one parser for event types"]');
+  await wideConfig.locator('summary').first().click();
+  await expect(wideConfig).toContainText('over 100 safe fields');
+  await expect(wideConfig.getByRole('button',{name:'Apply reviewed event types to this parser'}))
+    .toBeDisabled();
+  await page.getByRole('button',{name:/Add Logs/}).first().click();
+  await expect(raw).toHaveValue(wideSource);
+});
