@@ -19,6 +19,7 @@ interface Props {
   draft?:ParserDraft;
   suite?:SuiteResult;
   onApplyCandidate?:(draft:ParserDraft)=>void;
+  compilerBlockedReason?:string;
   resolvedByReviewedCandidate?:boolean;
   parserRuleReviewRequired?:boolean;
   parserRuleReviewEventIndexes?:number[];
@@ -62,6 +63,12 @@ function plainIssue(code:string,raw=''):string{
   if(prefixedJson(raw)&&code==='SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID')
     return 'The short text prefix prevents the normal JSON path from being used even though the JSON payload itself is valid.';
   const known:Record<string,string>={
+    FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER:'Parser Studio recognized the original stream boundaries and useful values. The downloadable parser cannot yet be verified for this exact transport or container: review the values before creating a draft.',
+    FRAMING_JOURNAL_FIELD_INVALID_OR_DUPLICATE:'A system journal entry has an invalid or repeated field; it was retained for manual review.',
+    FRAMING_JOURNAL_MESSAGE_MISSING:'A journal entry lacks the expected MESSAGE field, so its completeness is not verified.',
+    SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER:'Parser Studio found the column names and values using the original declared header. This structure is not yet supported by the downloadable parser compiler. Review the fields or use ChatGPT Assisted Parser; do not treat the result as ready to deploy.',
+    SCHEMA_ROW_INVALID:'This data row does not match the declared column structure. Check its field count and quoting; the source was not discarded.',
+    SCHEMA_ROW_WITHOUT_VALID_HEADER:'The data line has no complete valid declared field header. Keep the source and review the format.',
     FRAMING_MULTILINE_CSV_REVIEW:'Quoted CSV content crosses physical lines. Parser Studio kept the complete logical source record, but native CSV parser creation with embedded line breaks is not verified.',
     FRAMING_TRUNCATED_CSV:'A CSV quoted field did not close. Review the original exporter quotation before assigning any columns.',
     FRAMING_CSV_BOUNDARY_LIMIT:'CSV quotation exceeded the bounded record limit. Export smaller samples or split the source manually without inventing field boundaries.',
@@ -81,6 +88,8 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
     preview.residuals.some(region=>region.startByte===0&&region.endByte>=preview.sourceBytes);
 }
 function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
+  if(preview.syntax==='ZEEK_TSV_DECLARED')return 'Zeek data row with declared columns';
+  if(preview.syntax==='W3C_EFL_DECLARED')return 'W3C data row with declared columns';
   if(isZeekHeader(raw))return 'Zeek column/header metadata';
   if(isWindowsEventXml(raw))return 'unsupported Windows Event XML';
   if(preview.issues.some(issue=>issue.startsWith('FRAMING_')&&issue.includes('CSV')))
@@ -100,6 +109,11 @@ function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
 function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw=''):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
+  if(['W3C_EFL_DECLARED','ZEEK_TSV_DECLARED'].includes(preview.syntax))return {
+    kind:'assisted',
+    label:'Review the recognized columns before making parser files',
+    text:'Parser Studio matched the original header to each data row and kept the original source positions. Downloadable parser support for this original header-dependent stream is not verified. Inspect the field values or use ChatGPT Assisted Parser after redaction; do not convert the result into a certified parser automatically.',
+  };
   if(isZeekHeader(raw))return {
     kind:'split',
     label:'Separate Zeek header lines from data events',
@@ -188,7 +202,7 @@ function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=fal
 function metadataOnlyReview(preview:MultiPassSourcePreview):boolean{
   const issues=preview.issues.join(' ').toUpperCase();
   return preview.residuals.length===0&&
-    (issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
+    (issues.includes('SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER')||issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
      issues.includes('RFC5424_SD_TRAILING_SPACE_NONSTANDARD'));
 }
 function problemTitle(preview:MultiPassSourcePreview):string{
@@ -214,7 +228,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 }
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
-  resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
+  resolvedByReviewedCandidate=false,compilerBlockedReason,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
   csvReviewRequired=false,csvConsistentShapeAvailable=true,neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
   protectedResidualTextByEvent}:Props){
   const [selected,setSelected]=useState(0);
@@ -283,13 +297,17 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     }catch{setCopyStatus('Copy was blocked by the browser. Select the prompt text and copy it manually.');}
   };
   return <section className="beginner-analysis" aria-label="Beginner analysis summary">
-    <div className={"beginner-analysis-head "+(problems.length||csvReviewPending?'needs-attention':'complete')}>
-      {problems.length||csvReviewPending?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
+    <div className={"beginner-analysis-head "+(problems.length||csvReviewPending||compilerBlockedReason?'needs-attention':'complete')}>
+      {problems.length||csvReviewPending||compilerBlockedReason?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
       <div>
-        <strong>{csvReviewPending||parserRuleReviewRequired
+        <strong>{compilerBlockedReason
+          ?`Source values found in ${sourceParsed} of ${events.length} events — downloadable parser not ready`
+          :csvReviewPending||parserRuleReviewRequired
           ?`Values found in ${sourceParsed} of ${events.length} log event${events.length===1?'':'s'}`
           :`${parsed} of ${events.length} log event${events.length===1?'':'s'} parsed completely`}</strong>
-        <p>{resolvedByReviewedCandidate
+        <p>{compilerBlockedReason
+          ?'Original values were extracted, but a verified downloadable parser cannot be prepared for this shape yet. See the recovery instructions below; no source was dropped.'
+          :resolvedByReviewedCandidate
           ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
           :csvReviewPending
           ?!csvConsistentShapeAvailable
@@ -301,7 +319,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           ?'Parser Studio found the values, but it needs one more parsing step for this log shape before it can create files. The values already found will be kept.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
-          :'No unresolved source region was found. Continue to review field meanings and create the parser draft.'}</p>
+          :'No unresolved source region was found. Source extraction is complete; parser-file support will be checked separately when you continue.'}</p>
         {multilineCsvNeedsReview&&<p role="note" aria-label="Multiline CSV recovery">
           Quoted CSV data spans multiple physical lines. The source record was kept intact, but this input is not approved for native parser generation. Choose the affected event below to see how to export a safe one-event-per-line sample.
         </p>}

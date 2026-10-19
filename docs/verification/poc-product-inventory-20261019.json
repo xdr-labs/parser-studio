@@ -1,0 +1,1610 @@
+{
+  "schema": "parserstudio.poc-product-inventory.v1",
+  "date": "2026-10-19",
+  "baseline_head": "0392401f0331c89dd07eed70e5ba939c8e4ac85c",
+  "audit_branch": "feat/poc-coverage-audit-20261019",
+  "registered_worktree_count": 36,
+  "available_git_checkout_count": 110,
+  "available_git_checkouts": [
+    {
+      "path": "/home/aella/.local/state/parserstudio-mainline-backend-qualification-20261018/pinned-src",
+      "head": "429b179fc674"
+    },
+    {
+      "path": "/home/aella/.local/state/parserstudio-pr90-continued-20261018/pinned-backend-429b",
+      "head": "429b179fc674"
+    },
+    {
+      "path": "/home/aella/parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+      "head": "851be0206f02"
+    },
+    {
+      "path": "/home/aella/parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+      "head": "33995fb835e1"
+    },
+    {
+      "path": "/home/aella/parser-studio-acc-e3-e5-declared-csv-fidelity-20261018",
+      "head": "770ce0ad22e8"
+    },
+    {
+      "path": "/home/aella/parser-studio-acc-e5-partial-colon-source-20261018",
+      "head": "5555caf7f912"
+    },
+    {
+      "path": "/home/aella/parser-studio-authoring-exact-wrapper-20261019",
+      "head": "00b25de9a478"
+    },
+    {
+      "path": "/home/aella/parser-studio-backend-event-family-candidate-20261019",
+      "head": "fcaf34e70544"
+    },
+    {
+      "path": "/home/aella/parser-studio-backend-identity-20261016",
+      "head": "429b179fc674"
+    },
+    {
+      "path": "/home/aella/parser-studio-backend-multi-event-forwarder-20261017",
+      "head": "429b179fc674"
+    },
+    {
+      "path": "/home/aella/parser-studio-beginner-e2e-observe-20261016",
+      "head": "cb2e768c1fcf"
+    },
+    {
+      "path": "/home/aella/parser-studio-beginner-parser-set-e2e-20261016",
+      "head": "da94aa9177c6"
+    },
+    {
+      "path": "/home/aella/parser-studio-body-evidence-arbiter-20261017",
+      "head": "ceb048f92b90"
+    },
+    {
+      "path": "/home/aella/parser-studio-competitive-backend-20261016",
+      "head": "567aa46e0b15"
+    },
+    {
+      "path": "/home/aella/parser-studio-competitive-improvements-20261016",
+      "head": "cb2e768c1fcf"
+    },
+    {
+      "path": "/home/aella/parser-studio-composite-endpoint-poc-20261017",
+      "head": "70a50cb2e720"
+    },
+    {
+      "path": "/home/aella/parser-studio-conditional-event-ui-20261019",
+      "head": "fcaf34e70544"
+    },
+    {
+      "path": "/home/aella/parser-studio-declared-syslog-prefix-poc-20261017",
+      "head": "4e502553c9e4"
+    },
+    {
+      "path": "/home/aella/parser-studio-docs-manual-20261018",
+      "head": "22a0fe9990ee"
+    },
+    {
+      "path": "/home/aella/parser-studio-escape-source-provenance-poc-20261017",
+      "head": "6d6dc3aa65f4"
+    },
+    {
+      "path": "/home/aella/parser-studio-explicit-boundary-20261019",
+      "head": "e73e60971e09"
+    },
+    {
+      "path": "/home/aella/parser-studio-explicit-multi-log-input-20261019",
+      "head": "0392401f0331"
+    },
+    {
+      "path": "/home/aella/parser-studio-fortinet-escape-golden-holdout-20261017",
+      "head": "24d03c105a48"
+    },
+    {
+      "path": "/home/aella/parser-studio-fortios-cef-equals-escape-poc-20261017",
+      "head": "280030377990"
+    },
+    {
+      "path": "/home/aella/parser-studio-fortios8-empty-marker-source-poc-20261017",
+      "head": "3907eeff754a"
+    },
+    {
+      "path": "/home/aella/parser-studio-forwarder-boundary-20261019",
+      "head": "9e4d0855c321"
+    },
+    {
+      "path": "/home/aella/parser-studio-funnel-wrappers-20261016",
+      "head": "1ed3f2230b0f"
+    },
+    {
+      "path": "/home/aella/parser-studio-generalization-blind-structural-20261017",
+      "head": "25e0c8cab14b"
+    },
+    {
+      "path": "/home/aella/parser-studio-independent-leef-source-goldens-20261017",
+      "head": "c03d16705679"
+    },
+    {
+      "path": "/home/aella/parser-studio-independent-nonjson-source-goldens-20261017",
+      "head": "6a7ac861ed8b"
+    },
+    {
+      "path": "/home/aella/parser-studio-independent-quoted-csv-oracle-20261017",
+      "head": "0754f261744f"
+    },
+    {
+      "path": "/home/aella/parser-studio-independent-quoted-kv-source-20261017",
+      "head": "29e9d0b3999d"
+    },
+    {
+      "path": "/home/aella/parser-studio-json-field-holdout-poc-20261017",
+      "head": "e9e01a9fdc39"
+    },
+    {
+      "path": "/home/aella/parser-studio-kv-adversarial-holdout-gates-20261017",
+      "head": "399634190f25"
+    },
+    {
+      "path": "/home/aella/parser-studio-kv-conservative-escape-grammar-20261017",
+      "head": "960f0c81b429"
+    },
+    {
+      "path": "/home/aella/parser-studio-lossless-grammar-poc-20261017",
+      "head": "5b61d5815e97"
+    },
+    {
+      "path": "/home/aella/parser-studio-main-promotion-20261019",
+      "head": "19d123d4e39f"
+    },
+    {
+      "path": "/home/aella/parser-studio-mainline-authoring-backend-20261018",
+      "head": "841211806a90"
+    },
+    {
+      "path": "/home/aella/parser-studio-mainline-local-versions-20261018",
+      "head": "6488a3c7f7fc"
+    },
+    {
+      "path": "/home/aella/parser-studio-manual-source-boundaries-20261019",
+      "head": "8c54033f9a92"
+    },
+    {
+      "path": "/home/aella/parser-studio-manufacturer-empty-syslog-review-poc-20261017",
+      "head": "492964acf365"
+    },
+    {
+      "path": "/home/aella/parser-studio-mapping-evidence-20261016",
+      "head": "0d5c910e0ceb"
+    },
+    {
+      "path": "/home/aella/parser-studio-multi-event-forwarder-20261017",
+      "head": "2d061c3f0ef1"
+    },
+    {
+      "path": "/home/aella/parser-studio-named-log-samples-20261019",
+      "head": "b5ae99d8669d"
+    },
+    {
+      "path": "/home/aella/parser-studio-native-family-forwarder-poc-20261019",
+      "head": "e9bc7a66c23d"
+    },
+    {
+      "path": "/home/aella/parser-studio-novice-browser-20261019",
+      "head": "93f16b460030"
+    },
+    {
+      "path": "/home/aella/parser-studio-novice-cross-vendor-20261019",
+      "head": "0392401f0331"
+    },
+    {
+      "path": "/home/aella/parser-studio-novice-expanded-20261019",
+      "head": "0392401f0331"
+    },
+    {
+      "path": "/home/aella/parser-studio-poc-coverage-audit-20261019",
+      "head": "0392401f0331"
+    },
+    {
+      "path": "/home/aella/parser-studio-poc-stream-containers-20261019",
+      "head": "0392401f0331"
+    },
+    {
+      "path": "/home/aella/parser-studio-pr98-pinned-preview-674c790",
+      "head": "674c7900af1f"
+    },
+    {
+      "path": "/home/aella/parser-studio-pr98-pinned-preview-e555d9b",
+      "head": "e555d9b5f3a0"
+    },
+    {
+      "path": "/home/aella/parser-studio-public-corpus-logstash-20261016",
+      "head": "74a4098582d3"
+    },
+    {
+      "path": "/home/aella/parser-studio-publisher-cisco-ise-bare-syslog-poc-20261017",
+      "head": "51bd026e8db4"
+    },
+    {
+      "path": "/home/aella/parser-studio-relay-source-fidelity-gate-20261017",
+      "head": "44e606377966"
+    },
+    {
+      "path": "/home/aella/parser-studio-reviewed-multi-event-ui-20261019",
+      "head": "3fda6f6eb0ab"
+    },
+    {
+      "path": "/home/aella/parser-studio-roadmap-multi-event-20261017",
+      "head": "ed7a7f952808"
+    },
+    {
+      "path": "/home/aella/parser-studio-sample-field-coverage-20261018",
+      "head": "ec6a9e6bfc26"
+    },
+    {
+      "path": "/home/aella/parser-studio-sample-union-review-20261019",
+      "head": "82398682c8ca"
+    },
+    {
+      "path": "/home/aella/parser-studio-secure-domain-20261019",
+      "head": "0392401f0331"
+    },
+    {
+      "path": "/home/aella/parser-studio-security-parser-round4-20261016",
+      "head": "bb41e91059fc"
+    },
+    {
+      "path": "/home/aella/parser-studio-sonicwall-syslog-kv-holdout-20261017",
+      "head": "7baba027fec6"
+    },
+    {
+      "path": "/home/aella/parser-studio-source-kv-trust-boundary-20261017",
+      "head": "5bf17b440447"
+    },
+    {
+      "path": "/home/aella/parser-studio-source-kv-utf8-byte-span-oracle-20261017",
+      "head": "fa51ca0b7f79"
+    },
+    {
+      "path": "/home/aella/parser-studio-source-normalization-review-poc-20261017",
+      "head": "2d86487cb448"
+    },
+    {
+      "path": "/home/aella/parser-studio-source-trust-registry-poc-20261017",
+      "head": "da892c44460b"
+    },
+    {
+      "path": "/home/aella/parser-studio-standard-grammar-conformance-poc-20261018",
+      "head": "2335895dbf8c"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-cef-extension-source-20261018",
+      "head": "981996fac77c"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-cef-extension-source-span-poc-20261018",
+      "head": "dabc07a9acd8"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-cef-shared-header-poc-20261018",
+      "head": "b36029d0cf81"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-csv-source-parity-poc-20261018",
+      "head": "17fd04f4b382"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-framing-sd-transfer-poc-20261018",
+      "head": "289460af5e6e"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-iisw3c-declared-rotation-20261018",
+      "head": "90e73aca5ed4"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-json-nested-spans-poc-20261018",
+      "head": "e5f08ac85d9d"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-json-source-completeness-poc-20261018",
+      "head": "2335895dbf8c"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-json-source-preflight-poc-20261018",
+      "head": "6d9eae9f9ba4"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-kv-source-completeness-poc-20261018",
+      "head": "bdeeba41d84b"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-leef-delimiter-parity-poc-20261018",
+      "head": "73a4401b2d30"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-rfc4180-csv-space-parity-poc-20261018",
+      "head": "2335895dbf8c"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-rfc5424-grammar-parity-poc-20261018",
+      "head": "33f28679b647"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-w3c-declared-header-poc-20261018",
+      "head": "20b8aa7a7b19"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-w3c-source-span-poc-20261018",
+      "head": "bda5277c3dcc"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-zeek-boundary-20261018",
+      "head": "be41dd1b1eac"
+    },
+    {
+      "path": "/home/aella/parser-studio-std-zeek-rotation-framing-20261018",
+      "head": "b998025ad02e"
+    },
+    {
+      "path": "/home/aella/parser-studio-std10-cross-family-source-poc-20261018",
+      "head": "90e73aca5ed4"
+    },
+    {
+      "path": "/home/aella/parser-studio-std5424-envelope-sd-parity-20261018",
+      "head": "07403224b879"
+    },
+    {
+      "path": "/home/aella/parser-studio-std5424-time-version-20261018",
+      "head": "b058f4f2e721"
+    },
+    {
+      "path": "/home/aella/parser-studio-std75-cross-family-convergence-20261018",
+      "head": "67e267625b2b"
+    },
+    {
+      "path": "/home/aella/parser-studio-std77-csv-multiline-source-20261018",
+      "head": "67e267625b2b"
+    },
+    {
+      "path": "/home/aella/parser-studio-std77-rfc4180-multiline-original-spans-20261018",
+      "head": "71b19c002b03"
+    },
+    {
+      "path": "/home/aella/parser-studio-std78-relay-provenance-boundary-20261018",
+      "head": "66c234c6b838"
+    },
+    {
+      "path": "/home/aella/parser-studio-std79-leef-empty-duplicate-source-policy-20261018",
+      "head": "0be503d485b8"
+    },
+    {
+      "path": "/home/aella/parser-studio-std8-grammar-conflict-poc-20261018",
+      "head": "5c3377f8323e"
+    },
+    {
+      "path": "/home/aella/parser-studio-std80-octet-counted-rfc5424-msg-20261018",
+      "head": "615f1f87e86c"
+    },
+    {
+      "path": "/home/aella/parser-studio-std81-byte-opaque-rfc5424-msg-20261018",
+      "head": "309189334fcf"
+    },
+    {
+      "path": "/home/aella/parser-studio-std82-standards-traceability-20261018",
+      "head": "c02761250fd0"
+    },
+    {
+      "path": "/home/aella/parser-studio-std83-declared-brace-csv-source-20261018",
+      "head": "47480169bb7e"
+    },
+    {
+      "path": "/home/aella/parser-studio-std9-publisher-cef-poc-20261018",
+      "head": "f9542b0bd3f6"
+    },
+    {
+      "path": "/home/aella/parser-studio-std9-publisher-w3c-oracle-poc-20261018",
+      "head": "21538f30468e"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-baseline-20261016",
+      "head": "c986ab44c544"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-baseline2-20261016",
+      "head": "aa457e89ee97"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-body-decoupling-poc-20261016",
+      "head": "b7110bc5c14e"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-foundation-poc-20261016",
+      "head": "6b4f125d01e8"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-foundation-poc-r2-20261016",
+      "head": "2810a644a11b"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-generalization-conformance-20261017",
+      "head": "7b05891ab304"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-kv-field-fidelity-poc-20261017",
+      "head": "6749af3f8de6"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslog-kv-fresh-holdout-20261017",
+      "head": "c172a147e57c"
+    },
+    {
+      "path": "/home/aella/parser-studio-syslogng-independent-holdout-20261017",
+      "head": "aac74143a316"
+    },
+    {
+      "path": "/home/aella/parser-studio-usable-beta-http-copy-regression-20261018",
+      "head": "3d9ce3f8b3cd"
+    },
+    {
+      "path": "/home/aella/parser-studio-usable-structural-beta-20261018",
+      "head": "1cd3518901d0"
+    }
+  ],
+  "reachable_web_module_count": 76,
+  "reachable_python_module_count": 34,
+  "reachable_web_paths": [
+    "src/App.tsx",
+    "src/fieldPaths.ts",
+    "src/genericStructural.ts",
+    "src/guided/AutoParser.tsx",
+    "src/guided/AutoParserAIReview.tsx",
+    "src/guided/AutoParserLocalReplay.tsx",
+    "src/guided/BeginnerAnalysisPanel.tsx",
+    "src/guided/BeginnerHelp.tsx",
+    "src/guided/ChatGPTAssist.tsx",
+    "src/guided/DeclaredRelayProfilePanel.tsx",
+    "src/guided/ExistingParserReviewPanel.tsx",
+    "src/guided/LocalVersionsPanel.tsx",
+    "src/guided/ManualSourceBoundaryReview.tsx",
+    "src/guided/NormalizationMappingReview.tsx",
+    "src/guided/PythonTestSenderPanel.tsx",
+    "src/guided/ReviewedEventProfilesPanel.tsx",
+    "src/guided/SampleUnionReview.tsx",
+    "src/guided/aiRecipeExchange.ts",
+    "src/guided/approvedPatterns.ts",
+    "src/guided/artifactPackageClient.ts",
+    "src/guided/auto.css",
+    "src/guided/autoParserDraft.ts",
+    "src/guided/autoParserEnvelope.ts",
+    "src/guided/autoParserRegression.ts",
+    "src/guided/backendAdapter.ts",
+    "src/guided/backendCapabilities.ts",
+    "src/guided/backendClient.ts",
+    "src/guided/backendSchemaGuide.ts",
+    "src/guided/beginnerAiPrompt.ts",
+    "src/guided/contract.ts",
+    "src/guided/declaredForwarder.ts",
+    "src/guided/drain3OfflineClient.ts",
+    "src/guided/fieldMappingSuggestions.ts",
+    "src/guided/genericStructuralAutoDraft.ts",
+    "src/guided/guided.css",
+    "src/guided/knownParserFingerprints.ts",
+    "src/guided/localPatternMining.ts",
+    "src/guided/localProjectImport.ts",
+    "src/guided/localVersions.css",
+    "src/guided/localWorkspaceHistory.ts",
+    "src/guided/logicalBoundaryReview.ts",
+    "src/guided/manualSourceBoundaries.ts",
+    "src/guided/multiEventRouting.ts",
+    "src/guided/multipassPreviewClient.ts",
+    "src/guided/multipassSourceHighlights.ts",
+    "src/guided/nativeProjectVerificationClient.ts",
+    "src/guided/normalizationCandidates.ts",
+    "src/guided/normalizationValidation.ts",
+    "src/guided/pairImportReview.ts",
+    "src/guided/pairInspection.ts",
+    "src/guided/pairProjectImport.ts",
+    "src/guided/parserIdentity.ts",
+    "src/guided/parserRecipeV2.ts",
+    "src/guided/pythonTestSender.ts",
+    "src/guided/recipeV2BackendClient.ts",
+    "src/guided/replayPreview.ts",
+    "src/guided/reviewedEventFamilyDraft.ts",
+    "src/guided/reviewedEventValueEvidence.ts",
+    "src/guided/sampleTemplates.ts",
+    "src/guided/sampleUnionSchema.ts",
+    "src/guided/sourceByteSelection.ts",
+    "src/guided/stellarExportTheme.css",
+    "src/guided/stellarMetadataCatalog.ts",
+    "src/guided/twoPath.css",
+    "src/guided/typeSuggestions.ts",
+    "src/guided/zeekReview.ts",
+    "src/javaStacktrace.ts",
+    "src/main.tsx",
+    "src/model.ts",
+    "src/parser.ts",
+    "src/regexSafety.ts",
+    "src/rfc5424Subset.ts",
+    "src/sha256.ts",
+    "src/structuredFamilies.ts",
+    "src/styles.css",
+    "src/syslogEnvelope.ts"
+  ],
+  "reachable_python_paths": [
+    "runtime/multipass/bounded_funnel.py",
+    "runtime/multipass/engine.py",
+    "runtime/multipass/generic_partial_atoms.py",
+    "runtime/multipass/generic_partial_envelope.py",
+    "runtime/multipass/generic_partial_labels.py",
+    "runtime/multipass/generic_partial_single_kv.py",
+    "runtime/multipass/generic_structural_poc.py",
+    "runtime/multipass/java_source.py",
+    "runtime/multipass/multipass_adjudicator.py",
+    "runtime/multipass/multipass_contract.py",
+    "runtime/multipass/multipass_preview_api.py",
+    "runtime/multipass/multipass_residual.py",
+    "runtime/multipass/residual_kv.py",
+    "runtime/multipass/security_asa.py",
+    "runtime/multipass/security_cef.py",
+    "runtime/multipass/security_envelope.py",
+    "runtime/multipass/security_framing.py",
+    "runtime/multipass/security_juniper.py",
+    "runtime/multipass/security_leef.py",
+    "runtime/multipass/security_meraki.py",
+    "runtime/multipass/security_pairs.py",
+    "runtime/multipass/security_panos.py",
+    "runtime/multipass/security_profile_tokens.py",
+    "runtime/multipass/security_sonicwall.py",
+    "runtime/multipass/security_source.py",
+    "runtime/multipass/security_watchguard.py",
+    "runtime/multipass/source_container_stream.py",
+    "runtime/multipass/source_kv.py",
+    "runtime/multipass/source_parse.py",
+    "runtime/multipass/source_schema_stream.py",
+    "runtime/multipass/stellar_dictionary.py",
+    "runtime/multipass/structural_funnel.py",
+    "runtime/multipass/structured_source.py",
+    "runtime/multipass/visible_redaction.py"
+  ],
+  "features": {
+    "syslog_envelope": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_envelope.py",
+          "reachable": true,
+          "sha256": "98563a01bc2ecf22f90c85784dae52b3e7b393cf64881c98c9168201ec8f659d"
+        },
+        {
+          "path": "runtime/multipass/structured_source.py",
+          "reachable": true,
+          "sha256": "be3b681720ccc1de2c08fda849855edc4bc59741f34affc0304e52ce4c67bd65"
+        },
+        {
+          "path": "src/syslogEnvelope.ts",
+          "reachable": true,
+          "sha256": "0d145bb7ba98a297aaac7e49393b42a1cb788a7ae1b91d2a820cd2a39cfd2a36"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 4,
+      "poc_checkout_occurrences": 98,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/syslogEnvelope.ts",
+          "sha256": "124ce694bb6b91e09c6bb0a9783e660fa4b0c8978fb8436c85d8237a58102162",
+          "checkout_occurrences": 58,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/syslogEnvelope.ts",
+          "sha256": "0d145bb7ba98a297aaac7e49393b42a1cb788a7ae1b91d2a820cd2a39cfd2a36",
+          "checkout_occurrences": 31,
+          "example_checkouts": [
+            "parser-studio-authoring-exact-wrapper-20261019",
+            "parser-studio-backend-event-family-candidate-20261019",
+            "parser-studio-beginner-e2e-observe-20261016"
+          ]
+        },
+        {
+          "file": "src/syslogEnvelope.ts",
+          "sha256": "1aa7575d62547bf601591af21dfff96298dfb3a26727faf48fad64c79849b1cf",
+          "checkout_occurrences": 8,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/syslogEnvelope.ts",
+          "sha256": "724a4ec943a6e1c876ce5ddb77a274114f3906e9eb81c12820e26f71f3c02870",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-security-parser-round4-20261016"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "rfc5424_sd_kv",
+      "evidence_note": "Existing authored source replay retained the same structural status."
+    },
+    "rfc6587_octet_and_nul": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_FRAMED_DRAFT_UNVERIFIED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 1,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "rfc6587_octet",
+      "evidence_note": "Two frames recovered by new common container grammar; original transport DRAFT not qualified."
+    },
+    "json_typed_spans": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/source_parse.py",
+          "reachable": true,
+          "sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+        },
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 6,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/jsonBatch.ts",
+          "sha256": "6a9483c4f1e07aa7e0422b098b8589cf849db20862b69b279d88034622b565f9",
+          "checkout_occurrences": 39,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/jsonTextSequence.ts",
+          "sha256": "3098447c8f63c862133aef6a4cdd18a6d767be91966cd286249ba98580438f0b",
+          "checkout_occurrences": 39,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/jsonBatch.ts",
+          "sha256": "251b9141cd965ec4f55821acaf3214994626dae1ad742deb05bf573364f91b26",
+          "checkout_occurrences": 26,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/jsonTextSequence.ts",
+          "sha256": "269f7bea6972da4953fe5cab0a03bc3e8475a31a278402fb26483e158d5c06c6",
+          "checkout_occurrences": 26,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/jsonBatch.ts",
+          "sha256": "b0b06075c7f3ef08fdc7794fff14bbb9460348550541e64ac9bab783196f9267",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std-json-source-completeness-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/jsonTextSequence.ts",
+          "sha256": "6a88f2081668fe635c467bfa1342dc6f1bcb2ad03a064e6190f66311e23975d8",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std-json-source-completeness-poc-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "json_single_nested_utf8",
+      "evidence_note": "Existing typed JSON and UTF-8 source structure unchanged in the corpus replay."
+    },
+    "rfc7464_json_seq": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_FRAMED_DRAFT_UNVERIFIED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 4,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/jsonTextSequence.ts",
+          "sha256": "3098447c8f63c862133aef6a4cdd18a6d767be91966cd286249ba98580438f0b",
+          "checkout_occurrences": 39,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/jsonTextSequence.ts",
+          "sha256": "269f7bea6972da4953fe5cab0a03bc3e8475a31a278402fb26483e158d5c06c6",
+          "checkout_occurrences": 26,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/jsonTextSequence.ts",
+          "sha256": "6a88f2081668fe635c467bfa1342dc6f1bcb2ad03a064e6190f66311e23975d8",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std-json-source-completeness-poc-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "rfc7464_json_seq",
+      "evidence_note": "RS/JSON source framing restored; no native wire-compiler claim."
+    },
+    "gelf_tcp": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_FRAMED_DRAFT_UNVERIFIED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 2,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/gelfTcp.ts",
+          "sha256": "7a3849b08713a5a019eb95e7b4d6c2cee4840816fecde1a2585ab888108bb447",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "gelf_tcp",
+      "evidence_note": "NUL-delimited GELF 1.1 JSON source framing restored; not native-verified."
+    },
+    "ndjson": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 4,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/ndjsonStream.ts",
+          "sha256": "14f91c4dda245e833c4e8af71eae0c6068828fa4d45f71257fa40e13c89f6f44",
+          "checkout_occurrences": 39,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/ndjsonStream.ts",
+          "sha256": "d1634ee6b6f0c63a8064e47bd6e312b68123a944fe29cdf940450c44d0b65905",
+          "checkout_occurrences": 26,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/ndjsonStream.ts",
+          "sha256": "806fb5505e6b1a3c20a80ff068f2d17749ec3b4302e7705ea4b63447ff278bef",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std-json-source-completeness-poc-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "json_ndjson",
+      "evidence_note": "Multi-event newline boundaries unchanged."
+    },
+    "cef_grammar": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_cef.py",
+          "reachable": true,
+          "sha256": "7395d5feeba2ef88b2c4bb97c0d657009393cf2fb6f357ce31f166190ad7badd"
+        },
+        {
+          "path": "runtime/multipass/structured_source.py",
+          "reachable": true,
+          "sha256": "be3b681720ccc1de2c08fda849855edc4bc59741f34affc0304e52ce4c67bd65"
+        },
+        {
+          "path": "src/structuredFamilies.ts",
+          "reachable": true,
+          "sha256": "e813349192a701b0bc1abe61089ad9e8c1ed032b50cec261acb6817ab37807e9"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 11,
+      "poc_checkout_occurrences": 100,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "625d20a52c9d0d49ac98d0a272fbd7f7d3f40317d9f8c6fa29f38519363dd313",
+          "checkout_occurrences": 37,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "e813349192a701b0bc1abe61089ad9e8c1ed032b50cec261acb6817ab37807e9",
+          "checkout_occurrences": 33,
+          "example_checkouts": [
+            "parser-studio-authoring-exact-wrapper-20261019",
+            "parser-studio-backend-event-family-candidate-20261019",
+            "parser-studio-beginner-e2e-observe-20261016"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "e44c86221c760cdd1f19ccb118eb54b263875a145681da393038ecc9e4c0d227",
+          "checkout_occurrences": 9,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "0504ab07491a1495372d83fb53b6ad9e61f4e3a0a2eb450833ddf457ff9be670",
+          "checkout_occurrences": 8,
+          "example_checkouts": [
+            "parser-studio-std-cef-extension-source-span-poc-20261018",
+            "parser-studio-std-iisw3c-declared-rotation-20261018",
+            "parser-studio-std-w3c-declared-header-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "a3ea81c255e1b8273d1c926834f11e9ee891b6ec634b5d119e6ae63678c2da86",
+          "checkout_occurrences": 6,
+          "example_checkouts": [
+            "parser-studio-std-cef-extension-source-20261018",
+            "parser-studio-std-json-nested-spans-poc-20261018",
+            "parser-studio-std75-cross-family-convergence-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "091882c051056762f0a7fcf25d75e203a3d48f28364d427f5058d8b260e387f0",
+          "checkout_occurrences": 2,
+          "example_checkouts": [
+            "parser-studio-std-kv-source-completeness-poc-20261018",
+            "parser-studio-std8-grammar-conflict-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "0f49c730025f59a963596b962e15fbf9fe3f1e0133cb0d7f3c06864ac96b1dd2",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-funnel-wrappers-20261016"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "37e5ee8900e46bdbb1957cf64688f262a8a0d19b5d7d6a0dbf7354a45f99dc84",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std-cef-shared-header-poc-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 3,
+      "evidence_case": "cef_extension",
+      "evidence_note": "Authored CEF source replay unchanged; independent firmware oracle unavailable."
+    },
+    "leef_grammar": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_leef.py",
+          "reachable": true,
+          "sha256": "e403444ae29891a0659219f1c603409ea529b600dd2ca8355e12be9a76ac91c0"
+        },
+        {
+          "path": "runtime/multipass/structured_source.py",
+          "reachable": true,
+          "sha256": "be3b681720ccc1de2c08fda849855edc4bc59741f34affc0304e52ce4c67bd65"
+        },
+        {
+          "path": "src/structuredFamilies.ts",
+          "reachable": true,
+          "sha256": "e813349192a701b0bc1abe61089ad9e8c1ed032b50cec261acb6817ab37807e9"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 11,
+      "poc_checkout_occurrences": 100,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "625d20a52c9d0d49ac98d0a272fbd7f7d3f40317d9f8c6fa29f38519363dd313",
+          "checkout_occurrences": 37,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "e813349192a701b0bc1abe61089ad9e8c1ed032b50cec261acb6817ab37807e9",
+          "checkout_occurrences": 33,
+          "example_checkouts": [
+            "parser-studio-authoring-exact-wrapper-20261019",
+            "parser-studio-backend-event-family-candidate-20261019",
+            "parser-studio-beginner-e2e-observe-20261016"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "e44c86221c760cdd1f19ccb118eb54b263875a145681da393038ecc9e4c0d227",
+          "checkout_occurrences": 9,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "0504ab07491a1495372d83fb53b6ad9e61f4e3a0a2eb450833ddf457ff9be670",
+          "checkout_occurrences": 8,
+          "example_checkouts": [
+            "parser-studio-std-cef-extension-source-span-poc-20261018",
+            "parser-studio-std-iisw3c-declared-rotation-20261018",
+            "parser-studio-std-w3c-declared-header-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "a3ea81c255e1b8273d1c926834f11e9ee891b6ec634b5d119e6ae63678c2da86",
+          "checkout_occurrences": 6,
+          "example_checkouts": [
+            "parser-studio-std-cef-extension-source-20261018",
+            "parser-studio-std-json-nested-spans-poc-20261018",
+            "parser-studio-std75-cross-family-convergence-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "091882c051056762f0a7fcf25d75e203a3d48f28364d427f5058d8b260e387f0",
+          "checkout_occurrences": 2,
+          "example_checkouts": [
+            "parser-studio-std-kv-source-completeness-poc-20261018",
+            "parser-studio-std8-grammar-conflict-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "0f49c730025f59a963596b962e15fbf9fe3f1e0133cb0d7f3c06864ac96b1dd2",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-funnel-wrappers-20261016"
+          ]
+        },
+        {
+          "file": "src/structuredFamilies.ts",
+          "sha256": "37e5ee8900e46bdbb1957cf64688f262a8a0d19b5d7d6a0dbf7354a45f99dc84",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std-cef-shared-header-poc-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 3,
+      "evidence_case": "leef_implicit_tab",
+      "evidence_note": "Authored LEEF source replay unchanged; independent firmware oracle unavailable."
+    },
+    "kv_quotes_duplicates": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/source_kv.py",
+          "reachable": true,
+          "sha256": "f7f523df9f2626c0a5b007b5349cbb519a8e2cfc26a9dfcc5b4ba963504dcc3a"
+        },
+        {
+          "path": "runtime/multipass/source_parse.py",
+          "reachable": true,
+          "sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_PRESERVING_COMPILER_GAP",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 0,
+      "poc_checkout_occurrences": 0,
+      "poc_source_digest_examples": [],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "duplicate_kv",
+      "evidence_note": "Ordered duplicate key source values retained; downstream mapping not automatically qualified."
+    },
+    "csv_rfc4180": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        },
+        {
+          "path": "runtime/multipass/engine.py",
+          "reachable": true,
+          "sha256": "f366b761be3db880d42f8040a2876e221be8d65e8809d4a2341a5f577031e1ce"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_PARTIAL_DRAFT_GAP",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 4,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/rfc4180Csv.ts",
+          "sha256": "df349d4da6ec03e4fd6aa387fc3704799145eb7af31ea7b667deca9bc5d5e349",
+          "checkout_occurrences": 42,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/rfc4180Csv.ts",
+          "sha256": "17683cab2114905c7b84ab73e3cc6b226ef052f488ac10efbb2c7f8a5b2078d9",
+          "checkout_occurrences": 12,
+          "example_checkouts": [
+            "parser-studio-std-cef-extension-source-20261018",
+            "parser-studio-std-cef-extension-source-span-poc-20261018",
+            "parser-studio-std-csv-source-parity-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/rfc4180Csv.ts",
+          "sha256": "231ccca90b748788369e455e14f6565c00818071cd8d77f27e8cc3778ba0081a",
+          "checkout_occurrences": 11,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/rfc4180Csv.ts",
+          "sha256": "11ebe0b95bc555992cde2bdf0e25d60457a08ec030eac83ea168710206770ccc",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-std77-csv-multiline-source-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "multiline_quoted_csv",
+      "evidence_note": "Quoted multiline CSV remains conservative PARTIAL and needs native qualification."
+    },
+    "w3c_declared_schema": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED_DRAFT_GAP",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 5,
+      "poc_checkout_occurrences": 68,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityInputPipeline.ts",
+          "sha256": "be9241d03259b270dde26e26153d98e19561439e85d0361f61f32449a0b4ba46",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "e4c07f3d35433ec5153867498f22fcafc3ee8e2cce48b7c2b4bf41a58965e923",
+          "checkout_occurrences": 41,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "311f395ce771bb4f79f25accbf94b88742d7707a022df82463db5271651d7164",
+          "checkout_occurrences": 15,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "9dc1594fbddfccae7400426711de79d8458abc8da5475b83f3c2fc02ba72d0b6",
+          "checkout_occurrences": 11,
+          "example_checkouts": [
+            "parser-studio-novice-expanded-20261019",
+            "parser-studio-std-cef-extension-source-20261018",
+            "parser-studio-std-cef-extension-source-span-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "b3b8a44c86ca48db375a2ea6ef1faff0c84de5572778d68933d02cc02352d856",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-security-parser-round4-20261016"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "w3c_declared_two_rows",
+      "evidence_note": "Declared original header rows restored; 12/12 pinned publisher claims, native unverified."
+    },
+    "zeek_declared_schema": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED_DRAFT_GAP",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 4,
+      "poc_checkout_occurrences": 67,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/zeekTabular.ts",
+          "sha256": "afa698ed0a9c5ac53a7c1bf07c5e15b2962b7008323a13165ad96c9cc7cdfb16",
+          "checkout_occurrences": 42,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/zeekTabular.ts",
+          "sha256": "dd98386958167445a9db49e7d0876f718e8c1f5d805ab88525a6d413a3114b2a",
+          "checkout_occurrences": 24,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/zeekTabular.ts",
+          "sha256": "f3be5e318dc8a4f297ae7055b5fa16c2ad6ad0536f34d8458745f5a3db572b17",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-security-parser-round4-20261016"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "zeek_declared_two_rows",
+      "evidence_note": "Zeek declared original header rows restored; DRAFT parser grammar not qualified."
+    },
+    "journal_export": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_GROUPED_DRAFT_GAP",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 2,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/journalExport.ts",
+          "sha256": "4fbb4d3db2b77e9c23919a0659bea23424ec1c545d989b48fdbdd180962d3bd7",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "journal_export",
+      "evidence_note": "Two journal records no longer appear as four independent SOURCE_PARSED KV lines."
+    },
+    "linux_audit_group": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "STILL_MISSING_GROUPING",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 1,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "linux_audit_group",
+      "evidence_note": "Linux audit event sequence group by serial not integrated or independently qualified."
+    },
+    "container_cri_docker": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/security_framing.py",
+          "reachable": true,
+          "sha256": "747d29bb4757d47148eb97927efd9721a5b1b83705a6ae4c32c6da8466773d85"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "PARTIAL_CONTAINER_GAP",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 2,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/containerLogFraming.ts",
+          "sha256": "c98fe575454f8159e6a15eb793ba0ec96c9ae7371fe2489588e27906f55671cd",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "cri_multiline",
+      "evidence_note": "CRI partial/final continuation group still absent; Docker JSON line remains source-extracted."
+    },
+    "mixed_format_arbitration": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/source_parse.py",
+          "reachable": true,
+          "sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+        },
+        {
+          "path": "runtime/multipass/bounded_funnel.py",
+          "reachable": true,
+          "sha256": "b03f944a92126e5364f6e642797a52ed977e6f0affb7d2d6979580dd3cf8e0e1"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_EXTRACTED_COMPILER_GATED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 2,
+      "poc_checkout_occurrences": 66,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityEventBreaker.ts",
+          "sha256": "45c37062eb1322538c1dd1b13f841c247612c86260b9aeb42a8a91babdae2ee8",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/securityInputPipeline.ts",
+          "sha256": "be9241d03259b270dde26e26153d98e19561439e85d0361f61f32449a0b4ba46",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "mixed_json_kv_cef",
+      "evidence_note": "Mixed source parsing works for authored cases, parser export supports only declared subset."
+    },
+    "utf8_original_spans": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/source_parse.py",
+          "reachable": true,
+          "sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+        },
+        {
+          "path": "runtime/multipass/multipass_contract.py",
+          "reachable": true,
+          "sha256": "35f2e7e5d3e8dbf0e3f790be251bdbab48f9bfc37cd74453d1f271752249c4fe"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_QUALIFIED_NARROW",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 5,
+      "poc_checkout_occurrences": 68,
+      "poc_source_digest_examples": [
+        {
+          "file": "src/securityInputPipeline.ts",
+          "sha256": "be9241d03259b270dde26e26153d98e19561439e85d0361f61f32449a0b4ba46",
+          "checkout_occurrences": 66,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "e4c07f3d35433ec5153867498f22fcafc3ee8e2cce48b7c2b4bf41a58965e923",
+          "checkout_occurrences": 41,
+          "example_checkouts": [
+            "parser-studio-body-evidence-arbiter-20261017",
+            "parser-studio-composite-endpoint-poc-20261017",
+            "parser-studio-declared-syslog-prefix-poc-20261017"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "311f395ce771bb4f79f25accbf94b88742d7707a022df82463db5271651d7164",
+          "checkout_occurrences": 15,
+          "example_checkouts": [
+            "parser-studio-acc-e2-relay-stage-byte-fidelity-20261018",
+            "parser-studio-acc-e3-declared-source-prefix-fidelity-20261018",
+            "parser-studio-acc-e3-e5-declared-csv-fidelity-20261018"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "9dc1594fbddfccae7400426711de79d8458abc8da5475b83f3c2fc02ba72d0b6",
+          "checkout_occurrences": 11,
+          "example_checkouts": [
+            "parser-studio-novice-expanded-20261019",
+            "parser-studio-std-cef-extension-source-20261018",
+            "parser-studio-std-cef-extension-source-span-poc-20261018"
+          ]
+        },
+        {
+          "file": "src/w3cTabular.ts",
+          "sha256": "b3b8a44c86ca48db375a2ea6ef1faff0c84de5572778d68933d02cc02352d856",
+          "checkout_occurrences": 1,
+          "example_checkouts": [
+            "parser-studio-security-parser-round4-20261016"
+          ]
+        }
+      ],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": "utf8_bom_kv",
+      "evidence_note": "All 28 replay cases accounted bytes; pinned W3C lexical/name/decoded values exact."
+    },
+    "relay_prefix_declared": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/source_parse.py",
+          "reachable": true,
+          "sha256": "ff801f24861101a2bffdb3162829613010f7244e112de05457a2d24129e6b3fd"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "SOURCE_INSPECTION_ONLY",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 0,
+      "poc_checkout_occurrences": 0,
+      "poc_source_digest_examples": [],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": null,
+      "evidence_note": "User-declared prefix/suffix UI inspection is separate from a downloadable wrapping grammar."
+    },
+    "multitype_mapping": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/multipass_contract.py",
+          "reachable": true,
+          "sha256": "35f2e7e5d3e8dbf0e3f790be251bdbab48f9bfc37cd74453d1f271752249c4fe"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "PARTIAL_COMPILER_QUALIFICATION",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 0,
+      "poc_checkout_occurrences": 0,
+      "poc_source_digest_examples": [],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": null,
+      "evidence_note": "Threat/user/asset review workflow exists; full dynamic native event mapping not independently qualified."
+    },
+    "stellar_dictionary": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/stellar_dictionary.py",
+          "reachable": true,
+          "sha256": "2b9070d1114164d2c4805acfc1d19575444c5409bea144748320ee5e4eb6235e"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "METADATA_ONLY_NOT_NATIVE",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 0,
+      "poc_checkout_occurrences": 0,
+      "poc_source_digest_examples": [],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": null,
+      "evidence_note": "Dictionary projection metadata exists, but target field normalization not checked on actual Stellar."
+    },
+    "compiler_status_gating": {
+      "product_paths": [
+        {
+          "path": "runtime/multipass/multipass_preview_api.py",
+          "reachable": true,
+          "sha256": "f9ee92a53c36cbfd3be82698ca94ebe9817547c96d3426bc364009c4e8222afa"
+        }
+      ],
+      "static_trace": "FILE_AND_IMPORT_REACHABILITY_ONLY_NOT_BEHAVIORAL_PROOF",
+      "classification": "IN_PROGRESS_FAIL_CLOSED",
+      "notes": "Filename/symbol presence alone never proves functional equivalence.",
+      "unique_poc_source_variants": 0,
+      "poc_checkout_occurrences": 0,
+      "poc_source_digest_examples": [],
+      "poc_variants_omitted_from_digest_examples": 0,
+      "evidence_case": null,
+      "evidence_note": "Source PARTIAL is not native success; three public beginner review-gate UX gaps reproduced."
+    }
+  },
+  "privacy": "metadata and source code digests only; no private log or fixture payloads"
+}

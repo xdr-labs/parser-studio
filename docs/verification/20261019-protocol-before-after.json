@@ -1,0 +1,1684 @@
+{
+  "contract": "parserstudio.protocol-before-after.v1",
+  "baseline_head": "0392401f0331c89dd07eed70e5ba939c8e4ac85c",
+  "candidate_base_head": "0392401f0331c89dd07eed70e5ba939c8e4ac85c",
+  "case_count": 28,
+  "cases": {
+    "w3c_declared_two_rows": {
+      "source_sha256": "6e3315d8881fc902b1cd9b5077b720f0ed5f8ba39dbb97e2e4c6d5df677563d4",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 2,
+      "before": {
+        "record_count": 4,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "residual_bytes": [
+          13,
+          65,
+          50,
+          46
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "W3C_EFL_DECLARED",
+          "W3C_EFL_DECLARED"
+        ],
+        "issue_codes": [
+          [
+            "SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          6,
+          6
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 2,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "zeek_declared_two_rows": {
+      "source_sha256": "53c94a5528298a47445564727df19873686512c0050c11ec751f7812ce4719ad",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 2,
+      "before": {
+        "record_count": 7,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "PARTIAL",
+          "PARTIAL",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN+GENERIC_ATOMS",
+          "UNKNOWN+GENERIC_ATOMS",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0,
+          0,
+          0,
+          2,
+          2,
+          0
+        ],
+        "residual_bytes": [
+          15,
+          10,
+          34,
+          28,
+          18,
+          18,
+          17
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "ZEEK_TSV_DECLARED",
+          "ZEEK_TSV_DECLARED"
+        ],
+        "issue_codes": [
+          [
+            "SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          4,
+          4
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 5,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "w3c_bad_row": {
+      "source_sha256": "39ff31cde1316d2debe87992829728cf31b7095568159099f4aed7d4220210dc",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 2,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0
+        ],
+        "residual_bytes": [
+          23,
+          20
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "W3C_EFL_DECLARED"
+        ],
+        "issue_codes": [
+          [
+            "SCHEMA_ROW_INVALID"
+          ]
+        ],
+        "field_count": [
+          0
+        ],
+        "residual_bytes": [
+          20
+        ],
+        "metadata_partitions": 1,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "w3c_bom": {
+      "source_sha256": "1eba7a9f546b963b52b410035bb0bb61e56bb4603a7be8aa69512b55fffcfc40",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 2,
+      "before": {
+        "record_count": 4,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "residual_bytes": [
+          13,
+          65,
+          50,
+          46
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "W3C_EFL_DECLARED",
+          "W3C_EFL_DECLARED"
+        ],
+        "issue_codes": [
+          [
+            "SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          6,
+          6
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 2,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "zeek_malformed": {
+      "source_sha256": "6b56fc26b783987b4287ea7aae3bf0306d2307bbb51480b1fbc64351cdbb1e8f",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 3,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0,
+          0
+        ],
+        "residual_bytes": [
+          14,
+          18,
+          9
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "ZEEK_TSV_DECLARED"
+        ],
+        "issue_codes": [
+          [
+            "SCHEMA_ROW_INVALID"
+          ]
+        ],
+        "field_count": [
+          0
+        ],
+        "residual_bytes": [
+          9
+        ],
+        "metadata_partitions": 2,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "json_single_nested_utf8": {
+      "source_sha256": "1e7de2fb640427e2b7c556943012d4b02e8cc631ccd1307c24559bda0f8d196a",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "json_ndjson": {
+      "source_sha256": "c7d05023a29bb71f34afd711be9f4658d86e2b647121132d04c6a161d81fe245",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 2,
+      "before": {
+        "record_count": 2,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON",
+          "JSON"
+        ],
+        "issue_codes": [
+          [],
+          []
+        ],
+        "field_count": [
+          3,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON",
+          "JSON"
+        ],
+        "issue_codes": [
+          [],
+          []
+        ],
+        "field_count": [
+          3,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "json_array": {
+      "source_sha256": "c82a0ffb587cdbc0bdf8b4bda06d67c22ddeb1e8f9fb6c46929663346b82c27a",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          6
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          6
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "json_prefix_syslog": {
+      "source_sha256": "24aa9bf669fdc3d7c1bd18c2935c6295b0781b26379e9ec121142e56d6307ebe",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "SECURITY_SYSLOG_ENVELOPE+JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          8
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "SECURITY_SYSLOG_ENVELOPE+JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          8
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "rfc5424_sd_kv": {
+      "source_sha256": "bdc4794595e99b3e8e6a841b9ef66a6f6c4b19f74f72cc820ce2d9bda75e3b4a",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "SYSLOG_RFC5424+KV"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          11
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "SYSLOG_RFC5424+KV"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          11
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "rfc3164_cef": {
+      "source_sha256": "2476a0eea9abd09a3f2cfda94a9407c0866a73d1eea2f8fe6ac78954b4521d6b",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "MULTIPASS_MERGE[security.base+cef.standard]"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          15
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "MULTIPASS_MERGE[security.base+cef.standard]"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          15
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "cef_extension": {
+      "source_sha256": "c19a331ccd3ae065dcfc03dba30b8d399820438fe3b5eef1dd901cb7c0475551",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "MULTIPASS_MERGE[security.base+cef.standard]"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          10
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "MULTIPASS_MERGE[security.base+cef.standard]"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          10
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "leef_implicit_tab": {
+      "source_sha256": "62f2e31dbaa641f1b30ab8a46311e60a818831ed1bba41ba65e2e6a5d0178280",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "LEEF_2_IMPLICIT_TAB"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          8
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "LEEF_2_IMPLICIT_TAB"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          8
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "duplicate_kv": {
+      "source_sha256": "a6bfb582facb5b16da3717281d4a72e9bc9fad32a0d8dda8add5364de1e6f091",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          4
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          4
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "utf8_bom_kv": {
+      "source_sha256": "9ac4f22320c2532ee4b6b872d57a42d96dfbef7e2aa3a4e0981e88e4ad4ae624",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          4
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          4
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "multiline_quoted_csv": {
+      "source_sha256": "267ab888be9085026948bbac59921f0dd83ec7201453e1e0edcde23118a5bba5",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 3,
+        "status": [
+          "PARTIAL",
+          "RAW_ONLY",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "CSV_UNLABELED_CANDIDATE",
+          "UNKNOWN",
+          "CSV_UNLABELED_CANDIDATE"
+        ],
+        "issue_codes": [
+          [
+            "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"
+          ],
+          [
+            "FRAMING_MULTILINE_CSV_REVIEW"
+          ],
+          [
+            "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"
+          ]
+        ],
+        "field_count": [
+          3,
+          0,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          26,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 3,
+        "status": [
+          "PARTIAL",
+          "RAW_ONLY",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "CSV_UNLABELED_CANDIDATE",
+          "UNKNOWN",
+          "CSV_UNLABELED_CANDIDATE"
+        ],
+        "issue_codes": [
+          [
+            "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"
+          ],
+          [
+            "FRAMING_MULTILINE_CSV_REVIEW"
+          ],
+          [
+            "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"
+          ]
+        ],
+        "field_count": [
+          3,
+          0,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          26,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "bad_csv_quote": {
+      "source_sha256": "dc73f4a60d6027de950c4176b9e96ff3ee8d5cb5210869e73cee609dbb4b6069",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "CSV_UNLABELED_CANDIDATE",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"
+          ],
+          [
+            "FRAMING_TRUNCATED_CSV"
+          ]
+        ],
+        "field_count": [
+          3,
+          0
+        ],
+        "residual_bytes": [
+          0,
+          18
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "CSV_UNLABELED_CANDIDATE",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION"
+          ],
+          [
+            "FRAMING_TRUNCATED_CSV"
+          ]
+        ],
+        "field_count": [
+          3,
+          0
+        ],
+        "residual_bytes": [
+          0,
+          18
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "invalid_pri": {
+      "source_sha256": "da41a2591e1c82d5b4ca5550062cb038d6a2ced19f833fd694a2e0b1a50c7925",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "PARTIAL"
+        ],
+        "syntax": [
+          "UNKNOWN+GENERIC_ATOMS"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          60
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "PARTIAL"
+        ],
+        "syntax": [
+          "UNKNOWN+GENERIC_ATOMS"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          60
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "mixed_json_kv_cef": {
+      "source_sha256": "4f63f191d27fefdf7a235793a7a568627e203a5246562b72dc32b6a2d84d8452",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 3,
+      "before": {
+        "record_count": 3,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON",
+          "KV",
+          "MULTIPASS_MERGE[security.base+cef.standard]"
+        ],
+        "issue_codes": [
+          [],
+          [],
+          []
+        ],
+        "field_count": [
+          3,
+          4,
+          10
+        ],
+        "residual_bytes": [
+          0,
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 3,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON",
+          "KV",
+          "MULTIPASS_MERGE[security.base+cef.standard]"
+        ],
+        "issue_codes": [
+          [],
+          [],
+          []
+        ],
+        "field_count": [
+          3,
+          4,
+          10
+        ],
+        "residual_bytes": [
+          0,
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "rfc6587_octet": {
+      "source_sha256": "b611e94b6072b2300295056778ca5e57a3e69dd20dff72ea091510c7c573adc9",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "PARTIAL"
+        ],
+        "syntax": [
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR",
+            "ISLAND_DUPLICATE_VENDOR_FIELD",
+            "ISLAND_DUPLICATE_VENDOR_FIELD"
+          ]
+        ],
+        "field_count": [
+          4
+        ],
+        "residual_bytes": [
+          159
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "SYSLOG_RFC5424+KV",
+          "SYSLOG_RFC5424+KV"
+        ],
+        "issue_codes": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          11,
+          11
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "rfc6587_nul": {
+      "source_sha256": "cfac22042e90cd6792c9312c501c7410ccb9dd535580ff76ce3bccf5318b527a",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "SOURCE_SIZE_OR_NUL_INVALID"
+          ]
+        ],
+        "field_count": [
+          0
+        ],
+        "residual_bytes": [
+          206
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "SYSLOG_RFC5424+KV",
+          "SYSLOG_RFC5424+KV"
+        ],
+        "issue_codes": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          11,
+          11
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "rfc7464_json_seq": {
+      "source_sha256": "73eadb78dc3929f658866b474c771cd463b1cf325ab5ae8247c30de62781fbc6",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "JSON+GENERIC_ATOMS",
+          "JSON+GENERIC_ATOMS"
+        ],
+        "issue_codes": [
+          [
+            "SOURCE_SYNTAX_ERROR:Expecting value: line 1 column 1 (char 0)"
+          ],
+          [
+            "SOURCE_SYNTAX_ERROR:Expecting value: line 1 column 1 (char 0)"
+          ]
+        ],
+        "field_count": [
+          1,
+          1
+        ],
+        "residual_bytes": [
+          55,
+          55
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "JSON",
+          "JSON"
+        ],
+        "issue_codes": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          3,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "gelf_tcp": {
+      "source_sha256": "725b0f7c44c238ad1c7a163ad9f9b1c4ef74737fec721481664384b7e597b5a8",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "FRAMING_JSON_TRAILING_CONTENT"
+          ]
+        ],
+        "field_count": [
+          0
+        ],
+        "residual_bytes": [
+          52
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "PARTIAL"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "journal_export": {
+      "source_sha256": "ad32a7010c1f054a90a06f3de249b871168d2f9df295ca38caeba433b45e916c",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 4,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED",
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV",
+          "KV",
+          "KV",
+          "KV"
+        ],
+        "issue_codes": [
+          [],
+          [],
+          [],
+          []
+        ],
+        "field_count": [
+          2,
+          1,
+          2,
+          1
+        ],
+        "residual_bytes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "JOURNAL_EXPORT_GROUP",
+          "JOURNAL_EXPORT_GROUP"
+        ],
+        "issue_codes": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "field_count": [
+          2,
+          2
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": true,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "linux_audit_group": {
+      "source_sha256": "9267c3ce2c74bdcc007ece07334f4b9d6c027d20c8f5704109f503da56b5d469",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 2,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV",
+          "KV"
+        ],
+        "issue_codes": [
+          [],
+          []
+        ],
+        "field_count": [
+          5,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV",
+          "KV"
+        ],
+        "issue_codes": [
+          [],
+          []
+        ],
+        "field_count": [
+          5,
+          3
+        ],
+        "residual_bytes": [
+          0,
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "docker_json_file": {
+      "source_sha256": "e0aa5ab8a9c2f5f777df84dda4322879593e9dc10ba4fb1299f51d872f6d9a75",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issue_codes": [
+          []
+        ],
+        "field_count": [
+          3
+        ],
+        "residual_bytes": [
+          0
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "cri_multiline": {
+      "source_sha256": "432a23b5b6229a5bde905bcd684116b77a2b505d1ee852e91a410776293535f4",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": null,
+      "before": {
+        "record_count": 2,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0
+        ],
+        "residual_bytes": [
+          35,
+          35
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 2,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0,
+          0
+        ],
+        "residual_bytes": [
+          35,
+          35
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    },
+    "unsupported_windows_xml": {
+      "source_sha256": "c91fa690f7f938b58734ee201fda86a0f0c96449c7357ab3d8d04d9147b44790",
+      "fixture_origin": "AUTHORED_SYNTHETIC",
+      "expected_original_data_rows": 1,
+      "before": {
+        "record_count": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0
+        ],
+        "residual_bytes": [
+          55
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "after": {
+        "record_count": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN"
+        ],
+        "issue_codes": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "field_count": [
+          0
+        ],
+        "residual_bytes": [
+          55
+        ],
+        "metadata_partitions": 0,
+        "byte_accounting": true
+      },
+      "record_count_changed": false,
+      "all_original_source_bytes_accounted": true,
+      "no_new_false_complete": true
+    }
+  }
+}

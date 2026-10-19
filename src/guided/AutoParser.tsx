@@ -83,7 +83,7 @@ type ParserSetOrigin={
 };
 type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
  report?:NativeProjectVerificationReport;message:string};
-type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>};
+type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>;metadataLines?:number;transportFramingParts?:number};
 function download(filename:string,content:string|ArrayBuffer,binary=false){
  const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
  const url=URL.createObjectURL(object);
@@ -97,11 +97,11 @@ const readable:Record<string,string>={
  MIXED_OR_UNKNOWN:'The sample contains an unsupported family combination, malformed, or unrecognized events. Only explicitly allowed one-line JSON/KV/CEF/LEEF can share a parser; no log line will be discarded.',
  BOUNDARY_REVIEW:'The record boundaries are ambiguous. Review explicit event framing or use ChatGPT Assisted Parser.',
  COMPILER_UNSUPPORTED:'Parser Studio can read this log, but it cannot safely create parser files for this structure yet. Review the detected fields or use ChatGPT Assisted Parser.',
- COLUMNS_REQUIRED:'These positional values need field names before parser files can be created. Keep temporary names if you do not know the meanings yet.',
+ COLUMNS_REQUIRED:'This log has positional values without verified column names. Enter names from the product log definition for an eligible CSV stream, or use ChatGPT Assisted Parser for wrapped or mixed formats. The source fields remain intact.',
  BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
  BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
- MODEL_REVIEW_REQUIRED:'Review the detected field mappings on this screen before generating.',
+ MODEL_REVIEW_REQUIRED:'Parser Studio found source values, but their names, types or repeated occurrences cannot be mapped to one safe parser automatically. Use a trusted log field definition or ChatGPT Assisted Parser to review those choices. No source value was discarded.',
 };
 function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
 function friendlyEventStatus(status:string){
@@ -141,6 +141,7 @@ export default function AutoParser({
  const [selectedMultiPass,setSelectedMultiPass]=useState<MultiPassSourceSelection|null>(null);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
+ const [reviewBlock,setReviewBlock]=useState<{key:string;reason:string}|null>(null);
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
  const [capability,setCapability]=useState<{source:string;value:BackendCapabilities}|null>(null);
  const [csvApprovedKey,setCsvApprovedKey]=useState('');
@@ -195,7 +196,7 @@ export default function AutoParser({
    setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
    setSaveAfterApproval(false);
-   setBusy(false);setMessage('');
+   setBusy(false);setMessage('');setReviewBlock(null);
  },[identity]);
  useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
  // Changing type names or group membership revokes previously reviewed
@@ -388,10 +389,11 @@ export default function AutoParser({
    try{assertBackendProjectSupported(explicitBackendProject.project,capability.value);return true;}
    catch{return false;}
  },[browserSuiteComplete,explicitBackendProject,capability,sample]);
+ const currentReviewBlock=reviewBlock?.key===identity?reviewBlock:null;
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
-   report.complete&&report.sourceCount>0&&!busy&&csvApproved&&
-   (advanced||beginnerResolved)&&namedLogReady;
- const canGenerate=step===3&&namedLogReady&&!!currentReview&&!!suite&&!pending&&
+   report.complete&&report.sourceCount>0&&!busy&&!currentReviewBlock&&
+   csvApproved&&(advanced||beginnerResolved)&&namedLogReady;
+ const canGenerate=step===3&&namedLogReady&&!!currentReview&&!currentReviewBlock&&!!suite&&!pending&&
    !busy&&(assessment.status==='DRAFT_COMPILABLE'||explicitDraftCompilable);
  const confirmed=()=>{
    const record=suite;
@@ -428,7 +430,7 @@ export default function AutoParser({
         bodyFormat:null,nativeVerified:false as const,targetVerified:false as const}:
        baseline;
      const next=prepareAutoParserDraft(sample,draft,suite,report,compiler);
-     if(!next.ok){setMessage(statusMessage(next.reason));return;}
+     if(!next.ok){setReviewBlock({key:expected,reason:next.reason});setMessage('');return;}
      setDraft(next.draft);setReviewed({
        source:sample,mappingCount:next.automaticMappingCount,
        requiresApproval:next.requiresApproval,
@@ -745,9 +747,10 @@ export default function AutoParser({
   setMultiPassNotice('');setMultiPassBusy(true);
   try{
    let review:MultiPassReview;
-   if(original.includes('\n')||original.includes('\r')){
+   if(original.includes('\n')||original.includes('\r')||original.includes('\0')||
+      original.startsWith('\x1e')||/^[1-9][0-9]{0,5} /.test(original)){
     const result=await requestMultiPassBatchPreview(original);
-    review={raw:original,events:result.events.map(item=>({
+    review={raw:original,metadataLines:result.separators.filter(item=>item.kind==='SOURCE_METADATA').length,transportFramingParts:result.separators.filter(item=>item.kind==='SOURCE_FRAMING').length,events:result.events.map(item=>({
      startByte:item.startByte,endByte:item.endByte,preview:item.preview,
     }))};
    }else{
@@ -881,6 +884,7 @@ export default function AutoParser({
        </StageGuide>
        <p>Paste or upload a few representative security events. Parser Studio will try to identify
          the structure and fields for you. Nothing changes until you press <b>Analyze Logs</b>.</p>
+       <small>For exact original line endings and UTF-8 byte locations, upload the source file. Pasting into a browser text box can normalize CRLF to LF.</small>
        <NamedLogTypesPanel groups={namedLogTypes}
          onEnable={onEnableNamedLogTypes} onChange={onChangeNamedLogTypes}
          onExit={onExitNamedLogTypes} analysis={namedAnalysis??undefined}/>
@@ -948,6 +952,7 @@ export default function AutoParser({
          events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
          draft={draft} suite={suite} onApplyCandidate={setDraft}
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
+         compilerBlockedReason={currentReviewBlock?.reason}
          parserRuleReviewRequired={parserRuleReviewRequired}
          parserRuleReviewEventIndexes={parserRuleReviewEventIndexes}
          csvReviewRequired={csvReviewActive&&!csvApproved}
@@ -992,7 +997,9 @@ export default function AutoParser({
          </button>
          <small>This checks only the sample on this development server. It does not deploy anything or prove that final parser files work on a live Stellar system.</small>
          {multiPassNotice&&<p role="status">{multiPassNotice}</p>}
-         {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Detailed event accounting">
+         {currentMultiPassReview&&Boolean(currentMultiPassReview.transportFramingParts)&&<p className="auto-parser-note" role="status">Parser Studio kept {currentMultiPassReview.transportFramingParts} original transport boundaries or journal-entry separators. The original event count and source bytes are preserved. This transport framing is not yet verified for downloadable parser execution.</p>}
+       {currentMultiPassReview&&currentMultiPassReview.metadataLines!==undefined&&currentMultiPassReview.metadataLines>0&&<p className="auto-parser-note" role="status">Parser Studio kept {currentMultiPassReview.metadataLines} original schema/header lines as source metadata, not data events. The parsed field values are available for review; creating a downloadable parser for this exact header-dependent input is not yet verified.</p>}
+       {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Detailed event accounting">
            <strong>{currentMultiPassReview.events.length} event{currentMultiPassReview.events.length===1?'':'s'} checked without dropping source text</strong>
            <span>{currentMultiPassCounts.SOURCE_PARSED??0} fields found · {currentMultiPassCounts.PARTIAL??0} need review · {currentMultiPassCounts.RAW_ONLY??0} not yet understood · {currentMultiPassCounts.STRUCTURED_EMPTY??0} structure only</span>
            <span>Diagnostic check only · final parser files are tested later</span>
@@ -1308,6 +1315,18 @@ export default function AutoParser({
          <p className="beginner-next-step needs-fix" role="status">Resolve the events marked above before continuing. Already-correct fields remain preserved.</p>}
        {!advanced&&currentMultiPassReview&&beginnerResolved&&pending&&
          <p className="beginner-next-step" role="status">Source extraction is complete. Preparing the browser parser draft for field review…</p>}
+       {currentReviewBlock&&<div className="auto-parser-warning" role="alert" aria-label="Parser draft not ready">
+         <strong>Source fields are available, but this parser draft is not ready.</strong>
+         <p>{statusMessage(currentReviewBlock.reason)}</p>
+         <p>No source value was discarded. This is source extraction only; a downloadable parser and Stellar Cyber mapping are not yet verified for these original events.</p>
+         <details><summary>Inspect extracted source fields (read-only)</summary>
+           <p>These are original-source values. Choose field names and repeated-value policies before generating parser files.</p>
+           {Object.entries(currentMultiPass?.fields??{}).slice(0,40).map(([name,value])=>
+             <p key={name}><strong>{name}</strong>: {JSON.stringify(value).slice(0,180)}</p>)}
+         </details>
+         <button type="button" onClick={onChatGPT}>Use ChatGPT Assisted Parser</button>
+         <button type="button" onClick={()=>setReviewBlock(null)}>Re-check parser support</button>
+       </div>}
        <button type="button" className="auto-parser-primary"
          disabled={!canReview} onClick={()=>{void review();}}>
          {busy?'Checking the parser…':!advanced&&beginnerResolved&&pending?'Preparing Parser Draft…':advanced?'Review Detected Results':'Review Fields'} <ArrowRight size={16}/>

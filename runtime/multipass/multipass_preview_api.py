@@ -80,7 +80,7 @@ def preview_batch(raw:str)->dict:
     # The batch framer is authoritative for malformed/ambiguous record
     # boundaries. Never reparse its fail-closed events into apparent success.
     selected=[
-        frame.event if any(issue.startswith('FRAMING_') for issue in frame.event.issues)
+        frame.event if any(issue.startswith(('FRAMING_','SCHEMA_')) for issue in frame.event.issues)
         else funnel.selected[index]
         for index,frame in enumerate(batch.frames)
     ]

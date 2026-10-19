@@ -51,7 +51,7 @@ export interface MultiPassBatchPreview {
  contract:'parser-studio.multipass-source-batch-preview.v0.1';
  sourceSha256:string;sourceBytes:number;eventCount:number;
  events:Array<{index:number;startByte:number;endByte:number;preview:MultiPassSourcePreview}>;
- separators:Array<{startByte:number;endByte:number;kind:'WHITESPACE'|'UTF8_BOM'}>;
+ separators:Array<{startByte:number;endByte:number;kind:'WHITESPACE'|'UTF8_BOM'|'SOURCE_METADATA'|'SOURCE_FRAMING'}>;
  nativeVerified:false;targetVerified:false;
 }
 function mappingMatchesContract(sourcePath:string,targetField:string,mappingClass:string):boolean{
@@ -239,7 +239,7 @@ export async function requestMultiPassBatchPreview(raw:string,requester:typeof f
   if(!item||typeof item!=='object'||Array.isArray(item)||
     !Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
     item.startByte<0||item.endByte>size||item.startByte>=item.endByte||
-    !['WHITESPACE','UTF8_BOM'].includes(item.kind))
+    !['WHITESPACE','UTF8_BOM','SOURCE_METADATA','SOURCE_FRAMING'].includes(item.kind))
     throw new Error('Invalid Multi-Pass batch separator.');
   const bytes=sourceBytes.slice(item.startByte,item.endByte);
   if(item.kind==='UTF8_BOM'){
@@ -249,7 +249,14 @@ export async function requestMultiPassBatchPreview(raw:string,requester:typeof f
    let text:string;
    try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}
    catch{throw new Error('Invalid Multi-Pass batch separator.');}
-   if(!/^[ \t\r\n]+$/.test(text))throw new Error('Invalid Multi-Pass batch separator.');
+   if(item.kind==='SOURCE_FRAMING'){
+    if(!(text==='\0'||text==='\x1e'||text==='\n\n'||text==='\r\n\r\n'||
+      (/^[1-9][0-9]{0,5} $/.test(text)&&Number(text.trim())<=65536)))
+      throw new Error('Invalid source transport framing.');
+   }else if(item.kind==='SOURCE_METADATA'){
+    if(!/^#[^\r\n]*(?:\r?\n)?$/.test(text)||bytes.length>8194)
+     throw new Error('Invalid Multi-Pass schema metadata.');
+   }else if(!/^[ \t\r\n]+$/.test(text))throw new Error('Invalid Multi-Pass batch separator.');
   }
   partitions.push({startByte:item.startByte,endByte:item.endByte});
  }
