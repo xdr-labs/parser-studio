@@ -74,6 +74,45 @@ describe('browser-only parser experiment version contract',()=>{
     expect(original.source).toContain('김민수');
   });
 
+  it('fails closed on malformed saved multi-event rules and relay settings before restore',()=>{
+    const draft=createDraft();
+    const valid=structuredClone(draft);
+    valid.eventProfiles={
+      discriminator:'event_type',unknown:'reject',variants:[
+        {name:'threat',equals:'threat',mappings:[{
+          id:'threat-user',source:'username',target:'custom.user_name',type:'string',
+        }]},
+        {name:'user',equals:'user',mappings:[{
+          id:'user-name',source:'username',target:'custom.user_name',type:'string',
+        }]},
+      ],
+    };
+    valid.forwarder={maxHops:1,relayHosts:['relay01']};
+    expect(validLocalDraft(valid)).toBe(true);
+    expect(validLocalDraft({...valid,eventProfiles:{unknown:'reject'}})).toBe(false);
+    expect(validLocalDraft({...valid,eventProfiles:{...valid.eventProfiles,variants:[]}}))
+      .toBe(false);
+    expect(validLocalDraft({...valid,eventProfiles:{...valid.eventProfiles,unknown:'fallback'}}))
+      .toBe(false);
+    expect(validLocalDraft({...valid,eventProfiles:{...valid.eventProfiles,
+      variants:[{...valid.eventProfiles.variants[0]!,mappings:[
+        {id:'foo',source:'name',target:'target',type:'run_code'},
+      ]},valid.eventProfiles.variants[1]]}})).toBe(false);
+    expect(validLocalDraft({...valid,eventProfiles:{...valid.eventProfiles,
+      variants:[{...valid.eventProfiles.variants[0]!,mappings:[
+        valid.eventProfiles.variants[0]!.mappings[0],
+        valid.eventProfiles.variants[0]!.mappings[0],
+      ]},valid.eventProfiles.variants[1]]}})).toBe(false);
+    for(const forwarder of [
+      null,{}, {maxHops:4,relayHosts:['relay01']},
+      {maxHops:1,relayHosts:'relay01'},
+      {maxHops:1,relayHosts:['relay01','relay01']},
+      {maxHops:1,relayHosts:['bad hostname']}
+    ])expect(validLocalDraft({...valid,forwarder})).toBe(false);
+    expect(valid.eventProfiles.variants[0]!.mappings[0]!.target).toBe('custom.user_name');
+    expect(valid.forwarder.relayHosts).toEqual(['relay01']);
+  });
+
   it('rejects duplicate, malformed and unsafe persisted parser settings',()=>{
     const draft=createDraft();
     expect(validLocalDraft({...draft,format:'forged'})).toBe(false);
