@@ -35,6 +35,7 @@ import {requestMultiPassBatchPreview,requestMultiPassPreview,type MultiPassSourc
 import {buildMultiPassSourceHighlights,type MultiPassSourceSelection} from './multipassSourceHighlights';
 import AutoParserLocalReplay from './AutoParserLocalReplay';
 import PythonTestSenderPanel from './PythonTestSenderPanel';
+import ManualSourceBoundaryReview from './ManualSourceBoundaryReview';
 import SampleUnionReview from './SampleUnionReview';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
@@ -115,6 +116,7 @@ export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
  runPreview,onChatGPT,advanced,
 }:Props){
+ const sourceLogRef=useRef<HTMLTextAreaElement|null>(null);
  const [step,setStep]=useState<0|1|2|3>(0);
  const [furthestStep,setFurthestStep]=useState<0|1|2|3>(0);
  const [navigationHint,setNavigationHint]=useState('');
@@ -848,7 +850,7 @@ export default function AutoParser({
            Return to all {parserSetOrigin.sourceCount} logs
          </button>
        </div>}
-       <textarea spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
+       <textarea ref={sourceLogRef} spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
          placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
          value={sample} onChange={e=>{const value=e.target.value;
            if(parserSetOriginRef.current?.groupSource!==value){
@@ -862,6 +864,7 @@ export default function AutoParser({
          </button>
          <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
        </div>
+       <ManualSourceBoundaryReview source={sample} sourceInput={sourceLogRef}/>
        <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
          Parser Studio could not complete local analysis. Your source was preserved. Open troubleshooting tools only if you need more diagnostic detail.
