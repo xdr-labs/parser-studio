@@ -311,6 +311,7 @@ test('saved reviewed relay and event families download intact after reload',asyn
   const relay=page.locator('details[aria-label="Review declared relay hosts"]');
   await relay.locator('summary').first().click();
   await relay.getByLabel('Declared relay hostname list').fill('relay01');
+  await relay.getByLabel('Maximum declared relay hops').selectOption('2');
   await expect(relay.getByLabel('Relay source preview'))
     .toContainText('3 of 3 events recognized');
   await relay.getByRole('button',{name:'Apply declared relay profile'}).click();
@@ -337,6 +338,10 @@ test('saved reviewed relay and event families download intact after reload',asyn
   await versions.getByText('Reviewed relay and three types',{exact:true})
     .locator('..').locator('..').getByRole('button',{name:'Restore'}).click();
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
+  const restoredRelay=page.locator('details[aria-label="Review declared relay hosts"]');
+  await restoredRelay.locator('summary').first().click();
+  await expect(restoredRelay.getByLabel('Declared relay hostname list')).toHaveValue('relay01');
+  await expect(restoredRelay.getByLabel('Maximum declared relay hops')).toHaveValue('2');
   await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   await page.getByRole('button',{name:'Review Detected Results'}).click();
   await expect(page.getByLabel('Configured event profiles')).toContainText('3 explicit event types');
@@ -354,7 +359,7 @@ test('saved reviewed relay and event families download intact after reload',asyn
   const token=/Base64.strict_decode64\('([^']+)'\)/.exec(ruby)?.[1];
   expect(token).toBeTruthy();
   const project=JSON.parse(Buffer.from(token!,'base64').toString('utf8'));
-  expect(project.extraction.forwarder).toEqual({maxHops:1,relayHosts:['relay01']});
+  expect(project.extraction.forwarder).toEqual({maxHops:2,relayHosts:['relay01']});
   expect(project.normalization.eventProfiles.variants.map((item:{name:string})=>item.name))
     .toEqual(['threat','user','asset']);
   expect(JSON.stringify(project)).not.toContain('김민수');

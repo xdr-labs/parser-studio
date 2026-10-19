@@ -10,8 +10,10 @@ import {HelpTip} from './BeginnerHelp';
 export default function DeclaredRelayProfilePanel({
   sample,draft,setDraft,
 }:{sample:string;draft:ParserDraft;setDraft:Dispatch<SetStateAction<ParserDraft>>}){
-  const [names,setNames]=useState('');
-  const [maxHops,setMaxHops]=useState<1|2|3>(1);
+  // A restored local version must open with the reviewed relay values,
+  // not a blank editable form that contradicts the active DRAFT.
+  const [names,setNames]=useState(()=>draft.forwarder?.relayHosts.join(',')??'');
+  const [maxHops,setMaxHops]=useState<1|2|3>(()=>draft.forwarder?.maxHops??1);
   const [notice,setNotice]=useState('');
   const [loading,setLoading]=useState(false);
   const latestSource=useRef(sample);latestSource.current=sample;

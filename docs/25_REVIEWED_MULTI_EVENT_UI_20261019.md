@@ -15,6 +15,9 @@ distinct security event types.
    approve or undo the configuration. Overlapping output names and
    demonstrably incompatible typed example values are rejected locally;
    absent or ignored values remain omitted with an explicit warning.
+   When a browser-local version is restored, the editable event-type
+   selector, declared relay hosts and maximum hop limit reflect the
+   stored reviewed configuration rather than displaying default values.
 3. Conditional compilation is permitted only when the local backend
    advertises the exact event-family and unknown-reject capabilities.
    Unknown source types cannot fall back to a global routing rule.

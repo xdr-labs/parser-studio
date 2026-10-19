@@ -18,7 +18,9 @@ export default function ReviewedEventProfilesPanel({
   source:string;
   pending:boolean;
 }){
-  const [field,setField]=useState('event_type');
+  // Local Versions can restore a discriminator other than event_type.
+  // Show the saved reviewer choice on the remounted review workspace.
+  const [field,setField]=useState(()=>draft.eventProfiles?.discriminator??'event_type');
   const [notice,setNotice]=useState('');
   const [approval,setApproval]=useState(false);
   const [edits,setEdits]=useState<Record<string,{target:string;type:FieldType}>>({});
