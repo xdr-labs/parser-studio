@@ -13,6 +13,7 @@ interface Props{
 const currentId='__current__';
 const identity=(value:LocalVersion):LocalWorkingCopy=>({
   datasetName:value.datasetName,source:value.source,draft:value.draft,
+  ...(value.logTypes?{logTypes:value.logTypes}:{}),
 });
 function description(error:unknown):string{
   // Browser quota/permission diagnostics, never raw sensitive contents.
@@ -87,7 +88,7 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     <div className="local-versions-heading">
       <div>
         <h2>Local Versions · Try, compare and restore</h2>
-        <p>Save your current sample logs, parsing rules, CSV settings and field mappings as separate checkpoints. Every version stays in this browser profile and website origin. No version is stored on the Parser Studio server.</p>
+        <p>Save your current log type names and samples, parsing rules, CSV settings and field mappings as separate checkpoints. Every version stays in this browser profile and website origin. No version is stored on the Parser Studio server.</p>
       </div>
       <button type="button" className="button secondary" onClick={onClose}>Close Versions</button>
     </div>

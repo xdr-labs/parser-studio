@@ -7,6 +7,7 @@ Each feature below needs deterministic tests and a visible user flow. **P0** is 
 | F01 | P0 | Parser projects and drafts | Create, rename, save and reopen without losing ordered rules |
 | F02 | P0 | Sample collection | Paste/upload many events, inspect line/event boundaries and preserve fixture identities |
 | F03 | P0 | Event family / routing | Same sample set supports conditional variants with visible per-event selected branch |
+| F03A | P0 | User-named log-type inputs | A novice can add individually named, editable and uploadable source log types from one product, inspect per-type parsing and field coverage, save/restore them in browser-local versions, and qualify an optional single parser only with independent source-backed routing evidence |
 | F04 | P0 | Format recognition | User sees candidate format and confidence, can override and retest |
 | F05 | P0 | Extractors | JSON, KV, CSV, Syslog header and regex extraction run against sample set |
 | F06 | P0 | Multi-line event breaking | Physical line grouping generates stable logical events with error trace |

@@ -210,3 +210,48 @@
 .manual-boundary-example{background:#fff;border:1px solid #dce8ec;border-radius:6px;padding:10px;margin-block:7px;}
 .manual-boundary-example span{margin-left:10px;}
 .manual-boundary-example pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto;}
+
+/* User-named multi-log input uses the existing guided Auto Parser, not a new workflow. */
+.named-log-intro,.named-log-panel,.named-log-review{
+  border:1px solid var(--line,#dfdddf);border-radius:12px;
+  background:var(--surface,#fff);padding:16px;max-width:100%;min-width:0;
+}
+.named-log-intro p,.named-log-panel p,.named-log-review p{
+  margin:6px 0;line-height:1.55;overflow-wrap:anywhere;
+}
+.named-log-intro small{display:block;margin-top:8px;color:var(--text-secondary,#5d5b60);}
+.named-log-heading,.named-log-card-heading,.named-log-card-bottom,.named-log-actions{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.named-log-heading h3,.named-log-review h3{margin:0 0 5px;}
+.named-log-heading>span{font-size:12px;color:var(--text-secondary,#5d5b60);}
+.named-log-list{display:grid;gap:12px;margin:16px 0;}
+.named-log-card{border:1px solid var(--line,#dfdddf);background:var(--canvas,#f8f8f9);
+  border-radius:10px;padding:13px;min-width:0;}
+.named-log-card label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:13px;}
+.named-log-card-heading label{flex:1 1 210px;}
+.named-log-card input:not([type=file]),.named-log-card textarea{
+  display:block;width:100%;min-width:0;border:1px solid var(--line,#dfdddf);
+  border-radius:7px;padding:10px;color:inherit;background:var(--surface,#fff);
+  font:inherit;box-sizing:border-box;}
+.named-log-card textarea{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  resize:vertical;overflow-wrap:anywhere;margin-top:5px;}
+.named-log-card .named-log-sample-label{margin:12px 0;}
+.named-log-card-bottom>label{flex:1 1 225px;min-width:0;}
+.named-log-card-bottom input[type=file]{max-width:100%;font-size:12px;}
+.named-log-card-bottom span{font-size:12px;white-space:nowrap;}
+.named-log-actions{justify-content:flex-start;margin:6px 0 12px;}
+.named-log-add{display:inline-flex;align-items:center;gap:8px;}
+.named-log-remove{display:inline-flex;align-items:center;gap:6px;}
+.named-log-warning{color:#ac3838;font-size:13px;}
+.named-log-success{color:#138a63;font-size:13px;}
+.named-log-review-row{border-top:1px solid var(--line,#dfdddf);padding:10px 0;min-width:0;}
+.named-log-review-row span{margin-left:8px;font-size:12px;color:var(--text-secondary,#5d5b60);}
+.named-log-review-row code{display:inline-block;padding:2px 5px;margin:2px;
+  border:1px solid var(--line,#dfdddf);border-radius:5px;
+  overflow-wrap:anywhere;max-width:100%;}
+@media(max-width:520px){
+  .named-log-panel,.named-log-review,.named-log-intro{padding:12px;}
+  .named-log-card-heading>*{width:100%;}
+  .named-log-card-bottom>label{flex-basis:100%;}
+}

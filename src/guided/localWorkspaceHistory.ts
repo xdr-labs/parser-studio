@@ -1,6 +1,7 @@
 import {FORMATS,type MappingRule,type ParserDraft} from '../model';
 import {validForwarderConfig,type ForwarderConfig} from './declaredForwarder';
 import {validateEventProfiles,type EventProfileConfig} from './multiEventRouting';
+import {assembleNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
 
 /**
  * User-owned, origin-scoped browser experiment snapshots.
@@ -23,6 +24,7 @@ export interface LocalVersion{
   datasetName:string;
   source:string;
   draft:ParserDraft;
+  logTypes?:NamedLogType[];
   sha256:string;
 }
 
@@ -30,6 +32,7 @@ export interface LocalWorkingCopy{
   datasetName:string;
   source:string;
   draft:ParserDraft;
+  logTypes?:NamedLogType[];
 }
 
 export interface VersionList{
@@ -115,13 +118,23 @@ export function validLocalDraft(value:unknown):value is ParserDraft{
   return true;
 }
 function snapshotContent(v:Omit<LocalVersion,'sha256'>):string{
-  return json([v.contract,v.id,v.label,v.createdAt,v.datasetName,v.source,v.draft]);
+  const content:unknown[]=[v.contract,v.id,v.label,v.createdAt,v.datasetName,v.source,v.draft];
+  if(v.logTypes!==undefined)content.push(v.logTypes);
+  return json(content);
 }
 function validateWorking(copy:LocalWorkingCopy,label:string){
   if(!safeName.test(label.trim())||typeof copy.datasetName!=='string'||
      byteSize(copy.datasetName)>256||typeof copy.source!=='string'||
      byteSize(copy.source)>MAX_SOURCE_BYTES||!validLocalDraft(copy.draft))
     throw Error('Local version is invalid or exceeds the bounded browser workspace limits.');
+  if(copy.logTypes!==undefined){
+    if(!Array.isArray(copy.logTypes)||
+       !copy.logTypes.every(item=>isObject(item)&&typeof item.id==='string'&&
+         typeof item.name==='string'&&typeof item.sample==='string')||
+       !validateNamedLogs(copy.logTypes).ok||
+       assembleNamedLogs(copy.logTypes).source!==copy.source)
+      throw Error('Named log types are invalid or do not match the exact source sample.');
+  }
   if(byteSize(json(copy))>MAX_RECORD_BYTES)
     throw Error('Local version exceeds 180 KB. Reduce the sample or parser rules.');
 }
@@ -135,6 +148,7 @@ export async function prepareLocalVersion(copy:LocalWorkingCopy,label:string):Pr
     datasetName:copy.datasetName,
     source:copy.source,
     draft:structuredClone(copy.draft),
+    ...(copy.logTypes?{logTypes:structuredClone(copy.logTypes)}:{}),
   };
   return {...entry,sha256:await digest(snapshotContent(entry))};
 }
@@ -146,7 +160,8 @@ export async function verifyLocalVersion(v:unknown):Promise<boolean>{
      !hexSha.test(v.sha256))return false;
   try{
     const value=v as unknown as LocalVersion;
-    validateWorking({datasetName:value.datasetName,source:value.source,draft:value.draft},value.label);
+    validateWorking({datasetName:value.datasetName,source:value.source,draft:value.draft,
+      ...(value.logTypes!==undefined?{logTypes:value.logTypes}:{})},value.label);
     if(byteSize(json(value))>MAX_RECORD_BYTES)return false;
     return value.sha256===await digest(snapshotContent(value));
   }catch{return false;}
@@ -249,7 +264,7 @@ export async function readLocalVersion(id:string):Promise<LocalVersion>{
 }
 export function sameLocalWorking(a:LocalWorkingCopy,b:LocalWorkingCopy):boolean{
   return a.source===b.source&&a.datasetName===b.datasetName&&
-    json(a.draft)===json(b.draft);
+    json(a.draft)===json(b.draft)&&json(a.logTypes)===json(b.logTypes);
 }
 export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):VersionComparison{
   const first=new Map(a.draft.mappings.map(m=>[m.id,m]));
@@ -260,6 +275,7 @@ export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):Vers
     second.has(id)&&json(first.get(id))!==json(second.get(id)));
   const changes:string[]=[];
   if(a.datasetName!==b.datasetName)changes.push('Dataset name');
+  if(json(a.logTypes)!==json(b.logTypes))changes.push('Named log type samples / labels');
   if(a.draft.vendor!==b.draft.vendor||a.draft.name!==b.draft.name||
      a.draft.version!==b.draft.version)changes.push('Parser identity');
   if(a.draft.format!==b.draft.format)changes.push('Parser format');

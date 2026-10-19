@@ -39,6 +39,9 @@ import PythonTestSenderPanel from './PythonTestSenderPanel';
 import ManualSourceBoundaryReview from './ManualSourceBoundaryReview';
 import SampleUnionReview from './SampleUnionReview';
 import ReviewedEventProfilesPanel from './ReviewedEventProfilesPanel';
+import NamedLogTypesPanel from './NamedLogTypesPanel';
+import NamedLogTypeReview from './NamedLogTypeReview';
+import {analyzeNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
 import DeclaredRelayProfilePanel from './DeclaredRelayProfilePanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
@@ -53,6 +56,10 @@ interface Props {
  draft:ParserDraft;
  setDraft:Dispatch<SetStateAction<ParserDraft>>;
  sample:string;setSample:(text:string)=>void;
+ namedLogTypes:NamedLogType[]|null;
+ onEnableNamedLogTypes:()=>void;
+ onChangeNamedLogTypes:(groups:NamedLogType[])=>void;
+ onExitNamedLogTypes:()=>void;
  datasetName:string;setDatasetName:(name:string)=>void;
  suite?:SuiteResult;pending:boolean;
  runPreview:(candidate:ParserDraft,raw?:string)=>Promise<SuiteResult>;
@@ -117,7 +124,8 @@ function backendReviewMessage(error:unknown){
 }
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,onChatGPT,advanced,
+ runPreview,onChatGPT,advanced,namedLogTypes,onEnableNamedLogTypes,
+ onChangeNamedLogTypes,onExitNamedLogTypes,
 }:Props){
  const sourceLogRef=useRef<HTMLTextAreaElement|null>(null);
  const [zeekOrigin,setZeekOrigin]=useState<{source:string;draft:ParserDraft;datasetName:string;dataRows:string}|null>(null);
@@ -174,7 +182,7 @@ export default function AutoParser({
    comparison:CandidateComparison;source:string;target:string}|null>(null);
  const [repairNotice,setRepairNotice]=useState('');
  const epoch=useRef(0);
- const identity=JSON.stringify([draft,sample]);
+ const identity=JSON.stringify([draft,sample,namedLogTypes]);
  const currentRef=useRef(identity);currentRef.current=identity;
  const report=useMemo(()=>analyzeLogEnvelopes(sample,
    (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder),
@@ -190,6 +198,9 @@ export default function AutoParser({
    setBusy(false);setMessage('');
  },[identity]);
  useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
+ // Changing type names or group membership revokes previously reviewed
+ // parser routes even when the concatenated source is byte-identical.
+ useEffect(()=>{setReviewed(null);setStep(0);setFurthestStep(0);},[namedLogTypes]);
  // A local suggestion only: explicit source-framing confirmation is required.
  // Never promote arbitrary newline grouping or silently rewrite edited mappings.
  const javaFramedCandidate=useMemo(()=>{
@@ -315,6 +326,13 @@ export default function AutoParser({
      nativeVerified:false as const,targetVerified:false as const,
    }:localAssessment;
  const currentReview=reviewed?.source===sample?reviewed:null;
+ const namedLogValidation=namedLogTypes?validateNamedLogs(namedLogTypes):null;
+ const namedAnalysis=useMemo(()=>namedLogTypes&&multiPass?.raw===sample?
+   analyzeNamedLogs(namedLogTypes,multiPass.events):null,
+   [namedLogTypes,multiPass,sample]);
+ const namedLogReady=!namedLogTypes||(namedLogValidation?.ok===true&&
+   namedAnalysis!==null&&namedAnalysis.unassigned===0&&
+   namedAnalysis.groups.every(group=>group.events>0&&!group.boundaryWarning));
  function navigateToStep(target:0|1|2|3){
    if(target===0){setNavigationHint('');setStep(0);return;}
    if(!currentReview){
@@ -372,12 +390,12 @@ export default function AutoParser({
  },[browserSuiteComplete,explicitBackendProject,capability,sample]);
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
    report.complete&&report.sourceCount>0&&!busy&&csvApproved&&
-   (advanced||beginnerResolved);
- const canGenerate=step===3&&!!currentReview&&!!suite&&!pending&&
+   (advanced||beginnerResolved)&&namedLogReady;
+ const canGenerate=step===3&&namedLogReady&&!!currentReview&&!!suite&&!pending&&
    !busy&&(assessment.status==='DRAFT_COMPILABLE'||explicitDraftCompilable);
  const confirmed=()=>{
    const record=suite;
-   return !!record && record.engine==='browser-preview'&&
+   return namedLogReady&&!!record && record.engine==='browser-preview'&&
      record.nativeFluentdVerified===false&&record.stellarExportVerified===false&&
      record.counts.total>0&&record.counts.total===report.sourceCount&&
      record.counts.matched===record.counts.total&&
@@ -719,6 +737,10 @@ export default function AutoParser({
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
+  if(namedLogValidation&&!namedLogValidation.ok){
+    setMultiPassNotice('Every log type needs a unique name and at least one sample before analysis.');
+    return;
+  }
   const original=sample;setMultiPass(null);setMultiPassEvent(0);setSelectedMultiPass(null);
   setMultiPassNotice('');setMultiPassBusy(true);
   try{
@@ -859,6 +881,10 @@ export default function AutoParser({
        </StageGuide>
        <p>Paste or upload a few representative security events. Parser Studio will try to identify
          the structure and fields for you. Nothing changes until you press <b>Analyze Logs</b>.</p>
+       <NamedLogTypesPanel groups={namedLogTypes}
+         onEnable={onEnableNamedLogTypes} onChange={onChangeNamedLogTypes}
+         onExit={onExitNamedLogTypes} analysis={namedAnalysis??undefined}/>
+       {!namedLogTypes&&<>
        <div className="auto-parser-source-toolbar">
          <label>Upload a log file <HelpTip label="Upload a log file"
            text="Optional. Use this instead of paste when you already have a small text, log, JSON, or CSV sample. The file is read into this browser session."/>
@@ -904,6 +930,7 @@ export default function AutoParser({
            }
            if(zeekOrigin?.dataRows!==value)setZeekOrigin(null);
            setSample(value);setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
+       </>}
        <div className="beginner-analyze-action">
          <button type="button" className="auto-parser-primary" disabled={!sample.trim()||multiPassBusy}
            onClick={()=>void previewMultiPass()}>
@@ -1309,8 +1336,10 @@ export default function AutoParser({
          Review the actual values first; the next step will suggest Stellar Cyber field names.</p>}
        {currentReview?.requiresApproval&&<p className="auto-parser-note">
          Your edited field mappings were preserved. Check them below before generating.</p>}
+       {namedAnalysis&&<NamedLogTypeReview data={namedAnalysis}/>}
        <SampleUnionReview suite={suite}/>
        <ReviewedEventProfilesPanel suite={suite} draft={draft} setDraft={setDraft}
+         highlightNamed={Boolean(namedLogTypes&&namedLogTypes.length>1)}
          source={sample} pending={pending}
          backendCapabilities={capability?.source===sample?capability.value:undefined}/>
        <label>Choose a source event

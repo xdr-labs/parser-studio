@@ -7,6 +7,7 @@ import LocalVersionsPanel from './guided/LocalVersionsPanel';
 import type {LocalVersion} from './guided/localWorkspaceHistory';
 import {HelpTip} from './guided/BeginnerHelp';
 import {MAX_DATASET_BYTES} from './parser';
+import {assembleNamedLogs,newNamedLogType,type NamedLogType} from './guided/namedLogTypes';
 
 type Workspace='auto'|'chatgpt';
 type PreviewState={key:string;suite?:SuiteResult;error?:string};
@@ -66,22 +67,46 @@ export default function App(){
       'chatgpt':'auto');
   const [draft,setDraft]=useState<ParserDraft>(()=>createDraft());
   const [sample,setSample]=useState('');
+  const [namedLogTypes,setNamedLogTypes]=useState<NamedLogType[]|null>(null);
+  const updateNamedLogTypes=(groups:NamedLogType[])=>{
+    setNamedLogTypes(groups);
+    setSample(assembleNamedLogs(groups).source);
+    setDatasetName('Named log types · Browser session only');
+  };
+  const usePlainSample=(value:string)=>{
+    if(namedLogTypes&&!window.confirm(
+      'This action switches from separately named log types to one source sample. '+
+      'The combined original logs remain in the editor, but group labels will be cleared. Continue?'))return;
+    setNamedLogTypes(null);
+    setSample(value);
+  };
+  const enableNamedLogTypes=()=>updateNamedLogTypes([
+    newNamedLogType(crypto.randomUUID(),'General',sample),
+    newNamedLogType(crypto.randomUUID(),'Log Type 2'),
+  ]);
+  const exitNamedLogTypes=()=>{
+    if(!window.confirm('Keep all combined sample logs and return to a single text box? Log type names will no longer be editable.'))return;
+    setNamedLogTypes(null);
+  };
   const [advanced,setAdvanced]=useState(false);
   const [versionsOpen,setVersionsOpen]=useState(false);
   const [restoredEpoch,setRestoredEpoch]=useState(0);
   const [datasetName,setDatasetName]=useState('No sample selected');
-  const workingCopy=useMemo(()=>({datasetName,source:sample,draft}),
-    [datasetName,sample,draft]);
+  const workingCopy=useMemo(()=>({datasetName,source:sample,draft,
+    ...(namedLogTypes?{logTypes:namedLogTypes}:{}),
+  }),[datasetName,sample,draft,namedLogTypes]);
   const restoreLocalVersion=(version:LocalVersion)=>{
     // All derivable previews/approvals must be rerun after restoring a snapshot.
-    setSample(version.source);setDraft(structuredClone(version.draft));
+    setSample(version.source);setNamedLogTypes(version.logTypes?structuredClone(version.logTypes):null);
+    setDraft(structuredClone(version.draft));
     setDatasetName(version.datasetName);setWorkspace('auto');
     setAdvanced(false);setRestoredEpoch(old=>old+1);
   };
   const live=useLivePreview(sample,draft);
   const reset=()=>{
     if(sample.trim()&&!window.confirm('Clear the current sample and create a new parser?'))return;
-    setDraft(createDraft());setSample('');setDatasetName('No sample selected');
+    setDraft(createDraft());setSample('');setNamedLogTypes(null);
+    setDatasetName('No sample selected');
     setWorkspace('auto');setAdvanced(false);
   };
   const preview=(candidate:ParserDraft,source?:string)=>runInWorker(source??sample,candidate);
@@ -158,7 +183,9 @@ export default function App(){
         Local preview: {live.error}. Check the sample before generating a parser.
       </p>}
       {workspace==='auto'?<AutoParser key={restoredEpoch}
-        draft={draft} setDraft={setDraft} sample={sample} setSample={setSample}
+        draft={draft} setDraft={setDraft} sample={sample} setSample={usePlainSample}
+        namedLogTypes={namedLogTypes} onEnableNamedLogTypes={enableNamedLogTypes}
+        onChangeNamedLogTypes={updateNamedLogTypes} onExitNamedLogTypes={exitNamedLogTypes}
         datasetName={datasetName} setDatasetName={setDatasetName}
         suite={live.suite} pending={live.pending}
         runPreview={preview}
@@ -166,7 +193,7 @@ export default function App(){
         advanced={advanced}
       />:<ChatGPTAssist key={restoredEpoch}
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{
-          setSample(value);setDatasetName('ChatGPT local samples');
+          usePlainSample(value);setDatasetName('ChatGPT local samples');
         }}
         suite={live.suite} pending={live.pending}
         runPreview={preview}
