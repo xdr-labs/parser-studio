@@ -202,3 +202,11 @@
 .family-mapping-row input,.family-mapping-row select{min-width:0;max-width:100%;font-size:11px;}
 .family-mapping-row code{white-space:normal;overflow-wrap:anywhere;}
 @media(max-width:720px){.family-mapping-row{grid-template-columns:1fr 1fr;}.family-mapping-row>code{grid-column:1/-1;}}
+
+/* Browser-only literal wrapper inspection; no native compiler mutation. */
+.manual-boundary-buttons{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+.manual-boundary-labels{display:grid;gap:6px;padding:7px 0;overflow-wrap:anywhere;}
+.manual-boundary-labels code{white-space:pre-wrap;overflow-wrap:anywhere;}
+.manual-boundary-example{background:#fff;border:1px solid #dce8ec;border-radius:6px;padding:10px;margin-block:7px;}
+.manual-boundary-example span{margin-left:10px;}
+.manual-boundary-example pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto;}
