@@ -9,6 +9,7 @@ import io
 import json
 import runpy
 import unittest
+from unittest import mock
 from pathlib import Path
 
 TEMPLATE=Path(__file__).resolve().parents[1] / "src/guided/pythonTestSenderTemplate.py"
@@ -87,6 +88,30 @@ class PythonSenderFormatTests(unittest.TestCase):
         self.assertIn(values[5],CITIES)
         self.assertEqual(update('a,"not closed',{"format":"csv",
             "csv_columns":["first","second"],"csv_delimiter":","}),'a,"not closed')
+
+    def test_ip_mutation_is_single_pass_and_cannot_revert_to_original(self):
+        # Pin two successive random choices: one creates a new IP, but
+        # the old second global replacement reverted it to the source IP.
+        cases=[
+            ('json','{"src_ip":"192.0.2.10"}',{'format':'json'}),
+            ('kv','src_ip=192.0.2.10 action=allow',{'format':'kv'}),
+            ('csv','192.0.2.10,allow',
+             {'format':'csv','csv_columns':['src_ip','action'],'csv_delimiter':','}),
+        ]
+        for name,source,config in cases:
+            with self.subTest(name=name):
+                with mock.patch.object(runtime['secrets'],'choice',
+                                       side_effect=['198.51.100.','192.0.2.']) as choice:
+                    with mock.patch.object(runtime['secrets'],'randbelow',
+                                           side_effect=[9,9]) as draw:
+                        actual=update(source,config)
+                if name=='json': value=json.loads(actual)['src_ip']
+                elif name=='csv': value=next(csv.reader([actual]))[0]
+                else: value=actual.split('src_ip=',1)[1].split(' ',1)[0]
+                self.assertEqual(value,'198.51.100.10')
+                self.assertNotEqual(value,'192.0.2.10')
+                self.assertEqual(choice.call_count,1)
+                self.assertEqual(draw.call_count,1)
 
     def test_epoch_json_numeric_type(self):
         s='{"eventtime":1600000000000,"time":1600000000,"action":"deny"}'

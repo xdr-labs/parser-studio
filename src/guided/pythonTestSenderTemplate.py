@@ -189,18 +189,27 @@ def _quoted(value: str, modified: str) -> str:
     return modified
 
 
+def _fallback_identifiers(text: str) -> str:
+    # Use generic detection only in source substrings not already rewritten
+    # by an explicit key schema. Do not revisit newly generated values.
+    text = _EMAIL.sub(lambda _m: _email(), text)
+    return _IPV4.sub(lambda match: _ip(match.group(0)), text)
+
+
 def _inline_fields(source: str) -> str:
-    def replace(match: re.Match[str]) -> str:
+    parts: list[str] = []
+    cursor = 0
+    for match in _KV.finditer(source):
+        parts.append(_fallback_identifiers(source[cursor:match.start()]))
         old = match.group("value")
         inside = old[1:-1] if len(old) >= 2 and old[0] == old[-1] and old[0] in "\"'" else old
-        modified = _value_for_name(match.group("key"), inside)
-        return match.group("key") + "=" + _quoted(old, modified)
-    source = _KV.sub(replace, source)
-    source = _EMAIL.sub(lambda _m: _email(), source)
-    def ipv4(match: re.Match[str]) -> str:
-        return _ip(match.group(0))
-    source = _IPV4.sub(ipv4, source)
-    return source
+        updated = _value_for_name(match.group("key"), inside)
+        if updated == inside:
+            updated = _fallback_identifiers(inside)
+        parts.append(match.group("key") + "=" + _quoted(old, updated))
+        cursor = match.end()
+    parts.append(_fallback_identifiers(source[cursor:]))
+    return "".join(parts)
 
 
 def _csv_segments(raw: str, delimiter: str) -> list[str] | None:
@@ -238,9 +247,10 @@ def _csv_event(source: str, columns: list[str], delimiter: str) -> str | None:
     result: list[str] = []
     for name, old, lexical in zip(columns, rows[0], segments):
         updated = _value_for_name(name, old)
-        updated = _fresh_timestamps(updated)
-        updated = _EMAIL.sub(lambda _m: _email(), updated)
-        updated = _IPV4.sub(lambda match: _ip(match.group(0)), updated)
+        if updated == old:
+            # A column-name rule already produced final values when changed.
+            # Fallback may touch only cells not updated by the explicit rule.
+            updated = _fallback_identifiers(_fresh_timestamps(updated))
         if updated == old:
             result.append(lexical)
         elif lexical.startswith('"') and lexical.endswith('"'):
@@ -269,10 +279,10 @@ def _json_event(source: str) -> str | None:
             return [walk(v, key, depth + 1) for v in value]
         if isinstance(value, str):
             transformed = _fresh_timestamps(value)
-            transformed = _value_for_name(key, transformed)
-            transformed = _EMAIL.sub(lambda _m: _email(), transformed)
-            transformed = _IPV4.sub(lambda match: _ip(match.group(0)), transformed)
-            return transformed
+            named = _value_for_name(key, transformed)
+            if named != transformed:
+                return named
+            return _fallback_identifiers(transformed)
         if isinstance(value, int) and _name(key) in _TIME_NAMES and not isinstance(value, bool):
             converted = _epoch_value(str(value))
             return int(converted) if converted != str(value) else value
