@@ -157,6 +157,26 @@ def parse_source(raw:str)->SourceEvent:
         event.issues=list(outer.issues)
         if body_start is not None:
             body=parse_source(raw[body_start:])
+            # RFC 5424 section 6.4 defines MSG as free-form text. A valid
+            # header with a non-structured MSG is a complete source record,
+            # not an unknown field grammar. Capture only the literal message;
+            # leave recognized or malformed KV/CEF/CSV etc. to their decoders.
+            # Physical record controls still require an explicit stream
+            # framing decision, not an invented complete one-line event.
+            if (family=="SYSLOG_RFC5424" and not outer.issues and
+                    body.status=="RAW_ONLY" and
+                    body.issues==["NO_SUPPORTED_GRAMMAR"] and
+                    not body.vendor_fields and
+                    not any(control in body.raw for control in ("\r","\n","\x1e"))):
+                bom=1 if body.raw.startswith("\ufeff") else 0
+                if body.raw[bom:].strip():
+                    body=SourceEvent(
+                        body.raw,syntax="RFC5424_MSG",
+                        vendor_fields={"message":body.raw[bom:]},
+                        value_spans=[_span(body.raw,"message",bom,len(body.raw))],
+                        covered=[(0,len(body.raw))],primitive_fields=1,
+                    )
+                    body=_close(body)
             event.syntax=family+"+"+body.syntax
             event.vendor_fields["body"]=body.vendor_fields
             event.primitive_fields+=body.primitive_fields

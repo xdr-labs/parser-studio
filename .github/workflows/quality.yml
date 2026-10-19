@@ -29,6 +29,8 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
       - name: Lossless Linux Audit, CRI and Docker framing contract
         run: python3 -m unittest discover -s tests -p 'test_audit_cri_docker_framing_20261019.py' -v
+      - name: Strict RFC 5424 free-form MSG and original UTF-8 byte offsets
+        run: python3 -m unittest discover -s tests -p 'test_rfc5424_msg_source_20261019.py' -v
       - name: Mainline offline authoring backend build and HTTP security gate
         run: |
           npm ci --prefix backend --no-audit --no-fund
@@ -66,6 +68,31 @@ jobs:
           set -euo pipefail
           npx playwright test tests/reviewed-event-family-backend.spec.ts tests/explicit-multi-log-input.spec.ts tests/named-type-stream-boundaries-20261019.spec.ts tests/advanced-docker-compilability-probe-20261019.spec.ts tests/advanced-mixed-original-source-20261019.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-event-family-browser.json
           node -e "const s=require('fs').readFileSync('/tmp/parser-studio-event-family-browser.json','utf8'); const x=JSON.parse(s).stats; if(x.expected!==27||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('Expected exactly twenty-seven executed, passing same-HEAD named-type and mixed source/compiler safety E2E cases',x);process.exit(1)} console.log('EXACT_HEAD_NAMED_MULTI_TYPE_BROWSER_PASS 27/27');"
+
+      # A standalone, scoped verification: real Chromium and the exact-HEAD
+      # Python Multi-Pass + authoring backend, without external HTTP mocks.
+      # The isolated .isolated.ts spec is deliberately excluded from the
+      # evergreen *.spec.ts suite and its independent compiler pin.
+      - name: Exact-head RFC 5424 MSG source and honest draft-review Chromium
+        run: |
+          set -euo pipefail
+          python3 runtime/multipass/multipass_preview_api.py --port 4297 >/tmp/parser-rfc5424-msg-multipass-ci.log 2>&1 &
+          mp_pid=$!
+          PARSER_BACKEND_PORT=4187 node backend/dist/src/server.js >/tmp/parser-rfc5424-msg-authoring-ci.log 2>&1 &
+          author_pid=$!
+          PARSER_STUDIO_BACKEND_PORT=4187 PARSER_STUDIO_MULTIPASS_PORT=4297 npm run dev -- --port 5180 --strictPort >/tmp/parser-rfc5424-msg-web-ci.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$mp_pid" "$author_pid" "$vite_pid" 2>/dev/null || true; wait "$mp_pid" "$author_pid" "$vite_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4297/health >/dev/null &&
+               curl --fail --silent http://127.0.0.1:4187/health >/dev/null &&
+               curl --fail --silent http://127.0.0.1:5180/ >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          npx playwright test --config playwright.rfc5424-msg-isolated-20261019.config.ts --project=chromium --workers=1 --reporter=json >/tmp/parser-rfc5424-msg-chromium-ci.json
+          node -e "const x=JSON.parse(require('fs').readFileSync('/tmp/parser-rfc5424-msg-chromium-ci.json','utf8')).stats; if(x.expected!==3||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('All three RFC5424 real browser tests must execute and pass',x);process.exit(1)} console.log('RFC5424_REAL_HTTP_CHROMIUM_PASS 3/3');"
 
       - name: Real Chromium source-container beginner review (same HEAD)
         run: |
