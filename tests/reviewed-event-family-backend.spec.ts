@@ -288,3 +288,75 @@ test('saved multi-event and declared relay rules remain comparable and restorabl
     .getByLabel('Active declared relays')).toContainText('relay01');
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
 });
+
+
+// This bridges two previously separate contracts: saved offline versions must
+// still produce the exact reviewed compiler DRAFT after a full browser reload.
+test('saved reviewed relay and event families download intact after reload',async({page})=>{
+  test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
+    'Requires the same exact-HEAD scoped offline compiler as the user E2E.');
+  page.on('dialog',dialog=>dialog.accept());
+  const source=[
+    '<134>Jan 16 15:19:05 relay01 fw: {"event_type":"threat","src_ip":"192.0.2.10","action":"deny"}',
+    '<134>Jan 16 15:19:06 relay01 fw: {"event_type":"user","username":"김민수","action":"login"}',
+    '<134>Jan 16 15:19:07 relay01 fw: {"event_type":"asset","hostname":"fw01","action":"found"}',
+  ].join('\n');
+  const outsideRequests:string[]=[];
+  page.on('request',req=>{
+    if(!req.url().startsWith('http://127.0.0.1:'))
+      outsideRequests.push(req.url());
+  });
+  await page.goto('/');
+  await page.getByLabel('Auto Parser raw logs').fill(source);
+  const relay=page.locator('details[aria-label="Review declared relay hosts"]');
+  await relay.locator('summary').first().click();
+  await relay.getByLabel('Declared relay hostname list').fill('relay01');
+  await expect(relay.getByLabel('Relay source preview'))
+    .toContainText('3 of 3 events recognized');
+  await relay.getByRole('button',{name:'Apply declared relay profile'}).click();
+  await expect(relay.getByLabel('Active declared relays')).toContainText('relay01');
+  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
+  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  const family=page.locator('details[aria-label="Configure one parser for event types"]');
+  await family.locator('summary').first().click();
+  await expect(family.getByLabel('Proposed event type rules')).toContainText('3 reviewed types');
+  await family.getByLabel('Approve explicit family routing changes').check();
+  await family.getByRole('button',{name:'Apply reviewed event types to this parser'}).click();
+  await expect(family.getByLabel('Configured event profiles')).toContainText('3 explicit event types');
+  await page.getByRole('button',{name:'Local Versions',exact:true}).click();
+  const history=page.getByLabel('Local Versions workspace');
+  await history.getByLabel('Local version name').fill('Reviewed relay and three types');
+  await history.getByRole('button',{name:'Save Version'}).click();
+  await expect(history.getByLabel('Saved local versions'))
+    .toContainText('Reviewed relay and three types');
+  await page.reload();
+  await page.getByRole('button',{name:'Local Versions',exact:true}).click();
+  const versions=page.getByLabel('Local Versions workspace');
+  await expect(versions.getByLabel('Saved local versions'))
+    .toContainText('Reviewed relay and three types');
+  await versions.getByText('Reviewed relay and three types',{exact:true})
+    .locator('..').locator('..').getByRole('button',{name:'Restore'}).click();
+  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
+  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
+  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await expect(page.getByLabel('Configured event profiles')).toContainText('3 explicit event types');
+  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+  await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
+  await page.getByLabel('Create Parser Files').click();
+  const generated=page.getByLabel('Generated parser files');
+  await expect(generated).toContainText('Parser files created successfully',{timeout:25_000});
+  const download=page.waitForEvent('download');
+  await generated.getByRole('button',{name:/customized_demo_firewall$/}).click();
+  const artifact=await download;
+  const chunks:Buffer[]=[];
+  for await (const item of await artifact.createReadStream())chunks.push(Buffer.from(item));
+  const ruby=Buffer.concat(chunks).toString('utf8');
+  const token=/Base64.strict_decode64\('([^']+)'\)/.exec(ruby)?.[1];
+  expect(token).toBeTruthy();
+  const project=JSON.parse(Buffer.from(token!,'base64').toString('utf8'));
+  expect(project.extraction.forwarder).toEqual({maxHops:1,relayHosts:['relay01']});
+  expect(project.normalization.eventProfiles.variants.map((item:{name:string})=>item.name))
+    .toEqual(['threat','user','asset']);
+  expect(JSON.stringify(project)).not.toContain('김민수');
+  expect(outsideRequests).toEqual([]);
+});
