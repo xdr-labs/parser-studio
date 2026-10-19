@@ -5,6 +5,7 @@ import type {BackendCapabilities} from './backendCapabilities';
 import {assertBackendProjectSupported} from './backendCapabilities';
 import {toBackendProject} from './backendAdapter';
 import {planReviewedEventFamilyDraft} from './reviewedEventFamilyDraft';
+import {inspectReviewedEventValues} from './reviewedEventValueEvidence';
 import {HelpTip} from './BeginnerHelp';
 
 export default function ReviewedEventProfilesPanel({
@@ -35,11 +36,17 @@ export default function ReviewedEventProfilesPanel({
       });
     return next;
   },[plan,edits]);
+  const sampleEvidence=useMemo(()=>
+    candidate?inspectReviewedEventValues(suite,candidate):null,[suite,candidate]);
   const available=backendCapabilities?.authoring.conditionalEventProfiles===true&&
     backendCapabilities.authoring.conditionalEventProfilesUnknownPolicy==='reject';
   const apply=()=>{
     if(pending||!available||!candidate||!approval){
       setNotice('Complete the explicit field review and compiler capability check first.');
+      return;
+    }
+    if(sampleEvidence&&!sampleEvidence.ok){
+      setNotice(sampleEvidence.reason);
       return;
     }
     const adapted=toBackendProject(candidate);
@@ -113,6 +120,11 @@ export default function ReviewedEventProfilesPanel({
       <p>An unknown type always fails closed. A single parser DRAFT is permitted
         only if the backend advertises the exact conditional compiler capability.</p>
     </div>:<p role="note">{plan.reason}</p>}
+    {sampleEvidence&&!sampleEvidence.ok&&<p role="alert">{sampleEvidence.reason}</p>}
+    {sampleEvidence?.ok&&sampleEvidence.skipped>0&&<p role="note">
+      {sampleEvidence.skipped} optional, missing, or ignored field value(s) in the provided
+      sample are not generated. Review whether those event fields are required.
+      This preview does not certify native conversion.</p>}
     {!available&&<p role="note">The connected local compiler has not advertised
       this conditional parser feature. Source comparison remains available,
       but no conditional DRAFT will be applied.</p>}
@@ -121,7 +133,7 @@ export default function ReviewedEventProfilesPanel({
       I reviewed the event types, changed mappings and classification rules.</label>
     <div className="manual-boundary-buttons">
       <button type="button" onClick={apply}
-        disabled={!plan.ok||!available||pending||!approval}>
+        disabled={!plan.ok||!available||pending||!approval||sampleEvidence?.ok===false}>
         Apply reviewed event types to this parser
       </button>
       {previous.current?.source===source&&<button type="button" onClick={()=>{

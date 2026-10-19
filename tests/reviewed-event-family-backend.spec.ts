@@ -194,6 +194,12 @@ test('reviewed mapping collisions and oversized event schemas fail closed in the
   await expect(config).toContainText('same or overlapping output');
   await expect(config.getByLabel('Configured event profiles')).toHaveCount(0);
   await threat.getByLabel('threat output for confidence').fill('custom.confidence');
+  await threat.getByLabel('threat type for confidence').selectOption('integer');
+  await expect(config).toContainText('cannot be interpreted as integer');
+  await config.getByLabel('Approve explicit family routing changes').check();
+  await expect(config.getByRole('button',{name:'Apply reviewed event types to this parser'}))
+    .toBeDisabled();
+  await threat.getByLabel('threat type for confidence').selectOption('string');
   await config.getByLabel('Approve explicit family routing changes').check();
   await config.getByRole('button',{name:'Apply reviewed event types to this parser'}).click();
   await expect(config.getByLabel('Configured event profiles')).toContainText('3 explicit event types');

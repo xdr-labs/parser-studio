@@ -12,7 +12,9 @@ distinct security event types.
    Studio checks every extracted sample for a nonempty safe discriminator.
    Users can explicitly edit type-specific destination names and value types,
    compare common and type-specific fields, see classifier changes, and
-   approve or undo the configuration.
+   approve or undo the configuration. Overlapping output names and
+   demonstrably incompatible typed example values are rejected locally;
+   absent or ignored values remain omitted with an explicit warning.
 3. Conditional compilation is permitted only when the local backend
    advertises the exact event-family and unknown-reject capabilities.
    Unknown source types cannot fall back to a global routing rule.
