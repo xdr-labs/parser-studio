@@ -106,9 +106,16 @@ function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
   if(syntax.includes('KV'))return 'key/value fields';
   return 'security log structure';
 }
-function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw=''):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
+function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw='',needsReviewedParserRule=false):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
+  // Extraction and parser-file readiness are independent. Never ask a
+  // beginner to recover missing text when the source ledger is complete.
+  if(needsReviewedParserRule&&preview.status==='SOURCE_PARSED'&&preview.residuals.length===0)return {
+    kind:'assisted',
+    label:'Review parser-file support for these fields',
+    text:'The source fields were extracted, including any complete message body. No source text remains to recover. Review a supported parser rule and test it against additional log examples before creating files. A complete source preview does not verify native or Stellar Cyber parser compatibility.',
+  };
   if(['W3C_EFL_DECLARED','ZEEK_TSV_DECLARED'].includes(preview.syntax))return {
     kind:'assisted',
     label:'Review the recognized columns before making parser files',
@@ -252,7 +259,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     :events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
-  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns),raw):null;
+  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns),raw,parserRuleReviewRequired):null;
   const recipeImportEligible=!!rec&&rec.kind!=='metadata'&&rec.kind!=='split';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
@@ -316,7 +323,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
               ?'Parser Studio extracted every source value, but this positional CSV does not contain trustworthy field names. Keep temporary names or enter your own before continuing.'
               :'Parser Studio extracted the source values, but this positional CSV still needs a matching separator plus column names before continuing.'
           :parserRuleReviewRequired
-          ?'Parser Studio found the values, but it needs one more parsing step for this log shape before it can create files. The values already found will be kept.'
+          ?'All original values were extracted, but parser-file creation still needs a reviewed rule for this log shape. No source data was discarded.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
           :'No unresolved source region was found. Source extraction is complete; parser-file support will be checked separately when you continue.'}</p>
@@ -328,18 +335,18 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     {current&&<div className="beginner-problem" aria-label="Parse problem inspector">
       {problems.length>1&&<label>Problem to review
         <select aria-label="Problem event" value={selected} onChange={e=>{setSelected(Number(e.target.value));setPromptOpen(false);setPromptText('');setCopyStatus('');}}>
-          {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {parserRuleReviewRequired?'One parsing step needs review':problemTitle(item.event.preview)}</option>)}
+          {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {parserRuleReviewRequired?'Parser rule needs review':problemTitle(item.event.preview)}</option>)}
         </select>
       </label>}
       <h3>{parserRuleReviewRequired
-        ?'Fields found — one more parsing step is needed'
+        ?'Fields extracted — parser rule needs review'
         :problemTitle(current.event.preview)}</h3>
       <p>{parserRuleReviewRequired
-        ?<>Parser Studio found the values in this <b>{friendlySyntax(current.event.preview,raw)}</b>, but it needs one more parsing step before it can create the parser files.</>
+        ?<>Parser Studio extracted the values in this <b>{friendlySyntax(current.event.preview,raw)}</b>. A reviewed parser rule is still required to create files; source extraction alone does not verify compatibility.</>
         :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview,raw)}</b>, but it will not let you continue until the remaining review is resolved.</>}</p>
       <div className="beginner-problem-source">
         <span>Original event {current.index+1} · {parserRuleReviewRequired
-          ?'one parsing step needs review'
+          ?'parser-file rule needs review'
           :metadataOnlyReview(current.event.preview)
             ?'time/header warning · all source text kept'
             :'highlighted text needs attention'}</span>
@@ -349,14 +356,14 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
       <div className="beginner-problem-details">
         <div><strong>What needs attention</strong>
           {parserRuleReviewRequired
-            ?<p>The field values are already available. Parser Studio needs one more parsing step for this message shape before it can create the files.</p>
+            ?<p>The source field values are available. Parser Studio has not yet validated a downloadable parser rule for this log shape.</p>
             :current.event.preview.issues.length
               ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code,raw)}</li>)}</ul>
               :<p>Parser Studio could not produce a complete trustworthy field set for this event.</p>}
         </div>
         <div><strong>{parserRuleReviewRequired?'What Parser Studio still needs':metadataOnlyReview(current.event.preview)?'Time or header review':'Text not yet assigned to fields'}</strong>
           {parserRuleReviewRequired
-            ?<p>No source text is missing. Add one parsing step for this message shape, then test it against additional examples.</p>
+            ?<p>No source text is missing. Review a supported parser rule and test it against additional examples before creating parser files.</p>
             :current.event.preview.residuals.length
               ?current.event.preview.residuals.map((region,i)=><code key={i}>{utf8Slice(raw,region.startByte,region.endByte)}</code>)
               :metadataOnlyReview(current.event.preview)

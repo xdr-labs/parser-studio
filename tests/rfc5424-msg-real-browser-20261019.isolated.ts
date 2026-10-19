@@ -49,7 +49,10 @@ for(const item of [
   // adapter, so even completely extracted source values require review.
   await expect(summary).toContainText('Values found in 1 of 1 log event',{timeout:12000});
   const problem=page.getByLabel('Parse problem inspector');
-  await expect(problem).toContainText('Fields found — one more parsing step is needed');
+  await expect(problem).toContainText('Fields extracted — parser rule needs review');
+  await expect(problem).toContainText('Review parser-file support for these fields');
+  await expect(problem).toContainText('does not verify native or Stellar Cyber parser compatibility');
+  await expect(problem).not.toContainText('remaining message text');
   await expect(input).toHaveValue(item.raw);
   const next=page.getByRole('button',{name:'Review Fields',exact:true});
   if(await next.isEnabled()){
