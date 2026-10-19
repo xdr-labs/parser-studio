@@ -67,7 +67,11 @@ class PythonSenderFormatTests(unittest.TestCase):
                 self.assertNotIn("alice@example.test",a)
                 self.assertNotIn("username=alice",a)
                 self.assertNotIn("suser=alice",a)
-                self.assertNotIn("src=192.0.2.10",a)
+                # Compare the full lexical field value: a new .102 address
+                # is not the original .10 address even though it has that prefix.
+                self.assertIn("src=",a)
+                source_address=a.split("src=",1)[1].split()[0]
+                self.assertNotEqual(source_address,"192.0.2.10")
 
     def test_csv_lexical_quotes_and_current_time(self):
         s='"error, escalated",2020/10/17 11:12:13,192.0.2.10,alice,alice@example.test,"New York"'
