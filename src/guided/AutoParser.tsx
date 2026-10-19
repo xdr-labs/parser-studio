@@ -42,6 +42,7 @@ import ReviewedEventProfilesPanel from './ReviewedEventProfilesPanel';
 import NamedLogTypesPanel from './NamedLogTypesPanel';
 import NamedLogTypeReview from './NamedLogTypeReview';
 import {analyzeNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
+import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
 import DeclaredRelayProfilePanel from './DeclaredRelayProfilePanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
@@ -97,6 +98,7 @@ const readable:Record<string,string>={
  MIXED_OR_UNKNOWN:'The sample contains an unsupported family combination, malformed, or unrecognized events. Only explicitly allowed one-line JSON/KV/CEF/LEEF can share a parser; no log line will be discarded.',
  BOUNDARY_REVIEW:'The record boundaries are ambiguous. Review explicit event framing or use ChatGPT Assisted Parser.',
  COMPILER_UNSUPPORTED:'Parser Studio can read this log, but it cannot safely create parser files for this structure yet. Review the detected fields or use ChatGPT Assisted Parser.',
+ ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER:'These original stream or container boundaries are available for source inspection, but the downloadable parser does not yet support this exact transport format. Your original logs were preserved. Review them or use ChatGPT Assisted Parser.',
  COLUMNS_REQUIRED:'This log has positional values without verified column names. Enter names from the product log definition for an eligible CSV stream, or use ChatGPT Assisted Parser for wrapped or mixed formats. The source fields remain intact.',
  BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
  BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
@@ -334,6 +336,8 @@ export default function AutoParser({
  const namedLogReady=!namedLogTypes||(namedLogValidation?.ok===true&&
    namedAnalysis!==null&&namedAnalysis.unassigned===0&&
    namedAnalysis.groups.every(group=>group.events>0&&!group.boundaryWarning));
+ const originalContainerGate=useMemo(()=>originalContainerCompilerGate(
+   sample,multiPass?.raw===sample?multiPass:null),[sample,multiPass]);
  function navigateToStep(target:0|1|2|3){
    if(target===0){setNavigationHint('');setStep(0);return;}
    if(!currentReview){
@@ -393,11 +397,13 @@ export default function AutoParser({
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
    report.complete&&report.sourceCount>0&&!busy&&!currentReviewBlock&&
    csvApproved&&(advanced||beginnerResolved)&&namedLogReady;
- const canGenerate=step===3&&namedLogReady&&!!currentReview&&!currentReviewBlock&&!!suite&&!pending&&
+ const canGenerate=step===3&&!originalContainerGate&&namedLogReady&&
+   !!currentReview&&!currentReviewBlock&&!!suite&&!pending&&
    !busy&&(assessment.status==='DRAFT_COMPILABLE'||explicitDraftCompilable);
  const confirmed=()=>{
    const record=suite;
-   return namedLogReady&&!!record && record.engine==='browser-preview'&&
+   return !originalContainerGate&&namedLogReady&&!!record &&
+     record.engine==='browser-preview'&&
      record.nativeFluentdVerified===false&&record.stellarExportVerified===false&&
      record.counts.total>0&&record.counts.total===report.sourceCount&&
      record.counts.matched===record.counts.total&&
@@ -407,6 +413,14 @@ export default function AutoParser({
  };
  async function review(){
    if(!canReview||!suite)return;
+   if(originalContainerGate){
+     // A browser JSON match is not evidence that the downloadable parser
+     // supports the original Audit/CRI/Docker/schema/transport wrapper.
+     // Advanced Tools must obey the same source-to-compiler trust boundary.
+     setMessage('');
+     setReviewBlock({key:identity,reason:'ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER'});
+     return;
+   }
    const token=++epoch.current, expected=identity;
    setBusy(true);setMessage('');setEvidence(null);setPair(null);
    try{
