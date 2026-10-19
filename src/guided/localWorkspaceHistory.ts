@@ -243,8 +243,14 @@ export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):Vers
     changes.push('Receiver / framing settings');
   if(json(a.draft.guided?.enrichment)!==json(b.draft.guided?.enrichment))
     changes.push('Enrichment rules');
+  if(json(a.draft.forwarder)!==json(b.draft.forwarder))
+    changes.push('Declared relay profile');
+  if(json(a.draft.eventProfiles)!==json(b.draft.eventProfiles))
+    changes.push('Event-type routing / conditional mappings');
   if(addedMappings.length||removedMappings.length||editedMappings.length)
     changes.push('Field mappings');
+  if(json(a.draft)!==json(b.draft)&&changes.length===0)
+    changes.push('Other parser settings');
   const left=a.source.split('\n'),right=b.source.split('\n');
   let changedLines=0;
   for(let i=0;i<Math.max(left.length,right.length);i++)

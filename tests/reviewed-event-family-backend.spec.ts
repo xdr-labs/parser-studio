@@ -220,3 +220,71 @@ test('reviewed mapping collisions and oversized event schemas fail closed in the
   await page.getByRole('button',{name:/Add Logs/}).first().click();
   await expect(raw).toHaveValue(wideSource);
 });
+
+
+test('saved multi-event and declared relay rules remain comparable and restorable offline',async({page})=>{
+  test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
+    'Requires current exact-HEAD offline compiler with conditional family and relay capabilities.');
+  page.on('dialog',dialog=>dialog.accept());
+  const source=[
+    '<134>Jan 16 15:19:05 relay01 fw: {"event_type":"threat","src_ip":"192.0.2.10","action":"deny"}',
+    '<134>Jan 16 15:19:06 relay01 fw: {"event_type":"user","username":"김민수","action":"login"}',
+    '<134>Jan 16 15:19:07 relay01 fw: {"event_type":"asset","hostname":"fw01","action":"found"}',
+  ].join('\n');
+  await page.goto('/');
+  const raw=page.getByLabel('Auto Parser raw logs');
+  await raw.fill(source);
+  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
+  const toggle=page.getByRole('button',{name:'Local Versions',exact:true});
+  await toggle.click();
+  const history=page.getByLabel('Local Versions workspace');
+  await history.getByLabel('Local version name').fill('Before relay or event routing');
+  await history.getByRole('button',{name:'Save Version'}).click();
+  await expect(history.getByRole('status')).toContainText('Saved in this browser only');
+  await toggle.click();
+  const relay=page.locator('details[aria-label="Review declared relay hosts"]');
+  await relay.locator('summary').first().click();
+  await relay.getByLabel('Declared relay hostname list').fill('relay01');
+  await expect(relay.getByLabel('Relay source preview')).toContainText('3 of 3 events recognized');
+  await relay.getByRole('button',{name:'Apply declared relay profile'}).click();
+  await expect(relay.getByLabel('Active declared relays')).toContainText('relay01');
+  await expect(page.getByLabel('Automatic event accounting'))
+    .toContainText('3/3 events analyzed locally');
+  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  const types=page.locator('details[aria-label="Configure one parser for event types"]');
+  await types.locator('summary').first().click();
+  await expect(types.getByLabel('Proposed event type rules')).toContainText('3 reviewed types');
+  await types.getByLabel('Approve explicit family routing changes').check();
+  await types.getByRole('button',{name:'Apply reviewed event types to this parser'}).click();
+  await expect(types.getByLabel('Configured event profiles')).toContainText('3 explicit event types');
+  await toggle.click();
+  const versions=page.getByLabel('Local Versions workspace');
+  await versions.getByLabel('Local version name').fill('Reviewed three event types and relay');
+  await versions.getByRole('button',{name:'Save Version'}).click();
+  await expect(versions.getByLabel('Saved local versions'))
+    .toContainText('Reviewed three event types and relay');
+  await versions.getByLabel('Compare version A')
+    .selectOption({label:'Before relay or event routing'});
+  await versions.getByLabel('Compare version B')
+    .selectOption({label:'Reviewed three event types and relay'});
+  await expect(versions.getByLabel('Local version differences'))
+    .toContainText('Declared relay profile');
+  await expect(versions.getByLabel('Local version differences'))
+    .toContainText('Event-type routing / conditional mappings');
+  const versionRow=(title:string)=>versions.getByText(title,{exact:true})
+    .locator('..').locator('..');
+  await versionRow('Before relay or event routing')
+    .getByRole('button',{name:'Restore'}).click();
+  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
+  await versionRow('Reviewed three event types and relay')
+    .getByRole('button',{name:'Restore'}).click();
+  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
+  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
+  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await expect(page.locator('details[aria-label="Configure one parser for event types"]')
+    .getByLabel('Configured event profiles')).toContainText('3 explicit event types');
+  await page.getByRole('button',{name:/Add Logs/}).first().click();
+  await expect(page.locator('details[aria-label="Review declared relay hosts"]')
+    .getByLabel('Active declared relays')).toContainText('relay01');
+  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
+});

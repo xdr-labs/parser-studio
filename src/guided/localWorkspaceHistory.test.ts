@@ -37,6 +37,43 @@ describe('browser-only parser experiment version contract',()=>{
     });
   });
 
+  it('compares declared relays and reviewed multi-event mappings without exposing or altering raw values',()=>{
+    const draft=createDraft();
+    const original={
+      source:'{"event_type":"threat","username":"김민수"}',
+      datasetName:'UTF-8 event review',draft,
+    };
+    const staged=structuredClone(draft);
+    staged.forwarder={maxHops:1,relayHosts:['relay01']};
+    staged.eventProfiles={
+      discriminator:'event_type',unknown:'reject',variants:[
+        {name:'threat',equals:'threat',mappings:[{
+          id:'event-threat',source:'username',target:'custom.user_name',type:'string',
+        }]},
+        {name:'user',equals:'user',mappings:[{
+          id:'event-user',source:'username',target:'custom.user_name',type:'string',
+        }]},
+      ],
+    };
+    const selected={...original,draft:staged};
+    expect(validLocalDraft(staged)).toBe(true);
+    expect(compareLocalVersions(original,selected)).toMatchObject({
+      sourceChanged:false,draftChanged:true,
+      addedMappings:[],removedMappings:[],editedMappings:[],
+    });
+    expect(compareLocalVersions(original,selected).changes).toEqual([
+      'Declared relay profile','Event-type routing / conditional mappings',
+    ]);
+    const changed=structuredClone(staged);
+    changed.eventProfiles!.variants[0]!.mappings[0]!.target='custom.actor';
+    const compared=compareLocalVersions(selected,{...original,draft:changed});
+    expect(compared.changes).toContain('Event-type routing / conditional mappings');
+    expect(compared.changes).not.toContain('Field mappings');
+    expect(draft.forwarder).toBeUndefined();
+    expect(draft.eventProfiles).toBeUndefined();
+    expect(original.source).toContain('김민수');
+  });
+
   it('rejects duplicate, malformed and unsafe persisted parser settings',()=>{
     const draft=createDraft();
     expect(validLocalDraft({...draft,format:'forged'})).toBe(false);
