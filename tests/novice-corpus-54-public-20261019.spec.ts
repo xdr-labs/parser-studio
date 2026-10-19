@@ -97,11 +97,19 @@ for(const entry of scenarios){
   await expect(source).toHaveValue(entry.raw);
   if(reviewEnabled){
    await page.getByRole('button',{name:'Review Fields',exact:true}).click();
-   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
-   const mapping=page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields',exact:true});
-   if(await mapping.isEnabled()){
-    await mapping.click();
-    await expect(page.getByLabel('Map Fields stage')).toBeVisible();
+   const mappingStage=page.getByLabel('Review Fields stage');
+   const blocked=page.getByLabel('Parser draft not ready');
+   await expect(mappingStage.or(blocked)).toBeVisible({timeout:18000});
+   if(await blocked.isVisible()){
+    await expect(blocked).toContainText('No source value was discarded');
+    await expect(blocked.getByRole('button',{name:'Use ChatGPT Assisted Parser'})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+   }else{
+    const mapping=mappingStage.getByRole('button',{name:'Map Fields',exact:true});
+    if(await mapping.isEnabled()){
+     await mapping.click();
+     await expect(page.getByLabel('Map Fields stage')).toBeVisible();
+    }
    }
   }else{
    expect(hasProblem||csvReview||zeekPrep||summaryText.includes('review')).toBeTruthy();

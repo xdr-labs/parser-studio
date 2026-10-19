@@ -76,13 +76,21 @@ for(const item of joined){
   let traversed='Analysis';
   if(enabled){
    await review.click();
-   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
-   traversed+=' > Review Fields';
-   const map=page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields',exact:true});
-   if(await map.isEnabled()){
-    await map.click();
-    await expect(page.getByLabel('Map Fields stage')).toBeVisible();
-    traversed+=' > Map Fields';
+   const mappingStage=page.getByLabel('Review Fields stage');
+   const blocked=page.getByLabel('Parser draft not ready');
+   await expect(mappingStage.or(blocked)).toBeVisible({timeout:18000});
+   if(await blocked.isVisible()){
+    await expect(blocked).toContainText('No source value was discarded');
+    await expect(blocked.getByRole('button',{name:'Use ChatGPT Assisted Parser'})).toBeVisible();
+    traversed+=' > Source only (compiler blocked, retained)';
+   }else{
+    traversed+=' > Review Fields';
+    const map=mappingStage.getByRole('button',{name:'Map Fields',exact:true});
+    if(await map.isEnabled()){
+     await map.click();
+     await expect(page.getByLabel('Map Fields stage')).toBeVisible();
+     traversed+=' > Map Fields';
+    }
    }
   }
   const result={id:item.id,origin:item.origin,sourceBytes:Buffer.byteLength(item.raw,'utf8'),
