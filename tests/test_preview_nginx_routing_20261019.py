@@ -60,7 +60,8 @@ class SecurePreviewHost(unittest.TestCase):
             key=root/'key.pem'
             subprocess.run(['openssl','req','-x509','-newkey','rsa:2048',
                 '-keyout',str(key),'-out',str(cert),'-nodes','-days','1',
-                '-subj','/CN=app.parser.xdr.ooo'],check=True,
+                '-subj','/CN=app.parser.xdr.ooo',
+                '-addext','subjectAltName=DNS:app.parser.xdr.ooo'],check=True,
                 stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=20)
             backend=ThreadingHTTPServer(('127.0.0.1',0),UpstreamHandler)
             multipass=ThreadingHTTPServer(('127.0.0.1',0),UpstreamHandler)
@@ -121,6 +122,23 @@ class SecurePreviewHost(unittest.TestCase):
 
                     client=build_opener(HTTPSHandler(context=ssl._create_unverified_context()))
                     base=f'https://127.0.0.1:{https_port}'
+                    # Verify the actual TLS hostname and trust anchor with curl.
+                    # This is an isolated fixture CA, not a public TLS bypass.
+                    verified=subprocess.run([
+                        'curl','--noproxy','*','--cacert',str(cert),
+                        '--resolve',f'app.parser.xdr.ooo:{https_port}:127.0.0.1',
+                        f'https://app.parser.xdr.ooo:{https_port}/',
+                        '--max-time','6'],
+                        capture_output=True,text=True,timeout=9)
+                    self.assertEqual(verified.returncode,0,verified.stderr)
+                    self.assertIn('Parser Studio isolated verification',verified.stdout)
+                    wrong_host=subprocess.run([
+                        'curl','--noproxy','*','--cacert',str(cert),
+                        '--resolve',f'exporter.xdr.ooo:{https_port}:127.0.0.1',
+                        f'https://exporter.xdr.ooo:{https_port}/',
+                        '--max-time','6'],
+                        capture_output=True,text=True,timeout=9)
+                    self.assertEqual(wrong_host.returncode,60,wrong_host.stderr)
                     def request(path,method='GET',origin=None):
                         headers={'Host':'app.parser.xdr.ooo'}
                         if origin is not None:

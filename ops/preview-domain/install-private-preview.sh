@@ -152,10 +152,37 @@ install -m 0644 "$ROOT/ops/preview-domain/nginx-app.parser.xdr.ooo.conf" "$STAGE
 nginx -t
 systemctl reload nginx
 
-http_status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$SITE:80:127.0.0.1" "http://$SITE/" --max-time 8)
-https_status=$(curl -sS -o /dev/null -w '%{http_code}' --resolve "$SITE:443:127.0.0.1" "https://$SITE/" --max-time 10)
-[[ "$http_status" == 301 && "$https_status" == 200 ]] ||
-  die "Unexpected HTTP/HTTPS no-login status: $http_status/$https_status."
+wait_for_domain_route() {
+  local attempt http_status https_response https_status
+  # A successful systemctl reload only acknowledges the signal. Nginx can
+  # briefly serve the old default Exporter TLS certificate from existing workers.
+  # Always verify the real hostname/SNI and public CA chain. Never use -k.
+  for attempt in {1..40}; do
+    http_status=$(curl --noproxy '*' -sS -o /dev/null -w '%{http_code}' \
+      --resolve "$SITE:80:127.0.0.1" "http://$SITE/" --max-time 4 2>/dev/null) ||
+      http_status=TRANSPORT_ERROR
+    https_response=$(curl --noproxy '*' -sS \
+      -w $'\n__PARSER_HTTP_CODE__%{http_code}' \
+      --resolve "$SITE:443:127.0.0.1" "https://$SITE/" --max-time 4 2>/dev/null) ||
+      https_response=''
+    if [[ "$https_response" == *$'\n__PARSER_HTTP_CODE__'* ]]; then
+      https_status="${https_response##*$'\n__PARSER_HTTP_CODE__'}"
+    else
+      https_status=TLS_OR_TRANSPORT_ERROR
+    fi
+    if [[ "$http_status" == 301 && "$https_status" == 200 &&
+          "$https_response" == *"<title>Parser Studio"* ]]; then
+      printf 'Verified HTTPS site with hostname validation after probe %s.\n' "$attempt"
+      return 0
+    fi
+    sleep 1
+  done
+  printf 'Domain route not ready after 40 probes: HTTP=%s HTTPS=%s.\n' \
+    "$http_status" "$https_status" >&2
+  printf 'Nginx reload or certificate/SNI routing may be wrong; do not disable TLS verification.\n' >&2
+  return 1
+}
+wait_for_domain_route || die 'HTTPS site failed exact-hostname TLS and content validation.'
 completed=1
 printf '\nHTTPS setup complete. HTTP redirects to HTTPS; no site login is required.\n'
 printf 'Open https://%s/ in a browser.\n' "$SITE"

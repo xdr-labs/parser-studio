@@ -26,6 +26,7 @@ cd /home/aella/parser-studio-secure-domain-20261019
 bash -n ops/preview-domain/install-private-preview.sh
 bash -n ops/preview-domain/prepare-private-preview.sh
 python3 tests/test_preview_nginx_routing_20261019.py -v
+python3 tests/test_preview_domain_wait_20261019.py -v
 python3 tests/test_preview_staging_20261019.py -v
 python3 tests/test_preview_startup_wait_20261019.py -v
 python3 -m unittest discover -s tests -p test_embedded_multipass_service.py -v
@@ -52,7 +53,7 @@ cd /home/aella/parser-studio-secure-domain-20261019
 sudo bash ops/preview-domain/install-private-preview.sh "$(git rev-parse HEAD)"
 ```
 
-The installer requires only the existing server's sudo permission. A **Let's Encrypt contact email** is requested only if a valid, existing certificate is unavailable. It does **not** request, create or store a Parser Studio username or password. It creates the dedicated Nginx site, reuses the existing valid certificate if present, installs two independent loopback services, waits for bounded health probes instead of failing on the first cold-start request, validates `nginx -t`, then reloads Nginx. The old Exporter virtual host is not edited. On installation errors, Nginx routing is restored and new systemd services are disabled.
+The installer requires only the existing server's sudo permission. A **Let's Encrypt contact email** is requested only if a valid, existing certificate is unavailable. It does **not** request, create or store a Parser Studio username or password. It creates the dedicated Nginx site, reuses the existing valid certificate if present, installs two independent loopback services, waits for bounded health probes instead of failing on the first cold-start request, validates `nginx -t`, then reloads Nginx. **After reload, it retries both exact-hostname HTTP/HTTPS routes until HTTP 301 and CA-verified HTTPS 200 with the Parser Studio page title are actually served. It never disables TLS validation.** The old Exporter virtual host is not edited. On installation errors, Nginx routing is restored and new systemd services are disabled.
 
 ## Resume after the 2026-10-19 partial installation
 
@@ -62,7 +63,9 @@ The first approved installer issued a Let's Encrypt certificate successfully (ex
 
 The installer now runs `check-staged-files.sh` before touching services: it resumes only when all three existing destination trees match the exact package. Missing or modified files fail closed. It then checks and **reuses the existing certificate without any new email or password prompt**, starts the units, and retries each health endpoint for up to 40 probes. If the service actually stops, it reports service status and recent journal lines. The same authorized admin invocation above is used to resume.
 
-Only the installer script and staging verification code changed: the compiled Parser Studio web/backend/parser payload remains the same qualified source. Rebuild the exact-HEAD package using `prepare-private-preview.sh` before rerunning. Do not delete existing staged payload or try to bypass OS permissions.
+The second owner-executed installation confirmed the services were ready (Multi-Pass after probe 2, Authoring after probe 1) and the certificate was reused. `nginx -t` passed, but the immediate HTTPS curl failed certificate hostname verification: the earlier default Exporter TLS identity could still be active immediately after a Nginx reload. The installer rolled back the separate site and service units again; it did **not** corrupt the original Exporter. The fix retries the *actual* domain through the local Nginx listener, checks the real certificate hostname and chain, requires HTTP 301 and HTTPS 200 with the Parser Studio page title, and only declares readiness if every condition passes. If a certificate or routing mismatch persists after the bounded window, deployment still fails closed with diagnostics.
+
+Only the installer script, route-regression tests and documentation changed in this follow-up: the compiled Parser Studio web/backend/parser payload remains the same qualified source. Rebuild the exact-HEAD package using `prepare-private-preview.sh` before rerunning. Do not delete existing staged payload or try to bypass OS permissions.
 
 ## Real-domain acceptance (not automatically satisfied by deployment scripts)
 
