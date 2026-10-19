@@ -85,7 +85,7 @@ class SecurePreviewHost(unittest.TestCase):
                     ('/etc/nginx/parser-studio-private.htpasswd',str(password_file)),
                     ('/var/www/parser-studio-app',str(static)),
                     ('/var/www/parser-studio-acme',str(root/'acme')),
-                    ('127.0.0.1:6571',f'127.0.0.1:{backend.server_port}'),
+                    ('127.0.0.1:4305',f'127.0.0.1:{backend.server_port}'),
                     ('127.0.0.1:4304',f'127.0.0.1:{multipass.server_port}'),
                 ]:
                     site=site.replace(old,new)
