@@ -11,7 +11,7 @@ async function analyze(page:Page,raw:string){
   await expect(page.getByLabel('Beginner analysis summary'))
     .toContainText('1 of 1 log event parsed completely',{timeout:15_000});
   await expect(page.getByRole('button',{name:'Use extracted fields'})).toHaveCount(0);
-  await expect(page.getByText('Fields found — one more parsing step is needed')).toHaveCount(0);
+  await expect(page.getByText('Fields extracted — parser rule needs review')).toHaveCount(0);
   await expect(page.getByText(/Some events could not be understood safely/)).toHaveCount(0);
 }
 
