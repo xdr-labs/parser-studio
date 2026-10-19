@@ -30,8 +30,13 @@ export function suggestEventProfiles(
    if(!selected.found||typeof selected.value!=='string'||!selected.value.trim()||
      selected.value.length>128||/[\x00-\x1f\x7f]/.test(selected.value))
      return {ok:false,reason:'Some events do not have a usable explicit event type.'};
+   // Read one sentinel beyond the bounded field budget. A plain capped list
+   // could otherwise hide additional source fields and falsely appear complete.
+   const leaves=listSafeLeafPaths(event.fields,101);
+   if(leaves.length>100)return {ok:false,reason:
+     'A source event has over 100 safe fields. Review a smaller schema; no fields were silently dropped.'};
    const paths=groups.get(selected.value)??new Set<string>();
-   for(const path of listSafeLeafPaths(event.fields))if(safe(path))paths.add(path);
+   for(const path of leaves)if(safe(path))paths.add(path);
    groups.set(selected.value,paths);
  }
  if(groups.size<2||groups.size>16)
@@ -48,7 +53,9 @@ export function suggestEventProfiles(
      return {ok:false,reason:'Event type names must have distinct safe identifiers.'};
    names.add(name);
    const fields=[...groups.get(value)!].filter(path=>!shared.has(path));
-   const mappings:MappingRule[]=fields.slice(0,100).map((source,n)=>{
+   if(fields.length>100)return {ok:false,reason:
+     'An event type has over 100 distinct fields. Review a smaller schema; no fields were silently dropped.'};
+   const mappings:MappingRule[]=fields.map((source,n)=>{
      const existing=draft.mappings.find(rule=>rule.source===source);
      return {id:'family-'+index+'-'+n,source,
        target:existing?.target??'custom.'+source.replace(/[^A-Za-z0-9_]/g,'_'),

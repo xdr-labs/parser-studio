@@ -44,7 +44,10 @@ export default function ReviewedEventProfilesPanel({
     }
     const adapted=toBackendProject(candidate);
     if(!adapted.ok){
-      setNotice('The proposed mappings need further review before DRAFT generation.');
+      const collision=adapted.issues.some(issue=>issue.code==='EVENT_OUTPUT_COLLISION');
+      setNotice(collision
+        ? 'Two source fields would write the same or overlapping output. Change their destination fields before applying.'
+        : 'The proposed mappings need further review before DRAFT generation.');
       return;
     }
     try{assertBackendProjectSupported(adapted.project,backendCapabilities);}

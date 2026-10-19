@@ -194,6 +194,33 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
         unknown:'reject',variants};
     }
   }
+  // Mirror the backend destination-overlap rule before the user can apply a
+  // reviewed draft. Different variants may reuse an output; shared and local
+  // outputs (including parent/child dotted paths) may not overlap in a variant.
+  if(eventProfiles){
+    const commonOutputs=[
+      ...Object.values(topFields).map(x=>x.normalized_name),
+      ...Object.values(nsFields).map(x=>x.normalized_name),
+      ...Object.values(vendorFields).map(x=>draft.vendor+'.'+x.normalized_name),
+    ];
+    for(const variant of eventProfiles.variants){
+      const seen=[...commonOutputs];
+      const outputGroups=[
+        ...Object.values(variant.topFields).map(x=>x.normalized_name),
+        ...Object.values(variant.nsFields).map(x=>x.normalized_name),
+        ...Object.values(variant.vendorFields).map(x=>draft.vendor+'.'+x.normalized_name),
+      ];
+      for(const output of outputGroups){
+        if(seen.some(other=>other===output||other.startsWith(output+'.')||
+          output.startsWith(other+'.'))){
+          issues.push({code:'EVENT_OUTPUT_COLLISION',
+            path:'/eventProfiles/'+variant.name,
+            message:'An event-specific output overlaps a shared or another event-specific mapping. Review the destination field names.'});
+        }
+        seen.push(output);
+      }
+    }
+  }
   if(draft.forwarder&&!validForwarderConfig(draft.forwarder))
     issues.push({code:'INVALID_FORWARDER_PROFILE',path:'/forwarder',
       message:'Declare valid distinct relay hosts and 1–3 hops.'});

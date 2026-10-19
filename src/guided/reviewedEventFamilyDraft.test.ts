@@ -45,4 +45,54 @@ describe('Reviewed conditional event families are explicit source contracts',()=
    expect(planReviewedEventFamilyDraft(bad,draft,'__proto__').ok).toBe(false);
    expect(planReviewedEventFamilyDraft(bad,{...draft,format:'auto'},'event_type').ok).toBe(false);
  });
+ it('fails closed instead of silently truncating a wide event or multi-sample field union',()=>{
+   const draft={...createDraft(),format:'json' as const};
+   const wide=Object.fromEntries(Array.from({length:101},(_,index)=>
+     ['wide_'+index,'v']));
+   const source=[
+     JSON.stringify({event_type:'threat',...wide}),
+     JSON.stringify({event_type:'user',username:'demo'}),
+   ].join('\n');
+   const tooWide=planReviewedEventFamilyDraft(preview(source,draft),draft,'event_type');
+   expect(tooWide.ok).toBe(false);
+   if(!tooWide.ok)expect(tooWide.reason).toMatch(/100.*field/);
+   const first=Object.fromEntries(Array.from({length:70},(_,index)=>
+     ['first_'+index,'v']));
+   const second=Object.fromEntries(Array.from({length:70},(_,index)=>
+     ['second_'+index,'v']));
+   const mixed=[
+     JSON.stringify({event_type:'threat',...first}),
+     JSON.stringify({event_type:'threat',...second}),
+     JSON.stringify({event_type:'user',username:'demo'}),
+   ].join('\n');
+   const union=planReviewedEventFamilyDraft(preview(mixed,draft),draft,'event_type');
+   expect(union.ok).toBe(false);
+   if(!union.ok)expect(union.reason).toMatch(/100.*field/);
+ });
+ it('rejects colliding reviewed output paths before saving a draft, but permits exclusive variants',()=>{
+   const draft={...createDraft(),format:'json' as const};
+   const plan=planReviewedEventFamilyDraft(preview(dataset,draft),draft,'event_type');
+   expect(plan.ok).toBe(true);
+   if(!plan.ok)return;
+   const candidate=structuredClone(plan.candidate);
+   const threat=candidate.eventProfiles!.variants.find(x=>x.name==='threat')!;
+   const user=candidate.eventProfiles!.variants.find(x=>x.name==='user')!;
+   threat.mappings[0]!.target='custom.reused';
+   user.mappings[0]!.target='custom.reused';
+   expect(toBackendProject(candidate).ok).toBe(true);
+   // Two fields within the same branch cannot write one output.
+   candidate.guided!.groups.extra=candidate.guided!.groups[threat.mappings[0]!.id]??'vendor_fields';
+   threat.mappings.push({...threat.mappings[0]!,id:'extra',source:'extra_field',
+     target:'custom.reused.deep'});
+   const duplicated=toBackendProject(candidate);
+   expect(duplicated.ok).toBe(false);
+   if(!duplicated.ok)expect(duplicated.issues.some(x=>x.code==='EVENT_OUTPUT_COLLISION')).toBe(true);
+   threat.mappings.pop();
+   candidate.mappings=[{id:'shared',source:'event_type',target:'custom.reused',type:'string'}];
+   candidate.guided!.groups.shared=candidate.guided!.groups[threat.mappings[0]!.id]??'vendor_fields';
+   const sharedCollision=toBackendProject(candidate);
+   expect(sharedCollision.ok).toBe(false);
+   if(!sharedCollision.ok)expect(sharedCollision.issues.some(x=>x.code==='EVENT_OUTPUT_COLLISION')).toBe(true);
+ });
+
 });
