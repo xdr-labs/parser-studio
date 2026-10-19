@@ -29,13 +29,28 @@ to the frozen source snapshot; the unchanged original importer commit is
 preserved in Git history for reproducible comparison.
 
 The backend package's default entrypoint is now
-dist/src/mainline-authoring-server.js. It delegates only explicitly allowlisted
-offline compiler/schema/validation/inspect/package/ParserRecipe HTTP routes
-to the existing qualified compiler handlers. The historical target, Test Lab,
-sensor, tenant-revision, automated AI and Interflow operations are unreachable
-through this executable: they return a non-reflecting HTTP 404 without
-dispatch. The executable binds 127.0.0.1 only. No access credentials, DP
-configuration, target authorization or production instance is modified.
+dist/src/mainline-authoring-server.js. The shipping source invokes the
+already qualified, offline-only compiler, validation, schema, inspection,
+ZIP and ParserRecipe modules directly, without importing the historical
+http.ts server at all. The historical target, Test Lab, sensor,
+tenant-revision, automated AI and Interflow HTTP handlers are absent from
+the shipping module's transitive source-import graph, not merely hidden
+behind an HTTP allowlist. Requests for any such route return a
+non-reflecting HTTP 404. The executable binds 127.0.0.1 only. No
+access credentials, DP configuration, target authorization or production
+instance is modified.
+
+The archived http.ts and legacy modules remain in Git and retain their
+independent non-product regression tests; the product entrypoint cannot
+construct or register them. A source dependency-graph test fails if
+any new unreviewed module is reachable from the shipping entrypoint.
+HTTP contract tests validate the original DRAFT Ruby/CONF, Recipe v0.2,
+inspection and SHA-256 ZIP behavior with no target access. The scoped
+authoring test inventory after the isolation change: 336 passed,
+10 explicitly skipped, 0 failed, plus TypeScript build/check PASS.
+These results do not certify the entire historical target-capable
+backend, customer deployment, proprietary runtime, or external access
+security.
 
 This is a candidate for mainline after same-HEAD native and browser/HTTP
 qualification, not a completed release or target runtime verification.
