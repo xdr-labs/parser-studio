@@ -85,6 +85,17 @@ test('reviewed relay and three event types compile into the same downloaded Ruby
   await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const input=page.getByLabel('Auto Parser raw logs');
   await input.fill(source);
+  // A source-only literal boundary review must coexist with reviewed relay
+  // compilation without trimming or mutating the original multilingual input.
+  const boundary=page.locator('details[aria-label="Manually mark a log prefix or postfix"]');
+  await expect(boundary).toBeVisible();
+  await boundary.locator('summary').click();
+  await input.evaluate((element:HTMLTextAreaElement)=>element.setSelectionRange(0,5));
+  await boundary.getByRole('button',{name:'Mark selection as prefix'}).click();
+  await expect(boundary.getByLabel('Literal boundary review status'))
+    .toContainText('Exact boundary matches: 3 source events');
+  await expect(boundary).toContainText('Source-only review');
+  await expect(input).toHaveValue(source);
   const relay=page.locator('details[aria-label="Review declared relay hosts"]');
   await relay.locator('summary').click();
   await relay.getByLabel('Declared relay hostname list').fill('relay01');
