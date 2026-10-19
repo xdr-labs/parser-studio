@@ -111,3 +111,78 @@ test("target, Test Lab, revision, optional AI and Interflow routes remain unreac
     }
   });
 });
+
+
+test("shipping module graph excludes all legacy target-capable HTTP handlers",async()=>{
+  const fs=await import("node:fs/promises");
+  const path=await import("node:path");
+  const root=path.resolve("src");
+  const reviewed=new Set([
+    "mainline-authoring-server.ts","capabilities.ts","compiler.ts","validate.ts",
+    "import.ts","artifact-package.ts","parser-recipe-v02.ts","unicode.ts","types.ts",
+  ]);
+  const visited=new Set<string>();
+  const walk=async(file:string):Promise<void>=>{
+    assert.ok(reviewed.has(file),"Unreviewed runtime import in shipping backend: "+file);
+    if(visited.has(file))return;
+    visited.add(file);
+    const source=await fs.readFile(path.join(root,file),"utf8");
+    // Include value imports and type imports, so a future import change
+    // cannot silently add a target-capable runtime dependency.
+    for(const match of source.matchAll(/from\s+["']\.\/([^"']+)["']/g)){
+      const dependency=match[1]!.replace(/\.js$/,".ts");
+      await walk(dependency);
+    }
+  };
+  await walk("mainline-authoring-server.ts");
+  assert.ok(visited.has("compiler.ts"));
+  assert.ok(visited.has("parser-recipe-v02.ts"));
+  assert.equal(visited.has("http.ts"),false);
+});
+
+test("standalone shipping endpoints retain the exact bounded offline compiler contract",async()=>{
+  const {createHash}=await import("node:crypto");
+  const {compilePair}=await import("../src/compiler.js");
+  const {recipeFromLegacyProject}=await import("../src/parser-recipe-v02.js");
+  const project=sampleProject();
+  const pair=compilePair(project);
+  const conf=pair.files.find(file=>file.name.endsWith(".conf"))!;
+  const ruby=pair.files.find(file=>!file.name.endsWith(".conf"))!;
+  await withServer(async base=>{
+    const schema=await fetch(base+"/api/v1/parser-pairs/recipe/v0.2/schema");
+    assert.equal(schema.status,200);
+    assert.equal(((await schema.json()) as any).properties.compilerMode.const,"REVIEW_ONLY");
+    const caps=await fetch(base+"/api/v1/parser-pairs/recipe/v0.2/capabilities");
+    assert.equal(caps.status,200);
+    const declared=await caps.json() as Record<string,unknown>;
+    assert.equal(declared["nativeProjectVerificationConfigured"],false);
+    assert.equal(declared["apiDoesNotDeploy"],true);
+    const inspected=await post(base,"/api/v1/parser-pairs/inspect",{
+      name:ruby.name,fragmentContent:ruby.content,confContent:conf.content,
+    });
+    assert.equal(inspected.status,200);
+    const packageReply=await post(base,"/api/v1/parser-pairs/package",{pair,version:"1.0.0"});
+    assert.equal(packageReply.status,200);
+    assert.equal(packageReply.headers.get("content-type"),"application/zip");
+    const bytes=Buffer.from(await packageReply.arrayBuffer());
+    assert.equal(createHash("sha256").update(bytes).digest("hex"),
+      packageReply.headers.get("x-parser-zip-sha256"));
+    const patched=structuredClone(pair);
+    patched.files[0]!.bytes++;
+    const corrupt=await post(base,"/api/v1/parser-pairs/package",{pair:patched,version:"1.0.0"});
+    assert.equal(corrupt.status,422);
+    assert.match((await corrupt.json() as {error:string}).error,/^ARTIFACT_/);
+    project.projectId="draft-synthetic_recipe";
+    project.classification.rules=project.classification.rules.filter(rule=>rule.operator==="equals");
+    const request={
+      recipe:recipeFromLegacyProject(project,"b".repeat(64),2),
+      legacyProject:project,
+    };
+    const valid=await post(base,"/api/v1/parser-pairs/recipe/v0.2/validate",request);
+    assert.equal(valid.status,200);
+    assert.equal((await valid.json() as {targetImportVerified:boolean}).targetImportVerified,false);
+    const generated=await post(base,"/api/v1/parser-pairs/recipe/v0.2/generate",request);
+    assert.equal(generated.status,200);
+    assert.equal((await generated.json() as {manifest:{status:string}}).manifest.status,"DRAFT");
+  });
+});
