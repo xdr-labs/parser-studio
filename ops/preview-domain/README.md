@@ -26,6 +26,8 @@ cd /home/aella/parser-studio-secure-domain-20261019
 bash -n ops/preview-domain/install-private-preview.sh
 bash -n ops/preview-domain/prepare-private-preview.sh
 python3 tests/test_preview_nginx_routing_20261019.py -v
+python3 tests/test_preview_staging_20261019.py -v
+python3 tests/test_preview_startup_wait_20261019.py -v
 python3 -m unittest discover -s tests -p test_embedded_multipass_service.py -v
 python3 -m unittest discover -s tests -p test_csv_logical_framing_20261019.py -v
 ```
@@ -50,7 +52,17 @@ cd /home/aella/parser-studio-secure-domain-20261019
 sudo bash ops/preview-domain/install-private-preview.sh "$(git rev-parse HEAD)"
 ```
 
-The installer requires only the existing server's sudo permission and a **Let's Encrypt certificate contact email**. It does **not** request, create or store a Parser Studio username or password. It creates the dedicated Nginx site, requests the domain TLS certificate through Certbot webroot, installs the exact-HEAD build plus two independent loopback services, validates `nginx -t`, then reloads Nginx. The old Exporter virtual host is not edited. On an installation error, it restores Nginx routing and disables the new systemd services; copied staging artifacts remain for review.
+The installer requires only the existing server's sudo permission. A **Let's Encrypt contact email** is requested only if a valid, existing certificate is unavailable. It does **not** request, create or store a Parser Studio username or password. It creates the dedicated Nginx site, reuses the existing valid certificate if present, installs two independent loopback services, waits for bounded health probes instead of failing on the first cold-start request, validates `nginx -t`, then reloads Nginx. The old Exporter virtual host is not edited. On installation errors, Nginx routing is restored and new systemd services are disabled.
+
+## Resume after the 2026-10-19 partial installation
+
+The first approved installer issued a Let's Encrypt certificate successfully (expires **2027-01-17**) and copied the exact-HEAD static/frontend/backend/parser payload, but probed `127.0.0.1:4304` before the Python process was listening. Its rollback disabled both new systemd units and removed the new Nginx site. The existing Exporter host remained enabled. Its staged application files and issued certificate were preserved.
+
+**Verified:** previously staged files equal the package byte-for-byte, ignoring only Python's generated `__pycache__`. Running that same parser standalone on an isolated port produced HTTP 200 from `/health`. Journal entries showed systemd started the unit, then the installer cleanup stopped it; they did not show a Python crash.
+
+The installer now runs `check-staged-files.sh` before touching services: it resumes only when all three existing destination trees match the exact package. Missing or modified files fail closed. It then checks and **reuses the existing certificate without any new email or password prompt**, starts the units, and retries each health endpoint for up to 40 probes. If the service actually stops, it reports service status and recent journal lines. The same authorized admin invocation above is used to resume.
+
+Only the installer script and staging verification code changed: the compiled Parser Studio web/backend/parser payload remains the same qualified source. Rebuild the exact-HEAD package using `prepare-private-preview.sh` before rerunning. Do not delete existing staged payload or try to bypass OS permissions.
 
 ## Real-domain acceptance (not automatically satisfied by deployment scripts)
 

@@ -22,8 +22,6 @@ die(){ printf 'FAILED: %s\n' "$*" >&2; exit 1; }
 [[ ! -e "$STAGED" && ! -e "$ENABLED" ]] || die 'Domain virtual host already exists; do not overwrite it.'
 [[ ! -e "/etc/systemd/system/$SVC" && ! -e "/etc/systemd/system/$BACKEND_SVC" ]] ||
   die 'Preview service already exists; review before changing it.'
-[[ ! -e "$WWW" && ! -e "$BACKEND" && ! -e "$MULTIPASS" ]] ||
-  die 'Existing preview artifacts found; review before changing anything.'
 [[ -f "$PKG/web/index.html" && -f "$PKG/backend/dist/src/mainline-authoring-server.js" ]] ||
   die 'Exact-HEAD deployable web/backend package missing; run prepare-private-preview.sh first.'
 [[ -f "$PKG/COMMIT" && "$(cat "$PKG/COMMIT")" == "$1" ]] ||
@@ -35,25 +33,41 @@ die(){ printf 'FAILED: %s\n' "$*" >&2; exit 1; }
 [[ -f "$ROOT/ops/preview-domain/nginx-app.parser.xdr.ooo.conf" ]] || die 'Audited Nginx configuration missing.'
 [[ -f "$ROOT/ops/preview-domain/parser-studio-preview-multipass.service" ]] || die 'Multi-Pass unit missing.'
 [[ -f "$ROOT/ops/preview-domain/parser-studio-preview-authoring.service" ]] || die 'Authoring API unit missing.'
+[[ -f "$ROOT/ops/preview-domain/check-staged-files.sh" ]] || die 'Read-only staging verification is missing.'
 [[ -f "$PKG/multipass/multipass_preview_api.py" ]] || die 'Source engine missing.'
 ( cd "$PKG" && sha256sum --status -c FILES.sha256 ) ||
   die 'Offline preview package failed integrity verification.'
 if find "$PKG" -type l -print -quit | grep -q .; then
   die 'Deployment package contains symlinks; copy refused.'
 fi
-for bin in nginx certbot curl systemctl git; do
+for bin in nginx certbot curl systemctl git openssl diff; do
   command -v "$bin" >/dev/null || die "Required command missing: $bin"
 done
+stage_mode=$(bash "$ROOT/ops/preview-domain/check-staged-files.sh" "$PKG" "$WWW" "$BACKEND" "$MULTIPASS") ||
+  die 'An existing deployment does not exactly match the signed-off build. Nothing will be overwritten.'
+[[ "$stage_mode" == FRESH || "$stage_mode" == REUSE_VERIFIED ]] ||
+  die 'Unexpected staging inspection result.'
 getent hosts "$SITE" | grep -q 221.139.249.116 || die 'DNS does not resolve to this authorized development server.'
 if ss -ltn | grep -Eq '127\.0\.0\.1:(4304|4305)[[:space:]]'; then
   die 'Private preview port 4304 or 4305 is already occupied.'
 fi
 
 printf '\nThis installs a NEW no-login HTTPS Nginx virtual host for %s.\n' "$SITE"
-printf 'It requests a TLS certificate, installs loopback-only parser services and reloads Nginx.\n'
+printf 'It configures existing verified files, loopback services and an isolated Nginx site.\n'
 printf 'The existing exporter.xdr.ooo configuration is preserved.\n'
-read -r -p "Let's Encrypt certificate contact email: " email
-[[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] || die 'Invalid email.'
+printf 'Staged source files: %s\n' "$stage_mode"
+certificate=/etc/letsencrypt/live/$SITE/fullchain.pem
+private_key=/etc/letsencrypt/live/$SITE/privkey.pem
+if [[ -f "$certificate" && -f "$private_key" ]] &&
+   openssl x509 -checkend 86400 -noout -in "$certificate" >/dev/null; then
+  echo 'Reusing the already-issued valid HTTPS certificate.'
+  reuse_certificate=true
+else
+  reuse_certificate=false
+  read -r -p "Let's Encrypt certificate contact email: " email
+  [[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]] ||
+    die 'Invalid certificate contact email.'
+fi
 
 # In a failure, restore the old Nginx set of enabled sites. Never touch the
 # existing Exporter virtual host; certbot files can remain for manual review.
@@ -90,23 +104,49 @@ ln -s "$STAGED" "$ENABLED"
 nginx -t
 systemctl reload nginx
 
-certbot certonly --webroot --webroot-path "$ACME" -d "$SITE" \
-  --agree-tos --non-interactive --email "$email" --keep-until-expiring
+if [[ "$reuse_certificate" != true ]]; then
+  certbot certonly --webroot --webroot-path "$ACME" -d "$SITE" \
+    --agree-tos --non-interactive --email "$email" --keep-until-expiring
+fi
 
-install -d -m 0755 "$WWW" "$BACKEND" "$MULTIPASS"
-cp -a "$PKG/web/." "$WWW/"
-cp -a "$PKG/backend/." "$BACKEND/"
-cp -a "$PKG/multipass/." "$MULTIPASS/"
-chmod -R a+rX "$WWW" "$BACKEND" "$MULTIPASS"
+if [[ "$stage_mode" == FRESH ]]; then
+  install -d -m 0755 "$WWW" "$BACKEND" "$MULTIPASS"
+  cp -a "$PKG/web/." "$WWW/"
+  cp -a "$PKG/backend/." "$BACKEND/"
+  cp -a "$PKG/multipass/." "$MULTIPASS/"
+  chmod -R a+rX "$WWW" "$BACKEND" "$MULTIPASS"
+else
+  echo 'Existing exact-byte-matched static, backend and parser files retained without overwrite.'
+fi
 
 install -m 0644 "$ROOT/ops/preview-domain/parser-studio-preview-multipass.service" "/etc/systemd/system/$SVC"
 install -m 0644 "$ROOT/ops/preview-domain/parser-studio-preview-authoring.service" "/etc/systemd/system/$BACKEND_SVC"
 systemctl daemon-reload
 systemctl enable --now "$SVC" "$BACKEND_SVC"
-curl -fsS --max-time 10 http://127.0.0.1:4304/health >/dev/null ||
-  die 'Isolated parser worker did not become ready.'
-curl -fsS --max-time 10 http://127.0.0.1:4305/api/v1/parser-pairs/capabilities >/dev/null ||
-  die 'Exact-HEAD offline Authoring API did not become ready.'
+wait_for_service() {
+  local unit="$1" endpoint="$2" attempt
+  # First Python import on a cold host can take longer than systemctl start.
+  # Only report failure after bounded probes or a verified unit failure.
+  for attempt in {1..40}; do
+    if curl -fs --max-time 2 "$endpoint" >/dev/null; then
+      printf '%s ready after probe %s.\n' "$unit" "$attempt"
+      return 0
+    fi
+    if ! systemctl is-active --quiet "$unit"; then
+      systemctl status "$unit" --no-pager -l >&2 || true
+      journalctl -u "$unit" -n 25 --no-pager >&2 || true
+      return 1
+    fi
+    sleep 1
+  done
+  systemctl status "$unit" --no-pager -l >&2 || true
+  journalctl -u "$unit" -n 25 --no-pager >&2 || true
+  return 1
+}
+wait_for_service "$SVC" http://127.0.0.1:4304/health ||
+  die 'Isolated parser worker did not become ready within the bounded startup window.'
+wait_for_service "$BACKEND_SVC" http://127.0.0.1:4305/api/v1/parser-pairs/capabilities ||
+  die 'Exact-HEAD offline Authoring API did not become ready within the bounded startup window.'
 
 install -m 0644 "$ROOT/ops/preview-domain/nginx-app.parser.xdr.ooo.conf" "$STAGED"
 nginx -t
