@@ -50,7 +50,8 @@ test('beginner uses the bounded local Cisco FTD rule before unnecessary ChatGPT 
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
- if(process.env.PARSER_STUDIO_LIVE_BACKEND==='1'){
+ if(process.env.PARSER_STUDIO_LIVE_BACKEND==='1' ||
+    process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E==='1'){
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();

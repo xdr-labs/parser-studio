@@ -1,0 +1,1047 @@
+{
+  "kind": "parser-studio.recipe-v0.2-native-golden.v0.1",
+  "origin": "independently-authored-public-synthetic",
+  "profiles": [
+    {
+      "slug": "v02_json",
+      "format": "json",
+      "raw": "{\"source\":{\"ip\":\"192.0.2.17\"},\"destination\":{\"ip\":\"198.51.100.81\",\"port\":\"443\"},\"action\":\"deny\",\"event\":{\"id\":\"301\"}}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "dstip": "198.51.100.81",
+        "dstport": 443,
+        "action": "deny",
+        "log": {
+          "event_id": 301
+        },
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_kv",
+      "format": "kv",
+      "raw": "src_ip=192.0.2.11 dst_port=80 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 80,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_csv",
+      "format": "csv",
+      "raw": "192.0.2.6,443,deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.6",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_cef",
+      "format": "cef",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_leef",
+      "format": "leef",
+      "raw": "LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.5\tdstPort=80\tact=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.5",
+        "dstport": 80,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog_cef",
+      "format": "syslog_rfc5424",
+      "bodyFormat": "cef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog_leef",
+      "format": "syslog_rfc5424",
+      "bodyFormat": "leef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 80,
+        "action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog3164_kv",
+      "format": "syslog_rfc3164",
+      "bodyFormat": "kv",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=198.51.100.14 dst_port=443 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.14",
+        "dstport": 443,
+        "action": "deny",
+        "syslog_header_time": "Oct  9 14:15:16",
+        "syslog_time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog3164_cef",
+      "format": "syslog_rfc3164",
+      "bodyFormat": "cef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.11",
+        "dstport": 443,
+        "action": "deny",
+        "syslog_header_time": "Oct 12 02:03:04",
+        "syslog_time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_syslog3164_leef",
+      "format": "syslog_rfc3164",
+      "bodyFormat": "leef",
+      "raw": "<165>Nov 12 02:03:04 edge fw[122]: LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.8\tdstPort=80\tact=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.8",
+        "dstport": 80,
+        "action": "deny",
+        "syslog_header_time": "Nov 12 02:03:04",
+        "syslog_time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_mixed",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"dst_port\":443,\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_json_blanks",
+      "format": "json",
+      "transport": "blank_line_json",
+      "raw": "{\n  \"source\": {\n    \"ip\": \"192.0.2.17\"\n  },\n  \"destination\": {\n    \"ip\": \"198.51.100.81\",\n    \"port\": \"443\"\n  },\n  \"action\": \"deny\",\n  \"event\": {\n    \"id\": \"301\"\n  }\n}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "dstip": "198.51.100.81",
+        "dstport": 443,
+        "action": "deny",
+        "log": {
+          "event_id": 301
+        },
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_mixed_rfc5424",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"dst_port\":443,\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "dstport": 443,
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_mixed_rfc3164",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_mixed_rfc5424_bodies",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\"}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_java_blanks",
+      "format": "java_stacktrace",
+      "transport": "blank_line_java",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat com.example.Service.run(Service.java:42)\n\tat com.example.App.main(App.java:5)\nCaused by: java.io.IOException: simulated\n\tat com.example.Store.read(Store.java:12)\n\t... 2 more",
+      "expectedTime": null,
+      "expectedRecord": {
+        "exception_class": "java.lang.IllegalStateException",
+        "frame_count": 3,
+        "cause_class": "java.io.IOException",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "slug": "v02_mixed_csv",
+      "format": "mixed",
+      "raw": "{\"src_ip\":\"192.0.2.10\",\"action\":\"deny\",\"dst_port\":443}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.10",
+        "action": "deny",
+        "dstport": 443,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "negative": [
+    {
+      "id": "month",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Bad  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "day",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Apr 31 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "february",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Feb 30 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "hour",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 24:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "second",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:60 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "priority",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<192>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "application",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:16 edge noapp src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "malformed_kv",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=\"unterminated"
+    },
+    {
+      "id": "newline",
+      "slug": "v02_syslog3164_kv",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1\ndst_port=443 action=deny"
+    }
+  ],
+  "mixedCases": [
+    {
+      "id": "kv-allow",
+      "slug": "v02_mixed",
+      "raw": "src_ip=198.51.100.8 dst_port=53 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "dstport": 53,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "cef-deny",
+      "slug": "v02_mixed",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "cef_src": "192.0.2.11",
+        "cef_port": 443,
+        "cef_action": "deny",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "leef-allow",
+      "slug": "v02_mixed",
+      "raw": "LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.5\tdstPort=80\tact=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "cef_src": "203.0.113.5",
+        "leef_port": 80,
+        "cef_action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedNegative": [
+    {
+      "id": "unknown",
+      "slug": "v02_mixed",
+      "raw": "PRIVATE_SYNTHETIC_RAW no format"
+    },
+    {
+      "id": "csv-unknown",
+      "slug": "v02_mixed",
+      "raw": "allow,192.0.2.10,443"
+    },
+    {
+      "id": "cef-version",
+      "slug": "v02_mixed",
+      "raw": "CEF:9|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "kv-quote",
+      "slug": "v02_mixed",
+      "raw": "src_ip=192.0.2.10 dst_port=443 action=\"unterminated"
+    },
+    {
+      "id": "syslog-unallowed",
+      "slug": "v02_mixed",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.10 dst_port=443 action=deny"
+    }
+  ],
+  "blankLineCases": [
+    {
+      "id": "second_pretty_json",
+      "slug": "v02_json_blanks",
+      "raw": "{\n  \"source\": {\n    \"ip\": \"203.0.113.21\"\n  },\n  \"destination\": {\n    \"ip\": \"198.51.100.82\",\n    \"port\": \"22\"\n  },\n  \"action\": \"allow\",\n  \"event\": {\n    \"id\": \"302\"\n  }\n}",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.21",
+        "dstip": "198.51.100.82",
+        "dstport": 22,
+        "action": "allow",
+        "log": {
+          "event_id": 302
+        },
+        "stellar_log_index": "syslog",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedSyslogCases": [
+    {
+      "id": "kv-allow",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "src_ip=198.51.100.8 dst_port=53 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "dstport": 53,
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-cef-deny",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "wrapped_src": "192.0.2.11",
+        "wrapped_cef_port": 443,
+        "wrapped_action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "rfc5424-leef-allow",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "wrapped_src": "203.0.113.8",
+        "wrapped_leef_port": 80,
+        "wrapped_action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedSyslogNegative": [
+    {
+      "id": "rfc3164-not-allowed",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.1 dst_port=443 action=deny"
+    },
+    {
+      "id": "rfc5424-wrong-version",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<34>2 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "rfc5424-no-zone",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<34>1 2026-10-12T01:02:03 edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "rfc5424-unsupported-body",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<34>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=192.0.2.1 action=deny"
+    },
+    {
+      "id": "rfc5424-cef-invalid",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<34>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:2|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "rfc5424-leef-invalid",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "<34>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|bad|src=203.0.113.8"
+    },
+    {
+      "id": "direct-cef-disallowed",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "multiline-unsupported",
+      "slug": "v02_mixed_rfc5424",
+      "raw": "{\"src_ip\":\"192.0.2.1\"}\n{\"src_ip\":\"192.0.2.2\"}"
+    }
+  ],
+  "mixedRfc3164Cases": [
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "src_ip=198.51.100.8 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-kv-deny",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "192.0.2.17",
+        "wrapped_action": "deny",
+        "yearless_header": "Oct  9 14:15:16",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-kv-allow",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<191>Dec 31 23:59:59 other security: action=allow src_ip=203.0.113.4",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "203.0.113.4",
+        "wrapped_action": "allow",
+        "yearless_header": "Dec 31 23:59:59",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedRfc3164Negative": [
+    {
+      "id": "rfc5424-disallowed",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>1 2026-10-12T01:02:03Z edge fw 122 ID - action=allow src_ip=198.51.100.4"
+    },
+    {
+      "id": "bad-month",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Bad  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "bad-priority",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<192>Oct  9 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "bad-date",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Feb 30 14:15:16 edge fw[122]: src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "missing-tag",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge src_ip=192.0.2.17 action=deny"
+    },
+    {
+      "id": "disallowed-cef-body",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.17 act=deny"
+    },
+    {
+      "id": "invalid-quoted-kv",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "<34>Oct  9 14:15:16 edge fw[122]: src_ip=\"192.0.2.17 action=deny"
+    },
+    {
+      "id": "unknown-csv",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "192.0.2.17,deny,80"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_rfc3164",
+      "raw": "src_ip=198.51.100.3 action=allow\nsrc_ip=198.51.100.4 action=deny"
+    }
+  ],
+  "mixedRfc5424BodyCases": [
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "src_ip=198.51.100.8 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc5424-json-deny",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\"}",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "wrapped_srcip": "192.0.2.19",
+        "wrapped_action": "deny",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc5424-kv-allow",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=203.0.113.4 action=allow",
+      "expectedTime": "2026-10-12T01:02:03Z",
+      "expectedRecord": {
+        "wrapped_srcip": "203.0.113.4",
+        "wrapped_action": "allow",
+        "timestamp": 1791766923000,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedRfc5424BodyNegative": [
+    {
+      "id": "wrong-version",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>2 2026-10-12T01:02:03Z edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\"}"
+    },
+    {
+      "id": "no-timezone",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03 edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\"}"
+    },
+    {
+      "id": "invalid-json-object",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - {\"src_ip\":\"192.0.2.19\",\"action\":\"deny\""
+    },
+    {
+      "id": "malformed-kv",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=\"203.0.113.4 action=allow"
+    },
+    {
+      "id": "unallowlisted-cef",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.19 act=deny"
+    },
+    {
+      "id": "unallowlisted-leef",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:1.0|Synthetic|FW|1|501|src=192.0.2.19\tact=deny"
+    },
+    {
+      "id": "invalid-header-priority",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "<999>1 2026-10-12T01:02:03Z edge fw 122 ID - src_ip=203.0.113.4 action=allow"
+    },
+    {
+      "id": "unsupported-csv",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "192.0.2.19,deny,80"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_rfc5424_bodies",
+      "raw": "{\"src_ip\":\"192.0.2.19\"}\n{\"src_ip\":\"192.0.2.20\"}"
+    }
+  ],
+  "mixedRfc3164WrappedCases": [
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "src_ip=198.51.100.8 action=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-cef-deny",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "192.0.2.11",
+        "wrapped_action": "deny",
+        "cef_port": 443,
+        "yearless_header": "Oct 12 02:03:04",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "strict-rfc3164-leef-allow",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Nov 12 02:03:04 edge fw[122]: LEEF:1.0|Synthetic|FW|1|501|src=203.0.113.8\tdstPort=80\tact=allow",
+      "expectedTime": null,
+      "expectedRecord": {
+        "wrapped_srcip": "203.0.113.8",
+        "wrapped_action": "allow",
+        "leef_port": 80,
+        "yearless_header": "Nov 12 02:03:04",
+        "time_policy": "YEAR_AND_ZONE_UNKNOWN",
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedRfc3164WrappedNegative": [
+    {
+      "id": "rfc5424-disallowed",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "bad-month",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Bad 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "bad-priority",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<999>Oct 12 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "bad-day",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Feb 30 02:03:04 edge fw[122]: CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "missing-tag",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "unsupported-cef-version",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: CEF:2|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny"
+    },
+    {
+      "id": "unsupported-leef-version",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Nov 12 02:03:04 edge fw[122]: LEEF:3.0|Synthetic|FW|1|501|src=203.0.113.8\tact=deny"
+    },
+    {
+      "id": "unselected-rfc3164-kv",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "<165>Oct 12 02:03:04 edge fw[122]: src_ip=192.0.2.11 action=deny"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_rfc3164_cefleef",
+      "raw": "{\"src_ip\":\"192.0.2.11\"}\n{\"src_ip\":\"192.0.2.12\"}"
+    }
+  ],
+  "javaBlankLineCases": [
+    {
+      "id": "second_stacktrace",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.RuntimeException: another failure\n\tat demo.Worker.go(Worker.java:9)",
+      "expectedTime": null,
+      "expectedRecord": {
+        "exception_class": "java.lang.RuntimeException",
+        "frame_count": 1,
+        "stellar_log_index": "syslog",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "javaBlankLineNegative": [
+    {
+      "id": "orphan_frame",
+      "slug": "v02_java_blanks",
+      "raw": "\tat demo.Worker.go(Worker.java:9)"
+    },
+    {
+      "id": "missing_frames",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure"
+    },
+    {
+      "id": "bad_followup",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\nrandom unframed line"
+    },
+    {
+      "id": "orphan_cause",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\nCaused by: java.io.IOException: boom"
+    },
+    {
+      "id": "bad_frame",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(bad format)"
+    },
+    {
+      "id": "physical_blank",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(Worker.java:9)\n\n\tat demo.More.go(More.java:10)"
+    },
+    {
+      "id": "bad_crlf",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\r\n\tat demo.Worker.go(Worker.java:9)"
+    },
+    {
+      "id": "unframed_json",
+      "slug": "v02_java_blanks",
+      "raw": "{\n  \"action\":\"deny\"\n}"
+    },
+    {
+      "id": "too_long",
+      "slug": "v02_java_blanks",
+      "raw": "java.lang.IllegalStateException: Synthetic failure\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)\n\tat demo.Worker.go(Worker.java:9)"
+    }
+  ],
+  "mixedCsvCases": [
+    {
+      "id": "semicolon-csv-deny",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny;22",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "192.0.2.17",
+        "action": "deny",
+        "dstport": 22,
+        "stellar_log_index": "threat",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "standalone-kv-allow",
+      "slug": "v02_mixed_csv",
+      "raw": "src_ip=198.51.100.8 action=allow dst_port=443",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "198.51.100.8",
+        "action": "allow",
+        "dstport": 443,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    },
+    {
+      "id": "quoted-csv-allow",
+      "slug": "v02_mixed_csv",
+      "raw": "\"203.0.113.19\";allow;8443",
+      "expectedTime": null,
+      "expectedRecord": {
+        "srcip": "203.0.113.19",
+        "action": "allow",
+        "dstport": 8443,
+        "stellar_log_index": "session",
+        "msg_origin": {
+          "source": "sample_firewall",
+          "category": "network",
+          "class": "sample_firewall"
+        }
+      }
+    }
+  ],
+  "mixedCsvNegative": [
+    {
+      "id": "missing-column",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny"
+    },
+    {
+      "id": "extra-column",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny;22;unexpected"
+    },
+    {
+      "id": "wrong-delimiter",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17,deny,22"
+    },
+    {
+      "id": "broken-quotes",
+      "slug": "v02_mixed_csv",
+      "raw": "\"192.0.2.17;deny;22"
+    },
+    {
+      "id": "unselected-cef",
+      "slug": "v02_mixed_csv",
+      "raw": "CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 act=deny"
+    },
+    {
+      "id": "unselected-syslog",
+      "slug": "v02_mixed_csv",
+      "raw": "<34>Oct 12 02:03:04 edge fw[122]: src_ip=192.0.2.11 action=deny"
+    },
+    {
+      "id": "physical-multiline",
+      "slug": "v02_mixed_csv",
+      "raw": "192.0.2.17;deny;22\n203.0.113.3;allow;443"
+    },
+    {
+      "id": "duplicate-kv",
+      "slug": "v02_mixed_csv",
+      "raw": "src_ip=192.0.2.17 src_ip=203.0.113.3 action=deny"
+    },
+    {
+      "id": "no-family",
+      "slug": "v02_mixed_csv",
+      "raw": "UNRECOGNIZED_TEXT"
+    }
+  ]
+}

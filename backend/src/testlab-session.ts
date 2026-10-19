@@ -1,0 +1,544 @@
+/**
+ * P0 Live Test Lab: bounded in-memory session loop with Stop/Pause/expiry.
+ *
+ * This is a reusable orchestration primitive, not an actual UDP/TCP sender.
+ * No default network transport exists. Only an authorized backend/in-network
+ * agent may inject a delivery callback and server-side approval policy.
+ */
+import {randomUUID} from "node:crypto";
+import type {WorkerMetadata} from "./testlab-worker-journal.js";
+import type {TestLabEvidenceLedger} from "./testlab-evidence.js";
+import {createSyntheticPreview,SyntheticPreviewError,
+  type SyntheticPreviewRequest} from "./testlab-synthetic.js";
+import {selectScenarioPreview,validateReplayScenario,ScenarioContractError,
+  type ReplayScenario} from "./testlab-scenario.js";
+
+export type TestLabState="RUNNING"|"PAUSED"|"STOPPED"|"EXPIRED"|"FAILED"|"COMPLETED";
+export type TestLabStartRequest={
+  sample?:SyntheticPreviewRequest;
+  scenario?:ReplayScenario;
+  /** Exact SHA-256 of an independently reviewed compiled package. */
+  artifactRevisionId?:string;
+  approvalId:string;
+  ratePerSecond:number;
+  leaseMs:number;
+  maxEvents:number;
+};
+export type TestLabRenewRequest={
+  approvalId:string;
+  leaseMs:number;
+  additionalEvents:number;
+};
+export type TestLabRateChangeRequest={
+  approvalId:string;
+  ratePerSecond:number;
+};
+export type TestLabSendContext={
+  runId:string;
+  sequence:number;
+  signal:AbortSignal;
+};
+export type TestLabStatus={
+  runId:string;
+  state:TestLabState;
+  sentCount:number;
+  nextSequence:number;
+  replayMode:"single"|"constant-rate"|"original-gaps";
+  sampleFamilyCount:number;
+  ratePerSecond:number;
+  maxEvents:number;
+  leaseExpiresAt:string;
+  lastSentAt:string|null;
+  errorCode:string|null;
+  parserLifecycleNotModified:true;
+  realSensorVerified:false;
+  runtimeParsingVerified:false;
+  sensorIngestVerified:false;
+};
+export type TestLabSessionConfig={
+  /** Supplied by trusted backend, never by a browser alone. */
+  approveStart?:(intent:{approvalId:string;runId:string;format:string;
+    ratePerSecond:number;maxEvents:number;leaseMs:number;
+    artifactRevisionId?:string})=>Promise<boolean>;
+  /** New explicit operator decision for EVERY lease renewal. */
+  approveRenewal?:(intent:{approvalId:string;runId:string;ownerId:string|null;
+    leaseMs:number;additionalEvents:number;currentExpiry:string;
+    sentCount:number})=>Promise<boolean>;
+  /** An independent approval is required for EACH bounded rate change. */
+  approveRateChange?:(intent:{approvalId:string;runId:string;
+    ownerId:string|null;currentRatePerSecond:number;ratePerSecond:number;
+    sentCount:number;leaseExpiresAt:string})=>Promise<boolean>;
+  /** Backend-controlled trusted sink; no default network implementation. */
+  deliver?:(event:string,context:TestLabSendContext)=>Promise<void>;
+  now?:()=>number;
+  maxConcurrent?:number;
+  /** Synchronous owner-only durable write. START fails BEFORE sending
+   * if this callback is configured and its journal write is unavailable. */
+  recordTransition?:(event:WorkerMetadata)=>void;
+  /** Optional bounded per-event metadata, disabled unless injected. */
+  evidenceLedger?:TestLabEvidenceLedger;
+};
+export class TestLabSessionError extends Error{
+  constructor(readonly code:string){super(code);this.name="TestLabSessionError";}
+}
+function invalid(code:string):never{throw new TestLabSessionError(code);}
+type ActiveSession={
+  state:TestLabState;
+  runId:string;
+  ownerId:string|null;
+  artifactRevisionId?:string;
+  sample:SyntheticPreviewRequest;
+  scenario?:ReplayScenario;
+  ratePerSecond:number;
+  intervalMs:number;
+  leaseDeadline:number;
+  maxEvents:number;
+  sentCount:number;
+  nextSequence:number;
+  lastSentAt:string|null;
+  errorCode:string|null;
+  cancellation:AbortController;
+  deliveryInFlight:boolean;
+  tickTimer:ReturnType<typeof setTimeout>|null;
+  expiryTimer:ReturnType<typeof setTimeout>|null;
+};
+
+export class SyntheticSessionController{
+  #sessions=new Map<string,ActiveSession>();
+  #pendingStarts=0;
+  #closed=false;
+  #pendingRenewals=new Set<string>();
+  #pendingRateChanges=new Set<string>();
+  #approveRateChange?:TestLabSessionConfig["approveRateChange"];
+  #approve?:TestLabSessionConfig["approveStart"];
+  #approveRenewal?:TestLabSessionConfig["approveRenewal"];
+  #deliver?:TestLabSessionConfig["deliver"];
+  #now:()=>number;
+  #maxConcurrent:number;
+  #recordTransition?:TestLabSessionConfig["recordTransition"];
+  #evidence?:TestLabEvidenceLedger;
+  constructor(config:TestLabSessionConfig){
+    this.#approve=config.approveStart;
+    this.#approveRenewal=config.approveRenewal;
+    this.#approveRateChange=config.approveRateChange;
+    this.#deliver=config.deliver;
+    this.#now=config.now??(()=>Date.now());
+    this.#recordTransition=config.recordTransition;
+    this.#evidence=config.evidenceLedger;
+    this.#maxConcurrent=config.maxConcurrent??2;
+    if(!Number.isInteger(this.#maxConcurrent)||this.#maxConcurrent<1||
+       this.#maxConcurrent>10)invalid("TESTLAB_CAPACITY_INVALID");
+  }
+  #activeCount(){
+    return [...this.#sessions.values()].filter(x=>x.state==="RUNNING"||x.state==="PAUSED").length;
+  }
+  #journal(session:ActiveSession):void{
+    if(!this.#recordTransition)return;
+    if(!session.ownerId)invalid("TESTLAB_JOURNAL_OWNER_REQUIRED");
+    if(!session.artifactRevisionId||
+       !/^[0-9a-f]{64}$/.test(session.artifactRevisionId))
+      invalid("TESTLAB_JOURNAL_ARTIFACT_REQUIRED");
+    const data:WorkerMetadata={
+      runId:session.runId,actorId:session.ownerId,
+      state:session.state,
+      leaseExpiresAt:new Date(session.leaseDeadline).toISOString(),
+      sentCount:session.sentCount,maxEvents:session.maxEvents,
+      artifactRevisionId:session.artifactRevisionId,
+      replayMode:session.scenario?.mode??"single",
+      sampleFamilyCount:session.scenario?.events.length??1,
+    };
+    try{this.#recordTransition(data);}
+    catch{invalid("TESTLAB_JOURNAL_UNAVAILABLE");}
+  }
+  #public(session:ActiveSession):TestLabStatus{
+    return {
+      runId:session.runId,
+      state:session.state,
+      sentCount:session.sentCount,
+      nextSequence:session.nextSequence,
+      replayMode:session.scenario?.mode??"single",
+      sampleFamilyCount:session.scenario?.events.length??1,
+      ratePerSecond:session.ratePerSecond,
+      maxEvents:session.maxEvents,
+      leaseExpiresAt:new Date(session.leaseDeadline).toISOString(),
+      lastSentAt:session.lastSentAt,
+      errorCode:session.errorCode,
+      parserLifecycleNotModified:true,
+      realSensorVerified:false,runtimeParsingVerified:false,
+      sensorIngestVerified:false,
+    };
+  }
+  #owned(runId:string,ownerId?:string):ActiveSession{
+    const item=this.#sessions.get(runId);
+    // Hide whether another actor's run exists; random run IDs are not auth.
+    if(!item||(item.ownerId!==null&&item.ownerId!==ownerId))
+      invalid("TESTLAB_SESSION_NOT_FOUND");
+    return item;
+  }
+  status(runId:string,ownerId?:string):TestLabStatus{
+    return this.#public(this.#owned(runId,ownerId));
+  }
+  evidenceReport(runId:string,ownerId?:string){
+    const item=this.#owned(runId,ownerId);
+    if(!this.#evidence||!item.ownerId)
+      invalid("TESTLAB_EVIDENCE_DISABLED");
+    return this.#evidence.report(item.runId,item.ownerId);
+  }
+  #end(item:ActiveSession,state:TestLabState,errorCode:string|null=null){
+    if(item.state==="STOPPED"||item.state==="COMPLETED"||
+       item.state==="EXPIRED"||item.state==="FAILED")return;
+    item.state=state;
+    item.errorCode=errorCode;
+    if(item.tickTimer)clearTimeout(item.tickTimer);
+    if(item.expiryTimer)clearTimeout(item.expiryTimer);
+    item.tickTimer=null;item.expiryTimer=null;
+    item.cancellation.abort();
+    if(item.deliveryInFlight&&this.#evidence&&item.ownerId){
+      // The sink might already have accepted bytes. Do not replay on Resume.
+      try{this.#evidence.failure(item.runId,item.ownerId,item.nextSequence,
+        "SEND_OUTCOME_UNCERTAIN");}
+      catch{/* Preserve terminal Stop/expiry even on evidence error. */}
+    }
+    // Stop always wins, even if its metadata-only audit sink is unavailable.
+    try{this.#journal(item);}
+    catch{item.errorCode="TESTLAB_JOURNAL_UNAVAILABLE";}
+    // Purge the raw sample(s) from retained session state on terminal paths.
+    item.sample={...item.sample,source:""};
+    if(item.scenario)item.scenario={...item.scenario,events:item.scenario.events.map(entry=>({
+      ...entry,sample:{...entry.sample,source:""},
+    }))};
+  }
+  stop(runId:string,ownerId?:string):TestLabStatus{
+    const item=this.#owned(runId,ownerId);
+    this.#end(item,"STOPPED");
+    return this.#public(item);
+  }
+  stopAll():void{
+    // Shutdown is terminal. A late asynchronous approval must never
+    // resurrect sessions after the HTTP listener closes.
+    this.#closed=true;
+    this.#pendingRenewals.clear();
+    this.#pendingRateChanges.clear();
+    for(const item of this.#sessions.values())this.#end(item,"STOPPED");
+    this.#sessions.clear();
+  }
+  pause(runId:string,ownerId?:string):TestLabStatus{
+    const item=this.#owned(runId,ownerId);
+    if(item.state!=="RUNNING")invalid("TESTLAB_SESSION_NOT_RUNNING");
+    // We cannot know whether an unresolved sink has already accepted bytes.
+    // Terminalize instead of replaying the same sequence after Resume.
+    if(item.deliveryInFlight){
+      this.#end(item,"FAILED","TESTLAB_SEND_OUTCOME_UNCERTAIN");
+      return this.#public(item);
+    }
+    item.state="PAUSED";
+    if(item.tickTimer)clearTimeout(item.tickTimer);
+    item.tickTimer=null;
+    try{this.#journal(item);}catch{
+      this.#end(item,"FAILED","TESTLAB_JOURNAL_UNAVAILABLE");
+      invalid("TESTLAB_JOURNAL_UNAVAILABLE");
+    }
+    return this.#public(item);
+  }
+  resume(runId:string,ownerId?:string):TestLabStatus{
+    const item=this.#owned(runId,ownerId);
+    if(item.state!=="PAUSED")invalid("TESTLAB_SESSION_NOT_PAUSED");
+    if(this.#now()>=item.leaseDeadline){
+      this.#end(item,"EXPIRED");return this.#public(item);
+    }
+    item.state="RUNNING";
+    try{this.#journal(item);}catch{
+      this.#end(item,"FAILED","TESTLAB_JOURNAL_UNAVAILABLE");
+      invalid("TESTLAB_JOURNAL_UNAVAILABLE");
+    }
+    this.#schedule(item,0);
+    return this.#public(item);
+  }
+  async renew(runId:string,request:TestLabRenewRequest,
+    ownerId?:string):Promise<TestLabStatus>{
+    if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+    const item=this.#owned(runId,ownerId);
+    if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    if(!this.#approveRenewal)invalid("TESTLAB_RENEWAL_DISABLED");
+    if(!request||typeof request.approvalId!=="string"||
+      !/^[A-Za-z0-9_.-]{8,96}$/.test(request.approvalId)||
+      !Number.isInteger(request.leaseMs)||request.leaseMs<250||
+      request.leaseMs>900000||
+      !Number.isInteger(request.additionalEvents)||
+      request.additionalEvents<0||request.additionalEvents>3000)
+      invalid("TESTLAB_RENEWAL_LIMITS_INVALID");
+    if(item.maxEvents+request.additionalEvents>300000)
+      invalid("TESTLAB_RENEWAL_TOTAL_QUOTA");
+    if(this.#evidence&&item.maxEvents+request.additionalEvents>500)
+      invalid("TESTLAB_EVIDENCE_EVENT_LIMIT");
+    if(this.#pendingRenewals.has(runId))
+      invalid("TESTLAB_RENEWAL_IN_PROGRESS");
+    if(this.#now()>=item.leaseDeadline){
+      this.#end(item,"EXPIRED");
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    }
+    this.#pendingRenewals.add(runId);
+    try{
+      let approved=false;
+      try{
+        approved=await this.#approveRenewal({
+          approvalId:request.approvalId,runId,
+          ownerId:item.ownerId,
+          leaseMs:request.leaseMs,
+          additionalEvents:request.additionalEvents,
+          currentExpiry:new Date(item.leaseDeadline).toISOString(),
+          sentCount:item.sentCount,
+        });
+      }catch{/* Fail closed if independent authorization is unavailable. */}
+      if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+      if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+        invalid("TESTLAB_SESSION_NOT_RUNNING");
+      if(this.#now()>=item.leaseDeadline){
+        this.#end(item,"EXPIRED");
+        invalid("TESTLAB_SESSION_NOT_RUNNING");
+      }
+      if(approved!==true)invalid("TESTLAB_RENEWAL_DENIED");
+      const nextDeadline=this.#now()+request.leaseMs;
+      if(nextDeadline<=item.leaseDeadline)
+        invalid("TESTLAB_RENEWAL_NOT_EXTENDING");
+      item.maxEvents+=request.additionalEvents;
+      item.leaseDeadline=nextDeadline;
+      if(item.expiryTimer)clearTimeout(item.expiryTimer);
+      item.expiryTimer=setTimeout(()=>this.#end(item,"EXPIRED"),request.leaseMs);
+      item.expiryTimer.unref?.();
+      try{this.#journal(item);}catch{
+        this.#end(item,"FAILED","TESTLAB_JOURNAL_UNAVAILABLE");
+        invalid("TESTLAB_JOURNAL_UNAVAILABLE");
+      }
+      return this.#public(item);
+    }finally{
+      this.#pendingRenewals.delete(runId);
+    }
+  }
+
+  async changeRate(runId:string,request:TestLabRateChangeRequest,
+    ownerId?:string):Promise<TestLabStatus>{
+    if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+    const item=this.#owned(runId,ownerId);
+    if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    if(!this.#approveRateChange)invalid("TESTLAB_RATE_CHANGE_DISABLED");
+    if(!request||typeof request.approvalId!=="string"||
+       !/^[A-Za-z0-9_.-]{8,96}$/.test(request.approvalId)||
+       !Number.isFinite(request.ratePerSecond)||
+       request.ratePerSecond<0.2||request.ratePerSecond>5)
+      invalid("TESTLAB_RATE_CHANGE_LIMITS_INVALID");
+    // Original event offsets are intentional and cannot be rescaled.
+    if(item.scenario?.mode==="original-gaps")
+      invalid("TESTLAB_RATE_CHANGE_SCENARIO_UNSUPPORTED");
+    if(item.deliveryInFlight)invalid("TESTLAB_RATE_CHANGE_IN_FLIGHT");
+    if(this.#pendingRateChanges.has(runId))
+      invalid("TESTLAB_RATE_CHANGE_IN_PROGRESS");
+    if(this.#now()>=item.leaseDeadline){
+      this.#end(item,"EXPIRED");
+      invalid("TESTLAB_SESSION_NOT_RUNNING");
+    }
+    this.#pendingRateChanges.add(runId);
+    try{
+      let approved=false;
+      try{
+        approved=await this.#approveRateChange({
+          approvalId:request.approvalId,runId,ownerId:item.ownerId,
+          currentRatePerSecond:item.ratePerSecond,
+          ratePerSecond:request.ratePerSecond,sentCount:item.sentCount,
+          leaseExpiresAt:new Date(item.leaseDeadline).toISOString(),
+        });
+      }catch{/* Independent server approval unavailable: deny. */}
+      if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+      if(item.state!=="RUNNING"&&item.state!=="PAUSED")
+        invalid("TESTLAB_SESSION_NOT_RUNNING");
+      if(this.#now()>=item.leaseDeadline){
+        this.#end(item,"EXPIRED");invalid("TESTLAB_SESSION_NOT_RUNNING");
+      }
+      if(item.deliveryInFlight)invalid("TESTLAB_RATE_CHANGE_IN_FLIGHT");
+      if(approved!==true)invalid("TESTLAB_RATE_CHANGE_DENIED");
+      item.ratePerSecond=request.ratePerSecond;
+      item.intervalMs=Math.ceil(1000/request.ratePerSecond);
+      // No quota/lease alteration; existing pending timer is rescheduled.
+      if(item.state==="RUNNING"&&item.tickTimer){
+        clearTimeout(item.tickTimer);
+        item.tickTimer=null;
+        this.#schedule(item,item.intervalMs);
+      }
+      return this.#public(item);
+    }finally{this.#pendingRateChanges.delete(runId);}
+  }
+
+  #schedule(item:ActiveSession,delayMs:number){
+    if(item.state!=="RUNNING")return;
+    item.tickTimer=setTimeout(()=>{
+      item.tickTimer=null;
+      void this.#tick(item);
+    },delayMs);
+    item.tickTimer.unref?.();
+  }
+  async #tick(item:ActiveSession):Promise<void>{
+    if(item.state!=="RUNNING")return;
+    const now=this.#now();
+    if(now>=item.leaseDeadline){this.#end(item,"EXPIRED");return;}
+    try{
+      const picked=item.scenario?
+        selectScenarioPreview(item.scenario,item.nextSequence,now,item.runId,
+          item.ratePerSecond):
+        {preview:createSyntheticPreview({
+          ...item.sample,sequence:item.nextSequence,
+          ...(item.sample.runMarkerField===undefined?{}:{runId:item.runId}),
+        },now),nextDelayMs:item.intervalMs};
+      if(this.#evidence&&item.ownerId){
+        try{
+          this.#evidence.generated(item.runId,item.ownerId,item.nextSequence);
+          this.#evidence.sendAttempted(item.runId,item.ownerId,item.nextSequence);
+        }catch{
+          this.#end(item,"FAILED","TESTLAB_EVIDENCE_UNAVAILABLE");
+          return;
+        }
+      }
+      item.deliveryInFlight=true;
+      let delivered=false;
+      try{
+        await this.#deliver!(picked.preview.syntheticEvent,{
+          runId:item.runId,sequence:item.nextSequence,signal:item.cancellation.signal,
+        });
+        delivered=true;
+      }finally{
+        item.deliveryInFlight=false;
+        if(!delivered&&this.#evidence&&item.ownerId){
+          try{this.#evidence.failure(item.runId,item.ownerId,item.nextSequence,
+            "SEND_FAILED");}
+          catch{/* Do not expose log content or emit a duplicate. */}
+        }
+      }
+      if(item.state!=="RUNNING"||item.cancellation.signal.aborted)return;
+      if(this.#evidence&&item.ownerId){
+        try{this.#evidence.sinkAccepted(item.runId,item.ownerId,item.nextSequence);}
+        catch{
+          this.#end(item,"FAILED","TESTLAB_EVIDENCE_UNAVAILABLE");
+          return;
+        }
+      }
+      item.sentCount++;
+      item.nextSequence++;
+      item.lastSentAt=new Date(this.#now()).toISOString();
+      this.#journal(item);
+      if(item.sentCount>=item.maxEvents){this.#end(item,"COMPLETED");return;}
+      this.#schedule(item,picked.nextDelayMs);
+    }catch{
+      // Never echo transport exceptions or original event values.
+      this.#end(item,"FAILED","TESTLAB_SINK_FAILED");
+    }
+  }
+  async start(input:TestLabStartRequest,ownerId?:string):Promise<TestLabStatus>{
+    if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+    if(ownerId!==undefined && (typeof ownerId!=="string"||
+      !/^[A-Za-z0-9_.:@-]{1,128}$/.test(ownerId)))
+      invalid("TESTLAB_OWNER_INVALID");
+    if(!this.#approve||!this.#deliver)invalid("TESTLAB_SENDER_DISABLED");
+    if(this.#recordTransition && !ownerId)
+      invalid("TESTLAB_JOURNAL_OWNER_REQUIRED");
+    if(this.#evidence&&!ownerId)
+      invalid("TESTLAB_EVIDENCE_OWNER_REQUIRED");
+    if(this.#evidence&&
+      (typeof input?.artifactRevisionId!=="string"||
+       !/^[0-9a-f]{64}$/.test(input.artifactRevisionId)))
+      invalid("TESTLAB_EVIDENCE_ARTIFACT_REQUIRED");
+    if(this.#evidence&&input?.maxEvents>500)
+      invalid("TESTLAB_EVIDENCE_EVENT_LIMIT");
+    if(this.#recordTransition &&
+      (typeof input?.artifactRevisionId!=="string"||
+       !/^[0-9a-f]{64}$/.test(input.artifactRevisionId)))
+      invalid("TESTLAB_JOURNAL_ARTIFACT_REQUIRED");
+    if(!input||Boolean(input.sample)===Boolean(input.scenario)||
+      typeof input.approvalId!=="string"||
+      !/^[A-Za-z0-9_.-]{8,96}$/.test(input.approvalId)||
+      !Number.isFinite(input.ratePerSecond)||input.ratePerSecond<0.2||
+      input.ratePerSecond>5||
+      !Number.isInteger(input.leaseMs)||input.leaseMs<250||
+      input.leaseMs>900000||
+      !Number.isInteger(input.maxEvents)||input.maxEvents<1||
+      input.maxEvents>3000)invalid("TESTLAB_LIMITS_INVALID");
+    // Reserve capacity while awaiting the independent asynchronous approval.
+    // Without this, concurrent Start calls can both pass the first check.
+    if(this.#activeCount()+this.#pendingStarts>=this.#maxConcurrent)
+      invalid("TESTLAB_CAPACITY_REACHED");
+    if(input.scenario&&(!Array.isArray(input.scenario.events)||
+      input.scenario.events.length<2))
+      invalid("TESTLAB_SCENARIO_INVALID");
+    if(input.sample?.runId!==undefined)invalid("TESTLAB_RUN_ID_RESERVED");
+    this.#pendingStarts++;
+    try{
+    const runId="test_run_"+randomUUID().replace(/-/g,"");
+    const now=this.#now();
+    let allowed=false;
+    try{
+      allowed=await this.#approve({
+        approvalId:input.approvalId,runId,
+        format:input.scenario?"scenario:"+input.scenario.mode:input.sample!.format,
+        ratePerSecond:input.ratePerSecond,maxEvents:input.maxEvents,
+        leaseMs:input.leaseMs,
+        ...(input.artifactRevisionId===undefined?{}:
+          {artifactRevisionId:input.artifactRevisionId}),
+      });
+    }catch{/* Trusted approval service failure means deny. */}
+    if(this.#closed)invalid("TESTLAB_SENDER_SHUTDOWN");
+    if(allowed!==true)invalid("TESTLAB_START_DENIED");
+    // Validate ALL scenario source families before any delivery. Never
+    // accept a caller-chosen runId or mismatched original-gap rate.
+    let scenario:ReplayScenario|undefined;
+    const sampleInput=input.sample??input.scenario!.events[0]?.sample;
+    if(!sampleInput)invalid("TESTLAB_SAMPLE_INVALID");
+    const sample={...sampleInput,sequence:0,
+      ...(sampleInput.runMarkerField===undefined?{}:{runId})};
+    try{
+      if(input.scenario){
+        validateReplayScenario(input.scenario,input.ratePerSecond);
+        scenario={...input.scenario,events:input.scenario.events.map(entry=>({
+          ...entry,sample:{...entry.sample},
+        }))};
+      }else createSyntheticPreview(sample,now);
+    }catch(error){
+      if(error instanceof ScenarioContractError)invalid(error.code);
+      if(error instanceof SyntheticPreviewError)invalid(error.code);
+      invalid("TESTLAB_SAMPLE_INVALID");
+    }
+    if(this.#sessions.size>500){
+      for(const [id,item] of this.#sessions){
+        if(["STOPPED","COMPLETED","EXPIRED","FAILED"].includes(item.state)){
+          this.#sessions.delete(id);
+          if(this.#sessions.size<=400)break;
+        }
+      }
+      if(this.#sessions.size>500)invalid("TESTLAB_HISTORY_CAPACITY");
+    }
+    const item:ActiveSession={
+      runId,ownerId:ownerId??null,state:"RUNNING",sample,
+      ...(scenario?{scenario}:{}),
+      ...(input.artifactRevisionId===undefined?{}:
+        {artifactRevisionId:input.artifactRevisionId}),
+      ratePerSecond:input.ratePerSecond,intervalMs:Math.ceil(1000/input.ratePerSecond),
+      leaseDeadline:now+input.leaseMs,maxEvents:input.maxEvents,
+      sentCount:0,nextSequence:0,lastSentAt:null,errorCode:null,
+      cancellation:new AbortController(),deliveryInFlight:false,
+      tickTimer:null,expiryTimer:null,
+    };
+    // Durable START MUST succeed before queueing any synthetic delivery.
+    this.#journal(item);
+    if(this.#evidence){
+      try{this.#evidence.begin(runId,ownerId!,input.artifactRevisionId!);}
+      catch{invalid("TESTLAB_EVIDENCE_UNAVAILABLE");}
+    }
+    this.#sessions.set(runId,item);
+    item.expiryTimer=setTimeout(()=>this.#end(item,"EXPIRED"),input.leaseMs);
+    item.expiryTimer.unref?.();
+    this.#schedule(item,0);
+    return this.#public(item);
+    }finally{
+      this.#pendingStarts--;
+    }
+  }
+}
