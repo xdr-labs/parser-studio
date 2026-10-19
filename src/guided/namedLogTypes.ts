@@ -50,7 +50,12 @@ export function assembleNamedLogs(groups:readonly NamedLogType[]):NamedLogAssemb
   const spans:NamedLogSpan[]=[];
   for(const group of groups){
     if(!group.sample.trim())continue;
-    if(source.length){source+='\n';size++;}
+    // A physical record delimiter may already be supplied by either group.
+    // Adding another LF after an existing one fabricates a blank record and
+    // invalidates CRI/Docker stream framing. Never trim user-provided bytes.
+    if(source.length&&!source.endsWith('\n')&&!group.sample.startsWith('\n')){
+      source+='\n';size++;
+    }
     const startByte=size;
     source+=group.sample;
     size+=byteSize(group.sample);

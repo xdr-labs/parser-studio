@@ -4,7 +4,7 @@ import {createDraft,type ParserDraft,type SuiteResult} from './model';
 import AutoParser from './guided/AutoParser';
 import ChatGPTAssist from './guided/ChatGPTAssist';
 import LocalVersionsPanel from './guided/LocalVersionsPanel';
-import type {LocalVersion} from './guided/localWorkspaceHistory';
+import {restoredNamedSource,type LocalVersion} from './guided/localWorkspaceHistory';
 import {HelpTip} from './guided/BeginnerHelp';
 import {MAX_DATASET_BYTES} from './parser';
 import {assembleNamedLogs,newNamedLogType,type NamedLogType} from './guided/namedLogTypes';
@@ -97,7 +97,10 @@ export default function App(){
   }),[datasetName,sample,draft,namedLogTypes]);
   const restoreLocalVersion=(version:LocalVersion)=>{
     // All derivable previews/approvals must be rerun after restoring a snapshot.
-    setSample(version.source);setNamedLogTypes(version.logTypes?structuredClone(version.logTypes):null);
+    // Legacy snapshots retain their original checksum and per-group raw logs;
+    // omit only the redundant LF delimiters the prior UI inserted itself.
+    setSample(restoredNamedSource(version).source);
+    setNamedLogTypes(version.logTypes?structuredClone(version.logTypes):null);
     setDraft(structuredClone(version.draft));
     setDatasetName(version.datasetName);setWorkspace('auto');
     setAdvanced(false);setRestoredEpoch(old=>old+1);

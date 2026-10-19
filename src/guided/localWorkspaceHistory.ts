@@ -122,7 +122,19 @@ function snapshotContent(v:Omit<LocalVersion,'sha256'>):string{
   if(v.logTypes!==undefined)content.push(v.logTypes);
   return json(content);
 }
-function validateWorking(copy:LocalWorkingCopy,label:string){
+// Previous versions inserted a synthetic LF between groups even if a
+// preceding sample already ended in LF. Recognize exactly that historical
+// assembly only when VERIFYING an already checksum-protected snapshot.
+function legacyNamedSource(groups:readonly NamedLogType[]):string{
+  return groups.filter(group=>group.sample.trim()).map(group=>group.sample).join('\n');
+}
+export function restoredNamedSource(value:Pick<LocalVersion,'source'|'logTypes'>):
+  {source:string;removedLegacySeparators:boolean}{
+  if(!value.logTypes)return {source:value.source,removedLegacySeparators:false};
+  const source=assembleNamedLogs(value.logTypes).source;
+  return {source,removedLegacySeparators:source!==value.source};
+}
+function validateWorking(copy:LocalWorkingCopy,label:string,allowLegacy=false){
   if(!safeName.test(label.trim())||typeof copy.datasetName!=='string'||
      byteSize(copy.datasetName)>256||typeof copy.source!=='string'||
      byteSize(copy.source)>MAX_SOURCE_BYTES||!validLocalDraft(copy.draft))
@@ -132,7 +144,8 @@ function validateWorking(copy:LocalWorkingCopy,label:string){
        !copy.logTypes.every(item=>isObject(item)&&typeof item.id==='string'&&
          typeof item.name==='string'&&typeof item.sample==='string')||
        !validateNamedLogs(copy.logTypes).ok||
-       assembleNamedLogs(copy.logTypes).source!==copy.source)
+       (assembleNamedLogs(copy.logTypes).source!==copy.source&&
+        !(allowLegacy&&legacyNamedSource(copy.logTypes)===copy.source)))
       throw Error('Named log types are invalid or do not match the exact source sample.');
   }
   if(byteSize(json(copy))>MAX_RECORD_BYTES)
@@ -161,7 +174,7 @@ export async function verifyLocalVersion(v:unknown):Promise<boolean>{
   try{
     const value=v as unknown as LocalVersion;
     validateWorking({datasetName:value.datasetName,source:value.source,draft:value.draft,
-      ...(value.logTypes!==undefined?{logTypes:value.logTypes}:{})},value.label);
+      ...(value.logTypes!==undefined?{logTypes:value.logTypes}:{})},value.label,true);
     if(byteSize(json(value))>MAX_RECORD_BYTES)return false;
     return value.sha256===await digest(snapshotContent(value));
   }catch{return false;}

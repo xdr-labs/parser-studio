@@ -3,7 +3,7 @@ import './localVersions.css';
 import {GitCompareArrows,RotateCcw,Save,Trash2} from 'lucide-react';
 import type {LocalWorkingCopy,LocalVersion} from './localWorkspaceHistory';
 import {compareLocalVersions,deleteLocalVersion,listLocalVersions,readLocalVersion,
-  sameLocalWorking,saveLocalVersion} from './localWorkspaceHistory';
+  sameLocalWorking,saveLocalVersion,restoredNamedSource} from './localWorkspaceHistory';
 
 interface Props{
   working:LocalWorkingCopy;
@@ -76,7 +76,10 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     await saveLocalVersion(working,safeTitle);
     onRestore(retrieved);
     setRight(currentId);
-    setStatus('Restored "'+retrieved.label+'". Your previous working copy was saved locally. Re-run Analyze Logs before generating parser files.');
+    const migration=restoredNamedSource(retrieved).removedLegacySeparators;
+    setStatus('Restored "'+retrieved.label+'". Your previous working copy was saved locally. '+
+      (migration?'Only redundant separators inserted by the earlier Parser Studio version were omitted from the current working copy. The saved snapshot and each original log type are unchanged. ':'')+
+      'Re-run Analyze Logs before generating parser files.');
   });
   const remove=(item:LocalVersion)=>void run(async()=>{
     if(!window.confirm('Delete the local version "'+item.label+'"? This cannot be undone.'))return;
