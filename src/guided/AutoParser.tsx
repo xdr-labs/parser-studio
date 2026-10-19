@@ -28,6 +28,7 @@ import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {parserIdentitySlug} from './parserIdentity';
+import {inspectZeekReview} from './zeekReview';
 
 
 import AutoParserAIReview from './AutoParserAIReview';
@@ -119,6 +120,8 @@ export default function AutoParser({
  runPreview,onChatGPT,advanced,
 }:Props){
  const sourceLogRef=useRef<HTMLTextAreaElement|null>(null);
+ const [zeekOrigin,setZeekOrigin]=useState<{source:string;draft:ParserDraft;datasetName:string;dataRows:string}|null>(null);
+ const zeekSuggestion=useMemo(()=>inspectZeekReview(sample),[sample]);
  const [step,setStep]=useState<0|1|2|3>(0);
  const [furthestStep,setFurthestStep]=useState<0|1|2|3>(0);
  const [navigationHint,setNavigationHint]=useState('');
@@ -266,6 +269,30 @@ export default function AutoParser({
    }
    if(start!==undefined&&end!==undefined)ranges.push(start===end?String(start):start+'–'+end);
    return ranges.join(', ');
+ };
+ const prepareZeekRows=()=>{
+   if(!zeekSuggestion)return;
+   setZeekOrigin({source:sample,draft,datasetName,dataRows:zeekSuggestion.dataRows});
+   setDraft(old=>{
+     const opts=old.guided??defaultGuidedOptions();
+     const mappings=zeekSuggestion.columns.split(',').map((name,index)=>({
+       id:'zeek-column-'+String(index+1),source:name,target:name,type:'string' as const,
+     }));
+     return {...old,format:'csv',csvColumns:zeekSuggestion.columns,
+       csvDelimiter:'\t',mappings,guided:{...opts,
+         groups:Object.fromEntries(mappings.map(mapping=>[mapping.id,'vendor_fields' as const])),
+         classification:{defaultIndex:'Syslog',rules:[]}}};
+   });
+   setSample(zeekSuggestion.dataRows);
+   setDatasetName('Zeek data rows · Header saved for in-session restore');
+   setSelected(0);
+ };
+ const restoreZeekRows=()=>{
+   if(!zeekOrigin)return;
+   setDraft(zeekOrigin.draft);
+   setSample(zeekOrigin.source);
+   setDatasetName(zeekOrigin.datasetName);
+   setZeekOrigin(null);
  };
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
@@ -852,12 +879,30 @@ export default function AutoParser({
            Return to all {parserSetOrigin.sourceCount} logs
          </button>
        </div>}
+       {zeekSuggestion&&<div className="auto-parser-note beginner-essential-note" aria-label="Zeek schema preparation">
+         <strong>Zeek field names found — {zeekSuggestion.recordCount} data events</strong>
+         <p>{zeekSuggestion.metadataCount} lines beginning with # describe the log format, not separate security events.
+           The remaining {zeekSuggestion.recordCount} tab-separated rows have consistent columns.
+           You can explicitly separate them and fill the field names, then click Analyze Logs again.</p>
+         <p>Dots in Zeek column names become underscores for safe CSV field names.
+           All data row values remain unchanged. Original header lines stay in browser memory
+           for the Restore action until you leave this page. Save a Local Version if you need a lasting copy.</p>
+         <button type="button" onClick={prepareZeekRows}>Prepare Zeek data rows and field names</button>
+       </div>}
+       {zeekOrigin&&<div className="auto-parser-note beginner-essential-note" aria-label="Prepared Zeek source context">
+         <strong>Working with Zeek data rows only</strong>
+         <p>The original sample with its # header lines is preserved in this page.
+           Review the TAB column names, analyze again, and confirm mappings before creating a DRAFT.
+           You can restore the full original source now; closing the page clears this temporary copy.</p>
+         <button type="button" onClick={restoreZeekRows}>Restore original Zeek sample</button>
+       </div>}
        <textarea ref={sourceLogRef} spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
          placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
          value={sample} onChange={e=>{const value=e.target.value;
            if(parserSetOriginRef.current?.groupSource!==value){
              parserSetOriginRef.current=null;setParserSetOrigin(null);
            }
+           if(zeekOrigin?.dataRows!==value)setZeekOrigin(null);
            setSample(value);setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
        <div className="beginner-analyze-action">
          <button type="button" className="auto-parser-primary" disabled={!sample.trim()||multiPassBusy}

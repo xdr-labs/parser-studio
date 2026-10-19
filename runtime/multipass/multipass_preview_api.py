@@ -76,6 +76,13 @@ def preview_batch(raw:str)->dict:
     batch=parse_security_batch(raw,max_events=500,max_bytes=MAX_BYTES,
                                parser=parse_security_multipass)
     funnel=run_funnel_batch([frame.raw for frame in batch.frames])
+    # The batch framer is authoritative for malformed/ambiguous record
+    # boundaries. Never reparse its fail-closed events into apparent success.
+    selected=[
+        frame.event if any(issue.startswith('FRAMING_') for issue in frame.event.issues)
+        else funnel.selected[index]
+        for index,frame in enumerate(batch.frames)
+    ]
     return {
         'contract':'parser-studio.multipass-source-batch-preview.v0.1',
         'sourceSha256':hashlib.sha256(raw.encode('utf8')).hexdigest(),
@@ -85,7 +92,7 @@ def preview_batch(raw:str)->dict:
             'index':index,
             'startByte':frame.start_byte,
             'endByte':frame.end_byte,
-            'preview':_preview_event(frame.raw,funnel.selected[index]),
+            'preview':_preview_event(frame.raw,selected[index]),
         } for index,frame in enumerate(batch.frames)],
         'separators':[{
             'startByte':separator.start_byte,

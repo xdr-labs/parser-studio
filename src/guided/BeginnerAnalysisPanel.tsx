@@ -46,12 +46,25 @@ function prefixedJson(raw:string):boolean{
     return !!value&&typeof value==='object'&&!Array.isArray(value);
   }catch{return false;}
 }
+function isZeekHeader(raw:string):boolean{
+  return /^#(?:separator|fields|types|path|open|close)\b/.test(raw.trimStart());
+}
+function isWindowsEventXml(raw:string):boolean{
+  return /^<Event(?:\s|>)/.test(raw.trimStart());
+}
 function plainIssue(code:string,raw=''):string{
+  if(isZeekHeader(raw))
+    return 'This is a Zeek log header describing fields, not an event. Copy the declared column names and separator before reviewing the data rows separately.';
+  if(isWindowsEventXml(raw))
+    return 'Windows Event XML is not a qualified input format. Export events as JSON before using Auto Parser; do not treat the XML as parsed.';
   if(prefixedJson(raw)&&code==='UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION')
     return 'This event contains valid JSON after a short text prefix, so its wrapper must be handled separately.';
   if(prefixedJson(raw)&&code==='SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID')
     return 'The short text prefix prevents the normal JSON path from being used even though the JSON payload itself is valid.';
   const known:Record<string,string>={
+    FRAMING_MULTILINE_CSV_REVIEW:'Quoted CSV content crosses physical lines. Parser Studio kept the complete logical source record, but native CSV parser creation with embedded line breaks is not verified.',
+    FRAMING_TRUNCATED_CSV:'A CSV quoted field did not close. Review the original exporter quotation before assigning any columns.',
+    FRAMING_CSV_BOUNDARY_LIMIT:'CSV quotation exceeded the bounded record limit. Export smaller samples or split the source manually without inventing field boundaries.',
     KV_QUOTE_UNCLOSED:'A quoted key/value field is not closed, so the rest of the event cannot be trusted as normal key/value data.',
     RFC5424_SD_UNCLOSED:'A structured section in the log header is not closed correctly.',
     RFC5424_DUPLICATE_SD_KEY:'A structured section in the log header repeats the same field name.',
@@ -68,6 +81,10 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
     preview.residuals.some(region=>region.startByte===0&&region.endByte>=preview.sourceBytes);
 }
 function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
+  if(isZeekHeader(raw))return 'Zeek column/header metadata';
+  if(isWindowsEventXml(raw))return 'unsupported Windows Event XML';
+  if(preview.issues.some(issue=>issue.startsWith('FRAMING_')&&issue.includes('CSV')))
+    return 'CSV record with quoted line breaks';
   const syntax=preview.syntax.toUpperCase();
   if(wholeEventNeedsRule(preview))return 'custom text format';
   if(prefixedJson(raw))return 'JSON with a text prefix';
@@ -83,6 +100,21 @@ function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
 function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw=''):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
+  if(isZeekHeader(raw))return {
+    kind:'split',
+    label:'Separate Zeek header lines from data events',
+    text:'Lines beginning #separator or #fields define the format; they are not event data. Copy field names from #fields, paste the data rows separately, choose TAB as the CSV separator, and review every column before continuing. No header line was automatically discarded.',
+  };
+  if(isWindowsEventXml(raw))return {
+    kind:'assisted',
+    label:'Export Windows Event logs as JSON',
+    text:'Parser Studio does not safely extract Windows Event XML. Export the same events as JSON, then paste them into Auto Parser. ChatGPT Assisted Parser can explain the conversion after you remove private identifiers; it cannot verify XML import here.',
+  };
+  if(issues.includes('FRAMING_MULTILINE_CSV')||issues.includes('FRAMING_TRUNCATED_CSV')||issues.includes('FRAMING_CSV_BOUNDARY_LIMIT'))return {
+    kind:'assisted',
+    label:'Review the CSV record boundary and closing quotes',
+    text:'The log record contains a quoted line break or unfinished quote. Its bytes were preserved but the native DRAFT compiler does not support this multi-line CSV input. Export one event per line or correct the quoting, then re-analyze before entering field names.',
+  };
   if(wholeEventNeedsRule(preview))return {
     kind:'text',
     label:'Create a rule for this text format',
@@ -191,6 +223,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const [promptBusy,setPromptBusy]=useState(false);
   const [copyStatus,setCopyStatus]=useState('');
   const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
+  const multilineCsvNeedsReview=events.some(event=>event.preview.issues.some(
+    code=>code.startsWith('FRAMING_')&&code.includes('CSV')));
   const csvReviewPending=Boolean(csvReviewRequired&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
   const parsed=resolvedByReviewedCandidate?events.length:parserRuleReviewRequired?0:sourceParsed;
   const ruleReviewProblems=parserRuleReviewRequired&&events.length
@@ -268,6 +302,9 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
           :'No unresolved source region was found. Continue to review field meanings and create the parser draft.'}</p>
+        {multilineCsvNeedsReview&&<p role="note" aria-label="Multiline CSV recovery">
+          Quoted CSV data spans multiple physical lines. The source record was kept intact, but this input is not approved for native parser generation. Choose the affected event below to see how to export a safe one-event-per-line sample.
+        </p>}
       </div>
     </div>
     {current&&<div className="beginner-problem" aria-label="Parse problem inspector">

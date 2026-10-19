@@ -128,6 +128,68 @@ def _json_end(raw:str,start:int)->tuple[int,str|None]:
     return len(raw),'FRAMING_TRUNCATED_JSON'
 
 
+def _quoted_csv_end(raw:str,start:int)->tuple[int,str]|None:
+    """Recognize an unambiguous, bounded *multiline* CSV record.
+
+    This is framing only, not a claim that a CSV parser or field names were
+    verified. Other formats and ordinary single-line CSV keep their routes.
+    """
+    first_line=raw[start:_line_end(raw,start)]
+    if '"' not in first_line or first_line.lstrip().startswith(
+            ('<','{','[','#','CEF:','LEEF:','@cee:')):
+        return None
+    for delimiter in (',',';','\t'):
+        first=first_line.find(delimiter)
+        quote=first_line.find('"')
+        if first<0 or quote<=first or '=' in first_line[:first]:
+            continue
+        state='start'
+        delimiters=0
+        lines=0
+        index=start
+        while index<len(raw):
+            if index-start>MAX_RAW_BYTES or lines>16:
+                return len(raw),'FRAMING_CSV_BOUNDARY_LIMIT'
+            char=raw[index]
+            if char in '\r\n':
+                if state=='quoted':
+                    if char=='\n':lines+=1
+                    index+=1
+                    continue
+                if lines>0 and delimiters>=1:
+                    return index,'FRAMING_MULTILINE_CSV_REVIEW'
+                break
+            if state=='quoted':
+                if char=='"':
+                    if index+1<len(raw) and raw[index+1]=='"':
+                        index+=2
+                        continue
+                    state='after_quote'
+            elif state=='after_quote':
+                if char==delimiter:
+                    delimiters+=1
+                    state='start'
+                elif char not in ' \t':
+                    break
+            elif char==delimiter:
+                delimiters+=1
+                state='start'
+            elif char=='"':
+                if state!='start':
+                    break
+                state='quoted'
+            elif state=='start' and char in ' \t':
+                pass
+            else:
+                state='plain'
+            index+=1
+        if lines>0 and state=='quoted' and delimiters>=1:
+            return len(raw),'FRAMING_TRUNCATED_CSV'
+        if lines>0 and state!='quoted' and index==len(raw) and delimiters>=1:
+            return len(raw),'FRAMING_MULTILINE_CSV_REVIEW'
+    return None
+
+
 def _opaque(raw:str,issue:str)->SourceEvent:
     return SourceEvent(raw=raw,issues=[issue],unparsed=[(0,len(raw))])
 
@@ -171,7 +233,12 @@ def parse_security_batch(raw:str,*,max_events:int=1000,
                 if (next_pos<len(raw) and raw[next_pos] not in '\r\n'
                     and not _collection_at(raw,next_pos)):
                     end=_line_end(raw,next_pos);issue='FRAMING_JSON_TRAILING_CONTENT'
-        else:end=_line_end(raw,start)
+        else:
+            csv_frame=_quoted_csv_end(raw,start)
+            if csv_frame is not None:
+                end,issue=csv_frame
+            else:
+                end=_line_end(raw,start)
         if end<=start:raise AssertionError('SECURITY_FRAMING_NO_PROGRESS')
         if len(result.frames)==max_events-1 and raw[end:].strip(WHITESPACE):
             end=len(raw);issue='FRAMING_EVENT_LIMIT'
