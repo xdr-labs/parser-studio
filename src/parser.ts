@@ -5,6 +5,8 @@ import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
+import {inspectDeclaredForwarders} from './guided/declaredForwarder';
+import {inspectEventProfile} from './guided/multiEventRouting';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -111,7 +113,7 @@ function extractKV(raw: string): Extraction {
   return { fields, errors };
 }
 
-function tokenizeCSV(raw: string, delimiter: string): string[] | null {
+export function tokenizeCSV(raw: string, delimiter: string): string[] | null {
   // The backend compiles Ruby CSV.parse_line with liberal_parsing: false.
   // This browser subset is intentionally conservative; malformed quoted
   // cells never become successful evidence for native generation.
@@ -371,7 +373,9 @@ export function splitEvents(input: string, boundary: EventBoundary = 'single-lin
 }
 
 function processEvent(raw: string, line: number, index: number, draft: ParserDraft, boundary: EventBoundary = 'single-line'): EventResult {
-  const detected = detectFormat(raw);
+  const wrapped=inspectDeclaredForwarders(raw,draft.forwarder);
+  const eventSource=wrapped.status==='UNWRAPPED'?wrapped.payload:raw;
+  const detected = detectFormat(eventSource);
   const effectiveFormat = draft.format === 'auto' ? detected.format : draft.format;
   const diagnostics: Diagnostic[] = [];
   const trace: TraceStep[] = [];
@@ -383,10 +387,12 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   let matched = false;
   if (raw.length > MAX_LINE_CHARS) {
     error('break', 'LINE_TOO_LONG', 'Event exceeds ' + MAX_LINE_CHARS + ' characters');
+  } else if(wrapped.status==='ABSTAIN_UNSAFE'){
+    error('extract','UNSAFE_RELAY_ENVELOPE','The forwarded log cannot be safely unwrapped.');
   } else if (effectiveFormat === 'unknown') {
     error('detect', 'UNSUPPORTED_FORMAT', 'No supported format. Choose a format or create a regex rule.');
   } else {
-    const extraction = extractFields(raw, effectiveFormat, draft);
+    const extraction = extractFields(eventSource, effectiveFormat, draft);
     extraction.errors.forEach((message) => error('extract', 'EXTRACTION_FAILED', message));
     fields = extraction.fields;
     matched = Object.keys(fields).length > 0;
@@ -395,8 +401,23 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   const normalized: Record<string, unknown> = draft.format==='generic_structural'
     ? {parserstudio_source:fields}
     : {};
+  const family=inspectEventProfile(fields,draft.eventProfiles);
+  if(draft.eventProfiles&&!family.profile)
+    error('normalize','UNRECOGNIZED_EVENT_FAMILY',
+      'Event type is missing, ambiguous or not in the reviewed family list.');
+  if(family.profile)normalized.parserstudio_event_family=family.name;
+  if(wrapped.status==='UNWRAPPED') {
+    normalized.parserstudio_transport={forwarder_hops:wrapped.hops.map(hop=>({
+      relay_host:hop.relayHost,relay_timestamp:hop.relayTimestamp,
+      envelope:hop.format,prefix_start_byte:hop.prefixStartByte,
+      payload_start_byte:hop.payloadStartByte,
+    }))};
+    trace.push({stage:'Forwarder envelope',
+      detail:wrapped.hops.length+' declared relay hop(s); received source bytes preserved',
+      ok:true});
+  }
   const mapped = new Set<string>();
-  for (const mapping of draft.mappings) {
+  for (const mapping of [...draft.mappings,...(family.profile?.mappings??[])]) {
     const source = mapping.source.trim();
     const target = mapping.target.trim();
     if (!source || !VALID_TARGET.test(target) ||
@@ -531,6 +552,8 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   trace.push({ stage: 'Compatibility', detail: 'Browser approximation only; no Fluentd or Stellar import test', ok: false });
   return {
     id: 'event-' + (index + 1), line, raw, detected, effectiveFormat, fields, normalized, unmapped,
+    ...(draft.eventProfiles?{eventFamily:family.name}:{}),
+    ...(wrapped.hops.length?{forwarderHops:wrapped.hops}:{}),
     matched, extracted: matched, normalizedOk,
     status: hasErrors || !matched ? 'fail' : diagnostics.length ? 'warning' : 'pass',
     diagnostics, trace,

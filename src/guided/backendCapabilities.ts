@@ -13,6 +13,12 @@ export interface BackendCapabilities {
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
     strictMixedRequiresExplicitAllowlist?: true;
+    /** Per-family mapping is conditional within one generated parser artifact. */
+    conditionalEventProfiles?: true;
+    conditionalEventProfilesUnknownPolicy?: 'reject';
+    declaredForwarderEnvelopeUnwrap?: true;
+    declaredForwarderMaximumHops?: 3;
+    declaredForwarderFormats?: readonly ['rfc3164','rfc5424'];
     jsonBlankLineTcpFraming?: true;
     jsonBlankLineOtherTransports?: false;
     jsonBlankLineDelimiter?: 'LF_LF';
@@ -149,6 +155,16 @@ export async function fetchBackendCapabilities(
       (l?.maxProjectBodyBytes ?? 0) < 1024 || (l?.maxInspectBodyBytes ?? 0) < 1024) {
     throw new Error('DRAFT generation blocked due to untrusted backend capabilities or verification flags.');
   }
+  const conditionalClaims=[a.conditionalEventProfiles,
+    a.conditionalEventProfilesUnknownPolicy,a.declaredForwarderEnvelopeUnwrap,
+    a.declaredForwarderMaximumHops,a.declaredForwarderFormats];
+  if(conditionalClaims.some(value=>value!==undefined)&&(
+    a.conditionalEventProfiles!==true||
+    a.conditionalEventProfilesUnknownPolicy!=='reject'||
+    a.declaredForwarderEnvelopeUnwrap!==true||
+    a.declaredForwarderMaximumHops!==3||
+    JSON.stringify(a.declaredForwarderFormats)!=='["rfc3164","rfc5424"]'
+  ))throw new Error('Untrusted conditional-family or declared-forwarder compiler claims.');
   const mixedAdvertised=a.extractionFormats.includes('mixed');
   const mixed=a.strictMixedSingleLineFamilies;
   const reviewedMixed=['json','kv','cef','leef'];
@@ -268,6 +284,24 @@ export async function fetchBackendCapabilities(
 }
 
 export function assertBackendProjectSupported(project: BackendParserProject, cap: BackendCapabilities): void {
+  if(project.normalization.eventProfiles&&(
+    cap.authoring.conditionalEventProfiles!==true||
+    cap.authoring.conditionalEventProfilesUnknownPolicy!=='reject'))
+    throw new Error('Event-family routing requires reviewed backend compiler capability.');
+  if(project.extraction.forwarder&&(
+    cap.authoring.declaredForwarderEnvelopeUnwrap!==true||
+    cap.authoring.declaredForwarderMaximumHops!==3||
+    JSON.stringify(cap.authoring.declaredForwarderFormats)!=='["rfc3164","rfc5424"]'))
+    throw new Error('Forwarder relay parsing requires exact backed Ruby compiler capability.');
+  if(project.normalization.eventProfiles&&(
+    cap.authoring.conditionalEventProfiles!==true||
+    cap.authoring.conditionalEventProfilesUnknownPolicy!=='reject'))
+    throw new Error('Event-family conditional output requires an explicit reviewed native compiler capability.');
+  if(project.extraction.forwarder&&(
+    cap.authoring.declaredForwarderEnvelopeUnwrap!==true||
+    cap.authoring.declaredForwarderMaximumHops!==3))
+    throw new Error('Declared relay prefixes need exact backend compiler capability.');
+
   if(project.receiver.tcpFraming==='blank_line_json'&&(
     cap.authoring.jsonBlankLineTcpFraming!==true||
     cap.authoring.jsonBlankLineOtherTransports!==false||

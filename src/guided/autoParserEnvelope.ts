@@ -8,6 +8,7 @@ import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import type {BackendCapabilities} from './backendCapabilities';
 import type {EventBoundary} from './contract';
+import {inspectDeclaredForwarders,type ForwarderConfig} from './declaredForwarder';
 
 export type Envelope='none'|'rfc3164'|'rfc5424';
 export type Body='json'|'kv'|'cef'|'leef'|'csv'|'java_stacktrace'|'unknown';
@@ -18,6 +19,7 @@ export interface EnvelopeEntry{
   status:EntryStatus;
   timePolicy:'EXPLICIT_TIME'|'YEAR_AND_ZONE_UNKNOWN'|'NO_TIMESTAMP';
   rfc3164Profile?:'strict_tagged'|'tagless_structured_security';
+  relayHops?:number;
 }
 export interface EnvelopeLedger{
   contract:'auto-parser.envelopes.v0.1';
@@ -27,6 +29,7 @@ export interface EnvelopeLedger{
   events:EnvelopeEntry[];
   families:Array<{envelope:Envelope;body:Body;count:number}>;
   nativeVerified:false;targetVerified:false;
+  forwarderConfigured?:boolean;relayEvents?:number;
 }
 export type CompilerAssessment={
   status:'DRAFT_COMPILABLE'|'COMPILER_UNSUPPORTED'|'MIXED_OR_UNKNOWN'|
@@ -120,7 +123,18 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
   }
   return {body:'unknown',status:'UNKNOWN'};
 }
-function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBoundary):EnvelopeEntry{
+function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBoundary,
+  forwarder?:ForwarderConfig):EnvelopeEntry{
+  if(forwarder){
+    const inspection=inspectDeclaredForwarders(text,forwarder);
+    if(inspection.status==='ABSTAIN_UNSAFE')
+      return {sequence,line,envelope:'none',body:'unknown',
+        timePolicy:'NO_TIMESTAMP',status:'HEADER_MALFORMED'};
+    if(inspection.status==='UNWRAPPED'){
+      const inner=analyzeRecord(inspection.payload,sequence,line,boundary);
+      return {...inner,relayHops:inspection.hops.length};
+    }
+  }
   const raw=text.trim();
   const base={sequence,line,timePolicy:'NO_TIMESTAMP' as EnvelopeEntry['timePolicy']};
   if(text.length>MAX_LINE_CHARS)
@@ -165,7 +179,7 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
   }
   return {...base,envelope:'none',...classifyBody(raw)};
 }
-export function analyzeLogEnvelopes(source:string,boundary:EventBoundary):EnvelopeLedger{
+export function analyzeLogEnvelopes(source:string,boundary:EventBoundary,forwarder?:ForwarderConfig):EnvelopeLedger{
   if(typeof source!=='string'||!['single-line','blank-line'].includes(boundary))
     return EMPTY('SOURCE_LIMIT','single-line');
   if(new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES)
@@ -177,7 +191,7 @@ export function analyzeLogEnvelopes(source:string,boundary:EventBoundary):Envelo
   if(!source.trim())return EMPTY('NO_SAMPLES',boundary);
   const records=splitEvents(source,boundary,MAX_EVENTS+1);
   if(records.length>MAX_EVENTS)return EMPTY('SOURCE_LIMIT',boundary,records.length);
-  const events=records.map((item,index)=>analyzeRecord(item.raw,index+1,item.line,boundary));
+  const events=records.map((item,index)=>analyzeRecord(item.raw,index+1,item.line,boundary,forwarder));
   const groups=new Map<string,{envelope:Envelope;body:Body;count:number}>();
   for(const event of events){
     const id=event.envelope+'/'+event.body;
@@ -189,6 +203,8 @@ export function analyzeLogEnvelopes(source:string,boundary:EventBoundary):Envelo
     sourceCount:records.length,accounted:events.length,
     unsupported:events.filter(e=>e.status!=='RECOGNIZED').length,
     complete:events.length===records.length,events,
+    ...(forwarder?{forwarderConfigured:true,
+      relayEvents:events.filter(event=>(event.relayHops??0)>0).length}:{}),
     families:[...groups.values()].sort((a,b)=>b.count-a.count||
       (a.envelope+'/'+a.body).localeCompare(b.envelope+'/'+b.body)),
     nativeVerified:false,targetVerified:false};
@@ -200,6 +216,12 @@ export function assessEnvelopeCompilation(
     ({status,format:null,bodyFormat:null,nativeVerified:false,targetVerified:false});
   if(!report.complete||report.status!=='READY'||report.sourceCount===0)
     return no('SOURCE_LIMIT');
+  if(report.forwarderConfigured){
+    if(!cap)return no('BACKEND_UNAVAILABLE');
+    if(cap.authoring?.declaredForwarderEnvelopeUnwrap!==true||
+      cap.authoring.declaredForwarderMaximumHops!==3)
+      return no('COMPILER_UNSUPPORTED');
+  }
   if(report.boundary==='blank-line'){
     if(report.families.length!==1||
        report.families[0]?.envelope!=='none'||

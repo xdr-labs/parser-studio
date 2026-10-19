@@ -46,6 +46,25 @@ jobs:
       # unrelated to the logged security event. Reuse the exact pinned backend
       # for the ordinary browser suite and separately run the integrated E2E.
       # No DP, sensor, credential, target integration or deployment is enabled.
+      # These tests require the newest conditional family/forwarder compiler
+      # from this exact PR HEAD. The evergreen browser suite below uses an
+      # older pinned independent backend and intentionally does not re-run
+      # these two tests; this gate executes them, not merely marks them green.
+      - name: Exact-head reviewed event-family and relay browser acceptance
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5451'
+          PARSER_STUDIO_TEST_PORT: '5450'
+          PARSER_STUDIO_MULTIPASS_PORT: '5452'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/reviewed-event-family-backend.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-event-family-browser.json
+          node -e "const s=require('fs').readFileSync('/tmp/parser-studio-event-family-browser.json','utf8'); const x=JSON.parse(s).stats; if(x.expected!==6||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('Expected exactly six executed, passing experimental user E2E cases',x);process.exit(1)} console.log('EXACT_HEAD_EVENT_FAMILY_BROWSER_PASS 6/6');"
+
       - name: Checkout pinned independent parser backend
         uses: actions/checkout@v4
         with:

@@ -1,4 +1,6 @@
 import { defaultGuidedOptions, type GuidedOptions } from './guided/contract';
+import type {EventProfileConfig} from './guided/multiEventRouting';
+import type {ForwarderConfig,ForwarderHop} from './guided/declaredForwarder';
 
 export const FORMATS = ['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace', 'generic_structural', 'syslog', 'regex'] as const;
 export type Format = (typeof FORMATS)[number];
@@ -27,6 +29,10 @@ export interface ParserDraft {
   /** Explicit supported one-line families only; no implicit fallback. */
   mixedFormats?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
   mappings: MappingRule[];
+  /** One deployable parser, with conditional per-event normalization. */
+  eventProfiles?: EventProfileConfig;
+  /** Explicitly reviewed relay hostnames; never blindly trim prefixes. */
+  forwarder?: ForwarderConfig;
   guided?: GuidedOptions;
 }
 
@@ -59,6 +65,8 @@ export interface EventResult {
   effectiveFormat: ConcreteFormat | 'unknown';
   fields: Record<string, unknown>;
   normalized: Record<string, unknown>;
+  eventFamily?: string;
+  forwarderHops?: ForwarderHop[];
   unmapped: string[];
   matched: boolean;
   extracted: boolean;

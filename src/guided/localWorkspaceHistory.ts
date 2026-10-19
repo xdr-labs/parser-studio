@@ -1,4 +1,6 @@
 import {FORMATS,type MappingRule,type ParserDraft} from '../model';
+import {validForwarderConfig,type ForwarderConfig} from './declaredForwarder';
+import {validateEventProfiles,type EventProfileConfig} from './multiEventRouting';
 
 /**
  * User-owned, origin-scoped browser experiment snapshots.
@@ -73,6 +75,30 @@ function safeNested(value:unknown,depth=0):boolean{
     !['__proto__','prototype','constructor'].includes(k)&&
     k.length<=160&&safeNested(v,depth+1));
 }
+/**
+ * Stored browser versions are untrusted, including a locally modified
+ * IndexedDB row with a recomputed digest. Validate shape before invoking
+ * family/relay runtime code that assumes typed arrays and field mappings.
+ */
+function validStoredProfiles(value:unknown):value is EventProfileConfig{
+  if(!isObject(value)||typeof value.discriminator!=='string'||
+     value.unknown!=='reject'||!Array.isArray(value.variants)||
+     value.variants.length<2||value.variants.length>16)return false;
+  for(const variant of value.variants){
+    if(!isObject(variant)||typeof variant.name!=='string'||
+       typeof variant.equals!=='string'||!Array.isArray(variant.mappings)||
+       variant.mappings.length>100||!variant.mappings.every(validMapping)||
+       new Set(variant.mappings.map((m:MappingRule)=>m.id)).size!==variant.mappings.length)
+      return false;
+  }
+  return validateEventProfiles(value as EventProfileConfig)===null;
+}
+function validStoredRelay(value:unknown):value is ForwarderConfig{
+  return isObject(value)&&Number.isInteger(value.maxHops)&&
+    Array.isArray(value.relayHosts)&&
+    value.relayHosts.every((host:unknown)=>typeof host==='string')&&
+    validForwarderConfig(value as ForwarderConfig);
+}
 export function validLocalDraft(value:unknown):value is ParserDraft{
   if(!isObject(value))return false;
   if(!['name','vendor','pattern','csvColumns'].every(k=>
@@ -82,8 +108,11 @@ export function validLocalDraft(value:unknown):value is ParserDraft{
      !value.mappings.every(validMapping))return false;
   if(value.guided!==undefined&&!isObject(value.guided))return false;
   const mappings=value.mappings as MappingRule[];
-  if(new Set(mappings.map(m=>m.id)).size!==mappings.length)return false;
-  return safeNested(value);
+  if(new Set(mappings.map(m=>m.id)).size!==mappings.length||
+     !safeNested(value))return false;
+  if(value.eventProfiles!==undefined&&!validStoredProfiles(value.eventProfiles))return false;
+  if(value.forwarder!==undefined&&!validStoredRelay(value.forwarder))return false;
+  return true;
 }
 function snapshotContent(v:Omit<LocalVersion,'sha256'>):string{
   return json([v.contract,v.id,v.label,v.createdAt,v.datasetName,v.source,v.draft]);
@@ -243,8 +272,14 @@ export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):Vers
     changes.push('Receiver / framing settings');
   if(json(a.draft.guided?.enrichment)!==json(b.draft.guided?.enrichment))
     changes.push('Enrichment rules');
+  if(json(a.draft.forwarder)!==json(b.draft.forwarder))
+    changes.push('Declared relay profile');
+  if(json(a.draft.eventProfiles)!==json(b.draft.eventProfiles))
+    changes.push('Event-type routing / conditional mappings');
   if(addedMappings.length||removedMappings.length||editedMappings.length)
     changes.push('Field mappings');
+  if(json(a.draft)!==json(b.draft)&&changes.length===0)
+    changes.push('Other parser settings');
   const left=a.source.split('\n'),right=b.source.split('\n');
   let changedLines=0;
   for(let i=0;i<Math.max(left.length,right.length);i++)

@@ -35,16 +35,18 @@ export function lookupFieldValue(
   return { found: true, value };
 }
 
-/** Returns only safe leaf *names*, never log values, bounded at 100 paths. */
-export function listSafeLeafPaths(fields: Record<string, unknown>): string[] {
+/** Returns safe leaf *names* only, default 100; 101 is a truncation sentinel for strict callers. */
+export function listSafeLeafPaths(
+  fields: Record<string, unknown>, limit: 100 | 101 = MAX_FIELDS,
+): string[] {
   const results: string[] = [];
   const seen = new Set<string>();
   const visit = (value: unknown, prefix: string, depth: number) => {
-    if (results.length >= MAX_FIELDS || depth > MAX_DEPTH || (prefix && !safeLocalFieldPath(prefix))) return;
+    if (results.length >= limit || depth > MAX_DEPTH || (prefix && !safeLocalFieldPath(prefix))) return;
     if (objectRecord(value)) {
       if (depth === MAX_DEPTH) return;
       for (const key of Object.keys(value)) {
-        if (results.length >= MAX_FIELDS) break;
+        if (results.length >= limit) break;
         const next = prefix ? prefix + '.' + key : key;
         if (!safeLocalFieldPath(next)) continue;
         visit(value[key], next, depth + 1);
