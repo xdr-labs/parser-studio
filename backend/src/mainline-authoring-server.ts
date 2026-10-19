@@ -61,7 +61,10 @@ export const MAINLINE_AUTHORING_CAPABILITIES=Object.freeze({
 });
 
 export function isMainlineAuthoringRoute(path:string,method:string):boolean{
-  return ALLOWED[path]?.includes(method)===true;
+  // HTTP request targets are untrusted. Even a frozen ordinary object still
+  // inherits constructor/toString/__proto__; never invoke their properties
+  // as though they were allowlisted method arrays.
+  return Object.hasOwn(ALLOWED,path)&&ALLOWED[path]?.includes(method)===true;
 }
 
 export function createMainlineAuthoringServer():Server{

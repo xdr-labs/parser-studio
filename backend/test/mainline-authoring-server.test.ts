@@ -26,6 +26,13 @@ test("shipping backend accepts only true offline authoring HTTP methods",async()
   assert.equal(isMainlineAuthoringRoute("/api/v1/parser-pairs/generate","GET"),false);
   assert.equal(isMainlineAuthoringRoute("/api/v1/test-lab/sessions/start","POST"),false);
   assert.equal(isMainlineAuthoringRoute("/api/v1/parser-pairs/target/apply","POST"),false);
+  // Ordinary objects inherit property names outside their explicit route
+  // keys. Those names must fail closed instead of throwing from .includes().
+  for(const path of ["__proto__","constructor","toString","valueOf",
+    "/api/v1/parser-pairs/__proto__","/api/v1/parser-pairs/generate/"]){
+    assert.doesNotThrow(()=>isMainlineAuthoringRoute(path,"POST"));
+    assert.equal(isMainlineAuthoringRoute(path,"POST"),false);
+  }
 
   await withServer(async base=>{
     for(const path of ["/health","/api/v1/parser-pairs/schema",
