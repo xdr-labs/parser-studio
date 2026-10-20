@@ -105,6 +105,7 @@ const readable:Record<string,string>={
  COLUMNS_REQUIRED:'This log has positional values without verified column names. Enter names from the product log definition for an eligible CSV stream, or use ChatGPT Assisted Parser for wrapped or mixed formats. The source fields remain intact.',
  BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
  BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
+ BACKEND_PROFILE_UNSUPPORTED:'The connected parser creation service does not support this draft\'s log structure yet. Update or restart the development backend, then choose Re-check parser support and Review Fields. Your original logs and parsed fields are preserved.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
  MODEL_REVIEW_REQUIRED:'Parser Studio found source values, but their names, types or repeated occurrences cannot be mapped to one safe parser automatically. Use a trusted log field definition or ChatGPT Assisted Parser to review those choices. No source value was discarded.',
 };
@@ -474,7 +475,12 @@ export default function AutoParser({
      });
      setFurthestStep(1);setStep(1);setSelected(0);
    }catch(error){
-     if(token===epoch.current)setMessage(backendReviewMessage(error));
+     if(token===epoch.current&&currentRef.current===expected){
+       if(error instanceof Error&&'code' in error&&error.code==='BACKEND_PROFILE_UNSUPPORTED'){
+         setReviewBlock({key:expected,reason:'BACKEND_PROFILE_UNSUPPORTED'});
+         setMessage('');
+       }else setMessage(backendReviewMessage(error));
+     }
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function generate(){

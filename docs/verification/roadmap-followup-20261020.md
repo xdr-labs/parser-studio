@@ -29,9 +29,11 @@ vendor-specific regular expression, silent mapping truncation or target-ready
 claim was added. A batch requiring two incompatible additional profiles remains
 in review. Invalid syntax and undeclared schemas still require a user decision.
 
-## Local qualification
+## Saved implementation qualification
 
-The final working-tree qualification is preserved in
+The implementation qualification completed before the compatibility correction
+below belongs to the source committed as
+`cb7cec246e5dd4fbd4269369b5d3c338c5692740`. Its saved results are preserved in
 `/home/aella/.local/state/parserstudio-roadmap-followup-20261020`.
 Before commit, all 66 checkpointed source/configuration file hashes matched
 `handoff-worktree-snapshot.json`; repository documentation is finalized after
@@ -47,8 +49,10 @@ that comparison without changing the qualified application source.
 | Earlier full frontend, before the last LEEF precedence addition | 997/997 PASS across 125 files | `final-frontend-units.log` |
 | Earlier full product-scoped authoring backend, before that addition | 429/429 PASS, 0 skipped | `final-backend-authoring.log` |
 
-The final browser run began at 2026-10-20 10:26:06 UTC on the current
-working-tree candidate based on `00e783520c005a96b37b5fbf5eb4ad81c74381a6`.
+The saved browser run began at 2026-10-20 10:26:06 UTC on the implementation
+candidate based on `00e783520c005a96b37b5fbf5eb4ad81c74381a6`.
+It is not relabeled as a test of the later compatibility correction or as
+public-address verification.
 The two earlier full-suite results are not promoted to final exact-HEAD
 full-suite results. The committed candidate's CI is recorded separately in
 the work packet. Four historical external/Drain3 backend cases remain
@@ -102,6 +106,47 @@ authoring gates and existing affected browser suites. It now also executes the
 quoted-label/LEEF Python cases and the explicit eight-case continuation
 Chromium gate. Historical external backend tests and retired Wizard tests are
 not relabeled as current product passes.
+
+### Observed compatibility failure and correction
+
+[Initial PR CI 39413440206](https://github.com/xdr-labs/parser-studio/actions/runs/39413440206)
+failed on `cb7cec246e5dd4fbd4269369b5d3c338c5692740`. Full frontend
+**1003/1003**, product-scoped Backend **436/436**, the builds, selected Python
+gates and eight new continuation browser cases passed. The ordinary browser
+lane reported **278 passed, 40 skipped and 2 failed**; the later HTTP integration
+and final same-HEAD authoring steps did not execute.
+
+The original Cisco FTD threat and Zscaler NSS LEEF corpus cases correctly
+encountered unsupported profiles on independent Backend
+`429b179fc674eb07f3e2250e78aea7883a71b433`. The UI incorrectly reduced that
+refusal to a generic error, leaving Review Fields enabled without its existing
+source-preserving blocked panel.
+
+The correction tags only a recognized but unadvertised profile with
+`BACKEND_PROFILE_UNSUPPORTED`. The UI enters Parser draft not ready, preserves
+source and parsed fields, disables continuation, and explains the recovery.
+Re-check parser support clears the block; the subsequent Review Fields action
+requests fresh capabilities. Invalid profiles, malformed capability contracts
+and network failures retain their distinct handling. Source identity and
+request epoch checks prevent stale failures from blocking changed input.
+
+The correction passed **55/55 focused frontend tests**, including four new UI
+regressions for both profiles, fresh-capability recovery, generic network
+failure and stale responses. The four new regressions also passed after a
+test-only TypeScript query-option cleanup. Both original failing corpus cases
+passed **2/2 in real Chromium**, with no skip, flaky result or top-level error,
+against the unchanged independent Backend. The Web build passed. Final evidence
+is in `compatibility-correction-gates/final-results.json`,
+`focused-frontend.log`, `new-ui-regressions-final.log`,
+`old-backend-two-cases.json` and `web-build-final.log` in that directory.
+The initial failed build log is retained separately. Corpus assertions and
+Backend pins were not weakened or replaced.
+
+The corrected source commit, exact-candidate CI conclusion, merged main hash
+and subsequent public-address result are recorded in the Issue #1 work packet.
+The saved local 109-case run is not repeated or promoted to public evidence.
+Public Chromium is a separate 109-case gate after applying the complete
+qualified payload and restarting both existing development services.
 
 Development application requires the qualified web build, authoring build and
 schemas/templates, and the changed Python structural-label module. It therefore

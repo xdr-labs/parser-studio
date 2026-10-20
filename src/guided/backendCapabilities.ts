@@ -335,11 +335,14 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     project.receiver.port<6800||
     cap.authoring.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V15'))
     throw new Error('Generic Structural DRAFT requires the exact bounded grammar and listener port >=6800.');
-  if(project.extraction.genericStructuralProfile!==undefined&&(
-    project.extraction.format!=='generic_structural'||
-    !isGenericStructuralProfile(project.extraction.genericStructuralProfile)||
-    !cap.authoring.genericStructuralProfiles?.includes(project.extraction.genericStructuralProfile)))
-    throw new Error('The backend does not advertise the selected Generic Structural profile.');
+  if(project.extraction.genericStructuralProfile!==undefined){
+    if(project.extraction.format!=='generic_structural'||
+      !isGenericStructuralProfile(project.extraction.genericStructuralProfile))
+      throw new Error('The backend does not advertise the selected Generic Structural profile.');
+    if(!cap.authoring.genericStructuralProfiles?.includes(project.extraction.genericStructuralProfile))
+      throw Object.assign(new Error('The backend does not advertise the selected Generic Structural profile.'),
+        {code:'BACKEND_PROFILE_UNSUPPORTED'});
+  }
   if(project.extraction.format==='java_stacktrace'&&(
     project.receiver.tcpFraming!=='blank_line_java'||
     project.receiver.protocols.length!==1||
