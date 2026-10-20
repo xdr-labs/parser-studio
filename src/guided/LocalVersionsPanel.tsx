@@ -2,8 +2,9 @@ import {useCallback,useEffect,useMemo,useState} from 'react';
 import './localVersions.css';
 import {GitCompareArrows,RotateCcw,Save,Trash2} from 'lucide-react';
 import type {LocalWorkingCopy,LocalVersion} from './localWorkspaceHistory';
-import {compareLocalVersions,deleteLocalVersion,listLocalVersions,readLocalVersion,
-  sameLocalWorking,saveLocalVersion,restoredNamedSource} from './localWorkspaceHistory';
+import {compareLocalVersions,deleteLocalVersion,deleteRejectedLocalVersions,
+  listLocalVersions,readLocalVersion,sameLocalWorking,saveLocalVersion,
+  restoredNamedSource} from './localWorkspaceHistory';
 
 interface Props{
   working:LocalWorkingCopy;
@@ -86,6 +87,13 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     await deleteLocalVersion(item.id);
     setStatus('Deleted the selected local version. Other versions and your current work are unchanged.');
   });
+  const removeRejected=()=>void run(async()=>{
+    if(!window.confirm('Permanently delete '+invalid+' corrupt or unverified local version(s) from this browser? Parser Studio cannot restore these records, but they may still contain sensitive raw log data. This cannot be undone. Verified saved versions and the current workspace will be kept.'))return;
+    const count=await deleteRejectedLocalVersions();
+    setStatus(count>0?
+      'Deleted '+count+' corrupt or unverified browser-local version(s). Verified versions and your current workspace were preserved.':
+      'No unverified versions were deleted. Recheck this browser history before retrying.');
+  });
   const countBytes=new TextEncoder().encode(working.source).length;
   return <section className="local-versions-panel" aria-label="Local Versions workspace">
     <div className="local-versions-heading">
@@ -111,7 +119,11 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
       </button>
       <span>{countBytes.toLocaleString()} source bytes · {items.length}/30 saved</span>
     </div>
-    {invalid>0&&<p role="alert">{invalid} corrupt or unverified local version(s) were excluded from restore. The current workspace was not altered.</p>}
+    {invalid>0&&<div className="local-version-recovery" role="group" aria-label="Unverified local version recovery">
+      <p role="alert">{invalid} corrupt or unverified local version(s) were excluded from restore. They still occupy browser history space and may contain sensitive source values. The current workspace was not altered.</p>
+      <button type="button" className="button secondary" disabled={busy} onClick={removeRejected}
+        aria-label="Delete unverified local versions"><Trash2 size={14}/> Delete unverified versions</button>
+    </div>}
     {status&&<p role="status" className="local-versions-status">{status}</p>}
     <div className="local-version-list" aria-label="Saved local versions">
       {items.length===0?<p>No versions saved yet. Try a mapping, save V1, change the mapping, and save V2.</p>:

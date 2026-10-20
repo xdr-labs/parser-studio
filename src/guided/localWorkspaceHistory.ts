@@ -246,6 +246,64 @@ export async function saveLocalVersion(copy:LocalWorkingCopy,label:string):Promi
     });
   }finally{db.close();}
 }
+/** Remove only browser rows which fail the current version contract and SHA
+ * check. This is always user-initiated; neither listing nor saving removes
+ * data. Recheck the original row inside the write transaction so a concurrent
+ * tab cannot turn a formerly invalid row into a valid row that gets deleted.
+ */
+export async function deleteRejectedLocalVersions():Promise<number>{
+  const db=await openDb();
+  try{
+    const rows=await new Promise<Array<{key:IDBValidKey;value:unknown}>>((resolve,reject)=>{
+      const tx=db.transaction(TABLE,'readonly');
+      const cursor=tx.objectStore(TABLE).openCursor();
+      const found:Array<{key:IDBValidKey;value:unknown}>=[];
+      cursor.onsuccess=()=>{
+        const item=cursor.result;
+        if(item){found.push({key:item.primaryKey,value:item.value});item.continue();}
+      };
+      tx.oncomplete=()=>resolve(found);
+      tx.onerror=()=>reject(Error('Could not inspect browser-local versions.'));
+      tx.onabort=()=>reject(Error('Inspection of local versions was interrupted.'));
+    });
+    const invalid:Array<{key:IDBValidKey;serialized:string}>=[];
+    for(const row of rows){
+      if(await verifyLocalVersion(row.value))continue;
+      let serialized:string;
+      try{serialized=json(row.value)}
+      catch{throw Error('Unverified browser data could not be compared safely. No versions were deleted.');}
+      if(typeof serialized!=='string')
+        throw Error('Unverified browser data could not be compared safely. No versions were deleted.');
+      invalid.push({key:row.key,serialized});
+    }
+    if(invalid.length===0)return 0;
+    return await new Promise<number>((resolve,reject)=>{
+      const tx=db.transaction(TABLE,'readwrite');
+      const cursor=tx.objectStore(TABLE).openCursor();
+      let deleted=0;
+      let conflict=false;
+      cursor.onsuccess=()=>{
+        const item=cursor.result;
+        if(!item)return;
+        const candidate=invalid.find(entry=>indexedDB.cmp(entry.key,item.primaryKey)===0);
+        if(candidate){
+          let unchanged=false;
+          try{unchanged=json(item.value)===candidate.serialized}catch{/* deny deletion */}
+          if(!unchanged){conflict=true;tx.abort();return;}
+          item.delete();
+          deleted++;
+        }
+        item.continue();
+      };
+      tx.oncomplete=()=>resolve(deleted);
+      tx.onerror=()=>reject(Error('Browser-only unverified version cleanup failed.'));
+      tx.onabort=()=>reject(Error(conflict?
+        'A stored version changed in another tab. Nothing was deleted; refresh and retry.':
+        'Browser-only cleanup was interrupted. No verified versions were changed.'));
+    });
+  }finally{db.close();}
+}
+
 export async function deleteLocalVersion(id:string):Promise<void>{
   if(!/^[a-f0-9-]{36}$/i.test(id))throw Error('Invalid local version identifier.');
   const db=await openDb();
