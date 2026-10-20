@@ -315,10 +315,33 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
   }
 }
 
-function asIP(value: string): boolean {
-  if (value.includes(':')) return /^[0-9a-fA-F:]+$/.test(value) && value.split(':').length >= 3 && value.length <= 39;
+function asIPv4(value: string): boolean {
   const parts = value.split('.');
-  return parts.length === 4 && parts.every((part) => /^(?:0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255);
+  return parts.length === 4 && parts.every(part =>
+    /^(?:0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255);
+}
+
+function asIP(value: string): boolean {
+  if (!value.includes(':')) return asIPv4(value);
+  // RFC 4291: exactly eight 16-bit groups, optionally shortened once by ::.
+  // A dotted IPv4 tail consumes two groups. Reject zones and URL brackets:
+  // neither is a literal IP value in the normalized Stellar metadata field.
+  if (value.length > 45 || !/^[0-9a-fA-F:.]+$/.test(value)) return false;
+  let address = value;
+  if (address.includes('.')) {
+    const separator = address.lastIndexOf(':');
+    if (separator === -1 || !asIPv4(address.slice(separator + 1))) return false;
+    address = address.slice(0, separator + 1) + '0:0';
+  }
+  const halves = address.split('::');
+  if (halves.length > 2) return false;
+  const groups = (text: string) => text ? text.split(':') : [];
+  const left = groups(halves[0]!);
+  const right = halves.length === 2 ? groups(halves[1]!) : [];
+  const validGroup = (group: string) => /^[0-9a-fA-F]{1,4}$/.test(group);
+  if (![...left, ...right].every(validGroup)) return false;
+  const explicitGroups = left.length + right.length;
+  return halves.length === 2 ? explicitGroups < 8 : explicitGroups === 8;
 }
 
 export function convertValue(raw: unknown, type: FieldType): { value?: unknown; error?: string } {

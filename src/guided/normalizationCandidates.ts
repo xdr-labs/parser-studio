@@ -15,6 +15,7 @@ export interface NormalizationCandidate {
   catalogVerified:true;
   catalogRelease:'7.0.xs';
   observed:number;
+  compatibleObserved:number;
   total:number;
   replacesMappingId?:string;
   currentTarget?:string;
@@ -49,7 +50,9 @@ const ALIASES:Record<string,string>={
   host_name:'hostname',hostname:'hostname',host:'hostname','host.name':'hostname',device_name:'hostname',
   devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',unit_hostname:'hostname',
   ip_client:'srcip',protocol:'proto_name',
-  uri:'url',request_status:'action',
+  // request_status is not an action alias: an HTTP status code and a security
+  // allow/deny action have different semantics even if both are strings.
+  uri:'url',
   localip:'hostip',username:'username',processname:'process_name',
   commandline:'command',parentprocess:'parent_proc_name',
   eventtype:'event_type',
@@ -72,6 +75,13 @@ export function valueFitsNormalizationTarget(
   target:string,type:MappingRule['type'],value:unknown,
 ):boolean{
   if(ignored(value))return true;
+  const hashKind=/(?:^|\.)(md5|sha1|sha256)$/.exec(target)?.[1];
+  if(hashKind){
+    const widths:Record<string,number>={md5:32,sha1:40,sha256:64};
+    return typeof value==='string' && new RegExp('^[0-9a-fA-F]{'+widths[hashKind]+'}$').test(value);
+  }
+  // An HTTP numeric result and a security action are not equivalent.
+  if(target==='action'&&typeof value!=='string')return false;
   // Stellar documents L4 ports as integer fields, but their semantic range
   // remains 0..65535. Keep the documented target type while applying the
   // stricter field constraint before a HIGH-confidence mapping is offered.
@@ -102,10 +112,15 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   if(existing.some(rule=>rule.id!==current?.id&&overlaps(rule.target,target)))return null;
   const values=events.map(fields=>lookupFieldValue(fields,source)).filter(result=>result.found);
   if(values.length===0)return null;
-  const compatible=values.filter(result=>result.found&&
+  const informativeValues=values.filter(result=>!ignored(result.value));
+  const compatibleObserved=informativeValues.filter(result=>
     valueFitsNormalizationTarget(target,catalog.mappingType!,result.value)).length;
   const method:NormalizationCandidate['method']=target===source?'EXACT_DICTIONARY_NAME':'DOCUMENTED_ALIAS';
-  const high=compatible===values.length;
+  // All event samples must contain this source and at least one usable value.
+  // A sparse heterogeneous sample or placeholders are not sufficient evidence
+  // for a bulk-approved official field mapping.
+  const informative=informativeValues.length;
+  const high=compatibleObserved===informative&&values.length===events.length&&informative>0;
   const defaultGenerated=new Map([
     ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
   ]);
@@ -120,8 +135,13 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
       ?(method==='EXACT_DICTIONARY_NAME'
         ?'Source name matches the official Stellar metadata field and observed values match its documented type.'
         :'Reviewed source alias maps to an official Stellar metadata field and observed values match its documented type.')
-      :'The field-name match is plausible, but at least one observed value does not match the documented Stellar type.',
-    catalogVerified:true,catalogRelease:'7.0.xs',observed:values.length,total:events.length,
+      :values.length!==events.length
+        ?'The field is missing from some events; review its event-family scope before applying an official mapping.'
+        :informative===0
+          ?'The source contains no informative values; a matching name alone is not enough to approve an official mapping.'
+          :'The field-name match is plausible, but at least one observed value does not match the documented Stellar type.',
+    catalogVerified:true,catalogRelease:'7.0.xs',observed:values.length,
+    compatibleObserved,total:events.length,
     ...(current?{replacesMappingId:current.id,currentTarget:current.target}:{}),
     safeForBulk:high&&(!current||replaceIsGenerated),
   };
@@ -135,28 +155,28 @@ export function suggestNormalizationCandidatesFromSuite(
   const sources=new Set<string>();
   for(const event of fields)for(const path of listSafeLeafPaths(event))sources.add(path);
   const proposed:NormalizationCandidate[]=[];
-  const targetIndex=new Map<string,number>();
-  const ambiguousTargets=new Set<string>();
+  const candidatesByTarget=new Map<string,NormalizationCandidate[]>();
   for(const source of [...sources].slice(0,100)){
     const candidate=candidateForSource(source,fields,existing,existingGroups);
     if(!candidate)continue;
-    const priorIndex=targetIndex.get(candidate.target);
-    if(priorIndex===undefined){
-      targetIndex.set(candidate.target,proposed.length);
-      proposed.push(candidate);
-      continue;
-    }
-    ambiguousTargets.add(candidate.target);
-    const prior=proposed[priorIndex]!;
-    // For one official destination, prefer whole-sample compatible evidence
-    // over an earlier ambiguous leaf-name match.
-    if(prior.confidence==='REVIEW'&&candidate.confidence==='HIGH')
-      proposed[priorIndex]=candidate;
+    candidatesByTarget.set(candidate.target,[...(candidatesByTarget.get(candidate.target)??[]),candidate]);
+    proposed.push(candidate);
   }
-  // A combined grammar cannot infer precedence between distinct source paths
-  // merely because their dictionary aliases share an official destination.
+  // Competing sources are ambiguous only if more than one has actual values
+  // compatible with the official target. A standalone Syslog HH:MM:SS is not
+  // a competing timestamp to an independently qualified timezone date/time.
+  const ambiguousTargets=new Set([...candidatesByTarget.entries()]
+    .filter(([,candidates])=>candidates.filter(candidate=>candidate.compatibleObserved>0).length>1)
+    .map(([target])=>target));
+  // Never silently let insertion order select an official destination when
+  // two distinct source paths are plausible. Keep both visible for human
+  // review, but neither can be bulk-applied without resolving the conflict.
+  const reviewed=proposed.map(candidate=>ambiguousTargets.has(candidate.target)
+    ?{...candidate,confidence:'REVIEW' as const,safeForBulk:false,
+      explanation:'The multiple source fields map to the same official Stellar destination; review the source meaning and select one manually.'}
+    :candidate);
   return options.skipAmbiguousTargets
-    ?proposed.filter(candidate=>!ambiguousTargets.has(candidate.target)):proposed;
+    ?reviewed.filter(candidate=>!ambiguousTargets.has(candidate.target)):reviewed;
 }
 
 /** Backward-compatible selected-event helper used by the Review Fields summary. */

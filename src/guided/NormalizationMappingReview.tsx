@@ -224,9 +224,7 @@ export default function NormalizationMappingReview({
             </span>
             <button type="button" aria-label={'Apply official mapping '+candidate.source}
               onClick={()=>applyCandidate(candidate)}>Use this match</button>
-            <p>{candidate.confidence==='HIGH'
-              ?'The field name and all observed sample values fit this Stellar field.'
-              :'The name looks related, but at least one sample value needs your review before this mapping is applied.'}</p>
+            <p>{candidate.explanation}</p>
           </article>)}
         </div>}
     </section>

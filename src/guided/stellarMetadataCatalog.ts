@@ -7,6 +7,10 @@ export const STELLAR_METADATA_CATALOG_PROVENANCE = {
   retrievedOn:'2026-10-16',
   sourceSha256:'6577a72da962561ad9c0cfb726e1dc0bdf1a95e17df3ebfe63a0156e3c408053',
   evidence:'PUBLIC_VENDOR_DOCUMENTATION',
+  // Fixed 7.0 nested-scalar supplement; this is not a cross-version catalog.
+  nestedSource:'https://docs.stellarcyber.ai/7.0.xs/Using/Alerts/Alert-Key-Fields.htm',
+  nestedSourceSha256:'5458805df8ee0ed578cc480c8832cd13f0b9df06482a88792702f8aaff49171f',
+  nestedRetrievedOn:'2026-10-21',
 } as const;
 
 export interface StellarMetadataCatalogEntry {
@@ -309,6 +313,31 @@ const RAW:ReadonlyArray<readonly [string,readonly string[],readonly string[]]> =
   ['xgb_prob',['integer'],['DGA probability based on the XGBoost model.']],
 ];
 
+// Only scalar namespace paths explicitly named in the 7.0 Standard Metadata
+// Dictionary and the 7.0 Key Fields for Alert Types documentation. Parent
+// objects stay non-mappable; unknown descendants never inherit a guessed type.
+const TYPED_NESTED_7_0:ReadonlyArray<readonly [string,readonly string[],readonly string[]]>=[
+  ['host.ip',['ip'],['Endpoint host IP address.']],
+  ['host.name',['string'],['Endpoint hostname.']],
+  ['host.external_ip',['ip'],['Endpoint external IP address.']],
+  ['host.mac',['string'],['Endpoint MAC address.']],
+  ['user.name',['string'],['User name associated with the event.']],
+  ['file.name',['string'],['File name associated with the event.']],
+  ['file.path',['string'],['File path associated with the event.']],
+  ['file.hash.md5',['string'],['File MD5 hash.']],
+  ['file.hash.sha1',['string'],['File SHA-1 hash.']],
+  ['file.hash.sha256',['string'],['File SHA-256 hash.']],
+  ['process.name',['string'],['Process name.']],
+  ['process.command_line',['string'],['Process command line.']],
+  ['process.pid',['integer'],['Process identifier.']],
+  ['process.hash.md5',['string'],['Process MD5 hash.']],
+  ['process.hash.sha1',['string'],['Process SHA-1 hash.']],
+  ['process.hash.sha256',['string'],['Process SHA-256 hash.']],
+  ['process.parent.name',['string'],['Parent process name.']],
+  ['process.parent.pid',['integer'],['Parent process identifier.']],
+  ['rule.name',['string'],['Security rule name.']],
+];
+
 const RESERVED = new Set(['msg_origin','stellar_log_index','parser_err_msg','parser_err_stage','parser_err_field']);
 function mappingType(types:readonly string[]):FieldType|null {
   if(types.length!==1)return null;
@@ -323,7 +352,7 @@ function mappingType(types:readonly string[]):FieldType|null {
   }
 }
 
-export const STELLAR_METADATA_CATALOG:readonly StellarMetadataCatalogEntry[]=RAW.map(([name,types,descriptions])=>{
+export const STELLAR_METADATA_CATALOG:readonly StellarMetadataCatalogEntry[]=[...RAW,...TYPED_NESTED_7_0].map(([name,types,descriptions])=>{
   const mapped=mappingType(types);
   const reserved=RESERVED.has(name.split('.')[0]!);
   const scalar=types.length===1&&!['object','list','list_of_object','list_of_string'].some(type=>types[0]!.startsWith(type));

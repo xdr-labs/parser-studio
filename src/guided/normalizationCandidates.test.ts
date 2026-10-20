@@ -39,10 +39,12 @@ describe('official-catalog normalization candidates',()=>{
       sourcePort:52000,destinationPort:'8443',deviceName:'sensor-01',
     },[]);
     expect(suggestions).toEqual(expect.arrayContaining([
-      expect.objectContaining({source:'src',target:'srcip',confidence:'HIGH'}),
-      expect.objectContaining({source:'dst',target:'dstip',confidence:'HIGH'}),
-      expect.objectContaining({source:'spt',target:'srcport',confidence:'HIGH'}),
-      expect.objectContaining({source:'dpt',target:'dstport',confidence:'HIGH'}),
+      // Same target appears under two source aliases; both require human review
+      // instead of permitting order-dependent automatic normalization.
+      expect.objectContaining({source:'src',target:'srcip',confidence:'REVIEW',safeForBulk:false}),
+      expect.objectContaining({source:'dst',target:'dstip',confidence:'REVIEW',safeForBulk:false}),
+      expect.objectContaining({source:'spt',target:'srcport',confidence:'REVIEW',safeForBulk:false}),
+      expect.objectContaining({source:'dpt',target:'dstport',confidence:'REVIEW',safeForBulk:false}),
       expect.objectContaining({source:'act',target:'action',confidence:'HIGH'}),
       expect.objectContaining({source:'deviceName',target:'hostname',confidence:'HIGH'}),
     ]));
@@ -92,7 +94,7 @@ describe('official-catalog normalization candidates',()=>{
       processName:'powershell.exe',
       commandLine:'powershell.exe -NoProfile -EncodedCommand REDACTED',
       parentProcess:'WINWORD.EXE',
-      sha256:'6f5902ac237024bdd0c176cb93063dc4',
+      sha256:'6f5902ac237024bdd0c176cb93063dc46f5902ac237024bdd0c176cb93063dc4',
       tactic:'Execution',technique:'PowerShell',techniqueId:'T1059.001',
       action:'Detection',
     },[]);

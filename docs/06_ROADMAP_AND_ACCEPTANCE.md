@@ -506,3 +506,14 @@ Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retai
 - [x] NORM-07: browser Full User E2E covers EDR/XDR/NDR/EPP/AWS CloudTrail/AWS WAF/IPS/VPN with 8/8 normalization journeys PASS. Evidence: 89 files / 663 unit tests PASS; production build PASS; generic Chromium 50 PASS / 28 live-backend-gated SKIP / 0 FAIL; exact pinned live-backend suite 29/29 PASS; final exact-head GitHub Actions run **#38843728978 SUCCESS** on `7f2015de6ead10ad5bdaa1641ae30c92ec9c822c`.
 
 **P0-NORM engineering scope: COMPLETE.** Owner visual acceptance is tracked separately under R3; real Stellar DP/sensor execution is not part of this roadmap.
+
+## Owner follow-up — Stellar Cyber 7.0-only normalization integrity (2026-10-21)
+
+**Fixed target schema:** published Stellar Cyber 7.0 (`7.0.xs` documentation). No 6.5/6.6 per-version schema, compatibility logic, migration matrix or UI selector. This is a new authorized accuracy workstream, separate from completed PR #123.
+
+1. **NORM7-P0:** Reject malformed IPv6 at the browser conversion and recommendation boundary; remove ambiguous status-to-action aliasing; reject sparse/placeholder-only confidence. Prevent order-dependent bulk mapping of multiple type-compatible sources to one official destination.
+2. **NORM7-P1:** Extend the single pinned 7.0 catalog only with explicitly documented and typed nested scalar paths. Enforce official action/hash semantic constraints. Preserve existing vendor-only mappings and original source values, and keep unsupported float/complex types fail-closed.
+3. **NORM7-P2:** Run deterministic RED-to-GREEN tests, actual desktop Map Fields Chromium and backend contract checks, then exact-HEAD CI. Existing completed source/CI/public tests must not be repeated solely as a continuation.
+4. **Accuracy evidence deferred:** Independent manufacturer source goldens and proprietary Stellar native target behavior are not established by synthetic fixtures. Generated artifacts remain DRAFT and unknown evidence remains UNSCORABLE.
+
+Implementation details: [Stellar 7.0 normalization integrity verification](verification/20261021-stellar7-normalization-integrity.md). Keep the deployed development build, historic worktrees and completed evidence unchanged. Mobile, DP/sensors, production, releases and authorization changes are excluded.
