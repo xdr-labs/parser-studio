@@ -34,6 +34,18 @@ This additional browser test used the **already-deployed preceding public source
 - Initial exploratory attempts used incorrect accessibility-name and backend-project field assumptions in the *test harness*; these were fixed without changing the public product or corpus, and the fully checked final run passed. These earlier failures are not parser defects or passing test executions.
 - Local evidence: `/home/aella/.local/state/parserstudio-beginner-acceptance-20261021/public-desktop-quoted-csv-summary.json`, raw desktop screenshots and the ephemeral E2E test script.
 
+## Exact-source CI-discovered browser-local version comparison race
+
+The first [exact-source PR CI #39448876693](https://github.com/xdr-labs/parser-studio/actions/runs/39448876693) failed in the existing **desktop** `named type uploads replace only selected type and local versions restore labels` Chromium scenario. The original failure screenshot and Playwright trace showed Version A and Version B both displaying the newest saved version, despite explicit selection of two different version IDs; the diff silently showed `No parser configuration differences detected`. This was **not** a failure of the new first-input shortcut, but it affects actual novice version comparison.
+
+A same-HEAD local three-run browser reproduction passed without forced timing and is not a reason to waive the CI failure. A new deterministic `LocalVersionsPanel.initial-load-race20261021.test.tsx` deliberately holds the initial IndexedDB list response while two versions are saved and compared, then delivers the older list last. The unmodified component **failed RED**, overwriting manually selected Version A with Version B and losing the actual named event-type label difference. A bounded lifecycle fix uses a monotonic list-request generation to discard obsolete initial/read responses, preserves a still-valid manual left selection, invalidates old reads before user writes, and refreshes saved versions even when a write attempt fails. It does not change snapshot persistence, the diff contract, existing original samples, or server APIs.
+
+- Deterministic delayed-initial-read unit: **RED → GREEN, 1/1**.
+- Actual desktop Chromium after correction: **4/4 PASS**, comprising the previously failed named version comparison and the three new desktop first-use cases; one worker, zero retry, skipped/unexpected/flaky 0 and errors `[]`.
+- Affected frontend, local-version contract, AI and language policy: **29/29 PASS**, seven files.
+- Updated TypeScript/Vite build and new exact-source CI are separate gates. Do not call initial failing CI a successful run.
+- GitHub CI failure screenshot/trace are preserved under the local evidence root in `ci-39448876693-debug`. No failed assertion was disabled, deleted or weakened.
+
 ## Remaining honest gates
 
 The changed shortcut itself is qualified only in the isolated local real-browser candidate until exact-head CI and subsequent installed/public deployment are actually verified. Any required live restart must use established normal operator authority and hash-checked backup/rollback. Automated synthetic browser contexts are **not** human owner acceptance. Generated parser files remain DRAFT; no Fluentd listener, Stellar importer, sensor or production execution is inferred.

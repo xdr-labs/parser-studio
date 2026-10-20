@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import './localVersions.css';
 import {GitCompareArrows,RotateCcw,Save,Trash2} from 'lucide-react';
 import type {LocalWorkingCopy,LocalVersion} from './localWorkspaceHistory';
@@ -28,8 +28,13 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
   const [busy,setBusy]=useState(false);
   const [status,setStatus]=useState('');
   const [invalid,setInvalid]=useState(0);
+  // A late initial IndexedDB read must not overwrite newer saves or the
+  // user's manual A/B comparison selection.
+  const listingGeneration=useRef(0);
   const refresh=useCallback(async()=>{
+    const request=++listingGeneration.current;
     const list=await listLocalVersions();
+    if(request!==listingGeneration.current)return;
     setItems(list.versions);setInvalid(list.rejected);
     setLeft(previous=>list.versions.some(v=>v.id===previous)?
       previous:list.versions[0]?.id??'');
@@ -38,11 +43,15 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
   },[]);
   useEffect(()=>{
     let alive=true;
+    const request=++listingGeneration.current;
     void listLocalVersions().then(list=>{
-      if(!alive)return;
+      if(!alive||request!==listingGeneration.current)return;
       setItems(list.versions);setInvalid(list.rejected);
-      setLeft(list.versions[0]?.id??'');
-    }).catch(error=>{if(alive)setStatus(description(error));});
+      setLeft(previous=>list.versions.some(v=>v.id===previous)?
+        previous:list.versions[0]?.id??'');
+    }).catch(error=>{
+      if(alive&&request===listingGeneration.current)setStatus(description(error));
+    });
     return ()=>{alive=false;};
   },[]);
   const selected=items.find(item=>item.id===left);
@@ -53,9 +62,16 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     [selected,compared,right,working]);
   const run=async(action:()=>Promise<void>)=>{
     if(busy)return;
+    // User-initiated storage changes supersede all in-flight initial lists.
+    ++listingGeneration.current;
     setBusy(true);setStatus('');
     try{await action();await refresh();}
-    catch(error){setStatus(description(error));}
+    catch(error){
+      setStatus(description(error));
+      // Preserve access to previously saved versions even when a write failed
+      // while the initial list was still pending.
+      try{await refresh();}catch{/* Keep the original operation error visible. */}
+    }
     finally{setBusy(false);}
   };
   const save=()=>void run(async()=>{
