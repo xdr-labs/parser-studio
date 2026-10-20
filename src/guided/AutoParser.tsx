@@ -274,6 +274,16 @@ export default function AutoParser({
    inferConsistentCsvColumnCount(csvReviewSample,draft.csvDelimiter??','):null;
  const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
    csvColumns.length===neutralCsvColumnCount);
+ // Exactly two fully quoted columns have strong source grammar but the
+ // generic auto preview cannot assign positional meaning on its own.
+ // Once the user reviews both column names, use the existing CSV extractor.
+ // Wider CSV records retain their proven Auto Parser mapping workflow.
+ // This does NOT approve mixed/ambiguous rows, forge column semantics, or
+ // skip the subsequent mapping/compiler review.
+ const csvFullyReviewedSource=neutralCsvColumnCount===2&&
+   report.complete&&report.unsupported===0&&
+   report.families.length===1&&report.families[0]?.envelope==='none'&&
+   report.families[0]?.body==='csv';
  const formatCsvEventNumbers=(numbers:number[]):string=>{
    const ranges:string[]=[];let start=numbers[0],end=numbers[0];
    for(const value of numbers.slice(1)){
@@ -315,8 +325,15 @@ export default function AutoParser({
    const delimiter=draft.csvDelimiter??',';
    const key=JSON.stringify([sample,names,delimiter]);
    pendingNeutralCsvApproval.current=key;
-   setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter}));
+   setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter,
+     ...(old.format==='auto'&&csvFullyReviewedSource?{format:'csv' as const}:{})}));
    setCsvApprovedKey(key);
+ };
+ const confirmCsvColumns=()=>{
+   if(!csvNamesValid||!csvSelectedShapeMatchesNames)return;
+   setCsvApprovedKey(csvSchemaKey);
+   if(csvFullyReviewedSource&&draft.format==='auto')
+     setDraft(old=>({...old,format:'csv'}));
  };
  const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -1162,7 +1179,7 @@ export default function AutoParser({
          </label>
          {!csvApproved&&<button type="button"
            disabled={!csvNamesValid||!csvSelectedShapeMatchesNames||pending}
-           onClick={()=>setCsvApprovedKey(csvSchemaKey)}>
+           onClick={confirmCsvColumns}>
            I Confirm These CSV Column Names
          </button>}
          <p role="status">{csvApproved?

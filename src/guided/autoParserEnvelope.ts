@@ -86,7 +86,14 @@ function csvValid(input:string):boolean{
   // A successful lexer check proves grammar only; names still need review.
   return [',',';','\t'].some(delimiter=>{
     const fields=tokenizeCSV(input,delimiter);
-    return fields!==null&&fields.length>=3;
+    if(fields===null)return false;
+    if(fields.length>=3)return true;
+    // With only two values, an unquoted comma can be ordinary prose.
+    // Accept just an explicitly fully quoted field pair after the shared
+    // strict lexer has validated escapes and post-quote boundaries.
+    // This establishes CSV syntax, never guessed CSV field names.
+    return fields.length===2&&input.startsWith('"')&&input.endsWith('"')&&
+      input.includes('"'+delimiter+'"');
   });
 }
 function classifyBody(text:string):{body:Body;status:EntryStatus}{
