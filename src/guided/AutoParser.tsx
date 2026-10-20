@@ -27,7 +27,7 @@ import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVE
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
-import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
+import {buildSourceReviewedGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {parserIdentitySlug} from './parserIdentity';
 import {inspectZeekReview} from './zeekReview';
 
@@ -806,11 +806,11 @@ export default function AutoParser({
     }]};
    }
    if(!analysisRun.isCurrent(run))return;
-   // Beginner mode must not stop at a second "Use extracted fields" click when
-   // the deeper parser already has a complete bounded compiler grammar.
+   // The bounded compiler can resolve a partial source diagnostic only when
+   // its strict grammar preserves the same complete set of original records.
    const automatic=!advanced&&draft.format==='auto'&&report.unsupported>0&&
-     review.events.length>0&&review.events.every(event=>event.preview.status==='SOURCE_PARSED')
-     ?buildAutomaticGenericStructuralDraft(original,draft):null;
+     review.events.length>0
+     ?buildSourceReviewedGenericStructuralDraft(original,draft,review):null;
    // Finish before a successful automatic draft adoption changes the identity.
    analysisRun.finish(run);
    setMultiPass(review);

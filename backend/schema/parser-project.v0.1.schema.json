@@ -174,7 +174,8 @@
         "genericStructuralProfile": {
           "enum": [
             "syslog_prefix_kv",
-            "leef2_implicit_tab"
+            "leef2_implicit_tab",
+            "syslog_prefix_kv_leef2_implicit_tab_v1"
           ]
         },
         "mixedFormats": {

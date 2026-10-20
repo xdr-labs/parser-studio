@@ -5,20 +5,26 @@ import {createDraft} from '../model';
 import AutoParser from './AutoParser';
 import type {BackendCapabilities} from './backendCapabilities';
 import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
+import {GENERIC_STRUCTURAL_MIXED_PROFILE_V1 as mixedProfile} from '../genericStructuralProfiles';
 
-const cases=[
+const singleCases=[
   {name:'Syslog description and KV',profile:'syslog_prefix_kv' as const,
     raw:'<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block'},
   {name:'implicit-TAB LEEF',profile:'leef2_implicit_tab' as const,
     raw:'LEEF:2.0|Zscaler|NSS|1.0|web-block|\tusrName=alice\tsrc=192.0.2.6\tdst=198.51.100.4\turl=https://example.test/login\taction=blocked'},
 ];
+const cases=[...singleCases,
+  {name:'combined Syslog and implicit-TAB LEEF',profile:mixedProfile,
+    raw:singleCases.map(item=>item.raw).join('\n')},
+];
 
-function capabilities(profiles?:BackendCapabilities['authoring']['genericStructuralProfiles']):BackendCapabilities{
+function capabilities(profiles?:BackendCapabilities['authoring']['genericStructuralProfiles'],combined?:boolean):BackendCapabilities{
   return {
     contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
     authoring:{receiverProtocols:['udp','tcp'],extractionFormats:['generic_structural'],
       genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',
       ...(profiles?{genericStructuralProfiles:profiles}:{}),formatCoverage:'reviewed-bounded-subset',
+      ...(combined===undefined?{}:{genericStructuralMixedProfileV1:combined}),
       httpReceiver:false,multipleDistinctReceiverPorts:false,multiline:false,arbitraryRuby:false},
     import:{exactInternalPairsEditable:true,unknownLegacyRubyEditable:false,structuralInspectionOnly:true},
     verification:{engineVerified:false,targetImportVerified:false,liveListenerVerified:false,proprietaryLoaderVerified:false},
@@ -26,7 +32,7 @@ function capabilities(profiles?:BackendCapabilities['authoring']['genericStructu
   };
 }
 
-function candidateProps(raw:string):ComponentProps<typeof AutoParser>{
+function candidateProps(raw:string):ComponentProps<typeof AutoParser>&{suite:NonNullable<ComponentProps<typeof AutoParser>['suite']>}{
   const prepared=buildAutomaticGenericStructuralDraft(raw,createDraft());
   if(!prepared)throw new Error('Expected the original corpus source to produce an explicit browser draft');
   return {
@@ -41,7 +47,8 @@ afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 
 describe('explicit parser profile compatibility at the field-review transition',()=>{
   it.each(cases)('preserves $name and provides a retryable block until its profile is advertised',async item=>{
-    let available=capabilities();
+    let available=item.profile===mixedProfile
+      ?capabilities(['syslog_prefix_kv','leef2_implicit_tab']):capabilities();
     const request=vi.fn(async(url:RequestInfo|URL,init?:RequestInit)=>{
       expect(String(url)).toBe('/api/v1/parser-pairs/capabilities');
       expect(init?.method).toBe('GET');
@@ -69,14 +76,15 @@ describe('explicit parser profile compatibility at the field-review transition',
     expect(JSON.stringify({draft:props.draft,suite:props.suite})).toBe(before);
     expect(request).toHaveBeenCalledTimes(1);
 
-    available=capabilities([item.profile]);
+    available=item.profile===mixedProfile
+      ?capabilities(['syslog_prefix_kv','leef2_implicit_tab'],true):capabilities([item.profile]);
     fireEvent.click(within(blocked).getByRole('button',{name:'Re-check parser support'}));
     expect(screen.queryByRole('alert',{name:'Parser draft not ready'})).toBeNull();
     expect(screen.getByRole('button',{name:'Review Fields'})).toBeEnabled();
     fireEvent.click(screen.getByRole('button',{name:'Review Fields'}));
     await screen.findByRole('region',{name:'Review Fields stage'});
     expect(request).toHaveBeenCalledTimes(2);
-    expect(screen.getByLabelText('Browser-only event inspector').querySelector('pre')?.textContent).toBe(item.raw);
+    expect(screen.getByLabelText('Browser-only event inspector').querySelector('pre')?.textContent).toBe(props.suite.events[0]!.raw);
     expect(JSON.stringify({draft:props.draft,suite:props.suite})).toBe(before);
     expect(props.setDraft).not.toHaveBeenCalled();
     expect(props.setSample).not.toHaveBeenCalled();

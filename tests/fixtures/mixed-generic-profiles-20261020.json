@@ -1,0 +1,7 @@
+{
+  "description": "Synthetic mixed grammar fixtures; authored source data, not manufacturer captures.",
+  "profile": "syslog_prefix_kv_leef2_implicit_tab_v1",
+  "syslog": "<134>Oct 20 08:23:59 edge01 Security event observed src=192.0.2.10 action=deny user=\"담당자 홍 길동\" note=\"  padded value  \"",
+  "leef": "LEEF:2.0|  Example Vendor  |Security Suite|1.0|web block|user=  김 민수  \tsrc=192.0.2.20\tdst=198.51.100.9\taction=blocked\tmessage=  café 東京  ",
+  "malformedLeef": "LEEF:2.0|  Example Vendor  |Security Suite|1.0|web block|user=alice\tsrc=192.0.2.20\tsrc=192.0.2.21"
+}

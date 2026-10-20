@@ -2,9 +2,11 @@
 # Emitted only for generic_structural projects; no arbitrary user code executes.
 
 def parserstudio_generic_structural(text)
+  profile = @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')
+  mixed_profile = profile == 'syslog_prefix_kv_leef2_implicit_tab_v1'
   # The selected standalone LEEF 2.0 family must not fall through to an older
   # KV route that would split header values or trim TAB-delimited field data.
-  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')=='leef2_implicit_tab' && text.start_with?('LEEF:2.0|')
+  if (profile == 'leef2_implicit_tab' || mixed_profile) && text.start_with?('LEEF:2.0|')
     result = parserstudio_generic_leef2_implicit_tab(text)
     return result if result
     raise ArgumentError, 'Unsupported generic structural event'
@@ -49,7 +51,7 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_space_kv(text)
   return result if result
-  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')=='syslog_prefix_kv'
+  if profile == 'syslog_prefix_kv' || mixed_profile
     result = parserstudio_generic_syslog_prefix_kv(text)
     return result if result
   end
