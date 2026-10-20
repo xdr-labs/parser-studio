@@ -4,6 +4,12 @@
 .auto-parser-intro .pane-index{color:#77e5d8;}
 .auto-parser-intro h1{font-size:clamp(20px,2.6vw,31px);letter-spacing:-.6px;line-height:1.25;margin:9px 0 8px;color:#f5fbfd;}
 .auto-parser-intro p{font-size:13px;line-height:1.65;max-width:690px;color:#c8e1e8;margin:9px 0 18px;}
+/* Desktop-only first-use shortcut: focus the existing raw source; do not move or rewrite its bytes. */
+.novice-log-entry-shortcut{display:inline-flex;align-items:center;justify-content:center;min-height:37px;padding:9px 15px;border:1px solid #ffb18e;border-radius:7px;background:#f05b29;color:#fff;font-size:12px;font-weight:800;cursor:pointer;}
+.novice-log-entry-shortcut:hover{background:#d94b1e;}
+.novice-log-entry-shortcut:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+@media(max-width:850px){.novice-log-entry-shortcut{display:none;}}
+
 .auto-parser-links{display:flex;gap:9px;flex-wrap:wrap;}
 .auto-parser-links button{background:#ffffff11;border:1px solid #ffffff40;color:#eaf7fc;padding:9px 13px;border-radius:7px;font-size:11px;font-weight:700;}
 .auto-parser-links button:hover{background:#ffffff25;}

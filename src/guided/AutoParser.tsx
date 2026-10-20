@@ -878,6 +878,10 @@ export default function AutoParser({
      <h1>Paste security logs. Parser Studio will guide you to a parser step by step.</h1>
      <p>You do not need to know parser formats or write code. Start with a few representative
        logs, use the main button on each screen, and Parser Studio will tell you when something needs review.</p>
+     {step===0&&!namedLogTypes&&<button type="button" className="novice-log-entry-shortcut"
+       onClick={()=>sourceLogRef.current?.focus()}>
+       Go to log input
+     </button>}
    </header>
    <nav aria-label="Auto Parser steps" className="auto-parser-steps">
      {STEPS.map((label,index)=>{
