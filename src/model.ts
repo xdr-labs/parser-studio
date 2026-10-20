@@ -1,6 +1,7 @@
 import { defaultGuidedOptions, type GuidedOptions } from './guided/contract';
 import type {EventProfileConfig} from './guided/multiEventRouting';
 import type {ForwarderConfig,ForwarderHop} from './guided/declaredForwarder';
+import type {GenericStructuralProfile} from './genericStructuralProfiles';
 
 export const FORMATS = ['auto', 'json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace', 'generic_structural', 'syslog', 'regex'] as const;
 export type Format = (typeof FORMATS)[number];
@@ -26,6 +27,8 @@ export interface ParserDraft {
   csvDelimiter?: ',' | ';' | '\t';
   /** Only for bounded RFC3164/RFC5424 headers; raw is the backward-compatible default. */
   syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';
+  /** Explicit additional Generic Structural grammar; absent keeps V15 behavior. */
+  genericStructuralProfile?: GenericStructuralProfile;
   /** Explicit supported one-line families only; no implicit fallback. */
   mixedFormats?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
   mappings: MappingRule[];

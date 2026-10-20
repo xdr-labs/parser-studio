@@ -1,0 +1,336 @@
+{
+  "positive": [
+    {
+      "name": "original authored NSS implicit TAB event",
+      "raw": "LEEF:2.0|Zscaler|NSS|1.0|web-block|\tusrName=alice\tsrc=192.0.2.6\tdst=198.51.100.4\turl=https://example.test/login\taction=blocked",
+      "header": {
+        "version": "2.0",
+        "vendor": "Zscaler",
+        "product": "NSS",
+        "product_version": "1.0",
+        "event_id": "web-block"
+      },
+      "extension": {
+        "usrName": "alice",
+        "src": "192.0.2.6",
+        "dst": "198.51.100.4",
+        "url": "https://example.test/login",
+        "action": "blocked"
+      }
+    },
+    {
+      "name": "vendor-neutral direct first extension",
+      "raw": "LEEF:2.0|Acme|Gateway|3.2|policy-review|account=reviewer\trequest=https://example.test/path?x=1&y=2\tdecision=review",
+      "header": {
+        "version": "2.0",
+        "vendor": "Acme",
+        "product": "Gateway",
+        "product_version": "3.2",
+        "event_id": "policy-review"
+      },
+      "extension": {
+        "account": "reviewer",
+        "request": "https://example.test/path?x=1&y=2",
+        "decision": "review"
+      }
+    },
+    {
+      "name": "UTF-8 header and values",
+      "raw": "LEEF:2.0|김회사|보안 Gateway|2.7|접근-검토|\tuser=김민수 🔐\tmessage=原文を保持する\tdecision=검토",
+      "header": {
+        "version": "2.0",
+        "vendor": "김회사",
+        "product": "보안 Gateway",
+        "product_version": "2.7",
+        "event_id": "접근-검토"
+      },
+      "extension": {
+        "user": "김민수 🔐",
+        "message": "原文を保持する",
+        "decision": "검토"
+      }
+    },
+    {
+      "name": "literal spaces quotes escapes and Unicode separators",
+      "raw": "LEEF:2.0| Acme Corp |Policy Agent| v3 |event-7|note=  \"literal \\t spelling\"  \tpath=C:\\Logs\\events.log\tunicode=one two three four",
+      "header": {
+        "version": "2.0",
+        "vendor": " Acme Corp ",
+        "product": "Policy Agent",
+        "product_version": " v3 ",
+        "event_id": "event-7"
+      },
+      "extension": {
+        "note": "  \"literal \\t spelling\"  ",
+        "path": "C:\\Logs\\events.log",
+        "unicode": "one two three four"
+      }
+    },
+    {
+      "name": "extension names keep separate ownership from header",
+      "raw": "LEEF:2.0|Acme|Agent|1|header-event|vendor=event-vendor\tproduct=event-product\tevent_id=payload-event\tAction=ALLOW\taction=allow",
+      "header": {
+        "version": "2.0",
+        "vendor": "Acme",
+        "product": "Agent",
+        "product_version": "1",
+        "event_id": "header-event"
+      },
+      "extension": {
+        "vendor": "event-vendor",
+        "product": "event-product",
+        "event_id": "payload-event",
+        "Action": "ALLOW",
+        "action": "allow"
+      }
+    },
+    {
+      "name": "two field minimum",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|\tfirst=one\tsecond=two",
+      "header": {
+        "version": "2.0",
+        "vendor": "Acme",
+        "product": "Agent",
+        "product_version": "1",
+        "event_id": "event"
+      },
+      "extension": {
+        "first": "one",
+        "second": "two"
+      }
+    },
+    {
+      "name": "fifty-five extension fields fill the mapping budget",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|field_00=value-0\tfield_01=value-1\tfield_02=value-2\tfield_03=value-3\tfield_04=value-4\tfield_05=value-5\tfield_06=value-6\tfield_07=value-7\tfield_08=value-8\tfield_09=value-9\tfield_10=value-10\tfield_11=value-11\tfield_12=value-12\tfield_13=value-13\tfield_14=value-14\tfield_15=value-15\tfield_16=value-16\tfield_17=value-17\tfield_18=value-18\tfield_19=value-19\tfield_20=value-20\tfield_21=value-21\tfield_22=value-22\tfield_23=value-23\tfield_24=value-24\tfield_25=value-25\tfield_26=value-26\tfield_27=value-27\tfield_28=value-28\tfield_29=value-29\tfield_30=value-30\tfield_31=value-31\tfield_32=value-32\tfield_33=value-33\tfield_34=value-34\tfield_35=value-35\tfield_36=value-36\tfield_37=value-37\tfield_38=value-38\tfield_39=value-39\tfield_40=value-40\tfield_41=value-41\tfield_42=value-42\tfield_43=value-43\tfield_44=value-44\tfield_45=value-45\tfield_46=value-46\tfield_47=value-47\tfield_48=value-48\tfield_49=value-49\tfield_50=value-50\tfield_51=value-51\tfield_52=value-52\tfield_53=value-53\tfield_54=value-54",
+      "header": {
+        "version": "2.0",
+        "vendor": "Acme",
+        "product": "Agent",
+        "product_version": "1",
+        "event_id": "event"
+      },
+      "extension": {
+        "field_00": "value-0",
+        "field_01": "value-1",
+        "field_02": "value-2",
+        "field_03": "value-3",
+        "field_04": "value-4",
+        "field_05": "value-5",
+        "field_06": "value-6",
+        "field_07": "value-7",
+        "field_08": "value-8",
+        "field_09": "value-9",
+        "field_10": "value-10",
+        "field_11": "value-11",
+        "field_12": "value-12",
+        "field_13": "value-13",
+        "field_14": "value-14",
+        "field_15": "value-15",
+        "field_16": "value-16",
+        "field_17": "value-17",
+        "field_18": "value-18",
+        "field_19": "value-19",
+        "field_20": "value-20",
+        "field_21": "value-21",
+        "field_22": "value-22",
+        "field_23": "value-23",
+        "field_24": "value-24",
+        "field_25": "value-25",
+        "field_26": "value-26",
+        "field_27": "value-27",
+        "field_28": "value-28",
+        "field_29": "value-29",
+        "field_30": "value-30",
+        "field_31": "value-31",
+        "field_32": "value-32",
+        "field_33": "value-33",
+        "field_34": "value-34",
+        "field_35": "value-35",
+        "field_36": "value-36",
+        "field_37": "value-37",
+        "field_38": "value-38",
+        "field_39": "value-39",
+        "field_40": "value-40",
+        "field_41": "value-41",
+        "field_42": "value-42",
+        "field_43": "value-43",
+        "field_44": "value-44",
+        "field_45": "value-45",
+        "field_46": "value-46",
+        "field_47": "value-47",
+        "field_48": "value-48",
+        "field_49": "value-49",
+        "field_50": "value-50",
+        "field_51": "value-51",
+        "field_52": "value-52",
+        "field_53": "value-53",
+        "field_54": "value-54"
+      }
+    },
+    {
+      "name": "UTF-8 byte limits are accepted exactly",
+      "raw": "LEEF:2.0|🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐|Agent|1|event|message=🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐\tstatus=retained",
+      "header": {
+        "version": "2.0",
+        "vendor": "🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐",
+        "product": "Agent",
+        "product_version": "1",
+        "event_id": "event"
+      },
+      "extension": {
+        "message": "🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐",
+        "status": "retained"
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "different LEEF version",
+      "raw": "LEEF:1.0|Acme|Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "explicit hexadecimal delimiter slot",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|0x09|first=one\tsecond=two"
+    },
+    {
+      "name": "explicit xHH delimiter slot",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|x09|first=one\tsecond=two"
+    },
+    {
+      "name": "explicit literal TAB delimiter slot",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|\t|first=one\tsecond=two"
+    },
+    {
+      "name": "empty explicit delimiter slot",
+      "raw": "LEEF:2.0|Acme|Agent|1|event||first=one\tsecond=two"
+    },
+    {
+      "name": "invalid explicit delimiter slot",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|invalid|first=one\tsecond=two"
+    },
+    {
+      "name": "empty vendor header",
+      "raw": "LEEF:2.0||Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "blank header field",
+      "raw": "LEEF:2.0|Acme| |1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "incomplete header",
+      "raw": "LEEF:2.0|Acme|Agent|1|first=one\tsecond=two"
+    },
+    {
+      "name": "escaped header pipe",
+      "raw": "LEEF:2.0|Acme\\|Corp|Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "literal header backslash",
+      "raw": "LEEF:2.0|Acme\\Corp|Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "header TAB",
+      "raw": "LEEF:2.0|Acme\tCorp|Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "single extension field",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|\tfirst=one"
+    },
+    {
+      "name": "empty extension",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|"
+    },
+    {
+      "name": "empty value",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=\tsecond=two"
+    },
+    {
+      "name": "duplicate extension key",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\tfirst=two"
+    },
+    {
+      "name": "two leading TABs",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|\t\tfirst=one\tsecond=two"
+    },
+    {
+      "name": "consecutive extension TABs",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\t\tsecond=two"
+    },
+    {
+      "name": "trailing TAB",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\tsecond=two\t"
+    },
+    {
+      "name": "unassigned token",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\tsecond=two\tunfinished"
+    },
+    {
+      "name": "pipe in extension value",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one|other\tsecond=two"
+    },
+    {
+      "name": "space before extension key",
+      "raw": "LEEF:2.0|Acme|Agent|1|event| first=one\tsecond=two"
+    },
+    {
+      "name": "unsafe source key",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|__proto__=one\tsecond=two"
+    },
+    {
+      "name": "unsafe constructor key",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|constructor=one\tsecond=two"
+    },
+    {
+      "name": "unsafe prototype key",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|prototype=one\tsecond=two"
+    },
+    {
+      "name": "dotted source key outside identifier subset",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|field.name=one\tsecond=two"
+    },
+    {
+      "name": "unbounded key",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk=one\tsecond=two"
+    },
+    {
+      "name": "unbounded UTF-8 header",
+      "raw": "LEEF:2.0|🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐|Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "unbounded UTF-8 value",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐🔐\tsecond=two"
+    },
+    {
+      "name": "too many extension fields",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|field_0=value-0\tfield_1=value-1\tfield_2=value-2\tfield_3=value-3\tfield_4=value-4\tfield_5=value-5\tfield_6=value-6\tfield_7=value-7\tfield_8=value-8\tfield_9=value-9\tfield_10=value-10\tfield_11=value-11\tfield_12=value-12\tfield_13=value-13\tfield_14=value-14\tfield_15=value-15\tfield_16=value-16\tfield_17=value-17\tfield_18=value-18\tfield_19=value-19\tfield_20=value-20\tfield_21=value-21\tfield_22=value-22\tfield_23=value-23\tfield_24=value-24\tfield_25=value-25\tfield_26=value-26\tfield_27=value-27\tfield_28=value-28\tfield_29=value-29\tfield_30=value-30\tfield_31=value-31\tfield_32=value-32\tfield_33=value-33\tfield_34=value-34\tfield_35=value-35\tfield_36=value-36\tfield_37=value-37\tfield_38=value-38\tfield_39=value-39\tfield_40=value-40\tfield_41=value-41\tfield_42=value-42\tfield_43=value-43\tfield_44=value-44\tfield_45=value-45\tfield_46=value-46\tfield_47=value-47\tfield_48=value-48\tfield_49=value-49\tfield_50=value-50\tfield_51=value-51\tfield_52=value-52\tfield_53=value-53\tfield_54=value-54\tfield_55=value-55"
+    },
+    {
+      "name": "over record byte limit",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|field_0=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_1=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_2=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_3=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_4=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_5=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_6=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_7=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_8=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_9=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_10=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_11=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_12=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_13=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_14=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_15=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\tfield_16=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "name": "NUL control",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\u0000\tsecond=two"
+    },
+    {
+      "name": "line feed",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\nsecond=two"
+    },
+    {
+      "name": "carriage return",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\rsecond=two"
+    },
+    {
+      "name": "DEL control",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\tsecond=two"
+    },
+    {
+      "name": "unsupported ASCII control",
+      "raw": "LEEF:2.0|Acme|Agent|1|event|first=one\u001f\tsecond=two"
+    },
+    {
+      "name": "syslog wrapper outside standalone profile",
+      "raw": "<134>Oct 19 08:00:00 fw01 LEEF:2.0|Acme|Agent|1|event|first=one\tsecond=two"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import runpy
 import unittest
 from unittest import mock
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 TEMPLATE=Path(__file__).resolve().parents[1] / "src/guided/pythonTestSenderTemplate.py"
 runtime=runpy.run_path(str(TEMPLATE))
@@ -131,7 +132,7 @@ class PythonSenderFormatTests(unittest.TestCase):
                     cells=next(csv.reader(io.StringIO(result),delimiter=delimiter,strict=True))
                     self.assertEqual(len(cells),3)
                     self.assertIn("?user=alice&srcip=",cells[index])
-                    self.assertNotIn("srcip=192.0.2.10",cells[index])
+                    self.assertNotEqual(parse_qs(urlsplit(cells[index]).query).get("srcip"),["192.0.2.10"])
                     self.assertEqual(cells[1],"gw01")
 
     def test_auto_unknown_csv_must_not_swallow_url_query(self):

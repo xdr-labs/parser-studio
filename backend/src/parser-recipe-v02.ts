@@ -23,7 +23,8 @@ export type RecipeStage=
  | {op:"split_event";boundary:"single-line"|"blank-line"}
  | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
  | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef"|"csv")[];mode:"strict_prefix"}
- | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"|"parse_generic_structural"}
+ | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"}
+ | {op:"parse_generic_structural";profile?:"syslog_prefix_kv"|"leef2_implicit_tab"}
  | {op:"parse_regex";pattern:string}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
  | MapStage | CastStage | SplitFieldStage | MergeFieldsStage | ClassifyStage
@@ -152,8 +153,11 @@ export function recipeFromLegacyProject(
   const pattern=project.extraction.pattern;
   if(validateBoundedRegexPattern(pattern)!==null)throw new Error("UNSUPPORTED_REGEX_PATTERN");
   stages.push({op:"parse_regex",pattern:pattern!});
+ }else if(fmt.body==="generic_structural"){
+  stages.push({op:"parse_generic_structural",
+    ...(project.extraction.genericStructuralProfile?{profile:project.extraction.genericStructuralProfile}:{})});
  }else stages.push({op:("parse_"+fmt.body) as
-  "parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"|"parse_generic_structural"});
+  "parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"});
  for(const stage of expectedMappings(project)){
   stages.push(stage);
   if(stage.data_type!=="string"){
@@ -223,6 +227,11 @@ export function validateRecipePair(input:unknown):ValidationResult{
       parsed.pattern!==project.extraction.pattern||
       validateBoundedRegexPattern(parsed.pattern)!==null)
      return fail("REGEX_STAGE_MISMATCH");
+  }else if(fmt.body==="generic_structural"){
+   const profile=project.extraction.genericStructuralProfile;
+   if(!parsed||parsed.op!=="parse_generic_structural"||
+     !exact(parsed,profile?["op","profile"]:["op"])||parsed.profile!==profile)
+    return fail("GENERIC_PROFILE_STAGE_MISMATCH");
   }else if(!parsed||parsed.op!=="parse_"+fmt.body||
     !exact(parsed,["op"])||!PARSERS.has(parsed.op))
    return fail("BODY_STAGE_MISMATCH");

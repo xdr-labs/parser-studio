@@ -45,32 +45,20 @@ for(const item of [
   await input.fill(item.raw);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
   const summary=page.getByLabel('Beginner analysis summary');
-  // Native parser compiler does not have a proven generic RFC5424 text MSG
-  // adapter, so even completely extracted source values require review.
-  await expect(summary).toContainText('Values found in 1 of 1 log event',{timeout:12000});
-  const problem=page.getByLabel('Parse problem inspector');
-  await expect(problem).toContainText('Fields extracted — parser rule needs review');
-  await expect(problem).toContainText('Review parser-file support for these fields');
-  await expect(problem).toContainText('does not verify native or Stellar Cyber parser compatibility');
-  await expect(problem).not.toContainText('remaining message text');
+  // The validated RFC5424 boundary now selects the existing raw MSG compiler.
+  // Source preservation remains independent of proprietary target verification.
+  await expect(summary).toContainText('1 of 1 log event parsed completely',{timeout:12000});
   await expect(input).toHaveValue(item.raw);
   const next=page.getByRole('button',{name:'Review Fields',exact:true});
-  if(await next.isEnabled()){
-   await next.click();
-   const mapping=page.getByLabel('Review Fields stage');
-   const blocked=page.getByLabel('Parser draft not ready');
-   await expect(mapping.or(blocked)).toBeVisible({timeout:14000});
-   // A compiler block must not assert an unsupported native Parser Draft.
-   if(await blocked.isVisible()){
-    await expect(blocked).toContainText('No source value was discarded');
-    await expect(blocked.getByRole('button',{name:'Use ChatGPT Assisted Parser'})).toBeVisible();
-   }
-  }else{
-   await expect(problem.getByRole('button',{name:/Fix with ChatGPT|Review with ChatGPT/})).toBeVisible();
-  }
+  await expect(next).toBeEnabled();
+  await next.click();
+  const review=page.getByLabel('Review Fields stage');
+  await expect(review).toBeVisible({timeout:14000});
+  await review.getByRole('button',{name:'Map Fields',exact:true}).click();
+  await expect(page.getByLabel('Map Fields stage')).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(api5xx).toEqual([]);
-  console.log('RFC5424_REAL_BROWSER '+JSON.stringify({case:item.id,source:source.status,authoring:'REVIEW_REQUIRED',targetVerified:false}));
+  console.log('RFC5424_REAL_BROWSER '+JSON.stringify({case:item.id,source:source.status,authoring:'DRAFT_REVIEW_READY',targetVerified:false}));
  });
 }
 test('malformed quoted RFC5424 body is not falsely declared source-complete',async({page})=>{

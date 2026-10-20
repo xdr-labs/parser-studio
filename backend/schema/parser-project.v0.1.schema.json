@@ -171,6 +171,12 @@
             "regex"
           ]
         },
+        "genericStructuralProfile": {
+          "enum": [
+            "syslog_prefix_kv",
+            "leef2_implicit_tab"
+          ]
+        },
         "mixedFormats": {
           "type": "array",
           "minItems": 2,

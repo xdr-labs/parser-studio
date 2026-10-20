@@ -64,6 +64,10 @@
 /* Beginner-first Parser Studio UX. Advanced diagnostics stay available but are not the default surface. */
 .beginner-analyze-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 16px}
 .beginner-analyze-action span{font-size:11px;color:#68808d}
+.analysis-progress,.analysis-interruption{margin:0 0 16px;padding:12px 14px;border:1px solid #dce7ec;border-radius:8px;background:#f5f9fa;color:#385866;font-size:12px;line-height:1.55}
+.analysis-progress-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.analysis-progress progress{display:block;width:100%;height:8px;margin:12px 0;accent-color:#087c78}
+.analysis-progress p{margin:6px 0 0}
 .beginner-analysis-error{border:1px solid #e0bfa0;background:#fff7ed;color:#80542e;border-radius:8px;padding:11px 13px;font-size:12px;line-height:1.55}
 .beginner-analysis{margin:16px 0 18px;display:grid;gap:13px}
 .beginner-analysis-head{display:flex;gap:12px;align-items:flex-start;padding:15px 16px;border-radius:10px;border:1px solid #d2e6e1;background:#f4fbf9}

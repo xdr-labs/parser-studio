@@ -73,6 +73,11 @@ function plainIssue(code:string,raw=''):string{
     FRAMING_TRUNCATED_CSV:'A CSV quoted field did not close. Review the original exporter quotation before assigning any columns.',
     FRAMING_CSV_BOUNDARY_LIMIT:'CSV quotation exceeded the bounded record limit. Export smaller samples or split the source manually without inventing field boundaries.',
     KV_QUOTE_UNCLOSED:'A quoted key/value field is not closed, so the rest of the event cannot be trusted as normal key/value data.',
+    STRUCTURED_HEADER_INCOMPLETE:'The structured event header is incomplete. Check its fields and separators against the exporter format before continuing.',
+    LEEF_DELIMITER_UNSUPPORTED:'The LEEF delimiter is outside the currently supported parser subset. For TAB-delimited LEEF 2.0, review the explicit |0x09| header form.',
+    LEEF_VERSION_UNSUPPORTED:'This LEEF version is outside the currently supported parser subset. Check the version in the original exporter format.',
+    LEEF_VERSION_INVALID:'The LEEF version could not be validated. Check the original header before creating parser files.',
+    LEEF_INVALID_EXTENSION_TOKEN:'A LEEF extension field does not match the expected key=value boundary. Keep the source and check the delimiter and field spelling.',
     RFC5424_SD_UNCLOSED:'A structured section in the log header is not closed correctly.',
     RFC5424_DUPLICATE_SD_KEY:'A structured section in the log header repeats the same field name.',
     RFC5424_SD_TRAILING_SPACE_NONSTANDARD:'A structured section in the log header uses unusual spacing.',
@@ -87,6 +92,13 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
   return Object.keys(preview.fields).length===0&&
     preview.residuals.some(region=>region.startByte===0&&region.endByte>=preview.sourceBytes);
 }
+function leefHeaderNeedsReview(preview:MultiPassSourcePreview,raw=''):boolean{
+  return (preview.syntax.toUpperCase().includes('LEEF')||raw.startsWith('LEEF:'))&&
+    preview.issues.some(issue=>[
+      'STRUCTURED_HEADER_INCOMPLETE','LEEF_DELIMITER_UNSUPPORTED',
+      'LEEF_VERSION_UNSUPPORTED','LEEF_VERSION_INVALID',
+    ].includes(issue));
+}
 function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
   if(preview.syntax==='ZEEK_TSV_DECLARED')return 'Zeek data row with declared columns';
   if(preview.syntax==='W3C_EFL_DECLARED')return 'W3C data row with declared columns';
@@ -95,6 +107,8 @@ function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
   if(preview.issues.some(issue=>issue.startsWith('FRAMING_')&&issue.includes('CSV')))
     return 'CSV record with quoted line breaks';
   const syntax=preview.syntax.toUpperCase();
+  if(syntax.includes('LEEF_2_IMPLICIT_TAB'))return 'LEEF event with implicit TAB delimiters';
+  if(leefHeaderNeedsReview(preview,raw))return 'LEEF header needing review';
   if(wholeEventNeedsRule(preview))return 'custom text format';
   if(prefixedJson(raw))return 'JSON with a text prefix';
   if(syntax.includes('CISCO_ASA')||syntax.includes('FTD')||syntax.includes('BSD_SYSLOG'))return 'security device message';
@@ -109,6 +123,16 @@ function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
 function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw='',needsReviewedParserRule=false):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
+  if(syntax.includes('LEEF_2_IMPLICIT_TAB'))return {
+    kind:'leef',
+    label:'Review the LEEF delimiter before creating parser files',
+    text:'The source values were extracted from an implicit TAB-delimited LEEF event. This exact event does not match the currently reviewed downloadable parser grammar. If your exporter can produce an explicit delimiter, edit a copy of the LEEF 2.0 input to place |0x09| before its TAB-separated key=value fields, then analyze that input again. Any parser files created from the edited sample target the explicit form; the original input was not changed automatically.',
+  };
+  if(leefHeaderNeedsReview(preview,raw))return {
+    kind:'leef',
+    label:'Check the LEEF header and delimiter',
+    text:'The LEEF header could not be fully read. Compare its fields and pipe separators with the exporter format. The reviewed LEEF 2.0 parser supports an explicit delimiter field, such as |0x09| before TAB-separated key=value fields. Correct the input yourself when appropriate and analyze it again; Parser Studio keeps the original text until you edit it.',
+  };
   // Extraction and parser-file readiness are independent. Never ask a
   // beginner to recover missing text when the source ledger is complete.
   if(needsReviewedParserRule&&preview.status==='SOURCE_PARSED'&&preview.residuals.length===0)return {
@@ -165,8 +189,8 @@ function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=fal
   };
   if(syntax.includes('LEEF'))return {
     kind:'leef',
-    label:'Review the remaining fields in this LEEF event',
-    text:'Parser Studio already understands the main LEEF event. Review only the remaining vendor fields that still need names.',
+    label:'Review the LEEF extension fields',
+    text:'Keep the values already found and review the highlighted extension text. Check each key=value field and its declared delimiter before creating parser files.',
   };
   if(issues.includes('CSV_GRAMMAR_INVALID'))return {
     kind:'text',
@@ -260,6 +284,10 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
   const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns),raw,parserRuleReviewRequired):null;
+  const preservedSpans=current?.event.preview.spans??[];
+  const textRecovery=Boolean(current&&!parserRuleReviewRequired&&rec&&
+    (rec.kind==='message'||rec.kind==='text'||
+      (rec.kind==='assisted'&&current.event.preview.syntax.includes('GENERIC_'))));
   const recipeImportEligible=!!rec&&rec.kind!=='metadata'&&rec.kind!=='split';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
@@ -371,6 +399,17 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
                 :<p>No trustworthy smaller range is available, so the whole event should be reviewed.</p>}
         </div>
       </div>
+      {preservedSpans.length>0&&<details className="beginner-technical-details" aria-label="Preserved source values">
+        <summary>Values already found · {preservedSpans.length}</summary>
+        <p>Review these exact values from the original event while fixing the highlighted text. Field names describe the current extraction; review their meaning before mapping them.</p>
+        <table>
+          <thead><tr><th>Source field</th><th>Value in the original log</th></tr></thead>
+          <tbody>{preservedSpans.map((span,index)=><tr key={index}>
+            <td><code>{span.path}</code></td>
+            <td><code>{span.startByte===span.endByte?'(empty value)':utf8Slice(raw,span.startByte,span.endByte)}</code></td>
+          </tr>)}</tbody>
+        </table>
+      </details>}
       {rec&&<div className="beginner-fix">
         <Wrench size={18}/><div><strong>Recommended fix · {genericStructuralPreserveEligible?'Use the extracted fields':rec.label}</strong>
           <p>{genericStructuralPreserveEligible
@@ -378,6 +417,14 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
             :rec.kind==='metadata'&&!metadataPreserveEligible
               ?'Parser Studio kept the values it found, but it cannot safely create parser files while this header or time issue remains. Correct the source information or intentionally keep the affected value as text. ChatGPT can explain the problem, but Parser Studio will not guess missing time or header details.'
               :rec.text}</p></div>
+      </div>}
+      {textRecovery&&!genericStructuralPreserveEligible&&<div className="beginner-next-step" aria-label="Text recovery steps">
+        <strong>Continue with a reviewed fix</strong>
+        <ol>
+          <li>Choose Fix with ChatGPT to prepare a prompt with this event, the values already found, and the highlighted text. Review or redact it before sharing.</li>
+          <li>Paste the proposed result into the review below. Test it against the current logs and additional examples; check that existing values stay intact.</li>
+          <li>Apply the fix only after reviewing the test results. Then continue to Review Fields, Map Fields, and Create Parser. Parser-file support is checked separately.</li>
+        </ol>
       </div>}
       <div className="beginner-fix-actions">
         {rec?.kind==='csv'&&neutralCsvColumnCount&&onUseNeutralCsvColumns&&

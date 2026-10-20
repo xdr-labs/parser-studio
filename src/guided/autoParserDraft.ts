@@ -9,6 +9,7 @@ import {suggestMappingType} from './typeSuggestions';
 import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {defaultGuidedOptions} from './contract';
 import {toBackendProject} from './backendAdapter';
+import {selectDraftFormat} from './draftFormatTransition';
 import {analyzeLogEnvelopes,type EnvelopeLedger,type CompilerAssessment}
   from './autoParserEnvelope';
 
@@ -67,7 +68,7 @@ export function prepareAutoParserDraft(
 
   const opts=draft.guided??defaultGuidedOptions();
   const next:ParserDraft={
-    ...draft,format:compiler.format,
+    ...selectDraftFormat(draft,compiler.format),
     ...(compiler.format==='mixed'?{mixedFormats:[...(compiler.mixedFormats??[])]}:{}),
     ...(['syslog_rfc3164','syslog_rfc5424'].includes(compiler.format)&&compiler.bodyFormat
       ?{syslogBodyFormat:compiler.bodyFormat}:{}),

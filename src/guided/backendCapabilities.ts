@@ -1,5 +1,6 @@
 import type { BackendParserProject } from './backendAdapter';
 import {validatePreviewRegexPattern} from '../regexSafety';
+import {GENERIC_STRUCTURAL_PROFILES,isGenericStructuralProfile,type GenericStructuralProfile} from '../genericStructuralProfiles';
 
 /** A private loopback API advertises supported authoring features, not deployment approval. */
 export interface BackendCapabilities {
@@ -9,6 +10,7 @@ export interface BackendCapabilities {
     receiverProtocols: Array<'udp' | 'tcp'>;
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'regex' | 'generic_structural'>;
     genericStructuralGrammar?: 'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15';
+    genericStructuralProfiles?: Array<GenericStructuralProfile>;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
@@ -209,6 +211,12 @@ export async function fetchBackendCapabilities(
     throw new Error('Generic Structural authoring requires the exact bounded compiler grammar.');
   if(!genericStructuralAdvertised&&a.genericStructuralGrammar!==undefined)
     throw new Error('Untrusted Generic Structural capability without parser support.');
+  if(a.genericStructuralProfiles!==undefined&&(
+    !genericStructuralAdvertised||!Array.isArray(a.genericStructuralProfiles)||
+    a.genericStructuralProfiles.length<1||a.genericStructuralProfiles.length>GENERIC_STRUCTURAL_PROFILES.length||
+    new Set(a.genericStructuralProfiles).size!==a.genericStructuralProfiles.length||
+    !a.genericStructuralProfiles.every(isGenericStructuralProfile)))
+    throw new Error('Untrusted additional Generic Structural profile capability.');
   const regexAdvertised=a.extractionFormats.includes('regex');
   const regexClaims=[a.boundedRegexNamedCaptureSubset,a.boundedRegexMaxPatternChars,
     a.boundedRegexRuntimeTimeoutMs];
@@ -327,6 +335,14 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     project.receiver.port<6800||
     cap.authoring.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V15'))
     throw new Error('Generic Structural DRAFT requires the exact bounded grammar and listener port >=6800.');
+  if(project.extraction.genericStructuralProfile!==undefined){
+    if(project.extraction.format!=='generic_structural'||
+      !isGenericStructuralProfile(project.extraction.genericStructuralProfile))
+      throw new Error('The backend does not advertise the selected Generic Structural profile.');
+    if(!cap.authoring.genericStructuralProfiles?.includes(project.extraction.genericStructuralProfile))
+      throw Object.assign(new Error('The backend does not advertise the selected Generic Structural profile.'),
+        {code:'BACKEND_PROFILE_UNSUPPORTED'});
+  }
   if(project.extraction.format==='java_stacktrace'&&(
     project.receiver.tcpFraming!=='blank_line_java'||
     project.receiver.protocols.length!==1||

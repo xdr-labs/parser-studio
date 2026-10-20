@@ -11,6 +11,7 @@ import {validateBackendProject,generateBackendPair,type GeneratedPair} from './b
 import {verifyGeneratedPair,packageGeneratedPair} from './artifactPackageClient';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
+import {selectDraftFormat} from './draftFormatTransition';
 import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
 import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
 import {checkNativeProjectVerificationAvailability,verifyNativeProject,
@@ -46,6 +47,8 @@ import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
 import DeclaredRelayProfilePanel from './DeclaredRelayProfilePanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
+import AnalysisProgressPanel from './AnalysisProgressPanel';
+import {useAnalysisRun} from './useAnalysisRun';
 import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
   forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
 
@@ -102,6 +105,7 @@ const readable:Record<string,string>={
  COLUMNS_REQUIRED:'This log has positional values without verified column names. Enter names from the product log definition for an eligible CSV stream, or use ChatGPT Assisted Parser for wrapped or mixed formats. The source fields remain intact.',
  BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
  BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
+ BACKEND_PROFILE_UNSUPPORTED:'The connected parser creation service does not support this draft\'s log structure yet. Update or restart the development backend, then choose Re-check parser support and Review Fields. Your original logs and parsed fields are preserved.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
  MODEL_REVIEW_REQUIRED:'Parser Studio found source values, but their names, types or repeated occurrences cannot be mapped to one safe parser automatically. Use a trusted log field definition or ChatGPT Assisted Parser to review those choices. No source value was discarded.',
 };
@@ -138,7 +142,6 @@ export default function AutoParser({
  const [selected,setSelected]=useState(0);
  const [multiPass,setMultiPass]=useState<MultiPassReview|null>(null);
  const [multiPassNotice,setMultiPassNotice]=useState('');
- const [multiPassBusy,setMultiPassBusy]=useState(false);
  const [multiPassEvent,setMultiPassEvent]=useState(0);
  const [selectedMultiPass,setSelectedMultiPass]=useState<MultiPassSourceSelection|null>(null);
  const [busy,setBusy]=useState(false);
@@ -186,6 +189,8 @@ export default function AutoParser({
  const [repairNotice,setRepairNotice]=useState('');
  const epoch=useRef(0);
  const identity=JSON.stringify([draft,sample,namedLogTypes]);
+ const analysisRun=useAnalysisRun(identity);
+ const multiPassBusy=analysisRun.progress!==null;
  const currentRef=useRef(identity);currentRef.current=identity;
  const report=useMemo(()=>analyzeLogEnvelopes(sample,
    (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder),
@@ -223,7 +228,7 @@ export default function AutoParser({
    setDraft(old=>{
      if(old.format!=='auto'||!javaFramedCandidate)return old;
      const opts=old.guided??defaultGuidedOptions();
-     return {...old,format:'java_stacktrace',
+     return {...selectDraftFormat(old,'java_stacktrace'),
        mappings:[
          {id:'java-class',source:'exception_class',target:'custom.exception_class',type:'string'},
          {id:'java-count',source:'frame_count',target:'custom.frame_count',type:'integer'},
@@ -302,7 +307,7 @@ export default function AutoParser({
      const mappings=zeekSuggestion.columns.split(',').map((name,index)=>({
        id:'zeek-column-'+String(index+1),source:name,target:name,type:'string' as const,
      }));
-     return {...old,format:'csv',csvColumns:zeekSuggestion.columns,
+     return {...selectDraftFormat(old,'csv'),csvColumns:zeekSuggestion.columns,
        csvDelimiter:'\t',mappings,guided:{...opts,
          groups:Object.fromEntries(mappings.map(mapping=>[mapping.id,'vendor_fields' as const])),
          classification:{defaultIndex:'Syslog',rules:[]}}};
@@ -325,15 +330,17 @@ export default function AutoParser({
    const delimiter=draft.csvDelimiter??',';
    const key=JSON.stringify([sample,names,delimiter]);
    pendingNeutralCsvApproval.current=key;
-   setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter,
-     ...(old.format==='auto'&&csvFullyReviewedSource?{format:'csv' as const}:{})}));
+   setDraft(old=>{
+     const next={...old,csvColumns:names,csvDelimiter:delimiter};
+     return old.format==='auto'&&csvFullyReviewedSource?selectDraftFormat(next,'csv'):next;
+   });
    setCsvApprovedKey(key);
  };
  const confirmCsvColumns=()=>{
    if(!csvNamesValid||!csvSelectedShapeMatchesNames)return;
    setCsvApprovedKey(csvSchemaKey);
    if(csvFullyReviewedSource&&draft.format==='auto')
-     setDraft(old=>({...old,format:'csv'}));
+     setDraft(old=>selectDraftFormat(old,'csv'));
  };
  const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -468,7 +475,12 @@ export default function AutoParser({
      });
      setFurthestStep(1);setStep(1);setSelected(0);
    }catch(error){
-     if(token===epoch.current)setMessage(backendReviewMessage(error));
+     if(token===epoch.current&&currentRef.current===expected){
+       if(error instanceof Error&&'code' in error&&error.code==='BACKEND_PROFILE_UNSUPPORTED'){
+         setReviewBlock({key:expected,reason:'BACKEND_PROFILE_UNSUPPORTED'});
+         setMessage('');
+       }else setMessage(backendReviewMessage(error));
+     }
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function generate(){
@@ -775,36 +787,41 @@ export default function AutoParser({
     return;
   }
   const original=sample;setMultiPass(null);setMultiPassEvent(0);setSelectedMultiPass(null);
-  setMultiPassNotice('');setMultiPassBusy(true);
+  setMultiPassNotice('');
+  const run=analysisRun.begin(new TextEncoder().encode(original).byteLength);
+  const options={signal:run.controller.signal,
+    onPhase:(phase:'analyzing'|'validating')=>analysisRun.setPhase(run,phase)};
   try{
    let review:MultiPassReview;
    if(original.includes('\n')||original.includes('\r')||original.includes('\0')||
       original.startsWith('\x1e')||/^[1-9][0-9]{0,5} /.test(original)){
-    const result=await requestMultiPassBatchPreview(original);
+    const result=await requestMultiPassBatchPreview(original,fetch,options);
     review={raw:original,metadataLines:result.separators.filter(item=>item.kind==='SOURCE_METADATA').length,transportFramingParts:result.separators.filter(item=>item.kind==='SOURCE_FRAMING').length,events:result.events.map(item=>({
      startByte:item.startByte,endByte:item.endByte,preview:item.preview,
     }))};
    }else{
-    const result=await requestMultiPassPreview(original);
+    const result=await requestMultiPassPreview(original,fetch,options);
     review={raw:original,events:[{
      startByte:0,endByte:new TextEncoder().encode(original).byteLength,preview:result,
     }]};
    }
-   setMultiPass(review);
+   if(!analysisRun.isCurrent(run))return;
    // Beginner mode must not stop at a second "Use extracted fields" click when
    // the deeper parser already has a complete bounded compiler grammar.
-   if(!advanced&&draft.format==='auto'&&report.unsupported>0&&
-      review.events.length>0&&review.events.every(event=>event.preview.status==='SOURCE_PARSED')){
-     const automatic=buildAutomaticGenericStructuralDraft(original,draft);
-     if(automatic){
-       setDraft(automatic.draft);
-       // The main parsed-completely summary is the single beginner status.
-       // Do not add a second success/error-looking notice for the same action.
-       setMultiPassNotice('');
-     }
+   const automatic=!advanced&&draft.format==='auto'&&report.unsupported>0&&
+     review.events.length>0&&review.events.every(event=>event.preview.status==='SOURCE_PARSED')
+     ?buildAutomaticGenericStructuralDraft(original,draft):null;
+   // Finish before a successful automatic draft adoption changes the identity.
+   analysisRun.finish(run);
+   setMultiPass(review);
+   if(automatic){
+     setDraft(automatic.draft);
+     // The main parsed-completely summary is the single beginner status.
+     setMultiPassNotice('');
    }
-  }catch{setMultiPassNotice('Deeper local analysis is unavailable right now. Your logs were not changed; continue with the normal analysis or try again later.');}
-  finally{setMultiPassBusy(false);}
+  }catch{
+   if(analysisRun.isCurrent(run))setMultiPassNotice('Deeper local analysis is unavailable right now. Your logs were not changed; continue with the normal analysis or try again later.');
+  }finally{analysisRun.finish(run);}
  }
  const multiPassDerived=useMemo(()=>{
   const review=multiPass?.raw===sample?multiPass:null;
@@ -973,6 +990,8 @@ export default function AutoParser({
          </button>
          <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
        </div>
+       <AnalysisProgressPanel progress={analysisRun.progress} interruption={analysisRun.interruption}
+         onCancel={analysisRun.cancel}/>
        <ManualSourceBoundaryReview source={sample} sourceInput={sourceLogRef}/>
        <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
        <PythonTestSenderPanel source={sample} draft={draft}/>

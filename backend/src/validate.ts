@@ -99,6 +99,9 @@ export function validateProject(input: unknown): ValidationResult {
   }
 
   const extraction = p.extraction;
+  if(extraction.genericStructuralProfile!==undefined&&extraction.format!=="generic_structural")
+    issue(issues,"generic_structural_profile","/extraction/genericStructuralProfile",
+      "A Generic Structural profile requires the Generic Structural extraction format.");
   if(extraction.format==="java_stacktrace"&&
       p.receiver.tcpFraming!=="blank_line_java")
     issue(issues,"java_blank_line_transport","/receiver/tcpFraming",

@@ -11,7 +11,7 @@ import type {EventBoundary} from './contract';
 import {inspectDeclaredForwarders,type ForwarderConfig} from './declaredForwarder';
 
 export type Envelope='none'|'rfc3164'|'rfc5424';
-export type Body='json'|'kv'|'cef'|'leef'|'csv'|'java_stacktrace'|'unknown';
+export type Body='json'|'kv'|'cef'|'leef'|'csv'|'java_stacktrace'|'raw'|'unknown';
 export type EntryStatus='RECOGNIZED'|'HEADER_MALFORMED'|'BODY_MALFORMED'|
   'BOUNDARY_AMBIGUOUS'|'TOO_LONG'|'UNKNOWN';
 export interface EnvelopeEntry{
@@ -164,7 +164,12 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
     if(/^<\d{1,3}>1\s/.test(raw)){
       const scanned=parseRfc5424Subset(raw);
       if(!scanned.ok)return {...base,envelope:'rfc5424',body:'unknown',status:'HEADER_MALFORMED'};
-      const classified=classifyBody(scanned.message??'');
+      const body=classifyBody(scanned.message??'');
+      // RFC5424 declares the MSG boundary after a strictly validated HEADER
+      // and SD section. Its optional free-form MSG has an existing raw-body
+      // compiler; malformed structured dialects must still fail closed.
+      const classified=body.status==='UNKNOWN'
+        ?{body:'raw' as const,status:'RECOGNIZED' as const}:body;
       return {...base,envelope:'rfc5424',...classified,
         timePolicy:scanned.fields.syslog_timestamp==='-'?'NO_TIMESTAMP':'EXPLICIT_TIME'};
     }

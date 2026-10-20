@@ -39,3 +39,46 @@ it('keeps metadata-only source anomalies explanation-only even when UI wording c
  expect(prompt).toContain('Do not propose a Regex merely to hide malformed source metadata.');
  expect(prompt).not.toContain('Return only one ParserRecipe v0.2 JSON object');
 });
+
+it('lists exact UTF-8 source values and duplicate occurrences for a reviewed recovery',async()=>{
+ const source='알림 [id "942100"] [id "942100"] [user "김민수 🔐"]';
+ const byte=(at:number)=>new TextEncoder().encode(source.slice(0,at)).byteLength;
+ const positions=[source.indexOf('942100'),source.lastIndexOf('942100'),source.indexOf('김민수 🔐')];
+ const values=['942100','942100','김민수 🔐'];
+ const paths=['generic_labels.id.0','generic_labels.id.1','generic_labels.user.0'];
+ const preview:MultiPassSourcePreview={
+  contract:'parser-studio.multipass-source-preview.v0.1',
+  status:'PARTIAL',syntax:'UNKNOWN+GENERIC_LABELS',
+  sourceSha256:'c'.repeat(64),sourceBytes:byte(source.length),
+  fields:{generic_labels:{id:['942100','942100'],user:['김민수 🔐']}},
+  spans:positions.map((at,index)=>({path:paths[index]!,startByte:byte(at),endByte:byte(at+values[index]!.length)})),
+  residuals:[{startByte:0,endByte:byte(positions[0]!)}],
+  issues:['NO_SUPPORTED_GRAMMAR'],nativeVerified:false,targetVerified:false,
+ };
+ const prompt=await buildBeginnerRepairPrompt({
+  fullSource:source,eventSource:source,preview,
+  recommendation:{label:'Review the remaining text',text:'Preserve the current source values.'},
+ });
+ const occurrences=prompt.split('\n').filter(line=>line.startsWith('{"sourcePath":')).map(line=>JSON.parse(line));
+ expect(occurrences).toEqual(preview.spans.map((span,index)=>({
+  sourcePath:span.path,startByte:span.startByte,endByte:span.endByte,sourceValue:values[index],
+ })));
+});
+
+it('does not invent an unresolved region when only parser-file support needs review',async()=>{
+ const source='LEEF:2.0|Acme|Agent|1.0|alert|\tusrName=alice\taction=blocked';
+ const preview:MultiPassSourcePreview={
+  contract:'parser-studio.multipass-source-preview.v0.1',
+  status:'SOURCE_PARSED',syntax:'LEEF_2_IMPLICIT_TAB',
+  sourceSha256:'d'.repeat(64),sourceBytes:new TextEncoder().encode(source).byteLength,
+  fields:{leef_extension:{usrName:'alice',action:'blocked'}},spans:[],residuals:[],issues:[],
+  nativeVerified:false,targetVerified:false,
+ };
+ const prompt=await buildBeginnerRepairPrompt({
+  fullSource:source,eventSource:source,preview,
+  recommendation:{label:'Review the delimiter',text:'Review the explicit input form before making parser files.'},
+ });
+ expect(prompt).toContain('No unresolved source region remains. Review parser-file support');
+ expect(prompt).not.toContain('No trustworthy smaller residual range is available');
+ expect(prompt).toContain(source);
+});
