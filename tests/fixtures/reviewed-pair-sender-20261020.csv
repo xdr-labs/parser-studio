@@ -1,0 +1,2 @@
+"허용","https://example.test/path?user=alice&srcip=192.0.2.10"
+"차단","https://example.test/path?user=bob&srcip=203.0.113.5"

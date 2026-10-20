@@ -1,10 +1,12 @@
 """Deterministic stdlib smoke tests for the pinned development Multi-Pass service."""
 import hashlib
 import json
+import os
 import pathlib
 import sys
 import threading
 import unittest
+from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 from urllib.request import Request, urlopen
 
@@ -39,6 +41,18 @@ class EmbeddedMultiPassServiceTests(unittest.TestCase):
         self.assertTrue(allowed_origin('http://127.0.0.1:5180'))
         self.assertFalse(allowed_origin('https://attacker.example'))
         self.assertFalse(allowed_origin('http://127.0.0.1:5180.evil.example'))
+        self.assertFalse(allowed_origin('https://app.parser.xdr.ooo'))
+        with patch.dict(os.environ, {'PARSER_STUDIO_TRUSTED_ORIGIN':'https://app.parser.xdr.ooo'}):
+            self.assertTrue(allowed_origin('https://app.parser.xdr.ooo'))
+            for hostile in ('http://app.parser.xdr.ooo',
+                            'https://app.parser.xdr.ooo.evil.example',
+                            'https://evil.example',
+                            'https://app.parser.xdr.ooo:8443',
+                            'https://app.parser.xdr.ooo/anything',
+                            'https://user@app.parser.xdr.ooo'):
+                self.assertFalse(allowed_origin(hostile))
+        with patch.dict(os.environ, {'PARSER_STUDIO_TRUSTED_ORIGIN':'http://app.parser.xdr.ooo'}):
+            self.assertFalse(allowed_origin('http://app.parser.xdr.ooo'))
 
     def test_loopback_health_contains_no_source(self):
         with ThreadingHTTPServer(('127.0.0.1', 0), Handler) as server:

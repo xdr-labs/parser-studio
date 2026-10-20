@@ -2,7 +2,7 @@ import type {MappingRule,SuiteResult} from '../model';
 import type {FieldGroup} from './contract';
 import {lookupFieldValue} from '../fieldPaths';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
-import {valueFitsNormalizationTarget} from './normalizationCandidates';
+import {valueFitsMappingType,valueFitsNormalizationTarget} from './normalizationCandidates';
 
 export type NormalizationFindingCode=
   'TARGET_COLLISION'|'TYPE_ERROR'|'SOURCE_NOT_FOUND'|'UNVERIFIED_TARGET'|
@@ -54,7 +54,13 @@ export function validateNormalizationMappings(
     for(const mapping of mappings){
       const found=lookupFieldValue(fields,mapping.source);
       if(!found.found)findings.push({code:'SOURCE_NOT_FOUND',source:mapping.source,target:mapping.target,event:i+1});
-      else if(!valueFitsNormalizationTarget(mapping.target,mapping.type,found.value))
+      else if(!(groups[mapping.id]==='vendor_fields'
+        // Vendor-local names can coincide with official Stellar names (for
+        // example qualitative severity). Apply the chosen value type, not
+        // an official field's numeric/range constraint, until the user
+        // explicitly maps that field to the official Stellar namespace.
+        ?valueFitsMappingType(mapping.type,found.value)
+        :valueFitsNormalizationTarget(mapping.target,mapping.type,found.value)))
         findings.push({code:'TYPE_ERROR',source:mapping.source,target:mapping.target,event:i+1});
     }
   }

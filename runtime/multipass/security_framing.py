@@ -12,6 +12,8 @@ from array import array
 import re
 from source_parse import SourceEvent,assert_source_accounting
 from security_source import parse_security_source
+from source_schema_stream import parse_declared_schema_stream
+from source_container_stream import parse_transport_container
 from security_envelope import extract_security_envelope
 from engine import MAX_RAW_BYTES
 from structured_source import extract_rfc3164,extract_rfc5424,extract_plain_bsd
@@ -128,6 +130,68 @@ def _json_end(raw:str,start:int)->tuple[int,str|None]:
     return len(raw),'FRAMING_TRUNCATED_JSON'
 
 
+def _quoted_csv_end(raw:str,start:int)->tuple[int,str]|None:
+    """Recognize an unambiguous, bounded *multiline* CSV record.
+
+    This is framing only, not a claim that a CSV parser or field names were
+    verified. Other formats and ordinary single-line CSV keep their routes.
+    """
+    first_line=raw[start:_line_end(raw,start)]
+    if '"' not in first_line or first_line.lstrip().startswith(
+            ('<','{','[','#','CEF:','LEEF:','@cee:')):
+        return None
+    for delimiter in (',',';','\t'):
+        first=first_line.find(delimiter)
+        quote=first_line.find('"')
+        if first<0 or quote<=first or '=' in first_line[:first]:
+            continue
+        state='start'
+        delimiters=0
+        lines=0
+        index=start
+        while index<len(raw):
+            if index-start>MAX_RAW_BYTES or lines>16:
+                return len(raw),'FRAMING_CSV_BOUNDARY_LIMIT'
+            char=raw[index]
+            if char in '\r\n':
+                if state=='quoted':
+                    if char=='\n':lines+=1
+                    index+=1
+                    continue
+                if lines>0 and delimiters>=1:
+                    return index,'FRAMING_MULTILINE_CSV_REVIEW'
+                break
+            if state=='quoted':
+                if char=='"':
+                    if index+1<len(raw) and raw[index+1]=='"':
+                        index+=2
+                        continue
+                    state='after_quote'
+            elif state=='after_quote':
+                if char==delimiter:
+                    delimiters+=1
+                    state='start'
+                elif char not in ' \t':
+                    break
+            elif char==delimiter:
+                delimiters+=1
+                state='start'
+            elif char=='"':
+                if state!='start':
+                    break
+                state='quoted'
+            elif state=='start' and char in ' \t':
+                pass
+            else:
+                state='plain'
+            index+=1
+        if lines>0 and state=='quoted' and delimiters>=1:
+            return len(raw),'FRAMING_TRUNCATED_CSV'
+        if lines>0 and state!='quoted' and index==len(raw) and delimiters>=1:
+            return len(raw),'FRAMING_MULTILINE_CSV_REVIEW'
+    return None
+
+
 def _opaque(raw:str,issue:str)->SourceEvent:
     return SourceEvent(raw=raw,issues=[issue],unparsed=[(0,len(raw))])
 
@@ -153,6 +217,27 @@ def parse_security_batch(raw:str,*,max_events:int=1000,
     offsets=array('I',[0])
     for char in raw:offsets.append(offsets[-1]+len(char.encode('utf8')))
     result=SecurityBatch(raw)
+    # Shared metadata-aware stream framing for W3C/Zeek. Never strip headers:
+    # they remain explicit, validated source partitions in the batch contract.
+    declared=parse_declared_schema_stream(raw,max_events)
+    if declared is not None:
+        for kind,start,end,event in declared:
+            if kind=='EVENT':
+                result.frames.append(SecurityFrame(raw[start:end],offsets[start],offsets[end],event))
+            else:
+                result.separators.append(Separator(offsets[start],offsets[end],kind))
+        assert_batch_accounting(result)
+        return result
+    # Transport framing is authoritative before line-oriented heuristics.
+    transport=parse_transport_container(raw,max_events,parser)
+    if transport is not None:
+        for kind,start,end,event in transport:
+            if kind=='EVENT':
+                result.frames.append(SecurityFrame(raw[start:end],offsets[start],offsets[end],event))
+            else:
+                result.separators.append(Separator(offsets[start],offsets[end],kind))
+        assert_batch_accounting(result)
+        return result
     pos=0
     if raw.startswith('\ufeff'):
         result.separators.append(Separator(0,offsets[1],'UTF8_BOM'));pos=1
@@ -171,7 +256,12 @@ def parse_security_batch(raw:str,*,max_events:int=1000,
                 if (next_pos<len(raw) and raw[next_pos] not in '\r\n'
                     and not _collection_at(raw,next_pos)):
                     end=_line_end(raw,next_pos);issue='FRAMING_JSON_TRAILING_CONTENT'
-        else:end=_line_end(raw,start)
+        else:
+            csv_frame=_quoted_csv_end(raw,start)
+            if csv_frame is not None:
+                end,issue=csv_frame
+            else:
+                end=_line_end(raw,start)
         if end<=start:raise AssertionError('SECURITY_FRAMING_NO_PROGRESS')
         if len(result.frames)==max_events-1 and raw[end:].strip(WHITESPACE):
             end=len(raw);issue='FRAMING_EVENT_LIMIT'
@@ -197,6 +287,14 @@ def assert_batch_accounting(batch:SecurityBatch)->None:
         text=data[separator.start_byte:separator.end_byte].decode('utf8')
         if separator.kind=='UTF8_BOM':
             if separator.start_byte!=0 or text!='\ufeff':raise AssertionError('INVALID_SOURCE_BOM')
+        elif separator.kind=='SOURCE_FRAMING':
+            if not (text in ('\0','\x1e','\n\n','\r\n\r\n')
+                    or (text.endswith(' ') and text[:-1].isdigit()
+                        and len(text)<8)):
+                raise AssertionError('INVALID_SOURCE_FRAMING')
+        elif separator.kind=='SOURCE_METADATA':
+            if not text.startswith('#') or text.count('\n')>1 or len(text.encode('utf8'))>MAX_RAW_BYTES:
+                raise AssertionError('INVALID_SCHEMA_SOURCE_METADATA')
         elif not text or any(c not in WHITESPACE for c in text):
             raise AssertionError('NON_WHITESPACE_SOURCE_SEPARATOR')
         partitions.append((separator.start_byte,separator.end_byte))

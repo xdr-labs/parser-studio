@@ -2,7 +2,7 @@
  * Return ONLY fixed identifiers, counts and source line numbers. Untrusted
  * source strings, diagnostic messages and field values never enter this report.
  */
-import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents} from '../parser';
+import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents,tokenizeCSV} from '../parser';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -79,20 +79,22 @@ function jsonValid(input:string):boolean{
   }catch{return false;}
 }
 function csvValid(input:string):boolean{
-  // Lexical candidate only; named columns and a delimiter need user review.
-  // Recognize semicolon, comma, and TAB without guessing column meanings.
-  for(const delimiter of [',',';','\t']){
-    let quote=false,count=0;
-    for(let i=0;i<input.length;i++){
-      const c=input[i]!;
-      if(c==='"'){
-        if(quote&&input[i+1]==='"'){i++;continue;}
-        quote=!quote;
-      }else if(c===delimiter&&!quote)count++;
-    }
-    if(!quote&&count>=2)return true;
-  }
-  return false;
+  // Candidate syntax must agree with the already qualified strict CSV lexer.
+  // Counting delimiters with quote toggles alone accepts trailing bytes after
+  // closing quotes and quotes embedded in an unquoted field. Those are not
+  // valid RFC4180-style records for the downloadable CSV parser.
+  // A successful lexer check proves grammar only; names still need review.
+  return [',',';','\t'].some(delimiter=>{
+    const fields=tokenizeCSV(input,delimiter);
+    if(fields===null)return false;
+    if(fields.length>=3)return true;
+    // With only two values, an unquoted comma can be ordinary prose.
+    // Accept just an explicitly fully quoted field pair after the shared
+    // strict lexer has validated escapes and post-quote boundaries.
+    // This establishes CSV syntax, never guessed CSV field names.
+    return fields.length===2&&input.startsWith('"')&&input.endsWith('"')&&
+      input.includes('"'+delimiter+'"');
+  });
 }
 function classifyBody(text:string):{body:Body;status:EntryStatus}{
   const value=text.trim();
@@ -108,19 +110,20 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
     return {body:'leef',status:extractStructuredFamily(value,'leef').errors.length===0?
       'RECOGNIZED':'BODY_MALFORMED'};
   }
-  // A strongly quoted CSV row can legitimately contain '=' inside URL/query
-  // fields. Recognize that bounded shape before the generic KV hint so those
-  // embedded characters cannot turn an otherwise valid CSV event into
-  // BODY_MALFORMED. Unquoted key=value records still keep KV precedence.
-  if(value.startsWith('"')&&csvValid(value)){
-    return {body:'csv',status:'RECOGNIZED'};
-  }
-  if(value.includes('=')){
-    return {body:'kv',status:kvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
-  }
+  // A full key=value record wins over incidental comma/semicolon/TAB data.
+  // But a positional CSV record may contain '=' in any field (for example,
+  // a URL query), not only when its first field happens to be quoted.
+  const hasEquals=value.includes('=');
+  if(hasEquals&&kvValid(value))return {body:'kv',status:'RECOGNIZED'};
   if(value.includes(',')||value.includes(';')||value.includes('\t')){
-    return {body:'csv',status:csvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
+    // Do not turn a malformed leading key=value record into CSV success just
+    // because its later free-form bytes contain two separators. A candidate
+    // CSV still needs the shared strict lexer and reviewed field names.
+    if(!/^[A-Za-z_][A-Za-z0-9_.-]{0,95}\s*=/.test(value)){
+      return {body:'csv',status:csvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
+    }
   }
+  if(hasEquals)return {body:'kv',status:'BODY_MALFORMED'};
   return {body:'unknown',status:'UNKNOWN'};
 }
 function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBoundary,

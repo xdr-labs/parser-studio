@@ -9,7 +9,7 @@ import {inspectReviewedEventValues} from './reviewedEventValueEvidence';
 import {HelpTip} from './BeginnerHelp';
 
 export default function ReviewedEventProfilesPanel({
-  suite,draft,setDraft,backendCapabilities,source,pending,
+  suite,draft,setDraft,backendCapabilities,source,pending,highlightNamed=false,
 }:{
   suite?:SuiteResult;
   draft:ParserDraft;
@@ -17,6 +17,7 @@ export default function ReviewedEventProfilesPanel({
   backendCapabilities?:BackendCapabilities;
   source:string;
   pending:boolean;
+  highlightNamed?:boolean;
 }){
   // Local Versions can restore a discriminator other than event_type.
   // Show the saved reviewer choice on the remounted review workspace.
@@ -26,6 +27,13 @@ export default function ReviewedEventProfilesPanel({
   const [edits,setEdits]=useState<Record<string,{target:string;type:FieldType}>>({});
   useEffect(()=>{setEdits({});setApproval(false);},[source,field]);
   const previous=useRef<{source:string;draft:ParserDraft}|null>(null);
+  const detailsRef=useRef<HTMLDetailsElement|null>(null);
+  // A beginner who explicitly entered multiple named types should see the
+  // existing conditional routing review without searching for hidden tools.
+  useEffect(()=>{
+    if(highlightNamed&&suite&&suite.counts.total>=2&&detailsRef.current)
+      detailsRef.current.open=true;
+  },[highlightNamed,suite?.counts.total]);
   const plan=useMemo(()=>planReviewedEventFamilyDraft(suite,draft,field.trim()),
     [suite,draft,field]);
   const candidate=useMemo(()=>{
@@ -68,7 +76,7 @@ export default function ReviewedEventProfilesPanel({
   };
   if(!suite||suite.counts.total<2)return null;
 
-  return <details className="auto-parser-recipe" aria-label="Configure one parser for event types">
+  return <details ref={detailsRef} className="auto-parser-recipe" aria-label="Configure one parser for event types">
     <summary>Optional: one parser for several event types
       <HelpTip label="One reviewed multi-type parser"
         text="Use this only when all events contain an explicit discriminator. Review all shared and type-specific mappings. Unknown types must be rejected, never mapped by guessing."/></summary>

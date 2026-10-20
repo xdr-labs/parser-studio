@@ -36,8 +36,10 @@ _RFC3164 = re.compile(
     rf"^(?P<pri><\d{{1,3}}>)?(?P<month>{_MONTH})"
     r"(?P<space> {1,2})(?P<day>\d{1,2}) (?P<clock>\d{2}:\d{2}:\d{2})"
 )
+# Only source-level KV separators are eligible. URL/query substrings like
+# /?user=alice&srcip=192.0.2.10 must never be treated as KV fields.
 _KV = re.compile(
-    r"(?<![\w.])(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,63})="
+    r"(?<![^\s|;,:])(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,63})="
     r"(?P<value>\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|[^\s\t;,]+)"
 )
 _EMAIL = re.compile(
@@ -189,37 +191,68 @@ def _quoted(value: str, modified: str) -> str:
     return modified
 
 
+def _fallback_identifiers(text: str) -> str:
+    # Use generic detection only in source substrings not already rewritten
+    # by an explicit key schema. Do not revisit newly generated values.
+    text = _EMAIL.sub(lambda _m: _email(), text)
+    return _IPV4.sub(lambda match: _ip(match.group(0)), text)
+
+
 def _inline_fields(source: str) -> str:
-    def replace(match: re.Match[str]) -> str:
+    parts: list[str] = []
+    cursor = 0
+    for match in _KV.finditer(source):
+        parts.append(_fallback_identifiers(source[cursor:match.start()]))
         old = match.group("value")
         inside = old[1:-1] if len(old) >= 2 and old[0] == old[-1] and old[0] in "\"'" else old
-        modified = _value_for_name(match.group("key"), inside)
-        return match.group("key") + "=" + _quoted(old, modified)
-    source = _KV.sub(replace, source)
-    source = _EMAIL.sub(lambda _m: _email(), source)
-    def ipv4(match: re.Match[str]) -> str:
-        return _ip(match.group(0))
-    source = _IPV4.sub(ipv4, source)
-    return source
+        updated = _value_for_name(match.group("key"), inside)
+        if updated == inside:
+            updated = _fallback_identifiers(inside)
+        parts.append(match.group("key") + "=" + _quoted(old, updated))
+        cursor = match.end()
+    parts.append(_fallback_identifiers(source[cursor:]))
+    return "".join(parts)
 
 
 def _csv_segments(raw: str, delimiter: str) -> list[str] | None:
+    # Match the browser's strict tokenizeCSV quote-state transitions rather
+    # than toggling quotes at arbitrary positions inside unquoted cells.
+    # The source substrings are retained exactly for unchanged fields.
+    if delimiter not in (",", ";", "\t"):
+        return None
     parts: list[str] = []
-    quoted = False
+    state = "start"
     start = 0
     index = 0
     while index < len(raw):
         char = raw[index]
-        if char == '"':
-            if quoted and index + 1 < len(raw) and raw[index + 1] == '"':
-                index += 2
-                continue
-            quoted = not quoted
-        elif char == delimiter and not quoted:
+        if state == "quoted":
+            if char == '"':
+                if index + 1 < len(raw) and raw[index + 1] == '"':
+                    index += 2
+                    continue
+                state = "after_quote"
+        elif state == "after_quote":
+            if char == delimiter:
+                parts.append(raw[start:index])
+                start = index + 1
+                state = "start"
+            elif char not in (" ",) and not (char == "\t" and delimiter != "\t"):
+                return None
+        elif char == delimiter:
             parts.append(raw[start:index])
             start = index + 1
+            state = "start"
+        elif char == '"':
+            if state != "start":
+                return None
+            state = "quoted"
+        elif state == "start" and (char == " " or (char == "\t" and delimiter != "\t")):
+            pass
+        else:
+            state = "plain"
         index += 1
-    if quoted:
+    if state == "quoted":
         return None
     parts.append(raw[start:])
     return parts
@@ -238,9 +271,10 @@ def _csv_event(source: str, columns: list[str], delimiter: str) -> str | None:
     result: list[str] = []
     for name, old, lexical in zip(columns, rows[0], segments):
         updated = _value_for_name(name, old)
-        updated = _fresh_timestamps(updated)
-        updated = _EMAIL.sub(lambda _m: _email(), updated)
-        updated = _IPV4.sub(lambda match: _ip(match.group(0)), updated)
+        if updated == old:
+            # A column-name rule already produced final values when changed.
+            # Fallback may touch only cells not updated by the explicit rule.
+            updated = _fallback_identifiers(_fresh_timestamps(updated))
         if updated == old:
             result.append(lexical)
         elif lexical.startswith('"') and lexical.endswith('"'):
@@ -269,10 +303,10 @@ def _json_event(source: str) -> str | None:
             return [walk(v, key, depth + 1) for v in value]
         if isinstance(value, str):
             transformed = _fresh_timestamps(value)
-            transformed = _value_for_name(key, transformed)
-            transformed = _EMAIL.sub(lambda _m: _email(), transformed)
-            transformed = _IPV4.sub(lambda match: _ip(match.group(0)), transformed)
-            return transformed
+            named = _value_for_name(key, transformed)
+            if named != transformed:
+                return named
+            return _fallback_identifiers(transformed)
         if isinstance(value, int) and _name(key) in _TIME_NAMES and not isinstance(value, bool):
             converted = _epoch_value(str(value))
             return int(converted) if converted != str(value) else value
@@ -287,14 +321,21 @@ def update_record(source: str, config: dict) -> str:
         parsed = _json_event(source)
         if parsed is not None:
             return parsed
-    if fmt == "csv" or (fmt in ("auto", "mixed") and
-                        "=" not in source and not source.startswith(("<", "CEF:", "LEEF:"))):
-        columns = config.get("csv_columns", [])
-        delimiter = config.get("csv_delimiter", ",")
-        if columns and delimiter in (",", ";", "\t"):
-            csv_result = _csv_event(source, columns, delimiter)
-            if csv_result is not None:
-                return csv_result
+    # In auto/mixed mode, a user-reviewed CSV schema is more reliable than a
+    # lone '=' embedded in a positional URL or quoted value. Keep explicit
+    # source-level KV assignments and CEF/LEEF/Syslog envelopes ahead of it.
+    # The strict Python CSV reader must validate the exact column count.
+    columns = config.get("csv_columns", [])
+    delimiter = config.get("csv_delimiter", ",")
+    positional = not source.lstrip().startswith(("<", "CEF:", "LEEF:", "{")) and not re.match(
+        r"^\s*[A-Za-z_][A-Za-z0-9_.-]{0,63}=", source)
+    if (fmt == "csv" or (fmt in ("auto", "mixed") and positional)) and columns and \
+            delimiter in (",", ";", "\t"):
+        csv_result = _csv_event(source, columns, delimiter)
+        if csv_result is not None:
+            return csv_result
+    if fmt == "csv":
+        return source  # No grammar-safe mutation: leave the exact raw record.
     return _inline_fields(_fresh_timestamps(source))
 
 

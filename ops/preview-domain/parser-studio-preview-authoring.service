@@ -1,0 +1,29 @@
+[Unit]
+Description=Parser Studio private preview offline authoring API
+After=network.target
+ConditionPathExists=/opt/parser-studio-preview/backend/dist/src/mainline-authoring-server.js
+
+[Service]
+Type=simple
+User=aella
+Group=aella
+WorkingDirectory=/opt/parser-studio-preview/backend
+Environment=NODE_ENV=production
+Environment=PARSER_BACKEND_PORT=4305
+ExecStart=/usr/bin/node /opt/parser-studio-preview/backend/dist/src/mainline-authoring-server.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+MemoryMax=768M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

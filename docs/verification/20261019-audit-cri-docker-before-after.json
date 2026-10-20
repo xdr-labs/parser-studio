@@ -1,0 +1,493 @@
+{
+  "contract": "parser-studio.source-container-before-after.v1",
+  "source_kind": "authored synthetic security log structures (NOT device wire)",
+  "source_count": 11,
+  "baseline_sha": "440183d5856cde630da7d647957ed4a64a91e0e0",
+  "candidate_base_sha": "440183d5856cde630da7d647957ed4a64a91e0e0",
+  "candidate_uncommitted_implementation": true,
+  "source_integrity": "same exact SHA256 in old and new, all candidate bytes accounted",
+  "normalization_semantics": "not independently certified",
+  "native_fluentd": "NOT_VERIFIED",
+  "stellar_target": "NOT_VERIFIED",
+  "rows": [
+    {
+      "id": "audit_same_serial",
+      "sha256": "d60f8227b5dcfc485c6b615c6d428e93e24f941ac4a9c36c0d6596f675fe4598",
+      "bytes": 139,
+      "before": {
+        "eventCount": 2,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV",
+          "KV"
+        ],
+        "issues": [
+          [],
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "PARTIAL"
+        ],
+        "syntax": [
+          "LINUX_AUDIT_SERIAL_GROUP"
+        ],
+        "issues": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "audit_separate_serials",
+      "sha256": "15641d096df7519725cf1a9cc858b55be15c24fb6955424484b5c6ddaff35104",
+      "bytes": 213,
+      "before": {
+        "eventCount": 3,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV",
+          "KV",
+          "KV"
+        ],
+        "issues": [
+          [],
+          [],
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "LINUX_AUDIT_SERIAL_GROUP",
+          "LINUX_AUDIT_SERIAL_GROUP"
+        ],
+        "issues": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "audit_interleaved",
+      "sha256": "17e9ab91cb8324aa2e6c72b3c7aa2d54a6e91decc7dac28b37e29325f09c189f",
+      "bytes": 213,
+      "before": {
+        "eventCount": 3,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV",
+          "KV",
+          "KV"
+        ],
+        "issues": [
+          [],
+          [],
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 3,
+        "status": [
+          "PARTIAL",
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "LINUX_AUDIT_SERIAL_GROUP",
+          "LINUX_AUDIT_SERIAL_GROUP",
+          "LINUX_AUDIT_SERIAL_GROUP"
+        ],
+        "issues": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "cri_partial_final",
+      "sha256": "e48407c56f056cf760c48cbd1db892c52cea4b516eae2771d9e7c4f80e5574f4",
+      "bytes": 77,
+      "before": {
+        "eventCount": 2,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issues": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "PARTIAL"
+        ],
+        "syntax": [
+          "CRI_PARTIAL_FINAL_GROUP"
+        ],
+        "issues": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "cri_partial_final_stderr",
+      "sha256": "388317e3919705b5a9b603354da70c14a2fe1f67420630bcf42f81e5277a9afb",
+      "bytes": 114,
+      "before": {
+        "eventCount": 3,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issues": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "CRI_PARTIAL_FINAL_GROUP",
+          "CRI_PARTIAL_FINAL_GROUP"
+        ],
+        "issues": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "cri_truncated",
+      "sha256": "40360915494c08d3d3b92ea0df28a593551289cea7f55f3c58a7ac595d9d1d13",
+      "bytes": 37,
+      "before": {
+        "eventCount": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN"
+        ],
+        "issues": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNSUPPORTED_SOURCE_CONTAINER"
+        ],
+        "issues": [
+          [
+            "FRAMING_CRI_UNTERMINATED_PARTIAL"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "cri_interleaved",
+      "sha256": "f4f2e8d50b2c01c13e0542177305cdde48f6567ed60dad30bd795846f4bfc752",
+      "bytes": 114,
+      "before": {
+        "eventCount": 3,
+        "status": [
+          "RAW_ONLY",
+          "RAW_ONLY",
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "issues": [
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ],
+          [
+            "NO_SUPPORTED_GRAMMAR"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNSUPPORTED_SOURCE_CONTAINER"
+        ],
+        "issues": [
+          [
+            "FRAMING_CRI_INTERLEAVED_STREAM"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "docker_two",
+      "sha256": "dfd1d8ecc1925a6cfb8752cad6e65f8a04c73848f752c5e681b9ff4a11811ab4",
+      "bytes": 152,
+      "before": {
+        "eventCount": 2,
+        "status": [
+          "SOURCE_PARSED",
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON",
+          "JSON"
+        ],
+        "issues": [
+          [],
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 2,
+        "status": [
+          "PARTIAL",
+          "PARTIAL"
+        ],
+        "syntax": [
+          "DOCKER_JSON_FILE",
+          "DOCKER_JSON_FILE"
+        ],
+        "issues": [
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ],
+          [
+            "FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "docker_missing_time",
+      "sha256": "54a81acd759cee6a19c4ffb9ee808504f010d95a8f17d932ddb4771e0be5ee04",
+      "bytes": 35,
+      "before": {
+        "eventCount": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issues": [
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "RAW_ONLY"
+        ],
+        "syntax": [
+          "UNSUPPORTED_SOURCE_CONTAINER"
+        ],
+        "issues": [
+          [
+            "FRAMING_DOCKER_REQUIRED_FIELDS"
+          ]
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "plain_json_control",
+      "sha256": "3328ad5babb6b45853d31053e06080ec24bbd64a9c29bca87339f58443492741",
+      "bytes": 39,
+      "before": {
+        "eventCount": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issues": [
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "JSON"
+        ],
+        "issues": [
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    },
+    {
+      "id": "plain_kv_control",
+      "sha256": "fd946c038f6258b3db3cd41e0c6f78d4faa129496efb93bd506b24a799b18623",
+      "bytes": 29,
+      "before": {
+        "eventCount": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV"
+        ],
+        "issues": [
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      },
+      "after": {
+        "eventCount": 1,
+        "status": [
+          "SOURCE_PARSED"
+        ],
+        "syntax": [
+          "KV"
+        ],
+        "issues": [
+          []
+        ],
+        "accounted": true,
+        "nativeVerified": false,
+        "targetVerified": false
+      }
+    }
+  ]
+}

@@ -19,6 +19,7 @@ interface Props {
   draft?:ParserDraft;
   suite?:SuiteResult;
   onApplyCandidate?:(draft:ParserDraft)=>void;
+  compilerBlockedReason?:string;
   resolvedByReviewedCandidate?:boolean;
   parserRuleReviewRequired?:boolean;
   parserRuleReviewEventIndexes?:number[];
@@ -46,12 +47,31 @@ function prefixedJson(raw:string):boolean{
     return !!value&&typeof value==='object'&&!Array.isArray(value);
   }catch{return false;}
 }
+function isZeekHeader(raw:string):boolean{
+  return /^#(?:separator|fields|types|path|open|close)\b/.test(raw.trimStart());
+}
+function isWindowsEventXml(raw:string):boolean{
+  return /^<Event(?:\s|>)/.test(raw.trimStart());
+}
 function plainIssue(code:string,raw=''):string{
+  if(isZeekHeader(raw))
+    return 'This is a Zeek log header describing fields, not an event. Copy the declared column names and separator before reviewing the data rows separately.';
+  if(isWindowsEventXml(raw))
+    return 'Windows Event XML is not a qualified input format. Export events as JSON before using Auto Parser; do not treat the XML as parsed.';
   if(prefixedJson(raw)&&code==='UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION')
     return 'This event contains valid JSON after a short text prefix, so its wrapper must be handled separately.';
   if(prefixedJson(raw)&&code==='SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID')
     return 'The short text prefix prevents the normal JSON path from being used even though the JSON payload itself is valid.';
   const known:Record<string,string>={
+    FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER:'Parser Studio recognized the original stream boundaries and useful values. The downloadable parser cannot yet be verified for this exact transport or container: review the values before creating a draft.',
+    FRAMING_JOURNAL_FIELD_INVALID_OR_DUPLICATE:'A system journal entry has an invalid or repeated field; it was retained for manual review.',
+    FRAMING_JOURNAL_MESSAGE_MISSING:'A journal entry lacks the expected MESSAGE field, so its completeness is not verified.',
+    SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER:'Parser Studio found the column names and values using the original declared header. This structure is not yet supported by the downloadable parser compiler. Review the fields or use ChatGPT Assisted Parser; do not treat the result as ready to deploy.',
+    SCHEMA_ROW_INVALID:'This data row does not match the declared column structure. Check its field count and quoting; the source was not discarded.',
+    SCHEMA_ROW_WITHOUT_VALID_HEADER:'The data line has no complete valid declared field header. Keep the source and review the format.',
+    FRAMING_MULTILINE_CSV_REVIEW:'Quoted CSV content crosses physical lines. Parser Studio kept the complete logical source record, but native CSV parser creation with embedded line breaks is not verified.',
+    FRAMING_TRUNCATED_CSV:'A CSV quoted field did not close. Review the original exporter quotation before assigning any columns.',
+    FRAMING_CSV_BOUNDARY_LIMIT:'CSV quotation exceeded the bounded record limit. Export smaller samples or split the source manually without inventing field boundaries.',
     KV_QUOTE_UNCLOSED:'A quoted key/value field is not closed, so the rest of the event cannot be trusted as normal key/value data.',
     RFC5424_SD_UNCLOSED:'A structured section in the log header is not closed correctly.',
     RFC5424_DUPLICATE_SD_KEY:'A structured section in the log header repeats the same field name.',
@@ -68,6 +88,12 @@ function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
     preview.residuals.some(region=>region.startByte===0&&region.endByte>=preview.sourceBytes);
 }
 function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
+  if(preview.syntax==='ZEEK_TSV_DECLARED')return 'Zeek data row with declared columns';
+  if(preview.syntax==='W3C_EFL_DECLARED')return 'W3C data row with declared columns';
+  if(isZeekHeader(raw))return 'Zeek column/header metadata';
+  if(isWindowsEventXml(raw))return 'unsupported Windows Event XML';
+  if(preview.issues.some(issue=>issue.startsWith('FRAMING_')&&issue.includes('CSV')))
+    return 'CSV record with quoted line breaks';
   const syntax=preview.syntax.toUpperCase();
   if(wholeEventNeedsRule(preview))return 'custom text format';
   if(prefixedJson(raw))return 'JSON with a text prefix';
@@ -80,9 +106,36 @@ function friendlySyntax(preview:MultiPassSourcePreview,raw=''):string{
   if(syntax.includes('KV'))return 'key/value fields';
   return 'security log structure';
 }
-function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw=''):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
+function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=false,raw='',needsReviewedParserRule=false):{kind:'metadata'|'json'|'cef'|'leef'|'csv'|'kv'|'message'|'text'|'assisted'|'split';label:string;text:string}{
   const syntax=preview.syntax.toUpperCase();
   const issues=preview.issues.join(' ').toUpperCase();
+  // Extraction and parser-file readiness are independent. Never ask a
+  // beginner to recover missing text when the source ledger is complete.
+  if(needsReviewedParserRule&&preview.status==='SOURCE_PARSED'&&preview.residuals.length===0)return {
+    kind:'assisted',
+    label:'Review parser-file support for these fields',
+    text:'The source fields were extracted, including any complete message body. No source text remains to recover. Review a supported parser rule and test it against additional log examples before creating files. A complete source preview does not verify native or Stellar Cyber parser compatibility.',
+  };
+  if(['W3C_EFL_DECLARED','ZEEK_TSV_DECLARED'].includes(preview.syntax))return {
+    kind:'assisted',
+    label:'Review the recognized columns before making parser files',
+    text:'Parser Studio matched the original header to each data row and kept the original source positions. Downloadable parser support for this original header-dependent stream is not verified. Inspect the field values or use ChatGPT Assisted Parser after redaction; do not convert the result into a certified parser automatically.',
+  };
+  if(isZeekHeader(raw))return {
+    kind:'split',
+    label:'Separate Zeek header lines from data events',
+    text:'Lines beginning #separator or #fields define the format; they are not event data. Copy field names from #fields, paste the data rows separately, choose TAB as the CSV separator, and review every column before continuing. No header line was automatically discarded.',
+  };
+  if(isWindowsEventXml(raw))return {
+    kind:'assisted',
+    label:'Export Windows Event logs as JSON',
+    text:'Parser Studio does not safely extract Windows Event XML. Export the same events as JSON, then paste them into Auto Parser. ChatGPT Assisted Parser can explain the conversion after you remove private identifiers; it cannot verify XML import here.',
+  };
+  if(issues.includes('FRAMING_MULTILINE_CSV')||issues.includes('FRAMING_TRUNCATED_CSV')||issues.includes('FRAMING_CSV_BOUNDARY_LIMIT'))return {
+    kind:'assisted',
+    label:'Review the CSV record boundary and closing quotes',
+    text:'The log record contains a quoted line break or unfinished quote. Its bytes were preserved but the native DRAFT compiler does not support this multi-line CSV input. Export one event per line or correct the quoting, then re-analyze before entering field names.',
+  };
   if(wholeEventNeedsRule(preview))return {
     kind:'text',
     label:'Create a rule for this text format',
@@ -156,7 +209,7 @@ function recommendation(preview:MultiPassSourcePreview,canUseNeutralCsvNames=fal
 function metadataOnlyReview(preview:MultiPassSourcePreview):boolean{
   const issues=preview.issues.join(' ').toUpperCase();
   return preview.residuals.length===0&&
-    (issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
+    (issues.includes('SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER')||issues.includes('SOURCE_TIMESTAMP_INVALID')||issues.includes('RFC5424_TIMESTAMP_INVALID')||issues.includes('RFC5424_DUPLICATE_SD_KEY')||
      issues.includes('RFC5424_SD_TRAILING_SPACE_NONSTANDARD'));
 }
 function problemTitle(preview:MultiPassSourcePreview):string{
@@ -182,7 +235,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 }
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
-  resolvedByReviewedCandidate=false,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
+  resolvedByReviewedCandidate=false,compilerBlockedReason,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
   csvReviewRequired=false,csvConsistentShapeAvailable=true,neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
   protectedResidualTextByEvent}:Props){
   const [selected,setSelected]=useState(0);
@@ -191,6 +244,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const [promptBusy,setPromptBusy]=useState(false);
   const [copyStatus,setCopyStatus]=useState('');
   const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
+  const multilineCsvNeedsReview=events.some(event=>event.preview.issues.some(
+    code=>code.startsWith('FRAMING_')&&code.includes('CSV')));
   const csvReviewPending=Boolean(csvReviewRequired&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
   const parsed=resolvedByReviewedCandidate?events.length:parserRuleReviewRequired?0:sourceParsed;
   const ruleReviewProblems=parserRuleReviewRequired&&events.length
@@ -204,7 +259,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     :events.map((event,index)=>({event,index})).filter(x=>x.event.preview.status!=='SOURCE_PARSED');
   const current=problems[selected]??problems[0]??null;
   const raw=current?eventRaw(source,current.event):'';
-  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns),raw):null;
+  const rec=current?recommendation(current.event.preview,Boolean(neutralCsvColumnCount&&onUseNeutralCsvColumns),raw,parserRuleReviewRequired):null;
   const recipeImportEligible=!!rec&&rec.kind!=='metadata'&&rec.kind!=='split';
   const metadataPreserveEligible=Boolean(current&&rec?.kind==='metadata'&&draft&&onApplyCandidate&&
     current.event.preview.syntax.toUpperCase().includes('SECURITY_SYSLOG_BRACKET_COLON_KV'));
@@ -249,13 +304,17 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
     }catch{setCopyStatus('Copy was blocked by the browser. Select the prompt text and copy it manually.');}
   };
   return <section className="beginner-analysis" aria-label="Beginner analysis summary">
-    <div className={"beginner-analysis-head "+(problems.length||csvReviewPending?'needs-attention':'complete')}>
-      {problems.length||csvReviewPending?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
+    <div className={"beginner-analysis-head "+(problems.length||csvReviewPending||compilerBlockedReason?'needs-attention':'complete')}>
+      {problems.length||csvReviewPending||compilerBlockedReason?<TriangleAlert size={22}/>:<CheckCircle2 size={22}/>}
       <div>
-        <strong>{csvReviewPending||parserRuleReviewRequired
+        <strong>{compilerBlockedReason
+          ?`Source values found in ${sourceParsed} of ${events.length} events — downloadable parser not ready`
+          :csvReviewPending||parserRuleReviewRequired
           ?`Values found in ${sourceParsed} of ${events.length} log event${events.length===1?'':'s'}`
           :`${parsed} of ${events.length} log event${events.length===1?'':'s'} parsed completely`}</strong>
-        <p>{resolvedByReviewedCandidate
+        <p>{compilerBlockedReason
+          ?'Original values were extracted, but a verified downloadable parser cannot be prepared for this shape yet. See the recovery instructions below; no source was dropped.'
+          :resolvedByReviewedCandidate
           ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
           :csvReviewPending
           ?!csvConsistentShapeAvailable
@@ -264,27 +323,30 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
               ?'Parser Studio extracted every source value, but this positional CSV does not contain trustworthy field names. Keep temporary names or enter your own before continuing.'
               :'Parser Studio extracted the source values, but this positional CSV still needs a matching separator plus column names before continuing.'
           :parserRuleReviewRequired
-          ?'Parser Studio found the values, but it needs one more parsing step for this log shape before it can create files. The values already found will be kept.'
+          ?'All original values were extracted, but parser-file creation still needs a reviewed rule for this log shape. No source data was discarded.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
-          :'No unresolved source region was found. Continue to review field meanings and create the parser draft.'}</p>
+          :'No unresolved source region was found. Source extraction is complete; parser-file support will be checked separately when you continue.'}</p>
+        {multilineCsvNeedsReview&&<p role="note" aria-label="Multiline CSV recovery">
+          Quoted CSV data spans multiple physical lines. The source record was kept intact, but this input is not approved for native parser generation. Choose the affected event below to see how to export a safe one-event-per-line sample.
+        </p>}
       </div>
     </div>
     {current&&<div className="beginner-problem" aria-label="Parse problem inspector">
       {problems.length>1&&<label>Problem to review
         <select aria-label="Problem event" value={selected} onChange={e=>{setSelected(Number(e.target.value));setPromptOpen(false);setPromptText('');setCopyStatus('');}}>
-          {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {parserRuleReviewRequired?'One parsing step needs review':problemTitle(item.event.preview)}</option>)}
+          {problems.map((item,i)=><option key={item.index} value={i}>Event {item.index+1} · {parserRuleReviewRequired?'Parser rule needs review':problemTitle(item.event.preview)}</option>)}
         </select>
       </label>}
       <h3>{parserRuleReviewRequired
-        ?'Fields found — one more parsing step is needed'
+        ?'Fields extracted — parser rule needs review'
         :problemTitle(current.event.preview)}</h3>
       <p>{parserRuleReviewRequired
-        ?<>Parser Studio found the values in this <b>{friendlySyntax(current.event.preview,raw)}</b>, but it needs one more parsing step before it can create the parser files.</>
+        ?<>Parser Studio extracted the values in this <b>{friendlySyntax(current.event.preview,raw)}</b>. A reviewed parser rule is still required to create files; source extraction alone does not verify compatibility.</>
         :<>Parser Studio recognized <b>{friendlySyntax(current.event.preview,raw)}</b>, but it will not let you continue until the remaining review is resolved.</>}</p>
       <div className="beginner-problem-source">
         <span>Original event {current.index+1} · {parserRuleReviewRequired
-          ?'one parsing step needs review'
+          ?'parser-file rule needs review'
           :metadataOnlyReview(current.event.preview)
             ?'time/header warning · all source text kept'
             :'highlighted text needs attention'}</span>
@@ -294,14 +356,14 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
       <div className="beginner-problem-details">
         <div><strong>What needs attention</strong>
           {parserRuleReviewRequired
-            ?<p>The field values are already available. Parser Studio needs one more parsing step for this message shape before it can create the files.</p>
+            ?<p>The source field values are available. Parser Studio has not yet validated a downloadable parser rule for this log shape.</p>
             :current.event.preview.issues.length
               ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code,raw)}</li>)}</ul>
               :<p>Parser Studio could not produce a complete trustworthy field set for this event.</p>}
         </div>
         <div><strong>{parserRuleReviewRequired?'What Parser Studio still needs':metadataOnlyReview(current.event.preview)?'Time or header review':'Text not yet assigned to fields'}</strong>
           {parserRuleReviewRequired
-            ?<p>No source text is missing. Add one parsing step for this message shape, then test it against additional examples.</p>
+            ?<p>No source text is missing. Review a supported parser rule and test it against additional examples before creating parser files.</p>
             :current.event.preview.residuals.length
               ?current.event.preview.residuals.map((region,i)=><code key={i}>{utf8Slice(raw,region.startByte,region.endByte)}</code>)
               :metadataOnlyReview(current.event.preview)

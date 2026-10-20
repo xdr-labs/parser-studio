@@ -20,11 +20,11 @@ test('source extraction success is not falsely called parser-ready when the DRAF
 
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('Values found in 1 of 1 log event');
- await expect(summary).toContainText('one more parsing step for this log shape before it can create files');
+ await expect(summary).toContainText('parser-file creation still needs a reviewed rule for this log shape');
  const problem=page.getByLabel('Parse problem inspector');
- await expect(problem).toContainText('Fields found — one more parsing step is needed');
+ await expect(problem).toContainText('Fields extracted — parser rule needs review');
  await expect(problem).toContainText('No source text is missing');
- await expect(problem).toContainText('Recommended fix · Create a rule for the remaining message text');
+ await expect(problem).toContainText('Recommended fix · Review parser-file support for these fields');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
 
  await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();

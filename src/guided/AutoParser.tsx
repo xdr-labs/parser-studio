@@ -28,6 +28,7 @@ import {defaultGuidedOptions} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {parserIdentitySlug} from './parserIdentity';
+import {inspectZeekReview} from './zeekReview';
 
 
 import AutoParserAIReview from './AutoParserAIReview';
@@ -38,6 +39,10 @@ import PythonTestSenderPanel from './PythonTestSenderPanel';
 import ManualSourceBoundaryReview from './ManualSourceBoundaryReview';
 import SampleUnionReview from './SampleUnionReview';
 import ReviewedEventProfilesPanel from './ReviewedEventProfilesPanel';
+import NamedLogTypesPanel from './NamedLogTypesPanel';
+import NamedLogTypeReview from './NamedLogTypeReview';
+import {analyzeNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
+import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
 import DeclaredRelayProfilePanel from './DeclaredRelayProfilePanel';
 import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
@@ -52,6 +57,10 @@ interface Props {
  draft:ParserDraft;
  setDraft:Dispatch<SetStateAction<ParserDraft>>;
  sample:string;setSample:(text:string)=>void;
+ namedLogTypes:NamedLogType[]|null;
+ onEnableNamedLogTypes:()=>void;
+ onChangeNamedLogTypes:(groups:NamedLogType[])=>void;
+ onExitNamedLogTypes:()=>void;
  datasetName:string;setDatasetName:(name:string)=>void;
  suite?:SuiteResult;pending:boolean;
  runPreview:(candidate:ParserDraft,raw?:string)=>Promise<SuiteResult>;
@@ -75,7 +84,7 @@ type ParserSetOrigin={
 };
 type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
  report?:NativeProjectVerificationReport;message:string};
-type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>};
+type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>;metadataLines?:number;transportFramingParts?:number};
 function download(filename:string,content:string|ArrayBuffer,binary=false){
  const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
  const url=URL.createObjectURL(object);
@@ -89,11 +98,12 @@ const readable:Record<string,string>={
  MIXED_OR_UNKNOWN:'The sample contains an unsupported family combination, malformed, or unrecognized events. Only explicitly allowed one-line JSON/KV/CEF/LEEF can share a parser; no log line will be discarded.',
  BOUNDARY_REVIEW:'The record boundaries are ambiguous. Review explicit event framing or use ChatGPT Assisted Parser.',
  COMPILER_UNSUPPORTED:'Parser Studio can read this log, but it cannot safely create parser files for this structure yet. Review the detected fields or use ChatGPT Assisted Parser.',
- COLUMNS_REQUIRED:'These positional values need field names before parser files can be created. Keep temporary names if you do not know the meanings yet.',
+ ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER:'These original stream or container boundaries are available for source inspection, but the downloadable parser does not yet support this exact transport format. Your original logs were preserved. Review them or use ChatGPT Assisted Parser.',
+ COLUMNS_REQUIRED:'This log has positional values without verified column names. Enter names from the product log definition for an eligible CSV stream, or use ChatGPT Assisted Parser for wrapped or mixed formats. The source fields remain intact.',
  BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
  BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
- MODEL_REVIEW_REQUIRED:'Review the detected field mappings on this screen before generating.',
+ MODEL_REVIEW_REQUIRED:'Parser Studio found source values, but their names, types or repeated occurrences cannot be mapped to one safe parser automatically. Use a trusted log field definition or ChatGPT Assisted Parser to review those choices. No source value was discarded.',
 };
 function statusMessage(reason:string){return readable[reason]??'Try the other supported method, ChatGPT Assisted Parser.';}
 function friendlyEventStatus(status:string){
@@ -116,9 +126,12 @@ function backendReviewMessage(error:unknown){
 }
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
- runPreview,onChatGPT,advanced,
+ runPreview,onChatGPT,advanced,namedLogTypes,onEnableNamedLogTypes,
+ onChangeNamedLogTypes,onExitNamedLogTypes,
 }:Props){
  const sourceLogRef=useRef<HTMLTextAreaElement|null>(null);
+ const [zeekOrigin,setZeekOrigin]=useState<{source:string;draft:ParserDraft;datasetName:string;dataRows:string}|null>(null);
+ const zeekSuggestion=useMemo(()=>inspectZeekReview(sample),[sample]);
  const [step,setStep]=useState<0|1|2|3>(0);
  const [furthestStep,setFurthestStep]=useState<0|1|2|3>(0);
  const [navigationHint,setNavigationHint]=useState('');
@@ -130,6 +143,7 @@ export default function AutoParser({
  const [selectedMultiPass,setSelectedMultiPass]=useState<MultiPassSourceSelection|null>(null);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
+ const [reviewBlock,setReviewBlock]=useState<{key:string;reason:string}|null>(null);
  const [reviewed,setReviewed]=useState<{source:string;mappingCount:number;requiresApproval:boolean}|null>(null);
  const [capability,setCapability]=useState<{source:string;value:BackendCapabilities}|null>(null);
  const [csvApprovedKey,setCsvApprovedKey]=useState('');
@@ -171,7 +185,7 @@ export default function AutoParser({
    comparison:CandidateComparison;source:string;target:string}|null>(null);
  const [repairNotice,setRepairNotice]=useState('');
  const epoch=useRef(0);
- const identity=JSON.stringify([draft,sample]);
+ const identity=JSON.stringify([draft,sample,namedLogTypes]);
  const currentRef=useRef(identity);currentRef.current=identity;
  const report=useMemo(()=>analyzeLogEnvelopes(sample,
    (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder),
@@ -184,9 +198,12 @@ export default function AutoParser({
    setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
    setSaveAfterApproval(false);
-   setBusy(false);setMessage('');
+   setBusy(false);setMessage('');setReviewBlock(null);
  },[identity]);
  useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
+ // Changing type names or group membership revokes previously reviewed
+ // parser routes even when the concatenated source is byte-identical.
+ useEffect(()=>{setReviewed(null);setStep(0);setFurthestStep(0);},[namedLogTypes]);
  // A local suggestion only: explicit source-framing confirmation is required.
  // Never promote arbitrary newline grouping or silently rewrite edited mappings.
  const javaFramedCandidate=useMemo(()=>{
@@ -257,6 +274,16 @@ export default function AutoParser({
    inferConsistentCsvColumnCount(csvReviewSample,draft.csvDelimiter??','):null;
  const csvSelectedShapeMatchesNames=Boolean(neutralCsvColumnCount&&
    csvColumns.length===neutralCsvColumnCount);
+ // Exactly two fully quoted columns have strong source grammar but the
+ // generic auto preview cannot assign positional meaning on its own.
+ // Once the user reviews both column names, use the existing CSV extractor.
+ // Wider CSV records retain their proven Auto Parser mapping workflow.
+ // This does NOT approve mixed/ambiguous rows, forge column semantics, or
+ // skip the subsequent mapping/compiler review.
+ const csvFullyReviewedSource=neutralCsvColumnCount===2&&
+   report.complete&&report.unsupported===0&&
+   report.families.length===1&&report.families[0]?.envelope==='none'&&
+   report.families[0]?.body==='csv';
  const formatCsvEventNumbers=(numbers:number[]):string=>{
    const ranges:string[]=[];let start=numbers[0],end=numbers[0];
    for(const value of numbers.slice(1)){
@@ -267,6 +294,30 @@ export default function AutoParser({
    if(start!==undefined&&end!==undefined)ranges.push(start===end?String(start):start+'–'+end);
    return ranges.join(', ');
  };
+ const prepareZeekRows=()=>{
+   if(!zeekSuggestion)return;
+   setZeekOrigin({source:sample,draft,datasetName,dataRows:zeekSuggestion.dataRows});
+   setDraft(old=>{
+     const opts=old.guided??defaultGuidedOptions();
+     const mappings=zeekSuggestion.columns.split(',').map((name,index)=>({
+       id:'zeek-column-'+String(index+1),source:name,target:name,type:'string' as const,
+     }));
+     return {...old,format:'csv',csvColumns:zeekSuggestion.columns,
+       csvDelimiter:'\t',mappings,guided:{...opts,
+         groups:Object.fromEntries(mappings.map(mapping=>[mapping.id,'vendor_fields' as const])),
+         classification:{defaultIndex:'Syslog',rules:[]}}};
+   });
+   setSample(zeekSuggestion.dataRows);
+   setDatasetName('Zeek data rows · Header saved for in-session restore');
+   setSelected(0);
+ };
+ const restoreZeekRows=()=>{
+   if(!zeekOrigin)return;
+   setDraft(zeekOrigin.draft);
+   setSample(zeekOrigin.source);
+   setDatasetName(zeekOrigin.datasetName);
+   setZeekOrigin(null);
+ };
  const suggestNeutralCsvColumns=()=>{
    if(!neutralCsvColumnCount)return;
    const names=Array.from({length:neutralCsvColumnCount},
@@ -274,8 +325,15 @@ export default function AutoParser({
    const delimiter=draft.csvDelimiter??',';
    const key=JSON.stringify([sample,names,delimiter]);
    pendingNeutralCsvApproval.current=key;
-   setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter}));
+   setDraft(old=>({...old,csvColumns:names,csvDelimiter:delimiter,
+     ...(old.format==='auto'&&csvFullyReviewedSource?{format:'csv' as const}:{})}));
    setCsvApprovedKey(key);
+ };
+ const confirmCsvColumns=()=>{
+   if(!csvNamesValid||!csvSelectedShapeMatchesNames)return;
+   setCsvApprovedKey(csvSchemaKey);
+   if(csvFullyReviewedSource&&draft.format==='auto')
+     setDraft(old=>({...old,format:'csv'}));
  };
  const localAssessment=assessEnvelopeCompilation(report,
    capability?.source===sample?capability.value:null);
@@ -288,6 +346,15 @@ export default function AutoParser({
      nativeVerified:false as const,targetVerified:false as const,
    }:localAssessment;
  const currentReview=reviewed?.source===sample?reviewed:null;
+ const namedLogValidation=namedLogTypes?validateNamedLogs(namedLogTypes):null;
+ const namedAnalysis=useMemo(()=>namedLogTypes&&multiPass?.raw===sample?
+   analyzeNamedLogs(namedLogTypes,multiPass.events):null,
+   [namedLogTypes,multiPass,sample]);
+ const namedLogReady=!namedLogTypes||(namedLogValidation?.ok===true&&
+   namedAnalysis!==null&&namedAnalysis.unassigned===0&&
+   namedAnalysis.groups.every(group=>group.events>0&&!group.boundaryWarning));
+ const originalContainerGate=useMemo(()=>originalContainerCompilerGate(
+   sample,multiPass?.raw===sample?multiPass:null),[sample,multiPass]);
  function navigateToStep(target:0|1|2|3){
    if(target===0){setNavigationHint('');setStep(0);return;}
    if(!currentReview){
@@ -343,14 +410,17 @@ export default function AutoParser({
    try{assertBackendProjectSupported(explicitBackendProject.project,capability.value);return true;}
    catch{return false;}
  },[browserSuiteComplete,explicitBackendProject,capability,sample]);
+ const currentReviewBlock=reviewBlock?.key===identity?reviewBlock:null;
  const canReview=Boolean(sample.trim())&&!pending&&!!suite&&
-   report.complete&&report.sourceCount>0&&!busy&&csvApproved&&
-   (advanced||beginnerResolved);
- const canGenerate=step===3&&!!currentReview&&!!suite&&!pending&&
+   report.complete&&report.sourceCount>0&&!busy&&!currentReviewBlock&&
+   csvApproved&&(advanced||beginnerResolved)&&namedLogReady;
+ const canGenerate=step===3&&!originalContainerGate&&namedLogReady&&
+   !!currentReview&&!currentReviewBlock&&!!suite&&!pending&&
    !busy&&(assessment.status==='DRAFT_COMPILABLE'||explicitDraftCompilable);
  const confirmed=()=>{
    const record=suite;
-   return !!record && record.engine==='browser-preview'&&
+   return !originalContainerGate&&namedLogReady&&!!record &&
+     record.engine==='browser-preview'&&
      record.nativeFluentdVerified===false&&record.stellarExportVerified===false&&
      record.counts.total>0&&record.counts.total===report.sourceCount&&
      record.counts.matched===record.counts.total&&
@@ -360,6 +430,14 @@ export default function AutoParser({
  };
  async function review(){
    if(!canReview||!suite)return;
+   if(originalContainerGate){
+     // A browser JSON match is not evidence that the downloadable parser
+     // supports the original Audit/CRI/Docker/schema/transport wrapper.
+     // Advanced Tools must obey the same source-to-compiler trust boundary.
+     setMessage('');
+     setReviewBlock({key:identity,reason:'ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER'});
+     return;
+   }
    const token=++epoch.current, expected=identity;
    setBusy(true);setMessage('');setEvidence(null);setPair(null);
    try{
@@ -383,7 +461,7 @@ export default function AutoParser({
         bodyFormat:null,nativeVerified:false as const,targetVerified:false as const}:
        baseline;
      const next=prepareAutoParserDraft(sample,draft,suite,report,compiler);
-     if(!next.ok){setMessage(statusMessage(next.reason));return;}
+     if(!next.ok){setReviewBlock({key:expected,reason:next.reason});setMessage('');return;}
      setDraft(next.draft);setReviewed({
        source:sample,mappingCount:next.automaticMappingCount,
        requiresApproval:next.requiresApproval,
@@ -692,13 +770,18 @@ export default function AutoParser({
  }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
+  if(namedLogValidation&&!namedLogValidation.ok){
+    setMultiPassNotice('Every log type needs a unique name and at least one sample before analysis.');
+    return;
+  }
   const original=sample;setMultiPass(null);setMultiPassEvent(0);setSelectedMultiPass(null);
   setMultiPassNotice('');setMultiPassBusy(true);
   try{
    let review:MultiPassReview;
-   if(original.includes('\n')||original.includes('\r')){
+   if(original.includes('\n')||original.includes('\r')||original.includes('\0')||
+      original.startsWith('\x1e')||/^[1-9][0-9]{0,5} /.test(original)){
     const result=await requestMultiPassBatchPreview(original);
-    review={raw:original,events:result.events.map(item=>({
+    review={raw:original,metadataLines:result.separators.filter(item=>item.kind==='SOURCE_METADATA').length,transportFramingParts:result.separators.filter(item=>item.kind==='SOURCE_FRAMING').length,events:result.events.map(item=>({
      startByte:item.startByte,endByte:item.endByte,preview:item.preview,
     }))};
    }else{
@@ -832,6 +915,11 @@ export default function AutoParser({
        </StageGuide>
        <p>Paste or upload a few representative security events. Parser Studio will try to identify
          the structure and fields for you. Nothing changes until you press <b>Analyze Logs</b>.</p>
+       <small>For exact original line endings and UTF-8 byte locations, upload the source file. Pasting into a browser text box can normalize CRLF to LF.</small>
+       <NamedLogTypesPanel groups={namedLogTypes}
+         onEnable={onEnableNamedLogTypes} onChange={onChangeNamedLogTypes}
+         onExit={onExitNamedLogTypes} analysis={namedAnalysis??undefined}/>
+       {!namedLogTypes&&<>
        <div className="auto-parser-source-toolbar">
          <label>Upload a log file <HelpTip label="Upload a log file"
            text="Optional. Use this instead of paste when you already have a small text, log, JSON, or CSV sample. The file is read into this browser session."/>
@@ -852,13 +940,32 @@ export default function AutoParser({
            Return to all {parserSetOrigin.sourceCount} logs
          </button>
        </div>}
+       {zeekSuggestion&&<div className="auto-parser-note beginner-essential-note" aria-label="Zeek schema preparation">
+         <strong>Zeek field names found — {zeekSuggestion.recordCount} data events</strong>
+         <p>{zeekSuggestion.metadataCount} lines beginning with # describe the log format, not separate security events.
+           The remaining {zeekSuggestion.recordCount} tab-separated rows have consistent columns.
+           You can explicitly separate them and fill the field names, then click Analyze Logs again.</p>
+         <p>Dots in Zeek column names become underscores for safe CSV field names.
+           All data row values remain unchanged. Original header lines stay in browser memory
+           for the Restore action until you leave this page. Save a Local Version if you need a lasting copy.</p>
+         <button type="button" onClick={prepareZeekRows}>Prepare Zeek data rows and field names</button>
+       </div>}
+       {zeekOrigin&&<div className="auto-parser-note beginner-essential-note" aria-label="Prepared Zeek source context">
+         <strong>Working with Zeek data rows only</strong>
+         <p>The original sample with its # header lines is preserved in this page.
+           Review the TAB column names, analyze again, and confirm mappings before creating a DRAFT.
+           You can restore the full original source now; closing the page clears this temporary copy.</p>
+         <button type="button" onClick={restoreZeekRows}>Restore original Zeek sample</button>
+       </div>}
        <textarea ref={sourceLogRef} spellCheck={false} rows={10} aria-label="Auto Parser raw logs"
          placeholder="Paste representative raw log events here. Parser Studio will detect the structure for you."
          value={sample} onChange={e=>{const value=e.target.value;
            if(parserSetOriginRef.current?.groupSource!==value){
              parserSetOriginRef.current=null;setParserSetOrigin(null);
            }
+           if(zeekOrigin?.dataRows!==value)setZeekOrigin(null);
            setSample(value);setDatasetName('Pasted logs · Browser session only');setSelected(0);}}/>
+       </>}
        <div className="beginner-analyze-action">
          <button type="button" className="auto-parser-primary" disabled={!sample.trim()||multiPassBusy}
            onClick={()=>void previewMultiPass()}>
@@ -876,6 +983,7 @@ export default function AutoParser({
          events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
          draft={draft} suite={suite} onApplyCandidate={setDraft}
          resolvedByReviewedCandidate={reviewedCandidateComplete||neutralCsvComplete}
+         compilerBlockedReason={currentReviewBlock?.reason}
          parserRuleReviewRequired={parserRuleReviewRequired}
          parserRuleReviewEventIndexes={parserRuleReviewEventIndexes}
          csvReviewRequired={csvReviewActive&&!csvApproved}
@@ -920,7 +1028,9 @@ export default function AutoParser({
          </button>
          <small>This checks only the sample on this development server. It does not deploy anything or prove that final parser files work on a live Stellar system.</small>
          {multiPassNotice&&<p role="status">{multiPassNotice}</p>}
-         {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Detailed event accounting">
+         {currentMultiPassReview&&Boolean(currentMultiPassReview.transportFramingParts)&&<p className="auto-parser-note" role="status">Parser Studio kept {currentMultiPassReview.transportFramingParts} original transport boundaries or journal-entry separators. The original event count and source bytes are preserved. This transport framing is not yet verified for downloadable parser execution.</p>}
+       {currentMultiPassReview&&currentMultiPassReview.metadataLines!==undefined&&currentMultiPassReview.metadataLines>0&&<p className="auto-parser-note" role="status">Parser Studio kept {currentMultiPassReview.metadataLines} original schema/header lines as source metadata, not data events. The parsed field values are available for review; creating a downloadable parser for this exact header-dependent input is not yet verified.</p>}
+       {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Detailed event accounting">
            <strong>{currentMultiPassReview.events.length} event{currentMultiPassReview.events.length===1?'':'s'} checked without dropping source text</strong>
            <span>{currentMultiPassCounts.SOURCE_PARSED??0} fields found · {currentMultiPassCounts.PARTIAL??0} need review · {currentMultiPassCounts.RAW_ONLY??0} not yet understood · {currentMultiPassCounts.STRUCTURED_EMPTY??0} structure only</span>
            <span>Diagnostic check only · final parser files are tested later</span>
@@ -1014,7 +1124,7 @@ export default function AutoParser({
        {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
          <strong>{report.accounted}/{report.sourceCount} events checked</strong>
          <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally</span>
-         <span>{report.unsupported} event{report.unsupported===1?'':'s'} need attention · Local analysis only</span>
+         <span>{report.unsupported} event{report.unsupported===1?'':'s'} {report.unsupported===1?'needs':'need'} attention · Local analysis only</span>
          {advanced&&report.families.map(x=><span key={x.envelope+'/'+x.body}>
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
@@ -1069,7 +1179,7 @@ export default function AutoParser({
          </label>
          {!csvApproved&&<button type="button"
            disabled={!csvNamesValid||!csvSelectedShapeMatchesNames||pending}
-           onClick={()=>setCsvApprovedKey(csvSchemaKey)}>
+           onClick={confirmCsvColumns}>
            I Confirm These CSV Column Names
          </button>}
          <p role="status">{csvApproved?
@@ -1236,6 +1346,18 @@ export default function AutoParser({
          <p className="beginner-next-step needs-fix" role="status">Resolve the events marked above before continuing. Already-correct fields remain preserved.</p>}
        {!advanced&&currentMultiPassReview&&beginnerResolved&&pending&&
          <p className="beginner-next-step" role="status">Source extraction is complete. Preparing the browser parser draft for field review…</p>}
+       {currentReviewBlock&&<div className="auto-parser-warning" role="alert" aria-label="Parser draft not ready">
+         <strong>Source fields are available, but this parser draft is not ready.</strong>
+         <p>{statusMessage(currentReviewBlock.reason)}</p>
+         <p>No source value was discarded. This is source extraction only; a downloadable parser and Stellar Cyber mapping are not yet verified for these original events.</p>
+         <details><summary>Inspect extracted source fields (read-only)</summary>
+           <p>These are original-source values. Choose field names and repeated-value policies before generating parser files.</p>
+           {Object.entries(currentMultiPass?.fields??{}).slice(0,40).map(([name,value])=>
+             <p key={name}><strong>{name}</strong>: {JSON.stringify(value).slice(0,180)}</p>)}
+         </details>
+         <button type="button" onClick={onChatGPT}>Use ChatGPT Assisted Parser</button>
+         <button type="button" onClick={()=>setReviewBlock(null)}>Re-check parser support</button>
+       </div>}
        <button type="button" className="auto-parser-primary"
          disabled={!canReview} onClick={()=>{void review();}}>
          {busy?'Checking the parser…':!advanced&&beginnerResolved&&pending?'Preparing Parser Draft…':advanced?'Review Detected Results':'Review Fields'} <ArrowRight size={16}/>
@@ -1264,8 +1386,10 @@ export default function AutoParser({
          Review the actual values first; the next step will suggest Stellar Cyber field names.</p>}
        {currentReview?.requiresApproval&&<p className="auto-parser-note">
          Your edited field mappings were preserved. Check them below before generating.</p>}
+       {namedAnalysis&&<NamedLogTypeReview data={namedAnalysis}/>}
        <SampleUnionReview suite={suite}/>
        <ReviewedEventProfilesPanel suite={suite} draft={draft} setDraft={setDraft}
+         highlightNamed={Boolean(namedLogTypes&&namedLogTypes.length>1)}
          source={sample} pending={pending}
          backendCapabilities={capability?.source===sample?capability.value:undefined}/>
        <label>Choose a source event

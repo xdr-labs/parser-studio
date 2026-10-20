@@ -157,6 +157,42 @@ def parse_source(raw:str)->SourceEvent:
         event.issues=list(outer.issues)
         if body_start is not None:
             body=parse_source(raw[body_start:])
+            # Both RFC 5424 section 6.4 (MSG) and RFC 3164 section 4.1.3
+            # (CONTENT after a recognized TAG) permit free-form message
+            # text. Their field *semantics* are not inferred. Only capture
+            # text when the strict header is valid AND no structured decoder
+            # has claimed or rejected a recognized KV/JSON/CEF/LEEF syntax.
+            # Physical controls and malformed structured records stay REVIEW.
+            if (family in ("SYSLOG_RFC5424","SYSLOG_RFC3164","BSD_SYSLOG")
+                    and not outer.issues and body.status=="RAW_ONLY"
+                    and body.issues==["NO_SUPPORTED_GRAMMAR"]
+                    and not body.vendor_fields):
+                rfc5424=family=="SYSLOG_RFC5424"
+                bom=1 if rfc5424 and body.raw.startswith("\ufeff") else 0
+                valid_text=(not any(control in body.raw for control in ("\r","\n","\x1e"))
+                            if rfc5424 else
+                            all(char==" " or char.isprintable() for char in body.raw))
+                if valid_text and not rfc5424:
+                    # Candidate-only recovery previously identified exact
+                    # IP/MAC/URL and labeled spans inside incomplete prose.
+                    # A new full-text field must NEVER mask these independent
+                    # original-source claims simply to elevate the status.
+                    from generic_partial_atoms import augment_incomplete_atoms
+                    from generic_partial_labels import augment_incomplete_labels
+                    observed=augment_incomplete_labels(augment_incomplete_atoms(body))
+                    if observed.value_spans:
+                        valid_text=False
+                if valid_text and body.raw[bom:].strip():
+                    syntax=("RFC5424_MSG" if rfc5424 else
+                            "RFC3164_CONTENT" if family=="SYSLOG_RFC3164" else
+                            "BSD_CONTENT")
+                    body=SourceEvent(
+                        body.raw,syntax=syntax,
+                        vendor_fields={"message":body.raw[bom:]},
+                        value_spans=[_span(body.raw,"message",bom,len(body.raw))],
+                        covered=[(0,len(body.raw))],primitive_fields=1,
+                    )
+                    body=_close(body)
             event.syntax=family+"+"+body.syntax
             event.vendor_fields["body"]=body.vendor_fields
             event.primitive_fields+=body.primitive_fields

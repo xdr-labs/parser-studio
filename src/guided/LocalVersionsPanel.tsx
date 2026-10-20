@@ -2,8 +2,9 @@ import {useCallback,useEffect,useMemo,useState} from 'react';
 import './localVersions.css';
 import {GitCompareArrows,RotateCcw,Save,Trash2} from 'lucide-react';
 import type {LocalWorkingCopy,LocalVersion} from './localWorkspaceHistory';
-import {compareLocalVersions,deleteLocalVersion,listLocalVersions,readLocalVersion,
-  sameLocalWorking,saveLocalVersion} from './localWorkspaceHistory';
+import {compareLocalVersions,deleteLocalVersion,deleteRejectedLocalVersions,
+  listLocalVersions,readLocalVersion,sameLocalWorking,saveLocalVersion,saveLocalRestoreCheckpoint,
+  restoredNamedSource} from './localWorkspaceHistory';
 
 interface Props{
   working:LocalWorkingCopy;
@@ -13,6 +14,7 @@ interface Props{
 const currentId='__current__';
 const identity=(value:LocalVersion):LocalWorkingCopy=>({
   datasetName:value.datasetName,source:value.source,draft:value.draft,
+  ...(value.logTypes?{logTypes:value.logTypes}:{}),
 });
 function description(error:unknown):string{
   // Browser quota/permission diagnostics, never raw sensitive contents.
@@ -69,25 +71,37 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     if(sameLocalWorking(working,target)){
       setStatus('This version already matches the current workspace.');return;
     }
-    const agreed=window.confirm('Restore "'+retrieved.label+'"? Parser Studio will first save your current working copy as another local checkpoint. Generated files must be tested again.');
+    const agreed=window.confirm('Restore "'+retrieved.label+'"? Parser Studio will preserve your current working copy first. If local history is full, an identical verified saved version can be reused. Otherwise a new checkpoint is required. Generated files must be tested again.');
     if(!agreed)return;
     const safeTitle='Before restore · '+new Date().toLocaleString();
-    await saveLocalVersion(working,safeTitle);
+    const checkpoint=await saveLocalRestoreCheckpoint(working,safeTitle);
     onRestore(retrieved);
     setRight(currentId);
-    setStatus('Restored "'+retrieved.label+'". Your previous working copy was saved locally. Re-run Analyze Logs before generating parser files.');
+    const migration=restoredNamedSource(retrieved).removedLegacySeparators;
+    setStatus('Restored "'+retrieved.label+'". '+
+      (checkpoint.reused?'Your previous working copy is already preserved in an identical verified local version; no duplicate was added. ':
+        'Your previous working copy was saved locally. ')+
+      (migration?'Only redundant separators inserted by the earlier Parser Studio version were omitted from the current working copy. The saved snapshot and each original log type are unchanged. ':'')+
+      'Re-run Analyze Logs before generating parser files.');
   });
   const remove=(item:LocalVersion)=>void run(async()=>{
     if(!window.confirm('Delete the local version "'+item.label+'"? This cannot be undone.'))return;
     await deleteLocalVersion(item.id);
     setStatus('Deleted the selected local version. Other versions and your current work are unchanged.');
   });
+  const removeRejected=()=>void run(async()=>{
+    if(!window.confirm('Permanently delete '+invalid+' corrupt or unverified local version(s) from this browser? Parser Studio cannot restore these records, but they may still contain sensitive raw log data. This cannot be undone. Verified saved versions and the current workspace will be kept.'))return;
+    const count=await deleteRejectedLocalVersions();
+    setStatus(count>0?
+      'Deleted '+count+' corrupt or unverified browser-local version(s). Verified versions and your current workspace were preserved.':
+      'No unverified versions were deleted. Recheck this browser history before retrying.');
+  });
   const countBytes=new TextEncoder().encode(working.source).length;
   return <section className="local-versions-panel" aria-label="Local Versions workspace">
     <div className="local-versions-heading">
       <div>
         <h2>Local Versions · Try, compare and restore</h2>
-        <p>Save your current sample logs, parsing rules, CSV settings and field mappings as separate checkpoints. Every version stays in this browser profile and website origin. No version is stored on the Parser Studio server.</p>
+        <p>Save your current log type names and samples, parsing rules, CSV settings and field mappings as separate checkpoints. Every version stays in this browser profile and website origin. No version is stored on the Parser Studio server.</p>
       </div>
       <button type="button" className="button secondary" onClick={onClose}>Close Versions</button>
     </div>
@@ -107,7 +121,11 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
       </button>
       <span>{countBytes.toLocaleString()} source bytes · {items.length}/30 saved</span>
     </div>
-    {invalid>0&&<p role="alert">{invalid} corrupt or unverified local version(s) were excluded from restore. The current workspace was not altered.</p>}
+    {invalid>0&&<div className="local-version-recovery" role="group" aria-label="Unverified local version recovery">
+      <p role="alert">{invalid} corrupt or unverified local version(s) were excluded from restore. They still occupy browser history space and may contain sensitive source values. The current workspace was not altered.</p>
+      <button type="button" className="button secondary" disabled={busy} onClick={removeRejected}
+        aria-label="Delete unverified local versions"><Trash2 size={14}/> Delete unverified versions</button>
+    </div>}
     {status&&<p role="status" className="local-versions-status">{status}</p>}
     <div className="local-version-list" aria-label="Saved local versions">
       {items.length===0?<p>No versions saved yet. Try a mapping, save V1, change the mapping, and save V2.</p>:

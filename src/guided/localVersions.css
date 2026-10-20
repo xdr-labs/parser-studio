@@ -42,6 +42,13 @@
   gap:7px;
 }
 .local-version-actions span{font-size:.83rem;color:#52647a}
+.local-version-recovery{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  border:1px solid #caa66b;border-radius:8px;
+  padding:10px 12px;background:#fff9e9;color:#604d21;
+}
+.local-version-recovery p{margin:0;flex:1 1 320px;line-height:1.5}
+.local-version-recovery button{display:inline-flex;align-items:center;gap:7px}
 .local-versions-status{margin:0;font-weight:600}
 .local-version-list{display:grid;gap:7px;max-height:320px;overflow-y:auto}
 .local-version-list>p{margin:0;color:#52647a}

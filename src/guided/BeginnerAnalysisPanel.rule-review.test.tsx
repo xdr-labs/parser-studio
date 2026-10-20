@@ -22,9 +22,9 @@ describe('Beginner parser-rule review event targeting',()=>{
       onOpenAssisted={vi.fn()}
       parserRuleReviewRequired
       parserRuleReviewEventIndexes={[2]}/>);
-    expect(screen.getByText(/Original event 3 · one parsing step needs review/)).toBeTruthy();
+    expect(screen.getByText(/Original event 3 · parser-file rule needs review/)).toBeTruthy();
     expect(screen.getByText('third')).toBeTruthy();
-    expect(screen.queryByText(/Original event 1 · one parsing step needs review/)).toBeNull();
+    expect(screen.queryByText(/Original event 1 · parser-file rule needs review/)).toBeNull();
   });
 
   it('lists only the actual blockers when more than one browser family needs review',()=>{
@@ -40,8 +40,8 @@ describe('Beginner parser-rule review event targeting',()=>{
       parserRuleReviewEventIndexes={[1,2]}/>);
     const options=screen.getAllByRole('option').map(option=>option.textContent);
     expect(options).toEqual([
-      'Event 2 · One parsing step needs review',
-      'Event 3 · One parsing step needs review',
+      'Event 2 · Parser rule needs review',
+      'Event 3 · Parser rule needs review',
     ]);
   });
 });

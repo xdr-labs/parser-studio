@@ -1,6 +1,7 @@
 import {FORMATS,type MappingRule,type ParserDraft} from '../model';
 import {validForwarderConfig,type ForwarderConfig} from './declaredForwarder';
 import {validateEventProfiles,type EventProfileConfig} from './multiEventRouting';
+import {assembleNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
 
 /**
  * User-owned, origin-scoped browser experiment snapshots.
@@ -23,6 +24,7 @@ export interface LocalVersion{
   datasetName:string;
   source:string;
   draft:ParserDraft;
+  logTypes?:NamedLogType[];
   sha256:string;
 }
 
@@ -30,6 +32,7 @@ export interface LocalWorkingCopy{
   datasetName:string;
   source:string;
   draft:ParserDraft;
+  logTypes?:NamedLogType[];
 }
 
 export interface VersionList{
@@ -115,13 +118,36 @@ export function validLocalDraft(value:unknown):value is ParserDraft{
   return true;
 }
 function snapshotContent(v:Omit<LocalVersion,'sha256'>):string{
-  return json([v.contract,v.id,v.label,v.createdAt,v.datasetName,v.source,v.draft]);
+  const content:unknown[]=[v.contract,v.id,v.label,v.createdAt,v.datasetName,v.source,v.draft];
+  if(v.logTypes!==undefined)content.push(v.logTypes);
+  return json(content);
 }
-function validateWorking(copy:LocalWorkingCopy,label:string){
+// Previous versions inserted a synthetic LF between groups even if a
+// preceding sample already ended in LF. Recognize exactly that historical
+// assembly only when VERIFYING an already checksum-protected snapshot.
+function legacyNamedSource(groups:readonly NamedLogType[]):string{
+  return groups.filter(group=>group.sample.trim()).map(group=>group.sample).join('\n');
+}
+export function restoredNamedSource(value:Pick<LocalVersion,'source'|'logTypes'>):
+  {source:string;removedLegacySeparators:boolean}{
+  if(!value.logTypes)return {source:value.source,removedLegacySeparators:false};
+  const source=assembleNamedLogs(value.logTypes).source;
+  return {source,removedLegacySeparators:source!==value.source};
+}
+function validateWorking(copy:LocalWorkingCopy,label:string,allowLegacy=false){
   if(!safeName.test(label.trim())||typeof copy.datasetName!=='string'||
      byteSize(copy.datasetName)>256||typeof copy.source!=='string'||
      byteSize(copy.source)>MAX_SOURCE_BYTES||!validLocalDraft(copy.draft))
     throw Error('Local version is invalid or exceeds the bounded browser workspace limits.');
+  if(copy.logTypes!==undefined){
+    if(!Array.isArray(copy.logTypes)||
+       !copy.logTypes.every(item=>isObject(item)&&typeof item.id==='string'&&
+         typeof item.name==='string'&&typeof item.sample==='string')||
+       !validateNamedLogs(copy.logTypes).ok||
+       (assembleNamedLogs(copy.logTypes).source!==copy.source&&
+        !(allowLegacy&&legacyNamedSource(copy.logTypes)===copy.source)))
+      throw Error('Named log types are invalid or do not match the exact source sample.');
+  }
   if(byteSize(json(copy))>MAX_RECORD_BYTES)
     throw Error('Local version exceeds 180 KB. Reduce the sample or parser rules.');
 }
@@ -135,6 +161,7 @@ export async function prepareLocalVersion(copy:LocalWorkingCopy,label:string):Pr
     datasetName:copy.datasetName,
     source:copy.source,
     draft:structuredClone(copy.draft),
+    ...(copy.logTypes?{logTypes:structuredClone(copy.logTypes)}:{}),
   };
   return {...entry,sha256:await digest(snapshotContent(entry))};
 }
@@ -146,7 +173,8 @@ export async function verifyLocalVersion(v:unknown):Promise<boolean>{
      !hexSha.test(v.sha256))return false;
   try{
     const value=v as unknown as LocalVersion;
-    validateWorking({datasetName:value.datasetName,source:value.source,draft:value.draft},value.label);
+    validateWorking({datasetName:value.datasetName,source:value.source,draft:value.draft,
+      ...(value.logTypes!==undefined?{logTypes:value.logTypes}:{})},value.label,true);
     if(byteSize(json(value))>MAX_RECORD_BYTES)return false;
     return value.sha256===await digest(snapshotContent(value));
   }catch{return false;}
@@ -195,29 +223,136 @@ export async function listLocalVersions():Promise<VersionList>{
     return {versions,rejected};
   }finally{db.close();}
 }
-export async function saveLocalVersion(copy:LocalWorkingCopy,label:string):Promise<LocalVersion>{
+export interface LocalRestoreCheckpoint{
+  revision:LocalVersion;
+  reused:boolean;
+}
+/** Exact source/settings identity alone is insufficient: only a complete,
+ * SHA-verified stored version can protect the current working copy. */
+export async function verifyLocalRestoreCandidate(
+  value:unknown,copy:LocalWorkingCopy,
+):Promise<boolean>{
+  return await verifyLocalVersion(value)&&sameLocalWorking(value as LocalVersion,copy);
+}
+async function storeLocalVersion(
+  copy:LocalWorkingCopy,label:string,reuseAtCapacity:boolean,
+):Promise<LocalRestoreCheckpoint>{
   const revision=await prepareLocalVersion(copy,label);
   const db=await openDb();
   try{
-    return await new Promise<LocalVersion>((resolve,reject)=>{
+    const verified=new Map<string,string>();
+    if(reuseAtCapacity){
+      // Hashing is asynchronous. Verify outside the write transaction, then
+      // compare the entire verified row again inside that transaction.
+      for(const row of await readAll(db)){
+        if(await verifyLocalRestoreCandidate(row,revision)){
+          const candidate=row as LocalVersion;
+          verified.set(candidate.id,json(candidate));
+        }
+      }
+    }
+    return await new Promise<LocalRestoreCheckpoint>((resolve,reject)=>{
       const tx=db.transaction(TABLE,'readwrite');
       const all=tx.objectStore(TABLE).getAll();
       let error:Error|null=null;
+      let saved:LocalRestoreCheckpoint={revision,reused:false};
       all.onsuccess=()=>{
-        const rows=all.result as unknown[];
-        if(rows.length>=LOCAL_VERSION_LIMIT||
-           rows.reduce<number>((n,row)=>n+byteSize(json(row)),0)+byteSize(json(revision))>MAX_ALL_BYTES){
-          error=Error('Local history is full. Delete an unneeded version before saving.');
-          tx.abort();return;
+        try{
+          const rows=all.result as unknown[];
+          const full=rows.length>=LOCAL_VERSION_LIMIT||
+            rows.reduce<number>((n,row)=>n+byteSize(json(row)),0)+byteSize(json(revision))>MAX_ALL_BYTES;
+          if(full){
+            const existing=reuseAtCapacity?rows.find(row=>isObject(row)&&
+              typeof row.id==='string'&&verified.has(row.id)&&
+              verified.get(row.id)===json(row)):undefined;
+            if(existing){
+              saved={revision:existing as LocalVersion,reused:true};return;
+            }
+            error=Error(reuseAtCapacity?
+              'Local history is full. Your current changes are not safely saved. Delete an unneeded version, then retry Restore; the current workspace was not changed.':
+              'Local history is full. Delete an unneeded version before saving.');
+            tx.abort();return;
+          }
+          tx.objectStore(TABLE).add(revision);
+        }catch{
+          error=Error('Local history could not be checked safely. Your working copy was not changed.');
+          tx.abort();
         }
-        tx.objectStore(TABLE).add(revision);
       };
-      tx.oncomplete=()=>resolve(revision);
+      tx.oncomplete=()=>resolve(saved);
       tx.onerror=()=>reject(error??Error('Browser storage is unavailable or its quota was exceeded.'));
       tx.onabort=()=>reject(error??Error('Local save failed. Your working copy was not changed.'));
     });
   }finally{db.close();}
 }
+export async function saveLocalVersion(copy:LocalWorkingCopy,label:string):Promise<LocalVersion>{
+  return (await storeLocalVersion(copy,label,false)).revision;
+}
+/** Keep normal named saves unchanged. Only restore safety checkpoints may
+ * reuse an identical verified record when the bounded history is full. */
+export async function saveLocalRestoreCheckpoint(
+  copy:LocalWorkingCopy,label:string,
+):Promise<LocalRestoreCheckpoint>{
+  return storeLocalVersion(copy,label,true);
+}
+/** Remove only browser rows which fail the current version contract and SHA
+ * check. This is always user-initiated; neither listing nor saving removes
+ * data. Recheck the original row inside the write transaction so a concurrent
+ * tab cannot turn a formerly invalid row into a valid row that gets deleted.
+ */
+export async function deleteRejectedLocalVersions():Promise<number>{
+  const db=await openDb();
+  try{
+    const rows=await new Promise<Array<{key:IDBValidKey;value:unknown}>>((resolve,reject)=>{
+      const tx=db.transaction(TABLE,'readonly');
+      const cursor=tx.objectStore(TABLE).openCursor();
+      const found:Array<{key:IDBValidKey;value:unknown}>=[];
+      cursor.onsuccess=()=>{
+        const item=cursor.result;
+        if(item){found.push({key:item.primaryKey,value:item.value});item.continue();}
+      };
+      tx.oncomplete=()=>resolve(found);
+      tx.onerror=()=>reject(Error('Could not inspect browser-local versions.'));
+      tx.onabort=()=>reject(Error('Inspection of local versions was interrupted.'));
+    });
+    const invalid:Array<{key:IDBValidKey;serialized:string}>=[];
+    for(const row of rows){
+      if(await verifyLocalVersion(row.value))continue;
+      let serialized:string;
+      try{serialized=json(row.value)}
+      catch{throw Error('Unverified browser data could not be compared safely. No versions were deleted.');}
+      if(typeof serialized!=='string')
+        throw Error('Unverified browser data could not be compared safely. No versions were deleted.');
+      invalid.push({key:row.key,serialized});
+    }
+    if(invalid.length===0)return 0;
+    return await new Promise<number>((resolve,reject)=>{
+      const tx=db.transaction(TABLE,'readwrite');
+      const cursor=tx.objectStore(TABLE).openCursor();
+      let deleted=0;
+      let conflict=false;
+      cursor.onsuccess=()=>{
+        const item=cursor.result;
+        if(!item)return;
+        const candidate=invalid.find(entry=>indexedDB.cmp(entry.key,item.primaryKey)===0);
+        if(candidate){
+          let unchanged=false;
+          try{unchanged=json(item.value)===candidate.serialized}catch{/* deny deletion */}
+          if(!unchanged){conflict=true;tx.abort();return;}
+          item.delete();
+          deleted++;
+        }
+        item.continue();
+      };
+      tx.oncomplete=()=>resolve(deleted);
+      tx.onerror=()=>reject(Error('Browser-only unverified version cleanup failed.'));
+      tx.onabort=()=>reject(Error(conflict?
+        'A stored version changed in another tab. Nothing was deleted; refresh and retry.':
+        'Browser-only cleanup was interrupted. No verified versions were changed.'));
+    });
+  }finally{db.close();}
+}
+
 export async function deleteLocalVersion(id:string):Promise<void>{
   if(!/^[a-f0-9-]{36}$/i.test(id))throw Error('Invalid local version identifier.');
   const db=await openDb();
@@ -249,7 +384,7 @@ export async function readLocalVersion(id:string):Promise<LocalVersion>{
 }
 export function sameLocalWorking(a:LocalWorkingCopy,b:LocalWorkingCopy):boolean{
   return a.source===b.source&&a.datasetName===b.datasetName&&
-    json(a.draft)===json(b.draft);
+    json(a.draft)===json(b.draft)&&json(a.logTypes)===json(b.logTypes);
 }
 export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):VersionComparison{
   const first=new Map(a.draft.mappings.map(m=>[m.id,m]));
@@ -260,6 +395,7 @@ export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):Vers
     second.has(id)&&json(first.get(id))!==json(second.get(id)));
   const changes:string[]=[];
   if(a.datasetName!==b.datasetName)changes.push('Dataset name');
+  if(json(a.logTypes)!==json(b.logTypes))changes.push('Named log type samples / labels');
   if(a.draft.vendor!==b.draft.vendor||a.draft.name!==b.draft.name||
      a.draft.version!==b.draft.version)changes.push('Parser identity');
   if(a.draft.format!==b.draft.format)changes.push('Parser format');

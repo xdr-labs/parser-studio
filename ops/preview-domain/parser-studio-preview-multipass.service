@@ -1,0 +1,28 @@
+[Unit]
+Description=Parser Studio private preview Multi-Pass source engine
+After=network.target
+ConditionPathExists=/opt/parser-studio-preview/multipass/multipass_preview_api.py
+
+[Service]
+Type=simple
+User=aella
+Group=aella
+WorkingDirectory=/opt/parser-studio-preview/multipass
+Environment=PARSER_STUDIO_TRUSTED_ORIGIN=https://app.parser.xdr.ooo
+ExecStart=/usr/bin/python3 /opt/parser-studio-preview/multipass/multipass_preview_api.py --port 4304
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+MemoryMax=768M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
