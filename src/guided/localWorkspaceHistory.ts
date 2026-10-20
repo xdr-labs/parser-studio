@@ -223,28 +223,77 @@ export async function listLocalVersions():Promise<VersionList>{
     return {versions,rejected};
   }finally{db.close();}
 }
-export async function saveLocalVersion(copy:LocalWorkingCopy,label:string):Promise<LocalVersion>{
+export interface LocalRestoreCheckpoint{
+  revision:LocalVersion;
+  reused:boolean;
+}
+/** Exact source/settings identity alone is insufficient: only a complete,
+ * SHA-verified stored version can protect the current working copy. */
+export async function verifyLocalRestoreCandidate(
+  value:unknown,copy:LocalWorkingCopy,
+):Promise<boolean>{
+  return await verifyLocalVersion(value)&&sameLocalWorking(value as LocalVersion,copy);
+}
+async function storeLocalVersion(
+  copy:LocalWorkingCopy,label:string,reuseAtCapacity:boolean,
+):Promise<LocalRestoreCheckpoint>{
   const revision=await prepareLocalVersion(copy,label);
   const db=await openDb();
   try{
-    return await new Promise<LocalVersion>((resolve,reject)=>{
+    const verified=new Map<string,string>();
+    if(reuseAtCapacity){
+      // Hashing is asynchronous. Verify outside the write transaction, then
+      // compare the entire verified row again inside that transaction.
+      for(const row of await readAll(db)){
+        if(await verifyLocalRestoreCandidate(row,revision)){
+          const candidate=row as LocalVersion;
+          verified.set(candidate.id,json(candidate));
+        }
+      }
+    }
+    return await new Promise<LocalRestoreCheckpoint>((resolve,reject)=>{
       const tx=db.transaction(TABLE,'readwrite');
       const all=tx.objectStore(TABLE).getAll();
       let error:Error|null=null;
+      let saved:LocalRestoreCheckpoint={revision,reused:false};
       all.onsuccess=()=>{
-        const rows=all.result as unknown[];
-        if(rows.length>=LOCAL_VERSION_LIMIT||
-           rows.reduce<number>((n,row)=>n+byteSize(json(row)),0)+byteSize(json(revision))>MAX_ALL_BYTES){
-          error=Error('Local history is full. Delete an unneeded version before saving.');
-          tx.abort();return;
+        try{
+          const rows=all.result as unknown[];
+          const full=rows.length>=LOCAL_VERSION_LIMIT||
+            rows.reduce<number>((n,row)=>n+byteSize(json(row)),0)+byteSize(json(revision))>MAX_ALL_BYTES;
+          if(full){
+            const existing=reuseAtCapacity?rows.find(row=>isObject(row)&&
+              typeof row.id==='string'&&verified.has(row.id)&&
+              verified.get(row.id)===json(row)):undefined;
+            if(existing){
+              saved={revision:existing as LocalVersion,reused:true};return;
+            }
+            error=Error(reuseAtCapacity?
+              'Local history is full. Your current changes are not safely saved. Delete an unneeded version, then retry Restore; the current workspace was not changed.':
+              'Local history is full. Delete an unneeded version before saving.');
+            tx.abort();return;
+          }
+          tx.objectStore(TABLE).add(revision);
+        }catch{
+          error=Error('Local history could not be checked safely. Your working copy was not changed.');
+          tx.abort();
         }
-        tx.objectStore(TABLE).add(revision);
       };
-      tx.oncomplete=()=>resolve(revision);
+      tx.oncomplete=()=>resolve(saved);
       tx.onerror=()=>reject(error??Error('Browser storage is unavailable or its quota was exceeded.'));
       tx.onabort=()=>reject(error??Error('Local save failed. Your working copy was not changed.'));
     });
   }finally{db.close();}
+}
+export async function saveLocalVersion(copy:LocalWorkingCopy,label:string):Promise<LocalVersion>{
+  return (await storeLocalVersion(copy,label,false)).revision;
+}
+/** Keep normal named saves unchanged. Only restore safety checkpoints may
+ * reuse an identical verified record when the bounded history is full. */
+export async function saveLocalRestoreCheckpoint(
+  copy:LocalWorkingCopy,label:string,
+):Promise<LocalRestoreCheckpoint>{
+  return storeLocalVersion(copy,label,true);
 }
 /** Remove only browser rows which fail the current version contract and SHA
  * check. This is always user-initiated; neither listing nor saving removes

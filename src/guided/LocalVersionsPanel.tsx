@@ -3,7 +3,7 @@ import './localVersions.css';
 import {GitCompareArrows,RotateCcw,Save,Trash2} from 'lucide-react';
 import type {LocalWorkingCopy,LocalVersion} from './localWorkspaceHistory';
 import {compareLocalVersions,deleteLocalVersion,deleteRejectedLocalVersions,
-  listLocalVersions,readLocalVersion,sameLocalWorking,saveLocalVersion,
+  listLocalVersions,readLocalVersion,sameLocalWorking,saveLocalVersion,saveLocalRestoreCheckpoint,
   restoredNamedSource} from './localWorkspaceHistory';
 
 interface Props{
@@ -71,14 +71,16 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     if(sameLocalWorking(working,target)){
       setStatus('This version already matches the current workspace.');return;
     }
-    const agreed=window.confirm('Restore "'+retrieved.label+'"? Parser Studio will first save your current working copy as another local checkpoint. Generated files must be tested again.');
+    const agreed=window.confirm('Restore "'+retrieved.label+'"? Parser Studio will preserve your current working copy first. If local history is full, an identical verified saved version can be reused. Otherwise a new checkpoint is required. Generated files must be tested again.');
     if(!agreed)return;
     const safeTitle='Before restore · '+new Date().toLocaleString();
-    await saveLocalVersion(working,safeTitle);
+    const checkpoint=await saveLocalRestoreCheckpoint(working,safeTitle);
     onRestore(retrieved);
     setRight(currentId);
     const migration=restoredNamedSource(retrieved).removedLegacySeparators;
-    setStatus('Restored "'+retrieved.label+'". Your previous working copy was saved locally. '+
+    setStatus('Restored "'+retrieved.label+'". '+
+      (checkpoint.reused?'Your previous working copy is already preserved in an identical verified local version; no duplicate was added. ':
+        'Your previous working copy was saved locally. ')+
       (migration?'Only redundant separators inserted by the earlier Parser Studio version were omitted from the current working copy. The saved snapshot and each original log type are unchanged. ':'')+
       'Re-run Analyze Logs before generating parser files.');
   });
