@@ -103,19 +103,20 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
     return {body:'leef',status:extractStructuredFamily(value,'leef').errors.length===0?
       'RECOGNIZED':'BODY_MALFORMED'};
   }
-  // A strongly quoted CSV row can legitimately contain '=' inside URL/query
-  // fields. Recognize that bounded shape before the generic KV hint so those
-  // embedded characters cannot turn an otherwise valid CSV event into
-  // BODY_MALFORMED. Unquoted key=value records still keep KV precedence.
-  if(value.startsWith('"')&&csvValid(value)){
-    return {body:'csv',status:'RECOGNIZED'};
-  }
-  if(value.includes('=')){
-    return {body:'kv',status:kvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
-  }
+  // A full key=value record wins over incidental comma/semicolon/TAB data.
+  // But a positional CSV record may contain '=' in any field (for example,
+  // a URL query), not only when its first field happens to be quoted.
+  const hasEquals=value.includes('=');
+  if(hasEquals&&kvValid(value))return {body:'kv',status:'RECOGNIZED'};
   if(value.includes(',')||value.includes(';')||value.includes('\t')){
-    return {body:'csv',status:csvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
+    // Do not turn a malformed leading key=value record into CSV success just
+    // because its later free-form bytes contain two separators. A candidate
+    // CSV still needs the shared strict lexer and reviewed field names.
+    if(!/^[A-Za-z_][A-Za-z0-9_.-]{0,95}\s*=/.test(value)){
+      return {body:'csv',status:csvValid(value)?'RECOGNIZED':'BODY_MALFORMED'};
+    }
   }
+  if(hasEquals)return {body:'kv',status:'BODY_MALFORMED'};
   return {body:'unknown',status:'UNKNOWN'};
 }
 function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBoundary,
