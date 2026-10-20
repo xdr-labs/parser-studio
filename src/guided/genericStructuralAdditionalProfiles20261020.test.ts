@@ -22,7 +22,7 @@ function capability():BackendCapabilities{
   };
 }
 
-describe('one explicit additional Generic Structural profile per project',()=>{
+describe('explicit additional Generic Structural profiles',()=>{
   for(const sample of leefFixture.positive){
     it('prepares the implicit TAB grammar without changing source: '+sample.name,()=>{
       expect(extractGenericStructural(sample.raw).errors).not.toHaveLength(0);
@@ -61,10 +61,14 @@ describe('one explicit additional Generic Structural profile per project',()=>{
     expect(result!.suite.counts).toMatchObject({total:2,extracted:2,failures:0});
   });
 
-  it('rejects a batch requiring two incompatible additional profiles in either order',()=>{
+  it('selects the reviewed combined profile for a batch requiring both grammars in either order',()=>{
     const samples=[syslogFixture.positive[0]!.raw,leefFixture.positive[0]!.raw];
     for(const ordered of [samples,[...samples].reverse()]){
-      expect(buildAutomaticGenericStructuralDraft(ordered.join('\n'),createDraft())).toBeNull();
+      const prepared=buildAutomaticGenericStructuralDraft(ordered.join('\n'),createDraft());
+      expect(prepared).not.toBeNull();
+      expect(prepared!.draft.genericStructuralProfile).toBe('syslog_prefix_kv_leef2_implicit_tab_v1');
+      expect(prepared!.suite.counts).toMatchObject({total:2,matched:2,extracted:2,failures:0});
+      expect(prepared!.suite.events.map(event=>event.raw)).toEqual(ordered);
     }
   });
 

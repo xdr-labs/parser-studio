@@ -45,6 +45,9 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     boundedRegexRuntimeTimeoutMs: 50,
     genericStructuralGrammar: "GENERIC_STRUCTURAL_ULTRA_COMPILER_V15" as const,
     genericStructuralProfiles: ["syslog_prefix_kv", "leef2_implicit_tab"] as const,
+    // Older clients strictly validate the two-name profile array. Advertise
+    // this additive scalar profile separately so their existing flow survives.
+    genericStructuralMixedProfileV1: true,
     rfc3164StrictTaggedMessageSubset: true,
     rfc3164TaglessStructuredSecuritySubset: true,
     rfc3164TimePolicy: "YEAR_AND_ZONE_UNKNOWN" as const,

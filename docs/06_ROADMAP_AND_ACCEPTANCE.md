@@ -3,15 +3,20 @@
 This ledger supersedes dated next-action statements below. The active product
 remains Auto Parser and ChatGPT Assisted Parser. Historical unchecked research
 and target-release lists are not a count of unfinished beta implementation.
+This candidate records the local qualification available before its source
+commit; subsequent CI, main and application receipts are recorded in the
+[active work packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6287789712).
 
 | Scope | Current engineering status | Evidence / boundary |
 | --- | --- | --- |
 | MAIN-1/2, LOCAL-1/2, MULTI-TYPE-INPUT-1, SCRIPT-1/2/3 and CI-1 | Incorporated in main before this continuation | PR #120; main `00e783520c005a96b37b5fbf5eb4ad81c74381a6`; its qualified public development baseline is recorded in Issue #1 comment 6286114104. |
-| DRAFT-1: source-to-parser integration | Implemented in this continuation | Strict RFC5424 SD/free MSG uses the existing raw-body compiler. Additional explicit Generic Structural profiles preserve original Syslog prefix/KV and implicit-TAB LEEF 2.0 source through mappings and downloadable parser files. |
-| RECOVERY-1: incomplete text | Implemented in this continuation | Generic quoted bracket labels retain exact source values and UTF-8 spans, repeated/empty occurrences and previously recovered atoms. Residual prose stays PARTIAL. The novice review flow tests source preservation and distinct holdouts before applying a supported recipe. |
-| BATCH-1: 100–400-event usability | Implemented in this continuation | Actual request/verification phases, source byte count, elapsed time and cancellation. Source/draft identity checks reject late responses after cancellation, edits or replacement requests. No fabricated percentage or timeout-based success. |
-| Profile persistence and format changes | Implemented in this continuation | The selected additional grammar survives Project JSON, recipe projection and browser snapshots. Explicit non-generic format changes clear incompatible metadata; unknown or mismatched imported profiles are rejected. An older Backend without the selected profile shows a source-preserving blocked state and an explicit fresh-capability retry. |
-| Qualification, main and public development application | Recorded against the frozen continuation candidate | See [the continuation verification record](verification/roadmap-followup-20261020.md) and [Issue #1 work packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6287789712) for exact local/CI/source/deployment evidence and current rollout state. |
+| DRAFT-1: source-to-parser integration | Complete in PR #121 and current main | Strict RFC5424 SD/free MSG uses the existing raw-body compiler. Additional explicit Generic Structural profiles preserve original Syslog prefix/KV and implicit-TAB LEEF 2.0 source through mappings and downloadable parser files. |
+| RECOVERY-1: incomplete text | Complete in PR #121 and current main | Generic quoted bracket labels retain exact source values and UTF-8 spans, repeated/empty occurrences and previously recovered atoms. Residual prose stays PARTIAL. The novice review flow tests source preservation and distinct holdouts before applying a supported recipe. |
+| BATCH-1: 100–400-event usability | Complete in PR #121 and current main | Actual request/verification phases, source byte count, elapsed time and cancellation. Source/draft identity checks reject late responses after cancellation, edits or replacement requests. No fabricated percentage or timeout-based success. |
+| Profile persistence and format changes | Complete in PR #121 and current main | The selected additional grammar survives Project JSON, recipe projection and browser snapshots. Explicit non-generic format changes clear incompatible metadata; unknown or mismatched imported profiles are rejected. An older Backend without the selected profile shows a source-preserving blocked state and an explicit fresh-capability retry. |
+| Previous continuation qualification and public development application | Complete for the frozen PR #121 candidate | Source `19f3f5e7e82717d4c48a5ad8a24e599e84110201`; successful CI run #39416579705; main `ec6df2473612e5dd0cb23de6209801a7dda1548a`; separate public Chromium 109/109 PASS completed at 2026-10-20T12:59:55Z. See [the preserved continuation verification record](verification/roadmap-followup-20261020.md) and [Issue #1 work packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6287789712). |
+| MIXED-PROFILE-1: bounded Generic Structural combination | Implemented and locally qualified | The scalar `syslog_prefix_kv_leef2_implicit_tab_v1` combines the two existing additional grammars with unchanged V15 routes. It preserves the complete safe field union, strict LEEF ownership and existing bounds. A single existing profile remains preferred whenever sufficient; ambiguous normalization destinations retain distinct vendor fields. See [the new verification record](verification/mixed-generic-profiles-20261020.md). |
+| Mixed-profile qualification, main and development application | Local qualification complete; CI and application receipts follow the frozen commit | Actual affected Chromium 8/8 PASS, including both mixed orders, exact 22-source mappings, Ruby/CONF downloads, local save/reload/restore, malformed controls and two independent browser users. Initial 6/8 exposed the automatic-adoption gap; a source-aligned strict-grammar correction passed 44/44 focused tests, 3/3 English-policy checks and Web build. Generated Ruby 91/91 and Backend build remain valid for the unchanged Backend candidate. See the current work packet for exact-candidate CI, main and public affected-eight receipts. The earlier interim 112 includes two removed probes and is not a permanent-suite count. |
 
 ## Remaining support boundaries
 
@@ -20,10 +25,14 @@ an automatically downloadable parser. Unsupported original stream/container
 compiler contracts, ambiguous or undeclared CSV schemas, malformed controls and
 unrecognized text retain an actionable review state. Existing source framing for
 Audit/CRI/Docker, W3C/Zeek and transport streams must not be mistaken for native
-compilation of every original wire format. A batch requiring both newly added
-Generic Structural profiles is deliberately reviewed instead of selecting a
-single incompatible grammar. Additional-profile auto drafts exceeding the full
-mapping limit also remain in review rather than silently dropping fields.
+compilation of every original wire format. The isolated MIXED-PROFILE-1 candidate
+adds only the explicit versioned combination of Syslog prefix/KV and implicit-TAB
+LEEF 2.0, gated by a separate Backend capability. Unsupported or malformed
+combinations still require review. Additional-profile auto drafts exceeding the
+full 60-mapping limit also remain in review rather than silently dropping fields.
+Conflicting automatic normalization suggestions preserve their distinct vendor
+fields; they do not weaken destination-collision validation. The new profile
+does not change DRAFT status or assert native engine or target verification.
 
 Manufacturer/firmware-perfect oracle research and new original-wire compiler
 profiles remain optional later development. Owner visual acceptance and any

@@ -1,6 +1,7 @@
 import type { BackendParserProject } from './backendAdapter';
 import {validatePreviewRegexPattern} from '../regexSafety';
-import {GENERIC_STRUCTURAL_PROFILES,isGenericStructuralProfile,type GenericStructuralProfile} from '../genericStructuralProfiles';
+import {GENERIC_STRUCTURAL_SINGLE_PROFILES,GENERIC_STRUCTURAL_MIXED_PROFILE_V1,
+  isGenericStructuralProfile,isGenericStructuralSingleProfile,type GenericStructuralSingleProfile} from '../genericStructuralProfiles';
 
 /** A private loopback API advertises supported authoring features, not deployment approval. */
 export interface BackendCapabilities {
@@ -10,7 +11,9 @@ export interface BackendCapabilities {
     receiverProtocols: Array<'udp' | 'tcp'>;
     extractionFormats: Array<'json' | 'kv' | 'csv' | 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef' | 'mixed' | 'java_stacktrace' | 'regex' | 'generic_structural'>;
     genericStructuralGrammar?: 'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15';
-    genericStructuralProfiles?: Array<GenericStructuralProfile>;
+    genericStructuralProfiles?: Array<GenericStructuralSingleProfile>;
+    /** The explicit two-grammar combination is separate from the original profile list. */
+    genericStructuralMixedProfileV1?: boolean;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
@@ -213,10 +216,13 @@ export async function fetchBackendCapabilities(
     throw new Error('Untrusted Generic Structural capability without parser support.');
   if(a.genericStructuralProfiles!==undefined&&(
     !genericStructuralAdvertised||!Array.isArray(a.genericStructuralProfiles)||
-    a.genericStructuralProfiles.length<1||a.genericStructuralProfiles.length>GENERIC_STRUCTURAL_PROFILES.length||
+    a.genericStructuralProfiles.length<1||a.genericStructuralProfiles.length>GENERIC_STRUCTURAL_SINGLE_PROFILES.length||
     new Set(a.genericStructuralProfiles).size!==a.genericStructuralProfiles.length||
-    !a.genericStructuralProfiles.every(isGenericStructuralProfile)))
+    !a.genericStructuralProfiles.every(isGenericStructuralSingleProfile)))
     throw new Error('Untrusted additional Generic Structural profile capability.');
+  if(a.genericStructuralMixedProfileV1!==undefined&&(
+    !genericStructuralAdvertised||typeof a.genericStructuralMixedProfileV1!=='boolean'))
+    throw new Error('Untrusted combined Generic Structural profile capability.');
   const regexAdvertised=a.extractionFormats.includes('regex');
   const regexClaims=[a.boundedRegexNamedCaptureSubset,a.boundedRegexMaxPatternChars,
     a.boundedRegexRuntimeTimeoutMs];
@@ -336,10 +342,14 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     cap.authoring.genericStructuralGrammar!=='GENERIC_STRUCTURAL_ULTRA_COMPILER_V15'))
     throw new Error('Generic Structural DRAFT requires the exact bounded grammar and listener port >=6800.');
   if(project.extraction.genericStructuralProfile!==undefined){
+    const profile=project.extraction.genericStructuralProfile;
     if(project.extraction.format!=='generic_structural'||
-      !isGenericStructuralProfile(project.extraction.genericStructuralProfile))
+      !isGenericStructuralProfile(profile))
       throw new Error('The backend does not advertise the selected Generic Structural profile.');
-    if(!cap.authoring.genericStructuralProfiles?.includes(project.extraction.genericStructuralProfile))
+    const supported=profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1
+      ?cap.authoring.genericStructuralMixedProfileV1===true
+      :cap.authoring.genericStructuralProfiles?.includes(profile);
+    if(!supported)
       throw Object.assign(new Error('The backend does not advertise the selected Generic Structural profile.'),
         {code:'BACKEND_PROFILE_UNSUPPORTED'});
   }

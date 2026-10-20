@@ -24,7 +24,7 @@ export type RecipeStage=
  | {op:"unwrap_syslog";version:1|3164;mode:"strict_header"}
  | {op:"dispatch_family";families:("json"|"kv"|"cef"|"leef"|"rfc5424_cef"|"rfc5424_leef"|"rfc3164_kv"|"rfc5424_json"|"rfc5424_kv"|"rfc3164_cef"|"rfc3164_leef"|"csv")[];mode:"strict_prefix"}
  | {op:"parse_json"|"parse_kv"|"parse_cef"|"parse_leef"|"parse_java_stacktrace"}
- | {op:"parse_generic_structural";profile?:"syslog_prefix_kv"|"leef2_implicit_tab"}
+ | {op:"parse_generic_structural";profile?:ParserProject["extraction"]["genericStructuralProfile"]}
  | {op:"parse_regex";pattern:string}
  | {op:"parse_csv";columns:string[];delimiter:","|";"|"\t"}
  | MapStage | CastStage | SplitFieldStage | MergeFieldsStage | ClassifyStage

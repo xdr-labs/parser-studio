@@ -17,6 +17,9 @@ function prepared(sample:{raw:string}){
 for(const [profile,sample] of [
   ['syslog_prefix_kv',fixture.positive[0]!],
   ['leef2_implicit_tab',leefFixture.positive[0]!],
+  ['syslog_prefix_kv_leef2_implicit_tab_v1',{
+    raw:fixture.positive[0]!.raw+'\r\n'+leefFixture.positive[0]!.raw,
+  }],
 ] as const){
 it('preserves the selected generic grammar in the reviewable recipe: '+profile,async()=>{
   const result=prepared(sample);

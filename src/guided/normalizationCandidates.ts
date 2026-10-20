@@ -128,6 +128,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
 }
 export function suggestNormalizationCandidatesFromSuite(
   suite:SuiteResult|undefined,existing:MappingRule[],existingGroups:Record<string,FieldGroup>={},
+  options:{skipAmbiguousTargets?:boolean}={},
 ):NormalizationCandidate[]{
   if(!suite?.events.length)return [];
   const fields=suite.events.map(event=>event.fields);
@@ -135,6 +136,7 @@ export function suggestNormalizationCandidatesFromSuite(
   for(const event of fields)for(const path of listSafeLeafPaths(event))sources.add(path);
   const proposed:NormalizationCandidate[]=[];
   const targetIndex=new Map<string,number>();
+  const ambiguousTargets=new Set<string>();
   for(const source of [...sources].slice(0,100)){
     const candidate=candidateForSource(source,fields,existing,existingGroups);
     if(!candidate)continue;
@@ -144,13 +146,17 @@ export function suggestNormalizationCandidatesFromSuite(
       proposed.push(candidate);
       continue;
     }
+    ambiguousTargets.add(candidate.target);
     const prior=proposed[priorIndex]!;
     // For one official destination, prefer whole-sample compatible evidence
     // over an earlier ambiguous leaf-name match.
     if(prior.confidence==='REVIEW'&&candidate.confidence==='HIGH')
       proposed[priorIndex]=candidate;
   }
-  return proposed;
+  // A combined grammar cannot infer precedence between distinct source paths
+  // merely because their dictionary aliases share an official destination.
+  return options.skipAmbiguousTargets
+    ?proposed.filter(candidate=>!ambiguousTargets.has(candidate.target)):proposed;
 }
 
 /** Backward-compatible selected-event helper used by the Review Fields summary. */

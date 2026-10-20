@@ -1,0 +1,80 @@
+{
+  "positive": [
+    {
+      "name": "quoted Syslog values and multilingual text",
+      "raw": "<165>Feb  9 03:04:05 host02 security event user=\"박 지민\" action=allow src=192.0.2.44 note=\" padded value \"",
+      "source": {
+        "syslog": {
+          "pri": "165",
+          "month": "Feb",
+          "day": "9",
+          "time": "03:04:05",
+          "hostname": "host02",
+          "time_policy": "YEAR_AND_ZONE_UNKNOWN"
+        },
+        "generic": {
+          "mode": "syslog_prefix_kv",
+          "prefix": "security event ",
+          "message_raw": "security event user=\"박 지민\" action=allow src=192.0.2.44 note=\" padded value \"",
+          "source_raw": "<165>Feb  9 03:04:05 host02 security event user=\"박 지민\" action=allow src=192.0.2.44 note=\" padded value \"",
+          "kv": {
+            "user": "박 지민",
+            "action": "allow",
+            "src": "192.0.2.44",
+            "note": " padded value "
+          }
+        }
+      }
+    },
+    {
+      "name": "padded LEEF header and TAB-delimited Unicode values",
+      "raw": "LEEF:2.0| Example Vendor | Example Product | 1.0 | event 7 |\tsrc=198.51.100.9\tusrName= 홍 길동 \taction=deny\turl=https://example.test/a?b=c\tmsg= padded café value ",
+      "source": {
+        "leef_header": {
+          "version": "2.0",
+          "vendor": " Example Vendor ",
+          "product": " Example Product ",
+          "product_version": " 1.0 ",
+          "event_id": " event 7 "
+        },
+        "leef_extension": {
+          "src": "198.51.100.9",
+          "usrName": " 홍 길동 ",
+          "action": "deny",
+          "url": "https://example.test/a?b=c",
+          "msg": " padded café value "
+        },
+        "generic": {
+          "mode": "leef2_implicit_tab",
+          "source_raw": "LEEF:2.0| Example Vendor | Example Product | 1.0 | event 7 |\tsrc=198.51.100.9\tusrName= 홍 길동 \taction=deny\turl=https://example.test/a?b=c\tmsg= padded café value "
+        }
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "LEEF explicit delimiter cannot fall through to legacy KV",
+      "raw": "LEEF:2.0| Example Vendor | Example Product | 1.0 | event 7 |^|\tsrc=198.51.100.9\tusrName= 홍 길동 \taction=deny\turl=https://example.test/a?b=c\tmsg= padded café value "
+    },
+    {
+      "name": "duplicate LEEF extension key",
+      "raw": "LEEF:2.0| Example Vendor | Example Product | 1.0 | event 7 |\tsrc=198.51.100.9\tusrName= 홍 길동 \taction=deny\turl=https://example.test/a?b=c\tmsg= padded café value \tsrc=192.0.2.8"
+    },
+    {
+      "name": "unfinished LEEF extension",
+      "raw": "LEEF:2.0| Example Vendor | Example Product | 1.0 | event 7 |\tsrc=198.51.100.9\tusrName= 홍 길동 \taction=deny\turl=https://example.test/a?b=c\tmsg= padded café value \t"
+    },
+    {
+      "name": "unterminated Syslog quote",
+      "raw": "<165>Feb  9 03:04:05 host02 security event user=\"박 지민\" action=allow src=192.0.2.44 note=\" padded value "
+    },
+    {
+      "name": "invalid Syslog priority",
+      "raw": "<999>Feb  9 03:04:05 host02 security event user=\"박 지민\" action=allow src=192.0.2.44 note=\" padded value \""
+    },
+    {
+      "name": "unknown unstructured input",
+      "raw": "unrecognized original security event"
+    }
+  ]
+}

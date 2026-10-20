@@ -1,7 +1,7 @@
 import {extractStructuredFamily} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {extractLeef2ImplicitTab} from './leef2ImplicitTab';
-import type {GenericStructuralProfile} from './genericStructuralProfiles';
+import {GENERIC_STRUCTURAL_MIXED_PROFILE_V1,type GenericStructuralProfile} from './genericStructuralProfiles';
 export type {GenericStructuralProfile} from './genericStructuralProfiles';
 
 /**
@@ -954,9 +954,11 @@ function syslogPrefixedKeyValues(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string,profile?:GenericStructuralProfile):GenericStructuralExtraction{
+  const includesLeef=profile==='leef2_implicit_tab'||profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1;
+  const includesSyslog=profile==='syslog_prefix_kv'||profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1;
   // This selected profile owns the standalone LEEF 2.0 family. A legacy KV
   // route must not split its header or trim its TAB-delimited value spelling.
-  if(profile==='leef2_implicit_tab'&&raw.startsWith('LEEF:2.0|')){
+  if(includesLeef&&raw.startsWith('LEEF:2.0|')){
     const fields=extractLeef2ImplicitTab(raw);
     return fields?{fields,errors:[]}:
       {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
@@ -966,7 +968,7 @@ export function extractGenericStructural(raw:string,profile?:GenericStructuralPr
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??priSpaceKv(raw)??
     syslogEnvelopeStructuredFallback(raw)??commaKv(raw)??delimitedCommaKv(raw)??spaceKv(raw)??
     bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw)??
-    (profile==='syslog_prefix_kv'?syslogPrefixedKeyValues(raw):null);
+    (includesSyslog?syslogPrefixedKeyValues(raw):null);
   return fields?{fields,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
 }
