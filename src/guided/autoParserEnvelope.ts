@@ -2,7 +2,7 @@
  * Return ONLY fixed identifiers, counts and source line numbers. Untrusted
  * source strings, diagnostic messages and field values never enter this report.
  */
-import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents} from '../parser';
+import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents,tokenizeCSV} from '../parser';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -79,20 +79,15 @@ function jsonValid(input:string):boolean{
   }catch{return false;}
 }
 function csvValid(input:string):boolean{
-  // Lexical candidate only; named columns and a delimiter need user review.
-  // Recognize semicolon, comma, and TAB without guessing column meanings.
-  for(const delimiter of [',',';','\t']){
-    let quote=false,count=0;
-    for(let i=0;i<input.length;i++){
-      const c=input[i]!;
-      if(c==='"'){
-        if(quote&&input[i+1]==='"'){i++;continue;}
-        quote=!quote;
-      }else if(c===delimiter&&!quote)count++;
-    }
-    if(!quote&&count>=2)return true;
-  }
-  return false;
+  // Candidate syntax must agree with the already qualified strict CSV lexer.
+  // Counting delimiters with quote toggles alone accepts trailing bytes after
+  // closing quotes and quotes embedded in an unquoted field. Those are not
+  // valid RFC4180-style records for the downloadable CSV parser.
+  // A successful lexer check proves grammar only; names still need review.
+  return [',',';','\t'].some(delimiter=>{
+    const fields=tokenizeCSV(input,delimiter);
+    return fields!==null&&fields.length>=3;
+  });
 }
 function classifyBody(text:string):{body:Body;status:EntryStatus}{
   const value=text.trim();

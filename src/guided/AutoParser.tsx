@@ -1107,7 +1107,7 @@ export default function AutoParser({
        {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
          <strong>{report.accounted}/{report.sourceCount} events checked</strong>
          <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally</span>
-         <span>{report.unsupported} event{report.unsupported===1?'':'s'} need attention · Local analysis only</span>
+         <span>{report.unsupported} event{report.unsupported===1?'':'s'} {report.unsupported===1?'needs':'need'} attention · Local analysis only</span>
          {advanced&&report.families.map(x=><span key={x.envelope+'/'+x.body}>
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
