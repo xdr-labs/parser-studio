@@ -113,6 +113,61 @@ class PythonSenderFormatTests(unittest.TestCase):
                 self.assertEqual(choice.call_count,1)
                 self.assertEqual(draw.call_count,1)
 
+    def test_auto_and_mixed_reviewed_csv_preserve_url_query_fields(self):
+        # A reviewed CSV cell can contain key=value inside an URL. These are
+        # not top-level KV tokens, even when the first CSV column is unquoted.
+        cases=[
+            (",", "allow,gw01,https://example.test/path?user=alice&srcip=192.0.2.10", 2),
+            (";", "allow;gw01;https://example.test/path?user=alice&srcip=192.0.2.10", 2),
+            ("\t", "allow\tgw01\thttps://example.test/path?user=alice&srcip=192.0.2.10", 2),
+            (",", '"https://example.test/?user=alice&srcip=192.0.2.10",gw01,allow', 0),
+        ]
+        for fmt in ("auto", "mixed"):
+            for delimiter, source, index in cases:
+                with self.subTest(format=fmt, delimiter=repr(delimiter), index=index):
+                    cfg={"format":fmt,"csv_columns":["action","hostname","url"],
+                         "csv_delimiter":delimiter}
+                    result=update(source,cfg)
+                    cells=next(csv.reader(io.StringIO(result),delimiter=delimiter,strict=True))
+                    self.assertEqual(len(cells),3)
+                    self.assertIn("?user=alice&srcip=",cells[index])
+                    self.assertNotIn("srcip=192.0.2.10",cells[index])
+                    self.assertEqual(cells[1],"gw01")
+
+    def test_auto_unknown_csv_must_not_swallow_url_query(self):
+        source="allow,gw01,https://example.test/path?user=alice&srcip=192.0.2.10"
+        # With no reviewed schema, preserve URL query names rather than
+        # treating nested user= as a top-level KV token.
+        actual=update(source,{"format":"auto","csv_columns":[],"csv_delimiter":","})
+        self.assertIn("?user=alice&srcip=",actual)
+        self.assertEqual(len(next(csv.reader([actual]))),3)
+
+    def test_sender_fails_closed_on_invalid_csv_quote_transitions(self):
+        # Browser tokenizeCSV rejects an unquoted mid-cell quote. The Python
+        # emitter must not silently mutate fields under this invalid grammar.
+        bad=[
+            'left"inside",alice,alice@example.test',
+            'alice,"quoted"junk,alice@example.test',
+            'alice,alice@example.test,"broken"tail',
+            'alice;alice@example.test;"broken"tail',
+            'alice\talice@example.test\t"broken"tail',
+        ]
+        for source in bad:
+            sep=';' if ';' in source else '\t' if '\t' in source else ','
+            with self.subTest(source=source[:14]):
+                self.assertIsNone(runtime['_csv_segments'](source,sep))
+                output=update(source,{"format":"csv", "csv_columns":["username","email","action"],
+                                      "csv_delimiter":sep})
+                self.assertEqual(output,source)
+
+    def test_sender_retains_top_level_kv_priority_over_csv_schema(self):
+        source="src_ip=192.0.2.10 note=a,b,c"
+        actual=update(source,{"format":"auto","csv_columns":["first","username","email"],
+                              "csv_delimiter":","})
+        self.assertIn(" note=a,b,c",actual)
+        self.assertIn("src_ip=",actual)
+        self.assertNotIn("src_ip=192.0.2.10",actual)
+
     def test_epoch_json_numeric_type(self):
         s='{"eventtime":1600000000000,"time":1600000000,"action":"deny"}'
         a=json.loads(update(s,{"format":"json"}))

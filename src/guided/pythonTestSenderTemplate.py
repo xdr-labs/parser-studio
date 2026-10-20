@@ -36,8 +36,10 @@ _RFC3164 = re.compile(
     rf"^(?P<pri><\d{{1,3}}>)?(?P<month>{_MONTH})"
     r"(?P<space> {1,2})(?P<day>\d{1,2}) (?P<clock>\d{2}:\d{2}:\d{2})"
 )
+# Only source-level KV separators are eligible. URL/query substrings like
+# /?user=alice&srcip=192.0.2.10 must never be treated as KV fields.
 _KV = re.compile(
-    r"(?<![\w.])(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,63})="
+    r"(?<![^\s|;,:])(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,63})="
     r"(?P<value>\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|[^\s\t;,]+)"
 )
 _EMAIL = re.compile(
@@ -213,22 +215,44 @@ def _inline_fields(source: str) -> str:
 
 
 def _csv_segments(raw: str, delimiter: str) -> list[str] | None:
+    # Match the browser's strict tokenizeCSV quote-state transitions rather
+    # than toggling quotes at arbitrary positions inside unquoted cells.
+    # The source substrings are retained exactly for unchanged fields.
+    if delimiter not in (",", ";", "\t"):
+        return None
     parts: list[str] = []
-    quoted = False
+    state = "start"
     start = 0
     index = 0
     while index < len(raw):
         char = raw[index]
-        if char == '"':
-            if quoted and index + 1 < len(raw) and raw[index + 1] == '"':
-                index += 2
-                continue
-            quoted = not quoted
-        elif char == delimiter and not quoted:
+        if state == "quoted":
+            if char == '"':
+                if index + 1 < len(raw) and raw[index + 1] == '"':
+                    index += 2
+                    continue
+                state = "after_quote"
+        elif state == "after_quote":
+            if char == delimiter:
+                parts.append(raw[start:index])
+                start = index + 1
+                state = "start"
+            elif char not in (" ",) and not (char == "\t" and delimiter != "\t"):
+                return None
+        elif char == delimiter:
             parts.append(raw[start:index])
             start = index + 1
+            state = "start"
+        elif char == '"':
+            if state != "start":
+                return None
+            state = "quoted"
+        elif state == "start" and (char == " " or (char == "\t" and delimiter != "\t")):
+            pass
+        else:
+            state = "plain"
         index += 1
-    if quoted:
+    if state == "quoted":
         return None
     parts.append(raw[start:])
     return parts
@@ -297,14 +321,21 @@ def update_record(source: str, config: dict) -> str:
         parsed = _json_event(source)
         if parsed is not None:
             return parsed
-    if fmt == "csv" or (fmt in ("auto", "mixed") and
-                        "=" not in source and not source.startswith(("<", "CEF:", "LEEF:"))):
-        columns = config.get("csv_columns", [])
-        delimiter = config.get("csv_delimiter", ",")
-        if columns and delimiter in (",", ";", "\t"):
-            csv_result = _csv_event(source, columns, delimiter)
-            if csv_result is not None:
-                return csv_result
+    # In auto/mixed mode, a user-reviewed CSV schema is more reliable than a
+    # lone '=' embedded in a positional URL or quoted value. Keep explicit
+    # source-level KV assignments and CEF/LEEF/Syslog envelopes ahead of it.
+    # The strict Python CSV reader must validate the exact column count.
+    columns = config.get("csv_columns", [])
+    delimiter = config.get("csv_delimiter", ",")
+    positional = not source.lstrip().startswith(("<", "CEF:", "LEEF:", "{")) and not re.match(
+        r"^\s*[A-Za-z_][A-Za-z0-9_.-]{0,63}=", source)
+    if (fmt == "csv" or (fmt in ("auto", "mixed") and positional)) and columns and \
+            delimiter in (",", ";", "\t"):
+        csv_result = _csv_event(source, columns, delimiter)
+        if csv_result is not None:
+            return csv_result
+    if fmt == "csv":
+        return source  # No grammar-safe mutation: leave the exact raw record.
     return _inline_fields(_fresh_timestamps(source))
 
 
