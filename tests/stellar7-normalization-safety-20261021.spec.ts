@@ -91,8 +91,23 @@ test('7.0 nested field mappings generate real backend DRAFT files with checked d
   expect(pair.files).toHaveLength(2);
   const ruby=pair.files.find(item=>!item.name.endsWith('.conf'));
   expect(ruby).toBeDefined();
-  for(const field of ['process.name','process.pid','file.hash.sha256','host.ip','user.name'])
-    expect(ruby!.content).toContain(field);
+  // The production DRAFT Ruby holds a base64-encoded checked project, not
+  // plaintext normalization rules. Decode that project and verify the actual
+  // Backend compiler input that was embedded in the downloaded artifact.
+  const encoded=ruby!.content.match(/Base64\.strict_decode64\('([A-Za-z0-9+/=]+)'\)/)?.[1];
+  expect(encoded).toBeTruthy();
+  const embedded=JSON.parse(Buffer.from(encoded!,'base64').toString('utf8')) as {
+    normalization:{nsFields:Record<string,{normalized_name:string;data_type:string}>};
+  };
+  for(const [field,type] of [
+    ['process.name','string'],['process.pid','integer'],
+    ['file.hash.sha256','string'],['host.ip','ip'],['user.name','string'],
+  ]){
+    expect(embedded.normalization.nsFields[field]).toMatchObject({
+      normalized_name:field,data_type:type,
+    });
+  }
+  expect(ruby!.content).not.toContain('synthetic_a');
   const sha=(value:string|Buffer)=>createHash('sha256').update(value).digest('hex');
   for(const file of pair.files){
     expect(sha(file.content)).toBe(file.sha256);
