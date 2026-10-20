@@ -25,7 +25,7 @@ const LABELS:Record<CompilerAssessment['status'],string>={
   SOURCE_LIMIT:'The source is empty, truncated or over the bounded local analysis budget.',
 };
 const ENVELOPES={none:'Standalone',rfc3164:'RFC3164 Syslog',rfc5424:'RFC5424 Syslog'} as const;
-const BODIES={json:'JSON',kv:'Key / Value',cef:'CEF',leef:'LEEF',csv:'CSV',java_stacktrace:'Java Stack Trace',unknown:'Unknown'} as const;
+const BODIES={json:'JSON',kv:'Key / Value',cef:'CEF',leef:'LEEF',csv:'CSV',java_stacktrace:'Java Stack Trace',raw:'Message text',unknown:'Unknown'} as const;
 const STATUS={
   RECOGNIZED:'Candidate identified',
   HEADER_MALFORMED:'Malformed header',

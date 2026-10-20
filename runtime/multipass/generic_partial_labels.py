@@ -1,8 +1,8 @@
 """Conservative delimiter label/value recovery for incomplete events.
 
 This layer extracts only exact source values from bounded top-level comma or
-semicolon segments. It never assigns semantics and never certifies an event
-complete.
+semicolon segments and explicit bracketed labels. It never assigns semantics
+and never certifies an event complete.
 """
 from __future__ import annotations
 
@@ -16,6 +16,42 @@ BRACKET_FIELD=re.compile(
     r'\[(?P<key>[A-Za-z][A-Za-z0-9_. /#()\-]{0,63})'
     r'\s*[:=]\s*(?P<value>[^\[\]\r\n]{1,256})\]'
 )
+QUOTED_BRACKET_START=re.compile(
+    r'\[(?P<key>[A-Za-z][A-Za-z0-9_. /#()\-]{0,63})[ \t]+'
+    r'(?P<quote>[\"\'])'
+)
+
+
+def _quoted_bracket_fields(raw:str):
+    """Read [label "value"] with bounded quotes and original lexical values."""
+    cursor=0
+    for match in QUOTED_BRACKET_START.finditer(raw):
+        if match.start()<cursor:
+            continue
+        key=match.group('key').strip()
+        if not KEY.fullmatch(key) or key.lower() in {'http','https'}:
+            continue
+        quote=match.group('quote')
+        start=pos=match.end()
+        while pos<len(raw) and pos-start<=256:
+            char=raw[pos]
+            if char in '\r\n':
+                break
+            if char=='\\':
+                if pos+1>=len(raw) or raw[pos+1] in '\r\n':
+                    break
+                pos+=2
+                continue
+            if char==quote:
+                end=pos
+                pos+=1
+                while pos<len(raw) and raw[pos] in ' \t':
+                    pos+=1
+                if pos<len(raw) and raw[pos]==']':
+                    cursor=pos+1
+                    yield key,start,end,raw[start:end]
+                break
+            pos+=1
 
 
 def _b(raw:str,pos:int)->int:
@@ -84,7 +120,13 @@ def _field(raw:str,a:int,b:int,*,allow_prefix:bool=False):
 
 def _overlaps(a:int,b:int,spans:list[ValueSpan])->bool:
     for span in spans:
-        if max(a,span.start_byte)>=min(b,span.end_byte):
+        # Empty quoted values still have one source occurrence. A later pass
+        # must not append it again or recover it inside an existing value.
+        overlap=(
+            span.start_byte<=a<span.end_byte
+            or a==span.start_byte==span.end_byte
+        ) if a==b else max(a,span.start_byte)<min(b,span.end_byte)
+        if not overlap:
             continue
         weak_csv=(span.source_segments is None and (span.path.startswith('column_') or span.path.startswith('body.column_')))
         if weak_csv:
@@ -132,10 +174,17 @@ def augment_incomplete_labels(event:SourceEvent)->SourceEvent:
             vb-=1
         if va<vb:
             candidates.append((key,va,vb,event.raw[va:vb]))
+    candidates.extend(_quoted_bracket_fields(event.raw))
     if not candidates:
         return event
     out=deepcopy(event)
-    values={}
+    previous=out.vendor_fields.get('generic_labels')
+    if previous is not None and (
+        not isinstance(previous,dict)
+        or any(not isinstance(bucket,list) for bucket in previous.values())
+    ):
+        return event
+    values={} if previous is None else deepcopy(previous)
     spans=[]
     for key,a,b,value in candidates:
         byte_a=_b(event.raw,a);byte_b=_b(event.raw,b)

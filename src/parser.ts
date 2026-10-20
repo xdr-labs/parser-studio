@@ -255,7 +255,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
     case 'java_stacktrace': return parseJavaStacktrace(raw);
-    case 'generic_structural': return extractGenericStructural(raw);
+    case 'generic_structural': return extractGenericStructural(raw,draft.genericStructuralProfile);
     case 'mixed': {
       const selected=draft.mixedFormats??[];
       if(selected.length<2||selected.length>4||

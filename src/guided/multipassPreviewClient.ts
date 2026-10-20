@@ -197,23 +197,46 @@ function utf8Slice(raw:string,startByte:number,endByte:number):string{
  try{return new TextDecoder('utf-8',{fatal:true}).decode(data.slice(startByte,endByte));}
  catch{throw new Error('Invalid Multi-Pass event byte range.');}
 }
-export async function requestMultiPassPreview(raw:string,requester:typeof fetch=fetch):Promise<MultiPassSourcePreview>{
+export type MultiPassRequestPhase='analyzing'|'validating';
+export interface MultiPassRequestOptions {
+ signal?:AbortSignal;
+ onPhase?:(phase:MultiPassRequestPhase)=>void;
+}
+function assertNotAborted(signal?:AbortSignal){
+ if(signal?.aborted)throw new DOMException('Analysis canceled.','AbortError');
+}
+export async function requestMultiPassPreview(raw:string,requester:typeof fetch=fetch,
+ options:MultiPassRequestOptions={}):Promise<MultiPassSourcePreview>{
+ assertNotAborted(options.signal);
  const size=new TextEncoder().encode(raw).byteLength;
  if(!size||size>65536)throw new Error('Source must be between 1 and 65536 UTF-8 bytes.');
+ options.onPhase?.('analyzing');
  const response=await requester('/api/v1/multipass/preview',{method:'POST',
   headers:{'Content-Type':'application/json'},cache:'no-store',credentials:'same-origin',
-  body:JSON.stringify({raw})});
+  body:JSON.stringify({raw}),signal:options.signal});
+ assertNotAborted(options.signal);
  if(!response.ok)throw new Error('Multi-Pass preview is unavailable. No engine result was accepted.');
- return verifySourcePreview(raw,await response.json() as Partial<MultiPassSourcePreview>);
+ const value=await response.json() as Partial<MultiPassSourcePreview>;
+ assertNotAborted(options.signal);
+ options.onPhase?.('validating');
+ const result=await verifySourcePreview(raw,value);
+ assertNotAborted(options.signal);
+ return result;
 }
-export async function requestMultiPassBatchPreview(raw:string,requester:typeof fetch=fetch):Promise<MultiPassBatchPreview>{
+export async function requestMultiPassBatchPreview(raw:string,requester:typeof fetch=fetch,
+ options:MultiPassRequestOptions={}):Promise<MultiPassBatchPreview>{
+ assertNotAborted(options.signal);
  const size=new TextEncoder().encode(raw).byteLength;
  if(!size||size>65536)throw new Error('Source must be between 1 and 65536 UTF-8 bytes.');
+ options.onPhase?.('analyzing');
  const response=await requester('/api/v1/multipass/preview-batch',{method:'POST',
   headers:{'Content-Type':'application/json'},cache:'no-store',credentials:'same-origin',
-  body:JSON.stringify({raw})});
+  body:JSON.stringify({raw}),signal:options.signal});
+ assertNotAborted(options.signal);
  if(!response.ok)throw new Error('Multi-Pass batch preview is unavailable. No engine result was accepted.');
  const value=await response.json() as Partial<MultiPassBatchPreview>;
+ assertNotAborted(options.signal);
+ options.onPhase?.('validating');
  if(value.contract!=='parser-studio.multipass-source-batch-preview.v0.1'||
   value.nativeVerified!==false||value.targetVerified!==false||
   value.sourceBytes!==size||!Number.isSafeInteger(value.eventCount)||value.eventCount!<1||
@@ -223,6 +246,7 @@ export async function requestMultiPassBatchPreview(raw:string,requester:typeof f
  if(!/^[a-f0-9]{64}$/.test(value.sourceSha256??'')||
   value.sourceSha256!==await sha256Utf8Hex(raw))
   throw new Error('Multi-Pass batch response source mismatch.');
+ assertNotAborted(options.signal);
  const partitions:Array<{startByte:number;endByte:number}>=[];
  const sourceBytes=new TextEncoder().encode(raw);
  for(const [position,item] of value.events.entries()){
@@ -233,6 +257,7 @@ export async function requestMultiPassBatchPreview(raw:string,requester:typeof f
     throw new Error('Invalid Multi-Pass batch event.');
   const eventRaw=utf8Slice(raw,item.startByte,item.endByte);
   item.preview=await verifySourcePreview(eventRaw,item.preview);
+  assertNotAborted(options.signal);
   partitions.push({startByte:item.startByte,endByte:item.endByte});
  }
  for(const item of value.separators){

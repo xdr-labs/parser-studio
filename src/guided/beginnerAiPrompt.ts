@@ -39,12 +39,23 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     'Parser issues:',
     ...(preview.issues.length?preview.issues.map(x=>'- '+x):['- no explicit issue code']),
   ];
+  if(preview.spans.length){
+    lines.push('', 'Original source value occurrences to preserve:');
+    for(const span of preview.spans){
+      lines.push(JSON.stringify({
+        sourcePath:span.path,startByte:span.startByte,endByte:span.endByte,
+        sourceValue:utf8Slice(eventSource,span.startByte,span.endByte),
+      }));
+    }
+  }
   if(preview.residuals.length){
     lines.push('', 'Unparsed source regions:');
     for(const [index,region] of preview.residuals.entries()){
       lines.push(`Region ${index+1} · UTF-8 bytes ${region.startByte}-${region.endByte}`,
         'BEGIN UNPARSED REGION',utf8Slice(eventSource,region.startByte,region.endByte),'END UNPARSED REGION');
     }
+  }else if(preview.status==='SOURCE_PARSED'){
+    lines.push('', 'No unresolved source region remains. Review parser-file support for the extracted fields without inventing a missing source region.');
   }else{
     lines.push('', 'No trustworthy smaller residual range is available; review the whole problem event.');
   }

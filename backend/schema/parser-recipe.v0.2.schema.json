@@ -233,6 +233,12 @@
             "properties": {
               "op": {
                 "const": "parse_generic_structural"
+              },
+              "profile": {
+                "enum": [
+                  "syslog_prefix_kv",
+                  "leef2_implicit_tab"
+                ]
               }
             }
           },

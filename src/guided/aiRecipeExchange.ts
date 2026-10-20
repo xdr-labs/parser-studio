@@ -11,6 +11,7 @@ import {toBackendProject} from './backendAdapter';
 import {lookupFieldValue} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
+import {selectDraftFormat} from './draftFormatTransition';
 
 const MAX_RECIPE_BYTES=32*1024;
 export type AIExchangeReason='SOURCE_LIMIT'|'UNTRUSTED_PREVIEW'|
@@ -194,13 +195,20 @@ export function proposeV01RecoveryParserFromAI(imported:AIImportResult,draft:Par
    classification:{defaultIndex:INDEX_TO_UI[classify.defaultIndex],rules}};
  const parseCsv=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_csv'}>=>s.op==='parse_csv');
  const parseRegex=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_regex'}>=>s.op==='parse_regex');
+ const parseGeneric=recipe.stages.find((s):s is Extract<ReviewStage,{op:'parse_generic_structural'}>=>s.op==='parse_generic_structural');
  const dispatch=recipe.stages.find((s):s is Extract<ReviewStage,{op:'dispatch_family'}>=>s.op==='dispatch_family');
- const candidate:ParserDraft={...draft,format:recipe.sourceFormat,mappings,guided:nextOpts,
+ const candidate:ParserDraft={...selectDraftFormat(draft,recipe.sourceFormat),mappings,guided:nextOpts,
    ...(recipe.sourceFormat==='csv'&&parseCsv?{csvColumns:parseCsv.columns.join(','),csvDelimiter:parseCsv.delimiter}:{}),
    ...(recipe.sourceFormat==='regex'&&parseRegex?{pattern:parseRegex.pattern}:{}),
    ...(recipe.sourceFormat==='mixed'&&dispatch?{mixedFormats:[...dispatch.families]}:{}),
    ...(['syslog_rfc3164','syslog_rfc5424'].includes(recipe.sourceFormat)?
      {syslogBodyFormat:recipe.bodyFormat as 'json'|'kv'|'cef'|'leef'|'regex',...(recipe.bodyFormat==='regex'&&parseRegex?{pattern:parseRegex.pattern}:{})}:{})};
+ // A full replacement follows the selected recipe grammar, including an
+ // explicitly absent profile; mapping-only proposals retain the current one.
+ if(recipe.sourceFormat==='generic_structural'){
+   if(parseGeneric?.profile)candidate.genericStructuralProfile=parseGeneric.profile;
+   else delete candidate.genericStructuralProfile;
+ }
  if(!toBackendProject(candidate).ok)return deny('BACKEND_UNSUPPORTED');
  return {ok:true,candidate,approvalRequired:true,backendCompilerVerified:false,replacement:'FULL_PARSER'};
 }

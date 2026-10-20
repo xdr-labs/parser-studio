@@ -2,6 +2,13 @@
 # Emitted only for generic_structural projects; no arbitrary user code executes.
 
 def parserstudio_generic_structural(text)
+  # The selected standalone LEEF 2.0 family must not fall through to an older
+  # KV route that would split header values or trim TAB-delimited field data.
+  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')=='leef2_implicit_tab' && text.start_with?('LEEF:2.0|')
+    result = parserstudio_generic_leef2_implicit_tab(text)
+    return result if result
+    raise ArgumentError, 'Unsupported generic structural event'
+  end
   result = parserstudio_generic_short_rfc5424_structured(text)
   return result if result
   result = parserstudio_generic_short_rfc5424_json(text)
@@ -42,7 +49,52 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_space_kv(text)
   return result if result
+  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')=='syslog_prefix_kv'
+    result = parserstudio_generic_syslog_prefix_kv(text)
+    return result if result
+  end
   raise ArgumentError, 'Unsupported generic structural event'
+end
+
+# This additional grammar is selected by its own project profile and capability.
+# The V15 routes above retain their existing behavior.
+def parserstudio_generic_syslog_prefix_kv(text)
+  return nil if text.bytesize>8192 || text.match?(/[\x00-\x08\x0a-\x1f\x7f]/)
+  head=/\A<(\d{1,3})>([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([!-~]{1,255}) +([^\r\n]+)\z/.match(text)
+  return nil unless head && Integer(head[1],10)<=191 &&
+    parserstudio_generic_valid_bsd_clock(head[2],head[3],head[4])
+  message=head[6]
+  first=/[ \t]([A-Za-z_][A-Za-z0-9_-]{0,63})=/.match(message)
+  return nil unless first
+  cursor=first.begin(0)+1
+  prefix=message[0...cursor]
+  # Only space and TAB delimit fields. Other Unicode remains literal data,
+  # including Unicode spaces and line/paragraph separators in one record.
+  return nil unless prefix.match?(/[^ \t\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/)
+  return nil if prefix.bytesize>1024 ||
+    prefix.match?(/[="'{}\[\]|<>\/]/) ||
+    prefix.match?(/(?:\d{1,3}\.){3}\d{1,3}|(?:[0-9A-Fa-f]{0,4}:){2}|->/)
+  fields={}
+  token=/\A([A-Za-z_][A-Za-z0-9_-]{0,63})=(?:"((?:\\["\\]|[^"\\\x00-\x1f\x7f])*)"|'((?:\\['\\]|[^'\\\x00-\x1f\x7f])*)'|([^ \t"'\\]+))(?=[ \t]|\z)/
+  while cursor<message.length
+    match=token.match(message[cursor..-1])
+    return nil unless match
+    key=match[1]
+    value=match[2] || match[3] || match[4]
+    return nil unless parserstudio_generic_source_key_safe(key) &&
+      !fields.key?(key) && value.bytesize<=512
+    fields[key]=value
+    return nil if fields.length>60
+    cursor+=match[0].length
+    cursor+=1 while cursor<message.length && message[cursor].match?(/[ \t]/)
+  end
+  return nil if fields.length<2
+  {
+    'syslog'=>{'pri'=>head[1],'month'=>head[2],'day'=>head[3],'time'=>head[4],
+      'hostname'=>head[5],'time_policy'=>'YEAR_AND_ZONE_UNKNOWN'},
+    'generic'=>{'mode'=>'syslog_prefix_kv','prefix'=>prefix,'message_raw'=>message,
+      'source_raw'=>text,'kv'=>fields},
+  }
 end
 
 def parserstudio_generic_short_rfc5424_structured(text)
@@ -1241,4 +1293,46 @@ def parserstudio_generic_asa(text)
     end
   end
   {'syslog' => syslog, 'asa' => fields}
+end
+
+# Explicit additional profile for the bounded standalone implicit-TAB variant.
+# This does not broaden parserstudio_leef or the existing V15 dispatcher.
+def parserstudio_generic_leef2_implicit_tab(text)
+  return nil unless text.is_a?(String) && text.valid_encoding? &&
+    (text.encoding == Encoding::UTF_8 || text.ascii_only?)
+  return nil if text.bytesize>8192 || text.match?(/[\x00-\x08\x0a-\x1f\x7f]/) ||
+    !text.start_with?('LEEF:2.0|')
+  header={'version'=>text[5,3]}
+  cursor='LEEF:2.0|'.length
+  %w[vendor product product_version event_id].each do |name|
+    finish=text.index('|',cursor)
+    return nil unless finish
+    value=text[cursor...finish]
+    return nil if value.empty? || value.delete(' ').empty? ||
+      value.include?('\\') || value.include?("\t") || value.bytesize>256
+    header[name]=value
+    cursor=finish+1
+  end
+  extension=text[cursor..-1]
+  extension=extension[1..-1] if extension.start_with?("\t")
+  return nil if extension.empty? || extension.include?('|')
+  # Preserve empty trailing tokens so an unfinished extension stays rejected.
+  tokens=extension.split("\t",-1)
+  return nil unless tokens.length.between?(2,55)
+  fields={}
+  tokens.each do |token|
+    equal=token.index('=')
+    return nil unless equal && equal>0
+    key=token[0...equal]
+    value=token[(equal+1)..-1]
+    return nil unless key.match?(/\A[A-Za-z_][A-Za-z0-9_-]{0,63}\z/)
+    return nil if %w[__proto__ prototype constructor].include?(key) ||
+      fields.key?(key) || value.empty? || value.bytesize>512
+    fields[key]=value
+  end
+  {
+    'leef_header'=>header,
+    'leef_extension'=>fields,
+    'generic'=>{'mode'=>'leef2_implicit_tab','source_raw'=>text},
+  }
 end

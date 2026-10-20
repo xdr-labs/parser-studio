@@ -1,4 +1,5 @@
 import type { ParserDraft, MappingRule } from '../model';
+import {isGenericStructuralProfile} from '../genericStructuralProfiles';
 import { defaultGuidedOptions, type EventClass, type FieldGroup, type GuidedEnrichmentRule } from './contract';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
 
@@ -50,7 +51,8 @@ export function reconstructExactBackendDraft(
       !p.receiver.protocols.every(v=>v==='udp'||v==='tcp') ||
       (p.receiver.bindAddress!=='0.0.0.0'&&p.receiver.bindAddress!=='127.0.0.1') ||
       p.receiver.tcpFraming!=='line')return null;
-    if(!['json','kv','csv','cef','leef','syslog_rfc5424'].includes(p.extraction.format))
+    if(!['json','kv','csv','cef','leef','syslog_rfc5424'].includes(p.extraction.format)&&
+      !(p.extraction.format==='generic_structural'&&isGenericStructuralProfile(p.extraction.genericStructuralProfile)))
       return null;
     const mappings:MappingRule[]=[];
     const groups:Record<string,FieldGroup>=Object.create(null);
@@ -117,6 +119,7 @@ export function reconstructExactBackendDraft(
       pattern:'',csvColumns:e.format==='csv'?e.csvColumns.join(','):'',
       csvDelimiter:e.format==='csv'?e.csvDelimiter:',',
       syslogBodyFormat:e.format==='syslog_rfc5424'?e.syslogBodyFormat??'raw':'raw',
+      ...(e.genericStructuralProfile?{genericStructuralProfile:e.genericStructuralProfile}:{}),
       mappings,
       guided:{
         ...options,

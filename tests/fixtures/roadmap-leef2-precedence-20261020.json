@@ -1,0 +1,54 @@
+{
+  "positive": [
+    {
+      "name": "spaced vendor and five padded TAB fields",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|\tfirst=  padded  \tsecond=two\tthird=three\tfourth=four\tfifth=five",
+      "header": {
+        "version": "2.0",
+        "vendor": "Acme Corp",
+        "product": "Gateway",
+        "product_version": "1",
+        "event_id": "event"
+      },
+      "extension": {
+        "first": "  padded  ",
+        "second": "two",
+        "third": "three",
+        "fourth": "four",
+        "fifth": "five"
+      }
+    },
+    {
+      "name": "direct extension with literal UTF-8 and padded header fields",
+      "raw": "LEEF:2.0| Acme Corp |Policy Agent| v3 |event-7|first=  \"원문 \\t spelling\"  \tsecond=two words\tthird=x=y\tfourth=four\tfifth=  end padding  ",
+      "header": {
+        "version": "2.0",
+        "vendor": " Acme Corp ",
+        "product": "Policy Agent",
+        "product_version": " v3 ",
+        "event_id": "event-7"
+      },
+      "extension": {
+        "first": "  \"원문 \\t spelling\"  ",
+        "second": "two words",
+        "third": "x=y",
+        "fourth": "four",
+        "fifth": "  end padding  "
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "trailing TAB after five complete fields",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|\tfirst=  padded  \tsecond=two\tthird=three\tfourth=four\tfifth=five\t"
+    },
+    {
+      "name": "blank vendor with five complete fields",
+      "raw": "LEEF:2.0| |Gateway|1|event|\tfirst=  padded  \tsecond=two\tthird=three\tfourth=four\tfifth=five"
+    },
+    {
+      "name": "explicit delimiter outside selected implicit grammar",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|\tfirst=  padded  \tsecond=two\tthird=three\tfourth=four\tfifth=five"
+    }
+  ]
+}

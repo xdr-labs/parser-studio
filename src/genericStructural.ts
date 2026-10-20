@@ -1,5 +1,8 @@
 import {extractStructuredFamily} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
+import {extractLeef2ImplicitTab} from './leef2ImplicitTab';
+import type {GenericStructuralProfile} from './genericStructuralProfiles';
+export type {GenericStructuralProfile} from './genericStructuralProfiles';
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -911,12 +914,59 @@ function asa(raw:string):Record<string,unknown>|null{
   return {syslog,asa:fields};
 }
 
-export function extractGenericStructural(raw:string):GenericStructuralExtraction{
+/** Additional, explicitly selected grammar; it does not widen the V15 routes. */
+function syslogPrefixedKeyValues(raw:string):Record<string,unknown>|null{
+  if(new TextEncoder().encode(raw).byteLength>8192||/[\u0000-\u0008\u000a-\u001f\u007f]/.test(raw))return null;
+  const head=/^<(\d{1,3})>([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([!-~]{1,255}) +([^\r\n]+)$/.exec(raw);
+  if(!head||Number(head[1])>191||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
+  const message=head[6]!;
+  const first=/[ \t]([A-Za-z_][A-Za-z0-9_-]{0,63})=/.exec(message);
+  if(!first)return null;
+  let cursor=first.index+1;
+  const prefix=message.slice(0,cursor);
+  // A text prefix is retained literally. Do not hide malformed structured
+  // payloads, unsafe keys or previously discoverable network tuples in it.
+  // Only space and TAB are separators. Other Unicode remains literal data,
+  // including Unicode spaces and line/paragraph separators in one record.
+  if(!/[^ \t\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/.test(prefix)||
+     new TextEncoder().encode(prefix).byteLength>1024||
+     /[="'{}\[\]|<>\/]/.test(prefix)||
+     /(?:\d{1,3}\.){3}\d{1,3}|(?:[0-9A-Fa-f]{0,4}:){2}|->/.test(prefix))return null;
+  const fields:Record<string,unknown>={};
+  const token=/^([A-Za-z_][A-Za-z0-9_-]{0,63})=(?:"((?:\\["\\]|[^"\\\u0000-\u001f\u007f])*)"|'((?:\\['\\]|[^'\\\u0000-\u001f\u007f])*)'|([^ \t"'\\]+))(?=[ \t]|$)/;
+  while(cursor<message.length){
+    const match=token.exec(message.slice(cursor));
+    if(!match)return null;
+    const key=match[1]!,value=match[2]??match[3]??match[4]!;
+    if(!sourceKeySafe(key)||Object.prototype.hasOwnProperty.call(fields,key)||
+       new TextEncoder().encode(value).byteLength>512)return null;
+    fields[key]=value;
+    if(Object.keys(fields).length>60)return null;
+    cursor+=match[0].length;
+    while(cursor<message.length&&/[ \t]/.test(message[cursor]!))cursor++;
+  }
+  if(Object.keys(fields).length<2)return null;
+  return {
+    syslog:{pri:head[1],month:head[2],day:head[3],time:head[4],hostname:head[5],
+      time_policy:'YEAR_AND_ZONE_UNKNOWN'},
+    generic:{mode:'syslog_prefix_kv',prefix,message_raw:message,source_raw:raw,kv:fields},
+  };
+}
+
+export function extractGenericStructural(raw:string,profile?:GenericStructuralProfile):GenericStructuralExtraction{
+  // This selected profile owns the standalone LEEF 2.0 family. A legacy KV
+  // route must not split its header or trim its TAB-delimited value spelling.
+  if(profile==='leef2_implicit_tab'&&raw.startsWith('LEEF:2.0|')){
+    const fields=extractLeef2ImplicitTab(raw);
+    return fields?{fields,errors:[]}:
+      {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
+  }
   const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??
     rfc3164DelimitedCommaKv(raw)??rfc3164PositionalCsv(raw)??priSpaceKv(raw)??
     syslogEnvelopeStructuredFallback(raw)??commaKv(raw)??delimitedCommaKv(raw)??spaceKv(raw)??
-    bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw);
+    bsdClassicPidMessageProfile(raw)??bsdTaggedMessageProfile(raw)??
+    (profile==='syslog_prefix_kv'?syslogPrefixedKeyValues(raw):null);
   return fields?{fields,errors:[]}:
     {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
 }

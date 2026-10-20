@@ -1,4 +1,40 @@
-# CURRENT OWNER-APPROVED ROADMAP — MAINLINE + BROWSER EXPERIMENT VERSIONS (2026-10-18)
+# Current engineering completion ledger — 2026-10-20
+
+This ledger supersedes dated next-action statements below. The active product
+remains Auto Parser and ChatGPT Assisted Parser. Historical unchecked research
+and target-release lists are not a count of unfinished beta implementation.
+
+| Scope | Current engineering status | Evidence / boundary |
+| --- | --- | --- |
+| MAIN-1/2, LOCAL-1/2, MULTI-TYPE-INPUT-1, SCRIPT-1/2/3 and CI-1 | Incorporated in main before this continuation | PR #120; main `00e783520c005a96b37b5fbf5eb4ad81c74381a6`; its qualified public development baseline is recorded in Issue #1 comment 6286114104. |
+| DRAFT-1: source-to-parser integration | Implemented in this continuation | Strict RFC5424 SD/free MSG uses the existing raw-body compiler. Additional explicit Generic Structural profiles preserve original Syslog prefix/KV and implicit-TAB LEEF 2.0 source through mappings and downloadable parser files. |
+| RECOVERY-1: incomplete text | Implemented in this continuation | Generic quoted bracket labels retain exact source values and UTF-8 spans, repeated/empty occurrences and previously recovered atoms. Residual prose stays PARTIAL. The novice review flow tests source preservation and distinct holdouts before applying a supported recipe. |
+| BATCH-1: 100–400-event usability | Implemented in this continuation | Actual request/verification phases, source byte count, elapsed time and cancellation. Source/draft identity checks reject late responses after cancellation, edits or replacement requests. No fabricated percentage or timeout-based success. |
+| Profile persistence and format changes | Implemented in this continuation | The selected additional grammar survives Project JSON, recipe projection and browser snapshots. Explicit non-generic format changes clear incompatible metadata; unknown or mismatched imported profiles are rejected. |
+| Qualification, main and public development application | Recorded against the frozen continuation candidate | See [the continuation verification record](verification/roadmap-followup-20261020.md) and [Issue #1 work packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6287789712) for exact local/CI/source/deployment evidence and current rollout state. |
+
+## Remaining support boundaries
+
+The usable structural beta does not require every possible log grammar to become
+an automatically downloadable parser. Unsupported original stream/container
+compiler contracts, ambiguous or undeclared CSV schemas, malformed controls and
+unrecognized text retain an actionable review state. Existing source framing for
+Audit/CRI/Docker, W3C/Zeek and transport streams must not be mistaken for native
+compilation of every original wire format. A batch requiring both newly added
+Generic Structural profiles is deliberately reviewed instead of selecting a
+single incompatible grammar. Additional-profile auto drafts exceeding the full
+mapping limit also remain in review rather than silently dropping fields.
+
+Manufacturer/firmware-perfect oracle research and new original-wire compiler
+profiles remain optional later development. Owner visual acceptance and any
+production/release decision are separate from this runnable engineering work.
+Actual DP upload/apply, sensor operations and Interflow readback remain outside
+this product roadmap. Standalone downloaded Python sender behavior is already
+in scope and is verified with synthetic offline/loopback fixtures.
+
+---
+
+# Historical scope baseline — mainline and browser experiment versions (2026-10-18)
 
 This section supersedes older experimental/release tasks below. Continue with two
 user-facing authoring paths only: **Auto Parser** and **ChatGPT Assisted Parser**.
@@ -392,7 +428,7 @@ Affected regression evidence:
 
 ## 2026-10-16 Full User E2E implementation checkpoint
 
-This section is the current evidence-based continuation checkpoint. The original R0-R5 checklist above is an initial plan and its unchecked items are **not** a reliable completion percentage; reconcile each acceptance gate against same-candidate evidence before marking complete.
+This is a historical checkpoint. Use the current engineering completion ledger at the top of this document and Issue #1 for continuation. The original R0-R5 checklist is not a reliable completion percentage.
 
 ### Verified development changes
 
@@ -416,7 +452,7 @@ The owner removed real Stellar target execution from Parser Studio product-compl
 
 Those activities may be handled later as a separate target-integration project. Parser Studio continues to use the public Stellar metadata dictionary for normalization authoring and the pinned local Ruby/Fluentd environment for parser artifact verification.
 
-### Remaining product work after that scope change (ordered)
+### Historical remaining work recorded on 2026-10-16
 
 1. **R1 — Long-tail parser closure (P0):**
    - Juniper Junos: current recorded grouped-assisted recovery is 95/100. Resolve the residual 5 events only with bounded structural/Parser Set logic; otherwise classify them as explicit safe-abstention. Never force one broad Regex.

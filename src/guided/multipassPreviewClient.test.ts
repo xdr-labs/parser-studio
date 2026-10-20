@@ -2,6 +2,52 @@ import {afterEach,describe,it,expect,vi} from 'vitest';
 import {createHash} from 'node:crypto';
 import {requestMultiPassBatchPreview,requestMultiPassPreview} from './multipassPreviewClient';
 
+describe('cancelable Multi-Pass analysis',()=>{
+ for(const [label,request] of [['single event',requestMultiPassPreview],
+   ['event batch',requestMultiPassBatchPreview]] as const){
+  it(`does not send a ${label} request that was already canceled`,async()=>{
+   const controller=new AbortController();controller.abort();
+   const requester=vi.fn();
+   await expect(request('src=192.0.2.1',requester as typeof fetch,
+    {signal:controller.signal})).rejects.toMatchObject({name:'AbortError'});
+   expect(requester).not.toHaveBeenCalled();
+  });
+  it(`does not accept a late ${label} response even if the requester ignores cancellation`,async()=>{
+   const controller=new AbortController();
+   let release!:(value:unknown)=>void;
+   const body=new Promise(resolve=>{release=resolve;});
+   let bodyStarted!:()=>void;
+   const readingBody=new Promise<void>(resolve=>{bodyStarted=resolve;});
+   const requester=vi.fn().mockResolvedValue({ok:true,json:()=>{bodyStarted();return body;}});
+   const pending=request('src=192.0.2.1',requester as typeof fetch,{signal:controller.signal});
+   await readingBody;
+   expect(requester.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+   controller.abort();
+   release({});
+   await expect(pending).rejects.toMatchObject({name:'AbortError'});
+  });
+ }
+ it('starts source verification only after the engine response body is available',async()=>{
+  const raw='src=192.0.2.1';
+  const value={contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+   syntax:'KV',sourceSha256:createHash('sha256').update(raw).digest('hex'),sourceBytes:Buffer.byteLength(raw),
+   fields:{src:'192.0.2.1'},spans:[{path:'src',startByte:4,endByte:13}],residuals:[],issues:[],
+   nativeVerified:false,targetVerified:false};
+  let release!:(value:unknown)=>void;
+  const body=new Promise(resolve=>{release=resolve;});
+  let bodyStarted!:()=>void;
+  const readingBody=new Promise<void>(resolve=>{bodyStarted=resolve;});
+  const requester=vi.fn().mockResolvedValue({ok:true,json:()=>{bodyStarted();return body;}});
+  const phases:string[]=[];
+  const pending=requestMultiPassPreview(raw,requester as typeof fetch,{onPhase:phase=>phases.push(phase)});
+  await readingBody;
+  expect(phases).toEqual(['analyzing']);
+  release(value);
+  await expect(pending).resolves.toMatchObject({sourceBytes:Buffer.byteLength(raw),status:'SOURCE_PARSED'});
+  expect(phases).toEqual(['analyzing','validating']);
+ });
+});
+
 describe('opt-in Multi-Pass preview contract',()=>{
  afterEach(()=>vi.unstubAllGlobals());
  it('never sends source when input is empty or too large',async()=>{

@@ -32,6 +32,7 @@ export interface ParserProject {
     csvColumns?: string[];
     csvDelimiter?: "," | ";" | "\t";
     syslogBodyFormat?: "raw" | "json" | "kv" | "cef" | "leef" | "regex";
+    genericStructuralProfile?: "syslog_prefix_kv" | "leef2_implicit_tab";
     maxDepth?: number;
   };
   normalization: {

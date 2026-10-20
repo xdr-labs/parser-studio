@@ -44,6 +44,7 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     boundedRegexMaxPatternChars: 256,
     boundedRegexRuntimeTimeoutMs: 50,
     genericStructuralGrammar: "GENERIC_STRUCTURAL_ULTRA_COMPILER_V15" as const,
+    genericStructuralProfiles: ["syslog_prefix_kv", "leef2_implicit_tab"] as const,
     rfc3164StrictTaggedMessageSubset: true,
     rfc3164TaglessStructuredSecuritySubset: true,
     rfc3164TimePolicy: "YEAR_AND_ZONE_UNKNOWN" as const,

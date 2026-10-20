@@ -33,6 +33,10 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_rfc5424_msg_source_20261019.py' -v
       - name: RFC 3164 and BSD message grammar with original value no-loss gate
         run: python3 -m unittest discover -s tests -p 'test_rfc3164_freeform_content_20261020.py' -v
+      - name: Generic quoted labels and original implicit-TAB LEEF source preservation
+        run: |
+          python3 -m unittest discover -s tests -p 'test_generic_quoted_labels_20261020.py' -v
+          python3 -m unittest discover -s tests -p 'test_leef_interpretation_review_20261020.py' -v
       - name: Mainline offline authoring backend build and HTTP security gate
         run: |
           npm ci --prefix backend --no-audit --no-fund
@@ -99,6 +103,21 @@ jobs:
       - name: Real Chromium source-container beginner review (same HEAD)
         run: |
           npx playwright test tests/novice-audit-cri-docker-20261019.spec.ts             --config=playwright.poc-followup-containers-20261019.config.ts             --project=chromium --workers=1
+
+      - name: Original-source downloads, reviewed recovery and large-batch Chromium
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5461'
+          PARSER_STUDIO_TEST_PORT: '5460'
+          PARSER_STUDIO_MULTIPASS_PORT: '5462'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.roadmap-followup-20261020.config.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-roadmap-followup-browser.json
+          node -e "const x=JSON.parse(require('fs').readFileSync('/tmp/parser-studio-roadmap-followup-browser.json','utf8')).stats; if(x.expected!==8||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('All eight original-source, recovery, 100/400-event, cancellation and format-transition cases must execute and pass',x);process.exit(1)} console.log('ROADMAP_FOLLOWUP_REAL_CHROMIUM_PASS 8/8');"
 
       - name: Checkout pinned independent parser backend
         uses: actions/checkout@v4

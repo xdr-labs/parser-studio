@@ -1,0 +1,131 @@
+{
+  "provenance": "Authored synthetic regression data for the bounded Syslog prefix and KV profile; not manufacturer or device evidence.",
+  "positive": [
+    {
+      "name": "source-complete compiler-review regression",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block",
+      "prefix": "%FTD-4-430002: Intrusion event detected ",
+      "kv": {
+        "signature": "1000123",
+        "src": "192.0.2.40",
+        "dst": "198.51.100.5",
+        "action": "block"
+      }
+    },
+    {
+      "name": "multilingual vendor-neutral holdout",
+      "raw": "<165>Feb  9 03:04:05 host02 %NOTICE-7: 요청 완료 src=192.0.2.44 action=\"deny now\" note=\"café \\\"test\\\"\"",
+      "prefix": "%NOTICE-7: 요청 완료 ",
+      "kv": {
+        "src": "192.0.2.44",
+        "action": "deny now",
+        "note": "café \\\"test\\\""
+      }
+    },
+    {
+      "name": "literal Unicode non-breaking space",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: hello world a=one extra b=\"two parts\"",
+      "prefix": "%NOTICE: hello world ",
+      "kv": {
+        "a": "one extra",
+        "b": "two parts"
+      }
+    },
+    {
+      "name": "literal Unicode line separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: hello world a=one extra b=\"two parts\"",
+      "prefix": "%NOTICE: hello world ",
+      "kv": {
+        "a": "one extra",
+        "b": "two parts"
+      }
+    },
+    {
+      "name": "literal Unicode paragraph separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: hello world a=one extra b=\"two parts\"",
+      "prefix": "%NOTICE: hello world ",
+      "kv": {
+        "a": "one extra",
+        "b": "two parts"
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "invalid priority",
+      "raw": "<192>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block"
+    },
+    {
+      "name": "invalid calendar",
+      "raw": "<134>Oct 32 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block"
+    },
+    {
+      "name": "invalid clock",
+      "raw": "<134>Oct 19 28:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block"
+    },
+    {
+      "name": "duplicate key",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=one a=two"
+    },
+    {
+      "name": "unsafe key",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: constructor=one b=two"
+    },
+    {
+      "name": "unclosed quote",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=\"unfinished b=two"
+    },
+    {
+      "name": "unsupported quote escape",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=\"wrong\\q\" b=two"
+    },
+    {
+      "name": "trailing prose",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=one b=two trailing"
+    },
+    {
+      "name": "one pair",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=one"
+    },
+    {
+      "name": "structured marker",
+      "raw": "<134>Oct 19 08:23:59 ftd01 CEF:0|bad| a=one b=two"
+    },
+    {
+      "name": "network tuple prefix",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: 192.0.2.40/42 a=one b=two"
+    },
+    {
+      "name": "multiline",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block\n<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block"
+    },
+    {
+      "name": "unsafe dotted key",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: event.type=deny b=two"
+    },
+    {
+      "name": "Unicode non-breaking space is not a field separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=one b=two"
+    },
+    {
+      "name": "whitespace-only prefix with Unicode non-breaking space",
+      "raw": "<134>Oct 19 08:23:59 ftd01   a=one b=two"
+    },
+    {
+      "name": "Unicode line separator is not a field separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=one b=two"
+    },
+    {
+      "name": "whitespace-only prefix with Unicode line separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01   a=one b=two"
+    },
+    {
+      "name": "Unicode paragraph separator is not a field separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01 %NOTICE: a=one b=two"
+    },
+    {
+      "name": "whitespace-only prefix with Unicode paragraph separator",
+      "raw": "<134>Oct 19 08:23:59 ftd01   a=one b=two"
+    }
+  ]
+}

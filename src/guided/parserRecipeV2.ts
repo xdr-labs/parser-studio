@@ -12,12 +12,14 @@ import {defaultGuidedOptions} from './contract';
 import {analyzeLogEnvelopes} from './autoParserEnvelope';
 import {sha256Utf8Hex} from '../sha256';
 import {validatePreviewRegexPattern} from '../regexSafety';
+import {isGenericStructuralProfile,type GenericStructuralProfile} from '../genericStructuralProfiles';
 
 export type ReviewStage=
  | {op:'split_event';boundary:'single-line'|'blank-line'}
  | {op:'unwrap_syslog';version:1|3164;mode:'strict_header'}
  | {op:'dispatch_family';families:Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;mode:'strict_prefix'}
- | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'|'parse_generic_structural'}
+ | {op:'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'}
+ | {op:'parse_generic_structural';profile?:GenericStructuralProfile}
  | {op:'parse_regex';pattern:string}
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
  | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
@@ -81,8 +83,10 @@ function validateStage(input:unknown):input is ReviewStage{
     s.families.every(f=>['json','kv','cef','leef','rfc5424_cef','rfc5424_leef','rfc3164_kv','rfc5424_json','rfc5424_kv','rfc3164_cef','rfc3164_leef','csv'].includes(f));
   case 'unwrap_syslog':return exact(s,['op','version','mode'])&&
    [1,3164].includes(s.version as number)&&s.mode==='strict_header';
-  case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':case 'parse_java_stacktrace':case 'parse_generic_structural':
+  case 'parse_json':case 'parse_kv':case 'parse_cef':case 'parse_leef':case 'parse_java_stacktrace':
    return exact(s,['op']);
+  case 'parse_generic_structural':return exact(s,['op'])||
+   (exact(s,['op','profile'])&&isGenericStructuralProfile(s.profile));
   case 'parse_regex':return exact(s,['op','pattern'])&&
    typeof s.pattern==='string'&&validatePreviewRegexPattern(s.pattern)===null;
   case 'parse_csv':return exact(s,['op','columns','delimiter'])&&
@@ -271,8 +275,11 @@ export async function buildReviewableRecipe(
       validatePreviewRegexPattern(extraction.pattern)!==null)
      return fail('COMPILER_UNSUPPORTED');
    stages.push({op:'parse_regex',pattern:extraction.pattern});
- }else if(['json','kv','cef','leef','java_stacktrace','generic_structural'].includes(body)){
-   stages.push({op:('parse_'+body) as 'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'|'parse_generic_structural'});
+ }else if(body==='generic_structural'){
+   stages.push({op:'parse_generic_structural',
+     ...(draft.genericStructuralProfile?{profile:draft.genericStructuralProfile}:{})});
+ }else if(['json','kv','cef','leef','java_stacktrace'].includes(body)){
+   stages.push({op:('parse_'+body) as 'parse_json'|'parse_kv'|'parse_cef'|'parse_leef'|'parse_java_stacktrace'});
  }else return fail('COMPILER_UNSUPPORTED');
  const groups=(draft.guided??defaultGuidedOptions()).groups;
  for(const mapping of draft.mappings){
