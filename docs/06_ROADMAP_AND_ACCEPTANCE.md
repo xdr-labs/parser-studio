@@ -531,3 +531,21 @@ and compiled Ruby previously risked last-value overwrite.
   independent native oracles before asserting broader compiler parity.
 
 Evidence: verification/20261021-json-duplicate-source-native-parity.md.
+
+## S7-P2A — fixed 7.0 per-event-type mapping evidence (2026-10-21)
+
+- [x] Type-scoped 7.0 Dictionary candidates for explicitly reviewed event
+  families; no cross-type inference, implicit format selection or auto-apply.
+- [x] Manual 7.0 top/ns confirmation with additional explicit route approval;
+  vendor-only fallback and original source unchanged.
+- [x] Official value and type validation before conditional DRAFT acceptance.
+- [x] Independently authored synthetic Threat/User/Asset six-event oracle
+  with 16 exact expected field/value matches. Two distinct desktop browser
+  user journeys verify DRAFT Ruby/CONF download integrity; synthetic
+  acceptance is not manufacturer-wide accuracy.
+- [ ] Exact-HEAD CI and stacked PR review on the new candidate.
+- [ ] Manufacturer/firmware normalization accuracy scoring only when
+  independently sourced and authorized golden originals become available.
+
+Evidence: verification/20261021-stellar7-scoped-event-family-mappings.md.
+No version-specific schema management beyond the pinned Stellar 7.0 catalog.

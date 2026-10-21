@@ -1,11 +1,16 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import type {ParserDraft,SuiteResult,FieldType} from '../model';
+import type {FieldGroup} from './contract';
 import type {BackendCapabilities} from './backendCapabilities';
 import {assertBackendProjectSupported} from './backendCapabilities';
 import {toBackendProject} from './backendAdapter';
 import {planReviewedEventFamilyDraft} from './reviewedEventFamilyDraft';
 import {inspectReviewedEventValues} from './reviewedEventValueEvidence';
+import {
+  proposeStellar7FamilyMappings,applyStellar7FamilyMapping,
+  type ScopedFamilyStellar7Candidate,
+} from './stellar7ScopedFamilyMappings';
 import {HelpTip} from './BeginnerHelp';
 
 export default function ReviewedEventProfilesPanel({
@@ -24,7 +29,7 @@ export default function ReviewedEventProfilesPanel({
   const [field,setField]=useState(()=>draft.eventProfiles?.discriminator??'event_type');
   const [notice,setNotice]=useState('');
   const [approval,setApproval]=useState(false);
-  const [edits,setEdits]=useState<Record<string,{target:string;type:FieldType}>>({});
+  const [edits,setEdits]=useState<Record<string,{target:string;type:FieldType;group:FieldGroup}>>({});
   useEffect(()=>{setEdits({});setApproval(false);},[source,field]);
   const previous=useRef<{source:string;draft:ParserDraft}|null>(null);
   const detailsRef=useRef<HTMLDetailsElement|null>(null);
@@ -39,13 +44,36 @@ export default function ReviewedEventProfilesPanel({
   const candidate=useMemo(()=>{
     if(!plan.ok)return null;
     const next=structuredClone(plan.candidate);
+    const groups={...next.guided?.groups};
     for(const variant of next.eventProfiles?.variants??[])
       variant.mappings=variant.mappings.map(rule=>{
         const replacement=edits[rule.id];
-        return replacement?{...rule,...replacement}:rule;
+        if(!replacement)return rule;
+        groups[rule.id]=replacement.group;
+        return {...rule,target:replacement.target,type:replacement.type};
       });
+    if(next.guided)next.guided={...next.guided,groups};
     return next;
   },[plan,edits]);
+  // The only automatic behavior here is a suggestion. The user must click
+  // the 7.0 catalog match AND approve conditional routing before the DRAFT
+  // is changed. Suggestions are computed within each explicit event type.
+  const stellarSuggestions=useMemo(()=>
+    candidate?proposeStellar7FamilyMappings(suite,candidate):[],[suite,candidate]);
+  const use7Match=(item:ScopedFamilyStellar7Candidate)=>{
+    if(!candidate||pending)return;
+    const result=applyStellar7FamilyMapping(candidate,item,suite);
+    if(!result.ok){setNotice(result.reason);setApproval(false);return;}
+    const mapping=result.draft.eventProfiles?.variants.find(variant=>variant.name===item.family)
+      ?.mappings.find(rule=>rule.source===item.source);
+    if(!mapping)return;
+    setEdits(old=>({...old,[mapping.id]:{
+      target:mapping.target,type:mapping.type,group:item.group,
+    }}));
+    setNotice('The 7.0 mapping is selected for '+item.family+
+      ' only. Review the complete draft and explicitly approve before applying.');
+    setApproval(false);
+  };
   const sampleEvidence=useMemo(()=>
     candidate?inspectReviewedEventValues(suite,candidate):null,[suite,candidate]);
   const available=backendCapabilities?.authoring.conditionalEventProfiles===true&&
@@ -105,6 +133,7 @@ export default function ReviewedEventProfilesPanel({
                     const target=event.target.value;
                     setEdits(old=>({...old,[rule.id]:{
                       target,type:old[rule.id]?.type??rule.type,
+                      group:'vendor_fields',
                     }}));setApproval(false);
                   }}/>
               </label>
@@ -115,12 +144,29 @@ export default function ReviewedEventProfilesPanel({
                     const type=event.target.value as FieldType;
                     setEdits(old=>({...old,[rule.id]:{
                       target:old[rule.id]?.target??rule.target,type,
+                      group:'vendor_fields',
                     }}));setApproval(false);
                   }}>
                   {(['string','integer','boolean','ip','port','timestamp'] as const).map(type=>
                     <option key={type} value={type}>{type}</option>)}
                 </select>
               </label>
+              {stellarSuggestions.filter(suggestion=>
+                suggestion.family===group.name&&suggestion.source===rule.source
+              ).map(suggestion=><div className="family-stellar7-suggestion"
+                key={suggestion.family+':'+suggestion.source}>
+                <span>Stellar Cyber 7.0: {suggestion.source} → {suggestion.target}
+                  {' '}· present in {suggestion.observed}/{suggestion.total} type events
+                  {' '}· type-compatible in {suggestion.compatibleObserved}/{suggestion.observed} observed
+                </span>
+                {suggestion.confidence==='HIGH'&&suggestion.safeForBulk
+                  ?<button type="button"
+                    aria-label={'Use Stellar 7.0 '+group.name+' '+rule.source}
+                    onClick={()=>use7Match(suggestion)}>
+                    Use reviewed 7.0 field
+                  </button>
+                  :<span role="note">Review only · {suggestion.explanation}</span>}
+              </div>)}
             </div>)}
         </details>}
       </div>)}
