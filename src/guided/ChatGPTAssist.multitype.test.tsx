@@ -9,7 +9,7 @@ describe('ChatGPT Assisted combined source UI',()=>{
     {id:'type-threat',name:'Threat',sample:'event_type=threat action=blocked src_ip=10.11.1.1 dst_port=443 threat_score=9'},
     {id:'type-user',name:'User',sample:'event_type=user action=login src_ip=10.11.1.2 dst_port=443 username=somebody'},
   ];
-  it('keeps the producer identity and two user-reviewed sharing examples separate from original logs',async()=>{
+  it('keeps producer information, two original log types, and one privacy warning without extra sharing editors',async()=>{
     const source=groups.map(group=>group.sample).join('\n');
     const draft={...createDraft(),format:'kv' as const};
     const setDraft=vi.fn(),onChangeNamedLogTypes=vi.fn();
@@ -30,12 +30,10 @@ describe('ChatGPT Assisted combined source UI',()=>{
     const combined=screen.getByLabelText('ChatGPT local sample logs') as HTMLTextAreaElement;
     expect(combined.readOnly).toBe(true);
     expect(combined.value).toContain('10.11.1.1');
-    for(const index of [1,2]){
-      const shared=screen.getByLabelText('ChatGPT sharing example '+index) as HTMLTextAreaElement;
-      expect(shared.value).toContain('EXAMPLE-FW');
-      expect(shared.value).not.toContain('10.11.1.1');
-      expect(shared.value).not.toContain('10.11.1.2');
-    }
+    for(const index of [1,2])
+      expect(screen.queryByLabelText('ChatGPT sharing example '+index)).toBeNull();
+    expect(screen.queryByLabelText('ChatGPT redacted examples')).toBeNull();
+    expect(screen.getByText(/ChatGPT prompt includes your original log text/i)).toBeTruthy();
     expect(screen.getByLabelText('Combined parser routing review')).toBeTruthy();
   });
   it('blocks prompt preparation if a named type is missing its original logs',()=>{

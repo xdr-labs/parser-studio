@@ -2,6 +2,9 @@
 
 **Priority:** P0, overrides all earlier instructions keeping the six-step Wizard or three-pane Workbench. **Implementer:** CHATGPT_CHAT, one integrated session for Web UI, backend, API contracts, Chromium and roadmap. **Source and interface:** English only.
 
+> **Owner UX override (2026-10-22):** ChatGPT Assisted Parser takes the exact user-entered log source into a manually copied prompt. The separate synthetic/redacted example editor, masking approval, and extra source-copy action are removed. Show one clear warning that the prompt contains potentially sensitive log values; do not automatically send source data to ChatGPT. An unavailable v0.1 project must not create contradictory null-project instructions: the v0.2 recovery proposal uses the local draft identity and remains REVIEW_ONLY, unverified, and separately validated. Auto Parser presents only the default Multi-Pass analysis and context-sensitive feedback; Tools & Diagnostics and standalone deeper analysis mode are removed. Old tests/documents about the superseded redaction and troubleshooting UX are historical, not acceptance criteria.
+
+
 ## Product-level navigation: only two choices
 
 ### 1. Auto Parser
@@ -12,9 +15,9 @@ Do not require the user to know whether the source is JSON, KV, CEF, LEEF or Sys
 
 ### 2. ChatGPT Assisted Parser
 
-Enter local raw samples and desired fields → manually redact an example, approve it and inspect the generated copyable prompt → open ChatGPT manually → paste the response as restricted ParserRecipe v0.2 JSON → verify exact source SHA, stage order and allowed schema → perform complete local parsing, and independent holdout regression if the proposal adds one compatible mapping → user explicitly approves → validate/generate with the same pinned backend and SHA-verify both Ruby/CONF outputs.
+Enter local raw samples and desired fields → see the sensitive-data warning and inspect the prompt containing original logs → open ChatGPT manually → paste the response as restricted ParserRecipe v0.2 JSON → verify exact source SHA, stage order and allowed schema → perform complete local parsing, and independent holdout regression if the proposal adds one compatible mapping → user explicitly approves → validate/generate with the same pinned backend and SHA-verify both Ruby/CONF outputs.
 
-No API key, automatic external LLM request or source egress. The prompt contains source digest/count/family metadata, declarative reference recipe if locally available, and only the **user-approved masked example**. Unrecognized raw formats, arbitrary regex/Ruby/JSONata, arbitrary stage edits or invalid schema cannot fabricate a deployable parser.
+No API key, automatic external LLM request or source egress. The prompt contains the original source logs (manually copied only), source digest/count metadata, and a declarative reference recipe if locally available. A sensitive-data warning is always visible. Unrecognized raw formats, arbitrary regex/Ruby/JSONata, arbitrary stage edits or invalid schema cannot fabricate a deployable parser.
 
 ## Removed user journeys
 
@@ -59,7 +62,7 @@ Only real Stellar DP/sensor/Interflow proof, owner-supplied proprietary compatib
 
 - Browser only shows two method buttons, including on mobile. No Wizard, Workbench, Expert, Advanced Wizard, Test Lab or Library **creation navigation**.
 - Auto result can edit mappings without a third mode. No loss of source events. No invented Native verification.
-- Manual redaction approval resets when example content changes. A source value must not enter prompt unless the user explicitly supplied the masked example.
+- Changing the original source invalidates the prior prepared prompt. The original source is included only in the prepared prompt, with a visible sensitive-data warning; it is never sent to an LLM automatically.
 - ChatGPT result never executes arbitrary code. Changed supported rules require full local sample and independent holdout review; unchanged canonical recipes may pass directly after manual approval. Both output hashes must agree with the pinned backend's v0.1/v0.2 compiler.
 - Browser tests tied to retired UI are archived, not reported as PASS. The new suite must incrementally replace feature requirements and record remaining gaps.
 - No unauthorized real DP/sensor writes, no external AI provider by default, no final merge or release without approval.

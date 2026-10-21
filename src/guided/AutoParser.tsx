@@ -12,11 +12,8 @@ import {verifyGeneratedPair,packageGeneratedPair} from './artifactPackageClient'
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {selectDraftFormat} from './draftFormatTransition';
-import {buildReviewableRecipe,type RecipeReview} from './parserRecipeV2';
-import {compileReviewedRecipeV02,type ReviewedRecipeCompilation} from './recipeV2BackendClient';
-import {checkNativeProjectVerificationAvailability,verifyNativeProject,
-  NativeProjectVerificationUnavailable,type NativeProjectVerificationReport}
-  from './nativeProjectVerificationClient';
+import {buildReviewableRecipe} from './parserRecipeV2';
+import {compileReviewedRecipeV02} from './recipeV2BackendClient';
 import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
 import NormalizationMappingReview from './NormalizationMappingReview';
@@ -50,11 +47,6 @@ import ExistingParserReviewPanel from './ExistingParserReviewPanel';
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import AnalysisProgressPanel from './AnalysisProgressPanel';
 import {useAnalysisRun} from './useAnalysisRun';
-import {readApprovedPatterns,saveApprovedMapping,prepareApprovedPatternDraft,
-  forgetApprovedPattern,type ApprovedPattern} from './approvedPatterns';
-
-import {proposeReviewableMapping,compareCandidate,
- type CandidateComparison} from './autoParserRegression';
 import type {EventBoundary} from './contract';
 
 interface Props {
@@ -86,8 +78,6 @@ type ParserSetOrigin={
  source:string;datasetName:string;sourceCount:number;draft:ParserDraft;
  fingerprint:string;groupCount:number;groupSource:string;
 };
-type NativeEvidence={key:string;status:'PASS'|'UNAVAILABLE'|'FAILED';
- report?:NativeProjectVerificationReport;message:string};
 type MultiPassReview={raw:string;events:Array<{startByte:number;endByte:number;preview:MultiPassSourcePreview}>;metadataLines?:number;transportFramingParts?:number};
 function download(filename:string,content:string|ArrayBuffer,binary=false){
  const object=new Blob([content],{type:binary?'application/zip':'application/octet-stream'});
@@ -127,7 +117,7 @@ function backendReviewMessage(error:unknown){
    return 'The parser creation service is unavailable or access was denied. Log analysis succeeded and your parsed fields are preserved. Try again after the local backend is reachable and authorized.';
  if(/capabilit|contract|allowlist|bounded|authoring|verification flags|inconsistent/i.test(detail))
    return 'Parser Studio components are out of sync. Log analysis succeeded, but this UI cannot create parser files with the connected backend version. Update or restart the development backend, then try again. Your parsed fields are preserved.';
- return 'Parser Studio could not start parser creation with the connected backend. Your parsed fields are preserved; open Tools & Diagnostics for technical details or retry after the backend is updated.';
+ return 'Parser Studio could not start parser creation with the connected backend. Your parsed fields are preserved; retry after the backend is updated.';
 }
 export default function AutoParser({
  draft,setDraft,sample,setSample,datasetName,setDatasetName,suite,pending,
@@ -165,11 +155,6 @@ export default function AutoParser({
  const [evidence,setEvidence]=useState<Evidence|null>(null);
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
- const [recipe,setRecipe]=useState<{key:string;value:RecipeReview}|null>(null);
- const [recipeCompiled,setRecipeCompiled]=useState<{key:string;value:ReviewedRecipeCompilation}|null>(null);
- const [recipeCompilerError,setRecipeCompilerError]=useState('');
- const [nativeEvidence,setNativeEvidence]=useState<NativeEvidence|null>(null);
- const [nativeAvailability,setNativeAvailability]=useState<'UNCHECKED'|'AVAILABLE'|'UNAVAILABLE'|'ERROR'>('UNCHECKED');
  const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [parserSetOrigin,setParserSetOrigin]=useState<ParserSetOrigin|null>(null);
@@ -180,14 +165,6 @@ export default function AutoParser({
  const [drainResult,setDrainResult]=useState<{key:string;holdout:string;value:Drain3Report}|null>(null);
  const [drainNotice,setDrainNotice]=useState('');
  const [logicalReview,setLogicalReview]=useState<{key:string;value:LogicalBoundaryReport}|null>(null);
- const [approvedPatterns,setApprovedPatterns]=useState<ApprovedPattern[]>(()=>readApprovedPatterns());
- const [selectedPattern,setSelectedPattern]=useState('');
- const [saveAfterApproval,setSaveAfterApproval]=useState(false);
- const [reviewMetrics,setReviewMetrics]=useState({compared:0,approved:0,blocked:0});
- const [holdout,setHoldout]=useState('');
- const [repair,setRepair]=useState<{key:string;candidate:ParserDraft;
-   comparison:CandidateComparison;source:string;target:string}|null>(null);
- const [repairNotice,setRepairNotice]=useState('');
  const epoch=useRef(0);
  const identity=JSON.stringify([draft,sample,namedLogTypes]);
  const analysisRun=useAnalysisRun(identity);
@@ -197,13 +174,11 @@ export default function AutoParser({
    (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder),
    [sample,draft.guided?.eventBoundary,draft.forwarder]);
  useEffect(()=>{
-   epoch.current++;setEvidence(null);setPair(null);setZip(null);setRecipe(null);
-   setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);setNativeAvailability('UNCHECKED');
-   setRepair(null);setRepairNotice('');setFingerprints(null);setStructural(null);
+   epoch.current++;setEvidence(null);setPair(null);setZip(null);
+   setFingerprints(null);setStructural(null);
    setDrainAvailability('UNCHECKED');setDrainConsent(false);
    setDrainResult(null);setDrainNotice('');
    setLogicalReview(null);
-   setSaveAfterApproval(false);
    setBusy(false);setMessage('');setReviewBlock(null);
  },[identity]);
  useEffect(()=>{setStep(0);setFurthestStep(0);},[sample]);
@@ -380,9 +355,6 @@ export default function AutoParser({
  const currentPair=pair?.key===identity?pair.value:null;
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
- const currentRecipe=recipe?.key===identity?recipe.value:null;
- const currentRecipeCompiled=recipeCompiled?.key===identity?recipeCompiled.value:null;
- const currentNativeEvidence=nativeEvidence?.key===identity?nativeEvidence:null;
  const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
  const parserSetCandidates=currentStructural?.status==='CANDIDATES'?
@@ -391,8 +363,6 @@ export default function AutoParser({
  const currentDrain=drainResult?.key===identity&&
    drainResult.holdout===drainHoldout?drainResult.value:null;
  const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
- const repairKey=JSON.stringify([identity,holdout]);
- const currentRepair=repair?.key===repairKey?repair:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
  const multiPassSourceComplete=multiPass?.raw===sample&&multiPass.events.length>0&&
@@ -487,7 +457,7 @@ export default function AutoParser({
  async function generate(){
    if(!canGenerate||!confirmed()||!suite)return;
    const token=++epoch.current, expected=identity;
-   setBusy(true);setMessage('');setPair(null);setZip(null);setNativeEvidence(null);
+   setBusy(true);setMessage('');setPair(null);setZip(null);
    try{
      const local=await runPreview(draft,sample);
      if(token!==epoch.current||currentRef.current!==expected)return;
@@ -523,6 +493,20 @@ export default function AutoParser({
      const generated=await generateBackendPair(translated.project);
      await verifyGeneratedPair(generated);
      if(token!==epoch.current||currentRef.current!==expected)return;
+     // Additional reviewed recipe metadata is checked without uploading raw
+     // samples. Never start the private native-verifier POST automatically.
+     try{
+       const reviewed=await buildReviewableRecipe(sample,draft,local);
+       if(reviewed.ok){
+         await compileReviewedRecipeV02({
+           recipe:reviewed.recipe,legacyProject:reviewed.legacyProject,
+         },generated);
+       }
+     }catch{
+       // v0.1 schema and SHA verification passed. An optional v0.2 check
+       // failing does not claim Native verification or block a valid DRAFT.
+     }
+     if(token!==epoch.current||currentRef.current!==expected)return;
      setCapability({source:sample,value:cap});
      setEvidence({key:expected,status:'PASS',total:local.counts.total,issues:[]});
      setPair({key:expected,value:generated});
@@ -532,77 +516,6 @@ export default function AutoParser({
          issues:['The current draft could not pass verified backend compilation and file integrity checks.']});
      }
    }finally{if(token===epoch.current)setBusy(false);}
- }
- async function compareRepair(){
-   if(!suite||busy||pending)return;
-   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
-   setBusy(true);setRepair(null);setRepairNotice('');
-   try{
-     const suggestion=proposeReviewableMapping(sample,draft,suite);
-     if(!suggestion.ok){setRepairNotice('No safe one-field repair is available: '+suggestion.reason);return;}
-     if(holdout&&new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT){
-       setRepairNotice('Holdout exceeds 64 KiB; reduce the input.');return;
-     }
-     const candidate=await runPreview(suggestion.candidate,sample);
-     const held=holdout?{
-       source:holdout,baseline:await runPreview(draft,holdout),
-       candidate:await runPreview(suggestion.candidate,holdout),
-     }:undefined;
-     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
-     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
-     setRepair({key:JSON.stringify([expected,requestedHoldout]),
-       candidate:suggestion.candidate,comparison,
-       source:suggestion.mapping.source,target:suggestion.mapping.target});
-     setReviewMetrics(x=>({...x,compared:x.compared+1,
-       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setRepairNotice('Local regression could not be verified. No rules were changed.');
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function compareStoredPattern(){
-   if(!suite||busy||pending)return;
-   const item=approvedPatterns.find(x=>x.id===selectedPattern);
-   if(!item){setRepairNotice('Select one previously approved browser-local mapping.');return;}
-   const proposal=prepareApprovedPatternDraft(draft,item);
-   if(!proposal.ok){setRepairNotice('Stored mapping cannot be reused: '+proposal.reason);return;}
-   const token=++epoch.current,expected=identity,requestedHoldout=holdout;
-   setBusy(true);setRepair(null);setRepairNotice('');
-   try{
-     if(holdout&&new TextEncoder().encode(holdout).byteLength>MAX_LOCAL_TEXT)
-       throw new Error('HOLDOUT_LIMIT');
-     const candidate=await runPreview(proposal.draft,sample);
-     const held=holdout?{source:holdout,
-       baseline:await runPreview(draft,holdout),
-       candidate:await runPreview(proposal.draft,holdout)}:undefined;
-     if(token!==epoch.current||currentRef.current!==expected||holdout!==requestedHoldout)return;
-     const comparison=compareCandidate({source:sample,baseline:suite,candidate,holdout:held});
-     setRepair({key:JSON.stringify([expected,requestedHoldout]),
-       candidate:proposal.draft,comparison,source:proposal.source,target:proposal.target});
-     setReviewMetrics(x=>({...x,compared:x.compared+1,
-       blocked:x.blocked+Number(!comparison.acceptedWithoutRegression)}));
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setRepairNotice('Stored mapping regression was not verified; no rules changed.');
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- function approveRepair(){
-   if(!currentRepair||!currentRepair.comparison.acceptedWithoutRegression||
-      currentRepair.comparison.holdoutStatus!=='TESTED'||busy||pending)return;
-   const accepted=currentRepair;
-   if(saveAfterApproval){
-     try{
-       const mapping=accepted.candidate.mappings.at(-1);
-       if(!mapping)throw new Error('INVALID_MAPPING');
-       saveApprovedMapping({draft:accepted.candidate,mapping,
-         comparison:accepted.comparison});
-       setApprovedPatterns(readApprovedPatterns());
-     }catch{
-       setRepairNotice('Mapping approved for this draft; local pattern save was unavailable.');
-     }
-   }
-   setDraft(accepted.candidate);setRepair(null);
-   setReviewMetrics(x=>({...x,approved:x.approved+1}));
  }
  function findKnownTemplates(){
    if(!suite||busy||pending)return;
@@ -690,7 +603,7 @@ export default function AutoParser({
    setSample(selectedGroup.source);
    setDatasetName((datasetName||'Logs')+' · Parser Set group');
    setStep(0);setSelected(0);setMultiPass(null);setMultiPassEvent(0);
-   setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
+   setSelectedMultiPass(null);setMultiPassNotice('');setMessage('');
  }
  function restoreParserSetSource(){
    const origin=parserSetOrigin??parserSetOriginRef.current;
@@ -698,64 +611,7 @@ export default function AutoParser({
    parserSetOriginRef.current=null;setParserSetOrigin(null);
    setSample(origin.source);setDatasetName(origin.datasetName);
    setDraft(origin.draft);setStep(0);setSelected(0);setMultiPass(null);setMultiPassEvent(0);
-   setSelectedMultiPass(null);setMultiPassNotice('');setHoldout('');setMessage('');
- }
- async function previewRecipe(){
-   if(!suite||busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setRecipe(null);setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);
-   try{
-     const result=await buildReviewableRecipe(sample,draft,suite);
-     if(token===epoch.current&&currentRef.current===expected)
-       setRecipe({key:expected,value:result});
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setRecipe({key:expected,value:{ok:false,reason:'UNTRUSTED_PREVIEW'}});
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function compileReviewedRecipe(){
-   if(!currentRecipe||!currentRecipe.ok||!currentPair||busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setRecipeCompiled(null);setRecipeCompilerError('');setNativeEvidence(null);
-   try{
-     const result=await compileReviewedRecipeV02({
-       recipe:currentRecipe.recipe,legacyProject:currentRecipe.legacyProject,
-     },currentPair);
-     if(token===epoch.current&&currentRef.current===expected){
-       setRecipeCompiled({key:expected,value:result});
-       try{
-         const available=await checkNativeProjectVerificationAvailability();
-         if(token===epoch.current&&currentRef.current===expected)
-           setNativeAvailability(available?'AVAILABLE':'UNAVAILABLE');
-       }catch{
-         if(token===epoch.current&&currentRef.current===expected)setNativeAvailability('ERROR');
-       }
-     }
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setRecipeCompilerError('The backend could not verify the strict v0.2 stages against the current DRAFT pair. The original v0.1 files remain available.');
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function verifyCurrentNativeProject(){
-   if(!currentRecipe||!currentRecipe.ok||!currentRecipeCompiled||!suite||busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setNativeEvidence(null);
-   try{
-     const result=await verifyNativeProject({
-       source:sample,suite,recipe:currentRecipe.recipe,
-       legacyProject:currentRecipe.legacyProject,compiled:currentRecipeCompiled,
-     });
-     if(token===epoch.current&&currentRef.current===expected)
-       setNativeEvidence({key:expected,status:'PASS',report:result,
-         message:'Current source-bound Ruby/CONF passed the pinned Native parser runtime.'});
-   }catch(error){
-     if(token!==epoch.current||currentRef.current!==expected)return;
-     if(error instanceof NativeProjectVerificationUnavailable)
-       setNativeEvidence({key:expected,status:'UNAVAILABLE',
-         message:'Private Native verification is not configured or access was denied. DRAFT remains Native NOT VERIFIED.'});
-     else setNativeEvidence({key:expected,status:'FAILED',
-       message:'Native Ruby/CONF verification did not pass. No target or sensor claim was made.'});
-   }finally{if(token===epoch.current)setBusy(false);}
+   setSelectedMultiPass(null);setMultiPassNotice('');setMessage('');
  }
  async function zipPair(){
    if(!currentPair||!capability||!draft.guided||busy)return;
@@ -1003,7 +859,7 @@ export default function AutoParser({
        <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
        <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
-         Parser Studio could not complete local analysis. Your source was preserved. Open troubleshooting tools only if you need more diagnostic detail.
+         Parser Studio could not complete analysis. Your logs were preserved. Retry Analyze Logs or use ChatGPT Assisted Parser for an unfamiliar format.
        </p>}
        {currentMultiPassReview&&<BeginnerAnalysisPanel source={sample}
          events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
@@ -1500,18 +1356,15 @@ export default function AutoParser({
          {currentEvidence.issues.map((issue,i)=><span key={i}>{issue}</span>)}
          {advanced&&<small>
            Technical evidence: SHA/schema {currentEvidence.status} ·
-           {currentNativeEvidence?.status==='PASS'?' Native verified':' Native not verified'} ·
-           Stellar target import not verified.
+           Native and Stellar target import not verified.
          </small>}
        </div>}
        {currentPair&&<div className="auto-parser-download" aria-label="Generated parser files">
          <strong><CheckCircle2 size={17}/> Parser files created successfully</strong>
-         <span>{currentNativeEvidence?.status==='PASS'
-           ?'All current samples passed, and an additional local parser-file compatibility check passed. The files have not been installed in a live Stellar system.'
-           :'All current samples passed. The files have not been installed in a live Stellar system.'}</span>
+         <span>All current samples passed. The files have not been installed in a live Stellar system.</span>
          <details className="auto-parser-recipe" aria-label="Parser file verification details">
            <summary>Technical verification details</summary>
-           <span>File integrity checked · {currentNativeEvidence?.status==='PASS'?'Local parser-runtime check passed':'Local parser-runtime check not run'}</span>
+           <span>File integrity checked · Native parser runtime and Stellar Cyber target not verified</span>
            {advanced&&<span>Two generated files have matching recorded SHA-256 integrity evidence. Live Stellar import remains a separate test.</span>}
          </details>
          {currentPair.files.map(file=><button key={file.name} type="button"
@@ -1529,169 +1382,12 @@ export default function AutoParser({
          </details>}
        </div>}
        {currentPair&&<AutoParserLocalReplay sample={sample} draft={draft}/>}
-       <details className="auto-parser-recipe" aria-label="Manual field fix test">
-         <summary className="beginner-tool-summary">Test a manual field fix against different examples
-           <HelpTip label="Test a manual field fix"
-             text="Use this after you manually change a field mapping and want extra confidence that the change does not break other logs. Provide different examples that were not used to make the fix."/>
-         </summary>
-         <span className="beginner-tool-when">Use when: you changed a field mapping yourself and have fresh logs from the same source to test it against.</span>
-         <p>Parser Studio compares one proposed field change with every current sample and with the different examples you provide.
-           Nothing is applied automatically or uploaded to another service.</p>
-         <label>Different examples not used to make the fix
-           <HelpTip label="Different examples"
-             text="These are fresh log events from the same product that were not part of the original sample. They help reveal a fix that works only for the examples you already saw."/>
-           <textarea aria-label="Different example logs for field fix" rows={4}
-             value={holdout} onChange={e=>{setHoldout(e.target.value);setRepair(null);setRepairNotice('');}}
-             placeholder="Paste a few fresh events from the same source; kept in browser memory." />
-         </label>
-         <button type="button" disabled={busy||pending||!suite}
-           onClick={()=>{void compareRepair();}}>Test One Proposed Field Fix</button>
-         {repairNotice&&<p role="status">{repairNotice}</p>}
-         {currentRepair&&<div aria-label="Proposed field fix comparison" role="status">
-           <strong>{currentRepair.comparison.acceptedWithoutRegression&&currentRepair.comparison.holdoutStatus==='TESTED'
-             ?'This field fix passed the current and different examples'
-             :'Review this field fix before applying it'}</strong>
-           <span>{currentRepair.source} → {currentRepair.target}</span>
-           <span>Current sample: {currentRepair.comparison.baseline.accounted}/
-             {currentRepair.comparison.baseline.sourceCount} checked ·
-             Passed before {currentRepair.comparison.baseline.positiveBefore} ·
-             Passed after {currentRepair.comparison.baseline.positiveAfter}</span>
-           <span>Problems introduced by this fix: {currentRepair.comparison.baseline.regressions}</span>
-           <span>Different examples: {currentRepair.comparison.holdoutStatus==='TESTED'?'tested':'not tested yet'} ·
-             {currentRepair.comparison.holdout?.sourceCount??0} events ·
-             {currentRepair.comparison.holdout?.regressions??0} problems introduced</span>
-           <details className="beginner-technical-details"><summary>Technical comparison details</summary>
-             <span>Added field shapes: {currentRepair.comparison.baseline.fieldAdditions} · Removed: {currentRepair.comparison.baseline.fieldRemovals} · Type changes: {currentRepair.comparison.baseline.typeChanges}</span>
-             <span>Holdout status: {currentRepair.comparison.holdoutStatus}</span>
-           </details>
-           {currentRepair.comparison.baseline.families.map(f=><span key={f.family}>
-             {f.family}: {f.count} events · Passed {f.beforePassed} → {f.afterPassed}
-           </span>)}
-           {currentRepair.comparison.baseline.issues.map(i=><span key={i.reason}>
-             {i.reason}: {i.count}
-           </span>)}
-           <label className="auto-parser-persist-label">
-             <input type="checkbox" checked={saveAfterApproval}
-               onChange={e=>setSaveAfterApproval(e.target.checked)}/>
-             Also save approved mapping names/types to browser-local pattern library (no sample values)
-           </label>
-           <button type="button" disabled={busy||pending||
-             !currentRepair.comparison.acceptedWithoutRegression||
-             currentRepair.comparison.holdoutStatus!=='TESTED'}
-             onClick={approveRepair}>
-
-             Approve Reviewed Mapping
-           </button>
-           {currentRepair.comparison.holdoutStatus!=='TESTED'&&
-             <p>Add different examples before applying this fix.</p>}
-           {!currentRepair.comparison.acceptedWithoutRegression&&
-             <p>This fix caused a previously working sample to fail, so Parser Studio will not apply it.</p>}
-         </div>}
-       </details>
-       <details className="auto-parser-recipe" aria-label="Reusable approved field matches">
-         <summary className="beginner-tool-summary">Reuse a field match you approved earlier
-           <HelpTip label="Reuse an approved field match"
-             text="Use this only when the same kind of log appears again and you previously chose a field match that worked. Parser Studio retests it before allowing reuse."/>
-         </summary>
-         <span className="beginner-tool-when">Use when: the same log family returns and you want to try a field match you previously approved.</span>
-         <p>Only field names, value types, and anonymous test counts are stored in this browser.
-           No raw log values are saved. Reused matches must pass the current sample and different examples again.</p>
-         <label>Previously approved field match
-           <select aria-label="Approved field match" value={selectedPattern}
-             onChange={e=>setSelectedPattern(e.target.value)}>
-             <option value="">Choose a saved mapping</option>
-             {approvedPatterns.map(item=><option key={item.id} value={item.id}>
-               {item.family}: {item.mapping.source} → {item.mapping.target}
-             </option>)}
-           </select>
-         </label>
-         <button type="button" disabled={!selectedPattern||busy||pending||!suite}
-           onClick={()=>{void compareStoredPattern();}}>Test Saved Match with Different Examples</button>
-         <button type="button" disabled={!selectedPattern||busy}
-           onClick={()=>{
-             if(!window.confirm('Forget the selected saved field match? This does not change current parser rules.'))return;
-             if(forgetApprovedPattern(selectedPattern)){
-               setApprovedPatterns(readApprovedPatterns());setSelectedPattern('');
-             }else setRepairNotice('Unable to remove the selected saved field match.');
-           }}>Forget Selected Match</button>
-         <span>{approvedPatterns.length} approved field match{approvedPatterns.length===1?'':'es'} saved in this browser</span>
-       </details>
-       <div className="auto-parser-note" aria-label="Local review session metrics">
-         Session-only review counts: {reviewMetrics.compared} compared ·
-         {reviewMetrics.approved} user approved · {reviewMetrics.blocked} regression blocks.
-         Not a measured human usability study; no telemetry or raw samples are sent.
-       </div>
-       <details className="auto-parser-recipe" aria-label="Parser-building steps review">
-         <summary className="beginner-tool-summary">Inspect how Parser Studio will build the parser
-           <HelpTip label="Parser-building steps"
-             text="This is a technical troubleshooting view. Use it only when you need to inspect the internal sequence Parser Studio plans to use before creating the parser files."/>
-         </summary>
-         <span className="beginner-tool-when">Use when: you are troubleshooting parser generation or need technical evidence for the exact build steps. Normal users can skip this.</span>
-         <p>This view checks the planned parser-building steps locally. It does not install the parser or prove that it works in a live Stellar system.</p>
-         <button type="button" aria-label="Review Staged Recipe" disabled={busy||pending||!suite}
-           onClick={()=>{void previewRecipe();}}>Inspect Parser-Building Steps</button>
-         {currentRecipe&&(currentRecipe.ok
-           ? <div role="status" aria-label="Parser-building steps">
-             <strong>Parser-building steps are ready for technical review</strong>
-             <span>{currentRecipe.recipe.stages.length} planned step{currentRecipe.recipe.stages.length===1?'':'s'} ·
-               {currentRecipe.recipe.sample.events} sample event{currentRecipe.recipe.sample.events===1?'':'s'}</span>
-             <p>{currentRecipe.recipe.stages.map(stage=>stage.op).join(' → ')}</p>
-             <details className="beginner-technical-details"><summary>Technical evidence</summary>
-               <span>REVIEW_ONLY · Native and target NOT VERIFIED</span>
-               <span>Source SHA-256 {currentRecipe.recipe.sample.sha256.slice(0,12)}…</span>
-               <span>v0.1 snapshot: {currentRecipe.lossReport.status} · v0.2 restricted compilation needs backend capability verification</span>
-             </details>
-             <button type="button" aria-label="Validate and Compile Strict v0.2 DRAFT Pair"
-               disabled={!currentPair||busy||pending}
-               onClick={()=>{void compileReviewedRecipe();}}>
-               Validate These Build Steps
-             </button>
-             {!currentPair&&<span>Create the parser files first so Parser Studio can compare the exact generated result.</span>}
-           </div>
-           : <p role="status">Review cannot be generated safely: {statusMessage(currentRecipe.reason)}</p>)}
-         {recipeCompilerError&&<p role="status">{recipeCompilerError}</p>}
-         {currentRecipeCompiled&&<div role="status" aria-label="Parser-building step verification result">
-           <strong>Parser-building steps matched the generated files</strong>
-           <span>{currentRecipeCompiled.receipt.stageCount} build step{currentRecipeCompiled.receipt.stageCount===1?'':'s'} ·
-             {currentRecipeCompiled.receipt.sampleEventCount} sample event{currentRecipeCompiled.receipt.sampleEventCount===1?'':'s'}</span>
-           <details className="beginner-technical-details"><summary>Technical compiler evidence</summary>
-             <span>v0.2 STRICT COMPILER PASS · v0.1 pair SHA MATCHED</span>
-             <span>Recipe SHA-256 {currentRecipeCompiled.receipt.recipeSha256.slice(0,16)}… · Native user parser NOT VERIFIED by compiler receipt · Stellar DP import NOT VERIFIED</span>
-           </details>
-           <p>You can optionally run a private local compatibility check on the generated parser files. This still does not install anything in Stellar Cyber.</p>
-           {nativeAvailability==='AVAILABLE'
-             ? <button type="button" aria-label="Run private parser-file compatibility check"
-                 disabled={busy||pending||!suite}
-                 onClick={()=>{void verifyCurrentNativeProject();}}>
-                 {busy?'Checking parser files…':'Run Private Parser-File Compatibility Check'}
-               </button>
-             : nativeAvailability==='UNAVAILABLE'
-               ? <span>The private parser-file checker is not configured. You can still download the files after the normal sample test passes.</span>
-               : nativeAvailability==='ERROR'
-                 ? <span>Parser Studio could not verify the private parser-file checker. No compatibility result is claimed.</span>
-                 : <span>Checking whether the private parser-file checker is available…</span>}
-           {currentNativeEvidence&&<div className="auto-parser-result"
-             aria-label="Private parser-file compatibility result">
-             <strong>{currentNativeEvidence.status==='PASS'?
-               'Private parser-file compatibility check passed':
-               currentNativeEvidence.status==='UNAVAILABLE'?'Private parser-file checker unavailable':
-               'Private parser-file compatibility check failed'}</strong>
-             <span>{currentNativeEvidence.status==='PASS'
-               ?'The generated files worked in the configured private local parser runtime. This still does not mean they were installed in Stellar Cyber.'
-               :currentNativeEvidence.message}</span>
-             {currentNativeEvidence.report&&<details className="beginner-technical-details">
-               <summary>Technical runtime evidence</summary>
-               <span>NATIVE RUBY/CONF VERIFIED · TARGET NOT VERIFIED</span>
-               <span>{currentNativeEvidence.report.eventsPassed}/{currentNativeEvidence.report.eventCount} events exact · Ruby {currentNativeEvidence.report.ruby} · Fluentd {currentNativeEvidence.report.fluentd}</span>
-               <span>Source/event hashes verified · CONF AST verified · Parser callback verified · Stellar DP target import NOT VERIFIED</span>
-             </details>}
-           </div>}
-         </div>}
-       </details>
-       <p className="auto-parser-note"><LockKeyhole size={14}/> Parser Studio does not install or activate anything on a live Stellar system from this screen.
-         {currentNativeEvidence?.status==='PASS'
-           ?' The optional private parser-file compatibility check passed.'
-           :' The optional private parser-file compatibility check has not established live-system compatibility.'}</p>
+       <p className="auto-parser-note" role="status">
+         Parser Studio re-tested the complete current sample before creating these files.
+         To test additional log variants, add them to the input sample and analyze again.
+         Unsupported events cannot be silently treated as passing parser results.
+       </p>
+       <p className="auto-parser-note"><LockKeyhole size={14}/> Parser Studio does not install or activate anything on a live Stellar system from this screen. Native parser-runtime and target compatibility are not verified.</p>
        <div className="auto-parser-actions">
          <button type="button" onClick={()=>setStep(2)}><ArrowLeft size={14}/> Map Fields</button>
          <button type="button" onClick={onChatGPT}>Ask ChatGPT for Unfamiliar Logs</button>
