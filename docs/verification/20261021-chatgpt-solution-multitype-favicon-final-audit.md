@@ -16,21 +16,21 @@
 
 ## New product behavior in this follow-up
 
-1. ChatGPT Assisted Parser accepts optional **solution vendor, product, version/model and log delivery context**, carried into the manually reviewed prompt as JSON **user-declared hints**; producer names are not parser correctness evidence.
+1. ChatGPT Assisted Parser accepts optional **solution vendor, product, version/model and log delivery context**, included in a manually reviewed JSON prompt as **user-declared hints**. Vendor/product/version also update the canonical ParserDraft metadata and approved artifact slug, preventing divergence across Auto Parser, Local Versions and generated DRAFT. Producer labels are not correctness evidence.
 2. The same named-log-type editor used in Auto Parser is available in ChatGPT Assisted. Original per-type events are combined without rewriting bytes; 2–10 nonempty, distinct groups are required.
 3. Each type has a separate synthetic-default, manually editable **redacted sharing example**. Only the reviewed examples are inserted in the copyable ChatGPT prompt. Original local event values are not automatically included or sent to a third party.
 4. Existing `ReviewedEventProfilesPanel` is reused for explicit discriminator, type-specific mappings, unknown-type rejection, capability gating and approval. Unsafe or incompatible grammar combinations remain review-only.
 5. New independent group acceptance tests every original group with the candidate browser parser, checks complete normalized coverage and disjoint verified routing identities, and **blocks combined file generation** without reviewed conditional or supported mixed-format routing. No group label is silently treated as an event discriminator.
 6. Solution context and redacted sharing examples survive Auto ↔ ChatGPT workspace switches in the browser session; new projects or local-version restores reset the shareable examples.
-7. Actual conditional compiler boundary reproduced and corrected: `backend/src/parser-recipe-v02.ts::legacyAllowed` explicitly rejects `normalization.eventProfiles`; sending a reviewed conditional DRAFT through v0.2 caused a real browser generation failure. For conditional event profiles, ChatGPT Assisted now uses the **existing capability-checked, schema-validated, integrity-verified v0.1 conditional Backend pair** after separate original-group checks. Only non-conditional recipes call the strict v0.2 equivalent-subset compiler; no false v0.2 parity claim is made.
+7. The strict Recipe v0.2 equivalent-subset backend explicitly rejects conditional event profiles. The earlier UI reproduced a real failure attempting this projection. The shared buildReviewableRecipe now **rejects conditional eventProfiles** rather than silently dropping mappings. ChatGPT Assisted uses the existing capability-checked, schema-validated, integrity-verified **v0.1 conditional backend DRAFT pair** via a separate reviewer-controlled action after per-named-group checks. Only nonconditional recipes enter the strict v0.2 compiler. The conditional component draws on reviewed parallel Draft PR #137, consolidated with per-group checks here; do not double-merge competing implementations.
 8. The shared `main` already integrates the canonical XDR Labs Parser Studio favicon assets (`favicon.svg`, ICO, 16/32/48px PNG, 180px Apple touch and 192px icon) and a standard-library asset test. This branch preserves the newer canonical favicon without adding redundant icon sets or duplicate HTML links.
 
 ## Focused acceptance at implementation
 
-- Frontend suite: **145 files / 1,131 tests passed** (new helper and UI tests included).
+- Frontend suite: **146 files / 1,132 tests passed**, including a new conditional Recipe fail-closed regression and UI tests.
 - TypeScript + Vite production build: **PASS** (normal bundle size warning; no build error).
-- First genuine isolated Chromium new-feature test: **1/1 PASS**, including user-entered source context, two named log groups, privacy-safe prompt, workspace continuity and actual SVG HTTP response.
-- SVG parser validation: **PASS**. The 32px and 180px PNG raster fallbacks have correct PNG signature.
+- Genuine isolated Chromium new-feature tests: privacy-safe solution/context/favicons **1/1 PASS**; three-type reviewed conditional DRAFT with real backend and Multi-Pass **1/1 PASS**; existing Auto Parser conditional DRAFT **1/1 PASS**. Conditional generation makes zero Recipe v0.2 POSTs.
+- Canonical favicon assets: independent favicon unit tests **4/4 PASS**. Public HTTPS read-only probes confirm HTTP 200 and correct MIME types for the SVG, ICO, 32px PNG and Apple touch icon. Already-deployed favicon bytes are independent of this not-yet-deployed feature branch.
 - Previous exact source main CI and public-browser acceptance must not be counted as acceptance for this new source revision. This new revision requires its own exact-HEAD CI and development deployment / public Chromium checks.
 
 ## Decision and non-gating limitations

@@ -222,6 +222,9 @@ export async function buildReviewableRecipe(
     suite.counts.failures>0)return fail('SAMPLE_PREVIEW_INCOMPLETE');
  if(!['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed','java_stacktrace','regex','generic_structural'].includes(draft.format))
    return fail('COMPILER_UNSUPPORTED');
+ // Recipe v0.2 cannot preserve conditional event routing or per-type mappings.
+ // Do not silently project a reviewed conditional parser into one family.
+ if(draft.eventProfiles)return fail('COMPILER_UNSUPPORTED');
  const project=toBackendProject(draft);
  if(!project.ok)return fail('MODEL_REVIEW_REQUIRED');
  const sourceFormat=draft.format as ParserRecipeV2['sourceFormat'];

@@ -40,26 +40,17 @@ test('ChatGPT Assisted compiles one previously reviewed conditional parser for t
   for(let i=0;i<3;i++)
     await expect(page.getByLabel('Log type sample '+(i+1))).toHaveValue(fixtures[i]!.raw);
   await page.getByLabel('ChatGPT solution vendor').fill('Example Vendor');
-  const button=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
-  await expect(button).toBeEnabled();
-  await button.click();
-  const text=await page.getByLabel('ChatGPT copyable prompt').inputValue();
-  const begin='----- BEGIN CANONICAL PARSER RECIPE JSON -----\n';
-  const end='\n----- END CANONICAL PARSER RECIPE JSON -----';
-  expect(text).toContain(begin);
-  const recipe=JSON.parse(text.split(begin)[1]!.split(end)[0]!);
-  await page.getByLabel('ChatGPT result JSON').fill(JSON.stringify(recipe));
-  await page.getByRole('button',{name:'Check ChatGPT Result'}).click();
-  await expect(page.getByLabel('ChatGPT result ready for testing')).toBeVisible();
-  await page.getByRole('button',{name:'Apply Fix & Create Parser Files'}).click();
-  await expect(page.getByLabel('ChatGPT created parser files'))
-    .toContainText('Parser files created successfully',{timeout:20000});
-  await expect(page.getByText('Recipe v0.2 does not represent those conditional branches.',{exact:false}))
+  await expect(page.getByRole('button',{name:'Prepare ChatGPT Prompt'})).toBeDisabled();
+  await expect(page.getByText('A reviewed conditional parser is active.',{exact:false}))
     .toBeVisible();
+  const generate=page.getByRole('button',{name:'Validate & Generate One Multi-Type Parser'});
+  await expect(generate).toBeEnabled({timeout:15000});
+  await generate.click();
+  const downloads=page.getByLabel('Combined parser downloads');
+  await expect(downloads).toContainText('Two integrity-checked DRAFT files are available',{timeout:20000});
   expect(unsupportedV02Posts).toEqual([]);
   const downloadPromise=page.waitForEvent('download');
-  await page.getByLabel('ChatGPT created parser files')
-    .getByRole('button',{name:'Download customized_demo_firewall',exact:true}).click();
+  await downloads.getByRole('button',{name:/^Download customized_[a-z0-9_]+$/}).click();
   const download=await downloadPromise;
   const chunks:Buffer[]=[];
   const stream=await download.createReadStream();

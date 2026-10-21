@@ -17,9 +17,10 @@ import {compileReviewedRecipeV02} from './recipeV2BackendClient';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import ParserListenerPortInput from './ParserListenerPortInput';
 import NamedLogTypesPanel from './NamedLogTypesPanel';
-import ReviewedEventProfilesPanel from './ReviewedEventProfilesPanel';
+import ChatGPTConditionalDraft from './ChatGPTConditionalDraft';
+import {parserIdentitySlug} from './parserIdentity';
+import {defaultGuidedOptions} from './contract';
 import {validateNamedLogs,type NamedLogType} from './namedLogTypes';
-import type {BackendCapabilities} from './backendCapabilities';
 import {reviewedSourcePromptContext,checkNamedParserCoverage,MAX_REVIEWED_TYPE_BYTES,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 
@@ -95,7 +96,6 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       onSolutionInfoChange(typeof update==='function'?update(solutionInfo):update);
     else setLocalSolutionInfo(update);
   };
-  const [backendCapabilities,setBackendCapabilities]=useState<BackendCapabilities|undefined>();
   const [prompt,setPrompt]=useState('');
   const [promptError,setPromptError]=useState('');
   const [copied,setCopied]=useState(false);
@@ -123,14 +123,6 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   const reviewedContext=reviewedSourcePromptContext(solutionInfo,
     namedLogTypes&&namedLogTypes.length>=2?reviewedGroups:null);
   useEffect(()=>{
-    if(!namedLogTypes||namedLogTypes.length<2){setBackendCapabilities(undefined);return;}
-    let active=true;
-    void fetchBackendCapabilities().then(value=>{
-      if(active)setBackendCapabilities(value);
-    }).catch(()=>{if(active)setBackendCapabilities(undefined);});
-    return ()=>{active=false;};
-  },[namedLogTypes?.length]);
-  useEffect(()=>{
     setPrompt('');setPromptError('');setCopied(false);setReview(null);
     setComparison(null);setNotice('');setContext(null);setGenerated(null);
     setHoldoutAttested(false);setCandidateApproval(false);
@@ -140,9 +132,22 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     setPrompt('');setCopied(false);setReview(null);setComparison(null);
     setNotice('');setContext(null);setGenerated(null);setHoldoutAttested(false);setCandidateApproval(false);
   },[goal,redacted,redactedGroups,solutionInfo]);
+  const editSolution=(field:keyof AssistedSolutionInfo,value:string)=>{
+    const safe=value.replace(/[\x00-\x1f\x7f]/g,'').slice(0,96);
+    setSolutionInfo(previous=>({...previous,[field]:safe}));
+    if(field==='delivery')return;
+    setDraft(previous=>{
+      const vendor=field==='vendor'?safe:previous.vendor;
+      const name=field==='product'?safe:previous.name;
+      const version=field==='version'?safe:previous.version;
+      const opts=previous.guided??defaultGuidedOptions();
+      return {...previous,vendor,name,version,
+        guided:{...opts,slug:parserIdentitySlug(vendor,name)}};
+    });
+  };
 
   async function prepare(){
-    if(!suite||pending||busy||!sample.trim())return;
+    if(!suite||pending||busy||!sample.trim()||draft.eventProfiles)return;
     if(!namedReady){
       setPromptError('Complete at least two valid named log types before preparing one combined parser.');
       return;
@@ -218,7 +223,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     catch{setPromptError('Clipboard unavailable. Select and copy the visible prompt manually.');}
   }
   async function validate(){
-    if(!context||context.sample!==sample||pending||busy||!response.trim())return;
+    if(!context||context.sample!==sample||pending||busy||draft.eventProfiles||!response.trim())return;
     setBusy(true);setReview(null);setComparison(null);setGenerated(null);setNotice('');
     try{
       let result=await importReviewOnlyAIRecipe(response,sample,context.draft,context.suite);
@@ -232,7 +237,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     finally{setBusy(false);}
   }
   async function compareMapping(){
-    if(!context||context.sample!==sample||!review||!review.ok||!holdout.trim()||busy||pending)return;
+    if(!context||context.sample!==sample||!review||!review.ok||!holdout.trim()||busy||pending||draft.eventProfiles)return;
     if(!holdoutAttested){
       setNotice('Confirm that these additional test logs are different from the examples used to create the fix.');return;
     }
@@ -282,7 +287,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     finally{setBusy(false);}
   }
   async function generateVerifiedDraft(){
-    if(!context||context.sample!==sample||!review?.ok||pending||busy)return;
+    if(!context||context.sample!==sample||!review?.ok||pending||busy||draft.eventProfiles)return;
     const recovery=review.report.mode==='FULL_RECOVERY';
     const baseline=recovery?null:await buildReviewableRecipe(sample,context.draft,context.suite);
     if(!recovery&&(!baseline||!baseline.ok)){setNotice('No validated baseline is available. No files generated.');return;}
@@ -317,22 +322,11 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       const exact=await buildReviewableRecipe(sample,candidate,local);
       if(!exact.ok||JSON.stringify(exact.recipe)!==JSON.stringify(review.candidate))
         throw new Error('The AI proposal differs from the compiler-owned validated recipe.');
-      if(candidate.eventProfiles){
-        // The v0.2 equivalence-subset compiler explicitly excludes conditional
-        // eventProfiles. Use the already-validated v0.1 conditional backend
-        // DRAFT pair, never claim that a v0.2 recipe compiled those branches.
-        if(cap.authoring.conditionalEventProfiles!==true||
-           cap.authoring.conditionalEventProfilesUnknownPolicy!=='reject')
-          throw new Error('Reviewed conditional compilation is not available.');
-      }else{
-        await compileReviewedRecipeV02({
-          recipe:review.candidate,legacyProject:adapted.project,
-        },pair);
-      }
+      await compileReviewedRecipeV02({
+        recipe:review.candidate,legacyProject:adapted.project,
+      },pair);
       setGenerated({pair,draft:candidate});
-      setNotice(candidate.eventProfiles
-        ? 'One conditional parser DRAFT was created using the reviewed backend after separate checks of every log type. Recipe v0.2 does not represent those conditional branches. Nothing was installed automatically.'
-        : 'Parser files created after the local sample checks passed. Nothing was installed automatically.');
+      setNotice('Parser files created after the local sample checks passed. Nothing was installed automatically.');
     }catch{
       setNotice('Parser Studio could not safely create files from this ChatGPT result. No files were released and no parser rules were changed.');
     }finally{setBusy(false);}
@@ -370,22 +364,22 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             <label>Solution vendor
               <input aria-label="ChatGPT solution vendor" maxLength={120}
                 placeholder="e.g., Example Security" value={solutionInfo.vendor}
-                onChange={e=>setSolutionInfo(value=>({...value,vendor:e.target.value}))}/>
+                onChange={e=>editSolution('vendor',e.target.value)}/>
             </label>
             <label>Product / solution name
               <input aria-label="ChatGPT solution product" maxLength={120}
                 placeholder="e.g., Firewall, WAF, EDR" value={solutionInfo.product}
-                onChange={e=>setSolutionInfo(value=>({...value,product:e.target.value}))}/>
+                onChange={e=>editSolution('product',e.target.value)}/>
             </label>
             <label>Product version / model
               <input aria-label="ChatGPT solution version or model" maxLength={120}
                 placeholder="Optional product release or model" value={solutionInfo.version}
-                onChange={e=>setSolutionInfo(value=>({...value,version:e.target.value}))}/>
+                onChange={e=>editSolution('version',e.target.value)}/>
             </label>
             <label>Log source / delivery
               <input aria-label="ChatGPT log source or delivery" maxLength={120}
                 placeholder="e.g., Syslog TCP, file, API export" value={solutionInfo.delivery}
-                onChange={e=>setSolutionInfo(value=>({...value,delivery:e.target.value}))}/>
+                onChange={e=>editSolution('delivery',e.target.value)}/>
             </label>
           </div>
         </section>
@@ -407,13 +401,16 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             <p>These groups form one local sample. A single DRAFT is created only after
               each type passes separate checks and an explicit conditional discriminator
               or supported mixed-format route is reviewed. Names alone never create rules.</p>
-            <ReviewedEventProfilesPanel suite={suite} draft={draft} setDraft={setDraft}
-              backendCapabilities={backendCapabilities} source={sample}
-              pending={pending} highlightNamed/>
+            <ChatGPTConditionalDraft suite={suite} draft={draft} setDraft={setDraft}
+              sample={sample} pending={pending} runPreview={runPreview}
+              onAutoParser={onAutoParser} namedLogTypes={namedLogTypes}/>
             <p>If the review requests a supported source format, select it in Auto Parser,
               then return here with your combined logs preserved.</p>
             <button type="button" onClick={onAutoParser}>Review shared extraction format in Auto Parser</button>
           </section>}
+        {!namedLogTypes&&<ChatGPTConditionalDraft suite={suite} draft={draft} setDraft={setDraft}
+          sample={sample} pending={pending} runPreview={runPreview}
+          onAutoParser={onAutoParser} namedLogTypes={null}/>}
         <label>What do you want Parser Studio to find? <HelpTip label="What should be extracted?"
           text="Describe the values you care about in plain language, for example: source IP, destination IP, username, action, URL, process name, or event ID. You do not need to know Stellar field names yet."/>
           <input aria-label="ChatGPT desired fields" maxLength={512} type="text"
@@ -456,9 +453,13 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           Complete two or more valid named log types before preparing a combined parser.</p>}
         {!reviewedContext.ok&&<p role="alert" className="auto-parser-warning">
           {reviewedContext.reason}</p>}
+        {draft.eventProfiles&&<p role="note" className="auto-parser-warning">
+          A reviewed conditional parser is active. Its type-specific mappings cannot be
+          represented in ChatGPT Recipe v0.2. Use the validated combined-parser downloads above.
+          To propose another AI correction, first review a non-conditional source draft.</p>}
         <button type="button" className="auto-parser-primary"
           disabled={!sample.trim()||(!namedLogTypes&&!redacted.trim())||
-            !namedReady||!reviewedContext.ok||!suite||pending||busy}
+            !namedReady||!reviewedContext.ok||!suite||pending||busy||Boolean(draft.eventProfiles)}
           onClick={()=>{void prepare();}}>Prepare ChatGPT Prompt</button>
         {promptError&&<p role="alert" className="auto-parser-warning">{promptError}</p>}
         {prompt&&<div className="auto-parser-recipe" aria-label="ChatGPT prepared prompt">

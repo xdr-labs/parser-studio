@@ -69,9 +69,15 @@ export default function App(){
   const [draft,setDraft]=useState<ParserDraft>(()=>createDraft());
   const [sample,setSample]=useState('');
   const [namedLogTypes,setNamedLogTypes]=useState<NamedLogType[]|null>(null);
-  const [assistedSolutionInfo,setAssistedSolutionInfo]=useState<AssistedSolutionInfo>({
-    vendor:'',product:'',version:'',delivery:'',
-  });
+  // The ParserDraft owns manufacturer, product and version. Keeping another
+  // editable identity would become stale after Auto Parser or Local Versions.
+  const [assistedLogDelivery,setAssistedLogDelivery]=useState('');
+  const assistedSolutionInfo:AssistedSolutionInfo={
+    vendor:draft.vendor==='Demo / local draft'?'':draft.vendor,
+    product:draft.name==='Untitled parser'?'':draft.name,
+    version:draft.version==='1.0.0'?'':draft.version??'',
+    delivery:assistedLogDelivery,
+  };
   const [assistedSharingExamples,setAssistedSharingExamples]=useState<Record<string,string>>({});
   const updateNamedLogTypes=(groups:NamedLogType[])=>{
     setNamedLogTypes(groups);
@@ -108,7 +114,7 @@ export default function App(){
     // omit only the redundant LF delimiters the prior UI inserted itself.
     setSample(restoredNamedSource(version).source);
     setNamedLogTypes(version.logTypes?structuredClone(version.logTypes):null);
-    setAssistedSolutionInfo({vendor:'',product:'',version:'',delivery:''});
+    setAssistedLogDelivery('');
     setAssistedSharingExamples({});
     setDraft(structuredClone(version.draft));
     setDatasetName(version.datasetName);setWorkspace('auto');
@@ -118,7 +124,7 @@ export default function App(){
   const reset=()=>{
     if(sample.trim()&&!window.confirm('Clear the current sample and create a new parser?'))return;
     setDraft(createDraft());setSample('');setNamedLogTypes(null);
-    setAssistedSolutionInfo({vendor:'',product:'',version:'',delivery:''});
+    setAssistedLogDelivery('');
     setAssistedSharingExamples({});
     setDatasetName('No sample selected');
     setWorkspace('auto');setAdvanced(false);
@@ -209,7 +215,8 @@ export default function App(){
         draft={draft} setDraft={setDraft} sample={sample}
         namedLogTypes={namedLogTypes} onEnableNamedLogTypes={enableNamedLogTypes}
         onChangeNamedLogTypes={updateNamedLogTypes} onExitNamedLogTypes={exitNamedLogTypes}
-        solutionInfoValue={assistedSolutionInfo} onSolutionInfoChange={setAssistedSolutionInfo}
+        solutionInfoValue={assistedSolutionInfo}
+        onSolutionInfoChange={info=>setAssistedLogDelivery(info.delivery)}
         reviewedSharingExamples={assistedSharingExamples}
         onReviewedSharingExamplesChange={setAssistedSharingExamples}
         setSample={value=>{

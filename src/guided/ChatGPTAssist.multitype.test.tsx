@@ -1,5 +1,5 @@
 import {describe,expect,it,vi} from 'vitest';
-import {render,screen,fireEvent} from '@testing-library/react';
+import {render,screen,fireEvent,waitFor} from '@testing-library/react';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import ChatGPTAssist from './ChatGPTAssist';
@@ -9,7 +9,7 @@ describe('ChatGPT Assisted combined source UI',()=>{
     {id:'type-threat',name:'Threat',sample:'event_type=threat action=blocked src_ip=10.11.1.1 dst_port=443 threat_score=9'},
     {id:'type-user',name:'User',sample:'event_type=user action=login src_ip=10.11.1.2 dst_port=443 username=somebody'},
   ];
-  it('keeps the producer identity and two user-reviewed sharing examples separate from original logs',()=>{
+  it('keeps the producer identity and two user-reviewed sharing examples separate from original logs',async()=>{
     const source=groups.map(group=>group.sample).join('\n');
     const draft={...createDraft(),format:'kv' as const};
     const setDraft=vi.fn(),onChangeNamedLogTypes=vi.fn();
@@ -25,6 +25,11 @@ describe('ChatGPT Assisted combined source UI',()=>{
       {target:{value:'Example Firewall Vendor'}});
     expect((screen.getByLabelText('ChatGPT solution vendor') as HTMLInputElement).value)
       .toBe('Example Firewall Vendor');
+    const patchDraft=setDraft.mock.calls.at(-1)?.[0];
+    expect(typeof patchDraft).toBe('function');
+    const updated=patchDraft(draft);
+    expect(updated.vendor).toBe('Example Firewall Vendor');
+    expect(updated.guided.slug).toBe('example_firewall_vendor_untitled_parser');
     expect(screen.getByLabelText('Log type entry 1')).toBeTruthy();
     expect(screen.getByLabelText('Log type entry 2')).toBeTruthy();
     const combined=screen.getByLabelText('ChatGPT local sample logs') as HTMLTextAreaElement;
@@ -37,6 +42,7 @@ describe('ChatGPT Assisted combined source UI',()=>{
       expect(shared.value).not.toContain('10.11.1.2');
     }
     expect(screen.getByLabelText('Combined parser routing review')).toBeTruthy();
+    await waitFor(()=>expect(screen.getByText(/Conditional compiler support could not be verified/)).toBeTruthy());
   });
   it('blocks prompt preparation if a named type is missing its original logs',()=>{
     const draft={...createDraft(),format:'kv' as const};
