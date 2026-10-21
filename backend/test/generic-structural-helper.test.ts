@@ -18,6 +18,9 @@ function runRuby(method:string,raw:string):unknown{
   const source=[
     "require 'json'","require 'csv'","require 'base64'","require 'ipaddr'","require 'time'",
     helper,
+    // The strict JSON decoder relies on an initialized compiler runtime.
+    // Standalone source probes must use the same bounded JSON depth policy.
+    "@parser_rule_set = {'extraction'=>{'format'=>'generic_structural','maxDepth'=>8}}",
     `result = ${method}(${JSON.stringify(raw)})`,
     "STDOUT.write(JSON.generate(result))",
   ].join("\n");
