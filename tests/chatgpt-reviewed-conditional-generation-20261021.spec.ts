@@ -40,6 +40,8 @@ test('ChatGPT Assisted compiles one previously reviewed conditional parser for t
   for(let i=0;i<3;i++)
     await expect(page.getByLabel('Log type sample '+(i+1))).toHaveValue(fixtures[i]!.raw);
   await page.getByLabel('ChatGPT solution vendor').fill('Example Vendor');
+  await page.getByLabel('ChatGPT solution product').fill('Security Gateway');
+  await page.getByLabel('ChatGPT solution version or model').fill('9.4');
   await expect(page.getByRole('button',{name:'Prepare ChatGPT Prompt'})).toBeDisabled();
   const combined=page.getByLabel('Combined parser routing review');
   await expect(combined.getByLabel('Approved conditional parser')).toContainText('3 explicitly reviewed event types');
@@ -51,7 +53,7 @@ test('ChatGPT Assisted compiles one previously reviewed conditional parser for t
   expect(unsupportedV02Posts).toEqual([]);
   const downloadPromise=page.waitForEvent('download');
   await combined.getByLabel('Combined parser downloads')
-    .getByRole('button',{name:'Download customized_demo_firewall',exact:true}).click();
+    .getByRole('button',{name:'Download customized_example_vendor_security_gateway',exact:true}).click();
   const download=await downloadPromise;
   const chunks:Buffer[]=[];
   const stream=await download.createReadStream();
@@ -60,6 +62,10 @@ test('ChatGPT Assisted compiles one previously reviewed conditional parser for t
   const b64=/Base64.strict_decode64\('([^']+)'\)/.exec(ruby)?.[1];
   expect(b64).toBeTruthy();
   const compiled=JSON.parse(Buffer.from(b64!,'base64').toString('utf8'));
+  expect(compiled.vendor).toBe('Example Vendor');
+  expect(compiled.product).toBe('Security Gateway');
+  expect(compiled.productVersion).toBe('9.4');
+  expect(compiled.projectId).toBe('draft-example_vendor_security_gateway');
   expect(compiled.normalization.eventProfiles.variants.map((x:{name:string})=>x.name))
     .toEqual(['threat','user','asset']);
 });

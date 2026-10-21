@@ -22,6 +22,8 @@ import {validateNamedLogs,type NamedLogType} from './namedLogTypes';
 import {reviewedSourcePromptContext,checkNamedParserCoverage,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 import {composeChatGPTPrompt} from './chatGptPromptBuilder';
+import {parserIdentitySlug} from './parserIdentity';
+import {defaultGuidedOptions} from './contract';
 
 interface Props {
   draft:ParserDraft;
@@ -62,6 +64,20 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     if(onSolutionInfoChange)
       onSolutionInfoChange(typeof update==='function'?update(solutionInfo):update);
     else setLocalSolutionInfo(update);
+  };
+  const updateProducerIdentity=(field:'vendor'|'product'|'version',value:string)=>{
+    const safe=value.replace(/[\x00-\x1f\x7f]/g,'').slice(0,96);
+    // The user-declared hint must also populate the actual DRAFT identity,
+    // rather than creating files for the unrelated default demo product.
+    setSolutionInfo(old=>({...old,[field]:safe}));
+    setDraft(old=>{
+      const vendor=field==='vendor'?safe:old.vendor;
+      const name=field==='product'?safe:old.name;
+      const version=field==='version'?safe:old.version??'';
+      const opts=old.guided??defaultGuidedOptions();
+      return {...old,vendor,name,version,
+        guided:{...opts,slug:parserIdentitySlug(vendor,name)}};
+    });
   };
   const [prompt,setPrompt]=useState('');
   const [promptError,setPromptError]=useState('');
@@ -296,22 +312,23 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         <section className="auto-parser-recipe" aria-label="Log-generating solution information">
           <h3>Log-generating solution (optional)</h3>
           <p>Add the vendor and product to help ChatGPT recognize the context.
-            These are user-provided hints, not evidence that a manufacturer-specific grammar is supported.</p>
+            These details also identify the generated parser DRAFT, but are not
+            evidence that a manufacturer-specific grammar is supported.</p>
           <div className="chatgpt-source-grid">
             <label>Solution vendor
-              <input aria-label="ChatGPT solution vendor" maxLength={120}
+              <input aria-label="ChatGPT solution vendor" maxLength={96}
                 placeholder="e.g., Example Security" value={solutionInfo.vendor}
-                onChange={e=>setSolutionInfo(value=>({...value,vendor:e.target.value}))}/>
+                onChange={e=>updateProducerIdentity('vendor',e.target.value)}/>
             </label>
             <label>Product / solution name
-              <input aria-label="ChatGPT solution product" maxLength={120}
+              <input aria-label="ChatGPT solution product" maxLength={96}
                 placeholder="e.g., Firewall, WAF, EDR" value={solutionInfo.product}
-                onChange={e=>setSolutionInfo(value=>({...value,product:e.target.value}))}/>
+                onChange={e=>updateProducerIdentity('product',e.target.value)}/>
             </label>
             <label>Product version / model
-              <input aria-label="ChatGPT solution version or model" maxLength={120}
+              <input aria-label="ChatGPT solution version or model" maxLength={96}
                 placeholder="Optional product release or model" value={solutionInfo.version}
-                onChange={e=>setSolutionInfo(value=>({...value,version:e.target.value}))}/>
+                onChange={e=>updateProducerIdentity('version',e.target.value)}/>
             </label>
             <label>Log source / delivery
               <input aria-label="ChatGPT log source or delivery" maxLength={120}

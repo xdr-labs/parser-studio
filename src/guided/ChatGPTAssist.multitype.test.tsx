@@ -1,6 +1,7 @@
 import {describe,expect,it,vi} from 'vitest';
 import {render,screen,fireEvent,act} from '@testing-library/react';
-import {createDraft} from '../model';
+import {createDraft,type ParserDraft} from '../model';
+import type {SetStateAction} from 'react';
 import {preview} from '../parser';
 import ChatGPTAssist from './ChatGPTAssist';
 
@@ -25,6 +26,17 @@ describe('ChatGPT Assisted combined source UI',()=>{
       {target:{value:'Example Firewall Vendor'}});
     expect((screen.getByLabelText('ChatGPT solution vendor') as HTMLInputElement).value)
       .toBe('Example Firewall Vendor');
+    fireEvent.change(screen.getByLabelText('ChatGPT solution product'),
+      {target:{value:'Security Gateway'}});
+    fireEvent.change(screen.getByLabelText('ChatGPT solution version or model'),
+      {target:{value:'9.4'}});
+    let actualDraft:ParserDraft=draft;
+    for(const [change] of setDraft.mock.calls as Array<[SetStateAction<ParserDraft>]>)
+      actualDraft=typeof change==='function'?change(actualDraft):change;
+    expect(actualDraft.vendor).toBe('Example Firewall Vendor');
+    expect(actualDraft.name).toBe('Security Gateway');
+    expect(actualDraft.version).toBe('9.4');
+    expect(actualDraft.guided?.slug).toBe('example_firewall_vendor_security_gateway');
     expect(screen.getByLabelText('Log type entry 1')).toBeTruthy();
     expect(screen.getByLabelText('Log type entry 2')).toBeTruthy();
     const combined=screen.getByLabelText('ChatGPT local sample logs') as HTMLTextAreaElement;
