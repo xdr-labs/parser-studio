@@ -26,7 +26,7 @@ test("tenant-authorized port candidate reads verified backend inventory but stay
     const response=await fetch(base+"/api/v1/stellar/legacy/port-proposal");
     assert.equal(response.status,200);
     const p=await response.json() as any;
-    assert.equal(p.recommendedPort,20003);
+    assert.equal(p.recommendedPort,6801);
     assert.equal(p.deployableNow,false);
     assert.equal(p.needsFinalRecheck,true);
     assert.equal(p.status,"INCOMPLETE_EVIDENCE");
@@ -44,8 +44,8 @@ test("tenant-authorized port candidate reads verified backend inventory but stay
     const syslog=await fetch(base+"/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424");
     assert.equal(syslog.status,200);
     const port=await syslog.json() as any;
-    assert.equal(port.recommendedPort,6800);
-    assert.equal(port.sensorIngestPort,6800);
+    assert.equal(port.recommendedPort,6801);
+    assert.equal(port.sensorIngestPort,6801);
     assert.equal(port.deployableNow,false);
     const belowMin=await fetch(base+"/api/v1/stellar/legacy/port-proposal?format=syslog_rfc5424&port=6799");
     assert.equal(belowMin.status,422);
