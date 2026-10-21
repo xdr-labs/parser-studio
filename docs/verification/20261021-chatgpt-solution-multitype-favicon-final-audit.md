@@ -38,3 +38,12 @@
 **Engine decision:** No new reproducible, cross-vendor general grammar defect has been established from this evidence. Preserve the qualified engine rather than add speculative manufacturer-specific regular expressions. Reopen common grammar work only if new reproducible logs show silent record/field loss, false parsed/native readiness, a shared standards defect across sources, or a blocked novice path for an otherwise qualified DRAFT.
 
 Not verified: arbitrary multi-format/native target import, manufacturer/firmware-wide semantic accuracy, raw wire transport output, any proprietary Stellar importer, DP/sensor operations, and mobile coverage. Unsupported mixtures remain visibly blocked or review-only; the prompt alone is not a compiled parser.
+
+## 2026-10-22 isolated consolidation check
+
+Two parallel work packets were independently present and preserved: Draft PR #137 (source head `3d562588b`, exact-head CI #39620864434 SUCCESS) and Draft PR #138 (source head `98d072b`, local frontend 1,131/1,131 PASS and three-family conditional source Chromium PASS). Instead of attempting two overlapping merges, the final isolated integration branch carries both histories and resolves conflicting UI code once.
+
+- The reviewed conditional UI and strict `buildReviewableRecipe` fail-closed guard derive from PR #137, so v0.2 cannot silently lose per-event mappings.
+- The independent per-log-type validation, separated redacted examples, optional source-delivery hint, session continuity, and actual Chromium proof derive from PR #138. `ChatGPTConditionalDraft` now validates each named group separately in addition to the complete sample before calling the existing v0.1 conditional authoring/backend pair.
+- Main's independently qualified canonical favicon from PR #136 is retained without duplicating SVG/PNG/ICO links.
+- Consolidation focused unit test 16/16 PASS; frontend TypeScript/Vite build PASS; built Backend plus genuine Chromium with three-family DRAFT, single-source privacy/context and existing Auto conditional DRAFT 3/3 PASS (isolated loopback). Full exact-head CI, remote main merge and development installation must be qualified separately for this final merged source.

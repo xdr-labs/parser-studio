@@ -1,5 +1,5 @@
 import {describe,expect,it,vi} from 'vitest';
-import {render,screen,fireEvent} from '@testing-library/react';
+import {render,screen,fireEvent,act} from '@testing-library/react';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import ChatGPTAssist from './ChatGPTAssist';
@@ -9,17 +9,17 @@ describe('ChatGPT Assisted combined source UI',()=>{
     {id:'type-threat',name:'Threat',sample:'event_type=threat action=blocked src_ip=10.11.1.1 dst_port=443 threat_score=9'},
     {id:'type-user',name:'User',sample:'event_type=user action=login src_ip=10.11.1.2 dst_port=443 username=somebody'},
   ];
-  it('keeps the producer identity and two user-reviewed sharing examples separate from original logs',()=>{
+  it('keeps the producer identity and two user-reviewed sharing examples separate from original logs',async()=>{
     const source=groups.map(group=>group.sample).join('\n');
     const draft={...createDraft(),format:'kv' as const};
     const setDraft=vi.fn(),onChangeNamedLogTypes=vi.fn();
-    render(<ChatGPTAssist draft={draft} setDraft={setDraft}
+    await act(async()=>{render(<ChatGPTAssist draft={draft} setDraft={setDraft}
       sample={source} setSample={vi.fn()}
       suite={preview(source,draft)} pending={false}
       runPreview={async(candidate,text)=>preview(text??source,candidate)}
       onAutoParser={vi.fn()} namedLogTypes={groups}
       onEnableNamedLogTypes={vi.fn()} onChangeNamedLogTypes={onChangeNamedLogTypes}
-      onExitNamedLogTypes={vi.fn()}/>);
+      onExitNamedLogTypes={vi.fn()}/>);});
     expect(screen.getByLabelText('Log-generating solution information')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('ChatGPT solution vendor'),
       {target:{value:'Example Firewall Vendor'}});

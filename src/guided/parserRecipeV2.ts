@@ -222,6 +222,9 @@ export async function buildReviewableRecipe(
     suite.counts.failures>0)return fail('SAMPLE_PREVIEW_INCOMPLETE');
  if(!['json','kv','csv','cef','leef','syslog_rfc3164','syslog_rfc5424','mixed','java_stacktrace','regex','generic_structural'].includes(draft.format))
    return fail('COMPILER_UNSUPPORTED');
+ // Recipe v0.2 cannot represent per-event conditional mappings. Fail closed,
+ // rather than silently generating a single-family recipe from a routed draft.
+ if(draft.eventProfiles)return fail('COMPILER_UNSUPPORTED');
  const project=toBackendProject(draft);
  if(!project.ok)return fail('MODEL_REVIEW_REQUIRED');
  const sourceFormat=draft.format as ParserRecipeV2['sourceFormat'];
