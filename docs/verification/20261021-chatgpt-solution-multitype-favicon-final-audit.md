@@ -47,3 +47,9 @@ Two parallel work packets were independently present and preserved: Draft PR #13
 - The independent per-log-type validation, separated redacted examples, optional source-delivery hint, session continuity, and actual Chromium proof derive from PR #138. `ChatGPTConditionalDraft` now validates each named group separately in addition to the complete sample before calling the existing v0.1 conditional authoring/backend pair.
 - Main's independently qualified canonical favicon from PR #136 is retained without duplicating SVG/PNG/ICO links.
 - Consolidation focused unit test 16/16 PASS; frontend TypeScript/Vite build PASS; built Backend plus genuine Chromium with three-family DRAFT, single-source privacy/context and existing Auto conditional DRAFT 3/3 PASS (isolated loopback). Full exact-head CI, remote main merge and development installation must be qualified separately for this final merged source.
+
+## Source identity DRAFT parity correction
+
+Follow-up integrated test found that separately reviewed ChatGPT producer information could appear in the manually copied prompt but was not synchronized to the actual generated DRAFT identity. The fix reuses the already reviewed `parserIdentitySlug(vendor, product)` and updates `draft.vendor`, `draft.name`, `draft.version` and `draft.guided.slug` whenever the matching producer details change. The log-delivery field remains unverified descriptive context and never claims transport/native support.
+
+The actual isolated Chromium integration test now verifies a three-family downloaded conditional Ruby DRAFT includes `vendor=Example Vendor`, `product=Security Gateway`, `productVersion=9.4`, and `projectId=draft-example_vendor_security_gateway`, together with all three reviewed event branches. Focused source context and identity tests and Vite production build pass. No Stellar Dictionary release selector, vendor grammar patch, or target installation is added.
