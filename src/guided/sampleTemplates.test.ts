@@ -172,6 +172,6 @@ describe('safe synthetic no-code starter templates', () => {
     first.draft.mappings[0].source = 'tampered';
     first.draft.guided!.receiver.port = 8080;
     expect(again.draft.mappings[0].source).not.toBe('tampered');
-    expect(again.draft.guided!.receiver.port).toBe(7501);
+    expect(again.draft.guided!.receiver.port).toBe(6801);
   });
 });

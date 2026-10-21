@@ -3,7 +3,7 @@ import {createDraft} from '../model';
 import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 
 describe('beginner automatic Generic Structural handoff',()=>{
-  it('automatically prepares named BIG-IP fields and maps nested leaf aliases to Stellar fields',()=>{
+  it('prepares named BIG-IP fields while requiring review for competing hostname aliases',()=>{
     const raw='Oct 15 00:14:27 bigip-waf01 ASM: unit_hostname="bigip-waf01",management_ip_address="10.1.1.10",request_status="blocked",ip_client="203.0.113.210",protocol="HTTPS",date_time="2026-10-15T00:14:27+09:00",dest_port="443",dest_ip="10.20.1.25",uri="/api/login"';
     const result=buildAutomaticGenericStructuralDraft(raw,createDraft());
     expect(result).not.toBeNull();
@@ -14,7 +14,10 @@ describe('beginner automatic Generic Structural handoff',()=>{
     expect(draft.mappings.find(x=>x.source==='generic.fields.ip_client')).toMatchObject({target:'srcip',type:'ip'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'proto_name',type:'string'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.date_time')).toMatchObject({target:'timestamp',type:'timestamp'});
-    expect(draft.mappings.find(x=>x.source==='syslog.host')).toMatchObject({target:'hostname'});
+    // Both the Syslog envelope host and the BIG-IP unit_hostname contain
+    // valid hostname values; neither is silently selected as authoritative.
+    expect(draft.mappings.find(x=>x.source==='syslog.host')).toMatchObject({target:'syslog.host'});
+    expect(draft.mappings.find(x=>x.source==='generic.fields.unit_hostname')).toBeDefined();
   });
 
   it('auto-adopts RFC3164-wrapped positional firewall CSV without requiring a repair click',()=>{

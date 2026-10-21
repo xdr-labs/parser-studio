@@ -68,7 +68,7 @@ def _nul(raw:str,max_events:int,parser):
         if len(body.encode('utf8'))>MAX_FRAME_BYTES:
             return _invalid_stream(raw,'FRAMING_RECORD_SIZE_LIMIT')
         if body.startswith('{'):
-            try:obj=json.loads(body)
+            try:obj=json.loads(body,object_pairs_hook=_no_duplicate_keys)
             except (ValueError,TypeError):return _invalid_stream(raw,'FRAMING_INVALID_GELF_JSON')
             if not (isinstance(obj,dict) and obj.get('version')=='1.1'
                     and isinstance(obj.get('host'),str)
@@ -102,7 +102,7 @@ def _json_seq(raw:str,max_events:int,parser):
         source=raw[begin:json_end]
         if not source or len(source.encode('utf8'))>MAX_FRAME_BYTES:
             return _invalid_stream(raw,'FRAMING_JSON_SEQ_RECORD_LIMIT')
-        try:obj=json.loads(source)
+        try:obj=json.loads(source,object_pairs_hook=_no_duplicate_keys)
         except (TypeError,ValueError):return _invalid_stream(raw,'FRAMING_JSON_SEQ_RECORD_INVALID')
         if not isinstance(obj,(list,dict)):
             return _invalid_stream(raw,'FRAMING_JSON_SEQ_PRIMITIVE_UNSUPPORTED')

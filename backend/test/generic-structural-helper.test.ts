@@ -3,13 +3,24 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {spawnSync} from "node:child_process";
 
-const helper=readFileSync(new URL("../templates/generic-structural-helper.rb.tpl",import.meta.url),"utf8");
+const jsonFragment=readFileSync(new URL("../templates/ruby-fragment.rb.tpl",import.meta.url),"utf8");
+const jsonStart=jsonFragment.indexOf('def parserstudio_json_duplicate_keys?(raw)');
+const jsonEnd=jsonFragment.indexOf('\ndef parserstudio_unescape(text)',jsonStart);
+assert.ok(jsonStart>=0&&jsonEnd>jsonStart,'The compiled JSON duplicate guard must remain available');
+const sharedJsonDecoder=jsonFragment.slice(jsonStart,jsonEnd);
+// Standalone native helper acceptance uses the exact shared parser code
+// from the compiled Ruby fragment, not a permissive JSON.parse substitute.
+const helper=sharedJsonDecoder+'\n'+
+  readFileSync(new URL("../templates/generic-structural-helper.rb.tpl",import.meta.url),"utf8");
 const rubyAvailable=spawnSync("ruby",["-v"],{encoding:"utf8"}).status===0;
 
 function runRuby(method:string,raw:string):unknown{
   const source=[
     "require 'json'","require 'csv'","require 'base64'","require 'ipaddr'","require 'time'",
     helper,
+    // The strict JSON decoder relies on an initialized compiler runtime.
+    // Standalone source probes must use the same bounded JSON depth policy.
+    "@parser_rule_set = {'extraction'=>{'format'=>'generic_structural','maxDepth'=>8}}",
     `result = ${method}(${JSON.stringify(raw)})`,
     "STDOUT.write(JSON.generate(result))",
   ].join("\n");

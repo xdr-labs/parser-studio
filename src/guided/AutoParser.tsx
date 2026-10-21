@@ -25,7 +25,8 @@ import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
-import {defaultGuidedOptions} from './contract';
+import {DEFAULT_PARSER_LISTENER_PORT,defaultGuidedOptions} from './contract';
+import ParserListenerPortInput from './ParserListenerPortInput';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {buildSourceReviewedGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {parserIdentitySlug} from './parserIdentity';
@@ -903,7 +904,7 @@ export default function AutoParser({
        <div className="parser-identity-card" aria-label="Parser product identity">
          <div className="parser-identity-copy">
            <strong>Parser identity</strong>
-           <span>Enter the source product before creating files. Parser Studio uses these values in the parser metadata and file name.</span>
+           <span>Enter the source product and receiving port before creating parser files. The port is used by the generated .conf listener.</span>
          </div>
          <div className="parser-identity-fields">
            <label>Manufacturer
@@ -921,11 +922,13 @@ export default function AutoParser({
                placeholder="e.g. 7.4.5"
                onChange={e=>updateParserIdentity('version',e.target.value)}/>
            </label>
+           <ParserListenerPortInput draft={draft} setDraft={setDraft}/>
          </div>
          <div className="parser-identity-filename">
            <span>Generated parser files</span>
            <code>{parserArtifactName}</code>
            <code>{parserArtifactName}.conf</code>
+           <small>Generated .conf receiving port: {draft.guided?.receiver.port ?? DEFAULT_PARSER_LISTENER_PORT}</small>
            <small>Stellar custom parsers use the <b>customized_&lt;vendor&gt;_&lt;product&gt;</b> naming convention. Version is stored in the parser metadata rather than appended to the file name.</small>
          </div>
        </div>

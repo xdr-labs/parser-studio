@@ -87,7 +87,8 @@ export function proposeParserPort(data:PortInventory,
   if(options.parserFormat!==undefined&&
     !["syslog_rfc3164","syslog_rfc5424"].includes(options.parserFormat))
     reject("PORT_FORMAT_INVALID");
-  const start=options.rangeStart??(["syslog_rfc3164","syslog_rfc5424"].includes(options.parserFormat??"")?6800:20000);
+  // New DRAFT receivers start at 6801; availability is still only a candidate.
+  const start=options.rangeStart??6801;
   const end=options.rangeEnd??30000;
   if(["syslog_rfc3164","syslog_rfc5424"].includes(options.parserFormat??"")&&start<6800)
     reject("PORT_SYSLOG_MINIMUM");

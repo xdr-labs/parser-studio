@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 
 const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
 const parserName='customized_demo_firewall';
-const conf='<source>\n @type udp\n port 7501\n</source>\n';
+const conf='<source>\n @type udp\n port 6801\n</source>\n';
 const parser='# synthetic parser data\n';
 const pair={
   contract:'host-customized-pair.v0.1',
@@ -30,7 +30,7 @@ const caps={
 };
 const tenant='synthetic-tenant';
 const prepared={
-  contract:'stellar-legacy-poc.v0.1',name:parserName,tenant,version:'1.0.0',port:7501,
+  contract:'stellar-legacy-poc.v0.1',name:parserName,tenant,version:'1.0.0',port:6801,
   filenames:[parserName,parserName+'.conf'],
   proof:{parserSha256:sha(parser),confSha256:sha(conf),status:'DRAFT',
     targetImportVerified:false,runtimeParsingVerified:false},
@@ -92,7 +92,7 @@ test('read-only Legacy upload-file contract plan never submits credentials or in
   await expect(proof).toContainText('Parser Pair Integrity Verified');
   await expect(proof).toContainText('No Upload');
   await expect(proof).toContainText('Tenant synthetic-tenant');
-  await expect(proof).toContainText('Parser listener port 7501');
+  await expect(proof).toContainText('Parser listener port 6801');
   await expect(proof).toContainText('unverified');
   expect(calls).toBe(1);
   expect(forbidden).toBe(0);

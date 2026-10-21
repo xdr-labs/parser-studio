@@ -32,7 +32,7 @@ test('review and confirm an exact offline Project JSON without any network calls
   const preview=page.getByLabel('Validated local project');
   await expect(preview).toContainText('Lossless Project Model Verified · No Import Yet');
   await expect(preview).toContainText('Reviewed Offline Synthetic Project');
-  await expect(preview).toContainText('One shared port: 7501');
+  await expect(preview).toContainText('One shared port: 6801');
   const restore=preview.getByRole('button',{name:'Restore Validated JSON as Unsaved Draft'});
   await expect(restore).toBeDisabled();
   await preview.getByLabel('Confirm replace draft with Project JSON').check();

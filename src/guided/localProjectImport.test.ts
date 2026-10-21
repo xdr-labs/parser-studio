@@ -16,7 +16,7 @@ describe('strict offline Project JSON import, without network, raw samples or lo
     const original=fixture();
     const draft=reviewLocalProjectJson(bytes(original));
     expect(draft).toMatchObject({name:'Local Synthetic Import',format:'json'});
-    expect(draft.guided?.receiver.port).toBe(7501);
+    expect(draft.guided?.receiver.port).toBe(6801);
     const projected=toBackendProject(draft);
     expect(projected.ok).toBe(true);
     if(projected.ok)expect(projected.project).toEqual(original);

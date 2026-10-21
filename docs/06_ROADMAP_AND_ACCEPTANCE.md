@@ -506,3 +506,127 @@ Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retai
 - [x] NORM-07: browser Full User E2E covers EDR/XDR/NDR/EPP/AWS CloudTrail/AWS WAF/IPS/VPN with 8/8 normalization journeys PASS. Evidence: 89 files / 663 unit tests PASS; production build PASS; generic Chromium 50 PASS / 28 live-backend-gated SKIP / 0 FAIL; exact pinned live-backend suite 29/29 PASS; final exact-head GitHub Actions run **#38843728978 SUCCESS** on `7f2015de6ead10ad5bdaa1641ae30c92ec9c822c`.
 
 **P0-NORM engineering scope: COMPLETE.** Owner visual acceptance is tracked separately under R3; real Stellar DP/sensor execution is not part of this roadmap.
+
+## Owner follow-up — Stellar Cyber 7.0-only normalization integrity (2026-10-21)
+
+**Fixed target schema:** published Stellar Cyber 7.0 (`7.0.xs` documentation). No 6.5/6.6 per-version schema, compatibility logic, migration matrix or UI selector. This is a new authorized accuracy workstream, separate from completed PR #123.
+
+1. **NORM7-P0:** Reject malformed IPv6 at the browser conversion and recommendation boundary; remove ambiguous status-to-action aliasing; reject sparse/placeholder-only confidence. Prevent order-dependent bulk mapping of multiple type-compatible sources to one official destination.
+2. **NORM7-P1:** Extend the single pinned 7.0 catalog only with explicitly documented and typed nested scalar paths. Enforce official action/hash semantic constraints. Preserve existing vendor-only mappings and original source values, and keep unsupported float/complex types fail-closed.
+3. **NORM7-P2:** Run deterministic RED-to-GREEN tests, actual desktop Map Fields Chromium and backend contract checks, then exact-HEAD CI. Existing completed source/CI/public tests must not be repeated solely as a continuation.
+4. **Accuracy evidence deferred:** Independent manufacturer source goldens and proprietary Stellar native target behavior are not established by synthetic fixtures. Generated artifacts remain DRAFT and unknown evidence remains UNSCORABLE.
+
+Implementation details: [Stellar 7.0 normalization integrity verification](verification/20261021-stellar7-normalization-integrity.md). Keep the deployed development build, historic worktrees and completed evidence unchanged. Mobile, DP/sensors, production, releases and authorization changes are excluded.
+
+## P2-JSON-DUP — common JSON source/native key integrity (2026-10-21)
+
+Multi-Pass already rejects duplicate JSON object member names. Browser
+and compiled Ruby previously risked last-value overwrite.
+
+- [x] Duplicate decoded object names fail-closed in browser extraction
+  and automatic source census; original source remains unchanged.
+- [x] Apply the same reject semantics to native Ruby DRAFT JSON paths.
+- [ ] Exact-HEAD GitHub CI and real Chromium qualified on new candidate.
+- [ ] Other Generic Structural prefixed/container JSON families require
+  independent native oracles before asserting broader compiler parity.
+
+Evidence: verification/20261021-json-duplicate-source-native-parity.md.
+
+## S7-P2A — fixed 7.0 per-event-type mapping evidence (2026-10-21)
+
+- [x] Type-scoped 7.0 Dictionary candidates for explicitly reviewed event
+  families; no cross-type inference, implicit format selection or auto-apply.
+- [x] Manual 7.0 top/ns confirmation with additional explicit route approval;
+  vendor-only fallback and original source unchanged.
+- [x] Official value and type validation before conditional DRAFT acceptance.
+- [x] Independently authored synthetic Threat/User/Asset six-event oracle
+  with 16 exact expected field/value matches. Two distinct desktop browser
+  user journeys verify DRAFT Ruby/CONF download integrity; synthetic
+  acceptance is not manufacturer-wide accuracy.
+- [ ] Exact-HEAD CI and stacked PR review on the new candidate.
+- [ ] Manufacturer/firmware normalization accuracy scoring only when
+  independently sourced and authorized golden originals become available.
+
+Evidence: verification/20261021-stellar7-scoped-event-family-mappings.md.
+No version-specific schema management beyond the pinned Stellar 7.0 catalog.
+
+## P3-GENERIC-JSON — wrapped JSON source no-loss gate (2026-10-21)
+
+- [x] Reuse common decoded JSON member-name uniqueness checks for
+  bounded Generic Structural prefix, short RFC5424 JSON and JSON
+  envelope extraction, preserving the literal original source.
+- [x] Use the same strict compiled native Ruby JSON decoder for
+  prefixed and standard JSON rather than a permissive parallel parser.
+- [ ] Exact-HEAD GitHub Actions Ruby acceptance and real desktop
+  Chromium qualification before claiming native DRAFT parity.
+- [ ] Remaining vendor-wire/container extensions require independent
+  positive/negative source oracles. No synthetic manufacturer F1.
+
+Evidence: verification/20261021-generic-json-duplicate-source-parity.md.
+Only fixed Stellar Cyber 7.0 normalized fields are in scope; no 6.5/6.6
+schema handling, mobile, DP, sensor or production deployment.
+
+## P4-SYSLOG-JSON — strict browser/native source and multiline parity (2026-10-21)
+
+- [x] Refuse repeated decoded JSON object names in explicit RFC5424/RFC3164
+  bodies; match the already strict Ruby DRAFT backend source semantics.
+- [x] Mark duplicate-key multi-line JSON boundary candidates as
+  AMBIGUOUS / REVIEW_REQUIRED with physical source event accounting intact.
+- [x] Authored positive and negative oracles, focused source tests and
+  two actual Chromium localhost source workflows, no HTTP stubs.
+- [ ] Exact-HEAD CI, Draft PR and ACTIVE Work Packet evidence before closure.
+  No manufacturer-wide accuracy percentage from synthetic fixtures.
+
+Evidence: verification/20261021-syslog-json-boundary-source-integrity.md.
+Stellar Cyber normalization is pinned to 7.0; no 6.5/6.6 schemas,
+DP/sensor, mobile, production, proprietary runtime or release changes.
+
+## P5-FRAMING-JSON — GELF/RFC7464 decoded JSON member identity (2026-10-21)
+
+- [x] Original NUL-delimited GELF and RFC7464 JSON Sequence pre-validation
+  reject duplicated *decoded* JSON member names via the same strict
+  common source hook already used by Docker JSON-file framing.
+- [x] Invalid original containers return RAW_ONLY and their exact source
+  bytes are preserved. Valid separate object scopes and Unicode text remain
+  source-only PARTIAL, never native/target-verified.
+- [x] New 7 authored negative cases (framing RED before fix), 3 focused
+  Python regression methods, existing 7 transport and 8 Audit/CRI/Docker
+  framing regression tests GREEN.
+- [ ] Exact-head CI and scoped Draft PR evidence; no target integration.
+
+Evidence: verification/20261021-gelf-jsonseq-source-framing-identity.md.
+Stellar Cyber Dictionary remains fixed to 7.0 only; no 6.5/6.6 schemas,
+mobile, DP/sensor, production, target import or merge/deployment action.
+
+## P6-KV-CENSUS — duplicate key pre-analysis honesty (2026-10-21)
+
+- [x] Align value-free beginner KV source census with the strict common
+  per-record decoded field-name uniqueness grammar; duplicate KV keys
+  are BODY_MALFORMED rather than falsely initial source-ready.
+- [x] Preserve quoted equals signs, case-sensitive keys, original log bytes
+  and separately verified Multi-Pass reviewer recovery.
+- [x] Five authored RED duplicate source fixtures, bounded positive
+  controls, focused 29/29 regression and real browser 2/2 user journeys.
+- [ ] Exact-HEAD CI, isolated Draft PR and Work Packet checkpoint before
+  qualifying this new P6 source-only UI behavior.
+
+Evidence: verification/20261021-kv-duplicate-census-parity.md.
+Stellar Cyber 7.0 remains the sole Dictionary; no 6.5/6.6 schema work,
+mobile, DP/sensor, production release or target import.
+
+
+## P6B-LOCAL-VERSIONS — deterministic browser-only comparison baseline (2026-10-21)
+
+- [x] Reproduce a second Save Version moving comparison Version A from
+  baseline V1 to new V2 without user instruction (V2-vs-V2 false no-diff).
+- [x] Preserve the first or manually selected Version A across later
+  browser-only saves, without bypassing stale IndexedDB generation guards.
+- [x] Deterministic component RED-to-GREEN and the two real Chromium
+  version-restore/compare journeys previously failing on GitHub Actions.
+- [ ] Read the final exact-head CI after implementation before closing
+  this narrowly scoped browser regression. Do not duplicate earlier
+  unchanged DRAFT/Ruby tests or claim proprietary target import.
+
+Evidence: verification/20261021-kv-duplicate-census-parity.md.
+This remains fixed Stellar Cyber 7.0 Dictionary work; no legacy version
+selection, mobile, DP/sensors, production or public deployment.

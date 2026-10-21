@@ -163,11 +163,17 @@ class PythonSenderFormatTests(unittest.TestCase):
 
     def test_sender_retains_top_level_kv_priority_over_csv_schema(self):
         source="src_ip=192.0.2.10 note=a,b,c"
-        actual=update(source,{"format":"auto","csv_columns":["first","username","email"],
-                              "csv_delimiter":","})
+        # Deliberately force a new whole-token IPv4 whose textual prefix
+        # contains the original .10 address. A substring "not in" assertion
+        # would incorrectly fail on the valid mutated .109 address.
+        with mock.patch.object(runtime["secrets"],"choice",return_value="192.0.2."):
+            with mock.patch.object(runtime["secrets"],"randbelow",return_value=108):
+                actual=update(source,{"format":"auto","csv_columns":["first","username","email"],
+                                      "csv_delimiter":","})
         self.assertIn(" note=a,b,c",actual)
-        self.assertIn("src_ip=",actual)
-        self.assertNotIn("src_ip=192.0.2.10",actual)
+        self.assertEqual(actual,"src_ip=192.0.2.109 note=a,b,c")
+        mutated=actual.split(" ",1)[0].split("=",1)[1]
+        self.assertNotEqual(mutated,"192.0.2.10")
 
     def test_epoch_json_numeric_type(self):
         s='{"eventtime":1600000000000,"time":1600000000,"action":"deny"}'

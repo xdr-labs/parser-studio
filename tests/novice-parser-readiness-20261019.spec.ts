@@ -12,16 +12,35 @@ for(const item of cases){
   await source.fill(item.raw);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
   await expect(page.getByLabel('Beginner analysis summary')).toBeVisible({timeout:15000});
-  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
-  await page.getByRole('button',{name:'Review Fields',exact:true}).click();
-  const alert=page.getByLabel('Parser draft not ready');
-  await expect(alert).toBeVisible({timeout:18000});
-  await expect(alert).toContainText('No source value was discarded',{ignoreCase:true});
-  await expect(alert.getByRole('button',{name:'Use ChatGPT Assisted Parser'})).toBeVisible();
-  await expect(alert.getByText('Inspect extracted source fields')).toBeVisible();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('downloadable parser not ready');
-  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
-  await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
+  if(item.id==='Repeated KV occurrences'){
+    // The stricter preliminary event ledger now recognizes duplicate KV
+    // names before any review or compilation. A malformed source must not
+    // be granted a clickable Review Fields path just to show a later block.
+    await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+    // Multi-Pass retains both source occurrences and explicitly explains
+    // the still-unqualified downloadable parser. It is source-only review,
+    // not a contradictory "fully parser-ready" success claim.
+    const summary=page.getByLabel('Beginner analysis summary');
+    await expect(summary).toContainText('parser-file creation still needs a reviewed rule');
+    await expect(summary).toContainText('No source data was discarded');
+    await expect(summary.getByRole('button',{name:'Fix with ChatGPT'})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+    await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
+  }else{
+    // Unchanged source-only pfSense/OPNsense review contract: the user may
+    // inspect extracted source but is still blocked from exporting a DRAFT.
+    await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
+    await page.getByRole('button',{name:'Review Fields',exact:true}).click();
+    const alert=page.getByLabel('Parser draft not ready');
+    await expect(alert).toBeVisible({timeout:18000});
+    await expect(alert).toContainText('No source value was discarded',{ignoreCase:true});
+    await expect(alert.getByRole('button',{name:'Use ChatGPT Assisted Parser'})).toBeVisible();
+    await expect(alert.getByText('Inspect extracted source fields')).toBeVisible();
+    await expect(page.getByLabel('Beginner analysis summary')).toContainText('downloadable parser not ready');
+    await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+    await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
+  }
+  await expect(page.getByRole('button',{name:'Create Parser Files'})).toHaveCount(0);
   await expect(source).toHaveValue(item.raw);
   expect(errors).toEqual([]);
  });

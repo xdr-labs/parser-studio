@@ -290,7 +290,7 @@ test('only explicitly selected TCP LF LF JSON framing enables a reviewed DRAFT c
   const exported=JSON.parse(await readFile(await artifact.path(),'utf8'));
   expect(exported.receiver).toMatchObject({
     protocols:['tcp'],tcpFraming:'blank_line_json',
-    port:7501,
+    port:6801,
   });
   expect(exported.receiver).not.toHaveProperty('delimiter');
   expect(exported.extraction).toEqual({format:'json'});

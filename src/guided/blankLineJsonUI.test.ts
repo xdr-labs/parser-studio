@@ -49,7 +49,7 @@ describe('P0 explicit TCP LF LF framed JSON UI/backend contract',()=>{
   expect(backend).toMatchObject({ok:true});
   if(!backend.ok)return;
   expect(backend.project.receiver).toMatchObject({
-   tcpFraming:'blank_line_json',protocols:['tcp'],port:7501
+   tcpFraming:'blank_line_json',protocols:['tcp'],port:6801
   });
   expect(backend.project.receiver).not.toHaveProperty('delimiter');
   expect(()=>assertBackendProjectSupported(backend.project,cap)).not.toThrow();

@@ -38,7 +38,7 @@ function response(body:unknown,status=200){
 }
 function pairFor(review:Extract<RecipeReview,{ok:true}>):GeneratedPair{
  const slug=review.legacyProject.slug,name='customized_'+slug;
- const files=[{name:name+'.conf',content:'<source> port 7501 </source>\n'},
+ const files=[{name:name+'.conf',content:'<source> port 6801 </source>\n'},
   {name,content:'# STELLAR_INIT_BEGIN\n# STELLAR_PARSE_BEGIN\n'}]
   .map(x=>({...x,sha256:hash(x.content),bytes:Buffer.byteLength(x.content)}));
  return {contract:'host-customized-pair.v0.1',files,manifest:{

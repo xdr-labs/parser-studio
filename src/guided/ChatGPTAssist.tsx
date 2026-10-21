@@ -15,6 +15,7 @@ import {validateBackendProject,generateBackendPair,type GeneratedPair} from './b
 import {verifyGeneratedPair} from './artifactPackageClient';
 import {compileReviewedRecipeV02} from './recipeV2BackendClient';
 import {HelpTip,StageGuide} from './BeginnerHelp';
+import ParserListenerPortInput from './ParserListenerPortInput';
 
 interface Props {
   draft:ParserDraft;
@@ -271,6 +272,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           Keep the original logs here for local testing. Create a separate redacted example for ChatGPT, then review the prompt before copying it.
         </StageGuide>
         <p>Your original logs stay in Parser Studio. They are not added to the ChatGPT prompt automatically.</p>
+        <ParserListenerPortInput draft={draft} setDraft={setDraft}/>
         <label>Original local logs
           <textarea aria-label="ChatGPT local sample logs" rows={6} spellCheck={false}
             maxLength={MAX_SAMPLE} value={sample}

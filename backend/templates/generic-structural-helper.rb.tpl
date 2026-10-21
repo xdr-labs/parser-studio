@@ -146,8 +146,10 @@ def parserstudio_generic_prefixed_json(text)
   match = /\A([A-Za-z0-9_.:\/-]{1,64})[ \t]+(\{.*\})\z/.match(text)
   return nil unless match
   begin
-    body = JSON.parse(match[2])
-  rescue JSON::ParserError
+    # Reuse the same strict JSON object source contract as the generated
+    # standard JSON parser. Duplicate decoded member names are never collapsed.
+    body = parserstudio_json_object(match[2])
+  rescue StandardError
     return nil
   end
   return nil unless body.is_a?(Hash)

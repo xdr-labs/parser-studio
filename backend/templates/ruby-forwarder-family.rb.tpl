@@ -178,8 +178,58 @@ def parserstudio_java_stacktrace(text)
   result
 end
 
+# Original-source duplicate object keys cannot silently use the last value.
+# Input has already passed JSON.parse syntax validation. Scan only ASCII JSON
+# punctuation as bytes; JSON strings are decoded solely when followed by a
+# member-name colon. Distinct objects each receive a separate key scope.
+def parserstudio_json_duplicate_keys?(raw)
+  stack = []
+  index = 0
+  bytes = raw.bytesize
+  while index < bytes
+    char = raw.getbyte(index)
+    case char
+    when 123
+      stack << {}
+    when 91
+      stack << nil
+    when 125, 93
+      stack.pop
+    when 34
+      start = index
+      index += 1
+      while index < bytes
+        current = raw.getbyte(index)
+        if current == 92
+          index += 2
+          next
+        end
+        break if current == 34
+        index += 1
+      end
+      index += 1
+      scope = stack.last
+      if scope.is_a?(Hash)
+        probe = index
+        while probe < bytes && [9, 10, 13, 32].include?(raw.getbyte(probe))
+          probe += 1
+        end
+        if raw.getbyte(probe) == 58
+          key = JSON.parse(raw.byteslice(start, index - start))
+          return true if scope.key?(key)
+          scope[key] = true
+        end
+      end
+      next
+    end
+    index += 1
+  end
+  false
+end
+
 def parserstudio_json_object(text)
   decoded = JSON.parse(text)
+  raise ArgumentError, 'Duplicate JSON object key' if parserstudio_json_duplicate_keys?(text)
   raise ArgumentError, 'JSON root must be an object' unless decoded.is_a?(Hash)
   depth_limit = @parser_rule_set['extraction']['maxDepth'] || 8
   parserstudio_validate_json_depth(decoded, 0, depth_limit)

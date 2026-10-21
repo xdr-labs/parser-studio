@@ -78,7 +78,10 @@ export default function LocalVersionsPanel({working,onRestore,onClose}:Props){
     const title=label.trim()||
       'Checkpoint · '+new Date().toLocaleString();
     const saved=await saveLocalVersion(working,title);
-    setLabel('');setLeft(saved.id);
+    // Saving another checkpoint must not silently replace Version A.
+    // Keep the first baseline (or the owner's manual comparison choice)
+    // anchored; async IndexedDB refresh still validates the selected ID.
+    setLabel('');setLeft(previous=>previous||saved.id);
     setStatus('Saved in this browser only. No log or version was sent to a server.');
   });
   const restore=(item:LocalVersion)=>void run(async()=>{

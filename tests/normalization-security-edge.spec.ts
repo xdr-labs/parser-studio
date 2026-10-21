@@ -121,8 +121,23 @@ test('duplicate source aliases do not create duplicate official destinations',as
     '{"src":"192.0.2.71","source_ip":"192.0.2.71","action":"deny"}',
     '{"src":"192.0.2.72","source_ip":"192.0.2.72","action":"allow"}',
   ]);
+  // Two equally valid source paths compete for srcip. Neither may be
+  // silently selected or bulk-applied; the user explicitly chooses one.
+  const suggestions=map.getByLabel('Recommended field matches');
+  await expect(suggestions.getByRole('button',{name:'Apply official mapping src'})).toBeVisible();
+  await expect(suggestions.getByRole('button',{name:'Apply official mapping source_ip'})).toBeVisible();
+  const preApproval=await map.locator('input[aria-label^="Stellar field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  expect(preApproval.filter(target=>target==='srcip')).toHaveLength(0);
+  await suggestions.getByRole('button',{name:'Apply official mapping src'}).click();
+  await expect(suggestions.getByRole('button',{name:'Apply official mapping source_ip'})).toHaveCount(0);
   await verifyOfficialMappings(map,['srcip','action'],'duplicate aliases');
   const targets=await map.locator('input[aria-label^="Stellar field "]')
     .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
   expect(targets.filter(target=>target==='srcip')).toHaveLength(1);
+  const sources=await map.locator('input[aria-label^="Source field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  const otherIndex=sources.indexOf('source_ip');
+  expect(otherIndex).toBeGreaterThanOrEqual(0);
+  await expect(map.getByLabel('Stellar field '+otherIndex)).not.toHaveValue('srcip');
 });

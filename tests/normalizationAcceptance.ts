@@ -13,19 +13,35 @@ export async function verifyOfficialMappings(
   await expect(suggestion).toBeVisible();
   const current=()=>map.locator('input[aria-label^="Stellar field "]')
     .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  // The pinned Stellar 7.0 catalog has a documented host.name namespace
+  // leaf. Treat its fully verified host.name -> host.name mapping as a valid
+  // hostname destination for these historical general-host acceptance cases.
+  // Never accept a vendor-local host.name or an arbitrary string alias.
+  const verifiedHostName=()=>map.locator('article.normalization-map-row.verified')
+    .evaluateAll(nodes=>nodes.some(node=>{
+      const source=node.querySelector('input[aria-label^="Source field "]') as HTMLInputElement|null;
+      const target=node.querySelector('input[aria-label^="Stellar field "]') as HTMLInputElement|null;
+      return source?.value==='host.name'&&target?.value==='host.name';
+    }));
+  const meets=(target:string,existing:readonly string[],nestedHost:boolean)=>
+    existing.includes(target)||(target==='hostname'&&nestedHost);
   const before=await current();
+  const beforeHost=await verifiedHostName();
   const suggested=await suggestion.innerText();
   for(const target of targets){
     expect(
-      before.includes(target)||suggested.includes(target),
+      meets(target,before,beforeHost)||suggested.includes(target),
       family+' must either have a verified '+target+' mapping or expose a manual suggestion',
     ).toBe(true);
   }
   const bulk=map.getByRole('button',{name:/Apply \d+ recommended match/});
   if(await bulk.isEnabled())await bulk.click();
   const final=await current();
+  const finalHost=await verifiedHostName();
   for(const target of targets){
-    expect(final, family+' should map supported field '+target).toContain(target);
+    expect(meets(target,final,finalHost),
+      family+' should have a verified official '+target+' or an exact 7.0 host.name mapping'
+    ).toBe(true);
   }
   await expect(map.getByLabel('Field mapping checks')).toContainText(
     'All current field mappings passed the sample checks',

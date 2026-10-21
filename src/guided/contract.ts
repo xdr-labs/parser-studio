@@ -89,6 +89,8 @@ function overlappingDestination(first: string, second: string): boolean {
 }
 
 
+export const DEFAULT_PARSER_LISTENER_PORT = 6801;
+
 export function defaultGuidedOptions(): GuidedOptions {
   return {
     slug: 'demo_firewall',
@@ -96,7 +98,7 @@ export function defaultGuidedOptions(): GuidedOptions {
     eventBoundary: 'single-line',
     // Preserve the backend-validated classifier mapping; vendor-only is not routable.
     groups: { 'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'top_fields' },
-    receiver: { protocols: ['udp', 'tcp'], port: 7501, bindPolicy: 'loopback', messageLimit: 8192, framing: 'newline' },
+    receiver: { protocols: ['udp', 'tcp'], port: DEFAULT_PARSER_LISTENER_PORT, bindPolicy: 'loopback', messageLimit: 8192, framing: 'newline' },
     classification: {
       defaultIndex: 'Syslog',
       rules: [

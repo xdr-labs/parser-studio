@@ -3,6 +3,7 @@
  * source strings, diagnostic messages and field values never enter this report.
  */
 import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents,tokenizeCSV} from '../parser';
+import {hasDuplicateJsonObjectKeys} from '../jsonDuplicateKeys';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -49,11 +50,18 @@ const MONTH_DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:3
 const KV_TOKEN=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'\\]+)(?=\s|$)/;
 function kvValid(input:string):boolean{
   let index=0,count=0;
+  const fieldNames=new Set<string>();
   while(index<input.length){
     while(index<input.length&&/\s/.test(input[index]!))index++;
     if(index===input.length)break;
     const match=KV_TOKEN.exec(input.slice(index));
     if(!match)return false;
+    // Source event accounting must agree with the existing strict KV
+    // compiler: a later duplicate key cannot overwrite its first value.
+    // Only field-name identity is retained, never customer field values.
+    const key=match[1]!;
+    if(fieldNames.has(key))return false;
+    fieldNames.add(key);
     count++;if(count>100)return false;
     index+=match[0].length;
   }
@@ -63,6 +71,7 @@ function jsonValid(input:string):boolean{
   try{
     const value=JSON.parse(input) as unknown;
     if(!value||typeof value!=='object'||Array.isArray(value))return false;
+    if(hasDuplicateJsonObjectKeys(input))return false;
     let leaves=0;
     const descend=(node:unknown,depth:number):boolean=>{
       if(depth>8)return false;

@@ -9,7 +9,7 @@ function project(){
  const p=sampleProject();
  p.projectId='draft-json_blanks';
  p.slug='json_blanks';
- p.receiver={...p.receiver,protocols:['tcp'],port:7501,
+ p.receiver={...p.receiver,protocols:['tcp'],port:6801,
   bindAddress:'127.0.0.1',tcpFraming:'blank_line_json'};
  p.classification.rules=p.classification.rules.filter(x=>x.operator==='equals');
  return p;
@@ -25,7 +25,7 @@ test('P0 physically multiline JSON requires an explicit TCP blank-line frame, ne
  assert.doesNotMatch(conf,/  @type udp/);
  assert.ok(conf.includes('  delimiter "\\n\\n"'));
  assert.doesNotMatch(conf,/is_delimiter_part_of_log/);
- assert.match(conf,/  port 7501\n/);
+ assert.match(conf,/  port 6801\n/);
  assert.ok(output.manifest.warnings.some(s=>s.includes(
   "Only explicitly TCP blank-line-framed JSON")));
  assert.ok(output.manifest.warnings.every(s=>!s.includes("PRIVATE")));

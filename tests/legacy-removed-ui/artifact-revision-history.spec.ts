@@ -16,7 +16,7 @@ const pair={contract:'host-customized-pair.v0.1',files:[
 const zip=new Uint8Array([0x50,0x4b,0x03,0x04,0x08,0x09,0x09,0x08,
   0x50,0x4b,0x05,0x06,...Array(18).fill(0)]);
 const first={artifactRevisionId:'a'.repeat(64),parserName:parser,projectId,
-  projectRevision:1,version:'1.0.0',selectedParserPort:7501,
+  projectRevision:1,version:'1.0.0',selectedParserPort:6801,
   receiverProtocols:['udp','tcp'],fileHashes,zipSha256:sha(zip),
   createdAt:'2026-10-12T10:00:00.000Z',targetImportVerified:false,deploymentPerformed:false};
 const second={...first,artifactRevisionId:'b'.repeat(64),version:'2.0.0',
@@ -61,7 +61,7 @@ const history=(revisions:unknown[])=>({
 const diff={contract:'offline-artifact-diff.v0.1',
   fromRevisionId:first.artifactRevisionId,toRevisionId:second.artifactRevisionId,
   projectId,version:{from:'1.0.0',to:'2.0.0',changed:true},
-  selectedParserPort:{from:7501,to:7501,changed:false},
+  selectedParserPort:{from:6801,to:6801,changed:false},
   files:[{name:parser,fromSha256:sha(ruby),toSha256:sha(ruby),changed:false},
     {name:parser+'.conf',fromSha256:sha(config),toSha256:sha(config),changed:false}],
   realTargetVerified:false,appliesToDp:false};
@@ -203,7 +203,7 @@ test('Mock-only Apply status and explicit approved simulation never become real 
     expect(route.request().postData()).not.toContain('198.51.100.10');
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       artifactRevisionId:first.artifactRevisionId,
-      fileHashes,name:parser,version:'1.0.0',selectedParserPort:7501,
+      fileHashes,name:parser,version:'1.0.0',selectedParserPort:6801,
       tenant:'mock-tenant',origin:'https://mock-target.invalid',
       registration:{status:'API_REGISTERED_READBACK',apiReadbackVerified:true,
         realRuntimeParsingVerified:false,sensorReadyVerified:false,targetImportVerified:false},

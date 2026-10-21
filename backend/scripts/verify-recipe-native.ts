@@ -125,7 +125,7 @@ const field=(src:string,dst:string,type:'string'|'ip'|'port'|'date')=>
 function buildProject(entry:Profile):ParserProject{
  const p=sampleProject();
  p.projectId='draft-'+entry.slug;p.slug=entry.slug;
- p.receiver.port=7501;
+ p.receiver.port=6801;
  if(entry.transport==='blank_line_json'||entry.transport==='blank_line_java'){
    if((entry.slug!=='v02_json_blanks'||entry.format!=='json')&&
       (entry.slug!=='v02_java_blanks'||entry.format!=='java_stacktrace'))

@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 
 const source='allow,198.51.100.10\ndeny,203.0.113.4';
 const holdout='allow,192.0.2.10\ndeny,192.0.2.11';
@@ -26,6 +27,8 @@ test.skip(
 test('RAW_ONLY ChatGPT recovery reaches verified DRAFT Ruby and CONF through the real backend',async({page})=>{
  await page.goto('/?workspace=chatgpt');
  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+ await expect(page.getByLabel('Parser listener port')).toHaveValue('6801');
+ await page.getByLabel('Parser listener port').fill('6819');
  await page.getByLabel('ChatGPT local sample logs').fill(source);
  await page.getByLabel('ChatGPT redacted examples').fill('allow,REDACTED_IP\ndeny,REDACTED_IP');
   const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
@@ -51,6 +54,7 @@ test('RAW_ONLY ChatGPT recovery reaches verified DRAFT Ruby and CONF through the
  await generated.getByRole('button',{name:'Download customized_demo_firewall.conf'}).click();
  const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('customized_demo_firewall.conf');
+ expect(await readFile(await download.path(),'utf8')).toMatch(/^\s+port 6819$/m);
  await generated.getByRole('button',{name:'Review Fields in Auto Parser'}).click();
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);

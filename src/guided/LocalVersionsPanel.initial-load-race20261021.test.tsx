@@ -78,4 +78,42 @@ describe('desktop local version comparison under pending initial browser-storage
     expect(within(screen.getByLabelText('Saved local versions')).getByText('Three source types')).toBeTruthy();
     expect(within(screen.getByLabelText('Saved local versions')).getByText('Renamed type')).toBeTruthy();
   });
+  it('keeps baseline comparison A selected after subsequent saves instead of silently comparing V2 against itself',async()=>{
+    const source='{"event_type":"user","username":"김민수"}';
+    const draft=createDraft();
+    const baseline:LocalWorkingCopy={
+      datasetName:'Reviewed examples',source,draft,
+      logTypes:[{id:'one',name:'User',sample:source}],
+    };
+    const revised:LocalWorkingCopy={
+      ...baseline,
+      draft:{...draft,mappings:[
+        {id:'source',source:'src_ip',target:'srcip',type:'ip'},
+      ]},
+      logTypes:[{id:'one',name:'Renamed User',sample:source}],
+    };
+    const {rerender}=render(<LocalVersionsPanel working={baseline}
+      onRestore={vi.fn()} onClose={vi.fn()}/>);
+    await waitFor(()=>expect(storage.calls).toBe(1));
+    fireEvent.change(screen.getByLabelText('Local version name'),{target:{value:'Baseline V1'}});
+    fireEvent.click(screen.getByRole('button',{name:'Save Version'}));
+    await waitFor(()=>expect(within(screen.getByLabelText('Saved local versions'))
+      .getByText('Baseline V1')).toBeTruthy());
+    expect(screen.getByLabelText('Compare version A')).toHaveValue('v1');
+
+    rerender(<LocalVersionsPanel working={revised} onRestore={vi.fn()} onClose={vi.fn()}/>);
+    fireEvent.change(screen.getByLabelText('Local version name'),{target:{value:'Updated V2'}});
+    fireEvent.click(screen.getByRole('button',{name:'Save Version'}));
+    await waitFor(()=>expect(within(screen.getByLabelText('Saved local versions'))
+      .getByText('Updated V2')).toBeTruthy());
+    // A save is not a decision to replace the left-hand comparison choice.
+    // Old behavior setLeft(saved.id), causing an A=B false "No differences".
+    expect(screen.getByLabelText('Compare version A')).toHaveValue('v1');
+    fireEvent.change(screen.getByLabelText('Compare version B'),{target:{value:'v2'}});
+    expect(screen.getByLabelText('Local version differences'))
+      .toHaveTextContent('Named log type samples / labels');
+    expect(screen.getByLabelText('Local version differences'))
+      .toHaveTextContent('Field mappings');
+  });
+
 });

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { createDraft } from '../src/model';
 import { toBackendProject } from '../src/guided/backendAdapter';
 
-const conf='<source>\n  @type udp\n  port 7501\n  tag customized_demo_firewall\n</source>\n';
+const conf='<source>\n  @type udp\n  port 6801\n  tag customized_demo_firewall\n</source>\n';
 const fragment='# Synthetic, unexecuted test fixture.\n';
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const reviewed=createDraft();
@@ -16,7 +16,7 @@ const portableProject=initial.project;
 const base={
   format:'host-customized-pair',name:'customized_demo_firewall',
   originalHashes:{conf:hash(conf),fragment:hash(fragment)},
-  receiver:{protocols:['udp'],ports:[7501],sourceCount:1},
+  receiver:{protocols:['udp'],ports:[6801],sourceCount:1},
   fragment:{markersComplete:true,hasParseEntry:true,opaqueRuby:false},
   importStatus:'EDITABLE_EXACT',roundTripVerified:true,
   portableProject,diagnostics:[],warnings:[],

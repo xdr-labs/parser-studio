@@ -29,6 +29,11 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
       - name: Lossless Linux Audit, CRI and Docker framing contract
         run: python3 -m unittest discover -s tests -p 'test_audit_cri_docker_framing_20261019.py' -v
+      # Source-only original GELF and JSON Text Sequence framing must reject
+      # repeated decoded object keys before creating a logical source frame.
+      # This intentionally does not claim a native DRAFT transport compiler.
+      - name: Strict GELF and RFC7464 duplicate JSON source framing
+        run: python3 -m unittest discover -s tests -p 'test_gelf_jsonseq_duplicate_identity_20261021.py' -v
       - name: Strict RFC 5424 free-form MSG and original UTF-8 byte offsets
         run: python3 -m unittest discover -s tests -p 'test_rfc5424_msg_source_20261019.py' -v
       - name: RFC 3164 and BSD message grammar with original value no-loss gate
@@ -51,6 +56,107 @@ jobs:
           npm run test:authoring --prefix backend
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
+
+      # First-time users may review/override the shared CONF listener port
+      # before submitting source logs; both bytes and HTTP project must agree.
+      # The selected listener remains a DRAFT, never an opened or reserved port.
+      - name: Default 6801 source-entry and actual parser CONF Chromium
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5611'
+          PARSER_STUDIO_TEST_PORT: '5610'
+          PARSER_STUDIO_MULTIPASS_PORT: '5612'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: npx playwright test tests/parser-listener-port-6801.spec.ts --project=chromium --workers=1
+
+      # Newly approved fixed-7.0 normalization integrity gate. The previous
+      # 41-case exact-head browser suite remains untouched; these three cases
+      # require the same built backend and real in-repository Multi-Pass API.
+      - name: Fixed Stellar Cyber 7.0 semantic and namespace Chromium
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5541'
+          PARSER_STUDIO_TEST_PORT: '5540'
+          PARSER_STUDIO_MULTIPASS_PORT: '5542'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/stellar7-normalization-safety-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-stellar7-normalization-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-stellar7-normalization-browser.json','utf8'));const x=r.stats;if(x.expected!==3||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Stellar 7.0 safety E2E did not pass 3/3',x,r.errors);process.exit(1)}console.log('STELLAR7_NORMALIZATION_CHROMIUM_PASS 3/3')"
+      # Duplicate object keys must never overwrite an earlier source value.
+      # Native Ruby execution is part of the offline authoring test scope.
+      - name: Strict JSON duplicate-source desktop Chromium (same HEAD)
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5561'
+          PARSER_STUDIO_TEST_PORT: '5560'
+          PARSER_STUDIO_MULTIPASS_PORT: '5562'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/json-duplicate-source-parity-20261021.spec.ts tests/generic-json-duplicate-source-20261021.spec.ts tests/generic-json-duplicate-browser-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-json-duplicate-source-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-json-duplicate-source-browser.json','utf8')); const x=r.stats; if(x.expected!==5||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('JSON duplicate source gate failed',x,r.errors);process.exit(1)}console.log('STRICT_JSON_DUPLICATE_SOURCE_CHROMIUM_PASS 5/5')"
+
+      # Explicit RFC5424/RFC3164 JSON and bounded multiline grouping must
+      # refuse duplicate decoded object members, matching the strict native
+      # DRAFT Ruby parser already qualified in the previous stacked commit.
+      - name: Strict Syslog JSON and logical-boundary source Chromium
+        env:
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5581'
+          PARSER_STUDIO_TEST_PORT: '5580'
+          PARSER_STUDIO_MULTIPASS_PORT: '5582'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/syslog-json-duplicate-boundary-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-syslog-json-boundary-chromium.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-syslog-json-boundary-chromium.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Syslog JSON strict-source 2/2 gate failed',x,r.errors);process.exit(1)}console.log('SYSLOG_JSON_BOUNDARY_CHROMIUM_PASS 2/2')"
+
+      # Pre-analysis value-free source census must never call a duplicated
+      # KV source name "ready" before the reviewed source engine checks it.
+      # Existing independently validated Multi-Pass recovery remains allowed.
+      - name: Strict KV duplicate-key beginner source accounting Chromium
+        env:
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5591'
+          PARSER_STUDIO_TEST_PORT: '5590'
+          PARSER_STUDIO_MULTIPASS_PORT: '5592'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/kv-duplicate-census-safety-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-kv-duplicate-census-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-kv-duplicate-census-browser.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('KV duplicate-key census 2/2 gate failed',x,r.errors);process.exit(1)}console.log('KV_DUPLICATE_CENSUS_BROWSER_PASS 2/2')"
+
+      # Fixed 7.0 field suggestions must remain explicitly reviewed per
+      # event type. Offline exact-HEAD Backend + Python Multi-Pass; no mocks.
+      - name: Stellar 7.0 conditional event-family mapping Chromium
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5571'
+          PARSER_STUDIO_TEST_PORT: '5570'
+          PARSER_STUDIO_MULTIPASS_PORT: '5572'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/stellar7-reviewed-family-mapping-20261021.spec.ts tests/stellar7-event-family-reviewed-browser-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-stellar7-conditional-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-stellar7-conditional-browser.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Stellar 7.0 reviewed conditional mapping must execute 2/2',x,r.errors);process.exit(1)}console.log('STELLAR7_REVIEWED_CONDITIONAL_BROWSER_PASS 2/2')"
+
       # Historical browser tests require an actual local parser compiler for
       # map/review/create; without it they fail on backend-unavailable states
       # unrelated to the logged security event. Reuse the exact pinned backend
