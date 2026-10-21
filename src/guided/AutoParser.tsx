@@ -25,7 +25,7 @@ import {checkPrivateDrain3Availability,runPrivateDrain3Review,
   type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
-import {defaultGuidedOptions} from './contract';
+import {defaultGuidedOptions,DEFAULT_PARSER_LISTENER_PORT} from './contract';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {buildSourceReviewedGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {parserIdentitySlug} from './parserIdentity';
@@ -921,11 +921,24 @@ export default function AutoParser({
                placeholder="e.g. 7.4.5"
                onChange={e=>updateParserIdentity('version',e.target.value)}/>
            </label>
+           <label>Listener Port
+             <input aria-label="Parser listener port" type="number" min={1024} max={65535} step={1}
+               value={draft.guided?.receiver.port??DEFAULT_PARSER_LISTENER_PORT}
+               onChange={e=>{
+                 const port=Number(e.target.value);
+                 setDraft(old=>{
+                   const guided=old.guided??defaultGuidedOptions();
+                   return {...old,guided:{...guided,receiver:{...guided.receiver,port}}};
+                 });
+               }}/>
+             <small>Default 6801 · Used in the generated .conf listener. Change if your source needs another port. Syslog requires 6800 or higher; live port availability is not verified.</small>
+           </label>
          </div>
          <div className="parser-identity-filename">
            <span>Generated parser files</span>
            <code>{parserArtifactName}</code>
            <code>{parserArtifactName}.conf</code>
+           <small>CONF listener port: <b>{draft.guided?.receiver.port??DEFAULT_PARSER_LISTENER_PORT}</b> · Draft only</small>
            <small>Stellar custom parsers use the <b>customized_&lt;vendor&gt;_&lt;product&gt;</b> naming convention. Version is stored in the parser metadata rather than appended to the file name.</small>
          </div>
        </div>

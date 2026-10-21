@@ -57,6 +57,23 @@ jobs:
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
 
+      # New DRAFT CONF defaults to 6801. The first-entry override must reach
+      # the downloaded listener configuration without touching a live sensor.
+      - name: Default 6801 and editable source listener CONF Chromium (same HEAD)
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5591'
+          PARSER_STUDIO_TEST_PORT: '5590'
+          PARSER_STUDIO_MULTIPASS_PORT: '5592'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/parser-listener-default-6801-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-listener-6801-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-listener-6801-browser.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('6801 listener E2E did not pass 2/2',x,r.errors);process.exit(1)}console.log('PARSER_DEFAULT_6801_CHROMIUM_PASS 2/2')"
+
       # Newly approved fixed-7.0 normalization integrity gate. The previous
       # 41-case exact-head browser suite remains untouched; these three cases
       # require the same built backend and real in-repository Multi-Pass API.

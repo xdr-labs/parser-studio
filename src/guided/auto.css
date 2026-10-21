@@ -177,14 +177,15 @@
 .parser-identity-copy{display:grid;gap:5px;align-self:center}
 .parser-identity-copy strong{font-size:13px;color:#2b5666}
 .parser-identity-copy span{font-size:10px;line-height:1.5;color:#6d8089}
-.parser-identity-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.parser-identity-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
 .parser-identity-fields label{display:grid;gap:5px;font-size:10px;font-weight:800;color:#526d78}
+.parser-identity-fields label small{font-size:9px;line-height:1.35;color:#72868e;font-weight:500}
 .parser-identity-fields input{min-width:0;border:1px solid #cfdde2;border-radius:7px;background:#fff;padding:9px 10px;font-size:12px;color:#243943}
 .parser-identity-filename{display:grid;gap:4px;padding:10px 11px;border:1px solid #dce7ea;border-radius:8px;background:#f6fafb}
 .parser-identity-filename>span{font-size:10px;font-weight:800;color:#53707a}
 .parser-identity-filename code{display:block;font:10px/1.4 var(--mono);color:#255f71;overflow-wrap:anywhere}
 .parser-identity-filename small{font-size:9px;line-height:1.45;color:#72868e}
-@media(max-width:1000px){.parser-identity-card{grid-template-columns:1fr}.parser-identity-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1000px){.parser-identity-card{grid-template-columns:1fr}.parser-identity-fields{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:650px){.parser-identity-fields{grid-template-columns:1fr}}
 
 /* Optional, read-only field coverage for mixed security event samples. */

@@ -100,7 +100,7 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
         .getByRole('button',{name:f.name,exact:true}).click();
       expect(sha(await readFile(await (await download).path()))).toBe(f.sha256);
     }
-    expect(pair.files[0].content).toContain('port 7501');
+    expect(pair.files[0].content).toContain('port 6801');
     expect(pair.files[1].content).toContain('STELLAR_PARSE_BEGIN');
     const packageResponse=page.waitForResponse(r=>
       r.url().endsWith('/parser-pairs/package')&&r.request().method()==='POST');

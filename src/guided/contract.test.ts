@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { createDraft, DEMO_SAMPLES } from '../model';
-import { compilerDraftContract, defaultGuidedOptions, plannedPairNames } from './contract';
+import { compilerDraftContract, defaultGuidedOptions, plannedPairNames, DEFAULT_PARSER_LISTENER_PORT } from './contract';
+
+describe('new draft listener port policy', () => {
+  it('starts new receiver configuration at 6801, preserving user edits', () => {
+    expect(DEFAULT_PARSER_LISTENER_PORT).toBe(6801);
+    const fresh = defaultGuidedOptions();
+    expect(fresh.receiver.port).toBe(6801);
+    const changed = { ...fresh, receiver: { ...fresh.receiver, port: 6905 } };
+    expect(changed.receiver.port).toBe(6905);
+    expect(defaultGuidedOptions().receiver.port).toBe(6801);
+  });
+});
 
 describe('six-step guided builder UI-to-backend configuration boundary', () => {
   it('requires an explicit supported parser family but never claims native compatibility', () => {

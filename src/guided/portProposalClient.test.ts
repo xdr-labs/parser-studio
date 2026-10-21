@@ -6,7 +6,7 @@ const candidate={
   recommendedPort:20000,source:'SUGGESTED',
   status:'INCOMPLETE_EVIDENCE',
   missingEvidence:['sensorBindings','localReservations'],
-  occupiedPorts:[514,7501,20001],
+  occupiedPorts:[514,6801,20001],
   candidateOnly:true,deployableNow:false,
   verifiedIngestPort:false,sensorIngestPort:20000,needsFinalRecheck:true,
 };
@@ -29,16 +29,16 @@ describe('backend-authorized, read-only provisional parser listener port proposa
     expect(init.body).toBeUndefined();
   });
   it('checks the explicitly typed receiver port without modifying a parser',async()=>{
-    const response={...candidate,recommendedPort:7501,source:'USER_OVERRIDE',occupiedPorts:[514,20001],sensorIngestPort:7501};
+    const response={...candidate,recommendedPort:6801,source:'USER_OVERRIDE',occupiedPorts:[514,20001],sensorIngestPort:6801};
     const request=fake(response);
-    const result=await fetchParserPortProposal(7501,request);
-    expect(result.recommendedPort).toBe(7501);
+    const result=await fetchParserPortProposal(6801,request);
+    expect(result.recommendedPort).toBe(6801);
     const [url]=(request as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe('/api/v1/stellar/legacy/port-proposal?port=7501');
+    expect(url).toBe('/api/v1/stellar/legacy/port-proposal?port=6801');
   });
   it('refuses occupied ports, false deployment readiness and forged completeness claims',async()=>{
     for(const broken of [
-      {...candidate,recommendedPort:7501},
+      {...candidate,recommendedPort:6801},
       {...candidate,deployableNow:true},
       {...candidate,candidateOnly:false},
       {...candidate,verifiedIngestPort:true},
@@ -82,7 +82,7 @@ describe('backend-authorized, read-only provisional parser listener port proposa
       .rejects.toThrow('6800');
     expect(forbidden).not.toHaveBeenCalled();
     const answer={...candidate,recommendedPort:6801,sensorIngestPort:6801,
-      source:'USER_OVERRIDE',occupiedPorts:[514,7501,20001]};
+      source:'USER_OVERRIDE',occupiedPorts:[514,6802,20001]};
     const request=fake(answer);
     const result=await fetchParserPortProposal(6801,request,'syslog_rfc3164');
     expect(result.sensorIngestPort).toBe(6801);

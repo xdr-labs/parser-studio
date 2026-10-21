@@ -25,7 +25,7 @@ Receipt flags `sourceHashVerifiedAgainstEvents=false`, `nativeUserParserVerified
 
 `bash scripts/qualify.sh` generates eighteen **public-synthetic-only**, source-SHA-bound v0.2/legacy-identical parser profiles in a fixed isolated fixture directory. The native Ruby 3.2 + Fluentd 1.17.1 smoke verifies:
 - strict fixed fixture root, exact HEAD, complete file-name/hash set, no symlink/hardlink substitutions, and source SHA of every golden event;
-- generated `.conf` Fluentd AST with the same source/parser receiver port (7501 in these synthetic fixtures) for TCP and UDP, and expected log-index rewriting;
+- generated `.conf` Fluentd AST with the same source/parser receiver port (6801 in these synthetic fixtures) for TCP and UDP, and expected log-index rewriting;
 - real Fluentd parser plugin callback and exactly one **typed** normalized record and time for each of seven independent golden cases: JSON, quoted KV-compatible, CSV, CEF, LEEF, RFC5424+CEF and RFC5424+LEEF;
 - hard rejection of unrelated fixture roots.
 

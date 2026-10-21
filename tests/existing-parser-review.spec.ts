@@ -10,7 +10,7 @@ function project(){
 }
 const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
 const ruby='# STELLAR_INIT_BEGIN\n# STELLAR_PARSE_BEGIN\ndef parse(text)\nend\n# STELLAR_PARSE_END\n';
-const conf='<source>\n  @type udp\n  port 7501\n  tag customized_demo_firewall\n  <parse>\n    @type customized_demo_firewall\n  </parse>\n</source>\n';
+const conf='<source>\n  @type udp\n  port 6801\n  tag customized_demo_firewall\n  <parse>\n    @type customized_demo_firewall\n  </parse>\n</source>\n';
 
 test('Advanced local Project JSON review restores exact draft and clears raw samples without network',async({page})=>{
  let requests=0;page.on('request',r=>{if(r.url().includes('/api/v1/parser-pairs/inspect'))requests++;});
@@ -40,7 +40,7 @@ test('opaque Ruby CONF pair stays read-only and never echoes source code',async(
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
    format:'host-customized-pair',name:input.name,
    originalHashes:{conf:sha(conf),fragment:sha(ruby)},
-   receiver:{protocols:['udp'],ports:[7501],sourceCount:1},
+   receiver:{protocols:['udp'],ports:[6801],sourceCount:1},
    fragment:{markersComplete:true,hasParseEntry:true,opaqueRuby:true},
    importStatus:'OPAQUE_READ_ONLY',roundTripVerified:false,portableProject:null,
    diagnostics:[{code:'PAIR_NOT_REPRODUCIBLE',severity:'warning',message:'PRIVATE_BACKEND_TEXT'}],warnings:[],
@@ -66,7 +66,7 @@ test('exact inspected pair requires explicit restore and clears current sample',
   posts++;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
    format:'host-customized-pair',name:'customized_demo_firewall',
    originalHashes:{conf:sha(conf),fragment:sha(ruby)},
-   receiver:{protocols:['udp','tcp'],ports:[7501],sourceCount:2},
+   receiver:{protocols:['udp','tcp'],ports:[6801],sourceCount:2},
    fragment:{markersComplete:true,hasParseEntry:true,opaqueRuby:false},
    importStatus:'EDITABLE_EXACT',roundTripVerified:true,portableProject:portable,diagnostics:[],warnings:[],
   })});

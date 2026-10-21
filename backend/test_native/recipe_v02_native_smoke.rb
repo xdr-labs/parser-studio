@@ -106,7 +106,7 @@ allowed.each do |slug|
       'native TCP blank-line framing must be exactly LF LF and opt-in')
   end
   sources.each do |source|
-    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : slug == 'v02_mixed_rfc5424_bodies' ? '6803' : slug == 'v02_mixed_rfc3164_cefleef' ? '6804' : slug == 'v02_java_blanks' ? '7510' : slug == 'v02_mixed_csv' ? '7511' : '7501'
+    expected_port = slug == 'v02_mixed_rfc5424' ? '6801' : slug == 'v02_mixed_rfc3164' ? '6802' : slug == 'v02_mixed_rfc5424_bodies' ? '6803' : slug == 'v02_mixed_rfc3164_cefleef' ? '6804' : slug == 'v02_java_blanks' ? '7510' : slug == 'v02_mixed_csv' ? '7511' : '6801'
     assert(source['port'] == expected_port && source['tag'] == name &&
       source.elements.size == 1 && source.elements.first['@type'] == name,
       'generated receiver port and parser registration mismatch')

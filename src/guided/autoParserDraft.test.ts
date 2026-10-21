@@ -36,7 +36,7 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    ]));
    expect(result.draft.guided?.groups[result.draft.mappings.find(m=>m.source==='src_ip')!.id]).toBe('top_fields');
    expect(result.draft.guided?.groups[result.draft.mappings.find(m=>m.source==='user')!.id]).toBe('vendor_fields');
-   expect(result.draft.guided?.receiver.port).toBe(7501);
+   expect(result.draft.guided?.receiver.port).toBe(6801);
    expect(toBackendProject(result.draft)).toMatchObject({ok:true});
    expect(result.requiresApproval).toBe(false);
    expect(result.sourceFieldCount).toBe(4);

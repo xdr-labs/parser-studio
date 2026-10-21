@@ -80,7 +80,7 @@ test('checks approved same-origin packaged ZIP, version/sha/port and downloads w
       'content-length':String(zipped.byteLength),
       'x-parser-artifact-revision':'a'.repeat(64),
       'x-parser-zip-sha256':sha(zipped),
-      'x-parser-listener-port':'7501',
+      'x-parser-listener-port':'6801',
     },body:Buffer.from(zipped)});
   });
   await readyForPackage(page);
@@ -92,7 +92,7 @@ test('checks approved same-origin packaged ZIP, version/sha/port and downloads w
   const file=await promised;
   expect(file.suggestedFilename()).toBe(parserName+'-r1.zip');
   expect(sha(await readFile(await file.path()))).toBe(sha(zipped));
-  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('Listener port 7501');
+  await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('Listener port 6801');
   await expect(page.getByLabel('Draft ZIP integrity receipt')).toContainText('unverified');
   expect(packages).toBe(1);
 });
@@ -115,7 +115,7 @@ test('tampered ZIP hash blocks download and never displays verified revision',as
       'content-length':String(zipped.byteLength),
       'x-parser-artifact-revision':'a'.repeat(64),
       'x-parser-zip-sha256':'0'.repeat(64),
-      'x-parser-listener-port':'7501',
+      'x-parser-listener-port':'6801',
     },body:Buffer.from(zipped),
   }));
   await readyForPackage(page);

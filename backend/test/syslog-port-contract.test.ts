@@ -88,3 +88,16 @@ test("RFC3164 listener and sensor destination always share a permitted Syslog po
   assert.equal(suggestion.sensorIngestPort,suggestion.recommendedPort);
   assert.equal(suggestion.deployableNow,false);
 });
+
+// The compiler uses the first-use choice verbatim; it cannot certify target occupancy.
+test("new 6801 default and user override reach generated DRAFT CONF exactly",()=>{
+  for(const chosen of [6801,6905]){
+    const project=sampleProject();
+    project.receiver.port=chosen;
+    project.receiver.protocols=["udp","tcp"];
+    const conf=compilePair(project).files.find(file=>file.name.endsWith(".conf"))!.content;
+    const ports=[...conf.matchAll(/^\s+port (\d+)\s*$/gm)].map(match=>Number(match[1]));
+    assert.ok(ports.length>0);
+    assert.deepEqual([...new Set(ports)],[chosen]);
+  }
+});

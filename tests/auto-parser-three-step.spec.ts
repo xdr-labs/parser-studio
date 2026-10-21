@@ -7,7 +7,7 @@ const input=[
 ].join('\n');
 const sha=(text:string)=>createHash('sha256').update(text).digest('hex');
 const ruby='# synthetic test Ruby fragment\n';
-const conf='# synthetic test CONF for port 7501\n';
+const conf='# synthetic test CONF for port 6801\n';
 const files=[{name:'customized_demo_firewall.conf',content:conf,bytes:Buffer.byteLength(conf),sha256:sha(conf)},
 {name:'customized_demo_firewall',content:ruby,bytes:Buffer.byteLength(ruby),sha256:sha(ruby)}];
 const cap={

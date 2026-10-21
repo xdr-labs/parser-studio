@@ -25,7 +25,7 @@ describe('backend-exact, byte-verified portable parser project reconstruction',(
         expect.objectContaining({source:'src_ip',target:'custom.source_ip',type:'ip'}),
       ]),
     });
-    expect(reconstructed?.guided?.receiver.port).toBe(7501);
+    expect(reconstructed?.guided?.receiver.port).toBe(6801);
     expect(reconstructed?.guided?.classification.rules).toHaveLength(2);
     const check=toBackendProject(reconstructed!);
     expect(check.ok).toBe(true);

@@ -119,7 +119,7 @@ test("Generic Structural compiler is opt-in, bounded and keeps legacy artifact b
  assert.equal(legacy.includes("parserstudio_generic_structural"),false);
  assert.equal(legacy.includes("parserstudio_source"),false);
  const p=sampleProject();
- p.receiver.port=7501;
+ p.receiver.port=6801;
  p.extraction={format:"generic_structural"};
  p.normalization.topFields={
   "syslog.pri":{normalized_name:"source_pri",data_type:"string"},
