@@ -198,6 +198,8 @@ export default function App(){
         draft={draft} setDraft={setDraft} sample={sample} setSample={value=>{
           usePlainSample(value);setDatasetName('ChatGPT local samples');
         }}
+        namedLogTypes={namedLogTypes} onEnableNamedLogTypes={enableNamedLogTypes}
+        onChangeNamedLogTypes={updateNamedLogTypes} onExitNamedLogTypes={exitNamedLogTypes}
         suite={live.suite} pending={live.pending}
         runPreview={preview}
         onAutoParser={()=>setWorkspace('auto')}
