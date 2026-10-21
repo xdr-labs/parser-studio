@@ -549,3 +549,19 @@ Evidence: verification/20261021-json-duplicate-source-native-parity.md.
 
 Evidence: verification/20261021-stellar7-scoped-event-family-mappings.md.
 No version-specific schema management beyond the pinned Stellar 7.0 catalog.
+
+## P3-GENERIC-JSON — wrapped JSON source no-loss gate (2026-10-21)
+
+- [x] Reuse common decoded JSON member-name uniqueness checks for
+  bounded Generic Structural prefix, short RFC5424 JSON and JSON
+  envelope extraction, preserving the literal original source.
+- [x] Use the same strict compiled native Ruby JSON decoder for
+  prefixed and standard JSON rather than a permissive parallel parser.
+- [ ] Exact-HEAD GitHub Actions Ruby acceptance and real desktop
+  Chromium qualification before claiming native DRAFT parity.
+- [ ] Remaining vendor-wire/container extensions require independent
+  positive/negative source oracles. No synthetic manufacturer F1.
+
+Evidence: verification/20261021-generic-json-duplicate-source-parity.md.
+Only fixed Stellar Cyber 7.0 normalized fields are in scope; no 6.5/6.6
+schema handling, mobile, DP, sensor or production deployment.

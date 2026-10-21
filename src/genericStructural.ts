@@ -2,6 +2,7 @@ import {extractStructuredFamily} from './structuredFamilies';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {extractLeef2ImplicitTab} from './leef2ImplicitTab';
 import {GENERIC_STRUCTURAL_MIXED_PROFILE_V1,type GenericStructuralProfile} from './genericStructuralProfiles';
+import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 export type {GenericStructuralProfile} from './genericStructuralProfiles';
 
 /**
@@ -25,6 +26,7 @@ function shortRfc5424Json(raw:string):Record<string,unknown>|null{
   if(!Number.isInteger(pri)||pri<0||pri>191||!validRfc3339(match[3]!))return null;
   let body:unknown;
   try{body=JSON.parse(match[5]!);}catch{return null;}
+  if(hasDuplicateJsonObjectKeys(match[5]!))return null;
   if(!body||Array.isArray(body)||typeof body!=='object')return null;
   return {
     syslog:{pri:match[1],version:match[2],timestamp:match[3],hostname:match[4]},
@@ -38,6 +40,7 @@ function prefixedJson(raw:string):Record<string,unknown>|null{
   if(!match)return null;
   let body:unknown;
   try{body=JSON.parse(match[2]!);}catch{return null;}
+  if(hasDuplicateJsonObjectKeys(match[2]!))return null;
   if(!body||Array.isArray(body)||typeof body!=='object')return null;
   return {
     generic:{mode:'prefixed_json',prefix:match[1],source_raw:raw},
@@ -661,6 +664,7 @@ function boundedEnvelopeJson(text:string):Record<string,unknown>|null{
   if(!text.startsWith('{')||new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
   let parsed:unknown;
   try{parsed=JSON.parse(text);}catch{return null;}
+  if(hasDuplicateJsonObjectKeys(text))return null;
   if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')return null;
   let nodes=0;
   function safe(value:unknown,depth:number):boolean{
