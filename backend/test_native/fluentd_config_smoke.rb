@@ -36,6 +36,10 @@ names.each do |slug|
   rules = targets[0].elements
   assert(rules.size > 0 && rules.all? { |rule| rule['key'] == 'stellar_log_index' },
          "#{slug}: routes by normalized log index")
+  assert(rules.last['tag'] == 'syslog' && rules.last['invert'].to_s == 'true',
+         "#{slug}: last rule must be the inverted Syslog safety fallback")
+  assert(rules[0...-1].all? { |rule| rule['invert'].to_s != 'true' },
+         "#{slug}: class-specific routes must not be inverted")
 end
 
 puts "Fluentd native CONF parser: #{names.length} generated profiles PASS (fixed include resolved only in-memory)"
