@@ -103,15 +103,11 @@
 .beginner-chatgpt>strong{font-size:12px;color:#2c5f71}
 .beginner-chatgpt>p{font-size:11px;color:#687d88;line-height:1.55}
 .beginner-chatgpt textarea{min-height:260px;font:10px/1.55 var(--mono)}
-/* Keep diagnostics and research tools out of the first-time Add Logs path. */
+/* No hidden advanced mode: event accounting and useful in-context tools
+   must remain available in the ordinary Auto Parser flow. Only the retired
+   secondary diagnostics panel is excluded. */
 .beginner-mode [aria-label="Add Logs stage"]>.stellar-multipass-panel,
-.beginner-mode [aria-label="Add Logs stage"]>.auto-parser-ledger,
-.beginner-mode [aria-label="Add Logs stage"]>.stellar-ai-unrecognized,
-.beginner-mode [aria-label="Add Logs stage"]>.auto-parser-note:not(.beginner-essential-note),
-.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Existing parser review and import"],
-.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Local logical boundary review"],
-.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Private text grouping tool"],
-.beginner-mode [aria-label="Add Logs stage"]>[aria-label="Known log shape matcher"]{display:none}
+.beginner-mode [aria-label="Add Logs stage"]>.stellar-ai-unrecognized{display:none}
 .advanced-mode .beginner-analysis{border-bottom:1px dashed #d4e0e4;padding-bottom:15px}
 @media(max-width:760px){.beginner-problem-details{grid-template-columns:1fr}.beginner-fix-actions button{width:100%;justify-content:center}}
 
