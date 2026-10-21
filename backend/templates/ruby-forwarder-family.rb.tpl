@@ -754,6 +754,24 @@ def parserstudio_coerce(value, rule)
   end
 end
 
+# Fixed Stellar Cyber 7.0 scalar semantics for reviewed official fields only.
+# Preserve vendor-local mappings; never turn invalid values into accepted data.
+def parserstudio_stellar7_value_valid?(name, raw, converted)
+  leaf = name.to_s.split('.').last
+  widths = {'md5' => 32, 'sha1' => 40, 'sha256' => 64}
+  if widths.key?(leaf)
+    return raw.is_a?(String) && raw.match?(Regexp.new("\\A[0-9a-fA-F]{#{widths[leaf]}}\\z"))
+  end
+  return raw.is_a?(String) if name == 'action'
+  if name == 'srcport' || name == 'dstport'
+    return converted.is_a?(Integer) && converted.between?(0, 65535)
+  end
+  if name == 'severity'
+    return converted.is_a?(Integer) && converted.between?(0, 100)
+  end
+  true
+end
+
 def parserstudio_assign(record, path, value)
   pieces = path.split('.')
   cursor = record
@@ -795,6 +813,9 @@ def parserstudio_apply_field_maps(original, normalized, maps, ignored)
       end
       begin
         converted = parserstudio_coerce(raw, rule)
+        if section != 'vendorFields' && !parserstudio_stellar7_value_valid?(rule['normalized_name'], raw, converted)
+          raise ArgumentError, 'Invalid official Stellar field value'
+        end
         parserstudio_assign(target, rule['normalized_name'], converted)
       rescue StandardError
         raise ParserstudioFieldError.new(source)

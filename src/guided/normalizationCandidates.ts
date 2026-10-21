@@ -1,6 +1,7 @@
 import type {MappingRule,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {convertValue} from '../parser';
+import {meetsStellar7ValueConstraints} from '../stellar7ValueConstraints';
 import type {FieldGroup} from './contract';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 
@@ -75,24 +76,9 @@ export function valueFitsNormalizationTarget(
   target:string,type:MappingRule['type'],value:unknown,
 ):boolean{
   if(ignored(value))return true;
-  const hashKind=/(?:^|\.)(md5|sha1|sha256)$/.exec(target)?.[1];
-  if(hashKind){
-    const widths:Record<string,number>={md5:32,sha1:40,sha256:64};
-    return typeof value==='string' && new RegExp('^[0-9a-fA-F]{'+widths[hashKind]+'}$').test(value);
-  }
-  // An HTTP numeric result and a security action are not equivalent.
-  if(target==='action'&&typeof value!=='string')return false;
-  // Stellar documents L4 ports as integer fields, but their semantic range
-  // remains 0..65535. Keep the documented target type while applying the
-  // stricter field constraint before a HIGH-confidence mapping is offered.
-  if(target==='srcport'||target==='dstport')
-    return convertValue(value,'port').error===undefined;
-  if(target==='severity'){
-    const converted=convertValue(value,'integer');
-    return converted.error===undefined&&typeof converted.value==='number'&&
-      converted.value>=0&&converted.value<=100;
-  }
-  return valueFitsMappingType(type,value);
+  const converted=convertValue(value,type);
+  return converted.error===undefined&&
+    meetsStellar7ValueConstraints(target,value,converted.value);
 }
 function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[],
  existingGroups:Record<string,FieldGroup>):NormalizationCandidate|null{
