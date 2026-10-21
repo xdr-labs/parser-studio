@@ -580,3 +580,20 @@ schema handling, mobile, DP, sensor or production deployment.
 Evidence: verification/20261021-syslog-json-boundary-source-integrity.md.
 Stellar Cyber normalization is pinned to 7.0; no 6.5/6.6 schemas,
 DP/sensor, mobile, production, proprietary runtime or release changes.
+
+## P5-FRAMING-JSON — GELF/RFC7464 decoded JSON member identity (2026-10-21)
+
+- [x] Original NUL-delimited GELF and RFC7464 JSON Sequence pre-validation
+  reject duplicated *decoded* JSON member names via the same strict
+  common source hook already used by Docker JSON-file framing.
+- [x] Invalid original containers return RAW_ONLY and their exact source
+  bytes are preserved. Valid separate object scopes and Unicode text remain
+  source-only PARTIAL, never native/target-verified.
+- [x] New 7 authored negative cases (framing RED before fix), 3 focused
+  Python regression methods, existing 7 transport and 8 Audit/CRI/Docker
+  framing regression tests GREEN.
+- [ ] Exact-head CI and scoped Draft PR evidence; no target integration.
+
+Evidence: verification/20261021-gelf-jsonseq-source-framing-identity.md.
+Stellar Cyber Dictionary remains fixed to 7.0 only; no 6.5/6.6 schemas,
+mobile, DP/sensor, production, target import or merge/deployment action.

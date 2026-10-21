@@ -29,6 +29,11 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_embedded_multipass_service.py' -v
       - name: Lossless Linux Audit, CRI and Docker framing contract
         run: python3 -m unittest discover -s tests -p 'test_audit_cri_docker_framing_20261019.py' -v
+      # Source-only original GELF and JSON Text Sequence framing must reject
+      # repeated decoded object keys before creating a logical source frame.
+      # This intentionally does not claim a native DRAFT transport compiler.
+      - name: Strict GELF and RFC7464 duplicate JSON source framing
+        run: python3 -m unittest discover -s tests -p 'test_gelf_jsonseq_duplicate_identity_20261021.py' -v
       - name: Strict RFC 5424 free-form MSG and original UTF-8 byte offsets
         run: python3 -m unittest discover -s tests -p 'test_rfc5424_msg_source_20261019.py' -v
       - name: RFC 3164 and BSD message grammar with original value no-loss gate
