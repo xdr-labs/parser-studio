@@ -108,6 +108,23 @@ jobs:
           npx playwright test tests/syslog-json-duplicate-boundary-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-syslog-json-boundary-chromium.json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-syslog-json-boundary-chromium.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Syslog JSON strict-source 2/2 gate failed',x,r.errors);process.exit(1)}console.log('SYSLOG_JSON_BOUNDARY_CHROMIUM_PASS 2/2')"
 
+      # Pre-analysis value-free source census must never call a duplicated
+      # KV source name "ready" before the reviewed source engine checks it.
+      # Existing independently validated Multi-Pass recovery remains allowed.
+      - name: Strict KV duplicate-key beginner source accounting Chromium
+        env:
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5591'
+          PARSER_STUDIO_TEST_PORT: '5590'
+          PARSER_STUDIO_MULTIPASS_PORT: '5592'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/kv-duplicate-census-safety-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-kv-duplicate-census-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-kv-duplicate-census-browser.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('KV duplicate-key census 2/2 gate failed',x,r.errors);process.exit(1)}console.log('KV_DUPLICATE_CENSUS_BROWSER_PASS 2/2')"
+
       # Fixed 7.0 field suggestions must remain explicitly reviewed per
       # event type. Offline exact-HEAD Backend + Python Multi-Pass; no mocks.
       - name: Stellar 7.0 conditional event-family mapping Chromium

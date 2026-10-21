@@ -50,11 +50,18 @@ const MONTH_DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:3
 const KV_TOKEN=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'\\]+)(?=\s|$)/;
 function kvValid(input:string):boolean{
   let index=0,count=0;
+  const fieldNames=new Set<string>();
   while(index<input.length){
     while(index<input.length&&/\s/.test(input[index]!))index++;
     if(index===input.length)break;
     const match=KV_TOKEN.exec(input.slice(index));
     if(!match)return false;
+    // Source event accounting must agree with the existing strict KV
+    // compiler: a later duplicate key cannot overwrite its first value.
+    // Only field-name identity is retained, never customer field values.
+    const key=match[1]!;
+    if(fieldNames.has(key))return false;
+    fieldNames.add(key);
     count++;if(count>100)return false;
     index+=match[0].length;
   }

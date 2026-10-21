@@ -597,3 +597,19 @@ DP/sensor, mobile, production, proprietary runtime or release changes.
 Evidence: verification/20261021-gelf-jsonseq-source-framing-identity.md.
 Stellar Cyber Dictionary remains fixed to 7.0 only; no 6.5/6.6 schemas,
 mobile, DP/sensor, production, target import or merge/deployment action.
+
+## P6-KV-CENSUS — duplicate key pre-analysis honesty (2026-10-21)
+
+- [x] Align value-free beginner KV source census with the strict common
+  per-record decoded field-name uniqueness grammar; duplicate KV keys
+  are BODY_MALFORMED rather than falsely initial source-ready.
+- [x] Preserve quoted equals signs, case-sensitive keys, original log bytes
+  and separately verified Multi-Pass reviewer recovery.
+- [x] Five authored RED duplicate source fixtures, bounded positive
+  controls, focused 29/29 regression and real browser 2/2 user journeys.
+- [ ] Exact-HEAD CI, isolated Draft PR and Work Packet checkpoint before
+  qualifying this new P6 source-only UI behavior.
+
+Evidence: verification/20261021-kv-duplicate-census-parity.md.
+Stellar Cyber 7.0 remains the sole Dictionary; no 6.5/6.6 schema work,
+mobile, DP/sensor, production release or target import.
