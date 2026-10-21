@@ -68,6 +68,7 @@ test.describe('real source-to-backend DRAFT generation, without DP/sensor operat
       expect(pair.manifest).toMatchObject({status:'DRAFT',engineVerified:false,targetImportVerified:false});
       const conf=pair.files.find((item:{name:string})=>item.name.endsWith('.conf'));
       expect(conf?.content).toMatch(new RegExp('^\\s+port '+port+'$', 'm'));
+      expect(conf.content).toMatch(/<rule>\s+key stellar_log_index\s+pattern \S+\s+tag syslog\s+invert true\s+<\/rule>/);
       expect(sha(conf.content)).toBe(conf.sha256);
       const download=page.waitForEvent('download');
       await page.getByLabel('Generated parser files').getByRole('button',{name:conf.name,exact:true}).click();

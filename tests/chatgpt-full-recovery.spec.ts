@@ -54,7 +54,13 @@ test('RAW_ONLY ChatGPT recovery reaches verified DRAFT Ruby and CONF through the
  await generated.getByRole('button',{name:'Download customized_demo_firewall.conf'}).click();
  const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('customized_demo_firewall.conf');
- expect(await readFile(await download.path(),'utf8')).toMatch(/^\s+port 6819$/m);
+ const downloadedConf=await readFile(await download.path(),'utf8');
+ expect(downloadedConf).toMatch(/^\s+port 6819$/m);
+ // This structural extension belongs to the current same-source authoring
+ // compiler. The independent pinned legacy compatibility backend intentionally
+ // remains unchanged; do not demand newly introduced rules from an older HEAD.
+ if(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E==='1')
+   expect(downloadedConf).toMatch(/<rule>\s+key stellar_log_index\s+pattern \S+\s+tag syslog\s+invert true\s+<\/rule>/);
  await generated.getByRole('button',{name:'Review Fields in Auto Parser'}).click();
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);

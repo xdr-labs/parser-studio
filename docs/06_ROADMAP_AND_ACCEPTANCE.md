@@ -1,5 +1,30 @@
 # Current engineering completion ledger — 2026-10-20
 
+## Owner-scoped objective clarification — 2026-10-21
+
+**The product is a vendor-agnostic structural security log parser.** Completion
+means reliably detecting original event boundaries, extracting supported
+standard/generic grammars, preserving original values, and reporting PARSED,
+PARTIAL / NEEDS REVIEW and RAW_ONLY / UNSUPPORTED without a false success.
+Measure per-event/per-format coverage with deterministic goldens; manufacturer
+and firmware-by-firmware semantic accuracy is **not** the product's acceptance
+target. Avoid adding a vendor-regex patch to satisfy one product or release.
+
+Stellar normalization suggestions use the single documented **7.0**
+Dictionary, require type/value checks and preserve manual review when aliases
+are ambiguous. Do not introduce historical-version selection or falsely call
+vendor semantic accuracy verified.
+
+**External parser compatibility is read-only structure comparison:** inspect
+existing customized CONF and Ruby wrapper conventions (the owner-designated
+`rickmodular` host is an authorized reference), then qualify our compiler
+output as a two-file CONF + Ruby-fragment DRAFT with the matching marker and
+routing contracts. Never treat production DP installation, sensor send/receive,
+proprietary target import or any live device change as an acceptance gate.
+See [rickmodular customized structure audit](verification/20261021-rickmodular-customized-parser-structure.md)
+for the structurally verified common Syslog fallback and boundary of evidence.
+
+
 This ledger supersedes dated next-action statements below. The active product
 remains Auto Parser and ChatGPT Assisted Parser. Historical unchecked research
 and target-release lists are not a count of unfinished beta implementation.

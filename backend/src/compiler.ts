@@ -90,10 +90,19 @@ function emitConfiguration(project: ParserProject): string {
   for (const protocol of project.receiver.protocols) lines.push("", emitSource(project, protocol));
   lines.push("", "<match " + type + ".**>", "  @type rewrite_tag_filter", "  capitalize_regex_backreference yes");
   const categories = new Set([project.classification.defaultIndex, ...project.classification.rules.map(x => x.index)]);
-  for (const index of INDEX_ORDER) {
-    if (!categories.has(index)) continue;
-    lines.push("  <rule>", "    key stellar_log_index", "    pattern /^" + index + "$/", "    tag " + index, "  </rule>");
+  // Host-customized CONF references route each recognized non-syslog class
+  // first and finish with an inverted Syslog safety rule. The four inspected
+  // installed customized pairs all have this explicit fallback. In particular,
+  // even a parser whose default class is Threat must route its own parser error
+  // diagnostic (stellar_log_index=syslog) rather than silently drop the record.
+  const recognized=INDEX_ORDER.filter(index=>index!=="syslog"&&categories.has(index));
+  for(const index of recognized){
+    lines.push("  <rule>", "    key stellar_log_index", "    pattern /^"+index+"$/",
+      "    tag "+index, "  </rule>");
   }
+  const invertGuard=recognized.length?"(?:"+recognized.join("|")+")":"";
+  lines.push("  <rule>","    key stellar_log_index",
+    "    pattern /^"+invertGuard+"$/", "    tag syslog", "    invert true", "  </rule>");
   lines.push("</match>", "");
   return lines.join("\n");
 }
