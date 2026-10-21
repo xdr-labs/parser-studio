@@ -1,3 +1,4 @@
+import {hasDuplicateJsonObjectKeys} from '../jsonDuplicateKeys';
 /**
  * P0-AP1 browser-local candidate logical event boundaries.
  * Never returns customer text, creates parser rules, persists source, or
@@ -97,6 +98,10 @@ function scanJson(lines:string[],index:number):{
    const value:unknown=JSON.parse(content);
    if(!value||typeof value!=='object'||Array.isArray(value)||!jsonShape(value,0))
      return {last,status:'AMBIGUOUS'};
+   // A multiline review candidate does not certify data loss through
+   // JSON.parse's last-key-wins behavior. Keep complete source line accounting
+   // while marking this group explicitly ambiguous for human review.
+   if(hasDuplicateJsonObjectKeys(content))return {last,status:'AMBIGUOUS'};
  }catch{return {last,status:'AMBIGUOUS'};}
  return {last,status:last===index?'ALREADY_SINGLE_LINE':'CANDIDATE'};
 }

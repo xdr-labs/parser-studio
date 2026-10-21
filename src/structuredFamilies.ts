@@ -1,3 +1,4 @@
+import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 import { parseRfc5424Subset } from './rfc5424Subset';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
@@ -114,6 +115,10 @@ function boundedJsonObject(text: string): StructuredExtraction {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return failure('RFC5424 JSON body must be an object');
     }
+    // The local browser cannot silently keep the last decoded object member
+    // while the compiled Ruby parser correctly rejects that original source.
+    if (hasDuplicateJsonObjectKeys(text))
+      return failure('Duplicate JSON object key in reviewed Syslog body');
     function depthOkay(value: unknown, depth: number): boolean {
       if (depth > 8) return false;
       if (Array.isArray(value)) return value.every((v) => depthOkay(v, depth + 1));

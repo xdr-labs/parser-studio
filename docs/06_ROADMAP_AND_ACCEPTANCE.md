@@ -565,3 +565,18 @@ No version-specific schema management beyond the pinned Stellar 7.0 catalog.
 Evidence: verification/20261021-generic-json-duplicate-source-parity.md.
 Only fixed Stellar Cyber 7.0 normalized fields are in scope; no 6.5/6.6
 schema handling, mobile, DP, sensor or production deployment.
+
+## P4-SYSLOG-JSON — strict browser/native source and multiline parity (2026-10-21)
+
+- [x] Refuse repeated decoded JSON object names in explicit RFC5424/RFC3164
+  bodies; match the already strict Ruby DRAFT backend source semantics.
+- [x] Mark duplicate-key multi-line JSON boundary candidates as
+  AMBIGUOUS / REVIEW_REQUIRED with physical source event accounting intact.
+- [x] Authored positive and negative oracles, focused source tests and
+  two actual Chromium localhost source workflows, no HTTP stubs.
+- [ ] Exact-HEAD CI, Draft PR and ACTIVE Work Packet evidence before closure.
+  No manufacturer-wide accuracy percentage from synthetic fixtures.
+
+Evidence: verification/20261021-syslog-json-boundary-source-integrity.md.
+Stellar Cyber normalization is pinned to 7.0; no 6.5/6.6 schemas,
+DP/sensor, mobile, production, proprietary runtime or release changes.
