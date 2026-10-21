@@ -15,24 +15,32 @@ class AppFaviconTests(unittest.TestCase):
     def test_app_links_local_icons(self):
         content = HTML.read_text(encoding="utf-8")
         self.assertIn("<title>Parser Studio — XDR Labs</title>", content)
-        self.assertRegex(content, r'<link rel="icon" type="image/svg\+xml" href="/favicon\.svg"')
-        self.assertRegex(content, r'<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32\.png"')
-        self.assertRegex(content, r'<link rel="shortcut icon" type="image/x-icon" href="/favicon\.ico"')
-        self.assertRegex(content, r'<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon\.png"')
+        self.assertRegex(content, r'<link rel="icon" type="image/svg\+xml" href="/favicon\.svg\?v=app-filetext-20261022"')
+        self.assertRegex(content, r'<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32\.png\?v=app-filetext-20261022"')
+        self.assertRegex(content, r'<link rel="shortcut icon" type="image/x-icon" href="/favicon\.ico\?v=app-filetext-20261022"')
+        self.assertRegex(content, r'<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon\.png\?v=app-filetext-20261022"')
         for file in re.findall(r'<link (?:rel="icon"|rel="shortcut icon"|rel="apple-touch-icon")\b[^>]*href="(/[^"]+)"', content):
-            self.assertTrue((PUBLIC / file.lstrip("/")).is_file(), file)
-            self.assertTrue((PUBLIC / file.lstrip("/")).stat().st_size > 64, file)
+            self.assertTrue((PUBLIC / file.split("?",1)[0].lstrip("/")).is_file(), file)
+            self.assertTrue((PUBLIC / file.split("?",1)[0].lstrip("/")).stat().st_size > 64, file)
         self.assertNotIn("http://", content)
 
     def test_vector_brand_icon(self):
         text = (PUBLIC / "favicon.svg").read_text(encoding="utf-8")
         root = ElementTree.fromstring(text)
         self.assertEqual(root.attrib["viewBox"], "0 0 64 64")
-        self.assertIn("#1F59E0", text)
+        self.assertIn("#30231d", text)
+        self.assertIn("#9b472a", text)
+        self.assertIn("#f8ae41", text)
+        self.assertNotIn("#1F59E0", text)
+        self.assertIn('d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"', text)
         self.assertIn("Parser Studio", text)
         self.assertNotIn("<script", text.lower())
         self.assertNotIn('href="http', text)
         self.assertNotIn("<image", text.lower())
+        self.assertIn('<FileText size={23}/>', (ROOT/"src/App.tsx").read_text(encoding="utf-8"))
+        stylesheet=(ROOT/"src/guided/stellarExportTheme.css").read_text(encoding="utf-8")
+        self.assertIn("--stellar-gold:#f8ae41", stylesheet)
+        self.assertIn(".two-path-shell .brand-symbol{background:#30231d;border:1px solid #9b472a;color:var(--stellar-gold)}", stylesheet)
 
     def test_png_sizes(self):
         for filename, side in (
