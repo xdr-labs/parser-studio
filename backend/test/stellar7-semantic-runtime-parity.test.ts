@@ -4,6 +4,7 @@ import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {compilePair} from '../src/compiler.js';
 import {sampleProject} from './fixture.js';
+import {validateProject} from '../src/validate.js';
 
 const oldStyle=readFileSync(new URL('../templates/ruby-fragment.rb.tpl',import.meta.url),'utf8');
 const familyStyle=readFileSync(new URL('../templates/ruby-forwarder-family.rb.tpl',import.meta.url),'utf8');
@@ -35,11 +36,18 @@ function project(target:string,type:'integer'|'string',family=false,vendor=false
     p.normalization.topFields={event_type:{normalized_name:'event_type',data_type:'string'}};
     p.normalization.eventProfiles={discriminator:'event_type',unknown:'reject',variants:[
       {name:'threat',equals:'threat',topFields:mapping,nsFields:{},vendorFields:{}},
+      {name:'user',equals:'user',
+        topFields:{username:{normalized_name:'username',data_type:'string'}},
+        nsFields:{},vendorFields:{}},
     ]};
   }else if(vendor)p.normalization.vendorFields=mapping;
   else p.normalization.topFields=mapping;
   return p;
 }
+
+test('conditional native fixture has two explicit independent event-family variants',()=>{
+  assert.equal(validateProject(project('sha256','string',true)).ok,true);
+});
 
 const rubyAvailable=spawnSync('ruby',['-v'],{encoding:'utf8'}).status===0;
 function execute(target:string,type:'integer'|'string',value:unknown,family=false,vendor=false){
