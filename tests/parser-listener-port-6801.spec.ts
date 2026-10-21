@@ -24,6 +24,19 @@ test('new source identity displays editable CONF port before log analysis',async
   await expect(listener).toHaveAttribute('aria-invalid','false');
 });
 
+test('Auto and ChatGPT Assisted use one editable port before logs are supplied',async({page})=>{
+  await page.goto('/');
+  await expect(page.getByLabel('Parser listener port')).toHaveValue('6801');
+  await page.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
+  const input=page.getByLabel('ChatGPT preparation').getByLabel('Parser listener port');
+  await expect(input).toHaveValue('6801');
+  await input.fill('6819');
+  await expect(input).toHaveValue('6819');
+  await page.getByRole('button',{name:'Auto Parser',exact:true}).click();
+  await expect(page.getByLabel('Add Logs stage').getByLabel('Parser listener port')).toHaveValue('6819');
+  await expect(page.getByLabel('Add Logs stage')).toContainText('Generated .conf receiving port: 6819');
+});
+
 test.describe('real source-to-backend DRAFT generation, without DP/sensor operations',()=>{
   test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'&&
     process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',

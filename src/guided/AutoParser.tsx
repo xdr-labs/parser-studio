@@ -26,6 +26,7 @@ import {checkPrivateDrain3Availability,runPrivateDrain3Review,
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {DEFAULT_PARSER_LISTENER_PORT,defaultGuidedOptions} from './contract';
+import ParserListenerPortInput from './ParserListenerPortInput';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {buildSourceReviewedGenericStructuralDraft} from './genericStructuralAutoDraft';
 import {parserIdentitySlug} from './parserIdentity';
@@ -852,9 +853,6 @@ export default function AutoParser({
  const currentMultiPassCounts=multiPassDerived.counts;
  const protectedSourceValuesByEvent=multiPassDerived.protectedValues;
  const protectedResidualTextByEvent=multiPassDerived.protectedResiduals;
- const syslogListenerRequired=['syslog_rfc3164','syslog_rfc5424','generic_structural'].includes(draft.format)||
-   (draft.format==='mixed'&&draft.mixedFormats?.some(format=>format.startsWith('rfc5424_')||format.startsWith('rfc3164_')));
- const minimumListenerPort=syslogListenerRequired?6800:1024;
  const parserIdentityIsDefault=draft.vendor==='Demo / local draft'&&draft.name==='Untitled parser';
  const parserArtifactName=parserIdentityIsDefault
    ?'customized_<manufacturer>_<product>'
@@ -924,21 +922,7 @@ export default function AutoParser({
                placeholder="e.g. 7.4.5"
                onChange={e=>updateParserIdentity('version',e.target.value)}/>
            </label>
-           <label>Parser listener port (.conf)
-             <input aria-label="Parser listener port" type="number" min={minimumListenerPort} max={65535} step={1}
-               value={draft.guided?.receiver.port ?? DEFAULT_PARSER_LISTENER_PORT}
-               aria-invalid={!Number.isInteger(draft.guided?.receiver.port ?? DEFAULT_PARSER_LISTENER_PORT) ||
-                 (draft.guided?.receiver.port ?? DEFAULT_PARSER_LISTENER_PORT)<minimumListenerPort ||
-                 (draft.guided?.receiver.port ?? DEFAULT_PARSER_LISTENER_PORT)>65535}
-               onChange={e=>{
-                 const port=Number(e.target.value);
-                 setDraft(old=>{
-                   const guided=old.guided??defaultGuidedOptions();
-                   return {...old,guided:{...guided,receiver:{...guided.receiver,port}}};
-                 });
-               }}/>
-             <small>Default 6801. One shared sensor destination and .conf receiving port; check availability before deployment.</small>
-           </label>
+           <ParserListenerPortInput draft={draft} setDraft={setDraft}/>
          </div>
          <div className="parser-identity-filename">
            <span>Generated parser files</span>
