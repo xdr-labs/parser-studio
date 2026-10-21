@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Parser Studio">
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="#231f20"/>
+  <path d="M15 19h22M15 31h17M15 43h17" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M39 26l9 9-9 9" fill="none" stroke="#f05b29" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43 15v7" stroke="#f8ae41" stroke-width="5" stroke-linecap="round"/>
+</svg>

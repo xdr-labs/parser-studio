@@ -20,6 +20,13 @@
 .auto-parser-steps button.active span{background:#0f9494;color:#fff;}
 .auto-parser-body{border:1px solid #d6e4eb;border-radius:13px;background:#fff;box-shadow:0 5px 22px rgba(18,54,68,.05);padding:clamp(16px,2.7vw,28px);}
 .auto-parser-body h2{font-size:23px;color:#173e51;letter-spacing:-.6px;margin:0 0 6px;}
+.chatgpt-source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 16px;}
+.chatgpt-source-grid label{min-width:0;}
+.chatgpt-source-grid input{width:100%;}
+.chatgpt-named-source{margin:16px 0;}
+.chatgpt-named-source .named-log-panel{margin:0;}
+.auto-parser-body .chatgpt-named-source textarea{min-height:95px;}
+.auto-parser-body [aria-label="Redacted sharing examples per log type"] textarea{min-height:88px;}
 .auto-parser-body section>p{color:#55707f;font-size:12px;line-height:1.65;margin:8px 0 15px;}
 .auto-parser-body :is(label){font-size:11px;font-weight:700;color:#3a697a;display:block;margin:12px 0;}
 .auto-parser-body :is(input,select,textarea){border:1px solid #cbdce3;border-radius:7px;background:#fcfefe;color:#183449;padding:9px;min-height:36px;max-width:100%;}
