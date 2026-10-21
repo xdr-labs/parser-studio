@@ -23,7 +23,7 @@
 5. New independent group acceptance tests every original group with the candidate browser parser, checks complete normalized coverage and disjoint verified routing identities, and **blocks combined file generation** without reviewed conditional or supported mixed-format routing. No group label is silently treated as an event discriminator.
 6. Solution context and redacted sharing examples survive Auto ↔ ChatGPT workspace switches in the browser session; new projects or local-version restores reset the shareable examples.
 7. Actual conditional compiler boundary reproduced and corrected: `backend/src/parser-recipe-v02.ts::legacyAllowed` explicitly rejects `normalization.eventProfiles`; sending a reviewed conditional DRAFT through v0.2 caused a real browser generation failure. For conditional event profiles, ChatGPT Assisted now uses the **existing capability-checked, schema-validated, integrity-verified v0.1 conditional Backend pair** after separate original-group checks. Only non-conditional recipes call the strict v0.2 equivalent-subset compiler; no false v0.2 parity claim is made.
-8. New `favicon.svg`, `favicon-32.png` and `apple-touch-icon.png` are shipped through Vite `public/`, with explicit icon links in the application document.
+8. The shared `main` already integrates the canonical XDR Labs Parser Studio favicon assets (`favicon.svg`, ICO, 16/32/48px PNG, 180px Apple touch and 192px icon) and a standard-library asset test. This branch preserves the newer canonical favicon without adding redundant icon sets or duplicate HTML links.
 
 ## Focused acceptance at implementation
 
