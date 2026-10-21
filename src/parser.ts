@@ -7,6 +7,7 @@ import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
+import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -90,6 +91,8 @@ function extractJSON(raw: string): Extraction {
     if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
       return { fields: {}, errors: ['JSON event must be an object'] };
     }
+    if(hasDuplicateJsonObjectKeys(raw))
+      return {fields:{},errors:['Duplicate JSON object key: review the source before generating a parser']};
     return { fields: parsed as Record<string, unknown>, errors: [] };
   } catch {
     return { fields: {}, errors: ['Invalid JSON object'] };

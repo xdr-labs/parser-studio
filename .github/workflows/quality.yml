@@ -69,6 +69,22 @@ jobs:
           set -euo pipefail
           npx playwright test tests/stellar7-normalization-safety-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-stellar7-normalization-browser.json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-stellar7-normalization-browser.json','utf8'));const x=r.stats;if(x.expected!==3||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Stellar 7.0 safety E2E did not pass 3/3',x,r.errors);process.exit(1)}console.log('STELLAR7_NORMALIZATION_CHROMIUM_PASS 3/3')"
+      # Duplicate object keys must never overwrite an earlier source value.
+      # Native Ruby execution is part of the offline authoring test scope.
+      - name: Strict JSON duplicate-source desktop Chromium (same HEAD)
+        env:
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5561'
+          PARSER_STUDIO_TEST_PORT: '5560'
+          PARSER_STUDIO_MULTIPASS_PORT: '5562'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          npx playwright test tests/json-duplicate-source-parity-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-json-duplicate-source-browser.json
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-json-duplicate-source-browser.json','utf8')); const x=r.stats; if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('JSON duplicate source gate failed',x,r.errors);process.exit(1)}console.log('STRICT_JSON_DUPLICATE_SOURCE_CHROMIUM_PASS 2/2')"
+
       # Historical browser tests require an actual local parser compiler for
       # map/review/create; without it they fail on backend-unavailable states
       # unrelated to the logged security event. Reuse the exact pinned backend

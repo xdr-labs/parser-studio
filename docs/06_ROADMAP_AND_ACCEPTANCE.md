@@ -517,3 +517,17 @@ Product flow: Add Logs → Review Fields → Map Fields → Create Parser. Retai
 4. **Accuracy evidence deferred:** Independent manufacturer source goldens and proprietary Stellar native target behavior are not established by synthetic fixtures. Generated artifacts remain DRAFT and unknown evidence remains UNSCORABLE.
 
 Implementation details: [Stellar 7.0 normalization integrity verification](verification/20261021-stellar7-normalization-integrity.md). Keep the deployed development build, historic worktrees and completed evidence unchanged. Mobile, DP/sensors, production, releases and authorization changes are excluded.
+
+## P2-JSON-DUP — common JSON source/native key integrity (2026-10-21)
+
+Multi-Pass already rejects duplicate JSON object member names. Browser
+and compiled Ruby previously risked last-value overwrite.
+
+- [x] Duplicate decoded object names fail-closed in browser extraction
+  and automatic source census; original source remains unchanged.
+- [x] Apply the same reject semantics to native Ruby DRAFT JSON paths.
+- [ ] Exact-HEAD GitHub CI and real Chromium qualified on new candidate.
+- [ ] Other Generic Structural prefixed/container JSON families require
+  independent native oracles before asserting broader compiler parity.
+
+Evidence: verification/20261021-json-duplicate-source-native-parity.md.

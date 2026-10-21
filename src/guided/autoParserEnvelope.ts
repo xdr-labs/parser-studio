@@ -3,6 +3,7 @@
  * source strings, diagnostic messages and field values never enter this report.
  */
 import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents,tokenizeCSV} from '../parser';
+import {hasDuplicateJsonObjectKeys} from '../jsonDuplicateKeys';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -63,6 +64,7 @@ function jsonValid(input:string):boolean{
   try{
     const value=JSON.parse(input) as unknown;
     if(!value||typeof value!=='object'||Array.isArray(value))return false;
+    if(hasDuplicateJsonObjectKeys(input))return false;
     let leaves=0;
     const descend=(node:unknown,depth:number):boolean=>{
       if(depth>8)return false;
