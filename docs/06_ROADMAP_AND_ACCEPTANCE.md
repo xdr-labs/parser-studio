@@ -613,3 +613,20 @@ mobile, DP/sensor, production, target import or merge/deployment action.
 Evidence: verification/20261021-kv-duplicate-census-parity.md.
 Stellar Cyber 7.0 remains the sole Dictionary; no 6.5/6.6 schema work,
 mobile, DP/sensor, production release or target import.
+
+
+## P6B-LOCAL-VERSIONS — deterministic browser-only comparison baseline (2026-10-21)
+
+- [x] Reproduce a second Save Version moving comparison Version A from
+  baseline V1 to new V2 without user instruction (V2-vs-V2 false no-diff).
+- [x] Preserve the first or manually selected Version A across later
+  browser-only saves, without bypassing stale IndexedDB generation guards.
+- [x] Deterministic component RED-to-GREEN and the two real Chromium
+  version-restore/compare journeys previously failing on GitHub Actions.
+- [ ] Read the final exact-head CI after implementation before closing
+  this narrowly scoped browser regression. Do not duplicate earlier
+  unchanged DRAFT/Ruby tests or claim proprietary target import.
+
+Evidence: verification/20261021-kv-duplicate-census-parity.md.
+This remains fixed Stellar Cyber 7.0 Dictionary work; no legacy version
+selection, mobile, DP/sensors, production or public deployment.

@@ -42,3 +42,26 @@ No manufacturer-wide F1 or physical device original is inferred. The
 reviewed Ruby DRAFT compiler, output schema and target interfaces remain
 unchanged. No 6.5/6.6 Dictionary, version selector, release, mobile,
 DP upload, sensors, production, merge or public-development apply.
+
+
+## CI regression and independent Local Versions compare fix
+
+The first and second P6 CI corrections preserved the stricter KV grammar and
+updated pre-existing novice readiness / synthetic sender expectations only
+where independently reproduced. On the next CI, two browser-only version
+comparison journeys reported no differences between otherwise distinct
+snapshots. The test failures were recorded in GitHub Actions
+#39534088555 and their full failing Playwright traces were reviewed.
+
+A new deterministic component test reproduced the root cause as RED:
+on the second Save Version, the Local Versions panel unconditionally replaced
+the Version A comparison reference with the new saved ID, so the page could
+compare the newly saved V2 against V2 and display a false 'No differences'.
+After correction, Save Version initializes Version A only if it was unset,
+preserving the existing chosen baseline, pending IndexedDB listing
+generation and browser-local safeguards. No stored content or permission
+contract changed. The focused RED-to-GREEN test and both originally failing
+real Chromium journeys passed after correction.
+
+The exact final candidate and hosted CI need separate verification in the
+new PR #130 run before claiming the integration is fully qualified.
