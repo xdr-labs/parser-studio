@@ -1,3 +1,4 @@
+import {meetsStellar7ValueConstraints} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { lookupFieldValue } from './fieldPaths';
@@ -470,6 +471,12 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       continue;
     }
     const group=draft.guided?.groups[mapping.id]??'vendor_fields';
+    if(group!=='vendor_fields'&&
+       !meetsStellar7ValueConstraints(target,sourceValue.value,converted.value)){
+      error('normalize','TYPE_ERROR',
+        source+': value does not satisfy the reviewed Stellar 7.0 field constraints',source);
+      continue;
+    }
     let container=normalized;
     if(group==='vendor_fields'){
       const vendor=draft.vendor.trim()||'vendor';
