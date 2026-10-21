@@ -18,7 +18,7 @@ const pair:GeneratedPair={contract:'host-customized-pair.v0.1',files,manifest:{
 const zip=new Uint8Array([0x50,0x4b,0x03,0x04,0x01,0x02,0x03,
   0x50,0x4b,0x05,0x06,...Array(18).fill(0)]);
 const first:RevisionSummary={artifactRevisionId:'a'.repeat(64),parserName:parser,
-  projectId:project,projectRevision:1,version:'1.0.0',selectedParserPort:7501,
+  projectId:project,projectRevision:1,version:'1.0.0',selectedParserPort:6801,
   receiverProtocols:['udp'],fileHashes,zipSha256:hash(zip),
   createdAt:'2026-10-12T00:00:00.000Z',targetImportVerified:false,deploymentPerformed:false};
 const second:RevisionSummary={...first,artifactRevisionId:'b'.repeat(64),
@@ -42,7 +42,7 @@ describe('opt-in owner-scoped offline artifact revision API',()=>{
 
   it('registers only a verified DRAFT pair and redacts client-visible revision metadata',async()=>{
     const requester=vi.fn(async()=>json(200,first)) as unknown as typeof fetch;
-    await expect(registerArtifactRevision(pair,'1.0.0',7501,requester)).resolves.toEqual(first);
+    await expect(registerArtifactRevision(pair,'1.0.0',6801,requester)).resolves.toEqual(first);
     const [url,opts]=vi.mocked(requester).mock.calls[0];
     expect(url).toBe('/api/v1/parser-pairs/revisions/register');
     expect(opts).toMatchObject({method:'POST',credentials:'same-origin',cache:'no-store'});
@@ -53,7 +53,7 @@ describe('opt-in owner-scoped offline artifact revision API',()=>{
   it('rejects unauthorized default 403; never treats a disabled history as enabled',async()=>{
     const requester=vi.fn(async()=>json(403,{error:'REVISION_HISTORY_DISABLED'})) as unknown as typeof fetch;
     await expect(listArtifactRevisions(project,requester)).rejects.toThrow(/access denied|unavailable/i);
-    await expect(registerArtifactRevision(pair,'1.0.0',7501,requester)).rejects.toThrow(/access denied|unavailable/i);
+    await expect(registerArtifactRevision(pair,'1.0.0',6801,requester)).rejects.toThrow(/access denied|unavailable/i);
   });
   it('lists only an explicit same-origin project and refuses cross-owner/malicious metadata',async()=>{
     const requester=vi.fn(async()=>json(200,{contract:'offline-revision-history.v0.1',
@@ -82,14 +82,14 @@ describe('opt-in owner-scoped offline artifact revision API',()=>{
       {...first,targetImportVerified:true},
     ]) {
       const requester=vi.fn(async()=>json(200,altered)) as unknown as typeof fetch;
-      await expect(registerArtifactRevision(pair,'1.0.0',7501,requester)).rejects.toThrow();
+      await expect(registerArtifactRevision(pair,'1.0.0',6801,requester)).rejects.toThrow();
     }
   });
   it('returns only verified SHA/port changes and refuses cross-project diff',async()=>{
     const diff={contract:'offline-artifact-diff.v0.1',
       fromRevisionId:first.artifactRevisionId,toRevisionId:second.artifactRevisionId,
       projectId:project,version:{from:'1.0.0',to:'2.0.0',changed:true},
-      selectedParserPort:{from:7501,to:7501,changed:false},
+      selectedParserPort:{from:6801,to:6801,changed:false},
       files:[{name:parser,fromSha256:hash(ruby),toSha256:hash(ruby),changed:false},
         {name:conf,fromSha256:hash(config),toSha256:hash(config),changed:false}],
       realTargetVerified:false,appliesToDp:false};

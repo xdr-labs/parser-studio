@@ -57,6 +57,21 @@ jobs:
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
 
+      # First-time users may review/override the shared CONF listener port
+      # before submitting source logs; both bytes and HTTP project must agree.
+      # The selected listener remains a DRAFT, never an opened or reserved port.
+      - name: Default 6801 source-entry and actual parser CONF Chromium
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5611'
+          PARSER_STUDIO_TEST_PORT: '5610'
+          PARSER_STUDIO_MULTIPASS_PORT: '5612'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: npx playwright test tests/parser-listener-port-6801.spec.ts --project=chromium --workers=1
+
       # Newly approved fixed-7.0 normalization integrity gate. The previous
       # 41-case exact-head browser suite remains untouched; these three cases
       # require the same built backend and real in-repository Multi-Pass API.

@@ -20,7 +20,7 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
       sourceCategory: 'network',
       receiver: {
         protocols: ['udp', 'tcp'],
-        port: 7501,
+        port: 6801,
         bindAddress: '127.0.0.1',
         messageLengthLimit: 8192,
         tcpFraming: 'line',

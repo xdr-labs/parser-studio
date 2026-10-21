@@ -37,7 +37,7 @@ const response=(overrides?:{status?:number;hash?:string;name?:string;mime?:strin
     'content-length':String(overrides?.size??zip.byteLength),
     'content-disposition':'attachment; filename="'+(overrides?.name??'customized_demo_firewall-r1.zip')+'"',
     'x-parser-artifact-revision':'a'.repeat(64),
-    'x-parser-listener-port':overrides?.port??'7501',
+    'x-parser-listener-port':overrides?.port??'6801',
     'x-parser-zip-sha256':overrides?.hash??sha(zip),
   }),
   arrayBuffer:async()=>new Uint8Array(zip).buffer,
@@ -58,9 +58,9 @@ describe('explicit offline ZIP bundle packaging using reviewed same-origin backe
   });
   it('POSTs only already-generated DRAFT pair, checking ZIP SHA-256/port/revision',async()=>{
     const requester=vi.fn(async()=>response()) as unknown as typeof fetch;
-    const result=await packageGeneratedPair(pair,'1.0.0',capabilities,7501,requester);
+    const result=await packageGeneratedPair(pair,'1.0.0',capabilities,6801,requester);
     expect(result).toMatchObject({filename:'customized_demo_firewall-r1.zip',
-      size:zip.byteLength,sha256:sha(zip),artifactRevisionId:'a'.repeat(64),listenerPort:7501});
+      size:zip.byteLength,sha256:sha(zip),artifactRevisionId:'a'.repeat(64),listenerPort:6801});
     expect(result.bytes.byteLength).toBe(zip.byteLength);
     const [url,options]=(requester as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe('/api/v1/parser-pairs/package');
@@ -73,7 +73,7 @@ describe('explicit offline ZIP bundle packaging using reviewed same-origin backe
   it.each(['../bad','1.0.0/../../','','v'.repeat(65)])(
     'rejects unsafe package version %s without HTTP request',async version=>{
       const requester=vi.fn(async()=>response()) as unknown as typeof fetch;
-      await expect(packageGeneratedPair(pair,version,capabilities,7501,requester)).rejects.toThrow();
+      await expect(packageGeneratedPair(pair,version,capabilities,6801,requester)).rejects.toThrow();
       expect(requester).not.toHaveBeenCalled();
     },
   );
@@ -85,7 +85,7 @@ describe('explicit offline ZIP bundle packaging using reviewed same-origin backe
       {...pair,files:pair.files.map((f,i)=>i===0?{...f,bytes:99999}:f)},
       {...pair,manifest:{...pair.manifest,fileHashes:{...pair.manifest.fileHashes,[confName]:'0'.repeat(64)}}},
       {...pair,files:pair.files.map((f,i)=>i===0?{...f,name:'../bad.conf'}:f)},
-    ]) await expect(packageGeneratedPair(broken as GeneratedPair,'1.0.0',capabilities,7501,requester)).rejects.toThrow();
+    ]) await expect(packageGeneratedPair(broken as GeneratedPair,'1.0.0',capabilities,6801,requester)).rejects.toThrow();
     expect(requester).not.toHaveBeenCalled();
   });
   it.each([
@@ -93,12 +93,12 @@ describe('explicit offline ZIP bundle packaging using reviewed same-origin backe
     {size:2*1024*1024+1},{size:33},{port:'80'},{port:'99999'},{status:422},
   ])('refuses inconsistent binary headers, status and content',async modified=>{
     const requester=vi.fn(async()=>response(modified)) as unknown as typeof fetch;
-    await expect(packageGeneratedPair(pair,'1.0.0',capabilities,7501,requester)).rejects.toThrow();
+    await expect(packageGeneratedPair(pair,'1.0.0',capabilities,6801,requester)).rejects.toThrow();
   });
   it('requires WebCrypto; never permits unverified file download',async()=>{
     vi.stubGlobal('crypto',null);
     const requester=vi.fn(async()=>response()) as unknown as typeof fetch;
-    await expect(packageGeneratedPair(pair,'1.0.0',capabilities,7501,requester)).rejects.toThrow(/SHA-256|secure/i);
+    await expect(packageGeneratedPair(pair,'1.0.0',capabilities,6801,requester)).rejects.toThrow(/SHA-256|secure/i);
     expect(requester).not.toHaveBeenCalled();
   });
 });

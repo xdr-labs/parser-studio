@@ -5,7 +5,7 @@ const suggestion={
   recommendedPort:20000,source:'SUGGESTED',
   status:'INCOMPLETE_EVIDENCE',
   missingEvidence:['sensorBindings','localReservations'],
-  occupiedPorts:[514,7501,20001],
+  occupiedPorts:[514,6801,20001],
   candidateOnly:true,deployableNow:false,
   verifiedIngestPort:false,sensorIngestPort:20000,needsFinalRecheck:true,
 };
@@ -23,7 +23,7 @@ test('authorized backend port suggestion is explicitly opted into and never trea
   });
   await page.goto('/?workspace=guided');
   await page.getByRole('button',{name:/4\. Receive & Classify/}).click();
-  await expect(page.getByLabel('Receiving port')).toHaveValue('7501');
+  await expect(page.getByLabel('Receiving port')).toHaveValue('6801');
   expect(reads).toBe(0);
   await page.getByRole('button',{name:'Request Port Candidate'}).click();
   const result=page.getByLabel('Parser port proposal result');
@@ -31,7 +31,7 @@ test('authorized backend port suggestion is explicitly opted into and never trea
   await expect(result).toContainText('INCOMPLETE_EVIDENCE');
   await expect(result).toContainText('not proven free');
   await expect(result).toContainText('sensorBindings');
-  await expect(page.getByLabel('Receiving port')).toHaveValue('7501');
+  await expect(page.getByLabel('Receiving port')).toHaveValue('6801');
   await result.getByRole('button',{name:'Apply Candidate to Draft (recheck required)'}).click();
   await expect(page.getByLabel('Receiving port')).toHaveValue('20000');
   await expect(result).toHaveCount(0);
@@ -45,7 +45,7 @@ test('checking a manually edited parser port does not send credentials or switch
     requested=new URL(route.request().url()).search;
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
       ...suggestion,source:'USER_OVERRIDE',recommendedPort:22550,
-      occupiedPorts:[514,7501,20001],sensorIngestPort:22550,
+      occupiedPorts:[514,6801,20001],sensorIngestPort:22550,
     })});
   });
   await page.goto('/?workspace=guided');

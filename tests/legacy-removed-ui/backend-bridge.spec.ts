@@ -78,7 +78,7 @@ test('explicit backend validation and draft pair generation downloads two exact 
     const encoded = JSON.stringify(body);
     expect(encoded).not.toContain('198.51.100.10');
     expect(encoded).not.toContain('203.0.113.5');
-    expect((body as { receiver: { port: number } }).receiver.port).toBe(7501);
+    expect((body as { receiver: { port: number } }).receiver.port).toBe(6801);
   }
   for (const expected of files) {
     const downloading = page.waitForEvent('download');

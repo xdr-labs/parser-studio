@@ -7,7 +7,7 @@ const parser='customized_demo_firewall';
 const hash='a'.repeat(64);
 const pair:RevisionSummary={
   artifactRevisionId:hash,parserName:parser,projectId:'draft-demo_firewall',
-  projectRevision:1,version:'1.0.0',selectedParserPort:7501,
+  projectRevision:1,version:'1.0.0',selectedParserPort:6801,
   receiverProtocols:['udp','tcp'],
   fileHashes:{[parser]:hash,[parser+'.conf']:'b'.repeat(64)},
   zipSha256:'c'.repeat(64),createdAt:'2026-10-12T10:00:00.000Z',
@@ -19,7 +19,7 @@ const state={contract:'target-apply-mock.v0.1',mode:'MOCK_ONLY',
   targetImportVerified:false,realRuntimeParsingVerified:false};
 const proof={artifactRevisionId:hash,fileHashes:pair.fileHashes,name:parser,
   tenant:'offline-owner',origin:'https://offline.invalid',version:'1.0.0',
-  selectedParserPort:7501,registration:{status:'API_REGISTERED_READBACK',
+  selectedParserPort:6801,registration:{status:'API_REGISTERED_READBACK',
     apiReadbackVerified:true,realRuntimeParsingVerified:false,
     sensorReadyVerified:false,targetImportVerified:false},
   mode:'MOCK_ONLY',status:'MOCK_READBACK_VERIFIED',realTargetVerified:false};

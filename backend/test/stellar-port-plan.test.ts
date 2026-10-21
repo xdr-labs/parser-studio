@@ -8,7 +8,7 @@ const fullyKnown=()=>{
     tenantLegacyPorts:[20004],
     sensorParserPorts:[20005],
     localReservedPorts:[20006],
-    adminReservedPorts:[20007],
+    adminReservedPorts:[20007,6801,6802],
     evidence:{catalogueComplete:true,tenantComplete:true,
       sensorBindingsComplete:true,reservationsComplete:true},
   };
@@ -16,7 +16,7 @@ const fullyKnown=()=>{
 
 test("port planner skips built-in/custom/sensor/local/admin collisions across protocols",()=>{
   const result=proposeParserPort(fullyKnown());
-  assert.equal(result.recommendedPort,20008);
+  assert.equal(result.recommendedPort,6803);
   assert.equal(result.status,"CANDIDATE_REQUIRES_DEPLOY_RECHECK");
   assert.equal(result.deployableNow,false,"proposing is not an atomic reservation");
   assert.equal(result.verifiedIngestPort,false);
@@ -28,7 +28,7 @@ test("unknown parser/sensor inventories never imply availability; still show ten
   const data=fullyKnown();
   data.evidence.sensorBindingsComplete=false;
   const result=proposeParserPort(data);
-  assert.equal(result.recommendedPort,20008);
+  assert.equal(result.recommendedPort,6803);
   assert.equal(result.status,"INCOMPLETE_EVIDENCE");
   assert.equal(result.deployableNow,false);
   assert.ok(result.missingEvidence.includes("sensorBindings"));
