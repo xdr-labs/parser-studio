@@ -1,0 +1,269 @@
+{
+  "schema": "parser-studio.field-accuracy-oracle.v0.1",
+  "provenance": "SELF_AUTHORED_SYNTHETIC_NOT_INDEPENDENT_VENDOR_GROUND_TRUTH",
+  "notes": "Tiny deterministic API/schema smoke only; no manufacturer or semantic accuracy inference.",
+  "cases": [
+    {
+      "id": "kv_triplet",
+      "family": "KV",
+      "oracleScope": "COMPLETE",
+      "raw": "src=192.0.2.1 dst=198.51.100.2 action=deny",
+      "fields": [
+        {
+          "path": "src",
+          "value": "192.0.2.1",
+          "startByte": 4,
+          "endByte": 13,
+          "rawLexeme": "192.0.2.1",
+          "occurrence": 0
+        },
+        {
+          "path": "dst",
+          "value": "198.51.100.2",
+          "startByte": 18,
+          "endByte": 30,
+          "rawLexeme": "198.51.100.2",
+          "occurrence": 0
+        },
+        {
+          "path": "action",
+          "value": "deny",
+          "startByte": 38,
+          "endByte": 42,
+          "rawLexeme": "deny",
+          "occurrence": 0
+        }
+      ]
+    },
+    {
+      "id": "quoted_value_contains_kv",
+      "family": "KV_QUOTED",
+      "oracleScope": "COMPLETE",
+      "raw": "action=deny message=\"reason=invalid credentials\"",
+      "fields": [
+        {
+          "path": "action",
+          "value": "deny",
+          "startByte": 7,
+          "endByte": 11,
+          "rawLexeme": "deny",
+          "occurrence": 0
+        },
+        {
+          "path": "message",
+          "value": "reason=invalid credentials",
+          "startByte": 21,
+          "endByte": 47,
+          "rawLexeme": "reason=invalid credentials",
+          "occurrence": 0
+        }
+      ]
+    },
+    {
+      "id": "json_escaped_unicode",
+      "family": "JSON",
+      "oracleScope": "COMPLETE",
+      "raw": "{\"src\":\"192.0.2.1\",\"msg\":\"hello \\uD55C\"}",
+      "fields": [
+        {
+          "path": "src",
+          "value": "192.0.2.1",
+          "startByte": 7,
+          "endByte": 18,
+          "rawLexeme": "\"192.0.2.1\"",
+          "occurrence": 0
+        },
+        {
+          "path": "msg",
+          "value": "hello 한",
+          "startByte": 25,
+          "endByte": 39,
+          "rawLexeme": "\"hello \\uD55C\"",
+          "occurrence": 0
+        }
+      ]
+    },
+    {
+      "id": "cef_extension",
+      "family": "CEF",
+      "oracleScope": "COMPLETE",
+      "raw": "CEF:0|Acme|Edge|1.0|login|Login Failed|5|src=192.0.2.1 dst=198.51.100.2 act=deny",
+      "fields": [
+        {
+          "path": "cef_header.version",
+          "value": "0",
+          "startByte": 4,
+          "endByte": 5,
+          "rawLexeme": "0",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_header.vendor",
+          "value": "Acme",
+          "startByte": 6,
+          "endByte": 10,
+          "rawLexeme": "Acme",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_header.product",
+          "value": "Edge",
+          "startByte": 11,
+          "endByte": 15,
+          "rawLexeme": "Edge",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_header.device_version",
+          "value": "1.0",
+          "startByte": 16,
+          "endByte": 19,
+          "rawLexeme": "1.0",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_header.signature_id",
+          "value": "login",
+          "startByte": 20,
+          "endByte": 25,
+          "rawLexeme": "login",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_header.name",
+          "value": "Login Failed",
+          "startByte": 26,
+          "endByte": 38,
+          "rawLexeme": "Login Failed",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_header.severity",
+          "value": "5",
+          "startByte": 39,
+          "endByte": 40,
+          "rawLexeme": "5",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_extension.src",
+          "value": "192.0.2.1",
+          "startByte": 45,
+          "endByte": 54,
+          "rawLexeme": "192.0.2.1",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_extension.dst",
+          "value": "198.51.100.2",
+          "startByte": 59,
+          "endByte": 71,
+          "rawLexeme": "198.51.100.2",
+          "occurrence": 0
+        },
+        {
+          "path": "cef_extension.act",
+          "value": "deny",
+          "startByte": 76,
+          "endByte": 80,
+          "rawLexeme": "deny",
+          "occurrence": 0
+        }
+      ]
+    },
+    {
+      "id": "rfc5424_utf8_text",
+      "family": "RFC5424",
+      "oracleScope": "COMPLETE",
+      "raw": "<134>1 2026-10-19T09:15:22Z fw01 app - evt - 접근 차단",
+      "fields": [
+        {
+          "path": "syslog.pri",
+          "value": "134",
+          "startByte": 1,
+          "endByte": 4,
+          "rawLexeme": "134",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.version",
+          "value": "1",
+          "startByte": 5,
+          "endByte": 6,
+          "rawLexeme": "1",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.timestamp",
+          "value": "2026-10-19T09:15:22Z",
+          "startByte": 7,
+          "endByte": 27,
+          "rawLexeme": "2026-10-19T09:15:22Z",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.hostname",
+          "value": "fw01",
+          "startByte": 28,
+          "endByte": 32,
+          "rawLexeme": "fw01",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.appname",
+          "value": "app",
+          "startByte": 33,
+          "endByte": 36,
+          "rawLexeme": "app",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.procid",
+          "value": "-",
+          "startByte": 37,
+          "endByte": 38,
+          "rawLexeme": "-",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.msgid",
+          "value": "evt",
+          "startByte": 39,
+          "endByte": 42,
+          "rawLexeme": "evt",
+          "occurrence": 0
+        },
+        {
+          "path": "syslog.structured_data_raw",
+          "value": "-",
+          "startByte": 43,
+          "endByte": 44,
+          "rawLexeme": "-",
+          "occurrence": 0
+        },
+        {
+          "path": "body.message",
+          "value": "접근 차단",
+          "startByte": 45,
+          "endByte": 58,
+          "rawLexeme": "접근 차단",
+          "occurrence": 0
+        }
+      ]
+    },
+    {
+      "id": "unsupported_prose",
+      "family": "UNKNOWN",
+      "oracleScope": "COMPLETE",
+      "raw": "raw prose with no delimited fields",
+      "fields": []
+    },
+    {
+      "id": "unscorable_malformed",
+      "family": "MALFORMED",
+      "oracleScope": "UNSCORABLE",
+      "raw": "CEF:0|truncated|invalid",
+      "fields": []
+    }
+  ]
+}

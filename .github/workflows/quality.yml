@@ -42,6 +42,20 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p 'test_generic_quoted_labels_20261020.py' -v
           python3 -m unittest discover -s tests -p 'test_leef_interpretation_review_20261020.py' -v
+      # Research-only field accuracy scorer and candidate invariants; no
+      # product entry-point import or automatic MDL candidate selection.
+      - name: Offline source-exact field accuracy and shadow scoring
+        run: |
+          python3 -m unittest discover -s tests -p 'test_field_accuracy_shadow_20261022.py' -v
+          python3 scripts/verification/field_accuracy_shadow_poc.py >/tmp/parserstudio-accuracy-shadow-report.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/parserstudio-accuracy-shadow-report.json'))
+          assert data['scorable_cases']==6
+          assert data['product_single_event_baseline']['tp']==26
+          assert not data['holdout_independent_vendor_oracle']
+          assert not data['runtime_or_export_modified']
+          PY
       - name: Mainline offline authoring backend build and HTTP security gate
         run: |
           npm ci --prefix backend --no-audit --no-fund

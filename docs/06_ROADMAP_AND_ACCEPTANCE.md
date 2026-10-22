@@ -1,5 +1,37 @@
 # Current engineering completion ledger — 2026-10-20
 
+## ACC-RESEARCH — Field accuracy and conservative candidate selection (owner request 2026-10-22)
+
+This is a **separate experimental accuracy lane**, not a new runtime engine, UI mode,
+release prerequisite, or permission to merge/deploy the active UX PRs. Preserve
+the existing grammar-first Multi-Pass/Generic Structural/Funnel baseline, native
+DRAFT restrictions and Stellar Cyber **7.0 only** schema. No vendor-specific
+regex patches, DP/sensor calls, runtime LLM parsing, or customer raw logs in Git.
+Do not reopen accepted product/standards tests simply because this lane exists.
+
+| ID | Priority | Work | Completion evidence / acceptance |
+| --- | --- | --- | --- |
+| ACC-0 | P0 | Independent field-level evaluation harness; capture exact original value occurrences (source field path, decoded value, UTF-8 start/end, occurrence), provenance and scorable status | Hand-authored synthetic test oracles clearly separated from independent publisher/manufacturer oracles; no model-derived expectations claimed as independent; per-event precision/recall/F1, exact boundary and false-complete counting; unscorable/partial-gold records cannot inflate a score |
+| ACC-1 | P0 | Span-constrained candidate validation and MDL-inspired **shadow-only** ranking of already available candidates | Baseline/experimental candidates share the exact input and candidate pool; source SHA/bytes, UTF-8 boundaries, unchanged baseline claims and incompatible overlap checked. Grammar-aware decoding is distinguished from original lexeme; unresolved decoding remains review rather than false failure/success. Shadow must not affect public parsing or output |
+| ACC-2 | P0 | Pinned A/B evidence against existing qualified source, residual and adversarial corpora | Source/Oracle hashes and provenance, micro/macro by family, field F1 and recovered-field precision, false-positive/false-complete, baseline-preservation, 95% clustered uncertainty only if sufficient clusters; report p50/p99 latency when sample supports it. Do not claim a global percentage from small or tuned samples |
+| ACC-3 | P1 | Low-shot cross-event residual learning (3/5/10 samples) and unknown-vendor/template holdouts | Reuse current `structural_funnel.py`; test exact residual spans and preservation, abstain where insufficient evidence. No new Grammar Induction engine unless failing shared structure and gains are proven |
+| ACC-4 | P1 | Field-role evidence with abstention, scoped to Stellar 7.0 | Reuse existing alias/type/ambiguous review. Evaluate supported src/dst direction and paired IP:port evidence vs wrong-role rate, never force an unknown role into a normalized field |
+| ACC-5 | P2 / conditional | Offline LLM rule synthesis and typed tree exploration | Research only after ACC-0–4 show a reproducible gap; deterministic runtime and user review, never per-event runtime LLM |
+
+**Gating order:** ACC-0 → ACC-1 (isolated branch, initial synthetic goldens) →
+ACC-2 (independent pinned truth and holdouts). Only if ACC-2 demonstrates
+*better independently scored field precision/F1 without verified regression*
+and acceptable latency should a product integration PR be considered.
+Unproven candidates remain offline shadow/review. Existing qualified
+`SOURCE_PARSED` results are immutable in the product until independent
+counterevidence and explicit scoped acceptance. This lane must not block
+the already active PR #140/#141 novice-UX qualification.
+
+**Critical design detail:** exact original UTF-8 lexeme bytes and parsed/
+decoded field values are distinct for JSON escapes, CEF, LEEF and CSV. Valid
+parent/child nested spans may overlap; only incompatible claims conflict.
+MDL is a ranking *hypothesis*, not independent proof of correctness.
+
 ## Owner-scoped objective clarification — 2026-10-21
 
 **The product is a vendor-agnostic structural security log parser.** Completion

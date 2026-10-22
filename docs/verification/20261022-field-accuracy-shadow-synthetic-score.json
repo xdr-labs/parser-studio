@@ -1,0 +1,225 @@
+{
+  "candidate_count": 7,
+  "cases": 7,
+  "confidence_calibration": "NOT_EVALUATED",
+  "contract": "parser-studio.field-accuracy-mdl-shadow.v0.1",
+  "errors_or_review": [
+    {
+      "case_id_digest": "ad6436160885",
+      "reason": "UNSCORABLE_ORACLE"
+    }
+  ],
+  "fixed_pool_first_candidate": {
+    "f1": 1.0,
+    "false_complete": 0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 26
+  },
+  "hard_audit_rejections": 0,
+  "holdout_independent_vendor_oracle": false,
+  "latency_p99": "INSUFFICIENT_SAMPLE",
+  "manufacturer_wide_accuracy_claim": false,
+  "oracle_sha256": "b82668d0d269eee9349f8f210ee1bebcea27023eec7287b0e0f6639ea385294b",
+  "per_family": {
+    "CEF": {
+      "pool_first": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 10
+      },
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 10
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 10
+      }
+    },
+    "JSON": {
+      "pool_first": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      },
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      }
+    },
+    "KV": {
+      "pool_first": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 3
+      },
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 3
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 3
+      }
+    },
+    "KV_QUOTED": {
+      "pool_first": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      },
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      }
+    },
+    "RFC5424": {
+      "pool_first": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 9
+      },
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 9
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 9
+      }
+    },
+    "UNKNOWN": {
+      "pool_first": {
+        "f1": null,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": null,
+        "recall": null,
+        "tp": 0
+      },
+      "product": {
+        "f1": null,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": null,
+        "recall": null,
+        "tp": 0
+      },
+      "shadow": {
+        "f1": null,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": null,
+        "recall": null,
+        "tp": 0
+      }
+    }
+  },
+  "product_single_event_baseline": {
+    "f1": 1.0,
+    "false_complete": 0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 26
+  },
+  "provenance": "SELF_AUTHORED_SYNTHETIC_NOT_INDEPENDENT_VENDOR_GROUND_TRUTH",
+  "runtime_or_export_modified": false,
+  "same_pool_mdl_proxy_shadow": {
+    "f1": 1.0,
+    "false_complete": 0,
+    "fn": 0,
+    "fp": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 26
+  },
+  "scorable_cases": 6,
+  "shadow_changed_selected_candidate": 0,
+  "unscorable_or_error_cases": 1
+}
