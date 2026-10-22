@@ -37,6 +37,3 @@ test('single Analyze path shows contextual tools without the removed advanced-mo
   await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeDisabled();
   await expect(page.getByRole('button',{name:'Review Fields',exact:true}).last()).toBeDisabled();
 });
-  await groupingHelp.click();
-  await expect(groupingHelp.getByRole('tooltip')).toContainText('free-form text logs');
-});
