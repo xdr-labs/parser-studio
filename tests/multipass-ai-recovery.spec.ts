@@ -1,40 +1,31 @@
 import {test,expect} from '@playwright/test';
-import {createHash} from 'node:crypto';
 
-test.use({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
-const raw='%ASA-4-106023: Deny udp src outside:192.0.2.1/53 dst inside:198.51.100.1/53';
-const response={
- contract:'parser-studio.multipass-source-preview.v0.1',status:'PARTIAL',syntax:'CISCO_ASA_FTD_MESSAGE_ID',
- sourceSha256:createHash('sha256').update(raw).digest('hex'),sourceBytes:Buffer.byteLength(raw),
- fields:{asa:{product:'ASA',severity:'4',message_id:'106023',action:'Deny',protocol:'udp'}},
- spans:[
-  {path:'asa.product',startByte:1,endByte:4},{path:'asa.severity',startByte:5,endByte:6},
-  {path:'asa.message_id',startByte:7,endByte:13},{path:'asa.action',startByte:15,endByte:19},
-  {path:'asa.protocol',startByte:20,endByte:23},
- ],residuals:[{startByte:15,endByte:75}],issues:[],nativeVerified:false,targetVerified:false,
-};
+// The retired Advanced/mobile diagnostic controls are not the user recovery path.
+// This exercises the same source-backed partial Snort event through the desktop
+// Analyze Logs workflow, without a separate local-analysis mode.
+const raw='07/16-09:23:39.153899 [**] [1:1000000:0] "SERVER-WEBAPP Apache Log4j arbitrary code execution attempt" [**] [Classification: Attempted User Privilege Gain] [Priority: 1] [AppID: HTTP] {TCP} 192.168.1.2:50284 -> 192.168.2.3:80';
 
-test('touch selection opens exact extracted-field and residual AI correction scopes',async({page})=>{
- if(process.env.PARSER_STUDIO_LIVE_MULTIPASS!=='1'){
-  await page.route('**/api/v1/multipass/preview',async route=>{
-   const request=route.request();
-   expect(request.method()).toBe('POST');
-   expect(request.postDataJSON()).toEqual({raw});
-   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(response)});
+test('partial security event retains original source and opens a manually reviewed ChatGPT recovery prompt',async({page})=>{
+  const outbound:string[]=[];
+  page.on('request',request=>{
+    if(/api\.openai\.com|api\.anthropic\.com|generativelanguage\.googleapis\.com/.test(request.url()))
+      outbound.push(request.url());
   });
- }
- await page.goto('/');
- await page.getByLabel('Auto Parser raw logs').fill(raw);
- await page.getByRole('button',{name:'Analyze Logs'}).tap();
- await page.getByRole('button',{name:'Advanced'}).tap();
- const engine=page.getByLabel('Deeper local log analysis',{exact:true});
- await expect(engine).toContainText('Needs review');
- const field=page.getByRole('button',{name:'Correct extracted field asa.action'});
- await field.tap();
- await expect(engine).toContainText('Selected field: asa.action');
- await expect(engine).toContainText('Editing extracted field: asa.action');
- await page.getByRole('button',{name:'Review unparsed text',exact:true}).tap();
- await expect(engine).toContainText('Selected text that was not parsed');
- await expect(engine).toContainText('Editing an unparsed source region');
- expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(392);
+  await page.goto('/');
+  await expect(page.getByRole('button',{name:'Tools & Diagnostics'})).toHaveCount(0);
+  await page.getByLabel('Auto Parser raw logs').fill(raw);
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const analysis=page.getByLabel('Beginner analysis summary');
+  await expect(analysis).toContainText('1 event needs attention',{timeout:20000});
+  const problem=page.getByLabel('Parse problem inspector');
+  await expect(problem).toContainText('Attempted User Privilege Gain');
+  await expect(problem).toContainText('Text not yet assigned to fields');
+  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
+  await problem.getByRole('button',{name:'Fix with ChatGPT'}).click();
+  const prompt=page.getByLabel('Generated ChatGPT repair prompt');
+  await expect(prompt).toContainText('Detected syntax:');
+  await expect(prompt).toContainText('Original problem event:');
+  await expect(prompt).toContainText('192.168.1.2:50284');
+  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(raw);
+  expect(outbound).toEqual([]);
 });

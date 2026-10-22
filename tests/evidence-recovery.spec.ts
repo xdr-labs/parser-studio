@@ -26,7 +26,7 @@ test.describe('removed sensor/evidence UI and default-deny backend boundary',()=
     await page.getByRole('button',{name:'Analyze Logs'}).click();
     await expect(page.getByLabel('Beginner analysis summary'))
       .toContainText('parsed completely');
-    await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
+    await expect(page.getByRole('button',{name:'Tools & Diagnostics'})).toHaveCount(0);
     for(const removed of [
       'Authorized Test Lab session recovery',
       'Authorized Test Lab offline evidence',
@@ -41,7 +41,8 @@ test.describe('removed sensor/evidence UI and default-deny backend boundary',()=
       'Read Authorized Interflow Comparison',
       'Download Verified Redacted Evidence JSON',
     ])await expect(page.getByRole('button',{name:button,exact:true})).toHaveCount(0);
-    await page.getByRole('button',{name:/Return to Beginner Mode/}).click();
+    // The original user flow is already in the sole Auto Parser mode.
+    await expect(page.getByRole('button',{name:/Return to Beginner Mode/})).toHaveCount(0);
     await page.getByRole('button',{name:'Review Fields',exact:true}).click();
     await expect(page.getByLabel('Review Fields stage')).toBeVisible();
     await page.getByRole('button',{name:'Map Fields',exact:true}).click();
