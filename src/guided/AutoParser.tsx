@@ -14,12 +14,9 @@ import {prepareAutoParserDraft} from './autoParserDraft';
 import {selectDraftFormat} from './draftFormatTransition';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {compileReviewedRecipeV02} from './recipeV2BackendClient';
-import {matchKnownParserFingerprints,type FingerprintMatchReport} from './knownParserFingerprints';
 import {materializeStructuralGroupSource,type StructuralHint,type StructuralMiningReport} from './localPatternMining';
 import NormalizationMappingReview from './NormalizationMappingReview';
 import {HelpTip,StageGuide} from './BeginnerHelp';
-import {checkPrivateDrain3Availability,runPrivateDrain3Review,
-  type Drain3Availability,type Drain3Report} from './drain3OfflineClient';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import {DEFAULT_PARSER_LISTENER_PORT,defaultGuidedOptions} from './contract';
@@ -155,15 +152,9 @@ export default function AutoParser({
  const [evidence,setEvidence]=useState<Evidence|null>(null);
  const [pair,setPair]=useState<Pair|null>(null);
  const [zip,setZip]=useState<Zip|null>(null);
- const [fingerprints,setFingerprints]=useState<{key:string;value:FingerprintMatchReport}|null>(null);
  const [structural,setStructural]=useState<{key:string;value:StructuralMiningReport}|null>(null);
  const [parserSetOrigin,setParserSetOrigin]=useState<ParserSetOrigin|null>(null);
  const parserSetOriginRef=useRef<ParserSetOrigin|null>(null);
- const [drainAvailability,setDrainAvailability]=useState<'UNCHECKED'|'ERROR'|Drain3Availability>('UNCHECKED');
- const [drainConsent,setDrainConsent]=useState(false);
- const [drainHoldout,setDrainHoldout]=useState('');
- const [drainResult,setDrainResult]=useState<{key:string;holdout:string;value:Drain3Report}|null>(null);
- const [drainNotice,setDrainNotice]=useState('');
  const [logicalReview,setLogicalReview]=useState<{key:string;value:LogicalBoundaryReport}|null>(null);
  const epoch=useRef(0);
  const identity=JSON.stringify([draft,sample,namedLogTypes]);
@@ -175,9 +166,7 @@ export default function AutoParser({
    [sample,draft.guided?.eventBoundary,draft.forwarder]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);
-   setFingerprints(null);setStructural(null);
-   setDrainAvailability('UNCHECKED');setDrainConsent(false);
-   setDrainResult(null);setDrainNotice('');
+   setStructural(null);
    setLogicalReview(null);
    setBusy(false);setMessage('');setReviewBlock(null);
  },[identity]);
@@ -355,13 +344,10 @@ export default function AutoParser({
  const currentPair=pair?.key===identity?pair.value:null;
  const currentEvidence=evidence?.key===identity?evidence:null;
  const currentZip=zip?.key===identity?zip:null;
- const currentFingerprints=fingerprints?.key===identity?fingerprints.value:null;
  const currentStructural=structural?.key===identity?structural.value:null;
  const parserSetCandidates=currentStructural?.status==='CANDIDATES'?
    currentStructural.groups.filter(group=>group.count>=3):[];
  const parserSetCovered=parserSetCandidates.reduce((sum,group)=>sum+group.count,0);
- const currentDrain=drainResult?.key===identity&&
-   drainResult.holdout===drainHoldout?drainResult.value:null;
  const currentLogicalReview=logicalReview?.key===identity?logicalReview.value:null;
  const records=suite?.events??[];
  const chosen=records[selected]??records[0];
@@ -515,52 +501,6 @@ export default function AutoParser({
        setEvidence({key:expected,status:'FAILED',total:report.sourceCount,
          issues:['The current draft could not pass verified backend compilation and file integrity checks.']});
      }
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- function findKnownTemplates(){
-   if(!suite||busy||pending)return;
-   try{setFingerprints({key:identity,value:matchKnownParserFingerprints(sample,suite)});}
-   catch{setFingerprints(null);setMessage('The local template review could not verify this exact source.');}
- }
- async function probeDrain3(){
-   if(busy||pending)return;
-   const token=++epoch.current,expected=identity;
-   setBusy(true);setDrainNotice('');setDrainResult(null);
-   try{
-     const availability=await checkPrivateDrain3Availability();
-     if(token===epoch.current&&currentRef.current===expected){
-       setDrainAvailability(availability);setDrainConsent(false);
-     }
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected){
-       setDrainAvailability('ERROR');
-       setDrainNotice('The private offline miner capability could not be verified.');
-     }
-   }finally{if(token===epoch.current)setBusy(false);}
- }
- async function runApprovedDrain3(){
-   if(drainAvailability!=='AVAILABLE'||!drainConsent||busy||pending||!suite)return;
-   const expected=identity,requestedHoldout=drainHoldout;
-   const records=splitEvents(sample,'single-line',MAX_EVENTS+1);
-   const hold=drainHoldout.trim()?splitEvents(drainHoldout,'single-line',MAX_EVENTS+1):[];
-   if(!records.length||records.length>MAX_EVENTS||hold.length>MAX_EVENTS||
-     records.some((entry,i)=>entry.raw!==suite.events[i]?.raw||
-       entry.line!==suite.events[i]?.line)||
-     suite.counts.total!==records.length){
-     setDrainNotice('Original browser source accounting is not current; run local review again.');
-     return;
-   }
-   const token=++epoch.current;
-   setBusy(true);setDrainResult(null);setDrainNotice('');
-   try{
-     const result=await runPrivateDrain3Review(
-       records.map(item=>item.raw),hold.map(item=>item.raw),true);
-     if(token===epoch.current&&currentRef.current===expected&&
-       drainHoldout===requestedHoldout)
-       setDrainResult({key:expected,holdout:requestedHoldout,value:result});
-   }catch{
-     if(token===epoch.current&&currentRef.current===expected)
-       setDrainNotice('Private Drain3 request rejected or unavailable. No mapping changed.');
    }finally{if(token===epoch.current)setBusy(false);}
  }
  async function mineUnknownShapes(){
@@ -855,9 +795,6 @@ export default function AutoParser({
        </div>
        <AnalysisProgressPanel progress={analysisRun.progress} interruption={analysisRun.interruption}
          onCancel={analysisRun.cancel}/>
-       <ManualSourceBoundaryReview source={sample} sourceInput={sourceLogRef}/>
-       <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
-       <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
          Parser Studio could not complete analysis. Your logs were preserved. Retry Analyze Logs or use ChatGPT Assisted Parser for an unfamiliar format.
        </p>}
@@ -1004,9 +941,23 @@ export default function AutoParser({
          </div>
        </div>}
        {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
-         <strong>{report.accounted}/{report.sourceCount} events checked</strong>
-         <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally</span>
-         <span>{report.unsupported} event{report.unsupported===1?'':'s'} {report.unsupported===1?'needs':'need'} attention · Local analysis only</span>
+         <strong>{report.accounted}/{report.sourceCount} events checked in the initial format scan</strong>
+         <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally in the preliminary format scan only</span>
+         <span className="sr-only">{report.unsupported} events need attention in the preliminary format scan; this is not the final parsing result</span>
+         {currentMultiPassReview?<>
+           <span aria-label="Full parser analysis accounting">
+             Full parser analysis: {reviewedCandidateComplete||neutralCsvComplete
+               ?currentMultiPassReview.events.length
+               :currentMultiPassReview.events.filter(event=>event.preview.status==='SOURCE_PARSED').length}
+             /{currentMultiPassReview.events.length} logical events have reviewed source fields;
+             {' '}{reviewedCandidateComplete||neutralCsvComplete?0:currentMultiPassReview.events.filter(
+               event=>event.preview.status!=='SOURCE_PARSED').length} need review.
+           </span>
+           {(currentMultiPassReview.metadataLines??0)>0&&
+             <span>{currentMultiPassReview.metadataLines} schema/header lines are source metadata, not log events.</span>}
+           {report.sourceCount!==currentMultiPassReview.events.length&&
+             <span>The initial format scan and full analysis count different units. Use the full analysis for parser readiness.</span>}
+         </>:<span>Initial scan only — click Analyze Logs to see parsed, partial and unsupported results.</span>}
          {advanced&&report.families.map(x=><span key={x.envelope+'/'+x.body}>
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
@@ -1098,7 +1049,6 @@ export default function AutoParser({
          <HelpTip label="Why are some events blocked?"
            text="Security logs can contain unusual headers, broken timestamps, several lines per event, or vendor-specific text. Parser Studio stops instead of guessing when that could lose data or create the wrong fields."/>
        </p>}
-       <ExistingParserReviewPanel onRestore={restoreExistingProject}/>
        {advanced&&<details className="auto-parser-recipe" aria-label="Multi-line event boundary tool">
          <summary className="beginner-tool-summary">Check where multi-line events begin and end
            <HelpTip label="Multi-line event help"
@@ -1133,95 +1083,6 @@ export default function AutoParser({
            </span>}
          </div>}
        </details>}
-       <details className="auto-parser-recipe" aria-label="Private text grouping tool">
-         <summary className="beginner-tool-summary">Group similar text logs
-           <HelpTip label="Group similar text logs"
-             text="Use this when you have many free-form text logs that look similar but Parser Studio cannot find stable fields. The private service groups repeated text shapes so you can decide whether they should share one parser."/>
-         </summary>
-         <span className="beginner-tool-when">Use when: many unresolved text logs repeat the same general shape. Skip it for JSON, key/value, CEF, LEEF, or other logs that already parse cleanly.</span>
-         <p>This optional tool can send only the sample you approve to your private Parser Studio analysis service.
-           It does not send data to an external AI service, edit your parser automatically, or deploy anything.</p>
-         <button type="button" disabled={busy||pending}
-           onClick={()=>{void probeDrain3();}}>
-           Check whether private grouping is available
-         </button>
-         {drainAvailability==='DISABLED'&&<p role="status">
-           Private text grouping is not available. You can continue using the normal local analysis.
-         </p>}
-         {drainAvailability==='ERROR'&&<p role="status">
-           Parser Studio could not verify the private grouping service. No sample was sent.
-         </p>}
-         {drainAvailability==='AVAILABLE'&&<>
-           <label className="auto-parser-persist-label">
-             <input type="checkbox" checked={drainConsent}
-               onChange={e=>{
-                 setDrainConsent(e.target.checked);
-                 setDrainResult(null);setDrainNotice('');
-               }}/>
-             I approve sending this sample to my private Parser Studio service for this one grouping check.
-           </label>
-           <label>Optional different examples for a second check
-             <HelpTip label="Different examples"
-               text="Paste a few different logs from the same source. Parser Studio uses them only to see whether the discovered text groups also fit examples that were not used to form the groups."/>
-             <textarea aria-label="Different example logs" rows={3}
-               spellCheck={false} maxLength={MAX_LOCAL_TEXT}
-               value={drainHoldout}
-               onChange={e=>{
-                 setDrainHoldout(e.target.value);setDrainResult(null);
-                 setDrainNotice('');
-               }}/>
-           </label>
-           <button type="button" disabled={!drainConsent||busy||pending||
-             !sample.trim()||!suite}
-             onClick={()=>{void runApprovedDrain3();}}>
-             Group Similar Logs
-           </button>
-         </>}
-         {drainNotice&&<p role="status">{drainNotice}</p>}
-         {currentDrain&&<div role="status" aria-label="Private text grouping results">
-           <strong>{currentDrain.accounted}/{currentDrain.sourceCount} events checked · {currentDrain.groupCount} similar-text group{currentDrain.groupCount===1?'':'s'}</strong>
-           <span>{currentDrain.holdoutMatched}/{currentDrain.holdoutCount} different example{currentDrain.holdoutCount===1?'':'s'} matched the discovered groups</span>
-           {currentDrain.groups.map((group,index)=><span key={group.clusterId}>
-             Group {index+1}: {group.trainingCount} sample event{group.trainingCount===1?'':'s'} ·
-             {group.holdoutMatches} different example match{group.holdoutMatches===1?'':'es'}
-           </span>)}
-           <span>This is a grouping hint only. Review the groups before using them to create parser rules.</span>
-           <details><summary>Technical details</summary><span>{currentDrain.engine}</span></details>
-         </div>}
-       </details>
-       <details className="auto-parser-recipe" aria-label="Known log shape matcher">
-         <summary className="beginner-tool-summary">Find a similar known log shape
-           <HelpTip label="Find a similar known log shape"
-             text="Use this when you are unsure what kind of log you pasted. Parser Studio compares field names and structure with safe built-in examples. It never applies a parser automatically."/>
-         </summary>
-         <span className="beginner-tool-when">Use when: the log looks unfamiliar and normal analysis has not given you a clear next step.</span>
-         <p>This check compares only the shape and field names with reviewed example patterns.
-           It does not send log values anywhere and does not change your parser.</p>
-         <button type="button" disabled={busy||pending||!suite}
-           onClick={findKnownTemplates}>Find Similar Known Shapes</button>
-         <button type="button" disabled={busy||pending||!suite}
-           onClick={()=>{void mineUnknownShapes();}}>Group Similar Unknown Shapes</button>
-         {currentStructural&&<div role="status" aria-label="Similar-shape grouping results">
-           <strong>{currentStructural.unknownCount} unfamiliar event{currentStructural.unknownCount===1?'':'s'} ·
-             {currentStructural.groupedCount} placed into similar-shape groups</strong>
-           {currentStructural.groups.map((group,i)=><span key={i}>
-             Group {i+1}: {group.count} event{group.count===1?'':'s'}
-           </span>)}
-           <span>These groups are suggestions only. No parser rule was created or applied automatically.</span>
-           <details><summary>Technical shape identifiers</summary>
-             {currentStructural.groups.map((group,i)=><span key={i}>{group.fingerprint}</span>)}
-           </details>
-         </div>}
-         {currentFingerprints&&<div role="status" aria-label="Known shape comparison results">
-           <strong>{currentFingerprints.sourceCount} event{currentFingerprints.sourceCount===1?'':'s'} compared with known examples</strong>
-           {currentFingerprints.hints.length===0&&
-             <span>No close known shape was found. Nothing was changed.</span>}
-           {currentFingerprints.hints.map(hint=><span key={hint.id}>
-             Similar to {hint.label}: {hint.matchedFieldCount}/{hint.expectedFieldCount} expected field names were present consistently
-           </span>)}
-           <span>Use this only as a clue about the log family; review the actual extracted fields before continuing.</span>
-         </div>}
-       </details>
        {!advanced&&sample.trim()&&!currentMultiPassReview&&
          <p className="beginner-next-step" role="status">Analyze the logs first. Parser Studio will not create a parser from an unreviewed sample.</p>}
        {!advanced&&currentMultiPassReview&&!beginnerResolved&&
@@ -1244,6 +1105,16 @@ export default function AutoParser({
          disabled={!canReview} onClick={()=>{void review();}}>
          {busy?'Checking the parser…':!advanced&&beginnerResolved&&pending?'Preparing Parser Draft…':advanced?'Review Detected Results':'Review Fields'} <ArrowRight size={16}/>
        </button>
+       <div className="auto-parser-optional-actions" aria-label="Optional actions for special sources">
+         <strong>Other actions — skip these for ordinary logs</strong>
+         <p>Use these only for forwarded log wrappers, an offline Python test sender,
+           or an existing parser file. They do not replace Analyze Logs.
+           For ordinary parsed events, continue to Review Fields.</p>
+         <ManualSourceBoundaryReview source={sample} sourceInput={sourceLogRef}/>
+         <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
+         <PythonTestSenderPanel source={sample} draft={draft}/>
+         <ExistingParserReviewPanel onRestore={restoreExistingProject}/>
+       </div>
      </section>}
      {step===1&&<section aria-label="Review Fields stage">
        <h2>Review Fields <HelpTip label="Review Fields"
