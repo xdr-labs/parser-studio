@@ -72,7 +72,6 @@ export default function App(){
   const [assistedSolutionInfo,setAssistedSolutionInfo]=useState<AssistedSolutionInfo>({
     vendor:'',product:'',version:'',delivery:'',
   });
-  const [assistedSharingExamples,setAssistedSharingExamples]=useState<Record<string,string>>({});
   const updateNamedLogTypes=(groups:NamedLogType[])=>{
     setNamedLogTypes(groups);
     setSample(assembleNamedLogs(groups).source);
@@ -83,7 +82,6 @@ export default function App(){
       'This action switches from separately named log types to one source sample. '+
       'The combined original logs remain in the editor, but group labels will be cleared. Continue?'))return;
     setNamedLogTypes(null);
-    setAssistedSharingExamples({});
     setSample(value);
   };
   const enableNamedLogTypes=()=>updateNamedLogTypes([
@@ -93,9 +91,7 @@ export default function App(){
   const exitNamedLogTypes=()=>{
     if(!window.confirm('Keep all combined sample logs and return to a single text box? Log type names will no longer be editable.'))return;
     setNamedLogTypes(null);
-    setAssistedSharingExamples({});
   };
-  const [advanced,setAdvanced]=useState(false);
   const [versionsOpen,setVersionsOpen]=useState(false);
   const [restoredEpoch,setRestoredEpoch]=useState(0);
   const [datasetName,setDatasetName]=useState('No sample selected');
@@ -109,19 +105,17 @@ export default function App(){
     setSample(restoredNamedSource(version).source);
     setNamedLogTypes(version.logTypes?structuredClone(version.logTypes):null);
     setAssistedSolutionInfo({vendor:'',product:'',version:'',delivery:''});
-    setAssistedSharingExamples({});
     setDraft(structuredClone(version.draft));
     setDatasetName(version.datasetName);setWorkspace('auto');
-    setAdvanced(false);setRestoredEpoch(old=>old+1);
+    setRestoredEpoch(old=>old+1);
   };
   const live=useLivePreview(sample,draft);
   const reset=()=>{
     if(sample.trim()&&!window.confirm('Clear the current sample and create a new parser?'))return;
     setDraft(createDraft());setSample('');setNamedLogTypes(null);
     setAssistedSolutionInfo({vendor:'',product:'',version:'',delivery:''});
-    setAssistedSharingExamples({});
     setDatasetName('No sample selected');
-    setWorkspace('auto');setAdvanced(false);
+    setWorkspace('auto');
   };
   const preview=(candidate:ParserDraft,source?:string)=>runInWorker(source??sample,candidate);
   return <div className="app-shell two-path-shell">
@@ -163,15 +157,6 @@ export default function App(){
             <HelpTip label="Local workspace privacy"
               text="Auto Parser analysis happens locally unless you explicitly choose a feature that says it will send data elsewhere. ChatGPT Assisted uses manual copy and paste."/></span>
           <span className="topbar-help-action">
-            <button type="button" className="button secondary"
-              aria-label={advanced?'Return to Beginner Mode – hide Tools & Diagnostics':'Advanced Tools & Diagnostics'}
-              aria-pressed={advanced} onClick={()=>setAdvanced(value=>!value)}>
-              {advanced?'Hide Tools':'Tools & Diagnostics'}
-            </button>
-            <HelpTip label="When should I open Tools & Diagnostics?"
-              text="Open this only when normal Auto Parser guidance is not enough, or when you need to inspect an existing parser, multi-line boundaries, repeated text patterns, or technical evidence."/>
-          </span>
-          <span className="topbar-help-action">
             <button type="button" className="button secondary" aria-expanded={versionsOpen}
               aria-controls="local-version-workspace"
               onClick={()=>setVersionsOpen(value=>!value)}>
@@ -204,14 +189,12 @@ export default function App(){
         suite={live.suite} pending={live.pending}
         runPreview={preview}
         onChatGPT={()=>setWorkspace('chatgpt')}
-        advanced={advanced}
+        advanced={false}
       />:<ChatGPTAssist key={restoredEpoch}
         draft={draft} setDraft={setDraft} sample={sample}
         namedLogTypes={namedLogTypes} onEnableNamedLogTypes={enableNamedLogTypes}
         onChangeNamedLogTypes={updateNamedLogTypes} onExitNamedLogTypes={exitNamedLogTypes}
         solutionInfoValue={assistedSolutionInfo} onSolutionInfoChange={setAssistedSolutionInfo}
-        reviewedSharingExamples={assistedSharingExamples}
-        onReviewedSharingExamplesChange={setAssistedSharingExamples}
         setSample={value=>{
           usePlainSample(value);setDatasetName('ChatGPT local samples');
         }}

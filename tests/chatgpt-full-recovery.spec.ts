@@ -30,7 +30,6 @@ test('RAW_ONLY ChatGPT recovery reaches verified DRAFT Ruby and CONF through the
  await expect(page.getByLabel('Parser listener port')).toHaveValue('6801');
  await page.getByLabel('Parser listener port').fill('6819');
  await page.getByLabel('ChatGPT local sample logs').fill(source);
- await page.getByLabel('ChatGPT redacted examples').fill('allow,REDACTED_IP\ndeny,REDACTED_IP');
   const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
  await expect(prepare).toBeEnabled();
  await prepare.click();

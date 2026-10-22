@@ -33,11 +33,14 @@ test('novice reviews three Stellar 7.0 event families and downloads one scoped D
       expect(request.postData()??'').not.toContain(privateValue);
   });
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const input=page.getByLabel('Auto Parser raw logs');
   await input.fill(raw);
-  await expect(page.getByLabel('Automatic event accounting')).toContainText('6/6 events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  await expect(page.getByLabel('Automatic event accounting'))
+    .toContainText('6/6 events analyzed locally',{timeout:20000});
+  const reviewButton=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(reviewButton).toBeEnabled({timeout:20000});
+  await reviewButton.click();
   const stage=page.getByLabel('Review Fields stage');
   await expect(stage).toBeVisible();
   const panel=page.locator('details[aria-label="Configure one parser for event types"]');

@@ -112,7 +112,6 @@ async function namedUserJourney(page:Page){
 
 async function assistedUserJourney(page:Page){
   await page.getByLabel('ChatGPT local sample logs').fill(assistedSource);
-  await page.getByLabel('ChatGPT redacted examples').fill('allow,REDACTED_IP\ndeny,REDACTED_IP');
   await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
   await expect(page.getByLabel('ChatGPT copyable prompt')).toContainText('FULL_RECOVERY');
   await page.getByLabel('ChatGPT result JSON').fill(JSON.stringify(proposal()));

@@ -58,16 +58,21 @@ test.skip(
   process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
   'Requires the explicit exact-pinned or scoped loopback authoring backend.'
 );
-test('selected-area AI approves one bounded split then merge and compiles exact v0.1/v0.2 DRAFT pair',async({page})=>{
+test('current Auto Parser reviews bounded AI split and merge with independent holdouts before generating DRAFT files',async({page})=>{
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(source);
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled({timeout:20000});
+ await review.click();
  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+ await page.getByLabel('Optional AI field correction').locator('summary').click();
 
  await qualifyAndApply(page,recipe(true,false),'Apply Verified Fix','Split #1');
  await qualifyAndApply(page,recipe(true,true),'Apply Verified Fix','Merge #2');
+ await expect(page.getByLabel('Applied normalization refinements')).toContainText('Split #1');
+ await expect(page.getByLabel('Applied normalization refinements')).toContainText('Merge #2');
+ await expect(page.getByLabel('Applied normalization refinements')).not.toContainText('198.51.100.10');
 
  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
  const create=page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'});
@@ -75,24 +80,13 @@ test('selected-area AI approves one bounded split then merge and compiles exact 
  await create.click();
  await expect(page.getByLabel('Create Parser stage')).toBeVisible();
  const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
+ const recipeGenerated=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&r.request().method()==='POST');
  await page.getByRole('button',{name:'Create Parser Files'}).click();
  expect((await generatedResponse).status()).toBe(200);
+ expect((await recipeGenerated).status()).toBe(200);
  const generated=page.getByLabel('Generated parser files');
  await expect(generated).toContainText('Parser files created successfully');
-
- await page.getByLabel('Parser-building steps review').locator('summary').click();
- await page.getByRole('button',{name:'Review Staged Recipe'}).click();
- const reviewed=page.getByRole('status',{name:'Parser-building steps',exact:true});
- await expect(reviewed).toContainText('split_field');
- await expect(reviewed).toContainText('merge_fields');
- await expect(reviewed).not.toContainText('198.51.100.10');
-
- const recipeGenerated=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
-   r.request().method()==='POST');
- await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
- expect((await recipeGenerated).status()).toBe(200);
- const evidence=page.getByLabel('Parser-building step verification result');
- await expect(evidence).toContainText('v0.1 pair SHA MATCHED');
- await expect(evidence).toContainText('Native user parser NOT VERIFIED');
- await expect(evidence).toContainText('Stellar DP import NOT VERIFIED');
+ await generated.getByLabel('Parser file verification details').locator('summary').click();
+ await expect(generated.getByLabel('Parser file verification details'))
+   .toContainText('Native parser runtime and Stellar Cyber target not verified');
 });

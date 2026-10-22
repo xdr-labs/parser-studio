@@ -11,12 +11,14 @@ test('manual Stellar 7.0 official hash selection never turns invalid source valu
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const input=page.getByLabel('Auto Parser raw logs');
   await input.fill(source);
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Automatic event accounting'))
-    .toContainText('2/2 events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+    .toContainText('2/2 events analyzed locally',{timeout:20000});
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
   const stage=page.getByLabel('Map Fields stage');
   await expect(stage).toBeVisible();

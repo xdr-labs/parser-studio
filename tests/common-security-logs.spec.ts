@@ -158,34 +158,32 @@ test('common EDR JSON gets automatic Stellar mappings instead of leaving every f
   await expectMapping('action','action');
 });
 
-test('single-line logs never show a contradictory multi-line review-required result',async({page})=>{
+test('single-line logs retain accurate event accounting without an obsolete multi-line tool',async({page})=>{
   const raw='date=2026-10-15 time=00:04:12 devname="FGT-EDGE01" action="blocked" srcip=192.0.2.10 dstip=198.51.100.20 dstport=443';
   await analyze(page,raw);
-  const advanced=page.getByRole('button',{name:'Advanced'});
-  if(await advanced.count())await advanced.click();
-  const tool=page.getByLabel('Multi-line event boundary tool');
-  await tool.locator('summary').click();
-  await tool.getByRole('button',{name:'Review Logical Event Boundaries'}).click();
-  const result=tool.getByLabel('Reviewed logical boundaries');
-  await expect(result).toContainText('No multi-line boundary review is needed');
-  await expect(result).toContainText('already on one physical line');
-  await expect(result).not.toContainText('REVIEW REQUIRED');
+  const summary=page.getByLabel('Beginner analysis summary');
+  await expect(summary).toContainText('1 of 1 log event parsed completely');
+  await expect(summary).not.toContainText('REVIEW REQUIRED');
+  await expect(page.getByLabel('Multi-line event boundary tool')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeVisible();
 });
 
-test('ChatGPT assist keeps its creation path and novice prompt preparation starts with a safe example',async({page})=>{
+test('ChatGPT Assisted keeps original user logs and provides warning instead of fake redaction example',async({page})=>{
   await page.goto('/');
   const nav=page.getByRole('complementary',{name:'Parser Studio navigation'});
   await expect(nav.locator('button.rail-link')).toHaveCount(2);
-  await expect(nav.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true})).toBeVisible();
   await nav.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
   await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
-  await page.getByLabel('ChatGPT local sample logs')
-    .fill('action=deny src_ip=192.0.2.20 dst_ip=198.51.100.20 dst_port=443');
-  const example=page.getByLabel('ChatGPT redacted examples');
-  await expect(example).toHaveValue(/EXAMPLE-FW/);
-  await expect(example).toHaveValue(/192\.0\.2\.10/);
-    const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
-  await expect(prepare).toBeEnabled({timeout:10_000});
+  const original='action=deny src_ip=192.0.2.20 dst_ip=198.51.100.20 dst_port=443';
+  await page.getByLabel('ChatGPT local sample logs').fill(original);
+  await expect(page.getByLabel('ChatGPT redacted examples')).toHaveCount(0);
+  await expect(page.getByRole('alert').filter({hasText:'The ChatGPT prompt includes your original log text'})).toBeVisible();
+  const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
+  await expect(prepare).toBeEnabled({timeout:10000});
   await prepare.click();
-  await expect(page.getByLabel('ChatGPT prepared prompt')).toBeVisible();
+  const prompt=page.getByLabel('ChatGPT copyable prompt');
+  await expect(prompt).toBeVisible({timeout:20000});
+  const source=await prompt.inputValue();
+  expect(source).toContain(original);
+  expect(source).not.toContain('EXAMPLE-FW');
 });

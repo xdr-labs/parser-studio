@@ -156,11 +156,11 @@ const cases=[
 async function openMapping(page:Page,rows:readonly string[]){
   const sample=rows.join('\n');
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced'}).click();
   await page.getByLabel('Auto Parser raw logs').fill(sample);
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText(rows.length+'/'+rows.length+' events analyzed locally');
-  const review=page.getByRole('button',{name:'Review Detected Results'});
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled();
   await review.click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();

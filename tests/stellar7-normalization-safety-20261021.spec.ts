@@ -4,10 +4,13 @@ import {readFile} from 'node:fs/promises';
 
 async function goToMapFields(page:import('@playwright/test').Page,raw:string){
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced'}).click();
   await page.getByLabel('Auto Parser raw logs').fill(raw);
-  await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  await expect(page.getByLabel('Automatic event accounting'))
+    .toContainText('2/2 events analyzed locally',{timeout:20000});
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
   const map=page.getByLabel('Map Fields stage');

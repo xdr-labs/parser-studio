@@ -18,8 +18,9 @@ test('ChatGPT Assisted preserves reviewed multi-type solution context and serves
   await expect(original).toHaveAttribute('readonly','');
   expect(await original.inputValue()).toContain(logA);
   expect(await original.inputValue()).toContain(logB);
-  await page.getByLabel('ChatGPT sharing example 1').fill('event_type=threat action=deny src_ip=192.0.2.10 dst_port=443 threat_score=7');
-  await page.getByLabel('ChatGPT sharing example 2').fill('event_type=user action=login src_ip=192.0.2.11 dst_port=443 username=[REDACTED]');
+  await expect(page.getByLabel('ChatGPT sharing example 1')).toHaveCount(0);
+  await expect(page.getByLabel('ChatGPT sharing example 2')).toHaveCount(0);
+  await expect(page.getByRole('alert').filter({hasText:'The ChatGPT prompt includes your original log text'})).toBeVisible();
   const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
   await expect(prepare).toBeEnabled({timeout:15000});
   await prepare.click();
@@ -31,12 +32,12 @@ test('ChatGPT Assisted preserves reviewed multi-type solution context and serves
   expect(text).toContain('"name":"Threat"');
   expect(text).toContain('"name":"User"');
   expect(text).toContain('reject-unknown behavior');
-  expect(text).not.toContain('10.77.88.99');
-  expect(text).not.toContain('10.77.88.98');
+  expect(text).toContain('10.77.88.99');
+  expect(text).toContain('10.77.88.98');
   await page.getByRole('button',{name:'Review shared extraction format in Auto Parser'}).click();
   await page.getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
   await expect(page.getByLabel('ChatGPT solution vendor')).toHaveValue('Example Network Vendor');
-  await expect(page.getByLabel('ChatGPT sharing example 1')).toHaveValue(/192\.0\.2\.10/);
+  await expect(page.getByLabel('ChatGPT sharing example 1')).toHaveCount(0);
   const icon=await request.get('/favicon.svg');
   expect(icon.status()).toBe(200);
   expect(icon.headers()['content-type']).toContain('image/svg+xml');

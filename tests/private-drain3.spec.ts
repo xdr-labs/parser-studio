@@ -47,8 +47,6 @@ test('P1 user explicitly probes auth-only availability then consents before priv
      body:JSON.stringify(result)});
  });
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
- await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(logs);
  const block=page.getByLabel('Private text grouping tool');
  await expect(block).toBeVisible();
@@ -86,8 +84,6 @@ test('P1 disabled private Drain3 never presents consent or posts a source; brows
      body:JSON.stringify({error:'DRAIN3_DISABLED'})});
  });
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
- await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(logs);
  const block=page.getByLabel('Private text grouping tool');
  await expect(block).toBeVisible();
