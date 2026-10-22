@@ -55,12 +55,10 @@ async function mockBackend(page:Page){
 }
 async function begin(page:Page){
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByLabel('Auto Parser raw logs').fill(input);
  await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ await page.getByRole('button',{name:'Review Fields',exact:true}).click();
  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 }
 test('new visitor sees only the two supported creation methods and a four-step Auto Parser',async({page})=>{
@@ -106,31 +104,31 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
 test('mixed families and unknown logs are not dropped or transmitted to validation',async({page})=>{
  const posts=await mockBackend(page);
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByLabel('Auto Parser raw logs').fill(input+'\naction=allow src_ip=192.0.2.10\nMALFORMED_SECRET');
  await expect(page.getByLabel('Automatic event accounting')).toContainText('4/4 events analyzed locally');
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
- await expect(page.getByRole('alert')).toContainText('unsupported family combination, malformed, or unrecognized');
+ await expect(page.getByLabel('Beginner analysis summary'))
+   .toContainText('1 event needs attention');
+ await expect(page.getByText('Some events could not be understood safely.')).toBeVisible();
  const createStep=page.getByRole('navigation',{name:'Auto Parser steps'})
    .getByRole('button',{name:/Create Parser/});
  await expect(createStep).toHaveClass(/locked/);
  await createStep.click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
- await expect(page.getByRole('status')).toContainText('Start with Add Logs');
+ await expect(page.locator('.beginner-navigation-hint')).toContainText('Start with Add Logs');
  expect(posts()).toBe(0);
 });
 test('denied backend metadata blocks beginner compilation and does not exfiltrate samples',async({page})=>{
  await page.route('**/api/v1/parser-pairs/capabilities',route=>route.fulfill({status:403,
    contentType:'application/json',body:JSON.stringify({error:'CAPABILITY_DISABLED'})}));
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByLabel('Auto Parser raw logs').fill(input);
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled();
+ await review.click();
  await expect(page.getByRole('alert')).toContainText('unavailable or access was denied');
  await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
@@ -139,14 +137,12 @@ test('narrow viewport allows keyboard controls, avoids horizontal overflow, and 
  await page.setViewportSize({width:390,height:844});
  await mockBackend(page);
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(input);
  await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2');
  await expect(page.evaluate(()=>document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(392);
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- const review=page.getByRole('button',{name:'Review Detected Results'});
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
  await expect(review).toBeEnabled();
  await review.focus();
  await expect(review).toBeFocused();

@@ -20,23 +20,19 @@ test('first-time user sees one guided path, contextual help, and no empty techni
   await expect(page.getByRole('status')).toContainText('Start with Add Logs');
 });
 
-test('troubleshooting mode explains when each optional tool should be used without leading with internal engine names',async({page})=>{
+test('single-analysis mode still exposes parser import without retired diagnostics tools',async({page})=>{
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
-
-  await expect(page.getByLabel('Troubleshooting tools guidance')).toBeVisible();
-  await expect(page.getByText('Deeper local log analysis',{exact:true})).toBeVisible();
-  await expect(page.getByLabel('Existing parser review and import').locator('summary')).toContainText('Open or inspect an existing parser');
-  await expect(page.getByLabel('Multi-line event boundary tool').locator('summary')).toContainText('Check where multi-line events begin and end');
-  await expect(page.getByLabel('Private text grouping tool').locator('summary')).toContainText('Group similar text logs');
-  await expect(page.getByLabel('Known log shape matcher').locator('summary')).toContainText('Find a similar known log shape');
-
+  await expect(page.getByRole('button',{name:'Advanced Tools & Diagnostics'})).toHaveCount(0);
+  await expect(page.getByLabel('Troubleshooting tools guidance')).toHaveCount(0);
+  await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);
+  const importer=page.getByLabel('Existing parser review and import');
+  await expect(importer).toBeVisible();
+  await expect(importer.locator('summary')).toContainText('Open or inspect an existing parser');
+  await expect(page.getByLabel('Multi-line event boundary tool')).toHaveCount(0);
+  await expect(page.getByLabel('Private text grouping tool')).toBeVisible();
+  await expect(page.getByLabel('Known log shape matcher')).toBeVisible();
   await expect(page.getByText('Run Local Multi-Pass Source Preview')).toHaveCount(0);
-  await expect(page.getByText('Explicit local request only')).toHaveCount(0);
-  await expect(page.getByText('Optional · Real Drain3 pattern mining')).toHaveCount(0);
-  await expect(page.getByText('Advanced · Review Existing Parser or Project')).toHaveCount(0);
-
-  const groupingHelp=page.getByRole('button',{name:'Help: Group similar text logs'});
-  await groupingHelp.click();
-  await expect(groupingHelp.getByRole('tooltip')).toContainText('free-form text logs');
+  await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeDisabled();
+  await page.getByLabel('Auto Parser raw logs').fill('action=deny src_ip=192.0.2.10');
+  await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeEnabled();
 });

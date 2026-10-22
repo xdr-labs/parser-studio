@@ -53,13 +53,14 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await expect(prompt).toContainText('parse_regex');
  await expect(page.getByLabel('AI result verification')).toBeVisible();
  await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeHidden();
- await expect(page.getByLabel('Existing parser review and import')).toBeHidden();
+ await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
  await expect(page.getByLabel('Local logical boundary review')).toBeHidden();
- await expect(page.getByLabel('Private text grouping tool')).toBeHidden();
+ await expect(page.getByLabel('Private text grouping tool')).toBeVisible();
  await expect(page.getByLabel('Public synthetic parser fingerprints')).toBeHidden();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
- await page.getByRole('button',{name:'Advanced'}).click();
- await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeVisible();
+ // The novice product has a single local analysis path. Hidden legacy
+ // tools must not be required to inspect or repair original input.
+ await expect(page.getByRole('button',{name:'Tools & Diagnostics'})).toHaveCount(0);
  await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
 });

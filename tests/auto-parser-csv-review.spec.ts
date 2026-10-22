@@ -24,9 +24,7 @@ test('Auto Parser reviews the CSV subset of a mixed structured sample without tr
    .toContainText('4/4 events analyzed locally');
  const csv=page.getByLabel('Review CSV column names');
  await expect(csv).toBeVisible();
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- const review=page.getByRole('button',{name:'Review Detected Results'});
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
  await expect(review).toBeDisabled();
  await page.getByLabel('Reviewed CSV column names').fill('src_ip,action,dst_port');
  await page.getByLabel('Reviewed CSV data separator').selectOption(';');

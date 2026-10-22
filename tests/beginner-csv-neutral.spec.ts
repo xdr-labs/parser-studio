@@ -67,7 +67,6 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  await expect(summary).toContainText('reviewed parser fix passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
- await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002,field_003,field_004,field_005');
  await expect(page.getByText('Field names are ready. Continue to Review Fields.')).toBeVisible();
 });
