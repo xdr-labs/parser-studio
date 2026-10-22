@@ -943,7 +943,7 @@ export default function AutoParser({
        {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
          <strong>{report.accounted}/{report.sourceCount} events checked in the initial format scan</strong>
          <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally in the preliminary format scan only</span>
-         <span className="sr-only">{report.unsupported} events need attention in the preliminary format scan; this is not the final parsing result</span>
+         <span className="sr-only">{report.unsupported} event{report.unsupported===1?'':'s'} {report.unsupported===1?'needs':'need'} attention in the preliminary format scan; this is not the final parsing result</span>
          {currentMultiPassReview?<>
            <span aria-label="Full parser analysis accounting">
              Full parser analysis: {reviewedCandidateComplete||neutralCsvComplete
