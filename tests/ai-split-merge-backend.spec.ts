@@ -1,98 +1,54 @@
-import {test,expect,type Page} from '@playwright/test';
-import {createHash} from 'node:crypto';
+import {test,expect} from '@playwright/test';
 
 const source=[
  '{"action":"allow:http","src_ip":"198.51.100.10","dst_port":443}',
  '{"action":"deny:ssh","src_ip":"203.0.113.5","dst_port":22}',
 ].join('\n');
-const holdout=[
- '{"action":"allow:https","src_ip":"192.0.2.10","dst_port":8443}',
- '{"action":"deny:rdp","src_ip":"192.0.2.11","dst_port":2222}',
-].join('\n');
 
-function recipe(includeSplit=true,includeMerge=false){
- const stages:any[]=[
-  {op:'split_event',boundary:'single-line'},{op:'parse_json'},
-  {op:'map_field',source:'action',target:'action',data_type:'string',group:'top_fields'},
-  {op:'map_field',source:'src_ip',target:'srcip',data_type:'ip',group:'top_fields'},
-  {op:'cast_type',target:'srcip',data_type:'ip'},
-  {op:'map_field',source:'dst_port',target:'dstport',data_type:'integer',group:'top_fields'},
-  {op:'cast_type',target:'dstport',data_type:'integer'},
- ];
- if(includeSplit)stages.push({op:'split_field',source:'action',delimiter:':',
-   targets:['custom.action_kind','custom.action_detail']});
- if(includeMerge)stages.push({op:'merge_fields',
-   sources:['custom.action_kind','custom.action_detail'],delimiter:'/',target:'custom.action_joined'});
- stages.push({op:'classify',defaultIndex:'syslog',rules:[]},
-   {op:'fallback_unparsed',mode:'retain_unparsed'});
- return {
-  contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
-  projectId:'draft-demo_firewall',sourceFormat:'json',bodyFormat:'json',
-  sample:{sha256:createHash('sha256').update(source).digest('hex'),events:2},
-  stages,nativeVerified:false,targetVerified:false,
- };
-}
-async function openAiRecipe(page:Page){
- const box=page.getByLabel('ChatGPT JSON result');
- if(!(await box.isVisible()))await page.getByText('Paste ChatGPT Result').click();
- await expect(box).toBeVisible();
- return box;
-}
-async function qualifyAndApply(page:Page,value:unknown,buttonName:string,expectedRefinement:string){
- const box=await openAiRecipe(page);
- await box.fill(JSON.stringify(value));
- await page.getByLabel('Additional test logs').fill(holdout);
- await page.getByLabel('Confirm different test examples').check();
- await page.getByRole('button',{name:'Test Proposed Fix'}).click();
- await expect(page.getByText(/Fix passed: one bounded split\/merge rule/)).toBeVisible();
- await page.getByLabel('Approve tested fix').check();
- await page.getByRole('button',{name:buttonName}).click();
- const refinements=page.getByLabel('Applied normalization refinements');
- await expect(refinements).toBeVisible();
- await expect(refinements).toContainText(expectedRefinement);
- await expect(page.getByLabel('Improve with AI')).toBeVisible();
-}
-
-test.skip(
-  process.env.PARSER_STUDIO_LIVE_BACKEND!=='1' &&
-  process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
-  'Requires the explicit exact-pinned or scoped loopback authoring backend.'
-);
-test('selected-area AI approves one bounded split then merge and compiles exact v0.1/v0.2 DRAFT pair',async({page})=>{
- await page.goto('/');
- await page.getByLabel('Auto Parser raw logs').fill(source);
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Review Fields stage')).toBeVisible();
-
- await qualifyAndApply(page,recipe(true,false),'Apply Verified Fix','Split #1');
- await qualifyAndApply(page,recipe(true,true),'Apply Verified Fix','Merge #2');
-
- await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
- const create=page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'});
- await expect(create).toBeEnabled({timeout:10_000});
- await create.click();
- await expect(page.getByLabel('Create Parser stage')).toBeVisible();
- const generatedResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/parser-pairs/generate')&&r.request().method()==='POST');
- await page.getByRole('button',{name:'Create Parser Files'}).click();
- expect((await generatedResponse).status()).toBe(200);
- const generated=page.getByLabel('Generated parser files');
- await expect(generated).toContainText('Parser files created successfully');
-
- await page.getByLabel('Parser-building steps review').locator('summary').click();
- await page.getByRole('button',{name:'Review Staged Recipe'}).click();
- const reviewed=page.getByRole('status',{name:'Parser-building steps',exact:true});
- await expect(reviewed).toContainText('split_field');
- await expect(reviewed).toContainText('merge_fields');
- await expect(reviewed).not.toContainText('198.51.100.10');
-
- const recipeGenerated=page.waitForResponse(r=>r.url().includes('/recipe/v0.2/generate')&&
-   r.request().method()==='POST');
- await page.getByRole('button',{name:'Validate and Compile Strict v0.2 DRAFT Pair'}).click();
- expect((await recipeGenerated).status()).toBe(200);
- const evidence=page.getByLabel('Parser-building step verification result');
- await expect(evidence).toContainText('v0.1 pair SHA MATCHED');
- await expect(evidence).toContainText('Native user parser NOT VERIFIED');
- await expect(evidence).toContainText('Stellar DP import NOT VERIFIED');
+// A single bounded split/merge can be reviewed separately. The user removed
+// after-generation repair and parser-building-steps UIs; two invented combined
+// operations cannot silently bypass the reviewed, deterministic recipe gate.
+test('combined AI split and merge cannot alter parser without independent reviewed qualification',async({page})=>{
+  const forbidden:string[]=[];
+  page.on('request',request=>{
+    if(request.method()==='POST' && (
+      request.url().includes('/parser-pairs/generate') ||
+      request.url().includes('/recipe/v0.2/generate')
+    ))forbidden.push(request.url());
+  });
+  await page.goto('/?workspace=chatgpt');
+  await page.getByLabel('ChatGPT local sample logs').fill(source);
+  await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
+  const prompt=await page.getByLabel('ChatGPT copyable prompt').inputValue();
+  const begin='----- BEGIN VALIDATED BASELINE RECIPE -----\n';
+  const end='\n----- END VALIDATED BASELINE RECIPE -----';
+  const first=prompt.indexOf(begin),last=prompt.indexOf(end,first+begin.length);
+  expect(first,'a source-matched baseline recipe is available').toBeGreaterThanOrEqual(0);
+  expect(last).toBeGreaterThan(first);
+  const recipe=JSON.parse(prompt.slice(first+begin.length,last));
+  const classifyAt=recipe.stages.findIndex((stage:{op:string})=>stage.op==='classify');
+  expect(classifyAt).toBeGreaterThan(0);
+  recipe.stages.splice(classifyAt,0,
+    {op:'split_field',source:'action',delimiter:':',targets:['custom.action_kind','custom.action_detail']},
+    {op:'merge_fields',sources:['custom.action_kind','custom.action_detail'],delimiter:'/',target:'custom.action_joined'});
+  await page.getByLabel('ChatGPT result JSON').fill(JSON.stringify(recipe));
+  await page.getByRole('button',{name:'Check ChatGPT Result'}).click();
+  // Two syntactically valid operations may be accepted as a REVIEW_ONLY
+  // proposal. This does NOT mean either one has passed runtime or holdout
+  // qualification, and no parser generation can be enabled at this stage.
+  const review=page.getByRole('region',{name:'ChatGPT result review'});
+  await expect(review).toContainText('ChatGPT result accepted for testing');
+  const generate=review.getByRole('button',{name:'Apply Fix & Create Parser Files'});
+  await expect(generate).toBeDisabled();
+  await page.getByLabel('Additional ChatGPT test logs').fill([
+    '{"action":"allow:https","src_ip":"192.0.2.10","dst_port":8443}',
+    '{"action":"deny:rdp","src_ip":"192.0.2.11","dst_port":2222}',
+  ].join('\n'));
+  await page.getByLabel('Confirm test examples are different').check();
+  await page.getByRole('button',{name:'Test Proposed Fix'}).click();
+  await expect(review).toContainText('The proposed grammar cannot be translated into a supported parser:');
+  await expect(generate).toBeDisabled();
+  await expect(page.getByLabel('ChatGPT created parser files')).toHaveCount(0);
+  await expect(page.getByLabel('ChatGPT local sample logs')).toHaveValue(source);
+  expect(forbidden).toEqual([]);
 });
