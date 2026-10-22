@@ -18,6 +18,48 @@ Do not reopen accepted product/standards tests simply because this lane exists.
 | ACC-4 | P1 | Field-role evidence with abstention, scoped to Stellar 7.0 | Reuse existing alias/type/ambiguous review. Evaluate supported src/dst direction and paired IP:port evidence vs wrong-role rate, never force an unknown role into a normalized field |
 | ACC-5 | P2 / conditional | Offline LLM rule synthesis and typed tree exploration | Research only after ACC-0–4 show a reproducible gap; deterministic runtime and user review, never per-event runtime LLM |
 
+**2026-10-22 ACC-2 execution checkpoint:** Pinned independent truth has now
+been scored, not guessed: 588 JSON records / 15,655 original typed byte-span
+claims exact on both baseline and MDL shadow (40 development and 548 sealed
+holdout), plus 12/12 publisher W3C claims with protected PARTIAL status,
+and 123/145 lexical claims on 16 partial-oracle CEF/Syslog publisher
+records. **No shadow selection improvement was measured**; all scorable
+JSON and non-JSON publisher pools had one candidate, and the published W3C
+schema guard rejected unsafe status promotions. CEF whitespace and broader
+Syslog field boundaries require independent grammar evidence, not a patch to
+force score improvement. See
+[`20261022-field-accuracy-independent-evidence.md`](verification/20261022-field-accuracy-independent-evidence.md).
+ACC-2's **multiple-candidate independent PARTIAL holdout gate remains OPEN**;
+do not promote MDL into runtime based on these cases.
+
+### ACC-RESEARCH execution checkpoint — 2026-10-22
+
+- **ACC-0 DONE (evaluation mechanism):** exact name/decoded-value/UTF-8 span
+  scoring, 21 focused source/claim safety tests, explicit partial-golden
+  exclusions; no fabricated Field F1.
+- **ACC-1 DONE as shadow PoC, NOT accepted for runtime:** conservative source
+  invariants and MDL-inspired fixed-pool ranking implemented in Draft research
+  PR #142. No product parser selection, source status or compiler changed.
+- **ACC-2 MEASURED, no integration evidence:** 588 independently decoded
+  JSON records/15,655 exact claims (40 development + 548 sealed holdout),
+  publisher W3C 12/12 published assertions, and 123/145 partial non-JSON
+  publisher assertions. All available pool sizes were one and the shadow
+  changed no fields. Missing upstream assertions in several SOURCE_PARSED
+  originals remain REVIEW ONLY; no common generic grammar fix is proven.
+- **ACC-3 bounded synthetic trial complete:** existing structural Funnel
+  trained with 3/5/10 examples and replayed on disjoint examples; source-claim
+  preservation PASS, additions remain unscored for field correctness.
+- **ACC-4 bounded synthetic trial complete:** directional evidence-only role
+  suggestions for 2 positive examples and abstention for 6 ambiguous/invalid
+  examples; no runtime/7.0 mapping mutation or real-vendor role F1.
+- **ACC-5 NOT TRIGGERED:** conditional offline LLM/typed-template research is
+  deferred because the independent gate demonstrates no gain warranting the
+  complexity. Runtime LLM remains explicitly out of scope.
+- **Gate:** no new engine integration or release until a frozen independent
+  *competing-candidate* field oracle shows a measurable improvement without
+  regression. This non-gating research does not delay PR #140/#141 UX acceptance.
+  See [ACC-2–ACC-4 research decision](verification/20261022-acc2-acc4-decision.md).
+
 **Gating order:** ACC-0 → ACC-1 (isolated branch, initial synthetic goldens) →
 ACC-2 (independent pinned truth and holdouts). Only if ACC-2 demonstrates
 *better independently scored field precision/F1 without verified regression*

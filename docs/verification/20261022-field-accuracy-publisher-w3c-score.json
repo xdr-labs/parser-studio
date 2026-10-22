@@ -1,0 +1,61 @@
+{
+  "all_original_bytes_accounted": true,
+  "complete_vendor_field_oracle": false,
+  "contract": "parser-studio.acc2.publisher-w3c-digest.v0.1",
+  "elapsed_ms_includes_setup": 262.316,
+  "event_rows": 4,
+  "field_precision_recall_f1": "UNSCORABLE_WITH_PARTIAL_PUBLISHER_ORACLE",
+  "independent_claims_scored": true,
+  "manufacturer_holdout": "NOT_AVAILABLE",
+  "oracle_provenance": "PUBLISHER_AUTHORED_STANDARD_REFERENCE_NOT_VENDOR_WIRE_NOT_BLIND",
+  "product_published_claims_exact": 12,
+  "protected_frame_count": 4,
+  "public_or_target_deployment_modified": false,
+  "published_field_claims": 12,
+  "publisher_oracle_sha256": "76b37af28dee2538121801320269b6152ff8199a169f458021d6d5762a5d64e5",
+  "research_candidate_snapshots": 12,
+  "row_claim_counts_only": [
+    {
+      "product_exact_claims": 3,
+      "product_source_complete": false,
+      "protected_framing_or_schema": true,
+      "published_claim_count": 3,
+      "shadow_exact_claims": 3,
+      "shadow_source_complete": false
+    },
+    {
+      "product_exact_claims": 3,
+      "product_source_complete": false,
+      "protected_framing_or_schema": true,
+      "published_claim_count": 3,
+      "shadow_exact_claims": 3,
+      "shadow_source_complete": false
+    },
+    {
+      "product_exact_claims": 3,
+      "product_source_complete": false,
+      "protected_framing_or_schema": true,
+      "published_claim_count": 3,
+      "shadow_exact_claims": 3,
+      "shadow_source_complete": false
+    },
+    {
+      "product_exact_claims": 3,
+      "product_source_complete": false,
+      "protected_framing_or_schema": true,
+      "published_claim_count": 3,
+      "shadow_exact_claims": 3,
+      "shadow_source_complete": false
+    }
+  ],
+  "runtime_performance_p99": "NOT_ESTIMABLE_FROM_4_REFERENCE_ROWS",
+  "shadow_hard_gate_rejections": 8,
+  "shadow_published_claims_exact": 12,
+  "shadow_selection_changed": 0,
+  "source_bytes": 172,
+  "source_sha256": "5f687cab7a77ce375051fdb2d24fb63812d470fb68027f776c23fe466e2797da",
+  "source_status_counts": {
+    "PARTIAL": 4
+  },
+  "uncertified_extra_product_claims": 0
+}

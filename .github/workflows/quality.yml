@@ -47,6 +47,15 @@ jobs:
       - name: Offline source-exact field accuracy and shadow scoring
         run: |
           python3 -m unittest discover -s tests -p 'test_field_accuracy_shadow_20261022.py' -v
+          python3 -m unittest discover -s tests -p 'test_accuracy_external_lowshot_role_20261022.py' -v
+          python3 scripts/verification/lowshot_role_shadow_20261022.py --mode all >/tmp/parserstudio-lowshot-role-research.json
+          python3 - <<'PY'
+          import json
+          research=json.load(open('/tmp/parserstudio-lowshot-role-research.json'))
+          assert all(item['source_loss_regressions']==0 for item in research['lowshot']['results'])
+          assert research['roles']['normalization_changes']==0
+          assert research['roles']['wrong_role_tests']==0
+          PY
           python3 scripts/verification/field_accuracy_shadow_poc.py >/tmp/parserstudio-accuracy-shadow-report.json
           python3 - <<'PY'
           import json

@@ -13,6 +13,13 @@ sys.path.insert(0, str(ROOT / "runtime" / "multipass"))
 sys.path.insert(0, str(ROOT / "scripts" / "verification"))
 from accuracy_shadow import audit_candidate, choose_shadow, score_candidate
 from field_accuracy_shadow_poc import FIXTURE, run, summarize, validate_fixture
+from field_accuracy_publisher_w3c_20261022 import (
+    _validate_publisher, PUBLISHER_PIN_SHA256,
+)
+from field_accuracy_generalization_blind_20261022 import (
+    _pointer, _compare as compare_frozen_json, _verified_oracle,
+)
+from field_accuracy_nonjson_publisher_20261022 import validate_oracle as validate_nonjson
 from multipass_contract import CandidateEvidence, CandidateOccurrence, candidate_from_event
 from multipass_adjudicator import parse_security_multipass
 
@@ -78,6 +85,29 @@ class FieldAccuracyShadowTest(unittest.TestCase):
         audit = audit_candidate(raw, changed)
         self.assertFalse(audit.valid)
         self.assertIn("FIELD_UTF8_BOUNDARY_INVALID", audit.errors)
+
+    def test_schema_framing_protection_prevents_false_complete(self):
+        raw = "src=192.0.2.1 action=deny"
+        original = snapshot(raw)
+        protected = replace(
+            original, completeness="PARTIAL",
+            issues=("SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER",),
+        )
+        result = audit_candidate(raw, original, protected)
+        self.assertFalse(result.valid)
+        self.assertIn("PROTECTED_SOURCE_ISSUES_DROPPED", result.errors)
+        self.assertIn("PROTECTED_PARTIAL_FALSE_COMPLETE", result.errors)
+        self.assertFalse(score_candidate(raw, original, protected).valid)
+        self.assertTrue(audit_candidate(raw, protected, protected).valid)
+
+    def test_complete_baseline_status_remains_immutable(self):
+        raw = "src=192.0.2.1 action=deny"
+        original = snapshot(raw)
+        downgraded = replace(original, completeness="PARTIAL")
+        self.assertIn(
+            "COMPLETE_BASELINE_DOWNGRADED",
+            audit_candidate(raw, downgraded, original).errors,
+        )
 
     def test_original_source_hash_identity_fail_closed(self):
         raw = "src=192.0.2.1 action=deny"
@@ -181,6 +211,59 @@ class FieldAccuracyShadowTest(unittest.TestCase):
     def test_empty_goldens_cannot_fake_macro_f1(self):
         self.assertIsNone(summarize([])["f1"])
         self.assertEqual(summarize([{"tp": 0, "fp": 1, "fn": 0, "false_complete": True}])["f1"], 0.0)
+
+
+    def test_independent_json_pointer_escapes_and_exact_typed_span(self):
+        raw = '{"a/b":{"~":7}}'
+        position = raw.encode("utf8").index(b"7")
+        row = {"fields": [{
+            "path": "/a~1b/~0",
+            "value_start_byte": position, "value_end_byte": position + 1,
+            "value": 7,
+        }]}
+        self.assertEqual(_pointer(("a/b", "~")), "/a~1b/~0")
+        self.assertEqual(
+            compare_frozen_json(snapshot(raw), row),
+            {"tp": 1, "fp": 0, "fn": 0, "false_complete": False},
+        )
+
+    def test_independent_json_typed_value_mismatch_is_not_silent(self):
+        raw = '{"count":7}'
+        position = raw.encode("utf8").index(b"7")
+        row = {"fields": [{
+            "path": "/count",
+            "value_start_byte": position, "value_end_byte": position + 1,
+            "value": "7",
+        }]}
+        actual = compare_frozen_json(snapshot(raw), row)
+        self.assertEqual((actual["tp"], actual["fp"], actual["fn"]), (0, 1, 1))
+        self.assertTrue(actual["false_complete"])
+
+    def test_publisher_reference_pin_rejects_unqualified_bytes(self):
+        with self.assertRaisesRegex(ValueError, "PUBLISHER_ORACLE_PIN_MISMATCH"):
+            _validate_publisher(b'{"data":"untrusted"}', b"{}")
+        self.assertEqual(len(PUBLISHER_PIN_SHA256), 64)
+
+    def test_sealed_independent_oracle_requires_exact_pin(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            oracle = base / "oracle.json"
+            summary = base / "summary.json"
+            oracle.write_text("[]")
+            summary.write_text("{}")
+            with self.assertRaisesRegex(ValueError, "SEALED_ORACLE_SHA256_CHANGED"):
+                _verified_oracle(oracle, summary)
+
+    def test_nonjson_publisher_oracle_requires_exact_pin(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            oracle = base / "oracle.json"
+            summary = base / "summary.json"
+            sources = base / "sources.json"
+            for path in (oracle, summary, sources):
+                path.write_text("{}")
+            with self.assertRaisesRegex(ValueError, "PUBLISHER_FIELD_ORACLE_CHANGED"):
+                validate_nonjson(oracle, summary, sources)
 
 
 if __name__ == "__main__":
