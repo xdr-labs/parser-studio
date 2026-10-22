@@ -76,11 +76,11 @@ async function mapBatch(page:Page,rows:readonly string[]){
   await page.route('**/api/v1/parser-pairs/capabilities',route=>
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced'}).click();
   await page.getByLabel('Auto Parser raw logs').fill(rows.join('\n'));
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText(rows.length+'/'+rows.length+' events analyzed locally',{timeout:15000});
-  const review=page.getByRole('button',{name:'Review Detected Results'});
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled({timeout:15000});
   await review.click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible({timeout:15000});

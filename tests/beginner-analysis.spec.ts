@@ -33,7 +33,7 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await page.goto('/');
  await expect(page.getByRole('heading',{name:/Paste security logs/})).toBeVisible();
  await expect(page.getByRole('button',{name:'Analyze Logs'})).toBeDisabled();
- await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeHidden();
+ await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
@@ -52,14 +52,13 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await expect(prompt).toContainText('Return only one ParserRecipe v0.2 JSON object');
  await expect(prompt).toContainText('parse_regex');
  await expect(page.getByLabel('AI result verification')).toBeVisible();
- await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeHidden();
- await expect(page.getByLabel('Existing parser review and import')).toBeHidden();
+ await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);
+ await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
  await expect(page.getByLabel('Local logical boundary review')).toBeHidden();
- await expect(page.getByLabel('Private text grouping tool')).toBeHidden();
+ await expect(page.getByLabel('Private text grouping tool')).toBeVisible();
  await expect(page.getByLabel('Public synthetic parser fingerprints')).toBeHidden();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
- await page.getByRole('button',{name:'Advanced'}).click();
- await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);
  await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
 });

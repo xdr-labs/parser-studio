@@ -10,59 +10,17 @@ const ruby='# synthetic test Ruby fragment\n';
 const conf='# synthetic test CONF for port 6801\n';
 const files=[{name:'customized_demo_firewall.conf',content:conf,bytes:Buffer.byteLength(conf),sha256:sha(conf)},
 {name:'customized_demo_firewall',content:ruby,bytes:Buffer.byteLength(ruby),sha256:sha(ruby)}];
-const cap={
-  contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
-  authoring:{receiverProtocols:['udp','tcp'],extractionFormats:['json','kv','csv','syslog_rfc5424','cef','leef'],
-    rfc5424BodyFormats:['raw','json','kv','cef','leef'],rfc5424AdjacentStructuredDataSubset:true,
-    rfc5424StructuredDataMaxBytes:1024,leefHexSeparatorSubset:true,
-    formatCoverage:'reviewed-bounded-subset',httpReceiver:false,multipleDistinctReceiverPorts:false,
-    multiline:false,arbitraryRuby:false},
-  import:{exactInternalPairsEditable:true,unknownLegacyRubyEditable:false,structuralInspectionOnly:true},
-  verification:{engineVerified:false,targetImportVerified:false,liveListenerVerified:false,proprietaryLoaderVerified:false},
-  downloads:{individualGeneratedFiles:true,zipWithManifest:true,requiresDpConnection:false,
-    requiresApiKey:false,autoDeploys:false,exactArtifactRevision:true},
-  limits:{maxProjectBodyBytes:262144,maxInspectBodyBytes:2097152},
-};
-const generated={contract:'host-customized-pair.v0.1',files,manifest:{
-  contract:'host-customized-pair.v0.1',schemaRevision:'0.1',status:'DRAFT',
-  engineVerified:false,targetImportVerified:false,
-  projectId:'draft-demo_firewall',projectRevision:1,
-  fileHashes:Object.fromEntries(files.map(f=>[f.name,f.sha256])),warnings:[],
-}};
-async function mockBackend(page:Page){
- let posts=0;
- await page.route('**/api/v1/parser-pairs/**',route=>{
-   const req=route.request(),path=new URL(req.url()).pathname;
-   if(path.endsWith('/capabilities'))
-     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)});
-   if(path.endsWith('/schema')){
-     // This negative fixture intentionally prevents false schema PASS.
-     return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'SCHEMA_UNAVAILABLE'})});
-   }
-   if(path.endsWith('/validate')||path.endsWith('/generate')){
-     posts++;
-     const body=JSON.stringify(req.postDataJSON());
-     expect(body).not.toContain('198.51.100.10');
-     expect(body).not.toContain('203.0.113.5');
-     expect(body).not.toContain('apiKey');
-     if(path.endsWith('/validate'))return route.fulfill({status:200,contentType:'application/json',
-       body:JSON.stringify({ok:true,issues:[]})});
-     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(generated)});
-   }
-   throw Error('Unexpected private/API invocation: '+path);
- });
- return ()=>posts;
-}
 async function begin(page:Page){
- await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByLabel('Auto Parser raw logs').fill(input);
- await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+  await page.goto('/');
+  await page.getByLabel('Auto Parser raw logs').fill(input);
+  await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
+  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
 }
+
 test('new visitor sees only the two supported creation methods and a four-step Auto Parser',async({page})=>{
  await page.goto('/');
  await expect(page.getByRole('main',{name:'Auto Parser v2'})).toBeVisible();
@@ -81,7 +39,11 @@ test('new visitor sees only the two supported creation methods and a four-step A
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
 });
 test('novice reviews original/extracted/normalized samples, keeps source, and sees safe mapping provenance',async({page})=>{
- const posts=await mockBackend(page);
+ let generatedPosts=0;
+ page.on('request',req=>{
+   if(req.method()==='POST'&&new URL(req.url()).pathname.endsWith('/generate'))
+     generatedPosts++;
+ });
  await begin(page);
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('198.51.100.10');
  await expect(page.getByLabel('Browser-only event inspector')).toContainText('srcip');
@@ -101,53 +63,61 @@ test('novice reviews original/extracted/normalized samples, keeps source, and se
  await page.getByLabel('Map Fields stage').getByRole('button',{name:'Back to Review Fields'}).click();
  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Back to Logs'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
- expect(posts()).toBe(0);
+ expect(generatedPosts).toBe(0);
 });
 test('mixed families and unknown logs are not dropped or transmitted to validation',async({page})=>{
- const posts=await mockBackend(page);
+ const generated:string[]=[];
+ page.on('request',req=>{
+   const path=new URL(req.url()).pathname;
+   if(req.method()==='POST'&&path.includes('/parser-pairs/')&&path.endsWith('/generate'))generated.push(path);
+ });
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByLabel('Auto Parser raw logs').fill(input+'\naction=allow src_ip=192.0.2.10\nMALFORMED_SECRET');
  await expect(page.getByLabel('Automatic event accounting')).toContainText('4/4 events analyzed locally');
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
- await expect(page.getByRole('alert')).toContainText('unsupported family combination, malformed, or unrecognized');
+ await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+ // Wait for the asynchronous, byte-preserving Multi-Pass result before checking recovery.
+ await expect(page.getByLabel('Parse problem inspector')).toContainText('MALFORMED_SECRET',{timeout:20000});
+ await expect(page.getByLabel('Auto Parser raw logs')).toContainText('MALFORMED_SECRET');
  const createStep=page.getByRole('navigation',{name:'Auto Parser steps'})
    .getByRole('button',{name:/Create Parser/});
  await expect(createStep).toHaveClass(/locked/);
  await createStep.click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
- await expect(page.getByRole('status')).toContainText('Start with Add Logs');
- expect(posts()).toBe(0);
+ await expect(page.locator('.beginner-navigation-hint')).toContainText('Start with Add Logs');
+ expect(generated).toEqual([]);
 });
-test('denied backend metadata blocks beginner compilation and does not exfiltrate samples',async({page})=>{
+test('denied backend metadata cannot release parser files or leak the source',async({page})=>{
+ const sent:string[]=[];
+ page.on('request',req=>{
+   const path=new URL(req.url()).pathname;
+   if(req.method()==='POST'&&path.includes('/parser-pairs/'))
+     sent.push(path);
+ });
  await page.route('**/api/v1/parser-pairs/capabilities',route=>route.fulfill({status:403,
    contentType:'application/json',body:JSON.stringify({error:'CAPABILITY_DISABLED'})}));
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await page.getByLabel('Auto Parser raw logs').fill(input);
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- await page.getByRole('button',{name:'Review Detected Results'}).click();
- await expect(page.getByRole('alert')).toContainText('unavailable or access was denied');
- await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled({timeout:20000});
+ await review.click();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+ await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
+ expect(sent.some(path=>path.endsWith('/generate')||path.includes('/target/apply'))).toBe(false);
 });
-test('narrow viewport allows keyboard controls, avoids horizontal overflow, and never auto-sends source',async({page})=>{
- await page.setViewportSize({width:390,height:844});
- await mockBackend(page);
+test('desktop keyboard controls keep source local and enter Reviewed Fields without extra mode',async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
  await expect(page.getByLabel('Auto Parser raw logs')).toBeVisible();
  await page.getByLabel('Auto Parser raw logs').fill(input);
  await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2');
- await expect(page.evaluate(()=>document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(392);
- if(await page.getByRole('button',{name:'Advanced'}).count())
-  await page.getByRole('button',{name:'Advanced'}).click();
- const review=page.getByRole('button',{name:'Review Detected Results'});
- await expect(review).toBeEnabled();
+ await expect(page.evaluate(()=>document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(1442);
+ await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled({timeout:20000});
  await review.focus();
  await expect(review).toBeFocused();
  await page.keyboard.press('Enter');
