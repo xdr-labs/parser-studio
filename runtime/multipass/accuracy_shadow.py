@@ -93,10 +93,21 @@ def audit_candidate(
             map(_claim_key, candidate.occurrences)
         ):
             errors.append("BASELINE_CLAIMS_LOST")
-        if baseline.completeness == "SOURCE_PARSED" and Counter(
-            map(_claim_key, baseline.occurrences)
-        ) != Counter(map(_claim_key, candidate.occurrences)):
-            errors.append("COMPLETE_BASELINE_REINTERPRETED")
+        protected_issues = {
+            issue for issue in baseline.issues
+            if issue.startswith(("FRAMING_", "SCHEMA_"))
+        }
+        if not protected_issues.issubset(candidate.issues):
+            errors.append("PROTECTED_SOURCE_ISSUES_DROPPED")
+        if protected_issues and candidate.completeness == "SOURCE_PARSED":
+            errors.append("PROTECTED_PARTIAL_FALSE_COMPLETE")
+        if baseline.completeness == "SOURCE_PARSED":
+            if candidate.completeness != "SOURCE_PARSED":
+                errors.append("COMPLETE_BASELINE_DOWNGRADED")
+            if Counter(map(_claim_key, baseline.occurrences)) != Counter(
+                map(_claim_key, candidate.occurrences)
+            ):
+                errors.append("COMPLETE_BASELINE_REINTERPRETED")
 
     covered = bytearray(len(source))
     for region in (*candidate.covered_regions, *candidate.residual_regions):

@@ -1,0 +1,52 @@
+{
+  "contract": "parser-studio.acc2.publisher-nonjson-source-claims.v0.1",
+  "excluded_statuses": {
+    "DUPLICATE_SOURCE_EXCLUDED": 9,
+    "UNSCORABLE": 3,
+    "UPSTREAM_INVALID_CONTROL": 2
+  },
+  "field_precision_f1": "NOT_SCORABLE_WITH_INCOMPLETE_UPSTREAM_FIELDS",
+  "field_roles_stellar_7_0": "NOT_SCORED",
+  "native_target_and_wire": "NOT_VERIFIED",
+  "oracle_sha256": "18c25739376c4bd7289066e147ac73fc5e55344385b0312e7c0e6cab00cea17b",
+  "per_family": {
+    "cef": {
+      "assertions": 114,
+      "events": 8,
+      "product_exact": 110,
+      "product_missed": 4,
+      "product_status_counts": {
+        "SOURCE_PARSED": 8
+      },
+      "shadow_exact": 110,
+      "shadow_missed": 4
+    },
+    "syslog": {
+      "assertions": 31,
+      "events": 8,
+      "product_exact": 13,
+      "product_missed": 18,
+      "product_status_counts": {
+        "PARTIAL": 1,
+        "RAW_ONLY": 4,
+        "SOURCE_PARSED": 3
+      },
+      "shadow_exact": 13,
+      "shadow_missed": 18
+    }
+  },
+  "pool_sizes": {
+    "1": 16
+  },
+  "product_complete_but_missing_publisher_triples": 6,
+  "product_runtime_modified": false,
+  "provenance": "PINNED_UPSTREAM_AUTHORED_SOURCE_ASSERTIONS_PARTIAL_TRUTH",
+  "raw_values_emitted": false,
+  "scorable_originals": 16,
+  "scored_publisher_assertions": 145,
+  "shadow_changed_field_claims": 0,
+  "shadow_complete_but_missing_publisher_triples": 6,
+  "shadow_rejected_candidates": 0,
+  "source_manifest_sha256": "1998fd42a079cd87f059acc1052d1da57b4beee809f9dc11b7a1ebf18a3d7d1d",
+  "total_originals": 30
+}

@@ -1,0 +1,164 @@
+{
+  "contract": "parser-studio.acc2.sealed-json-field-score.v0.1",
+  "latency_ms": {
+    "product_ms": {
+      "p50": 4.212,
+      "p99": 7.5249,
+      "sample_count": 588
+    },
+    "research_pool_ms": {
+      "p50": 4.9167,
+      "p99": 8.2213,
+      "sample_count": 588
+    },
+    "shadow_score_ms": {
+      "p50": 2.6376,
+      "p99": 4.6209,
+      "sample_count": 588
+    }
+  },
+  "latency_scope": "ONE_PROCESS_LOCAL_MEASUREMENT_NOT_PRODUCTION_SLA",
+  "manufacturer_wide_statistical_significance": "INSUFFICIENT_DISTINCT_MANUFACTURER_CLUSTERS",
+  "normalization_and_role_accuracy": "NOT_SCORED",
+  "oracle_provenance": "FROZEN_INDEPENDENT_JSON_BYTE_TRUTH_NOT_VENDOR_SEMANTIC",
+  "original_source_values_printed": false,
+  "per_split": {
+    "development": {
+      "families": [
+        "converter_upstream",
+        "siem_examples"
+      ],
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 1302
+      },
+      "scorable_events": 40,
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 1302
+      },
+      "unscorable_events_excluded": 173
+    },
+    "sealed_holdout": {
+      "families": [
+        "suricata_pcap"
+      ],
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 14353
+      },
+      "scorable_events": 548,
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 14353
+      },
+      "unscorable_events_excluded": 4
+    }
+  },
+  "private_oracle_sha256": "1918c4da2e4c6b5dd5dd6381e976cc31fd82d337da4a25f32ce7f3eecbed2881",
+  "product_runtime_modified": false,
+  "product_source_status_by_family": {
+    "development/converter_upstream": {
+      "events": 36,
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 1223
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 1223
+      },
+      "statuses": {
+        "SOURCE_PARSED": 36
+      }
+    },
+    "development/siem_examples": {
+      "events": 4,
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 79
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 79
+      },
+      "statuses": {
+        "SOURCE_PARSED": 4
+      }
+    },
+    "sealed_holdout/suricata_pcap": {
+      "events": 548,
+      "product": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 14353
+      },
+      "shadow": {
+        "f1": 1.0,
+        "false_complete": 0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 14353
+      },
+      "statuses": {
+        "SOURCE_PARSED": 548
+      }
+    }
+  },
+  "record_count": 765,
+  "research_pool_sizes": {
+    "1": 588
+  },
+  "sealed_holdout_not_used_for_weight_calibration": true,
+  "shadow_changed_field_claims": 0,
+  "shadow_hard_rejections": 0,
+  "total_independently_scored_fields": 15655,
+  "unscorable_excluded": 177,
+  "upstream_source_manifest_sha256": "46cc04ac899bc4e7c610b6ce9ec4796fb553ba1766fc7b6462fa7faa3aeec0c4"
+}
