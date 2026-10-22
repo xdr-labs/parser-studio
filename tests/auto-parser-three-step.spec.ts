@@ -103,7 +103,9 @@ test('denied backend metadata cannot release parser files or leak the source',as
  const review=page.getByRole('button',{name:'Review Fields',exact:true});
  await expect(review).toBeEnabled({timeout:20000});
  await review.click();
- await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+ await expect(page.getByRole('alert')).toContainText(
+   'The parser creation service is unavailable or access was denied.');
+ await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
  await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(input);
  expect(sent.some(path=>path.endsWith('/generate')||path.includes('/target/apply'))).toBe(false);
