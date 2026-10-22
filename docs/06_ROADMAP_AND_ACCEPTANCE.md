@@ -1,4 +1,4 @@
-# Current engineering completion ledger — 2026-10-20
+# Current engineering completion ledger — 2026-10-23
 
 ## Owner-scoped objective clarification — 2026-10-21
 
@@ -28,12 +28,23 @@ for the structurally verified common Syslog fallback and boundary of evidence.
 This ledger supersedes dated next-action statements below. The active product
 remains Auto Parser and ChatGPT Assisted Parser. Historical unchecked research
 and target-release lists are not a count of unfinished beta implementation.
-This candidate records the local qualification available before its source
-commit; subsequent CI, main and application receipts are recorded in the
-[active work packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6287789712).
+The owner-approved development Web release is now merged, installed and
+accepted. Parent PR #140 was merged before child PR #141; the final `main`
+commit is `8906015d4e663425f66618ca6ac071d1edafc897`. Its Git tree exactly
+matches the qualified PR #141 source tree `8c42c8cbd28ee809d3bb9164de9010d3018447f6`.
+The PR-head GitHub Actions run #39757804376 passed 7/7 jobs; the public Web
+static hashes matched the reviewed candidate and real public desktop Chromium
+Full User E2E passed 14/14 final scenarios. These are *development DRAFT*
+acceptance results, not proprietary Stellar target/native, DP or sensor proof.
+The [latest authoritative ACTIVE Work Packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6340544512)
+and immutable release receipt on dev-atlas hold the full evidence. Earlier
+historical work packets and dated incomplete tasks below are preserved for
+traceability and are not active release gates.
 
 | Scope | Current engineering status | Evidence / boundary |
 | --- | --- | --- |
+| UX-RELEASE: two-path Parser Studio Web (2026-10-22) | Complete: parent/child merged, development app deployed, public desktop E2E accepted | [PR #140](https://github.com/xdr-labs/parser-studio/pull/140) then [PR #141](https://github.com/xdr-labs/parser-studio/pull/141) merged; exact accepted source-head [CI #39757804376](https://github.com/xdr-labs/parser-studio/actions/runs/39757804376) 7/7 SUCCESS. Development app `https://app.parser.xdr.ooo/` serves the pinned Web bundle; 4/4 public static file SHA checks and 14/14 final Chromium user scenarios PASS, including two simultaneous independent users. Rollback receipt and source-linked hashes preserved. No backend, DP, sensor or production deployment. |
+| ACC-0–ACC-5 field-accuracy research | Bounded offline evaluation complete; no runtime adoption | [Draft research PR #142](https://github.com/xdr-labs/parser-studio/pull/142) remains off-product. Independent JSON / publisher partial-field truth and low-shot / role experiments did **not** demonstrate an MDL selector improvement; keep the qualified Standard Grammar-first, Multi-Pass and Funnel engine. Reopen only for reproducible common grammar defects or independently scored competing candidates. |
 | MAIN-1/2, LOCAL-1/2, MULTI-TYPE-INPUT-1, SCRIPT-1/2/3 and CI-1 | Incorporated in main before this continuation | PR #120; main `00e783520c005a96b37b5fbf5eb4ad81c74381a6`; its qualified public development baseline is recorded in Issue #1 comment 6286114104. |
 | DRAFT-1: source-to-parser integration | Complete in PR #121 and current main | Strict RFC5424 SD/free MSG uses the existing raw-body compiler. Additional explicit Generic Structural profiles preserve original Syslog prefix/KV and implicit-TAB LEEF 2.0 source through mappings and downloadable parser files. |
 | RECOVERY-1: incomplete text | Complete in PR #121 and current main | Generic quoted bracket labels retain exact source values and UTF-8 spans, repeated/empty occurrences and previously recovered atoms. Residual prose stays PARTIAL. The novice review flow tests source preservation and distinct holdouts before applying a supported recipe. |
@@ -42,7 +53,7 @@ commit; subsequent CI, main and application receipts are recorded in the
 | Previous continuation qualification and public development application | Complete for the frozen PR #121 candidate | Source `19f3f5e7e82717d4c48a5ad8a24e599e84110201`; successful CI run #39416579705; main `ec6df2473612e5dd0cb23de6209801a7dda1548a`; separate public Chromium 109/109 PASS completed at 2026-10-20T12:59:55Z. See [the preserved continuation verification record](verification/roadmap-followup-20261020.md) and [Issue #1 work packet](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6287789712). |
 | MIXED-PROFILE-1: bounded Generic Structural combination | Implemented and locally qualified | The scalar `syslog_prefix_kv_leef2_implicit_tab_v1` combines the two existing additional grammars with unchanged V15 routes. It preserves the complete safe field union, strict LEEF ownership and existing bounds. A single existing profile remains preferred whenever sufficient; ambiguous normalization destinations retain distinct vendor fields. See [the new verification record](verification/mixed-generic-profiles-20261020.md). |
 | Mixed-profile qualification, main and development application | Local qualification complete; CI and application receipts follow the frozen commit | Actual affected Chromium 8/8 PASS, including both mixed orders, exact 22-source mappings, Ruby/CONF downloads, local save/reload/restore, malformed controls and two independent browser users. Initial 6/8 exposed the automatic-adoption gap; a source-aligned strict-grammar correction passed 44/44 focused tests, 3/3 English-policy checks and Web build. Generated Ruby 91/91 and Backend build remain valid for the unchanged Backend candidate. See the current work packet for exact-candidate CI, main and public affected-eight receipts. The earlier interim 112 includes two removed probes and is not a permanent-suite count. |
-| Desktop novice first-log entry (2026-10-21 follow-up) | Isolated desktop-only candidate, not yet installed | Existing 1440×900 public first viewport hides the raw input below other instructions. A desktop-only first-screen shortcut focuses the exact unchanged raw textarea; three real Chromium desktop cases, 23 affected frontend tests and Web build passed locally. The separate installed baseline passed a first-time quoted CSV parser-file-download journey. See [desktop first-use verification](verification/desktop-novice-first-entry-20261021.md); exact candidate CI and development application remain separate gates. Mobile expressly excluded. || Desktop novice first-log entry (2026-10-21 follow-up) | Isolated desktop-only candidate, not yet installed | Existing 1440×900 public first viewport hides the raw input below other instructions. A desktop-only first-screen shortcut focuses the exact unchanged raw textarea; three real Chromium desktop cases and Web build passed locally; initial exact CI exposed a separate saved-version comparison race fixed by deterministic delayed-read RED→GREEN, 4/4 desktop browser tests and 29/29 affected frontend tests. The separate installed baseline passed a first-time quoted CSV parser-file-download journey. See [desktop first-use verification](verification/desktop-novice-first-entry-20261021.md); new corrected exact candidate CI and development application remain separate gates. Mobile expressly excluded. |
+| Desktop novice first-log entry (2026-10-21/22) | Complete: included in the merged and installed two-path UX | The desktop-only `Go to log input` shortcut focuses the original raw input and preserves parser identity; the three directly affected real public desktop Chromium cases passed in the accepted PR #141 rollout. Existing accessibility/keyboard and named-log-type behavior is preserved. Mobile expressly excluded. See [desktop first-use verification](verification/desktop-novice-first-entry-20261021.md) and [final acceptance](https://github.com/xdr-labs/parser-studio/issues/1#issuecomment-6340544512). |
 
 ## Remaining support boundaries
 
