@@ -382,6 +382,11 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             Boolean(draft.eventProfiles)}
           onClick={()=>{void prepare();}}>Prepare ChatGPT Prompt</button>
         {promptError&&<p role="alert" className="auto-parser-warning">{promptError}</p>}
+        {!prompt&&<div className="auto-parser-note" aria-label="ChatGPT copy step">
+          <h3>2. Copy to ChatGPT</h3>
+          <p>Once you prepare the prompt, review the original log text for sensitive
+            details, then manually copy it into ChatGPT. Nothing is sent automatically.</p>
+        </div>}
         {prompt&&<div className="auto-parser-recipe" aria-label="ChatGPT prepared prompt">
           <h3>2. Copy to ChatGPT</h3>
           <textarea aria-label="ChatGPT copyable prompt" rows={10} value={prompt}
