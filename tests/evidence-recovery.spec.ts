@@ -58,9 +58,13 @@ test.describe('removed sensor/evidence UI and default-deny backend boundary',()=
     ];
     for(const path of paths){
       const response=await request.get(path);
-      expect(response.status(),path).toBe(403);
+      // Disabled endpoints may explicitly deny (403) or be absent (404).
+      // Both must remain non-successful and must never return owner evidence.
+      expect([403,404],path).toContain(response.status());
       const body=await response.json();
       expect(body).toHaveProperty('error');
+      expect(['TESTLAB_SENDER_DISABLED','NOT_FOUND','AUTHORING_ONLY_ROUTE_NOT_AVAILABLE'],path)
+        .toContain(body.error);
       const text=JSON.stringify(body);
       expect(text).not.toContain('PRIVATE_CUSTOMER_VALUE');
       expect(text).not.toContain('apiKey');
