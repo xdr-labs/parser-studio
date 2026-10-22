@@ -10,7 +10,9 @@ describe('ChatGPT Assisted Parser beginner defaults',()=>{
     const draft={...createDraft(),format:'kv' as const};
     const suite=preview(sample,draft);
     render(<ChatGPTAssist draft={draft} setDraft={vi.fn()} sample={sample}
-      setSample={vi.fn()} suite={suite} pending={false}
+      setSample={vi.fn()} namedLogTypes={null}
+      onEnableNamedLogTypes={vi.fn()} onChangeNamedLogTypes={vi.fn()}
+      onExitNamedLogTypes={vi.fn()} suite={suite} pending={false}
       runPreview={async()=>suite} onAutoParser={vi.fn()}/>);
     const redacted=screen.getByLabelText('ChatGPT redacted examples') as HTMLTextAreaElement;
     expect(redacted.value).toContain('EXAMPLE-FW');
