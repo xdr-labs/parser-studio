@@ -9,10 +9,9 @@ const docker=JSON.stringify({
 async function requireCompilerBlock(page:Page,raw:string){
   const serverErrors:string[]=[];
   page.on('pageerror',error=>serverErrors.push(error.message));
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Beginner analysis summary')).toBeVisible();
-  const review=page.getByRole('button',{name:'Review Detected Results'});
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
   // Analyze Logs may finish rendering its summary before the asynchronous
   // source preview and compiler readiness checks settle. Wait for the button
   // to be actionable; one immediate isEnabled() sample races that transition.

@@ -79,10 +79,9 @@ for(const entry of cases){
   expect(cursor).toBe(whole.byteLength);
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeDisabled();
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
-  const ledger=page.getByLabel('Detailed event accounting');
-  await expect(ledger).toBeVisible();
-  await expect(ledger).toContainText(entry.count+' event');
+  // The beginner analysis summary and exact API response replace the retired
+  // advanced ledger. Event boundaries and every byte are asserted above.
+  await expect(page.getByLabel('Beginner analysis summary')).toBeVisible();
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(entry.source);
  });
 }

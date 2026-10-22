@@ -17,12 +17,14 @@ test('novice explicitly reviews 7.0 type-specific suggestions and downloads one 
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const raw=page.getByLabel('Auto Parser raw logs');
   await raw.fill(source);
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Automatic event accounting'))
-    .toContainText('6/6 events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+    .toContainText('6/6 events analyzed locally',{timeout:20000});
+  const reviewButton=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(reviewButton).toBeEnabled({timeout:20000});
+  await reviewButton.click();
   const review=page.getByLabel('Review Fields stage');
   await expect(review).toBeVisible();
   const panel=page.locator('details[aria-label="Configure one parser for event types"]');

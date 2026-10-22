@@ -1,4 +1,16 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Page} from '@playwright/test';
+
+async function openReviewedFlow(page:Page,reanalyze=true){
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  if(reanalyze||!await review.isEnabled()){
+    await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+    await expect(page.getByLabel('Beginner analysis summary'))
+      .toBeVisible({timeout:20000});
+  }
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
+  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+}
 
 const source=[
   '{"event_type":"threat","src_ip":"192.0.2.10","action":"deny"}',
@@ -10,13 +22,12 @@ test('one reviewed parser DRAFT retains all three event types with exact backend
   test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
     'Runs separately against the current compiled offline backend exact Git HEAD.');
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const raw=page.getByLabel('Auto Parser raw logs');
   await raw.fill(source);
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText('3/3 events analyzed locally');
 
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page);
   const review=page.getByLabel('Review Fields stage');
   await expect(review).toBeVisible();
   const config=page.locator('details[aria-label="Configure one parser for event types"]');
@@ -82,7 +93,6 @@ test('reviewed relay and three event types compile into the same downloaded Ruby
   ];
   const source=lines.join('\n');
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const input=page.getByLabel('Auto Parser raw logs');
   await input.fill(source);
   // A source-only literal boundary review must coexist with reviewed relay
@@ -104,9 +114,7 @@ test('reviewed relay and three event types compile into the same downloaded Ruby
   await expect(relay.getByLabel('Active declared relays')).toContainText('relay01');
   await expect(input).toHaveValue(source);
   await expect(page.getByLabel('Automatic event accounting')).toContainText('3/3 events analyzed locally');
-  const reviewButton=page.getByRole('button',{name:'Review Detected Results'});
-  await expect(reviewButton).toBeEnabled();
-  await reviewButton.click();
+  await openReviewedFlow(page);
   const panel=page.locator('details[aria-label="Configure one parser for event types"]');
   await expect(panel).toBeVisible();
   await panel.locator('summary').first().click();
@@ -172,7 +180,6 @@ test('reviewed mapping collisions and oversized event schemas fail closed in the
   test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
     'Requires the actual current offline backend, not an unsupported pinned compiler.');
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const raw=page.getByLabel('Auto Parser raw logs');
   const source=[
     '{"event_type":"threat","indicator":"198.51.100.1","confidence":"high","action":"deny"}',
@@ -182,7 +189,7 @@ test('reviewed mapping collisions and oversized event schemas fail closed in the
   await raw.fill(source);
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText('3/3 events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page);
   const config=page.locator('details[aria-label="Configure one parser for event types"]');
   await config.locator('summary').first().click();
   const threat=config.locator('details[aria-label="Type-specific mappings for threat"]');
@@ -211,7 +218,7 @@ test('reviewed mapping collisions and oversized event schemas fail closed in the
     JSON.stringify({event_type:'user',username:'demo'}),
   ].join('\n');
   await raw.fill(wideSource);
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page);
   const wideConfig=page.locator('details[aria-label="Configure one parser for event types"]');
   await wideConfig.locator('summary').first().click();
   await expect(wideConfig).toContainText('over 100 safe fields');
@@ -234,7 +241,6 @@ test('saved multi-event and declared relay rules remain comparable and restorabl
   await page.goto('/');
   const raw=page.getByLabel('Auto Parser raw logs');
   await raw.fill(source);
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const toggle=page.getByRole('button',{name:'Local Versions',exact:true});
   await toggle.click();
   const history=page.getByLabel('Local Versions workspace');
@@ -250,7 +256,7 @@ test('saved multi-event and declared relay rules remain comparable and restorabl
   await expect(relay.getByLabel('Active declared relays')).toContainText('relay01');
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText('3/3 events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page);
   const types=page.locator('details[aria-label="Configure one parser for event types"]');
   await types.locator('summary').first().click();
   await expect(types.getByLabel('Proposed event type rules')).toContainText('3 reviewed types');
@@ -279,8 +285,7 @@ test('saved multi-event and declared relay rules remain comparable and restorabl
   await versionRow('Reviewed three event types and relay')
     .getByRole('button',{name:'Restore'}).click();
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page,false);
   await expect(page.locator('details[aria-label="Configure one parser for event types"]')
     .getByLabel('Configured event profiles')).toContainText('3 explicit event types');
   await page.getByRole('button',{name:/Add Logs/}).first().click();
@@ -316,8 +321,7 @@ test('saved reviewed relay and event families download intact after reload',asyn
     .toContainText('3 of 3 events recognized');
   await relay.getByRole('button',{name:'Apply declared relay profile'}).click();
   await expect(relay.getByLabel('Active declared relays')).toContainText('relay01');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page);
   const family=page.locator('details[aria-label="Configure one parser for event types"]');
   await family.locator('summary').first().click();
   await expect(family.getByLabel('Proposed event type rules')).toContainText('3 reviewed types');
@@ -342,8 +346,7 @@ test('saved reviewed relay and event families download intact after reload',asyn
   await restoredRelay.locator('summary').first().click();
   await expect(restoredRelay.getByLabel('Declared relay hostname list')).toHaveValue('relay01');
   await expect(restoredRelay.getByLabel('Maximum declared relay hops')).toHaveValue('2');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await openReviewedFlow(page,false);
   await expect(page.getByLabel('Configured event profiles')).toContainText('3 explicit event types');
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
   await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
