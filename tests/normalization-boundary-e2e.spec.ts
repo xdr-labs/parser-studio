@@ -19,11 +19,14 @@ async function openMapping(page:Page,rows:string[]){
   await page.route('**/api/v1/parser-pairs/capabilities',route=>
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced'}).click();
   await page.getByLabel('Auto Parser raw logs').fill(rows.join('\n'));
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText(rows.length+'/'+rows.length+' events analyzed locally');
-  await page.getByRole('button',{name:'Review Detected Results'}).click();
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
+  await expect(page.getByLabel('Review Fields stage')).toBeVisible();
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
   return page.getByLabel('Map Fields stage');
 }

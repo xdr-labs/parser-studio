@@ -33,13 +33,16 @@ test('Multi-Pass frames a pasted event stream and lets the user inspect each exa
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
- await page.getByRole('button',{name:'Advanced'}).click();
- const accounting=page.getByLabel('Detailed event accounting');
- await expect(accounting).toContainText('2 events checked without dropping source text');
- await expect(accounting).toContainText('2 fields found');
- const selector=page.getByLabel('Detailed analysis event');
+ await expect(page.getByLabel('Automatic event accounting'))
+   .toContainText('2/2 events analyzed locally');
+ const review=page.getByRole('button',{name:'Review Fields',exact:true});
+ await expect(review).toBeEnabled({timeout:20000});
+ await review.click();
+ await expect(page.getByLabel('Review Fields stage')).toBeVisible();
+ const selector=page.getByLabel('Auto Parser review event');
  await expect(selector.locator('option')).toHaveCount(2);
- await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toContainText('"action": "BLOCK"');
- await selector.selectOption('1');
- await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toContainText('"action": "ALLOW"');
+ const inspector=page.getByLabel('Browser-only event inspector');
+ await expect(inspector).toContainText('BLOCK');
+ await selector.selectOption({index:1});
+ await expect(inspector).toContainText('ALLOW');
  });

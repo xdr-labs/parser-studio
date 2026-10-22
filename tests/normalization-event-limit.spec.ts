@@ -23,7 +23,7 @@ async function open(page:Page,count:number){
   await page.route('**/api/v1/parser-pairs/capabilities',route=>
     route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced'}).click();
+
   await page.getByLabel('Auto Parser raw logs').fill(rows(count).join('\n'));
 }
 
@@ -32,7 +32,8 @@ test('exact 500-event normalization batch remains reviewable with no truncation'
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText('500/500 events analyzed locally',{timeout:20000});
   await expect(page.getByLabel('Auto Parser sample limit')).toHaveCount(0);
-  const review=page.getByRole('button',{name:'Review Detected Results'});
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled({timeout:20000});
   await review.click();
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
@@ -48,5 +49,5 @@ test('501 events fail closed with an explicit beginner-readable limit explanatio
   await expect(warning).toContainText('will not silently drop the extra events');
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText('0/501 events analyzed locally');
-  await expect(page.getByRole('button',{name:'Review Detected Results'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
 });

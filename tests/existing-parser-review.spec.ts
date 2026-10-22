@@ -12,11 +12,11 @@ const sha=(value:string)=>createHash('sha256').update(value).digest('hex');
 const ruby='# STELLAR_INIT_BEGIN\n# STELLAR_PARSE_BEGIN\ndef parse(text)\nend\n# STELLAR_PARSE_END\n';
 const conf='<source>\n  @type udp\n  port 6801\n  tag customized_demo_firewall\n  <parse>\n    @type customized_demo_firewall\n  </parse>\n</source>\n';
 
-test('Advanced local Project JSON review restores exact draft and clears raw samples without network',async({page})=>{
+test('Local Project JSON review restores exact draft and clears raw samples without network',async({page})=>{
  let requests=0;page.on('request',r=>{if(r.url().includes('/api/v1/parser-pairs/inspect'))requests++;});
  await page.goto('/');
- await page.getByRole('button',{name:'Advanced'}).click();
- await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();
+
+
  await page.getByLabel('Auto Parser raw logs').fill('{"action":"deny"}');
  const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
  await page.getByLabel('Existing Parser Project JSON').setInputFiles({
@@ -46,7 +46,7 @@ test('opaque Ruby CONF pair stays read-only and never echoes source code',async(
    diagnostics:[{code:'PAIR_NOT_REPRODUCIBLE',severity:'warning',message:'PRIVATE_BACKEND_TEXT'}],warnings:[],
   })});
  });
- await page.goto('/');await page.getByRole('button',{name:'Advanced'}).click();await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
+ await page.goto('/');const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
  await page.getByLabel('Existing parser logic file').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
  await page.getByLabel('Existing parser listener configuration').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});
  expect(posts).toBe(0);
@@ -71,7 +71,7 @@ test('exact inspected pair requires explicit restore and clears current sample',
    importStatus:'EDITABLE_EXACT',roundTripVerified:true,portableProject:portable,diagnostics:[],warnings:[],
   })});
  });
- await page.goto('/');await page.getByRole('button',{name:'Advanced'}).click();await expect(page.getByRole('button',{name:'Return to Beginner Mode'})).toBeVisible();await page.getByLabel('Auto Parser raw logs').fill('{"private":"sample"}');
+ await page.goto('/');await page.getByLabel('Auto Parser raw logs').fill('{"private":"sample"}');
  const panel=page.getByLabel('Existing parser review and import');await expect(panel).toBeVisible();await panel.locator('summary').click();
  await page.getByLabel('Existing parser logic file').setInputFiles({name:'customized_demo_firewall',mimeType:'text/plain',buffer:Buffer.from(ruby)});
  await page.getByLabel('Existing parser listener configuration').setInputFiles({name:'customized_demo_firewall.conf',mimeType:'text/plain',buffer:Buffer.from(conf)});

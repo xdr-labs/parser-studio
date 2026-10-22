@@ -8,14 +8,14 @@ const fixtures=JSON.parse(readFileSync(
 test('multilingual event values survive Auto Parser review and source-type comparison',async({page})=>{
   const original=fixtures.map(item=>item.raw).join('\n');
   await page.goto('/');
-  await page.getByRole('button',{name:'Advanced Tools & Diagnostics'}).click();
   const input=page.getByLabel('Auto Parser raw logs');
   await input.fill(original);
   await expect(input).toHaveValue(original);
   await expect(page.getByLabel('Automatic event accounting'))
     .toContainText('3/3 events analyzed locally');
 
-  const review=page.getByRole('button',{name:'Review Detected Results'});
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled();
   await review.click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();
