@@ -48,10 +48,13 @@ test.describe('real source-to-backend DRAFT generation, without DP/sensor operat
       await expect(listener).toHaveValue('6801');
       if(port!==6801)await listener.fill(String(port));
       await page.getByLabel('Auto Parser raw logs').fill(logs);
-      await expect(page.getByLabel('Automatic event accounting')).toContainText('2/2 events analyzed locally');
-      if(await page.getByRole('button',{name:'Advanced'}).count())
-        await page.getByRole('button',{name:'Advanced'}).click();
-      await page.getByRole('button',{name:'Review Detected Results'}).click();
+      await page.getByLabel('Add Logs stage').getByRole('button',{name:'Analyze Logs',exact:true}).click();
+      await expect(page.getByLabel('Automatic event accounting')).toContainText(
+        '2/2 events analyzed locally',{timeout:20000});
+      const review=page.getByLabel('Add Logs stage')
+        .getByRole('button',{name:'Review Fields',exact:true});
+      await expect(review).toBeEnabled({timeout:20000});
+      await review.click();
       await expect(page.getByLabel('Review Fields stage')).toBeVisible();
       await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
       await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
