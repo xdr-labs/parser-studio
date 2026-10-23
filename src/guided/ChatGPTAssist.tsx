@@ -19,6 +19,7 @@ import ParserListenerPortInput from './ParserListenerPortInput';
 import NamedLogTypesPanel from './NamedLogTypesPanel';
 import ChatGPTConditionalDraft from './ChatGPTConditionalDraft';
 import {validateNamedLogs,type NamedLogType} from './namedLogTypes';
+import {buildPromptSourceEvidence} from './chatGptSourceEvidence';
 import {reviewedSourcePromptContext,checkNamedParserCoverage,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 import {composeChatGPTPrompt} from './chatGptPromptBuilder';
@@ -157,6 +158,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         goal,source:sample,sourceHash:prepared.sampleSha256,
         sourceCount:prepared.sourceCount,projectId,baseline,
         extraContext:reviewedContext.text+(namedSummary?'\n'+namedSummary:''),
+        sourceEvidence:buildPromptSourceEvidence(sample).text,
       }));
     }catch{
       setPromptError('Could not prepare the reviewed AI prompt. No log data was transmitted.');
@@ -443,7 +445,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           {generated&&<div className="auto-parser-download"
              aria-label="ChatGPT created parser files">
             <strong>Parser files created successfully</strong>
-            <span>The current logs and additional examples passed the Parser Studio checks. Nothing was installed automatically.</span>
+            <span>{baselineUnchanged
+              ?'The current source and unchanged, previously reviewed parser passed local verification. No different holdout examples were tested in this step. Nothing was installed automatically.'
+              :'The original source and independently supplied additional test examples passed the Parser Studio checks. Nothing was installed automatically.'}</span>
             <details className="auto-parser-recipe">
               <summary>Technical verification details</summary>
               <span>Two parser files passed integrity checks before download.</span>
