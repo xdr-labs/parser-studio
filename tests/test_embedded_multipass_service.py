@@ -9,11 +9,12 @@ import unittest
 from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'runtime' / 'multipass'))
 
-from multipass_preview_api import Handler, preview, preview_batch, allowed_origin
+from multipass_preview_api import Handler, preview, preview_batch, allowed_origin, MAX_HTTP_JSON_BODY_BYTES
 
 
 class EmbeddedMultiPassServiceTests(unittest.TestCase):
@@ -75,6 +76,59 @@ class EmbeddedMultiPassServiceTests(unittest.TestCase):
                     self.assertFalse(preview_data['nativeVerified'])
                     self.assertEqual(preview_data['sourceSha256'],
                                      hashlib.sha256(b'{"action":"allow"}').hexdigest())
+            finally:
+                server.shutdown()
+                thread.join(timeout=5)
+
+
+    def test_http_valid_500_json_events_fits_source_limit_after_wire_escaping(self):
+        # Browser JSON.stringify escapes 500 lines of JSON text on the wire.
+        # The HTTP envelope is larger than its original 64 KiB source.
+        source = '\n'.join(json.dumps({
+            'timestamp': '2026-10-23T10:00:00Z',
+            'event_type': ('threat', 'user', 'asset')[i % 3],
+            'src_ip': '192.0.2.%d' % (i % 250 + 1),
+            'port': 443 if i % 2 else 80,
+            'action': 'deny' if i % 2 else 'allow',
+            'id': 'test-%d' % i,
+        }, separators=(',', ':')) for i in range(500))
+        source_bytes = source.encode('utf8')
+        payload = json.dumps({'raw': source}, separators=(',', ':')).encode('utf8')
+        self.assertLessEqual(len(source_bytes), 65536)
+        self.assertGreater(len(payload), 65536 + 1024)
+        with ThreadingHTTPServer(('127.0.0.1', 0), Handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            endpoint = 'http://127.0.0.1:%d/api/v1/multipass/preview-batch' % server.server_port
+            try:
+                request = Request(endpoint, payload, {
+                    'Content-Type': 'application/json',
+                    'Origin': 'http://127.0.0.1:5180',
+                }, method='POST')
+                with urlopen(request, timeout=35) as response:
+                    result = json.load(response)
+                    self.assertEqual(response.status, 200)
+                self.assertEqual(result['eventCount'], 500)
+                self.assertEqual(result['sourceBytes'], len(source_bytes))
+                self.assertEqual(result['sourceSha256'], hashlib.sha256(source_bytes).hexdigest())
+                self.assertEqual(len(result['events']), 500)
+                self.assertFalse(result['targetVerified'])
+                # Increasing the wire envelope must never permit a larger RAW source.
+                oversize = json.dumps({'raw': 'X' * 65537}).encode('utf8')
+                with self.assertRaises(HTTPError) as rejected:
+                    urlopen(Request(endpoint, oversize, {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://127.0.0.1:5180',
+                    }, method='POST'), timeout=10)
+                self.assertEqual(rejected.exception.code, 422)
+                # The separate HTTP envelope guard still refuses overly large
+                # requests without buffering or examining their contents.
+                with self.assertRaises(HTTPError) as too_large_wire:
+                    urlopen(Request(endpoint, b'X' * (MAX_HTTP_JSON_BODY_BYTES + 1), {
+                        'Content-Type': 'application/json',
+                        'Origin': 'http://127.0.0.1:5180',
+                    }, method='POST'), timeout=10)
+                self.assertEqual(too_large_wire.exception.code, 422)
             finally:
                 server.shutdown()
                 thread.join(timeout=5)
