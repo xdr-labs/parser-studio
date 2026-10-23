@@ -55,7 +55,7 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);
  await expect(page.getByLabel('Existing parser review and import')).toBeVisible();
  await expect(page.getByLabel('Local logical boundary review')).toBeHidden();
- await expect(page.getByLabel('Private text grouping tool')).toBeVisible();
+ await expect(page.getByLabel('Private text grouping tool')).toHaveCount(0);
  await expect(page.getByLabel('Public synthetic parser fingerprints')).toBeHidden();
  await expect(page.getByLabel('Authorized Test Lab session recovery')).toHaveCount(0);
   await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);

@@ -1,9 +1,9 @@
 /* Auto Parser 2.0: sample-first novice surface, not native/DP certification. */
-.auto-parser-workspace{padding:25px clamp(12px,3.6vw,45px) 55px;max-width:1390px;width:100%;margin:0 auto;color:#172f42;flex:1;}
-.auto-parser-intro{background:linear-gradient(110deg,#132d41,#164f5a);padding:26px 30px;color:#e8faf9;border-radius:14px;}
+.auto-parser-workspace{padding:16px clamp(12px,3.6vw,45px) 55px;max-width:1390px;width:100%;margin:0 auto;color:#172f42;flex:1;}
+.auto-parser-intro{background:linear-gradient(110deg,#132d41,#164f5a);padding:16px 22px;color:#e8faf9;border-radius:14px;}
 .auto-parser-intro .pane-index{color:#77e5d8;}
-.auto-parser-intro h1{font-size:clamp(20px,2.6vw,31px);letter-spacing:-.6px;line-height:1.25;margin:9px 0 8px;color:#f5fbfd;}
-.auto-parser-intro p{font-size:13px;line-height:1.65;max-width:690px;color:#c8e1e8;margin:9px 0 18px;}
+.auto-parser-intro h1{font-size:clamp(19px,2vw,26px);letter-spacing:-.5px;line-height:1.16;margin:5px 0 5px;color:#f5fbfd;}
+.auto-parser-intro p{font-size:12px;line-height:1.48;max-width:960px;color:#c8e1e8;margin:6px 0 10px;}
 /* Desktop-only first-use shortcut: focus the existing raw source; do not move or rewrite its bytes. */
 .novice-log-entry-shortcut{display:inline-flex;align-items:center;justify-content:center;min-height:37px;padding:9px 15px;border:1px solid #ffb18e;border-radius:7px;background:#f05b29;color:#fff;font-size:12px;font-weight:800;cursor:pointer;}
 .novice-log-entry-shortcut:hover{background:#d94b1e;}
@@ -13,12 +13,12 @@
 .auto-parser-links{display:flex;gap:9px;flex-wrap:wrap;}
 .auto-parser-links button{background:#ffffff11;border:1px solid #ffffff40;color:#eaf7fc;padding:9px 13px;border-radius:7px;font-size:11px;font-weight:700;}
 .auto-parser-links button:hover{background:#ffffff25;}
-.auto-parser-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:17px 0;}
+.auto-parser-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:10px 0;}
 .auto-parser-steps button{border:1px solid #d3e2e7;background:#fff;color:#5b7888;border-radius:9px;padding:13px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;text-align:left;}
 .auto-parser-steps button.active{border-color:#14a4a4;background:#e9f7f4;color:#126b70;}
 .auto-parser-steps button span{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#e3eff1;color:#477784;font-size:12px;flex-shrink:0;}
 .auto-parser-steps button.active span{background:#0f9494;color:#fff;}
-.auto-parser-body{border:1px solid #d6e4eb;border-radius:13px;background:#fff;box-shadow:0 5px 22px rgba(18,54,68,.05);padding:clamp(16px,2.7vw,28px);}
+.auto-parser-body{border:1px solid #d6e4eb;border-radius:13px;background:#fff;box-shadow:0 5px 22px rgba(18,54,68,.05);padding:clamp(16px,1.8vw,22px);}
 .auto-parser-body h2{font-size:23px;color:#173e51;letter-spacing:-.6px;margin:0 0 6px;}
 .chatgpt-source-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 16px;}
 .chatgpt-source-grid label{min-width:0;}
@@ -31,6 +31,8 @@
 .auto-parser-body :is(label){font-size:11px;font-weight:700;color:#3a697a;display:block;margin:12px 0;}
 .auto-parser-body :is(input,select,textarea){border:1px solid #cbdce3;border-radius:7px;background:#fcfefe;color:#183449;padding:9px;min-height:36px;max-width:100%;}
 .auto-parser-body textarea{display:block;width:100%;min-height:180px;font:12px/1.65 var(--mono);resize:vertical;}
+/* Keep the primary Analyze action in the first desktop viewport; input remains resizable. */
+.auto-parser-body textarea[aria-label="Auto Parser raw logs"]{min-height:132px;}
 .auto-parser-body select{display:block;width:min(100%,460px);margin-top:7px;}
 .auto-parser-body :is(button,textarea,input,select):focus-visible{outline:2px solid #0e9c98;outline-offset:3px;}
 .auto-parser-source-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;}
@@ -153,7 +155,7 @@
 .beginner-tool-summary{display:flex!important;align-items:center;gap:5px}
 .beginner-tool-summary .beginner-help-tip{margin-left:2px}
 .beginner-tool-when{display:block;margin:6px 0 10px;padding:7px 9px;border-radius:7px;background:#f6f9fa;color:#5c747d;font-size:10px;line-height:1.5}
-.auto-parser-steps button .step-copy{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;width:auto;height:auto;border-radius:0;background:transparent;color:inherit;font-size:inherit;line-height:1.35;overflow-wrap:anywhere;place-items:initial}.auto-parser-steps button.active .step-copy{background:transparent;color:inherit}.auto-parser-steps button{min-width:0;min-height:64px}.auto-parser-steps button .step-lock{display:block;width:auto;height:auto;border-radius:0;background:transparent;white-space:normal;overflow-wrap:anywhere}.auto-parser-steps button.active .step-lock{background:transparent;color:#547c82}
+.auto-parser-steps button .step-copy{display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;width:auto;height:auto;border-radius:0;background:transparent;color:inherit;font-size:inherit;line-height:1.35;overflow-wrap:anywhere;place-items:initial}.auto-parser-steps button.active .step-copy{background:transparent;color:inherit}.auto-parser-steps button{min-width:0;min-height:50px}.auto-parser-steps button .step-lock{display:block;width:auto;height:auto;border-radius:0;background:transparent;white-space:normal;overflow-wrap:anywhere}.auto-parser-steps button.active .step-lock{background:transparent;color:#547c82}
 .auto-parser-steps button .step-lock{font-size:9px;color:#86979d;font-weight:600;line-height:1.25}
 .auto-parser-steps button.locked{border-style:dashed;background:#fbfcfd;color:#738893;cursor:pointer}
 .auto-parser-steps button.locked:hover{border-color:#9fc6cf;background:#f4f9fa}
@@ -175,7 +177,7 @@
 @media(max-width:850px){.auto-parser-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.auto-parser-steps{grid-template-columns:1fr}.auto-parser-steps button{justify-content:flex-start}}
 
-/* Parser identity shown before Add Logs so generated artifacts cannot hide behind demo names. */
+/* Parser identity follows the source entry, before review and output generation. */
 .parser-identity-card{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(420px,1.7fr) minmax(230px,1fr);gap:14px;align-items:end;margin:0 0 18px;padding:14px 16px;border:1px solid #d7e3e7;border-radius:10px;background:#fbfcfd}
 .parser-identity-copy{display:grid;gap:5px;align-self:center}
 .parser-identity-copy strong{font-size:13px;color:#2b5666}
@@ -234,6 +236,12 @@
   margin:6px 0;line-height:1.55;overflow-wrap:anywhere;
 }
 .named-log-intro small{display:block;margin-top:8px;color:var(--text-secondary,#5d5b60);}
+/* One-line optional multi-type entry keeps the actual log textbox in the first desktop viewport. */
+.named-log-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;}
+.named-log-intro p{margin:0;font-size:12px;line-height:1.4;}
+.named-log-intro .named-log-add{flex-shrink:0;}
+@media(max-width:850px){.named-log-intro{align-items:flex-start;flex-wrap:wrap;}}
+
 .named-log-heading,.named-log-card-heading,.named-log-card-bottom,.named-log-actions{
   display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
 }

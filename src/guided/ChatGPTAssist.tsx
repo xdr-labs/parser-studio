@@ -308,6 +308,18 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           Paste actual log records. The prompt contains the original logs so ChatGPT
           can analyze their real format, without substituting unrelated examples.
         </StageGuide>
+        {onEnableNamedLogTypes&&onChangeNamedLogTypes&&onExitNamedLogTypes&&
+          <div className="chatgpt-named-source" aria-label="Combine multiple log types">
+            <NamedLogTypesPanel groups={namedLogTypes}
+              onEnable={onEnableNamedLogTypes}
+              onChange={onChangeNamedLogTypes} onExit={onExitNamedLogTypes}/>
+          </div>}
+        <label>{namedLogTypes?'Combined original logs (local preview, read only)':'Original local logs'}
+          <textarea aria-label="ChatGPT local sample logs" rows={6} spellCheck={false}
+            maxLength={MAX_SAMPLE} value={sample} readOnly={Boolean(namedLogTypes)}
+            placeholder="Paste the logs you want to parse."
+            onChange={e=>{if(!namedLogTypes)setSample(e.target.value);}}/>
+        </label>
         <ParserListenerPortInput draft={draft} setDraft={setDraft}/>
         <section className="auto-parser-recipe" aria-label="Log-generating solution information">
           <h3>Log-generating solution (optional)</h3>
@@ -337,18 +349,6 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             </label>
           </div>
         </section>
-        {onEnableNamedLogTypes&&onChangeNamedLogTypes&&onExitNamedLogTypes&&
-          <div className="chatgpt-named-source" aria-label="Combine multiple log types">
-            <NamedLogTypesPanel groups={namedLogTypes}
-              onEnable={onEnableNamedLogTypes}
-              onChange={onChangeNamedLogTypes} onExit={onExitNamedLogTypes}/>
-          </div>}
-        <label>{namedLogTypes?'Combined original logs (local preview, read only)':'Original local logs'}
-          <textarea aria-label="ChatGPT local sample logs" rows={6} spellCheck={false}
-            maxLength={MAX_SAMPLE} value={sample} readOnly={Boolean(namedLogTypes)}
-            placeholder="Paste the logs you want to parse."
-            onChange={e=>{if(!namedLogTypes)setSample(e.target.value);}}/>
-        </label>
         {namedLogTypes&&namedLogTypes.length>=2&&
           <section className="auto-parser-recipe" aria-label="Combined parser routing review">
             <ChatGPTConditionalDraft draft={draft} setDraft={setDraft} sample={sample}
@@ -394,7 +394,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         </div>}
       </section>
       <section aria-label="ChatGPT result review">
-        <h2>3. Paste the ChatGPT result</h2>
+        <h2>{prompt?'3. Paste the ChatGPT result':'After preparing the prompt: paste ChatGPT’s JSON result'}</h2>
         <p>Paste the JSON result from ChatGPT. Parser Studio checks it before any parser rule can change.</p>
         <textarea aria-label="ChatGPT result JSON" rows={8} maxLength={MAX_RECIPE}
           spellCheck={false} value={response} onChange={e=>{

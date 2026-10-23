@@ -6,6 +6,29 @@ import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
 describe('Beginner metadata preservation review',()=>{
 
+  it('explains W3C/Zeek header-line accounting without treating headers as events',()=>{
+    const source='2026-10-23 08:11:22 192.0.2.12 GET /admin 403';
+    const preview:MultiPassSourcePreview={
+      contract:'parser-studio.multipass-source-preview.v0.1',
+      status:'PARTIAL',syntax:'W3C_EFL_DECLARED',
+      sourceSha256:'0'.repeat(64),
+      sourceBytes:new TextEncoder().encode(source).byteLength,
+      fields:{date:'2026-10-23',time:'08:11:22'},
+      spans:[],residuals:[],issues:['SCHEMA_CONTEXT_NOT_IN_DRAFT_COMPILER'],
+      nativeVerified:false,targetVerified:false,
+    };
+    render(<BeginnerAnalysisPanel source={source}
+      events={[{startByte:0,endByte:preview.sourceBytes,preview}]}
+      onOpenAssisted={()=>{}} metadataLineCount={2}/>);
+    expect(screen.getByLabelText('Source header versus data event explanation'))
+      .toHaveTextContent(/1 data event.*2 schema\/header lines/);
+    expect(screen.getByLabelText('Beginner analysis summary'))
+      .toHaveTextContent('0 of 1 log event parsed completely');
+    expect(screen.getByLabelText('Beginner analysis summary'))
+      .not.toHaveTextContent('3 log events parsed');
+  });
+
+
   it('does not call source-complete positional CSV parser-ready while schema review is pending',()=>{
     const source='alpha,beta,gamma';
     const preview:MultiPassSourcePreview={
