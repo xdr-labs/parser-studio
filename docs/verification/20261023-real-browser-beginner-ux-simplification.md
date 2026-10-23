@@ -136,3 +136,51 @@ available; merge/public development deployment is a separate accepted gate.
 Do not regenerate the earlier MDL accuracy research or overwrite other
 protected worktrees. Do not claim native target/DP/sensor certification based
 on these browser-generated DRAFT files.
+
+
+## Additional independent browser coverage — 2026-10-23
+
+After the core 12-format real public-app journey, an additional **54/54
+Chromium browser tests PASS** on the isolated revised UI using deliberately
+authored (noncustomer) representative WAF, NGFW, IPS, EDR, NDR, DNS, email,
+IAM, cloud and Unicode log examples. Every test pasted the source in the
+visible Auto Parser editor, clicked Analyze Logs, inspected the real result,
+and proceeded to Review/Map only when the browser permitted it. Observed:
+
+- **42/54** source samples reported all data events structurally parsed.
+  This is a bounded **authored sample** figure, not independent vendor Field
+  F1 or a claim that those 42 emit native-ready DRAFT files.
+- **12/54** remained review-only, with explicit source residuals, incomplete
+  columns, header-native limits or unsupported input. These included
+  ModSecurity text, Cisco ASA prose, Juniper/WatchGuard, Snort,
+  Zeek/W3C header streams, quoted/unclosed CSV, XML and other cases.
+  Safe refusal is expected, not a missing-event drop.
+- **0** browser page errors and **0** API 5xx responses.
+- The review-only samples retained the original user-entered text and did not
+  bypass the generator readiness gate.
+
+A separate same-checkout, real-pinned-Backend Chromium run achieved **18/18
+PASS** for actual Ruby/CONF generation, 6801/6819 override, multi-type
+conditional DRAFT, declared relay boundary, ChatGPT recovery, historical
+restore and strict mapping denial. No mocks or external device were used for
+those backend DRAFT generation checks. A separate UI-oriented suite ran
+**40 PASS / 1 expected conditional SKIP** (the backend-gated case is
+covered in the pinned Backend matrix). Previously completed affected
+regressions **26/26 PASS**; keep these named suite scopes distinct rather
+than summing duplicate cases as independent source coverage.
+
+### Final first-viewport interaction
+
+The final 1280×800 and 1440×900 source checks assert **both** the original
+log textbox **and the Analyze Logs button** are visible and actionable
+without first scrolling. A six-row, user-resizable raw editor replaces the
+earlier ten-row default; additional log lines remain available by scrolling
+inside the editor. The input source itself is unchanged. Two real Chromium
+viewport cases PASS; resulting screenshots are preserved under
+`/tmp/parserstudio-first-screen-final-20261023`.
+
+Final exact-source implementation and CI must follow this evidence; public
+`app.parser.xdr.ooo` remains the previously owner-approved bundle until
+separately authorized to deploy the new novice UX. All source fixtures are
+test-only and do not assert native Stellar DP/sensor or vendor-wide oracle
+accuracy.
