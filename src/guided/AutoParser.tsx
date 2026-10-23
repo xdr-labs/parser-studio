@@ -40,7 +40,7 @@ import NamedLogTypeReview from './NamedLogTypeReview';
 import {analyzeNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
 import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
 import DeclaredRelayProfilePanel from './DeclaredRelayProfilePanel';
-import ExistingParserReviewPanel from './ExistingParserReviewPanel';
+
 import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import AnalysisProgressPanel from './AnalysisProgressPanel';
 import {useAnalysisRun} from './useAnalysisRun';
@@ -574,9 +574,6 @@ export default function AutoParser({
      parserSetOriginRef.current=null;setParserSetOrigin(null);setSample(value);setDatasetName(file.name);setSelected(0);setStep(0);
    }catch{setMessage('Only bounded, valid UTF-8 text files can be opened locally.');}
  }
- function restoreExistingProject(next:ParserDraft,label:string){
-   parserSetOriginRef.current=null;setParserSetOrigin(null);setDraft(next);setSample('');setDatasetName(label);setSelected(0);setStep(0);
- }
  async function previewMultiPass(){
   if(!sample.trim()||multiPassBusy)return;
   if(namedLogValidation&&!namedLogValidation.ok){
@@ -1045,7 +1042,6 @@ export default function AutoParser({
          <HelpTip label="Why are some events blocked?"
            text="Security logs can contain unusual headers, broken timestamps, several lines per event, or vendor-specific text. Parser Studio stops instead of guessing when that could lose data or create the wrong fields."/>
        </p>}
-       <ExistingParserReviewPanel onRestore={restoreExistingProject}/>
        {advanced&&<details className="auto-parser-recipe" aria-label="Multi-line event boundary tool">
          <summary className="beginner-tool-summary">Check where multi-line events begin and end
            <HelpTip label="Multi-line event help"
