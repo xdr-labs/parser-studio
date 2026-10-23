@@ -17,6 +17,11 @@ from source_parse import assert_source_accounting
 from visible_redaction import CONTRACT as REDACTION_CONTRACT,assess_visible_redaction
 
 MAX_BYTES=65536
+# Only the original decoded source is capped at 64 KiB. JSON escaping of an
+# accepted source can expand each byte to as many as six ASCII bytes (\u0000).
+# Bound the transport envelope separately; preview()/preview_batch() still
+# reject any decoded source larger than MAX_BYTES before parsing.
+MAX_HTTP_JSON_BODY_BYTES=MAX_BYTES*6+1024
 
 def _preview_event(raw:str,event)->dict:
     assert_source_accounting(event)
@@ -144,7 +149,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(403);return
         try:
             length=int(self.headers.get('Content-Length','-1'))
-            if not 1<=length<=MAX_BYTES+1024:raise ValueError('SOURCE_LIMIT')
+            if not 1<=length<=MAX_HTTP_JSON_BODY_BYTES:raise ValueError('SOURCE_LIMIT')
             body=json.loads(self.rfile.read(length).decode('utf8','strict'))
             if not isinstance(body,dict) or set(body)!={'raw'}:raise ValueError('INVALID_REQUEST')
             result=(preview_batch(body['raw']) if self.path.endswith('preview-batch')
