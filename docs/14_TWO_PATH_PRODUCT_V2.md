@@ -27,6 +27,19 @@ button, not repeated in the default introductory text. For W3C/Zeek headers, exp
 metadata/header lines from logical data events while preserving both in source
 accounting. Field extraction does not imply downloadable native support.
 
+## ChatGPT Assisted first-use visual sequence — 2026-10-23
+
+A real 1280×800 desktop Chromium screenshot exposed the original log input
+below the first viewport because optional listener-port and manufacturer details
+were rendered first. The novice user now pastes **original logs before
+optional source identity and receiving-port controls**, without changing how
+those fields bind to an approved parser DRAFT. The "3. Paste the ChatGPT result"
+number appears **only after** the user has prepared step 2's copyable prompt;
+before that action, the result heading explicitly explains it is the later
+paste step. This avoids showing a missing step in the untouched first-use UI.
+The visible warning and manual copy/paste boundary remain unchanged; no
+third-party transfer or automatic AI operation was added.
+
 ## Product-level navigation: only two choices
 
 ### 1. Auto Parser

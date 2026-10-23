@@ -184,3 +184,36 @@ Final exact-source implementation and CI must follow this evidence; public
 separately authorized to deploy the new novice UX. All source fixtures are
 test-only and do not assert native Stellar DP/sensor or vendor-wide oracle
 accuracy.
+
+## ChatGPT Assisted first-screen visual correction — 2026-10-23
+
+A further direct Playwright Chromium visual review of the *changed* candidate
+walked all four Auto stages, generated **actual two-file Ruby/CONF and ZIP**
+outputs, and opened the ChatGPT Assisted page with the same original log source.
+The first untouched ChatGPT screen exposed the next editor only beneath
+optional product/port controls, and rendered a **"3. Paste"** heading before
+the conditional **"2. Copy to ChatGPT"** prompt was prepared. This is a
+concrete newcomer sequencing problem, not a parser-engine defect.
+
+The source input now precedes optional ChatGPT manufacturer, product, version,
+source/delivery and listener-port values. Before prompt generation the result
+section reads **"After preparing the prompt: paste ChatGPT's JSON result"**;
+after the user prepares step 2, it displays **"3. Paste the ChatGPT result"**.
+No source values are rewritten. All existing manual privacy warnings, exact
+source digests, invalid-JSON rejection, holdout approval and real DRAFT
+backend checks remain intact.
+
+Two real Chromium user cases at **1280x800 and 1440x900 PASS**, verifying
+first-view original log visibility, port field placement, all three displayed
+steps, the manually prepared prompt's exact original source, solution context,
+zero page errors and zero external requests. The before/after screenshots are
+retained under `/tmp/parserstudio-chatgpt-first-steps-20261023`.
+An independent candidate-stage visual receipt with 8 screens and actual
+Ruby, CONF and ZIP filenames is retained at
+`/home/aella/.local/state/parserstudio-public-rollouts/parserstudio-candidate-visual-audit-20261023/inspection.json`.
+The beginner-only interface still intentionally hides internal synthetic
+replay, Test Lab / Interflow and unrelated advanced diagnostics; it does not
+hide the real file download, mapping or ChatGPT correction steps.
+
+The published development app remains on the previously owner-approved
+bundle. This candidate is **not yet merged or deployed**.
