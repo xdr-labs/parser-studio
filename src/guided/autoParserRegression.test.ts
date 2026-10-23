@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {createDraft,type ParserDraft} from '../model';
 import {preview} from '../parser';
-import {assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,proposeReviewableMapping} from './autoParserRegression';
+import {assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,proposeReviewableMapping} from './autoParserRegression';
 
 const train=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"user":"PRIVATE_A"}',
@@ -133,5 +133,74 @@ describe('P0-AP4 exact source, full coverage and holdout candidate regression',(
    }).join('\n');
    expect(proposeReviewableMapping(minimal,draft,preview(minimal,draft)))
      .toMatchObject({ok:false,reason:'NO_SAFE_CHANGE'});
+ });
+});
+
+
+describe('Exact normalized namespace in reviewed ChatGPT vendor-field correction',()=>{
+ const source=[
+  'devname=FW01 action=deny srcip=192.0.2.11',
+  'devname=FW02 action=allow srcip=192.0.2.12',
+ ].join('\n');
+ const other=[
+  'devname=FW03 action=allow srcip=192.0.2.13',
+  'devname=FW04 action=deny srcip=192.0.2.14',
+ ].join('\n');
+ const baseline=():ParserDraft=>{
+   const initial=createDraft();
+   return {...initial,format:'kv',vendor:'Fortinet',
+     mappings:[
+       {id:'vendor-device',source:'devname',target:'devname',type:'string'},
+       {id:'top-action',source:'action',target:'action',type:'string'},
+     ],guided:{...initial.guided!,
+       groups:{...initial.guided!.groups,'vendor-device':'vendor_fields','top-action':'top_fields'}}};
+ };
+ it('resolves exact manufacturer-prefixed keys instead of comparing unprefixed recipe labels',()=>{
+   const draft=baseline(),next=structuredClone(draft);
+   next.mappings[0]={...next.mappings[0]!,target:'device_hostname'};
+   expect(normalizedMappingOutputPath(draft,'vendor-device')).toBe('Fortinet.devname');
+   expect(normalizedMappingOutputPath(next,'vendor-device')).toBe('Fortinet.device_hostname');
+   expect(normalizedMappingOutputPath(draft,'top-action')).toBe('action');
+   expect(()=>normalizedMappingOutputPath(draft,'missing')).toThrow('mapping identity');
+   const first=preview(source,draft),corrected=preview(source,next);
+   const holdout={source:other,baseline:preview(other,draft),candidate:preview(other,next)};
+   const naive=compareMappingCorrectionCandidate({source,baseline:first,candidate:corrected,holdout},
+     {oldTarget:'devname',newTarget:'device_hostname'});
+   expect(naive.acceptedWithoutRegression).toBe(false);
+   const exact=compareMappingCorrectionCandidate({source,baseline:first,candidate:corrected,holdout},
+     {oldTarget:normalizedMappingOutputPath(draft,'vendor-device'),
+       newTarget:normalizedMappingOutputPath(next,'vendor-device')});
+   expect(exact).toMatchObject({acceptedWithoutRegression:true,holdoutStatus:'TESTED',
+     baseline:{regressions:0,fieldRemovals:0,typeChanges:0},
+     holdout:{regressions:0,fieldRemovals:0,typeChanges:0}});
+   expect(JSON.stringify(exact)).not.toContain('FW01');
+   expect(JSON.stringify(exact)).not.toContain('192.0.2.11');
+ });
+ it('does not suppress unrelated field removal, output type mutation, or insufficient holdout',()=>{
+   const before=baseline(),after=structuredClone(before);
+   after.mappings[0]={...after.mappings[0]!,target:'device_hostname'};
+   const scope={oldTarget:normalizedMappingOutputPath(before,'vendor-device'),
+     newTarget:normalizedMappingOutputPath(after,'vendor-device')};
+   const broken=structuredClone(after);
+   broken.mappings[1]={...broken.mappings[1]!,source:'missing_action'};
+   const damage=compareMappingCorrectionCandidate({source,baseline:preview(source,before),
+     candidate:preview(source,broken),holdout:{source:other,baseline:preview(other,before),
+       candidate:preview(other,broken)}},scope);
+   expect(damage.acceptedWithoutRegression).toBe(false);
+   expect(damage.baseline.fieldRemovals).toBeGreaterThan(0);
+   const typed=structuredClone(preview(source,after));
+   // A forged or incorrectly normalized replacement may never bypass a typed
+   // scope just because its destination key exists.
+   (typed.events[0]!.normalized as Record<string,any>).Fortinet.device_hostname=123;
+   const typeRegression=compareMappingCorrectionCandidate({source,baseline:preview(source,before),
+     candidate:typed},scope);
+   expect(typeRegression.acceptedWithoutRegression).toBe(false);
+   expect(typeRegression.baseline.regressions).toBeGreaterThan(0);
+   const insufficient=compareMappingCorrectionCandidate({source,baseline:preview(source,before),
+     candidate:preview(source,after),holdout:{
+       source:other.split('\n')[0]!,baseline:preview(other.split('\n')[0]!,before),
+       candidate:preview(other.split('\n')[0]!,after)}},scope);
+   expect(insufficient.holdoutStatus).toBe('REJECTED');
+   expect(insufficient.acceptedWithoutRegression).toBe(false);
  });
 });
