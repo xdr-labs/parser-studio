@@ -76,7 +76,7 @@ test('mixed families and unknown logs are not dropped or transmitted to validati
  await expect(page.getByLabel('Automatic event accounting')).toContainText('4/4 events analyzed locally');
  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
  await expect(page.getByLabel('Add Logs stage')).toBeVisible();
- await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+ await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event unrecognized in the initial format scan');
  // Wait for the asynchronous, byte-preserving Multi-Pass result before checking recovery.
  await expect(page.getByLabel('Parse problem inspector')).toContainText('MALFORMED_SECRET',{timeout:20000});
  await expect(page.getByLabel('Auto Parser raw logs')).toContainText('MALFORMED_SECRET');

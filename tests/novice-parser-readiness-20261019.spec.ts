@@ -16,7 +16,7 @@ for(const item of cases){
     // The stricter preliminary event ledger now recognizes duplicate KV
     // names before any review or compilation. A malformed source must not
     // be granted a clickable Review Fields path just to show a later block.
-    await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+    await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event unrecognized in the initial format scan');
     // Multi-Pass retains both source occurrences and explicitly explains
     // the still-unqualified downloadable parser. It is source-only review,
     // not a contradictory "fully parser-ready" success claim.

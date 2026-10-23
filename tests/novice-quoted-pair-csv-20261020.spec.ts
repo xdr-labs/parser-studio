@@ -15,7 +15,7 @@ test('novice reviews strongly quoted two-column CSV without inventing column nam
   await source.fill(quoted);
   const census=page.getByLabel('Automatic event accounting');
   await expect(census).toContainText('3/3 events checked');
-  await expect(census).toContainText('0 events need attention');
+  await expect(census).toContainText('0 events unrecognized in the initial format scan');
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(source).toHaveValue(quoted);
   const csv=page.getByLabel('Review CSV column names');
@@ -63,7 +63,7 @@ test('neutral names for two quoted fields remain user-approved and reset on chan
   await page.goto('/');
   const source=page.getByLabel('Auto Parser raw logs');
   await source.fill(sample);
-  await expect(page.getByLabel('Automatic event accounting')).toContainText('0 events need attention');
+  await expect(page.getByLabel('Automatic event accounting')).toContainText('0 events unrecognized in the initial format scan');
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   const csv=page.getByLabel('Review CSV column names');
   await expect(csv).toContainText('2 consistent columns detected');
@@ -71,6 +71,6 @@ test('neutral names for two quoted fields remain user-approved and reset on chan
   await expect(csv.getByLabel('Reviewed CSV column names')).toHaveValue('field_001,field_002');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
   await source.fill('"허용"junk,"김민수"');
-  await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+  await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event unrecognized in the initial format scan');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
 });

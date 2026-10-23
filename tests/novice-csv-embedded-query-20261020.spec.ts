@@ -22,7 +22,7 @@ test('unquoted CSV URL query equals survives real novice source accounting and d
     await source.fill(text);
     const ledger=page.getByLabel('Automatic event accounting');
     await expect(ledger).toContainText('1/1 events checked');
-    await expect(ledger).toContainText('0 events need attention');
+    await expect(ledger).toContainText('0 events unrecognized in the initial format scan');
     await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
     await expect(source).toHaveValue(text);
     const csv=page.getByLabel('Review CSV column names');
@@ -34,7 +34,7 @@ test('unquoted CSV URL query equals survives real novice source accounting and d
   }
   await page.goto('/');
   await page.getByLabel('Auto Parser raw logs').fill('action=allow bogus token,second,third');
-  await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+  await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event unrecognized in the initial format scan');
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
   expect(errors).toEqual([]);
