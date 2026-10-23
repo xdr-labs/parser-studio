@@ -940,14 +940,20 @@ export default function AutoParser({
          </div>
        </div>}
        {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
-         <strong>{report.accounted}/{report.sourceCount} events checked</strong>
-         <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally</span>
+         <strong>Initial format scan · {report.accounted}/{report.sourceCount} events checked</strong>
+         <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally in the initial format scan only, not final parser analysis</span>
          {currentMultiPassReview?.metadataLines?
            <span role="note" aria-label="Header and data event accounting">
              {currentMultiPassReview.events.length} data event{currentMultiPassReview.events.length===1?'':'s'} ·
              {' '}{currentMultiPassReview.metadataLines} original schema/header line{currentMultiPassReview.metadataLines===1?'':'s'} kept separately (not events)
            </span>:null}
-         <span>{report.unsupported} event{report.unsupported===1?'':'s'} {report.unsupported===1?'needs':'need'} attention · Local analysis only</span>
+         <span>{report.unsupported} event{report.unsupported===1?'':'s'} unrecognized in the initial format scan · not a parser completeness result</span>
+         {currentMultiPassReview&&<span role="note" aria-label="Full parser analysis accounting">
+           Use the full parser analysis summary for parsed, partial and review-required events.
+           {report.sourceCount!==currentMultiPassReview.events.length
+             ?' Initial format scanning counts original input records; full analysis counts logical data events.'
+             :''}
+         </span>}
          {advanced&&report.families.map(x=><span key={x.envelope+'/'+x.body}>
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}

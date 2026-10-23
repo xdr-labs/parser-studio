@@ -23,7 +23,7 @@ test('novice event accounting refuses duplicate KV sources before generating a D
     const source=page.getByLabel('Auto Parser raw logs');
     await source.fill(raw);
     await expect(page.getByLabel('Automatic event accounting')).toContainText('1/1 events checked');
-    await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event needs attention');
+    await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event unrecognized in the initial format scan');
     await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
     // A separately reviewed Multi-Pass source recovery may become available
     // *after* analysis. Only the lexical pre-analysis census is changed here;
@@ -41,7 +41,7 @@ test('quotes, distinct case-sensitive names and legitimate KV events do not trig
     const source=page.getByLabel('Auto Parser raw logs');
     await source.fill(raw);
     await expect(page.getByLabel('Automatic event accounting')).toContainText('1/1 events checked');
-    await expect(page.getByLabel('Automatic event accounting')).toContainText('0 events need attention');
+    await expect(page.getByLabel('Automatic event accounting')).toContainText('0 events unrecognized in the initial format scan');
     await expect(source).toHaveValue(raw);
   }
 });

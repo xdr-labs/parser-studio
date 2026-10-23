@@ -22,7 +22,7 @@ test('invalid JSON object names never become complete browser events or DRAFT co
     await input.fill(raw);
     const accounting=page.getByLabel('Automatic event accounting');
     await expect(accounting).toContainText('1/1 events checked');
-    await expect(accounting).toContainText('1 event needs attention');
+    await expect(accounting).toContainText('1 event unrecognized in the initial format scan');
     await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
     await expect(input).toHaveValue(raw);
     await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
@@ -38,7 +38,7 @@ test('identical JSON member names in separate valid objects remain source-preser
   await input.fill(raw);
   const accounting=page.getByLabel('Automatic event accounting');
   await expect(accounting).toContainText('1/1 events checked');
-  await expect(accounting).toContainText('0 events need attention');
+  await expect(accounting).toContainText('0 events unrecognized in the initial format scan');
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(input).toHaveValue(raw);
 });

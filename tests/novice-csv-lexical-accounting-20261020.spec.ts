@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 
 // No manufacturer originals: strictly synthetic RFC4180-style lexical cases.
 // A CSV-shaped record with an illegal quote transition must not receive a
-// "0 events need attention" browser envelope status before compiler review.
+// "0 events unrecognized in the initial format scan" browser envelope status before compiler review.
 const malformed=[
   'left"inside",right,third',
   '"first"junk,second,third',
@@ -32,7 +32,7 @@ test('strict source accounting rejects illegal CSV quote transitions but accepts
     await source.fill(text);
     const census=page.getByLabel('Automatic event accounting');
     await expect(census).toContainText('1/1 events checked');
-    await expect(census).toContainText('1 event needs attention');
+    await expect(census).toContainText('1 event unrecognized in the initial format scan');
     await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
     await expect(source).toHaveValue(text);
     await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
@@ -43,7 +43,7 @@ test('strict source accounting rejects illegal CSV quote transitions but accepts
     await source.fill(text);
     const census=page.getByLabel('Automatic event accounting');
     await expect(census).toContainText('1/1 events checked');
-    await expect(census).toContainText('0 events need attention');
+    await expect(census).toContainText('0 events unrecognized in the initial format scan');
     await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
     await expect(source).toHaveValue(text);
     const csv=page.getByLabel('Review CSV column names');
