@@ -113,6 +113,22 @@ function reasonFor(event:EventResult,envelope:EnvelopeEntry):RepairReason{
  return 'NATIVE_PENDING';
 }
 interface ScopedReplacement {oldTarget:string;newTarget:string}
+
+/** Resolve the actual browser-normalized field location before comparing one
+ * AI-suggested mapping correction. Vendor fields are nested under the exact
+ * source draft's manufacturer name; top and namespace fields are at the root.
+ * Never infer a dotted path from a user-facing field label alone.
+ */
+export function normalizedMappingOutputPath(draft:ParserDraft,mappingId:string):string{
+ const mapped=draft.mappings.find(item=>item.id===mappingId);
+ if(!mapped)fail('mapping identity is missing');
+ const group=draft.guided?.groups[mappingId]??'vendor_fields';
+ if(group!=='vendor_fields'&&group!=='top_fields'&&group!=='ns_fields')
+   fail('mapping field group is invalid');
+ if(group!=='vendor_fields')return mapped.target;
+ const vendor=draft.vendor.trim()||'vendor';
+ return vendor+'.'+mapped.target;
+}
 /** Exact source identity, all-event accounting, no field names or values in output. */
 function compareBrowserSuitesInternal(source:string,before:SuiteResult,after:SuiteResult,
  scope?:ScopedReplacement):BoundedRegressionReport{
@@ -130,6 +146,7 @@ function compareBrowserSuitesInternal(source:string,before:SuiteResult,after:Sui
    let added=0,removed=0,changed=0;
    const scopedOk=!scope||(
      prev.has(scope.oldTarget)&&next.has(scope.newTarget)&&
+     prev.get(scope.oldTarget)===next.get(scope.newTarget)&&
      (scope.oldTarget===scope.newTarget||!next.has(scope.oldTarget))
    );
    for(const [key,value] of prev){
@@ -143,7 +160,11 @@ function compareBrowserSuitesInternal(source:string,before:SuiteResult,after:Sui
      if(scope&&scope.oldTarget!==scope.newTarget&&key===scope.newTarget)continue;
      if(!prev.has(key))added++;
    }
-   const regression=positive(b)&&(!positive(a)||!scopedOk||removed>0||changed>0);
+   // Scoped correction needs the exact old/new typed field in every source
+   // event, even when unrelated unmapped fields made the baseline a REVIEW.
+   // Otherwise a renamed but type-mutated vendor value can look like PASS.
+   const regression=(scope!==undefined&&!scopedOk)||
+     (positive(b)&&(!positive(a)||removed>0||changed>0));
    if(regression)regressions++;
    const family=familyName(entry);
    const f=families.get(family)??{family,count:0,beforePassed:0,afterPassed:0};
@@ -209,7 +230,9 @@ export function compareCandidate(input:CandidateInput):CandidateComparison{
 }
 export function compareMappingCorrectionCandidate(input:CandidateInput,
  scope:ScopedReplacement):CandidateComparison{
- if(!scope.oldTarget||!scope.newTarget||scope.oldTarget.length>128||scope.newTarget.length>128)
+ // The real normalized vendor namespace can precede a separately bounded
+ // mapping target. Allow the combined path, not arbitrary unbounded scopes.
+ if(!scope.oldTarget||!scope.newTarget||scope.oldTarget.length>256||scope.newTarget.length>256)
   fail('invalid scoped mapping replacement');
  return compareCandidateInternal(input,scope);
 }

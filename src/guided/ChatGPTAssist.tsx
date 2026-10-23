@@ -5,7 +5,7 @@ import type {ParserDraft,SuiteResult} from '../model';
 import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
   proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
   proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
-import {compareCandidate,compareMappingCorrectionCandidate,type CandidateComparison} from './autoParserRegression';
+import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -204,7 +204,13 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       if(additive.ok)proposal=additive;
       else{
         const correction=proposeV01MappingCorrectionFromAI(review,sample,context.draft,context.suite);
-        if(correction.ok){proposal=correction;correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};}
+        if(correction.ok){
+          proposal=correction;
+          correctionScope={
+            oldTarget:normalizedMappingOutputPath(context.draft,correction.mappingId),
+            newTarget:normalizedMappingOutputPath(correction.candidate,correction.mappingId),
+          };
+        }
         else proposal=proposeV01EnrichmentFromAI(review,sample,context.draft,context.suite);
       }
     }
