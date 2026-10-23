@@ -15,7 +15,8 @@ Feature-contract coverage retained outside retired screens:
 - tests/integrated-backend.spec.ts: actual generated Ruby, CONF, ZIP and
   SHA-validation, two user methods, metadata and authorization gates.
 - tests/two-path.spec.ts: exact two-choice navigation, privacy, no legacy paths.
-- tests/private-drain3.spec.ts and ai-integrated-review.spec.ts: gated optional AI.
+- tests/private-drain3.spec.ts: asserts that the retired private grouping UI is absent and cannot initiate raw-source HTTP requests; the historical gated network behavior is preserved in repository history, not reported as current UI PASS.
+- ai-integrated-review.spec.ts: archived experimental AI review contract.
 - New Auto Parser result-specific revision/Apply/Replay/Interflow tests must
   replace applicable sections of these old suites as those tools are
   separately integrated without adding additional creation menus.

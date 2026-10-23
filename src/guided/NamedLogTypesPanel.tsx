@@ -18,13 +18,10 @@ export default function NamedLogTypesPanel({
 }:Props){
   const [fileError,setFileError]=useState('');
   if(!groups)return <section className="named-log-intro" aria-label="Add multiple log types">
-    <p><strong>Does this product produce different kinds of logs?</strong>
-      {' '}Add Threat, Traffic, User, Asset, or other examples separately.
-      Parser Studio will review every type together without guessing the format.</p>
+    <p><strong>Have Threat, User or other types?</strong> Add and review them together.</p>
     <button type="button" onClick={onEnable} className="named-log-add">
       <Plus size={16}/> Add Another Log Type
     </button>
-    <small>Existing pasted logs stay in the first group. No logs are sent to an AI service.</small>
   </section>;
   const validation=validateNamedLogs(groups);
   const edit=(id:string,update:Partial<NamedLogType>)=>{

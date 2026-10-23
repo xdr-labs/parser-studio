@@ -5,6 +5,28 @@
 > **Owner UX override (2026-10-22):** ChatGPT Assisted Parser takes the exact user-entered log source into a manually copied prompt. The separate synthetic/redacted example editor, masking approval, and extra source-copy action are removed. Show one clear warning that the prompt contains potentially sensitive log values; do not automatically send source data to ChatGPT. An unavailable v0.1 project must not create contradictory null-project instructions: the v0.2 recovery proposal uses the local draft identity and remains REVIEW_ONLY, unverified, and separately validated. Auto Parser presents only the default Multi-Pass analysis and context-sensitive feedback; Tools & Diagnostics and standalone deeper analysis mode are removed. Old tests/documents about the superseded redaction and troubleshooting UX are historical, not acceptance criteria.
 
 
+## P0 beginner UX cleanup — 2026-10-23
+
+The public desktop multi-format audit found that the optional **Group similar
+text logs** (private Drain3) and **Find a similar known log shape** controls
+duplicate the primary Analyze Logs workflow without producing an independently
+reviewed parser. They are removed from the Auto Parser Add Logs UI. No private
+source grouping capability probe or user-log POST is initiated by this screen.
+The useful automatic, browser-local *different log shapes* grouping and
+reversible selection for repeated unknown events remain available when needed;
+this does not add a third parser creation method.
+
+User-directed prefix/postfix selection, declared relay review, existing parser
+inspection, and the offline Python test sender remain as opt-in, collapsed
+controls. The normal Add Logs → Review Fields → Map Fields → Create Parser path
+remains the default. Desktop input is moved ahead of optional manufacturer,
+product and listener-port metadata, with a compact introduction and one-line
+multi-type action so the original raw-log textbox is visible at first load.
+Source/byte-fidelity upload guidance is retained next to the file input's Help
+button, not repeated in the default introductory text. For W3C/Zeek headers, explicitly distinguish original
+metadata/header lines from logical data events while preserving both in source
+accounting. Field extraction does not imply downloadable native support.
+
 ## Product-level navigation: only two choices
 
 ### 1. Auto Parser

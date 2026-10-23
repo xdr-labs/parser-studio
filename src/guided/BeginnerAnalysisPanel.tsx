@@ -21,6 +21,7 @@ interface Props {
   onApplyCandidate?:(draft:ParserDraft)=>void;
   compilerBlockedReason?:string;
   resolvedByReviewedCandidate?:boolean;
+  metadataLineCount?:number;
   parserRuleReviewRequired?:boolean;
   parserRuleReviewEventIndexes?:number[];
   csvReviewRequired?:boolean;
@@ -259,7 +260,7 @@ function sourceSegments(raw:string,preview:MultiPassSourcePreview){
 }
 
 export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draft,suite,onApplyCandidate,
-  resolvedByReviewedCandidate=false,compilerBlockedReason,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
+  resolvedByReviewedCandidate=false,metadataLineCount=0,compilerBlockedReason,parserRuleReviewRequired=false,parserRuleReviewEventIndexes,
   csvReviewRequired=false,csvConsistentShapeAvailable=true,neutralCsvColumnCount,onUseNeutralCsvColumns,protectedSourceValuesByEvent,
   protectedResidualTextByEvent}:Props){
   const [selected,setSelected]=useState(0);
@@ -360,6 +361,14 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         </p>}
       </div>
     </div>
+    {metadataLineCount>0&&<p className="beginner-source-accounting" role="note"
+      aria-label="Source header versus data event explanation">
+      The input contains {events.length} data event{events.length===1?'':'s'} and
+      {' '}{metadataLineCount} schema/header line{metadataLineCount===1?'':'s'}.
+      Header lines describe the log format, are preserved as original source,
+      and are not additional data events. Parser-file support for the original
+      header-dependent stream is checked separately.
+    </p>}
     {current&&<div className="beginner-problem" aria-label="Parse problem inspector">
       {problems.length>1&&<label>Problem to review
         <select aria-label="Problem event" value={selected} onChange={e=>{setSelected(Number(e.target.value));setPromptOpen(false);setPromptText('');setCopyStatus('');}}>

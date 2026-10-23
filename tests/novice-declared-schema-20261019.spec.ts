@@ -41,7 +41,8 @@ test('pasted CRLF text is browser-normalized, not misrepresented as original byt
  const source=page.getByLabel('Auto Parser raw logs');
  await source.fill(w3c);
  await expect(source).toHaveValue(w3c.replace(/\r\n/g,'\n'));
- await expect(page.getByText('For exact original line endings')).toBeVisible();
+ await page.getByRole('button',{name:'Help: Upload a log file'}).click();
+ await expect(page.getByRole('tooltip')).toContainText('For exact original line endings');
 });
 test('adversarial declared columns remain review-only',async({page})=>{
  await page.goto('/');
