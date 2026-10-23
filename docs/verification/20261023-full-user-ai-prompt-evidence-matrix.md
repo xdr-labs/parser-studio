@@ -70,6 +70,29 @@ An additional independent 9-case browser suite fed known, controlled, strict v0.
 3. **Unsupported free text:** for Snort-style raw events, only unknown-grammar status is presented, no manufactured vendor grammar or native import approval.
 4. **Prior separate bug:** public Multi-Pass valid 500-record JSON input hits HTTP 422 because JSON wire encoding exceeds the raw-source limit; it was fixed on separate **Draft PR #148** and passed exact-HEAD CI 7/7, but is not yet deployed. Avoid conflating that outstanding work with prompt improvements.
 
+## Full same-source browser regression and CI time-limit diagnosis
+
+- Full real Chromium Playwright collection on the isolated exact source:
+  **393 registered scenarios**, **367 PASS**, **26 explicitly conditional
+  SKIP**, **0 unexpected failures**, **0 flaky**. The source tests ran with
+  in-repository Multi-Pass and built same-source authoring backend; JSON proof:
+  `/tmp/parserstudio-chatgpt-full-chromium-20261023.json`.
+- Frontend Vitest **1,141/1,141 PASS** across 147 files and a fresh
+  TypeScript/Vite build **PASS**.
+- Original PR #149 Actions #39966462589: all six browser catalogue shards
+  succeeded, but Web Quality was **CANCELLED**, not test-FAILED, after its
+  configured 18-minute job timeout. Its first Chromium dependency installation
+  consumed much of the allotted job time before backend-driven Chromium
+  acceptance could finish. GH job log records `The operation was canceled`
+  during the later `Same-HEAD authoring-only HTTP and beginner Chromium`
+  step; no product-code failure was established. Increase only the Web Quality
+  time budget to 35 minutes and preserve its existing mandatory quality gates.
+  The new source HEAD must be separately checked; do not call the earlier
+  cancelled run SUCCESS.
+- The six browser-shard passes, full isolated local browser census and unit
+  suite are independent useful evidence, but the exact-head CI release gate
+  remains unqualified until the replacement GitHub run completes successfully.
+
 ## Proof requirements / result classification
 
 - Prompts: **22/22 model-input/clipboard fidelity**, **not** model-output semantic accuracy.

@@ -10,7 +10,10 @@ permissions:
 jobs:
   web-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    # Includes native/backend quality plus the full first-user browser matrix.
+    # Chromium apt/runtime downloads can consume most of an 18-minute job limit
+    # on uncached GitHub runners; preserve all tests rather than cancelling them.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
