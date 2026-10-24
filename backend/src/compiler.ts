@@ -15,6 +15,25 @@ const GENERIC_STRUCTURAL_NORMALIZE_BRANCH = "def parserstudio_normalize(original
 const REGEX_RUBY_HELPER = String.raw`
 # Parser Studio bounded named-capture Regex helper. This fixed helper is
 # emitted only for a Regex project; existing parser artifact bytes stay unchanged.
+# These two conventional named date/time fields require lexical plausibility.
+# A year or timezone is not inferred and the free-text meaning is unverified.
+def parserstudio_valid_month_day_capture?(value)
+  return false unless value.is_a?(String)
+  match = /\A([0-9]{2})[.-]([0-9]{2})\z/.match(value)
+  return false unless match
+  month, day = match[1].to_i, match[2].to_i
+  days = [0,31,29,31,30,31,30,31,31,30,31,30,31]
+  month.between?(1,12) && day.between?(1,days[month])
+end
+
+def parserstudio_valid_clock_capture?(value)
+  return false unless value.is_a?(String)
+  match = /\A([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.[0-9]{1,9})?\z/.match(value)
+  return false unless match
+  hour, minute, second = match[1].to_i, match[2].to_i, match[3].to_i
+  hour <= 23 && minute <= 59 && second <= 60
+end
+
 def parserstudio_regex(text, settings)
   pattern = settings['pattern']
   raise ArgumentError, 'Invalid Regex parser pattern' unless pattern.is_a?(String) &&
@@ -37,6 +56,14 @@ def parserstudio_regex(text, settings)
     result[name] = value unless value.nil?
   end
   raise ArgumentError, 'Regex parser returned no named fields' if result.empty?
+  # A deliberately broad model-suggested capture must never turn an impossible
+  # date or clock into a valid normalized event. Do not echo untrusted values.
+  if result.key?('month_day') && !parserstudio_valid_month_day_capture?(result['month_day'])
+    raise ArgumentError, 'Invalid reviewed temporal capture'
+  end
+  if result.key?('clock') && !parserstudio_valid_clock_capture?(result['clock'])
+    raise ArgumentError, 'Invalid reviewed temporal capture'
+  end
   result
 end
 `;

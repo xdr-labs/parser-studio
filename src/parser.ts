@@ -4,6 +4,7 @@ import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from 
 import { lookupFieldValue } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
+import {validateConventionalTemporalCaptures} from './regexTemporalClaims';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
@@ -247,6 +248,8 @@ function extractRegex(raw: string, pattern: string): Extraction {
     if (!matched?.groups) return { fields: {}, errors: ['Expression did not match this event'] };
     const fields = Object.fromEntries(Object.entries(matched.groups).filter(([, v]) => v !== undefined));
     if (!Object.keys(fields).length) return { fields: {}, errors: ['Named captures returned no fields'] };
+    const temporalIssue=validateConventionalTemporalCaptures(fields);
+    if(temporalIssue)return {fields:{},errors:[temporalIssue]};
     return { fields, errors: [] };
   } catch {
     return { fields: {}, errors: ['Invalid regular expression'] };
