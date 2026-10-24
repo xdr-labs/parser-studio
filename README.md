@@ -33,7 +33,7 @@ The guided workflow helps you:
 - assign and correct normalized field names using the available Stellar Cyber field catalog
 - verify the complete sample instead of accepting partial matches
 - create an integrity-checked **Ruby parser logic + CONF** draft pair, with optional package download
-- compare browser-local working versions and investigate difficult cases using additional diagnostic tools
+- compare browser-local working versions and inspect unresolved original text directly in the guided analysis result
 - download a standalone Python test sender that creates time-adjusted, synthetic variations of the sample
 
 ## Parser creation methods
@@ -43,7 +43,7 @@ Parser Studio provides **two** user-facing creation methods.
 | Method | Best for | Workflow |
 | --- | --- | --- |
 | **Auto Parser** | Most new samples, including logs whose format you do not know | Add Logs → Review Fields → Map Fields → Create Parser |
-| **ChatGPT Assisted Parser** | A record or mapping that still needs a carefully reviewed suggestion | Review and mask an example → copy a prompt manually → import a constrained JSON recipe → validate and approve |
+| **ChatGPT Assisted Parser** | A record or mapping that still needs a carefully reviewed suggestion | Review the exact original logs and redact sensitive source values before sharing → manually copy the prepared prompt → import a constrained JSON recipe → validate with independent examples and approve |
 
 Advanced diagnostics support these methods; they are not a separate creation workflow.
 
@@ -85,8 +85,8 @@ Returned artifacts undergo SHA-256 integrity checks. Keep the two files from the
 
 ## Privacy and review safeguards
 
-- Standard source previews run in the browser; do not assume that private logs are safe to share merely because they appear in a sample.
-- The ChatGPT-assisted method requires **manual review, redaction, copying, and pasting**. There is no automatic ChatGPT submission.
+- Immediate working previews run in the browser, but clicking **Analyze Logs** sends the original sample to this Parser Studio server for Multi-Pass analysis. It is not automatically sent to ChatGPT. Do not submit customer-sensitive logs without authorization.
+- ChatGPT Assisted prepares a manually copied prompt containing the **exact original sample**, not a separate masking editor. Review and redact sensitive values in your source before manually sharing that prompt outside Parser Studio. There is no automatic ChatGPT submission.
 - Proposed changes are constrained to the supported structured recipe and may require independent holdout events before approval.
 - The downloadable Python test sender contains the source sample in **base64, not encryption**. Mask sensitive content before distributing the file.
 - Treat all output files as reviewed drafts and verify them against representative source records.
