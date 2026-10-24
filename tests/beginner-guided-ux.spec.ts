@@ -25,8 +25,7 @@ test('single Analyze path shows contextual tools without the removed advanced-mo
   await expect(page.getByRole('button',{name:'Advanced Tools & Diagnostics'})).toHaveCount(0);
   await expect(page.getByLabel('Troubleshooting tools guidance')).toHaveCount(0);
   await expect(page.getByLabel('Deeper local log analysis',{exact:true})).toHaveCount(0);
-  await expect(page.getByLabel('Existing parser review and import').locator('summary'))
-    .toContainText('Open or inspect an existing parser');
+  await expect(page.getByLabel('Existing parser review and import')).toHaveCount(0);
   await expect(page.getByLabel('Private text grouping tool')).toHaveCount(0);
   await expect(page.getByLabel('Known log shape matcher')).toHaveCount(0);
   await expect(page.getByLabel('Python test sender',{exact:true})).toBeVisible();
