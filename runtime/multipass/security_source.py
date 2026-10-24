@@ -9,6 +9,7 @@ from __future__ import annotations
 from engine import MAX_RAW_BYTES
 from security_envelope import extract_security_envelope
 from security_pairs import PREFIX as PAIR_PREFIX,extract_pair_envelope,parse_bracket_pairs
+from security_documented_envelopes import parse_yearless_documented_envelope
 from source_parse import SourceEvent,ValueSpan,parse_source,_span,_close
 from structured_source import extract_rfc3164,extract_rfc5424,extract_plain_bsd
 
@@ -138,4 +139,13 @@ def parse_security_source(raw:str)->SourceEvent:
         result.covered=list(outer.covered)+[(start+a,start+b) for a,b in body.covered]
         result.issues=list(outer.issues)+list(body.issues)
         return _close(result)
-    return parse_source(raw)
+    baseline=parse_source(raw)
+    # Preserve every previously decoded field. Only opaque, span-free records
+    # may gain bounded structural header fields, never invented message roles.
+    if baseline.status=='RAW_ONLY' and not baseline.value_spans:
+        documented=parse_yearless_documented_envelope(raw)
+        if documented is not None:return documented
+        from generic_text_envelope import recover_textual_header
+        candidate=recover_textual_header(raw)
+        if candidate is not None:return candidate
+    return baseline
