@@ -4,6 +4,7 @@ import {defaultGuidedOptions} from './contract';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {sha256Utf8Hex} from '../sha256';
 import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
+import {buildEventCoverageEvidence} from './chatGptEventCoverage';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
 export interface BeginnerRepairContext {
@@ -115,6 +116,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
     }
   }
 
+  if(!metadataReview)lines.push('',buildEventCoverageEvidence(fullSource,draft,suite).text);
   lines.push('','Required output:');
   if(metadataReview){
     lines.push(
