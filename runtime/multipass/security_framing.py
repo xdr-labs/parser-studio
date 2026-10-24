@@ -22,6 +22,9 @@ DEFAULT_BATCH_BYTES=1048576
 MAX_BATCH_BYTES=16777216
 MAX_EVENTS=10000
 ARRAY_START=re.compile(r'\[\s*(?:[\[{}\]"0-9-]|true\b|false\b|null\b)')
+# A bracketed MM.DD HH:MM:SS producer header is not a JSON array. Treat
+# it as a complete physical text line before candidate body inspection.
+BRACKETED_TEXT_CLOCK=re.compile(r'\[[0-9]{2}\.[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\] ')
 WHITESPACE=' \t\r\n'
 
 
@@ -70,6 +73,7 @@ def _line_end(raw:str,start:int)->int:
 
 
 def _collection_at(raw:str,start:int)->bool:
+    if BRACKETED_TEXT_CLOCK.match(raw,start):return False
     return raw.startswith('{',start) or ARRAY_START.match(raw,start) is not None
 
 
