@@ -46,6 +46,13 @@ function leaves(node:unknown,prefix='',depth=0,out=new Map<string,unknown>()):Ma
   }else if(prefix)out.set(prefix,node);
   return out;
 }
+/** A probe is relevant only when the original parser actually extracts the value. */
+export function hasExtractedVariationTarget(
+  variation:SingleSampleVariation,original:SuiteResult,
+):boolean{
+  return original.events.length===1&&[...leaves(original.events[0]?.fields)].some(
+    ([,value])=>value===variation.previousValue);
+}
 /** Only identical extraction paths carrying the substituted value qualify. */
 export function verifySingleSampleVariation(
   variation:SingleSampleVariation,original:SuiteResult,mutated:SuiteResult,

@@ -8,6 +8,7 @@ export type AdaptiveRepairFailure =
   | 'SOURCE_IDENTITY_MISMATCH'
   | 'RECIPE_UNSUPPORTED'
   | 'SAMPLE_REGRESSION'
+  | 'SYNTHETIC_VALUE_FAILURE'
   | 'HOLDOUT_REGRESSION'
   | 'NATIVE_VALIDATION_FAILED';
 
@@ -22,6 +23,7 @@ export interface RetryEvidence {
   observedOutput?:string;
   /** Only from examples explicitly supplied and manually copied by the user. */
   observedHoldout?:string;
+  syntheticProbe?:string;
 }
 export interface RetryPromptInput {
   basePrompt:string;
@@ -43,6 +45,8 @@ const targeted:Record<AdaptiveRepairFailure,string>={
     'The existing candidate cannot be compiled by Parser Studio. Use only source-backed supported ParserRecipe v0.2 stages, preserving all successfully extracted source values and event boundaries. Never simulate unsupported runtime features.',
   SAMPLE_REGRESSION:
     'The generated parser failed a deterministic check on the ORIGINAL source. Preserve every previously successful source value and type; repair only unmatched ranges or demonstrably wrong field paths. Do not silently capture the whole event and claim extraction success.',
+  SYNTHETIC_VALUE_FAILURE:
+    'A controlled local substitution changed an IPv4 source value, but the candidate did not recover the replacement at the same extracted field path. Do not embed the observed IP as a fixed literal. Use a supported grammar or bounded variable capture, without changing other source values. This is a synthetic check, NOT independent vendor evidence.',
   HOLDOUT_REGRESSION:
     'The candidate passed some checks but failed independently supplied examples. Identify the shared structure and avoid hard-coded sample values or excessive regex specificity. Preserve all original events and known fields. The independent examples are feedback, not permission to invent field meanings.',
   NATIVE_VALIDATION_FAILED:
@@ -53,6 +57,8 @@ const alternate:Partial<Record<AdaptiveRepairFailure,string>>={
     'Try a genuinely different supported strategy: explicit standard grammar, a bounded named-capture regex, or supported structural parsing. Do not merely reword the preceding regex.',
   SAMPLE_REGRESSION:
     'Re-evaluate delimiters, fixed prefix versus variable payload, and whether the source requires separate event families. Consider a different bounded grammar instead of another small regex tweak.',
+  SYNTHETIC_VALUE_FAILURE:
+    'Replace a value-specific regex literal with a bounded general capture or use a supported KV/CSV structure; preserve all original source-value spans.',
   HOLDOUT_REGRESSION:
     'Use the counterexample to challenge the assumed field boundaries and event family. Prefer a different, supported structural representation when a single regex overfits.',
 };
@@ -62,7 +68,7 @@ const known=new Set<string>([
   'UNSUPPORTED_OPERATOR_CHANGE','UNSUPPORTED_RECIPE',
   'BACKEND_UNSUPPORTED','CLASSIFICATION_UNSUPPORTED',
   'REGRESSION','HOLDOUT_FAILED','SOURCE_TEST_FAILED',
-  'NATIVE_VALIDATION_FAILED','REVIEW_REQUIRED','NOT_JSON',
+  'NATIVE_VALIDATION_FAILED','SYNTHETIC_VARIANT_FAILED','REVIEW_REQUIRED','NOT_JSON',
   'NO_SAFE_CHANGE','SOURCE_INVALID','EXTRACTION_NO_MATCH',
 ]);
 export function buildAdaptiveRetryPrompt(input:RetryPromptInput):string{

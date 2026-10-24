@@ -1,7 +1,8 @@
 import {describe,it,expect} from 'vitest';
 import {createDraft} from '../model';
 import {preview} from '../parser';
-import {buildSingleSampleVariation,verifySingleSampleVariation} from './singleSampleVariation';
+import {buildSingleSampleVariation,hasExtractedVariationTarget,
+  verifySingleSampleVariation} from './singleSampleVariation';
 
 describe('one-record mutation probe is synthetic, bounded and value-exact',()=>{
   it('changes one CSV IP and proves capture follows the new value',()=>{
@@ -23,6 +24,13 @@ describe('one-record mutation probe is synthetic, bounded and value-exact',()=>{
     expect(variation).not.toBeNull();
     if(variation)expect(verifySingleSampleVariation(variation,
       preview(source,draft),preview(variation.mutatedSource,draft))).toBe(false);
+  });
+  it('skips an IP probe when the proposed parser never extracts that IP',()=>{
+    const source='deny src=198.51.100.10';
+    const draft={...createDraft(),format:'regex' as const,pattern:'(?<action>deny) src=[^ ]+'};
+    const variation=buildSingleSampleVariation(source,draft.format);
+    expect(variation).not.toBeNull();
+    if(variation)expect(hasExtractedVariationTarget(variation,preview(source,draft))).toBe(false);
   });
   it('does not manufacture variants from invalid, ambiguous or unsupported sources',()=>{
     expect(buildSingleSampleVariation('action=deny\nsrc=198.51.100.10','kv')).toBeNull();

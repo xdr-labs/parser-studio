@@ -25,7 +25,8 @@ import {reviewedSourcePromptContext,checkNamedParserCoverage,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 import {composeChatGPTPrompt} from './chatGptPromptBuilder';
 import {buildAdaptiveRetryPrompt,type AdaptiveRepairFailure,type RetryEvidence} from './chatGptAdaptiveRepair';
-import {buildSingleSampleVariation,verifySingleSampleVariation} from './singleSampleVariation';
+import {buildSingleSampleVariation,hasExtractedVariationTarget,
+  verifySingleSampleVariation} from './singleSampleVariation';
 import {parserIdentitySlug} from './parserIdentity';
 import {defaultGuidedOptions} from './contract';
 
@@ -280,7 +281,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     setRetryFailure(null);
     try{
       const candidate=await runPreview(proposal.candidate,sample);
-      const changed=sourceOnly?buildSingleSampleVariation(sample,proposal.candidate.format):null;
+      const variationCandidate=sourceOnly
+        ?buildSingleSampleVariation(sample,proposal.candidate.format):null;
+      const changed=variationCandidate&&hasExtractedVariationTarget(variationCandidate,candidate)
+        ?variationCandidate:null;
       const changedSuite=changed?await runPreview(proposal.candidate,changed.mutatedSource):null;
       const changedOk=!changed||Boolean(changedSuite&&
         verifySingleSampleVariation(changed,candidate,changedSuite));
@@ -315,8 +319,12 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         setNotice('Log type review required: '+typeCoverage.reason+' No rules changed.');
       else if(!qualified){
         setRetryFailure({
-          failure:sourceOnly?'SAMPLE_REGRESSION':'HOLDOUT_REGRESSION',
-          diagnostic:sourceOnly?'SOURCE_TEST_FAILED':'HOLDOUT_FAILED',
+          failure:sourceOnly
+            ?(variation==='FAIL'?'SYNTHETIC_VALUE_FAILURE':'SAMPLE_REGRESSION')
+            :'HOLDOUT_REGRESSION',
+          diagnostic:sourceOnly
+            ?(variation==='FAIL'?'SYNTHETIC_VARIANT_FAILED':'SOURCE_TEST_FAILED')
+            :'HOLDOUT_FAILED',
           evidence:{
             sourceEvents:result.baseline.sourceCount,
             sourcePassed:result.baseline.positiveAfter,
@@ -325,6 +333,11 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             typeChanges:result.baseline.typeChanges,
             holdoutStatus:result.holdoutStatus,
             observedOutput:fieldsPreview.slice(0,4096),
+            ...(variation==='FAIL'&&changed?{syntheticProbe:JSON.stringify({
+              originalValue:changed.previousValue,
+              substitutedValue:changed.replacementValue,
+              result:'FAILED_NOT_INDEPENDENT',
+            })}:{}),
             ...(candidateHoldout?{observedHoldout:JSON.stringify(
               candidateHoldout.events.filter(e=>e.status!=='pass'||!e.extracted||!e.normalizedOk)
                 .slice(0,2).map(e=>({sourceLine:e.line,raw:e.raw,
@@ -334,7 +347,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           },
         });
         setNotice(sourceOnly
-          ?'The original sample failed parser validation; no rules changed.'
+          ?(variation==='FAIL'&&completeSuite(candidate)
+            ?'The original sample passed, but the controlled value variation failed. The parser may overfit the exact input value. No rules changed.'
+            :'The original sample failed parser validation; no rules changed.')
           :'The original and independent examples did not both pass; no rules changed.');
       }else setNotice(sourceOnly
         ?'The original sample passed. Review its extracted fields before accepting a sample-only DRAFT; generalization was not tested.'

@@ -55,6 +55,19 @@ describe('evidence-guided bounded single-source retries',()=>{
     expect(text).toContain('counterexample');
     expect(text).toContain('"independentlyVerified":false');
   });
+  it('explains a failed synthetic value substitution without calling it independent evidence',()=>{
+    const text=buildAdaptiveRetryPrompt({basePrompt:original,
+      previousResponse:'{"regex":"198.51.100.10"}',
+      failure:'SYNTHETIC_VALUE_FAILURE',diagnostic:'SYNTHETIC_VARIANT_FAILED',
+      attempt:3,evidence:{sourceEvents:1,sourcePassed:1,regressions:0,
+        removedFields:0,typeChanges:0,holdoutStatus:'NOT_SUPPLIED',
+        syntheticProbe:'198.51.100.10 -> 203.0.113.77'}});
+    expect(text).toContain('SYNTHETIC_VARIANT_FAILED');
+    expect(text).toContain('203.0.113.77');
+    expect(text).toContain('Do not embed the observed IP as a fixed literal');
+    expect(text).toContain('Replace a value-specific regex literal');
+    expect(text).toContain('independentlyVerified":false');
+  });
   it('drops oversized local feedback instead of injecting unbounded payloads',()=>{
     const text=buildAdaptiveRetryPrompt({basePrompt:original,previousResponse:'{}',
       failure:'SAMPLE_REGRESSION',attempt:2,
