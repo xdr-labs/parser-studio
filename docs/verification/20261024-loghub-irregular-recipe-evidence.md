@@ -47,6 +47,14 @@ Reproducible private evidence and SHA:
 - Same-chat authored v0.2 trials: `same-chat-model-recipe.json`; actual source-specific Ruby/CONF pairs retained privately, no raw in Git.
 - Independent lexical oracle over 4,000 native Ruby events: `native-recipe-4000-benchmark.json`, SHA-256 `fdce439367d2ff951a5463c6a9a35cb77394d06608fbb0f86c2bb2f0f4c13c9a`.
 
+### Additional manual ChatGPT-assisted recovery cross-check
+
+A second **same-session** assistant-authored v0.2 browser trial used two Proxifier and two Android source records from the pinned corpus (not the same as an independent external provider inference), followed by different two-record holdouts. Both strict v0.2 proposals were **accepted for testing, passed source-disjoint holdout, required explicit approval, and downloaded actual Ruby/CONF DRAFT pairs** through the deployed public HTTPS UI. The original 2k rows per family matched the reviewed regex grammar, and isolated Ruby 3.2.3 callback execution on three separate source records per family returned the expected mapped fields without errors. This is supplementary to the separate **Proxifier + HDFS** 4,000 native-record evidence above; overlapping Proxifier records are **not** double-counted as unique source events.
+
+A further independent *lexical source* oracle replayed the downloaded Android DRAFT Ruby on **2,000 different Android log records**, observing **2,000/2,000 native callbacks, 10,000/10,000 selected source field values, zero parser errors**. This shares the original 2,000-line Android corpus already used in the structure benchmark; it is additional evaluation depth, **not 2,000 new unique logs**. Private reproducible result: `inchat-native-android-2000-evidence.json`. The earlier Proxifier+HDFS native 4k benchmark remains separately reproducible and is not combined into a misleading independent-model accuracy denominator.
+
+New focused `src/guided/sameChatRecipePolicy20261024.test.ts` checks both bounded named-capture regex shapes against strict ParserRecipe v0.2 schema and refuses representative invalid month/clock/unframed inputs. A second, more restrictive date/time capture specification matched 2,000/2,000 original lines per Proxifier and Android corpus but is **not yet a newly accepted production recipe**. All these authored proposals remain **SAME_CHAT_ASSISTANT**, with **zero** separate external ChatGPT inference runs.
+
 ### Evidence gates and next work
 
 - **Separate independent external ChatGPT provider/model calls: 0** (no authorized separate provider API, connected model tool or credentials). A true independent model benchmark requires model ID/run ID, response SHA, multiple distinct prompt/response runs, strict recipe acceptance, holdout correctness and hallucination scoring. Do not conflate this same-conversation GPT-6 trial with a separately called provider.
