@@ -6,6 +6,12 @@ import { canonicalJson, validateProject } from "./validate.js";
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
 const RUBY_FORWARDER_FAMILY_TEMPLATE = readFileSync(new URL("../templates/ruby-forwarder-family.rb.tpl", import.meta.url), "utf8");
+// Ruby CSV 3.2 rejects strip:true with TAB as col_sep. Modify only reviewed
+// explicit TAB CSV projects, preserving exact artifact bytes and approved
+// template digests for every other parser family.
+const CSV_TAB_STRIP_NEEDLE = 'row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: true)';
+const CSV_TAB_STRIP_REPLACEMENT = 'row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: (separator != "\\t"))';
+
 const GENERIC_STRUCTURAL_HELPER = readFileSync(new URL("../templates/generic-structural-helper.rb.tpl", import.meta.url), "utf8");
 const REGEX_EXTRACTOR_NEEDLE = "  when 'leef'\n    parserstudio_leef(text)\n  else";
 const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'regex'\n    parserstudio_regex(text, settings)\n  else";
@@ -113,6 +119,15 @@ function emitRubyFragment(project: ParserProject): string {
     ?RUBY_FORWARDER_FAMILY_TEMPLATE:RUBY_TEMPLATE;
   if (!template.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
   let fragment=template.replace("__PARSER_PROJECT_B64__", base64);
+  const tabCsv=project.extraction.csvDelimiter==="\t"&&
+    (project.extraction.format==="csv"||
+      (project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("csv")));
+  if(tabCsv){
+    if(fragment.split(CSV_TAB_STRIP_NEEDLE).length!==2)
+      throw new Error("Strict TAB CSV parser template mismatch");
+    fragment=fragment.replace(CSV_TAB_STRIP_NEEDLE,CSV_TAB_STRIP_REPLACEMENT);
+  }
+
   const regexBody=(project.extraction.format==="syslog_rfc3164"||
     project.extraction.format==="syslog_rfc5424")&&
     project.extraction.syslogBodyFormat==="regex";

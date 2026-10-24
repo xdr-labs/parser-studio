@@ -5,6 +5,7 @@
 import type {ParserDraft,SuiteResult} from '../model';
 import {MAX_DATASET_BYTES,MAX_EVENTS,splitEvents} from '../parser';
 import {analyzeLogEnvelopes} from './autoParserEnvelope';
+import {canonicalJson} from './recipeV2BackendClient';
 import {buildReviewableRecipe,validateReviewableRecipe,
  type ParserRecipeV2,type ReviewStage} from './parserRecipeV2';
 import {toBackendProject} from './backendAdapter';
@@ -113,7 +114,7 @@ export async function importReviewOnlyAIRecipe(
  const removed=priorMaps.filter(x=>!newTargets.has(x.target)).length;
  const length=Math.max(prior.length,proposed.length);
  let changed=0;
- for(let i=0;i<length;i++)if(JSON.stringify(prior[i])!==JSON.stringify(proposed[i]))changed++;
+ for(let i=0;i<length;i++)if(canonicalJson(prior[i])!==canonicalJson(proposed[i]))changed++;
  return {ok:true,candidate:imported,baseline:current.recipe,report:{
    contract:'auto-parser.ai-import-review.v0.1',status:'REVIEW_ONLY',mode:'BASELINE_EDIT',
    changedStageCount:changed,addedMappings:added,removedMappings:removed,
@@ -229,7 +230,7 @@ export function proposeV01FieldMappingFromAI(
  if(!imported.ok||imported.report.mode!=='BASELINE_EDIT'||!imported.baseline||!verified(source,suite))
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const proposed=imported.candidate;
- if(JSON.stringify(structuralStages(proposed.stages))!==JSON.stringify(structuralStages(imported.baseline.stages)))
+ if(canonicalJson(structuralStages(proposed.stages))!==canonicalJson(structuralStages(imported.baseline.stages)))
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const old=toBackendProject(draft);
  if(!old.ok||old.project.projectId!==proposed.projectId)return deny('BACKEND_UNSUPPORTED');
@@ -264,7 +265,7 @@ export function proposeV01FieldMappingFromAI(
  // The runtime schema validator has already checked stage order and casts.
  const stagedClass=proposed.stages.find(s=>s.op==='classify');
  if(stagedClass?.op!=='classify'||
-   JSON.stringify(stagedClass.rules)!==JSON.stringify(old.project.classification.rules)||
+   canonicalJson(stagedClass.rules)!==canonicalJson(old.project.classification.rules)||
    stagedClass.defaultIndex!==old.project.classification.defaultIndex)
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const id='ai-reviewed-'+String(oldMappings.length+1);
@@ -290,10 +291,10 @@ export function proposeV01EnrichmentFromAI(
  if(!imported.ok||imported.report.mode!=='BASELINE_EDIT'||!imported.baseline||!verified(source,suite))
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const strip=(stages:ReviewStage[])=>stages.filter(stage=>stage.op!=='split_field'&&stage.op!=='merge_fields');
- if(JSON.stringify(strip(imported.candidate.stages))!==JSON.stringify(strip(imported.baseline.stages)))
+ if(canonicalJson(strip(imported.candidate.stages))!==canonicalJson(strip(imported.baseline.stages)))
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const before=enrichment(imported.baseline.stages),after=enrichment(imported.candidate.stages);
- if(after.length!==before.length+1||JSON.stringify(after.slice(0,-1))!==JSON.stringify(before))
+ if(after.length!==before.length+1||canonicalJson(after.slice(0,-1))!==canonicalJson(before))
   return deny('NO_SINGLE_ENRICHMENT_CHANGE');
  const stage=after.at(-1)!;
  const opts=draft.guided??defaultGuidedOptions();
@@ -326,14 +327,14 @@ export function proposeV01MappingCorrectionFromAI(
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const shell=(stages:ReviewStage[])=>stages.filter(stage=>
   stage.op!=='map_field'&&stage.op!=='cast_type'&&stage.op!=='classify');
- if(JSON.stringify(shell(imported.candidate.stages))!==JSON.stringify(shell(imported.baseline.stages)))
+ if(canonicalJson(shell(imported.candidate.stages))!==canonicalJson(shell(imported.baseline.stages)))
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const oldProject=toBackendProject(draft);
  if(!oldProject.ok||oldProject.project.projectId!==imported.candidate.projectId)
   return deny('BACKEND_UNSUPPORTED');
  const before=mapping(imported.baseline.stages),after=mapping(imported.candidate.stages);
  if(before.length!==draft.mappings.length||after.length!==before.length)return deny('NO_SINGLE_MAPPING_CHANGE');
- const changed=after.map((item,index)=>JSON.stringify(item)!==JSON.stringify(before[index])?index:-1)
+ const changed=after.map((item,index)=>canonicalJson(item)!==canonicalJson(before[index])?index:-1)
   .filter(index=>index>=0);
  if(changed.length!==1)return deny('NO_SINGLE_MAPPING_CHANGE');
  const index=changed[0]!,next=after[index]!,prior=draft.mappings[index];
@@ -351,7 +352,7 @@ export function proposeV01MappingCorrectionFromAI(
  const adapted=toBackendProject(candidate);
  if(!adapted.ok)return deny('BACKEND_UNSUPPORTED');
  const stagedClass=imported.candidate.stages.find((stage):stage is Extract<ReviewStage,{op:'classify'}>=>stage.op==='classify');
- if(!stagedClass||JSON.stringify(stagedClass.rules)!==JSON.stringify(adapted.project.classification.rules)||
+ if(!stagedClass||canonicalJson(stagedClass.rules)!==canonicalJson(adapted.project.classification.rules)||
     stagedClass.defaultIndex!==adapted.project.classification.defaultIndex)
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  return {ok:true,candidate,mappingId:prior.id,oldTarget:prior.target,newTarget:next.target,
