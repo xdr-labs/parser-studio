@@ -28,7 +28,7 @@ test('irregular HDFS-like logs produce bounded value-free ChatGPT review hints',
  expect(prompt).toContain(source);
  // Raw sample appears only inside the original-source block, not in the
  // conservative metadata hints; a user still must copy explicitly.
- const before=prompt.split('----- BEGIN ORIGINAL LOG SOURCE -----')[0]!;
+ const before=prompt.split(/----- BEGIN ORIGINAL LOG SOURCE \[[a-f0-9]{20}(?:_\d+)?\] -----/)[0]!;
  expect(before).not.toContain(escaped);
  expect(await log.inputValue()).toBe(source);
  expect(providerRequests).toEqual([]);
@@ -48,7 +48,7 @@ test('Logcat prompt carries producer-grammar hints without inventing year, actio
  expect(prompt).toContain('Do not guess a missing year or timezone');
  expect(prompt).toContain('REVIEW_REQUIRED');
  expect(prompt).toContain(raw);
- const before=prompt.split('----- BEGIN ORIGINAL LOG SOURCE -----')[0]!;
+ const before=prompt.split(/----- BEGIN ORIGINAL LOG SOURCE \[[a-f0-9]{20}(?:_\d+)?\] -----/)[0]!;
  expect(before).not.toContain('LOCAL_SECRET_MARKER');
  expect(await page.getByLabel('ChatGPT local sample logs').inputValue()).toBe(raw);
 });

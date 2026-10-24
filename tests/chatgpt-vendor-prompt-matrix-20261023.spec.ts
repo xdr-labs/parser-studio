@@ -58,9 +58,11 @@ for(const item of cases){
   const prompt=page.getByLabel('ChatGPT copyable prompt');
   await expect(prompt).toBeVisible({timeout:24000});
   const text=await prompt.inputValue();
-  const originalBlock=text.split('----- BEGIN ORIGINAL LOG SOURCE -----\n')[1]?.split('\n----- END ORIGINAL LOG SOURCE -----')[0];
-  expect(originalBlock,'Original raw source was altered').toBe(item.raw);
   const hash=createHash('sha256').update(item.raw,'utf8').digest('hex');
+  const startTag='----- BEGIN ORIGINAL LOG SOURCE ['+hash.slice(0,20)+'] -----\n';
+  const endTag='\n----- END ORIGINAL LOG SOURCE ['+hash.slice(0,20)+'] -----';
+  const originalBlock=text.split(startTag)[1]?.split(endTag)[0];
+  expect(originalBlock,'Original raw source was altered').toBe(item.raw);
   const idLine=text.match(/\{"projectId":"([^"]+)","sourceHash":"([a-f0-9]{64})","sourceCount":(\d+)\}/);
   expect(idLine).toBeTruthy();
   expect(idLine![2]).toBe(hash);
