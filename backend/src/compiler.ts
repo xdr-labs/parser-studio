@@ -6,6 +6,12 @@ import { canonicalJson, validateProject } from "./validate.js";
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
 const RUBY_FORWARDER_FAMILY_TEMPLATE = readFileSync(new URL("../templates/ruby-forwarder-family.rb.tpl", import.meta.url), "utf8");
+// Ruby CSV 3.2 rejects strip:true with TAB as col_sep. Modify only reviewed
+// explicit TAB CSV projects, preserving exact artifact bytes and approved
+// template digests for every other parser family.
+const CSV_TAB_STRIP_NEEDLE = 'row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: true)';
+const CSV_TAB_STRIP_REPLACEMENT = 'row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: (separator != "\\t"))';
+
 const GENERIC_STRUCTURAL_HELPER = readFileSync(new URL("../templates/generic-structural-helper.rb.tpl", import.meta.url), "utf8");
 const REGEX_EXTRACTOR_NEEDLE = "  when 'leef'\n    parserstudio_leef(text)\n  else";
 const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'regex'\n    parserstudio_regex(text, settings)\n  else";
@@ -15,6 +21,25 @@ const GENERIC_STRUCTURAL_NORMALIZE_BRANCH = "def parserstudio_normalize(original
 const REGEX_RUBY_HELPER = String.raw`
 # Parser Studio bounded named-capture Regex helper. This fixed helper is
 # emitted only for a Regex project; existing parser artifact bytes stay unchanged.
+# These two conventional named date/time fields require lexical plausibility.
+# A year or timezone is not inferred and the free-text meaning is unverified.
+def parserstudio_valid_month_day_capture?(value)
+  return false unless value.is_a?(String)
+  match = /\A([0-9]{2})[.-]([0-9]{2})\z/.match(value)
+  return false unless match
+  month, day = match[1].to_i, match[2].to_i
+  days = [0,31,29,31,30,31,30,31,31,30,31,30,31]
+  month.between?(1,12) && day.between?(1,days[month])
+end
+
+def parserstudio_valid_clock_capture?(value)
+  return false unless value.is_a?(String)
+  match = /\A([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.[0-9]{1,9})?\z/.match(value)
+  return false unless match
+  hour, minute, second = match[1].to_i, match[2].to_i, match[3].to_i
+  hour <= 23 && minute <= 59 && second <= 60
+end
+
 def parserstudio_regex(text, settings)
   pattern = settings['pattern']
   raise ArgumentError, 'Invalid Regex parser pattern' unless pattern.is_a?(String) &&
@@ -37,6 +62,14 @@ def parserstudio_regex(text, settings)
     result[name] = value unless value.nil?
   end
   raise ArgumentError, 'Regex parser returned no named fields' if result.empty?
+  # A deliberately broad model-suggested capture must never turn an impossible
+  # date or clock into a valid normalized event. Do not echo untrusted values.
+  if result.key?('month_day') && !parserstudio_valid_month_day_capture?(result['month_day'])
+    raise ArgumentError, 'Invalid reviewed temporal capture'
+  end
+  if result.key?('clock') && !parserstudio_valid_clock_capture?(result['clock'])
+    raise ArgumentError, 'Invalid reviewed temporal capture'
+  end
   result
 end
 `;
@@ -113,6 +146,15 @@ function emitRubyFragment(project: ParserProject): string {
     ?RUBY_FORWARDER_FAMILY_TEMPLATE:RUBY_TEMPLATE;
   if (!template.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
   let fragment=template.replace("__PARSER_PROJECT_B64__", base64);
+  const tabCsv=project.extraction.csvDelimiter==="\t"&&
+    (project.extraction.format==="csv"||
+      (project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("csv")));
+  if(tabCsv){
+    if(fragment.split(CSV_TAB_STRIP_NEEDLE).length!==2)
+      throw new Error("Strict TAB CSV parser template mismatch");
+    fragment=fragment.replace(CSV_TAB_STRIP_NEEDLE,CSV_TAB_STRIP_REPLACEMENT);
+  }
+
   const regexBody=(project.extraction.format==="syslog_rfc3164"||
     project.extraction.format==="syslog_rfc5424")&&
     project.extraction.syslogBodyFormat==="regex";

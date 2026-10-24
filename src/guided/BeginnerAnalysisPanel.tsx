@@ -456,9 +456,9 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
       {promptOpen&&<div className="beginner-chatgpt" aria-label="ChatGPT repair prompt">
         <strong>1. Copy this prompt to ChatGPT</strong>
         <p className="auto-parser-warning" role="note">
-          This prompt includes the original log and any unparsed source regions. It may contain
-          sensitive information. Review it and edit or mask any values you do not want to share
-          before copying. Sharing the prompt is your decision; Parser Studio never sends it automatically.
+          This prompt may include your complete original log input, not just the selected
+          event, and any unparsed source regions. Review the prompt and redact any
+          sensitive values before sharing. Parser Studio never sends it automatically.
         </p>
         <textarea aria-label="Generated ChatGPT repair prompt" value={promptText}
           onChange={event=>setPromptText(event.target.value)} rows={14}/>

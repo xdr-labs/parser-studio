@@ -1,5 +1,6 @@
 import {describe,it,expect,beforeEach,afterEach,vi} from 'vitest';
 import {createHash,webcrypto} from 'node:crypto';
+import {canonicalJson} from './recipeV2BackendClient';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -47,6 +48,25 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
    changedStageCount:0,addedMappings:0,removedMappings:0,
    userApprovalRequired:true,backendCompilerAvailable:false}});
   if(value.ok)expect(JSON.stringify(value.report)).not.toContain('PRIVATE_ACCOUNT');
+ });
+ it('accepts semantically identical first-response JSON despite root and stage key order',async()=>{
+  const built=await buildReviewableRecipe(source,draft,suite());
+  expect(built.ok).toBe(true);
+  if(!built.ok)return;
+  const reverse=<T extends Record<string,unknown>>(item:T):T=>
+    Object.fromEntries(Object.entries(item).reverse()) as T;
+  const reordered={...reverse(built.recipe as unknown as Record<string,unknown>),
+    stages:built.recipe.stages.map(stage=>reverse(stage as unknown as Record<string,unknown>))};
+  expect(JSON.stringify(reordered)).not.toBe(JSON.stringify(built.recipe));
+  expect(canonicalJson(reordered)).toBe(canonicalJson(built.recipe));
+  const imported=await importReviewOnlyAIRecipe(JSON.stringify(reordered),source,draft,suite());
+  expect(imported).toMatchObject({ok:true,report:{
+    changedStageCount:0,addedMappings:0,removedMappings:0,
+  }});
+  const modified={...reordered,sample:{...built.recipe.sample,sha256:'a'.repeat(64)}};
+  expect(canonicalJson(modified)).not.toBe(canonicalJson(built.recipe));
+  expect(await importReviewOnlyAIRecipe(JSON.stringify(modified),source,draft,suite()))
+    .toMatchObject({ok:false,reason:'SOURCE_IDENTITY_MISMATCH'});
  });
  it('rejects forged native success, dangerous operator and extraneous keys',async()=>{
   const built=await buildReviewableRecipe(source,draft,suite());

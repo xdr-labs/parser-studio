@@ -13,16 +13,20 @@ import {toBackendProject} from './backendAdapter';
 import {fetchBackendCapabilities,assertBackendProjectSupported} from './backendCapabilities';
 import {validateBackendProject,generateBackendPair,type GeneratedPair} from './backendClient';
 import {verifyGeneratedPair} from './artifactPackageClient';
-import {compileReviewedRecipeV02} from './recipeV2BackendClient';
+import {compileReviewedRecipeV02,canonicalJson} from './recipeV2BackendClient';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import ParserListenerPortInput from './ParserListenerPortInput';
 import NamedLogTypesPanel from './NamedLogTypesPanel';
 import ChatGPTConditionalDraft from './ChatGPTConditionalDraft';
 import {validateNamedLogs,type NamedLogType} from './namedLogTypes';
 import {buildPromptSourceEvidence} from './chatGptSourceEvidence';
+import {buildEventCoverageEvidence} from './chatGptEventCoverage';
 import {reviewedSourcePromptContext,checkNamedParserCoverage,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 import {composeChatGPTPrompt} from './chatGptPromptBuilder';
+import {buildAdaptiveRetryPrompt,type AdaptiveRepairFailure,type RetryEvidence} from './chatGptAdaptiveRepair';
+import {buildSingleSampleVariation,hasExtractedVariationTarget,
+  verifySingleSampleVariation} from './singleSampleVariation';
 import {parserIdentitySlug} from './parserIdentity';
 import {defaultGuidedOptions} from './contract';
 
@@ -84,17 +88,27 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   const [promptError,setPromptError]=useState('');
   const [copied,setCopied]=useState(false);
   const [response,setResponse]=useState('');
+  const [attempt,setAttempt]=useState<1|2|3>(1);
+  const [retryFailure,setRetryFailure]=useState<{
+    failure:AdaptiveRepairFailure;diagnostic?:string;evidence?:RetryEvidence;
+  }|null>(null);
   const [review,setReview]=useState<AIImportResult|null>(null);
   const [holdout,setHoldout]=useState('');
   const [holdoutAttested,setHoldoutAttested]=useState(false);
   const [candidateApproval,setCandidateApproval]=useState(false);
-  const [comparison,setComparison]=useState<{candidate:ParserDraft;value:CandidateComparison;qualified:boolean}|null>(null);
+  const [comparison,setComparison]=useState<{
+    candidate:ParserDraft;value:CandidateComparison;qualified:boolean;
+    evidence:'SAMPLE_ONLY'|'INDEPENDENT';fieldsPreview:string;
+    variation:'PASS'|'FAIL'|'NOT_APPLICABLE';
+  }|null>(null);
   const [notice,setNotice]=useState('');
   const [busy,setBusy]=useState(false);
   const [context,setContext]=useState<{
-    sample:string;draft:ParserDraft;suite:SuiteResult;
+    sample:string;draft:ParserDraft;suite:SuiteResult;basePrompt:string;
   }|null>(null);
-  const [generated,setGenerated]=useState<{pair:GeneratedPair;draft:ParserDraft}|null>(null);
+  const [generated,setGenerated]=useState<{
+    pair:GeneratedPair;draft:ParserDraft;evidence:'SAMPLE_ONLY'|'INDEPENDENT'|'UNCHANGED';
+  }|null>(null);
   const sourceKey=useMemo(()=>JSON.stringify([sample,draft,namedLogTypes]),
     [sample,draft,namedLogTypes]);
   const namedValidation=namedLogTypes?validateNamedLogs(namedLogTypes):null;
@@ -112,10 +126,12 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     setPrompt('');setPromptError('');setCopied(false);setReview(null);
     setComparison(null);setNotice('');setContext(null);setGenerated(null);
     setHoldoutAttested(false);setCandidateApproval(false);
+    setAttempt(1);setRetryFailure(null);setResponse('');
   },[sourceKey]);
   useEffect(()=>{
     setPrompt('');setCopied(false);setReview(null);setComparison(null);
     setNotice('');setContext(null);setGenerated(null);setHoldoutAttested(false);setCandidateApproval(false);
+    setAttempt(1);setRetryFailure(null);setResponse('');
   },[goal,solutionInfo]);
 
   async function prepare(){
@@ -151,15 +167,17 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         return;
       }
       const baseline=await buildReviewableRecipe(sample,next,local);
-      setContext({sample,draft:next,suite:local});
       const projectId=baseline.ok?baseline.recipe.projectId:
         'draft-'+(next.guided??draft.guided)?.slug;
-      setPrompt(composeChatGPTPrompt({
+      const basePrompt=composeChatGPTPrompt({
         goal,source:sample,sourceHash:prepared.sampleSha256,
         sourceCount:prepared.sourceCount,projectId,baseline,
         extraContext:reviewedContext.text+(namedSummary?'\n'+namedSummary:''),
         sourceEvidence:buildPromptSourceEvidence(sample).text,
-      }));
+        eventCoverageEvidence:buildEventCoverageEvidence(sample,next,local).text,
+      });
+      setContext({sample,draft:next,suite:local,basePrompt});
+      setPrompt(basePrompt);setAttempt(1);setRetryFailure(null);
     }catch{
       setPromptError('Could not prepare the reviewed AI prompt. No log data was transmitted.');
     }finally{setBusy(false);}
@@ -169,89 +187,189 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     try{await navigator.clipboard.writeText(prompt);setCopied(true);}
     catch{setPromptError('Clipboard unavailable. Select and copy the visible prompt manually.');}
   }
+  async function copyImprovedPrompt(){
+    if(!context||!retryFailure||!response.trim()||pending||busy||attempt>=3)return;
+    const nextAttempt=(attempt+1) as 2|3;
+    try{
+      const updated=buildAdaptiveRetryPrompt({
+        basePrompt:context.basePrompt,previousResponse:response,
+        attempt:nextAttempt,...retryFailure,
+      });
+      setPrompt(updated);setAttempt(nextAttempt);setRetryFailure(null);
+      setResponse('');setReview(null);setComparison(null);setGenerated(null);
+      setCandidateApproval(false);setHoldoutAttested(false);setCopied(false);
+      try{
+        await navigator.clipboard.writeText(updated);
+        setCopied(true);
+        setNotice('Improved attempt '+nextAttempt+' prompt copied. Paste it into ChatGPT, then bring back the complete JSON.');
+      }catch{
+        setNotice('Improved attempt '+nextAttempt+' prompt prepared. Clipboard unavailable: copy the visible prompt manually.');
+      }
+    }catch{
+      setNotice('Could not prepare a safe retry. Original parser rules remain unchanged.');
+    }
+  }
+
   async function validate(){
     if(!context||context.sample!==sample||pending||busy||!response.trim())return;
-    setBusy(true);setReview(null);setComparison(null);setGenerated(null);setNotice('');
+    setBusy(true);setReview(null);setComparison(null);setGenerated(null);setNotice('');setRetryFailure(null);
     try{
       const text=response.trim().replace(/^\x60\x60\x60(?:json)?\s*\n([\s\S]*?)\n\x60\x60\x60$/i,'$1').trim();
       if(!text.startsWith('{')){
-        setNotice('ChatGPT returned a diagnosis, not a parser recipe. No rules were applied. Review the explanation, fix malformed source logs and analyze again.');
+        setRetryFailure({failure:'NON_JSON_RESPONSE',
+          diagnostic:text.startsWith('REVIEW_REQUIRED:')?'REVIEW_REQUIRED':'NOT_JSON'});
+        setNotice('ChatGPT returned a diagnosis, not a parser recipe. No rules were applied. Review the source and use a guided retry only if the original log is valid.');
         return;
       }
       let result=await importReviewOnlyAIRecipe(text,sample,context.draft,context.suite);
       if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
         result=await importRecoveryAIRecipe(text,sample,context.draft,context.suite);
       setReview(result);setHoldoutAttested(false);setCandidateApproval(false);
-      if(!result.ok)setNotice('ChatGPT result rejected: '+result.reason+'. No parser rules changed.');
-      else if(result.report.mode==='FULL_RECOVERY')
+      if(!result.ok){
+        const failure:AdaptiveRepairFailure=result.reason==='SOURCE_IDENTITY_MISMATCH'
+          ?'SOURCE_IDENTITY_MISMATCH':
+          (result.reason==='INVALID_JSON'||result.reason==='UNTRUSTED_RECIPE')
+            ?'SCHEMA_REJECTED':'RECIPE_UNSUPPORTED';
+        setRetryFailure({failure,diagnostic:result.reason});
+        setNotice('ChatGPT result rejected: '+result.reason+'. No parser rules changed.');
+      }else if(result.report.mode==='FULL_RECOVERY')
         setNotice('ChatGPT result is ready for testing. No parser changes have been applied yet.');
-    }catch{setNotice('The AI response could not be validated. No rules changed.');}
-    finally{setBusy(false);}
+    }catch{
+      setRetryFailure({failure:'SCHEMA_REJECTED',diagnostic:'INVALID_JSON'});
+      setNotice('The AI response could not be validated. No rules changed.');
+    }finally{setBusy(false);}
   }
-  async function compareMapping(){
-    if(!context||context.sample!==sample||!review||!review.ok||!holdout.trim()||busy||pending)return;
-    if(!holdoutAttested){
-      setNotice('Confirm that these additional test logs are different from the examples used to create the fix.');return;
+  async function compareMapping(sourceOnly=false){
+    if(!context||context.sample!==sample||!review||!review.ok||busy||pending)return;
+    if(sourceOnly&&holdout.trim()){
+      setNotice('To use the source-only path, clear the additional test examples.');return;
     }
-    if(new TextEncoder().encode(holdout).byteLength>MAX_SAMPLE){
+    if(!sourceOnly&&!holdout.trim())return;
+    if(!sourceOnly&&!holdoutAttested){
+      setNotice('Confirm that the additional examples are different from the original logs.');return;
+    }
+    if(!sourceOnly&&new TextEncoder().encode(holdout).byteLength>MAX_SAMPLE){
       setNotice('The additional test logs exceed the local 64 KiB limit.');return;
     }
     let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
     let correctionScope:{oldTarget:string;newTarget:string}|undefined;
-    if(review.report.mode==='FULL_RECOVERY')proposal=proposeV01RecoveryParserFromAI(review,context.draft);
+    if(review.report.mode==='FULL_RECOVERY')
+      proposal=proposeV01RecoveryParserFromAI(review,context.draft);
     else{
       const additive=proposeV01FieldMappingFromAI(review,sample,context.draft,context.suite);
       if(additive.ok)proposal=additive;
       else{
-        const correction=proposeV01MappingCorrectionFromAI(review,sample,context.draft,context.suite);
+        const correction=proposeV01MappingCorrectionFromAI(
+          review,sample,context.draft,context.suite);
         if(correction.ok){
           proposal=correction;
           correctionScope={
             oldTarget:normalizedMappingOutputPath(context.draft,correction.mappingId),
             newTarget:normalizedMappingOutputPath(correction.candidate,correction.mappingId),
           };
-        }
-        else proposal=proposeV01EnrichmentFromAI(review,sample,context.draft,context.suite);
+        }else proposal=proposeV01EnrichmentFromAI(
+          review,sample,context.draft,context.suite);
       }
     }
     if(!proposal.ok){
-      setNotice('The proposed grammar cannot be translated into a supported parser: '+proposal.reason);
+      setRetryFailure({failure:'RECIPE_UNSUPPORTED',diagnostic:proposal.reason});
+      setNotice('The proposed grammar cannot be translated into a supported parser: '+
+        proposal.reason);
       return;
     }
     setBusy(true);setComparison(null);setCandidateApproval(false);setNotice('');
+    setRetryFailure(null);
     try{
-      const [candidate,baselineHoldout,candidateHoldout]=await Promise.all([
-        runPreview(proposal.candidate,sample),
-        runPreview(context.draft,holdout),
-        runPreview(proposal.candidate,holdout),
-      ]);
-      const comparisonInput={source:sample,baseline:context.suite,candidate,
-        holdout:{source:holdout,baseline:baselineHoldout,candidate:candidateHoldout}};
-      const result=correctionScope?
-        compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
-      const typeSuites=namedLogTypes?
-        await Promise.all(namedLogTypes.map(group=>runPreview(proposal.candidate,group.sample))):[];
-      const typeCoverage=namedLogTypes?
-        checkNamedParserCoverage(proposal.candidate,namedLogTypes,typeSuites):
-        {ok:true as const};
-      const qualified=result.acceptedWithoutRegression&&result.holdoutStatus==='TESTED'&&
-        completeSuite(candidate)&&completeSuite(candidateHoldout)&&typeCoverage.ok;
-      setComparison({candidate:proposal.candidate,value:result,qualified});
+      const candidate=await runPreview(proposal.candidate,sample);
+      const variationCandidate=sourceOnly
+        ?buildSingleSampleVariation(sample,proposal.candidate.format):null;
+      const changed=variationCandidate&&hasExtractedVariationTarget(variationCandidate,candidate)
+        ?variationCandidate:null;
+      const changedSuite=changed?await runPreview(proposal.candidate,changed.mutatedSource):null;
+      const changedOk=!changed||Boolean(changedSuite&&
+        verifySingleSampleVariation(changed,candidate,changedSuite));
+      const variation=changed?(changedOk?'PASS' as const:'FAIL' as const):'NOT_APPLICABLE' as const;
+      const baselineHoldout=sourceOnly?null:await runPreview(context.draft,holdout);
+      const candidateHoldout=sourceOnly?null:await runPreview(proposal.candidate,holdout);
+      const input=baselineHoldout&&candidateHoldout
+        ?{source:sample,baseline:context.suite,candidate,
+            holdout:{source:holdout,baseline:baselineHoldout,candidate:candidateHoldout}}
+        :{source:sample,baseline:context.suite,candidate};
+      const result=correctionScope
+        ?compareMappingCorrectionCandidate(input,correctionScope)
+        :compareCandidate(input);
+      const typeSuites=namedLogTypes
+        ?await Promise.all(namedLogTypes.map(group=>runPreview(proposal.candidate,group.sample)))
+        :[];
+      const typeCoverage=namedLogTypes
+        ?checkNamedParserCoverage(proposal.candidate,namedLogTypes,typeSuites)
+        :{ok:true as const};
+      const qualified=result.acceptedWithoutRegression&&
+        result.holdoutStatus===(sourceOnly?'NOT_SUPPLIED':'TESTED')&&
+        completeSuite(candidate)&&changedOk&&
+        (sourceOnly||Boolean(candidateHoldout&&completeSuite(candidateHoldout)))&&
+        typeCoverage.ok;
+      const evidence=sourceOnly?'SAMPLE_ONLY' as const:'INDEPENDENT' as const;
+      const fieldsPreview=JSON.stringify(candidate.events.slice(0,10).map(event=>({
+        sourceLine:event.line,extracted:event.fields,normalized:event.normalized,
+        status:event.status,
+      })),null,2).slice(0,12000);
+      setComparison({candidate:proposal.candidate,value:result,qualified,evidence,fieldsPreview,variation});
       if(!typeCoverage.ok)
-        setNotice('Log type review required: '+typeCoverage.reason+' No parser rules changed.');
-      else if(!qualified)setNotice('The proposed fix did not pass both the original logs and the additional test logs. Existing parser rules are unchanged.');
-      else setNotice('The proposed fix passed the original logs and the additional test logs. Review and approve it before applying.');
-    }catch{setNotice('The additional-log test could not be completed. Existing parser rules remain unchanged.');}
-    finally{setBusy(false);}
+        setNotice('Log type review required: '+typeCoverage.reason+' No rules changed.');
+      else if(!qualified){
+        setRetryFailure({
+          failure:sourceOnly
+            ?(variation==='FAIL'?'SYNTHETIC_VALUE_FAILURE':'SAMPLE_REGRESSION')
+            :'HOLDOUT_REGRESSION',
+          diagnostic:sourceOnly
+            ?(variation==='FAIL'?'SYNTHETIC_VARIANT_FAILED':'SOURCE_TEST_FAILED')
+            :'HOLDOUT_FAILED',
+          evidence:{
+            sourceEvents:result.baseline.sourceCount,
+            sourcePassed:result.baseline.positiveAfter,
+            regressions:result.baseline.regressions,
+            removedFields:result.baseline.fieldRemovals,
+            typeChanges:result.baseline.typeChanges,
+            holdoutStatus:result.holdoutStatus,
+            observedOutput:fieldsPreview.slice(0,4096),
+            ...(variation==='FAIL'&&changed?{syntheticProbe:JSON.stringify({
+              originalValue:changed.previousValue,
+              substitutedValue:changed.replacementValue,
+              result:'FAILED_NOT_INDEPENDENT',
+            })}:{}),
+            ...(candidateHoldout?{observedHoldout:JSON.stringify(
+              candidateHoldout.events.filter(e=>e.status!=='pass'||!e.extracted||!e.normalizedOk)
+                .slice(0,2).map(e=>({sourceLine:e.line,raw:e.raw,
+                  extracted:e.fields,normalized:e.normalized,
+                  errorCodes:e.diagnostics.map(d=>d.code)})))
+                .slice(0,4096)}:{}),
+          },
+        });
+        setNotice(sourceOnly
+          ?(variation==='FAIL'&&completeSuite(candidate)
+            ?'The original sample passed, but the controlled value variation failed. The parser may overfit the exact input value. No rules changed.'
+            :'The original sample failed parser validation; no rules changed.')
+          :'The original and independent examples did not both pass; no rules changed.');
+      }else setNotice(sourceOnly
+        ?'The original sample passed. Review its extracted fields before accepting a sample-only DRAFT; generalization was not tested.'
+        :'Original and independent examples passed. Review and approve the fix.');
+    }catch{
+      setRetryFailure({failure:'SAMPLE_REGRESSION',diagnostic:'SOURCE_TEST_FAILED'});
+      setNotice('Candidate validation failed. Existing rules remain unchanged.');
+    }finally{setBusy(false);}
   }
   async function generateVerifiedDraft(){
     if(!context||context.sample!==sample||!review?.ok||pending||busy||draft.eventProfiles)return;
     const recovery=review.report.mode==='FULL_RECOVERY';
     const baseline=recovery?null:await buildReviewableRecipe(sample,context.draft,context.suite);
     if(!recovery&&(!baseline||!baseline.ok)){setNotice('No validated baseline is available. No files generated.');return;}
-    const unchanged=!recovery&&baseline?.ok&&JSON.stringify(baseline.recipe)===JSON.stringify(review.candidate);
-    if(!unchanged&&(!comparison?.qualified||comparison.value.holdoutStatus!=='TESTED'||!candidateApproval)){
-      setNotice('Test the proposed fix with different log examples and approve the result before applying it.');
+    const unchanged=!recovery&&baseline?.ok&&canonicalJson(baseline.recipe)===canonicalJson(review.candidate);
+    const acceptable=Boolean(comparison?.qualified&&(
+      comparison.evidence==='INDEPENDENT'&&comparison.value.holdoutStatus==='TESTED'||
+      comparison.evidence==='SAMPLE_ONLY'&&comparison.value.holdoutStatus==='NOT_SUPPLIED'));
+    if(!unchanged&&(!acceptable||!candidateApproval)){
+      setNotice('Validate the proposal on your original sample (and any independent examples) and explicitly approve the evidence level before creating a DRAFT.');
       return;
     }
     const candidate=unchanged?context.draft:comparison!.candidate;
@@ -278,7 +396,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       const pair=await generateBackendPair(adapted.project);
       await verifyGeneratedPair(pair);
       const exact=await buildReviewableRecipe(sample,candidate,local);
-      if(!exact.ok||JSON.stringify(exact.recipe)!==JSON.stringify(review.candidate))
+      if(!exact.ok||canonicalJson(exact.recipe)!==canonicalJson(review.candidate))
         throw new Error('The AI proposal differs from the compiler-owned validated recipe.');
       // Restricted Recipe v0.2 excludes conditional event routing.
       // Those DRAFTs must use the separately reviewed conditional builder.
@@ -287,9 +405,12 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       await compileReviewedRecipeV02({
         recipe:review.candidate,legacyProject:adapted.project,
       },pair);
-      setGenerated({pair,draft:candidate});
-      setNotice('Parser files created after the local sample checks passed. Nothing was installed automatically.');
+      setGenerated({pair,draft:candidate,
+        evidence:unchanged?'UNCHANGED':comparison!.evidence});
+      setNotice('DRAFT parser files created after local checks. No deployment or target compatibility is implied.');
     }catch{
+      setRetryFailure({failure:'NATIVE_VALIDATION_FAILED',
+        diagnostic:'NATIVE_VALIDATION_FAILED'});
       setNotice('Parser Studio could not safely create files from this ChatGPT result. No files were released and no parser rules were changed.');
     }finally{setBusy(false);}
   }
@@ -313,8 +434,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       <section aria-label="ChatGPT preparation">
         <h2>1. Prepare your logs</h2>
         <StageGuide title="Use ChatGPT when Auto Parser needs help">
-          Paste actual log records. The prompt contains the original logs so ChatGPT
-          can analyze their real format, without substituting unrelated examples.
+          Paste actual logs from each event type your security product emits:
+          for example traffic, IPS, antivirus, VPN, authentication or system events.
+          The copied prompt keeps your original examples; it cannot prove parsing
+          of an event type that you did not provide.
         </StageGuide>
         {onEnableNamedLogTypes&&onChangeNamedLogTypes&&onExitNamedLogTypes&&
           <div className="chatgpt-named-source" aria-label="Combine multiple log types">
@@ -391,7 +514,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           onClick={()=>{void prepare();}}>Prepare ChatGPT Prompt</button>
         {promptError&&<p role="alert" className="auto-parser-warning">{promptError}</p>}
         {prompt&&<div className="auto-parser-recipe" aria-label="ChatGPT prepared prompt">
-          <h3>2. Copy to ChatGPT</h3>
+          <h3>2. Copy to ChatGPT{attempt>1?' · Attempt '+attempt+' of 3':''}</h3>
           <textarea aria-label="ChatGPT copyable prompt" rows={10} value={prompt}
             onChange={e=>{setPrompt(e.target.value);setCopied(false);}}/>
           <button type="button" onClick={()=>{void copyPrompt();}}>
@@ -406,11 +529,21 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         <p>Paste the JSON result from ChatGPT. Parser Studio checks it before any parser rule can change.</p>
         <textarea aria-label="ChatGPT result JSON" rows={8} maxLength={MAX_RECIPE}
           spellCheck={false} value={response} onChange={e=>{
-            setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setNotice('');setHoldoutAttested(false);setCandidateApproval(false);
+            setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setRetryFailure(null);setNotice('');setHoldoutAttested(false);setCandidateApproval(false);
           }} placeholder="Paste the JSON result from ChatGPT here."/>
         <button type="button" disabled={!response.trim()||!context||pending||busy}
           onClick={()=>{void validate();}}>Check ChatGPT Result</button>
         {notice&&<p role="status" className="auto-parser-note">{notice}</p>}
+        {retryFailure&&attempt<3&&context&&<div className="auto-parser-recipe" aria-label="ChatGPT adaptive repair">
+          <p>Parser Studio identified a failed check: {retryFailure.failure}. The next prompt includes original logs, the previous response and local failure evidence. If additional test logs were supplied, relevant excerpts may be included. Review sensitive information before copying.</p>
+          <button type="button" disabled={busy||pending}
+            onClick={()=>{void copyImprovedPrompt();}}>
+            <ClipboardCopy size={15}/> Copy Improved Prompt · Attempt {attempt+1} of 3
+          </button>
+        </div>}
+        {retryFailure&&attempt===3&&<p role="status">
+          Three attempts reached. Preserve the original logs and review the unresolved fields; no rule was changed automatically.
+        </p>}
         {review?.ok&&<div aria-label="ChatGPT result ready for testing" className="auto-parser-result">
           <strong>ChatGPT result accepted for testing · {review.report.sampleEvents} source event{review.report.sampleEvents===1?'':'s'}</strong>
           <span>No parser rules have changed yet.</span>
@@ -431,17 +564,28 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
               checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setCandidateApproval(false);setComparison(null);}}/>
             These are different log examples from the ones used to create this fix.
           </label>}
+          {!baselineUnchanged&&!holdout.trim()&&<button type="button" disabled={busy||pending}
+            onClick={()=>{void compareMapping(true);}}>Test Original Sample Only</button>}
           {!baselineUnchanged&&<button type="button" disabled={!holdout.trim()||!holdoutAttested||busy||pending}
-            onClick={()=>{void compareMapping();}}>Test Proposed Fix</button>}
+            onClick={()=>{void compareMapping(false);}}>Test Proposed Fix</button>}
           {comparison&&<div role="status" aria-label="ChatGPT fix test result">
             <span>Original logs still pass: {comparison.value.acceptedWithoutRegression?'YES':'NO'}</span>
             <span>Additional logs tested: {comparison.value.holdoutStatus==='TESTED'?'YES':'NO'}</span>
-            <span>Overall test: {comparison.qualified?'PASS':'FAILED'}</span>
+            <span>Evidence level: {comparison.evidence==='SAMPLE_ONLY'?'ORIGINAL SAMPLE ONLY':'INDEPENDENT EXAMPLES'}</span>
+            {comparison.evidence==='SAMPLE_ONLY'&&<span>Controlled value variation: {comparison.variation} (synthetic check, not an independent log)</span>}
+            <span>Overall test: {comparison.qualified?(comparison.evidence==='SAMPLE_ONLY'?'SAMPLE PASS (NOT GENERALIZED)':'PASS'):'FAILED'}</span>
+            {comparison.qualified&&<details>
+              <summary>Review actual extracted fields before approval</summary>
+              <pre className="auto-parser-recipe">{comparison.fieldsPreview}</pre>
+            </details>}
           </div>}
           {!baselineUnchanged&&comparison?.qualified&&<label className="auto-parser-persist-label">
-            <input type="checkbox" aria-label="Approve tested ChatGPT fix"
+            <input type="checkbox" aria-label={comparison.evidence==='SAMPLE_ONLY'
+              ?'Approve sample-only draft':'Approve tested ChatGPT fix'}
               checked={candidateApproval} onChange={e=>setCandidateApproval(e.target.checked)}/>
-            I reviewed the test result and approve applying this fix.
+            {comparison.evidence==='SAMPLE_ONLY'
+              ?'I reviewed the extracted fields and approve a sample-only DRAFT. No independent examples or target validation were performed.'
+              :'I reviewed the test result and approve applying this fix.'}
           </label>}
           <button type="button" className="auto-parser-primary"
             disabled={busy||pending||(!baselineUnchanged&&(!comparison?.qualified||!candidateApproval))}
@@ -451,9 +595,11 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           {generated&&<div className="auto-parser-download"
              aria-label="ChatGPT created parser files">
             <strong>Parser files created successfully</strong>
-            <span>{baselineUnchanged
-              ?'The current source and unchanged, previously reviewed parser passed local verification. No different holdout examples were tested in this step. Nothing was installed automatically.'
-              :'The original source and independently supplied additional test examples passed the Parser Studio checks. Nothing was installed automatically.'}</span>
+            <span>{generated.evidence==='UNCHANGED'
+              ?'The unchanged previously reviewed parser passed local checks. No different holdout examples were tested in this step.'
+              :generated.evidence==='SAMPLE_ONLY'
+                ?'DRAFT qualified only against the original input sample. Generalization and Stellar Cyber target behavior remain NOT VERIFIED.'
+                :'Original and independently supplied log examples passed local checks. Stellar Cyber target behavior remains NOT VERIFIED.'} Nothing was installed automatically.</span>
             <details className="auto-parser-recipe">
               <summary>Technical verification details</summary>
               <span>Two parser files passed integrity checks before download.</span>

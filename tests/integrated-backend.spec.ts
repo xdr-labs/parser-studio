@@ -532,9 +532,9 @@ test.describe('actual Chromium UI ↔ exact pinned authoring backend; target API
     const textarea=page.getByLabel('ChatGPT copyable prompt');
     await expect(textarea).toBeVisible({timeout:20000});
     const prompt=await textarea.inputValue();
-    expect(prompt).toContain('----- BEGIN ORIGINAL LOG SOURCE -----');
+    expect(prompt).toMatch(/----- BEGIN ORIGINAL LOG SOURCE \[[a-f0-9]{20}\] -----/);
     expect(prompt).toContain(source);
-    expect(prompt).toContain('----- END ORIGINAL LOG SOURCE -----');
+    expect(prompt).toMatch(/----- END ORIGINAL LOG SOURCE \[[a-f0-9]{20}\] -----/);
     const prefix='----- BEGIN VALIDATED BASELINE RECIPE -----\n';
     const suffix='\n----- END VALIDATED BASELINE RECIPE -----';
     const start=prompt.indexOf(prefix),end=prompt.indexOf(suffix,start);

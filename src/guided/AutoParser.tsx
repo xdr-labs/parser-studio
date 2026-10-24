@@ -702,7 +702,7 @@ export default function AutoParser({
        {!namedLogTypes&&<>
        <div className="auto-parser-source-toolbar">
          <label>Upload a log file <HelpTip label="Upload a log file"
-           text="Optional. Upload a .log, .txt, .json or .csv file instead of pasting. For exact original line endings and UTF-8 byte locations, use Upload: pasting can normalize CRLF to LF. The file stays in your browser."/>
+           text="Optional. Upload a .log, .txt, .json or .csv file instead of pasting. For exact original line endings and UTF-8 byte locations, use Upload: pasting can normalize CRLF to LF. The file is read in your browser; clicking Analyze Logs sends its content to this Parser Studio server."/>
            <input type="file" aria-label="Auto Parser file upload"
              accept=".txt,.log,.json,.csv,text/plain"
              onChange={e=>{const file=e.currentTarget.files?.[0];
@@ -751,7 +751,7 @@ export default function AutoParser({
            onClick={()=>void previewMultiPass()}>
            {multiPassBusy?'Analyzing Logs…':'Analyze Logs'}
          </button>
-         <span>No log data is sent to an LLM. This analysis uses the local Parser Studio engine.</span>
+         <span>Analyze Logs sends your original sample to this Parser Studio server for analysis. Nothing is sent to ChatGPT automatically.</span>
        </div>
        <div className="parser-identity-card" aria-label="Parser product identity">
          <div className="parser-identity-copy">

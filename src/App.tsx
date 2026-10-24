@@ -153,9 +153,9 @@ export default function App(){
           </div>
         </div>
         <div className="topbar-actions">
-          <span className="context-flag"><span className="status-dot"/> Logs stay in this browser by default
+          <span className="context-flag"><span className="status-dot"/> Log analysis uses this server
             <HelpTip label="Local workspace privacy"
-              text="Auto Parser analysis happens locally unless you explicitly choose a feature that says it will send data elsewhere. ChatGPT Assisted uses manual copy and paste."/></span>
+              text="Typing and browser previews stay local. Clicking Analyze Logs sends the original sample to this Parser Studio server for Multi-Pass analysis. Parser Studio does not send the sample to ChatGPT automatically; copying a prepared prompt is your separate manual choice."/></span>
           <span className="topbar-help-action">
             <button type="button" className="button secondary" aria-expanded={versionsOpen}
               aria-controls="local-version-workspace"
