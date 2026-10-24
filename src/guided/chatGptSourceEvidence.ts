@@ -4,6 +4,7 @@
  */
 import {analyzeLogEnvelopes} from './autoParserEnvelope';
 import {inspectZeekReview} from './zeekReview';
+import {inferTextHeaderHints} from './textHeaderHints';
 
 export interface PromptSourceEvidence{
  text:string;
@@ -59,6 +60,16 @@ export function buildPromptSourceEvidence(source:string):PromptSourceEvidence{
    'Parser Studio preliminary local source-format observations (unverified, not a vendor oracle):',
    JSON.stringify(metadata),
  ];
+ const textHeader=inferTextHeaderHints(source);
+ if(textHeader){
+   sentences.push(
+     'Bounded header-only text layout observations (fixed identifiers and counts only, not decoded vendor values):',
+     JSON.stringify(textHeader),
+     'IMPORTANT: extracting a header or preserving a whole message is NOT proof of semantic fields such as username, action, source IP, or a compiler-ready parser.',
+     'For REVIEW_ONLY parse_regex proposals, capture only demonstrably delimited values with named groups; do not embed observed hostnames, IPs, identifiers or timestamps as fixed literals. Do not guess a missing year or timezone.',
+     'Check every event shape in the original source AND distinct holdout examples before accepting a recipe. If source shapes conflict or field boundaries are ambiguous, respond REVIEW_REQUIRED: with the exact missing evidence.',
+   );
+ }
  if(declared){
    sentences.push(
      'Recognized a declared-schema source whose header lines are metadata, not data events:',
