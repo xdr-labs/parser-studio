@@ -13,7 +13,7 @@ import {toBackendProject} from './backendAdapter';
 import {fetchBackendCapabilities,assertBackendProjectSupported} from './backendCapabilities';
 import {validateBackendProject,generateBackendPair,type GeneratedPair} from './backendClient';
 import {verifyGeneratedPair} from './artifactPackageClient';
-import {compileReviewedRecipeV02} from './recipeV2BackendClient';
+import {compileReviewedRecipeV02,canonicalJson} from './recipeV2BackendClient';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import ParserListenerPortInput from './ParserListenerPortInput';
 import NamedLogTypesPanel from './NamedLogTypesPanel';
@@ -251,7 +251,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     const recovery=review.report.mode==='FULL_RECOVERY';
     const baseline=recovery?null:await buildReviewableRecipe(sample,context.draft,context.suite);
     if(!recovery&&(!baseline||!baseline.ok)){setNotice('No validated baseline is available. No files generated.');return;}
-    const unchanged=!recovery&&baseline?.ok&&JSON.stringify(baseline.recipe)===JSON.stringify(review.candidate);
+    const unchanged=!recovery&&baseline?.ok&&canonicalJson(baseline.recipe)===canonicalJson(review.candidate);
     if(!unchanged&&(!comparison?.qualified||comparison.value.holdoutStatus!=='TESTED'||!candidateApproval)){
       setNotice('Test the proposed fix with different log examples and approve the result before applying it.');
       return;
@@ -280,7 +280,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       const pair=await generateBackendPair(adapted.project);
       await verifyGeneratedPair(pair);
       const exact=await buildReviewableRecipe(sample,candidate,local);
-      if(!exact.ok||JSON.stringify(exact.recipe)!==JSON.stringify(review.candidate))
+      if(!exact.ok||canonicalJson(exact.recipe)!==canonicalJson(review.candidate))
         throw new Error('The AI proposal differs from the compiler-owned validated recipe.');
       // Restricted Recipe v0.2 excludes conditional event routing.
       // Those DRAFTs must use the separately reviewed conditional builder.

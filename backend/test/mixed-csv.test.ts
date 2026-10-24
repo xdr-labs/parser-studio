@@ -40,6 +40,17 @@ test('explicit reviewed CSV plus JSON/KV mixes to exact ParserProject and v0.2 S
  for(const f of pair.files)assert.equal(f.sha256,
   createHash('sha256').update(f.content).digest('hex'));
 });
+test('strict mixed CSV compiles TAB safely for Ruby 3.2 while preserving the no-liberal-parsing boundary',()=>{
+ const p=project();
+ p.extraction={...p.extraction,csvDelimiter:'\t'};
+ assert.equal(validateProject(p).ok,true);
+ const pair=compilePair(p);
+ const ruby=pair.files[1]!.content;
+ assert.match(ruby,/CSV\.parse_line\(text, col_sep: separator, liberal_parsing: false, strip: \(separator != "\\t"\)\)/);
+ assert.equal(ruby.includes('liberal_parsing: true'),false);
+ assert.equal(pair.manifest.engineVerified,false);
+ assert.equal(pair.manifest.targetImportVerified,false);
+});
 test('mixed CSV requires explicit column names/delimiter and rejects ambiguous schemas',()=>{
  const p=project();
  const errors:Array<(x:any)=>void>=[
