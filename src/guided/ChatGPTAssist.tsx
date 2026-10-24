@@ -20,6 +20,7 @@ import NamedLogTypesPanel from './NamedLogTypesPanel';
 import ChatGPTConditionalDraft from './ChatGPTConditionalDraft';
 import {validateNamedLogs,type NamedLogType} from './namedLogTypes';
 import {buildPromptSourceEvidence} from './chatGptSourceEvidence';
+import {buildEventCoverageEvidence} from './chatGptEventCoverage';
 import {reviewedSourcePromptContext,checkNamedParserCoverage,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 import {composeChatGPTPrompt} from './chatGptPromptBuilder';
@@ -159,6 +160,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         sourceCount:prepared.sourceCount,projectId,baseline,
         extraContext:reviewedContext.text+(namedSummary?'\n'+namedSummary:''),
         sourceEvidence:buildPromptSourceEvidence(sample).text,
+        eventCoverageEvidence:buildEventCoverageEvidence(sample,next,local).text,
       }));
     }catch{
       setPromptError('Could not prepare the reviewed AI prompt. No log data was transmitted.');
@@ -313,8 +315,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       <section aria-label="ChatGPT preparation">
         <h2>1. Prepare your logs</h2>
         <StageGuide title="Use ChatGPT when Auto Parser needs help">
-          Paste actual log records. The prompt contains the original logs so ChatGPT
-          can analyze their real format, without substituting unrelated examples.
+          Paste actual logs from each event type your security product emits:
+          for example traffic, IPS, antivirus, VPN, authentication or system events.
+          The copied prompt keeps your original examples; it cannot prove parsing
+          of an event type that you did not provide.
         </StageGuide>
         {onEnableNamedLogTypes&&onChangeNamedLogTypes&&onExitNamedLogTypes&&
           <div className="chatgpt-named-source" aria-label="Combine multiple log types">

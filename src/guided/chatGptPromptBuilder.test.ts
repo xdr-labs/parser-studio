@@ -80,6 +80,26 @@ describe('ChatGPT Assisted reviewed prompt identity',()=>{
     expect(prompt).not.toContain('Exact ParserRecipe v0.2 stage-object syntax');
   });
 
+  it('never truncates security product preservation evidence inside a JSON object',()=>{
+    const large=JSON.stringify({mappings:Array.from({length:60},(_,i)=>({
+      source:'field_'+i,target:'vendor_field_'+i,group:'vendor_fields',
+      type:'string',observedRecords:4}))});
+    expect(large.length).toBeGreaterThan(4096);
+    const prompt=composeChatGPTPrompt({
+      goal:'Protect all existing security fields',source:'type=utm subtype=ips action=dropped',
+      projectId:'draft-demo_firewall',sourceHash:digest,sourceCount:1,
+      baseline:unavailable,eventCoverageEvidence:large,
+    });
+    const start='Observed event diversity and fields to preserve (not independent verification):\n';
+    const end='\nThe ORIGINAL log source begins';
+    const i=prompt.indexOf(start),j=prompt.indexOf(end,i+start.length);
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(j).toBeGreaterThan(i);
+    const decoded=JSON.parse(prompt.slice(i+start.length,j)) as {mappings:unknown[]};
+    expect(decoded.mappings).toHaveLength(60);
+    expect(decoded).toEqual(JSON.parse(large));
+  });
+
   it('uses a real validated baseline and never invents a project ID',async()=>{
     const source='{"action":"allow","src_ip":"192.0.2.1"}';
     const draft={...createDraft(),format:'json' as const};
