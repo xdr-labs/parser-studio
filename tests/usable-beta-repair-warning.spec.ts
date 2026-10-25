@@ -30,8 +30,8 @@ test('unresolved logs warn before manual copying without requiring a separate ma
   await expect(inspector).toContainText('could not');
   await inspector.getByRole('button',{name:'Fix with ChatGPT'}).click();
 
-  const warning=page.getByRole('note').filter({hasText:'This prompt includes the original log'});
-  await expect(warning).toContainText('sensitive information');
+  const warning=page.getByRole('note').filter({hasText:'original log input'});
+  await expect(warning).toContainText('redact any sensitive values');
   await expect(warning).toContainText('never sends it automatically');
   const prompt=page.getByLabel('Generated ChatGPT repair prompt');
   await expect(prompt).toBeVisible();
