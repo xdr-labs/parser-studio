@@ -5,7 +5,7 @@ import type {ParserDraft,SuiteResult} from '../model';
 import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
   proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
   proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
-import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
+import {assessHoldoutIndependence,compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -250,6 +250,16 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     }
     if(!sourceOnly&&new TextEncoder().encode(holdout).byteLength>MAX_SAMPLE){
       setNotice('The additional test logs exceed the local 64 KiB limit.');return;
+    }
+    if(!sourceOnly){
+      const independence=assessHoldoutIndependence(sample,holdout);
+      if(!independence.ok){
+        setNotice(independence.reason==='TOO_SMALL'
+          ?'Add at least '+independence.requiredUnique+' different additional log events; '+
+            independence.holdoutUnique+' provided. Or clear the box and use Test Original Sample Only for a DRAFT.'
+          :'Additional examples must not duplicate or overlap the original logs. Use genuinely different records.');
+        return;
+      }
     }
     let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
     let correctionScope:{oldTarget:string;newTarget:string}|undefined;
@@ -559,6 +569,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
                 setHoldout(e.target.value);setHoldoutAttested(false);setCandidateApproval(false);setComparison(null);setGenerated(null);
               }}/>
           </label>
+          <p className="auto-parser-note">For a broader test, supply at least two different complete log events that are not in the original sample. If none are available, leave this blank and use Test Original Sample Only for a DRAFT.</p>
           {!baselineUnchanged&&<label className="auto-parser-persist-label">
             <input type="checkbox" aria-label="Confirm test examples are different"
               checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setCandidateApproval(false);setComparison(null);}}/>
