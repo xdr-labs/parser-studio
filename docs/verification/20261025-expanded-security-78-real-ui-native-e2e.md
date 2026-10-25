@@ -81,3 +81,22 @@ Against the actual seven downloaded new-grammar Ruby fragments, **21/21 syntheti
 - Sample-only source success is not a production-readiness criterion. Keep nested-array output gaps and unsupported vendor positional schemas visible for a future evidence-led product decision; no speculative grammar patching.
 - Private original logs, prompt/response text, screenshots, generated Ruby+CONF and full result JSON remain on dev-atlas, not in Git.
 - Test code and summarized evidence in this QA Draft only. The accepted development version and main remain unchanged.
+
+
+## Source-disjoint authored holdout follow-up (not manufacturer inference)
+
+After the original 78-case run, seven **new** approved sample-only DRAFTs were tested again on **eight different authored source examples** drawn from repository browser regression fixtures (novice-corpus-54-public-20261019.spec.ts and novice-corpus-46-public-20261019.spec.ts) or the other Zeek data row. Each test sample has a different raw SHA from the corresponding one-sample Recipe's original.
+
+Actual downloaded Ruby/native results: **6/8 PASS**, with successful examples for Juniper SRX, WatchGuard Firebox, Cisco Umbrella DNS, Zeek row A, Zeek row B and W3C-like data. The two failures were **Snort formats without the original sample's quoted message / AppID layout**. Both were explicitly rejected by the narrow first-sample Regex rather than returned as false-success events. This is observed one-sample model-authored *generalization failure*, not an undetected product regression.
+
+The actual public ChatGPT Assisted Chromium UI was subsequently exercised on the **same Snort Recipe, with two distinct authored holdout records**. The owner-specified original source and all three captured model responses were replayed byte-for-byte through the real adaptive retry controls. The UI reported:
+
+- Original logs still pass: YES
+- Additional logs tested: YES
+- Evidence level: INDEPENDENT EXAMPLES (the UI label means different supplied records; here the evidence is **synthetic, not manufacturer independent**)
+- Overall test: FAILED
+- Apply Fix & Create Parser Files **disabled**, and **no parser generated** in this holdout failure path.
+
+The UI's source-disjoint holdout reviewer deliberately requires at least **two unique holdout records**; a single different Snort example is rejected as TOO_SMALL, so the final browser replay used two. This is expected fail-closed behavior, not a permission issue or production blocker.
+
+New test harnesses: tools/qa/expanded_source_disjoint_native_20261025.py and tools/qa/expanded_snort_holdout_browser_20261025.cjs. Private machine-readable readbacks: new-grammar-synthetic-source-disjoint.json (8 cases) and new-grammar-recovery/cisco-068/source-disjoint-ui-gate.json (real Chromium, no third-party/model calls). **These findings do not change the existing 7/15 sample-only acceptance or the 70 DRAFT pairs generated in the original exercise.** There is no reason to deploy or promote this synthetic-only Snort rule as a generalized parser without documented, independently reviewed sample diversity.
