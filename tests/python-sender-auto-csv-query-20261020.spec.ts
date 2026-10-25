@@ -40,9 +40,15 @@ test('downloaded auto Python test sender preserves all positional CSV URL query 
   const result=JSON.parse(output) as {format:string;original:string;mutated:string};
   expect(result.format).toBe('auto');
   expect(result.original).toBe(source);
-  expect(result.mutated.split(',')).toHaveLength(3);
+  const columns=result.mutated.split(',');
+  expect(columns).toHaveLength(3);
   expect(result.mutated).toContain('?user=alice&srcip=');
-  expect(result.mutated).not.toContain('srcip=192.0.2.10');
+  const query=new URL(columns[2]!).searchParams;
+  expect(query.get('user')).toBe('alice');
+  // Compare the complete URL parameter: a valid mutation such as
+  // 192.0.2.107 still contains 192.0.2.10 as a text prefix.
+  expect(query.get('srcip')).toMatch(/^(?:\d{1,3}\.){3}\d{1,3}$/);
+  expect(query.get('srcip')).not.toBe('192.0.2.10');
   expect(apiWrites).toEqual([]);
   expect(pageErrors).toEqual([]);
 });
