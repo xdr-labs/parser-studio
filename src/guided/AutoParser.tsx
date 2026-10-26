@@ -19,11 +19,10 @@ import NormalizationMappingReview from './NormalizationMappingReview';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import {inferConsistentCsvColumnCount,inspectCsvColumnShapes,splitEvents,MAX_EVENTS} from '../parser';
 import {parseJavaStacktrace} from '../javaStacktrace';
-import {DEFAULT_PARSER_LISTENER_PORT,defaultGuidedOptions} from './contract';
-import ParserListenerPortInput from './ParserListenerPortInput';
+import {defaultGuidedOptions} from './contract';
+import ParserIdentityCard from './ParserIdentityCard';
 import {reviewLogicalBoundaries,type LogicalBoundaryReport} from './logicalBoundaryReview';
 import {buildSourceReviewedGenericStructuralDraft} from './genericStructuralAutoDraft';
-import {parserIdentitySlug} from './parserIdentity';
 import {inspectZeekReview} from './zeekReview';
 
 
@@ -645,20 +644,6 @@ export default function AutoParser({
  const currentMultiPassCounts=multiPassDerived.counts;
  const protectedSourceValuesByEvent=multiPassDerived.protectedValues;
  const protectedResidualTextByEvent=multiPassDerived.protectedResiduals;
- const parserIdentityIsDefault=draft.vendor==='Demo / local draft'&&draft.name==='Untitled parser';
- const parserArtifactName=parserIdentityIsDefault
-   ?'customized_<manufacturer>_<product>'
-   :'customized_'+(draft.guided?.slug??parserIdentitySlug(draft.vendor,draft.name));
- const updateParserIdentity=(field:'vendor'|'name'|'version',value:string)=>{
-  setDraft(old=>{
-   const vendor=field==='vendor'?value:old.vendor;
-   const name=field==='name'?value:old.name;
-   const version=field==='version'?value:(old.version??'');
-   const opts=old.guided??defaultGuidedOptions();
-   return {...old,vendor,name,version,
-    guided:{...opts,slug:parserIdentitySlug(vendor,name)}};
-  });
- };
  useEffect(()=>{
    if(advanced||parserSetOrigin||report.unsupported<3||!currentMultiPassReview||
       currentStructural||busy||pending||!suite)return;
@@ -753,37 +738,7 @@ export default function AutoParser({
          </button>
          <span>Analyze Logs sends your original sample to this Parser Studio server for analysis. Nothing is sent to ChatGPT automatically.</span>
        </div>
-       <div className="parser-identity-card" aria-label="Parser product identity">
-         <div className="parser-identity-copy">
-           <strong>Parser details for the downloadable files</strong>
-           <span>Set the manufacturer, product and receiving port before downloading parser files. These details do not affect log detection.</span>
-         </div>
-         <div className="parser-identity-fields">
-           <label>Manufacturer
-             <input aria-label="Parser manufacturer" value={draft.vendor}
-               placeholder="e.g. Fortinet"
-               onChange={e=>updateParserIdentity('vendor',e.target.value)}/>
-           </label>
-           <label>Product
-             <input aria-label="Parser product" value={draft.name}
-               placeholder="e.g. FortiGate"
-               onChange={e=>updateParserIdentity('name',e.target.value)}/>
-           </label>
-           <label>Version
-             <input aria-label="Parser product version" value={draft.version??''}
-               placeholder="e.g. 7.4.5"
-               onChange={e=>updateParserIdentity('version',e.target.value)}/>
-           </label>
-           <ParserListenerPortInput draft={draft} setDraft={setDraft}/>
-         </div>
-         <div className="parser-identity-filename">
-           <span>Generated parser files</span>
-           <code>{parserArtifactName}</code>
-           <code>{parserArtifactName}.conf</code>
-           <small>Generated .conf receiving port: {draft.guided?.receiver.port ?? DEFAULT_PARSER_LISTENER_PORT}</small>
-           <small>Stellar custom parsers use the <b>customized_&lt;vendor&gt;_&lt;product&gt;</b> naming convention. Version is stored in the parser metadata rather than appended to the file name.</small>
-         </div>
-       </div>
+       <ParserIdentityCard draft={draft} setDraft={setDraft}/>
        <AnalysisProgressPanel progress={analysisRun.progress} interruption={analysisRun.interruption}
          onCancel={analysisRun.cancel}/>
        <ManualSourceBoundaryReview source={sample} sourceInput={sourceLogRef}/>

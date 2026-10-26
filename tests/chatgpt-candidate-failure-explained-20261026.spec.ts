@@ -7,8 +7,8 @@ test.skip(process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
 async function propose(page:import('@playwright/test').Page,raw:string,holdout:string,columns:string[],delimiter:','|'\t'){
  await page.goto('/?workspace=chatgpt');
  await page.getByLabel('ChatGPT local sample logs').fill(raw);
- await page.getByLabel('ChatGPT solution vendor').fill('Generic');
- await page.getByLabel('ChatGPT solution product').fill('Security CSV');
+ await page.getByLabel('Parser manufacturer').fill('Generic');
+ await page.getByLabel('Parser product',{exact:true}).fill('Security CSV');
  await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
  const prompt=await page.getByLabel('ChatGPT copyable prompt').inputValue();
  const m=prompt.match(/"projectId":"(draft-[a-z][a-z0-9_]+)","sourceHash":"([a-f0-9]{64})","sourceCount":(\d+)/);

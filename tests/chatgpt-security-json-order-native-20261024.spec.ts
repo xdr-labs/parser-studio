@@ -13,8 +13,8 @@ test('a security parser from an unedited valid first reply compiles despite JSON
   ].join('\n');
   await page.goto('/?workspace=chatgpt');
   await page.getByLabel('ChatGPT local sample logs').fill(source);
-  await page.getByLabel('ChatGPT solution vendor').fill('Cisco');
-  await page.getByLabel('ChatGPT solution product').fill('Umbrella DNS');
+  await page.getByLabel('Parser manufacturer').fill('Cisco');
+  await page.getByLabel('Parser product',{exact:true}).fill('Umbrella DNS');
   await page.getByLabel('ChatGPT desired fields').fill('Extract DNS domain, source IP, action and category without guessing new columns.');
   await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
   const copied=page.getByLabel('ChatGPT copyable prompt');

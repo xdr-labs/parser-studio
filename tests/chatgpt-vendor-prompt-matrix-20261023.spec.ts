@@ -46,10 +46,9 @@ for(const item of cases){
   await page.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
   await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
   await expect(page.getByLabel('ChatGPT local sample logs')).toHaveValue(item.raw);
-  await page.getByLabel('ChatGPT solution vendor').fill(item.v);
-  await page.getByLabel('ChatGPT solution product').fill(item.p);
-  await page.getByLabel('ChatGPT solution version or model').fill(item.vers);
-  await page.getByLabel('ChatGPT log source or delivery').fill('Sample log from documented device format');
+  await page.getByLabel('Parser manufacturer').fill(item.v);
+  await page.getByLabel('Parser product',{exact:true}).fill(item.p);
+  await page.getByLabel('Parser product version').fill(item.vers);
   await page.getByLabel('ChatGPT desired fields').fill(item.goal);
   await expect(page.getByRole('alert').filter({hasText:'The ChatGPT prompt includes your original log text'})).toBeVisible();
   const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});

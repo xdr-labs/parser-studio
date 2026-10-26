@@ -17,8 +17,8 @@ for(const item of cases){
   const errs:string[]=[];page.on('pageerror',e=>errs.push(e.message));
   await page.goto('/?workspace=chatgpt');
   await page.getByLabel('ChatGPT local sample logs').fill(item.raw);
-  await page.getByLabel('ChatGPT solution vendor').fill(item.vendor);
-  await page.getByLabel('ChatGPT solution product').fill(item.product);
+  await page.getByLabel('Parser manufacturer').fill(item.vendor);
+  await page.getByLabel('Parser product',{exact:true}).fill(item.product);
   await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
   const prompt=page.getByLabel('ChatGPT copyable prompt');await expect(prompt).toBeVisible({timeout:20000});
   const text=await prompt.inputValue(),l=text.indexOf(B),r=text.indexOf(E,l+B.length);

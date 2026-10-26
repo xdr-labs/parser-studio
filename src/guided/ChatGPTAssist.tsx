@@ -16,7 +16,7 @@ import {validateBackendProject,generateBackendPair,type GeneratedPair} from './b
 import {verifyGeneratedPair} from './artifactPackageClient';
 import {compileReviewedRecipeV02,canonicalJson} from './recipeV2BackendClient';
 import {HelpTip,StageGuide} from './BeginnerHelp';
-import ParserListenerPortInput from './ParserListenerPortInput';
+import ParserIdentityCard from './ParserIdentityCard';
 import NamedLogTypesPanel from './NamedLogTypesPanel';
 import ChatGPTConditionalDraft from './ChatGPTConditionalDraft';
 import {validateNamedLogs,type NamedLogType} from './namedLogTypes';
@@ -28,8 +28,6 @@ import {composeChatGPTPrompt} from './chatGptPromptBuilder';
 import {buildAdaptiveRetryPrompt,type AdaptiveRepairFailure,type RetryEvidence} from './chatGptAdaptiveRepair';
 import {buildSingleSampleVariation,hasExtractedVariationTarget,
   verifySingleSampleVariation} from './singleSampleVariation';
-import {parserIdentitySlug} from './parserIdentity';
-import {defaultGuidedOptions} from './contract';
 
 interface Props {
   draft:ParserDraft;
@@ -40,8 +38,6 @@ interface Props {
   onEnableNamedLogTypes?:()=>void;
   onChangeNamedLogTypes?:(groups:NamedLogType[])=>void;
   onExitNamedLogTypes?:()=>void;
-  solutionInfoValue?:AssistedSolutionInfo;
-  onSolutionInfoChange?:(value:AssistedSolutionInfo)=>void;
   suite?:SuiteResult;
   pending:boolean;
   runPreview:(draft:ParserDraft,source?:string)=>Promise<SuiteResult>;
@@ -60,31 +56,8 @@ const completeSuite=(value:SuiteResult)=>value.counts.total>0&&
  */
 export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   pending,runPreview,onAutoParser,namedLogTypes=null,onEnableNamedLogTypes,
-  onChangeNamedLogTypes,onExitNamedLogTypes,solutionInfoValue,onSolutionInfoChange}:Props){
+  onChangeNamedLogTypes,onExitNamedLogTypes}:Props){
   const [goal,setGoal]=useState('Extract event time, action, source and destination IP, user and URL when present.');
-  const [localSolutionInfo,setLocalSolutionInfo]=useState<AssistedSolutionInfo>({
-    vendor:'',product:'',version:'',delivery:'',
-  });
-  const solutionInfo=solutionInfoValue??localSolutionInfo;
-  const setSolutionInfo=(update:SetStateAction<AssistedSolutionInfo>)=>{
-    if(onSolutionInfoChange)
-      onSolutionInfoChange(typeof update==='function'?update(solutionInfo):update);
-    else setLocalSolutionInfo(update);
-  };
-  const updateProducerIdentity=(field:'vendor'|'product'|'version',value:string)=>{
-    const safe=value.replace(/[\x00-\x1f\x7f]/g,'').slice(0,96);
-    // The user-declared hint must also populate the actual DRAFT identity,
-    // rather than creating files for the unrelated default demo product.
-    setSolutionInfo(old=>({...old,[field]:safe}));
-    setDraft(old=>{
-      const vendor=field==='vendor'?safe:old.vendor;
-      const name=field==='product'?safe:old.name;
-      const version=field==='version'?safe:old.version??'';
-      const opts=old.guided??defaultGuidedOptions();
-      return {...old,vendor,name,version,
-        guided:{...opts,slug:parserIdentitySlug(vendor,name)}};
-    });
-  };
   const [prompt,setPrompt]=useState('');
   const [promptError,setPromptError]=useState('');
   const [copied,setCopied]=useState(false);
@@ -114,7 +87,15 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     [sample,draft,namedLogTypes]);
   const namedValidation=namedLogTypes?validateNamedLogs(namedLogTypes):null;
   const namedReady=!namedValidation||(namedValidation.ok&&namedLogTypes!.length>=2);
-  const reviewedContext=reviewedSourcePromptContext(solutionInfo,null);
+  // One source of truth across both creation methods. Untouched demo metadata
+  // is not falsely presented to ChatGPT as a real security-product identity.
+  const declaredInfo:AssistedSolutionInfo={
+    vendor:draft.vendor==='Demo / local draft'?'':draft.vendor,
+    product:draft.name==='Untitled parser'?'':draft.name,
+    version:draft.version==='1.0.0'?'':draft.version??'',
+    delivery:'',
+  };
+  const reviewedContext=reviewedSourcePromptContext(declaredInfo,null);
   const namedSummary=namedLogTypes&&namedLogTypes.length>=2
     ?'User-declared log type names and original event-group sizes (not independent parser evidence):\n'+
       JSON.stringify(namedLogTypes.map(group=>({
@@ -133,7 +114,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     setPrompt('');setCopied(false);setReview(null);setComparison(null);
     setNotice('');setContext(null);setGenerated(null);setHoldoutAttested(false);setCandidateApproval(false);
     setAttempt(1);setRetryFailure(null);setResponse('');
-  },[goal,solutionInfo]);
+  },[goal]);
 
   async function prepare(){
     if(!suite||pending||busy||!sample.trim()||draft.eventProfiles)return;
@@ -452,35 +433,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             placeholder="Paste the logs you want to parse."
             onChange={e=>{if(!namedLogTypes)setSample(e.target.value);}}/>
         </label>
-        <ParserListenerPortInput draft={draft} setDraft={setDraft}/>
-        <section className="auto-parser-recipe" aria-label="Log-generating solution information">
-          <h3>Log-generating solution (optional)</h3>
-          <p>Add the vendor and product to help ChatGPT recognize the context.
-            These details also identify the generated parser DRAFT, but are not
-            evidence that a manufacturer-specific grammar is supported.</p>
-          <div className="chatgpt-source-grid">
-            <label>Solution vendor
-              <input aria-label="ChatGPT solution vendor" maxLength={96}
-                placeholder="e.g., Example Security" value={solutionInfo.vendor}
-                onChange={e=>updateProducerIdentity('vendor',e.target.value)}/>
-            </label>
-            <label>Product / solution name
-              <input aria-label="ChatGPT solution product" maxLength={96}
-                placeholder="e.g., Firewall, WAF, EDR" value={solutionInfo.product}
-                onChange={e=>updateProducerIdentity('product',e.target.value)}/>
-            </label>
-            <label>Product version / model
-              <input aria-label="ChatGPT solution version or model" maxLength={96}
-                placeholder="Optional product release or model" value={solutionInfo.version}
-                onChange={e=>updateProducerIdentity('version',e.target.value)}/>
-            </label>
-            <label>Log source / delivery
-              <input aria-label="ChatGPT log source or delivery" maxLength={120}
-                placeholder="e.g., Syslog TCP, file, API export" value={solutionInfo.delivery}
-                onChange={e=>setSolutionInfo(value=>({...value,delivery:e.target.value}))}/>
-            </label>
-          </div>
-        </section>
+        <ParserIdentityCard draft={draft} setDraft={setDraft} assisted/>
         {namedLogTypes&&namedLogTypes.length>=2&&
           <section className="auto-parser-recipe" aria-label="Combined parser routing review">
             <ChatGPTConditionalDraft draft={draft} setDraft={setDraft} sample={sample}

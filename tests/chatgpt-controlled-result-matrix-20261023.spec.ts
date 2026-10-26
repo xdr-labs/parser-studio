@@ -24,8 +24,8 @@ for(const item of valid){
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Beginner analysis summary')).toContainText('parsed completely',{timeout:20000});
   await page.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
-  await page.getByLabel('ChatGPT solution vendor').fill(item.vendor);
-  await page.getByLabel('ChatGPT solution product').fill(item.product);
+  await page.getByLabel('Parser manufacturer').fill(item.vendor);
+  await page.getByLabel('Parser product',{exact:true}).fill(item.product);
   await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
   const prompt=page.getByLabel('ChatGPT copyable prompt');
   await expect(prompt).toBeVisible({timeout:20000});

@@ -27,8 +27,8 @@ for(const c of cases){
   await expect(page.getByLabel('Parse problem inspector')).toBeVisible();
   await page.goto(origin+'/?workspace=chatgpt');
   await page.getByLabel('ChatGPT local sample logs').fill(c.raw);
-  await page.getByLabel('ChatGPT solution vendor').fill(c.vendor);
-  await page.getByLabel('ChatGPT solution product').fill(c.product);
+  await page.getByLabel('Parser manufacturer').fill(c.vendor);
+  await page.getByLabel('Parser product',{exact:true}).fill(c.product);
   await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
   const prompt=await page.getByLabel('ChatGPT copyable prompt').inputValue();
   expect(prompt).toContain(c.raw);
