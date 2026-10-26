@@ -8,7 +8,6 @@ import {restoredNamedSource,type LocalVersion} from './guided/localWorkspaceHist
 import {HelpTip} from './guided/BeginnerHelp';
 import {MAX_DATASET_BYTES} from './parser';
 import {assembleNamedLogs,newNamedLogType,type NamedLogType} from './guided/namedLogTypes';
-import type {AssistedSolutionInfo} from './guided/chatGptSourceContext';
 
 type Workspace='auto'|'chatgpt';
 type PreviewState={key:string;suite?:SuiteResult;error?:string};
@@ -69,9 +68,6 @@ export default function App(){
   const [draft,setDraft]=useState<ParserDraft>(()=>createDraft());
   const [sample,setSample]=useState('');
   const [namedLogTypes,setNamedLogTypes]=useState<NamedLogType[]|null>(null);
-  const [assistedSolutionInfo,setAssistedSolutionInfo]=useState<AssistedSolutionInfo>({
-    vendor:'',product:'',version:'',delivery:'',
-  });
   const updateNamedLogTypes=(groups:NamedLogType[])=>{
     setNamedLogTypes(groups);
     setSample(assembleNamedLogs(groups).source);
@@ -104,7 +100,6 @@ export default function App(){
     // omit only the redundant LF delimiters the prior UI inserted itself.
     setSample(restoredNamedSource(version).source);
     setNamedLogTypes(version.logTypes?structuredClone(version.logTypes):null);
-    setAssistedSolutionInfo({vendor:'',product:'',version:'',delivery:''});
     setDraft(structuredClone(version.draft));
     setDatasetName(version.datasetName);setWorkspace('auto');
     setRestoredEpoch(old=>old+1);
@@ -113,7 +108,6 @@ export default function App(){
   const reset=()=>{
     if(sample.trim()&&!window.confirm('Clear the current sample and create a new parser?'))return;
     setDraft(createDraft());setSample('');setNamedLogTypes(null);
-    setAssistedSolutionInfo({vendor:'',product:'',version:'',delivery:''});
     setDatasetName('No sample selected');
     setWorkspace('auto');
   };
@@ -194,7 +188,6 @@ export default function App(){
         draft={draft} setDraft={setDraft} sample={sample}
         namedLogTypes={namedLogTypes} onEnableNamedLogTypes={enableNamedLogTypes}
         onChangeNamedLogTypes={updateNamedLogTypes} onExitNamedLogTypes={exitNamedLogTypes}
-        solutionInfoValue={assistedSolutionInfo} onSolutionInfoChange={setAssistedSolutionInfo}
         setSample={value=>{
           usePlainSample(value);setDatasetName('ChatGPT local samples');
         }}

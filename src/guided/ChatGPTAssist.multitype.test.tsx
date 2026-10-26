@@ -1,7 +1,7 @@
 import {describe,expect,it,vi} from 'vitest';
+import {useState} from 'react';
 import {render,screen,fireEvent,act} from '@testing-library/react';
 import {createDraft,type ParserDraft} from '../model';
-import type {SetStateAction} from 'react';
 import {preview} from '../parser';
 import ChatGPTAssist from './ChatGPTAssist';
 
@@ -13,30 +13,39 @@ describe('ChatGPT Assisted combined source UI',()=>{
   it('keeps producer information, two original log types, and one privacy warning without extra sharing editors',async()=>{
     const source=groups.map(group=>group.sample).join('\n');
     const draft={...createDraft(),format:'kv' as const};
-    const setDraft=vi.fn(),onChangeNamedLogTypes=vi.fn();
-    await act(async()=>{render(<ChatGPTAssist draft={draft} setDraft={setDraft}
-      sample={source} setSample={vi.fn()}
-      suite={preview(source,draft)} pending={false}
-      runPreview={async(candidate,text)=>preview(text??source,candidate)}
-      onAutoParser={vi.fn()} namedLogTypes={groups}
-      onEnableNamedLogTypes={vi.fn()} onChangeNamedLogTypes={onChangeNamedLogTypes}
-      onExitNamedLogTypes={vi.fn()}/>);});
-    expect(screen.getByLabelText('Log-generating solution information')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('ChatGPT solution vendor'),
-      {target:{value:'Example Firewall Vendor'}});
-    expect((screen.getByLabelText('ChatGPT solution vendor') as HTMLInputElement).value)
-      .toBe('Example Firewall Vendor');
-    fireEvent.change(screen.getByLabelText('ChatGPT solution product'),
-      {target:{value:'Security Gateway'}});
-    fireEvent.change(screen.getByLabelText('ChatGPT solution version or model'),
-      {target:{value:'9.4'}});
+    const onChangeNamedLogTypes=vi.fn();
     let actualDraft:ParserDraft=draft;
-    for(const [change] of setDraft.mock.calls as Array<[SetStateAction<ParserDraft>]>)
-      actualDraft=typeof change==='function'?change(actualDraft):change;
+    function Harness(){
+      const [current,setCurrent]=useState<ParserDraft>(draft);
+      return <ChatGPTAssist draft={current} setDraft={next=>setCurrent(old=>{
+        actualDraft=typeof next==='function'?next(old):next;
+        return actualDraft;
+      })}
+        sample={source} setSample={vi.fn()}
+        suite={preview(source,current)} pending={false}
+        runPreview={async(candidate,text)=>preview(text??source,candidate)}
+        onAutoParser={vi.fn()} namedLogTypes={groups}
+        onEnableNamedLogTypes={vi.fn()} onChangeNamedLogTypes={onChangeNamedLogTypes}
+        onExitNamedLogTypes={vi.fn()}/>;
+    }
+    await act(async()=>{render(<Harness/>);});
+    expect(screen.getByLabelText('Parser product identity')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Parser manufacturer'),
+      {target:{value:'Example Firewall Vendor'}});
+    expect((screen.getByLabelText('Parser manufacturer') as HTMLInputElement).value)
+      .toBe('Example Firewall Vendor');
+    fireEvent.change(screen.getByLabelText('Parser product',{exact:true}),
+      {target:{value:'Security Gateway'}});
+    fireEvent.change(screen.getByLabelText('Parser product version'),
+      {target:{value:'9.4'}});
     expect(actualDraft.vendor).toBe('Example Firewall Vendor');
     expect(actualDraft.name).toBe('Security Gateway');
     expect(actualDraft.version).toBe('9.4');
     expect(actualDraft.guided?.slug).toBe('example_firewall_vendor_security_gateway');
+    fireEvent.change(screen.getByRole('spinbutton',{name:'Parser listener port'}),
+      {target:{value:'6819'}});
+    expect(actualDraft.guided?.receiver.port).toBe(6819);
+    expect(screen.getByText('Generated .conf receiving port: 6819')).toBeTruthy();
     expect(screen.getByLabelText('Log type entry 1')).toBeTruthy();
     expect(screen.getByLabelText('Log type entry 2')).toBeTruthy();
     const combined=screen.getByLabelText('ChatGPT local sample logs') as HTMLTextAreaElement;

@@ -10,10 +10,9 @@ test('ChatGPT Assisted preserves reviewed multi-type solution context and serves
   await page.getByLabel('Log type name 1').fill('Threat');
   await page.getByLabel('Log type name 2').fill('User');
   await page.getByLabel('Log type sample 2').fill(logB);
-  await page.getByLabel('ChatGPT solution vendor').fill('Example Network Vendor');
-  await page.getByLabel('ChatGPT solution product').fill('Unified Security Gateway');
-  await page.getByLabel('ChatGPT solution version or model').fill('Firmware 42.1');
-  await page.getByLabel('ChatGPT log source or delivery').fill('Syslog / local export');
+  await page.getByLabel('Parser manufacturer').fill('Example Network Vendor');
+  await page.getByLabel('Parser product',{exact:true}).fill('Unified Security Gateway');
+  await page.getByLabel('Parser product version').fill('Firmware 42.1');
   const original=page.getByLabel('ChatGPT local sample logs');
   await expect(original).toHaveAttribute('readonly','');
   expect(await original.inputValue()).toContain(logA);
@@ -36,7 +35,7 @@ test('ChatGPT Assisted preserves reviewed multi-type solution context and serves
   expect(text).toContain('10.77.88.98');
   await page.getByRole('button',{name:'Review shared extraction format in Auto Parser'}).click();
   await page.getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
-  await expect(page.getByLabel('ChatGPT solution vendor')).toHaveValue('Example Network Vendor');
+  await expect(page.getByLabel('Parser manufacturer')).toHaveValue('Example Network Vendor');
   await expect(page.getByLabel('ChatGPT sharing example 1')).toHaveCount(0);
   const icon=await request.get('/favicon.svg');
   expect(icon.status()).toBe(200);

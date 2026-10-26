@@ -99,10 +99,9 @@ async function makePage(browser){
 }
 async function prepare(page,c){
  await page.getByLabel('ChatGPT local sample logs').fill(c.rawSample);
- await page.getByLabel('ChatGPT solution vendor').fill(c.publisher);
- await page.getByLabel('ChatGPT solution product').fill(c.product);
- if(c.productVersion)await page.getByLabel('ChatGPT solution version or model').fill(c.productVersion);
- await page.getByLabel('ChatGPT log source or delivery').fill('Public documentation fixture; source transport not attested');
+ await page.getByLabel('Parser manufacturer').fill(c.publisher);
+ await page.getByLabel('Parser product',{exact:true}).fill(c.product);
+ if(c.productVersion)await page.getByLabel('Parser product version').fill(c.productVersion);
  await page.getByLabel('ChatGPT desired fields').fill(c.desiredFields.slice(0,512));
  await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
  const promptField=page.getByLabel('ChatGPT copyable prompt');

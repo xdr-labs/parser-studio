@@ -34,8 +34,8 @@ function runNative(rb,raw){
 async function handle(page,c,rootFolder,row){
  await page.goto(origin+'/?workspace=chatgpt',{waitUntil:'domcontentloaded',timeout:18000});
  await page.getByLabel('ChatGPT local sample logs').fill(c.rawSample);
- await page.getByLabel('ChatGPT solution vendor').fill(c.vendor);
- await page.getByLabel('ChatGPT solution product').fill(c.product);
+ await page.getByLabel('Parser manufacturer').fill(c.vendor);
+ await page.getByLabel('Parser product',{exact:true}).fill(c.product);
  await page.getByLabel('ChatGPT desired fields').fill('Preserve source event fields with exact values; do not infer unsupported semantics');
  await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
  let prompt=await page.getByLabel('ChatGPT copyable prompt').inputValue();

@@ -143,8 +143,8 @@ for(const c of cases){
   await expect(fixPrompt).toContainText(c.raw);
   await page.goto(origin+'/?workspace=chatgpt');
   await page.getByLabel('ChatGPT local sample logs').fill(c.raw);
-  await page.getByLabel('ChatGPT solution vendor').fill(c.vendor);
-  await page.getByLabel('ChatGPT solution product').fill(c.product);
+  await page.getByLabel('Parser manufacturer').fill(c.vendor);
+  await page.getByLabel('Parser product',{exact:true}).fill(c.product);
   await page.getByLabel('ChatGPT desired fields').fill('Preserve observed lexical values. Never assert vendor-certified semantics from this fixture.');
   await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
   const prompt=await page.getByLabel('ChatGPT copyable prompt').inputValue();

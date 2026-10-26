@@ -39,9 +39,9 @@ test('ChatGPT Assisted compiles one previously reviewed conditional parser for t
     .getByRole('button',{name:'ChatGPT Assisted Parser'}).click();
   for(let i=0;i<3;i++)
     await expect(page.getByLabel('Log type sample '+(i+1))).toHaveValue(fixtures[i]!.raw);
-  await page.getByLabel('ChatGPT solution vendor').fill('Example Vendor');
-  await page.getByLabel('ChatGPT solution product').fill('Security Gateway');
-  await page.getByLabel('ChatGPT solution version or model').fill('9.4');
+  await page.getByLabel('Parser manufacturer').fill('Example Vendor');
+  await page.getByLabel('Parser product',{exact:true}).fill('Security Gateway');
+  await page.getByLabel('Parser product version').fill('9.4');
   await expect(page.getByRole('button',{name:'Prepare ChatGPT Prompt'})).toBeDisabled();
   const combined=page.getByLabel('Combined parser routing review');
   await expect(combined.getByLabel('Approved conditional parser')).toContainText('3 explicitly reviewed event types');

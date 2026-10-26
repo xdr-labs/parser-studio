@@ -32,8 +32,8 @@ page.on('request',r=>{try{
 try{
  await page.goto('https://app.parser.xdr.ooo/?workspace=chatgpt',{waitUntil:'domcontentloaded',timeout:22000});
  await page.getByLabel('ChatGPT local sample logs').fill(c.rawSample);
- await page.getByLabel('ChatGPT solution vendor').fill(c.vendor);
- await page.getByLabel('ChatGPT solution product').fill(c.product);
+ await page.getByLabel('Parser manufacturer').fill(c.vendor);
+ await page.getByLabel('Parser product',{exact:true}).fill(c.product);
  await page.getByLabel('ChatGPT desired fields').fill('Preserve source event fields with exact values; do not infer unsupported semantics');
  await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
  for(let n=1;n<=3;n++){

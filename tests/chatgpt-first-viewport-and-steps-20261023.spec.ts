@@ -30,9 +30,9 @@ for(const viewport of [{width:1280,height:800},{width:1440,height:900}]){
       'date=2026-10-23 time=08:11:23 action=allowed srcip=192.0.2.11 dstip=198.51.100.11',
     ].join('\n');
     await raw.fill(example);
-    await page.getByLabel('ChatGPT solution vendor').fill('Example Security');
-    await page.getByLabel('ChatGPT solution product').fill('Demo Gateway');
-    await page.getByLabel('ChatGPT solution version or model').fill('4.2');
+    await page.getByLabel('Parser manufacturer').fill('Example Security');
+    await page.getByLabel('Parser product',{exact:true}).fill('Demo Gateway');
+    await page.getByLabel('Parser product version').fill('4.2');
     await expect(page.getByRole('alert').filter({hasText:'The ChatGPT prompt includes your original log text'}))
       .toBeVisible();
     const prepare=page.getByRole('button',{name:'Prepare ChatGPT Prompt'});
