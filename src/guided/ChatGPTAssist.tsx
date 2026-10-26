@@ -6,6 +6,7 @@ import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecip
   proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
   proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
 import {assessHoldoutIndependence,compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
+import {explainRejectedChatGPTFix} from './chatGptFailureExplanation';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -585,6 +586,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             <span>Evidence level: {comparison.evidence==='SAMPLE_ONLY'?'ORIGINAL SAMPLE ONLY':'INDEPENDENT EXAMPLES'}</span>
             {comparison.evidence==='SAMPLE_ONLY'&&<span>Controlled value variation: {comparison.variation} (synthetic check, not an independent log)</span>}
             <span>Overall test: {comparison.qualified?(comparison.evidence==='SAMPLE_ONLY'?'SAMPLE PASS (NOT GENERALIZED)':'PASS'):'FAILED'}</span>
+            {!comparison.qualified&&<span aria-label="ChatGPT fix rejection details">
+              {explainRejectedChatGPTFix(comparison.value)}
+            </span>}
             {comparison.qualified&&<details>
               <summary>Review actual extracted fields before approval</summary>
               <pre className="auto-parser-recipe">{comparison.fieldsPreview}</pre>
