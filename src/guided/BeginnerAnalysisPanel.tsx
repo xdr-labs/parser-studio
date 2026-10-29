@@ -424,7 +424,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           <p>{genericStructuralPreserveEligible
             ?'Parser Studio already has a built-in safe rule for this structure. Use the extracted fields directly; no ChatGPT step is required.'
             :rec.kind==='metadata'&&!metadataPreserveEligible
-              ?'Parser Studio kept the values it found, but it cannot safely create parser files while this header or time issue remains. Correct the source information or intentionally keep the affected value as text. ChatGPT can explain the problem, but Parser Studio will not guess missing time or header details.'
+              ?'Parser Studio kept the values it found, but it cannot safely create parser files while this header or time issue remains. Correct the header or time in your log input (for example, add the missing time zone) and click Analyze Logs again. ChatGPT can explain the problem, but Parser Studio will not guess missing time or header details.'
               :rec.text}</p></div>
       </div>}
       {textRecovery&&!genericStructuralPreserveEligible&&<div className="beginner-next-step" aria-label="Text recovery steps">
