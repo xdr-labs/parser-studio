@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
+import {describeNonJsonReply,describeRejectedReply,COPY_DAMAGE_HINT} from './chatGptResultNotice';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowRight,ClipboardCopy,FileText,ShieldAlert} from 'lucide-react';
 import type {ParserDraft,SuiteResult} from '../model';
@@ -198,9 +199,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     try{
       const text=response.trim().replace(/^\x60\x60\x60(?:json)?\s*\n([\s\S]*?)\n\x60\x60\x60$/i,'$1').trim();
       if(!text.startsWith('{')){
-        setRetryFailure({failure:'NON_JSON_RESPONSE',
-          diagnostic:text.startsWith('REVIEW_REQUIRED:')?'REVIEW_REQUIRED':'NOT_JSON'});
-        setNotice('ChatGPT returned a diagnosis, not a parser recipe. No rules were applied. Review the source and use a guided retry only if the original log is valid.');
+        const nonJson=describeNonJsonReply(text);
+        setRetryFailure({failure:'NON_JSON_RESPONSE',diagnostic:nonJson.diagnostic});
+        setNotice(nonJson.notice);
         return;
       }
       let result=await importReviewOnlyAIRecipe(text,sample,context.draft,context.suite);
@@ -213,12 +214,12 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           (result.reason==='INVALID_JSON'||result.reason==='UNTRUSTED_RECIPE')
             ?'SCHEMA_REJECTED':'RECIPE_UNSUPPORTED';
         setRetryFailure({failure,diagnostic:result.reason});
-        setNotice('ChatGPT result rejected: '+result.reason+'. No parser rules changed.');
+        setNotice(describeRejectedReply(result.reason));
       }else if(result.report.mode==='FULL_RECOVERY')
         setNotice('ChatGPT result is ready for testing. No parser changes have been applied yet.');
     }catch{
       setRetryFailure({failure:'SCHEMA_REJECTED',diagnostic:'INVALID_JSON'});
-      setNotice('The AI response could not be validated. No rules changed.');
+      setNotice('The AI response could not be validated. No rules changed. '+COPY_DAMAGE_HINT);
     }finally{setBusy(false);}
   }
   async function compareMapping(sourceOnly=false){
