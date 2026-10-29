@@ -119,6 +119,25 @@ it('Auto Parser repair prompt provides a complete first-paste recovery contract 
  expect(prompt).toContain('events=2');
 });
 
+it('Auto Parser repair prompt asks for one fenced code block with the whole reply inside it',async()=>{
+ const eventSource='INFO security subsystem: new unknown threat-format message';
+ const bytes=new TextEncoder().encode(eventSource);
+ const parsed:MultiPassSourcePreview={
+   contract:'parser-studio.multipass-source-preview.v0.1',
+   status:'RAW_ONLY',syntax:'UNKNOWN',
+   sourceSha256:createHash('sha256').update(eventSource).digest('hex'),
+   sourceBytes:bytes.length,fields:{},spans:[],
+   residuals:[{startByte:0,endByte:bytes.length}],
+   issues:['NO_SUPPORTED_GRAMMAR'],nativeVerified:false,targetVerified:false,
+ };
+ const draft=createDraft();
+ const suite=preview(eventSource,draft);
+ const prompt=await buildBeginnerRepairPrompt({fullSource:eventSource,eventSource,preview:parsed,draft,suite,
+   recommendation:{label:'Create a rule for this text format',text:'Use a bounded source-backed rule only where supported.'}});
+ expect(prompt).toMatch(/exactly ONE fenced code block/);
+ expect(prompt).not.toContain('Never add markdown');
+});
+
 it('Auto Parser metadata-only repair never requests a schema-valid recovery parser',async()=>{
  const source='<12>1 bad_timestamp host daemon - - - source time missing';
  const bytes=new TextEncoder().encode(source).length;
