@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {explainRejectedChatGPTFix} from './chatGptFailureExplanation';
+import {explainRejectedChatGPTFix,originalLogsStillPass} from './chatGptFailureExplanation';
 
 const counts=(overrides:Partial<{
  fieldRemovals:number;typeChanges:number;positiveAfter:number;
@@ -35,5 +35,35 @@ describe('novice ChatGPT rejection details remain evidence based',()=>{
  it('uses a conservative fallback for unknown failed qualifications',()=>{
   expect(explainRejectedChatGPTFix({baseline:counts(),holdout:null}))
    .toContain('field-preservation checks');
+ });
+});
+
+describe('additional-example rejection explains the real cause',()=>{
+ const independence=(reason:'TOO_SMALL'|'TRAINING_OVERLAP'|'IDENTICAL_TO_TRAINING',
+  extra:Partial<{trainingUnique:number;holdoutUnique:number;requiredUnique:number;overlapCount:number}>={})=>({
+  ok:false as const,reason,trainingUnique:1,holdoutUnique:1,requiredUnique:2,overlapCount:0,...extra,
+ });
+ it('says the additional examples repeat the original sample',()=>{
+  const value=explainRejectedChatGPTFix({baseline:counts(),holdout:null,
+   holdoutIndependence:independence('IDENTICAL_TO_TRAINING',{overlapCount:1})});
+  expect(value).toContain('same as the original sample');
+  expect(value).not.toContain('field-preservation');
+ });
+ it('says how many additional examples overlap the original sample',()=>{
+  const value=explainRejectedChatGPTFix({baseline:counts(),holdout:null,
+   holdoutIndependence:independence('TRAINING_OVERLAP',{overlapCount:2,holdoutUnique:3,trainingUnique:4})});
+  expect(value).toContain('2 additional example(s) also appear in the original sample');
+ });
+ it('tells the user how many different additional examples are needed',()=>{
+  const value=explainRejectedChatGPTFix({baseline:counts(),holdout:null,
+   holdoutIndependence:independence('TOO_SMALL',{holdoutUnique:1,requiredUnique:2})});
+  expect(value).toContain('at least 2 different additional examples');
+  expect(value).toContain('1 unique');
+ });
+ it('does not label original logs as failing when only the additional examples were rejected',()=>{
+  expect(originalLogsStillPass({baseline:counts(),holdoutStatus:'REJECTED',acceptedWithoutRegression:false})).toBe(true);
+  expect(originalLogsStillPass({baseline:counts({regressions:1}),holdoutStatus:'REJECTED',acceptedWithoutRegression:false})).toBe(false);
+  expect(originalLogsStillPass({baseline:counts(),holdoutStatus:'TESTED',acceptedWithoutRegression:false})).toBe(false);
+  expect(originalLogsStillPass({baseline:counts(),holdoutStatus:'TESTED',acceptedWithoutRegression:true})).toBe(true);
  });
 });

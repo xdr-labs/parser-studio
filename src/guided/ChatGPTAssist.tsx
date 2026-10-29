@@ -6,7 +6,7 @@ import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecip
   proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
   proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
 import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
-import {explainRejectedChatGPTFix} from './chatGptFailureExplanation';
+import {explainRejectedChatGPTFix,originalLogsStillPass} from './chatGptFailureExplanation';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -299,7 +299,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       setComparison({candidate:proposal.candidate,value:result,qualified,evidence,fieldsPreview,variation});
       if(!typeCoverage.ok)
         setNotice('Log type review required: '+typeCoverage.reason+' No rules changed.');
-      else if(!qualified){
+      else if(result.holdoutStatus==='REJECTED'&&result.holdoutIndependence&&!result.holdoutIndependence.ok){
+        setRetryFailure(null);
+        setNotice('The additional examples were not accepted, so they were not used to test this fix. No rules changed. See the reason below.');
+      }else if(!qualified){
         setRetryFailure({
           failure:sourceOnly
             ?(variation==='FAIL'?'SYNTHETIC_VALUE_FAILURE':'SAMPLE_REGRESSION')
@@ -523,13 +526,14 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           {!baselineUnchanged&&<button type="button" disabled={!holdout.trim()||!holdoutAttested||busy||pending}
             onClick={()=>{void compareMapping(false);}}>Test Proposed Fix</button>}
           {comparison&&<div role="status" aria-label="ChatGPT fix test result">
-            <span>Original logs still pass: {comparison.value.acceptedWithoutRegression?'YES':'NO'}</span>
+            <span>Original logs still pass: {originalLogsStillPass(comparison.value)?'YES':'NO'}</span>
             <span>Additional logs tested: {comparison.value.holdoutStatus==='TESTED'?'YES':'NO'}</span>
             <span>Evidence level: {comparison.evidence==='SAMPLE_ONLY'?'ORIGINAL SAMPLE ONLY':'INDEPENDENT EXAMPLES'}</span>
             {comparison.evidence==='SAMPLE_ONLY'&&<span>Controlled value variation: {comparison.variation} (synthetic check, not an independent log)</span>}
             <span>Overall test: {comparison.qualified?(comparison.evidence==='SAMPLE_ONLY'?'SAMPLE PASS (NOT GENERALIZED)':'PASS'):'FAILED'}</span>
             {!comparison.qualified&&<span aria-label="ChatGPT fix rejection details">
-              {explainRejectedChatGPTFix(comparison.value)}
+              {explainRejectedChatGPTFix({baseline:comparison.value.baseline,
+                holdout:comparison.value.holdout,holdoutIndependence:comparison.value.holdoutIndependence})}
             </span>}
             {comparison.qualified&&<details>
               <summary>Review actual extracted fields before approval</summary>
