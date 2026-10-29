@@ -15,7 +15,7 @@ export function describeNonJsonReply(text:string):{diagnostic:'REVIEW_REQUIRED'|
   const shown=reason.length>MAX_REASON_CHARS?reason.slice(0,MAX_REASON_CHARS).trimEnd()+'…':reason;
   return {
     diagnostic:'REVIEW_REQUIRED',
-    notice:'ChatGPT did not return a parser recipe. It asked for a review first: '+(shown||'(no reason given)')+
+    notice:'ChatGPT returned a diagnosis, not a parser recipe. ChatGPT said: '+(shown||'(no reason given)')+
       ' No rules were applied. If the reason points at your logs, fix them and prepare a new prompt.',
   };
 }

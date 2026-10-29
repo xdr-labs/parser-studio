@@ -8,6 +8,7 @@ describe('ChatGPT result notices',()=>{
     expect(r.notice).toContain('The sample has no timezone, so the timestamp cannot be typed.');
     expect(r.notice).toContain('Please add it.');
     expect(r.notice).toMatch(/No rules were applied/);
+    expect(r.notice).toContain('diagnosis, not a parser recipe');
   });
 
   it('caps a very long REVIEW_REQUIRED explanation and keeps it plain text',()=>{
