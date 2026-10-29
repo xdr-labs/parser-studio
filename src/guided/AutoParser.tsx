@@ -4,6 +4,7 @@ import {ArrowLeft,ArrowRight,CheckCircle2,Download,FileArchive,FileText,
   LockKeyhole,ShieldAlert} from 'lucide-react';
 import {createDraft,type ParserDraft,type SuiteResult} from '../model';
 import {toBackendProject} from './backendAdapter';
+import {missingParserIdentityMessage} from './parserIdentity';
 import {fetchBackendCapabilities,assertBackendProjectSupported,
   type BackendCapabilities} from './backendCapabilities';
 import {fetchBackendSchemaGuide} from './backendSchemaGuide';
@@ -409,7 +410,8 @@ export default function AutoParser({
      if(draft.format!=='auto'&&browserSuiteComplete){
        const translated=toBackendProject(draft);
        if(!translated.ok){
-         setMessage('The reviewed parser contains an unsupported field or classification setting.');
+         setMessage(missingParserIdentityMessage(draft.vendor,draft.name)??
+           'The reviewed parser contains an unsupported field or classification setting.');
          return;
        }
        assertBackendProjectSupported(translated.project,cap);
