@@ -7,7 +7,7 @@ import type {ParserDraft,SuiteResult} from '../model';
 import {createPrivacySafeAIPrompt,describeEnrichmentDenial,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
   proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
   proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
-import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
+import {compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeChange,normalizedMappingOutputPath,typeChangeWording,type CandidateComparison} from './autoParserRegression';
 import {explainRejectedChatGPTFix,originalLogsStillPass} from './chatGptFailureExplanation';
 import {analyzeLogEnvelopes,assessEnvelopeCompilation} from './autoParserEnvelope';
 import {prepareAutoParserDraft} from './autoParserDraft';
@@ -287,6 +287,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       const result=correctionScope
         ?compareMappingCorrectionCandidate(input,correctionScope)
         :compareCandidate(input);
+      const typeChange=correctionScope?describeScopedTypeChange(input,correctionScope):null;
       const typeSuites=namedLogTypes
         ?await Promise.all(namedLogTypes.map(group=>runPreview(proposal.candidate,group.sample)))
         :[];
@@ -342,7 +343,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
           ?(variation==='FAIL'&&completeSuite(candidate)
             ?'The original sample passed, but the controlled value variation failed. The parser may overfit the exact input value. No rules changed.'
             :'The original sample failed parser validation; no rules changed.')
-          :'The original and independent examples did not both pass; no rules changed.');
+          :(typeChange
+            ?'Fix not applied: the proposed fix would change the type of the corrected field ('+typeChangeWording(typeChange)+'), and a fix that only changes a type is not applied here. To change a field\'s type, use Map Fields. No rules changed.'
+            :'The original and independent examples did not both pass; no rules changed.'));
       }else setNotice(sourceOnly
         ?'The original sample passed. Review its extracted fields before accepting a sample-only DRAFT; generalization was not tested.'
         :'Original and independent examples passed. Review and approve the fix.');

@@ -397,3 +397,7 @@ The button now reads "Leave out of output" (aria-label unchanged) and the hint s
 ### 2026-10-30 — Create Parser step flags the demo manufacturer/product placeholder (O-2)
 
 `Demo / local draft` / `Untitled parser` are the untouched defaults and were written into the downloaded `.conf` header (`# Vendor:`/`# Product:`) and file names. The Create Parser step now shows the identity card with a warning note naming which placeholder is still set, so the real names can be entered right there. It does not block creation (many existing journeys deliberately build with the defaults).
+
+### 2026-10-30 — Assisted path explains a type-only mapping correction too (O-10, Assisted)
+
+`ChatGPTAssist` now uses the same `describeScopedTypeChange`/`typeChangeWording` as Auto Parser review (#186): a ChatGPT mapping correction that only changes the JSON type of the corrected field is still not applied, but the notice says "Fix not applied: the proposed fix would change the type of the corrected field (text → number) ... use Map Fields. No rules changed." instead of "The original and independent examples did not both pass". Browser-only, wording/diagnosis only; no change to what is accepted.
