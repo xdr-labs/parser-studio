@@ -27,7 +27,7 @@ import {buildEventCoverageEvidence} from './chatGptEventCoverage';
 import {reviewedSourcePromptContext,checkNamedParserCoverage,
   type AssistedSolutionInfo} from './chatGptSourceContext';
 import {composeChatGPTPrompt} from './chatGptPromptBuilder';
-import {buildAdaptiveRetryPrompt,type AdaptiveRepairFailure,type RetryEvidence} from './chatGptAdaptiveRepair';
+import {buildAdaptiveRetryPrompt,summarizeHoldoutFailures,type AdaptiveRepairFailure,type RetryEvidence} from './chatGptAdaptiveRepair';
 import {buildSingleSampleVariation,hasExtractedVariationTarget,
   verifySingleSampleVariation} from './singleSampleVariation';
 
@@ -331,12 +331,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
               substitutedValue:changed.replacementValue,
               result:'FAILED_NOT_INDEPENDENT',
             })}:{}),
-            ...(candidateHoldout?{observedHoldout:JSON.stringify(
+            ...(candidateHoldout?{observedHoldout:summarizeHoldoutFailures(
               candidateHoldout.events.filter(e=>e.status!=='pass'||!e.extracted||!e.normalizedOk)
-                .slice(0,2).map(e=>({sourceLine:e.line,raw:e.raw,
-                  extracted:e.fields,normalized:e.normalized,
-                  errorCodes:e.diagnostics.map(d=>d.code)})))
-                .slice(0,4096)}:{}),
+                .map(e=>({line:e.line,raw:e.raw,fields:e.fields,normalized:e.normalized,diagnostics:e.diagnostics})))}:{}),
           },
         });
         setNotice(sourceOnly

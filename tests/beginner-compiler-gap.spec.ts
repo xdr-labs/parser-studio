@@ -20,7 +20,7 @@ test('source extraction success is not falsely called parser-ready when the DRAF
 
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('Values found in 1 of 1 log event');
- await expect(summary).toContainText('parser-file creation still needs a reviewed rule for this log shape');
+ await expect(summary).toContainText('cannot build the parser files for this log shape on its own yet');
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('Fields extracted — parser rule needs review');
  await expect(problem).toContainText('No source text is missing');

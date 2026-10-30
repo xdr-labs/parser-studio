@@ -52,7 +52,7 @@ const FAILED_CHECK_TEXT:Record<string,string>={
   RECIPE_UNSUPPORTED:'the recipe cannot be built by Parser Studio',
   SAMPLE_REGRESSION:'the recipe broke values that were parsed correctly before',
   SYNTHETIC_VALUE_FAILURE:'the recipe only works for the exact values in your sample',
-  HOLDOUT_REGRESSION:'the recipe failed on the different examples you supplied',
+  HOLDOUT_REGRESSION:'the proposed fix failed on the other example logs you added',
   NATIVE_VALIDATION_FAILED:'the generated parser failed a build check',
 };
 

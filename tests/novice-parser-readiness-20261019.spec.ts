@@ -21,8 +21,8 @@ for(const item of cases){
     // the still-unqualified downloadable parser. It is source-only review,
     // not a contradictory "fully parser-ready" success claim.
     const summary=page.getByLabel('Beginner analysis summary');
-    await expect(summary).toContainText('parser-file creation still needs a reviewed rule');
-    await expect(summary).toContainText('No source data was discarded');
+    await expect(summary).toContainText('cannot build the parser files for this log shape on its own yet');
+    await expect(summary).toContainText('No log data was discarded');
     await expect(summary.getByRole('button',{name:'Fix with ChatGPT'})).toBeVisible();
     await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
     await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);

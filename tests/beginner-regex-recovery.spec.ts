@@ -47,7 +47,7 @@ test('beginner uses the bounded local Cisco FTD rule before unnecessary ChatGPT 
  await expect(useExtracted).toBeEnabled();
  await useExtracted.click();
  await expect(summary).toContainText('2 of 2 log events parsed completely',{timeout:10000});
- await expect(summary).toContainText('reviewed parser fix passes the current sample');
+ await expect(summary).toContainText('built a parser rule that passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
  if(process.env.PARSER_STUDIO_LIVE_BACKEND==='1' ||
