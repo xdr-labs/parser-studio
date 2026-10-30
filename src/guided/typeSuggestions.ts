@@ -47,3 +47,31 @@ export function suggestMappingType(
   }
   return type === null ? null : { type, evidence: values.length, total: suite.events.length };
 }
+
+/** Type evidence that comes from the JSON itself, not from how text looks:
+ * every observed value was written as a JSON boolean, or as an integer that is
+ * exact in JavaScript. Strings (IDs such as "007", numeric text, ports given as
+ * text), fractions, mixed kinds, unsafe integers and a single observation never
+ * qualify. Like suggestMappingType it carries counts only, never values.
+ */
+export function suggestNativeJsonType(
+  suite: SuiteResult | undefined,
+  mapping: MappingRule,
+): MappingTypeSuggestion | null {
+  if (!suite) return null;
+  const values: unknown[] = [];
+  for (const event of suite.events) {
+    const found = lookupFieldValue(event.fields, mapping.source);
+    if (!found.found || found.value === undefined || found.value === null) continue;
+    values.push(found.value);
+  }
+  if (values.length < 2) return null;
+  let type: FieldType | null = null;
+  if (values.every(value => typeof value === 'boolean')) {
+    type = 'boolean';
+  } else if (values.every(value => typeof value === 'number' && Number.isSafeInteger(value))) {
+    type = 'integer';
+  }
+  if (type === null || !values.every(value => convertValue(value, type).error === undefined)) return null;
+  return { type, evidence: values.length, total: suite.events.length };
+}

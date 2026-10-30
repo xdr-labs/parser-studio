@@ -5,7 +5,7 @@ import {createDraft,type ParserDraft,type MappingRule,type SuiteResult} from '..
 import {splitEvents,MAX_DATASET_BYTES,MAX_EVENTS} from '../parser';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {suggestUnmappedFields} from './fieldMappingSuggestions';
-import {suggestMappingType} from './typeSuggestions';
+import {suggestMappingType,suggestNativeJsonType} from './typeSuggestions';
 import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {defaultGuidedOptions} from './contract';
 import {toBackendProject} from './backendAdapter';
@@ -131,6 +131,14 @@ export function prepareAutoParserDraft(
       });
       next.guided={...next.guided,groups};
     }
+    // Vendor-only fields keep the type the JSON itself declares: when every
+    // observed value is a JSON boolean or an exact integer, do not fall back to
+    // text. Dictionary-matched and top-level mappings are left as decided above.
+    next.mappings=next.mappings.map(mapping=>{
+      if(mapping.type!=='string'||next.guided?.groups[mapping.id]!=='vendor_fields')return mapping;
+      const native=suggestNativeJsonType(suite,mapping);
+      return native?{...mapping,type:native.type}:mapping;
+    });
   }
   // All paths must be safe for the actual R1.5 backend translator. A browser
   // preview alone must NEVER upgrade an unsupported parser into DRAFT-ready.
