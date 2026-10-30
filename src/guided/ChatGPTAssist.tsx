@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
+import {extractRecipeJson} from './aiReplyExtract';
 import {describeNonJsonReply,describeRejectedReply,COPY_DAMAGE_HINT} from './chatGptResultNotice';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowRight,ClipboardCopy,FileText,ShieldAlert} from 'lucide-react';
@@ -197,13 +198,16 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     if(!context||context.sample!==sample||pending||busy||!response.trim())return;
     setBusy(true);setReview(null);setComparison(null);setGenerated(null);setNotice('');setRetryFailure(null);
     try{
-      const text=response.trim().replace(/^\x60\x60\x60(?:json)?\s*\n([\s\S]*?)\n\x60\x60\x60$/i,'$1').trim();
-      if(!text.startsWith('{')){
-        const nonJson=describeNonJsonReply(text);
+      // ChatGPT often wraps the recipe in explanation. Pick out the one JSON recipe and
+      // ignore the surrounding prose; the recipe itself is still fully validated below.
+      const extracted=extractRecipeJson(response);
+      if(!extracted){
+        const nonJson=describeNonJsonReply(response.trim());
         setRetryFailure({failure:'NON_JSON_RESPONSE',diagnostic:nonJson.diagnostic});
         setNotice(nonJson.notice);
         return;
       }
+      const text=extracted.text;
       let result=await importReviewOnlyAIRecipe(text,sample,context.draft,context.suite);
       if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
         result=await importRecoveryAIRecipe(text,sample,context.draft,context.suite);
@@ -216,7 +220,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
         setRetryFailure({failure,diagnostic:result.reason});
         setNotice(describeRejectedReply(result.reason));
       }else if(result.report.mode==='FULL_RECOVERY')
-        setNotice('ChatGPT result is ready for testing. No parser changes have been applied yet.');
+        setNotice('ChatGPT result is ready for testing. No parser changes have been applied yet.'+
+          (extracted.ignoredText?' Text around the JSON recipe was ignored.':''));
+      else if(extracted.ignoredText)setNotice('Text around the JSON recipe was ignored.');
     }catch{
       setRetryFailure({failure:'SCHEMA_REJECTED',diagnostic:'INVALID_JSON'});
       setNotice('The AI response could not be validated. No rules changed. '+COPY_DAMAGE_HINT);

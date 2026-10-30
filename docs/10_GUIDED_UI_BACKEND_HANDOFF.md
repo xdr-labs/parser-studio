@@ -374,3 +374,15 @@ Auto Parser `Analyze Logs` no longer sends a sample larger than 64 KiB to the se
 ### 2026-10-30 — Declared relay preview explains unrecognized events (O-3)
 
 The declared-relay preview now says "N not matching a declared relay" and, when N > 0, explains that an event is unwrapped only when it begins with a Syslog header starting with `<PRI>` and names a declared relay hostname. A header without `<PRI>` is not unwrapped. Behaviour of the unwrapping is unchanged.
+
+### 2026-10-30 — ChatGPT answers with explanation around the JSON recipe are accepted (F-2)
+
+`extractRecipeJson` (`src/guided/aiReplyExtract.ts`) picks the single JSON recipe out of a ChatGPT answer that also contains prose: one fenced block, or the one balanced `{...}` object (string/escape aware). If several candidates exist it prefers the one with `contract: "parser-studio.recipe.v0.2"` and otherwise refuses to guess. The result still goes through the normal `validateReviewableRecipe`/source-hash checks, so a wrong pick can only be rejected. `ChatGPTAssist` (previously NON_JSON_RESPONSE, which consumed one of the three attempts) and `AutoParserAIReview` (previously INVALID_JSON) both use it and say "Text around the JSON recipe was ignored." A pure `REVIEW_REQUIRED:` diagnosis or prose without any JSON is still handled as before. Browser-only; no backend change.
+
+### 2026-10-30 — Map Fields says what "Remove mapping" does (F-6)
+
+The button now reads "Leave out of output" (aria-label unchanged) and the hint says the field does not appear in the generated parser output while the original log is not changed. The Add-Logs hint that said a mapping change "never deletes the original extracted value" (contradicting the above) was reworded. Wording only.
+
+### 2026-10-30 — Create Parser step flags the demo manufacturer/product placeholder (O-2)
+
+`Demo / local draft` / `Untitled parser` are the untouched defaults and were written into the downloaded `.conf` header (`# Vendor:`/`# Product:`) and file names. The Create Parser step now shows the identity card with a warning note naming which placeholder is still set, so the real names can be entered right there. It does not block creation (many existing journeys deliberately build with the defaults).

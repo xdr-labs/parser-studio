@@ -1,7 +1,8 @@
 import type {Dispatch,SetStateAction} from 'react';
 import type {ParserDraft} from '../model';
 import {DEFAULT_PARSER_LISTENER_PORT,defaultGuidedOptions} from './contract';
-import {MAX_PARSER_IDENTITY_TEXT,parserIdentitySlug} from './parserIdentity';
+import {MAX_PARSER_IDENTITY_TEXT,PLACEHOLDER_PARSER_PRODUCT,PLACEHOLDER_PARSER_VENDOR,
+  parserIdentitySlug,placeholderParserIdentityParts} from './parserIdentity';
 import ParserListenerPortInput from './ParserListenerPortInput';
 
 interface Props {
@@ -9,12 +10,15 @@ interface Props {
   setDraft:Dispatch<SetStateAction<ParserDraft>>;
   /** ChatGPT receives only the manually copied metadata hints, never the port. */
   assisted?:boolean;
+  /** Final step: say so when the demo placeholder would still be written into the downloaded files. */
+  warnIfPlaceholder?:boolean;
 }
 
 /** Shared identity and export-port controls for both parser creation paths. */
-export default function ParserIdentityCard({draft,setDraft,assisted=false}:Props){
-  const parserIdentityIsDefault=draft.vendor==='Demo / local draft'&&
-    draft.name==='Untitled parser';
+export default function ParserIdentityCard({draft,setDraft,assisted=false,warnIfPlaceholder=false}:Props){
+  const parserIdentityIsDefault=draft.vendor===PLACEHOLDER_PARSER_VENDOR&&
+    draft.name===PLACEHOLDER_PARSER_PRODUCT;
+  const placeholderParts=warnIfPlaceholder?placeholderParserIdentityParts(draft.vendor,draft.name):[];
   const artifactName=parserIdentityIsDefault
     ?'customized_<manufacturer>_<product>'
     :'customized_'+(draft.guided?.slug??parserIdentitySlug(draft.vendor,draft.name));
@@ -35,6 +39,13 @@ export default function ParserIdentityCard({draft,setDraft,assisted=false}:Props
         ?'Use the same manufacturer, product, version and receiving port as Auto Parser. Manufacturer, product and version are unverified hints included only when you manually copy the ChatGPT prompt; the port configures the generated .conf.'
         :'Set the manufacturer, product and receiving port before downloading parser files. These details do not affect log detection.'}</span>
     </div>
+    {placeholderParts.length>0&&<p className="auto-parser-warning" role="note"
+      aria-label="Placeholder parser name">
+      {'The '+placeholderParts.join(' and ')+' still show the placeholder '+
+        placeholderParts.map(part=>'\u201c'+(part==='manufacturer'?PLACEHOLDER_PARSER_VENDOR:PLACEHOLDER_PARSER_PRODUCT)+'\u201d').join(' / ')+
+        '. That text would be written into the downloaded files (header comments and file names). Enter the real '+
+        placeholderParts.join(' and ')+' below before downloading.'}
+    </p>}
     <div className="parser-identity-fields">
       <label>Manufacturer
         <input aria-label="Parser manufacturer" value={draft.vendor}

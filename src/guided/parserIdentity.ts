@@ -39,3 +39,14 @@ export function missingParserIdentityMessage(vendor:string,product:string):strin
   if(noProduct)return 'Enter the product name first. It is used in the parser file names.';
   return null;
 }
+
+export const PLACEHOLDER_PARSER_VENDOR='Demo / local draft';
+export const PLACEHOLDER_PARSER_PRODUCT='Untitled parser';
+
+/** Which of the two demo placeholders is still in place (blank counts as unset too). */
+export function placeholderParserIdentityParts(vendor:string,product:string):('manufacturer'|'product')[]{
+  const parts:('manufacturer'|'product')[]=[];
+  if(!vendor.trim()||vendor===PLACEHOLDER_PARSER_VENDOR)parts.push('manufacturer');
+  if(!product.trim()||product===PLACEHOLDER_PARSER_PRODUCT)parts.push('product');
+  return parts;
+}
