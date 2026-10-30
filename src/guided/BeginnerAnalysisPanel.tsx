@@ -346,7 +346,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
         <p>{compilerBlockedReason
           ?'Original values were extracted, but a verified downloadable parser cannot be prepared for this shape yet. See the recovery instructions below; no source was dropped.'
           :resolvedByReviewedCandidate
-          ?'The reviewed parser fix passes the current sample in browser validation. Continue to review field meanings and create the parser draft.'
+          ?'Parser Studio built a parser rule that passes the current sample. Continue to review field meanings and create the parser draft.'
           :csvReviewPending
           ?!csvConsistentShapeAvailable
             ?'Parser Studio extracted the source values, but these positional rows do not share one consistent CSV shape. Analyze matching row shapes separately before continuing.'
@@ -354,10 +354,10 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
               ?'Parser Studio extracted every source value, but this positional CSV does not contain trustworthy field names. Keep temporary names or enter your own before continuing.'
               :'Parser Studio extracted the source values, but this positional CSV still needs a matching separator plus column names before continuing.'
           :parserRuleReviewRequired
-          ?'All original values were extracted, but parser-file creation still needs a reviewed rule for this log shape. No source data was discarded.'
+          ?'Parser Studio read every value, but it cannot build the parser files for this log shape on its own yet. Use Fix with ChatGPT below. No log data was discarded.'
           :problems.length
-          ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Parser Studio will show what remains and the safest next action.`
-          :'No unresolved source region was found. Source extraction is complete; parser-file support will be checked separately when you continue.'}</p>
+          ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Pick one below to see why and what to do next.`
+          :'Every part of your logs was understood. Parser-file support is checked in the next steps.'}</p>
         {multilineCsvNeedsReview&&<p role="note" aria-label="Multiline CSV recovery">
           Quoted CSV data spans multiple physical lines. The source record was kept intact, but this input is not approved for native parser generation. Choose the affected event below to see how to export a safe one-event-per-line sample.
         </p>}

@@ -112,3 +112,31 @@ export function buildAdaptiveRetryPrompt(input:RetryPromptInput):string{
     'semantics were independently verified by this retry.',
   ].join('\n');
 }
+
+export interface HoldoutFailureEvent{
+  line:number;raw:string;fields:unknown;normalized:unknown;diagnostics:{code:string}[];
+}
+/** The failing independent examples that go into an improved prompt: up to four,
+ * each with its error codes counted instead of repeated, fitted into the evidence
+ * size limit without cutting an example in half. These are locally observed values,
+ * never a model assertion. */
+export function summarizeHoldoutFailures(events:HoldoutFailureEvent[],budget=4096,maxEvents=4):string{
+  const kept:unknown[]=[];
+  for(const event of events.slice(0,maxEvents)){
+    const counts=new Map<string,number>();
+    for(const item of event.diagnostics)counts.set(item.code,(counts.get(item.code)??0)+1);
+    const entry={
+      sourceLine:event.line,raw:event.raw,extracted:event.fields,normalized:event.normalized,
+      errorCodes:[...counts.entries()].slice(0,8).map(([code,count])=>count>1?code+' x'+count:code),
+    };
+    if(JSON.stringify([...kept,entry]).length>budget){
+      if(!kept.length){
+        // One example alone is too large: keep its beginning rather than nothing.
+        kept.push({sourceLine:event.line,raw:event.raw.slice(0,1500),errorCodes:entry.errorCodes});
+      }
+      break;
+    }
+    kept.push(entry);
+  }
+  return JSON.stringify(kept);
+}

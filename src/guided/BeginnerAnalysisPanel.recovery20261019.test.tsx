@@ -62,7 +62,7 @@ describe('source completeness does not mean downloadable parser readiness',()=>{
      events={[{startByte:0,endByte:bytes,preview:event}]}
      parserRuleReviewRequired onOpenAssisted={vi.fn()}/>);
    expect(screen.getByText('Fields extracted — parser rule needs review')).toBeInTheDocument();
-   expect(screen.getByText(/All original values were extracted/)).toBeInTheDocument();
+   expect(screen.getByText(/Parser Studio read every value/)).toBeInTheDocument();
    expect(screen.getByText(/Review parser-file support for these fields/)).toBeInTheDocument();
    expect(screen.getByText(/does not verify native or Stellar Cyber parser compatibility/)).toBeInTheDocument();
    expect(screen.queryByText(/remaining message text/i)).not.toBeInTheDocument();

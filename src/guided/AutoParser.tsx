@@ -918,8 +918,10 @@ export default function AutoParser({
            <p>Use at most 500 logical events and 64 KiB in one analysis. Split this sample into smaller representative batches; Parser Studio will not silently drop the extra events.</p>
          </div>
        </div>}
-       {sample.trim()&&<div className="auto-parser-ledger" aria-label="Automatic event accounting">
-         <strong>Initial format scan · {report.accounted}/{report.sourceCount} events checked</strong>
+       {sample.trim()&&<details className="auto-parser-ledger" aria-label="Automatic event accounting" open={advanced?true:undefined}>
+         <summary><strong>Initial format scan · {report.accounted}/{report.sourceCount} events checked</strong>
+           <span className="auto-parser-ledger-hint">Technical details - you can skip this</span></summary>
+         <div className="auto-parser-ledger-body">
          <span className="sr-only">{report.accounted}/{report.sourceCount} events analyzed locally in the initial format scan only, not final parser analysis</span>
          {currentMultiPassReview?.metadataLines?
            <span role="note" aria-label="Header and data event accounting">
@@ -936,7 +938,8 @@ export default function AutoParser({
          {advanced&&report.families.map(x=><span key={x.envelope+'/'+x.body}>
            {x.envelope==='none'?'Standalone':x.envelope.toUpperCase()} / {x.body.toUpperCase()}
            {' · '}{x.count}</span>)}
-       </div>}
+         </div>
+       </details>}
        {csvReviewActive&&<div className="auto-parser-recipe" aria-label="Review CSV column names">
          <strong>{csvConsistentShapeAvailable
            ?'Values found, but this log does not include field names'
@@ -1071,7 +1074,7 @@ export default function AutoParser({
        {!advanced&&currentMultiPassReview&&!beginnerResolved&&
          <p className="beginner-next-step needs-fix" role="status">Resolve the events marked above before continuing. Already-correct fields remain preserved.</p>}
        {!advanced&&currentMultiPassReview&&beginnerResolved&&pending&&
-         <p className="beginner-next-step" role="status">Source extraction is complete. Preparing the browser parser draft for field review…</p>}
+         <p className="beginner-next-step" role="status">Your logs were understood. Preparing the parser draft for field review…</p>}
        {currentReviewBlock&&<div className="auto-parser-warning" role="alert" aria-label="Parser draft not ready">
          <strong>Source fields are available, but this parser draft is not ready.</strong>
          <p>{statusMessage(currentReviewBlock.reason)}</p>

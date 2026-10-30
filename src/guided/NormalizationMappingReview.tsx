@@ -91,6 +91,8 @@ export default function NormalizationMappingReview({
   const officialCount=draft.mappings.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
   const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
   const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
+  // Notes that do not block (a field some sample logs simply do not carry).
+  const noteSources=new Set(findings.filter(finding=>!isBlockingNormalizationFinding(finding.code)).map(finding=>finding.source));
   const candidateView=candidates.filter(candidate=>{
     const needle=search.trim().toLowerCase();
     return !needle||candidate.source.toLowerCase().includes(needle)||candidate.target.toLowerCase().includes(needle);
@@ -350,8 +352,10 @@ export default function NormalizationMappingReview({
       <div className="normalization-section-head"><div><h3>Check all sample logs <HelpTip label="Check all sample logs"
         text="Parser Studio checks every current sample against every mapping, not just the event you are viewing. This catches missing fields, wrong value types, and duplicate destinations before parser files are created."/></h3>
         <p>Each field match is checked across the full sample so a single unusual event cannot be hidden by the others.</p></div>
-        <span className={blocking.length?'normalization-confidence review':'normalization-confidence high'}>
-          {blocking.length?'Fix '+blocking.length+' issue'+(blocking.length===1?'':'s')+' to continue':'No mapping problems found'}
+        <span className={blocking.length||noteSources.size?'normalization-confidence review':'normalization-confidence high'}>
+          {blocking.length?'Fix '+blocking.length+' issue'+(blocking.length===1?'':'s')+' to continue'
+            :noteSources.size?noteSources.size+' field'+(noteSources.size===1?'':'s')+' to double-check'
+            :'No mapping problems found'}
         </span>
       </div>
       {findings.length===0?<p className="normalization-pass"><CheckCircle2 size={15}/>All current field mappings passed the sample checks.</p>:
@@ -362,6 +366,7 @@ export default function NormalizationMappingReview({
               (item.event?'event '+item.event+' · ':'')+item.source+' → '+item.target).join(' | ')}</small>
           </div>)}
         </div>}
+      {!blocking.length&&findings.length>0&&<p className="normalization-empty">You can still continue. These notes do not block Create Parser.</p>}
     </section>
 
     {chosen&&<section className="normalization-comparison" aria-label="Field mapping comparison">
