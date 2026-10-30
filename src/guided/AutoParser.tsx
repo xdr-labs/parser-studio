@@ -5,6 +5,7 @@ import {ArrowLeft,ArrowRight,CheckCircle2,Download,FileArchive,FileText,
 import {createDraft,type ParserDraft,type SuiteResult} from '../model';
 import {toBackendProject} from './backendAdapter';
 import {missingParserIdentityMessage} from './parserIdentity';
+import {describeCsvColumnNameProblem} from './csvColumnNames';
 import {fetchBackendCapabilities,assertBackendProjectSupported,
   type BackendCapabilities} from './backendCapabilities';
 import {fetchBackendSchemaGuide} from './backendSchemaGuide';
@@ -972,6 +973,9 @@ export default function AutoParser({
              'Choose the separator that gives every row the same column count before confirming field names.':
            !csvSelectedShapeMatchesNames?
              `Enter exactly ${neutralCsvColumnCount} unique field names for the selected separator before confirming.`:
+           !csvNamesValid?
+             (describeCsvColumnNameProblem(csvColumns)??
+               'Choose a valid separator and field names before confirming.'):
              'Field names and separator are consistent. Confirm them to continue.'}</p>
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"

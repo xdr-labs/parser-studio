@@ -3,7 +3,7 @@ import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
 import {importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
-import {compareCandidate,compareMappingCorrectionCandidate} from './autoParserRegression';
+import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath} from './autoParserRegression';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
@@ -21,11 +21,14 @@ function scalarValues(value:unknown):string[]{
  if(typeof value==='object'&&value!==null)return Object.values(value as Record<string,unknown>).flatMap(scalarValues);
  return value===undefined?[]:[String(value)];
 }
-function sourceAlternatives(value:string):string[]{
+export function sourceAlternatives(value:string):string[]{
  const out=[value];
  if(value.length>=2&&value[0]==='\"'&&value.at(-1)==='\"'){
   try{const parsed=JSON.parse(value);if(typeof parsed==='string')out.push(parsed);}catch{/* keep exact source */}
  }else if(value.length>=2&&value[0]==="'"&&value.at(-1)==="'")out.push(value.slice(1,-1));
+ // The browser key=value reader decodes backslash escapes (`\=` -> `=`) while the backend span
+ // evidence keeps the raw text, so a decoded form of the same value is also the same value.
+ for(const item of [...out])if(item.includes('\\'))out.push(item.replace(/\\(.)/gs,'$1'));
  return [...new Set(out)];
 }
 function containsExactSourceRaw(value:unknown,raw:string,depth=0):boolean{
@@ -41,16 +44,35 @@ function hasLosslessSourceProjection(event:SuiteResult['events'][number]|undefin
  const projection=event.normalized?.parserstudio_source;
  return projection!==undefined&&containsExactSourceRaw(projection,event.raw);
 }
-function protectedValueRegression(candidate:SuiteResult,protectedValues:string[][]|undefined,
- normalizedOnly=false):{event:number;missing:number;required:number;available:number}|null{
+/**
+ * Source values the current parser output already carries. The backend span evidence can list
+ * tokens that the browser-side output never holds as separate values (for example the RFC3164
+ * header "Oct 29 10:00:00"); a candidate must not be blamed for losing what was never there.
+ */
+function valuesPresentInBaseline(observed:string[],baseline:SuiteResult|undefined,index:number):string[]{
+ const event=baseline?.events[index];
+ if(!event)return observed;
+ const pool=[...scalarValues(event.fields),...scalarValues(event.normalized)];
+ const used=new Array(pool.length).fill(false);
+ return observed.filter(source=>{
+  const choices=sourceAlternatives(source);
+  for(let i=0;i<pool.length;i++)if(!used[i]&&choices.includes(pool[i]!)){used[i]=true;return true;}
+  return false;
+ });
+}
+export function protectedValueRegression(candidate:SuiteResult,protectedValues:string[][]|undefined,
+ normalizedOnly=false,baseline?:SuiteResult):{event:number;missing:number;required:number;available:number}|null{
  if(!protectedValues?.some(values=>values.length))return null;
  for(let index=0;index<protectedValues.length;index++){
   const observed=protectedValues[index]??[];
   // The backend's reviewed normalization contract intentionally ignores an
   // explicit empty string. Do not make FULL_RECOVERY impossible by requiring
   // JSON "" / '' source spans to reappear in final normalized output.
+  // Full recovery stays strict (every reviewed source value must reach the final output);
+  // other fixes only have to keep what the current parser output already holds.
   const required=normalizedOnly?
-   observed.filter(source=>!sourceAlternatives(source).includes('')):observed;
+   observed.filter(source=>!sourceAlternatives(source).includes('')):
+   baseline?valuesPresentInBaseline(observed,baseline,index):observed;
   if(!required.length)continue;
   const event=candidate.events[index];
   if(normalizedOnly&&hasLosslessSourceProjection(event))continue;
@@ -193,7 +215,10 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     else{
      const correction=proposeV01MappingCorrectionFromAI(result,source,draft,suite);
      if(correction.ok){proposal=correction;candidateMode='correction';
-      correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};}
+      // The normalized output nests vendor fields under the manufacturer name, so the
+      // comparison scope must be the real output path, not the bare mapping target.
+      correctionScope={oldTarget:normalizedMappingOutputPath(draft,correction.mappingId),
+       newTarget:normalizedMappingOutputPath(correction.candidate,correction.mappingId)};}
      else{proposal=proposeV01EnrichmentFromAI(result,source,draft,suite);candidateMode='enrichment';}
     }
    }
@@ -207,7 +232,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    try{
     candidateSuite=preview(source,proposal.candidate);candidateHoldout=preview(holdout,proposal.candidate);
     const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
-     candidateMode==='recovery');
+     candidateMode==='recovery',suite);
     if(protectedRegression){
      const location=candidateMode==='recovery'?'final parser output':'reviewed extraction';
      setImportResult(`Fix not applied: event ${protectedRegression.event} would drop ${protectedRegression.missing} of ${protectedRegression.required} source value occurrences from the ${location}. No changes were made.`);return;
@@ -290,7 +315,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      try{
       const candidateSuite=preview(source,approvedCandidate.draft),candidateHoldout=preview(holdout,approvedCandidate.draft);
       const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
-       approvedCandidate.mode==='recovery');
+       approvedCandidate.mode==='recovery',suite);
       if(protectedRegression){
        setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
        const location=approvedCandidate.mode==='recovery'?'final parser output':'reviewed extraction';

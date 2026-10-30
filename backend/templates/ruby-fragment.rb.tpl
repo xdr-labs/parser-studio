@@ -26,6 +26,7 @@ def parse(text)
   end
 
   current_stage = 'extraction'
+  @parserstudio_partial = nil
   begin
     original = parserstudio_extract(text)
     current_stage = 'normalization'
@@ -42,15 +43,18 @@ def parse(text)
     event_time = parserstudio_event_time(normalized)
     yield event_time, normalized
   rescue StandardError => e
-    # Only static diagnostic codes and schema-controlled field paths are emitted.
-    # Never copy raw log text or exception messages containing customer data.
+    # Diagnostics are static codes and schema-controlled field paths. Fields that
+    # were already mapped and validated before the failure stay next to them; the
+    # field that failed, unmapped source data, raw log text and exception messages
+    # are never copied.
     diagnostic = {
       'stellar_log_index' => 'syslog',
       'parser_err_msg' => e.is_a?(ParserstudioFieldError) ? 'MappedFieldError' : e.class.name,
       'parser_err_stage' => current_stage
     }
     diagnostic['parser_err_field'] = e.field if e.is_a?(ParserstudioFieldError)
-    yield nil, diagnostic
+    kept = @parserstudio_partial.is_a?(Hash) ? @parserstudio_partial : {}
+    yield nil, kept.merge(diagnostic)
   end
 end
 
@@ -741,6 +745,8 @@ end
 
 def parserstudio_normalize(original)
   normalized = {}
+  @parserstudio_partial = normalized
+  first_failed = nil
   ignored = @parser_rule_set['normalization']['ignoreValues']
   ['topFields', 'nsFields', 'vendorFields'].each do |section|
     @parser_rule_set['normalization'][section].each do |source, rule|
@@ -759,10 +765,12 @@ def parserstudio_normalize(original)
         end
         parserstudio_assign(target, rule['normalized_name'], converted)
       rescue StandardError
-        raise ParserstudioFieldError.new(source)
+        # Keep going so every other valid field is retained; report the first failure.
+        first_failed ||= source
       end
     end
   end
+  raise ParserstudioFieldError.new(first_failed) if first_failed
   normalized
 end
 
