@@ -79,7 +79,11 @@ export default function DeclaredRelayProfilePanel({
     </label>
     <p aria-label="Relay source preview">Whole-sample review: {summary.unwrapped} of
       {' '}{summary.count} events recognized, {summary.unsafe} unsafe and
-      {' '}{summary.nonRelay} without a declared relay.</p>
+      {' '}{summary.nonRelay} not matching a declared relay.</p>
+    {summary.nonRelay>0&&<p role="note">An event is unwrapped only when it begins with
+      {' '}a Syslog header that starts with &lt;PRI&gt; (for example
+      {' '}&lt;134&gt;Oct 29 10:00:00 relay01 …) and names one of the relay hostnames above.
+      {' '}A header without &lt;PRI&gt; is not unwrapped.</p>}
     <div className="manual-boundary-buttons">
       <button type="button" disabled={loading||!valid}
         onClick={()=>void apply()}>{loading?'Checking compiler…':'Apply declared relay profile'}</button>
