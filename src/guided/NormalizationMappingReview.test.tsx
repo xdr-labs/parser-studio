@@ -67,4 +67,29 @@ describe('normalization mapping review UI',()=>{
     fireEvent.click(screen.getAllByRole('button',{name:/Remove normalization/})[0]!);
     expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output1');
   });
+
+  it('lets a Generic Structural parser leave the full raw line out of the output, and hides the switch for other formats',()=>{
+    const kv='<134>date=2023-02-23 time=22:49:29 devname=FMG-VM user=alice status=success';
+    function GenericHarness(){
+      const [draft,setDraft]=useState<ParserDraft>({...createDraft(),format:'generic_structural',
+        mappings:[{id:'g-1',source:'generic.kv.user',target:'custom.user',type:'string'}],
+        guided:{...defaultGuidedOptions(),groups:{'g-1':'vendor_fields'}}});
+      const suite=preview(kv,draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="omit flag">{String(draft.omitSourceRaw??'unset')}</output></>;
+    }
+    const {unmount}=render(<GenericHarness/>);
+    const toggle=screen.getByRole('checkbox',{name:/Copy the full original line/});
+    expect(toggle).toBeChecked();
+    expect(screen.getByText(/about twice the size/i)).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText('omit flag')).toHaveTextContent('true');
+    expect(screen.getByRole('checkbox',{name:/Copy the full original line/})).not.toBeChecked();
+    fireEvent.click(screen.getByRole('checkbox',{name:/Copy the full original line/}));
+    expect(screen.getByLabelText('omit flag')).toHaveTextContent('unset');
+    unmount();
+    render(<Harness/>);
+    expect(screen.queryByRole('checkbox',{name:/Copy the full original line/})).toBeNull();
+  });
 });

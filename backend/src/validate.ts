@@ -102,6 +102,10 @@ export function validateProject(input: unknown): ValidationResult {
   if(extraction.genericStructuralProfile!==undefined&&extraction.format!=="generic_structural")
     issue(issues,"generic_structural_profile","/extraction/genericStructuralProfile",
       "A Generic Structural profile requires the Generic Structural extraction format.");
+  if(extraction.omitSourceRaw!==undefined&&
+      (extraction.omitSourceRaw!==true||extraction.format!=="generic_structural"))
+    issue(issues,"omit_source_raw","/extraction/omitSourceRaw",
+      "omitSourceRaw may only be true and only with the Generic Structural extraction format.");
   if(extraction.format==="java_stacktrace"&&
       p.receiver.tcpFraming!=="blank_line_java")
     issue(issues,"java_blank_line_transport","/receiver/tcpFraming",

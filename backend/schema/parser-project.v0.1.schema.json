@@ -171,6 +171,9 @@
             "regex"
           ]
         },
+        "omitSourceRaw": {
+          "const": true
+        },
         "genericStructuralProfile": {
           "enum": [
             "syslog_prefix_kv",

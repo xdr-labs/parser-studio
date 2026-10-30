@@ -39,7 +39,7 @@ export interface BackendParserProject {
     messageLengthLimit: number;
     tcpFraming: 'line' | 'blank_line_json' | 'blank_line_java';
   };
-  extraction: ({ format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' } | {format:'regex';pattern:string} | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';pattern?:string } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' }) & {forwarder?:{maxHops:1|2|3;relayHosts:string[]};genericStructuralProfile?:GenericStructuralProfile};
+  extraction: ({ format: 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural' } | {format:'regex';pattern:string} | { format: 'mixed'; mixedFormats: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;csvColumns?:string[];csvDelimiter?:','|';'|'\t' } | { format: 'syslog_rfc3164' | 'syslog_rfc5424'; syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';pattern?:string } | { format: 'csv'; csvColumns: string[]; csvDelimiter: ',' | ';' | '\t' }) & {forwarder?:{maxHops:1|2|3;relayHosts:string[]};genericStructuralProfile?:GenericStructuralProfile;omitSourceRaw?:true};
   normalization: {
     msgOriginSource: string;
     msgClass: string;
@@ -107,6 +107,10 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     (!isGenericStructuralProfile(draft.genericStructuralProfile)||draft.format!=='generic_structural'))
     issues.push({code:'GENERIC_STRUCTURAL_PROFILE',path:'/genericStructuralProfile',
       message:'The additional Generic Structural profile requires its supported extraction format.'});
+  if(draft.omitSourceRaw!==undefined&&
+    (draft.omitSourceRaw!==true||draft.format!=='generic_structural'))
+    issues.push({code:'OMIT_SOURCE_RAW',path:'/omitSourceRaw',
+      message:'Leaving out the raw line is only available for Generic Structural.'});
   const topFields: Record<string, BackendField> = Object.create(null);
   const nsFields: Record<string, BackendField> = Object.create(null);
   const vendorFields: Record<string, BackendField> = Object.create(null);
@@ -266,7 +270,8 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
               ? { syslogBodyFormat: draft.syslogBodyFormat } : {}),
             ...(draft.syslogBodyFormat==='regex'?{pattern:draft.pattern}:{}) }
         : { format: draft.format as 'json' | 'kv' | 'cef' | 'leef' | 'java_stacktrace' | 'generic_structural',
-            ...(draft.genericStructuralProfile?{genericStructuralProfile:draft.genericStructuralProfile}:{}) },
+            ...(draft.genericStructuralProfile?{genericStructuralProfile:draft.genericStructuralProfile}:{}),
+            ...(draft.omitSourceRaw===true&&draft.format==='generic_structural'?{omitSourceRaw:true as const}:{}) },
     normalization: {
       ...(eventProfiles?{eventProfiles}:{}),
       msgOriginSource: options.slug,

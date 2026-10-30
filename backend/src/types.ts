@@ -34,6 +34,8 @@ export interface ParserProject {
     syslogBodyFormat?: "raw" | "json" | "kv" | "cef" | "leef" | "regex";
     genericStructuralProfile?: "syslog_prefix_kv" | "leef2_implicit_tab" |
       "syslog_prefix_kv_leef2_implicit_tab_v1";
+    /** Generic Structural only: leave the full raw line (source_raw) out of parserstudio_source. */
+    omitSourceRaw?: true;
     maxDepth?: number;
   };
   normalization: {
