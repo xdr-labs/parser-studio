@@ -181,6 +181,55 @@ describe('AI recovery review safety',()=>{
   expect(apply.mock.calls[0]![0].mappings[1]).toEqual(draft.mappings[1]);
   expect(apply.mock.calls[0]![0].mappings[2]).toEqual(draft.mappings[2]);
  });
+ it('explains that a type-only correction is not applied instead of a generic failure',async()=>{
+  vi.stubGlobal('crypto',webcrypto);
+  const source=[
+   '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"code":"200"}',
+   '{"action":"deny","src_ip":"203.0.113.5","dst_port":22,"code":"404"}',
+  ].join('\n');
+  const holdout=[
+   '{"action":"allow","src_ip":"192.0.2.10","dst_port":8443,"code":"301"}',
+   '{"action":"deny","src_ip":"192.0.2.11","dst_port":2222,"code":"500"}',
+  ].join('\n');
+  const base=createDraft();
+  const draft={...base,format:'json' as const,
+   mappings:[...base.mappings,{id:'vendor-code',source:'code',target:'code',type:'string' as const}],
+   guided:{...base.guided!,groups:{...base.guided!.groups,'vendor-code':'vendor_fields' as const}}};
+  const apply=vi.fn();
+  // The same recipe as the current draft, except that `code` is declared as an integer.
+  const recipe={
+   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
+   projectId:'draft-demo_firewall',sourceFormat:'json',bodyFormat:'json',
+   sample:{sha256:createHash('sha256').update(source).digest('hex'),events:2},
+   stages:[
+    {op:'split_event',boundary:'single-line'},{op:'parse_json'},
+    {op:'map_field',source:'src_ip',target:'custom.source_ip',data_type:'ip',group:'top_fields'},
+    {op:'cast_type',target:'custom.source_ip',data_type:'ip'},
+    {op:'map_field',source:'dst_port',target:'custom.destination_port',data_type:'port',group:'ns_fields'},
+    {op:'cast_type',target:'custom.destination_port',data_type:'port'},
+    {op:'map_field',source:'action',target:'custom.action',data_type:'string',group:'top_fields'},
+    {op:'map_field',source:'code',target:'code',data_type:'integer',group:'vendor_fields'},
+    {op:'cast_type',target:'code',data_type:'integer'},
+    {op:'classify',defaultIndex:'syslog',rules:[
+     {field:'custom.action',operator:'equals',value:'deny',index:'threat'},
+     {field:'custom.action',operator:'equals',value:'allow',index:'session'},
+    ]},{op:'fallback_unparsed',mode:'retain_unparsed'},
+   ],nativeVerified:false,targetVerified:false,
+  };
+  render(<AutoParserAIReview raw={source} status="partial" onChatGPT={vi.fn()}
+   source={source} draft={draft} suite={preview(source,draft)} onApplyCandidate={apply}/>);
+  fireEvent.change(screen.getByRole('textbox',{name:'ChatGPT JSON result'}),{target:{value:JSON.stringify(recipe)}});
+  fireEvent.change(screen.getByRole('textbox',{name:'Additional test logs'}),{target:{value:holdout}});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Confirm different test examples'}));
+  fireEvent.click(screen.getByRole('button',{name:'Test Proposed Fix'}));
+  const message=await screen.findByText(/Fix not applied: the proposed fix would change the type of the corrected field \(text → number\)/);
+  expect(message.textContent).toMatch(/Map Fields/);
+  expect(message.textContent).toMatch(/No parser rules were changed/);
+  expect(message.textContent).not.toMatch(/did not pass both/);
+  expect(message.textContent).not.toMatch(/200|404|301|500/);
+  expect(screen.queryByRole('button',{name:'Apply Verified Fix'})).toBeNull();
+  expect(apply).not.toHaveBeenCalled();
+ });
  it('rejects unverified AI recipe and never applies changes',()=>{
   render(<AutoParserAIReview raw="RAW" status="unsupported" onChatGPT={vi.fn()}/>);
   fireEvent.click(screen.getByText('Paste ChatGPT Result'));

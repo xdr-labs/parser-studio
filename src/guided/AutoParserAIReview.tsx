@@ -3,7 +3,7 @@ import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
 import {describeEnrichmentDenial,importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
-import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath} from './autoParserRegression';
+import {compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeChange,normalizedMappingOutputPath,typeChangeWording} from './autoParserRegression';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
@@ -229,6 +229,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    if(!holdout.trim()){setImportResult('Add different test log examples before applying this fix. No parser rules were changed.');return;}
    if(!holdoutAttested){setImportResult('Confirm that the additional test logs are different from the examples used to create this fix. No parser rules were changed.');return;}
    let report:ReturnType<typeof compareCandidate>;
+   let typeChange:ReturnType<typeof describeScopedTypeChange>=null;
    let candidateSuite:SuiteResult,candidateHoldout:SuiteResult;
    let holdoutProtectedValues:string[][]|undefined;
    let holdoutProtectedResiduals:string[][]|undefined;
@@ -268,6 +269,8 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
     report=candidateMode==='correction'&&correctionScope?
      compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
+    typeChange=candidateMode==='correction'&&correctionScope?
+     describeScopedTypeChange(comparisonInput,correctionScope):null;
    }catch(error){
     // The comparison guard throws a fixed, value-free reason; show it instead of a
     // misleading "logs changed" message when the log is simply too large to compare.
@@ -284,7 +287,9 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    }
    if(!report.acceptedWithoutRegression||report.holdoutStatus!=='TESTED'||
       !completeSuite(candidateSuite)||!completeSuite(candidateHoldout)){
-    setImportResult('The proposed fix did not pass both the original logs and the additional test logs. No parser rules were changed.');return;
+    setImportResult(typeChange?
+     `Fix not applied: the proposed fix would change the type of the corrected field (${typeChangeWording(typeChange)}), and a fix that only changes a type is not applied here. To change a field's type, use Map Fields. No parser rules were changed.`:
+     'The proposed fix did not pass both the original logs and the additional test logs. No parser rules were changed.');return;
    }
    setApprovedCandidate({draft:proposal.candidate,mode:candidateMode,scope:correctionScope,holdoutProtectedValues,holdoutProtectedResiduals});setValidatedEvidence(evidenceFingerprint());
    const description=candidateMode==='recovery'?'full parser recovery':candidateMode==='correction'?'one corrected mapping':candidateMode==='enrichment'?'one bounded split/merge rule':'one added mapping';
