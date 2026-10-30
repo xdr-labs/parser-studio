@@ -220,6 +220,22 @@ customer logs in it.
 - Do not describe the Development Preview as production, and do not claim Stellar Cyber or native Fluentd
   compatibility from a deploy check: those remain NOT VERIFIED.
 
+## 11. Helper for a web-only update
+
+`release_web.sh` and `deploy_web.sh.tpl` in this directory wrap sections 3 to 8 for the common case where only the web
+bundle changed (the backend and Multi-Pass comparisons of section 5 are empty). Run as root on `dev-atlas`:
+
+```
+ops/preview-domain/release_web.sh <full-40-char-sha> build   # detached worktree, npm ci, npm run build, generates $REL/deploy_web.sh
+ops/preview-domain/release_web.sh <full-40-char-sha> apply   # installs new hashed assets, then index.html last; checks public hashes and PIDs
+$REL/deploy_web.sh rollback                                   # restores the previous index.html (under one second)
+```
+
+`build` records the live `index.html` SHA-256 as the expected previous release, and `apply` refuses to run when the live
+file no longer matches it, when a service is inactive, or when an existing asset of the same name differs. `apply` rolls
+itself back on any failed check. Neither mode restarts a service. For a backend change use the full procedure above.
+`release_web.sh` was run for `d3556c0` (PR #193) and `2f4b1df` (PR #194) on 2026-10-30.
+
 ## Appendix: reference run
 
 2026-10-30, Development Preview, web + backend update from `f960030` (PR #168) to `35dc3eb` (PRs #169 to #182).
