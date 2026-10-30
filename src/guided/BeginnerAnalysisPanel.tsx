@@ -3,6 +3,7 @@ import {Bot,CheckCircle2,Clipboard,TriangleAlert,Wrench} from 'lucide-react';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 import type {ParserDraft,SuiteResult} from '../model';
 import AutoParserAIReview from './AutoParserAIReview';
+import {hasUnlabeledGenericPositions} from './genericTokenRoleReview';
 import {buildBeginnerRepairPrompt} from './beginnerAiPrompt';
 import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 
@@ -271,6 +272,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
   const [promptBusy,setPromptBusy]=useState(false);
   const [copyStatus,setCopyStatus]=useState('');
   const sourceParsed=events.filter(x=>x.preview.status==='SOURCE_PARSED').length;
+  const unlabeledGenericCount=events.filter(x=>hasUnlabeledGenericPositions(x.preview)).length;
   const multilineCsvNeedsReview=events.some(event=>event.preview.issues.some(
     code=>code.startsWith('FRAMING_')&&code.includes('CSV')));
   const csvReviewPending=Boolean(csvReviewRequired&&sourceParsed===events.length&&!resolvedByReviewedCandidate);
@@ -357,6 +359,8 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           ?'Parser Studio read every value, but it cannot build the parser files for this log shape on its own yet. Use Fix with ChatGPT below. No log data was discarded.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Pick one below to see why and what to do next.`
+          :unlabeledGenericCount>0
+          ?'The source text was structurally extracted, but some values have only positional names. Source and destination IP, action, and other field roles are not verified. Check Map Fields before using the draft parser.'
           :'Every part of your logs was understood. Parser-file support is checked in the next steps.'}</p>
         {multilineCsvNeedsReview&&<p role="note" aria-label="Multiline CSV recovery">
           Quoted CSV data spans multiple physical lines. The source record was kept intact, but this input is not approved for native parser generation. Choose the affected event below to see how to export a safe one-event-per-line sample.
