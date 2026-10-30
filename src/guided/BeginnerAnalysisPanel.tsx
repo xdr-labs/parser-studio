@@ -85,9 +85,11 @@ function plainIssue(code:string,raw=''):string{
     RFC5424_TIMESTAMP_INVALID:'The time in the log header is not complete or valid enough to use as an exact event time.',
     UNLABELED_CSV_NEEDS_CORPUS_CONFIRMATION:'The event contains comma-delimited text, but Parser Studio cannot confirm trustworthy column boundaries or names from this sample alone.',
     UNSUPPORTED_BSD_BODY:'The Syslog header was recognized but the message body still needs an extraction rule.',
+    UNSUPPORTED_PRI_BODY:'The Syslog priority header was recognized, but the message text after it still needs an extraction rule.',
+    NO_SUPPORTED_GRAMMAR:'None of the built-in parsing patterns matches this part of the event yet, so it needs an extra parsing rule.',
     RFC5424_HEADER_TOKEN_INVALID:'The Syslog header contains a token outside the supported grammar.',
   };
-  return known[code]??'This source region needs an additional reviewed parsing rule ('+code.replaceAll('_',' ').toLowerCase()+').';
+  return known[code]??'This part of the event does not match a built-in pattern yet, so it needs an extra parsing rule ('+code.replaceAll('_',' ').toLowerCase()+').';
 }
 function wholeEventNeedsRule(preview:MultiPassSourcePreview):boolean{
   return Object.keys(preview.fields).length===0&&
