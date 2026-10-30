@@ -233,7 +233,7 @@ export default function NormalizationMappingReview({
       <div className="normalization-section-head">
         <div><h3>Review field matches <HelpTip label="Review field matches"
           text="Left is the field Parser Studio found in your log. Right is the field name that will be used in Stellar Cyber. Change the right side only when the suggested destination is wrong for your data."/></h3>
-          <p>You can change a Stellar field or value type, or remove a mapping. Removing a mapping leaves that field out of the parser output; your original log is not changed.</p></div>
+          <p>You can change a Stellar field or value type, or remove a mapping. Removing a mapping means that field does not appear in the generated parser output. Your original log is not changed.</p></div>
       </div>
       <datalist id="stellar-metadata-field-list">
         {STELLAR_METADATA_CATALOG.filter(entry=>entry.mappable).map(entry=><option value={entry.name} key={entry.name}/>)}
@@ -283,8 +283,9 @@ export default function NormalizationMappingReview({
               onClick={()=>{setActiveMappingId(mapping.id);setCatalogQuery(group==='vendor_fields'?'':mapping.target);}}>
               Choose Stellar field
             </button>
-            <button type="button" aria-label={'Remove normalization '+index} onClick={()=>removeMapping(mapping.id)}>
-              <X size={14}/>Remove mapping
+            <button type="button" aria-label={'Remove normalization '+index}
+              title="Removes this mapping. The field will not appear in the generated parser output; your original log is not changed." onClick={()=>removeMapping(mapping.id)}>
+              <X size={14}/>Leave out of output
             </button>
           </div>
         </article>;
