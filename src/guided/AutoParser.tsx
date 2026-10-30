@@ -46,6 +46,7 @@ import BeginnerAnalysisPanel from './BeginnerAnalysisPanel';
 import AnalysisProgressPanel from './AnalysisProgressPanel';
 import {useAnalysisRun} from './useAnalysisRun';
 import type {EventBoundary} from './contract';
+import {hasUnlabeledGenericPositions} from './genericTokenRoleReview';
 
 interface Props {
  draft:ParserDraft;
@@ -1189,6 +1190,10 @@ export default function AutoParser({
          <span>Ready to output <strong>{suite?.counts.normalized??0}</strong></span>
          <span>Need fixing <strong>{suite?.counts.failures??0}</strong></span>
        </div>
+       {currentMultiPassReview?.events.some(event=>hasUnlabeledGenericPositions(event.preview))&&
+        <p className="auto-parser-warning" role="note" aria-label="Unlabeled field roles need review">
+          The sample's values were preserved as generic positional fields. Their meaning (including source and destination IP roles) has not been verified. Check the mappings before using these DRAFT parser files.
+        </p>}
        {!confirmed()&&<p className="auto-parser-warning" role="note">
          Not all sample events passed. Review detected fields and mappings above
          before generating your parser.</p>}
