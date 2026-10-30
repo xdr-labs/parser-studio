@@ -6,11 +6,35 @@ interface Counters {
  sourceCount:number;
  regressions:number;
 }
+type HoldoutIndependenceEvidence=
+ | {ok:true}
+ | {ok:false;reason:'TOO_SMALL'|'TRAINING_OVERLAP'|'IDENTICAL_TO_TRAINING';
+    holdoutUnique:number;requiredUnique:number;overlapCount:number};
 export interface CandidateFailureEvidence {
  baseline:Counters;
  holdout:Counters|null;
+ holdoutIndependence?:HoldoutIndependenceEvidence|null;
 }
-export function explainRejectedChatGPTFix({baseline,holdout}:CandidateFailureEvidence):string {
+/** Original-sample result that is not hidden by a rejected set of additional examples. */
+export function originalLogsStillPass({baseline,holdoutStatus,acceptedWithoutRegression}:{
+ baseline:Counters;holdoutStatus:string;acceptedWithoutRegression:boolean;
+}):boolean {
+ if(holdoutStatus!=='REJECTED')return acceptedWithoutRegression;
+ return baseline.regressions===0&&baseline.fieldRemovals===0&&baseline.typeChanges===0&&
+   baseline.positiveAfter>=baseline.sourceCount;
+}
+export function explainRejectedChatGPTFix({baseline,holdout,holdoutIndependence}:CandidateFailureEvidence):string {
+ if(holdoutIndependence&&!holdoutIndependence.ok){
+  if(holdoutIndependence.reason==='IDENTICAL_TO_TRAINING')
+   return 'Blocked: The additional examples are the same as the original sample. '+
+     'Paste different log lines that were not used to create this fix.';
+  if(holdoutIndependence.reason==='TRAINING_OVERLAP')
+   return 'Blocked: '+holdoutIndependence.overlapCount+
+     ' additional example(s) also appear in the original sample. Remove them and add different log lines.';
+  return 'Blocked: Add at least '+holdoutIndependence.requiredUnique+
+    ' different additional examples; '+holdoutIndependence.holdoutUnique+
+    ' unique example(s) were supplied.';
+ }
  if(baseline.fieldRemovals>0)
   return 'Blocked: The proposed parser would remove '+baseline.fieldRemovals+
     ' previously extracted original field path(s). Preserve them in the next proposal.';
