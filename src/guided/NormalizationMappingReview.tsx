@@ -67,9 +67,13 @@ const FINDING_LABEL:Record<NormalizationFindingCode,string>={
   BACKEND_TYPE_UNSUPPORTED:'This Stellar field cannot be mapped directly here',
 };
 
+/** Vendor-only lists longer than this are folded so the matched fields stay easy to reach. */
+const VENDOR_LIST_COLLAPSE_AT=12;
+
 export default function NormalizationMappingReview({
   draft,setDraft,suite,selected,setSelected,pending,onBack,onContinue,
 }:Props){
+  const [vendorListOpen,setVendorListOpen]=useState<boolean|null>(null);
   const [search,setSearch]=useState('');
   const [catalogQuery,setCatalogQuery]=useState('');
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
@@ -252,7 +256,8 @@ export default function NormalizationMappingReview({
       <datalist id="stellar-metadata-field-list">
         {STELLAR_METADATA_CATALOG.filter(entry=>entry.mappable).map(entry=><option value={entry.name} key={entry.name}/>)}
       </datalist>
-      {draft.mappings.map((mapping,index)=>{
+      {(()=>{
+      const renderRow=(mapping:MappingRule,index:number)=>{
         const group=draft.guided?.groups[mapping.id]??'vendor_fields';
         const state=catalogState(mapping,group);
         return <article className={'normalization-map-row '+state.kind} key={mapping.id}
@@ -303,7 +308,23 @@ export default function NormalizationMappingReview({
             </button>
           </div>
         </article>;
-      })}
+      };
+      const rows=draft.mappings.map((mapping,index)=>({mapping,index,
+        vendor:(draft.guided?.groups[mapping.id]??'vendor_fields')==='vendor_fields'}));
+      const lead=rows.filter(row=>!row.vendor);
+      const vendorRows=rows.filter(row=>row.vendor);
+      const collapsible=lead.length>0&&vendorRows.length>VENDOR_LIST_COLLAPSE_AT;
+      if(!collapsible)return rows.map(row=>renderRow(row.mapping,row.index));
+      return <>
+        {lead.map(row=>renderRow(row.mapping,row.index))}
+        <details className="normalization-vendor-list" open={vendorListOpen??false}
+          onToggle={event=>setVendorListOpen(event.currentTarget.open)}>
+          <summary>Vendor-only fields ({vendorRows.length}) · kept under the {draft.vendor||'vendor'} name, not matched to Stellar</summary>
+          <p className="normalization-vendor-note">These fields have no Stellar standard name. Open the list to rename one or leave it out of the output; leaving them as they are is fine.</p>
+          {vendorRows.map(row=>renderRow(row.mapping,row.index))}
+        </details>
+      </>;
+      })()}
     </section>
 
     {activeMappingId&&<section className="normalization-catalog-search" aria-label="Stellar field chooser">

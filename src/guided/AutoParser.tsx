@@ -287,6 +287,18 @@ export default function AutoParser({
    setDatasetName('Zeek data rows · Header saved for in-session restore');
    setSelected(0);
  };
+ // One click keeps only the rows that share a column count, so the user does not edit the sample by hand.
+ const sampleLineList=sample.split(/\r?\n/).filter(line=>line.trim());
+ const canKeepRowShape=sampleLineList.length===report.sourceCount;
+ const keepOnlyCsvRowShape=(eventNumbers:readonly number[])=>{
+   if(!canKeepRowShape)return;
+   const kept=eventNumbers.map(number=>sampleLineList[number-1]).filter((line):line is string=>typeof line==='string');
+   if(kept.length===0||kept.length===sampleLineList.length)return;
+   parserSetOriginRef.current=null;setParserSetOrigin(null);
+   if(zeekOrigin)setZeekOrigin(null);
+   setSample(kept.join('\n'));setDatasetName('Pasted logs · rows with one column count');setSelected(0);
+   setMessage('');
+ };
  const restoreZeekRows=()=>{
    if(!zeekOrigin)return;
    setDraft(zeekOrigin.draft);
@@ -942,10 +954,15 @@ export default function AutoParser({
            <div className="auto-parser-note" aria-label="CSV row shape groups">
              <strong>Row groups for the selected separator</strong>
              {csvSelectedShapeGroups.length>0&&<ul>{csvSelectedShapeGroups.map(group=>
-               <li key={group.columnCount}>{group.columnCount} columns · {group.eventNumbers.length} event{group.eventNumbers.length===1?'':'s'} · event {formatCsvEventNumbers(group.eventNumbers)}{group.columnCount>100?' · exceeds the 100-column parser limit':''}</li>)}</ul>}
+               <li key={group.columnCount}>{group.columnCount} columns · {group.eventNumbers.length} event{group.eventNumbers.length===1?'':'s'} · event {formatCsvEventNumbers(group.eventNumbers)}{group.columnCount>100?' · exceeds the 100-column parser limit':''}
+                 {canKeepRowShape&&csvSelectedShapeGroups.length>1&&group.columnCount<=100&&
+                   <button type="button" className="auto-parser-secondary" style={{marginLeft:8}}
+                     onClick={()=>keepOnlyCsvRowShape(group.eventNumbers)}>
+                     Use only these {group.eventNumbers.length} row{group.eventNumbers.length===1?'':'s'}
+                   </button>}</li>)}</ul>}
              {csvSelectedShapeInspection.invalidEventNumbers.length>0&&
                <p><b>Not safe CSV:</b> event {formatCsvEventNumbers(csvSelectedShapeInspection.invalidEventNumbers)} could not be tokenized with this separator and needs separate review.</p>}
-             <p>Use these event numbers to make one parser sample per matching row shape. No source event is discarded automatically.</p>
+             <p>Use these event numbers to make one parser sample per matching row shape. No source event is discarded automatically.{canKeepRowShape&&csvSelectedShapeGroups.length>1&&' The buttons keep one group in this sample; add the other rows again later with Add Another Log Type.'}</p>
            </div>}
          <label>Names to give each value <HelpTip label="Names to give each value"
            text="These names describe the values from left to right. If you do not know what they mean yet, use the temporary-name button instead of guessing."/>

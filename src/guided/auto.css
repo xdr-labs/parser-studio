@@ -285,3 +285,9 @@
 /* A checkbox and its sentence sit on one line instead of the box floating above the text. */
 .auto-parser-body label.auto-parser-persist-label,.auto-parser-persist-label{display:flex;align-items:center;gap:8px;line-height:1.5}
 .two-path-shell .auto-parser-persist-label input[type="checkbox"],.auto-parser-persist-label input[type="checkbox"]{width:16px;height:16px;min-height:0;padding:0;margin:0;flex:none}
+
+/* Long vendor-only mapping lists are folded so the Stellar-matched fields stay easy to reach. */
+.normalization-vendor-list{margin:14px 0;border:1px solid #dce7ec;border-radius:8px;background:#fafcfc}
+.normalization-vendor-list>summary{cursor:pointer;padding:12px 14px;font-size:12px;font-weight:800;color:#2b6272}
+.normalization-vendor-list>.normalization-vendor-note{margin:0 14px 10px;font-size:11px;color:#67818a;line-height:1.5}
+.normalization-vendor-list>article{margin-left:12px;margin-right:12px}

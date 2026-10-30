@@ -414,3 +414,13 @@ Found by driving the deployed Development Preview in a browser as a first-time u
 
 Not changed (needs a product decision): the 15,000 px Map Fields list, the vendor-only field grouping, PAN-OS mixed-column row split, and the remaining jargon in the unsupported-body wording.
 
+## Beginner E2E polish, part 2 (2026-10-30)
+
+Web-only. Follows the first round (PR #192) and covers the items that change screen structure.
+
+- **Map Fields vendor-only list:** when more than 12 vendor-only fields sit next to at least one Stellar-matched field, the vendor-only rows are folded into one `details` block ("Vendor-only fields (N) ... kept under the <vendor> name, not matched to Stellar"). Matched and "check this mapping" rows stay in the main list. Rows keep their original index (`Source field N`, `Remove normalization N`), so saved versions and tests are unaffected. Short lists (12 or fewer) and all-vendor lists render exactly as before. Once the user opens the block it stays open.
+- **Mixed CSV column counts:** each row-shape group now has "Use only these N rows". It keeps those rows in the sample (the other rows can be added again with Add Another Log Type). It is offered only when the sample has exactly one physical line per detected event, so event numbers map to lines safely.
+- **Wording:** `UNSUPPORTED_PRI_BODY` and `NO_SUPPORTED_GRAMMAR` have plain explanations; an unknown reason code now reads "does not match a built-in pattern yet, so it needs an extra parsing rule (code)".
+
+Observed but not changed: on Map Fields the "Check all sample logs" panel shows a green "No mapping problems found" badge next to a red "This source field is missing from some sample logs" row.
+
