@@ -1,0 +1,27 @@
+{
+  "id": "01-juniper-srx-partial",
+  "name": "Juniper SRX partial RT_FLOW",
+  "producer": "Juniper",
+  "product": "SRX",
+  "version": "Junos",
+  "provenance": [
+    {
+      "id": "juniper_appfw_deny",
+      "source": "https://www.juniper.net/documentation/us/en/software/junos/cli-reference/topics/ref/statement/security-edit-block-message-application-firewall.html",
+      "sampleClass": "PUBLISHED_VENDOR_EXAMPLE",
+      "sha256": "92c5a8b79b6dd046d7d225a2df291146842600871a8819b3d1cff9684b5d26d9"
+    }
+  ],
+  "sourceSha256": "92c5a8b79b6dd046d7d225a2df291146842600871a8819b3d1cff9684b5d26d9",
+  "promptSha256": "5a89da420e6afbb69bf08d4d6658df0b0f15ea35333b75487ac8c30c7af559f6",
+  "sourceCount": 1,
+  "promptLength": 10486,
+  "projectId": "draft-juniper_srx",
+  "browserClipboardExact": true,
+  "unmodifiedUI": true,
+  "manualApprovalRequired": true,
+  "externalPosts": 0,
+  "jsErrors": [],
+  "serverErrors": [],
+  "verifiedAt": "2026-10-30T14:49:28.773Z"
+}

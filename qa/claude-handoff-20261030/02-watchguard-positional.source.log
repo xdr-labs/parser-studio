@@ -1,0 +1,1 @@
+2024-03-29 15:00:50 Member2 Allow 192.168.228.202 10.0.1.1 webcache/tcp 42973 8080 3-Trusted 1-WCI Allowed 60 63 (Outgoing-proxy-00) proc_id="firewall" rc="100" src_ip_nat="69.164.168.163" tcp_info="offset 10 S 2982213793 win 2105" msg_id="3000-0148"

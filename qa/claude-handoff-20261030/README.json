@@ -1,0 +1,14 @@
+{
+  "title": "Parser Studio independent Claude-assisted manual evaluation",
+  "created": "2026-10-30",
+  "origin": "https://app.parser.xdr.ooo/?workspace=chatgpt",
+  "observedE2E": "3/3 prompt capture and exact browser clipboard checks PASS",
+  "samples": [
+    "01-juniper-srx-partial",
+    "02-watchguard-positional",
+    "03-fortinet-multitype"
+  ],
+  "evidence": "Official publisher-document example inputs only; not original device captures or independently authenticated Claude answers.",
+  "protocol": "Submit the exact .prompt.txt content to Claude with no extra instructions. Paste its entire unmodified response back to Parser Studio > ChatGPT Assisted Parser > ChatGPT result JSON > Check ChatGPT Result. Then run sample/holdout test, approve only if correct; for failures use the exact UI-generated retry prompt, up to three attempts. Respond with full Claude answer and which case ID for reproducible replay.",
+  "security": "Do not paste customer private logs or credentials. No model requests were made by this test."
+}

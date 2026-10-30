@@ -1,0 +1,33 @@
+{
+  "id": "03-fortinet-multitype",
+  "name": "Fortinet FortiGate traffic + system",
+  "producer": "Fortinet",
+  "product": "FortiGate",
+  "version": "7.x",
+  "provenance": [
+    {
+      "id": "fortinet_fortios_traffic",
+      "source": "https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/986892/sample-logs-by-log-type",
+      "sampleClass": "VENDOR_DOCUMENTED",
+      "sha256": "e0b6363ca5fbfd5fc41c130837bf587f81aba5377185ad05d77c396a16eb1f73"
+    },
+    {
+      "id": "fortinet_fortios_system",
+      "source": "https://docs.fortinet.com/document/fortigate/7.0.3/fortios-log-message-reference/463430/event-log-support-for-cef",
+      "sampleClass": "VENDOR_DOCUMENTED",
+      "sha256": "8db8e0b7e49e25ab85b139882a46ff92513dca79ebaa5567a9a1b027098c0d40"
+    }
+  ],
+  "sourceSha256": "d1face0caa7785da2f603d962e7b13d9fb5a5df5d86220da787a752a468222a6",
+  "promptSha256": "ea4bb5c9d6f534201edc47d7c7e45ba016967b80bf09e33345330547add39e7e",
+  "sourceCount": 2,
+  "promptLength": 18760,
+  "projectId": "draft-fortinet_fortigate",
+  "browserClipboardExact": true,
+  "unmodifiedUI": true,
+  "manualApprovalRequired": true,
+  "externalPosts": 0,
+  "jsErrors": [],
+  "serverErrors": [],
+  "verifiedAt": "2026-10-30T14:49:31.716Z"
+}

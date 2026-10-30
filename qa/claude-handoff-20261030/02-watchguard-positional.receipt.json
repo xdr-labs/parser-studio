@@ -1,0 +1,27 @@
+{
+  "id": "02-watchguard-positional",
+  "name": "WatchGuard Firebox positional tokens",
+  "producer": "WatchGuard",
+  "product": "Firebox",
+  "version": "Fireware",
+  "provenance": [
+    {
+      "id": "watchguard_firebox_allow",
+      "source": "https://www.watchguard.com/help/docs/help-center/en-us/content/en-us/Fireware/logging/read_log-msg.html",
+      "sampleClass": "PUBLISHED_VENDOR_EXAMPLE",
+      "sha256": "f39667ac51f8d3a8dc87ab99340fcebd531a6118e2e2da6d44ba94044f82c7c9"
+    }
+  ],
+  "sourceSha256": "f39667ac51f8d3a8dc87ab99340fcebd531a6118e2e2da6d44ba94044f82c7c9",
+  "promptSha256": "cb00bfbe6af231136833999decb08440c7a1944765bc73a71b0605ed85480a91",
+  "sourceCount": 1,
+  "promptLength": 9726,
+  "projectId": "draft-watchguard_firebox",
+  "browserClipboardExact": true,
+  "unmodifiedUI": true,
+  "manualApprovalRequired": true,
+  "externalPosts": 0,
+  "jsErrors": [],
+  "serverErrors": [],
+  "verifiedAt": "2026-10-30T14:49:30.187Z"
+}
