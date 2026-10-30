@@ -277,3 +277,11 @@
   .named-log-card-heading>*{width:100%;}
   .named-log-card-bottom>label{flex-basis:100%;}
 }
+
+/* Neutral secondary actions in the ChatGPT Assisted path (were unstyled browser buttons). */
+.auto-parser-secondary{border:1px solid #c9dce2;background:#fff;color:#21677a;border-radius:7px;font-size:12px;font-weight:700;min-height:37px;display:inline-flex;align-items:center;gap:7px;padding:8px 14px;cursor:pointer;font-family:inherit}
+.auto-parser-secondary:hover:not(:disabled){background:#f2f8f8;border-color:#9fc6cf}
+.auto-parser-secondary:disabled{opacity:.55;cursor:not-allowed}
+/* A checkbox and its sentence sit on one line instead of the box floating above the text. */
+.auto-parser-body label.auto-parser-persist-label,.auto-parser-persist-label{display:flex;align-items:center;gap:8px;line-height:1.5}
+.two-path-shell .auto-parser-persist-label input[type="checkbox"],.auto-parser-persist-label input[type="checkbox"]{width:16px;height:16px;min-height:0;padding:0;margin:0;flex:none}

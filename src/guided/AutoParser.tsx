@@ -1081,7 +1081,7 @@ export default function AutoParser({
        <p>Confirm the values Parser Studio found. You can adjust a field only when the detected result is not what you expect.</p>
        <div className="auto-parser-summary">
          <span>{advanced?'Browser events':'Log events'} <strong>{report.sourceCount}</strong></span>
-         <span>Need review <strong>{report.unsupported}</strong></span>
+         <span>Need review <strong>{!advanced&&beginnerResolved?0:report.unsupported}</strong></span>
          <span>{advanced?'Mapping rules':'Fields mapped'} <strong>{draft.mappings.length}</strong></span>
        </div>
        {report.events.some(event=>event.timePolicy==='YEAR_AND_ZONE_UNKNOWN')&&

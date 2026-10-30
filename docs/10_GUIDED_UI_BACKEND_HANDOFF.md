@@ -401,3 +401,16 @@ The button now reads "Leave out of output" (aria-label unchanged) and the hint s
 ### 2026-10-30 — Assisted path explains a type-only mapping correction too (O-10, Assisted)
 
 `ChatGPTAssist` now uses the same `describeScopedTypeChange`/`typeChangeWording` as Auto Parser review (#186): a ChatGPT mapping correction that only changes the JSON type of the corrected field is still not applied, but the notice says "Fix not applied: the proposed fix would change the type of the corrected field (text → number) ... use Map Fields. No rules changed." instead of "The original and independent examples did not both pass". Browser-only, wording/diagnosis only; no change to what is accepted.
+
+## Beginner E2E polish (2026-10-30)
+
+Found by driving the deployed Development Preview in a browser as a first-time user (real FortiGate, Suricata, SonicWall, Okta, CEF, Zeek, Cisco ASA, PAN-OS, Linux auth and IIS samples; screenshots viewed, not API-only). All changes are web-only; no backend or contract change.
+
+- The active step label no longer gets an orange block behind the text (`.two-path-shell` colored every `span` of the active step, including `.step-copy`).
+- A listener port below the minimum now says which field to change ("The parser listener port must be 6800 or higher for this kind of log. Change "Parser listener port (.conf)" above…") instead of the RFC3164/RFC5424/Generic Structural sentence. An input marked `aria-invalid` is outlined.
+- ChatGPT rejection and failed-check notices explain the problem in plain words and keep the code in brackets (for example `SOURCE_IDENTITY_MISMATCH` means "written for different log lines or a different prompt: copy the current prompt again").
+- The Assisted path buttons (Check ChatGPT Result, Return to Auto Parser, Test Proposed Fix, downloads) use the app button style instead of the browser default. The "different examples" checkbox sits on one line with its sentence.
+- The Review Fields stat "Need review" shows 0 when the guided analysis already parsed every event completely; it used to repeat the initial format-scan count (5 of 5 parsed, "Need review 5").
+
+Not changed (needs a product decision): the 15,000 px Map Fields list, the vendor-only field grouping, PAN-OS mixed-column row split, and the remaining jargon in the unsupported-body wording.
+

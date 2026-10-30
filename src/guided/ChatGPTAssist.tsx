@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {extractRecipeJson} from './aiReplyExtract';
-import {describeNonJsonReply,describeRejectedReply,COPY_DAMAGE_HINT} from './chatGptResultNotice';
+import {describeNonJsonReply,describeRejectedReply,describeFailedCheck,COPY_DAMAGE_HINT} from './chatGptResultNotice';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowRight,ClipboardCopy,FileText,ShieldAlert} from 'lucide-react';
 import type {ParserDraft,SuiteResult} from '../model';
@@ -454,7 +454,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
               namedLogTypes={namedLogTypes} onAutoParser={onAutoParser}/>
             <p>If the review requests a supported source format, select it in Auto Parser,
               then return here with your combined logs preserved.</p>
-            <button type="button" onClick={onAutoParser}>Review shared extraction format in Auto Parser</button>
+            <button type="button" className="auto-parser-secondary" onClick={onAutoParser}>Review shared extraction format in Auto Parser</button>
           </section>}
         {draft.eventProfiles&&<p role="note" className="auto-parser-warning">
           A reviewed conditional parser is configured. Use the separate
@@ -499,10 +499,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             setResponse(e.target.value);setReview(null);setComparison(null);setGenerated(null);setRetryFailure(null);setNotice('');setHoldoutAttested(false);setCandidateApproval(false);
           }} placeholder="Paste the JSON result from ChatGPT here."/>
         <button type="button" disabled={!response.trim()||!context||pending||busy}
-          onClick={()=>{void validate();}}>Check ChatGPT Result</button>
+          className="auto-parser-secondary" onClick={()=>{void validate();}}>Check ChatGPT Result</button>
         {notice&&<p role="status" className="auto-parser-note">{notice}</p>}
         {retryFailure&&attempt<3&&context&&<div className="auto-parser-recipe" aria-label="ChatGPT adaptive repair">
-          <p>Parser Studio identified a failed check: {retryFailure.failure}. The next prompt includes original logs, the previous response and local failure evidence. If additional test logs were supplied, relevant excerpts may be included. Review sensitive information before copying.</p>
+          <p>Parser Studio found a problem: {describeFailedCheck(retryFailure.failure)}. The next prompt includes original logs, the previous response and local failure evidence. If additional test logs were supplied, relevant excerpts may be included. Review sensitive information before copying.</p>
           <button type="button" disabled={busy||pending}
             onClick={()=>{void copyImprovedPrompt();}}>
             <ClipboardCopy size={15}/> Copy Improved Prompt · Attempt {attempt+1} of 3
@@ -531,9 +531,9 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
               checked={holdoutAttested} onChange={e=>{setHoldoutAttested(e.target.checked);setCandidateApproval(false);setComparison(null);}}/>
             These are different log examples from the ones used to create this fix.
           </label>}
-          {!baselineUnchanged&&!holdout.trim()&&<button type="button" disabled={busy||pending}
+          {!baselineUnchanged&&!holdout.trim()&&<button type="button" className="auto-parser-secondary" disabled={busy||pending}
             onClick={()=>{void compareMapping(true);}}>Test Original Sample Only</button>}
-          {!baselineUnchanged&&<button type="button" disabled={!holdout.trim()||!holdoutAttested||busy||pending}
+          {!baselineUnchanged&&<button type="button" className="auto-parser-secondary" disabled={!holdout.trim()||!holdoutAttested||busy||pending}
             onClick={()=>{void compareMapping(false);}}>Test Proposed Fix</button>}
           {comparison&&<div role="status" aria-label="ChatGPT fix test result">
             <span>Original logs still pass: {originalLogsStillPass(comparison.value)?'YES':'NO'}</span>
@@ -575,10 +575,10 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
               <summary>Technical verification details</summary>
               <span>Two parser files passed integrity checks before download.</span>
             </details>
-            {generated.pair.files.map(file=><button type="button" key={file.name}
+            {generated.pair.files.map(file=><button type="button" className="auto-parser-secondary" key={file.name}
               onClick={()=>download(file.name,file.content)}>
               <FileText size={15}/> Download {file.name}</button>)}
-            <button type="button" onClick={()=>{
+            <button type="button" className="auto-parser-secondary" onClick={()=>{
               setDraft(generated.draft);
               onAutoParser();
             }}>Review Fields in Auto Parser</button>
@@ -588,7 +588,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
       <p className="auto-parser-note"><ShieldAlert size={16}/>
         If ChatGPT returns something Parser Studio cannot safely use, no parser changes are made.
         Revise the result or return to Auto Parser.</p>
-      <button type="button" onClick={onAutoParser}>
+      <button type="button" className="auto-parser-secondary" onClick={onAutoParser}>
         <FileText size={15}/> Return to Auto Parser
       </button>
     </div>
