@@ -62,6 +62,11 @@ interface Props {
  advanced:boolean;
 }
 const MAX_LOCAL_TEXT=64*1024;
+// Only the notices below are shown as the visible analysis alert. Anything else
+// stored in multiPassNotice is a real analysis failure and gets the retry advice.
+const ANALYSIS_UNAVAILABLE_NOTICE='Deeper local analysis is unavailable right now. Your logs were not changed; continue with the normal analysis or try again later.';
+const ANALYSIS_FAILED_MESSAGE='Parser Studio could not complete analysis. Your logs were preserved. Retry Analyze Logs or use ChatGPT Assisted Parser for an unfamiliar format.';
+const SAMPLE_TOO_LARGE_NOTICE='Analysis was not started: the sample is larger than 64 KiB. Reduce it to a few representative events and click Analyze Logs again.';
 const STEPS=['Add Logs','Review Fields','Map Fields','Create Parser'] as const;
 const STEP_HELP=[
   'Paste or upload representative logs, then let Parser Studio find the structure and fields.',
@@ -582,6 +587,13 @@ export default function AutoParser({
     setMultiPassNotice('Every log type needs a unique name and at least one sample before analysis.');
     return;
   }
+  // The server refuses more than 64 KiB; do not start a run that cannot succeed
+  // and do not call it a failure worth retrying. The event count is not checked
+  // here because one logical event may span several physical lines.
+  if(new TextEncoder().encode(sample).byteLength>MAX_LOCAL_TEXT){
+    setMultiPass(null);setMultiPassNotice(SAMPLE_TOO_LARGE_NOTICE);
+    return;
+  }
   const original=sample;setMultiPass(null);setMultiPassEvent(0);setSelectedMultiPass(null);
   setMultiPassNotice('');
   const run=analysisRun.begin(new TextEncoder().encode(original).byteLength);
@@ -616,7 +628,7 @@ export default function AutoParser({
      setMultiPassNotice('');
    }
   }catch{
-   if(analysisRun.isCurrent(run))setMultiPassNotice('Deeper local analysis is unavailable right now. Your logs were not changed; continue with the normal analysis or try again later.');
+   if(analysisRun.isCurrent(run))setMultiPassNotice(ANALYSIS_UNAVAILABLE_NOTICE);
   }finally{analysisRun.finish(run);}
  }
  const multiPassDerived=useMemo(()=>{
@@ -749,7 +761,7 @@ export default function AutoParser({
        <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
        <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
-         Parser Studio could not complete analysis. Your logs were preserved. Retry Analyze Logs or use ChatGPT Assisted Parser for an unfamiliar format.
+         {multiPassNotice===ANALYSIS_UNAVAILABLE_NOTICE?ANALYSIS_FAILED_MESSAGE:multiPassNotice}
        </p>}
        {currentMultiPassReview&&<BeginnerAnalysisPanel source={sample}
          events={currentMultiPassReview.events} onOpenAssisted={onChatGPT}
@@ -800,7 +812,7 @@ export default function AutoParser({
            {multiPassBusy?'Running deeper analysis…':'Re-analyze difficult logs'}
          </button>
          <small>This checks only the sample on this development server. It does not deploy anything or prove that final parser files work on a live Stellar system.</small>
-         {multiPassNotice&&<p role="status">{multiPassNotice}</p>}
+         {multiPassNotice===ANALYSIS_UNAVAILABLE_NOTICE&&<p role="status">{multiPassNotice}</p>}
          {currentMultiPassReview&&Boolean(currentMultiPassReview.transportFramingParts)&&<p className="auto-parser-note" role="status">Parser Studio kept {currentMultiPassReview.transportFramingParts} original transport boundaries or journal-entry separators. The original event count and source bytes are preserved. This transport framing is not yet verified for downloadable parser execution.</p>}
        {currentMultiPassReview&&currentMultiPassReview.metadataLines!==undefined&&currentMultiPassReview.metadataLines>0&&<p className="auto-parser-note" role="status">Parser Studio kept {currentMultiPassReview.metadataLines} original schema/header lines as source metadata, not data events. The parsed field values are available for review; creating a downloadable parser for this exact header-dependent input is not yet verified.</p>}
        {currentMultiPassReview&&<div className="auto-parser-ledger" aria-label="Detailed event accounting">

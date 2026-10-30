@@ -358,3 +358,12 @@ The explicit `Download Redacted Family Audit JSON` action on the all-family loca
 ### 2026-10-12 — All-family per-event diagnostics allowlist
 
 After exact-head browser CI succeeded, a separate adversarial regression detected a potential private value disclosure if an arbitrary diagnostic identifier from the local worker happened to match the old `[A-Z0-9_]` grammar. `src/guided/familyIsolation.ts` now uses a fixed known diagnostic-code allowlist and maps all others to `DIAGNOSTIC_UNAVAILABLE`, covering both single-family and all-family views. The all-family UI now displays a maximum of eight source-line/status/allowlisted-code combinations per family, while retaining full totals and the explicit unknown-event ledger. The optional downloadable JSON still contains only hashes, aggregate counts and original line numbers; diagnostic messages, values, code strings and raw customer data are excluded.
+
+### 2026-10-30 — Analyze Logs stops calling a refused sample a retryable failure (O-6, O-12)
+
+Auto Parser `Analyze Logs` no longer sends a sample larger than 64 KiB to the server; it says "Analysis was not started: the sample is larger than 64 KiB" instead of the generic "could not complete analysis ... Retry". The event count is deliberately not checked in the browser because one logical event can span several physical lines (a 600-line sample with 200 events still analyzes). The visible analysis alert now shows the specific reason (incomplete log type, sample too large) once; the "could not complete analysis ... Retry Analyze Logs" text appears only for a real analysis failure.
+
+### 2026-10-30 — Declared relay preview explains unrecognized events (O-3)
+
+The declared-relay preview now says "N not matching a declared relay" and, when N > 0, explains that an event is unwrapped only when it begins with a Syslog header starting with `<PRI>` and names a declared relay hostname. A header without `<PRI>` is not unwrapped. Behaviour of the unwrapping is unchanged.
+
