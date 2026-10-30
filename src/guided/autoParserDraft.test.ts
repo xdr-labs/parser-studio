@@ -56,6 +56,46 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(toBackendProject(result.draft).ok).toBe(true);
    expect(JSON.stringify(result)).not.toContain('SECRET_ONE');
  });
+ it('types vendor JSON numbers and booleans from the JSON itself, never from strings or single observations',()=>{
+   const lines=[
+     {gid:1,rev:7,flag:true,label:'a',ratio:1.5,mixed:1,code:'007',big:9007199254740993,once:5,partial:3},
+     {gid:1,rev:9,flag:false,label:'b',ratio:2,mixed:'x',code:'043',big:9007199254740993,partial:4},
+     {gid:2,rev:-3,flag:true,label:'c',ratio:3,mixed:2,code:'112',big:9007199254740993},
+   ].map(item=>JSON.stringify(item)).join('\n');
+   const result=prepare(lines);
+   expect(result.ok).toBe(true);
+   if(!result.ok)return;
+   const type=(source:string)=>result.draft.mappings.find(m=>m.source===source)?.type;
+   expect(type('gid')).toBe('integer');
+   expect(type('rev')).toBe('integer');
+   expect(type('flag')).toBe('boolean');
+   // present in only two of three events, but every observed value is a JSON integer
+   expect(type('partial')).toBe('integer');
+   // one observation is not enough evidence
+   expect(type('once')).toBe('string');
+   // text, fractions, mixed kinds and integers beyond the exact range stay text
+   expect(type('label')).toBe('string');
+   expect(type('ratio')).toBe('string');
+   expect(type('mixed')).toBe('string');
+   expect(type('code')).toBe('string');
+   expect(type('big')).toBe('string');
+   expect(toBackendProject(result.draft)).toMatchObject({ok:true});
+   const replay=preview(lines,result.draft);
+   expect(replay.counts.failures).toBe(0);
+   expect(replay.counts.normalized).toBe(replay.counts.total);
+ });
+ it('keeps dictionary-matched and user-visible top-level mappings unchanged by native type inference',()=>{
+   const lines=[
+     '{"src_ip":"198.51.100.10","dst_port":443,"flow_id":1805461738637437}',
+     '{"src_ip":"203.0.113.2","dst_port":22,"flow_id":1805461738637438}',
+   ].join('\n');
+   const result=prepare(lines);
+   expect(result.ok).toBe(true);
+   if(!result.ok)return;
+   expect(result.draft.mappings.find(m=>m.source==='src_ip')).toMatchObject({target:'srcip',type:'ip'});
+   expect(result.draft.mappings.find(m=>m.source==='dst_port')).toMatchObject({target:'dstport',type:'integer'});
+   expect(result.draft.mappings.find(m=>m.source==='flow_id')?.type).toBe('integer');
+ });
  it('does not auto-map observed empty values that would make an otherwise valid sample fail normalization',()=>{
    const source=[
     '{"event":"allow","httpRequest":{"args":"","clientIp":"192.0.2.10"}}',
