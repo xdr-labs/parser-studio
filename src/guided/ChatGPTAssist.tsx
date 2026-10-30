@@ -3,7 +3,7 @@ import {describeNonJsonReply,describeRejectedReply,COPY_DAMAGE_HINT} from './cha
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowRight,ClipboardCopy,FileText,ShieldAlert} from 'lucide-react';
 import type {ParserDraft,SuiteResult} from '../model';
-import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
+import {createPrivacySafeAIPrompt,describeEnrichmentDenial,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
   proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
   proposeV01RecoveryParserFromAI,type AIImportResult} from './aiRecipeExchange';
 import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,type CandidateComparison} from './autoParserRegression';
@@ -234,7 +234,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     if(!sourceOnly&&new TextEncoder().encode(holdout).byteLength>MAX_SAMPLE){
       setNotice('The additional test logs exceed the local 64 KiB limit.');return;
     }
-    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
+    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string;field?:string};
     let correctionScope:{oldTarget:string;newTarget:string}|undefined;
     if(review.report.mode==='FULL_RECOVERY')
       proposal=proposeV01RecoveryParserFromAI(review,context.draft);
@@ -256,8 +256,8 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     }
     if(!proposal.ok){
       setRetryFailure({failure:'RECIPE_UNSUPPORTED',diagnostic:proposal.reason});
-      setNotice('The proposed grammar cannot be translated into a supported parser: '+
-        proposal.reason);
+      setNotice(describeEnrichmentDenial(proposal.reason,proposal.field)??
+        'The proposed grammar cannot be translated into a supported parser: '+proposal.reason);
       return;
     }
     setBusy(true);setComparison(null);setCandidateApproval(false);setNotice('');

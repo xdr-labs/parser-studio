@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
-import {importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
+import {describeEnrichmentDenial,importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
 import {compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeChange,normalizedMappingOutputPath,typeChangeWording} from './autoParserRegression';
 import {buildReviewableRecipe} from './parserRecipeV2';
@@ -204,7 +204,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
     result=await importRecoveryAIRecipe(recipeText,source,draft,suite);
    if(!result.ok){setImportResult(`ChatGPT result rejected: ${result.reason}. No changes were made.`);return;}
-   let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string};
+   let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string;field?:string};
    let candidateMode:'mapping'|'correction'|'enrichment'|'recovery';
    let correctionScope:{oldTarget:string;newTarget:string}|undefined;
    if(result.report.mode==='FULL_RECOVERY'){
@@ -222,7 +222,10 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      else{proposal=proposeV01EnrichmentFromAI(result,source,draft,suite);candidateMode='enrichment';}
     }
    }
-   if(!proposal.ok){setImportResult(`This ChatGPT result cannot be safely turned into a parser fix: ${proposal.reason}. No changes were made.`);return;}
+   if(!proposal.ok){
+    const specific=describeEnrichmentDenial(proposal.reason,proposal.field);
+    setImportResult(specific?`${specific} No changes were made.`:`This ChatGPT result cannot be safely turned into a parser fix: ${proposal.reason}. No changes were made.`);return;
+   }
    if(!holdout.trim()){setImportResult('Add different test log examples before applying this fix. No parser rules were changed.');return;}
    if(!holdoutAttested){setImportResult('Confirm that the additional test logs are different from the examples used to create this fix. No parser rules were changed.');return;}
    let report:ReturnType<typeof compareCandidate>;

@@ -7,7 +7,8 @@ import {buildReviewableRecipe} from './parserRecipeV2';
 import {toBackendProject} from './backendAdapter';
 import {createPrivacySafeAIPrompt,importRecoveryAIRecipe,importReviewOnlyAIRecipe,
  proposeV01EnrichmentFromAI,proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,
- proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
+ proposeV01RecoveryParserFromAI,describeEnrichmentDenial} from './aiRecipeExchange';
+import {buildAutomaticGenericStructuralDraft} from './genericStructuralAutoDraft';
 
 const source=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"name":"PRIVATE_ACCOUNT"}',
@@ -175,6 +176,33 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
   expect(toBackendProject(merge.candidate)).toMatchObject({ok:true,project:{enrichment:[
    {operator:'split_field'},{operator:'merge_fields'},
   ]}});
+ });
+
+ it('names the real reason when a split or merge reads a vendor-only field',async()=>{
+  const raw=[
+   '<134>Oct 19 08:23:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000123 src=192.0.2.40 dst=198.51.100.5 action=block user=usr1@mydom.tld',
+   '<134>Oct 19 08:24:59 ftd01 %FTD-4-430002: Intrusion event detected signature=1000124 src=192.0.2.41 dst=198.51.100.6 action=allow user=usr2@mydom.tld',
+  ].join('\n');
+  const prepared=buildAutomaticGenericStructuralDraft(raw,createDraft());
+  if(!prepared)throw new Error('Expected an automatic Generic Structural draft');
+  const {draft:base,suite:baseSuite}=prepared;
+  const original=await buildReviewableRecipe(raw,base,baseSuite);
+  if(!original.ok)throw new Error('Expected baseline');
+  const propose=async(stage:Record<string,unknown>)=>{
+   const stages=[...original.recipe.stages];
+   stages.splice(stages.findIndex(item=>item.op==='classify'),0,stage as never);
+   const imported=await importReviewOnlyAIRecipe(JSON.stringify({...original.recipe,stages}),raw,base,baseSuite);
+   return proposeV01EnrichmentFromAI(imported,raw,base,baseSuite);
+  };
+  expect(await propose({op:'split_field',source:'generic.kv.user',delimiter:'@',targets:['custom.name','custom.domain']}))
+   .toMatchObject({ok:false,reason:'ENRICHMENT_SOURCE_VENDOR_ONLY',field:'generic.kv.user'});
+  expect(await propose({op:'merge_fields',sources:['action','generic.kv.user'],delimiter:'/',target:'custom.joined'}))
+   .toMatchObject({ok:false,reason:'ENRICHMENT_SOURCE_VENDOR_ONLY',field:'generic.kv.user'});
+  expect(await propose({op:'split_field',source:'action',delimiter:'o',targets:['custom.first','custom.rest']}))
+   .toMatchObject({ok:true,operator:'split_field'});
+  expect(describeEnrichmentDenial('ENRICHMENT_SOURCE_VENDOR_ONLY','generic.kv.user'))
+   .toMatch(/vendor-only field \(generic\.kv\.user\).*Map Fields/);
+  expect(describeEnrichmentDenial('BACKEND_UNSUPPORTED','x')).toBeNull();
  });
 
  it('recovers an auto-RAW two-column CSV into a fully reviewable compiler-supported parser',async()=>{

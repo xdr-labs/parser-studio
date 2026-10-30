@@ -363,6 +363,10 @@ The explicit `Download Redacted Family Audit JSON` action on the all-family loca
 
 After exact-head browser CI succeeded, a separate adversarial regression detected a potential private value disclosure if an arbitrary diagnostic identifier from the local worker happened to match the old `[A-Z0-9_]` grammar. `src/guided/familyIsolation.ts` now uses a fixed known diagnostic-code allowlist and maps all others to `DIAGNOSTIC_UNAVAILABLE`, covering both single-family and all-family views. The all-family UI now displays a maximum of eight source-line/status/allowlisted-code combinations per family, while retaining full totals and the explicit unknown-event ledger. The optional downloadable JSON still contains only hashes, aggregate counts and original line numbers; diagnostic messages, values, code strings and raw customer data are excluded.
 
+### 2026-10-30 — ChatGPT split/merge of a vendor-only field is explained, not shown as BACKEND_UNSUPPORTED (O-11)
+
+Split and merge read normalized output fields, so the compiler contract (`compilerDraftContract`) accepts only fields mapped outside the `vendor_fields` group (plus outputs of earlier split/merge steps). A ChatGPT answer that splits or merges a vendor-only field was rejected with the bare code `BACKEND_UNSUPPORTED`. `proposeV01EnrichmentFromAI` now returns `ENRICHMENT_SOURCE_VENDOR_ONLY` with the field name, `describeEnrichmentDenial` turns it into a plain sentence ("Map that field in Map Fields first, then ask ChatGPT again"), and both the Auto Parser review and the Assisted Parser show it. The ChatGPT prompt now also tells the AI not to split or merge a `map_field` whose group is `vendor_fields`. The compiler contract itself is unchanged.
+
 ### 2026-10-30 — Analyze Logs stops calling a refused sample a retryable failure (O-6, O-12)
 
 Auto Parser `Analyze Logs` no longer sends a sample larger than 64 KiB to the server; it says "Analysis was not started: the sample is larger than 64 KiB" instead of the generic "could not complete analysis ... Retry". The event count is deliberately not checked in the browser because one logical event can span several physical lines (a 600-line sample with 200 events still analyzes). The visible analysis alert now shows the specific reason (incomplete log type, sample too large) once; the "could not complete analysis ... Retry Analyze Logs" text appears only for a real analysis failure.
@@ -370,4 +374,3 @@ Auto Parser `Analyze Logs` no longer sends a sample larger than 64 KiB to the se
 ### 2026-10-30 — Declared relay preview explains unrecognized events (O-3)
 
 The declared-relay preview now says "N not matching a declared relay" and, when N > 0, explains that an event is unwrapped only when it begins with a Syslog header starting with `<PRI>` and names a declared relay hostname. A header without `<PRI>` is not unwrapped. Behaviour of the unwrapping is unchanged.
-

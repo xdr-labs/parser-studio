@@ -59,6 +59,15 @@ describe('ChatGPT Assisted reviewed prompt identity',()=>{
     expect(prompt).toContain(source);
   });
 
+  it('tells the AI that vendor-only fields cannot be split or merged',()=>{
+    const prompt=composeChatGPTPrompt({
+      goal:'Split the user field',source:examples,
+      projectId:'draft-demo_firewall',sourceHash:digest,sourceCount:2,
+      baseline:unavailable,
+    });
+    expect(prompt).toContain('whose "group" is "vendor_fields"');
+  });
+
   it('does not let untrusted log records forge the original-source delimiter',()=>{
     const source=[
       '2026-10-23 12:10:10 event=alert src=192.0.2.10',
