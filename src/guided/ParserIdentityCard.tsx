@@ -1,7 +1,7 @@
 import type {Dispatch,SetStateAction} from 'react';
 import type {ParserDraft} from '../model';
 import {DEFAULT_PARSER_LISTENER_PORT,defaultGuidedOptions} from './contract';
-import {parserIdentitySlug} from './parserIdentity';
+import {MAX_PARSER_IDENTITY_TEXT,parserIdentitySlug} from './parserIdentity';
 import ParserListenerPortInput from './ParserListenerPortInput';
 
 interface Props {
@@ -38,11 +38,13 @@ export default function ParserIdentityCard({draft,setDraft,assisted=false}:Props
     <div className="parser-identity-fields">
       <label>Manufacturer
         <input aria-label="Parser manufacturer" value={draft.vendor}
+          maxLength={MAX_PARSER_IDENTITY_TEXT}
           placeholder="e.g. Fortinet"
           onChange={e=>updateIdentity('vendor',e.target.value)}/>
       </label>
       <label>Product
         <input aria-label="Parser product" value={draft.name}
+          maxLength={MAX_PARSER_IDENTITY_TEXT}
           placeholder="e.g. FortiGate"
           onChange={e=>updateIdentity('name',e.target.value)}/>
       </label>
