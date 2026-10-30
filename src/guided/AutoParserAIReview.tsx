@@ -265,8 +265,13 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
     report=candidateMode==='correction'&&correctionScope?
      compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
-   }catch{
-    setImportResult('The logs or ChatGPT result changed while testing. Test the fix again before applying it.');return;
+   }catch(error){
+    // The comparison guard throws a fixed, value-free reason; show it instead of a
+    // misleading "logs changed" message when the log is simply too large to compare.
+    const reason=error instanceof Error&&error.message.startsWith('Cannot compare exact browser evidence: ')?
+     error.message.slice('Cannot compare exact browser evidence: '.length):'';
+    setImportResult(reason?`Fix not applied: Parser Studio could not safely compare the result (${reason}). No changes were made.`:
+     'The logs or ChatGPT result changed while testing. Test the fix again before applying it.');return;
    }
    if(report.holdoutStatus==='REJECTED'){
     const reason=report.holdoutIndependence?.ok===false?report.holdoutIndependence.reason:'TOO_SMALL';

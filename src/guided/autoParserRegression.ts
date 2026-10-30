@@ -87,10 +87,15 @@ function audited(source:string,result:SuiteResult){
 }
 const positive=(e:EventResult)=>e.status==='pass'&&e.matched&&e.extracted&&e.normalizedOk;
 const status=(e:EventResult):SafeEventDelta['before']=>positive(e)?'PASS':e.status==='fail'?'FAILED':'REVIEW';
+// A single FortiGate-style event carries 40+ source fields and the normalized output
+// holds each of them under more than one namespace, so 100 leaves was too small and
+// made every reviewed fix on such logs fail. The bound only protects the browser from
+// pathological input.
+export const MAX_NORMALIZED_FIELDS=512;
 function shapes(input:unknown):Map<string,string>{
  const result=new Map<string,string>();
  function walk(node:unknown,path:string,depth:number){
-   if(depth>8||result.size>100)return;
+   if(depth>8||result.size>MAX_NORMALIZED_FIELDS)return;
    if(node&&typeof node==='object'&&!Array.isArray(node)){
      for(const [k,v] of Object.entries(node)){
        if(k==='constructor'||k==='prototype'||k==='__proto__')continue;
@@ -99,7 +104,7 @@ function shapes(input:unknown):Map<string,string>{
    }else if(path)result.set(path,node===null?'null':Array.isArray(node)?'array':typeof node);
  }
  walk(input,'',0);
- if(result.size>100)fail('normalized field depth/count exceeded');
+ if(result.size>MAX_NORMALIZED_FIELDS)fail('normalized field depth/count exceeded');
  return result;
 }
 function familyName(item:EnvelopeEntry){return item.envelope+'/'+item.body;}
