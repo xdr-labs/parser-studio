@@ -198,7 +198,16 @@ def _fallback_identifiers(text: str) -> str:
     return _IPV4.sub(lambda match: _ip(match.group(0)), text)
 
 
+_PRI_PREFIX = re.compile(r"^<\d{1,3}>")
+
+
 def _inline_fields(source: str) -> str:
+    # A Syslog <PRI> can be directly followed by the first key=value field (for
+    # example FortiGate "<190>date=..."). Keep the PRI exactly and scan the rest
+    # so the first key gets the same start-of-text boundary as every other field.
+    pri = _PRI_PREFIX.match(source)
+    prefix = pri.group(0) if pri else ""
+    source = source[len(prefix):]
     parts: list[str] = []
     cursor = 0
     for match in _KV.finditer(source):
@@ -211,7 +220,7 @@ def _inline_fields(source: str) -> str:
         parts.append(match.group("key") + "=" + _quoted(old, updated))
         cursor = match.end()
     parts.append(_fallback_identifiers(source[cursor:]))
-    return "".join(parts)
+    return prefix + "".join(parts)
 
 
 def _csv_segments(raw: str, delimiter: str) -> list[str] | None:

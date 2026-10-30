@@ -1,4 +1,8 @@
 import {describe,expect,it} from 'vitest';
+import {execFileSync} from 'node:child_process';
+import {mkdtempSync,writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {createDraft} from '../model';
 import {preparePythonTestSender} from './pythonTestSender';
 
@@ -54,5 +58,37 @@ describe('SCRIPT-1/2/3 browser-only Python standard library sender',()=>{
     expect(prepared.eventCount).toBe(1);
     expect(prepared.script).not.toContain('http://');
     expect(prepared.script).not.toContain('https://');
+  });
+
+  it('refreshes the first key=value field when it directly follows a Syslog <PRI> (no space)',()=>{
+    // Regression: a key immediately after <PRI> (for example FortiGate
+    // "<190>date=... time=...") was not eligible, so date stayed stale while
+    // time was refreshed, producing a self-inconsistent event.
+    const lines=[
+      '<190>date=2024-08-28 time=10:33:52 devname=\"FW1\" logid=\"0000000013\"',
+      '<190> date=2024-08-28 time=10:33:52 devname=\"FW1\" logid=\"0000000013\"',
+      '<134>user=alice action=allow',
+    ];
+    const generated=preparePythonTestSender(lines.join('\n'),createDraft());
+    const dir=mkdtempSync(join(tmpdir(),'ps-sender-'));
+    const file=join(dir,'sender.py');
+    writeFileSync(file,generated.script);
+    const code=[
+      'import importlib.util,sys,json,datetime as dt',
+      'spec=importlib.util.spec_from_file_location(\"s\",sys.argv[1])',
+      'm=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)',
+      'cfg=m._payload()',
+      'print(json.dumps({\"today\":dt.datetime.now().strftime(\"%Y-%m-%d\"),\"out\":[m.update_record(e,cfg) for e in cfg[\"events\"]]}))',
+    ].join('\n');
+    const result=JSON.parse(execFileSync('python3',['-c',code,file],{encoding:'utf8'}));
+    const [attached,spaced,userLine]=result.out as string[];
+    // PRI is preserved exactly and the first key is refreshed like the spaced form.
+    expect(attached.startsWith('<190>date=')).toBe(true);
+    expect(attached).toContain('date='+result.today+' ');
+    expect(attached).not.toContain('date=2024-08-28');
+    expect(spaced).toContain('date='+result.today+' ');
+    expect(attached).toContain('devname=\"FW1\" logid=\"0000000013\"');
+    expect(userLine.startsWith('<134>user=user')).toBe(true);
+    expect(userLine).toMatch(/^<134>user=user\d{5} action=allow$/);
   });
 });

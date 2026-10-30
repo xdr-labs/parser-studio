@@ -5,6 +5,7 @@ import {ArrowLeft,ArrowRight,CheckCircle2,Download,FileArchive,FileText,
 import {createDraft,type ParserDraft,type SuiteResult} from '../model';
 import {toBackendProject} from './backendAdapter';
 import {describeAdapterIssues} from './adapterIssueMessage';
+import {missingParserIdentityMessage} from './parserIdentity';
 import {describeCsvColumnNameProblem} from './csvColumnNames';
 import {fetchBackendCapabilities,assertBackendProjectSupported,
   type BackendCapabilities} from './backendCapabilities';
@@ -411,7 +412,8 @@ export default function AutoParser({
      if(draft.format!=='auto'&&browserSuiteComplete){
        const translated=toBackendProject(draft);
        if(!translated.ok){
-         setMessage(describeAdapterIssues(translated.issues));
+         setMessage(missingParserIdentityMessage(draft.vendor,draft.name)??
+           describeAdapterIssues(translated.issues));
          return;
        }
        assertBackendProjectSupported(translated.project,cap);
