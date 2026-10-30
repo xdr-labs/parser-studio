@@ -282,12 +282,22 @@ export function proposeV01FieldMappingFromAI(
 export type AIEnrichmentProposal=
  | {ok:true;candidate:ParserDraft;operator:'split_field'|'merge_fields';approvalRequired:true;
      backendCompilerVerified:false;replacement:'ONE_ENRICHMENT'}
- | {ok:false;reason:'UNSUPPORTED_OPERATOR_CHANGE'|'NO_SINGLE_ENRICHMENT_CHANGE'|'BACKEND_UNSUPPORTED'};
+ | {ok:false;reason:'UNSUPPORTED_OPERATOR_CHANGE'|'NO_SINGLE_ENRICHMENT_CHANGE'|'BACKEND_UNSUPPORTED'|
+     'ENRICHMENT_SOURCE_VENDOR_ONLY';field?:string};
+
+/** Plain-language explanation for the denials that have a specific, user-fixable cause. */
+export function describeEnrichmentDenial(reason:string,field?:string):string|null{
+ const name=field?` (${field})`:'';
+ if(reason==='ENRICHMENT_SOURCE_VENDOR_ONLY')
+  return `This ChatGPT result splits or merges a vendor-only field${name}. Split and merge work only on text fields that are already mapped to a Stellar field. Map that field in Map Fields first, then ask ChatGPT again.`;
+ return null;
+}
 /** Add exactly one bounded declarative split/merge step while preserving every existing parser rule. */
 export function proposeV01EnrichmentFromAI(
  imported:AIImportResult,source:string,draft:ParserDraft,suite:SuiteResult,
 ):AIEnrichmentProposal{
- const deny=(reason:Extract<AIEnrichmentProposal,{ok:false}>['reason']):AIEnrichmentProposal=>({ok:false,reason});
+ const deny=(reason:Extract<AIEnrichmentProposal,{ok:false}>['reason'],field?:string):AIEnrichmentProposal=>
+  field===undefined?{ok:false,reason}:{ok:false,reason,field};
  if(!imported.ok||imported.report.mode!=='BASELINE_EDIT'||!imported.baseline||!verified(source,suite))
   return deny('UNSUPPORTED_OPERATOR_CHANGE');
  const strip=(stages:ReviewStage[])=>stages.filter(stage=>stage.op!=='split_field'&&stage.op!=='merge_fields');
@@ -308,6 +318,21 @@ export function proposeV01EnrichmentFromAI(
    id,operator:'merge_fields' as const,source:'',target:stage.target,value:'',
    delimiter:stage.delimiter,sources:[...stage.sources]
  };
+ // Enrichment reads normalized output fields: mappings outside the vendor-only
+ // group plus the outputs of earlier enrichment steps. Name the common cause.
+ const readable=new Map<string,string>();
+ for(const item of draft.mappings)
+  if((opts.groups[item.id]??'vendor_fields')!=='vendor_fields')readable.set(item.target,item.type);
+ for(const earlier of existing){
+  for(const out of earlier.operator==='split_field'?(earlier.targets??[]):[earlier.target])
+   if(out)readable.set(out,'string');
+ }
+ const vendorTargets=new Set(draft.mappings
+  .filter(item=>(opts.groups[item.id]??'vendor_fields')==='vendor_fields').map(item=>item.target));
+ for(const sourceField of stage.op==='split_field'?[stage.source]:stage.sources){
+  if(!readable.has(sourceField)&&vendorTargets.has(sourceField))
+   return deny('ENRICHMENT_SOURCE_VENDOR_ONLY',sourceField);
+ }
  const candidate:ParserDraft={...draft,guided:{...opts,enrichment:[...existing,rule]}};
  if(!toBackendProject(candidate).ok)return deny('BACKEND_UNSUPPORTED');
  return {ok:true,candidate,operator:stage.op,approvalRequired:true,
