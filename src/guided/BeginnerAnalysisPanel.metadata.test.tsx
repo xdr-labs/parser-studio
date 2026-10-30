@@ -101,4 +101,20 @@ describe('Beginner metadata preservation review',()=>{
     expect(screen.getByText(/ChatGPT can explain the problem, but Parser Studio will not guess/)).toBeTruthy();
     expect(screen.getByRole('button',{name:'Review with ChatGPT'})).toBeTruthy();
   });
+
+  it('tells the user to correct the log input, not to keep text, when no preservation path exists',()=>{
+    const source='<1>1 bad';
+    const preview:MultiPassSourcePreview={
+      contract:'parser-studio.multipass-source-preview.v0.1',
+      status:'PARTIAL',syntax:'SYSLOG_RFC5424',
+      sourceSha256:'0'.repeat(64),sourceBytes:new TextEncoder().encode(source).byteLength,
+      fields:{},spans:[],residuals:[],issues:['SOURCE_TIMESTAMP_INVALID'],
+      nativeVerified:false,targetVerified:false,
+    };
+    render(<BeginnerAnalysisPanel source={source}
+      events={[{startByte:0,endByte:preview.sourceBytes,preview}]}
+      onOpenAssisted={vi.fn()} draft={createDraft()} onApplyCandidate={vi.fn()}/>);
+    expect(screen.getByText(/Correct the header or time in your log input.*add the missing time zone.*Analyze Logs again/)).toBeTruthy();
+    expect(screen.queryByText(/intentionally keep the affected value as text/)).toBeNull();
+  });
 });
