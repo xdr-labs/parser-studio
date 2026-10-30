@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {createDraft,type ParserDraft} from '../model';
 import {preview} from '../parser';
-import {assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,proposeReviewableMapping} from './autoParserRegression';
+import {MAX_NORMALIZED_FIELDS,assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,proposeReviewableMapping} from './autoParserRegression';
 
 const train=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"user":"PRIVATE_A"}',
@@ -202,5 +202,23 @@ describe('Exact normalized namespace in reviewed ChatGPT vendor-field correction
        candidate:preview(other.split('\n')[0]!,after)}},scope);
    expect(insufficient.holdoutStatus).toBe('REJECTED');
    expect(insufficient.acceptedWithoutRegression).toBe(false);
+ });
+});
+
+describe('comparison bound on normalized output size',()=>{
+ const withFields=(count:number)=>{
+  const base=preview(train,fixture());
+  const sized=structuredClone(base);
+  for(const event of sized.events)
+   event.normalized=Object.fromEntries(Array.from({length:count},(_,i)=>['field_'+i,'v'+i]));
+  return sized;
+ };
+ it('compares a FortiGate-sized event whose output has well over 100 fields',()=>{
+  const sized=withFields(300);
+  expect(()=>compareBrowserSuites(train,sized,sized)).not.toThrow();
+ });
+ it('still fails closed above the bound',()=>{
+  const sized=withFields(MAX_NORMALIZED_FIELDS+1);
+  expect(()=>compareBrowserSuites(train,sized,sized)).toThrow(/normalized field depth\/count exceeded/);
  });
 });
