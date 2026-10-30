@@ -185,7 +185,7 @@ export default function NormalizationMappingReview({
       <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
       <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
       <div><span>Vendor-only fields</span><strong>{vendorCount}</strong></div>
-      <div><span>Not mapped yet</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length}</strong></div>
+      <div><span>Left out of output</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length}</strong></div>
       <div className={blocking.length?'attention':''}><span>Must fix before continuing</span><strong>{blocking.length}</strong></div>
     </div>
 
@@ -233,7 +233,7 @@ export default function NormalizationMappingReview({
       <div className="normalization-section-head">
         <div><h3>Review field matches <HelpTip label="Review field matches"
           text="Left is the field Parser Studio found in your log. Right is the field name that will be used in Stellar Cyber. Change the right side only when the suggested destination is wrong for your data."/></h3>
-          <p>You can change a Stellar field, value type, or remove only the mapping. The original extracted value is never deleted.</p></div>
+          <p>You can change a Stellar field or value type, or remove a mapping. Removing a mapping leaves that field out of the parser output; your original log is not changed.</p></div>
       </div>
       <datalist id="stellar-metadata-field-list">
         {STELLAR_METADATA_CATALOG.filter(entry=>entry.mappable).map(entry=><option value={entry.name} key={entry.name}/>)}

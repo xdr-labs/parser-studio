@@ -56,4 +56,13 @@ describe('normalization mapping review UI',()=>{
     fireEvent.click(catalog.getElementsByTagName('button')[1]!);
     expect(screen.getByLabelText('Stellar field 0')).toHaveValue('srcip');
   });
+
+  it('says that removing a mapping leaves the field out of the parser output',()=>{
+    render(<Harness/>);
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output0');
+    expect(screen.getByText(/leaves that field out of the parser output/)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('never deleted');
+    fireEvent.click(screen.getAllByRole('button',{name:/Remove normalization/})[0]!);
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output1');
+  });
 });
