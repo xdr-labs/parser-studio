@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {createDraft,type ParserDraft} from '../model';
 import {preview} from '../parser';
-import {MAX_NORMALIZED_FIELDS,assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath,proposeReviewableMapping} from './autoParserRegression';
+import {MAX_NORMALIZED_FIELDS,assessHoldoutIndependence,compareBrowserSuites,compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeChange,normalizedMappingOutputPath,proposeReviewableMapping,typeChangeWording} from './autoParserRegression';
 
 const train=[
  '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"user":"PRIVATE_A"}',
@@ -220,5 +220,39 @@ describe('comparison bound on normalized output size',()=>{
  it('still fails closed above the bound',()=>{
   const sized=withFields(MAX_NORMALIZED_FIELDS+1);
   expect(()=>compareBrowserSuites(train,sized,sized)).toThrow(/normalized field depth\/count exceeded/);
+ });
+});
+
+describe('type-only correction is described, not hidden',()=>{
+ const codes=['{"action":"allow","code":"200"}','{"action":"deny","code":"404"}'].join('\n');
+ const base:ParserDraft={...createDraft(),format:'json',vendor:'Acme',
+  mappings:[{id:'vendor-code',source:'code',target:'code',type:'string'},
+   {id:'vendor-action',source:'action',target:'action',type:'string'}],
+  guided:{...createDraft().guided!,groups:{'vendor-code':'vendor_fields','vendor-action':'vendor_fields'}}};
+ const scope=(before:ParserDraft,after:ParserDraft)=>({
+  oldTarget:normalizedMappingOutputPath(before,'vendor-code'),
+  newTarget:normalizedMappingOutputPath(after,'vendor-code')});
+ it('reports the value-free type pair when only the type of the corrected field changes',()=>{
+  const typed=structuredClone(base);typed.mappings[0]={...typed.mappings[0]!,type:'integer'};
+  const input={source:codes,baseline:preview(codes,base),candidate:preview(codes,typed)};
+  const change=describeScopedTypeChange(input,scope(base,typed));
+  expect(change).toEqual({from:'string',to:'number'});
+  expect(typeChangeWording(change!)).toBe('text \u2192 number');
+  expect(JSON.stringify(change)).not.toContain('200');
+  expect(compareMappingCorrectionCandidate(input,scope(base,typed)).acceptedWithoutRegression).toBe(false);
+ });
+ it('stays silent for a rename or an unchanged type',()=>{
+  const renamed=structuredClone(base);renamed.mappings[0]={...renamed.mappings[0]!,target:'status_code'};
+  const input={source:codes,baseline:preview(codes,base),candidate:preview(codes,renamed)};
+  expect(describeScopedTypeChange(input,scope(base,renamed))).toBeNull();
+  expect(describeScopedTypeChange({...input,candidate:preview(codes,base)},scope(base,base))).toBeNull();
+ });
+ it('uses the holdout events too and ignores oversize scopes',()=>{
+  const typed=structuredClone(base);typed.mappings[0]={...typed.mappings[0]!,type:'integer'};
+  const other=['{"action":"allow","code":"301"}','{"action":"deny","code":"500"}'].join('\n');
+  const input={source:codes,baseline:preview(codes,base),candidate:preview(codes,base),
+   holdout:{source:other,baseline:preview(other,base),candidate:preview(other,typed)}};
+  expect(describeScopedTypeChange(input,scope(base,typed))).toEqual({from:'string',to:'number'});
+  expect(describeScopedTypeChange(input,{oldTarget:'x'.repeat(300),newTarget:'y'})).toBeNull();
  });
 });

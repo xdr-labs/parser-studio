@@ -241,6 +241,33 @@ export function compareMappingCorrectionCandidate(input:CandidateInput,
   fail('invalid scoped mapping replacement');
  return compareCandidateInternal(input,scope);
 }
+/** Value-free description of a pure type change of the corrected field: the JSON
+ * type of the old output and of the new output differ in some event. A type-only
+ * correction is rejected by the scoped comparison on purpose; this only lets the
+ * UI say so instead of a generic failure. Never carries field names or values.
+ */
+export function describeScopedTypeChange(input:CandidateInput,
+ scope:ScopedReplacement):{from:string;to:string}|null{
+ if(!scope.oldTarget||!scope.newTarget||scope.oldTarget.length>256||scope.newTarget.length>256)
+  return null;
+ const pairs=[{before:input.baseline,after:input.candidate},
+  ...(input.holdout?[{before:input.holdout.baseline,after:input.holdout.candidate}]:[])];
+ try{
+  for(const {before,after} of pairs){
+   const count=Math.min(before.events.length,after.events.length);
+   for(let i=0;i<count;i++){
+    const prev=shapes(before.events[i]!.normalized).get(scope.oldTarget);
+    const next=shapes(after.events[i]!.normalized).get(scope.newTarget);
+    if(prev!==undefined&&next!==undefined&&prev!==next)return {from:prev,to:next};
+   }
+  }
+ }catch{return null;}
+ return null;
+}
+const TYPE_WORDS:Record<string,string>={string:'text',number:'number',boolean:'true/false'};
+export function typeChangeWording(change:{from:string;to:string}):string{
+ return (TYPE_WORDS[change.from]??change.from)+' → '+(TYPE_WORDS[change.to]??change.to);
+}
 /** A single conservative field suggestion; no candidate is ever auto-applied. */
 export function proposeReviewableMapping(source:string,draft:ParserDraft,suite:SuiteResult):RepairProposal{
  try{audited(source,suite);}catch{return {ok:false,reason:'INSUFFICIENT_SAMPLE'};}
