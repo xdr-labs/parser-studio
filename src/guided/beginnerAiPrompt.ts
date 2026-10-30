@@ -125,7 +125,7 @@ export async function buildBeginnerRepairPrompt(ctx:BeginnerRepairContext):Promi
       '- Do not propose a Regex merely to hide malformed source metadata.');
   }else{
     lines.push(
-      '- Return only one ParserRecipe v0.2 JSON object using supported declarative stages.',
+      '- Return only one ParserRecipe v0.2 JSON object using supported declarative stages, inside exactly ONE fenced code block with nothing outside the block.',
       '- For FULL_RECOVERY, preserve every already-extracted source value occurrence in the final parser output. A reviewed lossless source projection such as Generic Structural parserstudio_source may provide that preservation; otherwise use explicit map_field stages. Do not leave successfully extracted values only in an intermediate extraction object.',
       ...(preview.residuals.length?['- For FULL_RECOVERY, preserve every unparsed source region listed above in the final parser output too. Capturing a region as raw_event is not enough unless that capture is mapped into final output (or retained by an approved lossless source projection).']:[]),
       '- Prefer parse_generic_structural over a broad Regex only when the problem event matches the reviewed Generic Structural compiler grammar advertised by the local backend.',

@@ -63,7 +63,7 @@ export function recoveryResponseContract(projectId:string,sourceHash:string,sour
     'Required JSON root keys ONLY: contract, schemaRevision, compilerMode, projectId, sourceFormat, bodyFormat, sample, stages, nativeVerified, targetVerified.',
     'Set contract="parser-studio.recipe.v0.2", schemaRevision="0.2", compilerMode="REVIEW_ONLY", nativeVerified=false, targetVerified=false. The booleans must be JSON booleans and schemaRevision a string.',
     'Use exact projectId '+JSON.stringify(projectId)+' and exact sample '+JSON.stringify({sha256:sourceHash,events:sourceCount})+'. Never recalculate the digest from a shortened example.',
-    'Return only one exact JSON ParserRecipe v0.2 object or REVIEW_REQUIRED: with a precise source-backed reason. Never add markdown, explanatory prose outside JSON, extra root keys or unverified deployment claims.',
+    'Return exactly ONE fenced code block (```json … ```) and write nothing outside that block, so it can be copied with the code-block copy button without losing characters. Inside the block put either one exact JSON ParserRecipe v0.2 object or a single line starting REVIEW_REQUIRED: with a precise source-backed reason. Never add explanatory prose, extra root keys or unverified deployment claims.',
     ...recoveryStageContract,
   ];
 }
@@ -116,7 +116,7 @@ export function composeChatGPTPrompt({
       'Do not interpret missing baseline as permission to infer unknown field boundaries, invent missing values, or claim parsing success.',
       ...recoveryResponseContract(projectId,sourceHash,sourceCount),
     ]),
-    'Output only the strict JSON object, or REVIEW_REQUIRED: with the reason and the precise source correction needed.',
+    'Your whole reply is the one code block: the strict JSON object, or a REVIEW_REQUIRED: line with the reason and the precise source correction needed.',
     'All changes require explicit local review and independent testing. Native Fluentd and Stellar Cyber target import remain NOT VERIFIED.',
   ].join('\n');
 }

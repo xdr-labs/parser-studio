@@ -29,6 +29,19 @@ describe('ChatGPT Assisted reviewed prompt identity',()=>{
     expect(prompt).toContain(digest);
   });
 
+  it('asks for exactly one fenced code block so the reply can be copied without losing characters',()=>{
+    const prompt=composeChatGPTPrompt({
+      goal:'Preserve action and source IP',source:examples,
+      projectId:'draft-demo_firewall',sourceHash:digest,sourceCount:2,
+      baseline:unavailable,
+    });
+    expect(prompt).toMatch(/exactly ONE fenced code block/);
+    expect(prompt).toMatch(/nothing (?:outside|before or after) (?:the|that) (?:code )?block/i);
+    expect(prompt).not.toContain('Never add markdown');
+    expect(prompt).not.toContain('Output only the strict JSON object');
+    expect(prompt).toContain('REVIEW_REQUIRED:');
+  });
+
   it('full recovery provides exact stage shapes rather than requiring the AI to invent our internal JSON API',()=>{
     const source='allow,198.51.100.10\ndeny,203.0.113.4';
     const prompt=composeChatGPTPrompt({
