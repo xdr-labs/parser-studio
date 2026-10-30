@@ -429,7 +429,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   }
   trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
   const normalized: Record<string, unknown> = draft.format==='generic_structural'
-    ? {parserstudio_source:fields}
+    ? {parserstudio_source:draft.omitSourceRaw===true?withoutSourceRaw(fields) as Record<string,unknown>:fields}
     : {};
   const family=inspectEventProfile(fields,draft.eventProfiles);
   if(draft.eventProfiles&&!family.profile)
@@ -594,6 +594,15 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     status: hasErrors || !matched ? 'fail' : diagnostics.length ? 'warning' : 'pass',
     diagnostics, trace,
   };
+}
+
+/** Mirrors the generated Ruby helper: drop every `source_raw` key from the lossless source projection. */
+function withoutSourceRaw(value:unknown):unknown{
+  if(Array.isArray(value))return value.map(withoutSourceRaw);
+  if(value&&typeof value==='object')
+    return Object.fromEntries(Object.entries(value as Record<string,unknown>)
+      .filter(([key])=>key!=='source_raw').map(([key,item])=>[key,withoutSourceRaw(item)]));
+  return value;
 }
 
 export function preview(input: string, draft: ParserDraft): SuiteResult {

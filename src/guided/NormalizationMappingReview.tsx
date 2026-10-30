@@ -189,6 +189,20 @@ export default function NormalizationMappingReview({
       <div className={blocking.length?'attention':''}><span>Must fix before continuing</span><strong>{blocking.length}</strong></div>
     </div>
 
+    {draft.format==='generic_structural'&&<div className="normalization-runtime-note" role="group"
+      aria-label="Original line copy">
+      <label>
+        <input type="checkbox" checked={draft.omitSourceRaw!==true}
+          onChange={event=>setDraft(old=>{
+            const next={...old};
+            if(event.target.checked)delete next.omitSourceRaw;else next.omitSourceRaw=true;
+            return next;
+          })}/>
+        {' '}Copy the full original line into every record (parserstudio_source ... source_raw)
+      </label>
+      <span>On (default): each output record also carries the whole original log line, so the output is about twice the size of the log. Turn it off to keep only the parsed fields. A field you mapped from source_raw still works, and your original log is not changed.</span>
+    </div>}
+
     <section className="normalization-suggestions" aria-label="Recommended field matches">
       <div className="normalization-section-head">
         <div>

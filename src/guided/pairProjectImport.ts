@@ -120,6 +120,7 @@ export function reconstructExactBackendDraft(
       csvDelimiter:e.format==='csv'?e.csvDelimiter:',',
       syslogBodyFormat:e.format==='syslog_rfc5424'?e.syslogBodyFormat??'raw':'raw',
       ...(e.genericStructuralProfile?{genericStructuralProfile:e.genericStructuralProfile}:{}),
+      ...(e.format==='generic_structural'&&e.omitSourceRaw===true?{omitSourceRaw:true as const}:{}),
       mappings,
       guided:{
         ...options,

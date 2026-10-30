@@ -48,6 +48,8 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     // Older clients strictly validate the two-name profile array. Advertise
     // this additive scalar profile separately so their existing flow survives.
     genericStructuralMixedProfileV1: true,
+    // Additive scalar: extraction.omitSourceRaw leaves source_raw out of parserstudio_source.
+    genericStructuralOmitSourceRaw: true,
     rfc3164StrictTaggedMessageSubset: true,
     rfc3164TaglessStructuredSecuritySubset: true,
     rfc3164TimePolicy: "YEAR_AND_ZONE_UNKNOWN" as const,

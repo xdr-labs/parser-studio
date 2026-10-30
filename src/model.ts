@@ -29,6 +29,8 @@ export interface ParserDraft {
   syslogBodyFormat?: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex';
   /** Explicit additional Generic Structural grammar; absent keeps V15 behavior. */
   genericStructuralProfile?: GenericStructuralProfile;
+  /** Generic Structural only: leave the full raw line (source_raw) out of parserstudio_source. Absent keeps it. */
+  omitSourceRaw?: true;
   /** Explicit supported one-line families only; no implicit fallback. */
   mixedFormats?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
   mappings: MappingRule[];

@@ -118,6 +118,8 @@ export function validLocalDraft(value:unknown):value is ParserDraft{
   if(value.forwarder!==undefined&&!validStoredRelay(value.forwarder))return false;
   if(value.genericStructuralProfile!==undefined&&
     (!isGenericStructuralProfile(value.genericStructuralProfile)||value.format!=='generic_structural'))return false;
+  if(value.omitSourceRaw!==undefined&&
+    (value.omitSourceRaw!==true||value.format!=='generic_structural'))return false;
   return true;
 }
 function snapshotContent(v:Omit<LocalVersion,'sha256'>):string{
@@ -404,6 +406,7 @@ export function compareLocalVersions(a:LocalWorkingCopy,b:LocalWorkingCopy):Vers
   if(a.draft.format!==b.draft.format)changes.push('Parser format');
   if(a.draft.genericStructuralProfile!==b.draft.genericStructuralProfile)
     changes.push('Generic Structural profile');
+  if(a.draft.omitSourceRaw!==b.draft.omitSourceRaw)changes.push('Raw line copy (source_raw)');
   if(a.draft.pattern!==b.draft.pattern)changes.push('Extraction pattern');
   if(a.draft.csvColumns!==b.draft.csvColumns||
      a.draft.csvDelimiter!==b.draft.csvDelimiter)changes.push('CSV schema / delimiter');

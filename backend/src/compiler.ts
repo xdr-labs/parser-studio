@@ -18,6 +18,25 @@ const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  wh
 const GENERIC_STRUCTURAL_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'generic_structural'\n    parserstudio_generic_structural(text)\n  else";
 const GENERIC_STRUCTURAL_NORMALIZE_NEEDLE = "def parserstudio_normalize(original)\n  normalized = {}";
 const GENERIC_STRUCTURAL_NORMALIZE_BRANCH = "def parserstudio_normalize(original)\n  normalized = {'parserstudio_source' => original}";
+const GENERIC_STRUCTURAL_NORMALIZE_NO_RAW_BRANCH = "def parserstudio_normalize(original)\n  normalized = {'parserstudio_source' => parserstudio_without_source_raw(original)}";
+// Only emitted when extraction.omitSourceRaw is true; default artifacts are byte-identical.
+const SOURCE_RAW_STRIP_HELPER = String.raw`
+# Parser Studio: leave the full raw line (source_raw) out of parserstudio_source.
+# Mappings read the extraction directly, so a mapped source_raw still works.
+def parserstudio_without_source_raw(value)
+  case value
+  when Hash
+    value.each_with_object({}) do |(key, item), out|
+      next if key == 'source_raw'
+      out[key] = parserstudio_without_source_raw(item)
+    end
+  when Array
+    value.map { |item| parserstudio_without_source_raw(item) }
+  else
+    value
+  end
+end
+`;
 const REGEX_RUBY_HELPER = String.raw`
 # Parser Studio bounded named-capture Regex helper. This fixed helper is
 # emitted only for a Regex project; existing parser artifact bytes stay unchanged.
@@ -165,8 +184,11 @@ function emitRubyFragment(project: ParserProject): string {
     if(!fragment.includes(REGEX_EXTRACTOR_NEEDLE))throw new Error("Generic structural template marker missing");
     fragment=fragment.replace(REGEX_EXTRACTOR_NEEDLE,GENERIC_STRUCTURAL_EXTRACTOR_BRANCH);
     if(!fragment.includes(GENERIC_STRUCTURAL_NORMALIZE_NEEDLE))throw new Error("Generic structural normalization marker missing");
-    fragment=fragment.replace(GENERIC_STRUCTURAL_NORMALIZE_NEEDLE,GENERIC_STRUCTURAL_NORMALIZE_BRANCH);
+    const omitRaw=project.extraction.omitSourceRaw===true;
+    fragment=fragment.replace(GENERIC_STRUCTURAL_NORMALIZE_NEEDLE,
+      omitRaw?GENERIC_STRUCTURAL_NORMALIZE_NO_RAW_BRANCH:GENERIC_STRUCTURAL_NORMALIZE_BRANCH);
     fragment+=GENERIC_STRUCTURAL_HELPER;
+    if(omitRaw)fragment+=SOURCE_RAW_STRIP_HELPER;
   }
   if(project.extraction.format==="regex"||regexBody)fragment+=REGEX_RUBY_HELPER;
   return fragment;

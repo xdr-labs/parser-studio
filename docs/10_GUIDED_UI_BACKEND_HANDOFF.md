@@ -374,3 +374,15 @@ Auto Parser `Analyze Logs` no longer sends a sample larger than 64 KiB to the se
 ### 2026-10-30 — Declared relay preview explains unrecognized events (O-3)
 
 The declared-relay preview now says "N not matching a declared relay" and, when N > 0, explains that an event is unwrapped only when it begins with a Syslog header starting with `<PRI>` and names a declared relay hostname. A header without `<PRI>` is not unwrapped. Behaviour of the unwrapping is unchanged.
+
+### 2026-10-30 — Generic Structural: copying the full raw line can be switched off (O-7)
+
+Every Generic Structural record carries the whole original log line under `parserstudio_source` (`...source_raw`), which roughly doubles the output for formats such as FortiGate KV. Map Fields now has a checkbox "Copy the full original line into every record"; on (default) is exactly today's behaviour.
+
+- Draft: `omitSourceRaw?: true` (absent = copy). Retired when another format is chosen (`selectDraftFormat`).
+- Project contract: `extraction.omitSourceRaw: true` (schema `const: true`; the validator rejects `false` and any non-`generic_structural` format). Absent keeps artifact bytes identical to before (tested).
+- Compiler: when set, `parserstudio_normalize` starts with `{'parserstudio_source' => parserstudio_without_source_raw(original)}` and the small Ruby helper `parserstudio_without_source_raw` (drops every `source_raw` key, recursively) is appended. Mappings still read the untouched extraction, so a field mapped from `source_raw` keeps working. Any key literally named `source_raw` inside the parsed data is dropped too.
+- Browser preview (`src/parser.ts`) mirrors the helper so the preview matches the generated parser.
+- Capability: the backend advertises `authoring.genericStructuralOmitSourceRaw: true`; the web client refuses to send the option to a backend that does not (`BACKEND_PROFILE_UNSUPPORTED`). **A backend deploy is required** (`backend/dist` swap + restart of the authoring service); a web-only deploy would show the checkbox but compile would be refused by an old backend.
+- Not verified: no Ruby on the development host, so the generated Ruby helper has only been checked by text assertions, not executed natively (the 97 Ruby-runtime backend tests fail identically on main for the same reason).
+- AI recovery safety (`hasLosslessSourceProjection` in `AutoParserAIReview.tsx`) waives its value-by-value check when `parserstudio_source` still contains the exact raw line. With the option off that waiver no longer applies, so a ChatGPT recovery fix for such a parser is checked against the actual output and may be refused where it was accepted before.
