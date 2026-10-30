@@ -46,12 +46,15 @@ body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
 .two-path-shell .auto-parser-intro h1{color:#fff}
 .two-path-shell .auto-parser-intro p{color:#c9c5c7}
 .two-path-shell .auto-parser-steps button.active{background:#fff0ea;border-color:var(--stellar-orange);color:#9b3e1e}
-.two-path-shell .auto-parser-steps button.active span{background:var(--stellar-orange);color:#fff}
+.two-path-shell .auto-parser-steps button.active>span:first-child{background:var(--stellar-orange);color:#fff}
+.two-path-shell .auto-parser-steps button.active .step-copy{background:transparent;color:inherit}
 .two-path-shell .auto-parser-body{border-color:var(--line);box-shadow:var(--shadow)}
 .two-path-shell .auto-parser-body h2{color:var(--charcoal)}
 .two-path-shell .auto-parser-body section>p{color:var(--muted)}
 .two-path-shell .auto-parser-body :is(label){color:#494448}
 .two-path-shell .auto-parser-body :is(input,select,textarea){border-color:#d2cdcf;background:#fff;color:var(--charcoal)}
+/* An input the app has marked invalid is outlined, not only explained in small print. */
+.two-path-shell .auto-parser-body input[aria-invalid="true"]{border-color:#d1432b;background:#fff7f5}
 .two-path-shell .auto-parser-body .auto-parser-primary{background:linear-gradient(135deg,var(--stellar-orange),#df4618);border-color:var(--stellar-orange);color:#fff}
 .two-path-shell .auto-parser-body .auto-parser-primary:hover:not(:disabled){background:#d94316}
 .stellar-review-columns{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:14px;align-items:start;margin:16px 0}

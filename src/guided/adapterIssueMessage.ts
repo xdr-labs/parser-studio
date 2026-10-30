@@ -13,6 +13,12 @@ export function describeAdapterIssues(issues:readonly AdapterIssue[]):string{
   const relayInvalid=issues.find(issue=>issue.code==='INVALID_FORWARDER_PROFILE');
   if(relayInvalid)
     return 'The declared relay settings are not valid. '+relayInvalid.message;
+  const portIssue=issues.find(issue=>/listener port must be at least \d+/i.test(issue.message??''));
+  if(portIssue){
+    const minimum=/at least (\d+)/i.exec(portIssue.message??'')?.[1]??'6800';
+    return 'The parser listener port must be '+minimum+' or higher for this kind of log. '
+      +'Change "Parser listener port (.conf)" above, then press the button again. Your logs were not changed.';
+  }
   const first=issues[0];
   if(first?.message)return 'The reviewed parser could not be turned into a parser: '+first.message;
   return 'The reviewed parser could not be turned into a parser.';

@@ -26,4 +26,12 @@ describe('describeAdapterIssues',()=>{
   it('falls back to a generic sentence when there is no issue text',()=>{
     expect(describeAdapterIssues([])).toMatch(/could not be turned into a parser/i);
   });
+
+  it('tells the user which field to change when the listener port is too low',()=>{
+    const text=describeAdapterIssues([{code:'PORT_RANGE',path:'/receiver/port',
+      message:'RFC3164/RFC5424/Generic Structural sensor and CONF listener port must be at least 6800'}]);
+    expect(text).toContain('6800 or higher');
+    expect(text).toContain('Parser listener port (.conf)');
+    expect(text).not.toMatch(/RFC3164/);
+  });
 });

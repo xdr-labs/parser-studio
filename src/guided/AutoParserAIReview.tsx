@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
 import {extractRecipeJson} from './aiReplyExtract';
+import {describeRejectedReason} from './chatGptResultNotice';
 import {describeEnrichmentDenial,importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
 import {compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeChange,normalizedMappingOutputPath,typeChangeWording} from './autoParserRegression';
@@ -208,7 +209,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    let result=await importReviewOnlyAIRecipe(recipeJson,source,draft,suite);
    if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
     result=await importRecoveryAIRecipe(recipeJson,source,draft,suite);
-   if(!result.ok){setImportResult(`ChatGPT result rejected: ${result.reason}. No changes were made.`);return;}
+   if(!result.ok){setImportResult(`ChatGPT result rejected: ${describeRejectedReason(result.reason)}. No changes were made.`);return;}
    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string;field?:string};
    let candidateMode:'mapping'|'correction'|'enrichment'|'recovery';
    let correctionScope:{oldTarget:string;newTarget:string}|undefined;
