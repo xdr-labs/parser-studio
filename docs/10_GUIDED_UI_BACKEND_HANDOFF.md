@@ -386,3 +386,14 @@ Every Generic Structural record carries the whole original log line under `parse
 - Capability: the backend advertises `authoring.genericStructuralOmitSourceRaw: true`; the web client refuses to send the option to a backend that does not (`BACKEND_PROFILE_UNSUPPORTED`). **A backend deploy is required** (`backend/dist` swap + restart of the authoring service); a web-only deploy would show the checkbox but compile would be refused by an old backend.
 - Not verified: no Ruby on the development host, so the generated Ruby helper has only been checked by text assertions, not executed natively (the 97 Ruby-runtime backend tests fail identically on main for the same reason).
 - AI recovery safety (`hasLosslessSourceProjection` in `AutoParserAIReview.tsx`) waives its value-by-value check when `parserstudio_source` still contains the exact raw line. With the option off that waiver no longer applies, so a ChatGPT recovery fix for such a parser is checked against the actual output and may be refused where it was accepted before.
+### 2026-10-30 — ChatGPT answers with explanation around the JSON recipe are accepted (F-2)
+
+`extractRecipeJson` (`src/guided/aiReplyExtract.ts`) picks the single JSON recipe out of a ChatGPT answer that also contains prose: one fenced block, or the one balanced `{...}` object (string/escape aware). If several candidates exist it prefers the one with `contract: "parser-studio.recipe.v0.2"` and otherwise refuses to guess. The result still goes through the normal `validateReviewableRecipe`/source-hash checks, so a wrong pick can only be rejected. `ChatGPTAssist` (previously NON_JSON_RESPONSE, which consumed one of the three attempts) and `AutoParserAIReview` (previously INVALID_JSON) both use it and say "Text around the JSON recipe was ignored." A pure `REVIEW_REQUIRED:` diagnosis or prose without any JSON is still handled as before. Browser-only; no backend change.
+
+### 2026-10-30 — Map Fields says what "Remove mapping" does (F-6)
+
+The button now reads "Leave out of output" (aria-label unchanged) and the hint says the field does not appear in the generated parser output while the original log is not changed. The Add-Logs hint that said a mapping change "never deletes the original extracted value" (contradicting the above) was reworded. Wording only.
+
+### 2026-10-30 — Create Parser step flags the demo manufacturer/product placeholder (O-2)
+
+`Demo / local draft` / `Untitled parser` are the untouched defaults and were written into the downloaded `.conf` header (`# Vendor:`/`# Product:`) and file names. The Create Parser step now shows the identity card with a warning note naming which placeholder is still set, so the real names can be entered right there. It does not block creation (many existing journeys deliberately build with the defaults).

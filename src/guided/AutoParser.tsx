@@ -5,7 +5,7 @@ import {ArrowLeft,ArrowRight,CheckCircle2,Download,FileArchive,FileText,
 import {createDraft,type ParserDraft,type SuiteResult} from '../model';
 import {toBackendProject} from './backendAdapter';
 import {describeAdapterIssues} from './adapterIssueMessage';
-import {missingParserIdentityMessage} from './parserIdentity';
+import {missingParserIdentityMessage,placeholderParserIdentityParts} from './parserIdentity';
 import {describeCsvColumnNameProblem} from './csvColumnNames';
 import {fetchBackendCapabilities,assertBackendProjectSupported,
   type BackendCapabilities} from './backendCapabilities';
@@ -1127,7 +1127,7 @@ export default function AutoParser({
        </div>
        <div className="auto-parser-note beginner-essential-note" aria-label="Normalization mapping handoff">
          <strong>Next: choose where each value belongs in Stellar Cyber</strong>
-         <p>Continue to Map Fields. Parser Studio will suggest Stellar field names, show example values, and warn you if a value does not fit. Changing a mapping never deletes the original extracted value.</p>
+         <p>Continue to Map Fields. Parser Studio will suggest Stellar field names, show example values, and warn you if a value does not fit. Your original log is never changed; a field you remove from the mapping simply does not appear in the generated parser output.</p>
        </div>
        {!!draft.guided?.enrichment?.length&&<div className="auto-parser-map-list" aria-label="Applied normalization refinements">
          {draft.guided.enrichment.map((rule,index)=><div key={rule.id}>
@@ -1161,6 +1161,8 @@ export default function AutoParser({
        </StageGuide>
        <p>Parser Studio will test every sample again before it creates downloadable files.
          Nothing is installed in a live Stellar system from this screen.</p>
+       {placeholderParserIdentityParts(draft.vendor,draft.name).length>0&&
+         <ParserIdentityCard draft={draft} setDraft={setDraft} warnIfPlaceholder/>}
        <div className="auto-parser-summary">
          <span>Sample logs <strong>{report.sourceCount}</strong></span>
          <span>Parsed successfully <strong>{suite?.counts.matched??0}</strong></span>

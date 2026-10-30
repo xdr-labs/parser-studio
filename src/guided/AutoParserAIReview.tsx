@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
+import {extractRecipeJson} from './aiReplyExtract';
 import {describeEnrichmentDenial,importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
 import {compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeChange,normalizedMappingOutputPath,typeChangeWording} from './autoParserRegression';
@@ -200,9 +201,13 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
   if(!source||!draft||!suite||!recipeText.trim()||importBusy)return;
   setImportBusy(true);setImportResult('');setApprovedCandidate(null);setApproval(false);
   try{
-   let result=await importReviewOnlyAIRecipe(recipeText,source,draft,suite);
+   // Drop explanation that ChatGPT wrote around the JSON recipe; the recipe is still fully validated.
+   const extracted=extractRecipeJson(recipeText);
+   const recipeJson=extracted?.text??recipeText;
+   if(extracted?.ignoredText)setNotice('Text around the JSON recipe was ignored.');
+   let result=await importReviewOnlyAIRecipe(recipeJson,source,draft,suite);
    if(!result.ok&&result.reason==='CURRENT_RECIPE_UNAVAILABLE')
-    result=await importRecoveryAIRecipe(recipeText,source,draft,suite);
+    result=await importRecoveryAIRecipe(recipeJson,source,draft,suite);
    if(!result.ok){setImportResult(`ChatGPT result rejected: ${result.reason}. No changes were made.`);return;}
    let proposal:{ok:true;candidate:ParserDraft}|{ok:false;reason:string;field?:string};
    let candidateMode:'mapping'|'correction'|'enrichment'|'recovery';

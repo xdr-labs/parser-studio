@@ -60,8 +60,10 @@ describe('normalization mapping review UI',()=>{
   it('says that removing a mapping leaves the field out of the parser output',()=>{
     render(<Harness/>);
     expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output0');
-    expect(screen.getByText(/leaves that field out of the parser output/)).toBeInTheDocument();
+    expect(screen.getByText(/does not appear in the generated parser output/)).toBeInTheDocument();
+    expect(screen.getByText(/original log is not changed/)).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('never deleted');
+    expect(screen.getAllByRole('button',{name:/Remove normalization/})[0]).toHaveTextContent('Leave out of output');
     fireEvent.click(screen.getAllByRole('button',{name:/Remove normalization/})[0]!);
     expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output1');
   });
