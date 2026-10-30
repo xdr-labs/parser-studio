@@ -81,3 +81,7 @@ A passing local Nginx fixture is not a successful public HTTPS deployment, and a
 ## Rollback
 
 If acceptance fails, disable **only** the new `app.parser.xdr.ooo` site, stop the two `parser-studio-preview-*.service` units, run `nginx -t`, reload, and verify that `exporter.xdr.ooo` remains available. Do not disable TLS, loosen source-size bounds, or bypass operating-system privileges.
+
+## Updating the running preview
+
+After the first installation, application updates (web, authoring backend, Multi-Pass) follow `UPDATE_RUNBOOK.md`: baseline, exact-commit build, changed-parts-only install, verification and rollback.
