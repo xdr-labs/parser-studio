@@ -8,7 +8,7 @@ import {reconstructExactBackendDraft} from './pairProjectImport';
 const LOG='<134>date=2023-02-23 time=22:49:29 devname=FMG-VM log_id=0001010018 type=event user=alice status=success';
 const generic=()=>({...createDraft(),format:'generic_structural' as const,
   vendor:'Acme',name:'Gate',
-  guided:{...createDraft().guided!,classification:{rules:[],defaultIndex:'syslog' as const}},
+  guided:{...createDraft().guided!,classification:{rules:[],defaultIndex:'Syslog' as const}},
   mappings:[{id:'m-user',source:'generic.kv.user',target:'custom.username',type:'string' as const}]});
 
 function sourceOf(draft:ReturnType<typeof generic>):Record<string,unknown>{
