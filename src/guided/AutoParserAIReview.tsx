@@ -3,7 +3,7 @@ import {toSourceByteRange,fromSourceByteRange} from './sourceByteSelection';
 import type {ParserDraft,SuiteResult} from '../model';
 import {importRecoveryAIRecipe,importReviewOnlyAIRecipe,proposeV01EnrichmentFromAI,
  proposeV01FieldMappingFromAI,proposeV01MappingCorrectionFromAI,proposeV01RecoveryParserFromAI} from './aiRecipeExchange';
-import {compareCandidate,compareMappingCorrectionCandidate} from './autoParserRegression';
+import {compareCandidate,compareMappingCorrectionCandidate,normalizedMappingOutputPath} from './autoParserRegression';
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
@@ -212,7 +212,10 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
     else{
      const correction=proposeV01MappingCorrectionFromAI(result,source,draft,suite);
      if(correction.ok){proposal=correction;candidateMode='correction';
-      correctionScope={oldTarget:correction.oldTarget,newTarget:correction.newTarget};}
+      // The normalized output nests vendor fields under the manufacturer name, so the
+      // comparison scope must be the real output path, not the bare mapping target.
+      correctionScope={oldTarget:normalizedMappingOutputPath(draft,correction.mappingId),
+       newTarget:normalizedMappingOutputPath(correction.candidate,correction.mappingId)};}
      else{proposal=proposeV01EnrichmentFromAI(result,source,draft,suite);candidateMode='enrichment';}
     }
    }
