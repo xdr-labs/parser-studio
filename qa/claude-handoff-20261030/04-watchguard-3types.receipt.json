@@ -1,0 +1,18 @@
+{
+  "ids": [
+    "watchguard_firebox_allow",
+    "watchguard_firebox_proxy",
+    "watchguard_firebox_deny"
+  ],
+  "sourceSha256": "843fbda1c8ce4fa1e8cf2e7efe6c7c26dbde04d9da86d06603c0fcc70d9c3b56",
+  "sourceCount": 3,
+  "js": [],
+  "api500": [],
+  "externalPosts": [],
+  "copyExact": true,
+  "originalExact": true,
+  "promptSha256": "09579d12f8b58b77bd4319671b45f6581c23b16270c0be4937e87dec08982806",
+  "promptBytes": 10532,
+  "projectId": "draft-watchguard_firebox",
+  "identityMatch": true
+}

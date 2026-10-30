@@ -1,0 +1,3 @@
+2024-03-29 15:00:50 Member2 Allow 192.168.228.202 10.0.1.1 webcache/tcp 42973 8080 3-Trusted 1-WCI Allowed 60 63 (Outgoing-proxy-00) proc_id="firewall" rc="100" src_ip_nat="69.164.168.163" tcp_info="offset 10 S 2982213793 win 2105" msg_id="3000-0148"
+2024-03-29 18:00:54 Allow 10.0.1.2 100.100.100.11 http/tcp 42017 80 Trusted External Allowed (HTTP-proxy.1-00) proc_id="firewall" rc="406" msg_id="3000-0176" src_ip_nat="100.100.100.10" flags="SDdF" duration="14" sent_pkts="10" rcvd_pkts="5" sent_bytes="564" rcvd_bytes="785"
+2024-04-01 23:39:46 Deny 10.0.1.131 10.0.1.1 echo-request/icmp Trusted Firebox Denied 84 64 (Ping-00) proc_id="firewall" rc="101" msg_id="3000-0148" type="8" duration="0" sent_pkts="1" rcvd_pkts="0" sent_bytes="84" rcvd_bytes="0"
