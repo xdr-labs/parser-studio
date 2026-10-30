@@ -47,4 +47,14 @@ describe('beginner automatic Generic Structural handoff',()=>{
     expect(result!.draft.mappings.find(x=>x.source==='asa.dst_ip')).toMatchObject({target:'dstip',type:'ip'});
     expect(result!.draft.mappings.find(x=>x.source==='asa.protocol')).toMatchObject({target:'proto_name'});
   });
+
+  it('does not auto-adopt Generic Structural when a declared relay profile is present',()=>{
+    // Nested PRI: the relay header is followed by the original <190> device PRI.
+    // The backend adapter does not accept declared relays on generic_structural,
+    // so adopting it would turn "parsed completely" into a locked Map Fields step.
+    const raw='<14>Oct 29 10:00:00 relay-a fortigate: <190>date=2024-08-28 time=10:33:52 devname="MYFWNAME" devid="FG3000000" logid="1700062307" type="utm" subtype="ssl" level="information" srcip=10.2.3.4 srcport=59968 dstip=10.3.2.1 dstport=8443';
+    expect(buildAutomaticGenericStructuralDraft(raw,createDraft())).not.toBeNull();
+    const withRelay={...createDraft(),forwarder:{maxHops:1 as const,relayHosts:['relay-a']}};
+    expect(buildAutomaticGenericStructuralDraft(raw,withRelay)).toBeNull();
+  });
 });

@@ -56,6 +56,11 @@ export function buildAutomaticGenericStructuralDraft(
   source:string,draft:ParserDraft,
 ):{draft:ParserDraft;suite:SuiteResult;automaticOfficialMappings:number}|null{
   if(draft.format!=='auto')return null;
+  // The backend adapter accepts a declared relay profile only on relay-capable
+  // formats, and Generic Structural is not one of them. Adopting it here would
+  // report a complete parse and then lock Map Fields, so leave the sample in the
+  // review-required path instead.
+  if(draft.forwarder)return null;
   const discovery=sourcePaths(source,draft);
   if(!discovery?.paths.length||
     (discovery.profile&&discovery.paths.length>MAX_EXPLICIT_MAPPINGS))return null;
