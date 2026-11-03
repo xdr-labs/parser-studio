@@ -14,7 +14,7 @@ test('a new user gets one Auto analysis path and real extracted fields without a
   await page.getByLabel('Auto Parser raw logs').fill(source);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   const analysis=page.getByLabel('Beginner analysis summary');
-  await expect(analysis).toContainText('2 of 2 log events parsed completely',{timeout:20000});
+  await expect(analysis).toContainText('2 of 2 log events structurally parsed',{timeout:20000});
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled({timeout:10000});
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await expect(page.getByLabel('Review Fields stage')).toBeVisible();

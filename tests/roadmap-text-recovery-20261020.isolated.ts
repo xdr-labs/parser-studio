@@ -41,7 +41,7 @@ async function downloadDraft(page:Page,info:TestInfo){
   await page.getByLabel('Create Parser Files').click();
   const generated=page.getByLabel('Generated parser files');
   await expect(generated).toContainText('Parser files created successfully',{timeout:30000});
-  await expect(generated).toContainText('The files have not been installed in a live Stellar system.');
+  await expect(generated).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   const downloads:Record<string,string>={};
   for(const filename of ['customized_demo_firewall','customized_demo_firewall.conf']){
     const pending=page.waitForEvent('download');
@@ -83,7 +83,7 @@ test('a novice preserves partial source values, reviews an independent fix, and 
   await page.getByLabel('Auto Parser raw logs').fill(source);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   const summary=page.getByLabel('Beginner analysis summary');
-  await expect(summary).toContainText('0 of 2 log events parsed completely',{timeout:20000});
+  await expect(summary).toContainText('0 of 2 log events structurally parsed',{timeout:20000});
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
   const preserved=page.getByLabel('Preserved source values');
   await preserved.locator('summary').click();
@@ -125,7 +125,7 @@ test('a novice preserves partial source values, reviews an independent fix, and 
   await expect(apply).toBeDisabled();
   await page.getByLabel('Approve tested fix').check();
   await apply.click();
-  await expect(summary).toContainText('2 of 2 log events parsed completely');
+  await expect(summary).toContainText('2 of 2 log events structurally parsed');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
   await downloadDraft(page,info);
   expect(errors).toEqual([]);

@@ -342,7 +342,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           ?`Source values found in ${sourceParsed} of ${events.length} events — downloadable parser not ready`
           :csvReviewPending||parserRuleReviewRequired
           ?`Values found in ${sourceParsed} of ${events.length} log event${events.length===1?'':'s'}`
-          :`${parsed} of ${events.length} log event${events.length===1?'':'s'} parsed completely`}</strong>
+          :`${parsed} of ${events.length} log event${events.length===1?'':'s'} structurally parsed`}</strong>
         <p>{compilerBlockedReason
           ?'Original values were extracted, but a verified downloadable parser cannot be prepared for this shape yet. See the recovery instructions below; no source was dropped.'
           :resolvedByReviewedCandidate
@@ -357,7 +357,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           ?'Parser Studio read every value, but it cannot build the parser files for this log shape on its own yet. Use Fix with ChatGPT below. No log data was discarded.'
           :problems.length
           ?`${problems.length} event${problems.length===1?' needs':'s need'} attention. Pick one below to see why and what to do next.`
-          :'Every part of your logs was understood. Parser-file support is checked in the next steps.'}</p>
+          :'The source structure was recognized. Check which field values can be mapped and verify the generated parser separately; native runtime and Stellar target are not verified.'}</p>
         {multilineCsvNeedsReview&&<p role="note" aria-label="Multiline CSV recovery">
           Quoted CSV data spans multiple physical lines. The source record was kept intact, but this input is not approved for native parser generation. Choose the affected event below to see how to export a safe one-event-per-line sample.
         </p>}

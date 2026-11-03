@@ -34,7 +34,7 @@ test('a first-time desktop user saves logs, generates actual files, and restores
 
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('2 of 2 log events parsed completely',{timeout:20000});
+    .toContainText('2 of 2 log events structurally parsed',{timeout:20000});
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled();
   await review.click();
@@ -46,7 +46,7 @@ test('a first-time desktop user saves logs, generates actual files, and restores
   await page.getByRole('button',{name:'Create Parser Files'}).click();
   const files=page.getByLabel('Generated parser files');
   await expect(files).toContainText('Parser files created successfully',{timeout:20000});
-  await expect(files).toContainText('not been installed in a live Stellar system');
+  await expect(files).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   const confPromise=page.waitForEvent('download');
   await files.getByRole('button',{name:/customized_example_network_vendor_example_firewall\.conf/}).click();
   const conf=await confPromise;

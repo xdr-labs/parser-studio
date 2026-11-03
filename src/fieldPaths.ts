@@ -48,6 +48,7 @@ export function listSafeLeafPaths(
       for (const key of Object.keys(value)) {
         if (results.length >= limit) break;
         const next = prefix ? prefix + '.' + key : key;
+        if (prefix && key.includes('.')) continue;
         if (!safeLocalFieldPath(next)) continue;
         visit(value[key], next, depth + 1);
       }
@@ -58,4 +59,32 @@ export function listSafeLeafPaths(
   };
   visit(fields, '', 0);
   return results;
+}
+
+/** Number of source values that cannot be mapped with the bounded parser schema.
+ * The preview may preserve such data, but it must never report it as mapped. */
+export function countUnaddressableSourceValues(fields:Record<string,unknown>):number {
+  const addressable=new Set(listSafeLeafPaths(fields));
+  const resolvedPaths=new Set<string>();
+  let missing=0;
+  const visit=(value:unknown,path:string,depth:number):void=>{
+    if(Array.isArray(value)){missing++;return;}
+    if(objectRecord(value)){
+      if(depth>=MAX_DEPTH){missing++;return;}
+      for(const [key,child] of Object.entries(value)){
+        const next=path?path+'.'+key:key;
+        if((path && key.includes('.')) || !safeLocalFieldPath(next)){
+          missing++;continue;
+        }
+        visit(child,next,depth+1);
+      }
+    }else if(path){
+      const resolved=lookupFieldValue(fields,path);
+      if(value===null||!addressable.has(path)||!resolved.found||
+         !Object.is(resolved.value,value)||resolvedPaths.has(path))missing++;
+      else resolvedPaths.add(path);
+    }
+  };
+  visit(fields,'',0);
+  return missing;
 }

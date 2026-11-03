@@ -51,7 +51,7 @@ async function verifyGeneratedDraftPair(
     expect(pair.manifest.fileHashes[file.name]).toBe(file.sha256);
   }
   await expect(page.getByLabel('Generated parser files'))
-    .toContainText('The files have not been installed in a live Stellar system.');
+    .toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   // Removed on purpose: parser-building step editor/review is no longer
   // available to bypass the ordinary DRAFT capability and sample checks.
   await expect(page.getByLabel('Parser-building steps review')).toHaveCount(0);

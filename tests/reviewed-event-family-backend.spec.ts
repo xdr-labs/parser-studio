@@ -60,7 +60,7 @@ test('one reviewed parser DRAFT retains all three event types with exact backend
   const files=page.getByLabel('Generated parser files');
   await expect(files).toBeVisible({timeout:25_000});
   await expect(files).toContainText('Parser files created successfully');
-  await expect(files).toContainText('The files have not been installed in a live Stellar system.');
+  await expect(files).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   const parserDownload=page.waitForEvent('download');
   await files.getByRole('button',{name:/customized_demo_firewall$/}).click();
   const downloaded=await parserDownload;

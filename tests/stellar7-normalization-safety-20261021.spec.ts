@@ -121,5 +121,5 @@ test('7.0 nested field mappings generate real backend DRAFT files with checked d
     expect(sha(await readFile(await downloaded.path()))).toBe(file.sha256);
   }
   expect(requests.some(url=>url.endsWith('/parser-pairs/generate'))).toBe(true);
-  await expect(page.getByLabel('Generated parser files')).toContainText('The files have not been installed in a live Stellar system.');
+  await expect(page.getByLabel('Generated parser files')).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
 });

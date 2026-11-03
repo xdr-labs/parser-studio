@@ -34,7 +34,7 @@ test('default Analyze Logs uses exact Multi-Pass event framing and preserves sou
   const source=page.getByLabel('Auto Parser raw logs');
   await source.fill(raw);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('2 of 2 log events parsed completely');
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('2 of 2 log events structurally parsed');
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled({timeout:20000});
   await review.click();

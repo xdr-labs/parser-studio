@@ -47,7 +47,7 @@ for(const item of [
   const summary=page.getByLabel('Beginner analysis summary');
   // The validated RFC5424 boundary now selects the existing raw MSG compiler.
   // Source preservation remains independent of proprietary target verification.
-  await expect(summary).toContainText('1 of 1 log event parsed completely',{timeout:12000});
+  await expect(summary).toContainText('1 of 1 log event structurally parsed',{timeout:12000});
   await expect(input).toHaveValue(item.raw);
   const next=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(next).toBeEnabled();

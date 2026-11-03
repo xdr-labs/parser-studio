@@ -256,17 +256,19 @@ end
 def parserstudio_rfc5424_sd(rest)
   if rest.start_with?('-')
     raise ArgumentError, 'Malformed RFC5424 NILVALUE' unless rest == '-' || rest.start_with?('- ')
-    return ['-', rest == '-' ? nil : rest[2..-1]]
+    return ['-', rest == '-' ? nil : rest[2..-1], {}]
   end
   raise ArgumentError, 'RFC5424 SD block required' unless rest.start_with?('[')
   offset = 0
   seen_ids = {}
+  elements = {}
   while rest.getbyte(offset) == 91 # [
     offset += 1
     sd_id, offset = parserstudio_rfc5424_sd_name(rest, offset)
     raise ArgumentError, 'Repeated RFC5424 SD identifier' if seen_ids.key?(sd_id)
     seen_ids[sd_id] = true
     seen_params = {}
+    params = {}
     while rest.getbyte(offset) == 32 # SPACE introduces a parameter
       offset += 1
       name, offset = parserstudio_rfc5424_sd_name(rest, offset)
@@ -277,6 +279,7 @@ def parserstudio_rfc5424_sd(rest)
       raise ArgumentError, 'Missing RFC5424 quoted SD value' unless rest.getbyte(offset) == 34
       offset += 1
       closed = false
+      value = +''
       while offset < rest.bytesize
         char = rest.getbyte(offset)
         if char == 34 # closing "
@@ -286,25 +289,35 @@ def parserstudio_rfc5424_sd(rest)
         elsif char == 92 # escaped ], " or backslash
           following = rest.getbyte(offset + 1)
           raise ArgumentError, 'Invalid RFC5424 SD escape' unless [34, 92, 93].include?(following)
+          value << following.chr(Encoding::UTF_8)
           offset += 2
         elsif char == 93 || char < 32 || char == 127
           raise ArgumentError, 'Unsafe or unescaped RFC5424 SD parameter character'
         else
+          value << rest.byteslice(offset, 1)
           offset += 1
         end
         raise ArgumentError, 'RFC5424 SD exceeds supported bound' if offset > 1024
       end
       raise ArgumentError, 'Incomplete RFC5424 quoted SD value' unless closed
+      raise ArgumentError, 'Invalid UTF-8 RFC5424 SD parameter' unless value.valid_encoding?
+      safe = name.match?(/\A[A-Za-z_][A-Za-z0-9_-]{0,63}\z/) &&
+        !%w[__proto__ constructor prototype].include?(name) &&
+        !name.start_with?('param_hex_')
+      key = safe ? name : 'param_hex_' + name.unpack1('H*')
+      raise ArgumentError, 'RFC5424 SD name collision' if params.key?(key)
+      params[key] = value
     end
     raise ArgumentError, 'Incomplete RFC5424 SD element' unless rest.getbyte(offset) == 93
     offset += 1
+    elements['element_' + elements.size.succ.to_s] = {'sd_id' => sd_id, 'params' => params}
     raise ArgumentError, 'RFC5424 SD exceeds supported bound' if offset > 1024
   end
   structured = rest.byteslice(0, offset)
   trailing = rest.byteslice(offset..-1)
-  return [structured, nil] if trailing.nil? || trailing.empty?
+  return [structured, nil, elements] if trailing.nil? || trailing.empty?
   raise ArgumentError, 'Unsupported RFC5424 trailer' unless trailing.start_with?(' ')
-  [structured, trailing.byteslice(1..-1)]
+  [structured, trailing.byteslice(1..-1), elements]
 end
 
 # RFC5424 strict profile; multiline and arbitrary/oversized SD remain unsupported.
@@ -331,7 +344,7 @@ def parserstudio_syslog_rfc5424(text, settings)
       match[3].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
     Time.iso8601(match[3])
   end
-  structured_data, message = parserstudio_rfc5424_sd(match[8])
+  structured_data, message, sd_elements = parserstudio_rfc5424_sd(match[8])
   record = {
     'syslog_pri' => priority,
     'syslog_version' => Integer(match[2], 10),
@@ -342,6 +355,7 @@ def parserstudio_syslog_rfc5424(text, settings)
     'syslog_msgid' => match[7],
     'syslog_structured_data' => structured_data
   }
+  record['syslog_sd'] = sd_elements unless sd_elements.empty?
   if message && !message.empty?
     format = settings['syslogBodyFormat'] || 'raw'
     case format

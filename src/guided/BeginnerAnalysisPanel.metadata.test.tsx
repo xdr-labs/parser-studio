@@ -23,7 +23,7 @@ describe('Beginner metadata preservation review',()=>{
     expect(screen.getByLabelText('Source header versus data event explanation'))
       .toHaveTextContent(/1 data event.*2 schema\/header lines/);
     expect(screen.getByLabelText('Beginner analysis summary'))
-      .toHaveTextContent('0 of 1 log event parsed completely');
+      .toHaveTextContent('0 of 1 log event structurally parsed');
     expect(screen.getByLabelText('Beginner analysis summary'))
       .not.toHaveTextContent('3 log events parsed');
   });
@@ -50,7 +50,7 @@ describe('Beginner metadata preservation review',()=>{
       csvReviewRequired csvConsistentShapeAvailable={false}/>);
     expect(screen.getByLabelText('Beginner analysis summary'))
       .toHaveTextContent('Values found in 1 of 1 log event');
-    expect(screen.queryByText(/parsed completely/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/structurally parsed/)).not.toBeInTheDocument();
     expect(screen.getByText(/do not share one consistent CSV shape/)).toBeInTheDocument();
   });
 

@@ -92,7 +92,7 @@ test('multiple field-mapping experiments remain independently restorable from lo
   const source='{"src_ip":"192.0.2.10","action":"allow","dst_port":443}';
   await page.getByLabel('Auto Parser raw logs').fill(source);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely');
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event structurally parsed');
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await page.getByRole('button',{name:'Map Fields',exact:true}).click();
   const field=page.getByLabel('Map Fields stage').getByLabel('Stellar field 0');

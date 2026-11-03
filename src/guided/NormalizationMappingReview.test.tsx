@@ -93,3 +93,20 @@ describe('normalization mapping review UI',()=>{
     expect(screen.queryByRole('checkbox',{name:/Copy the full original line/})).toBeNull();
   });
 });
+
+describe('unmappable source field disclosure',()=>{
+  it('does not silently exclude nested dotted keys, @ keys and arrays from the omission count',()=>{
+    const sample=JSON.stringify({
+      srcip:'192.0.2.10',
+      metadata:{'session.id':'s1','actor@realm':'alice',evidence:['ioc-1','ioc-2']},
+    });
+    const draft:ParserDraft={...createDraft(),format:'json',mappings:[
+      {id:'src',source:'srcip',target:'srcip',type:'ip'},
+    ]};
+    const suite=preview(sample,draft);
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Unmappable source values3');
+    expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output3');
+  });
+});
