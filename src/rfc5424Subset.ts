@@ -3,6 +3,10 @@
  * Mirrors only the reviewed backend's synthetic qualified subset. It never
  * establishes native Fluentd or proprietary target loader compatibility.
  */
+export interface Rfc5424SdElement {
+  sd_id: string;
+  params: Record<string,string>;
+}
 export interface Rfc5424Fields {
   syslog_pri: number;
   syslog_version: 1;
@@ -12,6 +16,7 @@ export interface Rfc5424Fields {
   syslog_procid: string;
   syslog_msgid: string;
   syslog_structured_data: string;
+  syslog_sd?: Record<string,Rfc5424SdElement>;
 }
 export type Rfc5424Scan =
   | { ok: true; fields: Rfc5424Fields; message: string | null }
@@ -29,13 +34,26 @@ function safeTimestamp(timestamp: string): boolean {
   return new Date(Date.UTC(y, m-1, d)).getUTCDate() === d;
 }
 
-function scanStructuredData(rest: string): { structured: string; message: string | null } | null {
-  if (rest === '-') return { structured: '-', message: null };
-  if (rest.startsWith('- ')) return { structured: '-', message: rest.slice(2) };
+// Source SD-NAMEs may contain tokens outside the supported mapping-path grammar.
+function safeParameterKey(name:string):string {
+  if(/^[A-Za-z_][A-Za-z0-9_-]{0,63}$/.test(name) &&
+     !['__proto__','constructor','prototype'].includes(name) &&
+     !name.startsWith('param_hex_'))return name;
+  return 'param_hex_'+Array.from(new TextEncoder().encode(name))
+    .map(byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+
+function scanStructuredData(rest: string): {
+  structured: string; message: string | null;
+  elements: Record<string,Rfc5424SdElement>;
+} | null {
+  if (rest === '-') return { structured: '-', message: null, elements:{} };
+  if (rest.startsWith('- ')) return { structured: '-', message: rest.slice(2), elements:{} };
   if (!rest.startsWith('[')) return null;
 
   let pos=0;
   const ids=new Set<string>();
+  const elements:Record<string,Rfc5424SdElement>={};
   // Backend's reviewed ASCII SD-NAME bytes: printable except \",=,[,],backslash.
   const readName=():string|null=>{
     const start=pos;
@@ -52,6 +70,7 @@ function scanStructuredData(rest: string): { structured: string; message: string
     if (!id || ids.has(id)) return null;
     ids.add(id);
     const names=new Set<string>();
+    const params:Record<string,string>={};
     while (rest[pos] === ' ') {
       pos++;
       const name=readName();
@@ -59,6 +78,7 @@ function scanStructuredData(rest: string): { structured: string; message: string
       names.add(name);
       if(rest[pos++]!=='=' || rest[pos++]!=='"')return null;
       let terminated=false;
+      let value='';
       while(pos<rest.length){
         const character=rest[pos++];
         const code=character.charCodeAt(0);
@@ -66,20 +86,28 @@ function scanStructuredData(rest: string): { structured: string; message: string
         if (character==='\\'){
           const escaped=rest[pos++];
           if(escaped!==']' && escaped!=='"' && escaped!=='\\') return null;
-        } else if(character===']' || code<32 || code===127) return null;
+          value+=escaped;
+        } else {
+          if(character===']' || code<32 || code===127)return null;
+          value+=character;
+        }
         if (new TextEncoder().encode(rest.slice(0,pos)).length>1024) return null;
       }
       if(!terminated)return null;
+      const key=safeParameterKey(name);
+      if(Object.prototype.hasOwnProperty.call(params,key))return null;
+      params[key]=value;
     }
     if (rest[pos++]!==']') return null;
+    elements['element_'+ids.size]={sd_id:id,params};
     if (new TextEncoder().encode(rest.slice(0,pos)).length>1024) return null;
   }
   const structured=rest.slice(0,pos);
   if (!structured || new TextEncoder().encode(structured).length>1024) return null;
   const trailer=rest.slice(pos);
-  if (trailer==='')return {structured,message:null};
+  if (trailer==='')return {structured,message:null,elements};
   if (!trailer.startsWith(' '))return null;
-  return {structured,message:trailer.slice(1)};
+  return {structured,message:trailer.slice(1),elements};
 }
 
 export function parseRfc5424Subset(text:string):Rfc5424Scan {
@@ -103,5 +131,6 @@ export function parseRfc5424Subset(text:string):Rfc5424Scan {
     syslog_timestamp:match[3],syslog_hostname:match[4],
     syslog_appname:match[5],syslog_procid:match[6],
     syslog_msgid:match[7],syslog_structured_data:parsed.structured,
+    ...(Object.keys(parsed.elements).length?{syslog_sd:parsed.elements}:{}),
   },message:parsed.message};
 }

@@ -34,3 +34,22 @@ invalid.each_with_index do |source, i|
   end
 end
 puts "RFC5424 SD grammar: #{valid.length} valid + #{invalid.length} invalid bounded cases PASS (synthetic only)"
+
+# Regression oracle: a syntactically valid vendor SD block is not a single
+# useful security field. Its individual values must survive in the generated parser.
+juniper = '<14>1 2019-11-14T11:12:46.573+01:00 SRX-GW1 RT_FLOW - RT_FLOW_SESSION_DENY ' \
+  '[junos@67.43.156.15 source-address="10.0.0.26" source-port="37233" ' \
+  'destination-address="67.43.156.13" destination-port="161" ' \
+  'policy-name="MgmtAccess-trust-cleanup" reason="Denied by policy"]'
+parsed_juniper = parser.parserstudio_syslog_rfc5424(juniper, {'syslogBodyFormat'=>'raw'})
+expected = {
+  'source-address'=>'10.0.0.26',
+  'source-port'=>'37233',
+  'destination-address'=>'67.43.156.13',
+  'destination-port'=>'161',
+  'policy-name'=>'MgmtAccess-trust-cleanup',
+  'reason'=>'Denied by policy'
+}
+actual = parsed_juniper.dig('syslog_sd','element_1','params')
+raise 'RFC5424 SD individual source fields were not emitted' unless actual == expected
+raise 'RFC5424 original SD bytes were lost' unless parsed_juniper['syslog_structured_data'].include?('source-address="10.0.0.26"')

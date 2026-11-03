@@ -16,7 +16,7 @@ export const MAX_EVENTS = 500;
 // Security products such as EDR/XDR can emit valid single-line JSON records well above 4 KiB.
 // The dataset is already hard-bounded to 64 KiB, so do not reject one valid record earlier.
 export const MAX_LINE_CHARS = MAX_DATASET_BYTES;
-const VALID_TARGET = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
+const VALID_TARGET = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const UNSAFE_OUTPUT_SEGMENTS=new Set(['__proto__','constructor','prototype']);
 
 function ownSet(record:Record<string,unknown>,key:string,value:unknown):void{
