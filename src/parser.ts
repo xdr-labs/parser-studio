@@ -10,6 +10,7 @@ import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
 import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
+import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -95,6 +96,8 @@ function extractJSON(raw: string): Extraction {
     }
     if(hasDuplicateJsonObjectKeys(raw))
       return {fields:{},errors:['Duplicate JSON object key: review the source before generating a parser']};
+    if(hasUnsafeJsonNumbers(raw))
+      return {fields:{},errors:['Unsafe JSON numeric precision: quote large integer identifiers as strings before mapping']};
     return { fields: parsed as Record<string, unknown>, errors: [] };
   } catch {
     return { fields: {}, errors: ['Invalid JSON object'] };
@@ -102,20 +105,9 @@ function extractJSON(raw: string): Extraction {
 }
 
 function extractKV(raw: string): Extraction {
-  const fields: Record<string, unknown> = {};
-  const errors: string[] = [];
-  const pattern = /(?:^|\s)([A-Za-z_][\w.-]*)=(?:"((?:\\.|[^"\\])*)"|'([^']*)'|([^\s]+))/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(raw)) !== null) {
-    const key = match[1];
-    if (Object.prototype.hasOwnProperty.call(fields, key)) {
-      errors.push('Duplicate key: ' + key);
-      continue;
-    }
-    fields[key] = match[2] !== undefined ? match[2].replace(/\\"/g, '"') : match[3] ?? match[4];
-  }
-  if (!Object.keys(fields).length) errors.push('No key=value fields matched');
-  return { fields, errors };
+  // Use the same complete, bounded grammar as Syslog KV and generated Ruby.
+  // A partial regex match must never conceal an unmatched source fragment.
+  return strictKeyValues(raw);
 }
 
 export function tokenizeCSV(raw: string, delimiter: string): string[] | null {

@@ -30,8 +30,10 @@ describe('single-line KV source census uses the same duplicate-key policy as rev
   it('confirms the explicit KV extractor already rejects duplicate keys rather than overwriting',()=>{
     const draft=createDraft();draft.format='kv';
     const result=extractFields('action=allow action=deny','kv',draft);
-    expect(result.errors).toContain('Duplicate key: action');
-    expect(result.fields).toEqual({action:'allow'});
+    // A duplicate now rejects the entire source record rather than exposing
+    // a seemingly complete first-value subset.
+    expect(result.errors).toContain('Unsafe or duplicate extension field');
+    expect(result.fields).toEqual({});
   });
   it.each(positives)('keeps valid distinct keys and quotes unambiguous: %s',raw=>{
     const result=analyzeLogEnvelopes(raw,'single-line');

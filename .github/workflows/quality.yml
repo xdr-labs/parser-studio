@@ -229,7 +229,7 @@ jobs:
         run: |
           set -euo pipefail
           npx playwright test --config playwright.roadmap-followup-20261020.config.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-roadmap-followup-browser.json
-          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-studio-roadmap-followup-browser.json','utf8')); const x=r.stats; if(x.expected!==11||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('All eleven original-source, mixed-profile, recovery, 100/400-event, cancellation and format-transition cases must execute and pass',x,r.errors);process.exit(1)} console.log('ROADMAP_FOLLOWUP_REAL_CHROMIUM_PASS 11/11');"
+          node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-studio-roadmap-followup-browser.json','utf8')); const x=r.stats; if(x.expected!==14||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('All fourteen original-source, mixed-profile, recovery, bounded batch and cross-engine generated Ruby parity cases must execute and pass',x,r.errors);process.exit(1)} console.log('ROADMAP_FOLLOWUP_REAL_CHROMIUM_PASS 14/14');"
 
       # The independent-backend evergreen browser catalogue runs in the
       # complete six-shard browser-regression matrix below. No cases are dropped.
