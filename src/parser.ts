@@ -110,12 +110,16 @@ function extractKV(raw: string): Extraction {
   return strictKeyValues(raw);
 }
 
-export function tokenizeCSV(raw: string, delimiter: string): string[] | null {
+export function tokenizeCSV(raw: string, delimiter: string): (string | null)[] | null {
   // The backend compiles Ruby CSV.parse_line with liberal_parsing: false.
   // This browser subset is intentionally conservative; malformed quoted
   // cells never become successful evidence for native generation.
   if (![',', ';', '\t'].includes(delimiter)) return null;
-  const out: string[] = [];
+  const out: (string | null)[] = [];
+  // The generated Ruby uses strip:false for TAB CSV because Ruby CSV 3.2
+  // cannot combine strip:true with a TAB column separator. Retain TAB-space
+  // cells exactly, including whitespace-only values (not missing/null).
+  const stripUnquoted = delimiter !== '\t';
   let token = '';
   let state: 'start' | 'plain' | 'quoted' | 'afterQuote' = 'start';
   for (let i = 0; i < raw.length; i++) {
@@ -127,14 +131,15 @@ export function tokenizeCSV(raw: string, delimiter: string): string[] | null {
       } else token += c;
     } else if (state === 'afterQuote') {
       if (c === delimiter) { out.push(token); token = ''; state = 'start'; }
-      else if (c === ' ' || (c === '\t' && delimiter !== '\t')) continue;
+      else if (stripUnquoted && (c === ' ' || c === '\t')) continue;
       else return null;
     } else if (c === delimiter) {
-      out.push(token.trim()); token = ''; state = 'start';
+      out.push(state === 'start' ? null : stripUnquoted ? token.trim() : token);
+      token = ''; state = 'start';
     } else if (c === '"') {
       if (state !== 'start') return null;
       state = 'quoted';
-    } else if (state === 'start' && (c === ' ' || (c === '\t' && delimiter !== '\t'))) {
+    } else if (state === 'start' && stripUnquoted && (c === ' ' || c === '\t')) {
       // Match the generated strict CSV parser's bounded field-edge stripping:
       // whitespace adjacent to a field is ignored, but quotes inside an
       // already-started unquoted value remain invalid.
@@ -145,7 +150,8 @@ export function tokenizeCSV(raw: string, delimiter: string): string[] | null {
     }
   }
   if (state === 'quoted') return null;
-  out.push(state === 'afterQuote' ? token : token.trim());
+  out.push(state === 'start' ? null : state === 'afterQuote' ? token :
+    stripUnquoted ? token.trim() : token);
   return out;
 }
 
