@@ -26,7 +26,7 @@ async function downloadDraft(page:Page,info:TestInfo,raw:string,format:string){
   await page.getByLabel('Create Parser Files').click();
   const generated=page.getByLabel('Generated parser files');
   await expect(generated).toContainText('Parser files created successfully',{timeout:30000});
-  await expect(generated).toContainText('The files have not been installed in a live Stellar system.');
+  await expect(generated).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   const contents:Record<string,string>={};
   for(const suffix of ['customized_demo_firewall','customized_demo_firewall.conf']){
     const pending=page.waitForEvent('download');

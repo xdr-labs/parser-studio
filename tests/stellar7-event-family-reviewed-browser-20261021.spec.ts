@@ -114,7 +114,7 @@ test('novice reviews three Stellar 7.0 event families and downloads one scoped D
     expect(digest(await readFile(await (await downloaded).path()))).toBe(file.sha256);
   }
   await expect(page.getByLabel('Generated parser files')).toContainText(
-    'The files have not been installed in a live Stellar system.');
+    'Native runtime and Stellar target verification are separate; nothing was deployed.');
   expect(requests.some(item=>item.endsWith('/parser-pairs/generate'))).toBe(true);
   expect(pageErrors).toEqual([]);
   expect(requestErrors).toEqual([]);

@@ -97,7 +97,7 @@ async function namedUserJourney(page:Page){
   await page.getByLabel('Create Parser Files').click();
   const files=page.getByLabel('Generated parser files');
   await expect(files).toContainText('Parser files created successfully',{timeout:25000});
-  await expect(files).toContainText('The files have not been installed in a live Stellar system.');
+  await expect(files).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   const downloaded=await downloadText(page,/customized_demo_firewall$/);
   expect(downloaded.filename).toBe('customized_demo_firewall');
   const base64=/Base64.strict_decode64\('([^']+)'\)/.exec(downloaded.contents)?.[1];

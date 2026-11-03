@@ -75,7 +75,7 @@ test('all 23 reviewed quoted CSV values survive vendor-local severity validation
   await page.getByLabel('Create Parser Files').click();
   const generated=page.getByLabel('Generated parser files');
   await expect(generated).toContainText('Parser files created successfully',{timeout:30000});
-  await expect(generated).toContainText('The files have not been installed in a live Stellar system.');
+  await expect(generated).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
   const downloadPromise=page.waitForEvent('download');
   await generated.getByRole('button',{name:/customized_demo_firewall$/}).click();
   const download=await downloadPromise;
