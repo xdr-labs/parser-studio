@@ -246,13 +246,18 @@ def parserstudio_validate_json_depth(value, depth, limit)
 end
 
 def parserstudio_unescape(text)
-  text.gsub(/\\(.)/m, '\1')
+  # Only reviewed escape sequences are decoded. All other backslashes,
+  # including Windows path separators, stay byte-for-byte intact.
+  text.gsub(/\\(.)/m) do |escaped|
+    next_char = escaped[1]
+    ['\\', '"', "'", '='].include?(next_char) ? next_char : escaped
+  end
 end
 
 # A strict small-subset token parser. No unmatched suffix can be silently lost.
 def parserstudio_key_values(text)
   record = {}
-  pattern = /\G[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/
+  pattern = /\G[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/
   position = 0
   while position < text.length
     tail = text[position..-1]
@@ -260,6 +265,8 @@ def parserstudio_key_values(text)
     match = pattern.match(text, position)
     raise ArgumentError, 'Unsupported or malformed key value segment' if match.nil?
     key = match[1]
+    raise ArgumentError, 'Unsafe key value field' if ['__proto__', 'constructor', 'prototype'].include?(key)
+    raise ArgumentError, 'Too many key value fields' if record.length >= 100
     raise ArgumentError, 'Duplicate key value field' if record.key?(key)
     value = match[2] || match[3] || match[4]
     record[key] = parserstudio_unescape(value)
@@ -724,6 +731,7 @@ def parserstudio_leef(text)
       raise ArgumentError, 'Empty LEEF extension token' if piece.empty?
       key, value = piece.split('=', 2)
       raise ArgumentError, 'Malformed LEEF extension' unless key && value && key.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*\z/)
+      raise ArgumentError, 'Unsafe LEEF field' if ['__proto__', 'constructor', 'prototype'].include?(key)
       raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)
       record[key] = value
     end
@@ -743,12 +751,15 @@ end
 
 def parserstudio_coerce(value, rule)
   type = rule['data_type']
-  str = value.to_s
+  str = value.to_s.strip
   case type
   when 'string'
-    str
+    value.to_s
   when 'integer', 'port'
-    raise ArgumentError, 'Invalid integer' unless str.match?(/\A[+-]?\d+\z/)
+    # A signed port is not in the browser's reviewed grammar; integers
+    # permit a leading minus only. Spaces are trimmed consistently.
+    integer_pattern = type == 'port' ? /\A\d+\z/ : /\A-?\d+\z/
+    raise ArgumentError, 'Invalid integer' unless str.match?(integer_pattern)
     number = Integer(str, 10)
     raise ArgumentError, 'Unsafe integer' if number.abs > 9007199254740991
     raise ArgumentError, 'Invalid port' if type == 'port' && (number < 0 || number > 65535)
@@ -758,7 +769,8 @@ def parserstudio_coerce(value, rule)
     return false if value == false || str.downcase == 'false' || str == '0'
     raise ArgumentError, 'Invalid boolean'
   when 'ip'
-    IPAddr.new(str).to_s
+    IPAddr.new(str) # Validate without silently rewriting the reviewer-visible value.
+    str
   when 'date'
     raise ArgumentError, 'Unsupported date policy' unless rule['time_format'] == 'iso8601'
     raise ArgumentError, 'Timestamp must contain an explicit timezone' unless str.match?(/(?:Z|[+-]\d{2}:\d{2})\z/)

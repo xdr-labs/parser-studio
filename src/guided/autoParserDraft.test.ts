@@ -58,10 +58,13 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
  });
  it('types vendor JSON numbers and booleans from the JSON itself, never from strings or single observations',()=>{
    const lines=[
-     {gid:1,rev:7,flag:true,label:'a',ratio:1.5,mixed:1,code:'007',big:9007199254740993,once:5,partial:3},
-     {gid:1,rev:9,flag:false,label:'b',ratio:2,mixed:'x',code:'043',big:9007199254740993,partial:4},
-     {gid:2,rev:-3,flag:true,label:'c',ratio:3,mixed:2,code:'112',big:9007199254740993},
+     {gid:1,rev:7,flag:true,label:'a',ratio:1.5,mixed:1,code:'007',big:'9007199254740993',once:5,partial:3},
+     {gid:1,rev:9,flag:false,label:'b',ratio:2,mixed:'x',code:'043',big:'9007199254740993',partial:4},
+     {gid:2,rev:-3,flag:true,label:'c',ratio:3,mixed:2,code:'112',big:'9007199254740993'},
    ].map(item=>JSON.stringify(item)).join('\n');
+   // Unquoted 64-bit JSON numeric IDs are now rejected before lossy parsing.
+   const unsafe=lines.replaceAll('"9007199254740993"','9007199254740993');
+   expect(prepare(unsafe).ok).toBe(false);
    const result=prepare(lines);
    expect(result.ok).toBe(true);
    if(!result.ok)return;
@@ -73,7 +76,7 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(type('partial')).toBe('integer');
    // one observation is not enough evidence
    expect(type('once')).toBe('string');
-   // text, fractions, mixed kinds and integers beyond the exact range stay text
+   // Large integer identifiers must be quoted in JSON to keep their exact digits.
    expect(type('label')).toBe('string');
    expect(type('ratio')).toBe('string');
    expect(type('mixed')).toBe('string');

@@ -1,4 +1,5 @@
 import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
+import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
@@ -43,7 +44,7 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
 
 export function strictKeyValues(input: string): StructuredExtraction {
   const values: Record<string, unknown> = Object.create(null);
-  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]*)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
+  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
   let cursor = 0;
   while (cursor < input.length) {
     if (!input.slice(cursor).trim()) break;
@@ -51,8 +52,10 @@ export function strictKeyValues(input: string): StructuredExtraction {
     const token = pattern.exec(input);
     if (!token || token.index !== cursor) return failure('Unsupported or malformed extension key=value segment');
     const key = token[1];
-    if (Object.prototype.hasOwnProperty.call(values, key)) return failure('Duplicate extension field');
-    values[key] = (token[2] ?? token[3] ?? token[4] ?? '').replace(/\\(.)/gs, '$1');
+    if (['__proto__','constructor','prototype'].includes(key) ||
+        Object.prototype.hasOwnProperty.call(values, key)) return failure('Unsafe or duplicate extension field');
+    // Only defined escapes are decoded. Literal Windows path separators survive.
+    values[key] = (token[2] ?? token[3] ?? token[4] ?? '').replace(/\\([\\"'=])/g, '$1');
     cursor = pattern.lastIndex;
   }
   if (!Object.keys(values).length) return failure('No extension fields parsed');
@@ -119,6 +122,8 @@ function boundedJsonObject(text: string): StructuredExtraction {
     // while the compiled Ruby parser correctly rejects that original source.
     if (hasDuplicateJsonObjectKeys(text))
       return failure('Duplicate JSON object key in reviewed Syslog body');
+    if (hasUnsafeJsonNumbers(text))
+      return failure('Unsafe JSON numeric precision: quote large identifiers as strings');
     function depthOkay(value: unknown, depth: number): boolean {
       if (depth > 8) return false;
       if (Array.isArray(value)) return value.every((v) => depthOkay(v, depth + 1));
@@ -245,15 +250,16 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   if (!(delimiter === '\t' || (/^[!-~]$/.test(delimiter) && delimiter !== '=' && delimiter !== '\\'))) {
     return failure('Unsupported LEEF 2.0 data delimiter');
   }
-  const record: Record<string, unknown> = {
+  const record: Record<string, unknown> = Object.assign(Object.create(null), {
     leef_version: match[1], leef_vendor: parts[0], leef_product: parts[1],
     leef_product_version: parts[2], leef_event_id: parts[3],
-  };
+  });
   if (parts[parts.length - 1]) {
     for (const part of parts[parts.length - 1].split(delimiter)) {
       const location = part.indexOf('=');
       const key = part.slice(0, location);
       if (location < 0 || !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(key) ||
+          ['__proto__','constructor','prototype'].includes(key) ||
           Object.prototype.hasOwnProperty.call(record, key)) return failure('Unsupported or duplicate LEEF extension token');
       record[key] = part.slice(location + 1);
     }

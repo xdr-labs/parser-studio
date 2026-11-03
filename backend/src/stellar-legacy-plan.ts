@@ -19,6 +19,10 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Exact audited 2026-11-03 lossless KV + scalar parity template.
+  // The existing test-only, loopback, null-sink, approval and read-back
+  // restrictions remain mandatory; no general Stellar upload is enabled.
+  "cbcc5c5c813da48dc4d405480314799f66a9b5d5fef8019d6b4884ac564ace16",
   // Current reviewed template with bounded standalone/Syslog-body named-capture Regex support.
   "2c274163b433f3757be04f471b80b755418d01b6d430b494fe7f1fa09f09dd54",
   // Current reviewed template with bounded named-capture Regex support.

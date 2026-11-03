@@ -4,6 +4,7 @@
  */
 import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents,tokenizeCSV} from '../parser';
 import {hasDuplicateJsonObjectKeys} from '../jsonDuplicateKeys';
+import {hasUnsafeJsonNumbers} from '../jsonNumberSafety';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -60,7 +61,7 @@ function kvValid(input:string):boolean{
     // compiler: a later duplicate key cannot overwrite its first value.
     // Only field-name identity is retained, never customer field values.
     const key=match[1]!;
-    if(fieldNames.has(key))return false;
+    if(['__proto__','prototype','constructor'].includes(key)||fieldNames.has(key))return false;
     fieldNames.add(key);
     count++;if(count>100)return false;
     index+=match[0].length;
@@ -71,7 +72,7 @@ function jsonValid(input:string):boolean{
   try{
     const value=JSON.parse(input) as unknown;
     if(!value||typeof value!=='object'||Array.isArray(value))return false;
-    if(hasDuplicateJsonObjectKeys(input))return false;
+    if(hasDuplicateJsonObjectKeys(input)||hasUnsafeJsonNumbers(input))return false;
     let leaves=0;
     const descend=(node:unknown,depth:number):boolean=>{
       if(depth>8)return false;
