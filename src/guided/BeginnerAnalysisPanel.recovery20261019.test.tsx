@@ -37,7 +37,7 @@ describe('novice recovery is format-specific and never claims unsupported native
   expect(screen.getByLabelText('Multiline CSV recovery')).toBeInTheDocument();
   expect(screen.getByText(/Review the CSV record boundary and closing quotes/)).toBeInTheDocument();
   expect(screen.getByText(/kept the complete logical source record/)).toBeInTheDocument();
-  expect(screen.getByText(/0 of 1 log event parsed completely/)).toBeInTheDocument();
+  expect(screen.getByText(/0 of 1 log event structurally parsed/)).toBeInTheDocument();
  });
 });
 
@@ -132,5 +132,5 @@ it('shows exact recovered source values and the full reviewed text-recovery path
  expect(steps).toHaveTextContent('check that existing values stay intact');
  expect(steps).toHaveTextContent('Review Fields, Map Fields, and Create Parser');
  expect(steps).toHaveTextContent('Parser-file support is checked separately');
- expect(screen.getByText('0 of 1 log event parsed completely')).toBeInTheDocument();
+ expect(screen.getByText('0 of 1 log event structurally parsed')).toBeInTheDocument();
 });

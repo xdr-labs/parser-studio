@@ -46,7 +46,7 @@ test('source-complete PAN-OS positional CSV still asks for neutral column approv
  const neutral=csvReview.getByRole('button',{name:'Keep all 5 values with temporary names'});
  await expect(neutral).toBeVisible();
  await neutral.click();
- await expect(summary).toContainText('2 of 2 log events parsed completely');
+ await expect(summary).toContainText('2 of 2 log events structurally parsed');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });
 
@@ -57,13 +57,13 @@ test('beginner can preserve PAN-OS positional values with neutral columns withou
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
- await expect(summary).toContainText('0 of 2 log events parsed completely');
+ await expect(summary).toContainText('0 of 2 log events structurally parsed');
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('Recommended fix · Keep all values with temporary field names');
  const neutral=problem.getByRole('button',{name:'Keep all 5 values with temporary names'});
  await expect(neutral).toBeVisible();
  await neutral.click();
- await expect(summary).toContainText('2 of 2 log events parsed completely');
+ await expect(summary).toContainText('2 of 2 log events structurally parsed');
  await expect(summary).toContainText('built a parser rule that passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
@@ -99,7 +99,7 @@ test('source-complete variable-width positional CSV explains that one schema can
  const summary=page.getByLabel('Beginner analysis summary');
  await expect(summary).toContainText('Values found in 2 of 2 log events');
  await expect(summary).toContainText('do not share one consistent CSV shape');
- await expect(summary).not.toContainText('parsed completely');
+ await expect(summary).not.toContainText('structurally parsed');
  const csvReview=page.getByLabel('Review CSV column names');
  await expect(csvReview).toContainText('These rows contain different numbers of values');
  await expect(csvReview).toContainText('One parser would shift values into the wrong fields');

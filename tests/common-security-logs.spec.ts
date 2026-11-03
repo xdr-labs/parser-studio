@@ -9,7 +9,7 @@ async function analyze(page:Page,raw:string){
   await page.getByLabel('Auto Parser raw logs').fill(raw);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('1 of 1 log event parsed completely',{timeout:15_000});
+    .toContainText('1 of 1 log event structurally parsed',{timeout:15_000});
   await expect(page.getByRole('button',{name:'Use extracted fields'})).toHaveCount(0);
   await expect(page.getByText('Fields extracted — parser rule needs review')).toHaveCount(0);
   await expect(page.getByText(/Some events could not be understood safely/)).toHaveCount(0);
@@ -39,13 +39,16 @@ test('common PAN-OS traffic syslog is parsed automatically and maps core fields'
   await page.getByLabel('Auto Parser raw logs').fill(PAN);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('1 of 1 log event parsed completely',{timeout:15_000});
+    .toContainText('1 of 1 log event structurally parsed',{timeout:15_000});
   await openMappings(page);
   const editor=page.getByLabel('Field mapping editor');
   const expectMapping=async(source:string,target:string)=>{
     const inputs=editor.locator('input[aria-label^="Source field "]');
-    const index=await inputs.evaluateAll((nodes,wanted)=>
-      nodes.findIndex(node=>(node as HTMLInputElement).value===wanted),source);
+    const index=await inputs.evaluateAll((nodes,wanted)=>{
+      const node=nodes.find(item=>(item as HTMLInputElement).value===wanted);
+      const match=node?.getAttribute('aria-label')?.match(/^Source field (\d+)$/);
+      return match ? Number(match[1]) : -1;
+    },source);
     expect(index,'source field '+source+' should be visible').toBeGreaterThanOrEqual(0);
     await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
   };
@@ -66,7 +69,7 @@ test('entered manufacturer product and version control generated parser names an
   await page.getByLabel('Auto Parser raw logs').fill(PAN);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('1 of 1 log event parsed completely',{timeout:15_000});
+    .toContainText('1 of 1 log event structurally parsed',{timeout:15_000});
   await openMappings(page);
   await page.getByLabel('Map Fields stage').getByRole('button',{name:'Create Parser'}).click();
   await expect(page.getByLabel('Create Parser stage')).toBeVisible();
@@ -107,8 +110,11 @@ test('BIG-IP ASM KV is auto-promoted and nested leaf names map to Stellar',async
   const editor=page.getByLabel('Field mapping editor');
   const expectMapping=async(source:string,target:string)=>{
     const inputs=editor.locator('input[aria-label^="Source field "]');
-    const index=await inputs.evaluateAll((nodes,wanted)=>
-      nodes.findIndex(node=>(node as HTMLInputElement).value===wanted),source);
+    const index=await inputs.evaluateAll((nodes,wanted)=>{
+      const node=nodes.find(item=>(item as HTMLInputElement).value===wanted);
+      const match=node?.getAttribute('aria-label')?.match(/^Source field (\d+)$/);
+      return match ? Number(match[1]) : -1;
+    },source);
     expect(index,'source field '+source+' should be visible').toBeGreaterThanOrEqual(0);
     await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
   };
@@ -140,8 +146,11 @@ test('common EDR JSON gets automatic Stellar mappings instead of leaving every f
   const editor=page.getByLabel('Field mapping editor');
   const expectMapping=async(source:string,target:string)=>{
     const inputs=editor.locator('input[aria-label^="Source field "]');
-    const index=await inputs.evaluateAll((nodes,wanted)=>
-      nodes.findIndex(node=>(node as HTMLInputElement).value===wanted),source);
+    const index=await inputs.evaluateAll((nodes,wanted)=>{
+      const node=nodes.find(item=>(item as HTMLInputElement).value===wanted);
+      const match=node?.getAttribute('aria-label')?.match(/^Source field (\d+)$/);
+      return match ? Number(match[1]) : -1;
+    },source);
     expect(index,'source field '+source+' should be visible').toBeGreaterThanOrEqual(0);
     await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
   };
@@ -162,7 +171,7 @@ test('single-line logs retain accurate event accounting without an obsolete mult
   const raw='date=2026-10-15 time=00:04:12 devname="FGT-EDGE01" action="blocked" srcip=192.0.2.10 dstip=198.51.100.20 dstport=443';
   await analyze(page,raw);
   const summary=page.getByLabel('Beginner analysis summary');
-  await expect(summary).toContainText('1 of 1 log event parsed completely');
+  await expect(summary).toContainText('1 of 1 log event structurally parsed');
   await expect(summary).not.toContainText('REVIEW REQUIRED');
   await expect(page.getByLabel('Multi-line event boundary tool')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeVisible();

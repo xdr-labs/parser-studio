@@ -25,7 +25,7 @@ test.describe('removed sensor/evidence UI and default-deny backend boundary',()=
       .fill('{"src_ip":"192.0.2.10","action":"deny","dst_port":443}');
     await page.getByRole('button',{name:'Analyze Logs'}).click();
     await expect(page.getByLabel('Beginner analysis summary'))
-      .toContainText('parsed completely');
+      .toContainText('structurally parsed');
     await expect(page.getByRole('button',{name:'Advanced Tools & Diagnostics'})).toHaveCount(0);
     for(const removed of [
       'Authorized Test Lab session recovery',

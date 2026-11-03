@@ -37,7 +37,7 @@ test('first-time user gets one Analyze action, plain failure location and a read
  await page.getByLabel('Auto Parser raw logs').fill(raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
- await expect(summary).toContainText('1 of 2 log events parsed completely');
+ await expect(summary).toContainText('1 of 2 log events structurally parsed');
  await expect(summary).toContainText('1 event needs attention');
  const problem=page.getByLabel('Parse problem inspector');
  await expect(problem).toContainText('Part of this event still needs parsing');
@@ -132,7 +132,7 @@ test('complete structured logs get a simple success result without technical sta
  await page.getByLabel('Auto Parser raw logs').fill(one);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
- await expect(summary).toContainText('2 of 2 log events parsed completely');
+ await expect(summary).toContainText('2 of 2 log events structurally parsed');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByText('SOURCE_PARSED',{exact:true})).toHaveCount(0);
 });
@@ -243,7 +243,7 @@ test('Cisco FTD recovery completes the user + ChatGPT + holdout + explicit appro
  await ai.getByLabel('Approve tested fix').check();
  await ai.getByRole('button',{name:'Apply Verified Fix'}).click();
  const summary=page.getByLabel('Beginner analysis summary');
- await expect(summary).toContainText('2 of 2 log events parsed completely');
+ await expect(summary).toContainText('2 of 2 log events structurally parsed');
  await expect(summary).toContainText('built a parser rule that passes the current sample');
  await expect(page.getByLabel('Parse problem inspector')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
@@ -386,7 +386,7 @@ test('vendor-prefixed JSON offers bounded local authoring without an unsafe CSV 
  await expect(problem.getByRole('button',{name:'Fix with ChatGPT'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:/Keep all .* values with temporary names/})).toHaveCount(0);
  await use.click();
- await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely');
+ await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event structurally parsed');
  await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });
 
@@ -462,7 +462,7 @@ test('beginner sees a clear UI/backend version mismatch instead of a vague backe
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(source);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
- await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely');
+ await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event structurally parsed');
  const review=page.getByRole('button',{name:'Review Fields',exact:true});
  await expect(review).toBeEnabled();
  await review.click();

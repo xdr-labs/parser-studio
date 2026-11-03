@@ -22,7 +22,7 @@ for(const item of valid){
   page.on('request',r=>{if(r.url().includes('/parser-pairs/generate')&&r.method()==='POST')genPosts++;});
   await page.goto('/');await page.getByLabel('Auto Parser raw logs').fill(item.raw);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('parsed completely',{timeout:20000});
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('structurally parsed',{timeout:20000});
   await page.getByRole('button',{name:'ChatGPT Assisted Parser',exact:true}).click();
   await page.getByLabel('Parser manufacturer').fill(item.vendor);
   await page.getByLabel('Parser product',{exact:true}).fill(item.product);

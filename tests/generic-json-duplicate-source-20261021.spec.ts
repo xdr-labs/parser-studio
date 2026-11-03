@@ -45,13 +45,13 @@ test('separate JSON objects with the same member names remain reviewable without
   // An unknown vendor text prefix needs the existing explicit "Use extracted
   // fields" review action; it must not be mislabeled as auto-parsed.
   await expect(page.getByLabel('Beginner analysis summary')).toContainText(
-    '0 of 1 log event parsed completely');
+    '0 of 1 log event structurally parsed');
   const recovery=page.getByLabel('Parse problem inspector')
     .getByRole('button',{name:'Use extracted fields'});
   await expect(recovery).toBeVisible();
   await recovery.click();
   await expect(page.getByLabel('Beginner analysis summary')).toContainText(
-    '1 of 1 log event parsed completely');
+    '1 of 1 log event structurally parsed');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
   await expect(source).toHaveValue(raw);
 });

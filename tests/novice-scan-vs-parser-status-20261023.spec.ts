@@ -25,7 +25,7 @@ for(const item of cases){
     await expect(ledger).toContainText('not a parser completeness result');
     await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
     const final=page.getByLabel('Beginner analysis summary');
-    await expect(final).toContainText('0 of '+item.eventCount+' log events parsed completely',{timeout:25000});
+    await expect(final).toContainText('0 of '+item.eventCount+' log events structurally parsed',{timeout:25000});
     await expect(final).toContainText(item.eventCount+' events need attention');
     await expect(ledger).toContainText('initial format scan');
     await expect(ledger.getByLabel('Full parser analysis accounting'))

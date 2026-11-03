@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowLeft,ArrowRight,CheckCircle2,CircleAlert,Search,ShieldCheck,WandSparkles,X} from 'lucide-react';
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
-import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
+import {listSafeLeafPaths,lookupFieldValue,countUnaddressableSourceValues} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
 import {suggestNormalizationCandidatesFromSuite,type NormalizationCandidate} from './normalizationCandidates';
 import {isBlockingNormalizationFinding,validateNormalizationMappings,
@@ -87,6 +87,8 @@ export default function NormalizationMappingReview({
     for(const event of suite?.events??[])for(const path of listSafeLeafPaths(event.fields))result.add(path);
     return [...result];
   },[suite]);
+  const unaddressableCount=useMemo(()=>
+    (suite?.events??[]).reduce((count,event)=>count+countUnaddressableSourceValues(event.fields),0),[suite]);
   const mappedSources=new Set(draft.mappings.map(mapping=>mapping.source));
   const officialCount=draft.mappings.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
   const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
@@ -191,7 +193,8 @@ export default function NormalizationMappingReview({
       <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
       <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
       <div><span>Vendor-only fields</span><strong>{vendorCount}</strong></div>
-      <div><span>Left out of output</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length}</strong></div>
+      <div><span>Left out of output</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length+unaddressableCount}</strong></div>
+      {unaddressableCount>0&&<div><span>Unmappable source values</span><strong>{unaddressableCount}</strong></div>}
       <div className={blocking.length?'attention':''}><span>Must fix before continuing</span><strong>{blocking.length}</strong></div>
     </div>
 

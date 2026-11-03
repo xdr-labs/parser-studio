@@ -41,7 +41,7 @@ test('common PAN-OS Traffic syslog is auto-adopted and mapped without a repair c
   await expect(page.getByRole('complementary',{name:'Parser Studio navigation'}).locator('button.rail-link')).toHaveCount(2);
   await page.getByLabel('Auto Parser raw logs').fill(raw);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('parsed completely',{timeout:10000});
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('structurally parsed',{timeout:10000});
   await expect(page.getByRole('button',{name:'Use extracted fields'})).toHaveCount(0);
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
   await expect(review).toBeEnabled();
@@ -68,7 +68,7 @@ test('common year-bearing ASA 302013 wrapper is auto-adopted as a complete event
   await page.goto('/');
   await page.getByLabel('Auto Parser raw logs').fill(raw);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('parsed completely',{timeout:10000});
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('structurally parsed',{timeout:10000});
   await expect(page.getByRole('button',{name:'Use extracted fields'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });
@@ -82,7 +82,7 @@ test('BIG-IP ASM comma KV is auto-adopted and nested leaf names drive Stellar su
   await page.goto('/');
   await page.getByLabel('Auto Parser raw logs').fill(raw);
   await page.getByRole('button',{name:'Analyze Logs'}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('parsed completely',{timeout:10000});
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('structurally parsed',{timeout:10000});
   await expect(page.getByRole('button',{name:'Use extracted fields'})).toHaveCount(0);
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await page.getByRole('button',{name:'Map Fields',exact:true}).click();

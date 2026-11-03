@@ -56,10 +56,10 @@ test('positional CSV summary updates from needing review to reviewed and ready',
   ].join('\n'));
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('0 of 2 log events parsed completely',{timeout:20000});
+    .toContainText('0 of 2 log events structurally parsed',{timeout:20000});
   await page.getByLabel('Reviewed CSV column names').fill('timestamp,src_ip,dst_ip,action');
   await page.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('2 of 2 log events parsed completely',{timeout:20000});
+    .toContainText('2 of 2 log events structurally parsed',{timeout:20000});
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
 });

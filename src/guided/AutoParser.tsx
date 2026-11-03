@@ -1185,7 +1185,7 @@ export default function AutoParser({
          <ParserIdentityCard draft={draft} setDraft={setDraft} warnIfPlaceholder/>}
        <div className="auto-parser-summary">
          <span>Sample logs <strong>{report.sourceCount}</strong></span>
-         <span>Parsed successfully <strong>{suite?.counts.matched??0}</strong></span>
+         <span>Browser extracted <strong>{suite?.counts.matched??0}</strong></span>
          <span>Ready to output <strong>{suite?.counts.normalized??0}</strong></span>
          <span>Need fixing <strong>{suite?.counts.failures??0}</strong></span>
        </div>
@@ -1198,9 +1198,9 @@ export default function AutoParser({
          {busy?'Testing every sample…':'Run Final Test & Create Files'}
        </button>
        {currentEvidence&&<div className="auto-parser-result" aria-label="Auto Parser test evidence">
-         <strong>{currentEvidence.status==='PASS'?'All sample logs passed the final test':'Parser creation stopped'}</strong>
+         <strong>{currentEvidence.status==='PASS'?'Browser preview and generated-file integrity checks passed':'Parser creation stopped'}</strong>
          <span>{currentEvidence.status==='PASS'
-           ?`${currentEvidence.total} sample event${currentEvidence.total===1?'':'s'} tested successfully. Nothing has been deployed.`
+           ?`${currentEvidence.total} sample event${currentEvidence.total===1?'':'s'} passed browser checks. Native runtime and Stellar target remain unverified; nothing has been deployed.`
            :'One or more sample logs still need review. No parser files were released.'}</span>
          {currentEvidence.issues.map((issue,i)=><span key={i}>{issue}</span>)}
          {advanced&&<small>
@@ -1210,7 +1210,7 @@ export default function AutoParser({
        </div>}
        {currentPair&&<div className="auto-parser-download" aria-label="Generated parser files">
          <strong><CheckCircle2 size={17}/> Parser files created successfully</strong>
-         <span>All current samples passed. The files have not been installed in a live Stellar system.</span>
+         <span>The browser samples passed and DRAFT files were generated. Native runtime and Stellar target verification are separate; nothing was deployed.</span>
          <details className="auto-parser-recipe" aria-label="Parser file verification details">
            <summary>Technical verification details</summary>
            <span>File integrity checked · Native parser runtime and Stellar Cyber target not verified</span>

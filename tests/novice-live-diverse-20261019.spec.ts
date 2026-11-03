@@ -32,7 +32,7 @@ for(const item of cases){
   const detail=(await summary.innerText()).replace(/\s+/g,' ').slice(0,290);
   const problems=await page.getByLabel('Parse problem inspector').count();
   if(item.id==='Quoted multiline CSV'){
-   await expect(summary).toContainText('0 of 3 log events parsed completely');
+   await expect(summary).toContainText('0 of 3 log events structurally parsed');
    await expect(summary.getByLabel('Multiline CSV recovery')).toBeVisible();
   }
   if(item.id==='Zeek TSV with schema header')
@@ -49,7 +49,7 @@ test('beginner follows AWS WAF fields into mapping review',async({page})=>{
  await page.goto('/');
  await page.getByLabel('Auto Parser raw logs').fill(cases[0].raw);
  await page.getByRole('button',{name:'Analyze Logs'}).click();
- await expect(page.getByLabel('Beginner analysis summary')).toContainText('parsed completely',{timeout:20000});
+ await expect(page.getByLabel('Beginner analysis summary')).toContainText('structurally parsed',{timeout:20000});
  const review=page.getByRole('button',{name:'Review Fields',exact:true});
  await expect(review).toBeEnabled();
  await review.click();
