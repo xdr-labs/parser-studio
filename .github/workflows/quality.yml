@@ -261,6 +261,7 @@ jobs:
           path: |
             test-results/
             playwright-report/
+            /tmp/parser-rfc5424-msg-chromium-artifacts-20261019/
           if-no-files-found: ignore
 
 

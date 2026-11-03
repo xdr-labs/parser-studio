@@ -47,7 +47,7 @@ for(const item of [
   await page.getByRole('button',{name:'Analyze Logs'}).click();
   const summary=page.getByLabel('Beginner analysis summary');
   await expect(summary).toBeVisible({timeout:16000});
-  await expect(summary).toContainText(/(?:Values found|parsed completely)/);
+  await expect(summary).toContainText(/(?:Values found|structurally parsed)/);
   await expect(raw).toHaveValue(item.raw);
   await expect(page.getByText('Native verified',{exact:true})).toHaveCount(0);
   const review=page.getByRole('button',{name:'Review Fields',exact:true});
