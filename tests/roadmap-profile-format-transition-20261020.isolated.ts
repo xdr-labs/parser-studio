@@ -27,7 +27,7 @@ test('a novice switches a generic profile to Zeek CSV and saves and reviews the 
   const source=page.getByLabel('Auto Parser raw logs');
   await source.fill(original);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely',{timeout:30000});
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event structurally parsed',{timeout:30000});
   await page.getByRole('button',{name:'Local Versions',exact:true}).click();
   const history=page.getByLabel('Local Versions workspace');
   await history.getByLabel('Local version name').fill('Reviewed generic profile');

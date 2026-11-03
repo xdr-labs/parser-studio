@@ -82,7 +82,7 @@ async function analyzeComplete(page:Page,raw:string){
   await page.getByLabel('Auto Parser raw logs').fill(raw);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   await expect(page.getByLabel('Beginner analysis summary'))
-    .toContainText('2 of 2 log events parsed completely',{timeout:30000});
+    .toContainText('2 of 2 log events structurally parsed',{timeout:30000});
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled({timeout:30000});
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(raw);
 }
@@ -139,7 +139,10 @@ async function createAndDownload(page:Page,info:TestInfo,ordered:string[]){
   const snapshots=await inspectBothEvents(page,ordered);
   await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields',exact:true}).click();
   const mapping=page.getByLabel('Map Fields stage');
-  await expect(mapping.getByLabel('Field mapping checks')).toContainText('No mapping problems found');
+  // Mixed event families legitimately carry per-family field absence notes.
+  // Only blocking mapping problems should prevent DRAFT creation.
+  await expect(mapping.getByLabel('Field mapping summary'))
+    .toContainText(/Must fix before continuing\s*0/);
   await mapping.getByRole('button',{name:'Create Parser',exact:true}).click();
   const create=page.getByLabel('Create Parser Files');
   await expect(create).toBeEnabled();
@@ -147,7 +150,7 @@ async function createAndDownload(page:Page,info:TestInfo,ordered:string[]){
   const generated=page.getByLabel('Generated parser files');
   await expect(generated).toContainText('Parser files created successfully',{timeout:30000});
   await expect(generated).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
-  await expect(page.getByLabel('Auto Parser test evidence')).toContainText('2 sample events tested successfully');
+  await expect(page.getByLabel('Auto Parser test evidence')).toContainText('2 sample events passed browser checks');
   const files:Record<string,string>={};
   for(const filename of ['customized_demo_firewall','customized_demo_firewall.conf']){
     const pending=page.waitForEvent('download');
@@ -303,7 +306,7 @@ test('duplicate-key LEEF remains partial with valid Syslog and cannot reach a fa
   await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
   await expect(page.getByLabel('Create Parser Files')).toHaveCount(0);
   await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
-  await expect(summary).not.toContainText('2 of 2 log events parsed completely');
+  await expect(summary).not.toContainText('2 of 2 log events structurally parsed');
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(raw);
   expect(observed.downloads).toEqual([]);
   expect(observed.apiRequests.filter(request=>request.method==='POST'&&

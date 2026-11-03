@@ -44,7 +44,7 @@ async function analyzeBatch(page:Page,info:TestInfo,raw:string,count:number){
   expect(requests).toHaveLength(1);
   expect(JSON.parse(requests[0]!).raw).toBe(raw);
   const summary=page.getByLabel('Beginner analysis summary');
-  await expect(summary).toContainText(`${count} of ${count} log events parsed completely`,{timeout:30000});
+  await expect(summary).toContainText(`${count} of ${count} log events structurally parsed`,{timeout:30000});
   await expect(page.getByLabel('Log analysis progress')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeEnabled();
   await expect(source).toHaveValue(raw);
@@ -139,7 +139,7 @@ test('cancel and source edits reject delayed successful results before a fresh a
   await expect(review).toBeDisabled();
 
   await analyze.click();
-  await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event parsed completely',{timeout:30000});
+  await expect(page.getByLabel('Beginner analysis summary')).toContainText('1 of 1 log event structurally parsed',{timeout:30000});
   await expect(source).toHaveValue(fresh);
   await expect(review).toBeEnabled();
   await review.click();

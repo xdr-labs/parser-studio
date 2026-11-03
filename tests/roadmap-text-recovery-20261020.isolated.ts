@@ -83,7 +83,7 @@ test('a novice preserves partial source values, reviews an independent fix, and 
   await page.getByLabel('Auto Parser raw logs').fill(source);
   await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
   const summary=page.getByLabel('Beginner analysis summary');
-  await expect(summary).toContainText('0 of 2 log events parsed completely',{timeout:20000});
+  await expect(summary).toContainText('0 of 2 log events structurally parsed',{timeout:20000});
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
   const preserved=page.getByLabel('Preserved source values');
   await preserved.locator('summary').click();
@@ -125,7 +125,7 @@ test('a novice preserves partial source values, reviews an independent fix, and 
   await expect(apply).toBeDisabled();
   await page.getByLabel('Approve tested fix').check();
   await apply.click();
-  await expect(summary).toContainText('2 of 2 log events parsed completely');
+  await expect(summary).toContainText('2 of 2 log events structurally parsed');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
   await downloadDraft(page,info);
   expect(errors).toEqual([]);
