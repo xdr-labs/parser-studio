@@ -12,7 +12,9 @@ describe('beginner automatic Generic Structural handoff',()=>{
     expect(draft.mappings.find(x=>x.source==='generic.fields.dest_ip')).toMatchObject({target:'dstip',type:'ip'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.dest_port')).toMatchObject({target:'dstport'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.ip_client')).toMatchObject({target:'srcip',type:'ip'});
-    expect(draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'proto_name',type:'string'});
+    // BIG-IP HTTPS is an application protocol, not an L4 TCP/UDP/ICMP name.
+    // Keep it vendor-local rather than corrupt Stellar 7.0 proto_name.
+    expect(draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'generic.fields.protocol',type:'string'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.date_time')).toMatchObject({target:'timestamp',type:'timestamp'});
     // Both the Syslog envelope host and the BIG-IP unit_hostname contain
     // valid hostname values; neither is silently selected as authoritative.
