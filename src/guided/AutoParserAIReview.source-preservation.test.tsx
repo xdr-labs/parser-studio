@@ -4,6 +4,12 @@ import {createHash,webcrypto} from 'node:crypto';
 import {createDraft} from '../model';
 import {preview} from '../parser';
 import AutoParserAIReview from './AutoParserAIReview';
+
+// Component tests use a deterministic parser simulation, never browser workers.
+vi.mock('../previewWorkerClient',()=>({
+ runInWorker:async(raw:string,draft:import('../model').ParserDraft)=>
+   (await import('../parser')).preview(raw,draft),
+}));
 import type {MultiPassBatchPreview} from './multipassPreviewClient';
 
 

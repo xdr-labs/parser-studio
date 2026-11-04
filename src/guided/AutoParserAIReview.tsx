@@ -9,9 +9,20 @@ import {compareCandidate,compareMappingCorrectionCandidate,describeScopedTypeCha
 import {buildReviewableRecipe} from './parserRecipeV2';
 import {recoveryResponseContract,sourceMarkers} from './chatGptPromptBuilder';
 import {MAX_EVENTS,preview,splitEvents} from '../parser';
+import {runInWorker} from '../previewWorkerClient';
 import {defaultGuidedOptions} from './contract';
 import {sha256Utf8Hex} from '../sha256';
 import {requestMultiPassBatchPreview,type MultiPassBatchPreview} from './multipassPreviewClient';
+
+/** Regex candidates must never run synchronously on React's main thread.
+ * The same isolated 15s worker used by the ordinary live preview is mandatory.
+ */
+function reviewCandidatePreview(source:string,draft:ParserDraft):Promise<SuiteResult>{
+ const customRegex=draft.format==='regex'||
+   ((draft.format==='syslog_rfc3164'||draft.format==='syslog_rfc5424')&&
+     draft.syslogBodyFormat==='regex');
+ return customRegex?runInWorker(source,draft):Promise.resolve(preview(source,draft));
+}
 
 type HoldoutEvidenceRequester=(source:string)=>Promise<MultiPassBatchPreview>;
 interface Props {raw:string;status:string;onChatGPT:()=>void;source?:string;draft?:ParserDraft;suite?:SuiteResult;initialByteRange?:{startByte:number;endByte:number}|null;selectionContext?:{kind:'field'|'residual';path?:string};onApplyCandidate?:(draft:ParserDraft)=>void;importOnly?:boolean;protectedSourceValuesByEvent?:string[][];protectedResidualTextByEvent?:string[][];holdoutEvidenceRequester?:HoldoutEvidenceRequester}
@@ -240,7 +251,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
    let holdoutProtectedValues:string[][]|undefined;
    let holdoutProtectedResiduals:string[][]|undefined;
    try{
-    candidateSuite=preview(source,proposal.candidate);candidateHoldout=preview(holdout,proposal.candidate);
+    candidateSuite=await reviewCandidatePreview(source,proposal.candidate);candidateHoldout=await reviewCandidatePreview(holdout,proposal.candidate);
     const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
      candidateMode==='recovery',suite);
     if(protectedRegression){
@@ -272,7 +283,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      }
     }
     const comparisonInput={source,baseline:suite,candidate:candidateSuite,
-     holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
+     holdout:{source:holdout,baseline:await reviewCandidatePreview(holdout,draft),candidate:candidateHoldout}};
     report=candidateMode==='correction'&&correctionScope?
      compareMappingCorrectionCandidate(comparisonInput,correctionScope):compareCandidate(comparisonInput);
     typeChange=candidateMode==='correction'&&correctionScope?
@@ -325,14 +336,14 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
      setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
      setImportResult('Fix discarded. Existing parser rules remain unchanged.');
     }}>Discard Fix</button>
-    <button type="button" disabled={!approval||!onApplyCandidate} onClick={()=>{
+    <button type="button" disabled={!approval||!onApplyCandidate||importBusy} onClick={async()=>{
      if(!approval||!approvedCandidate||!onApplyCandidate||!source||!draft||!suite)return;
      if(!holdoutAttested||validatedEvidence!==evidenceFingerprint()){
       setApprovedCandidate(null);setApproval(false);setValidatedEvidence('');
       setImportResult('The logs or ChatGPT result changed after testing. Test the fix again before applying it.');return;
      }
      try{
-      const candidateSuite=preview(source,approvedCandidate.draft),candidateHoldout=preview(holdout,approvedCandidate.draft);
+      const candidateSuite=await reviewCandidatePreview(source,approvedCandidate.draft),candidateHoldout=await reviewCandidatePreview(holdout,approvedCandidate.draft);
       const protectedRegression=protectedValueRegression(candidateSuite,protectedSourceValuesByEvent,
        approvedCandidate.mode==='recovery',suite);
       if(protectedRegression){
@@ -359,7 +370,7 @@ export default function AutoParserAIReview({raw,status,onChatGPT,source,draft,su
        setImportResult('The fix is no longer safe: additional test event '+holdoutResidualRegression.event+' would leave '+holdoutResidualRegression.missing+' of '+holdoutResidualRegression.required+' original source regions unaccounted for. No changes were made.');return;
       }
       const recheckInput={source,baseline:suite,candidate:candidateSuite,
-       holdout:{source:holdout,baseline:preview(holdout,draft),candidate:candidateHoldout}};
+       holdout:{source:holdout,baseline:await reviewCandidatePreview(holdout,draft),candidate:candidateHoldout}};
       const recheck=approvedCandidate.mode==='correction'&&approvedCandidate.scope?
        compareMappingCorrectionCandidate(recheckInput,approvedCandidate.scope):compareCandidate(recheckInput);
       if(!recheck.acceptedWithoutRegression||recheck.holdoutStatus!=='TESTED'||

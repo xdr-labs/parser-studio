@@ -19,6 +19,11 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Exact synthetic-only 2026-11-04 audit remediation template with fail-closed
+  // dotted-source ambiguity, Stellar protocol semantics and bounded regex guards.
+  // This SHA approves only the same loopback/null-sink POC contract verified
+  // below: project IR, host, port, tenant, recompile byte-parity and owner approval.
+  "d0f276cdff8708a2d8a7b4d120963d96e08bd521679b542e104b43ef1e4b8eb7",
   // Exact audited 2026-11-03 lossless KV + scalar parity template.
   // The existing test-only, loopback, null-sink, approval and read-back
   // restrictions remain mandatory; no general Stellar upload is enabled.

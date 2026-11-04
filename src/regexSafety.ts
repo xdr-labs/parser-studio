@@ -3,6 +3,50 @@
  * still enforces an execution timeout, and this check is NOT a proof that all
  * accepted JS regexes have linear complexity or match native Ruby/Fluentd.
  */
+/** Fail closed on quantified groups containing another repetition.
+ * Length limits alone do not bound backtracking (for example (a{1,3})+).
+ * The browser worker independently imposes a wall-clock deadline.
+ */
+function hasNestedQuantifiers(pattern:string):boolean {
+  const stack:{repeated:boolean}[]=[];
+  let characterClass=false;
+  for(let i=0;i<pattern.length;i++){
+    const char=pattern[i];
+    if(char==='\\'){i++;continue;}
+    if(char==='['&&!characterClass){characterClass=true;continue;}
+    if(char===']'&&characterClass){characterClass=false;continue;}
+    if(characterClass)continue;
+    if(char==='('){
+      stack.push({repeated:false});
+      if(pattern.startsWith('(?:',i)){i+=2;continue;}
+      if(pattern.startsWith('(?<',i)){
+        const end=pattern.indexOf('>',i+3);
+        if(end>=0){i=end;continue;}
+      }
+      continue;
+    }
+    if(char===')'){
+      const frame=stack.pop();
+      if(!frame)continue;
+      const suffix=pattern.slice(i+1);
+      const bound=/^\{(\d{1,8})(?:,(\d{0,8}))?\}/.exec(suffix);
+      const repeats=suffix.startsWith('+')||suffix.startsWith('*')||
+        Boolean(bound&&(bound[2]===''||Number(bound[2]??bound[1])>1));
+      if(frame.repeated&&repeats)return true;
+      if(stack.length&&(frame.repeated||repeats))stack[stack.length-1]!.repeated=true;
+      continue;
+    }
+    if(!stack.length)continue;
+    if(char==='*'||char==='+'||char==='?'){
+      stack[stack.length-1]!.repeated=true;
+    }else if(char==='{'){
+      const bound=/^\{\d{1,8}(?:,\d{0,8})?\}/.exec(pattern.slice(i));
+      if(bound){stack[stack.length-1]!.repeated=true;i+=bound[0].length-1;}
+    }
+  }
+  return false;
+}
+
 export function validatePreviewRegexPattern(pattern: string): string | null {
   if (!pattern.trim()) return 'Enter a named-group regular expression';
   if (pattern.length > 256) return 'Regex exceeds 256 characters';
@@ -21,6 +65,8 @@ export function validatePreviewRegexPattern(pattern: string): string | null {
   if (/\((?:\?:)?[^()]*\|[^()]*\)(?:[+*]|\{\d+(?:,\d*)?\})/.test(pattern)) {
     return unsupported;
   }
+  if (hasNestedQuantifiers(pattern)) return unsupported;
+
   // Adjacent repetitions of the identical literal character are ambiguous.
   if (/([A-Za-z0-9])(?:[*+])\1(?:[*+])/.test(pattern)) return unsupported;
 

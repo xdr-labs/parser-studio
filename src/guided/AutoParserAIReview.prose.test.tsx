@@ -5,6 +5,12 @@ import {createDraft} from '../model';
 import {preview} from '../parser';
 import AutoParserAIReview from './AutoParserAIReview';
 
+// Component tests use a deterministic parser simulation, never browser workers.
+vi.mock('../previewWorkerClient',()=>({
+ runInWorker:async(raw:string,draft:import('../model').ParserDraft)=>
+   (await import('../parser')).preview(raw,draft),
+}));
+
 describe('ChatGPT answer with explanation around the JSON recipe',()=>{
  afterEach(()=>vi.unstubAllGlobals());
  it('filters the prose and reviews the recipe instead of rejecting it as invalid JSON',async()=>{
