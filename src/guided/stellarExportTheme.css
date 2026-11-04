@@ -169,3 +169,22 @@ body,.app-main,.two-path-shell{background:var(--bg);color:var(--text)}
   flex:0 0 auto;border:1px solid #c8dce2;background:#fff;color:#23697a;
   border-radius:6px;padding:6px 9px;font-size:10px;font-weight:700
 }
+
+/* Manual ChatGPT JSONata mapping review, using the existing mapping-stage theme. */
+.jsonata-mapping-assistant .normalization-section-head>button,
+.jsonata-assist-step>button,.jsonata-assist-close{display:inline-flex;align-items:center;gap:7px;border:1px solid #d4cfd1;border-radius:8px;padding:9px 12px;background:#fff;font-size:12px;font-weight:700;color:var(--charcoal);cursor:pointer}
+.jsonata-mapping-assistant button:disabled{opacity:.55;cursor:not-allowed}
+.jsonata-assist-body{display:grid;gap:14px;margin-top:14px}
+.jsonata-assist-step{display:grid;justify-items:start;gap:10px;border-top:1px solid var(--line);padding-top:14px;width:100%}
+.jsonata-assist-step h4{margin:0;font-size:13px}
+.jsonata-assist-step p{margin:0;font-size:11px;color:var(--muted)}
+.jsonata-assist-step>label:not(.jsonata-assist-check){display:grid;gap:7px;width:100%;font-size:11px;font-weight:700}
+.jsonata-assist-step textarea{width:100%;min-height:100px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:11px;font:11px/1.5 ui-monospace,SFMono-Regular,monospace;color:var(--charcoal);background:#fafafa}
+.jsonata-assist-check{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.6}
+.jsonata-assist-check input{margin-top:3px}
+.jsonata-assist-rows{display:grid;gap:7px;width:100%;max-height:340px;overflow:auto}
+.jsonata-assist-row{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--line);border-radius:8px;background:#faf9f9}
+.jsonata-assist-row>div{min-width:0;display:grid;gap:3px}.jsonata-assist-row strong{font-size:11px;overflow-wrap:anywhere}
+.jsonata-assist-row span,.jsonata-assist-row small{font-size:10px;overflow-wrap:anywhere;color:var(--muted)}
+.jsonata-assist-error,.jsonata-assist-info{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:8px;font-size:11px;margin:0}
+.jsonata-assist-error{background:#fff3f3;color:var(--red)}.jsonata-assist-info{background:#f5fbf8;color:var(--green)}
