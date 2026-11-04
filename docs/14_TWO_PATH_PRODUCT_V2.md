@@ -296,3 +296,18 @@ loopback UDP/TCP listener validation without any real sensor.
   their historical prototype interfaces are not part of the product's scope.
 - The owner decides whether to redact a manually copied ChatGPT prompt;
   show a warning without a mandatory masking-consent checkbox.
+
+## ChatGPT-assisted JSONata field mapping (2026-11-04)
+
+Within **Auto Parser → Map Fields** (not a third workflow), users can prepare a
+privacy-reviewed ChatGPT prompt from extracted field paths, copy it manually,
+paste a strict JSONata selector mapping proposal, review local dictionary/type/
+semantic checks for every event, and explicitly approve compatible destination
+fields. The feature never sends raw logs to an AI provider automatically.
+
+The supported JSONata subset consists of direct property selectors only;
+functions, calculations and arbitrary expressions remain unsupported because
+this product must compile the same mapping to native Ruby/.conf. All unsupported
+proposals are blocked and no unverified Stellar DP compatibility is claimed.
+Detailed workflow, schema, semantic guards and tests are in
+[the JSONata mapping acceptance note](verification/20261104-chatgpt-jsonata-mapping.md).

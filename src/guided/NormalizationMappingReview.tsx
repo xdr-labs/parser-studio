@@ -8,6 +8,7 @@ import {suggestNormalizationCandidatesFromSuite,type NormalizationCandidate} fro
 import {isBlockingNormalizationFinding,validateNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
+import JsonataMappingAssistant from './JsonataMappingAssistant';
 import {
   findStellarMetadataField,searchStellarMetadataCatalog,STELLAR_METADATA_CATALOG,
   STELLAR_METADATA_CATALOG_PROVENANCE,
@@ -251,6 +252,8 @@ export default function NormalizationMappingReview({
           </article>)}
         </div>}
     </section>
+
+    {suite&&<JsonataMappingAssistant draft={draft} setDraft={setDraft} suite={suite} pending={pending}/>}
 
     <section className="normalization-editor" aria-label="Field mapping editor">
       <div className="normalization-section-head">
