@@ -22,7 +22,7 @@ export type ReviewStage=
  | {op:'parse_generic_structural';profile?:GenericStructuralProfile}
  | {op:'parse_regex';pattern:string}
  | {op:'parse_csv';columns:string[];delimiter:','|';'|'\t'}
- | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields'}
+ | {op:'map_field';source:string;target:string;data_type:'string'|'integer'|'ip'|'port'|'boolean'|'date';group:'top_fields'|'ns_fields'|'vendor_fields';source_path_kind?:'literal_root'|'nested'}
  | {op:'cast_type';target:string;data_type:'integer'|'ip'|'port'|'boolean'|'date';timezone?:'UTC'}
  | {op:'split_field';source:string;delimiter:string;targets:string[]}
  | {op:'merge_fields';sources:string[];delimiter:string;target:string}
@@ -93,7 +93,9 @@ function validateStage(input:unknown):input is ReviewStage{
    Array.isArray(s.columns)&&s.columns.length>=1&&s.columns.length<=100&&
    s.columns.every(safePath)&&new Set(s.columns).size===s.columns.length&&
    [',',';','\t'].includes(String(s.delimiter));
-  case 'map_field':return exact(s,['op','source','target','data_type','group'])&&
+  case 'map_field':return (exact(s,['op','source','target','data_type','group'])||
+    (exact(s,['op','source','target','data_type','group','source_path_kind'])&&
+     ['literal_root','nested'].includes(String(s.source_path_kind))))&&
    safePath(s.source)&&safePath(s.target)&&TYPES.includes(String(s.data_type))&&
    GROUPS.includes(String(s.group));
   case 'cast_type':return (
@@ -290,7 +292,8 @@ export async function buildReviewableRecipe(
    const data_type=mapping.type==='timestamp'?'date':mapping.type;
    if(!TYPES.includes(data_type)||!GROUPS.includes(group))return fail('MODEL_REVIEW_REQUIRED');
    stages.push({op:'map_field',source:mapping.source,target:mapping.target,
-     data_type:data_type as Extract<ReviewStage,{op:'map_field'}>['data_type'],group});
+     data_type:data_type as Extract<ReviewStage,{op:'map_field'}>['data_type'],group,
+     ...(mapping.sourcePathKind?{source_path_kind:mapping.sourcePathKind}:{})});
    if(data_type!=='string'){
      stages.push({op:'cast_type',target:mapping.target,
        data_type:data_type as Extract<ReviewStage,{op:'cast_type'}>['data_type'],

@@ -61,7 +61,7 @@ test("POC disposable writer accepts only reviewed template and exactly localhost
   const proof=requireDisposablePocWrite(plan);
   assert.equal(proof.port,7891);
   assert.equal(proof.protocols.length,2);
-  assert.equal(proof.templateSha256,"d0f276cdff8708a2d8a7b4d120963d96e08bd521679b542e104b43ef1e4b8eb7");
+  assert.equal(proof.templateSha256,"883dcd853ba16b3b7bb302028fded0f09afb2336e07688e584d7bc4e895148a3");
   assert.equal(proof.syntheticFixtureOnly,true);
   assert.equal(proof.runtimeParsingVerified,false);
   assert.equal(JSON.stringify(proof).includes("Base64.strict_decode64"),false);

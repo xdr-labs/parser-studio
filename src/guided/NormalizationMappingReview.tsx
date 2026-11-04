@@ -42,11 +42,11 @@ function displayValue(value:unknown):string{
   const rendered=JSON.stringify(value);
   return rendered?.length>80?rendered.slice(0,77)+'…':rendered??String(value);
 }
-function sourceValues(suite:SuiteResult|undefined,source:string):string[]{
+function sourceValues(suite:SuiteResult|undefined,source:string,kind?:MappingRule['sourcePathKind']):string[]{
   if(!suite)return [];
   const values:string[]=[];
   for(const event of suite.events){
-    const found=lookupFieldValue(event.fields,source);
+    const found=lookupFieldValue(event.fields,source,kind);
     if(found.found&&!values.includes(displayValue(found.value)))values.push(displayValue(found.value));
     if(values.length===3)break;
   }
@@ -66,6 +66,7 @@ const FINDING_LABEL:Record<NormalizationFindingCode,string>={
   CATALOG_TYPE_MISMATCH:'The selected value type does not match the Stellar field',
   TARGET_RESERVED:'This Stellar field is managed by the system',
   BACKEND_TYPE_UNSUPPORTED:'This Stellar field cannot be mapped directly here',
+  PROTOCOL_CONFLICT:'The IP protocol number and Layer 4 protocol name contradict each other',
 };
 
 /** Vendor-only lists longer than this are folded so the matched fields stay easy to reach. */
@@ -141,7 +142,7 @@ export default function NormalizationMappingReview({
       const mappings=old.mappings.map(mapping=>{
         if(mapping.id!==id)return mapping;
         if(key==='type')return {...mapping,type:value as MappingRule['type']};
-        if(key==='source')return {...mapping,source:value};
+        if(key==='source')return {...mapping,source:value,sourcePathKind:undefined};
         const catalog=findStellarMetadataField(value);
         if(catalog?.mappable&&catalog.mappingType&&catalog.group){
           groups[id]=catalog.group;
@@ -303,8 +304,11 @@ export default function NormalizationMappingReview({
           </label>
           <div className="normalization-map-meta">
             <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Generated as '+(draft.vendor||'vendor')+'.'+mapping.target:'Needs your review'}</span>
-            <span>{sourceValues(suite,mapping.source).length} example value{sourceValues(suite,mapping.source).length===1?'':'s'} shown</span>
+            <span>{sourceValues(suite,mapping.source,mapping.sourcePathKind).length} example value{sourceValues(suite,mapping.source,mapping.sourcePathKind).length===1?'':'s'} shown</span>
           </div>
+          {mapping.sourcePathKind&&<span className="normalization-source-kind">
+            JSONata selector: {mapping.sourcePathKind==='literal_root'?'literal root key':'nested field path'}
+          </span>}
           <div className="normalization-map-actions">
             <button type="button" aria-label="Choose Stellar field"
               onClick={()=>{setActiveMappingId(mapping.id);setCatalogQuery(group==='vendor_fields'?'':mapping.target);}}>

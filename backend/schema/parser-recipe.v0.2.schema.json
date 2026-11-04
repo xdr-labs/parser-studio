@@ -335,6 +335,13 @@
                   "ns_fields",
                   "vendor_fields"
                 ]
+              },
+              "source_path_kind": {
+                "type": "string",
+                "enum": [
+                  "literal_root",
+                  "nested"
+                ]
               }
             }
           },

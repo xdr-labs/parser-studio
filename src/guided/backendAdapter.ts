@@ -13,6 +13,7 @@ export type BackendFieldType = 'string' | 'integer' | 'ip' | 'port' | 'boolean' 
 export interface BackendField {
   normalized_name: string;
   data_type: BackendFieldType;
+  source_path_kind?: 'literal_root' | 'nested';
   time_format?: 'iso8601';
   timezone?: 'UTC';
 }
@@ -137,6 +138,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     collection[mapping.source] = {
       normalized_name: mapping.target,
       data_type,
+      ...(mapping.sourcePathKind?{source_path_kind:mapping.sourcePathKind}:{}),
       ...(data_type === 'date' ? { time_format: 'iso8601' as const, timezone: 'UTC' as const } : {}),
     };
     // Backend classification is evaluated after normalization and currently
@@ -194,6 +196,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
             mapping.type as BackendFieldType;
           bucket[mapping.source]={
             normalized_name:mapping.target,data_type,
+            ...(mapping.sourcePathKind?{source_path_kind:mapping.sourcePathKind}:{}),
             ...(data_type==='date'?{time_format:'iso8601' as const,timezone:'UTC' as const}:{}),
           };
         }

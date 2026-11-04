@@ -19,10 +19,16 @@ function objectRecord(value: unknown): value is Record<string, unknown> {
 
 export function lookupFieldValue(
   fields: Record<string, unknown>, path: string,
+  kind?: 'literal_root' | 'nested',
 ): { found: true; value: unknown } | { found: false } {
   if (!safeLocalFieldPath(path) || path.split('.').length > MAX_DEPTH) return { found: false };
-  // Match the backend's first direct-key check for flat KV keys containing dots.
-  if (Object.prototype.hasOwnProperty.call(fields, path)) {
+  // A reviewed JSONata selector preserves whether it selected the literal
+  // root key `a.b` or nested a -> b. Legacy mappings stay flexible.
+  if(kind==='literal_root'){
+    return Object.prototype.hasOwnProperty.call(fields,path)
+      ?{found:true,value:fields[path]}:{found:false};
+  }
+  if (kind!=='nested' && Object.prototype.hasOwnProperty.call(fields, path)) {
     return { found: true, value: fields[path] };
   }
   let value: unknown = fields;

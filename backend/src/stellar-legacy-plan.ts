@@ -19,6 +19,10 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Exact synthetic-only 2026-11-04 JSONata path, ISO calendar,
+  // protocol-pair and JSON serialization corrections. Original loopback-only,
+  // null-sink, owner approval and recompile byte-parity gates remain required.
+  "883dcd853ba16b3b7bb302028fded0f09afb2336e07688e584d7bc4e895148a3",
   // Exact synthetic-only 2026-11-04 audit remediation template with fail-closed
   // dotted-source ambiguity, Stellar protocol semantics and bounded regex guards.
   // This SHA approves only the same loopback/null-sink POC contract verified
