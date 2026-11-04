@@ -14,7 +14,7 @@ const matrix=[
   {file:'05-relay-holdout.log',vendor:'Fortinet',product:'FortiGate',relay:true},
   {file:'06-panos-traffic-issue.log',vendor:'Palo Alto',product:'PAN-OS',relay:false},
 ] as const;
-test.skip(process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1',
+test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),
   'Requires a pinned real local backend, not a capability mock.');
 for(const item of matrix){
   test('documentation full DRAFT authoring '+item.file,async({page})=>{
