@@ -8,7 +8,7 @@ import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates
 import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
-const MAX_EXPLICIT_MAPPINGS=60;
+const MAX_EXPLICIT_MAPPINGS=100;
 const NON_DATA_PATHS=new Set([
   'generic.mode','generic.delimiter',
 ]);

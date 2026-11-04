@@ -1,0 +1,82 @@
+{
+  "contract": "parser-studio.recipe.v0.2",
+  "schemaRevision": "0.2",
+  "compilerMode": "REVIEW_ONLY",
+  "projectId": "draft-snort_snort_3",
+  "sourceFormat": "regex",
+  "bodyFormat": "regex",
+  "sample": {
+    "sha256": "a3e78f6e4660338664eae29c4be53f5714eebfb2f0d38f84ba1aad0224226cc4",
+    "events": 1
+  },
+  "stages": [
+    {
+      "op": "split_event",
+      "boundary": "single-line"
+    },
+    {
+      "op": "parse_regex",
+      "pattern": "^(?<raw_event>.*?(?:\\[Classification: (?<classification>[^\\]]+)\\] )?\\[Priority: (?<priority>\\d+)\\](?: \\[AppID: (?<appid>[^\\]]+)\\])? \\{(?<protocol>\\w+)\\} (?<srcendpoint>[\\d.]+:\\d+) -> (?<dstendpoint>[\\d.]+:\\d+))$"
+    },
+    {
+      "op": "map_field",
+      "source": "raw_event",
+      "target": "raw_event",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "map_field",
+      "source": "classification",
+      "target": "classification",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "map_field",
+      "source": "priority",
+      "target": "priority",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "map_field",
+      "source": "appid",
+      "target": "appid",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "map_field",
+      "source": "protocol",
+      "target": "protocol",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "map_field",
+      "source": "srcendpoint",
+      "target": "srcendpoint",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "map_field",
+      "source": "dstendpoint",
+      "target": "dstendpoint",
+      "group": "vendor_fields",
+      "data_type": "string"
+    },
+    {
+      "op": "classify",
+      "defaultIndex": "syslog",
+      "rules": []
+    },
+    {
+      "op": "fallback_unparsed",
+      "mode": "retain_unparsed"
+    }
+  ],
+  "nativeVerified": false,
+  "targetVerified": false
+}

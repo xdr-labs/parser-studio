@@ -1,0 +1,36 @@
+import {test,expect} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+const root=resolve('tests/fixtures/docs-practice-20261104');
+
+test('published Snort original plus reviewed recipe and independent holdout, real browser and backend',async({page})=>{
+  test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),'Requires real pinned compiler.');
+  test.setTimeout(80000);
+  const errors:string[]=[];
+  page.on('pageerror',err=>errors.push(err.message));
+  const source=readFileSync(resolve(root,'03-snort-alert.log'),'utf8');
+  const holdout=readFileSync(resolve(root,'03-snort-holdout.log'),'utf8');
+  const recipe=readFileSync(resolve(root,'03-snort-reviewed-recipe.json'),'utf8');
+  await page.goto('/?workspace=chatgpt');
+  await expect(page.getByRole('main',{name:'ChatGPT Assisted Parser'})).toBeVisible();
+  await page.getByLabel('Parser manufacturer').fill('Snort');
+  await page.getByLabel('Parser product',{exact:true}).fill('Snort 3');
+  await page.getByLabel('ChatGPT local sample logs').fill(source);
+  await page.getByRole('button',{name:'Prepare ChatGPT Prompt'}).click();
+  await expect(page.getByLabel('ChatGPT copyable prompt')).toBeVisible();
+  await page.getByLabel('ChatGPT result JSON').fill(recipe);
+  await page.getByRole('button',{name:'Check ChatGPT Result'}).click();
+  const accepted=await page.getByLabel('ChatGPT result ready for testing').allInnerTexts();
+  console.log('DOC_SNORT_ACCEPTED '+JSON.stringify(accepted).slice(0,850));
+  await expect(page.getByLabel('ChatGPT result ready for testing')).toContainText('accepted for testing');
+  await page.getByLabel('Additional ChatGPT test logs').fill(holdout);
+  await page.getByLabel('Confirm test examples are different').check();
+  await page.getByRole('button',{name:'Test Proposed Fix'}).click();
+  const finding=await page.getByLabel('ChatGPT fix test result').innerText();
+  console.log('DOC_SNORT_HOLDOUT '+JSON.stringify(finding).slice(0,1400));
+  await expect(page.getByLabel('ChatGPT fix test result')).toContainText('Overall test: PASS');
+  await page.getByLabel('Approve tested ChatGPT fix').check();
+  await page.getByRole('button',{name:'Apply Fix & Create Parser Files'}).click();
+  await expect(page.getByLabel('ChatGPT created parser files')).toContainText('Parser files created successfully');
+  expect(errors).toEqual([]);
+});

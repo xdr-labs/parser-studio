@@ -136,7 +136,7 @@ describe('explicit versioned Syslog prefix/KV and implicit-TAB LEEF combination'
     expect(buildAutomaticGenericStructuralDraft(sampleSource()+'\nunrecognized event content',createDraft())).toBeNull();
   });
 
-  it('keeps every field when separately valid profiles exceed the combined mapping limit',()=>{
+  it('preserves all wide mixed-profile source paths within the expanded mapping limit',()=>{
     const wideSyslog='<134>Oct 19 08:23:59 edge01 Notice '+Array.from({length:20},()=> 'context').join(' ')+' '+
       Array.from({length:28},(_,index)=>'s'+index+'=value').join(' ');
     const wideLeef='LEEF:2.0|Example|Access|1.0|notice|'+
@@ -145,7 +145,14 @@ describe('explicit versioned Syslog prefix/KV and implicit-TAB LEEF combination'
     expect(prepared(wideLeef).draft.genericStructuralProfile).toBe('leef2_implicit_tab');
     expect(extractGenericStructural(wideSyslog,mixedProfile).errors).toEqual([]);
     expect(extractGenericStructural(wideLeef,mixedProfile).errors).toEqual([]);
-    expect(buildAutomaticGenericStructuralDraft(wideSyslog+'\n'+wideLeef,createDraft())).toBeNull();
+    const result=buildAutomaticGenericStructuralDraft(wideSyslog+'\n'+wideLeef,createDraft());
+    expect(result).not.toBeNull();
+    expect(result!.draft.mappings.length).toBeGreaterThan(60);
+    for(let index=0;index<28;index++){
+      expect(result!.draft.mappings.some(rule=>rule.source.endsWith('.s'+index))).toBe(true);
+      expect(result!.draft.mappings.some(rule=>rule.source.endsWith('.l'+index))).toBe(true);
+    }
+    expect(result!.suite.counts).toMatchObject({total:2,matched:2,extracted:2,failures:0});
   });
 
   it('does not truncate a mixed batch at the event or source-byte limits',()=>{

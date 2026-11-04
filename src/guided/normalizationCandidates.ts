@@ -29,20 +29,26 @@ const ALIASES:Record<string,string>={
   src:'srcip',src_ip:'srcip',source_ip:'srcip',sourceip:'srcip',
   sourceipaddress:'srcip',sourceaddress:'srcip',srcaddress:'srcip',
   'source.ip':'srcip','source.address':'srcip','source.ipaddress':'srcip',
+  // RFC5424 Structured Data and Juniper RT_FLOW use literal hyphenated keys.
+  // Preserve their complete source paths; only normalize the destination.
+  'source-address':'srcip',
   client_ip:'srcip',clientip:'srcip','client.ip':'srcip','client.ipaddress':'srcip',
   'httprequest.clientip':'srcip',
   'body.src':'srcip','body.src_ip':'srcip','body.source_ip':'srcip',
   dst:'dstip',dst_ip:'dstip',destination_ip:'dstip',destinationip:'dstip',
   dest_ip:'dstip',destip:'dstip',destinationaddress:'dstip',dstaddress:'dstip',
   'destination.ip':'dstip','destination.address':'dstip','destination.ipaddress':'dstip',
+  'destination-address':'dstip',
   server_ip:'dstip','server.ip':'dstip',
   'body.dst':'dstip','body.dst_ip':'dstip','body.destination_ip':'dstip',
   spt:'srcport',sport:'srcport',src_port:'srcport',source_port:'srcport',sourceport:'srcport',
   srcport:'srcport','source.port':'srcport',client_port:'srcport',
+  'source-port':'srcport',
   'body.spt':'srcport','body.srcport':'srcport','body.src_port':'srcport',
   dpt:'dstport',dport:'dstport',dst_port:'dstport',destination_port:'dstport',destinationport:'dstport',
   dest_port:'dstport',destport:'dstport',dstport:'dstport',
   'destination.port':'dstport',server_port:'dstport',
+  'destination-port':'dstport',
   'body.dpt':'dstport','body.dstport':'dstport','body.dst_port':'dstport',
   act:'action',event_action:'action',eventaction:'action','event.action':'action',
   'body.act':'action','body.action':'action',
@@ -51,6 +57,8 @@ const ALIASES:Record<string,string>={
   host_name:'hostname',hostname:'hostname',host:'hostname','host.name':'hostname',device_name:'hostname',
   devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',unit_hostname:'hostname',
   ip_client:'srcip',protocol:'proto_name',
+  'protocol-id':'proto','policy-name':'rule.name','icmp-type':'icmp_type',
+  policyid:'fw_policy_id',
   // request_status is not an action alias: an HTTP status code and a security
   // allow/deny action have different semantics even if both are strings.
   uri:'url',
@@ -64,6 +72,56 @@ function overlaps(a:string,b:string):boolean{
 }
 function ignored(value:unknown):boolean{
   return value===null||value===undefined||['','N/A','-'].includes(String(value));
+}
+
+// Published 7.0 proto_name is a transport protocol, not a vendor application
+// or service label. An unknown name is still reviewable, never auto-approved.
+const DOCUMENTED_PROTO_NAMES=new Set(['tcp','udp','icmp','igmp']);
+const NON_PORT_PROTOCOLS=new Set(['1','2','58','icmp','igmp','icmpv6']);
+function nonPortProtocolInEvent(fields:Record<string,unknown>,source:string):boolean{
+  const prefix=source.includes('.')?source.slice(0,source.lastIndexOf('.')+1):'';
+  const candidates=[prefix+'protocol-id',prefix+'protocol',prefix+'proto',
+    'protocol-id','protocol','proto','proto_name'];
+  return candidates.some(name=>{
+    const found=lookupFieldValue(fields,name);
+    return found.found&&NON_PORT_PROTOCOLS.has(String(found.value).toLowerCase());
+  });
+}
+// A matching label is not enough: these vendor log fields have distinct
+// meanings from Stellar's context-specific names or require unit conversion.
+// Restrict the guard to records with FortiOS's recognizable field family so
+// Windows/EDR payloads with independently supported semantics stay unaffected.
+function fortiGateRecord(fields:Record<string,unknown>):boolean{
+  return lookupFieldValue(fields,'logid').found&&
+    (lookupFieldValue(fields,'vd').found||lookupFieldValue(fields,'srcintf').found)&&
+    lookupFieldValue(fields,'type').found;
+}
+const FORTINET_FALSE_FRIENDS=new Set([
+  'type','eventtype','event_type','direction','duration','hostname',
+]);
+function incompatibleVendorMeaning(
+  source:string,target:string,events:Record<string,unknown>[],
+):boolean{
+  const leaf=(source.split('.').at(-1)??source).toLowerCase();
+  if(events.some(fortiGateRecord)&&FORTINET_FALSE_FRIENDS.has(leaf))return true;
+  // RFC3164 PRI severity 0-7 is a Syslog facility code component, not
+  // Stellar's 0-100 security severity score. Never silently relabel it.
+  if(source.toLowerCase().endsWith('syslog.severity'))return true;
+  // A reviewed PAN-OS positional CSV category is not the unrelated Stellar
+  // Windows-agent 'type' field, even when a structural profile names it type.
+  if(leaf==='type'&&source.toLowerCase().includes('generic.fields.')&&
+    events.some(fields=>{
+      const value=lookupFieldValue(fields,source);
+      return value.found&&['TRAFFIC','THREAT','SYSTEM','CONFIG'].includes(String(value.value).toUpperCase());
+    }))return true;
+  // A zero-filled ICMP field on UDP or TCP is not evidence of ICMP semantics.
+  if(target==='icmp_type'&&leaf==='icmp-type')return events.some(fields=>{
+    if(!lookupFieldValue(fields,source).found)return false;
+    const prefix=source.slice(0,source.length-leaf.length);
+    const protocol=lookupFieldValue(fields,prefix+'protocol-id');
+    return protocol.found&&!['1','58'].includes(String(protocol.value));
+  });
+  return false;
 }
 export function valueFitsMappingType(type:MappingRule['type'],value:unknown):boolean{
   if(ignored(value))return true;
@@ -89,6 +147,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
     leafExact?.mappable?leaf:
     ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
   if(!target)return null;
+  if(incompatibleVendorMeaning(source,target,events))return null;
   const catalog=findStellarMetadataField(target);
   if(!catalog?.mappable||!catalog.mappingType||!catalog.group)return null;
   const current=existing.find(rule=>rule.source===source);
@@ -100,13 +159,22 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   if(values.length===0)return null;
   const informativeValues=values.filter(result=>!ignored(result.value));
   const compatibleObserved=informativeValues.filter(result=>
-    valueFitsNormalizationTarget(target,catalog.mappingType!,result.value)).length;
+    valueFitsNormalizationTarget(target,catalog.mappingType!,result.value)&&
+    (target!=='proto_name'||DOCUMENTED_PROTO_NAMES.has(String(result.value).toLowerCase()))&&
+    (target!=='proto'||(Number.isInteger(Number(result.value))&&
+      Number(result.value)>=0&&Number(result.value)<=255))).length;
+  // ICMP/IGMP field names sometimes carry identifiers rather than Layer 4
+  // ports. Preserve them as vendor fields unless a human reviews the meaning.
+  const nonTransportPort=(target==='srcport'||target==='dstport')&&
+    events.some(fields=>lookupFieldValue(fields,source).found&&
+      nonPortProtocolInEvent(fields,source));
   const method:NormalizationCandidate['method']=target===source?'EXACT_DICTIONARY_NAME':'DOCUMENTED_ALIAS';
   // All event samples must contain this source and at least one usable value.
   // A sparse heterogeneous sample or placeholders are not sufficient evidence
   // for a bulk-approved official field mapping.
   const informative=informativeValues.length;
-  const high=compatibleObserved===informative&&values.length===events.length&&informative>0;
+  const high=compatibleObserved===informative&&values.length===events.length&&
+    informative>0&&!nonTransportPort;
   const defaultGenerated=new Map([
     ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
   ]);
@@ -121,11 +189,13 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
       ?(method==='EXACT_DICTIONARY_NAME'
         ?'Source name matches the official Stellar metadata field and observed values match its documented type.'
         :'Reviewed source alias maps to an official Stellar metadata field and observed values match its documented type.')
-      :values.length!==events.length
+      :nonTransportPort
+        ?'ICMP/IGMP does not have Layer 4 ports; review vendor port semantics before mapping to srcport or dstport.'
+        :values.length!==events.length
         ?'The field is missing from some events; review its event-family scope before applying an official mapping.'
         :informative===0
           ?'The source contains no informative values; a matching name alone is not enough to approve an official mapping.'
-          :'The field-name match is plausible, but at least one observed value does not match the documented Stellar type.',
+          :'The field-name match is plausible, but at least one observed value is incompatible with the documented Stellar field meaning or value type.',
     catalogVerified:true,catalogRelease:'7.0.xs',observed:values.length,
     compatibleObserved,total:events.length,
     ...(current?{replacesMappingId:current.id,currentTarget:current.target}:{}),

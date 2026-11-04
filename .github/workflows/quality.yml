@@ -60,6 +60,32 @@ jobs:
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
 
+      - name: Published security scenarios - same-HEAD mapping and authoring Chromium
+        env:
+          PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
+          PARSER_STUDIO_BROWSER_BACKEND: '1'
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_PORT: '5661'
+          PARSER_STUDIO_TEST_PORT: '5660'
+          PARSER_STUDIO_MULTIPASS_PORT: '5662'
+          PARSER_STUDIO_TEST_MULTIPASS: '1'
+        run: |
+          set -euo pipefail
+          files=(
+            tests/docs-practice-inventory-20261104.spec.ts
+            tests/docs-practice-full-authoring-20261104.spec.ts
+            tests/docs-snort-assisted-20261104.spec.ts
+            tests/docs-fortigate-multiple-types-20261104.spec.ts
+          )
+          expected=20
+          if test -f tests/docs-jsonata-mapping-assisted-20261104.spec.ts; then
+            files+=(tests/docs-jsonata-mapping-assisted-20261104.spec.ts)
+            expected=21
+          fi
+          npx playwright test "${files[@]}" --project=chromium --workers=1 --reporter=json > /tmp/parserstudio-documentation-corpus.json
+          EXPECTED_SCENARIO_TESTS="$expected" node -e "const s=JSON.parse(require('fs').readFileSync('/tmp/parserstudio-documentation-corpus.json','utf8')).stats;const n=Number(process.env.EXPECTED_SCENARIO_TESTS);if(s.expected!==n||s.skipped||s.unexpected||s.flaky){console.error('Published scenario exact-head E2E regression',s);process.exit(1)}console.log('PUBLISHED_SCENARIO_EXACT_HEAD_PASS',n+'/'+n)"
+
       # First-time users may review/override the shared CONF listener port
       # before submitting source logs; both bytes and HTTP project must agree.
       # The selected listener remains a DRAFT, never an opened or reserved port.

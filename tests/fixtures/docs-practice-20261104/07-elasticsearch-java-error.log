@@ -1,0 +1,16 @@
+Exception in thread "main" java.lang.NoSuchMethodError: org.elasticsearch.action.DocWriteRequest.ifSeqNo()J
+	at org.elasticsearch.client.RequestConverters.bulk(RequestConverters.java:197)
+	at org.elasticsearch.client.RestHighLevelClient.internalPerformRequest(RestHighLevelClient.java:1760)
+	at org.elasticsearch.client.RestHighLevelClient.performRequest(RestHighLevelClient.java:1734)
+	at org.elasticsearch.client.RestHighLevelClient.performRequestAndParseEntity(RestHighLevelClient.java:1696)
+	at org.elasticsearch.client.RestHighLevelClient.bulk(RestHighLevelClient.java:472)
+	at fulltext.storage.http.impl.HighLevelClient.batchSave(HighLevelClient.java:198)
+	at fulltext.storage.http.impl.HighLevelClient.main(HighLevelClient.java:99)
+	Suppressed: java.lang.IllegalStateException: Failed to close the XContentBuilder
+		at org.elasticsearch.common.xcontent.XContentBuilder.close(XContentBuilder.java:1002)
+		at org.elasticsearch.client.RequestConverters.bulk(RequestConverters.java:163)
+		... 6 more
+	Caused by: java.io.IOException: Unclosed object or array found
+		at org.elasticsearch.common.xcontent.json.JsonXContentGenerator.close(JsonXContentGenerator.java:469)
+		at org.elasticsearch.common.xcontent.XContentBuilder.close(XContentBuilder.java:1000)
+		... 7 more

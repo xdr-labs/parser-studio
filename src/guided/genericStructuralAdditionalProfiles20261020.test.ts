@@ -72,14 +72,20 @@ describe('explicit additional Generic Structural profiles',()=>{
     }
   });
 
-  it('does not drop new-profile source paths beyond the automatic mapping bound',()=>{
+  it('preserves all newly eligible source paths under the expanded 100-field mapping limit',()=>{
     const prefix='%NOTICE: '+Array.from({length:20},()=> 'context').join(' ')+' ';
     const source='<134>Oct 19 08:23:59 ftd01 '+prefix+
       Array.from({length:53},(_,index)=>'extra'+index+'=value').join(' ');
     const parsed=extractGenericStructural(source,'syslog_prefix_kv');
     expect(parsed.errors).toEqual([]);
     expect((parsed.fields.generic as {mode:string}).mode).toBe('syslog_prefix_kv');
-    expect(buildAutomaticGenericStructuralDraft(source,createDraft())).toBeNull();
+    const result=buildAutomaticGenericStructuralDraft(source,createDraft());
+    expect(result).not.toBeNull();
+    expect(result!.draft.mappings.length).toBeGreaterThan(60);
+    for(let index=0;index<53;index++){
+      expect(result!.draft.mappings.some(rule=>rule.source.endsWith('.extra'+index))).toBe(true);
+    }
+    expect(result!.suite.counts).toMatchObject({total:1,matched:1,extracted:1,failures:0});
   });
 
   it('accepts each advertised profile subset and rejects duplicate or unknown claims',async()=>{
