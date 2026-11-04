@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 
 const raw=readFileSync(resolve('tests/fixtures/docs-practice-20261104/01-juniper-srx.log'),'utf8');
 test('published Juniper logs → ChatGPT JSONata mapping review → DRAFT Ruby and conf',async({page})=>{
-  test.skip(process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1','Pinned real authoring backend required.');
+  test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),'Pinned real authoring backend required.');
   test.setTimeout(90000);
   const errors:string[]=[];
   const external:string[]=[];
