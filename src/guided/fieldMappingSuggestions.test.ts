@@ -41,10 +41,22 @@ describe('privacy-safe, conservative all-field suggestions', () => {
       {'cef_extension.src':'192.0.2.1'},
       {'leef.src':'198.51.100.1'},
     ], draft);
-    expect(proposed).toHaveLength(60);
+    expect(proposed).toHaveLength(83);
     expect(proposed.some(item=>item.source==='kv_only')).toBe(true);
     expect(proposed.some(item=>item.source==='cef_extension.src')).toBe(true);
     expect(proposed.some(item=>item.source==='leef.src')).toBe(true);
+  });
+
+  it('caps wide source field proposals at 100 while retaining mixed-family coverage', () => {
+    const wide=Object.fromEntries(Array.from({length:150},(_,i)=>[
+      'field_'+String(i).padStart(3,'0'),'value'
+    ]));
+    const proposed=suggestUnmappedFields([
+      wide,{fortigate_only:'value'},{juniper_only:'value'},
+    ],createDraft());
+    expect(proposed).toHaveLength(100);
+    expect(proposed.some(x=>x.source==='fortigate_only')).toBe(true);
+    expect(proposed.some(x=>x.source==='juniper_only')).toBe(true);
   });
 
   it('keeps classification operands in routable top fields only when the destination is a real Stellar field', () => {

@@ -58,6 +58,7 @@ const ALIASES:Record<string,string>={
   devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',unit_hostname:'hostname',
   ip_client:'srcip',protocol:'proto_name',
   'protocol-id':'proto','policy-name':'rule.name','icmp-type':'icmp_type',
+  policyid:'fw_policy_id',
   // request_status is not an action alias: an HTTP status code and a security
   // allow/deny action have different semantics even if both are strings.
   uri:'url',
@@ -86,6 +87,42 @@ function nonPortProtocolInEvent(fields:Record<string,unknown>,source:string):boo
     return found.found&&NON_PORT_PROTOCOLS.has(String(found.value).toLowerCase());
   });
 }
+// A matching label is not enough: these vendor log fields have distinct
+// meanings from Stellar's context-specific names or require unit conversion.
+// Restrict the guard to records with FortiOS's recognizable field family so
+// Windows/EDR payloads with independently supported semantics stay unaffected.
+function fortiGateRecord(fields:Record<string,unknown>):boolean{
+  return lookupFieldValue(fields,'logid').found&&
+    (lookupFieldValue(fields,'vd').found||lookupFieldValue(fields,'srcintf').found)&&
+    lookupFieldValue(fields,'type').found;
+}
+const FORTINET_FALSE_FRIENDS=new Set([
+  'type','eventtype','event_type','direction','duration','hostname',
+]);
+function incompatibleVendorMeaning(
+  source:string,target:string,events:Record<string,unknown>[],
+):boolean{
+  const leaf=(source.split('.').at(-1)??source).toLowerCase();
+  if(events.some(fortiGateRecord)&&FORTINET_FALSE_FRIENDS.has(leaf))return true;
+  // RFC3164 PRI severity 0-7 is a Syslog facility code component, not
+  // Stellar's 0-100 security severity score. Never silently relabel it.
+  if(source.toLowerCase().endsWith('syslog.severity'))return true;
+  // A reviewed PAN-OS positional CSV category is not the unrelated Stellar
+  // Windows-agent 'type' field, even when a structural profile names it type.
+  if(leaf==='type'&&source.toLowerCase().includes('generic.fields.')&&
+    events.some(fields=>{
+      const value=lookupFieldValue(fields,source);
+      return value.found&&['TRAFFIC','THREAT','SYSTEM','CONFIG'].includes(String(value.value).toUpperCase());
+    }))return true;
+  // A zero-filled ICMP field on UDP or TCP is not evidence of ICMP semantics.
+  if(target==='icmp_type'&&leaf==='icmp-type')return events.some(fields=>{
+    if(!lookupFieldValue(fields,source).found)return false;
+    const prefix=source.slice(0,source.length-leaf.length);
+    const protocol=lookupFieldValue(fields,prefix+'protocol-id');
+    return protocol.found&&!['1','58'].includes(String(protocol.value));
+  });
+  return false;
+}
 export function valueFitsMappingType(type:MappingRule['type'],value:unknown):boolean{
   if(ignored(value))return true;
   // Candidate confidence and whole-sample validation must use the same type
@@ -110,6 +147,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
     leafExact?.mappable?leaf:
     ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
   if(!target)return null;
+  if(incompatibleVendorMeaning(source,target,events))return null;
   const catalog=findStellarMetadataField(target);
   if(!catalog?.mappable||!catalog.mappingType||!catalog.group)return null;
   const current=existing.find(rule=>rule.source===source);

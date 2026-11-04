@@ -32,12 +32,12 @@ export function suggestUnmappedFields(
   const found = new Set<string>();
   const proposals: SuggestedFieldMapping[] = [];
 
-  // Do not let one wide JSON event consume the entire 60-mapping budget.
+  // Do not let one wide JSON event consume the entire 100-mapping budget.
   // Mixed security samples often have disjoint JSON/KV/CEF/LEEF field names;
   // round-robin candidates across events so every represented family can keep
   // at least some source-backed output without raising the global safety cap.
   const queues = samples.map(fields => listSafeLeafPaths(fields));
-  while (proposals.length < 60) {
+  while (proposals.length < 100) {
     let addedThisRound = false;
     let candidatesRemain = false;
     for (const queue of queues) {
@@ -62,7 +62,7 @@ export function suggestUnmappedFields(
         addedThisRound = true;
         break;
       }
-      if (proposals.length >= 60) break;
+      if (proposals.length >= 100) break;
     }
     if (!candidatesRemain || !addedThisRound) break;
   }
