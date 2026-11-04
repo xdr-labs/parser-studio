@@ -26,7 +26,7 @@ function save(obj:Record<string,unknown>){
   writeFileSync(evidenceFile,JSON.stringify(obj)+'\n',{flag:'a'});
 }
 test.describe('actual published Parser Studio documentation practice corpus',()=>{
-  test.skip(process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1',
+  test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),
     'Requires the exact-pinned local full authoring backend.');
   for(const item of fixtures){
     test(item.file+' real Chromium novice analysis and field mapping inventory',async({page})=>{

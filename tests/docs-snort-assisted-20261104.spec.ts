@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 const root=resolve('tests/fixtures/docs-practice-20261104');
 
 test('published Snort original plus reviewed recipe and independent holdout, real browser and backend',async({page})=>{
-  test.skip(process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1','Requires real pinned compiler.');
+  test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),'Requires real pinned compiler.');
   test.setTimeout(80000);
   const errors:string[]=[];
   page.on('pageerror',err=>errors.push(err.message));

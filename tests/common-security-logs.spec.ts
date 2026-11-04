@@ -104,7 +104,7 @@ test('year-bearing Cisco ASA wrapper is parsed before the ASA body',async({page}
   await expect(inspector).toContainText('"dst_ip": "10.1.15.27"');
 });
 
-test('BIG-IP ASM KV is auto-promoted and nested leaf names map to Stellar',async({page})=>{
+test('BIG-IP ASM KV maps network fields but keeps HTTPS application label vendor-local',async({page})=>{
   await analyze(page,BIGIP);
   await openMappings(page);
   const editor=page.getByLabel('Field mapping editor');
@@ -121,7 +121,13 @@ test('BIG-IP ASM KV is auto-promoted and nested leaf names map to Stellar',async
   await expectMapping('parserstudio_source.generic.fields.ip_client','srcip');
   await expectMapping('parserstudio_source.generic.fields.dest_ip','dstip');
   await expectMapping('parserstudio_source.generic.fields.dest_port','dstport');
-  await expectMapping('parserstudio_source.generic.fields.protocol','proto_name');
+  // BIG-IP's HTTPS value is an application-layer label, not a transport
+  // protocol name. Preserve it as a vendor field rather than claiming Stellar
+  // L4 proto_name compatibility.
+  await expectMapping('parserstudio_source.generic.fields.protocol','generic.fields.protocol');
+  const vendorSources=await editor.locator('article.normalization-map-row.custom input[aria-label^="Source field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  expect(vendorSources).toContain('parserstudio_source.generic.fields.protocol');
 });
 
 

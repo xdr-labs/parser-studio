@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 const root=resolve('tests/fixtures/docs-practice-20261104');
 test('published FortiGate traffic + web filter + IPS samples in one reviewed parser draft',async({page})=>{
-  test.skip(process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1','Pinned backend required');
+  test.skip((process.env.PARSER_STUDIO_BROWSER_BACKEND!=='1'||process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1'),'Pinned backend required');
   test.setTimeout(80000);
   const traffic=readFileSync(resolve(root,'04-fortigate-traffic.log'),'utf8').trimEnd();
   const threat=readFileSync(resolve(root,'04-fortigate-threat.log'),'utf8').trimEnd();
