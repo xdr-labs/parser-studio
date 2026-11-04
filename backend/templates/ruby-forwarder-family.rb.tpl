@@ -740,13 +740,25 @@ def parserstudio_leef(text)
 end
 
 def parserstudio_lookup(record, path)
-  return record[path] if record.is_a?(Hash) && record.key?(path)
-  value = record
-  path.split('.').each do |segment|
-    return nil unless value.is_a?(Hash) && value.key?(segment)
-    value = value[segment]
+  parts = path.split('.')
+  found = []
+  walk = nil
+  walk = lambda do |current, at|
+    next unless current.is_a?(Hash)
+    (at...parts.length).each do |last|
+      key = parts[at..last].join('.')
+      next unless current.key?(key)
+      value = current[key]
+      if last + 1 == parts.length
+        found << value
+      else
+        walk.call(value, last + 1)
+      end
+      raise ArgumentError, 'Ambiguous source path' if found.length > 1
+    end
   end
-  value
+  walk.call(record, 0)
+  found.first
 end
 
 def parserstudio_coerce(value, rule)
@@ -789,6 +801,13 @@ def parserstudio_stellar7_value_valid?(name, raw, converted)
     return raw.is_a?(String) && raw.match?(Regexp.new("\\A[0-9a-fA-F]{#{widths[leaf]}}\\z"))
   end
   return raw.is_a?(String) if name == 'action'
+  if name == 'proto'
+    return converted.is_a?(Integer) && converted.between?(0, 255)
+  end
+  if name == 'proto_name'
+    return raw.is_a?(String) && %w[tcp udp icmp igmp].include?(raw.strip.downcase)
+  end
+
   if name == 'srcport' || name == 'dstport'
     return converted.is_a?(Integer) && converted.between?(0, 65535)
   end

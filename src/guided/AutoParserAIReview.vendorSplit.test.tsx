@@ -5,6 +5,12 @@ import {createDraft} from '../model';
 import {preview} from '../parser';
 import AutoParserAIReview from './AutoParserAIReview';
 
+// Component tests use a deterministic parser simulation, never browser workers.
+vi.mock('../previewWorkerClient',()=>({
+ runInWorker:async(raw:string,draft:import('../model').ParserDraft)=>
+   (await import('../parser')).preview(raw,draft),
+}));
+
 describe('split or merge of a vendor-only field',()=>{
  afterEach(()=>vi.unstubAllGlobals());
  it('explains the real reason instead of a bare BACKEND_UNSUPPORTED code',async()=>{

@@ -5,6 +5,12 @@ import {createDraft} from '../model';
 import {preview} from '../parser';
 import AutoParserAIReview from './AutoParserAIReview';
 
+// Component tests use a deterministic parser simulation, never browser workers.
+vi.mock('../previewWorkerClient',()=>({
+ runInWorker:async(raw:string,draft:import('../model').ParserDraft)=>
+   (await import('../parser')).preview(raw,draft),
+}));
+
 describe('AI recovery review safety',()=>{
  afterEach(()=>vi.unstubAllGlobals());
  it('requires user-reviewed excerpt and request before copying whole log',()=>{

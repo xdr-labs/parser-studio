@@ -35,6 +35,29 @@ export function lookupFieldValue(
   return { found: true, value };
 }
 
+/** Detect a source path with multiple JSON interpretations (flat dotted keys
+ * versus nested objects, including mixed segment boundaries). Native Ruby
+ * rejects the same collision at run time.
+ */
+export function hasAmbiguousFieldPath(fields:Record<string,unknown>,path:string):boolean{
+  if(!safeLocalFieldPath(path))return false;
+  const segments=path.split('.');
+  if(segments.length<2||segments.length>MAX_DEPTH)return false;
+  let matches=0;
+  const visit=(node:unknown,at:number):void=>{
+    if(!objectRecord(node)||matches>1)return;
+    for(let end=at+1;end<=segments.length;end++){
+      const name=segments.slice(at,end).join('.');
+      if(!Object.prototype.hasOwnProperty.call(node,name))continue;
+      if(end===segments.length)matches++;
+      else visit(node[name],end);
+      if(matches>1)return;
+    }
+  };
+  visit(fields,0);
+  return matches>1;
+}
+
 /** Returns safe leaf *names* only, default 100; 101 is a truncation sentinel for strict callers. */
 export function listSafeLeafPaths(
   fields: Record<string, unknown>, limit: 100 | 101 = MAX_FIELDS,

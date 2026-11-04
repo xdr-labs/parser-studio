@@ -1,7 +1,7 @@
 import {meetsStellar7ValueConstraints} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
-import { lookupFieldValue } from './fieldPaths';
+import { hasAmbiguousFieldPath,lookupFieldValue } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
 import {validateConventionalTemporalCaptures} from './regexTemporalClaims';
@@ -451,6 +451,11 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     if (!source || !VALID_TARGET.test(target) ||
         target.split('.').some(part=>UNSAFE_OUTPUT_SEGMENTS.has(part))) {
       error('normalize', 'INVALID_MAPPING', 'Invalid source or output field', mapping.id);
+      continue;
+    }
+    if(hasAmbiguousFieldPath(fields,source)){
+      error('normalize','AMBIGUOUS_SOURCE_PATH',
+        'A dotted key and a nested field share the same source path; choose an unambiguous log structure.',source);
       continue;
     }
     const sourceValue = lookupFieldValue(fields, source);

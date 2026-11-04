@@ -23,13 +23,17 @@ describe('browser nested JSON field mapping parity with backend dotted lookup', 
     if (project.ok) expect(JSON.stringify(project.project)).not.toContain('198.51.100.21');
   });
 
-  it('prefers an exact literal dotted key if both literal and nested keys exist', () => {
+  it('rejects conflicting dotted and nested interpretations instead of choosing a wrong source value', () => {
     const draft = withMethod();
     const sample = JSON.stringify({
       action:'allow',src_ip:'198.51.100.22',dst_port:443,
       'http.request.method':'FLAT', http:{request:{method:'NESTED'}},
     });
-    expect((preview(sample, draft).events[0].normalized.custom as Record<string,unknown>).http_method).toBe('FLAT');
+    const result=preview(sample,draft);
+    expect((result.events[0].normalized.custom as Record<string,unknown>|undefined)?.http_method).toBeUndefined();
+    expect(result.events[0].diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({code:'AMBIGUOUS_SOURCE_PATH',severity:'error'}),
+    ]));
   });
 
   it('rejects traversal of prototype keys and array-index paths', () => {

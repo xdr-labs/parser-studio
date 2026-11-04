@@ -1,5 +1,5 @@
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
-import {listSafeLeafPaths,lookupFieldValue,safeLocalFieldPath} from '../fieldPaths';
+import {hasAmbiguousFieldPath,listSafeLeafPaths,lookupFieldValue,safeLocalFieldPath} from '../fieldPaths';
 import {sha256Utf8Hex} from '../sha256';
 import {defaultGuidedOptions,type FieldGroup} from './contract';
 import {findStellarMetadataField,STELLAR_METADATA_CATALOG_PROVENANCE} from './stellarMetadataCatalog';
@@ -27,6 +27,13 @@ export function parseJsonataSelector(expression:string):string|null{
   if(typeof expression!=='string'||expression.length>256)return null;
   let text=expression.trim();if(text.startsWith('$.'))text=text.slice(2);
   if(!text||text.startsWith('.')||text.endsWith('.'))return null;
+  // A root property whose actual key contains dots must be one quoted JSONata
+  // segment. Unquoted a.b means nested a -> b, not literal key a.b.
+  if(text.startsWith('`')&&text.endsWith('`')&&text.indexOf('`',1)===text.length-1){
+    const literal=text.slice(1,-1);
+    if(literal.includes('.')&&safeLocalFieldPath(literal))return literal;
+  }
+
   const parts:string[]=[];let index=0;
   while(index<text.length){
     let part:string;
@@ -48,9 +55,33 @@ export function parseJsonataSelector(expression:string):string|null{
   const path=parts.join('.');
   return parts.length<=8&&safeLocalFieldPath(path)?path:null;
 }
-export function pathToJsonataSelector(source:string):string{
+export function pathToJsonataSelector(source:string,literalRoot=false):string{
   if(!safeLocalFieldPath(source))return '';
+  if(literalRoot&&source.includes('.'))return '`'+source+'`';
   return source.split('.').map(s=>plain.test(s)?s:'`'+s+'`').join('.');
+}
+/** The compiler's source-path contract cannot disambiguate a dotted raw key
+ * from a nested object when both produce the same path string. Fail closed
+ * across the entire sample, including heterogeneous event families.
+ */
+function hasInconsistentSourceShape(suite:SuiteResult,source:string):boolean{
+  if(!source.includes('.'))return false;
+  let literal=false,nested=false;
+  for(const event of suite.events){
+    if(hasAmbiguousFieldPath(event.fields,source))return true;
+    const found=lookupFieldValue(event.fields,source);
+    if(!found.found)continue;
+    if(Object.prototype.hasOwnProperty.call(event.fields,source))literal=true;
+    else nested=true;
+  }
+  return literal&&nested;
+}
+function selectorMatchesSourceShape(expression:string,source:string,suite:SuiteResult):boolean{
+  if(hasInconsistentSourceShape(suite,source))return false;
+  if(!source.includes('.'))return true;
+  const quoted=expression.trim().replace(/^\$\./,'')==='`'+source+'`';
+  const literal=suite.events.some(e=>Object.prototype.hasOwnProperty.call(e.fields,source));
+  return quoted===literal;
 }
 export function jsonataDraftSignature(suite:SuiteResult,draft:ParserDraft):string{
   return JSON.stringify([suite.events.map(e=>[e.raw,e.fields]),draft.vendor,draft.name,draft.version??'',draft.format,draft.mappings,draft.guided?.groups??{}]);
@@ -64,11 +95,17 @@ const display=(value:unknown)=>{const s=typeof value==='string'?value:JSON.strin
 export async function createJsonataMappingPrompt(suite:SuiteResult,draft:ParserDraft,includeValues=false){
   if(!suite?.events?.length||suite.events.length>100)throw Error('No bounded parsed events available.');
   const sha256=await jsonataSampleHash(suite);
-  const fields=[...new Set(suite.events.flatMap(e=>listSafeLeafPaths(e.fields)))].slice(0,100);
+  const fields=[...new Set(suite.events.flatMap(e=>listSafeLeafPaths(e.fields,101)))];
+  if(fields.length>100)
+    throw Error('The sample has more than 100 parsed source fields. Split the event types into smaller batches; no fields were silently omitted.');
+  if(fields.some(source=>hasInconsistentSourceShape(suite,source)))
+    throw Error('The sample contains ambiguous dotted keys and nested source paths. Use unambiguous field names before requesting JSONata mappings.');
   const prior=new Map(draft.mappings.map(m=>[m.source,m.target]));
   const evidence=fields.map(source=>{
     const values=suite.events.flatMap(e=>{const v=lookupFieldValue(e.fields,source);return v.found?[v.value]:[];});
-    return {source,selector:pathToJsonataSelector(source),seen:values.length,
+    const literalRoot=source.includes('.')&&
+      suite.events.some(e=>Object.prototype.hasOwnProperty.call(e.fields,source));
+    return {source,selector:pathToJsonataSelector(source,literalRoot),seen:values.length,
       valueType:values.some(x=>typeof x==='number')?'number':values.some(x=>typeof x==='boolean')?'boolean':'text',
       ...(prior.has(source)?{currentTarget:prior.get(source)}:{}),
       ...(includeValues?{examples:values.slice(0,2).map(display)}:{})};
@@ -83,7 +120,8 @@ export async function createJsonataMappingPrompt(suite:SuiteResult,draft:ParserD
     JSON.stringify(example,null,2),
     'Reuse EXACT contract, sha256 and event count. Each mappings entry has ONLY expression and target, both strings.',
     'Allowed JSONata subset: a simple property selector such as src_ip, $.generic.fields.src, or syslog_sd.element_1.params.`source-address`.',
-    'Backtick-quote hyphenated source segments. Functions, arithmetic, conditionals, filters, arrays and scripts are NOT supported.',
+    'Backtick-quote hyphenated source segments and whole dotted literal keys (for example `source.ip`).',
+    'Unquoted source.ip selects a nested object, not a literal key named source.ip. Functions, arithmetic, conditionals, filters, arrays and scripts are NOT supported.',
     'Only these direct selectors can be compiled into the generated native Ruby parser. Never claim full JSONata support.',
     'Choose documented, directly mappable Stellar 7.0 scalar field names; do not invent targets or guess semantics.',
     'Do not mix NAT with original IPs, ICMP pseudo-ports with L4 ports, vendor service names with L4 protocol names,',
@@ -162,6 +200,9 @@ export async function reviewJsonataMapping(
       (groups[m.id]??'vendor_fields')!=='vendor_fields'&&conflict(m.target,target));
     if(!source){status='BLOCKED';reason='Unsupported JSONata: only read-only field selectors compile to Ruby.';}
     else if(!paths.has(source)){status='BLOCKED';reason='Source not found in parsed event fields.';}
+    else if(!selectorMatchesSourceShape(expression,source,suite)){
+      status='BLOCKED';reason='Ambiguous or incorrectly quoted dotted source path; use an exact quoted literal key or an unambiguous nested field.';
+    }
     else if(!type||!group){status='BLOCKED';reason='Target is not a mappable Stellar 7.0 field.';}
     else if(!useful.length){status='BLOCKED';reason='No informative source values observed.';}
     else if(useful.some(v=>!valueFitsNormalizationTarget(target,type,v))){
@@ -194,6 +235,7 @@ export function applyReviewedJsonataMapping(draft:ParserDraft,suite:SuiteResult,
   for(const row of selected){
     if(!['READY','CHECK_FIRST'].includes(row.status)||!row.type||!row.group||
       parseJsonataSelector(row.expression)!==row.source||!sourcePaths.has(row.source)||
+      !selectorMatchesSourceShape(row.expression,row.source,suite)||
       seen.has(row.source))
       return {ok:false as const,reason:'Selection contains an unsupported or unreviewed expression.'};
     seen.add(row.source);

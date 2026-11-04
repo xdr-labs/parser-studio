@@ -15,6 +15,11 @@ export function meetsStellar7ValueConstraints(
       new RegExp('^[0-9a-fA-F]{'+widths[hash]+'}$').test(raw);
   }
   if(target==='action')return typeof raw==='string';
+  if(target==='proto')return typeof converted==='number'&&
+    Number.isInteger(converted)&&converted>=0&&converted<=255;
+  if(target==='proto_name')return typeof raw==='string'&&
+    ['tcp','udp','icmp','igmp'].includes(raw.trim().toLowerCase());
+
   if(target==='srcport'||target==='dstport')
     return typeof converted==='number'&&Number.isInteger(converted)&&
       converted>=0&&converted<=65535;
