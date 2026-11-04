@@ -168,8 +168,9 @@ export default function AutoParser({
  const multiPassBusy=analysisRun.progress!==null;
  const currentRef=useRef(identity);currentRef.current=identity;
  const report=useMemo(()=>analyzeLogEnvelopes(sample,
-   (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder),
-   [sample,draft.guided?.eventBoundary,draft.forwarder]);
+   (draft.guided?.eventBoundary??'single-line') as EventBoundary,draft.forwarder,
+   draft.guided?.receiver.messageLimit,draft.guided?.receiver.framing),
+   [sample,draft.guided?.eventBoundary,draft.forwarder,draft.guided?.receiver.messageLimit,draft.guided?.receiver.framing]);
  useEffect(()=>{
    epoch.current++;setEvidence(null);setPair(null);setZip(null);
    setStructural(null);
@@ -212,6 +213,29 @@ export default function AutoParser({
          receiver:{...opts.receiver,protocols:['tcp'],framing:'blank_line_java'}
        }
      };
+   });
+ };
+ const jsonFramedCandidate=useMemo(()=>{
+   if(draft.format!=='auto'||!sample.includes('\n\n')||sample.includes('\r')||
+     draft.guided?.receiver.framing!=='newline'||
+     (draft.guided?.eventBoundary??'single-line')!=='single-line'||
+     new TextEncoder().encode(sample).byteLength>MAX_LOCAL_TEXT)return false;
+   const records=splitEvents(sample,'blank-line',MAX_EVENTS+1);
+   if(records.length<2||records.length>MAX_EVENTS)return false;
+   const observed=analyzeLogEnvelopes(sample,'blank-line',undefined,
+     draft.guided?.receiver.messageLimit,'blank_line_json');
+   return observed.status==='READY'&&observed.sourceCount===records.length&&
+     observed.unsupported===0&&observed.events.every(e=>e.body==='json');
+ },[sample,draft]);
+ const adoptFramedJson=()=>{
+   if(!jsonFramedCandidate)return;
+   setDraft(old=>{
+     if(old.format!=='auto')return old;
+     const opts=old.guided??defaultGuidedOptions();
+     return {...selectDraftFormat(old,'json'),guided:{
+       ...opts,eventBoundary:'blank-line',
+       receiver:{...opts.receiver,protocols:['tcp'],framing:'blank_line_json'},
+     }};
    });
  };
  const multiPassCsvEvidence=multiPass?.raw===sample&&multiPass.events.length>0&&
@@ -326,7 +350,7 @@ export default function AutoParser({
      setDraft(old=>selectDraftFormat(old,'csv'));
  };
  const localAssessment=assessEnvelopeCompilation(report,
-   capability?.source===sample?capability.value:null);
+   capability?.source===sample?capability.value:null,draft.guided?.receiver.framing);
  const assessment=csvReviewActive&&csvApproved&&report.families.length===1&&
    report.families[0]?.body==='csv'&&
    localAssessment.status==='COLUMNS_REQUIRED'&&
@@ -437,7 +461,7 @@ export default function AutoParser({
        setReviewed({source:sample,mappingCount:draft.mappings.length,requiresApproval:false});
        setFurthestStep(1);setStep(1);setSelected(0);return;
      }
-     const baseline=assessEnvelopeCompilation(report,cap);
+     const baseline=assessEnvelopeCompilation(report,cap,draft.guided?.receiver.framing);
      const compiler=csvReviewActive&&csvApproved&&report.families.length===1&&
        baseline.status==='COLUMNS_REQUIRED'&&cap.authoring.extractionFormats.includes('csv')?
        {status:'DRAFT_COMPILABLE' as const,format:'csv' as const,
@@ -1010,6 +1034,17 @@ export default function AutoParser({
              (describeCsvColumnNameProblem(csvColumns)??
                'Choose a valid separator and field names before confirming.'):
              'Field names and separator are consistent. Confirm them to continue.'}</p>
+       </div>}
+       {jsonFramedCandidate&&<div className="auto-parser-warning"
+         aria-label="Explicit JSON TCP framing confirmation">
+         <strong>These look like multiline JSON security events</strong>
+         <p>Confirm that each complete event is sent over TCP and separated
+           by exactly two line-feed characters (LF LF). This is not supported
+           for UDP or uncertain stream boundaries.</p>
+         <button type="button" aria-label="Confirm TCP multiline JSON LF LF framing"
+           onClick={adoptFramedJson}>
+           I Confirm TCP JSON Events Are Separated by a Blank Line
+         </button>
        </div>}
        {javaFramedCandidate&&<div className="auto-parser-warning"
          aria-label="Explicit Java TCP framing confirmation">

@@ -67,7 +67,8 @@ function exact(value:unknown,keys:readonly string[]):boolean {
   Object.keys(value).length===keys.length&&
   Object.keys(value).every(k=>keys.includes(k));
 }
-function pathOK(v:string):boolean{
+function pathOK(v:string,source=false):boolean{
+ if(source&&v==='@timestamp')return true;
  return v.length<=128&&v.length>=1&&
   /^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*$/.test(v)&&
   v.split(".").every(part=>!UNSAFE.has(part));
@@ -103,7 +104,7 @@ function expectedMappings(project:ParserProject):MapStage[]{
  const items:MapStage[]=[];
  for(const [group,section] of GROUPS){
   for(const [source,rule] of Object.entries(project.normalization[section])){
-   if(!pathOK(source)||!pathOK(rule.normalized_name)||!TYPES.has(rule.data_type))
+   if(!pathOK(source,true)||!pathOK(rule.normalized_name)||!TYPES.has(rule.data_type))
     throw new Error("UNSUPPORTED_MAPPING_PATH");
    items.push({op:"map_field",source,target:rule.normalized_name,
     data_type:rule.data_type,group,
@@ -243,7 +244,7 @@ export function validateRecipePair(input:unknown):ValidationResult{
    if(!(exact(m,["op","source","target","data_type","group"])||
      (exact(m,["op","source","target","data_type","group","source_path_kind"])&&
       ["literal_root","nested"].includes(m.source_path_kind??"")))||
-     !pathOK(m.source)||!pathOK(m.target)||targets.has(m.target))
+     !pathOK(m.source,true)||!pathOK(m.target)||targets.has(m.target))
     return fail("UNSAFE_OR_DUPLICATE_MAPPING");
    targets.add(m.target);
    actual.push(m);

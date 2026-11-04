@@ -9,3 +9,12 @@ export function validIsoCalendarDate(value:string):boolean{
   const days=[31,leap?29:28,31,30,31,30,31,31,30,31,30,31];
   return day<=days[month-1]!;
 }
+
+
+/** ISO timestamp subset shared with the generated Ruby coercion contract.
+ * Do not let Date.parse or Time.iso8601 repair invalid clock components. */
+export function validIsoTimestamp(value:string):boolean{
+  if(!validIsoCalendarDate(value))return false;
+  const matched=/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value);
+  return matched&&Number.isFinite(Date.parse(value));
+}

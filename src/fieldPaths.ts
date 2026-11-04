@@ -9,7 +9,8 @@ const MAX_DEPTH = 8;
 const MAX_FIELDS = 100;
 
 export function safeLocalFieldPath(path: string): boolean {
-  return path.length > 0 && path.length <= 128 && PATH.test(path) &&
+  return path.length > 0 && path.length <= 128 &&
+    (PATH.test(path)||path==='@timestamp') &&
     path.split('.').every((segment) => !UNSAFE.has(segment));
 }
 

@@ -1,5 +1,6 @@
 import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
+import {jsonSourceValueValid} from './jsonSourceSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
 import {validatePreviewRegexPattern} from './regexSafety';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
@@ -124,15 +125,8 @@ function boundedJsonObject(text: string): StructuredExtraction {
       return failure('Duplicate JSON object key in reviewed Syslog body');
     if (hasUnsafeJsonNumbers(text))
       return failure('Unsafe JSON numeric precision: quote large identifiers as strings');
-    function depthOkay(value: unknown, depth: number): boolean {
-      if (depth > 8) return false;
-      if (Array.isArray(value)) return value.every((v) => depthOkay(v, depth + 1));
-      if (value && typeof value === 'object') {
-        return Object.values(value).every((v) => depthOkay(v, depth + 1));
-      }
-      return true;
-    }
-    if (!depthOkay(parsed, 0)) return failure('RFC5424 JSON body exceeds reviewed nesting depth');
+    if (!jsonSourceValueValid(parsed))
+      return failure('RFC5424 JSON body exceeds native nesting depth or contains invalid Unicode');
     return { fields: parsed as Record<string, unknown>, errors: [] };
   } catch {
     return failure('RFC5424 JSON body is not valid JSON');

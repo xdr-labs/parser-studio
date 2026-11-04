@@ -5,6 +5,7 @@
 import {MAX_DATASET_BYTES,MAX_EVENTS,MAX_LINE_CHARS,splitEvents,tokenizeCSV} from '../parser';
 import {hasDuplicateJsonObjectKeys} from '../jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from '../jsonNumberSafety';
+import {jsonSourceValueValid} from '../jsonSourceSafety';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
@@ -72,7 +73,7 @@ function jsonValid(input:string):boolean{
   try{
     const value=JSON.parse(input) as unknown;
     if(!value||typeof value!=='object'||Array.isArray(value))return false;
-    if(hasDuplicateJsonObjectKeys(input)||hasUnsafeJsonNumbers(input))return false;
+    if(hasDuplicateJsonObjectKeys(input)||hasUnsafeJsonNumbers(input)||!jsonSourceValueValid(value))return false;
     let leaves=0;
     const descend=(node:unknown,depth:number):boolean=>{
       if(depth>8)return false;
@@ -137,23 +138,30 @@ function classifyBody(text:string):{body:Body;status:EntryStatus}{
   return {body:'unknown',status:'UNKNOWN'};
 }
 function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBoundary,
-  forwarder?:ForwarderConfig):EnvelopeEntry{
+  forwarder?:ForwarderConfig,messageLimit=65536,
+  framing:'newline'|'blank_line_json'|'blank_line_java'='newline'):EnvelopeEntry{
   if(forwarder){
     const inspection=inspectDeclaredForwarders(text,forwarder);
     if(inspection.status==='ABSTAIN_UNSAFE')
       return {sequence,line,envelope:'none',body:'unknown',
         timePolicy:'NO_TIMESTAMP',status:'HEADER_MALFORMED'};
     if(inspection.status==='UNWRAPPED'){
-      const inner=analyzeRecord(inspection.payload,sequence,line,boundary);
+      const inner=analyzeRecord(inspection.payload,sequence,line,boundary,undefined,messageLimit,framing);
       return {...inner,relayHops:inspection.hops.length};
     }
   }
   const raw=text.trim();
   const base={sequence,line,timePolicy:'NO_TIMESTAMP' as EnvelopeEntry['timePolicy']};
-  if(text.length>MAX_LINE_CHARS)
+  if(text.length>MAX_LINE_CHARS||new TextEncoder().encode(text).byteLength>messageLimit)
     return {...base,envelope:'none',body:'unknown',status:'TOO_LONG'};
+  if(text.includes('\r'))
+    return {...base,envelope:'none',body:'unknown',status:'BOUNDARY_AMBIGUOUS'};
   if(text.includes('\n')||text.includes('\r')){
-    if(boundary==='blank-line'&&parseJavaStacktrace(text).errors.length===0)
+    if(boundary==='blank-line'&&framing==='blank_line_json'&&
+       text.startsWith('{')&&jsonValid(text))
+      return {...base,envelope:'none',body:'json',status:'RECOGNIZED'};
+    if(boundary==='blank-line'&&framing==='blank_line_java'&&
+       parseJavaStacktrace(text).errors.length===0)
       return {...base,envelope:'none',body:'java_stacktrace',status:'RECOGNIZED'};
     return {...base,envelope:'none',body:'unknown',status:'BOUNDARY_AMBIGUOUS'};
   }
@@ -197,7 +205,9 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
   }
   return {...base,envelope:'none',...classifyBody(raw)};
 }
-export function analyzeLogEnvelopes(source:string,boundary:EventBoundary,forwarder?:ForwarderConfig):EnvelopeLedger{
+export function analyzeLogEnvelopes(source:string,boundary:EventBoundary,forwarder?:ForwarderConfig,
+  messageLimit=65536,
+  framing:'newline'|'blank_line_json'|'blank_line_java'='newline'):EnvelopeLedger{
   if(typeof source!=='string'||!['single-line','blank-line'].includes(boundary))
     return EMPTY('SOURCE_LIMIT','single-line');
   if(new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES)
@@ -209,7 +219,7 @@ export function analyzeLogEnvelopes(source:string,boundary:EventBoundary,forward
   if(!source.trim())return EMPTY('NO_SAMPLES',boundary);
   const records=splitEvents(source,boundary,MAX_EVENTS+1);
   if(records.length>MAX_EVENTS)return EMPTY('SOURCE_LIMIT',boundary,records.length);
-  const events=records.map((item,index)=>analyzeRecord(item.raw,index+1,item.line,boundary,forwarder));
+  const events=records.map((item,index)=>analyzeRecord(item.raw,index+1,item.line,boundary,forwarder,messageLimit,framing));
   const groups=new Map<string,{envelope:Envelope;body:Body;count:number}>();
   for(const event of events){
     const id=event.envelope+'/'+event.body;
@@ -229,6 +239,7 @@ export function analyzeLogEnvelopes(source:string,boundary:EventBoundary,forward
 }
 export function assessEnvelopeCompilation(
   report:EnvelopeLedger,cap:BackendCapabilities|null,
+  framing:'newline'|'blank_line_json'|'blank_line_java'='newline',
 ):CompilerAssessment{
   const no=(status:CompilerAssessment['status']):CompilerAssessment=>
     ({status,format:null,bodyFormat:null,nativeVerified:false,targetVerified:false});
@@ -241,6 +252,21 @@ export function assessEnvelopeCompilation(
       return no('COMPILER_UNSUPPORTED');
   }
   if(report.boundary==='blank-line'){
+    const allJson=report.families.length===1&&report.families[0]?.envelope==='none'&&
+      report.families[0]?.body==='json'&&report.unsupported===0&&
+      report.accounted===report.sourceCount&&
+      report.events.every(event=>event.status==='RECOGNIZED');
+    if(framing==='blank_line_json'&&allJson){
+      if(!cap)return no('BACKEND_UNAVAILABLE');
+      if(cap.verification?.engineVerified!==false||cap.verification?.targetImportVerified!==false)
+        return no('BACKEND_UNTRUSTED');
+      if(!cap.authoring?.extractionFormats?.includes('json')||
+        cap.authoring.jsonBlankLineTcpFraming!==true||
+        cap.authoring.jsonBlankLineOtherTransports!==false||
+        cap.authoring.jsonBlankLineDelimiter!=='LF_LF')return no('COMPILER_UNSUPPORTED');
+      return {status:'DRAFT_COMPILABLE',format:'json',bodyFormat:null,
+        nativeVerified:false,targetVerified:false};
+    }
     if(report.families.length!==1||
        report.families[0]?.envelope!=='none'||
        report.families[0]?.body!=='java_stacktrace'||

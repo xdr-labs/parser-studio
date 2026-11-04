@@ -7,6 +7,7 @@ require 'time'
 
 def initialize()
   @parser_rule_set = JSON.parse(Base64.strict_decode64('__PARSER_PROJECT_B64__'))
+  @parserstudio_official_types = JSON.parse('__STELLAR7_ENRICH_TYPES_JSON__')
 end
 # STELLAR_INIT_END
 
@@ -32,7 +33,12 @@ def parse(text)
     current_stage = 'normalization'
     normalized = parserstudio_normalize(original)
     current_stage = 'enrichment'
-    normalized = parserstudio_enrich(normalized)
+    # Enrichment is a transaction: an invalid new official field must not
+    # escape through the partial-record error path.
+    enriched = parserstudio_enrich(JSON.parse(JSON.generate(normalized)))
+    parserstudio_verify_proto_pair!(enriched)
+    normalized = enriched
+    @parserstudio_partial = normalized
     current_stage = 'classification'
     normalized['stellar_log_index'] = parserstudio_classify(normalized)
     normalized['msg_origin'] = {
@@ -195,9 +201,16 @@ end
 def parserstudio_validate_json_depth(value, depth, limit)
   raise ArgumentError, 'Maximum JSON nesting depth exceeded' if depth > limit
   if value.is_a?(Hash)
-    value.each_value { |item| parserstudio_validate_json_depth(item, depth + 1, limit) }
+    value.each do |key, item|
+      raise ArgumentError, 'Invalid JSON source key encoding' unless key.valid_encoding?
+      parserstudio_validate_json_depth(item, depth + 1, limit)
+    end
   elsif value.is_a?(Array)
     value.each { |item| parserstudio_validate_json_depth(item, depth + 1, limit) }
+  elsif value.is_a?(String)
+    # Ruby JSON.parse can admit lone low-surrogate escapes as invalid UTF-8.
+    # Reject them instead of passing invalid JSON strings to Stellar.
+    raise ArgumentError, 'Invalid JSON source text encoding' unless value.valid_encoding?
   end
 end
 
@@ -732,14 +745,72 @@ def parserstudio_lookup(record, path, kind = nil)
   found.first
 end
 
+# Serialize structured JSON as JavaScript JSON.stringify does for supported
+# JSON scalar values: array-index key ordering and shortest decimal numbers.
+# Never execute input as code or mutate original source hashes.
+def parserstudio_json_number(value)
+  return value.to_s if value.is_a?(Integer)
+  raise ArgumentError, 'Nonfinite JSON number' unless value.is_a?(Float) && value.finite?
+  return '0' if value.zero?
+  str = value.to_s
+  # Ruby commonly writes 1.0e-06 whereas JSON.stringify writes 0.000001.
+  if (value.abs >= 0.000001 && value.abs < 1.0e21)
+    if (match = /\A(-?)(\d+)(?:\.(\d+))?e([+-]?\d+)\z/.match(str))
+      digits = match[2] + (match[3] || '')
+      position = match[2].length + match[4].to_i
+      expanded = if position <= 0
+        '0.' + '0' * -position + digits
+      elsif position >= digits.length
+        digits + '0' * (position - digits.length)
+      else
+        digits[0...position] + '.' + digits[position..]
+      end
+      return match[1] + expanded.sub(/(\.\d*?)0+\z/, '\\1').sub(/\.\z/, '')
+    end
+    return str.sub(/\.0\z/, '')
+  end
+  if (match = /\A(-?)(\d+)(?:\.(\d+))?e([+-]?\d+)\z/.match(str))
+    fraction = (match[3] || '').sub(/0+\z/, '')
+    exponent = match[4].to_i
+    return match[1] + match[2] + (fraction.empty? ? '' : '.' + fraction) +
+      'e' + (exponent >= 0 ? '+' : '') + exponent.to_s
+  end
+  str.sub(/\.0\z/, '')
+end
+
+def parserstudio_json_stringify(value)
+  case value
+  when Hash
+    keys = value.keys
+    indexes = keys.select do |key|
+      key.is_a?(String) && key.match?(/\A(?:0|[1-9]\d*)\z/) &&
+        key.length <= 10 && key.to_i < 4294967295
+    end.sort_by(&:to_i)
+    ordered = indexes + keys.reject { |key| indexes.include?(key) }
+    '{' + ordered.map { |key|
+      JSON.generate(key) + ':' + parserstudio_json_stringify(value[key])
+    }.join(',') + '}'
+  when Array
+    '[' + value.map { |item| parserstudio_json_stringify(item) }.join(',') + ']'
+  when Float, Integer
+    parserstudio_json_number(value)
+  else
+    JSON.generate(value)
+  end
+end
+
 def parserstudio_coerce(value, rule)
   type = rule['data_type']
   str = value.to_s.strip
   case type
   when 'string'
     # Match the browser's JSON.stringify for object/array source values.
-    (value.is_a?(Hash) || value.is_a?(Array)) ? JSON.generate(value) : value.to_s
+    (value.is_a?(Hash) || value.is_a?(Array)) ? parserstudio_json_stringify(value) : value.to_s
   when 'integer', 'port'
+    # Ruby JSON.parse preserves 6.0/6e0 as Float while JS JSON.parse sees 6.
+    # Convert only EXACTLY integral, safe Float values; no rounding.
+    str = value.to_i.to_s if value.is_a?(Float) && value.finite? &&
+      value == value.to_i && value.abs <= 9007199254740991
     # A signed port is not in the browser's reviewed grammar; integers
     # permit a leading minus only. Spaces are trimmed consistently.
     integer_pattern = type == 'port' ? /\A\d+\z/ : /\A-?\d+\z/
@@ -749,17 +820,25 @@ def parserstudio_coerce(value, rule)
     raise ArgumentError, 'Invalid port' if type == 'port' && (number < 0 || number > 65535)
     number
   when 'boolean'
+    str = value.to_i.to_s if value.is_a?(Float) && value.finite? &&
+      value == value.to_i && value.abs <= 9007199254740991
     return true if value == true || str.downcase == 'true' || str == '1'
     return false if value == false || str.downcase == 'false' || str == '0'
     raise ArgumentError, 'Invalid boolean'
   when 'ip'
-    IPAddr.new(str) # Validate without silently rewriting the reviewer-visible value.
+    # IPAddr accepts CIDR masks and IPv6 interface zones; Stellar's srcip/dstip
+    # need host IP literals, with neither an attached prefix nor a zone.
+    raise ArgumentError, 'Not a host IP literal' if str.include?('/') || str.include?('%')
+    IPAddr.new(str)
     str
   when 'date'
     raise ArgumentError, 'Unsupported date policy' unless rule['time_format'] == 'iso8601'
     raise ArgumentError, 'Timestamp must contain an explicit timezone' unless str.match?(/(?:Z|[+-]\d{2}:\d{2})\z/)
+    raise ArgumentError, 'Invalid ISO timestamp clock or timezone' unless
+      str.match?(/\A\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)\z/)
     date_match = /\A(\d{4})-(\d{2})-(\d{2})T/.match(str)
     raise ArgumentError, 'Invalid ISO calendar date' unless date_match &&
+      date_match[1].to_i > 0 &&
       Date.valid_date?(date_match[1].to_i, date_match[2].to_i, date_match[3].to_i)
     (Time.iso8601(str).to_r * 1000).to_i
   else
@@ -790,6 +869,46 @@ def parserstudio_stellar7_value_valid?(name, raw, converted)
     return converted.is_a?(Integer) && converted.between?(0, 100)
   end
   true
+end
+
+# Validate the FINAL value of every enriched Stellar 7.0 scalar field.
+# The allowlist is compiled from the pinned 7.0 mappable-field catalog.
+# Unknown/vendor-local extension fields retain their original flexible behavior.
+def parserstudio_prepare_enriched_value(target, value)
+  type = @parserstudio_official_types[target]
+  return value unless type
+  converted = value
+  case type
+  when 'string'
+    raise ArgumentError, 'Official string must be text' unless value.is_a?(String)
+  when 'integer', 'port'
+    raise ArgumentError, 'Official integer must be safe and integral' unless
+      value.is_a?(Integer) && value.abs <= 9007199254740991
+    raise ArgumentError, 'Official port outside range' if type == 'port' &&
+      !value.between?(0,65535)
+  when 'number'
+    raise ArgumentError, 'Official number must be finite' unless
+      value.is_a?(Numeric) && value.finite?
+  when 'boolean'
+    raise ArgumentError, 'Official boolean must be boolean' unless
+      value == true || value == false
+  when 'ip'
+    raise ArgumentError, 'Official IP must be a host literal' unless value.is_a?(String)
+    converted = parserstudio_coerce(value, {'data_type'=>'ip'})
+  when 'timestamp'
+    if value.is_a?(String)
+      converted = parserstudio_coerce(value, {
+        'data_type'=>'date', 'time_format'=>'iso8601'})
+    else
+      raise ArgumentError, 'Official timestamp must be epoch ms or ISO string' unless
+        value.is_a?(Integer) && value.abs <= 9007199254740991
+    end
+  else
+    raise ArgumentError, 'Unsupported enriched official type'
+  end
+  raise ArgumentError, 'Invalid enriched official field value' unless
+    parserstudio_stellar7_value_valid?(target, value, converted)
+  converted
 end
 
 # An IP protocol number and its L4 name may not contradict each other.
@@ -874,7 +993,10 @@ def parserstudio_enrich(normalized)
         raise ArgumentError, 'Split enrichment targets invalid' unless targets.is_a?(Array) && targets.length.between?(2, 8)
         parts = value.split(delimiter, -1)
         raise ArgumentError, 'Split enrichment field count mismatch' unless parts.length == targets.length
-        targets.each_with_index { |target, index| parserstudio_assign(normalized, target, parts[index]) }
+        targets.each_with_index do |target, index|
+          parserstudio_assign(normalized, target,
+            parserstudio_prepare_enriched_value(target, parts[index]))
+        end
         next
       when 'merge_fields'
         delimiter = rule['delimiter']
@@ -890,7 +1012,8 @@ def parserstudio_enrich(normalized)
       else
         raise ArgumentError, 'Unknown enrichment operator'
       end
-      parserstudio_assign(normalized, rule['target'], value)
+      parserstudio_assign(normalized, rule['target'],
+        parserstudio_prepare_enriched_value(rule['target'], value))
     rescue StandardError
       raise ParserstudioFieldError.new(field)
     end

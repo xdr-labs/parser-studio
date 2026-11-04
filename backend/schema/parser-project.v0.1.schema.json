@@ -647,7 +647,7 @@
       "maxProperties": 1000,
       "propertyNames": {
         "type": "string",
-        "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*$",
+        "pattern": "^(?:@timestamp|[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)*)$",
         "maxLength": 128
       },
       "additionalProperties": {

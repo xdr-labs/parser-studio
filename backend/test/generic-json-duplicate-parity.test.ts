@@ -37,10 +37,11 @@ test('native compiled Generic Structural refuses duplicate prefixed JSON without
   const statements=[
     "require 'json'","require 'base64'","require 'csv'","require 'ipaddr'","require 'time'",
     'klass=Class.new',
-    "klass.class_eval(Base64.strict_decode64('"+Buffer.from(ruby,'utf8').toString('base64')+"'))",
+    'input=JSON.parse(STDIN.read)',
+    'klass.class_eval(input.fetch("ruby"))',
     'parser=klass.new',
     'results=[]',
-    'JSON.parse(STDIN.read).each do |entry|',
+    'input.fetch("cases").each do |entry|',
     "  method=entry['method']=='prefixed' ? :parserstudio_generic_prefixed_json : :parserstudio_generic_short_rfc5424_json",
     "  parsed=parser.send(method,entry['source'])",
     '  results << (!parsed.nil?)',
@@ -48,7 +49,7 @@ test('native compiled Generic Structural refuses duplicate prefixed JSON without
     'STDOUT.write(JSON.generate(results))',
   ].join('\n');
   const result=spawnSync('ruby',['-e',statements],{
-    input:JSON.stringify(cases),encoding:'utf8',timeout:10000,
+    input:JSON.stringify({ruby,cases}),encoding:'utf8',timeout:10000,
   });
   assert.equal(result.status,0,result.stderr||String(result.error));
   assert.deepEqual(JSON.parse(result.stdout),cases.map(item=>item.accepted));

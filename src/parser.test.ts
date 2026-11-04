@@ -200,6 +200,12 @@ describe('logical event boundary modes', () => {
     draft.format = 'json';
     draft.guided = { ...draft.guided!, eventBoundary: 'blank-line' };
     const realisticEdR = ['{', ' '.repeat(10_000) + '"action":"allow"', '}'].join('\n');
+    // The default 8192-byte receiver cannot accept this wire record even
+    // when the overall 64KiB browser dataset is valid.
+    const defaultRejected=preview(realisticEdR,draft);
+    expect(defaultRejected.counts.failures).toBe(1);
+    expect(defaultRejected.events[0]?.diagnostics.some(x=>x.code==='MESSAGE_LIMIT')).toBe(true);
+    draft.guided!.receiver.messageLimit=16384;
     const accepted = preview(realisticEdR, draft);
     expect(accepted.counts.failures).toBe(0);
     expect(accepted.events[0].diagnostics.some((x) => x.code === 'LINE_TOO_LONG')).toBe(false);

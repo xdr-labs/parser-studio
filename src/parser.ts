@@ -4,7 +4,9 @@ import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from 
 import { hasAmbiguousFieldPath,lookupFieldValue } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
-import {validIsoCalendarDate} from './isoCalendar';
+import {validIsoTimestamp} from './isoCalendar';
+import {jsonSourceValueValid} from './jsonSourceSafety';
+import {findStellarMetadataField} from './guided/stellarMetadataCatalog';
 import {validateConventionalTemporalCaptures} from './regexTemporalClaims';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
@@ -99,6 +101,8 @@ function extractJSON(raw: string): Extraction {
       return {fields:{},errors:['Duplicate JSON object key: review the source before generating a parser']};
     if(hasUnsafeJsonNumbers(raw))
       return {fields:{},errors:['Unsafe JSON numeric precision: quote large integer identifiers as strings before mapping']};
+    if(!jsonSourceValueValid(parsed))
+      return {fields:{},errors:['JSON source exceeds the native nesting limit or has an invalid Unicode surrogate']};
     return { fields: parsed as Record<string, unknown>, errors: [] };
   } catch {
     return { fields: {}, errors: ['Invalid JSON object'] };
@@ -369,14 +373,13 @@ export function convertValue(raw: unknown, type: FieldType): { value?: unknown; 
     case 'ip':
       return asIP(value) ? { value } : { error: 'Expected valid IP address' };
     case 'timestamp':
-      return validIsoCalendarDate(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
-        Number.isFinite(Date.parse(value))
+      return validIsoTimestamp(value)
         ? { value: new Date(value).toISOString() } : { error: 'Expected ISO timestamp with explicit timezone' };
   }
 }
 
 export function splitEvents(input: string, boundary: EventBoundary = 'single-line', limit = MAX_EVENTS): { raw: string; line: number }[] {
-  const lines = input.replace(/\r\n?/g, '\n').split('\n');
+  const lines = input.replace(/\r\n/g, '\n').split('\n');
   const maximum = Math.max(0, Math.min(Math.floor(limit), MAX_EVENTS + 1));
   if (boundary === 'single-line') {
     return lines.map((raw, i) => ({ raw, line: i + 1 })).filter(({ raw }) => raw.trim().length > 0).slice(0, maximum);
@@ -417,6 +420,10 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   let matched = false;
   if (raw.length > MAX_LINE_CHARS) {
     error('break', 'LINE_TOO_LONG', 'Event exceeds ' + MAX_LINE_CHARS + ' characters');
+  } else if(new TextEncoder().encode(raw).byteLength>(draft.guided?.receiver.messageLimit??65536)){
+    error('break','MESSAGE_LIMIT','Source event exceeds the configured receiver byte limit');
+  } else if(raw.includes('\r')){
+    error('break','UNSUPPORTED_LINE_ENDING','Bare carriage returns are not approved event delimiters');
   } else if(wrapped.status==='ABSTAIN_UNSAFE'){
     error('extract','UNSAFE_RELAY_ENVELOPE','The forwarded log cannot be safely unwrapped.');
   } else if (effectiveFormat === 'unknown') {
@@ -507,9 +514,6 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       error('normalize','INVALID_MAPPING','Could not assign output field: '+target,target);
     }
   }
-  if(officialProtocolPairConflict(normalized.proto,normalized.proto_name))
-    error('normalize','PROTOCOL_CONFLICT',
-      'The official IP protocol number contradicts the reviewed Layer 4 protocol name.');
   // Preview the reviewed declarative enrichment steps in order, never Ruby.
   // Dotted paths use the same nested lookup/assignment semantics as the
   // generated backend parser instead of creating literal "a.b" object keys.
@@ -585,6 +589,32 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
         error('normalize','ENRICHMENT_TARGET','Could not assign transformed output at step '+step);
     } else error('normalize', 'ENRICHMENT_UNSUPPORTED', 'Unsupported enrichment operator');
   }
+  // The native DRAFT validates every final enriched official field.
+  // A successful browser mapping must not hide invalid enrichment output.
+  const enrichedTargets=(draft.guided?.enrichment??[]).flatMap(rule=>
+    rule.operator==='split_field'?(rule.targets??[]):[rule.target]);
+  for(const target of enrichedTargets){
+    if(target===draft.vendor||target.startsWith(draft.vendor+'.'))continue;
+    const meta=findStellarMetadataField(target);
+    if(!meta?.mappable||!meta.mappingType)continue;
+    const found=lookupFieldValue(normalized,target);
+    if(!found.found)continue;
+    const value=found.value;
+    const type=meta.mappingType;
+    const basic=type==='string'?typeof value==='string':
+      type==='integer'?typeof value==='number'&&Number.isSafeInteger(value):
+      type==='port'?typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=65535:
+      type==='number'?typeof value==='number'&&Number.isFinite(value):
+      type==='boolean'?typeof value==='boolean':
+      type==='ip'?typeof value==='string'&&!convertValue(value,'ip').error:
+      type==='timestamp'?typeof value==='string'&&!convertValue(value,'timestamp').error:
+      false;
+    if(!basic||!meetsStellar7ValueConstraints(target,value,value))
+      error('normalize','ENRICHMENT_TYPE','Enriched official field violates Stellar 7.0 scalar rules: '+target,target);
+  }
+  if(officialProtocolPairConflict(normalized.proto,normalized.proto_name))
+    error('normalize','PROTOCOL_CONFLICT',
+      'The final IP protocol number contradicts the reviewed Layer 4 protocol name.');
   const unmapped = Object.keys(fields).filter((field) => !mapped.has(field));
   if (unmapped.length) diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'UNMAPPED_FIELDS', message: unmapped.length + ' source fields remain available without mappings' });
   const hasErrors = diagnostics.some((issue) => issue.severity === 'error');
