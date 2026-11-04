@@ -14,7 +14,7 @@ const UNSAFE_PARTS = new Set(["__proto__", "constructor", "prototype"]);
  * The browser worker independently imposes a wall-clock deadline.
  */
 function hasNestedQuantifiers(pattern:string):boolean {
-  const stack:{repeated:boolean}[]=[];
+  const stack:{repeated:boolean;alternative:boolean}[]=[];
   let characterClass=false;
   for(let i=0;i<pattern.length;i++){
     const char=pattern[i];
@@ -23,7 +23,7 @@ function hasNestedQuantifiers(pattern:string):boolean {
     if(char===']'&&characterClass){characterClass=false;continue;}
     if(characterClass)continue;
     if(char==='('){
-      stack.push({repeated:false});
+      stack.push({repeated:false,alternative:false});
       if(pattern.startsWith('(?:',i)){i+=2;continue;}
       if(pattern.startsWith('(?<',i)){
         const end=pattern.indexOf('>',i+3);
@@ -38,11 +38,15 @@ function hasNestedQuantifiers(pattern:string):boolean {
       const bound=/^\{(\d{1,8})(?:,(\d{0,8}))?\}/.exec(suffix);
       const repeats=suffix.startsWith('+')||suffix.startsWith('*')||
         Boolean(bound&&(bound[2]===''||Number(bound[2]??bound[1])>1));
-      if(frame.repeated&&repeats)return true;
-      if(stack.length&&(frame.repeated||repeats))stack[stack.length-1]!.repeated=true;
+      if(repeats&&(frame.repeated||frame.alternative))return true;
+      if(stack.length){
+        if(frame.repeated||repeats)stack[stack.length-1]!.repeated=true;
+        if(frame.alternative)stack[stack.length-1]!.alternative=true;
+      }
       continue;
     }
     if(!stack.length)continue;
+    if(char==='|')stack[stack.length-1]!.alternative=true;
     if(char==='*'||char==='+'||char==='?'){
       stack[stack.length-1]!.repeated=true;
     }else if(char==='{'){

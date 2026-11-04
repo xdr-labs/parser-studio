@@ -3,6 +3,7 @@ export type FieldType = "string" | "integer" | "ip" | "port" | "boolean" | "date
 export type FieldRule = {
   normalized_name: string;
   data_type: FieldType;
+  source_path_kind?: 'literal_root' | 'nested';
   time_format?: "iso8601";
   timezone?: "UTC";
 };

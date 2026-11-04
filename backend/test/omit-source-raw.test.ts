@@ -29,7 +29,7 @@ test("omitSourceRaw: true strips source_raw from parserstudio_source only", () =
   assert.match(ruby, /def parserstudio_without_source_raw\(value\)/);
   assert.match(ruby, /next if key == 'source_raw'/);
   // Mappings still read the untouched extraction.
-  assert.match(ruby, /raw = parserstudio_lookup\(original, source\)/);
+  assert.match(ruby, /raw = parserstudio_lookup\(original, source, rule\['source_path_kind'\]\)/);
 });
 
 test("omitSourceRaw is rejected unless it is true and the format is Generic Structural", () => {

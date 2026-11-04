@@ -1,12 +1,13 @@
 import type {MappingRule,SuiteResult} from '../model';
 import type {FieldGroup} from './contract';
 import {lookupFieldValue} from '../fieldPaths';
+import {officialProtocolPairConflict} from '../stellar7ValueConstraints';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 import {valueFitsMappingType,valueFitsNormalizationTarget} from './normalizationCandidates';
 
 export type NormalizationFindingCode=
   'TARGET_COLLISION'|'TYPE_ERROR'|'SOURCE_NOT_FOUND'|'UNVERIFIED_TARGET'|
-  'CATALOG_TYPE_MISMATCH'|'TARGET_RESERVED'|'BACKEND_TYPE_UNSUPPORTED';
+  'CATALOG_TYPE_MISMATCH'|'TARGET_RESERVED'|'BACKEND_TYPE_UNSUPPORTED'|'PROTOCOL_CONFLICT';
 
 export interface NormalizationFinding {
   code:NormalizationFindingCode;
@@ -17,7 +18,7 @@ export interface NormalizationFinding {
 
 const BLOCKING_CODES=new Set<NormalizationFindingCode>([
   'TARGET_COLLISION','TYPE_ERROR','UNVERIFIED_TARGET','CATALOG_TYPE_MISMATCH',
-  'TARGET_RESERVED','BACKEND_TYPE_UNSUPPORTED',
+  'TARGET_RESERVED','BACKEND_TYPE_UNSUPPORTED','PROTOCOL_CONFLICT',
 ]);
 export function isBlockingNormalizationFinding(code:NormalizationFindingCode):boolean{
   return BLOCKING_CODES.has(code);
@@ -52,7 +53,7 @@ export function validateNormalizationMappings(
   for(let i=0;i<suite.events.length;i++){
     const fields=suite.events[i]!.fields;
     for(const mapping of mappings){
-      const found=lookupFieldValue(fields,mapping.source);
+      const found=lookupFieldValue(fields,mapping.source,mapping.sourcePathKind);
       if(!found.found)findings.push({code:'SOURCE_NOT_FOUND',source:mapping.source,target:mapping.target,event:i+1});
       else if(!(groups[mapping.id]==='vendor_fields'
         // Vendor-local names can coincide with official Stellar names (for
@@ -63,6 +64,17 @@ export function validateNormalizationMappings(
         :valueFitsNormalizationTarget(mapping.target,mapping.type,found.value)))
         findings.push({code:'TYPE_ERROR',source:mapping.source,target:mapping.target,event:i+1});
     }
+  }
+  const official=(target:string)=>mappings.find(m=>m.target===target&&
+    ['top_fields','ns_fields'].includes(groups[m.id]??'vendor_fields'));
+  const proto=official('proto'),name=official('proto_name');
+  if(proto&&name)for(let i=0;i<suite.events.length;i++){
+    const fields=suite.events[i]!.fields;
+    const rawProto=lookupFieldValue(fields,proto.source,proto.sourcePathKind);
+    const rawName=lookupFieldValue(fields,name.source,name.sourcePathKind);
+    if(rawProto.found&&rawName.found&&
+      officialProtocolPairConflict(rawProto.value,rawName.value))
+      findings.push({code:'PROTOCOL_CONFLICT',source:name.source,target:'proto_name',event:i+1});
   }
   return findings.slice(0,300);
 }

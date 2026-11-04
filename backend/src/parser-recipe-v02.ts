@@ -12,7 +12,7 @@ import type {ParserProject,PairExport,ValidationIssue,ValidationResult,FieldType
 export type RecipeBody="json"|"kv"|"csv"|"cef"|"leef"|"mixed"|"java_stacktrace"|"regex"|"generic_structural";
 export type RecipeSource=RecipeBody|"syslog_rfc3164"|"syslog_rfc5424";
 type Group="top_fields"|"ns_fields"|"vendor_fields";
-type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group};
+type MapStage={op:"map_field";source:string;target:string;data_type:FieldType;group:Group;source_path_kind?:"literal_root"|"nested"};
 type CastStage={op:"cast_type";target:string;data_type:Exclude<FieldType,"string">;timezone?:"UTC"};
 type SplitFieldStage={op:"split_field";source:string;delimiter:string;targets:string[]};
 type MergeFieldsStage={op:"merge_fields";sources:string[];delimiter:string;target:string};
@@ -106,7 +106,8 @@ function expectedMappings(project:ParserProject):MapStage[]{
    if(!pathOK(source)||!pathOK(rule.normalized_name)||!TYPES.has(rule.data_type))
     throw new Error("UNSUPPORTED_MAPPING_PATH");
    items.push({op:"map_field",source,target:rule.normalized_name,
-    data_type:rule.data_type,group});
+    data_type:rule.data_type,group,
+    ...(rule.source_path_kind?{source_path_kind:rule.source_path_kind}:{})});
   }
  }
  if(items.length<1||items.length>60)throw new Error("UNSUPPORTED_MAPPING_COUNT");
@@ -239,7 +240,9 @@ export function validateRecipePair(input:unknown):ValidationResult{
   const targets=new Set<string>();
   while(stages[i]?.op==="map_field"){
    const m=stages[i++] as MapStage;
-   if(!exact(m,["op","source","target","data_type","group"])||
+   if(!(exact(m,["op","source","target","data_type","group"])||
+     (exact(m,["op","source","target","data_type","group","source_path_kind"])&&
+      ["literal_root","nested"].includes(m.source_path_kind??"")))||
      !pathOK(m.source)||!pathOK(m.target)||targets.has(m.target))
     return fail("UNSAFE_OR_DUPLICATE_MAPPING");
    targets.add(m.target);

@@ -695,7 +695,22 @@ def parserstudio_leef(text)
   record
 end
 
-def parserstudio_lookup(record, path)
+def parserstudio_lookup(record, path, kind = nil)
+  if kind
+    # Preserve the historical ambiguous-path failure even for strict selectors.
+    parserstudio_lookup(record, path)
+    if kind == 'literal_root'
+      return record.is_a?(Hash) ? record[path] : nil
+    elsif kind == 'nested'
+      cursor = record
+      path.split('.').each do |piece|
+        return nil unless cursor.is_a?(Hash) && cursor.key?(piece)
+        cursor = cursor[piece]
+      end
+      return cursor
+    end
+    raise ArgumentError, 'Unknown source path kind'
+  end
   parts = path.split('.')
   found = []
   walk = nil
@@ -722,7 +737,8 @@ def parserstudio_coerce(value, rule)
   str = value.to_s.strip
   case type
   when 'string'
-    value.to_s
+    # Match the browser's JSON.stringify for object/array source values.
+    (value.is_a?(Hash) || value.is_a?(Array)) ? JSON.generate(value) : value.to_s
   when 'integer', 'port'
     # A signed port is not in the browser's reviewed grammar; integers
     # permit a leading minus only. Spaces are trimmed consistently.
@@ -742,6 +758,9 @@ def parserstudio_coerce(value, rule)
   when 'date'
     raise ArgumentError, 'Unsupported date policy' unless rule['time_format'] == 'iso8601'
     raise ArgumentError, 'Timestamp must contain an explicit timezone' unless str.match?(/(?:Z|[+-]\d{2}:\d{2})\z/)
+    date_match = /\A(\d{4})-(\d{2})-(\d{2})T/.match(str)
+    raise ArgumentError, 'Invalid ISO calendar date' unless date_match &&
+      Date.valid_date?(date_match[1].to_i, date_match[2].to_i, date_match[3].to_i)
     (Time.iso8601(str).to_r * 1000).to_i
   else
     raise ArgumentError, 'Unsupported type'
@@ -773,6 +792,16 @@ def parserstudio_stellar7_value_valid?(name, raw, converted)
   true
 end
 
+# An IP protocol number and its L4 name may not contradict each other.
+def parserstudio_verify_proto_pair!(normalized)
+  number = normalized['proto']
+  name = normalized['proto_name']
+  return if number.nil? || name.nil?
+  expected = {'tcp'=>6, 'udp'=>17, 'icmp'=>[1,58], 'igmp'=>2}[name.to_s.strip.downcase]
+  valid = expected.is_a?(Array) ? expected.include?(number) : expected == number
+  raise ParserstudioFieldError.new('proto_name') unless valid
+end
+
 def parserstudio_assign(record, path, value)
   pieces = path.split('.')
   cursor = record
@@ -795,7 +824,7 @@ def parserstudio_normalize(original)
   ignored = @parser_rule_set['normalization']['ignoreValues']
   ['topFields', 'nsFields', 'vendorFields'].each do |section|
     @parser_rule_set['normalization'][section].each do |source, rule|
-      raw = parserstudio_lookup(original, source)
+      raw = parserstudio_lookup(original, source, rule['source_path_kind'])
       next if raw.nil? || ignored.include?(raw.to_s)
       target = normalized
       if section == 'vendorFields'
@@ -816,6 +845,7 @@ def parserstudio_normalize(original)
     end
   end
   raise ParserstudioFieldError.new(first_failed) if first_failed
+  parserstudio_verify_proto_pair!(normalized)
   normalized
 end
 

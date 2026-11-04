@@ -1,9 +1,10 @@
-import {meetsStellar7ValueConstraints} from './stellar7ValueConstraints';
+import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { hasAmbiguousFieldPath,lookupFieldValue } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
+import {validIsoCalendarDate} from './isoCalendar';
 import {validateConventionalTemporalCaptures} from './regexTemporalClaims';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
@@ -368,7 +369,8 @@ export function convertValue(raw: unknown, type: FieldType): { value?: unknown; 
     case 'ip':
       return asIP(value) ? { value } : { error: 'Expected valid IP address' };
     case 'timestamp':
-      return /(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value))
+      return validIsoCalendarDate(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+        Number.isFinite(Date.parse(value))
         ? { value: new Date(value).toISOString() } : { error: 'Expected ISO timestamp with explicit timezone' };
   }
 }
@@ -458,7 +460,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
         'A dotted key and a nested field share the same source path; choose an unambiguous log structure.',source);
       continue;
     }
-    const sourceValue = lookupFieldValue(fields, source);
+    const sourceValue = lookupFieldValue(fields, source, mapping.sourcePathKind);
     if (!sourceValue.found) {
       diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'SOURCE_NOT_FOUND', message: 'Source field is absent: ' + source, field: source });
       continue;
@@ -505,6 +507,9 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       error('normalize','INVALID_MAPPING','Could not assign output field: '+target,target);
     }
   }
+  if(officialProtocolPairConflict(normalized.proto,normalized.proto_name))
+    error('normalize','PROTOCOL_CONFLICT',
+      'The official IP protocol number contradicts the reviewed Layer 4 protocol name.');
   // Preview the reviewed declarative enrichment steps in order, never Ruby.
   // Dotted paths use the same nested lookup/assignment semantics as the
   // generated backend parser instead of creating literal "a.b" object keys.

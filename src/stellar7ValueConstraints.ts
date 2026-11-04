@@ -28,3 +28,11 @@ export function meetsStellar7ValueConstraints(
       converted>=0&&converted<=100;
   return true;
 }
+
+/** Official IP protocol assignments for the supported transport names. */
+export function officialProtocolPairConflict(proto:unknown,protoName:unknown):boolean{
+  if(proto===undefined||proto===null||protoName===undefined||protoName===null)return false;
+  const codes:Record<string,number[]>={tcp:[6],udp:[17],icmp:[1,58],igmp:[2]};
+  const allowed=typeof protoName==='string'?codes[protoName.trim().toLowerCase()]:undefined;
+  return !allowed||!allowed.includes(Number(proto));
+}

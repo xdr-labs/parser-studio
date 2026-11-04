@@ -632,6 +632,13 @@
           "enum": [
             "UTC"
           ]
+        },
+        "source_path_kind": {
+          "type": "string",
+          "enum": [
+            "literal_root",
+            "nested"
+          ]
         }
       }
     },

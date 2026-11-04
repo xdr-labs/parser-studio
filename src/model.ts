@@ -13,6 +13,8 @@ export interface MappingRule {
   source: string;
   target: string;
   type: FieldType;
+  /** JSONata-authored source selector. Absent is the legacy flexible source lookup. */
+  sourcePathKind?: 'literal_root' | 'nested';
 }
 
 export interface ParserDraft {

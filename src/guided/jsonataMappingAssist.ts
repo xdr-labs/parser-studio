@@ -83,6 +83,11 @@ function selectorMatchesSourceShape(expression:string,source:string,suite:SuiteR
   const literal=suite.events.some(e=>Object.prototype.hasOwnProperty.call(e.fields,source));
   return quoted===literal;
 }
+function reviewedSourceKind(expression:string,source:string):MappingRule['sourcePathKind']{
+  if(!source.includes('.'))return undefined;
+  const selector=expression.trim().replace(/^\$\./,'');
+  return selector==='`'+source+'`'?'literal_root':'nested';
+}
 export function jsonataDraftSignature(suite:SuiteResult,draft:ParserDraft):string{
   return JSON.stringify([suite.events.map(e=>[e.raw,e.fields]),draft.vendor,draft.name,draft.version??'',draft.format,draft.mappings,draft.guided?.groups??{}]);
 }
@@ -189,8 +194,9 @@ export async function reviewJsonataMapping(
     const meta=findStellarMetadataField(target);
     const type=meta?.mappable?meta.mappingType:null,group=meta?.mappable?meta.group:null;
     const current=draft.mappings.find(m=>m.source===source);
+    const sourceKind=source?reviewedSourceKind(expression,source):undefined;
     const values=suite.events.flatMap(e=>{
-      const v=source?lookupFieldValue(e.fields,source):{found:false as const};
+      const v=source?lookupFieldValue(e.fields,source,sourceKind):{found:false as const};
       return v.found?[v.value]:[];
     });
     const useful=values.filter(v=>v!==null&&v!==undefined&&!['','N/A','-'].includes(String(v)));
@@ -210,7 +216,7 @@ export async function reviewJsonataMapping(
     }else if(semantic){status='BLOCKED';reason=semantic;}
     else if(occupied||usedSources.has(source)||[...usedTargets].some(t=>conflict(t,target))){
       status='BLOCKED';reason='Duplicate source or colliding normalized destination.';
-    }else if(current?.target===target&&current.type===type&&(groups[current.id]??'vendor_fields')===group){
+    }else if(current?.target===target&&current.type===type&&current.sourcePathKind===sourceKind&&(groups[current.id]??'vendor_fields')===group){
       status='UNCHANGED';reason='This official mapping is already present.';
     }else{
       const existing=suggestions.find(s=>s.source===source&&s.target===target);
@@ -241,7 +247,7 @@ export function applyReviewedJsonataMapping(draft:ParserDraft,suite:SuiteResult,
     seen.add(row.source);
     const metadata=findStellarMetadataField(row.target);
     const values=suite.events.flatMap(event=>{
-      const found=lookupFieldValue(event.fields,row.source);
+      const found=lookupFieldValue(event.fields,row.source,reviewedSourceKind(row.expression,row.source));
       return found.found?[found.value]:[];
     });
     if(!metadata?.mappable||metadata.mappingType!==row.type||metadata.group!==row.group||
@@ -258,7 +264,9 @@ export function applyReviewedJsonataMapping(draft:ParserDraft,suite:SuiteResult,
       return {ok:false as const,reason:'The selected mapping requires explicit semantic review.'};
     const at=mappings.findIndex(m=>m.source===row.source);
     const id=at<0?'ai-jsonata-'+String(mappings.length+1):mappings[at]!.id;
-    const mapping={id,source:row.source,target:row.target,type:row.type};
+    const sourcePathKind=reviewedSourceKind(row.expression,row.source);
+    const mapping={id,source:row.source,target:row.target,type:row.type,
+      ...(sourcePathKind?{sourcePathKind}:{})};
     if(at<0)mappings.push(mapping);else mappings[at]=mapping;
     groups[id]=row.group;
   }
