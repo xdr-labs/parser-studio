@@ -16,6 +16,14 @@ export interface NormalizationFinding {
   event:number|null;
 }
 
+const MAX_REPORTED_FINDINGS=300;
+
+export interface NormalizationReviewResult {
+  findings:NormalizationFinding[];
+  totalFindings:number;
+  totalBlocking:number;
+}
+
 const BLOCKING_CODES=new Set<NormalizationFindingCode>([
   'TARGET_COLLISION','TYPE_ERROR','UNVERIFIED_TARGET','CATALOG_TYPE_MISMATCH',
   'TARGET_RESERVED','BACKEND_TYPE_UNSUPPORTED','PROTOCOL_CONFLICT',
@@ -27,11 +35,11 @@ export function isBlockingNormalizationFinding(code:NormalizationFindingCode):bo
 function overlaps(a:string,b:string):boolean{
   return a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
 }
-export function validateNormalizationMappings(
+export function reviewNormalizationMappings(
   suite:SuiteResult|undefined,mappings:MappingRule[],
   groups:Record<string,FieldGroup>={},
-):NormalizationFinding[]{
-  if(!suite)return [];
+):NormalizationReviewResult{
+  if(!suite)return {findings:[],totalFindings:0,totalBlocking:0};
   const findings:NormalizationFinding[]=[];
   for(const mapping of mappings){
     if(mappings.some(other=>other.id!==mapping.id&&overlaps(other.target,mapping.target)))
@@ -76,5 +84,20 @@ export function validateNormalizationMappings(
       officialProtocolPairConflict(rawProto.value,rawName.value))
       findings.push({code:'PROTOCOL_CONFLICT',source:name.source,target:'proto_name',event:i+1});
   }
-  return findings.slice(0,300);
+  // Check all events before enforcing the display cap. Earlier nonblocking
+  // absent-field notes must never hide a later invalid official field.
+  const blocking=findings.filter(item=>isBlockingNormalizationFinding(item.code));
+  const shown=findings.length<=MAX_REPORTED_FINDINGS?findings:[
+    ...blocking.slice(0,MAX_REPORTED_FINDINGS),
+    ...findings.filter(item=>!isBlockingNormalizationFinding(item.code))
+      .slice(0,Math.max(0,MAX_REPORTED_FINDINGS-blocking.length)),
+  ];
+  return {findings:shown,totalFindings:findings.length,totalBlocking:blocking.length};
+}
+
+export function validateNormalizationMappings(
+  suite:SuiteResult|undefined,mappings:MappingRule[],
+  groups:Record<string,FieldGroup>={},
+):NormalizationFinding[]{
+  return reviewNormalizationMappings(suite,mappings,groups).findings;
 }
