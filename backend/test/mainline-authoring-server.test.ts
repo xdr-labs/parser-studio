@@ -120,6 +120,8 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
   const reviewed=new Set([
     "mainline-authoring-server.ts","capabilities.ts","compiler.ts","validate.ts",
     "import.ts","artifact-package.ts","parser-recipe-v02.ts","unicode.ts","types.ts",
+    // Static pinned Stellar 7.0 scalar catalog; no executable/HTTP-capable module.
+    "stellar7-enrichment-types.json",
   ]);
   const visited=new Set<string>();
   const walk=async(file:string):Promise<void>=>{

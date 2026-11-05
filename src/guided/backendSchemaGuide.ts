@@ -17,6 +17,9 @@ export interface BackendSchemaGuide {
 
 const BASE = '/api/v1/parser-pairs/schema';
 const FIELD_PATH_PATTERN = String.raw`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*$`;
+// Source-only extension: the exact ECS root event time key. The target
+// field pattern remains unchanged, and arbitrary @-prefixed paths stay unsafe.
+const ECS_SOURCE_PATH_PATTERN = String.raw`^(?:@timestamp|[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*)$`;
 const ALLOWED_FORMATS = ['json', 'kv', 'csv', 'syslog_rfc3164', 'syslog_rfc5424', 'cef', 'leef', 'mixed', 'java_stacktrace', 'regex', 'generic_structural'];
 const ALLOWED_TYPES = ['string', 'integer', 'ip', 'port', 'boolean', 'date'];
 const ALLOWED_CATEGORIES = ['network', 'endpoint', 'cloud', 'application', 'other'];
@@ -60,7 +63,8 @@ export function parseBackendSchemaGuide(input: unknown): BackendSchemaGuide {
   const protocols = knownEnums(member(input, 'properties','receiver','properties','protocols','items','enum'), ALLOWED_PROTOCOLS);
   const sourceName = record(member(input, '$defs','mapping','propertyNames'));
   const targetName = record(member(input, '$defs','fieldRule','properties','normalized_name'));
-  if (sourceName.pattern !== FIELD_PATH_PATTERN || targetName.pattern !== FIELD_PATH_PATTERN) {
+  if (![FIELD_PATH_PATTERN,ECS_SOURCE_PATH_PATTERN].includes(String(sourceName.pattern)) ||
+      targetName.pattern !== FIELD_PATH_PATTERN) {
     throw new Error('Schema guidance blocked due to unverified field naming rules.');
   }
   const sourceMax = boundedInteger(sourceName.maxLength, 1, 128);

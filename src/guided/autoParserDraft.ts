@@ -30,7 +30,10 @@ export function prepareAutoParserDraft(
     !Array.isArray(suite.events))return failed('UNTRUSTED_PREVIEW');
   if(typeof source!=='string'||new TextEncoder().encode(source).byteLength>MAX_DATASET_BYTES||
     (ledger.boundary!=='single-line'&&
-      !(ledger.boundary==='blank-line'&&compiler.format==='java_stacktrace'))||
+      !(ledger.boundary==='blank-line'&&
+        (compiler.format==='java_stacktrace'&&draft.guided?.receiver.framing==='blank_line_java'||
+         compiler.format==='json'&&draft.guided?.receiver.framing==='blank_line_json'&&
+         draft.guided.receiver.protocols.length===1&&draft.guided.receiver.protocols[0]==='tcp')))||
     ledger.sourceCount>MAX_EVENTS)return failed('SOURCE_LIMIT');
   const records=splitEvents(source,ledger.boundary,MAX_EVENTS+1);
   if(!ledger.complete||ledger.accounted!==records.length||
@@ -42,7 +45,9 @@ export function prepareAutoParserDraft(
     return failed('SOURCE_CHANGED');
   }
   // Recompute *only the value-free census* to block stale/forged summaries.
-  if(!same(analyzeLogEnvelopes(source,ledger.boundary,draft.forwarder),ledger))return failed('SOURCE_CHANGED');
+  if(!same(analyzeLogEnvelopes(source,ledger.boundary,draft.forwarder,
+    draft.guided?.receiver.messageLimit,draft.guided?.receiver.framing),ledger))
+    return failed('SOURCE_CHANGED');
   if(compiler.status!=='DRAFT_COMPILABLE'||!compiler.format){
     return failed(compiler.status==='DRAFT_COMPILABLE'?'COMPILER_UNSUPPORTED':compiler.status);
   }

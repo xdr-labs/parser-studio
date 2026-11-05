@@ -204,7 +204,7 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     if(draft.format==='syslog_rfc3164'&&mapping.source==='syslog_timestamp'&&
       mapping.type==='timestamp')
       errors.push('RFC3164 timestamp has no year or timezone; map it as text.');
-    if (!safeUiPath(mapping.source)) errors.push('Invalid source field: ' + mapping.source);
+    if (!safeUiPath(mapping.source) && mapping.source!=='@timestamp') errors.push('Invalid source field: ' + mapping.source);
     if (!safeUiPath(mapping.target)) errors.push('Invalid destination field: ' + mapping.target);
     if (targets.has(mapping.target)) errors.push('Duplicate normalized destination: ' + mapping.target);
     else if ([...targets].some((target) => overlappingDestination(target, mapping.target))) {

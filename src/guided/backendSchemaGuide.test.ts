@@ -44,6 +44,21 @@ describe('live same-origin backend JSON Schema guide (not a vendor dictionary)',
     });
   });
 
+  it('accepts only the exact ECS root source extension without widening target rules',()=>{
+    const current=structuredClone(input);
+    const baseline=input.$defs.mapping.propertyNames.pattern;
+    current.$defs.mapping.propertyNames.pattern='^(?:@timestamp|'+baseline.slice(1,-1)+')$';
+    expect(parseBackendSchemaGuide(current).fieldNamePattern)
+      .toBe(input.$defs.fieldRule.properties.normalized_name.pattern);
+    current.$defs.mapping.propertyNames.pattern=
+      current.$defs.mapping.propertyNames.pattern.replace('@timestamp','@arbitrary');
+    expect(()=>parseBackendSchemaGuide(current)).toThrow();
+    const wrongTarget=structuredClone(input);
+    wrongTarget.$defs.fieldRule.properties.normalized_name.pattern=
+      current.$defs.mapping.propertyNames.pattern;
+    expect(()=>parseBackendSchemaGuide(wrongTarget)).toThrow();
+  });
+
   it('queries only a same-origin GET and never sends sample or mapping values', async () => {
     const requester = make(200, input);
     expect((await fetchBackendSchemaGuide(requester)).fieldTypes).toContain('ip');

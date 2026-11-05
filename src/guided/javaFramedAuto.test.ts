@@ -57,11 +57,12 @@ describe('P0 Java stacktrace strict TCP blank-line Native contract and beginner 
   expect(suite.counts).toMatchObject({total:2,matched:2,extracted:2,normalized:2,failures:0});
   expect(suite.events[0]?.fields).toEqual({
    exception_class:'java.lang.IllegalStateException',frame_count:3,cause_class:'java.io.IOException'});
-  const ledger=analyzeLogEnvelopes(sample,'blank-line');
+  const ledger=analyzeLogEnvelopes(sample,'blank-line',undefined,
+    d.guided!.receiver.messageLimit,'blank_line_java');
   expect(ledger).toMatchObject({sourceCount:2,accounted:2,unsupported:0,complete:true});
   expect(ledger.families).toEqual([{envelope:'none',body:'java_stacktrace',count:2}]);
-  expect(assessEnvelopeCompilation(ledger,oldCapability).status).toBe('COMPILER_UNSUPPORTED');
-  const assessed=assessEnvelopeCompilation(ledger,cap);
+  expect(assessEnvelopeCompilation(ledger,oldCapability,'blank_line_java').status).toBe('COMPILER_UNSUPPORTED');
+  const assessed=assessEnvelopeCompilation(ledger,cap,'blank_line_java');
   expect(assessed).toMatchObject({status:'DRAFT_COMPILABLE',format:'java_stacktrace',
    nativeVerified:false,targetVerified:false});
   const ready=prepareAutoParserDraft(sample,d,suite,ledger,assessed);

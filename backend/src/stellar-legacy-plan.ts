@@ -19,6 +19,11 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Issue #210: exact reviewed synthetic-only template after strict browser/native
+  // source limits, value coercion, final enrichment and JSON string parity.
+  // This never relaxes loopback, null-sink, owner approval, tenant,
+  // exact recompile-byte or read-back verification gates.
+  '9448f5c9c63a4e5f306aa7bd7049912adb0473f6a78eec4f55ae11745fc7d9b4',
   // Exact synthetic-only 2026-11-04 JSONata path, ISO calendar,
   // protocol-pair and JSON serialization corrections. Original loopback-only,
   // null-sink, owner approval and recompile byte-parity gates remain required.

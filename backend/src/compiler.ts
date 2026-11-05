@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { PairExport, ParserProject, ExportFile } from "./types.js";
+import officialEnrichmentTypes from "./stellar7-enrichment-types.json" with { type: "json" };
 import { canonicalJson, validateProject } from "./validate.js";
 
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
@@ -165,6 +166,12 @@ function emitRubyFragment(project: ParserProject): string {
     ?RUBY_FORWARDER_FAMILY_TEMPLATE:RUBY_TEMPLATE;
   if (!template.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
   let fragment=template.replace("__PARSER_PROJECT_B64__", base64);
+  if(!fragment.includes("__STELLAR7_ENRICH_TYPES_JSON__"))
+    throw new Error("Official enrichment type marker missing");
+  const officialJson=JSON.stringify(officialEnrichmentTypes);
+  // The source is a bundled static catalog, never user-controlled data.
+  if(/[\\'\r\n]/.test(officialJson))throw new Error("Unsafe official type literal");
+  fragment=fragment.replace("__STELLAR7_ENRICH_TYPES_JSON__",officialJson);
   const tabCsv=project.extraction.csvDelimiter==="\t"&&
     (project.extraction.format==="csv"||
       (project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("csv")));

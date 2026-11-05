@@ -31,7 +31,7 @@ export function parseJsonataSelector(expression:string):string|null{
   // segment. Unquoted a.b means nested a -> b, not literal key a.b.
   if(text.startsWith('`')&&text.endsWith('`')&&text.indexOf('`',1)===text.length-1){
     const literal=text.slice(1,-1);
-    if(literal.includes('.')&&safeLocalFieldPath(literal))return literal;
+    if((literal.includes('.')||literal==='@timestamp')&&safeLocalFieldPath(literal))return literal;
   }
 
   const parts:string[]=[];let index=0;
@@ -57,6 +57,7 @@ export function parseJsonataSelector(expression:string):string|null{
 }
 export function pathToJsonataSelector(source:string,literalRoot=false):string{
   if(!safeLocalFieldPath(source))return '';
+  if(source==='@timestamp')return '`@timestamp`';
   if(literalRoot&&source.includes('.'))return '`'+source+'`';
   return source.split('.').map(s=>plain.test(s)?s:'`'+s+'`').join('.');
 }
@@ -84,6 +85,7 @@ function selectorMatchesSourceShape(expression:string,source:string,suite:SuiteR
   return quoted===literal;
 }
 function reviewedSourceKind(expression:string,source:string):MappingRule['sourcePathKind']{
+  if(source==='@timestamp')return 'literal_root';
   if(!source.includes('.'))return undefined;
   const selector=expression.trim().replace(/^\$\./,'');
   return selector==='`'+source+'`'?'literal_root':'nested';
@@ -125,7 +127,7 @@ export async function createJsonataMappingPrompt(suite:SuiteResult,draft:ParserD
     JSON.stringify(example,null,2),
     'Reuse EXACT contract, sha256 and event count. Each mappings entry has ONLY expression and target, both strings.',
     'Allowed JSONata subset: a simple property selector such as src_ip, $.generic.fields.src, or syslog_sd.element_1.params.`source-address`.',
-    'Backtick-quote hyphenated source segments and whole dotted literal keys (for example `source.ip`).',
+    'Backtick-quote hyphenated source segments, whole dotted literal keys and ECS root `@timestamp`.',
     'Unquoted source.ip selects a nested object, not a literal key named source.ip. Functions, arithmetic, conditionals, filters, arrays and scripts are NOT supported.',
     'Only these direct selectors can be compiled into the generated native Ruby parser. Never claim full JSONata support.',
     'Choose documented, directly mappable Stellar 7.0 scalar field names; do not invent targets or guess semantics.',
