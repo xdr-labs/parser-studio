@@ -958,6 +958,9 @@ function syslogPrefixedKeyValues(raw:string):Record<string,unknown>|null{
 }
 
 export function extractGenericStructural(raw:string,profile?:GenericStructuralProfile):GenericStructuralExtraction{
+  // Physical C0 control separators must not be misread as unquoted KV spacing.
+  if(/[\x0b\x0c\x0d\x1c-\x1f]/.test(raw))
+    return {fields:{},errors:['Unsupported physical control separator in Generic Structural source']};
   const includesLeef=profile==='leef2_implicit_tab'||profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1;
   const includesSyslog=profile==='syslog_prefix_kv'||profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1;
   // This selected profile owns the standalone LEEF 2.0 family. A legacy KV

@@ -1096,6 +1096,13 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         return parse_security_source(raw)
 
     standard=_standard_candidate(raw)
+    # Physical C0 record/control separators are not Generic Structural token
+    # delimiters. A permissive Python isspace() split could otherwise turn
+    # action=<RS>deny into an empty action and an unrelated token while
+    # falsely certifying the entire source as parsed. Retain the strict
+    # standard parser's residuals and issues instead of reinterpreting bytes.
+    if any(control in raw for control in '\r\v\f\x1c\x1d\x1e\x1f'):
+        return standard
     if standard.status=='SOURCE_PARSED':
         return standard
     # A direct JSON-looking event is owned by the JSON grammar. If JSON is
