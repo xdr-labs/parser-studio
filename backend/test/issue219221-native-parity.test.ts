@@ -13,14 +13,19 @@ function native(project:ParserProject,raws:string[]):Record<string,unknown>[]{
   const ruby=result.files.find(file=>!file.name.endsWith('.conf'))!.content;
   const code=[
     "require 'json'","require 'base64'","require 'time'","require 'date'","require 'ipaddr'","require 'csv'",
+    'input=JSON.parse(STDIN.read)',
     'klass=Class.new',
-    "klass.class_eval(Base64.strict_decode64('"+Buffer.from(ruby).toString('base64')+"'))",
+    "klass.class_eval(Base64.strict_decode64(input.fetch('fragment')))",
     'parser=klass.new',
     'results=[]',
-    'JSON.parse(STDIN.read).each{|line|parser.parse(line){|_time,event|results << event}}',
+    "input.fetch('lines').each{|line|parser.parse(line){|_time,event|results << event}}",
     'STDOUT.write(JSON.generate(results))',
   ].join('\n');
-  const response=spawnSync('ruby',['-e',code],{input:JSON.stringify(raws),
+  // Large generated Ruby fragments can exceed OS argument limits when passed
+  // via ruby -e. Keep the fixed script short; send the fragment via stdin.
+  assert.ok(code.length < 4096, 'Ruby -e argument must remain bounded');
+  const response=spawnSync('ruby',['-e',code],{
+    input:JSON.stringify({fragment:Buffer.from(ruby).toString('base64'),lines:raws}),
     encoding:'utf8',timeout:20000,maxBuffer:4*1024*1024});
   assert.equal(response.status,0,response.stderr||String(response.error));
   const actual=JSON.parse(response.stdout) as Record<string,unknown>[];
