@@ -159,7 +159,11 @@ function mappedLegacyError(res:ServerResponse,error:unknown):void{
  * a caller invokes server.listen. When run from the CLI, binds loopback only.
  */
 export function createBackendServer(options:BackendServerOptions={}): Server {
-  const server=createServer(async (req, res) => {
+  const server=createServer((req, res) => {
+    // Node HTTP does not await an async request listener. Always catch a
+    // rejected request promise so injected provider outages cannot terminate
+    // the process or leave the client waiting for an indefinite response.
+    void (async () => {
     const path = req.url?.split("?")[0] || "";
     if (path === "/health" && req.method === "GET") {
       send(res, 200, {status:"ok", service:"parser-pair-backend", version:"0.1"});
@@ -179,7 +183,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       }
       const gateway=options.aiReviewGateway;
       if(!gateway){send(res,403,{error:"AI_REVIEW_DISABLED"});return;}
-      const actor=await gateway.authorize(req);
+      let actor;
+      try{actor=await gateway.authorize(req);}
+      catch{send(res,503,{error:"AI_REVIEW_AUTH_UNAVAILABLE"});return;}
       if(!actor){send(res,403,{error:"AI_REVIEW_DENIED"});return;}
       if(isGet){send(res,200,gateway.capabilities());return;}
       if(!/^application\/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$/i.test(
@@ -599,7 +605,9 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       }
       const gateway=options.targetApplyMockGateway;
       if(!gateway){send(res,403,{error:"TARGET_APPLY_DISABLED"});return;}
-      const actor=await gateway.authenticate(req);
+      let actor;
+      try{actor=await gateway.authenticate(req);}
+      catch{send(res,503,{error:"TARGET_APPLY_AUTH_UNAVAILABLE"});return;}
       if(!actor){send(res,403,{error:"TARGET_APPLY_IDENTITY_DENIED"});return;}
       if(isStatus){
         try{
@@ -1193,6 +1201,15 @@ export function createBackendServer(options:BackendServerOptions={}): Server {
       else if (code === "JSON") send(res, 400, {error:"INVALID_JSON"});
       else send(res, 500, {error:"GENERATION_ERROR"});
     }
+    })().catch(()=>{
+      if(res.writableEnded||res.destroyed)return;
+      try{
+        if(res.headersSent)res.end();
+        else send(res,503,{error:"REQUEST_HANDLER_UNAVAILABLE"});
+      }catch{
+        res.destroy();
+      }
+    });
   });
   // The network-facing server owns its injected in-memory Test Lab
   // controller. Closing the server cancels all timers and active sessions.
