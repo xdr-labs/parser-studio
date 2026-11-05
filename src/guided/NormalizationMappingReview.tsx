@@ -5,7 +5,7 @@ import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue,countUnaddressableSourceValues} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
 import {suggestNormalizationCandidatesFromSuite,type NormalizationCandidate} from './normalizationCandidates';
-import {isBlockingNormalizationFinding,validateNormalizationMappings,
+import {isBlockingNormalizationFinding,reviewNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import JsonataMappingAssistant from './JsonataMappingAssistant';
@@ -81,7 +81,8 @@ export default function NormalizationMappingReview({
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
   const groups=draft.guided?.groups??{};
   const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
-  const findings=useMemo(()=>validateNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
+  const mappingReview=useMemo(()=>reviewNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
+  const findings=mappingReview.findings;
   const chosen=suite?.events[selected]??suite?.events[0];
   const sourceDisplay=(source:string)=>draft.format==='generic_structural'?'parserstudio_source.'+source:source;
   const sourceFields=useMemo(()=>{
@@ -197,7 +198,7 @@ export default function NormalizationMappingReview({
       <div><span>Vendor-only fields</span><strong>{vendorCount}</strong></div>
       <div><span>Left out of output</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length+unaddressableCount}</strong></div>
       {unaddressableCount>0&&<div><span>Unmappable source values</span><strong>{unaddressableCount}</strong></div>}
-      <div className={blocking.length?'attention':''}><span>Must fix before continuing</span><strong>{blocking.length}</strong></div>
+      <div className={mappingReview.totalBlocking?'attention':''}><span>Must fix before continuing</span><strong>{mappingReview.totalBlocking}</strong></div>
     </div>
 
     {draft.format==='generic_structural'&&<div className="normalization-runtime-note" role="group"
@@ -363,11 +364,12 @@ export default function NormalizationMappingReview({
         text="Parser Studio checks every current sample against every mapping, not just the event you are viewing. This catches missing fields, wrong value types, and duplicate destinations before parser files are created."/></h3>
         <p>Each field match is checked across the full sample so a single unusual event cannot be hidden by the others.</p></div>
         <span className={blocking.length||noteSources.size?'normalization-confidence review':'normalization-confidence high'}>
-          {blocking.length?'Fix '+blocking.length+' issue'+(blocking.length===1?'':'s')+' to continue'
+          {mappingReview.totalBlocking?'Fix '+mappingReview.totalBlocking+' issue'+(mappingReview.totalBlocking===1?'':'s')+' to continue'
             :noteSources.size?noteSources.size+' field'+(noteSources.size===1?'':'s')+' to double-check'
             :'No mapping problems found'}
         </span>
       </div>
+      {mappingReview.totalFindings>findings.length&&<p className="normalization-empty">Showing {findings.length} of {mappingReview.totalFindings} sample findings. All logs were checked; required fixes appear first.</p>}
       {findings.length===0?<p className="normalization-pass"><CheckCircle2 size={15}/>All current field mappings passed the sample checks.</p>:
         <div className="normalization-finding-summary">
           {[...findingCounts.entries()].map(([code,count])=><div key={code}>
