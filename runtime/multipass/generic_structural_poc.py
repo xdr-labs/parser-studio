@@ -1090,6 +1090,22 @@ def _generic_event(raw:str,start:int,outer:SourceEvent|None,syntax:str,
     return out
 
 
+def _strong_syslog_header_rejected(raw:str,standard:SourceEvent)->bool:
+    """Do not upgrade a clearly malformed standard header through generic KV."""
+    if 'RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED' in standard.issues:
+        return True
+    framed=RFC3164_LOOSE_HOST_HEAD.match(raw)
+    if framed is None:
+        return False
+    month=framed.group('month')
+    day=int(framed.group('day'))
+    hour,minute,second=(int(item) for item in framed.group('time').split(':'))
+    return (
+        month not in MONTH_DAYS or day<1 or day>MONTH_DAYS[month] or
+        hour>23 or minute>59 or second>59
+    )
+
+
 def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceEvent:
     if not isinstance(raw,str):raise TypeError('RAW_NOT_STRING')
     if not raw or len(raw.encode('utf8'))>MAX_RAW_BYTES or '\x00' in raw:
@@ -1104,6 +1120,11 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
     if any(control in raw for control in '\r\v\f\x1c\x1d\x1e\x1f'):
         return standard
     if standard.status=='SOURCE_PARSED':
+        return standard
+    # Strong RFC3164/RFC5424 headers cannot be reinterpreted as loose KV,
+    # even when the body contains enough structure to fill the whole record.
+    # Preserve exact strict rejection reasons and original byte accounting.
+    if _strong_syslog_header_rejected(raw,standard):
         return standard
     # A direct JSON-looking event is owned by the JSON grammar. If JSON is
     # malformed, truncated, duplicate-key, over-depth, or over-field-limit,
