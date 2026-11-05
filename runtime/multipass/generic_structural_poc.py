@@ -1098,6 +1098,29 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
     standard=_standard_candidate(raw)
     if standard.status=='SOURCE_PARSED':
         return standard
+    # A strongly RFC-shaped but invalid envelope is negative grammar evidence.
+    # A permissive positional/KV fallback must not erase invalid date, clock,
+    # priority, version or structured-data findings and claim SOURCE_PARSED.
+    looks_rfc3164=(
+        BSD_TIME_HEAD.match(raw) is not None
+        and raw.startswith('<')
+    )
+    looks_rfc5424=(
+        re.match(r'^<\d{1,3}>\d{1,2} +\S+ +\S+ +\S+ +\S+ +\S+ +',raw)
+        is not None
+    )
+    if looks_rfc3164 and extract_rfc3164(raw) is None:
+        result=deepcopy(standard)
+        if 'RFC3164_HEADER_INVALID' not in result.issues:
+            result.issues.append('RFC3164_HEADER_INVALID')
+        return result
+    if looks_rfc5424:
+        strict=extract_rfc5424(raw)
+        if strict is None or strict[0].issues or strict[1] is None:
+            result=deepcopy(standard)
+            if 'RFC5424_HEADER_INVALID' not in result.issues:
+                result.issues.append('RFC5424_HEADER_INVALID')
+            return result
     # A direct JSON-looking event is owned by the JSON grammar. If JSON is
     # malformed, truncated, duplicate-key, over-depth, or over-field-limit,
     # never reinterpret the same bytes as a looser mixed/delimited grammar.
