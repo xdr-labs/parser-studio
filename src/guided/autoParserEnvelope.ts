@@ -154,7 +154,7 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
   const base={sequence,line,timePolicy:'NO_TIMESTAMP' as EnvelopeEntry['timePolicy']};
   if(text.length>MAX_LINE_CHARS||new TextEncoder().encode(text).byteLength>messageLimit)
     return {...base,envelope:'none',body:'unknown',status:'TOO_LONG'};
-  if(text.includes('\r'))
+  if(/[\x0b\x0c\x0d\x1c-\x1f]/.test(text))
     return {...base,envelope:'none',body:'unknown',status:'BOUNDARY_AMBIGUOUS'};
   if(text.includes('\n')||text.includes('\r')){
     if(boundary==='blank-line'&&framing==='blank_line_json'&&

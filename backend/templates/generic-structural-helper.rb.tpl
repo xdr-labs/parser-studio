@@ -2,6 +2,9 @@
 # Emitted only for generic_structural projects; no arbitrary user code executes.
 
 def parserstudio_generic_structural(text)
+  # Do not reinterpret physical C0 record separators as KV/token whitespace.
+  raise ArgumentError, 'Unsupported generic structural control separator' if
+    text.match?(/[\x0b\x0c\x0d\x1c-\x1f]/)
   profile = @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')
   mixed_profile = profile == 'syslog_prefix_kv_leef2_implicit_tab_v1'
   # The selected standalone LEEF 2.0 family must not fall through to an older
