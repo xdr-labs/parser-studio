@@ -815,7 +815,15 @@ def parserstudio_coerce(value, rule)
   case type
   when 'string'
     # Match the browser's JSON.stringify for object/array source values.
-    (value.is_a?(Hash) || value.is_a?(Array)) ? parserstudio_json_stringify(value) : value.to_s
+    # JSON numeric tokens use JS Number string semantics in the browser;
+    # Ruby JSON.parse may preserve integral 6.0/6e0 as Float.
+    if value.is_a?(Hash) || value.is_a?(Array)
+      parserstudio_json_stringify(value)
+    elsif value.is_a?(Integer) || value.is_a?(Float)
+      parserstudio_json_number(value)
+    else
+      value.to_s
+    end
   when 'integer', 'port'
     # Ruby JSON.parse preserves 6.0/6e0 as Float while JS JSON.parse sees 6.
     # Convert only EXACTLY integral, safe Float values; no rounding.

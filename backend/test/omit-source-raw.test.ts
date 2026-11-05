@@ -20,14 +20,16 @@ test("default Generic Structural output keeps the full raw line and the artifact
   assert.equal(ruby.includes("parserstudio_without_source_raw"), false);
 });
 
-test("omitSourceRaw: true strips source_raw from parserstudio_source only", () => {
+test("omitSourceRaw: true strips only generated source_raw copies", () => {
   const p = genericProject(true);
   const validation = validateProject(p);
   assert.equal(validation.ok, true, JSON.stringify(validation));
   const ruby = compilePair(p).files[1]!.content;
   assert.match(ruby, /normalized = \{'parserstudio_source' => parserstudio_without_source_raw\(original\)\}/);
   assert.match(ruby, /def parserstudio_without_source_raw\(value\)/);
-  assert.match(ruby, /next if key == 'source_raw'/);
+  assert.match(ruby, /generated_roots = %w\[generic watchguard_message/);
+  assert.match(ruby, /out\[key\] = item.reject/);
+  assert.doesNotMatch(ruby, /next if key == 'source_raw'/);
   // Mappings still read the untouched extraction.
   assert.match(ruby, /raw = parserstudio_lookup\(original, source, rule\['source_path_kind'\]\)/);
 });

@@ -125,6 +125,9 @@ export function tokenizeCSV(raw: string, delimiter: string): (string | null)[] |
   // cannot combine strip:true with a TAB column separator. Retain TAB-space
   // cells exactly, including whitespace-only values (not missing/null).
   const stripUnquoted = delimiter !== '\t';
+  // Ruby CSV strip:true removes ASCII whitespace, not Unicode NBSP/EM SPACE.
+  // Preserve source Unicode values to keep browser/native mapped fields equal.
+  const trimCsvAscii=(text:string)=>text.replace(/^[ \t\n\v\f\r]+|[ \t\n\v\f\r]+$/g,'');
   let token = '';
   let state: 'start' | 'plain' | 'quoted' | 'afterQuote' = 'start';
   for (let i = 0; i < raw.length; i++) {
@@ -139,7 +142,7 @@ export function tokenizeCSV(raw: string, delimiter: string): (string | null)[] |
       else if (stripUnquoted && (c === ' ' || c === '\t')) continue;
       else return null;
     } else if (c === delimiter) {
-      out.push(state === 'start' ? null : stripUnquoted ? token.trim() : token);
+      out.push(state === 'start' ? null : stripUnquoted ? trimCsvAscii(token) : token);
       token = ''; state = 'start';
     } else if (c === '"') {
       if (state !== 'start') return null;
@@ -156,7 +159,7 @@ export function tokenizeCSV(raw: string, delimiter: string): (string | null)[] |
   }
   if (state === 'quoted') return null;
   out.push(state === 'start' ? null : state === 'afterQuote' ? token :
-    stripUnquoted ? token.trim() : token);
+    stripUnquoted ? trimCsvAscii(token) : token);
   return out;
 }
 
@@ -634,13 +637,18 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   };
 }
 
-/** Mirrors the generated Ruby helper: drop every `source_raw` key from the lossless source projection. */
+/** Drop only whole-line copies owned by Generic Structural grammar nodes.
+ * Manufacturer fields such as generic.kv.source_raw must remain unchanged. */
 function withoutSourceRaw(value:unknown):unknown{
-  if(Array.isArray(value))return value.map(withoutSourceRaw);
-  if(value&&typeof value==='object')
-    return Object.fromEntries(Object.entries(value as Record<string,unknown>)
-      .filter(([key])=>key!=='source_raw').map(([key,item])=>[key,withoutSourceRaw(item)]));
-  return value;
+  if(!value||typeof value!=='object'||Array.isArray(value))return value;
+  const synthetic=new Set(['generic','watchguard_message','session_envelope',
+    'asa','juniper','watchguard']);
+  return Object.fromEntries(Object.entries(value as Record<string,unknown>).map(([key,item])=>{
+    if(synthetic.has(key)&&item&&typeof item==='object'&&!Array.isArray(item))
+      return [key,Object.fromEntries(Object.entries(item as Record<string,unknown>)
+        .filter(([field])=>field!=='source_raw'))];
+    return [key,item];
+  }));
 }
 
 export function preview(input: string, draft: ParserDraft): SuiteResult {
