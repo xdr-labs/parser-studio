@@ -77,6 +77,19 @@ for(const family of [false,true]){
    assert.equal(result.parser_err_stage,'enrichment',target);
    assert.ok(!(target in result));
   }
+  // Codex PR review: ISO set_const must stay text during subsequent string
+  // operations, then become epoch milliseconds in the emitted native record.
+  const chained=fixture({action:str('action')},family,{enrichment:[
+    {operator:'set_const',target:'timestamp',value:'2026-11-04T12:00:00Z'},
+    {operator:'uppercase',source:'timestamp',target:'message'},
+    {operator:'copy',source:'timestamp',target:'custom.reviewed_timestamp'},
+  ]});
+  const chainedOutput=native(chained,['{"action":"deny"}'])[0]!;
+  assert.equal(chainedOutput.parser_err_stage,undefined);
+  assert.equal(chainedOutput.message,'2026-11-04T12:00:00Z');
+  assert.equal((chainedOutput.custom as Record<string,unknown>)?.reviewed_timestamp,
+    '2026-11-04T12:00:00Z');
+  assert.equal(chainedOutput.timestamp,Date.parse('2026-11-04T12:00:00Z'));
   const good=fixture({src:ip('srcip')},family,{enrichment:[
    family?{operator:'set_const',target:'dstip',value:'192.0.2.10'}:
     {operator:'copy',source:'srcip',target:'dstip'},

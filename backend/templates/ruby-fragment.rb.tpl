@@ -37,10 +37,20 @@ def parse(text)
     # escape through the partial-record error path.
     enriched = parserstudio_enrich(JSON.parse(JSON.generate(normalized)))
     parserstudio_verify_proto_pair!(enriched)
+    # Ordered enrichment and classification see the same ISO timestamp string
+    # as the validated browser preview. Only the final emitted native field
+    # requires the canonical epoch-ms integer.
+    current_stage = 'classification'
+    event_index = parserstudio_classify(enriched)
+    current_stage = 'enrichment'
+    if enriched['timestamp'].is_a?(String)
+      enriched['timestamp'] = parserstudio_coerce(enriched['timestamp'],
+        {'data_type'=>'date', 'time_format'=>'iso8601'})
+    end
     normalized = enriched
     @parserstudio_partial = normalized
     current_stage = 'classification'
-    normalized['stellar_log_index'] = parserstudio_classify(normalized)
+    normalized['stellar_log_index'] = event_index
     normalized['msg_origin'] = {
       'source' => @parser_rule_set['normalization']['msgOriginSource'],
       'category' => @parser_rule_set['normalization']['msgOriginCategory'],
@@ -908,6 +918,11 @@ def parserstudio_prepare_enriched_value(target, value)
   end
   raise ArgumentError, 'Invalid enriched official field value' unless
     parserstudio_stellar7_value_valid?(target, value, converted)
+  # Preserve the validated ISO text during ordered enrichment. Downstream
+  # copy/uppercase/merge rules and classification are authored against the
+  # original string (as in the browser preview). Convert to epoch milliseconds
+  # only after these steps have completed.
+  return value if type == 'timestamp' && value.is_a?(String)
   converted
 end
 

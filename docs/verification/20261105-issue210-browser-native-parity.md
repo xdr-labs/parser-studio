@@ -39,3 +39,21 @@ It does **not** replace the parsing engine, execute arbitrary JSONata, add any D
 - An actual Stellar Cyber 7.0 DP parser import and end-to-end ingestion are **NOT VERIFIED** by this change.
 
 The independently reproduced original failures and source scripts are documented in [Issue #210](https://github.com/xdr-labs/parser-studio/issues/210). Newly executed regression evidence is recorded under `/home/aella/.local/state/parserstudio-issue210-evidence-20261105/`.
+
+
+## PR #211 independent review correction (2026-11-05)
+
+The review found a further ordered-Enrichment type drift in the initial
+F-01 correction. A reviewed set_const(timestamp, ISO text) followed by
+uppercase(timestamp to message) used to be accepted by both UI and authored
+contract, but the first patch converted the timestamp to epoch milliseconds
+during enrichment, making the second step fail only in native Ruby.
+
+The final native contract now validates the timestamp text immediately but
+preserves it for all ordered enrichment operators and classification (matching
+browser preview). After those steps succeed, and before the record is emitted,
+the native parser converts the validated timestamp to epoch milliseconds.
+Invalid enrichment remains transactional and cannot expose unapproved fields.
+Both native templates and browser fixture tests cover this timestamp-to-text
+chain, and the exact reviewed synthetic-only Ruby template SHA was re-pinned
+with the existing POC restrictions intact.

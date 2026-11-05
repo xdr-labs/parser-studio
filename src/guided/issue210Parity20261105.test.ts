@@ -33,6 +33,23 @@ describe('Issue #210 browser/native parity and security regressions',()=>{
    expect(output.normalizedOk).toBe(false);
    expect(output.diagnostics.some(d=>d.code==='ENRICHMENT_TYPE')).toBe(true);
   }
+  const timestampPipeline=project(
+    [{id:'action',source:'a',target:'action',type:'string'}],
+    [
+      {id:'iso-time',operator:'set_const',source:'',target:'timestamp',
+        value:'2026-11-04T12:00:00Z'},
+      {id:'upper-time',operator:'uppercase',source:'timestamp',target:'message',value:''},
+      {id:'copy-time',operator:'copy',source:'timestamp',
+        target:'custom.reviewed_timestamp',value:''},
+    ],
+  );
+  const timestampPreview=preview('{"a":"deny"}',timestampPipeline).events[0]!;
+  expect(timestampPreview.normalizedOk).toBe(true);
+  expect(timestampPreview.normalized).toMatchObject({
+    timestamp:'2026-11-04T12:00:00Z',
+    message:'2026-11-04T12:00:00Z',
+    custom:{reviewed_timestamp:'2026-11-04T12:00:00Z'},
+  });
   const good=project([{id:'src',source:'src',target:'srcip',type:'ip'}],
     [{id:'valid-copy',operator:'copy',source:'srcip',target:'dstip',value:''}]);
   expect(preview('{"src":"192.0.2.10"}',good).events[0]?.normalized).toMatchObject({

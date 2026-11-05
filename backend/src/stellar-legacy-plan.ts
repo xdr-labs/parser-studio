@@ -23,7 +23,7 @@ const KNOWN_TEMPLATES=new Set([
   // source limits, value coercion, final enrichment and JSON string parity.
   // This never relaxes loopback, null-sink, owner approval, tenant,
   // exact recompile-byte or read-back verification gates.
-  '384a5991bc9c5e647c9abe498dd202bc14573748fc643ae90e518e6e91b5c741',
+  '9448f5c9c63a4e5f306aa7bd7049912adb0473f6a78eec4f55ae11745fc7d9b4',
   // Exact synthetic-only 2026-11-04 JSONata path, ISO calendar,
   // protocol-pair and JSON serialization corrections. Original loopback-only,
   // null-sink, owner approval and recompile byte-parity gates remain required.
