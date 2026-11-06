@@ -1,4 +1,5 @@
 import {FORMATS,type MappingRule,type ParserDraft} from '../model';
+import {validMappingWhen} from '../fieldPaths';
 import {validForwarderConfig,type ForwarderConfig} from './declaredForwarder';
 import {validateEventProfiles,type EventProfileConfig} from './multiEventRouting';
 import {assembleNamedLogs,validateNamedLogs,type NamedLogType} from './namedLogTypes';
@@ -66,7 +67,8 @@ function validMapping(value:unknown):value is MappingRule{
   return ['id','source','target'].every(k=>
     typeof value[k]==='string' && (value[k] as string).length>0&&
     (value[k] as string).length<=160)&&
-    ['string','integer','number','boolean','ip','port','timestamp'].includes(String(value.type));
+    ['string','integer','number','boolean','ip','port','timestamp'].includes(String(value.type))&&
+    (value.when===undefined||validMappingWhen(value.when));
 }
 function safeNested(value:unknown,depth=0):boolean{
   if(depth>20)return false;

@@ -1016,9 +1016,26 @@ def parserstudio_event_profile(original)
   profiles.first
 end
 
+def parserstudio_when_applies?(original, rule)
+  predicate = rule['when']
+  return true unless predicate
+  value = parserstudio_lookup(original, predicate['sourcePath'])
+  return false if value.nil? || !(value.is_a?(String) || value.is_a?(Numeric))
+  # JavaScript String(6.0) is "6" after JSON decoding. Match its numeric
+  # representation so a Ruby Float with integral value cannot drift.
+  token = value.is_a?(Float) && value.finite? && value == value.to_i ?
+    value.to_i.to_s : value.to_s
+  predicate['values'].include?(token)
+rescue ArgumentError
+  # Ambiguous predicate source paths are untrusted. Omit only this mapping,
+  # preserving unrelated fields and the original vendor event.
+  false
+end
+
 def parserstudio_apply_field_maps(original, normalized, maps, ignored)
   ['topFields', 'nsFields', 'vendorFields'].each do |section|
     maps[section].each do |source, rule|
+      next unless parserstudio_when_applies?(original, rule)
       raw = parserstudio_lookup(original, source, rule['source_path_kind'])
       next if raw.nil? || ignored.include?(raw.to_s)
       target = normalized

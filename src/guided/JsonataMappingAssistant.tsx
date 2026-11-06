@@ -146,6 +146,8 @@ export default function JsonataMappingAssistant({draft,setDraft,suite,pending}:P
               <div>
                 <strong>{row.source||row.expression} → {row.target}</strong>
                 <span>{row.status.replace('_',' ')} · {row.observed}/{row.total} events · {row.type??'unknown'} · {row.reason}</span>
+                {row.when&&<small>Apply only when {row.when.sourcePath} is one of
+                  {' '+row.when.values.join(' / ')}. Other events retain the original vendor fields.</small>}
                 <small>{row.values.join(' · ')||'No observed values'}</small>
               </div>
             </label>)}

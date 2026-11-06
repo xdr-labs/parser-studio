@@ -1,7 +1,7 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
-import { hasAmbiguousFieldPath,lookupFieldValue } from './fieldPaths';
+import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
 import {validIsoTimestamp} from './isoCalendar';
@@ -458,6 +458,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   }
   const mapped = new Set<string>();
   for (const mapping of [...draft.mappings,...(family.profile?.mappings??[])]) {
+    if(!mappingWhenApplies(fields,mapping.when))continue;
     const source = mapping.source.trim();
     const target = mapping.target.trim();
     if (!source || !VALID_TARGET.test(target) ||

@@ -1,3 +1,4 @@
+import {validMappingWhen} from '../fieldPaths';
 import type { FieldType, ParserDraft } from '../model';
 import {validatePreviewRegexPattern} from '../regexSafety';
 
@@ -201,6 +202,8 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
   const normalization: PairProjectContract['normalization'] = { top_fields: [], ns_fields: [], vendor_fields: [] };
   const supportedTypes: FieldType[] = ['string', 'integer', 'timestamp', 'ip', 'port', 'boolean'];
   for (const mapping of draft.mappings) {
+    if(mapping.when!==undefined&&!validMappingWhen(mapping.when))
+      errors.push('Unsupported or unsafe conditional mapping rule for '+mapping.source);
     if(draft.format==='syslog_rfc3164'&&mapping.source==='syslog_timestamp'&&
       mapping.type==='timestamp')
       errors.push('RFC3164 timestamp has no year or timezone; map it as text.');

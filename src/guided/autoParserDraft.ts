@@ -130,10 +130,19 @@ export function prepareAutoParserDraft(
       const groups={...next.guided.groups};
       next.mappings=next.mappings.map(mapping=>{
         const candidate=bySource.get(mapping.source);
-        if(!candidate)return mapping;
+        if(!candidate||candidate.when)return mapping;
         groups[mapping.id]=candidate.group;
         return {...mapping,target:candidate.target,type:candidate.type};
       });
+      // Keep the original vendor field for every event. The additional
+      // official field exists only for approved, observed transport events.
+      for(const candidate of official.filter(item=>item.when)){
+        const id='auto-semantic-'+candidate.target;
+        if(next.mappings.some(m=>m.id===id))continue;
+        next.mappings.push({id,source:candidate.source,target:candidate.target,
+          type:candidate.type,when:candidate.when});
+        groups[id]=candidate.group;
+      }
       next.guided={...next.guided,groups};
     }
     // Vendor-only fields keep the type the JSON itself declares: when every
