@@ -120,7 +120,9 @@ test('BIG-IP ASM KV maps network fields but keeps HTTPS application label vendor
   };
   await expectMapping('parserstudio_source.generic.fields.ip_client','srcip');
   await expectMapping('parserstudio_source.generic.fields.dest_ip','dstip');
-  await expectMapping('parserstudio_source.generic.fields.dest_port','dstport');
+  // The observed HTTPS application label cannot establish TCP/UDP transport.
+  // Preserve the vendor port instead of silently claiming Stellar L4 semantics.
+  await expectMapping('parserstudio_source.generic.fields.dest_port','generic.fields.dest_port');
   // BIG-IP's HTTPS value is an application-layer label, not a transport
   // protocol name. Preserve it as a vendor field rather than claiming Stellar
   // L4 proto_name compatibility.
@@ -128,6 +130,7 @@ test('BIG-IP ASM KV maps network fields but keeps HTTPS application label vendor
   const vendorSources=await editor.locator('article.normalization-map-row.custom input[aria-label^="Source field "]')
     .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
   expect(vendorSources).toContain('parserstudio_source.generic.fields.protocol');
+  expect(vendorSources).toContain('parserstudio_source.generic.fields.dest_port');
 });
 
 
