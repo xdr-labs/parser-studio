@@ -45,11 +45,13 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
 
 export function strictKeyValues(input: string): StructuredExtraction {
   const values: Record<string, unknown> = Object.create(null);
-  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
+  // Ruby's /\s/ and String#strip have ASCII whitespace semantics. JS /\s/
+  // includes NBSP/BOM/EM SPACE and must NOT silently alter source field values.
+  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^ \t\n\r\f\v"'\\])+))/y;
   let cursor = 0;
   let count = 0;
   while (cursor < input.length) {
-    if (!input.slice(cursor).trim()) break;
+    if (/^[ \t\n\r\f\v]*$/.test(input.slice(cursor))) break;
     pattern.lastIndex = cursor;
     const token = pattern.exec(input);
     if (!token || token.index !== cursor) return failure('Unsupported or malformed extension key=value segment');

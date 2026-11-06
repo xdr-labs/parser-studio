@@ -76,7 +76,7 @@ describe('official-catalog normalization candidates',()=>{
       expect.objectContaining({source:'parserstudio_source.syslog.host',target:'hostname',confidence:'HIGH'}),
       expect.objectContaining({source:'parserstudio_source.generic.fields.ip_client',target:'srcip',confidence:'HIGH'}),
       expect.objectContaining({source:'parserstudio_source.generic.fields.dest_ip',target:'dstip',confidence:'HIGH'}),
-      expect.objectContaining({source:'parserstudio_source.generic.fields.dest_port',target:'dstport',confidence:'HIGH'}),
+      expect.objectContaining({source:'parserstudio_source.generic.fields.dest_port',target:'dstport',confidence:'REVIEW',safeForBulk:false}),
       expect.objectContaining({source:'parserstudio_source.generic.fields.protocol',target:'proto_name',confidence:'REVIEW',safeForBulk:false}),
       expect.objectContaining({source:'parserstudio_source.syslog.time',target:'timestamp',confidence:'REVIEW'}),
     ]));

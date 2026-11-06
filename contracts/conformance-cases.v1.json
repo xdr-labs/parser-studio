@@ -1,0 +1,184 @@
+{
+  "contract": "parser-studio.cross-engine-corpus.v1",
+  "origin": "independently-authored-synthetic",
+  "policy": "../runtime/multipass/semantic-policy.v1.json",
+  "portEvidence": [
+    {
+      "id": "tcp-number",
+      "proto": "6",
+      "allow": true
+    },
+    {
+      "id": "udp-number",
+      "proto": "17",
+      "allow": true
+    },
+    {
+      "id": "icmp-number",
+      "proto": "1",
+      "allow": false
+    },
+    {
+      "id": "igmp-number",
+      "proto": "2",
+      "allow": false
+    },
+    {
+      "id": "gre-number",
+      "proto": "47",
+      "allow": false
+    },
+    {
+      "id": "esp-number",
+      "proto": "50",
+      "allow": false
+    },
+    {
+      "id": "icmpv6-number",
+      "proto": "58",
+      "allow": false
+    },
+    {
+      "id": "ospf-number",
+      "proto": "89",
+      "allow": false
+    },
+    {
+      "id": "sctp-unreviewed-number",
+      "proto": "132",
+      "allow": false
+    },
+    {
+      "id": "experimental-number",
+      "proto": "253",
+      "allow": false
+    },
+    {
+      "id": "tcp-name",
+      "proto_name": "tcp",
+      "allow": true
+    },
+    {
+      "id": "udp-name",
+      "proto_name": "udp",
+      "allow": true
+    },
+    {
+      "id": "icmp-name",
+      "proto_name": "icmp",
+      "allow": false
+    },
+    {
+      "id": "igmp-name",
+      "proto_name": "igmp",
+      "allow": false
+    },
+    {
+      "id": "unknown-name",
+      "proto_name": "unknown",
+      "allow": false
+    },
+    {
+      "id": "gre-name",
+      "proto_name": "gre",
+      "allow": false
+    },
+    {
+      "id": "https-name",
+      "proto_name": "https",
+      "allow": false
+    }
+  ],
+  "kvWhitespace": [
+    {
+      "id": "ascii-space",
+      "trailer": " ",
+      "quoted": false,
+      "accept": true,
+      "srcip": "192.0.2.1"
+    },
+    {
+      "id": "ascii-tab",
+      "trailer": "\t",
+      "quoted": false,
+      "accept": true,
+      "srcip": "192.0.2.1"
+    },
+    {
+      "id": "unicode-nbsp",
+      "trailer": "\u00a0",
+      "quoted": false,
+      "accept": false,
+      "srcip": "192.0.2.1\u00a0"
+    },
+    {
+      "id": "unicode-emspace",
+      "trailer": "\u2003",
+      "quoted": false,
+      "accept": false,
+      "srcip": "192.0.2.1\u2003"
+    },
+    {
+      "id": "unicode-bom",
+      "trailer": "\ufeff",
+      "quoted": false,
+      "accept": false,
+      "srcip": "192.0.2.1\ufeff"
+    },
+    {
+      "id": "unicode-ideographic",
+      "trailer": "\u3000",
+      "quoted": false,
+      "accept": false,
+      "srcip": "192.0.2.1\u3000"
+    },
+    {
+      "id": "quoted-nbsp",
+      "trailer": "\u00a0",
+      "quoted": true,
+      "accept": false
+    },
+    {
+      "id": "quoted-emspace",
+      "trailer": "\u2003",
+      "quoted": true,
+      "accept": false
+    },
+    {
+      "id": "quoted-bom",
+      "trailer": "\ufeff",
+      "quoted": true,
+      "accept": false
+    },
+    {
+      "id": "quoted-with-nbsp-inside",
+      "trailer": "",
+      "quoted": true,
+      "internal": "note\u00a0value",
+      "accept": true,
+      "srcip": "note\u00a0value"
+    }
+  ],
+  "regexSafety": [
+    {
+      "id": "five-greedy-captures",
+      "pattern": "^(?<a>a+)(?<b>a+)(?<c>a+)(?<d>a+)(?<e>a+)$",
+      "accept": false
+    },
+    {
+      "id": "two-ambiguous-captures",
+      "pattern": "^(?<a>\\w+)(?<b>\\w+)$",
+      "accept": false
+    },
+    {
+      "id": "spaced-captures",
+      "pattern": "^(?<a>\\w+) (?<b>\\w+)$",
+      "accept": true
+    },
+    {
+      "id": "single-capture",
+      "pattern": "^(?<a>\\w+)$",
+      "accept": true
+    }
+  ]
+}

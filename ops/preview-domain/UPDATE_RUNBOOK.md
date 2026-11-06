@@ -78,7 +78,7 @@ cd $REL/src/backend && npm ci --no-audit --no-fund && npm run build        # Bac
 ```
 
 `npm ci` prints "install-scripts ... esbuild" warnings. They are harmless: the build still succeeds.
-Multi-Pass has no build step; its source is `runtime/multipass/*.py`.
+Multi-Pass has no build step; it ships its `runtime/multipass/*.py` files **and** the co-located `runtime/multipass/semantic-policy.v1.json`. Verify the versioned policy checksum before restarting the deployed Python service.
 
 ## 5. Decide what changed (deploy only that)
 

@@ -19,12 +19,22 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 import ipaddress
+import json
+from pathlib import Path
 import re
 from typing import Any
 
 from multipass_contract import CandidateResult
 from source_parse import SourceEvent, ValueSpan, assert_source_accounting
 
+# The same reviewed protocol/action vocabulary is consumed by the browser
+# contract. Missing data is a fatal source configuration error, not a guess.
+_POLICY=json.loads(Path(__file__).with_name(
+    "semantic-policy.v1.json").read_text(encoding="utf-8"))
+assert _POLICY["contract"]=="parser-studio.semantic-policy.v1"
+_L4_NUMERIC=frozenset(_POLICY["transportPortProtocols"]["numeric"])
+_L4_NAMES=frozenset(_POLICY["transportPortProtocols"]["names"])
+_DOCUMENTED_PROTO_NAMES=frozenset(_POLICY["officialProtocolNames"])
 DICTIONARY_REVISION="stellar-standard-metadata-7.0.xs-2026-10-14"
 OFFICIAL_DICTIONARY_URL_65="https://docs.stellarcyber.ai/prod-docs/6.5.xs/Common/Metadata-Dictionary.htm?TocPath=REFERENCE%7C_____8"
 OFFICIAL_DICTIONARY_URL_70="https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm"
@@ -216,17 +226,17 @@ def _coerce(field:str,value:Any)->tuple[bool,Any]:
 
 # Only explicitly reviewed enforcement outcomes are safe action suggestions.
 # Unknown values remain unchanged in vendor source, never inferred as policy.
-SECURITY_DISPOSITIONS=frozenset({
-    "allow","allowed","accept","accepted","permit","permitted","pass","passed",
-    "block","blocked","deny","denied","drop","dropped","reject","rejected",
-    "reset","quarantine","quarantined","isolate","isolated",
-})
+SECURITY_DISPOSITIONS=frozenset(_POLICY["securityDispositions"])
 
 def _semantic_rejection(target:str,value:Any,observed:list[tuple[str,Any]])->str|None:
     if target=="action" and (
         not isinstance(value,str) or value.strip().lower() not in SECURITY_DISPOSITIONS
     ):
         return "DICTIONARY_ACTION_NOT_ENFORCEMENT"
+    if target=="proto_name" and (
+        not isinstance(value,str) or value.strip().lower() not in _DOCUMENTED_PROTO_NAMES
+    ):
+        return "DICTIONARY_PROTOCOL_NAME_UNSUPPORTED"
     if target not in ("srcport","dstport"):
         return None
     numeric=set()
@@ -238,14 +248,24 @@ def _semantic_rejection(target:str,value:Any,observed:list[tuple[str,Any]])->str
             if not ok:return "DICTIONARY_PROTOCOL_UNCERTAIN"
             numeric.add(number)
         elif field=="proto_name":
-            if not isinstance(observed_value,str):return "DICTIONARY_PROTOCOL_UNCERTAIN"
+            if not isinstance(observed_value,str):
+                return "DICTIONARY_PROTOCOL_UNCERTAIN"
             names.add(observed_value.strip().lower())
     if 1 in numeric or 58 in numeric or names.intersection({"icmp","icmpv6","icmp6"}):
         return "DICTIONARY_ICMP_HAS_NO_L4_PORT"
-    codes={"tcp":6,"udp":17,"icmp":1,"icmpv6":58,"icmp6":58,"igmp":2}
-    if numeric and names and any(codes.get(name)!=number for name in names for number in numeric):
-        return "DICTIONARY_PROTOCOL_UNCERTAIN"
+    # Protocol evidence exists: allow only explicitly reviewed L4 carriers.
+    # Unknown/non-transport protocols are never silently treated as TCP/UDP.
+    if (numeric and not numeric.issubset(_L4_NUMERIC)) or (
+        names and not names.issubset(_L4_NAMES)
+    ):
+        return "DICTIONARY_NO_L4_PORT_EVIDENCE"
+    if numeric and names:
+        codes={"tcp":6,"udp":17}
+        if any(codes.get(name)!=number for name in names for number in numeric):
+            return "DICTIONARY_PROTOCOL_UNCERTAIN"
+    # No protocol evidence preserves historical source-specific authoring.
     return None
+
 
 def project_stellar_dictionary(candidate:CandidateResult)->DictionaryProjection:
     """Value-free exact-key projection for UI preview metadata only.
