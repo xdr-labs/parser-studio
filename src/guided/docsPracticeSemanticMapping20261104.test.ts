@@ -53,11 +53,13 @@ describe('exact published parser.xdr.ooo practice corpus - Stellar 7.0 semantic 
     expect(result.some(x=>x.source.endsWith('nat-source-address'))).toBe(false);
   });
 
-  it('keeps context-independent EDR event fields eligible outside FortiOS',()=>{
+  it('preserves EDR event family and unqualified duration while normalizing its host and source IP',()=>{
     const result=suggestNormalizationCandidatesFromSuite(
       {events:[{fields:{eventType:'DetectionSummaryEvent',hostname:'EDR01',
         duration:1500,src_ip:'192.0.2.10'}}]} as unknown as SuiteResult,[]);
-    expect(result.find(x=>x.source==='eventType')).toMatchObject({target:'event_type',confidence:'HIGH'});
+    expect(result.find(x=>x.source==='eventType')).toBeUndefined();
+    expect(result.find(x=>x.source==='duration')).toBeUndefined();
     expect(result.find(x=>x.source==='hostname')).toMatchObject({target:'hostname',confidence:'HIGH'});
+    expect(result.find(x=>x.source==='src_ip')).toMatchObject({target:'srcip',confidence:'HIGH'});
   });
 });

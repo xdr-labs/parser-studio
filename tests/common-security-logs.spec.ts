@@ -161,7 +161,8 @@ test('common EDR JSON gets automatic Stellar mappings instead of leaving every f
     await expect(editor.getByLabel('Stellar field '+index,{exact:true})).toHaveValue(target);
   };
   await expectMapping('timestamp','timestamp');
-  await expectMapping('eventType','event_type');
+  // DetectionSummaryEvent is a vendor event family, not a Stellar ML job event_type.
+  await expectMapping('eventType','eventType');
   await expectMapping('severity','severity');
   await expectMapping('hostname','hostname');
   await expectMapping('localIP','hostip');
@@ -171,6 +172,12 @@ test('common EDR JSON gets automatic Stellar mappings instead of leaving every f
   await expectMapping('parentProcess','parent_proc_name');
   await expectMapping('sha256','sha256');
   await expectMapping('action','action');
+  // 'Detection' is a security event verb, not an enforcement action. Both
+  // fields must remain vendor-scoped even though the displayed value is kept.
+  const vendor=await editor.locator('article.normalization-map-row.custom input[aria-label^="Source field "]')
+    .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+  expect(vendor).toContain('eventType');
+  expect(vendor).toContain('action');
 });
 
 test('single-line logs retain accurate event accounting without an obsolete multi-line tool',async({page})=>{
