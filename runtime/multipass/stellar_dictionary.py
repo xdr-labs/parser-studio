@@ -214,6 +214,39 @@ def _coerce(field:str,value:Any)->tuple[bool,Any]:
         return True,number
     return False,value
 
+# Only explicitly reviewed enforcement outcomes are safe action suggestions.
+# Unknown values remain unchanged in vendor source, never inferred as policy.
+SECURITY_DISPOSITIONS=frozenset({
+    "allow","allowed","accept","accepted","permit","permitted","pass","passed",
+    "block","blocked","deny","denied","drop","dropped","reject","rejected",
+    "reset","quarantine","quarantined","isolate","isolated",
+})
+
+def _semantic_rejection(target:str,value:Any,observed:list[tuple[str,Any]])->str|None:
+    if target=="action" and (
+        not isinstance(value,str) or value.strip().lower() not in SECURITY_DISPOSITIONS
+    ):
+        return "DICTIONARY_ACTION_NOT_ENFORCEMENT"
+    if target not in ("srcport","dstport"):
+        return None
+    numeric=set()
+    names=set()
+    for path,observed_value in observed:
+        field=_identity_target(path)
+        if field=="proto":
+            ok,number=_coerce("proto",observed_value)
+            if not ok:return "DICTIONARY_PROTOCOL_UNCERTAIN"
+            numeric.add(number)
+        elif field=="proto_name":
+            if not isinstance(observed_value,str):return "DICTIONARY_PROTOCOL_UNCERTAIN"
+            names.add(observed_value.strip().lower())
+    if 1 in numeric or 58 in numeric or names.intersection({"icmp","icmpv6","icmp6"}):
+        return "DICTIONARY_ICMP_HAS_NO_L4_PORT"
+    codes={"tcp":6,"udp":17,"icmp":1,"icmpv6":58,"icmp6":58,"igmp":2}
+    if numeric and names and any(codes.get(name)!=number for name in names for number in numeric):
+        return "DICTIONARY_PROTOCOL_UNCERTAIN"
+    return None
+
 def project_stellar_dictionary(candidate:CandidateResult)->DictionaryProjection:
     """Value-free exact-key projection for UI preview metadata only.
 
@@ -225,6 +258,7 @@ def project_stellar_dictionary(candidate:CandidateResult)->DictionaryProjection:
         raise ValueError("DICTIONARY_SOURCE_ALREADY_NORMALIZED")
     proposed=defaultdict(list)
     unmapped=0;issues=[]
+    observed=[(item.display_path,item.value) for item in candidate.occurrences]
     for occurrence in candidate.occurrences:
         target=_identity_target(occurrence.display_path)
         if target is None:
@@ -232,6 +266,9 @@ def project_stellar_dictionary(candidate:CandidateResult)->DictionaryProjection:
         ok,_=_coerce(target,occurrence.value)
         if not ok:
             issues.append("DICTIONARY_TYPE_REJECTED:"+target);unmapped+=1;continue
+        semantic=_semantic_rejection(target,occurrence.value,observed)
+        if semantic:
+            issues.append(semantic+":"+target);unmapped+=1;continue
         proposed[target].append(occurrence)
     accepted=[]
     for target,items in proposed.items():
@@ -249,6 +286,7 @@ def normalize_stellar_dictionary(event:SourceEvent)->DictionaryNormalization:
     assert_source_accounting(event)
     original_tree=deepcopy(event.vendor_fields)
     rows=_span_values(event)
+    observed=[(ref.path,value) for ref,value in rows]
     proposed=defaultdict(list)
     unmapped=[]
     issues=[]
@@ -260,6 +298,10 @@ def normalize_stellar_dictionary(event:SourceEvent)->DictionaryNormalization:
         ok,normalized=_coerce(target,value)
         if not ok:
             issues.append("DICTIONARY_TYPE_REJECTED:"+target)
+            unmapped.append(ref);continue
+        semantic=_semantic_rejection(target,value,observed)
+        if semantic:
+            issues.append(semantic+":"+target)
             unmapped.append(ref);continue
         proposed[target].append((ref,normalized))
 
