@@ -47,6 +47,7 @@ export function strictKeyValues(input: string): StructuredExtraction {
   const values: Record<string, unknown> = Object.create(null);
   const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/y;
   let cursor = 0;
+  let count = 0;
   while (cursor < input.length) {
     if (!input.slice(cursor).trim()) break;
     pattern.lastIndex = cursor;
@@ -55,6 +56,8 @@ export function strictKeyValues(input: string): StructuredExtraction {
     const key = token[1];
     if (['__proto__','constructor','prototype'].includes(key) ||
         Object.prototype.hasOwnProperty.call(values, key)) return failure('Unsafe or duplicate extension field');
+    if (count >= 100) return failure('KV field limit exceeded: maximum 100 keys per event');
+    count++;
     // Only defined escapes are decoded. Literal Windows path separators survive.
     values[key] = (token[2] ?? token[3] ?? token[4] ?? '').replace(/\\([\\"'=])/g, '$1');
     cursor = pattern.lastIndex;

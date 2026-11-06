@@ -1,4 +1,5 @@
 import type { ParserDraft } from '../model';
+import {validMappingWhen} from '../fieldPaths';
 import {isGenericStructuralProfile,type GenericStructuralProfile} from '../genericStructuralProfiles';
 import {validateEventProfiles} from './multiEventRouting';
 import {validForwarderConfig} from './declaredForwarder';
@@ -14,6 +15,7 @@ export interface BackendField {
   normalized_name: string;
   data_type: BackendFieldType;
   source_path_kind?: 'literal_root' | 'nested';
+  when?:{sourcePath:string;operator:'in';values:string[]};
   time_format?: 'iso8601';
   timezone?: 'UTC';
 }
@@ -120,6 +122,11 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
   };
   const destinationForSource = new Map<string, string>();
   for (const [index, mapping] of draft.mappings.entries()) {
+    if(mapping.when!==undefined&&!validMappingWhen(mapping.when)){
+      issues.push({code:'INVALID_MAPPING_WHEN',path:'/mappings/'+index,
+        message:'Only bounded exact-value mapping predicates are supported.'});
+      continue;
+    }
     const group = options.groups[mapping.id] ?? 'vendor_fields';
     if (!safeFieldPath(mapping.source) || !safeFieldPath(mapping.target)) {
       issues.push({ code: 'UNSAFE_FIELD', path: '/mappings/' + index, message: 'Prototype/constructor field paths are not allowed' });
@@ -139,6 +146,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       normalized_name: mapping.target,
       data_type,
       ...(mapping.sourcePathKind?{source_path_kind:mapping.sourcePathKind}:{}),
+      ...(mapping.when?{when:mapping.when}:{}),
       ...(data_type === 'date' ? { time_format: 'iso8601' as const, timezone: 'UTC' as const } : {}),
     };
     // Backend classification is evaluated after normalization and currently
@@ -176,6 +184,12 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
         const vendorFields:Record<string,BackendField>=Object.create(null);
         const buckets={top_fields:topFields,ns_fields:nsFields,vendor_fields:vendorFields};
         for(const [index,mapping] of variant.mappings.entries()){
+          if(mapping.when!==undefined&&!validMappingWhen(mapping.when)){
+            issues.push({code:'INVALID_EVENT_MAPPING_WHEN',
+              path:'/eventProfiles/'+variant.name+'/'+index,
+              message:'Unsupported event-specific mapping predicate.'});
+            continue;
+          }
           const group=options.groups[mapping.id]??'vendor_fields';
           if(!safeFieldPath(mapping.source)||!safeFieldPath(mapping.target)||
              !Object.prototype.hasOwnProperty.call(buckets,group)||
@@ -197,6 +211,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
           bucket[mapping.source]={
             normalized_name:mapping.target,data_type,
             ...(mapping.sourcePathKind?{source_path_kind:mapping.sourcePathKind}:{}),
+            ...(mapping.when?{when:mapping.when}:{}),
             ...(data_type==='date'?{time_format:'iso8601' as const,timezone:'UTC' as const}:{}),
           };
         }

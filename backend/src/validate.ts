@@ -5,7 +5,8 @@ import type { ParserProject, ValidationIssue, ValidationResult, FieldMap } from 
 export const MAX_PROJECT_BYTES = 256 * 1024;
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validateSchema = ajv.compile(projectSchema);
-const RESERVED = new Set(["stellar_log_index", "parser_err_msg", "msg_origin",
+const RESERVED = new Set(["stellar_log_index", "parser_err_msg", "parser_err_stage",
+  "parser_err_field", "msg_origin", "parserstudio_source",
   "parserstudio_event_family", "parserstudio_transport"]);
 const UNSAFE_PARTS = new Set(["__proto__", "constructor", "prototype"]);
 
@@ -247,6 +248,14 @@ export function validateProject(input: unknown): ValidationResult {
   const normalizedNames = new Set<string>();
   const normalizedTypes = new Map<string, string>();
   const namespaces: Array<keyof ParserProject["normalization"]> = ["topFields", "nsFields", "vendorFields"];
+  // The literal manufacturer is also a top-level output namespace whenever
+  // vendor fields exist. It must never alias system-owned source/diagnostic data.
+  const hasVendorFields = Object.keys(p.normalization.vendorFields).length > 0 ||
+    Boolean(p.normalization.eventProfiles?.variants.some(
+      variant => Object.keys(variant.vendorFields).length > 0));
+  if (hasVendorFields && RESERVED.has(p.vendor))
+    issue(issues, "reserved_vendor_namespace", "/vendor",
+      "Manufacturer name conflicts with a reserved output namespace. Choose a different output-safe manufacturer name.");
   for (const section of namespaces) {
     const mappings = p.normalization[section] as FieldMap;
     for (const [source, mapping] of Object.entries(mappings)) {
@@ -255,6 +264,9 @@ export function validateProject(input: unknown): ValidationResult {
         issue(issues, "unsafe_field", path, "Prototype/constructor field segments are forbidden.");
       for (const part of mapping.normalized_name.split(".")) if (UNSAFE_PARTS.has(part))
         issue(issues, "unsafe_field", path, "Prototype/constructor destination segments are forbidden.");
+      if(mapping.when&&(mapping.when.sourcePath.split('.').length>8||
+        mapping.when.sourcePath.split('.').some(part=>UNSAFE_PARTS.has(part))))
+        issue(issues,"mapping_predicate_depth",path,"Mapping condition has more than eight source path segments.");
       if (RESERVED.has(mapping.normalized_name.split(".")[0]!))
         issue(issues, "reserved_field", path, "System-managed output fields are reserved.");
       if (mapping.data_type === "date" && mapping.time_format !== "iso8601")
@@ -291,6 +303,9 @@ export function validateProject(input: unknown): ValidationResult {
           if(source.split(".").some(part=>UNSAFE_PARTS.has(part)) ||
              mapping.normalized_name.split(".").some(part=>UNSAFE_PARTS.has(part)))
             issue(issues,"unsafe_field",path,"Unsafe event-profile field path.");
+          if(mapping.when&&(mapping.when.sourcePath.split('.').length>8||
+            mapping.when.sourcePath.split('.').some(part=>UNSAFE_PARTS.has(part))))
+            issue(issues,"mapping_predicate_depth",path,"Mapping condition has more than eight source path segments.");
           if(RESERVED.has(mapping.normalized_name.split(".")[0]!))
             issue(issues,"reserved_field",path,"Event-profile destination is system-managed.");
           if(mapping.data_type==="date" && mapping.time_format!=="iso8601")

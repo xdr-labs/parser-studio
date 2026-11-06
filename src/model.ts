@@ -8,7 +8,14 @@ export type Format = (typeof FORMATS)[number];
 export type ConcreteFormat = Exclude<Format, 'auto'>;
 export type FieldType = 'string' | 'integer' | 'number' | 'boolean' | 'ip' | 'port' | 'timestamp';
 
+export interface MappingWhen {
+  sourcePath:string;
+  operator:'in';
+  values:string[];
+}
 export interface MappingRule {
+  /** Bounded per-event applicability. Nonmatching events preserve other mappings. */
+  when?:MappingWhen;
   id: string;
   source: string;
   target: string;

@@ -1,7 +1,7 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
-import { hasAmbiguousFieldPath,lookupFieldValue } from './fieldPaths';
+import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import { validatePreviewRegexPattern } from './regexSafety';
 import {validIsoTimestamp} from './isoCalendar';
@@ -22,6 +22,10 @@ export const MAX_EVENTS = 500;
 export const MAX_LINE_CHARS = MAX_DATASET_BYTES;
 const VALID_TARGET = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const UNSAFE_OUTPUT_SEGMENTS=new Set(['__proto__','constructor','prototype']);
+const RUNTIME_OUTPUT_ROOTS=new Set([
+  'parserstudio_source','parserstudio_event_family','parserstudio_transport',
+  'stellar_log_index','msg_origin','parser_err_msg','parser_err_stage','parser_err_field',
+]);
 
 function ownSet(record:Record<string,unknown>,key:string,value:unknown):void{
   Object.defineProperty(record,key,{value,writable:true,enumerable:true,configurable:true});
@@ -439,7 +443,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   }
   trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
   const normalized: Record<string, unknown> = draft.format==='generic_structural'
-    ? {parserstudio_source:draft.omitSourceRaw===true?withoutSourceRaw(fields) as Record<string,unknown>:fields}
+    ? {parserstudio_source:structuredClone(draft.omitSourceRaw===true?withoutSourceRaw(fields):fields)}
     : {};
   const family=inspectEventProfile(fields,draft.eventProfiles);
   if(draft.eventProfiles&&!family.profile)
@@ -458,6 +462,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   }
   const mapped = new Set<string>();
   for (const mapping of [...draft.mappings,...(family.profile?.mappings??[])]) {
+    if(!mappingWhenApplies(fields,mapping.when))continue;
     const source = mapping.source.trim();
     const target = mapping.target.trim();
     if (!source || !VALID_TARGET.test(target) ||
@@ -495,9 +500,17 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
         source+': value does not satisfy the reviewed Stellar 7.0 field constraints',source);
       continue;
     }
+    if(RUNTIME_OUTPUT_ROOTS.has(target.split('.')[0]!)){
+      error('normalize','TARGET_COLLISION','System-owned output field is reserved: '+target,target);
+      continue;
+    }
     let container=normalized;
     if(group==='vendor_fields'){
       const vendor=draft.vendor.trim()||'vendor';
+      if(RUNTIME_OUTPUT_ROOTS.has(vendor)){
+        error('normalize','TARGET_COLLISION','Manufacturer conflicts with a reserved parser namespace: '+vendor,target);
+        continue;
+      }
       const existing=Object.prototype.hasOwnProperty.call(normalized,vendor)?normalized[vendor]:undefined;
       if(existing!==undefined&&(!existing||typeof existing!=='object'||Array.isArray(existing))){
         error('normalize','TARGET_COLLISION','Vendor namespace collides with an existing output: '+vendor,target);
@@ -523,6 +536,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   for (const [index, rule] of (draft.guided?.enrichment ?? []).entries()) {
     const step=index+1;
     const safeOutput=(target:string)=>VALID_TARGET.test(target)&&
+      !RUNTIME_OUTPUT_ROOTS.has(target.split('.')[0]!)&&
       !normalizedPathExists(normalized,target)&&
       !target.split('.').some((part)=>UNSAFE_OUTPUT_SEGMENTS.has(part));
     const validDelimiter=(value:string|undefined)=>typeof value==='string'&&value.length>=1&&value.length<=8&&

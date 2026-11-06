@@ -57,9 +57,13 @@ test('Juniper RFC5424 novice flow maps source/destination IPs to actual Stellar 
     expect(get(key)?.className).toContain('verified');
   }
   for(const key of ['source-port','destination-port','nat-source-address','service-name']){
-    expect(get(key)?.className).toContain('custom');
+    expect(rows.some(row=>row.source==='syslog_sd.element_1.params.'+key&&
+      row.className.includes('custom'))).toBe(true);
   }
-  await expect(map.getByLabel('Recommended field matches')).toContainText('ICMP/IGMP');
+  const conditional=rows.filter(row=>row.className.includes('verified')&&
+    ['srcport','dstport'].includes(row.target??''));
+  expect(conditional.map(row=>row.target).sort()).toEqual(['dstport','srcport']);
+  await expect(map.getByText(/Conditional official field:/)).toHaveCount(2);
   await expect(map.getByLabel('Field changes only')).toContainText('srcip');
   await expect(map.getByLabel('Field changes only')).toContainText('dstip');
   expect(errors).toEqual([]);

@@ -165,9 +165,11 @@ for(const family of [false,true]){
   for(let i=2;i<=5;i++)assert.equal(results[i]?.parser_err_stage,'normalization');
   assert.equal(results[6]?.timestamp,Date.parse(cases[6]!));
  });
+ // Explicitly use a JavaScript-safe exponent. Unsafe 1e21 is now rejected
+ // by the same lexical JSON-number gate as the browser review (#237).
  test('F-04 '+label+' byte-identical JSON object-to-string coercion',{skip:!rubyAvailable},()=>{
   const p=fixture({},family,{vendorFields:{details:str('custom.payload')}});
-  const raw='{"details":{"2":"b","1":"a","small":0.000001,"float":1.0,"large":1e21,"arr":[0.0000001,true,"한"]}}';
+  const raw='{"details":{"2":"b","1":"a","small":0.000001,"float":1.0,"large":1e10,"arr":[0.0000001,true,"한"]}}';
   const result=native(p,[raw])[0]!;
   assert.equal(result.parser_err_stage,undefined);
   const expected=JSON.stringify((JSON.parse(raw) as {details:unknown}).details);

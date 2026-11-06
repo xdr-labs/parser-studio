@@ -4,6 +4,7 @@ export type FieldRule = {
   normalized_name: string;
   data_type: FieldType;
   source_path_kind?: 'literal_root' | 'nested';
+  when?:{sourcePath:string;operator:'in';values:string[]};
   time_format?: "iso8601";
   timezone?: "UTC";
 };

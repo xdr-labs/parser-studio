@@ -1,3 +1,4 @@
+import {validMappingWhen} from '../fieldPaths';
 import type { FieldType, ParserDraft } from '../model';
 import {validatePreviewRegexPattern} from '../regexSafety';
 
@@ -79,6 +80,7 @@ const SAFE_UI_FIELD_PATH = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*
 const UNSAFE_FIELD_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 const RESERVED_OUTPUT_ROOTS = new Set([
   'msg_origin', 'stellar_log_index', 'parser_err_msg', 'parser_err_stage', 'parser_err_field',
+  'parserstudio_source', 'parserstudio_transport', 'parserstudio_event_family',
 ]);
 function safeUiPath(path: string): boolean {
   return path.length > 0 && path.length <= 128 && SAFE_UI_FIELD_PATH.test(path) &&
@@ -196,11 +198,22 @@ export function compilerDraftContract(draft: ParserDraft): ContractResult {
     }
   }
 
+  // The manufacturer becomes an actual root namespace for vendor fields.
+  // Do not reuse reserved parser metadata as a writable vendor container.
+  const vendorOutputs = draft.mappings.some(mapping =>
+    (options.groups[mapping.id] ?? 'vendor_fields') === 'vendor_fields') ||
+    Boolean(draft.eventProfiles?.variants.some(variant =>
+      variant.mappings.some(mapping =>
+        (options.groups[mapping.id] ?? 'vendor_fields') === 'vendor_fields')));
+  if (vendorOutputs && RESERVED_OUTPUT_ROOTS.has(draft.vendor.trim()))
+    errors.push('Manufacturer conflicts with a reserved parser output namespace.');
   if (!draft.mappings.length) errors.push('Map at least one extracted field');
   const targets = new Set<string>();
   const normalization: PairProjectContract['normalization'] = { top_fields: [], ns_fields: [], vendor_fields: [] };
   const supportedTypes: FieldType[] = ['string', 'integer', 'timestamp', 'ip', 'port', 'boolean'];
   for (const mapping of draft.mappings) {
+    if(mapping.when!==undefined&&!validMappingWhen(mapping.when))
+      errors.push('Unsupported or unsafe conditional mapping rule for '+mapping.source);
     if(draft.format==='syslog_rfc3164'&&mapping.source==='syslog_timestamp'&&
       mapping.type==='timestamp')
       errors.push('RFC3164 timestamp has no year or timezone; map it as text.');

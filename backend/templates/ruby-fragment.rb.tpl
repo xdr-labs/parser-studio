@@ -199,9 +199,59 @@ def parserstudio_json_duplicate_keys?(raw)
   false
 end
 
+# Reject source JSON number tokens that JavaScript would round or underflow.
+# Scan the original UTF-8 bytes, skipping quoted strings, before accepting
+# JSON.parse results as parity-safe with the browser review.
+def parserstudio_json_unsafe_number?(raw)
+  data = raw.b
+  offset = 0
+  number_token = /\G-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/
+  while offset < data.bytesize
+    byte = data.getbyte(offset)
+    if byte == 34
+      offset += 1
+      while offset < data.bytesize
+        current = data.getbyte(offset)
+        if current == 92
+          offset += 2
+        elsif current == 34
+          offset += 1
+          break
+        else
+          offset += 1
+        end
+      end
+      next
+    end
+    if byte == 45 || (byte >= 48 && byte <= 57)
+      found = number_token.match(data, offset)
+      return true unless found && found.begin(0) == offset
+      token = found[0]
+      begin
+        number = Float(token)
+        return true unless number.finite?
+        return true if number == number.to_i && number.abs > 9007199254740991
+      rescue ArgumentError, RangeError
+        return true
+      end
+      if token.match?(/[.eE]/)
+        mantissa = token.split(/[eE]/, 2)[0]
+        significant = mantissa.sub(/\A[+-]?0*/, '').delete('.').sub(/0+\z/, '')
+        return true if significant.length > 15
+        return true if number.zero? && mantissa.match?(/[1-9]/)
+      end
+      offset = found.end(0)
+      next
+    end
+    offset += 1
+  end
+  false
+end
+
 def parserstudio_json_object(text)
   decoded = JSON.parse(text)
   raise ArgumentError, 'Duplicate JSON object key' if parserstudio_json_duplicate_keys?(text)
+  raise ArgumentError, 'Unsafe JSON numeric precision' if parserstudio_json_unsafe_number?(text)
   raise ArgumentError, 'JSON root must be an object' unless decoded.is_a?(Hash)
   depth_limit = @parser_rule_set['extraction']['maxDepth'] || 8
   parserstudio_validate_json_depth(decoded, 0, depth_limit)
@@ -959,6 +1009,22 @@ def parserstudio_assign(record, path, value)
   cursor[pieces.last] = value
 end
 
+def parserstudio_when_applies?(original, rule)
+  predicate = rule['when']
+  return true unless predicate
+  value = parserstudio_lookup(original, predicate['sourcePath'])
+  return false if value.nil? || !(value.is_a?(String) || value.is_a?(Numeric))
+  # JavaScript String(6.0) is "6" after JSON decoding. Match its numeric
+  # representation so a Ruby Float with integral value cannot drift.
+  token = value.is_a?(Float) && value.finite? && value == value.to_i ?
+    value.to_i.to_s : value.to_s
+  predicate['values'].include?(token)
+rescue ArgumentError
+  # Ambiguous predicate source paths are untrusted. Omit only this mapping,
+  # preserving unrelated fields and the original vendor event.
+  false
+end
+
 def parserstudio_normalize(original)
   normalized = {}
   @parserstudio_partial = normalized
@@ -966,6 +1032,7 @@ def parserstudio_normalize(original)
   ignored = @parser_rule_set['normalization']['ignoreValues']
   ['topFields', 'nsFields', 'vendorFields'].each do |section|
     @parser_rule_set['normalization'][section].each do |source, rule|
+      next unless parserstudio_when_applies?(original, rule)
       raw = parserstudio_lookup(original, source, rule['source_path_kind'])
       next if raw.nil? || ignored.include?(raw.to_s)
       target = normalized

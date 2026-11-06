@@ -26,9 +26,11 @@ test('published FortiGate traffic + web filter + IPS samples in one reviewed par
   const selected=(source:string)=>fields.find(x=>x.source===source);
   for(const [source,target] of [
     ['srcip','srcip'],['dstip','dstip'],['srcport','srcport'],
-    ['dstport','dstport'],['proto','proto'],['action','action'],
-    ['policyid','fw_policy_id'],
+    ['dstport','dstport'],['proto','proto'],['policyid','fw_policy_id'],
   ])expect(selected(source)).toMatchObject({target,official:true});
+  // Multi-type FortiOS contains traffic action=close as well as enforcement
+  // dispositions. One session-end verb invalidates unconditional action mapping.
+  expect(selected('action')).toMatchObject({target:'action',official:false});
   for(const source of ['type','eventtype','duration','direction','hostname']){
     if(selected(source))expect(selected(source)?.official,source+' must stay vendor-specific').toBe(false);
   }

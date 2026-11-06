@@ -107,6 +107,20 @@ export default function NormalizationMappingReview({
 
   const applyCandidate=(candidate:NormalizationCandidate)=>{
     setDraft(old=>{
+      if(candidate.when){
+        const group=old.guided?.groups??{};
+        if(old.mappings.some(mapping=>mapping.source===candidate.source&&
+          mapping.target===candidate.target&&group[mapping.id]===candidate.group))
+          return old;
+        const id='stellar-semantic-'+candidate.target;
+        const existing=old.mappings.find(m=>m.id===id);
+        if(existing)return old;
+        const options=old.guided??defaultGuidedOptions();
+        return {...old,mappings:[...old.mappings,
+          {id,source:candidate.source,target:candidate.target,type:candidate.type,
+            when:candidate.when}],guided:{...options,
+            groups:{...options.groups,[id]:candidate.group}}};
+      }
       const existing=old.mappings.find(mapping=>mapping.source===candidate.source);
       const id=existing?.id??candidate.replacesMappingId??
         'stellar-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_')+'-'+String(old.mappings.length+1);
@@ -126,6 +140,16 @@ export default function NormalizationMappingReview({
       const options=old.guided??defaultGuidedOptions();
       const groups={...options.groups};
       for(const candidate of approved){
+        if(candidate.when){
+          const id='stellar-semantic-'+candidate.target;
+          if(!mappings.some(m=>m.source===candidate.source&&m.target===candidate.target&&
+            groups[m.id]===candidate.group)&&!mappings.some(m=>m.id===id)){
+            mappings.push({id,source:candidate.source,target:candidate.target,
+              type:candidate.type,when:candidate.when});
+            groups[id]=candidate.group;
+          }
+          continue;
+        }
         const index=mappings.findIndex(mapping=>mapping.source===candidate.source);
         const existing=index>=0?mappings[index]:undefined;
         const id=existing?.id??'stellar-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_')+'-'+String(mappings.length+1);
@@ -142,15 +166,25 @@ export default function NormalizationMappingReview({
       const groups={...options.groups};
       const mappings=old.mappings.map(mapping=>{
         if(mapping.id!==id)return mapping;
-        if(key==='type')return {...mapping,type:value as MappingRule['type']};
-        if(key==='source')return {...mapping,source:value,sourcePathKind:undefined};
+        // Editing a reviewed mapping invalidates its semantic applicability.
+        // Never silently keep a TCP/UDP gate attached to an unrelated target.
+        if(key==='type'){
+          const {when:_previous,...rest}=mapping;
+          return {...rest,type:value as MappingRule['type']};
+        }
+        if(key==='source'){
+          const {when:_previous,...rest}=mapping;
+          return {...rest,source:value,sourcePathKind:undefined};
+        }
+        const {when:_previous,...rest}=mapping;
+        const updated=value===mapping.target?mapping:rest;
         const catalog=findStellarMetadataField(value);
         if(catalog?.mappable&&catalog.mappingType&&catalog.group){
           groups[id]=catalog.group;
-          return {...mapping,target:value,type:catalog.mappingType};
+          return {...updated,target:value,type:catalog.mappingType};
         }
         groups[id]='vendor_fields';
-        return {...mapping,target:value};
+        return {...updated,target:value};
       });
       return {...old,mappings,guided:{...options,groups}};
     });
@@ -195,11 +229,20 @@ export default function NormalizationMappingReview({
     <div className="normalization-kpis" aria-label="Field mapping summary">
       <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
       <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
-      <div><span>Vendor-only fields</span><strong>{vendorCount}</strong></div>
+      <div><span>Vendor fields retained</span><strong>{vendorCount}</strong></div>
       <div><span>Left out of output</span><strong>{sourceFields.filter(field=>!mappedSources.has(field)).length+unaddressableCount}</strong></div>
       {unaddressableCount>0&&<div><span>Unmappable source values</span><strong>{unaddressableCount}</strong></div>}
       <div className={mappingReview.totalBlocking?'attention':''}><span>Must fix before continuing</span><strong>{mappingReview.totalBlocking}</strong></div>
     </div>
+
+    {draft.mappings.some(mapping=>mapping.when)&&<div className="normalization-runtime-note"
+      aria-label="Protocol-aware mapping explanation" role="note">
+      <strong>Protocol-aware standard fields</strong>
+      <span>Some original vendor fields also produce an official field only for
+        eligible event protocols. For example, TCP and UDP use Layer 4 ports;
+        ICMP and unknown protocols keep their original vendor values without
+        inventing a standard port. Standard and vendor mapping counts may overlap.</span>
+    </div>}
 
     {draft.format==='generic_structural'&&<div className="normalization-runtime-note" role="group"
       aria-label="Original line copy">
@@ -243,7 +286,12 @@ export default function NormalizationMappingReview({
             <div className="normalization-target">
               <strong>{candidate.target}</strong>
               <span>{candidate.type} · Stellar field</span>
-              <small>{candidate.method==='EXACT_DICTIONARY_NAME'?'Same name as Stellar field':'Common security-log name'} · value seen in {candidate.observed}/{candidate.total} event{candidate.total===1?'':'s'}</small>
+              <small>{candidate.when
+                ?'Protocol-gated: '+candidate.eligibleObserved+'/'+candidate.total+
+                  ' events eligible · '+candidate.skippedForSemantics+' retained as vendor data'
+                :(candidate.method==='EXACT_DICTIONARY_NAME'?'Same name as Stellar field':'Common security-log name')+
+                  ' · value seen in '+candidate.observed+'/'+candidate.total+
+                  ' event'+(candidate.total===1?'':'s')}</small>
             </div>
             <span className={'normalization-confidence '+candidate.confidence.toLowerCase()}>
               {candidate.confidence==='HIGH'?'Recommended':'Check first'}
@@ -303,6 +351,10 @@ export default function NormalizationMappingReview({
               {TYPES.map(type=><option value={type} key={type}>{TYPE_LABEL[type]}</option>)}
             </select>
           </label>
+          {mapping.when&&<div className="normalization-mapping-condition">
+            Conditional official field: {mapping.when.sourcePath} in
+            {' '+mapping.when.values.join(', ')}. Other events keep the original vendor field.
+          </div>}
           <div className="normalization-map-meta">
             <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Generated as '+(draft.vendor||'vendor')+'.'+mapping.target:'Needs your review'}</span>
             <span>{sourceValues(suite,mapping.source,mapping.sourcePathKind).length} example value{sourceValues(suite,mapping.source,mapping.sourcePathKind).length===1?'':'s'} shown</span>
