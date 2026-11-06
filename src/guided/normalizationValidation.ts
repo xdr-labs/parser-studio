@@ -1,6 +1,6 @@
 import type {MappingRule,SuiteResult} from '../model';
 import type {FieldGroup} from './contract';
-import {lookupFieldValue} from '../fieldPaths';
+import {lookupFieldValue,mappingWhenApplies} from '../fieldPaths';
 import {officialProtocolPairConflict} from '../stellar7ValueConstraints';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 import {valueFitsMappingType,valueFitsNormalizationTarget} from './normalizationCandidates';
@@ -61,6 +61,7 @@ export function reviewNormalizationMappings(
   for(let i=0;i<suite.events.length;i++){
     const fields=suite.events[i]!.fields;
     for(const mapping of mappings){
+      if(!mappingWhenApplies(fields,mapping.when))continue;
       const found=lookupFieldValue(fields,mapping.source,mapping.sourcePathKind);
       if(!found.found)findings.push({code:'SOURCE_NOT_FOUND',source:mapping.source,target:mapping.target,event:i+1});
       else if(!(groups[mapping.id]==='vendor_fields'

@@ -3,6 +3,8 @@
  * source paths. Backend lookup prefers an exact literal key before descending
  * nested JSON objects. Never traverse inherited/prototype or array-index paths.
  */
+import type {MappingWhen} from './model';
+
 const PATH = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
 const UNSAFE = new Set(['__proto__', 'constructor', 'prototype']);
 const MAX_DEPTH = 8;
@@ -117,4 +119,25 @@ export function countUnaddressableSourceValues(fields:Record<string,unknown>):nu
   };
   visit(fields,'',0);
   return missing;
+}
+
+/** Only bounded exact-value predicates are compilable into both browser and native Ruby. */
+export function validMappingWhen(when:unknown):when is MappingWhen{
+  if(!when||typeof when!=='object'||Array.isArray(when))return false;
+  const rule=when as Record<string,unknown>;
+  return Object.keys(rule).length===3&&
+    Object.keys(rule).every(key=>['sourcePath','operator','values'].includes(key))&&
+    typeof rule.sourcePath==='string'&&safeLocalFieldPath(rule.sourcePath)&&
+    rule.sourcePath.split('.').length<=8&&rule.operator==='in'&&
+    Array.isArray(rule.values)&&rule.values.length>=1&&rule.values.length<=16&&
+    rule.values.every(value=>typeof value==='string'&&/^[A-Za-z0-9_-]{1,32}$/.test(value))&&
+    new Set(rule.values).size===rule.values.length;
+}
+export function mappingWhenApplies(fields:Record<string,unknown>,when?:MappingWhen):boolean{
+  if(!when)return true;
+  if(!validMappingWhen(when))return false;
+  const found=lookupFieldValue(fields,when.sourcePath);
+  return found.found&&found.value!==null&&found.value!==undefined&&
+    (typeof found.value==='string'||typeof found.value==='number')&&
+    when.values.includes(String(found.value));
 }

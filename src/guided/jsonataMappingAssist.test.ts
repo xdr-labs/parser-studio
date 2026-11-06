@@ -1,3 +1,5 @@
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {describe,it,expect} from 'vitest';
 import {createDraft,type ParserDraft} from '../model';
 import {preview} from '../parser';
@@ -112,6 +114,38 @@ describe('review-only JSONata source selector mapping',()=>{
    status:'READY',reason:'forged',observed:2,total:2,values:[],
   }]);
   expect(attempt).toMatchObject({ok:false});
+ });
+ it('accepts a reviewed Juniper selector with a locally attested TCP/UDP-only mapping',async()=>{
+  const original=readFileSync(resolve('tests/fixtures/docs-practice-20261104/01-juniper-srx.log'),'utf8').trimEnd();
+  const base=createDraft();
+  const source='syslog_sd.element_1.params.source-port';
+  const draft:ParserDraft={...base,format:'syslog_rfc5424',
+    mappings:[{id:'raw_source_port',source,target:'original_source_port',type:'string'}],
+    guided:{...base.guided!,groups:{raw_source_port:'vendor_fields'},
+      classification:{defaultIndex:'Syslog',rules:[]}}};
+  const suite=preview(original,draft);
+  const {sha256}=await createJsonataMappingPrompt(suite,draft);
+  const reviewed=await reviewJsonataMapping(answer(sha256,2,[
+    {expression:'syslog_sd.element_1.params.\x60source-port\x60',target:'srcport'},
+  ]),suite,draft,sha256);
+  expect(reviewed.ok).toBe(true);
+  if(!reviewed.ok)return;
+  expect(reviewed.rows).toMatchObject([{status:'CHECK_FIRST',observed:1,total:2,
+    when:{sourcePath:'syslog_sd.element_1.params.protocol-id',
+      operator:'in',values:['6','17']}}]);
+  // The model is never trusted to supply or alter the executable condition.
+  const forged={...reviewed.rows[0]!,when:{...reviewed.rows[0]!.when!,values:['1']}};
+  expect(applyReviewedJsonataMapping(draft,suite,[forged])).toMatchObject({ok:false});
+  const applied=applyReviewedJsonataMapping(draft,suite,reviewed.rows);
+  expect(applied.ok,applied.ok?"":applied.reason).toBe(true);
+  if(!applied.ok)return;
+  expect(applied.draft.mappings.filter(m=>m.source===source)).toHaveLength(2);
+  expect(toBackendProject(applied.draft)).toMatchObject({ok:true});
+  const output=preview(original,applied.draft);
+  expect(output.counts.failures).toBe(0);
+  expect(output.events[0]?.normalized.srcport).toBeUndefined();
+  expect(output.events[1]?.normalized.srcport).toBe(37233);
+  expect((output.events[0]?.normalized[draft.vendor] as Record<string,unknown>).original_source_port).toBe('594');
  });
  it('blocks PAN-OS event type as a Windows-agent Stellar type',async()=>{
   const base=createDraft();

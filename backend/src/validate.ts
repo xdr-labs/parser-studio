@@ -255,6 +255,9 @@ export function validateProject(input: unknown): ValidationResult {
         issue(issues, "unsafe_field", path, "Prototype/constructor field segments are forbidden.");
       for (const part of mapping.normalized_name.split(".")) if (UNSAFE_PARTS.has(part))
         issue(issues, "unsafe_field", path, "Prototype/constructor destination segments are forbidden.");
+      if(mapping.when&&(mapping.when.sourcePath.split('.').length>8||
+        mapping.when.sourcePath.split('.').some(part=>UNSAFE_PARTS.has(part))))
+        issue(issues,"mapping_predicate_depth",path,"Mapping condition has more than eight source path segments.");
       if (RESERVED.has(mapping.normalized_name.split(".")[0]!))
         issue(issues, "reserved_field", path, "System-managed output fields are reserved.");
       if (mapping.data_type === "date" && mapping.time_format !== "iso8601")
@@ -291,6 +294,9 @@ export function validateProject(input: unknown): ValidationResult {
           if(source.split(".").some(part=>UNSAFE_PARTS.has(part)) ||
              mapping.normalized_name.split(".").some(part=>UNSAFE_PARTS.has(part)))
             issue(issues,"unsafe_field",path,"Unsafe event-profile field path.");
+          if(mapping.when&&(mapping.when.sourcePath.split('.').length>8||
+            mapping.when.sourcePath.split('.').some(part=>UNSAFE_PARTS.has(part))))
+            issue(issues,"mapping_predicate_depth",path,"Mapping condition has more than eight source path segments.");
           if(RESERVED.has(mapping.normalized_name.split(".")[0]!))
             issue(issues,"reserved_field",path,"Event-profile destination is system-managed.");
           if(mapping.data_type==="date" && mapping.time_format!=="iso8601")

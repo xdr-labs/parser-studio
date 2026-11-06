@@ -102,14 +102,17 @@ describe('Juniper RFC5424 SD semantic mappings with Stellar 7.0 catalog evidence
     expect(result).toMatchObject({ok:true});
     if(!result.ok)return;
     const official=(suffix:string)=>{
-      const rule=result.draft.mappings.find(mapping=>mapping.source===prefix+suffix);
+      const rule=result.draft.mappings.find(mapping=>mapping.source===prefix+suffix&&
+        result.draft.guided?.groups[mapping.id]!=='vendor_fields');
       expect(rule).toBeDefined();
       return rule!;
     };
     expect(official('source-address')).toMatchObject({target:'srcip',type:'ip'});
     expect(official('destination-address')).toMatchObject({target:'dstip',type:'ip'});
-    expect(official('source-port')).toMatchObject({target:'srcport',type:'integer'});
-    expect(official('destination-port')).toMatchObject({target:'dstport',type:'integer'});
+    expect(official('source-port')).toMatchObject({target:'srcport',type:'integer',
+      when:{sourcePath:prefix+'protocol-id',operator:'in',values:['6','17']}});
+    expect(official('destination-port')).toMatchObject({target:'dstport',type:'integer',
+      when:{sourcePath:prefix+'protocol-id',operator:'in',values:['6','17']}});
     expect(official('protocol-id')).toMatchObject({target:'proto',type:'integer'});
     expect(official('policy-name')).toMatchObject({target:'rule.name',type:'string'});
     expect(result.draft.guided?.groups[official('policy-name').id]).toBe('ns_fields');

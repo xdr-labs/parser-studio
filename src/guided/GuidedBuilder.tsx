@@ -955,7 +955,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const setMapping = (id: string, key: keyof MappingRule, value: string) =>
     setDraft((old) => ({
       ...old,
-      mappings: old.mappings.map((rule) => rule.id === id ? { ...rule, [key]: value } : rule),
+      mappings: old.mappings.map((rule) => {
+        if(rule.id!==id)return rule;
+        // Advanced edits also invalidate previously reviewed applicability.
+        const {when:_oldWhen,...rest}=rule;
+        return {...rest,[key]:value};
+      }),
     }));
 
   const addEnrichment = () => setGuided({

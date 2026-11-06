@@ -115,6 +115,13 @@ describe('browser-only parser experiment version contract',()=>{
 
   it('rejects duplicate, malformed and unsafe persisted parser settings',()=>{
     const draft=createDraft();
+    const conditional={...draft,mappings:[{...draft.mappings[0]!,
+      when:{sourcePath:'protocol-id',operator:'in' as const,values:['6','17']}}]};
+    expect(validLocalDraft(conditional)).toBe(true);
+    expect(validLocalDraft({...conditional,mappings:[{...conditional.mappings[0]!,
+      when:{sourcePath:'__proto__.x',operator:'in',values:['6']}}]})).toBe(false);
+    expect(validLocalDraft({...conditional,mappings:[{...conditional.mappings[0]!,
+      when:{sourcePath:'proto',operator:'execute',values:['6']}}]})).toBe(false);
     expect(validLocalDraft({...draft,format:'forged'})).toBe(false);
     expect(validLocalDraft({...draft,mappings:[...draft.mappings,draft.mappings[0]]})).toBe(false);
     expect(validLocalDraft({...draft,mappings:[{id:'a',source:'src',target:'dst',type:'run_code'}]})).toBe(false);
