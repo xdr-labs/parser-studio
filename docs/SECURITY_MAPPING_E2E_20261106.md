@@ -118,6 +118,12 @@ existing healthy real authoring and Multi-Pass backends:
 - **0 known-good target mappings lost** under the scenario-specific positive
   controls, and 11/11 generated pair requests returned HTTP 200 with a DRAFT.
 - **1,426/1,426 frontend tests PASS** (188 files).
+- **1/1 AI split/merge browser acceptance PASS** using semantically valid
+  username rather than a composite vendor action such as allow:http.
+- **12/12 expanded cross-vendor browser E2E PASS** (SentinelOne, Defender,
+  Darktrace, Vectra, Umbrella, Imperva, Akamai, Sophos, Juniper, Google
+  Workspace, Azure, Rapid7). Producer event_type labels are vendor-scoped.
+
 - **15/15 targeted CI browser catalog tests PASS** after replacing two
   outdated assertions that had required vendor event verbs to become unrelated
   official `event_type`/`action` fields. These checks now explicitly verify
