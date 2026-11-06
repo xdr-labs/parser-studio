@@ -59,6 +59,8 @@ const ALIASES:Record<string,string>={
   ip_client:'srcip',protocol:'proto_name',
   'protocol-id':'proto','policy-name':'rule.name','icmp-type':'icmp_type',
   policyid:'fw_policy_id',
+  // The explicit unit suffix is required: Stellar duration is milliseconds.
+  duration_ms:'duration',session_duration_ms:'duration',
   // request_status is not an action alias: an HTTP status code and a security
   // allow/deny action have different semantics even if both are strings.
   uri:'url',
@@ -99,10 +101,44 @@ function fortiGateRecord(fields:Record<string,unknown>):boolean{
 const FORTINET_FALSE_FRIENDS=new Set([
   'type','eventtype','event_type','direction','duration','hostname',
 ]);
+// The official action field describes enforcement/response, not arbitrary
+// event verbs such as a VPN negotiation, session close or admin login.
+const SECURITY_DISPOSITIONS=new Set([
+  'allow','allowed','accept','accepted','permit','permitted','pass','passed',
+  'block','blocked','deny','denied','drop','dropped','reject','rejected',
+  'reset','quarantine','quarantined','isolate','isolated',
+]);
+function windowsAgentEvidence(fields:Record<string,unknown>):boolean{
+  // The published top-level Stellar "type" is Windows-agent-specific.
+  return ['provider_guid','record_number','log_name','event_data'].some(name=>
+    lookupFieldValue(fields,name).found);
+}
+function suricataAlertEvidence(fields:Record<string,unknown>):boolean{
+  const kind=lookupFieldValue(fields,'event_type');
+  return kind.found&&String(kind.value).toLowerCase()==='alert'&&
+    lookupFieldValue(fields,'alert.signature_id').found;
+}
 function incompatibleVendorMeaning(
   source:string,target:string,events:Record<string,unknown>[],
 ):boolean{
   const leaf=(source.split('.').at(-1)??source).toLowerCase();
+  const lower=source.toLowerCase();
+  // An exact dictionary field-name match cannot establish vendor semantics.
+  // event_type is an ML-job event type in the 7.0 dictionary, not the
+  // manufacturer's record family (Suricata alert, Okta session, etc.).
+  if(target==='event_type')return true;
+  if(target==='type'&&(!events.every(windowsAgentEvidence)||source!=='type'))return true;
+  // Vendor traffic durations commonly use seconds or unspecified units.
+  // Do not emit the official milliseconds field without explicit ms evidence.
+  if(target==='duration'&&!['duration_ms','session_duration_ms'].includes(leaf))return true;
+  if(target==='action'&&events.some(fields=>{
+    const result=lookupFieldValue(fields,source);
+    return result.found&&!ignored(result.value)&&
+      !SECURITY_DISPOSITIONS.has(String(result.value).trim().toLowerCase());
+  }))return true;
+  // Suricata IDS priority severity (1-4) is not Stellar's 0-100 score.
+  if(target==='severity'&&lower.endsWith('alert.severity')&&
+    events.some(suricataAlertEvidence))return true;
   if(events.some(fortiGateRecord)&&FORTINET_FALSE_FRIENDS.has(leaf))return true;
   // RFC3164 PRI severity 0-7 is a Syslog facility code component, not
   // Stellar's 0-100 security severity score. Never silently relabel it.

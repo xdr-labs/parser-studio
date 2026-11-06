@@ -100,7 +100,6 @@ describe('official-catalog normalization candidates',()=>{
     },[]);
     expect(suggestions).toEqual(expect.arrayContaining([
       expect.objectContaining({source:'timestamp',target:'timestamp',confidence:'HIGH'}),
-      expect.objectContaining({source:'eventType',target:'event_type',confidence:'HIGH'}),
       expect.objectContaining({source:'severity',target:'severity',confidence:'HIGH'}),
       expect.objectContaining({source:'hostname',target:'hostname',confidence:'HIGH'}),
       expect.objectContaining({source:'localIP',target:'hostip',confidence:'HIGH'}),
@@ -109,8 +108,9 @@ describe('official-catalog normalization candidates',()=>{
       expect.objectContaining({source:'commandLine',target:'command',confidence:'HIGH'}),
       expect.objectContaining({source:'parentProcess',target:'parent_proc_name',confidence:'HIGH'}),
       expect.objectContaining({source:'sha256',target:'sha256',confidence:'HIGH'}),
-      expect.objectContaining({source:'action',target:'action',confidence:'HIGH'}),
     ]));
+    // EDR event family and detection state are not Stellar ML event_type or enforcement action.
+    expect(suggestions.some(item=>['eventType','action'].includes(item.source))).toBe(false);
     expect(suggestions.some(item=>['severityName','tactic','technique','techniqueId'].includes(item.source))).toBe(false);
   });
 
