@@ -136,6 +136,9 @@ export function validMappingWhen(when:unknown):when is MappingWhen{
 export function mappingWhenApplies(fields:Record<string,unknown>,when?:MappingWhen):boolean{
   if(!when)return true;
   if(!validMappingWhen(when))return false;
+  // An event with both a literal dotted key and a nested path cannot prove
+  // which value controls semantic eligibility. Skip this field, not the log.
+  if(hasAmbiguousFieldPath(fields,when.sourcePath))return false;
   const found=lookupFieldValue(fields,when.sourcePath);
   return found.found&&found.value!==null&&found.value!==undefined&&
     (typeof found.value==='string'||typeof found.value==='number')&&

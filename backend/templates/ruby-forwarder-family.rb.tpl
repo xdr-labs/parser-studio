@@ -1026,6 +1026,10 @@ def parserstudio_when_applies?(original, rule)
   token = value.is_a?(Float) && value.finite? && value == value.to_i ?
     value.to_i.to_s : value.to_s
   predicate['values'].include?(token)
+rescue ArgumentError
+  # Ambiguous predicate source paths are untrusted. Omit only this mapping,
+  # preserving unrelated fields and the original vendor event.
+  false
 end
 
 def parserstudio_apply_field_maps(original, normalized, maps, ignored)

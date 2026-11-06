@@ -144,3 +144,33 @@ test('Issue #232: integral JSON protocol numbers use browser/Ruby-equivalent exa
       ['5512','161','8','9000']);
     assert.ok(records.every(row=>row.parser_err_stage===undefined));
   });
+
+
+test('Issue #232: ambiguous condition source does not promote an official field',
+  {skip:!rubyAvailable},()=>{
+    const p=sampleProject();
+    p.projectId='draft_issue232_ambiguous_condition';
+    p.slug='issue232_ambiguous';
+    p.extraction={format:'json'};
+    p.normalization.topFields={
+      port:{normalized_name:'srcport',data_type:'integer',
+        when:{sourcePath:'proto.id',operator:'in',values:['6','17']}},
+    };
+    p.normalization.nsFields={};
+    p.normalization.vendorFields={
+      user:{normalized_name:'user',data_type:'string'},
+      port:{normalized_name:'original_port',data_type:'string'},
+    };
+    p.classification.rules=[];
+    assert.deepEqual(validateProject(p),{ok:true,issues:[]});
+    const out=runNative(p,[
+      '{"proto":{"id":"6"},"proto.id":"1","user":"alice","port":5001}',
+      '{"proto":{"id":"6"},"user":"bob","port":5002}',
+    ]);
+    assert.equal(out[0]?.srcport,undefined);
+    assert.equal(out[0]?.[p.vendor]?.user,'alice');
+    assert.equal(out[0]?.[p.vendor]?.original_port,'5001');
+    assert.equal(out[1]?.srcport,5002);
+    assert.equal(out[1]?.[p.vendor]?.user,'bob');
+    assert.ok(out.every(row=>row.parser_err_stage===undefined));
+  });

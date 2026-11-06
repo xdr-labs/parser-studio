@@ -57,7 +57,8 @@ test('Juniper RFC5424 novice flow maps source/destination IPs to actual Stellar 
     expect(get(key)?.className).toContain('verified');
   }
   for(const key of ['source-port','destination-port','nat-source-address','service-name']){
-    expect(get(key)?.className).toContain('custom');
+    expect(rows.some(row=>row.source==='syslog_sd.element_1.params.'+key&&
+      row.className.includes('custom'))).toBe(true);
   }
   const conditional=rows.filter(row=>row.className.includes('verified')&&
     ['srcport','dstport'].includes(row.target??''));

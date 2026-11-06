@@ -1,4 +1,5 @@
 import {describe,it,expect} from 'vitest';
+import {mappingWhenApplies} from '../fieldPaths';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {createDraft} from '../model';
@@ -152,6 +153,15 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
     expect({positivePrecision:actualPositive/(actualPositive+falsePositive),
       eligibleRecall:actualPositive/expectedPositive,falsePositive}).toEqual({
       positivePrecision:1,eligibleRecall:1,falsePositive:0});
+  });
+
+  it('fails closed on ambiguous predicate source paths without discarding another field',()=>{
+    const predicate={sourcePath:'proto.id',operator:'in' as const,values:['6','17']};
+    const event={proto:{id:'6'},'proto.id':'1',user:'alice'};
+    expect(mappingWhenApplies(event,predicate)).toBe(false);
+    expect(mappingWhenApplies({proto:{id:'6'},user:'alice'},predicate)).toBe(true);
+    expect(mappingWhenApplies({'proto.id':'6',user:'alice'},predicate)).toBe(true);
+    expect(event.user).toBe('alice');
   });
 
   it('retains source values and rejects invalid injected conditional expressions',()=>{
