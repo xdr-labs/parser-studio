@@ -82,13 +82,21 @@ export function validateBoundedRegexPattern(pattern: unknown): string | null {
 }
 
 export function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) return "[" + value.map(canonicalJson).join(",") + "]";
+  // The generated Ruby embeds this as real JSON, never a JavaScript literal.
+  // JSON.stringify silently drops optional undefined keys and turns NaN into
+  // null; neither is a valid in-process parser project value.
+  if (Array.isArray(value)) return "[" + Array.from({length:value.length},
+    (_,index)=>canonicalJson(value[index])).join(",") + "]";
   if (value !== null && typeof value === "object") {
     return "{" + Object.keys(value).sort().map(key =>
       JSON.stringify(key) + ":" + canonicalJson((value as Record<string, unknown>)[key])
     ).join(",") + "}";
   }
-  return JSON.stringify(value);
+  if (typeof value === "number" && !Number.isFinite(value))
+    throw new TypeError("Nonfinite JSON number");
+  const encoded=JSON.stringify(value);
+  if (typeof encoded !== "string") throw new TypeError("Non-JSON project value");
+  return encoded;
 }
 
 function issue(issues: ValidationIssue[], code: string, path: string, message: string): void {
@@ -110,6 +118,14 @@ export function validateProject(input: unknown): ValidationResult {
   if (jsonBytes > MAX_PROJECT_BYTES) {
     issue(issues, "size_limit", "", "Project JSON exceeds the 256 KiB limit.");
     return { ok: false, issues };
+  }
+  try {
+    // AJV considers own optional undefined properties absent. Validate the
+    // exact canonical payload before generating a Ruby fragment from it.
+    JSON.parse(canonicalJson(input));
+  } catch {
+    return {ok:false,issues:[{code:"invalid_input",path:"",
+      message:"Project must contain only finite, defined JSON values."}]};
   }
   if (!validateSchema(input)) {
     for (const error of validateSchema.errors ?? []) {

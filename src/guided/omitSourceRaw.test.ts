@@ -30,6 +30,19 @@ describe('Generic Structural: copying the full raw line is switchable',()=>{
     expect(hasKey(source,'source_raw')).toBe(false);
     expect(JSON.stringify(source)).toContain('alice');
   });
+  it('does not discard a manufacturer field named source_raw inside extracted KV data',()=>{
+    const raw=LOG+' source_raw=vendor-specific-value';
+    const original=preview(raw,generic()).events[0]!.normalized.parserstudio_source as {
+      generic:{source_raw?:string;kv:Record<string,unknown>};
+    };
+    const without=preview(raw,{...generic(),omitSourceRaw:true}).events[0]!.normalized.parserstudio_source as {
+      generic:{source_raw?:string;kv:Record<string,unknown>};
+    };
+    expect(original.generic.source_raw).toBe(raw);
+    expect(original.generic.kv.source_raw).toBe('vendor-specific-value');
+    expect(without.generic.source_raw).toBeUndefined();
+    expect(without.generic.kv.source_raw).toBe('vendor-specific-value');
+  });
   it('reaches the backend project only when switched off, and only for Generic Structural',()=>{
     const on=toBackendProject({...generic(),omitSourceRaw:true});
     expect(on.ok&&on.project.extraction).toMatchObject({format:'generic_structural',omitSourceRaw:true});

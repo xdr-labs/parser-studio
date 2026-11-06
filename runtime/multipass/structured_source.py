@@ -397,6 +397,14 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
                 return result,None
     else:
         result.issues.append("RFC5424_STRUCTURED_DATA_MISSING")
+        if source_preserving:
+            result.fields["syslog"] = dict(syslog)
+            result.covered = [(0, match.end())]
+        else:
+            result.spans = []
+            result.primitive_fields = 0
+            result.fields = {}
+            result.covered = []
         return result,None
     syslog["structured_data_raw"]=raw[sd_start:pos]
     syslog["structured_data"]=structured

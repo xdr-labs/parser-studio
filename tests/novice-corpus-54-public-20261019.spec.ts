@@ -80,12 +80,15 @@ for(const entry of scenarios){
   const headline=((await summary.locator('.beginner-analysis-head strong').first().textContent())||'').trim();
   const summaryText=(await summary.innerText()).replace(/\s+/g,' ').slice(0,620);
   const problem=page.getByLabel('Parse problem inspector');
-  const hasProblem=(await problem.count())>0;
+  // The inspector can disappear when the asynchronous source review advances
+  // from partial to complete; inspect the current DOM without locator auto-wait.
+  const inspectorText=await problem.evaluateAll(nodes=>nodes[0]?.textContent??'');
+  const hasProblem=inspectorText.length>0;
   const recover=hasProblem ? await problem.getByRole('button',{name:/Fix with ChatGPT|Review with ChatGPT/}).count()>0:false;
   const csvReview=await page.getByLabel('Review CSV column names').count()>0;
   const zeekPrep=await page.getByLabel('Zeek schema preparation').count()>0;
   const reviewEnabled=await page.getByRole('button',{name:'Review Fields',exact:true}).isEnabled();
-  const reviewedNotice=hasProblem?(await problem.innerText()).replace(/\s+/g,' ').slice(0,390):'';
+  const reviewedNotice=hasProblem?inspectorText.replace(/\s+/g,' ').slice(0,390):'';
   const sampleStatuses={name:entry.id,family:entry.family,headline,problem:hasProblem,recover,csvReview,zeekPrep,reviewEnabled,explanation:reviewedNotice,summary:summaryText,pageErrors:errors,http5xx:failedResponses};
   console.log('NOVICE_MATRIX '+JSON.stringify(sampleStatuses));
   await test.info().attach('real-public-user-journey',{body:JSON.stringify(sampleStatuses,null,2),contentType:'application/json'});

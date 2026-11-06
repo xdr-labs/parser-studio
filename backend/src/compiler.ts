@@ -22,19 +22,18 @@ const GENERIC_STRUCTURAL_NORMALIZE_BRANCH = "def parserstudio_normalize(original
 const GENERIC_STRUCTURAL_NORMALIZE_NO_RAW_BRANCH = "def parserstudio_normalize(original)\n  normalized = {'parserstudio_source' => parserstudio_without_source_raw(original)}";
 // Only emitted when extraction.omitSourceRaw is true; default artifacts are byte-identical.
 const SOURCE_RAW_STRIP_HELPER = String.raw`
-# Parser Studio: leave the full raw line (source_raw) out of parserstudio_source.
-# Mappings read the extraction directly, so a mapped source_raw still works.
+# Parser Studio: omit generated full-line copies only from known grammar-owned nodes.
+# Manufacturer fields named source_raw inside nested kv/fields are still data.
+# Mappings read the original extraction and keep exact source values.
 def parserstudio_without_source_raw(value)
-  case value
-  when Hash
-    value.each_with_object({}) do |(key, item), out|
-      next if key == 'source_raw'
-      out[key] = parserstudio_without_source_raw(item)
+  return value unless value.is_a?(Hash)
+  generated_roots = %w[generic watchguard_message session_envelope asa juniper watchguard]
+  value.each_with_object({}) do |(key, item), out|
+    if generated_roots.include?(key) && item.is_a?(Hash)
+      out[key] = item.reject { |field, _| field == 'source_raw' }
+    else
+      out[key] = item
     end
-  when Array
-    value.map { |item| parserstudio_without_source_raw(item) }
-  else
-    value
   end
 end
 `;

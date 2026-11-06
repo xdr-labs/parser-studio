@@ -258,7 +258,9 @@ def _add_residual_child(
     result = deepcopy(parent)
     result.vendor_fields = deepcopy(parent.vendor_fields)
     bucket = result.vendor_fields.setdefault("funnel_residual", {})
-    bucket[f"p{pass_index}_r{region_index}_{parser_name}"] = tree_values
+    pass_bucket = bucket.setdefault(f"p{pass_index}", {})
+    region_bucket = pass_bucket.setdefault(f"r{region_index}", {})
+    region_bucket[parser_name] = tree_values
     result.value_spans.extend(shifted)
     result.value_spans.sort(key=lambda s: (s.start_byte, s.end_byte, s.path))
     result.primitive_fields = len(result.value_spans)
