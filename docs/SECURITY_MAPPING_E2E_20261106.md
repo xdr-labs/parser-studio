@@ -122,6 +122,9 @@ existing healthy real authoring and Multi-Pass backends:
   outdated assertions that had required vendor event verbs to become unrelated
   official `event_type`/`action` fields. These checks now explicitly verify
   that EDR event family/detection and XDR alert/VPN tunnel state stay vendor-only.
+- Multi-type FortiGate samples mix session-close and enforcement dispositions.
+  The acceptance test now requires a vendor-scoped shared action field rather
+  than claiming high-confidence unconditional Stellar enforcement action.
 - TypeScript `tsc --noEmit` PASS; production `tsc -b && vite build` PASS;
   production bundle-size warning remains (not newly introduced by this change).
 
