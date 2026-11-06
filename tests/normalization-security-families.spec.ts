@@ -28,7 +28,7 @@ const cases=[
   {
     family:'XDR',
     product:'Cortex-style nested network event',
-    expectTargets:['srcip','dstip','srcport','dstport','hostname','action'],
+    expectTargets:['srcip','dstip','srcport','dstport','hostname'],
     sample:[
       '{"event":{"action":"alert"},"source":{"ip":"192.0.2.30","port":51000},"destination":{"ip":"203.0.113.30","port":443},"host":{"name":"xdr-01"}}',
       '{"event":{"action":"allow"},"source":{"ip":"192.0.2.31","port":51001},"destination":{"ip":"203.0.113.31","port":8443},"host":{"name":"xdr-02"}}',
@@ -82,7 +82,7 @@ const cases=[
   {
     family:'VPN',
     product:'FortiGate-style VPN KV event',
-    expectTargets:['srcip','dstip','srcport','dstport','hostname','action'],
+    expectTargets:['srcip','dstip','srcport','dstport','hostname'],
     sample:[
       'action=tunnel-up srcip=192.0.2.90 dstip=203.0.113.90 srcport=4500 dstport=4500 hostname=vpn-01 tunnelid=101',
       'action=tunnel-down srcip=192.0.2.91 dstip=203.0.113.91 srcport=4500 dstport=4500 hostname=vpn-02 tunnelid=102',
@@ -111,6 +111,16 @@ for(const scenario of cases){
 
     const map=await openMapping(page,scenario.sample);
     await verifyOfficialMappings(map,scenario.expectTargets,scenario.family);
+    // XDR alert and VPN tunnel-up/down are event verbs, not enforcement actions.
+    // A matching source name is insufficient evidence for a Stellar "action".
+    if(scenario.family==='XDR'||scenario.family==='VPN'){
+      const officialActionRows=map.locator('article.normalization-map-row.verified')
+        .filter({has:map.locator('input[aria-label^="Stellar field "][value="action"]')});
+      await expect(officialActionRows).toHaveCount(0);
+      const vendorActions=await map.locator('article.normalization-map-row.custom input[aria-label^="Source field "]')
+        .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+      expect(vendorActions.some(source=>source==='action'||source.endsWith('.action'))).toBe(true);
+    }
     await expect(map).toContainText('Nothing is sent to a Stellar Cyber system from this screen.');
 
     // Result remains editable instead of auto-promoted to a target-verified state.

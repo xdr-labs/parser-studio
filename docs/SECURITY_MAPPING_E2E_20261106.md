@@ -118,6 +118,10 @@ existing healthy real authoring and Multi-Pass backends:
 - **0 known-good target mappings lost** under the scenario-specific positive
   controls, and 11/11 generated pair requests returned HTTP 200 with a DRAFT.
 - **1,426/1,426 frontend tests PASS** (188 files).
+- **15/15 targeted CI browser catalog tests PASS** after replacing two
+  outdated assertions that had required vendor event verbs to become unrelated
+  official `event_type`/`action` fields. These checks now explicitly verify
+  that EDR event family/detection and XDR alert/VPN tunnel state stay vendor-only.
 - TypeScript `tsc --noEmit` PASS; production `tsc -b && vite build` PASS;
   production bundle-size warning remains (not newly introduced by this change).
 
