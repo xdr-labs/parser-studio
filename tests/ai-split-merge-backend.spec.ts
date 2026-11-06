@@ -1,13 +1,15 @@
 import {test,expect,type Page} from '@playwright/test';
 import {createHash} from 'node:crypto';
 
+// Split/merge a valid official text field. A composite vendor action such as
+// allow:http must not be silently classified as an official enforcement action.
 const source=[
- '{"action":"allow:http","src_ip":"198.51.100.10","dst_port":443}',
- '{"action":"deny:ssh","src_ip":"203.0.113.5","dst_port":22}',
+ '{"action":"allow","src_ip":"198.51.100.10","dst_port":443,"username":"CORP:alice"}',
+ '{"action":"deny","src_ip":"203.0.113.5","dst_port":22,"username":"CORP:bob"}',
 ].join('\n');
 const holdout=[
- '{"action":"allow:https","src_ip":"192.0.2.10","dst_port":8443}',
- '{"action":"deny:rdp","src_ip":"192.0.2.11","dst_port":2222}',
+ '{"action":"allow","src_ip":"192.0.2.10","dst_port":8443,"username":"CORP:carol"}',
+ '{"action":"deny","src_ip":"192.0.2.11","dst_port":2222,"username":"CORP:dave"}',
 ].join('\n');
 
 function recipe(includeSplit=true,includeMerge=false){
@@ -18,11 +20,12 @@ function recipe(includeSplit=true,includeMerge=false){
   {op:'cast_type',target:'srcip',data_type:'ip'},
   {op:'map_field',source:'dst_port',target:'dstport',data_type:'integer',group:'top_fields'},
   {op:'cast_type',target:'dstport',data_type:'integer'},
+  {op:'map_field',source:'username',target:'username',data_type:'string',group:'top_fields'},
  ];
- if(includeSplit)stages.push({op:'split_field',source:'action',delimiter:':',
-   targets:['custom.action_kind','custom.action_detail']});
+ if(includeSplit)stages.push({op:'split_field',source:'username',delimiter:':',
+   targets:['custom.username_domain','custom.username_id']});
  if(includeMerge)stages.push({op:'merge_fields',
-   sources:['custom.action_kind','custom.action_detail'],delimiter:'/',target:'custom.action_joined'});
+   sources:['custom.username_domain','custom.username_id'],delimiter:'/',target:'custom.username_joined'});
  stages.push({op:'classify',defaultIndex:'syslog',rules:[]},
    {op:'fallback_unparsed',mode:'retain_unparsed'});
  return {

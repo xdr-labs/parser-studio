@@ -24,7 +24,7 @@ const cases=[
       '{"sourceIp":"192.0.2.12","destinationIp":"198.51.100.12","sourcePort":61002,"destinationPort":22,"eventAction":"block","deviceName":"s1-03","username":"carol","event_name":"Network Control"}',
     ]},
   {family:'EDR',product:'Microsoft Defender-style endpoint JSON',
-    expectTargets:['srcip','dstip','action','hostname','username','file_name','event_name','event_type'],
+    expectTargets:['srcip','dstip','action','hostname','username','file_name','event_name'],
     rows:[
       '{"src_ip":"192.0.2.20","dst_ip":"198.51.100.20","action":"quarantine","hostname":"mde-01","username":"alice","file_name":"tool.exe","event_name":"MalwareDetected","event_type":"alert"}',
       '{"src_ip":"192.0.2.21","dst_ip":"198.51.100.21","action":"block","hostname":"mde-02","username":"bob","file_name":"script.ps1","event_name":"SuspiciousScript","event_type":"alert"}',
@@ -45,7 +45,7 @@ const cases=[
       '{"sourceAddress":"192.0.2.42","destinationAddress":"198.51.100.42","host_name":"vectra-03","severity":20,"event_name":"Policy"}',
     ]},
   {family:'DNS Security',product:'Cisco Umbrella-style DNS JSON',
-    expectTargets:['srcip','action','hostname','username','event_type'],
+    expectTargets:['srcip','action','hostname','username'],
     rows:[
       '{"client_ip":"192.0.2.50","action":"blocked","hostname":"dns-client-01","username":"alice","event_type":"dns","query":"bad.example.invalid"}',
       '{"client_ip":"192.0.2.51","action":"allowed","hostname":"dns-client-02","username":"bob","event_type":"dns","query":"good.example.invalid"}',
@@ -80,7 +80,7 @@ const cases=[
       'src=192.0.2.92 dst=198.51.100.92 srcport=64002 dstport=53 action=permit proto_name=udp policy=dns-allow',
     ]},
   {family:'SaaS Audit',product:'Google Workspace-style audit JSON',
-    expectTargets:['srcip','username','event_name','event_type'],
+    expectTargets:['srcip','username','event_name'],
     rows:[
       '{"sourceIPAddress":"192.0.2.100","username":"alice@example.invalid","event_name":"login_success","event_type":"authentication"}',
       '{"sourceIPAddress":"192.0.2.101","username":"bob@example.invalid","event_name":"drive_download","event_type":"data_access"}',
@@ -119,5 +119,16 @@ for(const scenario of cases){
       route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cap)}));
     const map=await openMapping(page,scenario.rows);
     await verifyOfficialMappings(map,scenario.expectTargets,scenario.family);
+    // A producer's event category is not the Stellar 7.0 ML-job event_type.
+    // Preserve this source field, but never auto-promote it to a false official target.
+    if(['Microsoft Defender-style endpoint JSON','Cisco Umbrella-style DNS JSON',
+      'Google Workspace-style audit JSON'].includes(scenario.product)){
+      const official=await map.locator('article.normalization-map-row.verified input[aria-label^="Source field "]')
+        .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+      expect(official).not.toContain('event_type');
+      const vendor=await map.locator('article.normalization-map-row.custom input[aria-label^="Source field "]')
+        .evaluateAll(nodes=>nodes.map(node=>(node as HTMLInputElement).value));
+      expect(vendor).toContain('event_type');
+    }
   });
 }
