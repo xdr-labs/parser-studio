@@ -58,6 +58,13 @@ for(const family of [false,true]){
         '{"value":'+value+(family?',"event_type":"security"':'')+'}');
       const results=native(p,raws);
       results.forEach((row,index)=>{
+        if(index===5){
+          // Browser review rejects 1e20 as an unsafe integer; native Ruby
+          // must not silently normalize it into apparently safe vendor text.
+          assert.equal(row.parser_err_stage,'extraction',raws[index]);
+          assert.equal((row.Synthetic as any)?.custom?.text_value,undefined);
+          return;
+        }
         const expected=String((JSON.parse(raws[index]!) as {value:number}).value);
         assert.equal((row.Synthetic as any)?.custom?.text_value,expected,
           JSON.stringify({raw:raws[index],row}));
