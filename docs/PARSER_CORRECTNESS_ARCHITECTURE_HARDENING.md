@@ -90,13 +90,17 @@ and bounded property-based mutations. Generate and run the exact Ruby pair,
 compare typed results, error stages and original source accounting. No tests
 may use implementation-produced outputs as their only goldens.
 
-### H4: Mandatory release gates — planned
+### H4: Exact-HEAD release gate — operator-side verification implemented
 
 Require same-HEAD native differential, compiler, all browser UX paths and
 sanctioned regression suites, with no unexpected skips or P0/P1 issues.
 Require verified CI statuses and strict review of the current advisory
 `merge_gate_status` / actual repository protections before requesting the
-separately authorized branch-protection or release-policy change.
+separately authorized branch-protection or release-policy change. The
+[H4 exact-HEAD operator release gate](H4_EXACT_HEAD_RELEASE_GATE_20261108.md)
+implements the approved verification in a fail-closed CLI. GitHub returned 403
+for private repository protection/rulesets on the current plan, so GitHub
+branch enforcement remains unavailable; do not mark H4 fully complete.
 
 ### H5: Stellar Cyber DP 7.0 qualification — separate approval and lab
 
