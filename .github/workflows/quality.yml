@@ -10,6 +10,28 @@ permissions:
   contents: read
 
 jobs:
+  # H2 is an independent CI-only execution boundary: no HTTP service,
+  # customer events, credentials, host filesystem mounts or DP traffic.
+  native-isolated-synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install fixed synthetic fixture compiler dependencies
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Execute exact generated Ruby and pinned Fluentd in sealed container
+        run: bash scripts/verification/h2-ci-isolated-runner.sh
+      - name: Upload sanitized H2 isolated Native receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-h2-isolated-native-evidence
+          path: ${{ runner.temp }}/parser-studio-h2-isolated-evidence.json
+          if-no-files-found: error
+
   web-quality:
     runs-on: ubuntu-latest
     # Includes native/backend quality plus the full first-user browser matrix.
@@ -63,6 +85,21 @@ jobs:
         run: |
           set -euo pipefail
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/canonical-cross-engine.ts
+      # Native proof from the EXACT generated fragment, using only a fixed
+      # independent synthetic fixture. No network service/customer input;
+      # the artifact includes hashes and counts only. Not Fluentd/DP proof.
+      - name: Generated Ruby executable evidence (required CI-only oracle)
+        run: |
+          set -euo pipefail
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/native-executable-evidence.ts > "$RUNNER_TEMP/parser-studio-native-evidence.json"
+          node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/parser-studio-native-evidence.json','utf8'));if(r.contract!=='parser-studio.native-executable-evidence.v1'||r.nativeRubyExecuted!==true||r.verifiedEventCount!==3||r.verifiedFieldCount!==12||r.userParserVerified!==false||r.stellarTargetImportVerified!==false||r.rawValuesReturned!==false)process.exit(1);console.log('GENERATED_NATIVE_ORACLE_PASS',r.verifiedEventCount+' events',r.verifiedFieldCount+' typed fields')"
+      - name: Upload sanitized Native Ruby oracle evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-native-evidence
+          path: ${{ runner.temp }}/parser-studio-native-evidence.json
+          if-no-files-found: error
+
       - name: Full Python regression inventory, including isolation and corpus
         run: |
           set -euo pipefail

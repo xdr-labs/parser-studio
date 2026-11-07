@@ -1,5 +1,5 @@
 import type {MappingRule,MappingWhen,ParserDraft,SuiteResult} from '../model';
-import {hasAmbiguousFieldPath,listSafeLeafPaths,lookupFieldValue,safeLocalFieldPath} from '../fieldPaths';
+import {hasAmbiguousFieldPath,hasAmbiguousSourceFields,listSafeLeafPaths,lookupFieldValue,safeLocalFieldPath} from '../fieldPaths';
 import {sha256Utf8Hex} from '../sha256';
 import {defaultGuidedOptions,type FieldGroup} from './contract';
 import {findStellarMetadataField,STELLAR_METADATA_CATALOG_PROVENANCE} from './stellarMetadataCatalog';
@@ -105,7 +105,8 @@ export async function createJsonataMappingPrompt(suite:SuiteResult,draft:ParserD
   const fields=[...new Set(suite.events.flatMap(e=>listSafeLeafPaths(e.fields,101)))];
   if(fields.length>100)
     throw Error('The sample has more than 100 parsed source fields. Split the event types into smaller batches; no fields were silently omitted.');
-  if(fields.some(source=>hasInconsistentSourceShape(suite,source)))
+  if(suite.events.some(e=>hasAmbiguousSourceFields(e.fields))||
+    fields.some(source=>hasInconsistentSourceShape(suite,source)))
     throw Error('The sample contains ambiguous dotted keys and nested source paths. Use unambiguous field names before requesting JSONata mappings.');
   const prior=new Map(draft.mappings.map(m=>[m.source,m.target]));
   const evidence=fields.map(source=>{

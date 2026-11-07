@@ -15,16 +15,16 @@ describe('safe browser field paths',()=>{
 });
 
 describe('literal dotted source keys versus nested object paths',()=>{
-  it('discloses a nested field hidden by a conflicting literal dotted root key',()=>{
+  it('refuses ambiguous literal and nested interpretations rather than selecting one',()=>{
     const fields={user:{name:'nested-value'},'user.name':'literal-value'};
-    expect(listSafeLeafPaths(fields)).toEqual(['user.name']);
-    expect(lookupFieldValue(fields,'user.name')).toEqual({found:true,value:'literal-value'});
-    expect(countUnaddressableSourceValues(fields)).toBe(1);
+    expect(listSafeLeafPaths(fields)).toEqual([]);
+    expect(lookupFieldValue(fields,'user.name')).toEqual({found:false});
+    expect(countUnaddressableSourceValues(fields)).toBe(2);
   });
 });
 
 describe('loss-aware source field coverage',()=>{
-  it('does not propose unresolvable nested keys and reports unsupported values',()=>{
+  it('resolves unique intermediate dotted keys and reports unsupported values',()=>{
     const fields={
       timestamp:'2026-11-03T11:00:00Z',
       metadata:{
@@ -35,9 +35,9 @@ describe('loss-aware source field coverage',()=>{
       },
     };
     const paths=listSafeLeafPaths(fields);
-    expect(paths).toEqual(['timestamp','metadata.source-address']);
+    expect(paths).toEqual(['timestamp','metadata.session.id','metadata.source-address']);
     for(const path of paths)expect(lookupFieldValue(fields,path).found).toBe(true);
-    expect(countUnaddressableSourceValues(fields)).toBe(3);
+    expect(countUnaddressableSourceValues(fields)).toBe(2);
   });
 
   it('counts source fields beyond the safe mapping budget, without erasing the input',()=>{

@@ -1738,7 +1738,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-routing-preview" aria-label="Sample classification preview">
               {!suite?.events.length && <div className="guided-route-empty">Add sample logs to preview classification.</div>}
               {(suite?.events ?? []).slice(0, 30).map((event) => {
-                const hint = suggestClassification(event, options);
+                const hint = suggestClassification(event, options, draft);
                 return <div className="guided-routing-row" key={event.id}>
                   <span className="guided-routing-event">#{event.line}</span>
                   <div><strong className={hint.status === 'unresolved' ? 'unresolved' : hint.status === 'matched' ? 'matched' : 'fallback'}>{hint.index ?? 'Unclassified'}</strong><small>{hint.reason}</small></div>

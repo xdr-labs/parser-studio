@@ -4,7 +4,8 @@ import {ArrowLeft,ArrowRight,CheckCircle2,CircleAlert,Search,ShieldCheck,WandSpa
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue,countUnaddressableSourceValues} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
-import {suggestNormalizationCandidatesFromSuite,type NormalizationCandidate} from './normalizationCandidates';
+import {suggestNormalizationCandidatesFromSuite,normalizationCandidateScanStatus,
+  type NormalizationCandidate} from './normalizationCandidates';
 import {isBlockingNormalizationFinding,reviewNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
@@ -81,6 +82,7 @@ export default function NormalizationMappingReview({
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
   const groups=draft.guided?.groups??{};
   const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
+  const candidateScan=useMemo(()=>normalizationCandidateScanStatus(suite),[suite]);
   const mappingReview=useMemo(()=>reviewNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const findings=mappingReview.findings;
   const chosen=suite?.events[selected]??suite?.events[0];
@@ -226,6 +228,15 @@ export default function NormalizationMappingReview({
       <span>This step only prepares field names inside Parser Studio. Nothing is sent to a Stellar Cyber system from this screen.</span>
     </div>
 
+    {candidateScan.exceeded&&<div className="normalization-runtime-note" role="alert"
+      aria-label="Official candidate scan incomplete">
+      <strong>Official field suggestions require a smaller sample</strong>
+      <span>{candidateScan.eligiblePaths} source paths could match official fields,
+        above the safe review budget of {candidateScan.limit}. No partial official
+        suggestions were applied; reduce the number of distinct field paths
+        before trusting the mapping recommendations.</span>
+    </div>}
+
     <div className="normalization-kpis" aria-label="Field mapping summary">
       <div><span>Fields found</span><strong>{sourceFields.length}</strong></div>
       <div><span>Matched to Stellar</span><strong>{officialCount}</strong></div>
@@ -274,7 +285,7 @@ export default function NormalizationMappingReview({
         <input aria-label="Search normalization suggestions" value={search}
           placeholder="Search source or Stellar field" onChange={event=>setSearch(event.target.value)}/>
       </label>
-      {candidateView.length===0?<p className="normalization-empty">No additional official mapping suggestion needs review for this sample.</p>:
+      {candidateView.length===0?<p className="normalization-empty">{candidateScan.exceeded?'Official mapping suggestions are withheld until the full eligible source set can be reviewed.':'No additional official mapping suggestion needs review for this sample.'}</p>:
         <div className="normalization-candidate-list">
           {candidateView.map(candidate=><article key={candidate.source} className={'normalization-candidate '+candidate.confidence.toLowerCase()}>
             <div className="normalization-source">

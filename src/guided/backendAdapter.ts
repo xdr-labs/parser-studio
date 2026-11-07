@@ -1,3 +1,4 @@
+import {supportsCanonicalClassificationOperator} from '../../backend/src/canonical-operator-contract';
 import type { ParserDraft } from '../model';
 import {validMappingWhen} from '../fieldPaths';
 import {isGenericStructuralProfile,type GenericStructuralProfile} from '../genericStructuralProfiles';
@@ -162,6 +163,13 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
         path: '/classification/rules/' + index,
         message: 'Classification rule ' + (index + 1) + ': ' + rule.sourceField + ' must map to Common or Network Fields to support classification on this backend.',
       });
+      continue;
+    }
+    const mapping=draft.mappings.find(candidate=>candidate.source===rule.sourceField&&
+      (options.groups[candidate.id]??'vendor_fields')!=='vendor_fields');
+    if(!supportsCanonicalClassificationOperator('equals',mapping?.type)){
+      issues.push({code:'CLASSIFICATION_NONSTRING_FIELD',path:'/classification/rules/'+index,
+        message:'String equals classification requires a reviewed text mapping. Numeric and boolean fields cannot be compared to text in generated Ruby.'});
       continue;
     }
     rules.push({ field: normalized, operator: 'equals', value: rule.equals, index: indexMap[rule.index] });

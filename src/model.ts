@@ -57,7 +57,7 @@ export interface Detection {
 }
 
 export interface Diagnostic {
-  stage: 'break' | 'detect' | 'extract' | 'normalize' | 'validate';
+  stage: 'break' | 'detect' | 'extract' | 'normalize' | 'enrichment' | 'validate';
   severity: 'error' | 'warning';
   code: string;
   message: string;

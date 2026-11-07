@@ -9,9 +9,9 @@ const KNOWN_DIAGNOSTICS = new Set([
   'DATASET_TOO_LARGE','EVENT_LIMIT','UNSUPPORTED_FORMAT','EXTRACTION_FAILED',
   'INVALID_MAPPING','TARGET_COLLISION','SOURCE_NOT_FOUND','TYPE_ERROR',
   'ENRICHMENT_TARGET','ENRICHMENT_SOURCE','ENRICHMENT_TYPE',
-  'ENRICHMENT_UNSUPPORTED','UNMAPPED_FIELDS','NO_MAPPINGS',
+  'ENRICHMENT_UNSUPPORTED','PROTOCOL_CONFLICT','UNMAPPED_FIELDS','NO_MAPPINGS',
 ]);
-const STAGES = new Set<Diagnostic['stage']>(['break','detect','extract','normalize','validate']);
+const STAGES = new Set<Diagnostic['stage']>(['break','detect','extract','normalize','enrichment','validate']);
 const LEVELS = new Set<Diagnostic['severity']>(['error','warning']);
 const STATUSES = new Set<EventResult['status']>(['pass','fail','warning']);
 const FORMATS = new Set(['auto','json','kv','csv','syslog_rfc3164','syslog_rfc5424','cef','leef','syslog','regex','unknown']);

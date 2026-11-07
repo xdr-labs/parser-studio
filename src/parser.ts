@@ -536,10 +536,19 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       error('normalize','INVALID_MAPPING','Could not assign output field: '+target,target);
     }
   }
-  // Preview the reviewed declarative enrichment steps in order, never Ruby.
-  // Dotted paths use the same nested lookup/assignment semantics as the
-  // generated backend parser instead of creating literal "a.b" object keys.
-  for (const [index, rule] of (draft.guided?.enrichment ?? []).entries()) {
+  // Native Ruby checks typed protocol-pair semantics at normalization exit.
+  // A contradiction in mapped values must not be blamed on enrichment.
+  if(matched&&!diagnostics.some(issue=>issue.severity==='error')&&
+     officialProtocolPairConflict(normalized.proto,normalized.proto_name))
+    error('normalize','PROTOCOL_CONFLICT',
+      'The normalized IP protocol number contradicts its Layer 4 name.');
+  // Native Ruby only starts enrichment after successful extraction and mapping.
+  // It executes enrichment against a deep copy; any failure leaves the
+  // pre-enrichment normalized fields untouched in its diagnostic callback.
+  const canEnrich=matched&&!diagnostics.some(issue=>issue.severity==='error');
+  const preEnrichment=canEnrich?structuredClone(normalized):null;
+  // Dotted paths share the bounded source lookup contract with native Ruby.
+  for (const [index, rule] of (canEnrich?draft.guided?.enrichment??[]:[]).entries()) {
     const step=index+1;
     const safeOutput=(target:string)=>VALID_TARGET.test(target)&&
       !RUNTIME_OUTPUT_ROOTS.has(target.split('.')[0]!)&&
@@ -551,18 +560,18 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       const sourceResult=lookupFieldValue(normalized,rule.source),targets=rule.targets??[];
       const source=sourceResult.found?sourceResult.value:undefined;
       if(typeof source!=='string'){
-        error('normalize','ENRICHMENT_SOURCE','Split source must be an existing string field at step '+step);continue;
+        error('enrichment','ENRICHMENT_SOURCE','Split source must be an existing string field at step '+step);continue;
       }
       if(!validDelimiter(rule.delimiter)||targets.length<2||targets.length>8||
          new Set(targets).size!==targets.length||targets.some(target=>!safeOutput(target))){
-        error('normalize','ENRICHMENT_TARGET','Unsafe split rule at step '+step);continue;
+        error('enrichment','ENRICHMENT_TARGET','Unsafe split rule at step '+step);continue;
       }
       const parts=source.split(rule.delimiter!);
       if(parts.length!==targets.length){
-        error('normalize','ENRICHMENT_TYPE','Split field count mismatch at step '+step);continue;
+        error('enrichment','ENRICHMENT_TYPE','Split field count mismatch at step '+step);continue;
       }
       if(targets.some((target,i)=>!assignNormalizedPath(normalized,target,parts[i]!))){
-        error('normalize','ENRICHMENT_TARGET','Could not assign split output at step '+step);
+        error('enrichment','ENRICHMENT_TARGET','Could not assign split output at step '+step);
       }
       continue;
     }
@@ -570,51 +579,51 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       const sources=rule.sources??[],target=rule.target.trim();
       if(!validDelimiter(rule.delimiter)||sources.length<2||sources.length>8||
          new Set(sources).size!==sources.length||!safeOutput(target)){
-        error('normalize','ENRICHMENT_TARGET','Unsafe merge rule at step '+step);continue;
+        error('enrichment','ENRICHMENT_TARGET','Unsafe merge rule at step '+step);continue;
       }
       const values=sources.map(source=>{
         const found=lookupFieldValue(normalized,source);
         return found.found?found.value:undefined;
       });
       if(values.some(value=>typeof value!=='string')){
-        error('normalize','ENRICHMENT_SOURCE','Merge sources must be existing string fields at step '+step);continue;
+        error('enrichment','ENRICHMENT_SOURCE','Merge sources must be existing string fields at step '+step);continue;
       }
       if(!assignNormalizedPath(normalized,target,(values as string[]).join(rule.delimiter!)))
-        error('normalize','ENRICHMENT_TARGET','Could not assign merge output at step '+step);
+        error('enrichment','ENRICHMENT_TARGET','Could not assign merge output at step '+step);
       continue;
     }
     const target = rule.target.trim();
     if (!safeOutput(target)) {
-      error('normalize', 'ENRICHMENT_TARGET', 'Unsafe or duplicate enrichment output at step ' + step);
+      error('enrichment', 'ENRICHMENT_TARGET', 'Unsafe or duplicate enrichment output at step ' + step);
       continue;
     }
     if (rule.operator === 'set_const') {
       if(!assignNormalizedPath(normalized,target,rule.value))
-        error('normalize','ENRICHMENT_TARGET','Could not assign constant output at step '+step);
+        error('enrichment','ENRICHMENT_TARGET','Could not assign constant output at step '+step);
       continue;
     }
     const sourceResult=lookupFieldValue(normalized,rule.source);
     if (!sourceResult.found) {
-      error('normalize', 'ENRICHMENT_SOURCE', 'Source field unavailable at step ' + step);
+      error('enrichment', 'ENRICHMENT_SOURCE', 'Source field unavailable at step ' + step);
       continue;
     }
     const source = sourceResult.value;
     if (rule.operator === 'copy') {
       if(!assignNormalizedPath(normalized,target,source))
-        error('normalize','ENRICHMENT_TARGET','Could not assign copied output at step '+step);
+        error('enrichment','ENRICHMENT_TARGET','Could not assign copied output at step '+step);
     } else if (rule.operator === 'lowercase' || rule.operator === 'uppercase') {
       if (typeof source !== 'string') {
-        error('normalize', 'ENRICHMENT_TYPE', 'Text transform requires a string source');
+        error('enrichment', 'ENRICHMENT_TYPE', 'Text transform requires a string source');
         continue;
       }
       const value=rule.operator === 'lowercase' ? source.toLowerCase() : source.toUpperCase();
       if(!assignNormalizedPath(normalized,target,value))
-        error('normalize','ENRICHMENT_TARGET','Could not assign transformed output at step '+step);
-    } else error('normalize', 'ENRICHMENT_UNSUPPORTED', 'Unsupported enrichment operator');
+        error('enrichment','ENRICHMENT_TARGET','Could not assign transformed output at step '+step);
+    } else error('enrichment', 'ENRICHMENT_UNSUPPORTED', 'Unsupported enrichment operator');
   }
   // The native DRAFT validates every final enriched official field.
   // A successful browser mapping must not hide invalid enrichment output.
-  const enrichedTargets=(draft.guided?.enrichment??[]).flatMap(rule=>
+  const enrichedTargets=(canEnrich?draft.guided?.enrichment??[]:[]).flatMap(rule=>
     rule.operator==='split_field'?(rule.targets??[]):[rule.target]);
   for(const target of enrichedTargets){
     if(target===draft.vendor||target.startsWith(draft.vendor+'.'))continue;
@@ -633,11 +642,18 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       type==='timestamp'?typeof value==='string'&&!convertValue(value,'timestamp').error:
       false;
     if(!basic||!meetsStellar7ValueConstraints(target,value,value))
-      error('normalize','ENRICHMENT_TYPE','Enriched official field violates Stellar 7.0 scalar rules: '+target,target);
+      error('enrichment','ENRICHMENT_TYPE','Enriched official field violates Stellar 7.0 scalar rules: '+target,target);
   }
-  if(officialProtocolPairConflict(normalized.proto,normalized.proto_name))
-    error('normalize','PROTOCOL_CONFLICT',
+  if(canEnrich&&officialProtocolPairConflict(normalized.proto,normalized.proto_name))
+    error('enrichment','PROTOCOL_CONFLICT',
       'The final IP protocol number contradicts the reviewed Layer 4 protocol name.');
+  if(preEnrichment&&diagnostics.some(issue=>issue.severity==='error'&&
+    (issue.code.startsWith('ENRICHMENT_')||issue.code==='PROTOCOL_CONFLICT'))){
+    // Do not leave a partially applied split, earlier successful constant or
+    // invalid official value in a browser preview that native Ruby rolls back.
+    for(const key of Object.keys(normalized))delete normalized[key];
+    for(const [key,value] of Object.entries(preEnrichment))ownSet(normalized,key,value);
+  }
   const unmapped = Object.keys(fields).filter((field) => !mapped.has(field));
   if (unmapped.length) diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'UNMAPPED_FIELDS', message: unmapped.length + ' source fields remain available without mappings' });
   const hasErrors = diagnostics.some((issue) => issue.severity === 'error');

@@ -35,6 +35,26 @@ describe('same-fixture offline browser test evidence comparison', () => {
     expect(compareBrowserEvidence(after,before)).toMatchObject({improved:1,regressed:0});
   });
 
+  it('retains canonical enrichment stages and protocol failures in safe evidence',async()=>{
+    const draft=createDraft();
+    draft.format='json';
+    draft.mappings=[
+      {id:'user',source:'user',target:'username',type:'string'},
+      {id:'p',source:'p',target:'proto',type:'integer'},
+    ];
+    draft.guided={...draft.guided!,groups:{user:'top_fields',p:'top_fields'},
+      enrichment:[{id:'name',operator:'set_const',source:'',target:'proto_name',value:'UDP'}]};
+    const raw=JSON.stringify({user:'alice',p:6});
+    const report=await createBrowserEvidence({sample:raw,draft,suite:preview(raw,draft)});
+    expect(report.events[0]?.diagnostics).toContainEqual({
+      stage:'enrichment',severity:'error',code:'PROTOCOL_CONFLICT',
+    });
+    expect(compareBrowserEvidence(report,report)).toMatchObject({
+      sameSample:true,unchanged:1,changedDiagnostics:0,
+    });
+    expect(JSON.stringify(report)).not.toContain('alice');
+  });
+
   it('identical evidence is an unchanged, non-native report',async()=>{
     const original=await report('ip');
     expect(compareBrowserEvidence(original,original)).toMatchObject({
