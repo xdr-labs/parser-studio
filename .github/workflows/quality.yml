@@ -10,6 +10,22 @@ permissions:
   contents: read
 
 jobs:
+  # H2 is an independent CI-only execution boundary: no HTTP service,
+  # customer events, credentials, host filesystem mounts or DP traffic.
+  native-isolated-synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install fixed synthetic fixture compiler dependencies
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Execute exact generated Ruby and pinned Fluentd in sealed container
+        run: bash scripts/verification/h2-ci-isolated-runner.sh
+
   web-quality:
     runs-on: ubuntu-latest
     # Includes native/backend quality plus the full first-user browser matrix.

@@ -49,3 +49,40 @@ reception or vendor/firmware-wide accuracy.
 
 No public API endpoint, production runtime, DP, credentials or browser setting
 was modified by the CI-only increment.
+
+## H2 CI-only sealed Fluentd runner increment (Draft)
+
+The H2 continuation introduces a **separate mandatory GitHub Actions job**
+(`native-isolated-synthetic`) that builds the fixed Ruby 3.2 / Fluentd
+1.17.1 Gemfile.lock environment and runs exactly one authored synthetic
+ParserRecipe-derived parser+CONF pair. The source, expected normalized output
+hashes and expected timestamp results are independent, fixed test inputs
+compiled from the same repository HEAD. No arbitrary user parser, request
+body, file upload or HTTP endpoint reaches this job.
+
+Build-time access is limited to fetching the base Ruby image and Gemfile.lock
+dependencies. Runtime execution uses Docker `--network none`,
+`--read-only`, UID/GID 65532, `--cap-drop ALL`,
+`--security-opt no-new-privileges`, PIDs/CPU/memory/file-handle limits,
+a small non-executable tmpfs and a hard wall-time deadline. The image includes
+the fixed repository-owned Native Fluentd runner, not a mounted host directory.
+No Docker socket, credentials, source worktree or host path is mounted into
+the container. The CI script first verifies that the sandbox cannot write to
+the root filesystem, connect to an external IP or run as root.
+
+The input payload is a transient private CI file containing **only fixed
+synthetic logs and generated code**; it is not logged or uploaded. The output
+must conform to the source-bound `parser-studio.native-project-verification.v0.1`
+receipt and is checked again on the host. Only hashes, runtime version,
+verified counts and explicit non-target/non-customer claims appear in console
+output. In particular, `nativeUserParserVerified` describes the
+*fixed synthetic* test request in this CI job, not customer parser support
+or Stellar Cyber import verification.
+
+**Evidence limitations:** Docker on the GitHub runner still shares its host
+kernel, and the Ruby Docker base image is currently pinned to the `3.2`
+minor track rather than an immutable OCI digest. Exact image ID is logged for
+each run; strengthening image-digest governance and an independent hardened
+runtime security review remain prerequisites for exposing a live service.
+No public development-preview Native endpoint, DP import, traffic send,
+Fluentd-in-DP claim, branch-protection mutation or deployment is performed.
