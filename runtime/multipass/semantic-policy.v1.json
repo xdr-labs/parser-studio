@@ -1,0 +1,52 @@
+{
+  "contract": "parser-studio.semantic-policy.v1",
+  "release": "stellar-7.0",
+  "transportPortProtocols": {
+    "numeric": [
+      6,
+      17
+    ],
+    "names": [
+      "tcp",
+      "udp"
+    ]
+  },
+  "officialProtocolNames": [
+    "tcp",
+    "udp",
+    "icmp",
+    "igmp"
+  ],
+  "securityDispositions": [
+    "allow",
+    "allowed",
+    "accept",
+    "accepted",
+    "permit",
+    "permitted",
+    "pass",
+    "passed",
+    "block",
+    "blocked",
+    "deny",
+    "denied",
+    "drop",
+    "dropped",
+    "reject",
+    "rejected",
+    "reset",
+    "quarantine",
+    "quarantined",
+    "isolate",
+    "isolated"
+  ],
+  "kvAsciiWhitespaceCodepoints": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    32
+  ],
+  "notes": "Transport evidence is permitted only when a source record identifies a known L4 carrier. Unknown protocol evidence never authorizes automatic official port mapping. No-protocol logs retain existing source-specific review policy; raw bytes are never discarded."
+}

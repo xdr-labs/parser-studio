@@ -2,6 +2,7 @@ import type {MappingRule,MappingWhen,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {convertValue} from '../parser';
 import {meetsStellar7ValueConstraints} from '../stellar7ValueConstraints';
+import semanticPolicy from '../../runtime/multipass/semantic-policy.v1.json';
 import type {FieldGroup} from './contract';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 
@@ -81,15 +82,23 @@ function ignored(value:unknown):boolean{
 
 // Published 7.0 proto_name is a transport protocol, not a vendor application
 // or service label. An unknown name is still reviewable, never auto-approved.
-const DOCUMENTED_PROTO_NAMES=new Set(['tcp','udp','icmp','igmp']);
-const NON_PORT_PROTOCOLS=new Set(['1','2','58','icmp','igmp','icmpv6']);
-function nonPortProtocolInEvent(fields:Record<string,unknown>,source:string):boolean{
+const DOCUMENTED_PROTO_NAMES=new Set(semanticPolicy.officialProtocolNames);
+const TRANSPORT_NUMERIC=new Set<string>(
+  semanticPolicy.transportPortProtocols.numeric.map(String));
+const TRANSPORT_NAMES=new Set<string>(semanticPolicy.transportPortProtocols.names);
+/** A protocol observation is not proof of a Layer 4 port unless it names an
+ * independently reviewed carrier. Unknown/contradicting evidence is REVIEW. */
+function unsupportedPortProtocolInEvent(
+  fields:Record<string,unknown>,source:string,
+):boolean{
   const prefix=source.includes('.')?source.slice(0,source.lastIndexOf('.')+1):'';
   const candidates=[prefix+'protocol-id',prefix+'protocol',prefix+'proto',
-    'protocol-id','protocol','proto','proto_name'];
+    prefix+'proto_name','protocol-id','protocol','proto','proto_name'];
   return candidates.some(name=>{
     const found=lookupFieldValue(fields,name);
-    return found.found&&NON_PORT_PROTOCOLS.has(String(found.value).toLowerCase());
+    if(!found.found)return false;
+    const value=String(found.value).trim().toLowerCase();
+    return !(TRANSPORT_NUMERIC.has(value)||TRANSPORT_NAMES.has(value));
   });
 }
 // Juniper SD RT_FLOW source-port is not unconditionally an L4 port.
@@ -139,11 +148,7 @@ const FORTINET_FALSE_FRIENDS=new Set([
 ]);
 // The official action field describes enforcement/response, not arbitrary
 // event verbs such as a VPN negotiation, session close or admin login.
-const SECURITY_DISPOSITIONS=new Set([
-  'allow','allowed','accept','accepted','permit','permitted','pass','passed',
-  'block','blocked','deny','denied','drop','dropped','reject','rejected',
-  'reset','quarantine','quarantined','isolate','isolated',
-]);
+const SECURITY_DISPOSITIONS=new Set(semanticPolicy.securityDispositions);
 function windowsAgentEvidence(fields:Record<string,unknown>):boolean{
   // The published top-level Stellar "type" is Windows-agent-specific.
   return ['provider_guid','record_number','log_name','event_data'].some(name=>
@@ -247,7 +252,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   // ports. Preserve them as vendor fields unless a human reviews the meaning.
   const nonTransportPort=!when&&(target==='srcport'||target==='dstport')&&
     events.some(fields=>lookupFieldValue(fields,source).found&&
-      nonPortProtocolInEvent(fields,source));
+      unsupportedPortProtocolInEvent(fields,source));
   const method:NormalizationCandidate['method']=target===source?'EXACT_DICTIONARY_NAME':'DOCUMENTED_ALIAS';
   // All event samples must contain this source and at least one usable value.
   // A sparse heterogeneous sample or placeholders are not sufficient evidence
@@ -278,7 +283,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
       :missingJuniperContext
         ?'Juniper RT_FLOW needs a valid protocol ID in every port-bearing event before official Layer 4 port mapping can be considered.'
       :nonTransportPort
-        ?'ICMP/IGMP does not have Layer 4 ports; review vendor port semantics before mapping to srcport or dstport.'
+        ?'An unknown or non-transport IP protocol does not establish Layer 4 port semantics; review vendor values before mapping to srcport or dstport.'
         :values.length!==events.length
         ?'The field is missing from some events; review its event-family scope before applying an official mapping.'
         :informative===0

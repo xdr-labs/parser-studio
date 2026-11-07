@@ -2,6 +2,8 @@ name: Parser Studio quality
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -56,7 +58,21 @@ jobs:
           ruby -c backend/templates/ruby-forwarder-family.rb.tpl
           # Product scope is a finite, explicit list; keep broader historical
           # target/Drain3 regression failures visible in backend documentation.
-          npm run test:authoring --prefix backend
+          PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 npm run test:authoring --prefix backend
+      - name: Canonical same-source authored Ruby conformance (mandatory native)
+        run: |
+          set -euo pipefail
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/canonical-cross-engine.ts
+      - name: Full Python regression inventory, including isolation and corpus
+        run: |
+          set -euo pipefail
+          # The isolated Nginx fixture executes unprivileged on the runner.
+          # Never silently skip a Python source grammar or conformance file.
+          if ! command -v nginx >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y nginx
+          fi
+          python3 -m unittest discover -s tests -p 'test_*.py' -q
       - name: Install isolated Chromium and dependencies
         run: npx playwright install --with-deps chromium
 

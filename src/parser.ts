@@ -361,9 +361,15 @@ function asIP(value: string): boolean {
   return halves.length === 2 ? explicitGroups < 8 : explicitGroups === 8;
 }
 
+// Native Ruby String#strip trims ASCII whitespace, not NBSP/BOM/EM SPACE.
+ // This is typed-value handling, never a mutation of the original field.
+const trimNativeAscii=(value:string):string=>value.replace(
+  /^[ \t\n\r\f\v]+|[ \t\n\r\f\v]+$/g,'');
+
 export function convertValue(raw: unknown, type: FieldType): { value?: unknown; error?: string } {
-  if (raw === undefined || raw === null || (typeof raw === 'string' && !raw.trim())) return { error: 'Missing value' };
-  const value = typeof raw === 'string' ? raw.trim() : String(raw);
+  if (raw === undefined || raw === null ||
+      (typeof raw === 'string' && !trimNativeAscii(raw))) return { error: 'Missing value' };
+  const value = typeof raw === 'string' ? trimNativeAscii(raw) : String(raw);
   switch (type) {
     case 'string':
       return { value: typeof raw === 'object' ? JSON.stringify(raw) : String(raw) };

@@ -58,6 +58,22 @@ function hasNestedQuantifiers(pattern:string):boolean {
   return false;
 }
 
+/** Adjacent unbounded captures can overlap with polynomial backtracking
+ * despite having no nested groups or identical literal atoms. Conservatively
+ * require an explicit separator between consecutive quantified captures. */
+function hasAdjacentQuantifiedCaptures(pattern:string):boolean{
+  const capture=/\(\?<([A-Za-z_][A-Za-z0-9_]*)>((?:\\.|[^()])*)\)/g;
+  let previousEnd=-1,previousQuantified=false;
+  for(const match of pattern.matchAll(capture)){
+    const body=match[2]!;
+    const quantified=/(?:\+|\*|\{\d+(?:,\d*)?\})$/.test(body);
+    if(previousEnd===match.index&&previousQuantified&&quantified)return true;
+    previousEnd=match.index!+match[0].length;
+    previousQuantified=quantified;
+  }
+  return false;
+}
+
 export function validateBoundedRegexPattern(pattern: unknown): string | null {
   if (typeof pattern !== "string" || !pattern.trim()) return "regex_pattern_required";
   if (pattern.length > 256 || /[\x00-\x1f\x7f]/.test(pattern)) return "regex_pattern_limit";
@@ -69,6 +85,7 @@ export function validateBoundedRegexPattern(pattern: unknown): string | null {
   if (/\((?:\?:)?[^()]*\|[^()]*\)(?:[+*]|\{\d+(?:,\d*)?\})/.test(pattern))
     return unsupported;
   if(hasNestedQuantifiers(pattern))return unsupported;
+  if(hasAdjacentQuantifiedCaptures(pattern))return unsupported;
   if (/([A-Za-z0-9])(?:[*+])\1(?:[*+])/.test(pattern)) return unsupported;
   for (const match of pattern.matchAll(/\{(\d{1,8})(?:,(\d{0,8}))?\}/g)) {
     const low=Number(match[1]);

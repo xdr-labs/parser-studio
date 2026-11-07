@@ -10,7 +10,10 @@ describe('beginner automatic Generic Structural handoff',()=>{
     const draft=result!.draft;
     expect(draft.format).toBe('generic_structural');
     expect(draft.mappings.find(x=>x.source==='generic.fields.dest_ip')).toMatchObject({target:'dstip',type:'ip'});
-    expect(draft.mappings.find(x=>x.source==='generic.fields.dest_port')).toMatchObject({target:'dstport'});
+    // HTTPS is an application protocol label. Do not silently assume TCP
+    // port 443 is an official L4 destination without transport evidence.
+    expect(draft.mappings.find(x=>x.source==='generic.fields.dest_port'))
+      .toMatchObject({target:'generic.fields.dest_port'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.ip_client')).toMatchObject({target:'srcip',type:'ip'});
     // BIG-IP HTTPS is an application protocol, not an L4 TCP/UDP/ICMP name.
     // Keep it vendor-local rather than corrupt Stellar 7.0 proto_name.

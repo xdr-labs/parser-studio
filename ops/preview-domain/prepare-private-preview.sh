@@ -34,6 +34,8 @@ cp -a dist/assets dist/index.html "$STAGE/web/"
 cp -a backend/dist/. "$STAGE/backend/dist/"
 cp backend/package.json backend/package-lock.json "$STAGE/backend/"
 cp runtime/multipass/*.py "$STAGE/multipass/"
+# Required versioned policy is part of the Multi-Pass runtime itself.
+cp runtime/multipass/semantic-policy.v1.json "$STAGE/multipass/"
 (
   cd "$STAGE/backend"
   npm ci --omit=dev --ignore-scripts --no-audit --no-fund

@@ -54,6 +54,22 @@ function hasNestedQuantifiers(pattern:string):boolean {
   return false;
 }
 
+/** Adjacent unbounded captures can overlap with polynomial backtracking
+ * despite having no nested groups or identical literal atoms. Conservatively
+ * require an explicit separator between consecutive quantified captures. */
+function hasAdjacentQuantifiedCaptures(pattern:string):boolean{
+  const capture=/\(\?<([A-Za-z_][A-Za-z0-9_]*)>((?:\\.|[^()])*)\)/g;
+  let previousEnd=-1,previousQuantified=false;
+  for(const match of pattern.matchAll(capture)){
+    const body=match[2]!;
+    const quantified=/(?:\+|\*|\{\d+(?:,\d*)?\})$/.test(body);
+    if(previousEnd===match.index&&previousQuantified&&quantified)return true;
+    previousEnd=match.index!+match[0].length;
+    previousQuantified=quantified;
+  }
+  return false;
+}
+
 export function validatePreviewRegexPattern(pattern: string): string | null {
   if (!pattern.trim()) return 'Enter a named-group regular expression';
   if (pattern.length > 256) return 'Regex exceeds 256 characters';
@@ -73,6 +89,7 @@ export function validatePreviewRegexPattern(pattern: string): string | null {
     return unsupported;
   }
   if (hasNestedQuantifiers(pattern)) return unsupported;
+  if (hasAdjacentQuantifiedCaptures(pattern)) return unsupported;
 
   // Adjacent repetitions of the identical literal character are ambiguous.
   if (/([A-Za-z0-9])(?:[*+])\1(?:[*+])/.test(pattern)) return unsupported;
