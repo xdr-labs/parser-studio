@@ -1,3 +1,4 @@
+import {portableRegexIssue} from '../backend/src/portable-regex';
 /**
  * Conservative preview-only regular-expression linter. The separate Web Worker
  * still enforces an execution timeout, and this check is NOT a proof that all
@@ -76,6 +77,7 @@ export function validatePreviewRegexPattern(pattern: string): string | null {
   if (!pattern.includes('(?<')) return 'Add at least one (?<field>...) named capture';
 
   const unsupported = 'Regex uses an unsupported or potentially expensive construct';
+  if(portableRegexIssue(pattern))return unsupported;
 
   // Backreferences and lookbehind enable nonlocal matching/ambiguous nesting.
   if (/\\[1-9]|\\k<|\(\?<[=!]/.test(pattern)) return unsupported;

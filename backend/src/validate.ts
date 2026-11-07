@@ -1,3 +1,4 @@
+import {portableRegexIssue} from './portable-regex.js';
 import { Ajv } from "ajv";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
 import type { ParserProject, ValidationIssue, ValidationResult, FieldMap } from "./types.js";
@@ -79,6 +80,7 @@ export function validateBoundedRegexPattern(pattern: unknown): string | null {
   if (pattern.length > 256 || /[\x00-\x1f\x7f]/.test(pattern)) return "regex_pattern_limit";
   if (!pattern.includes("(?<")) return "regex_named_capture_required";
   const unsupported = "regex_unsafe_construct";
+  if(portableRegexIssue(pattern))return unsupported;
   if (/\\[1-9]|\\k<|\(\?<[=!]/.test(pattern)) return unsupported;
   if (/\((?:[^()]|\\.)*[+*?](?:[^()]|\\.)*\)(?:[+*]|\{\d+(?:,\d*)?\})/.test(pattern))
     return unsupported;
@@ -400,6 +402,12 @@ export function validateProject(input: unknown): ValidationResult {
     const path = "/classification/rules";
     if (!normalizedNames.has(rule.field))
       issue(issues, "unmapped_classification_field", path, "Classification must reference an extracted normalized field.");
+    // Classification equals values are strings in ParserProject v0.1. Ruby
+    // compares typed normalized values strictly; an integer 6 != string "6".
+    // Fail closed instead of emitting a silently misrouted native parser.
+    if (rule.operator === "equals" && normalizedTypes.has(rule.field) && normalizedTypes.get(rule.field) !== "string")
+      issue(issues, "classification_type", path,
+        "String equals classification can only target normalized string fields.");
     if (rule.operator === "equals" && rule.value === undefined)
       issue(issues, "classification_value", path, "Equals requires a value.");
     if (rule.operator === "exists" && rule.value !== undefined)
