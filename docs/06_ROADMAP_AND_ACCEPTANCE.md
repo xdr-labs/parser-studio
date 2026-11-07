@@ -1,5 +1,32 @@
 # Current engineering completion ledger — 2026-10-23
 
+
+## ACTIVE implementation roadmap — 2026-11-07
+
+The current owner-requested next work is **Parser Correctness Architecture
+Hardening**, tracked by [ACTIVE Work Packet #249](https://github.com/xdr-labs/parser-studio/issues/249)
+and the committed
+[Native-first hardening plan](PARSER_CORRECTNESS_ARCHITECTURE_HARDENING.md).
+Do not interpret older completed release pointers below as instructions to
+reopen completed work. This roadmap is ordered **H0 → H1 → H2 → H3 → H4 → H5**:
+
+- **H0 in progress:** close confirmed regex dialect/performance, field
+  order-dependence and typed classifier mismatches (#245–#248).
+- **H1 pending:** canonical versioned operator/regex contract and common
+  browser/backend/native semantics.
+- **H2 pending:** isolated generated-Ruby verification with exact artifact
+  hashes and resource limits; no public runner by default.
+- **H3 pending:** independent source goldens, negative/mutation fixtures,
+  native differentials and browser user acceptance for each supported grammar.
+- **H4 pending:** convert advisory QA to enforced, exact-HEAD merge/release
+  gates only after independently verifying repository policy and approvals.
+- **H5 separately gated:** actual Stellar Cyber DP 7.0 import/receive requires
+  permissioned lab and separate authorization; currently NOT VERIFIED.
+
+No production or development preview deployment is included in this
+implementation PR. Synthetic source fixtures never establish actual vendor-
+wide parser accuracy or target runtime import compatibility.
+
 ## Owner-scoped objective clarification — 2026-10-21
 
 **The product is a vendor-agnostic structural security log parser.** Completion
