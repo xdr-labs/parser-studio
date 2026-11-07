@@ -536,10 +536,13 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       error('normalize','INVALID_MAPPING','Could not assign output field: '+target,target);
     }
   }
-  // Preview the reviewed declarative enrichment steps in order, never Ruby.
-  // Dotted paths use the same nested lookup/assignment semantics as the
-  // generated backend parser instead of creating literal "a.b" object keys.
-  for (const [index, rule] of (draft.guided?.enrichment ?? []).entries()) {
+  // Native Ruby only starts enrichment after successful extraction and mapping.
+  // It executes enrichment against a deep copy; any failure leaves the
+  // pre-enrichment normalized fields untouched in its diagnostic callback.
+  const canEnrich=matched&&!diagnostics.some(issue=>issue.severity==='error');
+  const preEnrichment=canEnrich?structuredClone(normalized):null;
+  // Dotted paths share the bounded source lookup contract with native Ruby.
+  for (const [index, rule] of (canEnrich?draft.guided?.enrichment??[]:[]).entries()) {
     const step=index+1;
     const safeOutput=(target:string)=>VALID_TARGET.test(target)&&
       !RUNTIME_OUTPUT_ROOTS.has(target.split('.')[0]!)&&
@@ -614,7 +617,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   }
   // The native DRAFT validates every final enriched official field.
   // A successful browser mapping must not hide invalid enrichment output.
-  const enrichedTargets=(draft.guided?.enrichment??[]).flatMap(rule=>
+  const enrichedTargets=(canEnrich?draft.guided?.enrichment??[]:[]).flatMap(rule=>
     rule.operator==='split_field'?(rule.targets??[]):[rule.target]);
   for(const target of enrichedTargets){
     if(target===draft.vendor||target.startsWith(draft.vendor+'.'))continue;
@@ -638,6 +641,13 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   if(officialProtocolPairConflict(normalized.proto,normalized.proto_name))
     error('normalize','PROTOCOL_CONFLICT',
       'The final IP protocol number contradicts the reviewed Layer 4 protocol name.');
+  if(preEnrichment&&diagnostics.some(issue=>issue.severity==='error'&&
+    (issue.code.startsWith('ENRICHMENT_')||issue.code==='PROTOCOL_CONFLICT'))){
+    // Do not leave a partially applied split, earlier successful constant or
+    // invalid official value in a browser preview that native Ruby rolls back.
+    for(const key of Object.keys(normalized))delete normalized[key];
+    for(const [key,value] of Object.entries(preEnrichment))ownSet(normalized,key,value);
+  }
   const unmapped = Object.keys(fields).filter((field) => !mapped.has(field));
   if (unmapped.length) diagnostics.push({ stage: 'normalize', severity: 'warning', code: 'UNMAPPED_FIELDS', message: unmapped.length + ' source fields remain available without mappings' });
   const hasErrors = diagnostics.some((issue) => issue.severity === 'error');

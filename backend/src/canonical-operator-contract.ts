@@ -19,6 +19,13 @@ export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
       falseAndZeroCountAsPresent:true,
     }),
   }),
+  enrichment:Object.freeze({
+    application:'ordered-after-typed-normalization',
+    skippedAfterPreviousError:true,
+    failure:'rollback-entire-enrichment-transaction',
+    failureStage:'enrichment',
+    retainedOnFailure:'validated-pre-enrichment-fields-only',
+  }),
   sourcePaths:Object.freeze({
     syntax:'safe-dotted-or-at-timestamp',
     maxCharacters:128,maxSegments:8,

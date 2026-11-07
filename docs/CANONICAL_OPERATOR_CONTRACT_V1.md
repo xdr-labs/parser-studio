@@ -84,3 +84,31 @@ executed on a publicly accessible native service.
 
 Unreviewed grammar families, error stage/byte-accounting contracts, Native
 sandbox and actual Stellar DP 7.0 import remain separate acceptance gates.
+
+## H1 typed-enrichment failure transaction (DRAFT)
+
+The `enrichment` section of the versioned common operator contract now
+records the sequence and failure handling already enforced by the generated
+Ruby: extraction and typed normalization complete first; **any earlier
+blocking error prevents enrichment execution**. On a valid event, ordered
+enrichment runs transactionally against a copy of the normalized record.
+Missing input, unsupported cast, invalid official Stellar destination,
+assignment conflict, split/merge mismatch or a final contradictory protocol
+pair invalidates the entire enrichment transaction. The generated Ruby reports
+`parser_err_stage=enrichment` and retains only previously validated fields
+from before enrichment. It never returns a partially written enrichment value.
+
+The browser preview now follows the same rollback/skip behavior while retaining
+its existing diagnostic-code and `stage=normalize` display schema for
+compatibility. This UI stage string is **not** a native Ruby error stage; compare
+the canonical operation and error code rather than asserting that the two
+serialized stage labels have identical values. A mapping cast failure remains
+a native `normalization` error even when reviewed enrichment was configured.
+
+Independent positive/negative source truth covers source-not-found, mapping
+type failure, invalid enriched official IP, and success, including a UTF-8
+sample. The mandated CI Native Ruby test executes the exact compiled fragment
+and requires the native diagnostic stage/field, preservation of valid
+pre-enrichment fields, atomic rollback, and absence of raw or unrelated
+source text. Both success and failure evidence remain `DRAFT` and do not
+prove Fluentd or Stellar Cyber DP 7.0 target acceptance.
