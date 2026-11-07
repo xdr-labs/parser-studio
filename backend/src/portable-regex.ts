@@ -8,7 +8,122 @@
  * parser requires independent native conformance before certification.
  */
 export type PortableRegexIssue =
-  'REGEX_DIALECT_ESCAPE'|'REGEX_POSIX_CLASS'|'REGEX_OVERLAPPING_REPETITION';
+  'REGEX_DIALECT_ESCAPE'|'REGEX_POSIX_CLASS'|'REGEX_OVERLAPPING_REPETITION'|
+  'REGEX_UNSUPPORTED_GROUP'|'REGEX_AST_SYNTAX'|'REGEX_BOUND_LIMIT';
+
+/** Versioned, inspection-only AST for the reviewed JS/Ruby regex subset.
+ * This is not a regex evaluator or a promise of native execution. Runtime
+ * parity remains subject to independent generated-Ruby conformance.
+ */
+export const PORTABLE_REGEX_AST_CONTRACT='parser-studio.portable-regex-ast.v1';
+export type PortableRegexNode=
+  |{kind:'sequence';nodes:PortableRegexNode[]}
+  |{kind:'alternation';branches:PortableRegexNode[]}
+  |{kind:'group';captureName:string|null;body:PortableRegexNode}
+  |{kind:'repeat';min:number;max:number|null;lazy:boolean;atom:PortableRegexNode}
+  |{kind:'literal'|'escape'|'class'|'wildcard'|'anchor';text:string};
+export type PortableRegexAstResult=
+  |{ok:true;contract:typeof PORTABLE_REGEX_AST_CONTRACT;
+    ast:PortableRegexNode;captureNames:string[]}
+  |{ok:false;issue:PortableRegexIssue};
+
+export function parsePortableRegexAst(pattern:string):PortableRegexAstResult{
+  let pos=0;
+  const captureNames:string[]=[];
+  const captures=new Set<string>();
+  let issue:PortableRegexIssue|null=null;
+  const fail=(reason:PortableRegexIssue):null=>{issue=reason;return null;};
+  const atom=():PortableRegexNode|null=>{
+    const c=pattern[pos++];
+    if(c===undefined)return fail('REGEX_AST_SYNTAX');
+    if(c==='('){
+      let name:string|null=null;
+      if(pattern.startsWith('?:',pos))pos+=2;
+      else if(pattern.startsWith('?<',pos)){
+        const end=pattern.indexOf('>',pos+2);
+        if(end<0)return fail('REGEX_AST_SYNTAX');
+        name=pattern.slice(pos+2,end);
+        if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)||
+           ['__proto__','constructor','prototype'].includes(name)||
+           captures.has(name))return fail('REGEX_UNSUPPORTED_GROUP');
+        captureNames.push(name);captures.add(name);pos=end+1;
+      }else if(pattern[pos]==='?')return fail('REGEX_UNSUPPORTED_GROUP');
+      const body=expression(true);
+      if(!body||pattern[pos]!==')')return fail('REGEX_AST_SYNTAX');
+      pos++;
+      return {kind:'group',captureName:name,body};
+    }
+    if(c==='['){
+      const start=pos-1;
+      if(pattern[pos]==='^')pos++;
+      const first=pos;
+      while(pos<pattern.length){
+        if(pattern[pos]==='\\'){pos+=2;continue;}
+        if(pattern[pos]===']')break;
+        pos++;
+      }
+      if(pos===first||pattern[pos]!==']')return fail('REGEX_AST_SYNTAX');
+      pos++;
+      return {kind:'class',text:pattern.slice(start,pos)};
+    }
+    if(c==='\\'){
+      const escaped=pattern[pos++];
+      if(escaped===undefined)return fail('REGEX_AST_SYNTAX');
+      if(escaped==='x'){
+        if(!/^[a-fA-F0-9]{2}$/.test(pattern.slice(pos,pos+2)))
+          return fail('REGEX_DIALECT_ESCAPE');
+        pos+=2;
+      }
+      return {kind:'escape',text:pattern.slice(pos-(escaped==='x'?4:2),pos)};
+    }
+    if(c==='*'||c==='+'||c==='?'||c==='{')return fail('REGEX_AST_SYNTAX');
+    return c==='.'?{kind:'wildcard',text:c}:
+      c==='^'||c==='$'?{kind:'anchor',text:c}:
+      {kind:'literal',text:c};
+  };
+  const quantified=(base:PortableRegexNode):PortableRegexNode|null=>{
+    const c=pattern[pos];
+    if(c===undefined||!['*','+','?','{'].includes(c))return base;
+    let min=0,max:number|null=null;
+    if(c==='*'){pos++;}
+    else if(c==='+'){min=1;pos++;}
+    else if(c==='?'){max=1;pos++;}
+    else{
+      const m=/^\{(\d{1,8})(?:,(\d{0,8}))?\}/.exec(pattern.slice(pos));
+      if(!m)return fail('REGEX_AST_SYNTAX');
+      min=Number(m[1]);max=m[2]===undefined?min:m[2]===''?null:Number(m[2]);
+      pos+=m[0].length;
+      if(min>128||(max!==null&&(max>128||max<min)))
+        return fail('REGEX_BOUND_LIMIT');
+    }
+    const lazy=pattern[pos]==='?';
+    if(lazy)pos++;
+    return {kind:'repeat',min,max,lazy,atom:base};
+  };
+  const expression=(nested:boolean):PortableRegexNode|null=>{
+    const branches:PortableRegexNode[]=[];
+    let nodes:PortableRegexNode[]=[];
+    while(pos<pattern.length){
+      if(pattern[pos]===')'){
+        if(!nested)return fail('REGEX_AST_SYNTAX');
+        break;
+      }
+      if(pattern[pos]==='|'){
+        branches.push({kind:'sequence',nodes});nodes=[];pos++;continue;
+      }
+      const node=atom();
+      if(!node)return null;
+      const repeated=quantified(node);
+      if(!repeated)return null;
+      nodes.push(repeated);
+    }
+    branches.push({kind:'sequence',nodes});
+    return branches.length===1?branches[0]!:{kind:'alternation',branches};
+  };
+  const ast=expression(false);
+  if(!ast||pos!==pattern.length||issue)return {ok:false,issue:issue??'REGEX_AST_SYNTAX'};
+  return {ok:true,contract:PORTABLE_REGEX_AST_CONTRACT,ast,captureNames};
+}
 
 type Atom={kind:'wildcard'|'class'|'literal';token:string;quantified:boolean};
 
@@ -35,6 +150,8 @@ export function portableRegexIssue(pattern:string):PortableRegexIssue|null{
   // Ruby recognizes POSIX bracket classes but JS regex has different syntax.
   // Reject before analyzing the class's internal nested '[' characters.
   if(/\[\[:[A-Za-z]+:\]\]/.test(pattern))return 'REGEX_POSIX_CLASS';
+  const grammar=parsePortableRegexAst(pattern);
+  if(!grammar.ok)return grammar.issue;
   const frames:Array<{previous:Atom|null;wildcards:number}>=[{previous:null,wildcards:0}];
   let index=0;
   while(index<pattern.length){

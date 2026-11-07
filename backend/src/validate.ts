@@ -1,4 +1,4 @@
-import {portableRegexIssue} from './portable-regex.js';
+import {parsePortableRegexAst,portableRegexIssue} from './portable-regex.js';
 import {supportsCanonicalClassificationOperator} from './canonical-operator-contract.js';
 import { Ajv } from "ajv";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
@@ -82,6 +82,9 @@ export function validateBoundedRegexPattern(pattern: unknown): string | null {
   if (!pattern.includes("(?<")) return "regex_named_capture_required";
   const unsupported = "regex_unsafe_construct";
   if(portableRegexIssue(pattern))return unsupported;
+  const ast=parsePortableRegexAst(pattern);
+  if(!ast.ok)return unsupported;
+  if(!ast.captureNames.length)return 'regex_named_capture_required';
   if (/\\[1-9]|\\k<|\(\?<[=!]/.test(pattern)) return unsupported;
   if (/\((?:[^()]|\\.)*[+*?](?:[^()]|\\.)*\)(?:[+*]|\{\d+(?:,\d*)?\})/.test(pattern))
     return unsupported;

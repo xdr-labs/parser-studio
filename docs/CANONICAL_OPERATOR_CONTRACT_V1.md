@@ -62,3 +62,25 @@ Future H1 work: expand canonical semantics to extraction AST/regex grammar,
 JSONata selectors, protocol-aware conditional field applicability, enrichment,
 source-byte accounting and error-stage behavior without silently changing
 legacy ParserProject/Recipe contracts.
+
+## H1 portable regular expression AST increment (DRAFT)
+
+A single pure, versioned `parser-studio.portable-regex-ast.v1` parser
+(`backend/src/portable-regex.ts`) records sequence, alternation, named/noncapture
+groups, character classes, anchors, reviewed escapes and bounded repetitions.
+The shared browser/backend authoring gate now rejects unsupported lookaheads,
+inline flags, malformed parentheses, duplicate captures, invalid escape syntax
+and unsafe repetition limits before accepting a named-capture expression.
+Names must be genuine parsed captures, not substring matches inside escaped
+literals or classes. Existing conservative overlapping repetition checks remain
+in force.
+
+The AST is a **validation/inspection contract**, not an alternative matching
+engine or assertion of full JS/Ruby equivalence. Independently authored
+positive/negative ASCII and Unicode log fixtures are checked against JavaScript
+and mandatory Native Ruby matching in CI. Existing Regex ParserRecipe v0.2 and
+ParserProject authoring shapes are not expanded. No customer expression is
+executed on a publicly accessible native service.
+
+Unreviewed grammar families, error stage/byte-accounting contracts, Native
+sandbox and actual Stellar DP 7.0 import remain separate acceptance gates.
