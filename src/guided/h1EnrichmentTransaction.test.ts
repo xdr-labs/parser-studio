@@ -27,7 +27,9 @@ describe('H1 generated-Ruby enrichment transaction parity',()=>{
    const original=raw;
    const event=preview(raw,draft).events[0]!;
    expect(event.normalizedOk).toBe(false);
-   expect(event.diagnostics.some(d=>d.code==='ENRICHMENT_SOURCE')).toBe(true);
+   expect(event.diagnostics).toContainEqual(expect.objectContaining({
+     code:'ENRICHMENT_SOURCE',stage:'enrichment',severity:'error',
+   }));
    expect(event.normalized).toEqual({username:'한글-user'});
    expect(event.raw).toBe(original);
  });
@@ -51,8 +53,36 @@ describe('H1 generated-Ruby enrichment transaction parity',()=>{
    ];
    const event=preview(JSON.stringify({user:'alice',source:'not-an-ip'}),draft).events[0]!;
    expect(event.normalizedOk).toBe(false);
-   expect(event.diagnostics.some(d=>d.code==='ENRICHMENT_TYPE')).toBe(true);
+   expect(event.diagnostics).toContainEqual(expect.objectContaining({
+     code:'ENRICHMENT_TYPE',stage:'enrichment',severity:'error',
+   }));
    expect(event.normalized).toEqual({username:'alice',custom:{source:'not-an-ip'}});
+ });
+ it('labels a protocol pair conflict by the phase that introduced it',()=>{
+   const draft=fixture();
+   draft.mappings.push({id:'p',source:'p',target:'proto',type:'integer'});
+   draft.guided!.groups.p='top_fields';
+   draft.guided!.enrichment=[
+     {id:'proto-name',operator:'set_const',source:'',target:'proto_name',value:'UDP'},
+   ];
+   const enriched=preview(JSON.stringify({user:'alice',action:'allow',p:6}),draft).events[0]!;
+   expect(enriched.normalizedOk).toBe(false);
+   expect(enriched.diagnostics).toContainEqual(expect.objectContaining({
+     code:'PROTOCOL_CONFLICT',stage:'enrichment',severity:'error',
+   }));
+   expect(enriched.normalized).toEqual({username:'alice',action:'allow',proto:6});
+
+   const baseline=fixture();
+   baseline.mappings.push({id:'p',source:'p',target:'proto',type:'integer'});
+   baseline.mappings.push({id:'name',source:'name',target:'proto_name',type:'string'});
+   baseline.guided!.groups.p='top_fields';
+   baseline.guided!.groups.name='top_fields';
+   const normalized=preview(JSON.stringify({user:'alice',action:'allow',p:6,name:'UDP'}),baseline).events[0]!;
+   expect(normalized.normalizedOk).toBe(false);
+   expect(normalized.diagnostics).toContainEqual(expect.objectContaining({
+     code:'PROTOCOL_CONFLICT',stage:'normalize',severity:'error',
+   }));
+   expect(normalized.normalized).toEqual({username:'alice',action:'allow',proto:6,proto_name:'UDP'});
  });
  it('commits all ordered enrichment fields after successful validation',()=>{
    const draft=fixture();

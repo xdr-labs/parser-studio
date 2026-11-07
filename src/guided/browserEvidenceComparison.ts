@@ -19,7 +19,7 @@ export interface BrowserEvidenceComparison {
 }
 
 const HEX = /^[0-9a-f]{64}$/;
-const STAGES = new Set(['break','detect','extract','normalize','validate']);
+const STAGES = new Set(['break','detect','extract','normalize','enrichment','validate']);
 const STATUSES = new Set(['pass','warning','fail']);
 const SEVERITIES = new Set(['error','warning']);
 const FORMATS = new Set(['auto','json','kv','csv','syslog_rfc5424','cef','leef','syslog','regex','unknown']);
@@ -27,7 +27,7 @@ const DIAGNOSTIC_CODES = new Set([
   'DATASET_TOO_LARGE','EVENT_LIMIT','UNSUPPORTED_FORMAT','EXTRACTION_FAILED',
   'INVALID_MAPPING','TARGET_COLLISION','SOURCE_NOT_FOUND','TYPE_ERROR',
   'ENRICHMENT_TARGET','ENRICHMENT_SOURCE','ENRICHMENT_TYPE',
-  'ENRICHMENT_UNSUPPORTED','UNMAPPED_FIELDS','NO_MAPPINGS','UNSPECIFIED',
+  'ENRICHMENT_UNSUPPORTED','PROTOCOL_CONFLICT','UNMAPPED_FIELDS','NO_MAPPINGS','UNSPECIFIED',
 ]);
 const TOTAL_COUNTS = ['total','matched','extracted','normalized','failures','warnings'];
 const EVENT_KEYS = ['number','line','status','detectedFormat','effectiveFormat','matched','extracted','normalized','diagnostics'];

@@ -19,6 +19,14 @@ export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
       falseAndZeroCountAsPresent:true,
     }),
   }),
+  errorStages:Object.freeze({
+    extraction:'extraction',
+    normalization:'normalization',
+    enrichment:'enrichment',
+    browserPreviewNormalization:'normalize',
+    browserPreviewEnrichment:'enrichment',
+    rollbackPreservesPreEnrichmentFields:true,
+  }),
   sourceBytes:Object.freeze({
     encoding:'utf-8',
     offsets:'byte-index',

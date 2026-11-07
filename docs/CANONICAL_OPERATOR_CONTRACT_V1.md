@@ -98,12 +98,16 @@ pair invalidates the entire enrichment transaction. The generated Ruby reports
 `parser_err_stage=enrichment` and retains only previously validated fields
 from before enrichment. It never returns a partially written enrichment value.
 
-The browser preview now follows the same rollback/skip behavior while retaining
-its existing diagnostic-code and `stage=normalize` display schema for
-compatibility. This UI stage string is **not** a native Ruby error stage; compare
-the canonical operation and error code rather than asserting that the two
-serialized stage labels have identical values. A mapping cast failure remains
-a native `normalization` error even when reviewed enrichment was configured.
+The browser preview follows the same rollback/skip behavior and now emits the
+distinct `stage=enrichment` for enrichment failures while preserving
+`stage=normalize` for typed mapping failures. Both the new and legacy stages
+remain accepted by the existing browser evidence comparison reader.
+Native Ruby uses the full `normalization` / `enrichment` labels in
+`parser_err_stage`; the v1 contract documents their explicit projection.
+Protocol-pair validity is checked immediately after mapping, then after
+reviewed enrichment, so a preexisting conflicting pair cannot be misreported
+as an enrichment failure. A mapping cast failure remains a native
+`normalization` error even when enrichment was configured.
 
 Independent positive/negative source truth covers source-not-found, mapping
 type failure, invalid enriched official IP, and success, including a UTF-8
