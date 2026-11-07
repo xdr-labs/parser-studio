@@ -1,4 +1,5 @@
 import {sha256Utf8Hex} from '../sha256';
+import {isUtf8ByteBoundary} from './sourceByteSelection';
 
 const DICTIONARY_REVISION='stellar-standard-metadata-7.0.xs-2026-10-14';
 const DICTIONARY_URLS=[
@@ -165,7 +166,8 @@ function verifyRedaction(raw:unknown,source:string,spans:MultiPassSourcePreview[
  return value as MultiPassRedactionProjection;
 }
 async function verifySourcePreview(raw:string,value:Partial<MultiPassSourcePreview>):Promise<MultiPassSourcePreview>{
- const size=new TextEncoder().encode(raw).byteLength;
+ const originalBytes=new TextEncoder().encode(raw);
+ const size=originalBytes.byteLength;
  if(value.contract!=='parser-studio.multipass-source-preview.v0.1'||
   !['SOURCE_PARSED','PARTIAL','RAW_ONLY','STRUCTURED_EMPTY'].includes(value.status??'')||
   value.nativeVerified!==false||value.targetVerified!==false||
@@ -180,11 +182,17 @@ async function verifySourcePreview(raw:string,value:Partial<MultiPassSourcePrevi
   if(!Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
     item.startByte<0||item.endByte>size||item.startByte>item.endByte)
     throw new Error('Invalid Multi-Pass byte span.');
+  if(!isUtf8ByteBoundary(originalBytes,item.startByte)||
+     !isUtf8ByteBoundary(originalBytes,item.endByte))
+    throw new Error('Invalid Multi-Pass UTF-8 byte boundary.');
  }
  for(const item of value.residuals){
   if(!Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
     item.startByte<0||item.endByte>size||item.startByte>=item.endByte)
     throw new Error('Invalid Multi-Pass residual span.');
+  if(!isUtf8ByteBoundary(originalBytes,item.startByte)||
+     !isUtf8ByteBoundary(originalBytes,item.endByte))
+    throw new Error('Invalid Multi-Pass UTF-8 residual byte boundary.');
  }
  if(value.dictionary!==undefined)
   value.dictionary=verifyDictionary(value.dictionary,value.spans,size);

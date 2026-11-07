@@ -19,6 +19,13 @@ export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
       falseAndZeroCountAsPresent:true,
     }),
   }),
+  sourceBytes:Object.freeze({
+    encoding:'utf-8',
+    offsets:'byte-index',
+    spanBoundary:'whole-codepoint',
+    rejectSplitMultibyteSpan:true,
+    rawSourceMustRemainImmutable:true,
+  }),
   enrichment:Object.freeze({
     application:'ordered-after-typed-normalization',
     skippedAfterPreviousError:true,

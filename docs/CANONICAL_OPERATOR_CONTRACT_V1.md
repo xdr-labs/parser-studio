@@ -112,3 +112,27 @@ and requires the native diagnostic stage/field, preservation of valid
 pre-enrichment fields, atomic rollback, and absence of raw or unrelated
 source text. Both success and failure evidence remain `DRAFT` and do not
 prove Fluentd or Stellar Cyber DP 7.0 target acceptance.
+
+## H1 UTF-8 source span boundary contract (DRAFT)
+
+The `sourceBytes` policy in the common v1 operator contract requires every
+reported parsed-value span and unparsed residual range to have **complete
+UTF-8 codepoint** boundaries. A forged byte offset that points into the
+continuation bytes of a Korean syllable or a four-byte emoji is rejected
+before the browser treats the response as valid extraction evidence. Valid
+zero-length extracted spans remain permitted, but residual ranges must be
+non-empty.
+
+The check runs in the browser's source-identity verifier for single and
+multi-event Multi-Pass responses, after matching the raw UTF-8 SHA-256 digest
+and byte count. It shares the UTF-8 boundary predicate with source selection
+utilities. Engine output is never automatically repaired, trimmed or
+normalization-replaced to make a failing span pass. The independently authored
+red-to-green fixtures cover valid Unicode, invalid captured-value start/end,
+invalid residual start/end and correctly framed batches carrying invalid
+per-event spans.
+
+This is **source-byte integrity validation**, not a claim that every extracted
+value is semantically correct or that the source engine covers all bytes. Full
+grammar-wide matched/unmatched span accounting remains a separate H3 oracle
+requirement; a browser HTTP 200 is not Native or DP verification.
