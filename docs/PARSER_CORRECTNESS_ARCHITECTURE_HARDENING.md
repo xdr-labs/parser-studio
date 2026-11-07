@@ -63,7 +63,12 @@ The first increment adds a required exact-HEAD synthetic Ruby executable
 oracle and sanitized artifact hashes, described in
 [Native Executable Evidence v1](NATIVE_EXECUTABLE_EVIDENCE_V1.md).
 **This is not a production sandbox or certification of arbitrary user parsers.**
-The isolated runner/security hardening and live deployment remain pending.
+The next H2 increment adds a **CI-only, network-disabled, resource-limited**
+container adapter that reuses the source-hash-bound generated pair and strict
+Fluentd callback report. Its threat model, pinned runtime and residual risks
+are in [H2 isolated Native CI security boundary](H2_ISOLATED_NATIVE_CI_SECURITY.md).
+No customer-input or publicly accessible Native runner is enabled; live
+development-preview exposure remains pending a separate safety review.
 
 Reuse the source-hash-bound `native-project-verification.ts` contract and
 `local-native-project-verifier.ts` behind an authorization-checked isolated

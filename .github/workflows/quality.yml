@@ -10,6 +10,41 @@ permissions:
   contents: read
 
 jobs:
+  # H2: completely separate GitHub-hosted runner. Build may use the network
+  # solely for pinned dependencies; runtime receives no network/mount/host
+  # privileges. Never enable a public native parser execution endpoint.
+  isolated-native-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install isolated Native CI test tooling
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: H2 isolated Docker policy regression
+        run: backend/node_modules/.bin/tsx --test backend/test/isolated-native-project-verifier.test.ts
+      - name: Build pinned Ruby 3.2.11 and Fluentd 1.17.1 compatibility image
+        run: |
+          set -euo pipefail
+          docker build --pull -f backend/native-sandbox/Dockerfile -t parser-studio-h2-native-ci:${{ github.sha }} backend
+      - name: Execute exact generated pair in network-disabled Native container
+        run: |
+          set -euo pipefail
+          image_id="$(docker image inspect --format '{{.Id}}' parser-studio-h2-native-ci:${{ github.sha }})"
+          [[ "$image_id" =~ ^sha256:[a-f0-9]{64}$ ]]
+          PARSER_NATIVE_ISOLATED_IMAGE_ID="$image_id" backend/node_modules/.bin/tsx backend/scripts/verify-native-project-isolated.ts > "$RUNNER_TEMP/parser-studio-h2-isolated-evidence.json"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/parser-studio-h2-isolated-evidence.json","utf8"));if(r.contract!=="parser-studio.isolated-native-evidence.v1"||r.scope!=="CI_FIXED_PUBLIC_SYNTHETIC_ONLY"||r.network!=="none"||r.filesystem!=="read-only"||r.privileged!==false||r.report.nativeUserParserVerified!==true||r.report.targetImportVerified!==false||r.report.eventsPassed!==2||r.realUserParserClaim!==false||r.stellarDpVerified!==false)process.exit(1);console.log("H2_ISOLATED_NATIVE_PASS",r.report.eventsPassed,"synthetic records")'
+      - name: Upload sanitized isolated Native H2 receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-h2-isolated-native-evidence
+          path: ${{ runner.temp }}/parser-studio-h2-isolated-evidence.json
+          if-no-files-found: error
+
   web-quality:
     runs-on: ubuntu-latest
     # Includes native/backend quality plus the full first-user browser matrix.
