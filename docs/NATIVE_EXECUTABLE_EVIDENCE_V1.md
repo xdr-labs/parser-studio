@@ -86,3 +86,35 @@ each run; strengthening image-digest governance and an independent hardened
 runtime security review remain prerequisites for exposing a live service.
 No public development-preview Native endpoint, DP import, traffic send,
 Fluentd-in-DP claim, branch-protection mutation or deployment is performed.
+
+## H2 hardening reconciliation — pinned OCI identity and artifact
+
+After the independent H2 synthetic runner passed, the CI-only integration
+retains the original runtime behavioral probes (UID is non-root, root
+filesystem is unwritable, outbound TCP is refused) and strengthens the same
+runner rather than creating a second Docker job.
+
+Both image stages use the official Ruby **3.2.11 slim Bookworm** multi-platform
+manifest `sha256:84140472007d27c7ec641dbc606a47ff9c0aa5f358445947b7350392fa5115e5`.
+The Ruby version check is exact, Bundler 4.0.22 and the checked-in Fluentd
+1.17.1 Gemfile.lock remain mandatory. Both runtime probes and compiler-generated
+Ruby execution use the **immutable local image ID** obtained from Docker after
+the build, not a mutable image tag. The isolated process additionally has no
+shared IPC namespace or device access, a 25-second CPU ulimit, strict image-ID
+syntax and named-container cleanup if a CLI timeout leaves a process alive.
+A successful runtime still has no host mounts, socket, network or elevated
+capabilities.
+
+The strict hash/count receipt is saved as
+`parser-studio-h2-isolated-native-evidence` by GitHub Actions. Source log text,
+generated Ruby, normalized values and private temporary payloads are never
+uploaded. These measures are additive to the existing runtime tests; they
+do **not** enable a user-facing Native verification service.
+
+**Security limitation:** Ruby 3.2.11 was its final release on March 27, 2026
+and receives no upstream fixes. This runtime is retained solely for disposable
+historic compatibility evidence in CI. It must never become a production
+parser execution profile. Full container/vulnerability review, a modern
+supported runtime and separate owner authorization are prerequisites for any
+user-submitted parser runner. Stellar DP 7.0 import/receive proof is still
+`NOT_VERIFIED`.

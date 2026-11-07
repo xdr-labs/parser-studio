@@ -13,13 +13,19 @@ docker info >/dev/null
 private_input=$(mktemp)
 private_receipt=$(mktemp)
 chmod 600 "$private_input" "$private_receipt"
-trap 'rm -f "$private_input" "$private_receipt"' EXIT
+probe_name="parser-h2-probe-$$"
+run_name="parser-h2-exact-$$"
+cleanup() {
+  docker rm -f "$probe_name" "$run_name" >/dev/null 2>&1 || true
+  rm -f "$private_input" "$private_receipt"
+}
+trap cleanup EXIT
 
 # Build is allowed to retrieve locked gems. Execution explicitly is NOT.
 docker build --pull --file backend/native_isolation/Dockerfile \
   --tag parserstudio-h2-ci-native:local .
 image_id=$(docker image inspect parserstudio-h2-ci-native:local --format '{{.Id}}')
-[[ "$image_id" == sha256:* ]] || { echo 'H2_IMAGE_ID_UNVERIFIED' >&2; exit 1; }
+[[ "$image_id" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo 'H2_IMAGE_ID_UNVERIFIED' >&2; exit 1; }
 
 # No mounts, no Docker socket, no published ports, no ambient env inheritance.
 # Only stdin contains PRIVATE fixed-synthetic inputs; stdout holds sanitized
@@ -27,6 +33,7 @@ image_id=$(docker image inspect parserstudio-h2-ci-native:local --format '{{.Id}
 sandbox=(
   --rm -i
   --network none
+  --ipc none
   --read-only
   --cap-drop ALL
   --security-opt no-new-privileges
@@ -34,14 +41,15 @@ sandbox=(
   --memory 512m
   --cpus 1
   --ulimit nofile=64:64
-  --tmpfs /tmp:rw,noexec,nosuid,size=16m
+  --ulimit cpu=25:25
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m
   --user 65532:65532
 )
 
 # Explicitly verify isolation at runtime, rather than relying on a manifest.
 # A false network or read-only claim causes the CI job to fail.
-timeout --kill-after=5s 20s docker run "${sandbox[@]}" \
-  --entrypoint ruby parserstudio-h2-ci-native:local \
+timeout --kill-after=5s 20s docker run "${sandbox[@]}" --name "$probe_name" \
+  --entrypoint ruby "$image_id" \
   -rsocket -e '
     abort "H2_ROOT_EXECUTION" if Process.uid == 0
     begin
@@ -60,9 +68,16 @@ timeout --kill-after=5s 20s docker run "${sandbox[@]}" \
 node backend/node_modules/tsx/dist/cli.mjs \
   scripts/verification/h2-isolated-native-input.ts >"$private_input"
 test "$(wc -c < "$private_input")" -gt 1
-timeout --kill-after=5s 45s docker run "${sandbox[@]}" \
-  parserstudio-h2-ci-native:local <"$private_input" >"$private_receipt"
+timeout --kill-after=5s 45s docker run "${sandbox[@]}" --name "$run_name" \
+  "$image_id" <"$private_input" >"$private_receipt"
 
-node backend/node_modules/tsx/dist/cli.mjs \
-  scripts/verification/h2-isolated-native-verify.ts "$private_receipt"
+# Write only the strict, source-free hash/count receipt to a CI artifact.
+if [[ -n "${RUNNER_TEMP:-}" ]]; then
+  node backend/node_modules/tsx/dist/cli.mjs \
+    scripts/verification/h2-isolated-native-verify.ts "$private_receipt" \
+    | tee "$RUNNER_TEMP/parser-studio-h2-isolated-evidence.json"
+else
+  node backend/node_modules/tsx/dist/cli.mjs \
+    scripts/verification/h2-isolated-native-verify.ts "$private_receipt"
+fi
 echo "H2_CONTAINER_IMAGE_ID=$image_id"

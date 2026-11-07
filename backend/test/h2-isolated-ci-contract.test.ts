@@ -23,10 +23,10 @@ test('H2 runner settings fail closed, with runtime checked in its own CI job',()
   const workflow=file('.github/workflows/quality.yml');
   const dockerfile=file('backend/native_isolation/Dockerfile');
   for(const required of [
-    '--network none','--read-only','--cap-drop ALL',
+    '--network none','--ipc none','--read-only','--cap-drop ALL',
     '--security-opt no-new-privileges','--pids-limit 64',
-    '--memory 512m','--cpus 1','--user 65532:65532',
-    '--tmpfs /tmp:rw,noexec,nosuid,size=16m',
+    '--memory 512m','--cpus 1','--ulimit cpu=25:25','--user 65532:65532',
+    '--tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m',
   ])assert.ok(shell.includes(required),'H2 isolation option missing: '+required);
   assert.match(shell,/H2_OFFLINE_NONROOT_READONLY_PASS/);
   assert.match(shell,/H2_FIXED_SYNTHETIC_ONLY/);
@@ -35,5 +35,10 @@ test('H2 runner settings fail closed, with runtime checked in its own CI job',()
   assert.match(workflow,/h2-ci-isolated-runner\.sh/);
   assert.match(dockerfile,/^USER 65532:65532$/m);
   assert.match(dockerfile,/^ENTRYPOINT \["ruby"/m);
-  assert.match(dockerfile,/^FROM ruby:3\.2-slim-bookworm/m);
+  assert.match(dockerfile,
+    /^FROM ruby:3\.2\.11-slim-bookworm@sha256:84140472007d27c7ec641dbc606a47ff9c0aa5f358445947b7350392fa5115e5$/m);
+  assert.match(shell,/\[\[ "\$image_id" =~ \^sha256:/);
+  assert.match(shell,/--entrypoint ruby "\$image_id"/);
+  assert.match(shell,/--name "\$run_name"/);
+  assert.match(workflow,/parser-studio-h2-isolated-native-evidence/);
 });

@@ -25,6 +25,12 @@ jobs:
         run: npm ci --prefix backend --no-audit --no-fund
       - name: Execute exact generated Ruby and pinned Fluentd in sealed container
         run: bash scripts/verification/h2-ci-isolated-runner.sh
+      - name: Upload sanitized H2 isolated Native receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-h2-isolated-native-evidence
+          path: ${{ runner.temp }}/parser-studio-h2-isolated-evidence.json
+          if-no-files-found: error
 
   web-quality:
     runs-on: ubuntu-latest
