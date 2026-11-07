@@ -1,19 +1,16 @@
 /**
  * Browser-local conservative, bounded projection of ParserProject 0.1 dotted
- * source paths. Backend lookup prefers an exact literal key before descending
- * nested JSON objects. Never traverse inherited/prototype or array-index paths.
+ * source paths. All possible literal/nested partitions are considered.
+ * Multiple matches fail closed; inherited and array-index paths are excluded.
  */
 import type {MappingWhen} from './model';
+import {resolveCanonicalSourcePath,validCanonicalSourcePath} from '../backend/src/canonical-operator-contract';
 
-const PATH = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
-const UNSAFE = new Set(['__proto__', 'constructor', 'prototype']);
 const MAX_DEPTH = 8;
 const MAX_FIELDS = 100;
 
 export function safeLocalFieldPath(path: string): boolean {
-  return path.length > 0 && path.length <= 128 &&
-    (PATH.test(path)||path==='@timestamp') &&
-    path.split('.').every((segment) => !UNSAFE.has(segment));
+  return validCanonicalSourcePath(path);
 }
 
 function objectRecord(value: unknown): value is Record<string, unknown> {
@@ -24,50 +21,34 @@ export function lookupFieldValue(
   fields: Record<string, unknown>, path: string,
   kind?: 'literal_root' | 'nested',
 ): { found: true; value: unknown } | { found: false } {
-  if (!safeLocalFieldPath(path) || path.split('.').length > MAX_DEPTH) return { found: false };
-  // A reviewed JSONata selector preserves whether it selected the literal
-  // root key `a.b` or nested a -> b. Legacy mappings stay flexible.
-  if(kind==='literal_root'){
-    return Object.prototype.hasOwnProperty.call(fields,path)
-      ?{found:true,value:fields[path]}:{found:false};
-  }
-  if (kind!=='nested' && Object.prototype.hasOwnProperty.call(fields, path)) {
-    return { found: true, value: fields[path] };
-  }
-  let value: unknown = fields;
-  for (const segment of path.split('.')) {
-    if (!objectRecord(value) || !Object.prototype.hasOwnProperty.call(value, segment)) {
-      return { found: false };
-    }
-    value = value[segment];
-  }
-  return { found: true, value };
+  const resolved=resolveCanonicalSourcePath(fields,path,kind);
+  return resolved.status==='unique'
+    ?{found:true,value:resolved.value}:{found:false};
 }
 
-/** Detect a source path with multiple JSON interpretations (flat dotted keys
- * versus nested objects, including mixed segment boundaries). Native Ruby
- * rejects the same collision at run time.
- */
 export function hasAmbiguousFieldPath(fields:Record<string,unknown>,path:string):boolean{
-  if(!safeLocalFieldPath(path))return false;
-  const segments=path.split('.');
-  if(segments.length<2||segments.length>MAX_DEPTH)return false;
-  let matches=0;
-  const visit=(node:unknown,at:number):void=>{
-    if(!objectRecord(node)||matches>1)return;
-    for(let end=at+1;end<=segments.length;end++){
-      const name=segments.slice(at,end).join('.');
-      if(!Object.prototype.hasOwnProperty.call(node,name))continue;
-      if(end===segments.length)matches++;
-      else visit(node[name],end);
-      if(matches>1)return;
-    }
-  };
-  visit(fields,0);
-  return matches>1;
+  return resolveCanonicalSourcePath(fields,path).status==='ambiguous';
 }
 
-/** Returns safe leaf *names* only, default 100; 101 is a truncation sentinel for strict callers. */
+/** Scan actual source leaves rather than only eligible suggestions. Ambiguous
+ * paths must not disappear silently when candidate filtering excludes them.
+ * Return a conservative failure if the bounded scan cannot finish.
+ */
+export function hasAmbiguousSourceFields(fields:Record<string,unknown>):boolean{
+  let visits=0;
+  const visit=(value:unknown,path:string,depth:number):boolean=>{
+    if(++visits>1024)return true;
+    if(path&&!safeLocalFieldPath(path))return false;
+    if(!objectRecord(value))return Boolean(path&&hasAmbiguousFieldPath(fields,path));
+    if(depth>=MAX_DEPTH)return false;
+    for(const [key,child] of Object.entries(value)){
+      if(visit(child,path?path+'.'+key:key,depth+1))return true;
+    }
+    return false;
+  };
+  return visit(fields,'',0);
+}
+
 export function listSafeLeafPaths(
   fields: Record<string, unknown>, limit: 100 | 101 = MAX_FIELDS,
 ): string[] {
@@ -80,13 +61,15 @@ export function listSafeLeafPaths(
       for (const key of Object.keys(value)) {
         if (results.length >= limit) break;
         const next = prefix ? prefix + '.' + key : key;
-        if (prefix && key.includes('.')) continue;
         if (!safeLocalFieldPath(next)) continue;
         visit(value[key], next, depth + 1);
       }
     } else if (prefix && value !== null && !Array.isArray(value) && !seen.has(prefix)) {
-      seen.add(prefix);
-      results.push(prefix);
+      const resolved=lookupFieldValue(fields,prefix);
+      if(resolved.found && Object.is(resolved.value,value)){
+        seen.add(prefix);
+        results.push(prefix);
+      }
     }
   };
   visit(fields, '', 0);
@@ -105,7 +88,7 @@ export function countUnaddressableSourceValues(fields:Record<string,unknown>):nu
       if(depth>=MAX_DEPTH){missing++;return;}
       for(const [key,child] of Object.entries(value)){
         const next=path?path+'.'+key:key;
-        if((path && key.includes('.')) || !safeLocalFieldPath(next)){
+        if(!safeLocalFieldPath(next)){
           missing++;continue;
         }
         visit(child,next,depth+1);

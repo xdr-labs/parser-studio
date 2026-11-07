@@ -19,6 +19,13 @@ export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
       falseAndZeroCountAsPresent:true,
     }),
   }),
+  sourcePaths:Object.freeze({
+    syntax:'safe-dotted-or-at-timestamp',
+    maxCharacters:128,maxSegments:8,
+    lookup:'all-partitions-own-keys',ambiguous:'reject',
+    explicitSelectorMustBeUnambiguous:true,
+    arraysTraversable:false,missingAndNullIneligible:true,
+  }),
   executionOrder:Object.freeze([
     'extract-source','normalize-typed-fields','apply-enrichment','classify',
   ]),
@@ -45,4 +52,64 @@ export function evaluateCanonicalClassificationPredicate(
 ):boolean{
   if(operator==='exists')return value!==null&&value!==undefined;
   return typeof value==='string'&&typeof expected==='string'&&value===expected;
+}
+
+
+/** Shared browser/backend projection of Ruby parserstudio_lookup's bounded
+ * dotted-path partition semantics. Every segment combination is considered,
+ * including an intermediate literal key containing dots. More than one
+ * matching interpretation must fail closed, even with an explicit selector.
+ * No inherited keys, array indices or prototype segments are traversed.
+ */
+const CANONICAL_PATH=/^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*)*$/;
+const FORBIDDEN_PATH_SEGMENTS=new Set(['__proto__','constructor','prototype']);
+
+export function validCanonicalSourcePath(path:string):boolean{
+  return path.length>0&&path.length<=128&&
+    (path==='@timestamp'||CANONICAL_PATH.test(path))&&
+    path.split('.').length<=8&&
+    path.split('.').every(segment=>!FORBIDDEN_PATH_SEGMENTS.has(segment));
+}
+
+type SourcePathKind='literal_root'|'nested';
+export type CanonicalPathResolution=
+  |{status:'missing'}|{status:'ambiguous'}|{status:'unique';value:unknown};
+
+function canonicalPathObject(value:unknown):value is Record<string,unknown>{
+  return value!==null&&typeof value==='object'&&!Array.isArray(value);
+}
+
+export function resolveCanonicalSourcePath(
+  record:Record<string,unknown>,path:string,kind?:SourcePathKind,
+):CanonicalPathResolution{
+  if(!validCanonicalSourcePath(path))return {status:'missing'};
+  const parts=path.split('.');
+  let count=0,value:unknown;
+  const visit=(current:unknown,index:number):void=>{
+    if(!canonicalPathObject(current)||count>1)return;
+    for(let end=index+1;end<=parts.length;end++){
+      const key=parts.slice(index,end).join('.');
+      if(!Object.prototype.hasOwnProperty.call(current,key))continue;
+      if(end===parts.length){count++;value=current[key];}
+      else visit(current[key],end);
+      if(count>1)return;
+    }
+  };
+  visit(record,0);
+  if(count>1)return {status:'ambiguous'};
+  if(count===0)return {status:'missing'};
+  if(kind==='literal_root'){
+    return Object.prototype.hasOwnProperty.call(record,path)
+      ?{status:'unique',value:record[path]}:{status:'missing'};
+  }
+  if(kind==='nested'){
+    let cursor:unknown=record;
+    for(const part of parts){
+      if(!canonicalPathObject(cursor)||!Object.prototype.hasOwnProperty.call(cursor,part))
+        return {status:'missing'};
+      cursor=cursor[part];
+    }
+    return {status:'unique',value:cursor};
+  }
+  return {status:'unique',value};
 }

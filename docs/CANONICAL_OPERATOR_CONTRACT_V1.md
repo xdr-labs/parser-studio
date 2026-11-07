@@ -30,6 +30,34 @@ predicate/type module. Two authored corpora assert byte-for-byte reviewed
 source examples and expected routing; generated Ruby is executed in the CI
 Ruby environment for the native comparisons.
 
+## H1 source path parity increment (stacked on H3, still DRAFT)
+
+The same pure `canonical-operator-contract.ts` module defines
+`sourcePaths.lookup = all-partitions-own-keys` with an eight-segment,
+128-character, own-property-only source path grammar. A path such as
+`a.b.c` can denote `a -> b -> c`, `a -> "b.c"`, `"a.b" -> c`, or
+`"a.b.c"`. Exactly one resolved source value is required; a missing value
+does not map, and competing interpretations **always fail closed** even
+when a reviewed `source_path_kind` specifies a literal or nested selector.
+This matches the behavior of `parserstudio_lookup` in both native templates,
+which raises `Ambiguous source path` on collisions.
+
+The browser now uses the same bounded partition algorithm rather than
+prefering a literal root key or ignoring dotted intermediate keys. Field
+suggestions exclude ambiguous paths; JSONata prompt generation independently
+checks original source leaves **before** candidate filtering so the reason is
+not lost. Source bytes and vendor records are never rewritten to disambiguate
+a value. The browser preserves a `found` distinction for absent and null
+fields; the native lookup returns Ruby `nil` for either, and both are
+ineligible for `exists`.
+
+Independent tests assert synthetic mixed, ambiguous, zero, false, null,
+missing, literal and nested cases. A required Ruby CI test compares the
+identical lookup method from both generated template sources with independent
+truth. Local dev-atlas has no Ruby executable, so local tests alone cannot
+certify Native conformance. This increment does **not** certify an isolated
+Native runner, grammar-wide regex AST, Fluentd integration or Stellar DP 7.0.
+
 Future H1 work: expand canonical semantics to extraction AST/regex grammar,
 JSONata selectors, protocol-aware conditional field applicability, enrichment,
 source-byte accounting and error-stage behavior without silently changing
