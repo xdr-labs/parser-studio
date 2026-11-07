@@ -77,3 +77,38 @@ This is a source engine/browser evidence increment only. Existing generated
 Ruby independent goldens and H2 CI isolation are separate evidence; a
 same-source native differential test across **all** supported families and
 Stellar Cyber DP 7.0 import/receive qualification are not completed by it.
+
+## H3 publisher-attributed original-source excerpts (2026-11-08)
+
+The fixed H3 holdout in
+`tests/test_h3_official_vendor_source_excerpts_20261108.py` adds **two
+publisher-attributed, contiguous excerpts** from official manufacturer log
+documentation. They are deliberately **not** presented as entire vendor logs
+or customer-production evidence.
+
+- **Fortinet FortiOS Traffic** — [Log message fields, FortiOS 7.4.2](https://docs.fortinet.com/document/fortigate/7.4.2/fortios-log-message-reference/357866/log-message-fields).
+  The first 16 raw KV fields from the published 2017 traffic example are
+  preserved verbatim; the later action field was not copied. Independent truth
+  asserts source/destination IP, source/destination port **as source strings**,
+  original byte spans and source hash. No invented action mapping is allowed.
+- **WatchGuard Firebox Traffic Monitor** —
+  [Read a Log Message](https://www.watchguard.com/help/docs/help-center/en-us/content/en-US/Fireware/logging/read_log-msg.html).
+  A contiguous excerpt of the 2024 Member2 Allow example retains the
+  original source/destination IP positional tokens and trailing `proc_id`
+  and `rc` indicators. The currently supported local source parser keeps
+  those addresses as unmatched/partially recovered positional evidence and
+  does **not** assign official `srcip`/`dstip` semantics without explicit
+  positional-grammar review. This is **not** scored as normalized success.
+
+For both excerpts, the oracle asserts the original UTF-8 source hash,
+physical input identity, source-bound byte spans and no Native/target claim.
+Reversing the two records in a batch must preserve both per-event source
+bytes and newline framing. Test scope: three Python unit tests, fixed public
+source excerpts only. The complete manufacturer logs are not reproduced,
+and production receiver/DP 7.0 import is untested.
+
+This is independent publicly documented format *evidence*, not a claim of
+full production vendor normalization accuracy. Expand future holdouts only
+with license-safe verified source artifacts, explicit sample provenance and
+independently authored expected output; do not invent samples to improve
+an accuracy score.
