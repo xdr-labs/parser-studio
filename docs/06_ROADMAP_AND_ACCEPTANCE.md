@@ -20,8 +20,10 @@ reopen completed work. This roadmap is ordered **H0 → H1 → H2 → H3 → H4 
   generated Ruby callback and paired file hash oracle in CI, with only
   sanitized receipts. Separately isolated, resource-constrained user-parser
   Native execution remains pending and public runner stays disabled.
-- **H3 pending:** independent source goldens, negative/mutation fixtures,
-  native differentials and browser user acceptance for each supported grammar.
+- **H3 in progress:** independent 100-seed, 2–10 event-family synthetic
+  metamorphic mapping oracle; original vendor field values remain unchanged.
+  Complete grammar-wide independent goldens and generated Ruby comparisons
+  remain pending.
 - **H4 pending:** convert advisory QA to enforced, exact-HEAD merge/release
   gates only after independently verifying repository policy and approvals.
 - **H5 separately gated:** actual Stellar Cyber DP 7.0 import/receive requires

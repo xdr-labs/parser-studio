@@ -76,7 +76,12 @@ Evidence levels: `SOURCE_PARSED` → `DRAFT_COMPILED` → `NATIVE_CONFORMANT` �
 `TARGET_VERIFIED`. Browser preview/HTTP 200/zip hash do not imply native
 conformance; even native Ruby cannot prove Stellar Cyber DP 7.0 import.
 
-### H3: Differential + independent-oracle QA — planned
+### H3: Differential + independent-oracle QA — metamorphic increment in progress
+
+The first increment adds 100 deterministic multi-event source-order permutations
+with independently authored official field truth and exact vendor value
+preservation. Evidence and remaining scope:
+[Independent Oracle H3](INDEPENDENT_ORACLE_H3.md).
 
 For each explicitly supported grammar: independent original source truth,
 positive/negative fixtures, validated Stellar 7.0 target values, predictable
