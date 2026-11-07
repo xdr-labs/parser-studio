@@ -12,8 +12,10 @@ reopen completed work. This roadmap is ordered **H0 → H1 → H2 → H3 → H4 
 
 - **H0 in progress:** close confirmed regex dialect/performance, field
   order-dependence and typed classifier mismatches (#245–#248).
-- **H1 pending:** canonical versioned operator/regex contract and common
-  browser/backend/native semantics.
+- **H1 in progress:** canonical classification operator contract v1 (strict
+  string equality and typed presence across browser/backend/compiled Ruby)
+  implemented on stacked branch, with native CI pending; regex AST,
+  source-byte accounting and remaining operators are not yet qualified.
 - **H2 pending:** isolated generated-Ruby verification with exact artifact
   hashes and resource limits; no public runner by default.
 - **H3 pending:** independent source goldens, negative/mutation fixtures,

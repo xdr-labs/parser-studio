@@ -41,7 +41,15 @@ Observed independent red cases:
 4. Run focused TypeScript/backend regression and full exact-HEAD suites; native
    Ruby and public Chromium must pass for all changed behavior before merging.
 
-### H1: Canonical rule/operator contract v1 — planned
+### H1: Canonical rule/operator contract v1 — in progress
+
+The first increment defines the versioned strict classification operator
+contract (string-only `equals`, typed `exists`, post-normalization comparison),
+shares its evaluator and type eligibility checks across browser/backend, and
+marks both generated Ruby templates. Independent authored examples check that
+`0006` differs from `6`; same-head CI must execute generated Ruby to verify
+actual native agreement. Further extraction/field-path/error contracts remain
+open until their own executable goldens exist.
 
 Define a versioned supported grammar and explicit types/paths, predicate
 semantics, error-stage behavior and original-byte accounting. Consolidate
