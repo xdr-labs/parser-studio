@@ -297,17 +297,44 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
     safeForBulk:high&&(!current||replaceIsGenerated),
   };
 }
+/** Limit expensive per-event semantic checks without silently sampling input order.
+ * Catalog/alias eligibility is a cheap name-only prefilter. If more than the
+ * bounded budget qualify, do not infer ANY official field from an incomplete
+ * competition set; the UI shows a blocking review warning instead. */
+export const MAX_OFFICIAL_CANDIDATE_SCAN=1024;
+export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
+  eligiblePaths:number;limit:number;exceeded:boolean;paths:string[];
+}{
+  const sources=new Set<string>();
+  for(const event of suite?.events??[])
+    for(const path of listSafeLeafPaths(event.fields))sources.add(path);
+  const eligible=[...sources].filter(source=>{
+    const leaf=source.split('.').at(-1)??source;
+    return Boolean(findStellarMetadataField(source)?.mappable||
+      findStellarMetadataField(leaf)?.mappable||
+      ALIASES[source.toLowerCase()]||ALIASES[leaf.toLowerCase()]);
+  });
+  // Preserve the established single-event suggestion order for beginner UX.
+  // With multiple event families, deterministic lexical order makes reversed
+  // event ordering produce the exact same REVIEW candidate list.
+  if((suite?.events.length??0)>1)eligible.sort();
+  return {eligiblePaths:eligible.length,limit:MAX_OFFICIAL_CANDIDATE_SCAN,
+    exceeded:eligible.length>MAX_OFFICIAL_CANDIDATE_SCAN,
+    paths:eligible.length>MAX_OFFICIAL_CANDIDATE_SCAN?[]:eligible};
+}
 export function suggestNormalizationCandidatesFromSuite(
   suite:SuiteResult|undefined,existing:MappingRule[],existingGroups:Record<string,FieldGroup>={},
   options:{skipAmbiguousTargets?:boolean}={},
 ):NormalizationCandidate[]{
   if(!suite?.events.length)return [];
   const fields=suite.events.map(event=>event.fields);
-  const sources=new Set<string>();
-  for(const event of fields)for(const path of listSafeLeafPaths(event))sources.add(path);
+  const scan=normalizationCandidateScanStatus(suite);
+  // An incomplete candidate set could hide a competing official destination.
+  // Fail closed instead of marking the first 100 paths as complete.
+  if(scan.exceeded)return [];
   const proposed:NormalizationCandidate[]=[];
   const candidatesByTarget=new Map<string,NormalizationCandidate[]>();
-  for(const source of [...sources].slice(0,100)){
+  for(const source of scan.paths){
     const candidate=candidateForSource(source,fields,existing,existingGroups);
     if(!candidate)continue;
     candidatesByTarget.set(candidate.target,[...(candidatesByTarget.get(candidate.target)??[]),candidate]);
