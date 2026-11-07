@@ -1,3 +1,4 @@
+import {evaluateCanonicalClassificationPredicate} from '../../backend/src/canonical-operator-contract';
 import type { EventResult,ParserDraft } from '../model';
 import type { EventClass, GuidedOptions } from './contract';
 import { lookupFieldValue } from '../fieldPaths';
@@ -28,7 +29,7 @@ export function suggestClassification(event: EventResult, options: GuidedOptions
           ?lookupFieldValue(event.normalized,mapping.target)
           :{found:false,value:undefined})
       :lookupFieldValue(event.fields,rule.sourceField.trim());
-    if(match.found&&typeof match.value==='string'&&match.value===rule.equals){
+    if(match.found&&evaluateCanonicalClassificationPredicate('equals',match.value,rule.equals)){
       return { index: rule.index, rule: i, status: 'matched', reason: rule.sourceField + ' = ' + rule.equals + ' · Condition ' + (i + 1) };
     }
   }

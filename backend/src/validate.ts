@@ -1,4 +1,5 @@
 import {portableRegexIssue} from './portable-regex.js';
+import {supportsCanonicalClassificationOperator} from './canonical-operator-contract.js';
 import { Ajv } from "ajv";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
 import type { ParserProject, ValidationIssue, ValidationResult, FieldMap } from "./types.js";
@@ -405,7 +406,8 @@ export function validateProject(input: unknown): ValidationResult {
     // Classification equals values are strings in ParserProject v0.1. Ruby
     // compares typed normalized values strictly; an integer 6 != string "6".
     // Fail closed instead of emitting a silently misrouted native parser.
-    if (rule.operator === "equals" && normalizedTypes.has(rule.field) && normalizedTypes.get(rule.field) !== "string")
+    if (normalizedTypes.has(rule.field) &&
+        !supportsCanonicalClassificationOperator(rule.operator,normalizedTypes.get(rule.field)))
       issue(issues, "classification_type", path,
         "String equals classification can only target normalized string fields.");
     if (rule.operator === "equals" && rule.value === undefined)

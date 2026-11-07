@@ -1174,6 +1174,7 @@ def parserstudio_enrich(normalized)
   normalized
 end
 
+# Canonical classifier contract: parser-studio.operator-semantics.v1
 def parserstudio_classify(normalized)
   @parser_rule_set['classification']['rules'].each do |rule|
     value = parserstudio_lookup(normalized, rule['field'])
