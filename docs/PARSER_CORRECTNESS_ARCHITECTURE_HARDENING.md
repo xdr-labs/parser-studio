@@ -57,7 +57,13 @@ existing Ruby template helpers by generated/common validated implementation.
 Unsupported grammar is `REVIEW_REQUIRED`, not a best-effort promoted DRAFT.
 Preserve the independent Grammar-first / Multi-Pass source engine.
 
-### H2: Native-first verification — planned
+### H2: Native-first verification — CI evidence increment in progress
+
+The first increment adds a required exact-HEAD synthetic Ruby executable
+oracle and sanitized artifact hashes, described in
+[Native Executable Evidence v1](NATIVE_EXECUTABLE_EVIDENCE_V1.md).
+**This is not a production sandbox or certification of arbitrary user parsers.**
+The isolated runner/security hardening and live deployment remain pending.
 
 Reuse the source-hash-bound `native-project-verification.ts` contract and
 `local-native-project-verifier.ts` behind an authorization-checked isolated

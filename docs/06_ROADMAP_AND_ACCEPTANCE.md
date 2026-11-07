@@ -16,8 +16,10 @@ reopen completed work. This roadmap is ordered **H0 → H1 → H2 → H3 → H4 
   string equality and typed presence across browser/backend/compiled Ruby)
   implemented on stacked branch, with native CI pending; regex AST,
   source-byte accounting and remaining operators are not yet qualified.
-- **H2 pending:** isolated generated-Ruby verification with exact artifact
-  hashes and resource limits; no public runner by default.
+- **H2 CI evidence in progress:** mandatory fixed synthetic source → actual
+  generated Ruby callback and paired file hash oracle in CI, with only
+  sanitized receipts. Separately isolated, resource-constrained user-parser
+  Native execution remains pending and public runner stays disabled.
 - **H3 pending:** independent source goldens, negative/mutation fixtures,
   native differentials and browser user acceptance for each supported grammar.
 - **H4 pending:** convert advisory QA to enforced, exact-HEAD merge/release
