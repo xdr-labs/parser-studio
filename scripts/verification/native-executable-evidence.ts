@@ -15,15 +15,23 @@ import {sampleProject} from '../../backend/test/fixture';
 
 const hash=(text:string)=>createHash('sha256').update(text,'utf8').digest('hex');
 
-// The raw examples and expected outputs are independently authored, not
-// constructed from parsed/compiler results or used as self-derived goldens.
+// Independent official-field policy requires original source `action` to be
+// TEXT, even if a generic string mapping can stringify JSON numeric values.
+// The numeric second event must fail closed with an explicit normalization
+// diagnostic, preserve its unrelated valid IP and never emit official action.
+// Oracle expectations are authored from the pinned Stellar 7.0 policy, not
+// derived from browser/native implementation output.
 const oracle=[
   {raw:'{"status":"0006","client_ip":"192.0.2.10"}',
-    expected:{action:'0006',srcip:'192.0.2.10',stellar_log_index:'threat'}},
+    expected:{action:'0006',srcip:'192.0.2.10',stellar_log_index:'threat'},
+    absent:[] as string[]},
   {raw:'{"status":6,"client_ip":"198.51.100.7"}',
-    expected:{action:'6',srcip:'198.51.100.7',stellar_log_index:'syslog'}},
+    expected:{srcip:'198.51.100.7',stellar_log_index:'syslog',
+      parser_err_msg:'MappedFieldError',parser_err_stage:'normalization',
+      parser_err_field:'status'},absent:['action']},
   {raw:'{"status":"6","client_ip":"203.0.113.9"}',
-    expected:{action:'6',srcip:'203.0.113.9',stellar_log_index:'syslog'}},
+    expected:{action:'6',srcip:'203.0.113.9',stellar_log_index:'syslog'},
+    absent:[] as string[]},
 ];
 
 const runner=[
@@ -81,6 +89,9 @@ function main(){
     const record=actual[i]!;
     for(const [field,value] of Object.entries(oracle[i]!.expected))
       assert.equal(record[field],value,`Native mismatch in synthetic event ${i+1}, field ${field}`);
+    for(const forbidden of oracle[i]!.absent)
+      assert.equal(Object.hasOwn(record,forbidden),false,
+        `Unexpected official field in failed synthetic event ${i+1}: ${forbidden}`);
   }
   // Receipt contains no raw events, normalized values, Ruby code, passwords or
   // environment values. It is explicitly not a per-user parser validation.
@@ -88,7 +99,7 @@ function main(){
     contract:'parser-studio.native-executable-evidence.v1',
     scope:'fixed-synthetic-ruby-callback-only',
     verifiedEventCount:oracle.length,
-    verifiedFieldCount:oracle.reduce((sum,event)=>sum+Object.keys(event.expected).length,0),
+    verifiedFieldCount:oracle.reduce((sum,event)=>sum+Object.keys(event.expected).length+event.absent.length,0),
     sourceSha256:hash(oracle.map(entry=>entry.raw).join('\n')),
     parserSha256:parser.sha256,
     confSha256:conf.sha256,

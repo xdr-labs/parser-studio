@@ -8,8 +8,9 @@ It compiles one trusted synthetic ParserProject into the actual extensionless
 Ruby and `.conf` artifacts, verifies their byte hashes, executes the Ruby
 fragment in a real Ruby interpreter, and compares each generated record with
 independently authored expected values. The three fixed JSON source records
-cover string leading zeros, numeric-to-string normalization and nonmatching
-routing. The synthetic source/expected oracle is hardcoded in
+cover string leading zeros, rejection of a numeric original as an official
+Stellar `action` field (with mapped-field error stage and unrelated IP retained),
+and nonmatching routing. The synthetic source/expected oracle is hardcoded in
 `scripts/verification/native-executable-evidence.ts`, not inferred from the
 browser or compiler outputs.
 

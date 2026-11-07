@@ -70,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/native-executable-evidence.ts > "$RUNNER_TEMP/parser-studio-native-evidence.json"
-          node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/parser-studio-native-evidence.json','utf8'));if(r.contract!=='parser-studio.native-executable-evidence.v1'||r.nativeRubyExecuted!==true||r.verifiedEventCount!==3||r.verifiedFieldCount!==9||r.userParserVerified!==false||r.stellarTargetImportVerified!==false||r.rawValuesReturned!==false)process.exit(1);console.log('GENERATED_NATIVE_ORACLE_PASS',r.verifiedEventCount+' events',r.verifiedFieldCount+' typed fields')"
+          node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/parser-studio-native-evidence.json','utf8'));if(r.contract!=='parser-studio.native-executable-evidence.v1'||r.nativeRubyExecuted!==true||r.verifiedEventCount!==3||r.verifiedFieldCount!==12||r.userParserVerified!==false||r.stellarTargetImportVerified!==false||r.rawValuesReturned!==false)process.exit(1);console.log('GENERATED_NATIVE_ORACLE_PASS',r.verifiedEventCount+' events',r.verifiedFieldCount+' typed fields')"
       - name: Upload sanitized Native Ruby oracle evidence
         uses: actions/upload-artifact@v4
         with:
