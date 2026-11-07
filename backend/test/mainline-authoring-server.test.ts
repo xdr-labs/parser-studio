@@ -122,6 +122,9 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
     "import.ts","artifact-package.ts","parser-recipe-v02.ts","unicode.ts","types.ts",
     // Pure browser-shared regex grammar guard, with no I/O, network or target APIs.
     "portable-regex.ts",
+    // Canonical v1 classification comparison is a pure data/typing helper.
+    // It exposes no disk, network, target or dynamic execution capability.
+    "canonical-operator-contract.ts",
     // Static pinned Stellar 7.0 scalar catalog; no executable/HTTP-capable module.
     "stellar7-enrichment-types.json",
   ]);
