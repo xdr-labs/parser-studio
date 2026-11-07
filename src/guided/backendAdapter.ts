@@ -164,6 +164,13 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       });
       continue;
     }
+    const mapping=draft.mappings.find(candidate=>candidate.source===rule.sourceField&&
+      (options.groups[candidate.id]??'vendor_fields')!=='vendor_fields');
+    if(mapping?.type!=='string'){
+      issues.push({code:'CLASSIFICATION_NONSTRING_FIELD',path:'/classification/rules/'+index,
+        message:'String equals classification requires a reviewed text mapping. Numeric and boolean fields cannot be compared to text in generated Ruby.'});
+      continue;
+    }
     rules.push({ field: normalized, operator: 'equals', value: rule.equals, index: indexMap[rule.index] });
   }
   const category = options.sourceCategory ?? 'network';
