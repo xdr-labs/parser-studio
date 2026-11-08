@@ -106,6 +106,8 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     };
   }
   const options = draft.guided ?? defaultGuidedOptions();
+  // Match the browser preview namespace before constructing the native project.
+  const vendorNamespace = draft.vendor.trim();
   const issues: AdapterIssue[] = [];
   if(draft.genericStructuralProfile!==undefined&&
     (!isGenericStructuralProfile(draft.genericStructuralProfile)||draft.format!=='generic_structural'))
@@ -236,14 +238,14 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     const commonOutputs=[
       ...Object.values(topFields).map(x=>x.normalized_name),
       ...Object.values(nsFields).map(x=>x.normalized_name),
-      ...Object.values(vendorFields).map(x=>draft.vendor+'.'+x.normalized_name),
+      ...Object.values(vendorFields).map(x=>vendorNamespace+'.'+x.normalized_name),
     ];
     for(const variant of eventProfiles.variants){
       const seen=[...commonOutputs];
       const outputGroups=[
         ...Object.values(variant.topFields).map(x=>x.normalized_name),
         ...Object.values(variant.nsFields).map(x=>x.normalized_name),
-        ...Object.values(variant.vendorFields).map(x=>draft.vendor+'.'+x.normalized_name),
+        ...Object.values(variant.vendorFields).map(x=>vendorNamespace+'.'+x.normalized_name),
       ];
       for(const output of outputGroups){
         if(seen.some(other=>other===output||other.startsWith(output+'.')||
@@ -269,7 +271,7 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
     projectId: 'draft-' + options.slug,
     revision: 1,
     slug: options.slug,
-    vendor: draft.vendor,
+    vendor: vendorNamespace,
     product: draft.name,
     ...(draft.version?.trim()?{productVersion:draft.version.trim()}:{}),
     sourceCategory: category,

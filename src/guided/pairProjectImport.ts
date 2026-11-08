@@ -42,7 +42,7 @@ export function reconstructExactBackendDraft(
       p.projectId!=='draft-'+p.slug ||
       pairName!=='customized_'+p.slug ||
       typeof p.vendor!=='string' || typeof p.product!=='string' ||
-      !p.vendor.trim() || !p.product.trim() ||
+      !p.vendor.trim() || p.vendor!==p.vendor.trim() || !p.product.trim() ||
       (p.productVersion!==undefined&&(typeof p.productVersion!=='string'||!p.productVersion.trim())) ||
       !isObject(p.extraction) || !isObject(p.receiver) ||
       !isObject(p.normalization) || !isObject(p.classification))return null;
