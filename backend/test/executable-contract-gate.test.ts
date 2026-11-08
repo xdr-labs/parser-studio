@@ -14,7 +14,7 @@ test('new compiler grammars or removed operators cannot bypass independent execu
  assert.deepEqual([...BACKEND_CAPABILITIES.authoring.extractionFormats].sort(),
   [...manifest.extractionFormats].sort(),'Every shipping grammar needs an independent native oracle');
  const truth=JSON.parse(read(manifest.operatorTruth));
- assert.ok(truth.cases.length>=60,'The independently authored boundary corpus was reduced');
+ assert.ok(truth.cases.length>=63,'The independently authored boundary corpus was reduced');
  const operations=new Set(truth.cases.flatMap((c:any)=>(c.enrichment??[]).map((e:any)=>e.operator)));
  const types=new Set(truth.cases.flatMap((c:any)=>c.mappings.map((m:any)=>m.type)));
  assert.deepEqual([...operations].sort(),[...manifest.operators].sort());
@@ -31,7 +31,9 @@ test('new compiler grammars or removed operators cannot bypass independent execu
 test('direct backend generation rejects unsupported regex bytes and source-depth contracts',()=>{
  for(const pattern of ['^'+'가'.repeat(90)+'(?<field>x)$',String.raw`(?<field>\xFF)`,
   String.raw`(?<field>\bvalue\b)`,String.raw`(?<field>[a&&b])`,
-  '(?<field>'+String.fromCharCode(0xd800)+')']){
+  '(?<field>'+String.fromCharCode(0xd800)+')',
+  '^(?<field>'+'🙂*'.repeat(6)+')z$',
+  '^(?<field>'+'🙂{0,128}'.repeat(4)+')z$']){
   assert.notEqual(validateBoundedRegexPattern(pattern),null);
   const p=sampleProject();p.extraction={format:'regex',pattern};p.classification.rules=[];
   assert.equal(validateProject(p).ok,false);

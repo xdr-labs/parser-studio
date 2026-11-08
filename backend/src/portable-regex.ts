@@ -39,8 +39,11 @@ export function parsePortableRegexAst(pattern:string):PortableRegexAstResult{
   let issue:PortableRegexIssue|null=null;
   const fail=(reason:PortableRegexIssue):null=>{issue=reason;return null;};
   const atom=():PortableRegexNode|null=>{
-    const c=pattern[pos++];
-    if(c===undefined)return fail('REGEX_AST_SYNTAX');
+    const point=pattern.codePointAt(pos);
+    if(point===undefined)return fail('REGEX_AST_SYNTAX');
+    if(point>=0xd800&&point<=0xdfff)return fail('REGEX_DIALECT_ESCAPE');
+    const c=String.fromCodePoint(point);
+    pos+=c.length;
     if(c==='('){
       let name:string|null=null;
       if(pattern.startsWith('?:',pos))pos+=2;
@@ -261,7 +264,10 @@ export function portableRegexIssue(pattern:string):PortableRegexIssue|null{
       // downstream by the syntax validator.
       frame.previous=null;index++;continue;
     }else{
-      atom={kind:'literal',token:current,quantified:false};index++;
+      // Cost analysis must consume the same Unicode scalar as the AST and
+      // the emitted /u matcher, including its attached quantifier.
+      const literal=String.fromCodePoint(pattern.codePointAt(index)!);
+      atom={kind:'literal',token:literal,quantified:false};index+=literal.length;
     }
     const remaining=pattern.slice(index);
     const quantifier=/^(?:[+*?]|\{\d{1,8}(?:,\d{0,8})?\})/.exec(remaining)?.[0];
