@@ -1198,6 +1198,52 @@
         "message": " 192.0.2.1 "
       },
       "stage": "enrichment"
+    },
+    {
+      "id": "A09-astral-bounded-repeat",
+      "format": "regex",
+      "pattern": "^(?<message>🙂{2,3})$",
+      "raw": "🙂🙂",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "🙂🙂"
+      }
+    },
+    {
+      "id": "A09-rejected-astral-adjacent",
+      "format": "regex",
+      "pattern": "^(?<message>🙂*🙂*🙂*🙂*🙂*🙂*)z$",
+      "raw": "🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "rejected": true
+    },
+    {
+      "id": "A09-rejected-astral-finite",
+      "format": "regex",
+      "pattern": "^(?<message>🙂{0,128}🙂{0,128}🙂{0,128}🙂{0,128})z$",
+      "raw": "🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "rejected": true
     }
   ]
 }

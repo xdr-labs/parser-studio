@@ -35,10 +35,10 @@ verified independently rather than mistaken for another project payload.
 
 ## Required evidence
 
-- Frontend independent operator corpus: 60 authored fixtures, ordinary/family
-  variants where applicable, with six authoring rejections and explicit expected
+- Frontend independent operator corpus: 63 authored fixtures, ordinary/family
+  variants where applicable, with eight authoring rejections and explicit expected
   normalized values and error phases. The same fixtures feed the native gate.
-- `scripts/verification/operator-conformance.ts`: 104 compiled projects, 208
+- `scripts/verification/operator-conformance.ts`: 105 compiled projects, 210
   expected-result replays plus an invalid intermediate event for every project.
 - `scripts/verification/grammar-conformance.ts`: 24 compound/framing/relay
   projects, 48 expected-result replays and 24 deliberately invalid records.
@@ -79,3 +79,14 @@ the separately authorized policy change.
 H5 remains NOT VERIFIED: the reference rickmodular device is offline and no
 reachable designated DP 7.0 lab has been provided. No DP import/installation,
 sensor receive or production operation is part of these synthetic receipts.
+
+## Supplementary-character release boundary — issue #268
+
+A final bounded release probe found that the static AST/cost walk still read
+literal UTF-16 units after Unicode execution had been corrected. Adjacent
+supplementary-character repetitions could therefore bypass the overlap gate.
+Both walks now consume complete Unicode scalars; the AST entry also rejects lone
+surrogates. Independent fixtures include bounded astral repetition, repeated
+unbounded and finite astral repetitions, and direct backend rejection. The old
+staged release was held before any deployment; final release evidence must use
+the follow-up candidate recorded in the ACTIVE packet.
