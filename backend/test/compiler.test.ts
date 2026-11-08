@@ -67,8 +67,13 @@ test("manufacturer, product and version drive filenames, CONF identity and embed
  assert.equal(embedded.productVersion,"7.4.5");
 });
 
-test("fragment includes only one set of markers, safe literal payload, and Ruby callback", () => {
+test("compiler rejects untrusted manufacturer punctuation rather than embedding it", () => {
  const p=sampleProject();p.vendor="Pretend #{Kernel.exit} 'vendor'";
+ assert.throws(()=>compilePair(p),/Invalid parser project/);
+});
+
+test("fragment includes only one set of markers, safe literal payload, and Ruby callback", () => {
+ const p=sampleProject();p.vendor="Pretend Kernel.exit Vendor";
  const ruby=compilePair(p).files[1]!.content;
  for(const marker of ["STELLAR_INIT_BEGIN","STELLAR_INIT_END","STELLAR_PARSE_BEGIN","STELLAR_PARSE_END"])
    assert.equal(ruby.split(marker).length-1,1);
