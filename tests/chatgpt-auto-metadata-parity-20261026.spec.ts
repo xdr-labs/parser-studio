@@ -55,7 +55,7 @@ test('Auto Parser metadata is the sole shared source for ChatGPT prompt and CONF
 test('untouched demo metadata is not asserted to be real manufacturer evidence in the AI prompt',async({page})=>{
   await page.goto('/?workspace=chatgpt');
   const identity=page.getByLabel('Parser product identity');
-  await expect(identity.getByRole('textbox',{name:'Parser manufacturer'})).toHaveValue('Demo / local draft');
+  await expect(identity.getByRole('textbox',{name:'Parser manufacturer'})).toHaveValue('Demo Local Draft');
   await expect(identity.getByRole('textbox',{name:'Parser product',exact:true})).toHaveValue('Untitled parser');
   await expect(identity.getByRole('textbox',{name:'Parser product version'})).toHaveValue('1.0.0');
   await expect(identity.getByRole('spinbutton',{name:'Parser listener port'})).toHaveValue('6801');

@@ -40,7 +40,7 @@ export function missingParserIdentityMessage(vendor:string,product:string):strin
   return null;
 }
 
-export const PLACEHOLDER_PARSER_VENDOR='Demo / local draft';
+export const PLACEHOLDER_PARSER_VENDOR='Demo Local Draft';
 export const PLACEHOLDER_PARSER_PRODUCT='Untitled parser';
 
 /** Which of the two demo placeholders is still in place (blank counts as unset too). */

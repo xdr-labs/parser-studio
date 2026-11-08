@@ -13,7 +13,7 @@ describe('parser identity inputs',()=>{
   it('warns on the final step while the demo manufacturer/product placeholder is still in use',()=>{
     render(<ParserIdentityCard draft={createDraft()} setDraft={vi.fn()} warnIfPlaceholder/>);
     const warning=screen.getByRole('note',{name:/placeholder/i});
-    expect(warning).toHaveTextContent('Demo / local draft');
+    expect(warning).toHaveTextContent('Demo Local Draft');
     expect(warning).toHaveTextContent('Untitled parser');
     expect(warning).toHaveTextContent(/downloaded files/i);
   });
@@ -22,7 +22,7 @@ describe('parser identity inputs',()=>{
     render(<ParserIdentityCard draft={draft} setDraft={vi.fn()} warnIfPlaceholder/>);
     const warning=screen.getByRole('note',{name:/placeholder/i});
     expect(warning).toHaveTextContent('Untitled parser');
-    expect(warning).not.toHaveTextContent('Demo / local draft');
+    expect(warning).not.toHaveTextContent('Demo Local Draft');
   });
   it('shows no warning once real names are entered, or when the warning is not requested',()=>{
     const real={...createDraft(),vendor:'Fortinet',name:'FortiGate'};

@@ -92,7 +92,7 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   // One source of truth across both creation methods. Untouched demo metadata
   // is not falsely presented to ChatGPT as a real security-product identity.
   const declaredInfo:AssistedSolutionInfo={
-    vendor:draft.vendor==='Demo / local draft'?'':draft.vendor,
+    vendor:draft.vendor==='Demo Local Draft'?'':draft.vendor,
     product:draft.name==='Untitled parser'?'':draft.name,
     version:draft.version==='1.0.0'?'':draft.version??'',
     delivery:'',
