@@ -39,7 +39,8 @@
     "vendor": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 128
+      "maxLength": 128,
+      "pattern": "^[^\\p{Cc}\\p{Cf}\\p{Cs}\\p{Zl}\\p{Zp}]+$"
     },
     "product": {
       "type": "string",

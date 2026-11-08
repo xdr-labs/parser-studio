@@ -32,6 +32,13 @@ describe('backend-exact, byte-verified portable parser project reconstruction',(
     if(check.ok)expect(check.project).toEqual(initial);
     expect(JSON.stringify(reconstructed)).not.toContain('SECRET_CUSTOMER_EVENT');
   });
+  it('refuses imported projects with invisible or unsafe manufacturer output roots',()=>{
+    for(const vendor of ['Audit\nInjected','Audit\u0000Bad','Audit\tBad',
+      'Audit\u200bBad','__proto__','constructor']){
+      const value=clone(project());value.vendor=vendor;
+      expect(reconstructExactBackendDraft(value,'customized_demo_firewall'),JSON.stringify(vendor)).toBeNull();
+    }
+  });
   it('accepts native reviewed mapping groups and enrichment only when completely preserved',()=>{
     const original=project();
     const value=clone(original);

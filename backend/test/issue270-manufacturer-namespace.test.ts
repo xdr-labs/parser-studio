@@ -24,6 +24,15 @@ test('backend refuses noncanonical manufacturer identities before Ruby export',(
     assert.equal(result.ok,false,vendor);
     assert.ok(result.issues.some(issue=>issue.code==='noncanonical_vendor_namespace'),vendor);
   }
+  for(const vendor of ['Audit\nInjected','Audit\u0000Bad','Audit\tBad',
+    'Audit\u200bBad','Audit\u202eBad','Audit\u00adBad',
+    '__proto__','constructor','prototype']){
+    const result=validateProject(fixture(vendor));
+    assert.equal(result.ok,false,JSON.stringify(vendor));
+    assert.ok(result.issues.some(issue=>issue.path==='/vendor'),JSON.stringify(vendor));
+  }
+  assert.equal(validateProject(fixture('Palo Alto Networks')).ok,true);
+  assert.equal(validateProject(fixture('트렌드마이크로')).ok,true);
   assert.equal(validateProject(fixture('Audit')).ok,true);
   assert.equal(validateProject(fixture('Palo Alto')).ok,true);
 });

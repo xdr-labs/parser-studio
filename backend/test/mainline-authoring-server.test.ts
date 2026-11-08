@@ -125,6 +125,8 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
     // Canonical v1 classification comparison is a pure data/typing helper.
     // It exposes no disk, network, target or dynamic execution capability.
     "canonical-operator-contract.ts",
+    // Pure manufacturer namespace predicate; no runtime capabilities.
+    "vendor-namespace.ts",
     "canonical-value-contract.ts","unicode-case-map.v1.json",
     // Static pinned Stellar 7.0 scalar catalog; no executable/HTTP-capable module.
     "stellar7-enrichment-types.json",

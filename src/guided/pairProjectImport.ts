@@ -2,6 +2,7 @@ import type { ParserDraft, MappingRule } from '../model';
 import {isGenericStructuralProfile} from '../genericStructuralProfiles';
 import { defaultGuidedOptions, type EventClass, type FieldGroup, type GuidedEnrichmentRule } from './contract';
 import { toBackendProject, type BackendParserProject } from './backendAdapter';
+import {validManufacturerNamespace} from '../../backend/src/vendor-namespace';
 
 /**
  * Reverse only the EXACT, reviewed Parser Studio backend project subset.
@@ -42,7 +43,7 @@ export function reconstructExactBackendDraft(
       p.projectId!=='draft-'+p.slug ||
       pairName!=='customized_'+p.slug ||
       typeof p.vendor!=='string' || typeof p.product!=='string' ||
-      !p.vendor.trim() || p.vendor!==p.vendor.trim() || !p.product.trim() ||
+      !validManufacturerNamespace(p.vendor) || !p.product.trim() ||
       (p.productVersion!==undefined&&(typeof p.productVersion!=='string'||!p.productVersion.trim())) ||
       !isObject(p.extraction) || !isObject(p.receiver) ||
       !isObject(p.normalization) || !isObject(p.classification))return null;

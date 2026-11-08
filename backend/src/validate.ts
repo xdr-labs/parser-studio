@@ -2,6 +2,7 @@ import {createPortableRegex,parsePortableRegexAst,portableRegexIssue,
   portableRegexBytes,PORTABLE_REGEX_MAX_BYTES} from './portable-regex.js';
 import {supportsCanonicalClassificationOperator,validCanonicalSourcePath} from './canonical-operator-contract.js';
 import { Ajv } from "ajv";
+import {validManufacturerNamespace} from "./vendor-namespace.js";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
 import type { ParserProject, ValidationIssue, ValidationResult, FieldMap } from "./types.js";
 
@@ -171,9 +172,9 @@ export function validateProject(input: unknown): ValidationResult {
   const p = input as unknown as ParserProject;
   // Native Ruby consumes this literal as an output key. Reject ambiguous
   // externally supplied projects rather than silently changing field paths.
-  if (p.vendor !== p.vendor.trim())
+  if (!validManufacturerNamespace(p.vendor))
     issue(issues, "noncanonical_vendor_namespace", "/vendor",
-      "Manufacturer must not contain leading or trailing whitespace.");
+      "Manufacturer must be a canonical visible output namespace without controls, invisible characters or unsafe object roots.");
   if(p.receiver.tcpFraming==="blank_line_json"||
      p.receiver.tcpFraming==="blank_line_java"){
     // No auto-reassembly: sender MUST delimit each complete event with LF LF,
