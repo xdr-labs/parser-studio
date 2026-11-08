@@ -61,7 +61,7 @@ test("POC disposable writer accepts only reviewed template and exactly localhost
   const proof=requireDisposablePocWrite(plan);
   assert.equal(proof.port,7891);
   assert.equal(proof.protocols.length,2);
-  assert.equal(proof.templateSha256,"9448f5c9c63a4e5f306aa7bd7049912adb0473f6a78eec4f55ae11745fc7d9b4");
+  assert.equal(proof.templateSha256,"439b1c9f31e827ad6ff92746ef9309f8ad5f2dbaa7952cdb77118f00e0a9f5f7");
   assert.equal(proof.syntheticFixtureOnly,true);
   assert.equal(proof.runtimeParsingVerified,false);
   assert.equal(JSON.stringify(proof).includes("Base64.strict_decode64"),false);
@@ -74,6 +74,14 @@ test("POC write guard rejects extra filters, arbitrary self-hashed Ruby and mism
     ["sink",(x:PairExport)=>{x.files[0]!.content=x.files[0]!.content.replace("@type null","@type stdout");}],
     ["public",(x:PairExport)=>{x.files[0]!.content=x.files[0]!.content.replace("bind 127.0.0.1","bind 0.0.0.0");}],
     ["ruby",(x:PairExport)=>{x.files[1]!.content+="\n# injected Ruby";}],
+    ["unicode-map",(x:PairExport)=>{
+      x.files[1]!.content=x.files[1]!.content.replace(
+        /(@parserstudio_case_map = JSON.parse\(Zlib::Inflate.inflate\(Base64.strict_decode64\(')([A-Za-z0-9+/=]+)/,
+        (_all,prefix:string,encoded:string)=>prefix+(encoded[0]==='A'?'B':'A')+encoded.slice(1));
+    }],
+    ["extra-base64",(x:PairExport)=>{
+      x.files[1]!.content+="\n# Base64.strict_decode64('QUJDREVGR0hJSktM')";
+    }],
   ] as const){
     const x=clone(pair);patch(x);
     for(const file of x.files){

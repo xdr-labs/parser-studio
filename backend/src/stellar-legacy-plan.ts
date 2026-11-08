@@ -19,6 +19,9 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Reviewed current compiler: fixed Unicode case-fold map embedded as a second
+  // Base64 literal. Its exact bytes remain covered by the normalized template SHA.
+  "439b1c9f31e827ad6ff92746ef9309f8ad5f2dbaa7952cdb77118f00e0a9f5f7",
   // Issue #210: exact reviewed synthetic-only template after strict browser/native
   // source limits, value coercion, final enrichment and JSON string parity.
   // This never relaxes loopback, null-sink, owner approval, tenant,
@@ -179,7 +182,13 @@ export function makeLegacyUploadPlan(pair:PairExport,tenant:string,version:strin
 function reviewedRuby(ruby:Buffer,name:string,port:number,protocols:readonly string[]):string{
   const text=ruby.toString("utf8");
   const matches=Array.from(text.matchAll(B64_CALL));
-  if(matches.length!==1)fail("POC_RUBY_UNREVIEWED");
+  // The first literal is the project IR. The second, when present, is the
+  // compiler-owned compressed Unicode case-fold table. Never interpret it as
+  // another project or allow extra literals beyond this exact reviewed shape.
+  if(matches.length!==1&&matches.length!==2)fail("POC_RUBY_UNREVIEWED");
+  if(matches.length===2&&(
+    !text.includes("@parserstudio_case_map = JSON.parse(Zlib::Inflate.inflate(Base64.strict_decode64('"+matches[1]![1]+"')))")))
+    fail("POC_RUBY_UNREVIEWED");
   const token=matches[0]![1]!;
   const normalized=text.replace(token,"__PARSER_PROJECT_B64__");
   const templateSha=sha256(normalized);
