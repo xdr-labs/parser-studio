@@ -47,6 +47,6 @@ describe('actual Browser normalization matches 7.0 candidate value constraints',
     draft.guided!.groups['explicit-reviewed']='vendor_fields';
     const result=preview('{"digest":"short"}',draft);
     expect(result.events[0]?.normalizedOk).toBe(true);
-    expect(result.events[0]?.normalized).toHaveProperty('Demo / local draft.sha256','short');
+    expect(result.events[0]?.normalized).toHaveProperty('Demo Local Draft.sha256','short');
   });
 });

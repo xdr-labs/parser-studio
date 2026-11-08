@@ -62,12 +62,14 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
   it('rejects non-printing manufacturer namespaces before native generation', () => {
     for(const vendor of ['Audit\nInjected','Audit\u0000Bad','Audit\tBad',
       'Audit\u200bBad','Audit\u202eBad','Audit\u00adBad',
+      'Audit\u034fBad','Audit\u115fBad','Audit\u2800Bad','Audit\u3164Bad',
+      'Audit\uffa0Bad','트렌드마이크로','Palo\u00a0Alto','Café',
       '__proto__','constructor','prototype']){
       const draft=createDraft();draft.vendor=vendor;draft.format='json';
       const result=toBackendProject(draft);
       expect(result.ok,JSON.stringify(vendor)).toBe(false);
     }
-    for(const vendor of ['Palo Alto Networks','트렌드마이크로']){
+    for(const vendor of ['Palo Alto Networks','A&B (Security)-2026_1.0']){
       const draft=createDraft();draft.vendor=vendor;draft.format='json';
       expect(toBackendProject(draft).ok,JSON.stringify(vendor)).toBe(true);
     }

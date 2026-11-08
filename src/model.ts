@@ -114,7 +114,7 @@ export const DEMO_SAMPLES = [
 export function createDraft(): ParserDraft {
   return {
     name: 'Untitled parser',
-    vendor: 'Demo / local draft',
+    vendor: 'Demo Local Draft',
     version: '1.0.0',
     format: 'auto',
     pattern: '(?<action>\\w+)\\s+src=(?<src_ip>\\S+)',

@@ -34,7 +34,8 @@ describe('backend-exact, byte-verified portable parser project reconstruction',(
   });
   it('refuses imported projects with invisible or unsafe manufacturer output roots',()=>{
     for(const vendor of ['Audit\nInjected','Audit\u0000Bad','Audit\tBad',
-      'Audit\u200bBad','__proto__','constructor']){
+      'Audit\u200bBad','Audit\u034fBad','Audit\u3164Bad',
+      '트렌드마이크로','Café','__proto__','constructor']){
       const value=clone(project());value.vendor=vendor;
       expect(reconstructExactBackendDraft(value,'customized_demo_firewall'),JSON.stringify(vendor)).toBeNull();
     }

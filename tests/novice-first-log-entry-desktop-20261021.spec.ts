@@ -18,7 +18,7 @@ test('a new desktop user can jump from the opening explanation straight to the o
   expect(textarea!.y+Math.min(textarea!.height,50)).toBeGreaterThan(0);
   await sample.fill('{"event_type":"threat","message":"테스트"}');
   await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeEnabled();
-  await expect(page.getByRole('textbox',{name:'Parser manufacturer'})).toHaveValue('Demo / local draft');
+  await expect(page.getByRole('textbox',{name:'Parser manufacturer'})).toHaveValue('Demo Local Draft');
   await page.screenshot({path:info.outputPath('desktop-first-log-entry.png'),fullPage:true});
 });
 

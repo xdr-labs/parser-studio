@@ -396,7 +396,7 @@ The button now reads "Leave out of output" (aria-label unchanged) and the hint s
 
 ### 2026-10-30 — Create Parser step flags the demo manufacturer/product placeholder (O-2)
 
-`Demo / local draft` / `Untitled parser` are the untouched defaults and were written into the downloaded `.conf` header (`# Vendor:`/`# Product:`) and file names. The Create Parser step now shows the identity card with a warning note naming which placeholder is still set, so the real names can be entered right there. It does not block creation (many existing journeys deliberately build with the defaults).
+`Demo Local Draft` / `Untitled parser` are the untouched defaults and were written into the downloaded `.conf` header (`# Vendor:`/`# Product:`) and file names. The Create Parser step now shows the identity card with a warning note naming which placeholder is still set, so the real names can be entered right there. It does not block creation (many existing journeys deliberately build with the defaults).
 
 ### 2026-10-30 — Assisted path explains a type-only mapping correction too (O-10, Assisted)
 

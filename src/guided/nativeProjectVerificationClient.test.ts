@@ -84,7 +84,7 @@ describe('explicit source-bound Native project verification client',()=>{
   const actual=await buildNativeExpectedEvents(suite,review.recipe,review.legacyProject);
   const record={
    custom:{action:'deny',destination_port:443},
-   'Demo / local draft':{custom:{source_ip:'192.0.2.10'}},
+   'Demo Local Draft':{custom:{source_ip:'192.0.2.10'}},
    stellar_log_index:'threat',
    msg_origin:{source:'demo_firewall',category:'network',class:'demo_firewall'},
   };

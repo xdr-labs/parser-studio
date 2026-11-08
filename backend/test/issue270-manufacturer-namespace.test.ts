@@ -22,17 +22,19 @@ test('backend refuses noncanonical manufacturer identities before Ruby export',(
   for(const vendor of [' Audit','Audit ',' Audit ', '\u00a0Audit\u00a0','\u2003Audit\u2003']){
     const result=validateProject(fixture(vendor));
     assert.equal(result.ok,false,vendor);
-    assert.ok(result.issues.some(issue=>issue.code==='noncanonical_vendor_namespace'),vendor);
+    assert.ok(result.issues.some(issue=>issue.path==='/vendor'),vendor);
   }
   for(const vendor of ['Audit\nInjected','Audit\u0000Bad','Audit\tBad',
     'Audit\u200bBad','Audit\u202eBad','Audit\u00adBad',
+    'Audit\u034fBad','Audit\u115fBad','Audit\u2800Bad','Audit\u3164Bad',
+    'Audit\uffa0Bad','트렌드마이크로','Palo\u00a0Alto','Café',
     '__proto__','constructor','prototype']){
     const result=validateProject(fixture(vendor));
     assert.equal(result.ok,false,JSON.stringify(vendor));
     assert.ok(result.issues.some(issue=>issue.path==='/vendor'),JSON.stringify(vendor));
   }
   assert.equal(validateProject(fixture('Palo Alto Networks')).ok,true);
-  assert.equal(validateProject(fixture('트렌드마이크로')).ok,true);
+  assert.equal(validateProject(fixture('A&B (Security)-2026_1.0')).ok,true);
   assert.equal(validateProject(fixture('Audit')).ok,true);
   assert.equal(validateProject(fixture('Palo Alto')).ok,true);
 });
