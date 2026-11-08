@@ -10,7 +10,9 @@ test('published Juniper logs → ChatGPT JSONata mapping review → DRAFT Ruby a
   const external:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>{
-    if(request.method()==='POST'&&!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(request.url()))
+    // Same-origin API requests are required by the live public workflow.
+    // Only a POST to a third-party origin is an unexpected disclosure.
+    if(request.method()==='POST' && new URL(request.url()).origin!==new URL(page.url()).origin)
       external.push(request.url());
   });
   await page.goto('/');
