@@ -33,6 +33,12 @@ const ALIASES:Record<string,string>={
   src:'srcip',src_ip:'srcip',source_ip:'srcip',sourceip:'srcip',
   sourceipaddress:'srcip',sourceaddress:'srcip',srcaddress:'srcip',
   'source.ip':'srcip','source.address':'srcip','source.ipaddress':'srcip',
+  // Zeek TSV #fields dotted names are flattened to underscores by the explicit
+  // browser preparation step. Only the documented orig/resp address and L4
+  // port columns have unambiguous Stellar counterparts; ts needs epoch
+  // conversion and proto is a transport name, not numeric Stellar proto.
+  id_orig_h:'srcip',id_orig_p:'srcport',
+  id_resp_h:'dstip',id_resp_p:'dstport',
   // RFC5424 Structured Data and Juniper RT_FLOW use literal hyphenated keys.
   // Preserve their complete source paths; only normalize the destination.
   'source-address':'srcip',
@@ -266,6 +272,8 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
     ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
   ]);
   const replaceIsGenerated=Boolean(current&&(
+    (current.id.startsWith('zeek-column-')&&currentGroup==='vendor_fields'&&
+      current.target===source)||
     (current.id.startsWith('auto-')&&currentGroup==='vendor_fields')||
     (current.target.startsWith('custom.')&&defaultGenerated.get(current.id)===current.target)
   ));

@@ -26,6 +26,32 @@ describe('official-catalog normalization candidates',()=>{
       source:'src_ip',confidence:'REVIEW',observed:2,total:2,safeForBulk:false,
     });
   });
+  it('maps actual Zeek TSV flattened endpoint columns without guessing epoch or protocol semantics',()=>{
+    const event={id_orig_h:'10.20.0.25',id_orig_p:'41000',
+      id_resp_h:'203.0.113.80',id_resp_p:'80',proto:'tcp',ts:'1783509600.029999'};
+    const suggestions=suggestNormalizationCandidates(event,[]);
+    for(const [source,target] of [
+      ['id_orig_h','srcip'],['id_orig_p','srcport'],
+      ['id_resp_h','dstip'],['id_resp_p','dstport'],
+    ]){
+      expect(suggestions).toEqual(expect.arrayContaining([
+        expect.objectContaining({source,target,confidence:'HIGH',safeForBulk:true}),
+      ]));
+    }
+    expect(suggestions.some(x=>x.source==='ts'&&x.target==='timestamp')).toBe(false);
+    expect(suggestions.find(x=>x.source==='proto')).toMatchObject({
+      target:'proto',confidence:'REVIEW',safeForBulk:false,
+    });
+    const prepared=[{id:'zeek-column-3',source:'id_orig_h',target:'id_orig_h',type:'string' as const}];
+    expect(suggestNormalizationCandidates(event,prepared)
+      .find(x=>x.source==='id_orig_h')).toMatchObject({
+        replacesMappingId:'zeek-column-3',safeForBulk:true,
+      });
+    expect(suggestNormalizationCandidates(event,[{...prepared[0],target:'custom.reviewed'}])
+      .find(x=>x.source==='id_orig_h')).toMatchObject({safeForBulk:false});
+    expect(suggestNormalizationCandidates({...event,id_orig_h:'not-ip'},[])
+      .find(x=>x.source==='id_orig_h')).toMatchObject({confidence:'REVIEW',safeForBulk:false});
+  });
   it('covers common AWS CloudTrail and WAF source address names without broad semantic guessing',()=>{
     expect(suggestNormalizationCandidates({sourceIPAddress:'198.51.100.10'},[])[0])
       .toMatchObject({source:'sourceIPAddress',target:'srcip',confidence:'HIGH'});
