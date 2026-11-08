@@ -32,7 +32,7 @@ test('exact generated native Ruby preserves canonical manufacturer namespace',
   {skip:!nativeAvailable},()=>{
     const project=fixture('Audit');
     const pair=compilePair(project);
-    const ruby=pair.files.find(file=>file.name.endsWith('.rb'))!.content;
+    const ruby=pair.files.find(file=>!file.name.endsWith('.conf'))!.content;
     const runner=[
       "require 'json'", "require 'base64'", "require 'csv'", "require 'time'", "require 'ipaddr'",
       'klass=Class.new',
