@@ -1,3 +1,4 @@
+import {resolvedTemplate} from './template-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -105,7 +106,7 @@ test('Both native Ruby templates have identical strict KV Unicode grammar',
     const raw=corpus.kvWhitespace.map(input);
     const signatures:string[]=[];
     for(const name of ['ruby-fragment.rb.tpl','ruby-forwarder-family.rb.tpl']){
-      const template=readFileSync(new URL('../templates/'+name,import.meta.url),'utf8');
+      const template=resolvedTemplate(name);
       const out=spawnSync('ruby',['-e',source],{
         encoding:'utf8',timeout:15000,maxBuffer:1024*1024,
         input:Buffer.from(template).toString('base64')+'\n'+JSON.stringify(raw),

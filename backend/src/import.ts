@@ -122,9 +122,10 @@ function parseConfSource(conf: string, pairName: string, diagnostics: PairInspec
 }
 
 function tryRoundTrip(input: PairInspectionInput): ParserProject | null {
-  // Do not evaluate Ruby. Decode only the one embedded compiler model,
-  // independently validate, then prove exact byte equality with both files.
-  const matches = [...input.fragmentContent.matchAll(/Base64\.strict_decode64\('([A-Za-z0-9+/=]+)'\)/g)];
+  // Do not evaluate Ruby. Select only the canonical project assignment;
+  // other compiler-owned Base64 payloads (for example pinned Unicode data)
+  // are not project candidates. Exact regeneration still verifies both files.
+  const matches = [...input.fragmentContent.matchAll(/^[ \t]*@parser_rule_set = JSON\.parse\(Base64\.strict_decode64\('([A-Za-z0-9+/=]+)'\)\)[ \t]*$/gm)];
   if (matches.length !== 1 || !matches[0]?.[1]) return null;
   try {
     const value: unknown = JSON.parse(Buffer.from(matches[0][1], "base64").toString("utf8"));

@@ -699,3 +699,22 @@ mobile, DP/sensor, production release or target import.
 Evidence: verification/20261021-kv-duplicate-census-parity.md.
 This remains fixed Stellar Cyber 7.0 Dictionary work; no legacy version
 selection, mobile, DP/sensors, production or public deployment.
+
+
+## 2026-11-08 — executable contract acceptance supersedes aggregate H0-H3 claims
+
+Audit #266 showed that the previous integration/CI receipt did not close all H1/H3
+execution gaps. The corrected implementation unifies native operators across both
+templates and requires independently authored operator/type/grammar boundary truth.
+See [the explicit scope and acceptance](verification/20261108-executable-contract-completion.md)
+and `contracts/execution-coverage.v1.json`; final candidate SHA/CI/browser receipts
+are authoritative in [#266](https://github.com/xdr-labs/parser-studio/issues/266).
+
+- H1: reviewed executable v1 grammar/value/path/enrichment/error contract implemented;
+  native and browser matrices are mandatory before this candidate is qualified.
+- H3: required synthetic grammar/operator/type/template coverage implemented;
+  no universal vendor accuracy or target import claim.
+- H4: operator-side exact-head gate implemented; GitHub main is currently unprotected
+  (404, empty Rulesets). Previous private-plan 403 is stale. Branch policy changes
+  require their separate authorization; repository visibility was not changed here.
+- H5: real DP 7.0 import/receive remains NOT VERIFIED without an accessible designated lab.

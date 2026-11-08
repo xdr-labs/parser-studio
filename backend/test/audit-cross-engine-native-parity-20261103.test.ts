@@ -1,6 +1,6 @@
+import {resolvedTemplate} from './template-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {sampleProject} from './fixture.js';
 import {compilePair} from '../src/compiler.js';
@@ -43,7 +43,7 @@ function execute(source:string,raw:string,extractor:'kv'|'syslog_rfc5424'|'syslo
 test('both Ruby templates retain path separators across KV, RFC5424 and RFC3164',
   {skip:!available},()=>{
     for(const name of ['ruby-fragment.rb.tpl','ruby-forwarder-family.rb.tpl']){
-      const template=readFileSync(new URL('../templates/'+name,import.meta.url),'utf8');
+      const template=resolvedTemplate(name);
       for(const [extractor,raw] of [
         ['kv',kv],
         ['syslog_rfc5424','<14>1 2026-11-03T11:11:11Z fw app - ID - '+kv],
@@ -117,7 +117,7 @@ test('generated Ruby DRAFT has exact Browser-approved port/IP conversion', {skip
 test('both Ruby template scalar conversions agree on whitespace, sign and IPv6',
   {skip:!available},()=>{
     for(const name of ['ruby-fragment.rb.tpl','ruby-forwarder-family.rb.tpl']){
-      const template=readFileSync(new URL('../templates/'+name,import.meta.url),'utf8');
+      const template=resolvedTemplate(name);
       const ruby=[
         "require 'json'","require 'base64'","require 'ipaddr'","require 'csv'","require 'time'",
         "klass=Class.new",

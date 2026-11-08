@@ -1,6 +1,7 @@
 import {validMappingWhen} from '../fieldPaths';
 import type { FieldType, ParserDraft } from '../model';
 import {validatePreviewRegexPattern} from '../regexSafety';
+import {validCanonicalSourcePath} from '../../backend/src/canonical-operator-contract';
 
 export type EventClass = 'Session' | 'Threat' | 'Syslog' | 'Winlogevent';
 export type FieldGroup = 'top_fields' | 'ns_fields' | 'vendor_fields';
@@ -84,6 +85,7 @@ const RESERVED_OUTPUT_ROOTS = new Set([
 ]);
 function safeUiPath(path: string): boolean {
   return path.length > 0 && path.length <= 128 && SAFE_UI_FIELD_PATH.test(path) &&
+    validCanonicalSourcePath(path) &&
     path.split('.').every((part) => !UNSAFE_FIELD_SEGMENTS.has(part));
 }
 function overlappingDestination(first: string, second: string): boolean {

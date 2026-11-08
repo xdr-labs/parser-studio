@@ -1,3 +1,4 @@
+import {extractStructuredFamily} from '../structuredFamilies';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 export type ForwarderConfig={maxHops:1|2|3;relayHosts:string[]};
 export interface ForwarderHop {
@@ -10,8 +11,6 @@ export type ForwarderInspection={
  reason:string;
 };
 const enc=new TextEncoder();
-const monthDays:Record<string,number>={
- Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
 export function validForwarderConfig(config?:ForwarderConfig):boolean{
  return !config||(Number.isInteger(config.maxHops)&&config.maxHops>=1&&config.maxHops<=3&&
    config.relayHosts.length>=1&&config.relayHosts.length<=8&&
@@ -26,12 +25,14 @@ function singleEnvelope(raw:string):
    return {host:parsed.fields.syslog_hostname,timestamp:parsed.fields.syslog_timestamp,
      format:'rfc5424',payload:parsed.message};
  }
- const match=/^<(\d{1,3})>([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+([!-~]{1,255})\s+([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[\d{1,8}\])?:\s+(.+)$/.exec(raw);
- if(!match||Number(match[1])>191||!monthDays[match[2]!]||
-    Number(match[3])<1||Number(match[3])>monthDays[match[2]!]||
-    Number(match[4])>23||Number(match[5])>59||Number(match[6])>59)return null;
- return {host:match[7]!,timestamp:match[2]+' '+match[3]+' '+match[4]+':'+match[5]+':'+match[6],
-   format:'rfc3164',payload:match[9]!};
+ // Reuse the exact bounded BSD decoder used by ordinary extraction. This
+ // keeps ASCII separators, calendar checks and canonical header text equal.
+ if(!raw.startsWith('<'))return null;
+ const parsed=extractStructuredFamily(raw,'syslog_rfc3164','raw');
+ if(parsed.errors.length||typeof parsed.fields.message!=='string')return null;
+ return {host:parsed.fields.syslog_hostname as string,
+   timestamp:parsed.fields.syslog_timestamp as string,
+   format:'rfc3164',payload:parsed.fields.message};
 }
 export function inspectDeclaredForwarders(raw:string,config?:ForwarderConfig):ForwarderInspection{
  const direct={status:'DIRECT' as const,payload:raw,payloadStartByte:0,hops:[],reason:'NO_DECLARED_RELAY'};

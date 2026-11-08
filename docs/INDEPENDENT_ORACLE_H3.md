@@ -1,6 +1,6 @@
 # Independent Oracle H3 — deterministic event-order metamorphic regression
 
-Status: **H3 first increment**. This is not full semantic acceptance for every
+Status: **Historical increments below; current executable coverage is in [the 2026-11-08 contract receipt](verification/20261108-executable-contract-completion.md).** This is not full semantic acceptance for every
 security-source grammar or proof of Stellar Cyber DP compatibility.
 
 `src/guided/mappingMetamorphicOracle20261107.test.ts` exercises

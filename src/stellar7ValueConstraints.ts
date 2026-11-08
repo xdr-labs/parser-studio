@@ -5,9 +5,12 @@
  * official destination constraint after the user bypasses a suggestion.
  * Kept independent of the parser to avoid cyclic imports in normalizer UI.
  */
+import {trimCanonicalAscii,canonicalOfficialScalarValid} from '../backend/src/canonical-value-contract';
+
 export function meetsStellar7ValueConstraints(
   target:string,raw:unknown,converted:unknown,
 ):boolean{
+  if(!canonicalOfficialScalarValid(target,converted))return false;
   const hash=/(?:^|\.)(md5|sha1|sha256)$/.exec(target)?.[1];
   if(hash){
     const widths:Record<string,number>={md5:32,sha1:40,sha256:64};
@@ -18,7 +21,7 @@ export function meetsStellar7ValueConstraints(
   if(target==='proto')return typeof converted==='number'&&
     Number.isInteger(converted)&&converted>=0&&converted<=255;
   if(target==='proto_name')return typeof raw==='string'&&
-    ['tcp','udp','icmp','igmp'].includes(raw.trim().toLowerCase());
+    ['tcp','udp','icmp','igmp'].includes(trimCanonicalAscii(raw).toLowerCase());
 
   if(target==='srcport'||target==='dstport')
     return typeof converted==='number'&&Number.isInteger(converted)&&
@@ -33,6 +36,6 @@ export function meetsStellar7ValueConstraints(
 export function officialProtocolPairConflict(proto:unknown,protoName:unknown):boolean{
   if(proto===undefined||proto===null||protoName===undefined||protoName===null)return false;
   const codes:Record<string,number[]>={tcp:[6],udp:[17],icmp:[1,58],igmp:[2]};
-  const allowed=typeof protoName==='string'?codes[protoName.trim().toLowerCase()]:undefined;
+  const allowed=typeof protoName==='string'?codes[trimCanonicalAscii(protoName).toLowerCase()]:undefined;
   return !allowed||!allowed.includes(Number(proto));
 }
