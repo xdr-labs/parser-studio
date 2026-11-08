@@ -551,7 +551,8 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   const enrichedTargets=(canEnrich?draft.guided?.enrichment??[]:[]).flatMap(rule=>
     rule.operator==='split_field'?(rule.targets??[]):[rule.target]);
   for(const target of enrichedTargets){
-    if(target===draft.vendor||target.startsWith(draft.vendor+'.'))continue;
+    const vendorNamespace=draft.vendor.trim()||'vendor';
+    if(target===vendorNamespace||target.startsWith(vendorNamespace+'.'))continue;
     const meta=findStellarMetadataField(target);
     if(!meta?.mappable||!meta.mappingType)continue;
     const found=lookupFieldValue(normalized,target);

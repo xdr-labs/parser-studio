@@ -169,6 +169,11 @@ export function validateProject(input: unknown): ValidationResult {
   }
 
   const p = input as unknown as ParserProject;
+  // Native Ruby consumes this literal as an output key. Reject ambiguous
+  // externally supplied projects rather than silently changing field paths.
+  if (p.vendor !== p.vendor.trim())
+    issue(issues, "noncanonical_vendor_namespace", "/vendor",
+      "Manufacturer must not contain leading or trailing whitespace.");
   if(p.receiver.tcpFraming==="blank_line_json"||
      p.receiver.tcpFraming==="blank_line_java"){
     // No auto-reassembly: sender MUST delimit each complete event with LF LF,

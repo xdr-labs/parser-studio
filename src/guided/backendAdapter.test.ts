@@ -48,6 +48,17 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     expect(JSON.stringify(result.project)).not.toContain(DEMO_SAMPLES);
   });
 
+  it('canonicalizes manufacturer whitespace before native output namespace serialization', () => {
+    for (const vendor of [' Audit ', '\u00a0Audit\u00a0', '\u2003Audit\u2003']) {
+      const draft = createDraft();
+      draft.vendor = vendor;
+      draft.format = 'json';
+      const result = toBackendProject(draft);
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.project.vendor).toBe('Audit');
+    }
+  });
+
   it('maps timestamp to a supported backend date rule with explicit UTC', () => {
     const draft = createDraft();
     draft.format = 'json';
