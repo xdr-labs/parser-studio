@@ -59,6 +59,20 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     }
   });
 
+  it('rejects non-printing manufacturer namespaces before native generation', () => {
+    for(const vendor of ['Audit\nInjected','Audit\u0000Bad','Audit\tBad',
+      'Audit\u200bBad','Audit\u202eBad','Audit\u00adBad',
+      '__proto__','constructor','prototype']){
+      const draft=createDraft();draft.vendor=vendor;draft.format='json';
+      const result=toBackendProject(draft);
+      expect(result.ok,JSON.stringify(vendor)).toBe(false);
+    }
+    for(const vendor of ['Palo Alto Networks','트렌드마이크로']){
+      const draft=createDraft();draft.vendor=vendor;draft.format='json';
+      expect(toBackendProject(draft).ok,JSON.stringify(vendor)).toBe(true);
+    }
+  });
+
   it('maps timestamp to a supported backend date rule with explicit UTC', () => {
     const draft = createDraft();
     draft.format = 'json';
