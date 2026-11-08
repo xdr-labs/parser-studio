@@ -16,6 +16,11 @@ export type PortableRegexIssue =
  * parity remains subject to independent generated-Ruby conformance.
  */
 export const PORTABLE_REGEX_AST_CONTRACT='parser-studio.portable-regex-ast.v1';
+export const PORTABLE_REGEX_MAX_BYTES=256;
+
+export function portableRegexBytes(pattern:string):number{
+  return new TextEncoder().encode(pattern).byteLength;
+}
 export type PortableRegexNode=
   |{kind:'sequence';nodes:PortableRegexNode[]}
   |{kind:'alternation';branches:PortableRegexNode[]}
@@ -147,11 +152,38 @@ function possiblyOverlaps(a:Atom,b:Atom):boolean{
  * wildcards repeated in a capture are also forbidden even when separated by
  * literals: .*a.*a.*a.* produces polynomial backtracking on nonmatches. */
 export function portableRegexIssue(pattern:string):PortableRegexIssue|null{
+  for(const character of pattern){
+    const unit=character.charCodeAt(0);
+    if(character.length===1&&unit>=0xd800&&unit<=0xdfff)return 'REGEX_DIALECT_ESCAPE';
+  }
   // Ruby recognizes POSIX bracket classes but JS regex has different syntax.
   // Reject before analyzing the class's internal nested '[' characters.
   if(/\[\[:[A-Za-z]+:\]\]/.test(pattern))return 'REGEX_POSIX_CLASS';
   const grammar=parsePortableRegexAst(pattern);
   if(!grammar.ok)return grammar.issue;
+  // Ruby hex escapes describe UTF-8 bytes, whereas JS describes code points.
+  // Word boundaries also use different Unicode word sets. Keep these outside
+  // the supported subset instead of approving a pattern with a new meaning.
+  const check=(node:PortableRegexNode):boolean=>{
+    if(node.kind==='sequence')return node.nodes.every(check);
+    if(node.kind==='alternation')return node.branches.every(check);
+    if(node.kind==='group')return check(node.body);
+    if(node.kind==='repeat')return check(node.atom);
+    if(node.kind==='escape')return !/^\\[bB]$/.test(node.text)&&
+      !/^\\x[89a-fA-F]/.test(node.text);
+    if(node.kind==='class'){
+      const content=node.text.slice(1,-1);
+      if(content.includes('&&'))return false;
+      for(let i=0;i<content.length;i++){
+        if(content[i]==='[')return false;
+        if(content[i]!=='\\')continue;
+        const c=content[++i];
+        if(c==='S'||(c==='x'&&/[89a-fA-F]/.test(content[i+1]??'')))return false;
+      }
+    }
+    return true;
+  };
+  if(!check(grammar.ast))return 'REGEX_DIALECT_ESCAPE';
   const frames:Array<{previous:Atom|null;wildcards:number}>=[{previous:null,wildcards:0}];
   let index=0;
   while(index<pattern.length){
@@ -245,4 +277,50 @@ export function portableRegexIssue(pattern:string):PortableRegexIssue|null{
     }else frame.previous=null;
   }
   return null;
+}
+
+/** Lower the reviewed AST to Unicode JS semantics matching the native
+ * single-line Ruby subset. Never evaluate raw user syntax with JS defaults. */
+export function portableRegexJavaScriptSource(pattern:string):string{
+  const parsed=parsePortableRegexAst(pattern);
+  if(!parsed.ok||portableRegexIssue(pattern))throw new Error('Unsupported portable regex');
+  const quote=(s:string)=>s.replace(/[\\^$.*+?()[\]{}|]/g,'\\$&');
+  const emit=(node:PortableRegexNode):string=>{
+    switch(node.kind){
+      case 'sequence':return node.nodes.map(emit).join('');
+      case 'alternation':return node.branches.map(emit).join('|');
+      case 'group':return '('+(node.captureName?'?<'+node.captureName+'>':'?:')+emit(node.body)+')';
+      case 'repeat':{
+        const count=node.min===0&&node.max===null?'*':node.min===1&&node.max===null?'+':
+          node.min===0&&node.max===1?'?':'{'+node.min+
+          (node.max===node.min?'':','+(node.max??''))+'}';
+        return emit(node.atom)+count+(node.lazy?'?':'');
+      }
+      case 'literal':return quote(node.text);
+      case 'wildcard':return '[^\\n]';
+      case 'anchor':return node.text==='$'?'(?![\\s\\S])':'^';
+      case 'class':{
+        let result='[';
+        for(let index=1;index<node.text.length-1;index++){
+          const c=node.text[index]!;
+          if(c!=='\\'){result+=c;continue;}
+          const escaped=node.text[++index]!;
+          result+=escaped==='s'?'\\x09-\\x0d\\x20':
+            /^[,:;=!'"/]$/.test(escaped)?escaped:'\\'+escaped;
+        }
+        return result+']';
+      }
+      case 'escape':{
+        if(node.text==='\\s')return '[\\x09-\\x0d\\x20]';
+        if(node.text==='\\S')return '[^\\x09-\\x0d\\x20]';
+        if(/^\\[,:;=!'"/-]$/.test(node.text))return quote(node.text.slice(1));
+        return node.text;
+      }
+    }
+  };
+  return emit(parsed.ast);
+}
+
+export function createPortableRegex(pattern:string):RegExp{
+  return new RegExp(portableRegexJavaScriptSource(pattern),'u');
 }

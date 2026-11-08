@@ -2,7 +2,7 @@ import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
 import {jsonSourceValueValid} from './jsonSourceSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
-import {validatePreviewRegexPattern} from './regexSafety';
+import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
 export type StructuredFamily = 'syslog_rfc3164' | 'syslog_rfc5424' | 'cef' | 'leef';
@@ -148,13 +148,7 @@ function deterministicBody(text:string):'raw'|'json'|'kv'|'cef'|'leef'{
  return 'raw';
 }
 function regexBody(message:string,pattern:string|undefined):StructuredExtraction{
- if(validatePreviewRegexPattern(pattern??'')!==null)return failure('Unsafe or invalid bounded Regex body pattern');
- try{
-  const match=new RegExp(pattern!).exec(message);
-  if(!match?.groups)return failure('Regex body did not match this event');
-  const fields=Object.fromEntries(Object.entries(match.groups).filter(([,value])=>value!==undefined));
-  return Object.keys(fields).length?{fields,errors:[]}:failure('Regex body returned no named fields');
- }catch{return failure('Invalid bounded Regex body pattern');}
+ return extractPortableRegexFields(message,pattern??'');
 }
 function parsedBody(message:string,mode:'raw'|'json'|'kv'|'cef'|'leef'|'regex',regexPattern?:string):
  StructuredExtraction{

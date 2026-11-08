@@ -13,10 +13,12 @@ const method=(s:string)=>{
   assert.ok(match,'native parserstudio_lookup method missing');
   return match[0];
 };
-const templates=[
-  method(source('ruby-fragment.rb.tpl')),
-  method(source('ruby-forwarder-family.rb.tpl')),
-];
+const canonicalMethod=method(source('canonical-operators.rb.tpl'));
+const templates=['ruby-fragment.rb.tpl','ruby-forwarder-family.rb.tpl'].map(name=>{
+  assert.ok(source(name).includes('# __PARSERSTUDIO_CANONICAL_OPERATORS__'));
+  assert.ok(!source(name).includes('def parserstudio_lookup('),'operators must have one source');
+  return canonicalMethod;
+});
 const generatedPair=compilePair(sampleProject());
 const generatedRuby=generatedPair.files.find(file=>!file.name.endsWith('.conf'));
 assert.ok(generatedRuby,'generated Ruby artifact missing');

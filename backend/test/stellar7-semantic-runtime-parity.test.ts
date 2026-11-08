@@ -1,13 +1,13 @@
+import {resolvedTemplate} from './template-fixture.js';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {compilePair} from '../src/compiler.js';
 import {sampleProject} from './fixture.js';
 import {validateProject} from '../src/validate.js';
 
-const oldStyle=readFileSync(new URL('../templates/ruby-fragment.rb.tpl',import.meta.url),'utf8');
-const familyStyle=readFileSync(new URL('../templates/ruby-forwarder-family.rb.tpl',import.meta.url),'utf8');
+const oldStyle=resolvedTemplate('ruby-fragment.rb.tpl');
+const familyStyle=resolvedTemplate('ruby-forwarder-family.rb.tpl');
 const helper=(source:string)=>{
   const begin=source.indexOf('def parserstudio_stellar7_value_valid?(');
   assert.ok(begin>=0,'Missing official-field semantic validator');

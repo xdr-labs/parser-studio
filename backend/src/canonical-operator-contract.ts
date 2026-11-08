@@ -7,6 +7,8 @@
  * This is a versioned operator contract, not evidence that the generated
  * parser was actually executed in Ruby or accepted by a Stellar Cyber DP.
  */
+import unicodeCaseMap from './unicode-case-map.v1.json' with {type:'json'};
+
 export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
   contract:'parser-studio.operator-semantics.v1',
   classification:Object.freeze({
@@ -48,6 +50,13 @@ export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
     explicitSelectorMustBeUnambiguous:true,
     arraysTraversable:false,missingAndNullIneligible:true,
   }),
+  values:Object.freeze({
+    compoundScalarCoercion:false,compoundStringEncoding:'json',
+    ignoredStringsMatchOriginalType:true,timestampIntermediate:'canonical-utc-iso-ms',
+    timestampWireField:'timestamp',timestampWireEncoding:'epoch-ms',
+    splitDelimiter:'literal-preserve-empty',unicodeCase:unicodeCaseMap.contract,
+    unicodeVersion:unicodeCaseMap.unicodeVersion,
+  }),
   executionOrder:Object.freeze([
     'extract-source','normalize-typed-fields','apply-enrichment','classify',
   ]),
@@ -55,6 +64,17 @@ export const CANONICAL_OPERATOR_CONTRACT_V1 = Object.freeze({
     sourcePreviewIsNativeEvidence:false,nativeRubyIsTargetEvidence:false,
   }),
 });
+
+export function canonicalIgnoreSourceValue(value:unknown,ignored:readonly string[]):boolean{
+  return value===null||value===undefined||typeof value==='string'&&ignored.includes(value);
+}
+
+/** Pinned Unicode 15.0 per-codepoint mappings, independent of host ICU.
+ * Context-sensitive casing is deliberately outside the operator contract. */
+export function canonicalCaseTransform(value:string,operator:'lowercase'|'uppercase'):string{
+  const table:Record<string,string>=unicodeCaseMap[operator];
+  return Array.from(value,char=>table[char.codePointAt(0)!.toString(16)]??char).join('');
+}
 
 export type CanonicalClassificationOperator='equals'|'exists';
 

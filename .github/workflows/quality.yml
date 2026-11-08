@@ -85,6 +85,10 @@ jobs:
         run: |
           set -euo pipefail
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/canonical-cross-engine.ts
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/operator-conformance.ts > "$RUNNER_TEMP/parser-studio-operator-matrix.json"
+          cat "$RUNNER_TEMP/parser-studio-operator-matrix.json"
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/grammar-conformance.ts > "$RUNNER_TEMP/parser-studio-grammar-matrix.json"
+          cat "$RUNNER_TEMP/parser-studio-grammar-matrix.json"
       # Native proof from the EXACT generated fragment, using only a fixed
       # independent synthetic fixture. No network service/customer input;
       # the artifact includes hashes and counts only. Not Fluentd/DP proof.
@@ -97,7 +101,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: parser-studio-native-evidence
-          path: ${{ runner.temp }}/parser-studio-native-evidence.json
+          path: |
+            ${{ runner.temp }}/parser-studio-native-evidence.json
+            ${{ runner.temp }}/parser-studio-operator-matrix.json
+            ${{ runner.temp }}/parser-studio-grammar-matrix.json
           if-no-files-found: error
 
       - name: Full Python regression inventory, including isolation and corpus

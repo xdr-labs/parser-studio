@@ -1,4 +1,5 @@
-import {parsePortableRegexAst,portableRegexIssue} from '../backend/src/portable-regex';
+import {createPortableRegex,parsePortableRegexAst,portableRegexIssue,
+  portableRegexBytes,PORTABLE_REGEX_MAX_BYTES} from '../backend/src/portable-regex';
 /**
  * Conservative preview-only regular-expression linter. The separate Web Worker
  * still enforces an execution timeout, and this check is NOT a proof that all
@@ -73,7 +74,8 @@ function hasAdjacentQuantifiedCaptures(pattern:string):boolean{
 
 export function validatePreviewRegexPattern(pattern: string): string | null {
   if (!pattern.trim()) return 'Enter a named-group regular expression';
-  if (pattern.length > 256) return 'Regex exceeds 256 characters';
+  if (portableRegexBytes(pattern)>PORTABLE_REGEX_MAX_BYTES) return 'Regex exceeds 256 UTF-8 bytes';
+  if(/[\x00-\x1f\x7f]/.test(pattern))return 'Regex contains unsupported control characters';
   if (!pattern.includes('(?<')) return 'Add at least one (?<field>...) named capture';
 
   const unsupported = 'Regex uses an unsupported or potentially expensive construct';
@@ -81,6 +83,7 @@ export function validatePreviewRegexPattern(pattern: string): string | null {
   const ast=parsePortableRegexAst(pattern);
   if(!ast.ok)return unsupported;
   if(!ast.captureNames.length)return 'Add at least one (?<field>...) named capture';
+  try{createPortableRegex(pattern);}catch{return unsupported;}
 
   // Backreferences and lookbehind enable nonlocal matching/ambiguous nesting.
   if (/\\[1-9]|\\k<|\(\?<[=!]/.test(pattern)) return unsupported;

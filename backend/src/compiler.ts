@@ -1,9 +1,12 @@
+import {deflateSync} from 'node:zlib';
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { PairExport, ParserProject, ExportFile } from "./types.js";
+import unicodeCaseMap from './unicode-case-map.v1.json' with {type:'json'};
 import officialEnrichmentTypes from "./stellar7-enrichment-types.json" with { type: "json" };
 import { canonicalJson, validateProject } from "./validate.js";
 
+const CANONICAL_OPERATORS=readFileSync(new URL('../templates/canonical-operators.rb.tpl',import.meta.url),'utf8');
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
 const RUBY_FORWARDER_FAMILY_TEMPLATE = readFileSync(new URL("../templates/ruby-forwarder-family.rb.tpl", import.meta.url), "utf8");
@@ -165,6 +168,12 @@ function emitRubyFragment(project: ParserProject): string {
     ?RUBY_FORWARDER_FAMILY_TEMPLATE:RUBY_TEMPLATE;
   if (!template.includes("__PARSER_PROJECT_B64__")) throw new Error("Template marker missing");
   let fragment=template.replace("__PARSER_PROJECT_B64__", base64);
+  const marker='# __PARSERSTUDIO_CANONICAL_OPERATORS__';
+  if(template.split(marker).length!==2)throw new Error('Canonical operator marker missing or duplicated');
+  fragment=fragment.replace(marker,CANONICAL_OPERATORS);
+  if(!fragment.includes('__PARSERSTUDIO_UNICODE_CASE_B64__'))throw new Error('Unicode contract marker missing');
+  fragment=fragment.replace('__PARSERSTUDIO_UNICODE_CASE_B64__',
+    deflateSync(Buffer.from(JSON.stringify(unicodeCaseMap),'utf8')).toString('base64'));
   if(!fragment.includes("__STELLAR7_ENRICH_TYPES_JSON__"))
     throw new Error("Official enrichment type marker missing");
   const officialJson=JSON.stringify(officialEnrichmentTypes);

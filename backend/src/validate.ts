@@ -1,5 +1,6 @@
-import {parsePortableRegexAst,portableRegexIssue} from './portable-regex.js';
-import {supportsCanonicalClassificationOperator} from './canonical-operator-contract.js';
+import {createPortableRegex,parsePortableRegexAst,portableRegexIssue,
+  portableRegexBytes,PORTABLE_REGEX_MAX_BYTES} from './portable-regex.js';
+import {supportsCanonicalClassificationOperator,validCanonicalSourcePath} from './canonical-operator-contract.js';
 import { Ajv } from "ajv";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with { type: "json" };
 import type { ParserProject, ValidationIssue, ValidationResult, FieldMap } from "./types.js";
@@ -78,7 +79,7 @@ function hasAdjacentQuantifiedCaptures(pattern:string):boolean{
 
 export function validateBoundedRegexPattern(pattern: unknown): string | null {
   if (typeof pattern !== "string" || !pattern.trim()) return "regex_pattern_required";
-  if (pattern.length > 256 || /[\x00-\x1f\x7f]/.test(pattern)) return "regex_pattern_limit";
+  if (portableRegexBytes(pattern)>PORTABLE_REGEX_MAX_BYTES || /[\x00-\x1f\x7f]/.test(pattern)) return "regex_pattern_limit";
   if (!pattern.includes("(?<")) return "regex_named_capture_required";
   const unsupported = "regex_unsafe_construct";
   if(portableRegexIssue(pattern))return unsupported;
@@ -101,7 +102,7 @@ export function validateBoundedRegexPattern(pattern: unknown): string | null {
   const names=[...pattern.matchAll(/\(\?<([A-Za-z_][A-Za-z0-9_]*)>/g)].map(x=>x[1]!);
   if(!names.length||new Set(names).size!==names.length||names.some(x=>UNSAFE_PARTS.has(x)))
     return "regex_named_capture_invalid";
-  try { new RegExp(pattern); } catch { return "regex_syntax_invalid"; }
+  try { createPortableRegex(pattern); } catch { return "regex_syntax_invalid"; }
   return null;
 }
 
@@ -283,6 +284,8 @@ export function validateProject(input: unknown): ValidationResult {
     const mappings = p.normalization[section] as FieldMap;
     for (const [source, mapping] of Object.entries(mappings)) {
       const path = `/normalization/${section}/${source}`;
+      if(!validCanonicalSourcePath(source)||!validCanonicalSourcePath(mapping.normalized_name))
+        issue(issues,'field_path_contract',path,'Source and output paths must satisfy the bounded canonical path contract.');
       for (const part of source.split(".")) if (UNSAFE_PARTS.has(part))
         issue(issues, "unsafe_field", path, "Prototype/constructor field segments are forbidden.");
       for (const part of mapping.normalized_name.split(".")) if (UNSAFE_PARTS.has(part))
@@ -310,6 +313,8 @@ export function validateProject(input: unknown): ValidationResult {
     issue(issues, "no_fields", "/normalization", "Map at least one source field before compiling.");
   const eventProfiles = p.normalization.eventProfiles;
   if (eventProfiles) {
+    if(!validCanonicalSourcePath(eventProfiles.discriminator))
+      issue(issues,'field_path_contract','/normalization/eventProfiles/discriminator','Invalid canonical discriminator path.');
     if(eventProfiles.discriminator.split(".").some(part=>UNSAFE_PARTS.has(part)))
       issue(issues,"unsafe_field","/normalization/eventProfiles/discriminator",
         "Unsafe event-family selector source path.");
@@ -323,6 +328,8 @@ export function validateProject(input: unknown): ValidationResult {
       for(const section of ["topFields","nsFields","vendorFields"] as const) {
         for(const [source, mapping] of Object.entries(profile[section])) {
           const path=prefix+"/"+section+"/"+source;
+          if(!validCanonicalSourcePath(source)||!validCanonicalSourcePath(mapping.normalized_name))
+            issue(issues,'field_path_contract',path,'Invalid canonical profile field path.');
           if(source.split(".").some(part=>UNSAFE_PARTS.has(part)) ||
              mapping.normalized_name.split(".").some(part=>UNSAFE_PARTS.has(part)))
             issue(issues,"unsafe_field",path,"Unsafe event-profile field path.");
@@ -356,6 +363,8 @@ export function validateProject(input: unknown): ValidationResult {
     const path = `/enrichment/${index}`;
     const safeDelimiter = (value: string) => value.length >= 1 && value.length <= 8 && !/[\x00-\x1f\x7f]/.test(value);
     const addTarget = (target: string, type: string) => {
+      if(!validCanonicalSourcePath(target))
+        issue(issues,'field_path_contract',path,'Invalid canonical enrichment target path.');
       for (const segment of target.split(".")) {
         if (UNSAFE_PARTS.has(segment))
           issue(issues, "unsafe_field", path, "Prototype/constructor destination segments are forbidden.");

@@ -4,6 +4,17 @@ Status: **ACTIVE**, owner requested 2026-11-07. Implementation Work Packet:
 [GitHub #249](https://github.com/xdr-labs/parser-studio/issues/249).
 Baseline: main `0f95c5818f4606ab006468432dd062382043ed7d`.
 
+## Current bounded implementation and evidence (2026-11-08)
+
+The former H0-H3 integration receipt did not establish complete operator semantics.
+Audit #266 reproduced eight gaps. The executable v1 correction and required
+coverage inventory are described in
+[Executable contract completion](verification/20261108-executable-contract-completion.md).
+Read that scope and the exact candidate receipts in #266 before using the older
+incremental statuses below. H1/H3 qualification is tied to the shipping grammar,
+operator, type and template matrix, not an aggregate historical PASS count.
+H4 branch enforcement and H5 target qualification remain separately gated.
+
 ## Diagnosis
 
 Existing `ParserProject` and `ParserRecipe v0.2` schemas, shared

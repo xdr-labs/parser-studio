@@ -1,19 +1,19 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
-import type { ConcreteFormat, Detection, Diagnostic, EventResult, FieldType, Format, ParserDraft, SuiteResult, TraceStep } from './model';
+import type { ConcreteFormat, Detection, Diagnostic, EventResult, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
-import { validatePreviewRegexPattern } from './regexSafety';
-import {validIsoTimestamp} from './isoCalendar';
+import {coerceCanonicalValue as convertValue} from '../backend/src/canonical-value-contract';
 import {jsonSourceValueValid} from './jsonSourceSafety';
 import {findStellarMetadataField} from './guided/stellarMetadataCatalog';
-import {validateConventionalTemporalCaptures} from './regexTemporalClaims';
 import {extractGenericStructural} from './genericStructural';
 import type { EventBoundary } from './guided/contract';
 import {inspectDeclaredForwarders} from './guided/declaredForwarder';
 import {inspectEventProfile} from './guided/multiEventRouting';
 import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
+import {extractPortableRegexFields as extractRegex} from './portableRegexExtraction';
+import {canonicalCaseTransform,canonicalIgnoreSourceValue} from '../backend/src/canonical-operator-contract';
 
 export const MAX_DATASET_BYTES = 64 * 1024;
 export const MAX_EVENTS = 500;
@@ -249,23 +249,6 @@ function extractSyslog(raw: string): Extraction {
 }
 
 
-function extractRegex(raw: string, pattern: string): Extraction {
-  const issue = validatePreviewRegexPattern(pattern);
-  if (issue) return { fields: {}, errors: [issue] };
-  try {
-    const expression = new RegExp(pattern);
-    const matched = expression.exec(raw);
-    if (!matched?.groups) return { fields: {}, errors: ['Expression did not match this event'] };
-    const fields = Object.fromEntries(Object.entries(matched.groups).filter(([, v]) => v !== undefined));
-    if (!Object.keys(fields).length) return { fields: {}, errors: ['Named captures returned no fields'] };
-    const temporalIssue=validateConventionalTemporalCaptures(fields);
-    if(temporalIssue)return {fields:{},errors:[temporalIssue]};
-    return { fields, errors: [] };
-  } catch {
-    return { fields: {}, errors: ['Invalid regular expression'] };
-  }
-}
-
 export function extractFields(raw: string, format: ConcreteFormat, draft: ParserDraft): Extraction {
   switch (format) {
     case 'json': return extractJSON(raw);
@@ -332,64 +315,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
   }
 }
 
-function asIPv4(value: string): boolean {
-  const parts = value.split('.');
-  return parts.length === 4 && parts.every(part =>
-    /^(?:0|[1-9]\d{0,2})$/.test(part) && Number(part) <= 255);
-}
-
-function asIP(value: string): boolean {
-  if (!value.includes(':')) return asIPv4(value);
-  // RFC 4291: exactly eight 16-bit groups, optionally shortened once by ::.
-  // A dotted IPv4 tail consumes two groups. Reject zones and URL brackets:
-  // neither is a literal IP value in the normalized Stellar metadata field.
-  if (value.length > 45 || !/^[0-9a-fA-F:.]+$/.test(value)) return false;
-  let address = value;
-  if (address.includes('.')) {
-    const separator = address.lastIndexOf(':');
-    if (separator === -1 || !asIPv4(address.slice(separator + 1))) return false;
-    address = address.slice(0, separator + 1) + '0:0';
-  }
-  const halves = address.split('::');
-  if (halves.length > 2) return false;
-  const groups = (text: string) => text ? text.split(':') : [];
-  const left = groups(halves[0]!);
-  const right = halves.length === 2 ? groups(halves[1]!) : [];
-  const validGroup = (group: string) => /^[0-9a-fA-F]{1,4}$/.test(group);
-  if (![...left, ...right].every(validGroup)) return false;
-  const explicitGroups = left.length + right.length;
-  return halves.length === 2 ? explicitGroups < 8 : explicitGroups === 8;
-}
-
-// Native Ruby String#strip trims ASCII whitespace, not NBSP/BOM/EM SPACE.
- // This is typed-value handling, never a mutation of the original field.
-const trimNativeAscii=(value:string):string=>value.replace(
-  /^[ \t\n\r\f\v]+|[ \t\n\r\f\v]+$/g,'');
-
-export function convertValue(raw: unknown, type: FieldType): { value?: unknown; error?: string } {
-  if (raw === undefined || raw === null ||
-      (typeof raw === 'string' && !trimNativeAscii(raw))) return { error: 'Missing value' };
-  const value = typeof raw === 'string' ? trimNativeAscii(raw) : String(raw);
-  switch (type) {
-    case 'string':
-      return { value: typeof raw === 'object' ? JSON.stringify(raw) : String(raw) };
-    case 'integer':
-      return /^-?\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? { value: Number(value) } : { error: 'Expected safe integer' };
-    case 'number':
-      return value !== '' && Number.isFinite(Number(value)) ? { value: Number(value) } : { error: 'Expected finite number' };
-    case 'boolean':
-      if (/^(?:true|1)$/i.test(value)) return { value: true };
-      if (/^(?:false|0)$/i.test(value)) return { value: false };
-      return { error: 'Expected boolean (true/false/1/0)' };
-    case 'port':
-      return /^\d+$/.test(value) && Number(value) <= 65535 ? { value: Number(value) } : { error: 'Expected port 0..65535' };
-    case 'ip':
-      return asIP(value) ? { value } : { error: 'Expected valid IP address' };
-    case 'timestamp':
-      return validIsoTimestamp(value)
-        ? { value: new Date(value).toISOString() } : { error: 'Expected ISO timestamp with explicit timezone' };
-  }
-}
+export {convertValue};
 
 export function splitEvents(input: string, boundary: EventBoundary = 'single-line', limit = MAX_EVENTS): { raw: string; line: number }[] {
   const lines = input.replace(/\r\n/g, '\n').split('\n');
@@ -448,7 +374,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     matched = Object.keys(fields).length > 0;
   }
   trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
-  const normalized: Record<string, unknown> = draft.format==='generic_structural'
+  const normalized: Record<string, unknown> = draft.format==='generic_structural'&&matched
     ? {parserstudio_source:structuredClone(draft.omitSourceRaw===true?withoutSourceRaw(fields):fields)}
     : {};
   const family=inspectEventProfile(fields,draft.eventProfiles);
@@ -456,7 +382,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     error('normalize','UNRECOGNIZED_EVENT_FAMILY',
       'Event type is missing, ambiguous or not in the reviewed family list.');
   if(family.profile)normalized.parserstudio_event_family=family.name;
-  if(wrapped.status==='UNWRAPPED') {
+  if(wrapped.status==='UNWRAPPED'&&matched) {
     normalized.parserstudio_transport={forwarder_hops:wrapped.hops.map(hop=>({
       relay_host:hop.relayHost,relay_timestamp:hop.relayTimestamp,
       envelope:hop.format,prefix_start_byte:hop.prefixStartByte,
@@ -488,8 +414,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     }
     // Match the backend DRAFT runtime: ignored source values remain preserved
     // in Generic Structural parserstudio_source, but are not coerced/mapped.
-    if (sourceValue.value === null || sourceValue.value === undefined ||
-        ['', 'N/A', '-'].includes(String(sourceValue.value))) {
+    if (canonicalIgnoreSourceValue(sourceValue.value,['','N/A','-'])) {
       mapped.add(source);
       continue;
     }
@@ -616,7 +541,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
         error('enrichment', 'ENRICHMENT_TYPE', 'Text transform requires a string source');
         continue;
       }
-      const value=rule.operator === 'lowercase' ? source.toLowerCase() : source.toUpperCase();
+      const value=canonicalCaseTransform(source,rule.operator);
       if(!assignNormalizedPath(normalized,target,value))
         error('enrichment','ENRICHMENT_TARGET','Could not assign transformed output at step '+step);
     } else error('enrichment', 'ENRICHMENT_UNSUPPORTED', 'Unsupported enrichment operator');

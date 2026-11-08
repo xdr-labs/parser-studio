@@ -1,0 +1,18 @@
+{
+  "contract": "parser-studio.execution-coverage.v1",
+  "schemaRevision": "0.1",
+  "extractionFormats": ["json", "kv", "csv", "syslog_rfc5424", "syslog_rfc3164", "cef", "leef", "mixed", "java_stacktrace", "generic_structural", "regex"],
+  "templates": ["ordinary", "family"],
+  "operators": ["set_const", "copy", "lowercase", "uppercase", "split_field", "merge_fields"],
+  "types": ["string", "integer", "boolean", "ip", "port", "timestamp"],
+  "standardGrammarOracle": "backend/test/h3-independent-cross-grammar-native.test.ts",
+  "compoundGrammarOracle": "scripts/verification/grammar-conformance.ts",
+  "operatorOracle": "scripts/verification/operator-conformance.ts",
+  "operatorTruth": "contracts/operator-conformance.v1.json",
+  "sourceByteOracle": "tests/test_h3_independent_six_family_bytes_20261108.py",
+  "sourceBoundaryOracle": "src/guided/h1Utf8SourceByteSpanContract.test.ts",
+  "nativeMismatchAllowance": 0,
+  "nativeSkipAllowance": 0,
+  "userParserCertified": false,
+  "stellarTargetVerified": false
+}

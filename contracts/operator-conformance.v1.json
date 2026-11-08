@@ -1,0 +1,1203 @@
+{
+  "contract": "parser-studio.executable-operator-matrix.v1",
+  "cases": [
+    {
+      "id": "A01-astral-captures",
+      "raw": "🙂allow",
+      "mappings": [
+        {
+          "source": "head",
+          "target": "custom.head",
+          "type": "string"
+        },
+        {
+          "source": "tail",
+          "target": "custom.tail",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "head": "🙂",
+          "tail": "allow"
+        }
+      },
+      "format": "regex",
+      "pattern": "^(?<head>.)(?<tail>.+)$"
+    },
+    {
+      "id": "A01-whitespace-ascii",
+      "raw": "action=allow src=192.0.2.1",
+      "mappings": [
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        },
+        {
+          "source": "src",
+          "target": "srcip",
+          "type": "ip"
+        }
+      ],
+      "expected": {
+        "action": "allow",
+        "srcip": "192.0.2.1"
+      },
+      "format": "regex",
+      "pattern": "^action=(?<action>\\w+)\\s+src=(?<src>\\S+)$"
+    },
+    {
+      "id": "A01-whitespace-nbsp",
+      "raw": "action=allow src=192.0.2.1",
+      "mappings": [
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        },
+        {
+          "source": "src",
+          "target": "srcip",
+          "type": "ip"
+        }
+      ],
+      "expected": {},
+      "format": "regex",
+      "pattern": "^action=(?<action>\\w+)\\s+src=(?<src>\\S+)$",
+      "stage": "extract"
+    },
+    {
+      "id": "A01-unicode-line-separator",
+      "raw": "x y",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "x y"
+      },
+      "format": "regex",
+      "pattern": "^(?<message>.+)$"
+    },
+    {
+      "id": "A01-strict-end",
+      "raw": "allow ",
+      "mappings": [
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "format": "regex",
+      "pattern": "^(?<action>allow)$",
+      "stage": "extract"
+    },
+    {
+      "id": "A01-A08-rejected-hex",
+      "raw": "value",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "format": "regex",
+      "pattern": "^(?<message>\\xFF)$",
+      "rejected": true
+    },
+    {
+      "id": "A01-A08-rejected-word-boundary",
+      "raw": "value",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "format": "regex",
+      "pattern": "(?<message>\\bfoo\\b)",
+      "rejected": true
+    },
+    {
+      "id": "A01-A08-rejected-bytes",
+      "raw": "value",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "format": "regex",
+      "pattern": "^가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가(?<message>allow)$",
+      "rejected": true
+    },
+    {
+      "id": "A01-A08-rejected-intersection",
+      "raw": "value",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "format": "regex",
+      "pattern": "(?<message>[a&&b])",
+      "rejected": true
+    },
+    {
+      "id": "A02-array-ip",
+      "raw": "{\"field\":[\"192.0.2.1\"],\"action\":\"allow\"}",
+      "mappings": [
+        {
+          "source": "field",
+          "target": "srcip",
+          "type": "ip"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A02-array-port",
+      "raw": "{\"field\":[443],\"action\":\"allow\"}",
+      "mappings": [
+        {
+          "source": "field",
+          "target": "dstport",
+          "type": "port"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A02-array-integer",
+      "raw": "{\"field\":[6],\"action\":\"allow\"}",
+      "mappings": [
+        {
+          "source": "field",
+          "target": "proto",
+          "type": "integer"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A02-array-boolean",
+      "raw": "{\"field\":[true],\"action\":\"allow\"}",
+      "mappings": [
+        {
+          "source": "field",
+          "target": "custom.enabled",
+          "type": "boolean"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A02-empty-element-array",
+      "raw": "{\"field\":[\"\"]}",
+      "mappings": [
+        {
+          "source": "field",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "[\"\"]"
+      }
+    },
+    {
+      "id": "A02-shadowed-object",
+      "raw": "{\"field\":{\"toString\":\"vendor data\",\"valueOf\":\"vendor data\"}}",
+      "mappings": [
+        {
+          "source": "field",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "{\"toString\":\"vendor data\",\"valueOf\":\"vendor data\"}"
+      }
+    },
+    {
+      "id": "A03-partial-mapping",
+      "raw": "{\"action\":\"allow\",\"source\":\"not-an-ip\",\"user\":\"alice\"}",
+      "mappings": [
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        },
+        {
+          "source": "source",
+          "target": "srcip",
+          "type": "ip"
+        },
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow",
+        "username": "alice"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A03-transaction-rollback",
+      "raw": "{\"action\":\"allow\",\"user\":\"alice\"}",
+      "mappings": [
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        },
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow",
+        "username": "alice"
+      },
+      "stage": "enrichment",
+      "enrichment": [
+        {
+          "id": "set_const",
+          "operator": "set_const",
+          "source": "",
+          "target": "custom.site",
+          "value": "kr"
+        },
+        {
+          "id": "copy",
+          "operator": "copy",
+          "source": "username",
+          "target": "srcip",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "A04-time-copy",
+      "raw": "{\"event_time\":\"2026-11-08T09:00:00+09:00\"}",
+      "mappings": [
+        {
+          "source": "event_time",
+          "target": "timestamp",
+          "type": "timestamp"
+        }
+      ],
+      "expected": {
+        "timestamp": "2026-11-08T00:00:00.000Z",
+        "message": "2026-11-08T00:00:00.000Z",
+        "custom": {
+          "copy": "2026-11-08T00:00:00.000Z"
+        }
+      },
+      "enrichment": [
+        {
+          "id": "copy",
+          "operator": "copy",
+          "source": "timestamp",
+          "target": "message",
+          "value": ""
+        },
+        {
+          "id": "copy",
+          "operator": "copy",
+          "source": "timestamp",
+          "target": "custom.copy",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "A04-submillisecond-before-epoch",
+      "raw": "{\"event_time\":\"1969-12-31T23:59:59.9999Z\"}",
+      "mappings": [
+        {
+          "source": "event_time",
+          "target": "timestamp",
+          "type": "timestamp"
+        }
+      ],
+      "expected": {
+        "timestamp": "1969-12-31T23:59:59.999Z"
+      }
+    },
+    {
+      "id": "A04-reject-gregorian",
+      "raw": "{\"event_time\": \"1500-02-29T00:00:00Z\", \"action\": \"allow\"}",
+      "mappings": [
+        {
+          "source": "event_time",
+          "target": "timestamp",
+          "type": "timestamp"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A04-reject-utc-range",
+      "raw": "{\"event_time\": \"0001-01-01T00:00:00+23:00\", \"action\": \"allow\"}",
+      "mappings": [
+        {
+          "source": "event_time",
+          "target": "timestamp",
+          "type": "timestamp"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "A05-split-spaces-three",
+      "raw": "{\"user\": \"alice  admin\"}",
+      "mappings": [
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "alice  admin",
+        "custom": {
+          "first": "alice",
+          "second": "",
+          "third": "admin"
+        }
+      },
+      "enrichment": [
+        {
+          "id": "split_field",
+          "operator": "split_field",
+          "source": "username",
+          "target": "",
+          "value": "",
+          "delimiter": " ",
+          "targets": [
+            "custom.first",
+            "custom.second",
+            "custom.third"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A05-split-spaces-two",
+      "raw": "{\"user\": \"alice  admin\"}",
+      "mappings": [
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "alice  admin"
+      },
+      "enrichment": [
+        {
+          "id": "split_field",
+          "operator": "split_field",
+          "source": "username",
+          "target": "",
+          "value": "",
+          "delimiter": " ",
+          "targets": [
+            "custom.first",
+            "custom.second"
+          ]
+        }
+      ],
+      "stage": "enrichment"
+    },
+    {
+      "id": "A05-split-tab-space",
+      "raw": "{\"user\": \"alice\\tadmin\"}",
+      "mappings": [
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "alice\tadmin"
+      },
+      "enrichment": [
+        {
+          "id": "split_field",
+          "operator": "split_field",
+          "source": "username",
+          "target": "",
+          "value": "",
+          "delimiter": " ",
+          "targets": [
+            "custom.first",
+            "custom.second"
+          ]
+        }
+      ],
+      "stage": "enrichment"
+    },
+    {
+      "id": "A05-split-unicode",
+      "raw": "{\"user\": \"alice🙂admin\"}",
+      "mappings": [
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "alice🙂admin",
+        "custom": {
+          "first": "alice",
+          "second": "admin"
+        }
+      },
+      "enrichment": [
+        {
+          "id": "split_field",
+          "operator": "split_field",
+          "source": "username",
+          "target": "",
+          "value": "",
+          "delimiter": "🙂",
+          "targets": [
+            "custom.first",
+            "custom.second"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A05-split-trailing",
+      "raw": "{\"user\": \"alice|\"}",
+      "mappings": [
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "alice|",
+        "custom": {
+          "first": "alice",
+          "second": ""
+        }
+      },
+      "enrichment": [
+        {
+          "id": "split_field",
+          "operator": "split_field",
+          "source": "username",
+          "target": "",
+          "value": "",
+          "delimiter": "|",
+          "targets": [
+            "custom.first",
+            "custom.second"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A06-case-greek",
+      "raw": "{\"label\": \"ΟΣ\"}",
+      "mappings": [
+        {
+          "source": "label",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "ΟΣ",
+        "username": "οσ"
+      },
+      "enrichment": [
+        {
+          "id": "lowercase",
+          "operator": "lowercase",
+          "source": "message",
+          "target": "username",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "A06-case-turkish",
+      "raw": "{\"label\": \"İ\"}",
+      "mappings": [
+        {
+          "source": "label",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "İ",
+        "username": "i̇"
+      },
+      "enrichment": [
+        {
+          "id": "lowercase",
+          "operator": "lowercase",
+          "source": "message",
+          "target": "username",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "A06-case-german",
+      "raw": "{\"label\": \"straße\"}",
+      "mappings": [
+        {
+          "source": "label",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "straße",
+        "username": "STRASSE"
+      },
+      "enrichment": [
+        {
+          "id": "uppercase",
+          "operator": "uppercase",
+          "source": "message",
+          "target": "username",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "A06-case-version",
+      "raw": "{\"label\": \"Ᲊ\"}",
+      "mappings": [
+        {
+          "source": "label",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "Ᲊ",
+        "username": "Ᲊ"
+      },
+      "enrichment": [
+        {
+          "id": "lowercase",
+          "operator": "lowercase",
+          "source": "message",
+          "target": "username",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "id": "A07-ambiguous-path",
+      "raw": "{\"a.b\":\"192.0.2.1\",\"a\":{\"b\":\"198.51.100.2\"},\"action\":\"deny\",\"user\":\"alice\"}",
+      "mappings": [
+        {
+          "source": "a.b",
+          "target": "srcip",
+          "type": "ip"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        },
+        {
+          "source": "user",
+          "target": "username",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "deny",
+        "username": "alice"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "ordered-merge",
+      "raw": "{\"a\":\"alice\",\"b\":\"admin\"}",
+      "mappings": [
+        {
+          "source": "a",
+          "target": "username",
+          "type": "string"
+        },
+        {
+          "source": "b",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "username": "alice",
+        "message": "admin",
+        "custom": {
+          "merged": "alice|admin",
+          "site": "kr"
+        }
+      },
+      "enrichment": [
+        {
+          "id": "merge_fields",
+          "operator": "merge_fields",
+          "source": "",
+          "target": "custom.merged",
+          "value": "",
+          "delimiter": "|",
+          "sources": [
+            "username",
+            "message"
+          ]
+        },
+        {
+          "id": "set_const",
+          "operator": "set_const",
+          "source": "",
+          "target": "custom.site",
+          "value": "kr"
+        }
+      ]
+    },
+    {
+      "id": "protocol-before-enrichment",
+      "raw": "{\"p\":6,\"name\":\"UDP\"}",
+      "mappings": [
+        {
+          "source": "p",
+          "target": "proto",
+          "type": "integer"
+        },
+        {
+          "source": "name",
+          "target": "proto_name",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "proto": 6,
+        "proto_name": "UDP"
+      },
+      "stage": "normalize",
+      "enrichment": [
+        {
+          "id": "set_const",
+          "operator": "set_const",
+          "source": "",
+          "target": "custom.site",
+          "value": "kr"
+        }
+      ]
+    },
+    {
+      "id": "protocol-after-enrichment",
+      "raw": "{\"p\":6}",
+      "mappings": [
+        {
+          "source": "p",
+          "target": "proto",
+          "type": "integer"
+        }
+      ],
+      "expected": {
+        "proto": 6
+      },
+      "stage": "enrichment",
+      "enrichment": [
+        {
+          "id": "set_const",
+          "operator": "set_const",
+          "source": "",
+          "target": "proto_name",
+          "value": "UDP"
+        }
+      ]
+    },
+    {
+      "id": "path-depth-reject",
+      "raw": "{\"field\":\"x\"}",
+      "mappings": [
+        {
+          "source": "a.b.c.d.e.f.g.h.i",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {},
+      "rejected": true
+    },
+    {
+      "id": "regex-escaped-backslash-class",
+      "raw": "s\\",
+      "format": "regex",
+      "pattern": "^(?<message>[\\\\s]+)$",
+      "mappings": [
+        {
+          "source": "message",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "message": "s\\"
+      }
+    },
+    {
+      "id": "typed-boolean-false",
+      "raw": "{\"value\":false}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "boolean"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": false
+        }
+      }
+    },
+    {
+      "id": "typed-boolean-zero",
+      "raw": "{\"value\":0}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "boolean"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": false
+        }
+      }
+    },
+    {
+      "id": "typed-boolean-text",
+      "raw": "{\"value\":\"TRUE\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "boolean"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": true
+        }
+      }
+    },
+    {
+      "id": "typed-port-zero",
+      "raw": "{\"value\":0}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "port"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": 0
+        }
+      }
+    },
+    {
+      "id": "typed-port-max",
+      "raw": "{\"value\":65535}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "port"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": 65535
+        }
+      }
+    },
+    {
+      "id": "typed-integer-safe-max",
+      "raw": "{\"value\":9007199254740991}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "integer"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": 9007199254740991
+        }
+      }
+    },
+    {
+      "id": "typed-integer-float-token",
+      "raw": "{\"value\":6.0}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "integer"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": 6
+        }
+      }
+    },
+    {
+      "id": "typed-integer-leading-zero-text",
+      "raw": "{\"value\":\"0006\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "integer"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": 6
+        }
+      }
+    },
+    {
+      "id": "typed-integer-negative",
+      "raw": "{\"value\":\"-6\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "integer"
+        }
+      ],
+      "expected": {
+        "custom": {
+          "value": -6
+        }
+      }
+    },
+    {
+      "id": "typed-reject-unsafe-json-number",
+      "raw": "{\"value\":9007199254740993}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "integer"
+        }
+      ],
+      "expected": {},
+      "stage": "extract"
+    },
+    {
+      "id": "typed-reject-signed-integer",
+      "raw": "{\"value\":\"+6\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "integer"
+        }
+      ],
+      "expected": {},
+      "stage": "normalize"
+    },
+    {
+      "id": "typed-reject-ip-brackets",
+      "raw": "{\"value\":\"[::1]\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "ip"
+        }
+      ],
+      "expected": {},
+      "stage": "normalize"
+    },
+    {
+      "id": "typed-reject-ip-mask",
+      "raw": "{\"value\":\"192.0.2.1/24\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "ip"
+        }
+      ],
+      "expected": {},
+      "stage": "normalize"
+    },
+    {
+      "id": "typed-reject-ip-zone",
+      "raw": "{\"value\":\"fe80::1%eth0\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "ip"
+        }
+      ],
+      "expected": {},
+      "stage": "normalize"
+    },
+    {
+      "id": "typed-reject-ip-nul",
+      "raw": "{\"value\": \"\\u0000192.0.2.1\\u0000\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "ip"
+        }
+      ],
+      "expected": {},
+      "stage": "normalize"
+    },
+    {
+      "id": "typed-reject-port-high",
+      "raw": "{\"value\":65536}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "port"
+        }
+      ],
+      "expected": {},
+      "stage": "normalize"
+    },
+    {
+      "id": "typed-null",
+      "raw": "{\"value\":null}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "string"
+        }
+      ],
+      "expected": {}
+    },
+    {
+      "id": "typed-missing",
+      "raw": "{\"other\":\"not-mapped\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "string"
+        }
+      ],
+      "expected": {}
+    },
+    {
+      "id": "typed-ignored",
+      "raw": "{\"value\":\"N/A\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "custom.value",
+          "type": "string"
+        }
+      ],
+      "expected": {}
+    },
+    {
+      "id": "typed-scientific-predicate",
+      "raw": "{\"kindnum\":1e-7,\"value\":\"allow\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "message",
+          "type": "string",
+          "when": {
+            "sourcePath": "kindnum",
+            "operator": "in",
+            "values": [
+              "1e-7"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "message": "allow"
+      }
+    },
+    {
+      "id": "destination-type-ip",
+      "raw": "{\"value\": \"not-an-ip\", \"action\": \"allow\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "srcip",
+          "type": "string"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "destination-type-timestamp",
+      "raw": "{\"value\": \"not-a-date\", \"action\": \"allow\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "timestamp",
+          "type": "string"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "destination-type-port",
+      "raw": "{\"value\": \"443\", \"action\": \"allow\"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "dstport",
+          "type": "string"
+        },
+        {
+          "source": "action",
+          "target": "action",
+          "type": "string"
+        }
+      ],
+      "expected": {
+        "action": "allow"
+      },
+      "stage": "normalize"
+    },
+    {
+      "id": "copy-cannot-silently-trim-ip",
+      "raw": "{\"value\":\" 192.0.2.1 \"}",
+      "mappings": [
+        {
+          "source": "value",
+          "target": "message",
+          "type": "string"
+        }
+      ],
+      "enrichment": [
+        {
+          "id": "copy",
+          "operator": "copy",
+          "source": "message",
+          "target": "srcip",
+          "value": ""
+        }
+      ],
+      "expected": {
+        "message": " 192.0.2.1 "
+      },
+      "stage": "enrichment"
+    }
+  ]
+}

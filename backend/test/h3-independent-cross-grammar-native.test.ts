@@ -51,7 +51,7 @@ const CORPUS:Golden[]=[
   srcField:'srcip',actionField:'action',expectedIp:'192.0.2.17',expectedAction:'allow'},
 ];
 
-function project(item:Golden):ParserProject{
+function project(item:Golden,family=false):ParserProject{
  const p=sampleProject();
  p.projectId='h3-golden-'+item.format;
  p.slug='h3_'+item.format;
@@ -71,6 +71,12 @@ function project(item:Golden):ParserProject{
  else if(item.format==='regex')p.extraction={format:'regex',
    pattern:String.raw`^src=(?<srcip>[\d.]+) action=(?<action>deny|allow)$`};
  else p.extraction={format:item.format};
+ if(family)p.normalization.eventProfiles={
+  discriminator:item.actionField,unknown:'reject',variants:[
+   {name:'allow',equals:'allow',topFields:{},nsFields:{},vendorFields:{}},
+   {name:'deny',equals:'deny',topFields:{},nsFields:{},vendorFields:{}},
+  ],
+ };
  return p;
 }
 const available=spawnSync('ruby',['-v'],{encoding:'utf8',timeout:3000}).status===0;
@@ -103,10 +109,10 @@ function native(p:ParserProject,raw:string[]):Array<Record<string,unknown>>{
 test('H3 authored positive and negative corpus validates and compiles all eight reviewed grammar formats',()=>{
  assert.equal(CORPUS.length,8);
  assert.equal(new Set(CORPUS.map(x=>x.format)).size,8);
- for(const item of CORPUS){
-   const checked=validateProject(project(item));
+ for(const family of [false,true])for(const item of CORPUS){
+   const checked=validateProject(project(item,family));
    assert.equal(checked.ok,true,item.format+' '+JSON.stringify(checked.issues));
-   const files=compilePair(project(item));
+   const files=compilePair(project(item,family));
    assert.equal(files.files.length,2);
    assert.equal(sha(item.good).length,64);
    if(item.format!=='regex')
@@ -118,9 +124,9 @@ test('H3 authored positive and negative corpus validates and compiles all eight 
 });
 test('H3 generated native 8-grammar differential has exact typed, error-stage and raw-leak truth',
  {skip:!available},()=>{
- for(const item of CORPUS){
+ for(const family of [false,true])for(const item of CORPUS){
    const input=[item.good,item.bad];
-   const outputs=native(project(item),input);
+   const outputs=native(project(item,family),input);
    assert.equal(outputs.length,2,item.format+' missing/fabricated native events');
    const good=outputs[0]!,bad=outputs[1]!;
    assert.equal(good.srcip,item.expectedIp,item.format+' official srcip');
