@@ -83,6 +83,15 @@ export function createCanonicalMappingPlan(
   const errors=reviewNormalizationMappings(suite,draft.mappings,groups).findings;
   const status=normalizationCandidateScanStatus(suite);
   const occupied=draft.mappings.map(mapping=>mapping.target);
+  // The official candidate provider intentionally suppresses destinations
+  // occupied by another mapping. Preserve that safe suppression, but derive
+  // collision evidence from a separate catalog-only pass so the canonical
+  // plan explains why a source was not eligible for official normalization.
+  // Never promote the diagnostic-only candidate to an actionable proposal.
+  const diagnosticOfficial=occupied.length
+    ?new Map(suggestNormalizationCandidatesFromSuite(suite,[],{})
+      .map(candidate=>[candidate.source,candidate]))
+    :new Map<string,NormalizationCandidate>();
   const entries=[...paths].sort().map(source=>{
     const mapped=existingBySource.get(source)??[];
     if(mapped.length){
@@ -93,7 +102,9 @@ export function createCanonicalMappingPlan(
     }
     const candidate=official.get(source);
     const suggestion=vendor.get(source);
-    const collision=Boolean(candidate&&occupied.some(target=>overlaps(target,candidate.target)));
+    const evidenceCandidate=candidate??diagnosticOfficial.get(source);
+    const collision=Boolean(evidenceCandidate&&occupied.some(target=>
+      overlaps(target,evidenceCandidate.target)));
     const approved=Boolean(candidate&&candidate.confidence==='HIGH'&&candidate.safeForBulk&&
       !candidate.when&&!collision);
     const reviewReasons:MappingReviewReason[]=[];

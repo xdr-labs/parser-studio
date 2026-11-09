@@ -105,6 +105,79 @@ non-`.conf` parser file from `compilePair` instead of assuming a `.rb` file
 suffix. These corrections are part of the acceptance gate, not a relaxation
 of no-silent-loss requirements.
 
+### Third implementation slice — Canonical MappingPlan source-level mutation oracle
+
+The MCV2-C gate now executes `scripts/verification/mcv2-canonical-mutants.mjs`
+in GitHub CI. It bundles the **real** `canonicalMappingPlan.ts` and its
+production dependencies with esbuild, injects 24 independently selected
+semantic mutations in memory (never modifies the working tree) and compares
+all of them against expected manual override, path census, official-vendor
+semantics, collisions, unresolved counts, type validation, retained array
+accounting and value-free evidence. The initial baseline exposed a real
+missing collision diagnostic: the official candidate provider safely excluded
+an occupied target but the IR did not explain that conflict. The v1 plan now
+retains `EXISTING_TARGET_CONFLICT` using a catalog-only diagnostic scan while
+keeping the occupied destination ineligible for auto-approval.
+
+**Measured subset:** 24/24 Canonical MappingPlan mutation probes and 11/11
+source-allocation/port-policy probes rejected. These are source-executed
+meaningful error injections, but not an exhaustive mutation census of every
+mapping-decision statement. The >=90% full mapping decision-core target is
+still unverified until a comprehensive measured baseline is available. The
+new gate fails on any surviving selected mutant or missing source anchor.
+
+### Independent AST-wide Canonical MappingPlan mutation baseline
+
+The `mcv2-canonical-ast-score.mjs` CI gate visits **every binary operator
+and `if` condition** in `canonicalMappingPlan.ts` using TypeScript AST source
+positions, bundles and runs the actual mutated module with its production
+dependencies, and evaluates independently declared source, destination,
+catalog, collision, manual override, type/range, budget, unknown-value and
+cross-event oracle expectations. A mutation that does not compile is recorded
+as invalid, never counted as a kill. Invalid count is currently zero.
+
+Observed on this source version: **32 total**, **26 killed**, **zero
+non-equivalent survivors** and **six explicitly justified equivalent**
+`??` → `||` variants. The raw kill fraction is **26/32 = 81.25%**; excluding
+only the six proven equivalent expressions under well-typed input contracts,
+the measured **Canonical MappingPlan orchestrator score is 26/26 = 100%**.
+Those six original operands are typed Array, object, non-empty FieldGroup or
+null/undefined, so `||` produces exactly the same value as `??` for valid
+inputs. Their literal source expressions and reasons appear in the CI output.
+The gate fails closed on a surviving non-equivalent mutation, a baseline
+oracle failure or an effective score below 90%. It also runs the 24/24
+independently selected semantic orchestrator mutants, complementing the
+11/11 source-name allocator and translated-port semantic mutants.
+
+**Scope limitation:** This AST census covers the Canonical MappingPlan
+orchestrator, not all statements in the separate allocator, candidate
+provider, Python structural analyzer or generated Ruby backend. The broad
+multi-module 90%-coverage target remains open; neither a successful AST
+orchestrator gate nor selected mutant results proves that target.
+
+### Bounded source-allocator and semantic-policy mutation census
+
+`mcv2-bounded-allocation-ast-score.mjs` runs each AST-mutated source in a
+**separate bounded process**, including deliberately corrupted loop/SCC exit
+conditions. This prevents an accidental infinite loop in a mutant from
+hanging the development machine or GitHub CI. The oracle enumerates all
+source/leaf assignments for small source sets, checks deterministic
+lexicographic preference and fail-closed collisions, then verifies
+128/129/256-path boundary behavior, duplicate leaf identity, manual edit
+provenance, NAT/translation aliases and nested source paths. It also checks
+that a duplicate auto-generated source rule cannot silently produce the
+same target twice. Mutation syntax errors are tracked separately and do
+not count as killed mutants; every source position has a receipt.
+
+Current measured baseline: **field allocator 68/72 (94.44% raw)** and
+**source-port policy 4/4 (100% raw)**. Four allocator survivors are low-risk
+observationally equivalent guards/boolean expressions under the tested domain
+contracts (the same zero defaults, no-op already-chosen leaf, and early
+empty-array return), and are **retained in the raw denominator**. The gate
+fails below 90% raw AST mutation detection on either measured module.
+This is a real bounded sampled mutation baseline, not a claim that every
+branch of `normalizationCandidates.ts` or Stellar DP 7.0 is mutation-tested.
+
 ## Scope and release safety
 
 Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.

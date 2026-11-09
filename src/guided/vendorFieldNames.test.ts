@@ -54,6 +54,19 @@ describe('vendor-local field names preserve original source semantics',()=>{
     }
   });
 
+  it('keeps duplicate leaves in their original full source paths at 128/129/256 boundaries',()=>{
+    // The bounded large-source fast path must obey the same policy as the
+    // exact solver, including reversed input order and stable names.
+    for(const n of [128,129,256]){
+      const paths=Array.from({length:n},(_,i)=>'root_'+i+'.same');
+      for(const ordered of [paths,[...paths].reverse()]){
+        const plan=vendorFieldNames(ordered);
+        expect(plan.size,'source count '+n).toBe(n);
+        for(const field of paths)expect(plan.get(field),'full path '+n).toBe(field);
+      }
+    }
+  });
+
   it('never rewrites unmarked legacy mappings or explicit user edits',()=>{
     const legacy:MappingRule={id:'auto-1',source:'http.status',target:'http.status',type:'string'};
     expect(compactLegacyAutoVendorMappings([legacy],{'auto-1':'vendor_fields'}))

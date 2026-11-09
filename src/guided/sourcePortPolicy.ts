@@ -8,7 +8,6 @@ const TRANSLATED=new Set(policy.excludedPortSourceSegments);
 export function sourceHasExcludedPortSegment(source:string):boolean{
   return source.split('.').some(segment=>{
     const normalized=segment.replace(/([a-z0-9])([A-Z])/g,'$1_$2').toLowerCase();
-    if(TRANSLATED.has(normalized))return true;
     const words=normalized.split(/[-_]+/).filter(Boolean);
     return words.some(word=>TRANSLATED.has(word));
   });

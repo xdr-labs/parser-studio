@@ -19,6 +19,34 @@ function oracleExists(sources:string[],occupied:string[]):boolean{
   }
   return false;
 }
+// Enumerate ALL valid allocations, independently of the production SCC
+// solver. Prefer all original paths for a duplicated leaf when feasible;
+// otherwise select the lexicographically maximal leaf preference vector.
+function oracleAllocation(sources:string[],occupied:string[]):Map<string,string>|null{
+  const sorted=[...new Set(sources)].sort();
+  const occurrences=new Map<string,number>();
+  for(const source of sorted){
+    const leaf=source.split('.').at(-1)!;
+    occurrences.set(leaf,(occurrences.get(leaf)??0)+1);
+  }
+  const feasible:Array<{targets:string[];strict:boolean;priority:string}>=[];
+  for(let mask=0;mask<2**sorted.length;mask++){
+    const targets=sorted.map((source,i)=>(mask&(1<<i))
+      ?source.split('.').at(-1)!:source);
+    if(targets.some(target=>occupied.some(other=>overlap(target,other))))continue;
+    if(targets.some((target,i)=>targets.some((other,j)=>i!==j&&
+      overlap(target,other))))continue;
+    const strict=sorted.every((source,i)=>
+      occurrences.get(source.split('.').at(-1)!)===1||!(mask&(1<<i)));
+    feasible.push({targets,strict,priority:sorted.map((_,i)=>
+      mask&(1<<i)?'1':'0').join('')});
+  }
+  if(!feasible.length)return null;
+  feasible.sort((a,b)=>Number(b.strict)-Number(a.strict)||
+    b.priority.localeCompare(a.priority));
+  return new Map(sorted.map((source,i)=>[source,feasible[0]!.targets[i]!]));
+}
+
 function random(seed:number){
   let value=seed>>>0;
   return ()=>{value^=value<<13;value^=value>>>17;value^=value<<5;return value>>>0;};
@@ -37,6 +65,7 @@ describe('Mapping Correctness v2 invariant-first executable contract',()=>{
       const sources=[...seen];
       const occupied=seed%3===0?[choices(sources[next()%sources.length]!)[next()%2]!] : [];
       const truth=oracleExists(sources,occupied);
+      const exact=oracleAllocation(sources,occupied);
       const plan=planVendorFieldNames(sources,occupied);
       const reversed=planVendorFieldNames([...sources].reverse(),occupied);
       expect(Object.fromEntries(plan.names),'seed '+seed+' deterministic').toEqual(Object.fromEntries(reversed.names));
@@ -49,6 +78,8 @@ describe('Mapping Correctness v2 invariant-first executable contract',()=>{
       }
       expect(plan.unresolved,'seed '+seed+' no silent loss').toEqual([]);
       expect(plan.names.size,'seed '+seed+' all source paths').toBe(sources.length);
+      expect([...plan.names],'seed '+seed+' independent optimal assignment')
+        .toEqual([...exact!]);
       const destinations=[...plan.names.values()];
       for(const [source,target] of plan.names){
         expect(choices(source),'seed '+seed+' source identity').toContain(target);

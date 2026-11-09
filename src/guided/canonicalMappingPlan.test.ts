@@ -66,6 +66,17 @@ describe('canonical source-to-destination decision plan v1',()=>{
     expect(unmapped?.disposition).not.toBe('SUGGESTED_OFFICIAL');
   });
 
+  it('retains catalog collision diagnostics without offering an occupied official target',()=>{
+    const draft=unconfigured();
+    draft.mappings=[{id:'manual-1',source:'previous',target:'srcip',type:'ip',
+      authoring:{version:1,origin:'USER_EDITED'}}];
+    draft.guided!.groups['manual-1']='top_fields';
+    const plan=createCanonicalMappingPlan(preview('{"src_ip":"192.0.2.2"}',draft),draft);
+    expect(plan.entries).toMatchObject([{source:'src_ip',
+      disposition:'SUGGESTED_VENDOR',reviewReasons:['EXISTING_TARGET_CONFLICT']}]);
+    expect(plan.officialCandidates).toHaveLength(0);
+  });
+
   it('produces an order-independent source census on mixed event permutations',()=>{
     const draft=unconfigured();
     const a=JSON.stringify({'source-port':594,alpha:{code:'A'}});

@@ -112,6 +112,10 @@ export function planVendorFieldNames(
     for(let i=0;i<n;i++){
       if(result[i]===1)continue;
       const leaf=candidates[i]![1];
+      // The large (>128) fast path must preserve the same duplicate-leaf
+      // identity policy as the exact solver. When strict placement succeeds,
+      // duplicate last segments retain their full original source paths.
+      if(strict&&leafCounts.get(leaf)!>1)continue;
       if(occupied.some(x=>overlaps(x,leaf)))continue;
       if(candidates.some((choice,j)=>j!==i&&overlaps(leaf,choice[result![j]!])))continue;
       result[i]=1;
