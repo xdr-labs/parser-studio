@@ -132,3 +132,16 @@ browser decisions and the dormant review-only advisory logic against these
 independent results and refuses any divergent value, skipped case or reduced
 fixture inventory. This is a small explicit truth set; it does NOT claim
 independent proof for every undocumented vendor log or DP index event.
+
+
+## Explicit shipping-surface graph (R1 improvement)
+
+`contracts/shipping-surface.v1.json` identifies the actually shipped
+backend entrypoint, its required compiler path, and legacy-only modules.
+`scripts/verification/shipping-entrypoint-reachability.mjs` checks a
+transitive source-import graph, asserts that `backend/src/http.ts` remains
+unreachable from the shipping server, and kills an injected-import
+mutation. The shipped backend's actual HTTP/404 behavior remains a
+separate browser and runtime test; source graph reachability is
+not a formal replacement for dynamic coverage. This prevents false
+release readiness claims based on tests of dormant helper endpoints.

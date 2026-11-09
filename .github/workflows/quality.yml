@@ -79,6 +79,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Executable consumer, policy and runtime contract guard
         run: node scripts/verification/executable-contract-gate.mjs
+      - name: Shipping backend source reachability and legacy-only API exclusion
+        run: node scripts/verification/shipping-entrypoint-reachability.mjs
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants
