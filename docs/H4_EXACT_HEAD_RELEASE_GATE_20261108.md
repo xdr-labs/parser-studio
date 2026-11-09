@@ -28,17 +28,13 @@ run. Error output uses fixed non-source-bearing codes. The gate does not
 rewrite or repair failing evidence. Each negative behavior has a local
 red/green unit regression.
 
-## Current platform limit
+## GitHub-enforced branch protection (2026-11-09)
 
-As checked on November 8, 2026, GitHub returns HTTP 403 for both repository
-branch protection and repository rulesets on this **private** repository,
-with the message that GitHub Pro is required or the repository must be made
-public. The repository **must not** be made public to bypass the restriction.
-Therefore the script is an explicitly run, owner-approved **operator-side**
-gate; it cannot prevent an unrelated GitHub identity from merging without
-using this command. Engineering `merge_gate_status` remains `advisory`
-until a supported GitHub-enforced branch policy is actually installed and
-independently verified. Do not label H4 enforcement COMPLETE.
+The repository is public and GitHub's `main` branch protection is **enforced**, verified by reading back its REST representation after the owner-authorized update. It requires strict up-to-date checks from GitHub Actions (the six browser shards, `web-quality` and isolated native Ruby), an actual pull request, resolution of review conversations, administrator enforcement, and no force-push or branch deletion. Approval count is zero; a specific human approval is **not** required by this policy.
+
+The `release-eligibility` GitHub Actions job additionally queries every page of open P0 and P1 issues with a read-only token and fails closed on any match or API error. After its first successful exact-head run, add that ninth job to the required status checks and read back the protection. Engineering `merge_gate_status: enforced` describes this GitHub merge protection; the exact-SHA owner operator procedure, deployment receipts and deployment approval remain separate operational gates.
+
+The prior November 8 private-repository HTTP 403 observation is superseded; there was no change to repository visibility to bypass protections in this release operation.
 
 GitHub CI green does not establish Stellar Cyber DP 7.0 import/receive. For
 H5, target verification requires an independently designated, authorized DP
