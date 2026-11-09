@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Operator-side release gate for a nominated, owner-approved candidate.
 
-Does NOT configure GitHub branch protection. A private repository on the
-current GitHub plan returns 403 to both protection and rulesets APIs.
-Do not misrepresent this script as universally enforced merge protection.
+The operator gate validates the exact reviewed PR and its full CI evidence.
+GitHub also enforces the required checks through protected main.
 """
 from __future__ import annotations
 
@@ -16,7 +15,7 @@ from urllib.parse import quote
 REPO = "xdr-labs/parser-studio"
 SHA = re.compile(r"[a-f0-9]{40}\Z")
 REQUIRED_JOBS = frozenset(
-    ["native-isolated-synthetic", "web-quality"] +
+    ["native-isolated-synthetic", "web-quality", "release-eligibility"] +
     [f"Browser regression (shard {i}/6)" for i in range(1, 7)]
 )
 REQUIRED_ARTIFACTS = frozenset(
@@ -41,8 +40,8 @@ def validate_release_evidence(run: dict, jobs: dict, artifacts: dict,
         raise ValueError("H4_MAIN_BASE")
     entries = jobs.get("jobs", [])
     names = [item.get("name") for item in entries]
-    if (jobs.get("total_count") != 8 or len(entries) != 8 or
-            len(set(names)) != 8 or set(names) != REQUIRED_JOBS or
+    if (jobs.get("total_count") != len(REQUIRED_JOBS) or len(entries) != len(REQUIRED_JOBS) or
+            len(set(names)) != len(REQUIRED_JOBS) or set(names) != REQUIRED_JOBS or
             any(item.get("status") != "completed" or
                 item.get("conclusion") != "success" for item in entries)):
         raise ValueError("H4_REQUIRED_JOBS")
@@ -111,7 +110,7 @@ def main() -> int:
         for label in ('P0','P1')]
     validate_work_packet(work, severity)
     print("H4_OWNER_RELEASE_GATE_PASS exact_head=" + args.sha +
-          " jobs=8 native_artifacts=2 work_packet_closed=1 open_p0_p1=0")
+          " jobs=9 native_artifacts=2 work_packet_closed=1 open_p0_p1=0")
     return 0
 
 

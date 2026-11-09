@@ -20,9 +20,9 @@ python3 scripts/verification/h4_exact_head_release_gate.py \
 
 The gate uses the authenticated GitHub CLI in read-only mode. It refuses a
 different repository, a Draft/closed PR, a PR not targeting `main`, a stale
-head SHA or failing/incomplete Actions run. All eight **named** jobs must
+head SHA or failing/incomplete Actions run. All nine **named** jobs must
 pass: main `web-quality`, the isolated fixed synthetic Native Fluentd
-runner and six Chromium browser shards. Both sanitized native report
+runner, the P0/P1 release-eligibility check and six Chromium browser shards. Both sanitized native report
 artifacts must be present and unexpired in the **same** successful Actions
 run. Error output uses fixed non-source-bearing codes. The gate does not
 rewrite or repair failing evidence. Each negative behavior has a local
