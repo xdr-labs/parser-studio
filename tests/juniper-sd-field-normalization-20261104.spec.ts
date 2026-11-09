@@ -64,6 +64,11 @@ test('Juniper RFC5424 novice flow maps source/destination IPs to actual Stellar 
     ['srcport','dstport'].includes(row.target??''));
   expect(conditional.map(row=>row.target).sort()).toEqual(['dstport','srcport']);
   await expect(map.getByText(/Conditional official field:/)).toHaveCount(2);
+  const diff=map.getByLabel('Field changes only');
+  const vendorRow=diff.locator(':scope > div').filter({has:page.getByText('syslog_sd.element_1.params.service-name',{exact:true})});
+  await expect(vendorRow.locator('strong').nth(1)).toHaveText('syslog_sd_element_1_params_service-name');
+  const destinations=await diff.locator(':scope > div > strong:nth-of-type(2)').allTextContents();
+  expect(destinations.every(name=>!name.startsWith('Demo Local Draft.'))).toBe(true);
   await expect(map.getByLabel('Field changes only')).toContainText('srcip');
   await expect(map.getByLabel('Field changes only')).toContainText('dstip');
   expect(errors).toEqual([]);

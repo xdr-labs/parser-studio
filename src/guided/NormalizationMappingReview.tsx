@@ -350,7 +350,7 @@ export default function NormalizationMappingReview({
           <label>{group==='vendor_fields'?'Vendor field name':'Stellar field name'} <HelpTip
             label={group==='vendor_fields'?'Vendor field name':'Stellar field name'}
             text={group==='vendor_fields'
-              ?'This field is not mapped to the published Stellar dictionary. The generated parser keeps it under the '+(draft.vendor||'vendor')+' vendor namespace instead of inventing a Stellar field name.'
+              ?'This field is not mapped to the published Stellar dictionary. Its destination name stays as entered here; the generated parser stores it under the manufacturer namespace.'
               :'This is where the value will appear in the normalized Stellar Cyber event. Use Choose Stellar field if you are unsure which name to use.'}/>
             <input aria-label={'Stellar field '+index} list="stellar-metadata-field-list"
               value={mapping.target} onChange={event=>updateMapping(mapping.id,'target',event.target.value)}/>
@@ -367,7 +367,7 @@ export default function NormalizationMappingReview({
             {' '+mapping.when.values.join(', ')}. Other events keep the original vendor field.
           </div>}
           <div className="normalization-map-meta">
-            <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Generated as '+(draft.vendor||'vendor')+'.'+mapping.target:'Needs your review'}</span>
+            <span>{state.kind==='verified'?'Uses a Stellar standard field':group==='vendor_fields'?'Destination: '+mapping.target+' (manufacturer namespace in generated output)':'Needs your review'}</span>
             <span>{sourceValues(suite,mapping.source,mapping.sourcePathKind).length} example value{sourceValues(suite,mapping.source,mapping.sourcePathKind).length===1?'':'s'} shown</span>
           </div>
           {mapping.sourcePathKind&&<span className="normalization-source-kind">
@@ -457,14 +457,21 @@ export default function NormalizationMappingReview({
       </div>
       <div className="normalization-diff-list" aria-label="Field changes only">
         {draft.mappings.map(mapping=>{
-          const found=lookupFieldValue(chosen.fields,mapping.source);
+          const found=lookupFieldValue(chosen.fields,mapping.source,mapping.sourcePathKind);
           const group=draft.guided?.groups[mapping.id]??'vendor_fields';
           const vendorRoot=chosen.normalized[draft.vendor];
-          const afterResult=group==='vendor_fields'&&vendorRoot&&typeof vendorRoot==='object'&&!Array.isArray(vendorRoot)
-            ?lookupFieldValue(vendorRoot as Record<string,unknown>,mapping.target)
+          // A missing vendor namespace means this vendor mapping emitted nothing.
+          // Never fall back to an unrelated root field with the same leaf name.
+          const afterResult=group==='vendor_fields'
+            ?vendorRoot&&typeof vendorRoot==='object'&&!Array.isArray(vendorRoot)
+              ?lookupFieldValue(vendorRoot as Record<string,unknown>,mapping.target)
+              :{found:false as const}
             :lookupFieldValue(chosen.normalized,mapping.target);
           const after=afterResult.found?afterResult.value:undefined;
-          const displayTarget=group==='vendor_fields'?(draft.vendor||'vendor')+'.'+mapping.target:mapping.target;
+          // The destination name is mapping.target, not the enclosing manufacturer
+          // namespace. In particular, never present the demo manufacturer as
+          // part of a field name while the author has not set their identity.
+          const displayTarget=mapping.target;
           return <div key={mapping.id}>
             <strong>{sourceDisplay(mapping.source)}</strong><span>{found.found?displayValue(found.value):'Not present'}</span>
             <ArrowRight size={14}/><strong>{displayTarget}</strong>

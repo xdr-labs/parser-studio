@@ -53,7 +53,7 @@ test('beginner can review official Stellar mappings, compare output and correct 
   // not silently retained as a verified Stellar mapping.
   await expect(officialRow).toHaveClass(/custom/);
   await expect(officialRow).toContainText('Vendor field');
-  await expect(map.getByLabel('Field changes only')).toContainText('.not_a_stellar_field');
+  await expect(map.getByLabel('Field changes only').locator(':scope > div > strong:nth-of-type(2)').first()).toHaveText('not_a_stellar_field');
   await expect(map.getByLabel('Field mapping summary')).toContainText('Vendor fields retained');
   await expect(map.getByLabel('Field mapping checks'))
     .toContainText('All current field mappings passed the sample checks');
