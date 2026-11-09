@@ -3,7 +3,8 @@ import {hasAmbiguousFieldPath,hasAmbiguousSourceFields,listSafeLeafPaths,lookupF
 import {sha256Utf8Hex} from '../sha256';
 import {defaultGuidedOptions,type FieldGroup} from './contract';
 import {findStellarMetadataField,STELLAR_METADATA_CATALOG_PROVENANCE} from './stellarMetadataCatalog';
-import {explicitPortSourceAlias,sourceHasExcludedPortSegment,suggestNormalizationCandidatesFromSuite,valueFitsNormalizationTarget} from './normalizationCandidates';
+import {explicitPortSourceAlias,sourceHasExcludedPortSegment,valueFitsNormalizationTarget} from './normalizationCandidates';
+import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {validateNormalizationMappings,isBlockingNormalizationFinding} from './normalizationValidation';
 import {toBackendProject} from './backendAdapter';
 
@@ -118,7 +119,7 @@ export async function createJsonataMappingPrompt(suite:SuiteResult,draft:ParserD
       ...(prior.has(source)?{currentTarget:prior.get(source)}:{}),
       ...(includeValues?{examples:values.slice(0,2).map(display)}:{})};
   });
-  const candidates=suggestNormalizationCandidatesFromSuite(suite,draft.mappings,draft.guided?.groups??{})
+  const candidates=createCanonicalMappingPlan(suite,draft).officialCandidates
     .map(c=>({source:c.source,target:c.target,confidence:c.confidence,note:c.explanation}));
   const example={contract:JSONATA_MAPPING_CONTRACT,sample:{sha256,events:suite.events.length},
     mappings:[{expression:'syslog_sd.element_1.params.`source-address`',target:'srcip'}]};
@@ -190,7 +191,7 @@ export async function reviewJsonataMapping(
     return {ok:false,reason:'Supply at most 100 field-mapping entries.'};
   const paths=new Set(suite.events.flatMap(e=>listSafeLeafPaths(e.fields)));
   const groups=draft.guided?.groups??{};
-  const suggestions=suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups);
+  const suggestions=createCanonicalMappingPlan(suite,draft).officialCandidates;
   const usedSources=new Set<string>(),usedTargets=new Set<string>();
   const rows:ReviewedJsonataMapping[]=[];
   for(const item of parsed.mappings){
@@ -258,7 +259,7 @@ export function applyReviewedJsonataMapping(draft:ParserDraft,suite:SuiteResult,
   const options=draft.guided??defaultGuidedOptions();
   const groups={...options.groups},mappings=[...draft.mappings];
   const sourcePaths=new Set(suite.events.flatMap(e=>listSafeLeafPaths(e.fields)));
-  const suggestions=suggestNormalizationCandidatesFromSuite(suite,draft.mappings,options.groups);
+  const suggestions=createCanonicalMappingPlan(suite,draft).officialCandidates;
   const seen=new Set<string>();
   for(const row of selected){
     if(!['READY','CHECK_FIRST'].includes(row.status)||!row.type||!row.group||
@@ -300,6 +301,7 @@ export function applyReviewedJsonataMapping(draft:ParserDraft,suite:SuiteResult,
     const id=at<0?'ai-jsonata-'+String(mappings.length+1):mappings[at]!.id;
     const sourcePathKind=reviewedSourceKind(row.expression,row.source);
     const mapping={id,source:row.source,target:row.target,type:row.type,
+      authoring:{version:1 as const,origin:'APPROVED' as const},
       ...(sourcePathKind?{sourcePathKind}:{}),...(row.when?{when:row.when}:{})};
     if(at<0)mappings.push(mapping);else mappings[at]=mapping;
     groups[id]=row.group;

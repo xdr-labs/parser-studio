@@ -13,9 +13,12 @@ const sample=[
 
 function initialDraft():ParserDraft{
   return {...createDraft(),format:'json',mappings:[
-    {id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'ip'},
-    {id:'auto-2',source:'dst_port',target:'custom.dst_port',type:'integer'},
-    {id:'auto-3',source:'action',target:'custom.action',type:'string'},
+    {id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'ip',
+      authoring:{version:1,origin:'AUTO'}},
+    {id:'auto-2',source:'dst_port',target:'custom.dst_port',type:'integer',
+      authoring:{version:1,origin:'AUTO'}},
+    {id:'auto-3',source:'action',target:'custom.action',type:'string',
+      authoring:{version:1,origin:'AUTO'}},
   ],guided:{...defaultGuidedOptions(),groups:{
     'auto-1':'vendor_fields','auto-2':'vendor_fields','auto-3':'vendor_fields',
   }}};

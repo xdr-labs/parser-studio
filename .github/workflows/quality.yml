@@ -53,6 +53,8 @@ jobs:
           set -euo pipefail
           npx vitest run src/guided/mappingCorrectnessV2Invariants.test.ts src/guided/vendorFieldNames.test.ts src/guided/generatedMappingReconciliation.test.ts src/guided/sourcePortPolicy.test.ts --reporter=dot
           python3 -m unittest discover -s tests -p 'test_mapping_correctness_v2.py' -v
+          python3 -m unittest discover -s tests -p 'test_h4_exact_head_release_gate_20261108.py' -v
+          node scripts/verification/mcv2-mutation-sensitivity.mjs
       - name: Typecheck and build
         run: npm run build
       - name: Offline Python standard-library sender grammar
@@ -90,6 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/canonical-cross-engine.ts
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mcv2-vendor-native-parity.ts
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/operator-conformance.ts > "$RUNNER_TEMP/parser-studio-operator-matrix.json"
           cat "$RUNNER_TEMP/parser-studio-operator-matrix.json"
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/grammar-conformance.ts > "$RUNNER_TEMP/parser-studio-grammar-matrix.json"

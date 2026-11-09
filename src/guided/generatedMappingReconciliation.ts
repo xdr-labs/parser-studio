@@ -1,5 +1,5 @@
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
-import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
+import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {compactLegacyAutoVendorMappings} from './vendorFieldNames';
 
 const overlaps=(a:string,b:string)=>a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
@@ -24,7 +24,7 @@ export function reconcileGeneratedMappings(draft:ParserDraft,suite:SuiteResult|u
   const names=compactLegacyAutoVendorMappings(draft.mappings,draft.guided?.groups??{});
   const renamed=names===draft.mappings?draft:{...draft,mappings:names};
   if(!suite?.events.length||!renamed.guided)return renamed;
-  const choices=suggestNormalizationCandidatesFromSuite(suite,[],{})
+  const choices=createCanonicalMappingPlan(suite,{...renamed,mappings:[]}).officialCandidates
     .filter(c=>c.safeForBulk&&c.confidence==='HIGH'&&!c.when);
   if(!choices.length)return renamed;
   let mappings=[...renamed.mappings];

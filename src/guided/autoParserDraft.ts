@@ -6,7 +6,7 @@ import {splitEvents,MAX_DATASET_BYTES,MAX_EVENTS} from '../parser';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {suggestUnmappedFieldPlan} from './fieldMappingSuggestions';
 import {suggestMappingType,suggestNativeJsonType} from './typeSuggestions';
-import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
+import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {defaultGuidedOptions} from './contract';
 import {toBackendProject} from './backendAdapter';
 import {selectDraftFormat} from './draftFormatTransition';
@@ -106,7 +106,8 @@ export function prepareAutoParserDraft(
           return value!==undefined&&value!==null&&
             !(typeof value==='string'&&value.trim()==='');
         }));
-    if(fieldPlan.unresolved.length>0)return failed('MODEL_REVIEW_REQUIRED');
+    if(fieldPlan.unresolved.length>0||fieldPlan.unaddressableValues>0)
+      return failed('MODEL_REVIEW_REQUIRED');
     if(suggestions.length===0)return failed('MODEL_REVIEW_REQUIRED');
     const mappings:MappingRule[]=suggestions.map((suggestion,i)=>{
       const rule:MappingRule={id:'auto-'+String(i+1),authoring:{version:1,origin:'AUTO'},source:suggestion.source,
@@ -124,9 +125,8 @@ export function prepareAutoParserDraft(
       classification:{defaultIndex:'Syslog',rules:[]}};
     // Apply only whole-sample, dictionary-backed matches to generated mappings.
     // The user still reviews them in Map Fields; ambiguous candidates stay vendor-only.
-    const official=suggestNormalizationCandidatesFromSuite(
-      suite,next.mappings,next.guided.groups,
-    ).filter(candidate=>candidate.confidence==='HIGH'&&candidate.safeForBulk);
+    const official=createCanonicalMappingPlan(suite,next).officialCandidates
+      .filter(candidate=>candidate.confidence==='HIGH'&&candidate.safeForBulk);
     if(official.length){
       const bySource=new Map(official.map(candidate=>[candidate.source,candidate]));
       const groups={...next.guided.groups};

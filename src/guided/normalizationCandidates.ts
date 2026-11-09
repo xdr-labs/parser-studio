@@ -228,13 +228,10 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   const informative=informativeValues.length;
   const high=compatibleObserved===informative&&values.length===events.length&&
     informative>0&&!nonTransportPort;
-  const defaultGenerated=new Map([
-    ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
-  ]);
-  const replaceIsGenerated=Boolean(current&&(
-    (current.id.startsWith('auto-')&&currentGroup==='vendor_fields')||
-    (current.target.startsWith('custom.')&&defaultGenerated.get(current.id)===current.target)
-  ));
+  // Auto-generated provenance is explicit; field names and IDs cannot prove
+  // that a user has not edited a persisted mapping.
+  const replaceIsGenerated=current?.authoring?.version===1&&
+    current.authoring.origin==='AUTO';
   return {
     source,target,type:catalog.mappingType,group:catalog.group,
     confidence:high?'HIGH':'REVIEW',method,

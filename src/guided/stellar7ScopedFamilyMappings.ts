@@ -1,6 +1,7 @@
 import type {ParserDraft,MappingRule,SuiteResult} from '../model';
 import {inspectEventProfile} from './multiEventRouting';
-import {suggestNormalizationCandidatesFromSuite,type NormalizationCandidate} from './normalizationCandidates';
+import type {NormalizationCandidate} from './normalizationCandidates';
+import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 
 export type ScopedFamilyStellar7Candidate=Pick<NormalizationCandidate,
@@ -18,7 +19,7 @@ function defaultTarget(source:string):string{
 function editableMapping(draft:ParserDraft,variantName:string,source:string):MappingRule|undefined{
   const variant=draft.eventProfiles?.variants.find(item=>item.name===variantName);
   const mapping=variant?.mappings.find(item=>item.source===source);
-  if(!mapping||!mapping.id.startsWith('family-')||
+  if(!mapping||mapping.authoring?.origin!=='AUTO'||
     ![defaultTarget(source),source,source.replace(/\./g,'_'),source.split('.').at(-1)!].includes(mapping.target))
     return undefined;
   if((draft.guided?.groups[mapping.id]??'vendor_fields')!=='vendor_fields')
@@ -43,7 +44,9 @@ export function proposeStellar7FamilyMappings(
       inspectEventProfile(event.fields,config).profile?.name===variant.name);
     if(!events.length)continue;
     const subset={...suite,events};
-    const proposals=suggestNormalizationCandidatesFromSuite(subset,[],{});
+    const isolated={...draft,mappings:[],guided:draft.guided
+      ?{...draft.guided,groups:{}}:undefined};
+    const proposals=createCanonicalMappingPlan(subset,isolated).officialCandidates;
     for(const candidate of proposals){
       if(!editableMapping(draft,variant.name,candidate.source))continue;
       const catalog=findStellarMetadataField(candidate.target);
@@ -114,7 +117,8 @@ export function applyStellar7FamilyMapping(
   const updated=structuredClone(draft);
   const ownVariant=updated.eventProfiles!.variants.find(item=>item.name===variant.name)!;
   const index=ownVariant.mappings.findIndex(item=>item.id===mapping.id);
-  ownVariant.mappings[index]={...mapping,target:suggestion.target,type:suggestion.type};
+  ownVariant.mappings[index]={...mapping,target:suggestion.target,type:suggestion.type,
+    authoring:{version:1,origin:'APPROVED'}};
   if(!updated.guided)
     return {ok:false,reason:'The local field-group contract is unavailable.'};
   updated.guided.groups={...updated.guided.groups,[mapping.id]:suggestion.group};

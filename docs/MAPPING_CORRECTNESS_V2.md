@@ -53,6 +53,44 @@ The target CI HEAD, exact-generated-Ruby comparisons and full property/mutation
 coverage are still separate acceptance requirements. Do not mark MCV2-A–E
 complete merely because this initial slice is green.
 
+## Second implementation slice — canonical IR and executable release evidence
+
+`src/guided/canonicalMappingPlan.ts` is the versioned
+`parser-studio.mapping-plan.v1` local decision census. It records each safe
+original source path, typed target, field group, explicit origin, observed
+catalog evidence, review reasons, conflicts, and unresolved source identities.
+It does **not** embed original values or runtime secrets. Auto Parser,
+normalization review, generated mapping reconciliation, JSONata proposal
+review and scoped event-family candidates consume the same catalog decision
+plan. The existing backend adapter/compiled Ruby executes the reviewed mapping
+rules; DP 7.0 import remains separately unverified.
+
+The MCV2 type and source identity guards now require trusted `AUTO` origin;
+auto-looking IDs or original path-shaped targets no longer authorize silent
+replacement. `createDraft` initializes genuine generated defaults with AUTO,
+whereas legacy unmarked drafts remain untouched. Explicit editing persists
+`USER_EDITED` and user-approved JSONata/scoped family mappings persist
+`APPROVED`. Exact source paths, non-transport semantics and the NAT/translated
+family deny-list are preserved.
+
+Regression additions: 512 independent seeded 2-choice allocation cases; 11
+actual in-memory mutations of production mapping/port-policy code, all
+rejected by an independent oracle (**11/11 selected mutants**, not a broad
+mutation score); 5 documentation-fixture source holdouts (3 authorable,
+2 correctly review-only); selected browser tests of Juniper, FortiGate
+multi-event, JSONata and 7.0 scoped mapping. The exact-head GitHub quality
+workflow now requires both the negative/positive mutation probes and
+original-source Ruby differential assertions on the Juniper and two FortiGate
+fixtures. There is no optional skip if Ruby is unavailable on the runner.
+
+The H4 operator-side gate now requires an explicitly identified closed Work
+Packet with all acceptance boxes checked; open P0/P1 issues, stale CI and
+incomplete GitHub search responses refuse release even when CI is green.
+This does not change GitHub branch protection and does not authorize any
+release. Independent full-repository mutation sampling, every Stellar field
+family, and actual customer DP 7.0 import/runtime qualification remain
+separate unverified gates.
+
 ## Scope and release safety
 
 Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.

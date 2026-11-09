@@ -4,13 +4,14 @@ import {ArrowLeft,ArrowRight,CheckCircle2,CircleAlert,Search,ShieldCheck,WandSpa
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue,countUnaddressableSourceValues} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
-import {suggestNormalizationCandidatesFromSuite,normalizationCandidateScanStatus,
+import {normalizationCandidateScanStatus,
   type NormalizationCandidate} from './normalizationCandidates';
 import {isBlockingNormalizationFinding,reviewNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import JsonataMappingAssistant from './JsonataMappingAssistant';
 import {reconcileGeneratedMappings} from './generatedMappingReconciliation';
+import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {
   findStellarMetadataField,searchStellarMetadataCatalog,STELLAR_METADATA_CATALOG,
   STELLAR_METADATA_CATALOG_PROVENANCE,
@@ -89,7 +90,8 @@ export default function NormalizationMappingReview({
     setDraft(current=>reconcileGeneratedMappings(current,suite));
   },[draft.mappings,draft.guided?.groups,suite,setDraft]);
   const groups=draft.guided?.groups??{};
-  const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
+  const canonicalPlan=useMemo(()=>createCanonicalMappingPlan(suite,draft),[suite,draft]);
+  const candidates=canonicalPlan.officialCandidates;
   const candidateScan=useMemo(()=>normalizationCandidateScanStatus(suite),[suite]);
   const mappingReview=useMemo(()=>reviewNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const findings=mappingReview.findings;
@@ -106,6 +108,7 @@ export default function NormalizationMappingReview({
   const officialCount=draft.mappings.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
   const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
   const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
+  const unplanned=canonicalPlan.entries.filter(entry=>entry.disposition==='REVIEW_REQUIRED');
   // Notes that do not block (a field some sample logs simply do not carry).
   const noteSources=new Set(findings.filter(finding=>!isBlockingNormalizationFinding(finding.code)).map(finding=>finding.source));
   const candidateView=candidates.filter(candidate=>{
@@ -128,7 +131,7 @@ export default function NormalizationMappingReview({
         const options=old.guided??defaultGuidedOptions();
         return {...old,mappings:[...old.mappings,
           {id,source:candidate.source,target:candidate.target,type:candidate.type,
-            when:candidate.when}],guided:{...options,
+            when:candidate.when,authoring:{version:1,origin:'APPROVED'}}],guided:{...options,
             groups:{...options.groups,[id]:candidate.group}}};
       }
       const existing=old.mappings.find(mapping=>mapping.source===candidate.source);
@@ -156,7 +159,8 @@ export default function NormalizationMappingReview({
           if(!mappings.some(m=>m.source===candidate.source&&m.target===candidate.target&&
             groups[m.id]===candidate.group)&&!mappings.some(m=>m.id===id)){
             mappings.push({id,source:candidate.source,target:candidate.target,
-              type:candidate.type,when:candidate.when});
+              type:candidate.type,when:candidate.when,
+              authoring:{version:1,origin:'APPROVED'}});
             groups[id]=candidate.group;
           }
           continue;
@@ -239,6 +243,15 @@ export default function NormalizationMappingReview({
       <strong>Suggestions come from Stellar Cyber's published field list</strong>
       <span>This step only prepares field names inside Parser Studio. Nothing is sent to a Stellar Cyber system from this screen.</span>
     </div>
+
+    {unplanned.length>0&&<div className="normalization-runtime-note" role="alert"
+      aria-label="Unresolved mapping decisions">
+      <strong>{unplanned.length} source field mapping decision(s) require review</strong>
+      <span>These extracted fields remain visible in the source preview; the
+        canonical mapping plan did not silently discard or auto-approve them.
+        Review the original paths and resolve the listed mapping conditions
+        before relying on exported destination fields.</span>
+    </div>}
 
     {candidateScan.exceeded&&<div className="normalization-runtime-note" role="alert"
       aria-label="Official candidate scan incomplete">

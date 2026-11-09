@@ -26,6 +26,21 @@ def inputs():
 class GateTests(unittest.TestCase):
     def test_all_8_jobs_and_both_artifacts_pass(self):
         gate.validate_release_evidence(*inputs(),expected_sha=SHA)
+    def test_active_work_packet_refuses_merge_despite_green_ci(self):
+        pending={'state':'open','body':'- [ ] MCV2-C\n- [x] MCV2-A'}
+        with self.assertRaisesRegex(ValueError,'ACTIVE_WORK_PACKET'):
+            gate.validate_work_packet(pending,[{'total_count':0},{'total_count':0}])
+        pending['state']='closed'
+        with self.assertRaisesRegex(ValueError,'ACTIVE_WORK_PACKET'):
+            gate.validate_work_packet(pending,[{'total_count':0},{'total_count':0}])
+
+    def test_open_p1_and_incomplete_github_search_fail_closed(self):
+        closed={'state':'closed','body':'- [x] MCV2-A\n- [x] MCV2-E'}
+        for result in ({'total_count':1},{'total_count':0,'incomplete_results':True},{}):
+            with self.assertRaisesRegex(ValueError,'OPEN_P0_P1'):
+                gate.validate_work_packet(closed,[{'total_count':0},result])
+        gate.validate_work_packet(closed,[{'total_count':0},{'total_count':0}])
+
     def test_wrong_sha_is_rejected(self):
         run,jobs,artifacts,pr=inputs();run['head_sha']='a'*40
         with self.assertRaisesRegex(ValueError,'HEAD_SHA'):

@@ -1,6 +1,6 @@
 import type { MappingRule, ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
-import { listSafeLeafPaths } from '../fieldPaths';
+import { listSafeLeafPaths,countUnaddressableSourceValues } from '../fieldPaths';
 import { findStellarMetadataField } from './stellarMetadataCatalog';
 import {planVendorFieldNames} from './vendorFieldNames';
 
@@ -25,6 +25,7 @@ export interface UnmappedFieldPlan {
   suggestions: SuggestedFieldMapping[];
   /** Field paths that cannot be given noncolliding leaf or original-path names. */
   unresolved: readonly string[];
+  unaddressableValues:number;
 }
 export function suggestUnmappedFieldPlan(
   samples: Array<Record<string, unknown>>,
@@ -73,7 +74,20 @@ export function suggestUnmappedFieldPlan(
     }
     if (!candidatesRemain || !addedThisRound) break;
   }
-  return {suggestions:proposals,unresolved:plan.unresolved};
+  // The round-robin 100-field budget is a selection budget, not permission to
+  // silently omit any of the remaining safe extracted source identities.
+  const selected=new Set(proposals.map(item=>item.source));
+  // Queues were consumed above; recompute the bounded source census from the
+  // original events, preserving the same parser-supported source identities.
+  const allSources=[...new Set(samples.flatMap(fields=>listSafeLeafPaths(fields)))];
+  const uncovered=allSources.filter(source=>
+    !existingSources.has(source)&&!selected.has(source)&&
+    SAFE_PATH.test(source)&&!SYSTEM.has(source.split('.')[0]!)&&
+    source.split('.').every(segment=>segment&&!DANGEROUS.has(segment)));
+  return {suggestions:proposals,
+    unresolved:[...new Set([...plan.unresolved,...uncovered])].sort(),
+    unaddressableValues:samples.reduce((sum,fields)=>
+      sum+countUnaddressableSourceValues(fields),0)};
 }
 export function suggestUnmappedFields(
   samples: Array<Record<string, unknown>>,

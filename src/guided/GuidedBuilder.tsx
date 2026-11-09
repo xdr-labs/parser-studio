@@ -1624,9 +1624,12 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <datalist id="guided-field-suggestions">{activeFieldNames.map((name) => <option value={name} key={name} />)}</datalist>
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> Add Field Mapping</button>
               {activeFieldNames.some((field) => !draft.mappings.some((mapping) => mapping.source === field)) && <button className="guided-link" type="button" onClick={() => { const first = activeFieldNames.find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> Suggest Another Unmapped Field</button>}
-              {unmappedFieldPlan.unresolved.length>0&&<p role="alert" className="guided-error">
-                Mapping review required: {unmappedFieldPlan.unresolved.length} extracted field path(s)
-                could not be assigned a noncolliding original or leaf destination. No field was silently renamed or auto-approved.
+              {(unmappedFieldPlan.unresolved.length>0||unmappedFieldPlan.unaddressableValues>0)&&
+                <p role="alert" className="guided-error">
+                Mapping review required: {unmappedFieldPlan.unresolved.length} safe extracted field path(s)
+                could not be automatically assigned within the mapping budget or without collisions,
+                and {unmappedFieldPlan.unaddressableValues} source value(s) are outside the compiler schema.
+                No field was silently renamed, omitted, or auto-approved.
               </p>}
               <button className="guided-cta-secondary" type="button" disabled={!unmappedSuggestions.length} onClick={applyUnmappedSuggestions}>
                 <WandSparkles size={15} /> Add Remaining Safe Fields ({unmappedSuggestions.length})

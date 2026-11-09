@@ -128,9 +128,12 @@ export function createDraft(): ParserDraft {
     syslogBodyFormat: 'raw',
     guided: defaultGuidedOptions(),
     mappings: [
-      { id: 'source-ip', source: 'src_ip', target: 'custom.source_ip', type: 'ip' },
-      { id: 'target-port', source: 'dst_port', target: 'custom.destination_port', type: 'port' },
-      { id: 'action', source: 'action', target: 'custom.action', type: 'string' },
+      { id: 'source-ip', source: 'src_ip', target: 'custom.source_ip', type: 'ip',
+        authoring:{version:1,origin:'AUTO'} },
+      { id: 'target-port', source: 'dst_port', target: 'custom.destination_port', type: 'port',
+        authoring:{version:1,origin:'AUTO'} },
+      { id: 'action', source: 'action', target: 'custom.action', type: 'string',
+        authoring:{version:1,origin:'AUTO'} },
     ],
   };
 }
