@@ -457,11 +457,15 @@ export default function NormalizationMappingReview({
       </div>
       <div className="normalization-diff-list" aria-label="Field changes only">
         {draft.mappings.map(mapping=>{
-          const found=lookupFieldValue(chosen.fields,mapping.source);
+          const found=lookupFieldValue(chosen.fields,mapping.source,mapping.sourcePathKind);
           const group=draft.guided?.groups[mapping.id]??'vendor_fields';
           const vendorRoot=chosen.normalized[draft.vendor];
-          const afterResult=group==='vendor_fields'&&vendorRoot&&typeof vendorRoot==='object'&&!Array.isArray(vendorRoot)
-            ?lookupFieldValue(vendorRoot as Record<string,unknown>,mapping.target)
+          // A missing vendor namespace means this vendor mapping emitted nothing.
+          // Never fall back to an unrelated root field with the same leaf name.
+          const afterResult=group==='vendor_fields'
+            ?vendorRoot&&typeof vendorRoot==='object'&&!Array.isArray(vendorRoot)
+              ?lookupFieldValue(vendorRoot as Record<string,unknown>,mapping.target)
+              :{found:false as const}
             :lookupFieldValue(chosen.normalized,mapping.target);
           const after=afterResult.found?afterResult.value:undefined;
           // The destination name is mapping.target, not the enclosing manufacturer

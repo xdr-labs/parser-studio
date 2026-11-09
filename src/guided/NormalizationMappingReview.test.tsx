@@ -72,6 +72,38 @@ describe('normalization mapping review UI',()=>{
     expect(normalized?.textContent).toContain('custom');
   });
 
+
+  it('does not display a nested source value when a reviewed literal-root selector is absent',()=>{
+    const draft:ParserDraft={...createDraft(),format:'json',
+      mappings:[{id:'literal-ip',source:'source.ip',sourcePathKind:'literal_root',
+        target:'vendor_ip',type:'string'}],
+      guided:{...defaultGuidedOptions(),groups:{'literal-ip':'vendor_fields'}}};
+    const suite=preview('{"source":{"ip":"192.0.2.40"}}',draft);
+    expect(suite.events[0]?.normalized).not.toHaveProperty('Demo Local Draft');
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    const row=screen.getByLabelText('Field changes only').firstElementChild;
+    expect(row?.querySelector('strong')?.textContent).toBe('source.ip');
+    expect(row?.querySelector('span')?.textContent).toBe('Not present');
+    expect(row?.querySelectorAll('span')[1]?.textContent).toBe('Not emitted');
+  });
+
+  it('does not display an unrelated top-level enrichment as an absent vendor field',()=>{
+    const options=defaultGuidedOptions();
+    const draft:ParserDraft={...createDraft(),format:'json',
+      mappings:[{id:'vendor-marker',source:'missing_source',target:'review_marker',type:'string'}],
+      guided:{...options,groups:{'vendor-marker':'vendor_fields'},
+        enrichment:[{id:'marker',operator:'set_const',source:'',target:'review_marker',value:'ENRICHED_ROOT'}]}};
+    const suite=preview('{"device":"fw1"}',draft);
+    expect(suite.events[0]?.normalized).toHaveProperty('review_marker','ENRICHED_ROOT');
+    expect(suite.events[0]?.normalized).not.toHaveProperty('Demo Local Draft');
+    render(<NormalizationMappingReview draft={draft} setDraft={vi.fn()} suite={suite}
+      selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>);
+    const row=screen.getByLabelText('Field changes only').firstElementChild;
+    expect(row?.querySelectorAll('strong')[1]?.textContent).toBe('review_marker');
+    expect(row?.querySelectorAll('span')[1]?.textContent).toBe('Not emitted');
+  });
+
   it('says that removing a mapping leaves the field out of the parser output',()=>{
     render(<Harness/>);
     expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output0');
