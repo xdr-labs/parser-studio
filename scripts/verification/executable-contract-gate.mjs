@@ -110,12 +110,15 @@ assert.match(workflow,/GITHUB_EVENT_NAME.*pull_request/);
 assert.match(workflow,/for label in P0 P1/);
 assert.doesNotMatch(workflow,/ref: 03624952a8c097e5423df32b40ec64137f029f49/);
 const exactPrHeadExpr="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
-assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,3,
-  'all 3 GitHub Actions checkouts must use exact PR source commit');
+assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,4,
+  'all 4 GitHub Actions checkouts must use exact PR source commit');
+assert.match(workflow,/needs: \[native-isolated-synthetic, web-quality\]/);
+assert.match(workflow,/actions\/download-artifact@v4/);
+assert.match(workflow,/reconcile-artifact-lineage\.mjs/);
 assert.ok(workflow.includes('PARSER_STUDIO_BACKEND_HEAD: '+exactPrHeadExpr),
   'browser backend source must follow exact frontend PR head');
-assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,3,
-  'each checkout job must state the actual source SHA');
+assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,4,
+  'all source-validating and release-reconciliation steps must state the exact source SHA');
 assert.doesNotMatch(workflow,/PARSER_STUDIO_BACKEND_HEAD: \$\{\{ github\.sha \$\}\}/);
 assert.doesNotMatch(workflow,/r\.sourceHead!==process\.env\.GITHUB_SHA/,
   'lineage receipts must compare actual PR source SHA, not GitHub synthetic merge SHA');
