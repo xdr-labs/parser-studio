@@ -7,9 +7,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "tsx --test test/*.test.ts",
-    "check": "tsc --noEmit",
-    "build": "tsc && mkdir -p dist/templates && cp templates/canonical-operators.rb.tpl templates/ruby-fragment.rb.tpl templates/ruby-forwarder-family.rb.tpl templates/generic-structural-helper.rb.tpl dist/templates/ && mkdir -p dist/scripts && cp scripts/drain3_offline_worker.py dist/scripts/drain3_offline_worker.py && mkdir -p dist/test_native && cp test_native/project_native_runner.rb dist/test_native/project_native_runner.rb",
+    "test": "node scripts/sync-semantic-policy.mjs --verify && tsx --test test/*.test.ts",
+    "check": "node scripts/sync-semantic-policy.mjs --verify && tsc --noEmit",
+    "build": "node scripts/sync-semantic-policy.mjs --verify && tsc && cp semantic-policy.v1.json dist/semantic-policy.v1.json && mkdir -p dist/templates && cp templates/canonical-operators.rb.tpl templates/ruby-fragment.rb.tpl templates/ruby-forwarder-family.rb.tpl templates/generic-structural-helper.rb.tpl dist/templates/ && mkdir -p dist/scripts && cp scripts/drain3_offline_worker.py dist/scripts/drain3_offline_worker.py && mkdir -p dist/test_native && cp test_native/project_native_runner.rb dist/test_native/project_native_runner.rb",
     "start": "node dist/src/mainline-authoring-server.js",
     "test:authoring": "node scripts/run-authoring-tests.mjs"
   },

@@ -58,9 +58,34 @@ async function verifyGeneratedDraftPair(
   return pair;
 }
 
-test.describe('actual Chromium UI ↔ exact pinned authoring backend; target APIs isolated',()=>{
+test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target APIs isolated',()=>{
   test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',
     'Real integration requires an exact backend HEAD checkout and localhost isolation.');
+
+  test('same-head public backend refuses legacy name-only mapping API',async({request})=>{
+    const response=await request.get('/api/v1/parser-pairs/capabilities');
+    expect(response.status()).toBe(200);
+    const cap=await response.json();
+    expect(cap.authoring.deterministicNameOnlyMappingHttpAvailable).toBe(false);
+
+    // Historical http.ts implements optional diagnostics, but the shipping
+    // mainline authoring server deliberately does not expose this endpoint.
+    // Do not expand a dead-code finding into a new public attack surface.
+    for(const payload of [
+      {fieldNames:['source-port','destination-port','src_ip'],
+        existingDestinations:['srcip.vendor']},
+      {fieldNames:['translated.source-port']},
+      {fieldNames:['x.__proto__']},
+    ]){
+      const blocked=await request.post('/api/v1/parser-pairs/mapping-suggestions',{
+        data:payload,
+      });
+      expect(blocked.status()).toBe(404);
+      expect(await blocked.json()).toEqual({
+        error:'AUTHORING_ONLY_ROUTE_NOT_AVAILABLE',
+      });
+    }
+  });
 
   test('real same-origin schema, capabilities and independent default-deny authorizations',async({request})=>{
     const schema=await request.get('/api/v1/parser-pairs/schema');

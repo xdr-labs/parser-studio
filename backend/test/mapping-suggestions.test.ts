@@ -52,3 +52,43 @@ test("no-value name-only suggestion does not invent mappings for unfamiliar fiel
   assert.equal(JSON.stringify(payload),before);
   assert.equal(r.containsRawValues,false);
 });
+
+
+test("port identity suggestions are derived from canonical policy, including nested SD paths",()=>{
+  const direct=suggestFieldMappings({
+    fieldNames:["source-port","destination-port","srcport","dstport"],
+  });
+  assert.deepEqual(direct.unknownFields,[]);
+  assert.deepEqual(direct.suggestions.map(x=>[x.sourceField,x.proposedDestination,x.status]),[
+    ["destination-port","dstport","DESTINATION_CONFLICT"],
+    ["dstport","dstport","DESTINATION_CONFLICT"],
+    ["source-port","srcport","DESTINATION_CONFLICT"],
+    ["srcport","srcport","DESTINATION_CONFLICT"],
+  ]);
+  const nested=suggestFieldMappings({
+    fieldNames:["Juniper.sd.source-port","Juniper.sd.destination-port"],
+  });
+  assert.deepEqual(nested.suggestions.map(x=>[x.sourceField,x.proposedDestination,x.status]),[
+    ["Juniper.sd.destination-port","dstport","REVIEW_REQUIRED"],
+    ["Juniper.sd.source-port","srcport","REVIEW_REQUIRED"],
+  ]);
+  assert.equal(nested.autoApplied,false);
+});
+
+test("ancestor, descendant and NAT provenance never imply safe target assignment",()=>{
+  for(const existing of ["srcip.vendor","srcip","srcip.family"]){
+    const r=suggestFieldMappings({
+      fieldNames:["src_ip"],existingDestinations:[existing],
+    });
+    assert.equal(r.suggestions[0]?.status,
+      existing==="srcip"?"EXISTING_MAPPING":"DESTINATION_CONFLICT");
+  }
+  const nat=suggestFieldMappings({
+    fieldNames:["forwarder.post_nat.source-port","forwarder.translated.destination-port",
+      "source-port"],
+  });
+  assert.deepEqual(nat.unknownFields,[
+    "forwarder.post_nat.source-port","forwarder.translated.destination-port",
+  ]);
+  assert.equal(nat.suggestions[0]?.proposedDestination,"srcport");
+});

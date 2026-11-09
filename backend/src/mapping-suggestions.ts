@@ -3,29 +3,43 @@
  * Human review is mandatory before assigning a normalized output name.
  * No target, native runner, compiler or parser side effects.
  */
+import semanticPolicy from "../semantic-policy.v1.json" with {type:"json"};
+
 export class MappingSuggestionError extends Error{
   constructor(readonly code:string){super(code);this.name="MappingSuggestionError";}
 }
 const reject=(code:string):never=>{throw new MappingSuggestionError(code);};
 const FIELD=/^[A-Za-z_][A-Za-z0-9_.-]{0,95}$/;
 const BAD=new Set(["__proto__","constructor","prototype"]);
-const aliases:ReadonlyArray<{
-  destination:string;type:"string"|"ip"|"port";
-  source:readonly string[];
-}>=[
-  {destination:"srcip",type:"ip",
-    source:["src_ip","source.ip","srcip","source_ip","sourceip"]},
-  {destination:"dstip",type:"ip",
-    source:["dst_ip","destination.ip","dstip","destination_ip","dest_ip"]},
-  {destination:"dstport",type:"port",
-    source:["dst_port","destination.port","dest_port","dstport"]},
-  {destination:"action",type:"string",
-    source:["action","act","event.action"]},
-  {destination:"username",type:"string",
-    source:["username","user_name","user.name","account_name"]},
-  {destination:"url",type:"string",
-    source:["url","request_url","http.url"]},
-];
+// Approved name identities derive from the frontend normalization policy.
+// Name-only evidence always requires review; never auto-apply to records.
+const APPROVED=new Set<string>(semanticPolicy.advisoryNameOnlySources);
+const TYPES:Readonly<Record<string,"string"|"ip"|"port">>=
+  semanticPolicy.advisoryTargetTypes as Record<string,"string"|"ip"|"port">;
+const NORMALIZATION:Readonly<Record<string,string>>=semanticPolicy.normalizationAliases;
+const ADVISORY_ONLY:Readonly<Record<string,string>>=semanticPolicy.advisoryOnlyAliases;
+const EXPLICIT_PORT:Readonly<Record<string,string>>=semanticPolicy.explicitPortSourceAliases;
+const TRANSLATED=new Set<string>(semanticPolicy.excludedPortSourceSegments);
+function overlaps(a:string,b:string):boolean{
+  return a===b||a.startsWith(b+".")||b.startsWith(a+".");
+}
+function excludedPortSource(path:string):boolean{
+  return path.split(".").some(segment=>{
+    const normalized=segment.replace(/([a-z0-9])([A-Z])/g,"$1_$2").toLowerCase();
+    return normalized.split(/[-_]+/).some(token=>TRANSLATED.has(token));
+  });
+}
+function reviewOnlyDestination(field:string):string|undefined{
+  const lower=field.toLowerCase();
+  const leaf=lower.split(".").at(-1)!;
+  const destination=APPROVED.has(lower)?
+    NORMALIZATION[lower]??ADVISORY_ONLY[lower]:EXPLICIT_PORT[leaf];
+  // Preserve NAT/translated paths as source data regardless of leaf spelling.
+  if((destination==="srcport"||destination==="dstport")&&
+     excludedPortSource(field))return undefined;
+  return destination;
+}
+
 export type MappingHintInput={
   fieldNames:string[];
   existingDestinations?:string[];
@@ -64,19 +78,19 @@ export function suggestFieldMappings(input:MappingHintInput):MappingHintReport{
   const suggestions:MappingHint[]=[];
   const unknownFields:string[]=[];
   for(const field of sorted){
-    const mapping=aliases.find(a=>a.source.includes(field.toLowerCase()));
-    if(!mapping){unknownFields.push(field);continue;}
+    const destination=reviewOnlyDestination(field);
+    if(!destination||!TYPES[destination]){unknownFields.push(field);continue;}
     suggestions.push({
-      sourceField:field,proposedDestination:mapping.destination,
-      type:mapping.type,reason:"NAME_ALIAS_ONLY",status:"REVIEW_REQUIRED",
+      sourceField:field,proposedDestination:destination,
+      type:TYPES[destination]!,reason:"NAME_ALIAS_ONLY",status:"REVIEW_REQUIRED",
     });
   }
-  const count=new Map<string,number>();
-  for(const hint of suggestions)
-    count.set(hint.proposedDestination,(count.get(hint.proposedDestination)??0)+1);
   for(const hint of suggestions){
-    if(previous.has(hint.proposedDestination))hint.status="EXISTING_MAPPING";
-    else if((count.get(hint.proposedDestination)??0)>1)
+    if(previous.has(hint.proposedDestination))
+      hint.status="EXISTING_MAPPING";
+    else if([...previous].some(value=>overlaps(value,hint.proposedDestination))||
+      suggestions.some(other=>other!==hint&&
+        overlaps(other.proposedDestination,hint.proposedDestination)))
       hint.status="DESTINATION_CONFLICT";
   }
   return {contract:"parser-mapping-hints.v0.1",

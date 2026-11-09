@@ -23,6 +23,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          # A fixing PR must be able to merge while an existing release blocker
+          # remains open. The main/release event still fails closed on P0/P1.
+          # Report the defer explicitly; never call a PR release-qualified.
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo 'H4_RELEASE_ELIGIBILITY_NOT_EVALUATED_ON_PR'
+            exit 0
+          fi
           for label in P0 P1; do
             open=$(gh api "repos/${GH_REPO}/issues?state=open&labels=${label}&per_page=100" --paginate --jq '.[].number')
             if [[ -n "$open" ]]; then
@@ -47,6 +54,8 @@ jobs:
         run: npm ci --prefix backend --no-audit --no-fund
       - name: Execute exact generated Ruby and pinned Fluentd in sealed container
         run: bash scripts/verification/h2-ci-isolated-runner.sh
+      - name: Mandatory Ruby 2.4.9 target versus Ruby 3.2.11 synthetic Regex parity
+        run: bash scripts/verification/ruby24-regex-container-gate.sh
       - name: Upload sanitized H2 isolated Native receipt
         uses: actions/upload-artifact@v4
         with:
@@ -68,6 +77,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Executable consumer, policy and runtime contract guard
+        run: node scripts/verification/executable-contract-gate.mjs
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants
@@ -114,6 +125,8 @@ jobs:
           # Product scope is a finite, explicit list; keep broader historical
           # target/Drain3 regression failures visible in backend documentation.
           PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 npm run test:authoring --prefix backend
+      - name: Cross-consumer mapping identity, NAT and collision differential
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
       - name: Canonical same-source authored Ruby conformance (mandatory native)
         run: |
           set -euo pipefail
@@ -405,36 +418,28 @@ jobs:
           cache: npm
       - name: Install browser test dependencies
         run: npm ci --no-audit --no-fund
-      - name: Checkout exact independent authoring backend
-        uses: actions/checkout@v4
-        with:
-          repository: xdr-labs/parser-studio
-          ref: 03624952a8c097e5423df32b40ec64137f029f49
-          path: .integration-backend-src
-          sparse-checkout: backend
-      - name: Compile pinned loopback backend
+      - name: Compile same-exact-HEAD authoring backend
         run: |
-          test "$(git -C .integration-backend-src rev-parse HEAD)" = 03624952a8c097e5423df32b40ec64137f029f49
-          npm ci --prefix .integration-backend-src/backend --no-audit --no-fund
-          npm run build --prefix .integration-backend-src/backend
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          npm ci --prefix backend --no-audit --no-fund
+          npm run build --prefix backend
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run pinned-backend browser catalogue shard with real HTTP and draft guards
+      - name: Run same-HEAD browser catalogue shard with real HTTP and draft guards
         env:
           PARSER_STUDIO_LIVE_BACKEND: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
-          PARSER_STUDIO_BACKEND_ROOT: .integration-backend-src/backend
-          PARSER_STUDIO_BACKEND_HEAD: 03624952a8c097e5423df32b40ec64137f029f49
+          PARSER_STUDIO_BACKEND_ROOT: backend
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '4191'
           PARSER_STUDIO_TEST_PORT: '5180'
           PARSER_STUDIO_TEST_MULTIPASS: '1'
           PARSER_STUDIO_MULTIPASS_PORT: '5292'
         run: |
           set -euo pipefail
-          # The two compiler-structure assertions require today's merged
-          # source compiler, not the older independent compatibility backend.
-          # Both run in web-quality's exact-HEAD "Default 6801" Chromium gate.
-          npx playwright test --project=chromium --workers=2 --shard=${{ matrix.shard }}/6 --grep-invert 'generated Ruby/CONF files use explicitly selected' --reporter=json > /tmp/parser-studio-browser-shard.json
+          # No historical backend can satisfy this same-HEAD integration gate.
+          npx playwright test --project=chromium --workers=2 --shard=${{ matrix.shard }}/6 --reporter=json > /tmp/parser-studio-browser-shard.json
           node -e "const r=require('/tmp/parser-studio-browser-shard.json');const s=r.stats;if(!s.expected||s.unexpected||s.flaky||(r.errors||[]).length){console.error('Browser shard must pass all in-scope tests',s,r.errors);process.exit(1)}console.log('BROWSER_REGRESSION_SHARD_PASS',s)"
       - name: Upload shard failure evidence
         if: failure()

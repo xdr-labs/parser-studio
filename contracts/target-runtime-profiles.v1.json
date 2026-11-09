@@ -1,0 +1,41 @@
+{
+  "contract": "parser-studio.target-runtime-profiles.v1",
+  "profiles": [
+    {
+      "id": "ci-synthetic-ruby32",
+      "ruby": "3.2.11",
+      "fluentd": "1.17.1",
+      "source": "backend/native_isolation/Dockerfile",
+      "evidence": "CI_ONLY_SYNTHETIC",
+      "realStellarTarget": false,
+      "regexDeadlineCapable": true,
+      "targetIndexedEventVerified": false
+    },
+    {
+      "id": "stellar70-observed-ruby24",
+      "ruby": "2.4.9",
+      "fluentd": "1.7.4",
+      "source": "Authorized read-only rickmodular 7.0.0_023bdc1 runtime observation 2026-11-09",
+      "evidence": "OBSERVED_RUNTIME_VERSION_ONLY",
+      "realStellarTarget": true,
+      "regexDeadlineCapable": false,
+      "targetIndexedEventVerified": false,
+      "ciContainerImage": "ruby:2.4.9@sha256:c56ec7f366f95cd6c83552ccb054c0fd95e491ee8ad637812ae3ea37b95ef2c4"
+    }
+  ],
+  "unsupported": [
+    {
+      "feature": "regex",
+      "profile": "stellar70-observed-ruby24",
+      "behavior": "FAIL_CLOSED_RUNTIME",
+      "reason": "Ruby 2.4 treats a timeout Hash as positional regexp flags and has no Regexp timeout API"
+    },
+    {
+      "feature": "syslog-regex-body",
+      "profile": "stellar70-observed-ruby24",
+      "behavior": "FAIL_CLOSED_RUNTIME",
+      "reason": "Same Regexp timeout incompatibility as standalone regex"
+    }
+  ],
+  "targetVerified": false
+}

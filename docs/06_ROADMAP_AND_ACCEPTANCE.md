@@ -1,6 +1,24 @@
 # Current engineering completion ledger — 2026-10-23
 
 
+## ACTIVE — Executable Contract and Runtime Fidelity (owner approved 2026-11-10)
+
+Repeated audits found missing **enforcement of shared semantics across every
+consumer**, mixed-version UI/backend tests, and native tests running a different
+Ruby/Fluentd version from the designated Stellar 7.0 host. H0–H4 and MCV2 are
+historical achievements, not evidence that these remaining escape routes were
+closed. Track this as R0–R5 in [Executable Contract Hardening](PARSER_EXECUTABLE_CONTRACT_HARDENING.md)
+and [ACTIVE Work Packet #249](https://github.com/xdr-labs/parser-studio/issues/249).
+Initial red examples: [Native Regex #285](https://github.com/xdr-labs/parser-studio/issues/285)
+and [Advisory Mapping #286](https://github.com/xdr-labs/parser-studio/issues/286).
+
+The work is ordered R0 PR-vs-release gate separation, R1 machine-checked
+consumer/runtime coverage, R2 no-shadow mapping policy, R3 target Ruby2.4 native
+fidelity and Regex fail-closed safety, R4 same-exact-HEAD UI/API/native differential
+oracles, R5 build-once release/evidence. Each stage must have a specific
+negative test and owner-visible proof. The existing public preview, production
+DP and managed services are unchanged without separate deployment approval.
+
 ## ACTIVE — Mapping Correctness v2 (owner approved 2026-11-09)
 
 The owner directed implementation of a **root-cause, invariant-first mapping correction**, rather than additional per-vendor/name patches. Official [Work Packet #283](https://github.com/xdr-labs/parser-studio/issues/283) is attached to umbrella [#249](https://github.com/xdr-labs/parser-studio/issues/249); authoritative design and WBS: [Mapping Correctness v2](MAPPING_CORRECTNESS_V2.md). Work proceeds **MCV2-A provenance → B allocation/semantics → C property/differential oracles → D exact-head release gates → E multi-vendor source E2E**, without replacing existing H0–H3 extraction. Initial RED acceptance includes silent source drop, manual destination overwrite and NAT alias mispromotion, all reproduced from PR #282 HEAD `608144c`. **Do not merge or deploy PR #282 while these are open.** H4 actual GitHub branch enforcement and H5 real DP7 import remain separately gated.
