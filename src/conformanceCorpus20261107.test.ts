@@ -31,7 +31,8 @@ describe('Canonical conformance contract — deterministic browser and authored 
     expect(corpus.origin).toBe('independently-authored-synthetic');
     expect(policy.contract).toBe('parser-studio.semantic-policy.v1');
     expect(policy.transportPortProtocols.numeric).toEqual([6,17]);
-    const ids=[...corpus.portEvidence,...corpus.kvWhitespace,...corpus.regexSafety].map(x=>x.id);
+    const ids=[...corpus.portEvidence,...corpus.explicitPortAliasEvidence,
+      ...corpus.kvWhitespace,...corpus.regexSafety].map(x=>x.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.length).toBeGreaterThanOrEqual(30);
   });
@@ -62,6 +63,31 @@ describe('Canonical conformance contract — deterministic browser and authored 
       expect(after.fields.dstport,entry.id).toBe('10400');
       expect(after.raw,entry.id).toBe(raw(entry));
     });
+  it.each(corpus.explicitPortAliasEvidence)('$id: named-port aliases preserve types and source bytes',entry=>{
+    const source='proto='+entry.proto+' source-port='+entry.sourcePort+
+      ' destination-port='+entry.destinationPort+' srcip=192.0.2.1';
+    const fields={'proto':entry.proto,'source-port':entry.sourcePort,
+      'destination-port':entry.destinationPort,'srcip':'192.0.2.1'};
+    const proposed=suggestNormalizationCandidates(fields,[]);
+    for(const [leaf,target,expected] of [
+      ['source-port','srcport',entry.srcport],
+      ['destination-port','dstport',entry.dstport],
+    ] as const){
+      const candidate=proposed.find(item=>item.source===leaf);
+      expect(candidate?.target,entry.id+' '+leaf).toBe(target);
+      expect(candidate?.safeForBulk,entry.id+' '+leaf).toBe(expected!==null);
+    }
+    const prepared=prepare(source);
+    expect(prepared.ok,entry.id).toBe(true);
+    if(!prepared.ok)return;
+    expect(toBackendProject(prepared.draft).ok).toBe(true);
+    const event=preview(source,prepared.draft).events[0]!;
+    expect(event.raw).toBe(source);
+    expect(event.fields['source-port']).toBe(entry.sourcePort);
+    expect(event.fields['destination-port']).toBe(entry.destinationPort);
+    expect(event.normalized.srcport).toBe(entry.srcport===null?undefined:entry.srcport);
+    expect(event.normalized.dstport).toBe(entry.dstport===null?undefined:entry.dstport);
+  });
   it.each(corpus.kvWhitespace)('$id: exact KV bytes, no false green',
     entry=>{
       const source='action=allow srcip='+

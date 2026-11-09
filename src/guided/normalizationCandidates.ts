@@ -101,38 +101,20 @@ function unsupportedPortProtocolInEvent(
     return !(TRANSPORT_NUMERIC.has(value)||TRANSPORT_NAMES.has(value));
   });
 }
-// Juniper SD RT_FLOW source-port is not unconditionally an L4 port.
-// Its ICMP records contain vendor protocol identifiers in the same slot.
-// Bound the official map to independently observed TCP/UDP protocol numbers.
-function juniperTransportWhen(
-  source:string,events:Record<string,unknown>[],
-):MappingWhen|undefined{
-  const prefix='syslog_sd.element_1.params.';
-  if(source!==prefix+'source-port'&&source!==prefix+'destination-port')return;
-  if(!events.every(fields=>{
-    const sd=lookupFieldValue(fields,'syslog_sd.element_1.sd_id');
-    const app=lookupFieldValue(fields,'syslog_appname');
-    const port=lookupFieldValue(fields,source);
-    const proto=lookupFieldValue(fields,prefix+'protocol-id');
-    return sd.found&&String(sd.value).startsWith('junos@')&&
-      app.found&&app.value==='RT_FLOW'&&
-      (!port.found||(proto.found&&/^\d{1,3}$/.test(String(proto.value))&&
-        Number(proto.value)<=255));
-  }))return;
-  return {sourcePath:prefix+'protocol-id',operator:'in',values:['6','17']};
+/** Shared, versioned source-field contract. A declared port label has higher
+ * identity evidence than abbreviated aliases (spt/sport etc). The field must
+ * still pass Stellar's integer/range constraints and source ambiguity checks.
+ * No vendor, product or sample-specific path is required.
+ */
+export function sourceHasExcludedPortSegment(source:string):boolean{
+  return source.toLowerCase().split('.').some(part=>
+    semanticPolicy.excludedPortSourceSegments.includes(part));
 }
-function juniperPortWithMissingProtocolContext(
-  source:string,events:Record<string,unknown>[],
-):boolean{
-  const prefix='syslog_sd.element_1.params.';
-  if(![prefix+'source-port',prefix+'destination-port'].includes(source))return false;
-  return events.some(fields=>{
-    const sd=lookupFieldValue(fields,'syslog_sd.element_1.sd_id');
-    const app=lookupFieldValue(fields,'syslog_appname');
-    const port=lookupFieldValue(fields,source);
-    return sd.found&&String(sd.value).startsWith('junos@')&&
-      app.found&&app.value==='RT_FLOW'&&port.found;
-  });
+export function explicitPortSourceAlias(source:string,target:string):boolean{
+  const leaf=source.split('.').at(-1)?.toLowerCase();
+  return !sourceHasExcludedPortSegment(source)&&leaf!==undefined&&
+    semanticPolicy.explicitPortSourceAliases[
+      leaf as keyof typeof semanticPolicy.explicitPortSourceAliases]===target;
 }
 // A matching label is not enough: these vendor log fields have distinct
 // meanings from Stellar's context-specific names or require unit conversion.
@@ -224,33 +206,27 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
     leafExact?.mappable?leaf:
     ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
   if(!target)return null;
+  if((target==='srcport'||target==='dstport')&&sourceHasExcludedPortSegment(source))return null;
   if(incompatibleVendorMeaning(source,target,events))return null;
   const catalog=findStellarMetadataField(target);
   if(!catalog?.mappable||!catalog.mappingType||!catalog.group)return null;
   const current=existing.find(rule=>rule.source===source);
   const currentGroup=current?(existingGroups[current.id]??'vendor_fields'):undefined;
-  const when=(target==='srcport'||target==='dstport')
-    ?juniperTransportWhen(source,events):undefined;
+  const explicitPort=explicitPortSourceAlias(source,target);
   if(current&&current.target===target&&current.type===catalog.mappingType&&
-     currentGroup===catalog.group&&JSON.stringify(current.when)===JSON.stringify(when))return null;
+     currentGroup===catalog.group&&!current.when)return null;
   if(existing.some(rule=>rule.id!==current?.id&&overlaps(rule.target,target)))return null;
   const values=events.map(fields=>lookupFieldValue(fields,source)).filter(result=>result.found);
   if(values.length===0)return null;
-  const applicable=when
-    ?events.filter(fields=>{
-      const p=lookupFieldValue(fields,when.sourcePath);
-      return p.found&&when.values.includes(String(p.value));
-    }).map(fields=>lookupFieldValue(fields,source)).filter(result=>result.found)
-    :values;
-  const informativeValues=applicable.filter(result=>!ignored(result.value));
+  const informativeValues=values.filter(result=>!ignored(result.value));
   const compatibleObserved=informativeValues.filter(result=>
     valueFitsNormalizationTarget(target,catalog.mappingType!,result.value)&&
     (target!=='proto_name'||DOCUMENTED_PROTO_NAMES.has(String(result.value).toLowerCase()))&&
     (target!=='proto'||(Number.isInteger(Number(result.value))&&
       Number(result.value)>=0&&Number(result.value)<=255))).length;
-  // ICMP/IGMP field names sometimes carry identifiers rather than Layer 4
-  // ports. Preserve them as vendor fields unless a human reviews the meaning.
-  const nonTransportPort=!when&&(target==='srcport'||target==='dstport')&&
+  // Protocol-gate abbreviated/ambiguous names; exact descriptive source
+  // labels are an explicit source-identity contract, independent of vendor.
+  const nonTransportPort=!explicitPort&&(target==='srcport'||target==='dstport')&&
     events.some(fields=>lookupFieldValue(fields,source).found&&
       unsupportedPortProtocolInEvent(fields,source));
   const method:NormalizationCandidate['method']=target===source?'EXACT_DICTIONARY_NAME':'DOCUMENTED_ALIAS';
@@ -258,10 +234,8 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   // A sparse heterogeneous sample or placeholders are not sufficient evidence
   // for a bulk-approved official field mapping.
   const informative=informativeValues.length;
-  const missingJuniperContext=!when&&(target==='srcport'||target==='dstport')&&
-    juniperPortWithMissingProtocolContext(source,events);
   const high=compatibleObserved===informative&&values.length===events.length&&
-    informative>0&&!nonTransportPort&&!missingJuniperContext;
+    informative>0&&!nonTransportPort;
   const defaultGenerated=new Map([
     ['source-ip','custom.source_ip'],['target-port','custom.destination_port'],['action','custom.action'],
   ]);
@@ -272,18 +246,14 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   return {
     source,target,type:catalog.mappingType,group:catalog.group,
     confidence:high?'HIGH':'REVIEW',method,
-    explanation:when&&informative>0&&high
-      ?'Juniper RT_FLOW uses this source field for multiple protocols. Emit the Stellar L4 port only for TCP (6) or UDP (17); preserve the original vendor value for ICMP/IGMP and unknown protocols.'
-      :when&&informative===0
-        ?'The current Juniper ICMP/IGMP sample has no eligible TCP/UDP port value; preserve the vendor field until a transport event can be reviewed.'
+    explanation:high&&explicitPort
+      ?'The source explicitly names a port. Its validated integer value maps to the published Stellar field; non-TCP/UDP events may carry vendor-specific numeric identifiers rather than L4 transport ports.'
       :high
       ?(method==='EXACT_DICTIONARY_NAME'
         ?'Source name matches the official Stellar metadata field and observed values match its documented type.'
         :'Reviewed source alias maps to an official Stellar metadata field and observed values match its documented type.')
-      :missingJuniperContext
-        ?'Juniper RT_FLOW needs a valid protocol ID in every port-bearing event before official Layer 4 port mapping can be considered.'
       :nonTransportPort
-        ?'An unknown or non-transport IP protocol does not establish Layer 4 port semantics; review vendor values before mapping to srcport or dstport.'
+        ?'An abbreviated port field with unknown or non-transport protocol context needs review before mapping to an L4 port.'
         :values.length!==events.length
         ?'The field is missing from some events; review its event-family scope before applying an official mapping.'
         :informative===0
@@ -291,8 +261,7 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
           :'The field-name match is plausible, but at least one observed value is incompatible with the documented Stellar field meaning or value type.',
     catalogVerified:true,catalogRelease:'7.0.xs',observed:values.length,
     compatibleObserved,total:events.length,
-    ...(when?{when}:{}),eligibleObserved:applicable.length,
-    skippedForSemantics:values.length-applicable.length,
+    eligibleObserved:values.length,skippedForSemantics:0,
     ...(current?{replacesMappingId:current.id,currentTarget:current.target}:{}),
     safeForBulk:high&&(!current||replaceIsGenerated),
   };

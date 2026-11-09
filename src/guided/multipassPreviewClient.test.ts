@@ -99,6 +99,45 @@ describe('opt-in Multi-Pass preview contract',()=>{
    await expect(requestMultiPassPreview(raw,bad as typeof fetch)).rejects.toThrow('Dictionary');
   }
  });
+ it('validates a policy-backed named port alias without trusting the remote source',async()=>{
+  const raw='source-port=594';
+  const sourcePath='source-port';
+  const base={contract:'parser-studio.multipass-source-preview.v0.1',status:'SOURCE_PARSED',
+    syntax:'KV',sourceSha256:createHash('sha256').update(raw).digest('hex'),
+    sourceBytes:new TextEncoder().encode(raw).length,
+    fields:{'source-port':'594'},spans:[{path:sourcePath,startByte:12,endByte:15}],
+    residuals:[],issues:[],dictionary:{
+      contract:'parser-studio.stellar-dictionary-projection.v0.1',
+      dictionaryRevision:'stellar-standard-metadata-7.0.xs-2026-10-14',
+      sourceUrls:[
+        'https://docs.stellarcyber.ai/prod-docs/6.5.xs/Common/Metadata-Dictionary.htm?TocPath=REFERENCE%7C_____8',
+        'https://docs.stellarcyber.ai/7.0.xs/Common/Metadata-Dictionary.htm',
+        'https://community.opentext.com/cfs-filesystemfile/__key/communityserver-discussions-components-files/224/3731.CommonEventFormatV25.pdf'],
+      mapped:[{sourcePath,targetField:'srcport',documentedType:'integer',
+        mappingClass:'EXPLICIT_SOURCE_ALIAS',startByte:12,endByte:15}],
+      unmappedCount:0,issues:[],automaticAliasInference:false,standardizedAliasMapping:true,
+      sourceExtractionPreserved:true,nativeVerified:false,targetVerified:false,
+    },nativeVerified:false,targetVerified:false};
+  const sender=(result:unknown)=>vi.fn().mockResolvedValue({ok:true,json:async()=>result});
+  const expected=await requestMultiPassPreview(raw,sender(base) as typeof fetch);
+  expect(expected.dictionary?.mapped[0]?.targetField).toBe('srcport');
+  const nestedRaw='nat.source-port=594';
+  const nested=JSON.parse(JSON.stringify(base)) as typeof base;
+  nested.sourceSha256=createHash('sha256').update(nestedRaw).digest('hex');
+  nested.sourceBytes=new TextEncoder().encode(nestedRaw).length;
+  nested.fields={'source-port':'594'};
+  nested.spans=[{path:'nat.source-port',startByte:16,endByte:19}];
+  nested.dictionary.mapped=[{...nested.dictionary.mapped[0]!,
+    sourcePath:'nat.source-port',startByte:16,endByte:19}];
+  await expect(requestMultiPassPreview(nestedRaw,sender(nested) as typeof fetch))
+    .rejects.toThrow('Dictionary');
+  for(const invalid of [
+    {...base.dictionary,mapped:[{...base.dictionary.mapped[0],targetField:'dstport'}]},
+    {...base.dictionary,mapped:[{...base.dictionary.mapped[0],mappingClass:'EXACT_DICTIONARY_NAME'}]},
+    {...base.dictionary,mapped:[{...base.dictionary.mapped[0],documentedType:'string'}]},
+  ])await expect(requestMultiPassPreview(raw,sender({...base,dictionary:invalid}) as typeof fetch))
+    .rejects.toThrow('Dictionary');
+ });
  it('accepts only value-free visible-redaction metadata bound to exact source occurrence spans',async()=>{
   const raw='src=REDACTED secret=*** custom=PRIVATE_VISIBLE';
   const bytes=new TextEncoder();

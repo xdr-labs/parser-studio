@@ -10,7 +10,7 @@ import {isBlockingNormalizationFinding,reviewNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import JsonataMappingAssistant from './JsonataMappingAssistant';
-import {compactLegacyAutoVendorMappings} from './vendorFieldNames';
+import {reconcileGeneratedMappings} from './generatedMappingReconciliation';
 import {
   findStellarMetadataField,searchStellarMetadataCatalog,STELLAR_METADATA_CATALOG,
   STELLAR_METADATA_CATALOG_PROVENANCE,
@@ -81,16 +81,13 @@ export default function NormalizationMappingReview({
   const [search,setSearch]=useState('');
   const [catalogQuery,setCatalogQuery]=useState('');
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
-  // Existing Auto Parser projects used flattened underscore names. Correct
-  // their untouched generated vendor destinations when this review opens.
+  // Every automatically generated mapping is reconsidered against the same
+  // current dictionary/semantic evidence as a fresh Auto Parser draft.
+  // Hand-edited destinations and source conflicts are never rewritten.
   useEffect(()=>{
-    const changed=compactLegacyAutoVendorMappings(draft.mappings,draft.guided?.groups??{});
-    if(changed===draft.mappings)return;
-    setDraft(current=>{
-      const next=compactLegacyAutoVendorMappings(current.mappings,current.guided?.groups??{});
-      return next===current.mappings?current:{...current,mappings:next};
-    });
-  },[draft.mappings,draft.guided?.groups,setDraft]);
+    if(reconcileGeneratedMappings(draft,suite)===draft)return;
+    setDraft(current=>reconcileGeneratedMappings(current,suite));
+  },[draft.mappings,draft.guided?.groups,suite,setDraft]);
   const groups=draft.guided?.groups??{};
   const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const candidateScan=useMemo(()=>normalizationCandidateScanStatus(suite),[suite]);

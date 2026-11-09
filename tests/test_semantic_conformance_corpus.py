@@ -32,6 +32,34 @@ class SharedSemanticConformance(unittest.TestCase):
                 self.assertEqual("SOURCE_PARSED",result["status"])
                 self.assertEqual("594",str(result["fields"]["srcport"]))
 
+    def test_versioned_named_source_aliases_are_cross_engine_and_value_guarded(self):
+        self.assertEqual({'source-port':'srcport','destination-port':'dstport'},
+                         POLICY['explicitPortSourceAliases'])
+        for case in CASES['explicitPortAliasEvidence']:
+            with self.subTest(case=case['id']):
+                raw=(f'proto={case["proto"]} source-port={case["sourcePort"]} '
+                     f'destination-port={case["destinationPort"]} srcip=192.0.2.1')
+                result=preview(raw)
+                mapped={item['targetField']:item for item in result['dictionary']['mapped']}
+                self.assertEqual('SOURCE_PARSED',result['status'])
+                self.assertEqual(case['sourcePort'],str(result['fields']['source-port']))
+                self.assertEqual(case['destinationPort'],str(result['fields']['destination-port']))
+                for key,source in [('srcport','source-port'),('dstport','destination-port')]:
+                    if case[key] is None:
+                        self.assertNotIn(key,mapped)
+                    else:
+                        self.assertEqual(source,mapped[key]['sourcePath'])
+                        self.assertEqual('EXPLICIT_SOURCE_ALIAS',mapped[key]['mappingClass'])
+                        self.assertEqual('integer',mapped[key]['documentedType'])
+        nat=preview('proto=1 nat-source-port=594 srcip=192.0.2.1')
+        self.assertNotIn('srcport',
+            {item['targetField'] for item in nat['dictionary']['mapped']})
+        for source in ['nat.source-port','translated.destination-port']:
+            nested=preview(f'proto=6 {source}=594 srcip=192.0.2.1')
+            self.assertFalse({'srcport','dstport'}.intersection(
+                {item['targetField'] for item in nested['dictionary']['mapped']}),source)
+
+
     def test_unknown_proto_name_preserved_but_not_official(self):
         for value in ["unknown","https","gre","ospf","icmpv6"]:
             with self.subTest(name=value):

@@ -34,6 +34,7 @@ _POLICY=json.loads(Path(__file__).with_name(
 assert _POLICY["contract"]=="parser-studio.semantic-policy.v1"
 _L4_NUMERIC=frozenset(_POLICY["transportPortProtocols"]["numeric"])
 _L4_NAMES=frozenset(_POLICY["transportPortProtocols"]["names"])
+_EXPLICIT_PORT_ALIASES=dict(_POLICY["explicitPortSourceAliases"])
 _DOCUMENTED_PROTO_NAMES=frozenset(_POLICY["officialProtocolNames"])
 DICTIONARY_REVISION="stellar-standard-metadata-7.0.xs-2026-10-14"
 OFFICIAL_DICTIONARY_URL_65="https://docs.stellarcyber.ai/prod-docs/6.5.xs/Common/Metadata-Dictionary.htm?TocPath=REFERENCE%7C_____8"
@@ -193,6 +194,15 @@ def _identity_target(path:str)->str|None:
         return path[5:]
     return None
 
+def _explicit_port_target(path:str)->str|None:
+    # Same versioned source-identity rule as the browser: only the literal
+    # source leaf, never NAT/translated ancestors or ambiguous abbreviations.
+    # Keep the source occurrence and let the common integer/range guard apply.
+    segments=path.lower().split(".")
+    if any(x in _POLICY["excludedPortSourceSegments"] for x in segments):
+        return None
+    return _EXPLICIT_PORT_ALIASES.get(segments[-1])
+
 def _cef_target(path:str,syntax:str)->str|None:
     # Multi-Pass syntax may preserve a base CEF result or name the accepted
     # qualified candidate as `cef.standard`; require both CEF provenance and
@@ -312,14 +322,16 @@ def normalize_stellar_dictionary(event:SourceEvent)->DictionaryNormalization:
     issues=[]
 
     for ref,value in rows:
-        target=_identity_target(ref.path) or _cef_target(ref.path,event.syntax)
+        target=(_identity_target(ref.path) or _cef_target(ref.path,event.syntax)
+                or _explicit_port_target(ref.path))
         if target is None:
             unmapped.append(ref);continue
         ok,normalized=_coerce(target,value)
         if not ok:
             issues.append("DICTIONARY_TYPE_REJECTED:"+target)
             unmapped.append(ref);continue
-        semantic=_semantic_rejection(target,value,observed)
+        semantic=(None if _explicit_port_target(ref.path)==target
+                  else _semantic_rejection(target,value,observed))
         if semantic:
             issues.append(semantic+":"+target)
             unmapped.append(ref);continue
@@ -335,6 +347,8 @@ def normalize_stellar_dictionary(event:SourceEvent)->DictionaryNormalization:
         ref,value=candidates[0]
         rule_id=("cef:"+ref.path+"->"+target
                  if _cef_target(ref.path,event.syntax)==target
+                 else "explicit-source:"+ref.path+"->"+target
+                 if _explicit_port_target(ref.path)==target
                  else "identity:"+ref.path+"->"+target)
         mappings.append(DictionaryMapping(
             ref,target,FIELDS[target].data_type,value,rule_id,

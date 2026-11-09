@@ -90,3 +90,30 @@ unchanged path segment:
 Deterministic regression coverage: `vendorFieldNames.test.ts`,
 `NormalizationMappingReview.test.tsx`, `issue232SemanticMapping.test.ts`, and
 Chromium `tests/juniper-sd-field-normalization-20261104.spec.ts`.
+
+## 2026-11-09 shared named-port mapping policy
+
+**Supersedes the earlier TCP/UDP-only Juniper mapping behavior.** The verified
+Stellar 7.0 targets `srcport` and `dstport` accept integer values from
+explicit source key names `source-port` and `destination-port` under the
+owner-approved normalization contract. The literal source path remains
+unchanged. No manufacturer-specific parser or path exception is needed.
+
+The authoritative rule is `explicitPortSourceAliases` in the versioned
+`runtime/multipass/semantic-policy.v1.json`. The browser suggestion engine,
+reviewed JSONata proposals, Python Multi-Pass normalization, browser
+projection validation, and re-evaluation of untouched auto-generated mapping
+drafts consume this same policy. Unambiguous source names carry stronger
+identity evidence than shortened aliases such as `sport` and `dport`.
+
+The sample ICMP `source-port=594` and `destination-port=10400` now emit
+`srcport=594` and `dstport=10400` as integers. This owner-directed field
+mapping does **not** prove ICMP has real TCP/UDP ports: consumers must examine
+`proto=1` before applying L4-only analytics. Invalid values, collisions,
+NAT-prefixed source keys, translated-path descendants, and ambiguous abbreviated names are not promoted
+without evidence. Existing user-entered field names are preserved.
+
+Both JavaScript and Python engines are covered by the same independent
+cross-engine conformance corpus (`explicitPortAliasEvidence`), including ICMP,
+UDP, TCP, unknown protocol, and invalid range fixtures. A matching browser
+preview is not by itself native Fluentd or Stellar DP import verification.

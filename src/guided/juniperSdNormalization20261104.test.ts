@@ -57,7 +57,7 @@ describe('Juniper RFC5424 SD semantic mappings with Stellar 7.0 catalog evidence
       .toMatchObject({target:'username',confidence:'REVIEW',safeForBulk:false});
   });
 
-  it('requires explicit review for ICMP pseudo-ports while mapping its IPs and protocol ID',()=>{
+  it('maps exactly named port fields using validated integers even for an ICMP event',()=>{
     const suggestions=candidates(source('1','icmp','CREATE'));
     for(const [field,target] of [['source-address','srcip'],['destination-address','dstip'],['protocol-id','proto']]){
       expect(suggestions.find(candidate=>candidate.source===prefix+field))
@@ -65,11 +65,43 @@ describe('Juniper RFC5424 SD semantic mappings with Stellar 7.0 catalog evidence
     }
     for(const [field,target] of [['source-port','srcport'],['destination-port','dstport']]){
       expect(suggestions.find(candidate=>candidate.source===prefix+field))
-        .toMatchObject({target,confidence:'REVIEW',safeForBulk:false});
-      expect(suggestions.find(candidate=>candidate.source===prefix+field)?.explanation)
-        .toContain('ICMP/IGMP');
+        .toMatchObject({target,confidence:'HIGH',safeForBulk:true,type:'integer'});
+      expect(suggestions.find(candidate=>candidate.source===prefix+field)?.when).toBeUndefined();
     }
     expect(suggestions.some(candidate=>candidate.source===prefix+'service-name')).toBe(false);
+  });
+
+  it('applies the same named-port contract without a vendor-specific rule',()=>{
+    const other=extracted(source('1','icmp','CREATE')
+      .replace('junos@67.43.156.15','another@67.43.156.15'));
+    const accepted=suggestNormalizationCandidatesFromSuite(
+      {events:[{fields:other}]} as unknown as SuiteResult,[]);
+    expect(accepted.find(c=>c.source===prefix+'source-port')).toMatchObject({
+      target:'srcport',confidence:'HIGH',safeForBulk:true,
+    });
+    // Abbreviated port labels without transport semantics remain review-only.
+    const ambiguous=suggestNormalizationCandidatesFromSuite(
+      {events:[{fields:{proto:'1',sport:'594',dport:'10400'}}]} as unknown as SuiteResult,[]);
+    expect(ambiguous.find(c=>c.source==='sport')).toMatchObject({
+      target:'srcport',confidence:'REVIEW',safeForBulk:false,
+    });
+    expect(ambiguous.find(c=>c.source==='dport')).toMatchObject({
+      target:'dstport',confidence:'REVIEW',safeForBulk:false,
+    });
+    const invalid=suggestNormalizationCandidatesFromSuite(
+      {events:[{fields:{'source-port':'65536','destination-port':'-1'}}]} as unknown as SuiteResult,[]);
+    expect(invalid.every(c=>!c.safeForBulk)).toBe(true);
+    // A nested NAT field with the same final label is a different semantic
+    // source, not a competing original network tuple.
+    const scoped=suggestNormalizationCandidatesFromSuite(
+      {events:[{fields:{'source-port':'594',nat:{'source-port':'45000'},
+        translated:{'destination-port':'8443'}}}]} as unknown as SuiteResult,[]);
+    expect(scoped.find(c=>c.source==='source-port')).toMatchObject({
+      target:'srcport',confidence:'HIGH',safeForBulk:true,
+    });
+    expect(scoped.some(c=>c.source==='nat.source-port')).toBe(false);
+    expect(scoped.some(c=>c.source==='translated.destination-port')).toBe(false);
+
   });
 
   it('offers sparse ICMP type only for manual review while preserving unrelated event types',()=>{
@@ -109,10 +141,10 @@ describe('Juniper RFC5424 SD semantic mappings with Stellar 7.0 catalog evidence
     };
     expect(official('source-address')).toMatchObject({target:'srcip',type:'ip'});
     expect(official('destination-address')).toMatchObject({target:'dstip',type:'ip'});
-    expect(official('source-port')).toMatchObject({target:'srcport',type:'integer',
-      when:{sourcePath:prefix+'protocol-id',operator:'in',values:['6','17']}});
-    expect(official('destination-port')).toMatchObject({target:'dstport',type:'integer',
-      when:{sourcePath:prefix+'protocol-id',operator:'in',values:['6','17']}});
+    expect(official('source-port')).toMatchObject({target:'srcport',type:'integer'});
+    expect(official('source-port').when).toBeUndefined();
+    expect(official('destination-port')).toMatchObject({target:'dstport',type:'integer'});
+    expect(official('destination-port').when).toBeUndefined();
     expect(official('protocol-id')).toMatchObject({target:'proto',type:'integer'});
     expect(official('policy-name')).toMatchObject({target:'rule.name',type:'string'});
     expect(result.draft.guided?.groups[official('policy-name').id]).toBe('ns_fields');

@@ -106,47 +106,47 @@
     },
     {
       "id": "unicode-nbsp",
-      "trailer": "\u00a0",
+      "trailer": " ",
       "quoted": false,
       "accept": false,
-      "srcip": "192.0.2.1\u00a0"
+      "srcip": "192.0.2.1 "
     },
     {
       "id": "unicode-emspace",
-      "trailer": "\u2003",
+      "trailer": " ",
       "quoted": false,
       "accept": false,
-      "srcip": "192.0.2.1\u2003"
+      "srcip": "192.0.2.1 "
     },
     {
       "id": "unicode-bom",
-      "trailer": "\ufeff",
+      "trailer": "﻿",
       "quoted": false,
       "accept": false,
-      "srcip": "192.0.2.1\ufeff"
+      "srcip": "192.0.2.1﻿"
     },
     {
       "id": "unicode-ideographic",
-      "trailer": "\u3000",
+      "trailer": "　",
       "quoted": false,
       "accept": false,
-      "srcip": "192.0.2.1\u3000"
+      "srcip": "192.0.2.1　"
     },
     {
       "id": "quoted-nbsp",
-      "trailer": "\u00a0",
+      "trailer": " ",
       "quoted": true,
       "accept": false
     },
     {
       "id": "quoted-emspace",
-      "trailer": "\u2003",
+      "trailer": " ",
       "quoted": true,
       "accept": false
     },
     {
       "id": "quoted-bom",
-      "trailer": "\ufeff",
+      "trailer": "﻿",
       "quoted": true,
       "accept": false
     },
@@ -154,9 +154,9 @@
       "id": "quoted-with-nbsp-inside",
       "trailer": "",
       "quoted": true,
-      "internal": "note\u00a0value",
+      "internal": "note value",
       "accept": true,
-      "srcip": "note\u00a0value"
+      "srcip": "note value"
     }
   ],
   "regexSafety": [
@@ -179,6 +179,48 @@
       "id": "single-capture",
       "pattern": "^(?<a>\\w+)$",
       "accept": true
+    }
+  ],
+  "explicitPortAliasEvidence": [
+    {
+      "id": "icmp-named-port",
+      "proto": "1",
+      "sourcePort": "594",
+      "destinationPort": "10400",
+      "srcport": 594,
+      "dstport": 10400
+    },
+    {
+      "id": "udp-named-port",
+      "proto": "17",
+      "sourcePort": "37233",
+      "destinationPort": "161",
+      "srcport": 37233,
+      "dstport": 161
+    },
+    {
+      "id": "tcp-named-port",
+      "proto": "6",
+      "sourcePort": "52311",
+      "destinationPort": "443",
+      "srcport": 52311,
+      "dstport": 443
+    },
+    {
+      "id": "unknown-proto-named-port",
+      "proto": "253",
+      "sourcePort": "2000",
+      "destinationPort": "5000",
+      "srcport": 2000,
+      "dstport": 5000
+    },
+    {
+      "id": "out-of-range-named-port",
+      "proto": "6",
+      "sourcePort": "65536",
+      "destinationPort": "443",
+      "srcport": null,
+      "dstport": 443
     }
   ]
 }

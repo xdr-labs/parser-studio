@@ -29,7 +29,7 @@ const cap={
   limits:{maxProjectBodyBytes:262144,maxInspectBodyBytes:2097152},
 };
 
-test('Juniper RFC5424 novice flow maps source/destination IPs to actual Stellar names',async({page})=>{
+test('Juniper RFC5424 novice flow maps IPs and explicit numeric source/destination ports',async({page})=>{
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.route('**/api/v1/parser-pairs/capabilities',route=>
@@ -53,22 +53,25 @@ test('Juniper RFC5424 novice flow maps source/destination IPs to actual Stellar 
   expect(get('destination-address')).toMatchObject({target:'dstip'});
   expect(get('protocol-id')).toMatchObject({target:'proto'});
   expect(get('policy-name')).toMatchObject({target:'rule.name'});
-  for(const key of ['source-address','destination-address','protocol-id','policy-name']){
+  for(const key of ['source-address','destination-address','source-port','destination-port','protocol-id','policy-name']){
     expect(get(key)?.className).toContain('verified');
   }
-  for(const key of ['source-port','destination-port','nat-source-address','service-name']){
+  expect(get('source-port')).toMatchObject({target:'srcport'});
+  expect(get('destination-port')).toMatchObject({target:'dstport'});
+  for(const key of ['nat-source-address','service-name']){
     expect(rows.some(row=>row.source==='syslog_sd.element_1.params.'+key&&
       row.className.includes('custom'))).toBe(true);
   }
-  const conditional=rows.filter(row=>row.className.includes('verified')&&
-    ['srcport','dstport'].includes(row.target??''));
-  expect(conditional.map(row=>row.target).sort()).toEqual(['dstport','srcport']);
-  await expect(map.getByText(/Conditional official field:/)).toHaveCount(2);
+  await expect(map.getByText(/Conditional official field:/)).toHaveCount(0);
   const diff=map.getByLabel('Field changes only');
   const vendorRow=diff.locator(':scope > div').filter({has:page.getByText('syslog_sd.element_1.params.service-name',{exact:true})});
   await expect(vendorRow.locator('strong').nth(1)).toHaveText('service-name');
   const portRow=diff.locator(':scope > div').filter({has:page.getByText('syslog_sd.element_1.params.source-port',{exact:true})}).first();
-  await expect(portRow.locator('strong').nth(1)).toHaveText('source-port');
+  await expect(portRow.locator('strong').nth(1)).toHaveText('srcport');
+  const dstRow=diff.locator(':scope > div').filter({has:page.getByText('syslog_sd.element_1.params.destination-port',{exact:true})}).first();
+  await expect(dstRow.locator('strong').nth(1)).toHaveText('dstport');
+  await expect(portRow).toContainText('594');
+  await expect(dstRow).toContainText('10400');
   const destinations=await diff.locator(':scope > div > strong:nth-of-type(2)').allTextContents();
   expect(destinations.every(name=>!name.startsWith('Demo Local Draft.')&&
     !name.startsWith('Juniper.')&&!name.includes('syslog_sd_element_1_params'))).toBe(true);

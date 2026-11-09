@@ -166,13 +166,13 @@ describe('Juniper nested vendor field naming',()=>{
     }
     render(<JuniperHarness/>);
     expect(screen.getByLabelText('Source field 0')).toHaveValue(source);
-    expect(screen.getByLabelText('Stellar field 0')).toHaveValue('source-port');
-    expect(screen.getByLabelText('Stellar field 1')).toHaveValue('destination-port');
+    expect(screen.getByLabelText('Stellar field 0')).toHaveValue('srcport');
+    expect(screen.getByLabelText('Stellar field 1')).toHaveValue('dstport');
     const comparison=screen.getByLabelText('Field changes only');
     expect(comparison).toHaveTextContent('source-port');
     expect(comparison).not.toHaveTextContent('Juniper.syslog_sd_element_1_params_source-port');
     expect(comparison).not.toHaveTextContent('Juniper.source-port');
-    expect(screen.getByLabelText('native vendor target')).toHaveTextContent('"source-port":"594"');
+    expect(screen.getByLabelText('Field changes only')).toHaveTextContent('srcport');
     expect(screen.getByLabelText('Stellar field 2')).toHaveValue('srcip');
   });
 });
