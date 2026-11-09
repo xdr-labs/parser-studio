@@ -1,0 +1,41 @@
+# Mapping Correctness v2 — invariant-first normalization
+
+Status: **ACTIVE** · 2026-11-09 · [Work Packet #283](https://github.com/xdr-labs/parser-studio/issues/283) · umbrella [H0–H5 #249](https://github.com/xdr-labs/parser-studio/issues/249) · implementation PR [#282](https://github.com/xdr-labs/parser-studio/pull/282).
+
+## Root-cause evidence
+
+Passing 8/8 GitHub Actions jobs did not establish general correctness. The previous implementation lost valid source paths in a name allocator, overwrote an explicitly edited destination via a name heuristic, and promoted translated/NAT port keys through a shared-but-under-specified policy. All three reproduced on exact HEAD `608144c`. The previous review's lack of invariant-driven negative cases was the release gap; counting more ordinary test fixtures does not close it.
+
+## Decision authority
+
+One versioned MappingPlan carries **source identity, target, type, provenance, semantic evidence, collision status, review decision and explicit unresolved entries**. Browser, Python source analyzer and native Ruby must interpret the *same contract*, not derive independent assumptions. The approved Stellar 7.0 target dictionary remains the source of valid official fields. Unreviewed vendor semantics are never silently promoted.
+
+A target's generated/manual identity **must never be inferred from an automatic-looking ID, destination spelling, or vendor label**. Legacy drafts without trusted provenance are held unchanged. On user edit, persist `USER_EDITED`; explicit official-field approval persists `APPROVED`. Auto-generated destinations have `AUTO` provenance only at the actual generation boundary. ParserRecipe/review-only suggestions cannot forge approval. Keep provenance as authoring metadata and do not emit it as a Stellar normalized field.
+
+## Ordered implementation and acceptance
+
+| Phase | Implementation | Hard acceptance |
+| --- | --- | --- |
+| MCV2-A | Versioned MappingPlan + per-mapping provenance and idempotent legacy migration | Manual override survives rerender, reanalysis and save/restore; unmarked legacy state never rewritten |
+| MCV2-B | Source-path allocation and unified semantic policy | No silent omissions, no unapproved collision, NAT/translated aliases blocked across TS/Python/JSONata, Juniper explicit source/destination port aliases remain valid |
+| MCV2-C | Independent executable invariants + property/stateful/mutation tests | No Silent Loss / No Collision / Manual Override / Determinism / Semantic Safety / Cross-engine Parity / Fail Closed, deterministic shrunk counterexamples stored as fixtures |
+| MCV2-D | Exact-head mandatory CI & H4 operator gate | No skipped required oracle; no open P0/P1; native semantic comparison on changed source and matching backend/Ruby SHA; advisory branch protection stated accurately |
+| MCV2-E | Multi-vendor source holdouts, novice Chromium, native pair/receiver evidence | Same samples from UI to source IR to emitted Ruby; remain `DRAFT` unless exact target runtime tested |
+
+A target mapping is **APPROVED** only if the field is in the vetted dictionary, all relevant observed values satisfy type/range constraints, no ambiguous competing source or destination exists, user changes are not overwritten and the exact generated parser can execute the same plan. Unknown paths, impossible allocations and unsupported source semantics become `REVIEW_REQUIRED`, never success.
+
+The MCV2-A/B fixes are the initial implementation slice. The H0–H3 compiler hardening, H4 advisory operator CLI and H5 Stellar 7.0 DP target qualification remain existing work; do not silently redefine them as passed by this document.
+
+## Quality metrics
+
+- Zero unreported lost valid source paths; zero collisions declared successful.
+- Zero user-edited destinations rewritten by automatic reconciliation.
+- Zero unreviewed NAT-derived port promotions; preserve original values and event bytes.
+- Zero deterministic mapping-plan disagreement between browser and generated native Ruby for verified operator subsets.
+- Record seed, source hash, expected/oracle result and minimal counterexample for each failed property test.
+- Mutation score target **>=90%** on the mapping decision core, after an independently measured baseline; a target, not a claimed current result.
+- GitHub CI pass is necessary but not sufficient. The issue/PR gate must also have no unresolved P0/P1 counterexamples and a reviewed native evidence receipt.
+
+## Scope and release safety
+
+Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.

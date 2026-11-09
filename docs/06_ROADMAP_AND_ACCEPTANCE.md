@@ -1,6 +1,10 @@
 # Current engineering completion ledger — 2026-10-23
 
 
+## ACTIVE — Mapping Correctness v2 (owner approved 2026-11-09)
+
+The owner directed implementation of a **root-cause, invariant-first mapping correction**, rather than additional per-vendor/name patches. Official [Work Packet #283](https://github.com/xdr-labs/parser-studio/issues/283) is attached to umbrella [#249](https://github.com/xdr-labs/parser-studio/issues/249); authoritative design and WBS: [Mapping Correctness v2](MAPPING_CORRECTNESS_V2.md). Work proceeds **MCV2-A provenance → B allocation/semantics → C property/differential oracles → D exact-head release gates → E multi-vendor source E2E**, without replacing existing H0–H3 extraction. Initial RED acceptance includes silent source drop, manual destination overwrite and NAT alias mispromotion, all reproduced from PR #282 HEAD `608144c`. **Do not merge or deploy PR #282 while these are open.** H4 actual GitHub branch enforcement and H5 real DP7 import remain separately gated.
+
 ## ACTIVE implementation roadmap — 2026-11-07
 
 The current owner-requested next work is **Parser Correctness Architecture

@@ -15,6 +15,10 @@ incremental statuses below. H1/H3 qualification is tied to the shipping grammar,
 operator, type and template matrix, not an aggregate historical PASS count.
 H4 branch enforcement and H5 target qualification remain separately gated.
 
+## Mapping Correctness v2 root-cause extension — 2026-11-09
+
+[Work Packet #283](https://github.com/xdr-labs/parser-studio/issues/283) and [MCV2 plan](MAPPING_CORRECTNESS_V2.md) define the owner-approved mapping semantics, mutation/invariant tests and provenance protections. The new A→E sequence is an explicit hardening dependency **before** further PR #282 integration, not a substitute for H0–H5 or an assertion that current passing CI proves safety.
+
 ## Diagnosis
 
 Existing `ParserProject` and `ParserRecipe v0.2` schemas, shared
