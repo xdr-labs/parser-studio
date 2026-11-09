@@ -6,7 +6,7 @@ engineering_system:
   baseline: dcce075522a7749765d4ef017234a49f76861072
   ci_mode: shared
   native_ci_workflows: []
-  merge_gate_status: advisory
+  merge_gate_status: enforced
 project:
   name: parser-studio
   type: generic

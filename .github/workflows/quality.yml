@@ -10,6 +10,28 @@ permissions:
   contents: read
 
 jobs:
+  release-eligibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - name: Reject any open P0 or P1 issue before merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for label in P0 P1; do
+            open=$(gh api "repos/${GH_REPO}/issues?state=open&labels=${label}&per_page=100" --paginate --jq '.[].number')
+            if [[ -n "$open" ]]; then
+              echo "H4_RELEASE_BLOCKED_OPEN_${label}=$open"
+              exit 1
+            fi
+          done
+          echo 'H4_OPEN_P0_P1_GATE_PASS'
+
   # H2 is an independent CI-only execution boundary: no HTTP service,
   # customer events, credentials, host filesystem mounts or DP traffic.
   native-isolated-synthetic:
