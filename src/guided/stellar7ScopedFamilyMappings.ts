@@ -19,7 +19,7 @@ function editableMapping(draft:ParserDraft,variantName:string,source:string):Map
   const variant=draft.eventProfiles?.variants.find(item=>item.name===variantName);
   const mapping=variant?.mappings.find(item=>item.source===source);
   if(!mapping||!mapping.id.startsWith('family-')||
-    ![defaultTarget(source),source,source.replace(/\./g,'_')].includes(mapping.target))
+    ![defaultTarget(source),source,source.replace(/\./g,'_'),source.split('.').at(-1)!].includes(mapping.target))
     return undefined;
   if((draft.guided?.groups[mapping.id]??'vendor_fields')!=='vendor_fields')
     return undefined;

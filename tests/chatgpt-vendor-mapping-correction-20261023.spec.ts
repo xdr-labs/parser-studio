@@ -4,7 +4,7 @@ const cases=[
  {name:'FortiGate device identity',vendor:'Fortinet',product:'FortiGate',field:'devname',prior:'devname',target:'device_hostname',
   raw:'date=2026-10-23 time=12:11:13 devname="FW01" type=traffic srcip=192.0.2.11 dstip=198.51.100.11 action=deny service=HTTPS',
   holdout:['date=2026-10-23 time=12:11:14 devname="FW02" type=traffic srcip=192.0.2.12 dstip=198.51.100.12 action=allow service=HTTPS','date=2026-10-23 time=12:11:15 devname="FW03" type=traffic srcip=192.0.2.13 dstip=198.51.100.13 action=deny service=HTTP'].join('\n')},
- {name:'Suricata alert signature',vendor:'OISF',product:'Suricata EVE',field:'alert.signature',prior:'alert_signature',target:'attack_signature_reviewed',
+ {name:'Suricata alert signature',vendor:'OISF',product:'Suricata EVE',field:'alert.signature',prior:'signature',target:'attack_signature_reviewed',
   raw:JSON.stringify({timestamp:'2026-10-23T12:11:13Z',event_type:'alert',src_ip:'192.0.2.11',dest_ip:'198.51.100.11',alert:{signature_id:1001,signature:'Synthetic test rule',severity:2}}),
   holdout:[JSON.stringify({timestamp:'2026-10-23T12:11:14Z',event_type:'alert',src_ip:'192.0.2.12',dest_ip:'198.51.100.12',alert:{signature_id:1002,signature:'Second test rule',severity:1}}),JSON.stringify({timestamp:'2026-10-23T12:11:15Z',event_type:'alert',src_ip:'192.0.2.13',dest_ip:'198.51.100.13',alert:{signature_id:1003,signature:'Third test rule',severity:2}})].join('\n')},
  {name:'CloudTrail API operation',vendor:'Amazon',product:'CloudTrail',field:'eventName',prior:'eventName',target:'api_operation',
