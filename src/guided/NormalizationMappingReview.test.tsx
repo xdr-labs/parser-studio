@@ -57,6 +57,21 @@ describe('normalization mapping review UI',()=>{
     expect(screen.getByLabelText('Stellar field 0')).toHaveValue('srcip');
   });
 
+
+  it('shows actual destination field names without treating the draft manufacturer as part of the name',()=>{
+    render(<Harness/>);
+    const comparison=screen.getByLabelText('Field changes only');
+    const destinations=[...comparison.querySelectorAll('div > strong:nth-of-type(2)')]
+      .map(node=>node.textContent);
+    expect(destinations).toEqual(['custom.src_ip','custom.dst_port','custom.action']);
+    expect(destinations.every(name=>!name?.startsWith('Demo Local Draft.'))).toBe(true);
+    // The real output contract remains namespaced until a manufacturer is set;
+    // this changes the destination label only, not parser emission semantics.
+    const normalized=screen.getByText('Stellar output preview').parentElement;
+    expect(normalized?.textContent).toContain('Demo Local Draft');
+    expect(normalized?.textContent).toContain('custom');
+  });
+
   it('says that removing a mapping leaves the field out of the parser output',()=>{
     render(<Harness/>);
     expect(screen.getByLabelText('Field mapping summary')).toHaveTextContent('Left out of output0');
