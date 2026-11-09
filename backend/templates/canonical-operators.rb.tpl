@@ -139,7 +139,7 @@ def parserstudio_json_number(value)
       elsif position >= digits.length
         digits + '0' * (position - digits.length)
       else
-        digits[0...position] + '.' + digits[position..]
+        digits[0...position] + '.' + digits[position..-1]
       end
       return match[1] + expanded.sub(/(\.\d*?)0+\z/, '\\1').sub(/\.\z/, '')
     end

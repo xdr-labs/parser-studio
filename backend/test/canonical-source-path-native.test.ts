@@ -23,6 +23,16 @@ const generatedPair=compilePair(sampleProject());
 const generatedRuby=generatedPair.files.find(file=>!file.name.endsWith('.conf'));
 assert.ok(generatedRuby,'generated Ruby artifact missing');
 const generatedMethod=method(generatedRuby.content);
+// The target td-agent bundles Ruby 2.4, which rejects an endless range `start..`.
+// Pin the generated native source, not just the independently parsed template.
+test('generated canonical JSON number serialization is Ruby 2.4 syntax compatible',()=>{
+  const canonical=source('canonical-operators.rb.tpl');
+  assert.ok(canonical.includes('digits[position..-1]'));
+  assert.ok(!canonical.includes('digits[position..]'));
+  assert.ok(generatedRuby.content.includes('digits[position..-1]'));
+  assert.ok(!generatedRuby.content.includes('digits[position..]'));
+});
+
 const ruby=spawnSync('ruby',['-v'],{encoding:'utf8'});
 const required=process.env.PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED==='1';
 
