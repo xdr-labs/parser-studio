@@ -10,7 +10,8 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 WORKFLOW=(ROOT/'.github/workflows/quality.yml').read_text(encoding='utf-8')
 SECTION=WORKFLOW.split('  release-eligibility:',1)[1].split('  native-isolated-synthetic:',1)[0]
-BLOCK=re.search(r'(?m)^        run: \|\n((?:(?:          .*|)\n)+)',SECTION)
+BLOCK=re.search(r'(?m)^        run: \|\n((?:(?:          .*|)\n)+)',
+    SECTION.split('      - name: Reject any open P0 or P1 issue before merge',1)[1])
 assert BLOCK, 'Release eligibility workflow script changed'
 SCRIPT=textwrap.dedent(BLOCK.group(1))
 

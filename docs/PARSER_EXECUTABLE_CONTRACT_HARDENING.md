@@ -177,3 +177,24 @@ All checkout jobs now explicitly select
 commit. The lineage receipts verify that same expected source SHA.
 Integration against a merge candidate remains a distinct concern and is
 enforced by protected main's strict up-to-date requirement and post-merge CI.
+
+
+## Cross-job artifact evidence reconciliation (R5 follow-on)
+
+The nine-job required CI suite retains its existing status check names.
+`release-eligibility` now waits for both `native-isolated-synthetic`
+and `web-quality` jobs; it downloads their redacted lineage receipts
+from the same workflow run, checks the exact PR source SHA (not the
+temporary merge SHA), and requires every source tree, policy, target
+runtime profile, compiler/template, generated Ruby/CONF, artifact
+revision and deterministic ZIP hash to match. It refuses extra fields,
+missing evidence, forged target-proof booleans, missing/modified files,
+and the previous version of stale-head evidence. New independent
+negative tests verify all fail-closed paths.
+
+**Separation of concerns:** This detects cross-job drift, not a genuine
+single-build distribution pipeline, independent correctness of every
+vendor parser, or actual downstream Stellar indexed events. The
+release-eligibility step continues to reject open P0/P1 issues after
+checking evidence. Thus release remains blocked until #285 is
+qualified without suppressing the issue.

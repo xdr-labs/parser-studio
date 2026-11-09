@@ -11,12 +11,42 @@ permissions:
 
 jobs:
   release-eligibility:
+    # Wait for both independent artifact-producing jobs before comparing the
+    # source HEAD, policy, template, Ruby/CONF and ZIP hashes. A failed source
+    # job must never allow this required status context to succeed.
+    needs: [native-isolated-synthetic, web-quality]
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: read
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download Native synthetic artifact lineage receipt
+        uses: actions/download-artifact@v4
+        with:
+          name: parser-studio-artifact-lineage-native
+          path: ${{ runner.temp }}/parser-studio-lineage-native
+      - name: Download Web synthetic artifact lineage receipt
+        uses: actions/download-artifact@v4
+        with:
+          name: parser-studio-artifact-lineage-web
+          path: ${{ runner.temp }}/parser-studio-lineage-web
+      - name: Fail closed on mismatched exact-HEAD Native and Web artifact receipts
+        env:
+          PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PARSER_STUDIO_EXPECTED_SOURCE_HEAD"
+          node --test scripts/verification/reconcile-artifact-lineage.test.mjs
+          node scripts/verification/reconcile-artifact-lineage.mjs \
+            "$RUNNER_TEMP/parser-studio-lineage-native/parser-studio-lineage-native.json" \
+            "$RUNNER_TEMP/parser-studio-lineage-web/parser-studio-lineage-web.json"
       - name: Reject any open P0 or P1 issue before merge
         env:
           GH_TOKEN: ${{ github.token }}
