@@ -134,7 +134,8 @@ export default function NormalizationMappingReview({
       const existing=old.mappings.find(mapping=>mapping.source===candidate.source);
       const id=existing?.id??candidate.replacesMappingId??
         'stellar-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_')+'-'+String(old.mappings.length+1);
-      const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type};
+      const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type,
+        authoring:{version:1,origin:'APPROVED'}};
       const mappings=existing
         ?old.mappings.map(mapping=>mapping.id===existing.id?next:mapping)
         :[...old.mappings,next];
@@ -163,7 +164,8 @@ export default function NormalizationMappingReview({
         const index=mappings.findIndex(mapping=>mapping.source===candidate.source);
         const existing=index>=0?mappings[index]:undefined;
         const id=existing?.id??'stellar-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_')+'-'+String(mappings.length+1);
-        const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type};
+        const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type,
+        authoring:{version:1,origin:'APPROVED'}};
         if(index>=0)mappings[index]=next;else mappings.push(next);
         groups[id]=candidate.group;
       }
@@ -180,21 +182,23 @@ export default function NormalizationMappingReview({
         // Never silently keep a TCP/UDP gate attached to an unrelated target.
         if(key==='type'){
           const {when:_previous,...rest}=mapping;
-          return {...rest,type:value as MappingRule['type']};
+          return {...rest,type:value as MappingRule['type'],authoring:{version:1 as const,origin:'USER_EDITED' as const}};
         }
         if(key==='source'){
           const {when:_previous,...rest}=mapping;
-          return {...rest,source:value,sourcePathKind:undefined};
+          return {...rest,source:value,sourcePathKind:undefined,
+            authoring:{version:1 as const,origin:'USER_EDITED' as const}};
         }
         const {when:_previous,...rest}=mapping;
         const updated=value===mapping.target?mapping:rest;
         const catalog=findStellarMetadataField(value);
         if(catalog?.mappable&&catalog.mappingType&&catalog.group){
           groups[id]=catalog.group;
-          return {...updated,target:value,type:catalog.mappingType};
+          return {...updated,target:value,type:catalog.mappingType,
+            authoring:{version:1 as const,origin:'USER_EDITED' as const}};
         }
         groups[id]='vendor_fields';
-        return {...updated,target:value};
+        return {...updated,target:value,authoring:{version:1 as const,origin:'USER_EDITED' as const}};
       });
       return {...old,mappings,guided:{...options,groups}};
     });

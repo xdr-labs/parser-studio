@@ -1,6 +1,6 @@
 import {sha256Utf8Hex} from '../sha256';
 import {isUtf8ByteBoundary} from './sourceByteSelection';
-import semanticPolicy from '../../runtime/multipass/semantic-policy.v1.json';
+import {explicitPortSourceAlias} from './sourcePortPolicy';
 
 const DICTIONARY_REVISION='stellar-standard-metadata-7.0.xs-2026-10-14';
 const DICTIONARY_URLS=[
@@ -60,11 +60,7 @@ function mappingMatchesContract(sourcePath:string,targetField:string,mappingClas
  if(mappingClass==='EXACT_DICTIONARY_NAME')
   return sourcePath===targetField||sourcePath===`body.${targetField}`;
  if(mappingClass==='EXPLICIT_SOURCE_ALIAS'){
-  const parts=sourcePath.toLowerCase().split('.');
-  const leaf=parts.at(-1);
-  return !parts.some(part=>semanticPolicy.excludedPortSourceSegments.includes(part))&&
-    leaf!==undefined&&semanticPolicy.explicitPortSourceAliases[
-      leaf as keyof typeof semanticPolicy.explicitPortSourceAliases]===targetField;
+  return explicitPortSourceAlias(sourcePath,targetField);
  }
  if(mappingClass==='CEF_STANDARD_ALIAS'){
   for(const prefix of ['cef_extension.','body.cef_extension.']){

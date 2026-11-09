@@ -2,7 +2,6 @@ import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {compactLegacyAutoVendorMappings} from './vendorFieldNames';
 
-const AUTO=/^auto-(?:generic-)?\d+$/;
 const overlaps=(a:string,b:string)=>a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
 function originalGeneratedTarget(mapping:MappingRule):boolean{
   const leaf=mapping.source.split('.').at(-1);
@@ -32,8 +31,9 @@ export function reconcileGeneratedMappings(draft:ParserDraft,suite:SuiteResult|u
   const groups={...renamed.guided.groups};
   let upgraded=false;
   for(const candidate of choices){
-    const generated=mappings.filter(m=>m.source===candidate.source&&AUTO.test(m.id)&&
-      groups[m.id]==='vendor_fields'&&!m.when&&originalGeneratedTarget(m));
+    const generated=mappings.filter(m=>m.source===candidate.source&&
+      groups[m.id]==='vendor_fields'&&!m.when&&
+      m.authoring?.origin==='AUTO'&&originalGeneratedTarget(m));
     if(generated.length!==1)continue;
     const original=generated[0]!;
     const redundant=mappings.find(m=>generatedConditional(m,candidate.source,candidate.target)&&

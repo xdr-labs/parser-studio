@@ -4,7 +4,7 @@
 import {createDraft,type ParserDraft,type MappingRule,type SuiteResult} from '../model';
 import {splitEvents,MAX_DATASET_BYTES,MAX_EVENTS} from '../parser';
 import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
-import {suggestUnmappedFields} from './fieldMappingSuggestions';
+import {suggestUnmappedFieldPlan} from './fieldMappingSuggestions';
 import {suggestMappingType,suggestNativeJsonType} from './typeSuggestions';
 import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {defaultGuidedOptions} from './contract';
@@ -96,8 +96,9 @@ export function prepareAutoParserDraft(
       ...next,mappings:[],
       guided:{...opts,classification:{defaultIndex:'Syslog',rules:[]},groups:{}},
     };
-    const suggestions=suggestUnmappedFields(
-      suite.events.map(event=>event.fields),blank).filter(suggestion=>
+    const fieldPlan=suggestUnmappedFieldPlan(
+      suite.events.map(event=>event.fields),blank);
+    const suggestions=fieldPlan.suggestions.filter(suggestion=>
         suite.events.every(event=>{
           const found=lookupFieldValue(event.fields,suggestion.source);
           if(!found.found)return true;
@@ -105,9 +106,10 @@ export function prepareAutoParserDraft(
           return value!==undefined&&value!==null&&
             !(typeof value==='string'&&value.trim()==='');
         }));
+    if(fieldPlan.unresolved.length>0)return failed('MODEL_REVIEW_REQUIRED');
     if(suggestions.length===0)return failed('MODEL_REVIEW_REQUIRED');
     const mappings:MappingRule[]=suggestions.map((suggestion,i)=>{
-      const rule:MappingRule={id:'auto-'+String(i+1),source:suggestion.source,
+      const rule:MappingRule={id:'auto-'+String(i+1),authoring:{version:1,origin:'AUTO'},source:suggestion.source,
         target:suggestion.target,type:suggestion.type};
       const supported=suggestMappingType(suite,rule);
       // Strong, bounded conversion evidence only; never guess timezone or

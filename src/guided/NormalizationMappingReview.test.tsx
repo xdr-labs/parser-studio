@@ -58,6 +58,29 @@ describe('normalization mapping review UI',()=>{
   });
 
 
+  it('keeps an edited auto-generated destination through rerenders and review reconciliation',()=>{
+    function EditedHarness(){
+      const base=createDraft();
+      const [draft,setDraft]=useState<ParserDraft>({...base,format:'json',mappings:[
+        {id:'auto-1',source:'http.status',target:'status',type:'string',
+          authoring:{version:1,origin:'AUTO'}},
+      ],guided:{...defaultGuidedOptions(),groups:{'auto-1':'vendor_fields'}}});
+      const suite=preview('{"http":{"status":200}}',draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="authoring status">{draft.mappings[0]?.authoring?.origin}</output>
+        <output aria-label="saved current mapping">{JSON.stringify(draft.mappings[0])}</output>
+      </>;
+    }
+    render(<EditedHarness/>);
+    const target=screen.getByLabelText('Stellar field 0');
+    fireEvent.change(target,{target:{value:'http.status'}});
+    expect(target).toHaveValue('http.status');
+    expect(screen.getByLabelText('authoring status')).toHaveTextContent('USER_EDITED');
+    expect(screen.getByLabelText('saved current mapping')).toHaveTextContent('http.status');
+    expect(target).toHaveValue('http.status');
+  });
+
   it('shows actual destination field names without treating the draft manufacturer as part of the name',()=>{
     render(<Harness/>);
     const comparison=screen.getByLabelText('Field changes only');
@@ -151,9 +174,11 @@ describe('Juniper nested vendor field naming',()=>{
       const [draft,setDraft]=useState<ParserDraft>({...createDraft(),vendor:'Juniper',
         format:'syslog_rfc5424',syslogBodyFormat:'raw',
         mappings:[
-          {id:'auto-1',source,target:'syslog_sd_element_1_params_source-port',type:'string'},
+          {id:'auto-1',source,target:'syslog_sd_element_1_params_source-port',type:'string',
+            authoring:{version:1,origin:'AUTO'}},
           {id:'auto-2',source:'syslog_sd.element_1.params.destination-port',
-            target:'syslog_sd_element_1_params_destination-port',type:'string'},
+            target:'syslog_sd_element_1_params_destination-port',type:'string',
+            authoring:{version:1,origin:'AUTO'}},
           {id:'auto-3',source:'syslog_sd.element_1.params.source-address',target:'srcip',type:'ip'},
         ],guided:{...defaultGuidedOptions(),groups:{
           'auto-1':'vendor_fields','auto-2':'vendor_fields','auto-3':'top_fields',

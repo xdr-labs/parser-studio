@@ -194,14 +194,25 @@ def _identity_target(path:str)->str|None:
         return path[5:]
     return None
 
+def _excluded_port_path(path:str)->bool:
+    excluded=frozenset(_POLICY['excludedPortSourceSegments'])
+    for segment in path.split('.'):
+        # Mirror the browser's camelCase/underscore/hyphen semantic tokens.
+        normalized=re.sub(r'([a-z0-9])([A-Z])',r'\1_\2',segment).lower()
+        if normalized in excluded:
+            return True
+        if any(part in excluded for part in re.split(r'[-_]+',normalized) if part):
+            return True
+    return False
+
+
 def _explicit_port_target(path:str)->str|None:
     # Same versioned source-identity rule as the browser: only the literal
     # source leaf, never NAT/translated ancestors or ambiguous abbreviations.
     # Keep the source occurrence and let the common integer/range guard apply.
-    segments=path.lower().split(".")
-    if any(x in _POLICY["excludedPortSourceSegments"] for x in segments):
+    if _excluded_port_path(path):
         return None
-    return _EXPLICIT_PORT_ALIASES.get(segments[-1])
+    return _EXPLICIT_PORT_ALIASES.get(path.lower().split('.')[-1])
 
 def _cef_target(path:str,syntax:str)->str|None:
     # Multi-Pass syntax may preserve a base CEF result or name the accepted

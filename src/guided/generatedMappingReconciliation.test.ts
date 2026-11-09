@@ -11,8 +11,10 @@ const raw=readFileSync(resolve('tests/fixtures/docs-practice-20261104/01-juniper
 function legacy():ParserDraft{
   const draft=createDraft();
   return {...draft,vendor:'Any vendor',format:'syslog_rfc5424',syslogBodyFormat:'raw',mappings:[
-    {id:'auto-1',source:prefix+'source-port',target:'syslog_sd_element_1_params_source-port',type:'string'},
-    {id:'auto-2',source:prefix+'destination-port',target:'destination-port',type:'string'},
+    {id:'auto-1',source:prefix+'source-port',target:'syslog_sd_element_1_params_source-port',type:'string',
+      authoring:{version:1,origin:'AUTO'}},
+    {id:'auto-2',source:prefix+'destination-port',target:'destination-port',type:'string',
+      authoring:{version:1,origin:'AUTO'}},
     {id:'auto-semantic-srcport',source:prefix+'source-port',target:'srcport',type:'integer',
       when:{sourcePath:prefix+'protocol-id',operator:'in',values:['6','17']}},
     {id:'auto-semantic-dstport',source:prefix+'destination-port',target:'dstport',type:'integer',
@@ -37,6 +39,13 @@ describe('catalog-based generated mapping reconciliation across drafts and vendo
     expect(values.events[1]?.normalized).toMatchObject({srcport:37233,dstport:161});
     expect(before.mappings).toHaveLength(4);
   });
+  it('does not guess provenance on an imported legacy mapping',()=>{
+    const draft=legacy();
+    draft.mappings=draft.mappings.map(m=>({...m,authoring:undefined}));
+    const next=reconcileGeneratedMappings(draft,preview(raw,draft));
+    expect(next.mappings).toEqual(draft.mappings);
+  });
+
   it('respects user edits, official destination conflicts and a different vendor name',()=>{
     const draft=legacy();
     draft.mappings[0]={...draft.mappings[0]!,target:'explicit_user_choice'};

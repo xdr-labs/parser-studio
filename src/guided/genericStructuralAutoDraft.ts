@@ -66,6 +66,7 @@ export function buildAutomaticGenericStructuralDraft(
   if(vendorNames.size!==initialPaths.length)return null;
   const mappings:MappingRule[]=initialPaths.map((sourcePath,index)=>({
     id:'auto-generic-'+String(index+1),
+    authoring:{version:1,origin:'AUTO'},
     source:sourcePath,
     target:vendorNames.get(sourcePath)!,
     type:'string',

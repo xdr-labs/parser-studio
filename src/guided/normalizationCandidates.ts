@@ -3,6 +3,8 @@ import {listSafeLeafPaths,lookupFieldValue} from '../fieldPaths';
 import {convertValue} from '../parser';
 import {meetsStellar7ValueConstraints} from '../stellar7ValueConstraints';
 import semanticPolicy from '../../runtime/multipass/semantic-policy.v1.json';
+import {sourceHasExcludedPortSegment,explicitPortSourceAlias} from './sourcePortPolicy';
+export {sourceHasExcludedPortSegment,explicitPortSourceAlias} from './sourcePortPolicy';
 import type {FieldGroup} from './contract';
 import {findStellarMetadataField} from './stellarMetadataCatalog';
 
@@ -106,16 +108,6 @@ function unsupportedPortProtocolInEvent(
  * still pass Stellar's integer/range constraints and source ambiguity checks.
  * No vendor, product or sample-specific path is required.
  */
-export function sourceHasExcludedPortSegment(source:string):boolean{
-  return source.toLowerCase().split('.').some(part=>
-    semanticPolicy.excludedPortSourceSegments.includes(part));
-}
-export function explicitPortSourceAlias(source:string,target:string):boolean{
-  const leaf=source.split('.').at(-1)?.toLowerCase();
-  return !sourceHasExcludedPortSegment(source)&&leaf!==undefined&&
-    semanticPolicy.explicitPortSourceAliases[
-      leaf as keyof typeof semanticPolicy.explicitPortSourceAliases]===target;
-}
 // A matching label is not enough: these vendor log fields have distinct
 // meanings from Stellar's context-specific names or require unit conversion.
 // Restrict the guard to records with FortiOS's recognizable field family so

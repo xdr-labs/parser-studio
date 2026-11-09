@@ -36,6 +36,23 @@ The MCV2-A/B fixes are the initial implementation slice. The H0–H3 compiler ha
 - Mutation score target **>=90%** on the mapping decision core, after an independently measured baseline; a target, not a claimed current result.
 - GitHub CI pass is necessary but not sufficient. The issue/PR gate must also have no unresolved P0/P1 counterexamples and a reviewed native evidence receipt.
 
+## Initial implementation evidence (2026-11-09, PR #282)
+
+The first MCV2-A/B/C/D slice adds explicit v1 authoring provenance, a
+collision-aware original/leaf source-name allocator, bounded 256-source
+feasibility with explicit unresolved diagnostics, a shared TS/Python NAT
+semantic guard, 512 seeded independently checked allocation cases and a
+mandatory MCV2 job step in the existing `web-quality` gate. Existing legacy
+mappings without provenance are held unchanged rather than guessed to be
+unmodified. Browser Auto Parser and manual edits now explicitly retain origin.
+
+Local evidence before exact-head CI: full frontend 1,679 tests PASS; targeted
+UI user-edit state test PASS; both TypeScript/build PASS; independent Python
+semantic negatives 2/2 PASS; two complete Juniper tutorial Chromium paths PASS.
+The target CI HEAD, exact-generated-Ruby comparisons and full property/mutation
+coverage are still separate acceptance requirements. Do not mark MCV2-A–E
+complete merely because this initial slice is green.
+
 ## Scope and release safety
 
 Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.

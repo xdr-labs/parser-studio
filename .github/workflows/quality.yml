@@ -48,6 +48,11 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Deterministic unit tests
         run: npm test
+      - name: MCV2 mandatory lossless mapping and semantic policy invariants
+        run: |
+          set -euo pipefail
+          npx vitest run src/guided/mappingCorrectnessV2Invariants.test.ts src/guided/vendorFieldNames.test.ts src/guided/generatedMappingReconciliation.test.ts src/guided/sourcePortPolicy.test.ts --reporter=dot
+          python3 -m unittest discover -s tests -p 'test_mapping_correctness_v2.py' -v
       - name: Typecheck and build
         run: npm run build
       - name: Offline Python standard-library sender grammar

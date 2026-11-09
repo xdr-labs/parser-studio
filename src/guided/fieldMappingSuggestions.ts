@@ -2,7 +2,7 @@ import type { MappingRule, ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 import { listSafeLeafPaths } from '../fieldPaths';
 import { findStellarMetadataField } from './stellarMetadataCatalog';
-import {vendorFieldNames} from './vendorFieldNames';
+import {planVendorFieldNames} from './vendorFieldNames';
 
 export interface SuggestedFieldMapping {
   source: string;
@@ -21,10 +21,15 @@ function conflicts(a: string, b: string): boolean {
 
 /** Source keys only, not sample values; suggestions are conservative string mappings.
  * Nothing is applied until the user explicitly confirms in the Guided UI. */
-export function suggestUnmappedFields(
+export interface UnmappedFieldPlan {
+  suggestions: SuggestedFieldMapping[];
+  /** Field paths that cannot be given noncolliding leaf or original-path names. */
+  unresolved: readonly string[];
+}
+export function suggestUnmappedFieldPlan(
   samples: Array<Record<string, unknown>>,
   draft: ParserDraft,
-): SuggestedFieldMapping[] {
+): UnmappedFieldPlan {
   const existingSources = new Set(draft.mappings.map(mapping => mapping.source.trim()));
   const taken = draft.mappings.map(mapping => mapping.target.trim());
   const classifierFields = new Set(
@@ -38,7 +43,8 @@ export function suggestUnmappedFields(
   // round-robin candidates across events so every represented family can keep
   // at least some source-backed output without raising the global safety cap.
   const queues = samples.map(fields => listSafeLeafPaths(fields));
-  const names=vendorFieldNames(queues.flat().filter(source=>!existingSources.has(source)),taken);
+  const plan=planVendorFieldNames(queues.flat().filter(source=>!existingSources.has(source)),taken);
+  const names=plan.names;
   while (proposals.length < 100) {
     let addedThisRound = false;
     let candidatesRemain = false;
@@ -67,5 +73,11 @@ export function suggestUnmappedFields(
     }
     if (!candidatesRemain || !addedThisRound) break;
   }
-  return proposals;
+  return {suggestions:proposals,unresolved:plan.unresolved};
+}
+export function suggestUnmappedFields(
+  samples: Array<Record<string, unknown>>,
+  draft: ParserDraft,
+): SuggestedFieldMapping[]{
+  return suggestUnmappedFieldPlan(samples,draft).suggestions;
 }
