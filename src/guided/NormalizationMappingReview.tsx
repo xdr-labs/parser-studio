@@ -256,10 +256,15 @@ export default function NormalizationMappingReview({
     {candidateScan.exceeded&&<div className="normalization-runtime-note" role="alert"
       aria-label="Official candidate scan incomplete">
       <strong>Official field suggestions require a smaller sample</strong>
-      <span>{candidateScan.eligiblePaths} source paths could match official fields,
-        above the safe review budget of {candidateScan.limit}. No partial official
-        suggestions were applied; reduce the number of distinct field paths
-        before trusting the mapping recommendations.</span>
+      {candidateScan.sourceScanTruncated
+        ?<span>At least one event exceeds the {candidateScan.limit}-path
+          official mapping scan limit. Its remaining source fields could not
+          be checked for competing destinations, so no partial official
+          suggestions were applied. Reduce the source paths and retry.</span>
+        :<span>{candidateScan.eligiblePaths} source paths could match official fields,
+          above the safe review budget of {candidateScan.limit}. No partial official
+          suggestions were applied; reduce the number of distinct field paths
+          before trusting the mapping recommendations.</span>}
     </div>}
 
     <div className="normalization-kpis" aria-label="Field mapping summary">

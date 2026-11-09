@@ -262,10 +262,23 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
 export const MAX_OFFICIAL_CANDIDATE_SCAN=1024;
 export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
   eligiblePaths:number;limit:number;exceeded:boolean;paths:string[];
+  sourceScanTruncated:boolean;
 }{
   const sources=new Set<string>();
-  for(const event of suite?.events??[])
-    for(const path of listSafeLeafPaths(event.fields))sources.add(path);
+  let sourceScanTruncated=false;
+  // Authoring is separately limited to 100 fields per event, but official
+  // mapping competition must inspect ALL safe paths within its own 1024-path
+  // budget. A large valid PAN-OS CSV can exceed 100 raw fields; refusing it
+  // wholesale would erase independently qualified official source mappings.
+  // The 1025th source path is a fail-closed overflow sentinel.
+  for(const event of suite?.events??[]){
+    const paths=listSafeLeafPaths(event.fields,1025);
+    if(paths.length>MAX_OFFICIAL_CANDIDATE_SCAN){
+      sourceScanTruncated=true;
+      continue;
+    }
+    for(const path of paths)sources.add(path);
+  }
   const eligible=[...sources].filter(source=>{
     const leaf=source.split('.').at(-1)??source;
     return Boolean(findStellarMetadataField(source)?.mappable||
@@ -276,9 +289,9 @@ export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
   // With multiple event families, deterministic lexical order makes reversed
   // event ordering produce the exact same REVIEW candidate list.
   if((suite?.events.length??0)>1)eligible.sort();
+  const exceeded=sourceScanTruncated||eligible.length>MAX_OFFICIAL_CANDIDATE_SCAN;
   return {eligiblePaths:eligible.length,limit:MAX_OFFICIAL_CANDIDATE_SCAN,
-    exceeded:eligible.length>MAX_OFFICIAL_CANDIDATE_SCAN,
-    paths:eligible.length>MAX_OFFICIAL_CANDIDATE_SCAN?[]:eligible};
+    exceeded,sourceScanTruncated,paths:exceeded?[]:eligible};
 }
 export function suggestNormalizationCandidatesFromSuite(
   suite:SuiteResult|undefined,existing:MappingRule[],existingGroups:Record<string,FieldGroup>={},

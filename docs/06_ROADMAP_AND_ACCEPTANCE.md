@@ -5,6 +5,23 @@
 
 The owner directed implementation of a **root-cause, invariant-first mapping correction**, rather than additional per-vendor/name patches. Official [Work Packet #283](https://github.com/xdr-labs/parser-studio/issues/283) is attached to umbrella [#249](https://github.com/xdr-labs/parser-studio/issues/249); authoritative design and WBS: [Mapping Correctness v2](MAPPING_CORRECTNESS_V2.md). Work proceeds **MCV2-A provenance → B allocation/semantics → C property/differential oracles → D exact-head release gates → E multi-vendor source E2E**, without replacing existing H0–H3 extraction. Initial RED acceptance includes silent source drop, manual destination overwrite and NAT alias mispromotion, all reproduced from PR #282 HEAD `608144c`. **Do not merge or deploy PR #282 while these are open.** H4 actual GitHub branch enforcement and H5 real DP7 import remain separately gated.
 
+### MCV2-C candidate-provider gate — 2026-11-09
+
+Independent AST-wide mapping-candidate evidence is now available:
+155 source mutations, 135 detected, eight explicitly proven equivalent,
+12 still unwaived; 87.10% raw / 91.84% non-equivalent. Across the
+explicitly bounded MappingPlan, allocator, port policy and official
+candidate source modules, the aggregate is 233/249 (93.57%).
+A previously silent >100-fields-per-event candidate truncation was
+reproduced. A full source-leaf candidate scan up to 1,024 paths now
+preserves real PAN-OS mappings while catching late competing aliases;
+only true 1,025-path overflow fails closed with a visible UI warning.
+The full-module bounded mutation census is now a mandatory CI gate.
+See [Mapping Correctness v2](MAPPING_CORRECTNESS_V2.md) for the scope
+and exact denominator. MCV2-C completion, PR merge and preview rollout
+still require exact-head CI and review; H4 policy and H5 DP runtime
+remain separately gated.
+
 ## ACTIVE implementation roadmap — 2026-11-07
 
 The current owner-requested next work is **Parser Correctness Architecture

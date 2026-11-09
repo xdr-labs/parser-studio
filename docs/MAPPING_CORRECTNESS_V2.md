@@ -192,6 +192,57 @@ module bundling. Two equivalent/no-op mutations were discarded from the
 selected probe set rather than counted as successful detections. This is
 NOT an AST-wide mutation score for `normalizationCandidates.ts`.
 
+### Bounded AST-wide official-candidate mutation census (2026-11-09)
+
+The independent production-provider oracle now exercises
+`src/guided/normalizationCandidates.ts` through **all 155 AST-level binary,
+`if`, and ternary condition mutations**. Each mutant is separately bundled
+with the real production dependencies, then executed in a distinct Node
+process with a **3.5-second timeout and a 192 MiB V8 heap cap**. The
+baseline must pass before mutation; any compile-invalid mutant is recorded
+separately, never counted as killed. Tests use entirely synthetic log values.
+The mandatory CI command is
+`node scripts/verification/mcv2-bounded-candidate-ast-score.mjs --require-90`.
+
+**Measured local result:** 135 killed / 155 compile-valid mutations (87.10%
+raw); eight documented equivalent `??` to `||` substitutions; **135/147
+non-equivalent (91.84%)**, with 12 unwaived survivors, zero invalid and zero
+timeouts. Equivalence proofs are executable-expression-specific:
+`source.split('.').at(-1)??source` (three locations: valid paths have a
+nonempty last segment); alias-table values (nonempty official-name strings);
+FieldGroup values (nonempty enum strings); event arrays (always truthy);
+event length (nonnegative integer, including zero); and accumulated
+candidate arrays (always truthy). An unknown survivor is **not** classified
+as equivalent by default. The gate requires exactly eight reviewed
+equivalences, a full-module census, zero compile-invalid mutations, and a
+non-equivalent score of at least 90%.
+
+Combining this candidate-provider scope with the previously measured
+Canonical MappingPlan (26/26 non-equivalent), source allocator (68/72 raw),
+and source-port policy (4/4 raw) gives **233/249 = 93.57%** across the
+explicitly scoped core AST operators. Four allocator survivors remain in
+the denominator, so this aggregate is conservative relative to that
+module's equivalence notes. This **does not** measure every expression,
+every external module, all Python branches, or the proprietary DP runtime;
+the 12 candidate-provider survivors remain documented sensitivity gaps.
+The existing shared TS/Python/compiled-Ruby golden oracle is a separate
+cross-engine contract, not an AST score.
+
+**New real correctness defect discovered by the oracle:** a single event
+with more than 100 addressable fields previously had only its first 100
+fields inspected for official suggestions; a competing official alias
+later in a CSV record could be missed. A first fail-closed correction
+unintentionally suppressed legitimate PAN-OS mappings because the 100-field
+authoring budget is not the official-candidate scan budget. The corrected
+implementation enumerates **up to 1,024 safe source leaves per event** and
+uses the 1,025th as a fail-closed sentinel. An event with 101 source
+leaves is fully inspected, so competing aliases remain REVIEW; an event
+with 1,025 safe leaves is blocked with a visible incomplete-scan warning.
+The separate authoring budget remains 100 and the mapping-plan UI already
+reports values beyond that authoring limit as unaddressable. The aggregate
+official-candidate budget remains 1,024 *eligible* distinct paths across
+events. The independent PAN-OS positional CSV regression must remain green.
+
 ## Scope and release safety
 
 Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.

@@ -58,6 +58,7 @@ jobs:
           node scripts/verification/mcv2-canonical-ast-score.mjs
           node scripts/verification/mcv2-bounded-allocation-ast-score.mjs
           node scripts/verification/mcv2-semantic-candidate-mutants.mjs
+          node scripts/verification/mcv2-bounded-candidate-ast-score.mjs --require-90
       - name: Typecheck and build
         run: npm run build
       - name: Offline Python standard-library sender grammar
