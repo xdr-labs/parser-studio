@@ -67,7 +67,7 @@ jobs:
       - name: Verify Native-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-native.json"
-          node -e 'const r=require(process.env.RUNNER_TEMP+"/parser-studio-lineage-native.json");if(r.worktreeDirty||r.sourceHead!==process.env.GITHUB_SHA||!r.reproducibleWithinBuild||r.stellarTargetImportVerified||r.indexedEventVerified)process.exit(1)'
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/parser-studio-lineage-native.json");if(r.worktreeDirty||r.sourceHead!==process.env.PARSER_STUDIO_EXPECTED_SOURCE_HEAD||!r.reproducibleWithinBuild||r.stellarTargetImportVerified||r.indexedEventVerified)process.exit(1)'
       - name: Upload Native synthetic artifact lineage receipt
         uses: actions/upload-artifact@v4
         with:
@@ -160,7 +160,7 @@ jobs:
       - name: Verify Web-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-web.json"
-          node -e 'const r=require(process.env.RUNNER_TEMP+"/parser-studio-lineage-web.json");if(r.worktreeDirty||r.sourceHead!==process.env.GITHUB_SHA||!r.reproducibleWithinBuild||r.stellarTargetImportVerified||r.indexedEventVerified)process.exit(1)'
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/parser-studio-lineage-web.json");if(r.worktreeDirty||r.sourceHead!==process.env.PARSER_STUDIO_EXPECTED_SOURCE_HEAD||!r.reproducibleWithinBuild||r.stellarTargetImportVerified||r.indexedEventVerified)process.exit(1)'
       - name: Upload Web synthetic artifact lineage receipt
         uses: actions/upload-artifact@v4
         with:

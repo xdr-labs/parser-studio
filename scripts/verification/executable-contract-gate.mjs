@@ -117,6 +117,11 @@ assert.ok(workflow.includes('PARSER_STUDIO_BACKEND_HEAD: '+exactPrHeadExpr),
 assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,3,
   'each checkout job must state the actual source SHA');
 assert.doesNotMatch(workflow,/PARSER_STUDIO_BACKEND_HEAD: \$\{\{ github\.sha \$\}\}/);
+assert.doesNotMatch(workflow,/r\.sourceHead!==process\.env\.GITHUB_SHA/,
+  'lineage receipts must compare actual PR source SHA, not GitHub synthetic merge SHA');
+assert.equal(
+  workflow.split('r.sourceHead!==process.env.PARSER_STUDIO_EXPECTED_SOURCE_HEAD').length-1,
+  2,'both Native and Web receipt verifiers must check the same PR source SHA');
 assert.match(text('playwright.config.ts'),/liveBackend&&actual!==frontendHead/);
 assert.doesNotMatch(workflow,/--grep-invert /);
 // Assert a deliberately corrupted contract is detected by the same
