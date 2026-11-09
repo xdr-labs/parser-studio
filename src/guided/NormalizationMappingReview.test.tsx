@@ -141,6 +141,42 @@ describe('normalization mapping review UI',()=>{
   });
 });
 
+describe('Juniper nested vendor field naming',()=>{
+  it('fixes persisted generated names in the editor, comparison and parser preview',()=>{
+    const raw='<14>1 2019-11-14T09:37:51.184+01:00 SRX-GW1 RT_FLOW - RT_FLOW_SESSION_CREATE '+
+      '[junos@67.43.156.15 source-address="10.0.0.1" source-port="594" '+
+      'destination-address="67.43.156.13" destination-port="10400" protocol-id="1"]';
+    const source='syslog_sd.element_1.params.source-port';
+    function JuniperHarness(){
+      const [draft,setDraft]=useState<ParserDraft>({...createDraft(),vendor:'Juniper',
+        format:'syslog_rfc5424',syslogBodyFormat:'raw',
+        mappings:[
+          {id:'auto-1',source,target:'syslog_sd_element_1_params_source-port',type:'string'},
+          {id:'auto-2',source:'syslog_sd.element_1.params.destination-port',
+            target:'syslog_sd_element_1_params_destination-port',type:'string'},
+          {id:'auto-3',source:'syslog_sd.element_1.params.source-address',target:'srcip',type:'ip'},
+        ],guided:{...defaultGuidedOptions(),groups:{
+          'auto-1':'vendor_fields','auto-2':'vendor_fields','auto-3':'top_fields',
+        },classification:{defaultIndex:'Syslog',rules:[]}}});
+      const suite=preview(raw,draft);
+      return <><NormalizationMappingReview draft={draft} setDraft={setDraft} suite={suite}
+        selected={0} setSelected={vi.fn()} pending={false} onBack={vi.fn()} onContinue={vi.fn()}/>
+        <output aria-label="native vendor target">{JSON.stringify(suite.events[0]?.normalized.Juniper)}</output>
+      </>;
+    }
+    render(<JuniperHarness/>);
+    expect(screen.getByLabelText('Source field 0')).toHaveValue(source);
+    expect(screen.getByLabelText('Stellar field 0')).toHaveValue('source-port');
+    expect(screen.getByLabelText('Stellar field 1')).toHaveValue('destination-port');
+    const comparison=screen.getByLabelText('Field changes only');
+    expect(comparison).toHaveTextContent('source-port');
+    expect(comparison).not.toHaveTextContent('Juniper.syslog_sd_element_1_params_source-port');
+    expect(comparison).not.toHaveTextContent('Juniper.source-port');
+    expect(screen.getByLabelText('native vendor target')).toHaveTextContent('"source-port":"594"');
+    expect(screen.getByLabelText('Stellar field 2')).toHaveValue('srcip');
+  });
+});
+
 describe('unmappable source field disclosure',()=>{
   it('counts unsupported @ keys and arrays while preserving selectable dotted paths',()=>{
     const sample=JSON.stringify({

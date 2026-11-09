@@ -12,7 +12,7 @@ describe('nondeveloper nested source path discovery from local JSON events', () 
     expect(paths).toEqual(['http.request.method', 'http.request.uri', 'action']);
     const draft = createDraft(); draft.format = 'json';
     expect(suggestUnmappedFields([{http:{request:{method:'GET'}}}], draft)).toEqual([{
-      source: 'http.request.method', target: 'http_request_method', type: 'string', group: 'vendor_fields',
+      source: 'http.request.method', target: 'method', type: 'string', group: 'vendor_fields',
     }]);
   });
 

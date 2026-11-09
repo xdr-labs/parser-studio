@@ -6,6 +6,7 @@ import {listSafeLeafPaths} from '../fieldPaths';
 import {defaultGuidedOptions,type FieldGroup} from './contract';
 import {suggestNormalizationCandidatesFromSuite} from './normalizationCandidates';
 import {originalContainerCompilerGate} from './sourceContainerCompilerGate';
+import {vendorFieldNames} from './vendorFieldNames';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 
 const MAX_EXPLICIT_MAPPINGS=100;
@@ -40,12 +41,6 @@ function sourcePaths(source:string,draft:ParserDraft):{paths:string[];profile?:G
   return {paths:[...all],...(profile?{profile}:{})};
 }
 
-function targetForVendorSource(source:string):string{
-  // Preserve the JSON-like source path for vendor-only fields. The backend
-  // adds the selected parser vendor namespace at emission time.
-  return source;
-}
-
 /**
  * Beginner-mode automatic handoff for a fully source-parsed Generic Structural
  * sample. This is the same action that the old "Use extracted fields" button
@@ -67,10 +62,12 @@ export function buildAutomaticGenericStructuralDraft(
 
   const opts=draft.guided??defaultGuidedOptions();
   const initialPaths=discovery.paths.slice(0,MAX_EXPLICIT_MAPPINGS);
+  const vendorNames=vendorFieldNames(initialPaths);
+  if(vendorNames.size!==initialPaths.length)return null;
   const mappings:MappingRule[]=initialPaths.map((sourcePath,index)=>({
     id:'auto-generic-'+String(index+1),
     source:sourcePath,
-    target:targetForVendorSource(sourcePath),
+    target:vendorNames.get(sourcePath)!,
     type:'string',
   }));
   const groups:Record<string,FieldGroup>=Object.fromEntries(

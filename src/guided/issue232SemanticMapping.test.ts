@@ -77,8 +77,8 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
       expect(actual.proto).toBe(g.protocol);
       expect(actual).toMatchObject({srcip:i===0?'10.0.0.1':'10.0.0.26',dstip:'67.43.156.13'});
       const vendor=actual[outcome.draft.vendor] as Record<string,unknown>;
-      expect(vendor['syslog_sd_element_1_params_source-port']??vendor['syslog_sd_element_1_params_source_port']).toBe(g.raw.srcport);
-      expect(vendor['syslog_sd_element_1_params_destination-port']??vendor['syslog_sd_element_1_params_destination_port']).toBe(g.raw.dstport);
+      expect(vendor['source-port']).toBe(g.raw.srcport);
+      expect(vendor['destination-port']).toBe(g.raw.dstport);
       for(const field of ['srcport','dstport'] as const){
         const expected=g.official[field],actualValue=actual[field];
         if(expected===null){

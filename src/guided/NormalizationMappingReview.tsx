@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowLeft,ArrowRight,CheckCircle2,CircleAlert,Search,ShieldCheck,WandSparkles,X} from 'lucide-react';
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
@@ -10,6 +10,7 @@ import {isBlockingNormalizationFinding,reviewNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import JsonataMappingAssistant from './JsonataMappingAssistant';
+import {compactLegacyAutoVendorMappings} from './vendorFieldNames';
 import {
   findStellarMetadataField,searchStellarMetadataCatalog,STELLAR_METADATA_CATALOG,
   STELLAR_METADATA_CATALOG_PROVENANCE,
@@ -80,6 +81,16 @@ export default function NormalizationMappingReview({
   const [search,setSearch]=useState('');
   const [catalogQuery,setCatalogQuery]=useState('');
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
+  // Existing Auto Parser projects used flattened underscore names. Correct
+  // their untouched generated vendor destinations when this review opens.
+  useEffect(()=>{
+    const changed=compactLegacyAutoVendorMappings(draft.mappings,draft.guided?.groups??{});
+    if(changed===draft.mappings)return;
+    setDraft(current=>{
+      const next=compactLegacyAutoVendorMappings(current.mappings,current.guided?.groups??{});
+      return next===current.mappings?current:{...current,mappings:next};
+    });
+  },[draft.mappings,draft.guided?.groups,setDraft]);
   const groups=draft.guided?.groups??{};
   const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const candidateScan=useMemo(()=>normalizationCandidateScanStatus(suite),[suite]);
@@ -395,7 +406,7 @@ export default function NormalizationMappingReview({
         {lead.map(row=>renderRow(row.mapping,row.index))}
         <details className="normalization-vendor-list" open={vendorListOpen??false}
           onToggle={event=>setVendorListOpen(event.currentTarget.open)}>
-          <summary>Vendor-only fields ({vendorRows.length}) · kept under the {draft.vendor||'vendor'} name, not matched to Stellar</summary>
+          <summary>Vendor-only fields ({vendorRows.length}) · original leaf names, not matched to Stellar</summary>
           <p className="normalization-vendor-note">These fields have no Stellar standard name. Open the list to rename one or leave it out of the output; leaving them as they are is fine.</p>
           {vendorRows.map(row=>renderRow(row.mapping,row.index))}
         </details>

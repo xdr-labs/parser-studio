@@ -13,15 +13,15 @@ describe('beginner automatic Generic Structural handoff',()=>{
     // HTTPS is an application protocol label. Do not silently assume TCP
     // port 443 is an official L4 destination without transport evidence.
     expect(draft.mappings.find(x=>x.source==='generic.fields.dest_port'))
-      .toMatchObject({target:'generic.fields.dest_port'});
+      .toMatchObject({target:'dest_port'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.ip_client')).toMatchObject({target:'srcip',type:'ip'});
     // BIG-IP HTTPS is an application protocol, not an L4 TCP/UDP/ICMP name.
     // Keep it vendor-local rather than corrupt Stellar 7.0 proto_name.
-    expect(draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'generic.fields.protocol',type:'string'});
+    expect(draft.mappings.find(x=>x.source==='generic.fields.protocol')).toMatchObject({target:'protocol',type:'string'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.date_time')).toMatchObject({target:'timestamp',type:'timestamp'});
     // Both the Syslog envelope host and the BIG-IP unit_hostname contain
     // valid hostname values; neither is silently selected as authoritative.
-    expect(draft.mappings.find(x=>x.source==='syslog.host')).toMatchObject({target:'syslog.host'});
+    expect(draft.mappings.find(x=>x.source==='syslog.host')).toMatchObject({target:'host'});
     expect(draft.mappings.find(x=>x.source==='generic.fields.unit_hostname')).toBeDefined();
   });
 

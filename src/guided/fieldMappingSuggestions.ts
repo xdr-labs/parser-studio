@@ -2,6 +2,7 @@ import type { MappingRule, ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
 import { listSafeLeafPaths } from '../fieldPaths';
 import { findStellarMetadataField } from './stellarMetadataCatalog';
+import {vendorFieldNames} from './vendorFieldNames';
 
 export interface SuggestedFieldMapping {
   source: string;
@@ -37,6 +38,7 @@ export function suggestUnmappedFields(
   // round-robin candidates across events so every represented family can keep
   // at least some source-backed output without raising the global safety cap.
   const queues = samples.map(fields => listSafeLeafPaths(fields));
+  const names=vendorFieldNames(queues.flat().filter(source=>!existingSources.has(source)),taken);
   while (proposals.length < 100) {
     let addedThisRound = false;
     let candidatesRemain = false;
@@ -47,11 +49,10 @@ export function suggestUnmappedFields(
         if (found.has(source) || existingSources.has(source) || !SAFE_PATH.test(source)) continue;
         found.add(source);
         if (source.split('.').some(segment => DANGEROUS.has(segment) || !segment)) continue;
-        // Fields absent from the Stellar dictionary remain vendor fields.
-        // Their normalized name is vendor-local; the backend writes it under
-        // the parser vendor namespace instead of inventing a custom.* Stellar field.
-        const normalized = source.replace(/\./g, '_');
-        if (SYSTEM.has(source.split('.')[0]) || normalized.length > 128) continue;
+        // Prefer the last original path component. Duplicate leaf names fall
+        // back to their exact source paths without dot-to-underscore mangling.
+        const normalized = names.get(source);
+        if (SYSTEM.has(source.split('.')[0]) || !normalized) continue;
         if (taken.some(target => conflicts(target, normalized))) continue;
         const proposal: SuggestedFieldMapping = {
           source, target: normalized, type: 'string',

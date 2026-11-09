@@ -40,6 +40,7 @@ import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
 import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
 import { suggestUnmappedFields } from './fieldMappingSuggestions';
+import {vendorFieldNames} from './vendorFieldNames';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
@@ -896,7 +897,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     const exists = draft.mappings.some((rule) => rule.source === source);
     const mapping: MappingRule = {
       id: crypto.randomUUID(),
-      source, target: 'custom.' + source,
+      source, target: vendorFieldNames([source],draft.mappings.map(m=>m.target)).get(source)??'',
       type: /(^|_)ip$/i.test(source) ? 'ip' : /port/i.test(source) ? 'port' : 'string',
     };
     setDraft((old) => ({
@@ -946,7 +947,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const addMapping = (source = '') => {
     const next: MappingRule = {
       id: crypto.randomUUID(), source,
-      target: source ? 'custom.' + source.replace(/[^\w]+/g, '_') : '',
+      target: source ? vendorFieldNames([source],draft.mappings.map(m=>m.target)).get(source)??'' : '',
       type: source.endsWith('ip') ? 'ip' : source.includes('port') ? 'port' : 'string',
     };
     setDraft((old) => ({ ...old, mappings: [...old.mappings, next] }));
