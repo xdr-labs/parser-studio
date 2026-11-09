@@ -79,8 +79,6 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Executable consumer, policy and runtime contract guard
         run: node scripts/verification/executable-contract-gate.mjs
-      - name: Cross-consumer mapping identity, NAT and collision differential
-        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants
@@ -127,6 +125,8 @@ jobs:
           # Product scope is a finite, explicit list; keep broader historical
           # target/Drain3 regression failures visible in backend documentation.
           PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 npm run test:authoring --prefix backend
+      - name: Cross-consumer mapping identity, NAT and collision differential
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
       - name: Canonical same-source authored Ruby conformance (mandatory native)
         run: |
           set -euo pipefail
