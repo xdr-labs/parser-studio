@@ -116,3 +116,19 @@ legacy code audit pass. Only the actual Guided mapping path is user-facing.
 The new cross-consumer parity runner tests those separate active/dormant
 paths with explicit evidence strengths. This distinction is mandatory for
 future audits: inventory shipped entrypoints and reachable call paths first.
+
+
+## Independent semantic truth acceptance (R4 added)
+
+The golden targets in
+[`contracts/semantic-identity-independent-goldens.v1.json`](../contracts/semantic-identity-independent-goldens.v1.json)
+are authored independently of both executable engines and the shared
+semantic-policy JSON. They carry **26 literal expected outcomes** across
+reviewed IP/port/action/source identity, nested RFC5424 source paths,
+dangerous NAT prefix variants, invalid values, occupied destinations and
+both orders of competing source fields. The CI runner
+`scripts/verification/independent-semantic-identity-oracle.ts` checks both
+browser decisions and the dormant review-only advisory logic against these
+independent results and refuses any divergent value, skipped case or reduced
+fixture inventory. This is a small explicit truth set; it does NOT claim
+independent proof for every undocumented vendor log or DP index event.

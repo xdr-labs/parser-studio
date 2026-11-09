@@ -127,6 +127,8 @@ jobs:
           PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 npm run test:authoring --prefix backend
       - name: Cross-consumer mapping identity, NAT and collision differential
         run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
+      - name: Independently authored source-to-Stellar semantic oracle
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/independent-semantic-identity-oracle.ts
       - name: Canonical same-source authored Ruby conformance (mandatory native)
         run: |
           set -euo pipefail

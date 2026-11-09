@@ -54,6 +54,13 @@ function validateNativeProfiles(input){
 validateCanonicalPolicy(policy);
 validateNativeProfiles(profiles);
 assert.equal(matrix.contract,'parser-studio.executable-capability-matrix.v1');
+assert.equal(matrix.independentSemanticCaseCount,26);
+assert.ok(existsSync(matrix.independentSemanticOracle));
+assert.ok(existsSync(matrix.independentSemanticOracleTruth));
+const independent=json(matrix.independentSemanticOracleTruth);
+assert.equal(independent.oracleOrigin,'INDEPENDENTLY_AUTHORED_EXPECTED_TARGETS');
+assert.equal(independent.cases.length,matrix.independentSemanticCaseCount);
+assert.equal(independent.targetIndexedProof,false);
 assert.equal(matrix.independentRuntimeProof,false);
 assert.equal(matrix.stellar7IndexedProof,false);
 assert.deepEqual(
