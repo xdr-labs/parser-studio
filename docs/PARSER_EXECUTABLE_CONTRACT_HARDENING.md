@@ -100,3 +100,19 @@ Regex path is implemented or the authoring UI explicitly blocks target export.
   evidence-scoped results, not a claim of exhaustive absence of defects.
 - R5/DP indexed events remain NOT VERIFIED. No deployment or production
   parser/transport mutation was performed for this checkpoint.
+
+
+## Critical source-reachability correction (2026-11-10)
+
+`backend/src/http.ts` owns a legacy optional mapping-suggestions endpoint,
+but **the shipping entrypoint is `backend/src/mainline-authoring-server.ts`**.
+It explicitly disables the name-only HTTP feature and responds with 404.
+Thus #286 is a latent shared-policy divergence, **not a demonstrated
+customer-facing mapping-hints endpoint defect**. The canonical policy is
+still applied to that dormant module to prevent reactivation of stale
+semantics. Full current-product browser E2E must assert the optional
+endpoint remains unavailable; it must NOT add a public API to make a
+legacy code audit pass. Only the actual Guided mapping path is user-facing.
+The new cross-consumer parity runner tests those separate active/dormant
+paths with explicit evidence strengths. This distinction is mandatory for
+future audits: inventory shipped entrypoints and reachable call paths first.

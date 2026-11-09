@@ -51,6 +51,29 @@ input['records'].each do |item|
     end
     result_count+=1
   end
+  # Execute the actual generated plugin parser callback, not only a private
+  # helper. On unsupported target Ruby, extraction failures must produce a
+  # diagnostic, never a false parsed event or an exception that escapes.
+  ['allow', 'ALLOW', 'MALFORMED'].each do |sample|
+    line = item['id'] == 'syslog-regex-body' ?
+      '<14>1 2026-01-01T00:00:00Z sensor app - - - ' + sample : sample
+    emitted = []
+    parser.parse(line) { |event_time, record| emitted << [event_time, record] }
+    abort 'UNEXPECTED_CALLBACK_COUNT' unless emitted.length == 1
+    event_time, record = emitted.fetch(0)
+    expected_success = profile == 'ruby32' && sample == 'ALLOW'
+    if expected_success
+      abort 'EXPECTED_NATIVE_CALLBACK_SUCCESS' if
+        record.key?('parser_err_stage') ||
+        record['stellar_log_index'] != 'syslog'
+    else
+      abort 'FAILED_CLOSED_CALLBACK_MISSING' unless
+        event_time.nil? && record['parser_err_msg'] == 'ArgumentError' &&
+        record['parser_err_stage'] == 'extraction' &&
+        !record.key?('action') && !record.key?('body')
+    end
+    result_count += 1
+  end
 end
-abort 'MISSING_NATIVE_CASES' unless result_count == 4
+abort 'MISSING_NATIVE_CASES' unless result_count == 10
 puts "SYNTHETIC_NATIVE_REGEX_PROFILE_PASS ruby=#{RUBY_VERSION} cases=#{result_count} profile=#{profile}"

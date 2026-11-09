@@ -79,6 +79,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Executable consumer, policy and runtime contract guard
         run: node scripts/verification/executable-contract-gate.mjs
+      - name: Cross-consumer mapping identity, NAT and collision differential
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants

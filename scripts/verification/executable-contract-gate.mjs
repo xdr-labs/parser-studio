@@ -68,6 +68,8 @@ for(const c of matrix.consumers){
   if(c.policy)assert.ok(existsSync(c.policy),'missing policy '+c.id);
   assert.equal(c.targetVerified,false);
 }
+assert.equal(matrix.consumers.find(c=>c.id==='backend-advisory-hints')?.shippingMainlineRoute,false);
+assert.match(text('backend/src/mainline-authoring-server.ts'),/deterministicNameOnlyMappingHttpAvailable:false/);
 for(const id of [
   'browser-normalization','python-multipass','backend-advisory-hints',
   'ruby-pair-compiler','browser-http-authoring',
@@ -84,6 +86,8 @@ assert.doesNotMatch(text('backend/src/mapping-suggestions.ts'),
   /const aliases\s*:/);
 assert.match(text('runtime/multipass/stellar_dictionary.py'),
   /semantic-policy\.v1\.json/);
+assert.ok(existsSync('scripts/verification/mapping-hints-cross-consumer.ts'));
+assert.match(text('.github/workflows/quality.yml'),/MAPPING_CROSS_CONSUMER_PARITY_PASS|mapping-hints-cross-consumer\.ts/);
 assert.match(text('backend/src/compiler.ts'),/Regexp\.respond_to\?\(:timeout=\)/);
 assert.match(text('backend/src/compiler.ts'),/Native Regex unsupported/);
 const workflow=text('.github/workflows/quality.yml');
