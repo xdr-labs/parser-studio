@@ -1,15 +1,17 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import type {Dispatch,SetStateAction} from 'react';
 import {ArrowLeft,ArrowRight,CheckCircle2,CircleAlert,Search,ShieldCheck,WandSparkles,X} from 'lucide-react';
 import type {MappingRule,ParserDraft,SuiteResult} from '../model';
 import {listSafeLeafPaths,lookupFieldValue,countUnaddressableSourceValues} from '../fieldPaths';
 import {defaultGuidedOptions} from './contract';
-import {suggestNormalizationCandidatesFromSuite,normalizationCandidateScanStatus,
+import {normalizationCandidateScanStatus,
   type NormalizationCandidate} from './normalizationCandidates';
 import {isBlockingNormalizationFinding,reviewNormalizationMappings,
   type NormalizationFindingCode} from './normalizationValidation';
 import {HelpTip,StageGuide} from './BeginnerHelp';
 import JsonataMappingAssistant from './JsonataMappingAssistant';
+import {reconcileGeneratedMappings} from './generatedMappingReconciliation';
+import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {
   findStellarMetadataField,searchStellarMetadataCatalog,STELLAR_METADATA_CATALOG,
   STELLAR_METADATA_CATALOG_PROVENANCE,
@@ -80,8 +82,16 @@ export default function NormalizationMappingReview({
   const [search,setSearch]=useState('');
   const [catalogQuery,setCatalogQuery]=useState('');
   const [activeMappingId,setActiveMappingId]=useState<string|null>(null);
+  // Every automatically generated mapping is reconsidered against the same
+  // current dictionary/semantic evidence as a fresh Auto Parser draft.
+  // Hand-edited destinations and source conflicts are never rewritten.
+  useEffect(()=>{
+    if(reconcileGeneratedMappings(draft,suite)===draft)return;
+    setDraft(current=>reconcileGeneratedMappings(current,suite));
+  },[draft.mappings,draft.guided?.groups,suite,setDraft]);
   const groups=draft.guided?.groups??{};
-  const candidates=useMemo(()=>suggestNormalizationCandidatesFromSuite(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
+  const canonicalPlan=useMemo(()=>createCanonicalMappingPlan(suite,draft),[suite,draft]);
+  const candidates=canonicalPlan.officialCandidates;
   const candidateScan=useMemo(()=>normalizationCandidateScanStatus(suite),[suite]);
   const mappingReview=useMemo(()=>reviewNormalizationMappings(suite,draft.mappings,groups),[suite,draft.mappings,groups]);
   const findings=mappingReview.findings;
@@ -98,6 +108,7 @@ export default function NormalizationMappingReview({
   const officialCount=draft.mappings.filter(mapping=>catalogState(mapping,groups[mapping.id]??'vendor_fields').kind==='verified').length;
   const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
   const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
+  const unplanned=canonicalPlan.entries.filter(entry=>entry.disposition==='REVIEW_REQUIRED');
   // Notes that do not block (a field some sample logs simply do not carry).
   const noteSources=new Set(findings.filter(finding=>!isBlockingNormalizationFinding(finding.code)).map(finding=>finding.source));
   const candidateView=candidates.filter(candidate=>{
@@ -120,13 +131,14 @@ export default function NormalizationMappingReview({
         const options=old.guided??defaultGuidedOptions();
         return {...old,mappings:[...old.mappings,
           {id,source:candidate.source,target:candidate.target,type:candidate.type,
-            when:candidate.when}],guided:{...options,
+            when:candidate.when,authoring:{version:1,origin:'APPROVED'}}],guided:{...options,
             groups:{...options.groups,[id]:candidate.group}}};
       }
       const existing=old.mappings.find(mapping=>mapping.source===candidate.source);
       const id=existing?.id??candidate.replacesMappingId??
         'stellar-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_')+'-'+String(old.mappings.length+1);
-      const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type};
+      const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type,
+        authoring:{version:1,origin:'APPROVED'}};
       const mappings=existing
         ?old.mappings.map(mapping=>mapping.id===existing.id?next:mapping)
         :[...old.mappings,next];
@@ -147,7 +159,8 @@ export default function NormalizationMappingReview({
           if(!mappings.some(m=>m.source===candidate.source&&m.target===candidate.target&&
             groups[m.id]===candidate.group)&&!mappings.some(m=>m.id===id)){
             mappings.push({id,source:candidate.source,target:candidate.target,
-              type:candidate.type,when:candidate.when});
+              type:candidate.type,when:candidate.when,
+              authoring:{version:1,origin:'APPROVED'}});
             groups[id]=candidate.group;
           }
           continue;
@@ -155,7 +168,8 @@ export default function NormalizationMappingReview({
         const index=mappings.findIndex(mapping=>mapping.source===candidate.source);
         const existing=index>=0?mappings[index]:undefined;
         const id=existing?.id??'stellar-'+candidate.source.replace(/[^A-Za-z0-9_-]/g,'_')+'-'+String(mappings.length+1);
-        const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type};
+        const next:MappingRule={id,source:candidate.source,target:candidate.target,type:candidate.type,
+        authoring:{version:1,origin:'APPROVED'}};
         if(index>=0)mappings[index]=next;else mappings.push(next);
         groups[id]=candidate.group;
       }
@@ -172,21 +186,23 @@ export default function NormalizationMappingReview({
         // Never silently keep a TCP/UDP gate attached to an unrelated target.
         if(key==='type'){
           const {when:_previous,...rest}=mapping;
-          return {...rest,type:value as MappingRule['type']};
+          return {...rest,type:value as MappingRule['type'],authoring:{version:1 as const,origin:'USER_EDITED' as const}};
         }
         if(key==='source'){
           const {when:_previous,...rest}=mapping;
-          return {...rest,source:value,sourcePathKind:undefined};
+          return {...rest,source:value,sourcePathKind:undefined,
+            authoring:{version:1 as const,origin:'USER_EDITED' as const}};
         }
         const {when:_previous,...rest}=mapping;
         const updated=value===mapping.target?mapping:rest;
         const catalog=findStellarMetadataField(value);
         if(catalog?.mappable&&catalog.mappingType&&catalog.group){
           groups[id]=catalog.group;
-          return {...updated,target:value,type:catalog.mappingType};
+          return {...updated,target:value,type:catalog.mappingType,
+            authoring:{version:1 as const,origin:'USER_EDITED' as const}};
         }
         groups[id]='vendor_fields';
-        return {...updated,target:value};
+        return {...updated,target:value,authoring:{version:1 as const,origin:'USER_EDITED' as const}};
       });
       return {...old,mappings,guided:{...options,groups}};
     });
@@ -228,13 +244,27 @@ export default function NormalizationMappingReview({
       <span>This step only prepares field names inside Parser Studio. Nothing is sent to a Stellar Cyber system from this screen.</span>
     </div>
 
+    {unplanned.length>0&&<div className="normalization-runtime-note" role="alert"
+      aria-label="Unresolved mapping decisions">
+      <strong>{unplanned.length} source field mapping decision(s) require review</strong>
+      <span>These extracted fields remain visible in the source preview; the
+        canonical mapping plan did not silently discard or auto-approve them.
+        Review the original paths and resolve the listed mapping conditions
+        before relying on exported destination fields.</span>
+    </div>}
+
     {candidateScan.exceeded&&<div className="normalization-runtime-note" role="alert"
       aria-label="Official candidate scan incomplete">
       <strong>Official field suggestions require a smaller sample</strong>
-      <span>{candidateScan.eligiblePaths} source paths could match official fields,
-        above the safe review budget of {candidateScan.limit}. No partial official
-        suggestions were applied; reduce the number of distinct field paths
-        before trusting the mapping recommendations.</span>
+      {candidateScan.sourceScanTruncated
+        ?<span>At least one event exceeds the {candidateScan.limit}-path
+          official mapping scan limit. Its remaining source fields could not
+          be checked for competing destinations, so no partial official
+          suggestions were applied. Reduce the source paths and retry.</span>
+        :<span>{candidateScan.eligiblePaths} source paths could match official fields,
+          above the safe review budget of {candidateScan.limit}. No partial official
+          suggestions were applied; reduce the number of distinct field paths
+          before trusting the mapping recommendations.</span>}
     </div>}
 
     <div className="normalization-kpis" aria-label="Field mapping summary">
@@ -395,7 +425,7 @@ export default function NormalizationMappingReview({
         {lead.map(row=>renderRow(row.mapping,row.index))}
         <details className="normalization-vendor-list" open={vendorListOpen??false}
           onToggle={event=>setVendorListOpen(event.currentTarget.open)}>
-          <summary>Vendor-only fields ({vendorRows.length}) · kept under the {draft.vendor||'vendor'} name, not matched to Stellar</summary>
+          <summary>Vendor-only fields ({vendorRows.length}) · original leaf names, not matched to Stellar</summary>
           <p className="normalization-vendor-note">These fields have no Stellar standard name. Open the list to rename one or leave it out of the output; leaving them as they are is fine.</p>
           {vendorRows.map(row=>renderRow(row.mapping,row.index))}
         </details>

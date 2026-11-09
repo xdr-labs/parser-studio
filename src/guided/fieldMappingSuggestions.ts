@@ -1,7 +1,8 @@
 import type { MappingRule, ParserDraft } from '../model';
 import { defaultGuidedOptions, type FieldGroup } from './contract';
-import { listSafeLeafPaths } from '../fieldPaths';
+import { listSafeLeafPaths,countUnaddressableSourceValues } from '../fieldPaths';
 import { findStellarMetadataField } from './stellarMetadataCatalog';
+import {planVendorFieldNames} from './vendorFieldNames';
 
 export interface SuggestedFieldMapping {
   source: string;
@@ -20,10 +21,16 @@ function conflicts(a: string, b: string): boolean {
 
 /** Source keys only, not sample values; suggestions are conservative string mappings.
  * Nothing is applied until the user explicitly confirms in the Guided UI. */
-export function suggestUnmappedFields(
+export interface UnmappedFieldPlan {
+  suggestions: SuggestedFieldMapping[];
+  /** Field paths that cannot be given noncolliding leaf or original-path names. */
+  unresolved: readonly string[];
+  unaddressableValues:number;
+}
+export function suggestUnmappedFieldPlan(
   samples: Array<Record<string, unknown>>,
   draft: ParserDraft,
-): SuggestedFieldMapping[] {
+): UnmappedFieldPlan {
   const existingSources = new Set(draft.mappings.map(mapping => mapping.source.trim()));
   const taken = draft.mappings.map(mapping => mapping.target.trim());
   const classifierFields = new Set(
@@ -37,6 +44,8 @@ export function suggestUnmappedFields(
   // round-robin candidates across events so every represented family can keep
   // at least some source-backed output without raising the global safety cap.
   const queues = samples.map(fields => listSafeLeafPaths(fields));
+  const plan=planVendorFieldNames(queues.flat().filter(source=>!existingSources.has(source)),taken);
+  const names=plan.names;
   while (proposals.length < 100) {
     let addedThisRound = false;
     let candidatesRemain = false;
@@ -47,11 +56,10 @@ export function suggestUnmappedFields(
         if (found.has(source) || existingSources.has(source) || !SAFE_PATH.test(source)) continue;
         found.add(source);
         if (source.split('.').some(segment => DANGEROUS.has(segment) || !segment)) continue;
-        // Fields absent from the Stellar dictionary remain vendor fields.
-        // Their normalized name is vendor-local; the backend writes it under
-        // the parser vendor namespace instead of inventing a custom.* Stellar field.
-        const normalized = source.replace(/\./g, '_');
-        if (SYSTEM.has(source.split('.')[0]) || normalized.length > 128) continue;
+        // Prefer the last original path component. Duplicate leaf names fall
+        // back to their exact source paths without dot-to-underscore mangling.
+        const normalized = names.get(source);
+        if (SYSTEM.has(source.split('.')[0]) || !normalized) continue;
         if (taken.some(target => conflicts(target, normalized))) continue;
         const proposal: SuggestedFieldMapping = {
           source, target: normalized, type: 'string',
@@ -66,5 +74,24 @@ export function suggestUnmappedFields(
     }
     if (!candidatesRemain || !addedThisRound) break;
   }
-  return proposals;
+  // The round-robin 100-field budget is a selection budget, not permission to
+  // silently omit any of the remaining safe extracted source identities.
+  const selected=new Set(proposals.map(item=>item.source));
+  // Queues were consumed above; recompute the bounded source census from the
+  // original events, preserving the same parser-supported source identities.
+  const allSources=[...new Set(samples.flatMap(fields=>listSafeLeafPaths(fields)))];
+  const uncovered=allSources.filter(source=>
+    !existingSources.has(source)&&!selected.has(source)&&
+    SAFE_PATH.test(source)&&!SYSTEM.has(source.split('.')[0]!)&&
+    source.split('.').every(segment=>segment&&!DANGEROUS.has(segment)));
+  return {suggestions:proposals,
+    unresolved:[...new Set([...plan.unresolved,...uncovered])].sort(),
+    unaddressableValues:samples.reduce((sum,fields)=>
+      sum+countUnaddressableSourceValues(fields),0)};
+}
+export function suggestUnmappedFields(
+  samples: Array<Record<string, unknown>>,
+  draft: ParserDraft,
+): SuggestedFieldMapping[]{
+  return suggestUnmappedFieldPlan(samples,draft).suggestions;
 }

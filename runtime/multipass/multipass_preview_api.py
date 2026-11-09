@@ -50,7 +50,9 @@ def _preview_event(raw:str,event)->dict:
         'sourceUrls':[OFFICIAL_DICTIONARY_URL_65,OFFICIAL_DICTIONARY_URL_70,CEF_DICTIONARY_URL],
         'mapped':[{'sourcePath':item.source.path,'targetField':item.dictionary_field,
                    'documentedType':item.dictionary_type,
-                   'mappingClass':'CEF_STANDARD_ALIAS' if item.rule_id.startswith('cef:') else 'EXACT_DICTIONARY_NAME',
+                   'mappingClass':('CEF_STANDARD_ALIAS' if item.rule_id.startswith('cef:')
+                                   else 'EXPLICIT_SOURCE_ALIAS' if item.rule_id.startswith('explicit-source:')
+                                   else 'EXACT_DICTIONARY_NAME'),
                    'startByte':item.source.start_byte,'endByte':item.source.end_byte}
                   for item in dictionary.mappings],
         'unmappedCount':len(dictionary.unmapped_occurrences),

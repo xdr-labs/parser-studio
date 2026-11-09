@@ -58,6 +58,7 @@ export function suggestEventProfiles(
    const mappings:MappingRule[]=fields.map((source,n)=>{
      const existing=draft.mappings.find(rule=>rule.source===source);
      return {id:'family-'+index+'-'+n,source,
+       authoring:existing?.authoring??{version:1,origin:'AUTO'},
        target:existing?.target??'custom.'+source.replace(/[^A-Za-z0-9_]/g,'_'),
        type:existing?.type??'string'};
    });

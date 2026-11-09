@@ -45,6 +45,9 @@ describe('beginner reviewed multi-type fixed 7.0 mapping UX',()=>{
     expect(selected).toBeEnabled();
     expect(within(threat).queryByRole('button',{name:'Use Stellar 7.0 threat sha256'})).toBeNull();
     expect(within(threat).getByText(/Review only/)).toBeInTheDocument();
+    // A generated vendor leaf name must remain eligible for an explicit,
+    // evidence-backed scoped Stellar mapping (e.g. host.ip -> host.ip).
+    // The field itself is not rewritten until its individual Use action.
     fireEvent.click(selected);
     expect(within(threat).getByLabelText('threat output for src_ip')).toHaveValue('srcip');
     // A suggestion click edits only the proposed candidate. User approval

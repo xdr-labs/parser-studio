@@ -12,7 +12,7 @@ describe('privacy-safe, conservative all-field suggestions', () => {
     ], draft);
     expect(proposed).toEqual([
       {source:'device',target:'device',type:'string',group:'vendor_fields'},
-      {source:'user.name',target:'user_name',type:'string',group:'vendor_fields'},
+      {source:'user.name',target:'name',type:'string',group:'vendor_fields'},
     ]);
     expect(JSON.stringify(proposed)).not.toContain('198.51.100.10');
   });
@@ -25,9 +25,23 @@ describe('privacy-safe, conservative all-field suggestions', () => {
       {'__proto__.x':'bad','constructor.name':'bad','1bad':'bad','account.id':'bad','account_id':'bad','host':'synthetic'},
     ],draft);
     expect(proposed).toEqual([
-      {source:'account.id',target:'account_id',type:'string',group:'vendor_fields'},
+      {source:'account.id',target:'id',type:'string',group:'vendor_fields'},
+      {source:'account_id',target:'account_id',type:'string',group:'vendor_fields'},
       {source:'host',target:'host',type:'string',group:'vendor_fields'},
     ]);
+  });
+
+  it('preserves Juniper source paths in the left column but names vendor output by the final source key',()=>{
+    const draft=createDraft();draft.mappings=[];
+    const source='syslog_sd.element_1.params.source-port';
+    const suggested=suggestUnmappedFields([{
+      syslog_sd:{element_1:{params:{'source-port':'594','destination-port':'10400'}}},
+    }],draft);
+    expect(suggested.find(x=>x.source===source)).toMatchObject({
+      target:'source-port',group:'vendor_fields',
+    });
+    expect(suggested.find(x=>x.source.endsWith('destination-port'))?.target)
+      .toBe('destination-port');
   });
 
   it('shares the bounded mapping budget across wide mixed-family events', () => {

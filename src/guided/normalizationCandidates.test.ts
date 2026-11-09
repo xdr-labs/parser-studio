@@ -12,12 +12,25 @@ describe('official-catalog normalization candidates',()=>{
     ]);
   });
   it('proposes replacing generated custom mappings instead of duplicating their source',()=>{
-    const existing=[{id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'string' as const}];
+    const existing=[{id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'string' as const,
+      authoring:{version:1 as const,origin:'AUTO' as const}}];
     expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},existing)).toEqual([
       expect.objectContaining({source:'src_ip',target:'srcip',replacesMappingId:'auto-1',
         currentTarget:'custom.src_ip',safeForBulk:true}),
     ]);
   });
+  it('never treats an auto-looking ID as permission to override a manual edit',()=>{
+    for(const origin of ['USER_EDITED','APPROVED'] as const){
+      const existing=[{id:'auto-1',source:'src_ip',target:'custom.src_ip',
+        type:'string' as const,authoring:{version:1 as const,origin}}];
+      const candidate=suggestNormalizationCandidates({src_ip:'192.0.2.1'},existing)[0]!;
+      expect(candidate).toMatchObject({target:'srcip',safeForBulk:false});
+    }
+    const legacy=[{id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'string' as const}];
+    expect(suggestNormalizationCandidates({src_ip:'192.0.2.1'},legacy)[0])
+      .toMatchObject({target:'srcip',safeForBulk:false});
+  });
+
   it('uses whole-sample type evidence and lowers confidence when one value disagrees',()=>{
     const suite={events:[
       {fields:{src_ip:'192.0.2.1'}},{fields:{src_ip:'not-an-ip'}},

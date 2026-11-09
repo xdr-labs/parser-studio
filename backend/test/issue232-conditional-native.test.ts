@@ -115,6 +115,27 @@ for(const withFamily of [false,true]){
 }
 
 
+test('shared named-port alias emits typed ICMP and UDP fields through generated native Ruby',
+  {skip:!rubyAvailable},()=>{
+    const p=project();
+    p.projectId='draft_explicit_named_port_contract';
+    p.slug='explicit_named_ports';
+    p.normalization.topFields={
+      [prefix+'protocol-id']:{normalized_name:'proto',data_type:'integer'},
+      [prefix+'source-port']:{normalized_name:'srcport',data_type:'integer'},
+      [prefix+'destination-port']:{normalized_name:'dstport',data_type:'integer'},
+    };
+    p.normalization.vendorFields={};
+    assert.deepEqual(validateProject(p),{ok:true,issues:[]});
+    const rows=runNative(p,original);
+    assert.equal(rows.length,2);
+    assert.deepEqual(rows.map(row=>({proto:row.proto,srcport:row.srcport,dstport:row.dstport})),[
+      {proto:1,srcport:594,dstport:10400},
+      {proto:17,srcport:37233,dstport:161},
+    ]);
+    assert.ok(rows.every(row=>row.parser_err_stage===undefined),JSON.stringify(rows));
+  });
+
 test('Issue #232: integral JSON protocol numbers use browser/Ruby-equivalent exact predicates',
   {skip:!rubyAvailable},()=>{
     const p=sampleProject();

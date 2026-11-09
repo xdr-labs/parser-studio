@@ -48,5 +48,22 @@
     13,
     32
   ],
-  "notes": "Transport evidence is permitted only when a source record identifies a known L4 carrier. Unknown protocol evidence never authorizes automatic official port mapping. No-protocol logs retain existing source-specific review policy; raw bytes are never discarded."
+  "notes": "Transport evidence is permitted only when a source record identifies a known L4 carrier. Unknown protocol evidence never authorizes automatic official port mapping. No-protocol logs retain existing source-specific review policy; raw bytes are never discarded. Explicitly labeled source-port/destination-port fields are eligible for owner-requested integer mapping to srcport/dstport after range validation; on ICMP the numeric value may be a vendor identifier, not a transport port. Ambiguous alias names remain subject to protocol evidence. NAT/translated ancestor tokens are blocked across dot, underscore, hyphen and camelCase source path spellings before any explicit port identity approval.",
+  "explicitPortSourceAliases": {
+    "source-port": "srcport",
+    "destination-port": "dstport"
+  },
+  "excludedPortSourceSegments": [
+    "nat",
+    "translation",
+    "translated",
+    "postnat",
+    "pre-nat",
+    "post-nat",
+    "prenat",
+    "dnat",
+    "snat",
+    "natted",
+    "network-address-translation"
+  ]
 }

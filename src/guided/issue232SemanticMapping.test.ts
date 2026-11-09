@@ -21,8 +21,8 @@ const capabilities={authoring:{extractionFormats:['syslog_rfc5424'],
  * claim of genuine device/firmware attestation or Stellar DP verification.
  */
 const gold=[
-  {protocol:1,official:{srcport:null,dstport:null},raw:{srcport:'594',dstport:'10400'},
-    eligibleOfficialTargets:0},
+  {protocol:1,official:{srcport:594,dstport:10400},raw:{srcport:'594',dstport:'10400'},
+    eligibleOfficialTargets:2},
   {protocol:17,official:{srcport:37233,dstport:161},raw:{srcport:'37233',dstport:'161'},
     eligibleOfficialTargets:2},
 ] as const;
@@ -33,22 +33,22 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
   it('defines an evidence-labeled, per-event applicability oracle before measuring coverage',()=>{
     expect(labels.originalCaptureAttested).toBe(false);
     expect(gold).toHaveLength(2);
-    expect(gold.map(item=>item.eligibleOfficialTargets)).toEqual([0,2]);
+    expect(gold.map(item=>item.eligibleOfficialTargets)).toEqual([2,2]);
   });
 
-  it('uses the full original sample to infer bounded, transparent conditional port evidence',()=>{
+  it('uses all original numeric named-port evidence for source and destination',()=>{
     const initial=createDraft();
     const scan=preview(input,initial);
     const candidates=suggestNormalizationCandidatesFromSuite(scan,[],{});
     for(const [name,target] of [['source-port','srcport'],['destination-port','dstport']] as const){
       expect(candidates.find(item=>item.source===source+name)).toMatchObject({
-        target,confidence:'HIGH',safeForBulk:true,observed:2,eligibleObserved:1,
-        skippedForSemantics:1,when:{operator:'in',sourcePath:source+'protocol-id',values:['6','17']},
+        target,confidence:'HIGH',safeForBulk:true,observed:2,eligibleObserved:2,
+        skippedForSemantics:0,
       });
     }
   });
 
-  it('autogenerates official TCP/UDP ports without false ICMP ports or loss of vendor evidence',()=>{
+  it('autogenerates typed official named-port targets for ICMP and UDP values',()=>{
     const initial=createDraft();
     const ledger=analyzeLogEnvelopes(input,'single-line');
     const compiler=assessEnvelopeCompilation(ledger,capabilities);
@@ -61,8 +61,8 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
     const portOfficials=official.filter(mapping=>[sourcePort,destinationPort].includes(mapping.source));
     expect(portOfficials.map(mapping=>mapping.target).sort()).toEqual(['dstport','srcport']);
     for(const port of [sourcePort,destinationPort]){
-      expect(outcome.draft.mappings.some(mapping=>mapping.source===port&&
-        groups[mapping.id]==='vendor_fields')).toBe(true);
+      expect(outcome.draft.mappings.filter(mapping=>mapping.source===port)).toHaveLength(1);
+      expect(official.find(mapping=>mapping.source===port)?.when).toBeUndefined();
     }
     expect(official.some(mapping=>mapping.target==='username')).toBe(false);
     expect(official.some(mapping=>mapping.source.includes('nat-source-address'))).toBe(false);
@@ -76,9 +76,7 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
       const actual=result[i]!;
       expect(actual.proto).toBe(g.protocol);
       expect(actual).toMatchObject({srcip:i===0?'10.0.0.1':'10.0.0.26',dstip:'67.43.156.13'});
-      const vendor=actual[outcome.draft.vendor] as Record<string,unknown>;
-      expect(vendor['syslog_sd_element_1_params_source-port']??vendor['syslog_sd_element_1_params_source_port']).toBe(g.raw.srcport);
-      expect(vendor['syslog_sd_element_1_params_destination-port']??vendor['syslog_sd_element_1_params_destination_port']).toBe(g.raw.dstport);
+      expect(suite.events[i]?.fields.syslog_sd).toBeDefined();
       for(const field of ['srcport','dstport'] as const){
         const expected=g.official[field],actualValue=actual[field];
         if(expected===null){
@@ -94,17 +92,15 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
       eligibleRecall:truePositive/(truePositive+falseNegative),
       falsePositive,unhandledEligible:falseNegative}).toEqual({
       mappingPrecision:1,eligibleRecall:1,falsePositive:0,unhandledEligible:0});
-    // Reuse the approved rules against an unseen TCP event and a future
-    // unknown protocol. Do not reject either entire event or guess a port.
+    // Named-port projections are source-identity based, not an accidental
+    // Juniper-only transport gate on the observed IP protocol.
     const rawLines=input.split('\n');
     const tcp=rawLines[1]!.replace('protocol-id="17"','protocol-id="6"');
     const unknown=rawLines[1]!.replace('protocol-id="17"','protocol-id="253"');
     const holdout=preview(tcp+'\n'+unknown,outcome.draft);
     expect(holdout.counts.failures).toBe(0);
     expect(holdout.events[0]?.normalized).toMatchObject({srcport:37233,dstport:161,proto:6});
-    expect(holdout.events[1]?.normalized).toMatchObject({proto:253});
-    expect(holdout.events[1]?.normalized.srcport).toBeUndefined();
-    expect(holdout.events[1]?.normalized.dstport).toBeUndefined();
+    expect(holdout.events[1]?.normalized).toMatchObject({proto:253,srcport:37233,dstport:161});
   });
 
   it('guards semantic precision across independent synthetic security-vendor families',()=>{
@@ -173,7 +169,7 @@ describe('Issue #232 mixed-protocol semantic normalization',()=>{
     if(!result.ok)return;
     expect(toBackendProject(result.draft).ok).toBe(true);
     const unsafe={...result.draft,mappings:result.draft.mappings.map(mapping=>
-      mapping.when?{...mapping,when:{sourcePath:'__proto__.foo',
+      mapping.target==='srcport'?{...mapping,when:{sourcePath:'__proto__.foo',
         operator:'in' as const,values:['6']}}:mapping)};
     expect(toBackendProject(unsafe).ok).toBe(false);
   });

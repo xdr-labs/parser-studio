@@ -14,6 +14,11 @@ export interface MappingWhen {
   values:string[];
 }
 export interface MappingRule {
+  /** v1 authoring provenance: never infer manual intent from an ID or field spelling.
+   * Absence on a legacy draft means unknown and is never eligible for rewrites.
+   * This metadata is excluded from the generated Stellar target mapping.
+   */
+  authoring?:{version:1;origin:'AUTO'|'USER_EDITED'|'APPROVED'|'REVIEW_REQUIRED'};
   /** Bounded per-event applicability. Nonmatching events preserve other mappings. */
   when?:MappingWhen;
   id: string;
@@ -123,9 +128,12 @@ export function createDraft(): ParserDraft {
     syslogBodyFormat: 'raw',
     guided: defaultGuidedOptions(),
     mappings: [
-      { id: 'source-ip', source: 'src_ip', target: 'custom.source_ip', type: 'ip' },
-      { id: 'target-port', source: 'dst_port', target: 'custom.destination_port', type: 'port' },
-      { id: 'action', source: 'action', target: 'custom.action', type: 'string' },
+      { id: 'source-ip', source: 'src_ip', target: 'custom.source_ip', type: 'ip',
+        authoring:{version:1,origin:'AUTO'} },
+      { id: 'target-port', source: 'dst_port', target: 'custom.destination_port', type: 'port',
+        authoring:{version:1,origin:'AUTO'} },
+      { id: 'action', source: 'action', target: 'custom.action', type: 'string',
+        authoring:{version:1,origin:'AUTO'} },
     ],
   };
 }

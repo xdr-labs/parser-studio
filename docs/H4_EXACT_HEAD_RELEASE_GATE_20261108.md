@@ -14,6 +14,7 @@ python3 scripts/verification/h4_exact_head_release_gate.py \
   --repo xdr-labs/parser-studio \
   --pr <reviewed-main-target-pr> \
   --run-id <that-pr-exact-head-pull-request-actions-run-id> \
+  --work-issue 283 \
   --sha <full-forty-character-reviewed-head-sha>
 ```
 
@@ -51,3 +52,13 @@ The development-preview rollout requires a separate staged candidate build
 and checked hashes, original service/config backup, loopback health preflight,
 atomic code promotion, a site-specific first-user Chromium acceptance test
 and rollback verification. The merge gate itself **does not deploy**.
+
+### Mapping Correctness v2 owner-reviewed work packet
+
+The H4 operator command now requires `--work-issue` to identify the current
+ACTIVE engineering work packet. It rejects an open packet, unchecked `- [ ]`
+acceptance items, and any open repository issues labeled `P0` or `P1`
+(including incomplete GitHub search results). This is an **operator check**,
+not GitHub branch protection. An all-green CI run with an incomplete Mapping
+Correctness v2 Issue #283 is deliberately **not release-eligible**. Verify the
+exact PR and SHA again before a separately authorized merge or deployment.

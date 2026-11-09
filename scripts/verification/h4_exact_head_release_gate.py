@@ -11,6 +11,7 @@ import argparse
 import json
 import re
 import subprocess
+from urllib.parse import quote
 
 REPO = "xdr-labs/parser-studio"
 SHA = re.compile(r"[a-f0-9]{40}\Z")
@@ -56,6 +57,19 @@ def validate_release_evidence(run: dict, jobs: dict, artifacts: dict,
         raise ValueError("H4_NATIVE_ARTIFACTS")
 
 
+def validate_work_packet(work: dict, blockers: list[dict]) -> None:
+    """Do not convert successful CI into owner release authorization."""
+    body = work.get('body')
+    if (work.get('state') != 'closed' or not isinstance(body, str) or
+            not body.strip() or re.search(r'(?mi)^\s*-\s*\[\s\]', body)):
+        raise ValueError('H4_ACTIVE_WORK_PACKET_INCOMPLETE')
+    for result in blockers:
+        if (not isinstance(result.get('total_count'), int) or
+                result['total_count'] != 0 or
+                result.get('incomplete_results') is True):
+            raise ValueError('H4_OPEN_P0_P1')
+
+
 def fetch(endpoint: str) -> dict:
     result = subprocess.run(
         ["gh", "api", "--method", "GET", endpoint],
@@ -79,8 +93,11 @@ def main() -> int:
     parser.add_argument("--pr", required=True, type=int)
     parser.add_argument("--run-id", required=True, type=int)
     parser.add_argument("--sha", required=True)
+    parser.add_argument("--work-issue", required=True, type=int,
+                        help="Owner-reviewed, closed ACTIVE Work Packet")
     args = parser.parse_args()
-    if args.repo != REPO or args.pr < 1 or args.run_id < 1 or not SHA.fullmatch(args.sha):
+    if (args.repo != REPO or args.pr < 1 or args.run_id < 1 or
+            args.work_issue < 1 or not SHA.fullmatch(args.sha)):
         raise ValueError("H4_INVALID_SCOPE")
     root = f"repos/{REPO}"
     run = fetch(f"{root}/actions/runs/{args.run_id}")
@@ -88,8 +105,13 @@ def main() -> int:
     artifacts = fetch(f"{root}/actions/runs/{args.run_id}/artifacts?per_page=100")
     pr = fetch(f"{root}/pulls/{args.pr}")
     validate_release_evidence(run, jobs, artifacts, pr, expected_sha=args.sha)
+    work = fetch(f'{root}/issues/{args.work_issue}')
+    severity = [fetch('search/issues?q='+quote(
+        f'repo:{REPO} is:issue is:open label:{label}',safe=''))
+        for label in ('P0','P1')]
+    validate_work_packet(work, severity)
     print("H4_OWNER_RELEASE_GATE_PASS exact_head=" + args.sha +
-          " jobs=8 native_artifacts=2")
+          " jobs=8 native_artifacts=2 work_packet_closed=1 open_p0_p1=0")
     return 0
 
 

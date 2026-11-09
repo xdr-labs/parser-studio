@@ -22,6 +22,34 @@ describe('official candidate scan never samples only the first event family',()=
     expect(first.every(c=>c.confidence==='REVIEW'&&!c.safeForBulk)).toBe(true);
     expect(normalizationCandidateScanStatus(before).eligiblePaths).toBe(5);
   });
+  it('finds late official fields without hiding competing aliases after the authoring budget',()=>{
+    const vendor=Object.fromEntries(Array.from({length:99},(_,i)=>
+      ['vendor_'+i,'literal']));
+    const fields={src_ip:'192.0.2.1',...vendor,source_ip:'198.51.100.1'};
+    const status=normalizationCandidateScanStatus(suite([fields]));
+    expect(status).toMatchObject({eligiblePaths:2,exceeded:false,
+      sourceScanTruncated:false});
+    const recommendations=suggestNormalizationCandidatesFromSuite(suite([fields]),[]);
+    expect(recommendations.map(r=>r.source)).toEqual(['src_ip','source_ip']);
+    expect(recommendations.every(r=>r.target==='srcip'&&
+      r.confidence==='REVIEW'&&!r.safeForBulk)).toBe(true);
+    const reversed=Object.fromEntries(Object.entries(fields).reverse());
+    const backwards=suggestNormalizationCandidatesFromSuite(suite([reversed]),[]);
+    expect(backwards.map(r=>[r.source,r.confidence,r.safeForBulk]).sort())
+      .toEqual(recommendations.map(r=>[r.source,r.confidence,r.safeForBulk]).sort());
+  });
+  it('fails closed only after the independently bounded 1024-leaf source scan',()=>{
+    const safe=Object.fromEntries(Array.from({length:1024},(_,i)=>
+      ['node_'+i,{src_ip:'192.0.2.1'}]));
+    const eligible=normalizationCandidateScanStatus(suite([safe]));
+    expect(eligible).toMatchObject({eligiblePaths:1024,exceeded:false,
+      sourceScanTruncated:false});
+    const over={...safe,node_1024:{src_ip:'198.51.100.1'}};
+    expect(normalizationCandidateScanStatus(suite([over])))
+      .toMatchObject({exceeded:true,sourceScanTruncated:true,paths:[]});
+    expect(suggestNormalizationCandidatesFromSuite(suite([over]),[])).toEqual([]);
+  });
+
   it('refuses a partial result if the official candidate budget is exceeded',()=>{
     const events:Record<string,unknown>[]=[];
     for(let i=0;i<MAX_OFFICIAL_CANDIDATE_SCAN+1;i+=50){

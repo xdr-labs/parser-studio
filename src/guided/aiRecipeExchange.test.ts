@@ -194,10 +194,10 @@ describe('P1-AP6 explicit local AI exchange, fail-closed',()=>{
    const imported=await importReviewOnlyAIRecipe(JSON.stringify({...original.recipe,stages}),raw,base,baseSuite);
    return proposeV01EnrichmentFromAI(imported,raw,base,baseSuite);
   };
-  expect(await propose({op:'split_field',source:'generic.kv.user',delimiter:'@',targets:['custom.name','custom.domain']}))
-   .toMatchObject({ok:false,reason:'ENRICHMENT_SOURCE_VENDOR_ONLY',field:'generic.kv.user'});
-  expect(await propose({op:'merge_fields',sources:['action','generic.kv.user'],delimiter:'/',target:'custom.joined'}))
-   .toMatchObject({ok:false,reason:'ENRICHMENT_SOURCE_VENDOR_ONLY',field:'generic.kv.user'});
+  expect(await propose({op:'split_field',source:'user',delimiter:'@',targets:['custom.name','custom.domain']}))
+   .toMatchObject({ok:false,reason:'ENRICHMENT_SOURCE_VENDOR_ONLY',field:'user'});
+  expect(await propose({op:'merge_fields',sources:['action','user'],delimiter:'/',target:'custom.joined'}))
+   .toMatchObject({ok:false,reason:'ENRICHMENT_SOURCE_VENDOR_ONLY',field:'user'});
   expect(await propose({op:'split_field',source:'action',delimiter:'o',targets:['custom.first','custom.rest']}))
    .toMatchObject({ok:true,operator:'split_field'});
   expect(describeEnrichmentDenial('ENRICHMENT_SOURCE_VENDOR_ONLY','generic.kv.user'))

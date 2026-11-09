@@ -39,7 +39,8 @@ import { reviewLocalProjectJson, MAX_PROJECT_JSON_BYTES } from './localProjectIm
 import { backendIssueTarget } from './backendIssueGuide';
 import { fetchBackendSchemaGuide, type BackendSchemaGuide } from './backendSchemaGuide';
 import { starterTemplateIds, starterTemplateInfo, loadStarterTemplate, type StarterTemplateId } from './sampleTemplates';
-import { suggestUnmappedFields } from './fieldMappingSuggestions';
+import { suggestUnmappedFieldPlan } from './fieldMappingSuggestions';
+import {vendorFieldNames} from './vendorFieldNames';
 import { validateBackendProject, generateBackendPair, type BackendValidationResult, type GeneratedPair } from './backendClient';
 import { highlightPreview, matchContext } from './fieldHighlights';
 import { summarizeFamilyCoverage } from './familyCoverage';
@@ -362,9 +363,10 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       ? highlightPreview(suite.events, proposal)
       : null
   ), [acceptedResult, proposal, suite]);
-  const unmappedSuggestions = useMemo(() => suggestUnmappedFields(
+  const unmappedFieldPlan = useMemo(() => suggestUnmappedFieldPlan(
     (suite?.events ?? []).map(event => event.fields), draft,
   ), [suite?.events, draft]);
+  const unmappedSuggestions=unmappedFieldPlan.suggestions;
   const familyCoverage = useMemo(
     () => summarizeFamilyCoverage(suite?.events ?? [], draft.format),
     [suite?.events, draft.format],
@@ -896,7 +898,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
     const exists = draft.mappings.some((rule) => rule.source === source);
     const mapping: MappingRule = {
       id: crypto.randomUUID(),
-      source, target: 'custom.' + source,
+      authoring:{version:1,origin:'USER_EDITED'},
+      source, target: vendorFieldNames([source],draft.mappings.map(m=>m.target)).get(source)??'',
       type: /(^|_)ip$/i.test(source) ? 'ip' : /port/i.test(source) ? 'port' : 'string',
     };
     setDraft((old) => ({
@@ -934,6 +937,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
       return {...old,
         mappings:[...old.mappings,{
           id,source:suggestion.source,target:suggestion.target,type:suggestion.type,
+          authoring:{version:1,origin:'APPROVED'},
         }],
         guided:{...options,groups:{...options.groups,[id]:suggestion.group}},
       };
@@ -946,7 +950,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const addMapping = (source = '') => {
     const next: MappingRule = {
       id: crypto.randomUUID(), source,
-      target: source ? 'custom.' + source.replace(/[^\w]+/g, '_') : '',
+      target: source ? vendorFieldNames([source],draft.mappings.map(m=>m.target)).get(source)??'' : '',
       type: source.endsWith('ip') ? 'ip' : source.includes('port') ? 'port' : 'string',
     };
     setDraft((old) => ({ ...old, mappings: [...old.mappings, next] }));
@@ -959,7 +963,7 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
         if(rule.id!==id)return rule;
         // Advanced edits also invalidate previously reviewed applicability.
         const {when:_oldWhen,...rest}=rule;
-        return {...rest,[key]:value};
+        return {...rest,[key]:value,authoring:{version:1,origin:'USER_EDITED'}};
       }),
     }));
 
@@ -979,7 +983,8 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
   const applyUnmappedSuggestions = () => {
     if (!unmappedSuggestions.length) return;
     const additions = unmappedSuggestions.map(({ source, target, type, group }) => ({
-      rule: { id: crypto.randomUUID(), source, target, type } satisfies MappingRule,
+      rule: { id: crypto.randomUUID(), source, target, type,
+        authoring:{version:1 as const,origin:'APPROVED' as const} } satisfies MappingRule,
       group,
     }));
     setDraft((old) => {
@@ -1619,6 +1624,13 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <datalist id="guided-field-suggestions">{activeFieldNames.map((name) => <option value={name} key={name} />)}</datalist>
             <div className="guided-inline-actions"><button type="button" className="guided-cta-secondary" onClick={() => addMapping()}><Plus size={15} /> Add Field Mapping</button>
               {activeFieldNames.some((field) => !draft.mappings.some((mapping) => mapping.source === field)) && <button className="guided-link" type="button" onClick={() => { const first = activeFieldNames.find((field) => !draft.mappings.some((mapping) => mapping.source === field)); if (first) addMapping(first); }}><WandSparkles size={15} /> Suggest Another Unmapped Field</button>}
+              {(unmappedFieldPlan.unresolved.length>0||unmappedFieldPlan.unaddressableValues>0)&&
+                <p role="alert" className="guided-error">
+                Mapping review required: {unmappedFieldPlan.unresolved.length} safe extracted field path(s)
+                could not be automatically assigned within the mapping budget or without collisions,
+                and {unmappedFieldPlan.unaddressableValues} source value(s) are outside the compiler schema.
+                No field was silently renamed, omitted, or auto-approved.
+              </p>}
               <button className="guided-cta-secondary" type="button" disabled={!unmappedSuggestions.length} onClick={applyUnmappedSuggestions}>
                 <WandSparkles size={15} /> Add Remaining Safe Fields ({unmappedSuggestions.length})
               </button></div>

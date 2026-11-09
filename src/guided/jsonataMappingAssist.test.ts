@@ -115,7 +115,7 @@ describe('review-only JSONata source selector mapping',()=>{
   }]);
   expect(attempt).toMatchObject({ok:false});
  });
- it('accepts a reviewed Juniper selector with a locally attested TCP/UDP-only mapping',async()=>{
+ it('accepts a documented named-port selector with validated numeric ICMP and UDP data',async()=>{
   const original=readFileSync(resolve('tests/fixtures/docs-practice-20261104/01-juniper-srx.log'),'utf8').trimEnd();
   const base=createDraft();
   const source='syslog_sd.element_1.params.source-port';
@@ -130,22 +130,22 @@ describe('review-only JSONata source selector mapping',()=>{
   ]),suite,draft,sha256);
   expect(reviewed.ok).toBe(true);
   if(!reviewed.ok)return;
-  expect(reviewed.rows).toMatchObject([{status:'CHECK_FIRST',observed:1,total:2,
-    when:{sourcePath:'syslog_sd.element_1.params.protocol-id',
-      operator:'in',values:['6','17']}}]);
-  // The model is never trusted to supply or alter the executable condition.
-  const forged={...reviewed.rows[0]!,when:{...reviewed.rows[0]!.when!,values:['1']}};
+  expect(reviewed.rows).toMatchObject([{status:'READY',observed:2,total:2}]);
+  expect(reviewed.rows[0]?.when).toBeUndefined();
+  // Models cannot forge a conditional expression for an unconditional rule.
+  const forged={...reviewed.rows[0]!,when:{sourcePath:'syslog_sd.element_1.params.protocol-id',
+    operator:'in' as const,values:['1']}};
   expect(applyReviewedJsonataMapping(draft,suite,[forged])).toMatchObject({ok:false});
   const applied=applyReviewedJsonataMapping(draft,suite,reviewed.rows);
   expect(applied.ok,applied.ok?"":applied.reason).toBe(true);
   if(!applied.ok)return;
-  expect(applied.draft.mappings.filter(m=>m.source===source)).toHaveLength(2);
+  expect(applied.draft.mappings.filter(m=>m.source===source)).toHaveLength(1);
   expect(toBackendProject(applied.draft)).toMatchObject({ok:true});
   const output=preview(original,applied.draft);
   expect(output.counts.failures).toBe(0);
-  expect(output.events[0]?.normalized.srcport).toBeUndefined();
+  expect(output.events[0]?.normalized.srcport).toBe(594);
   expect(output.events[1]?.normalized.srcport).toBe(37233);
-  expect((output.events[0]?.normalized[draft.vendor] as Record<string,unknown>).original_source_port).toBe('594');
+  expect(output.events[0]?.fields.syslog_sd).toBeDefined();
  });
  it('blocks PAN-OS event type as a Windows-agent Stellar type',async()=>{
   const base=createDraft();

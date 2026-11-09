@@ -65,3 +65,55 @@ Header fields: `syslog_timestamp → timestamp` and `syslog_hostname → hostnam
 
 - `RT_FLOW_SESSION_CREATE` / `DENY` in `syslog_msgid` could drive event-class or action mapping, but assigning a constant/conditional `action` is **not** equivalent to relabeling the full message ID. It would require a separate, explicit, tested event-value transform.
 - An E2E test with the user's full original **41-field raw sample** is necessary to assert exact counts and per-field semantics for that exact dataset. The screenshots alone only establish visible rows and summary metrics.
+
+## 2026-11-09 vendor-local destination naming correction
+
+The prior automatic fallback flattened source path dots and the mapping review
+could show the manufacturer-qualified output path as if it were a destination
+field name. These are distinct concepts. The original extracted source path
+remains unchanged, and vendor-only destination names now prefer the final,
+unchanged path segment:
+
+- Source `syslog_sd.element_1.params.source-port` → destination `source-port`.
+- Source `syslog_sd.element_1.params.destination-port` → destination `destination-port`.
+- Source `syslog_sd.element_1.params.service-name` → destination `service-name`.
+- If multiple sources would use the same leaf name, keep each safe original
+  source path, e.g. `syslog_sd.element_1.params.source-port`.
+- Do not prepend the manufacturer to the destination input or field-change
+  preview; the native serializer still groups vendor-only keys inside the
+  manufacturer object as required by its output contract.
+- Official Stellar dictionary mappings (e.g. `srcip`, `dstip`, `proto`) remain
+  authoritative when supported by the source semantics and values.
+- Only untouched auto-generated legacy fallback names are migrated; user
+  edits and official mappings are preserved.
+
+Deterministic regression coverage: `vendorFieldNames.test.ts`,
+`NormalizationMappingReview.test.tsx`, `issue232SemanticMapping.test.ts`, and
+Chromium `tests/juniper-sd-field-normalization-20261104.spec.ts`.
+
+## 2026-11-09 shared named-port mapping policy
+
+**Supersedes the earlier TCP/UDP-only Juniper mapping behavior.** The verified
+Stellar 7.0 targets `srcport` and `dstport` accept integer values from
+explicit source key names `source-port` and `destination-port` under the
+owner-approved normalization contract. The literal source path remains
+unchanged. No manufacturer-specific parser or path exception is needed.
+
+The authoritative rule is `explicitPortSourceAliases` in the versioned
+`runtime/multipass/semantic-policy.v1.json`. The browser suggestion engine,
+reviewed JSONata proposals, Python Multi-Pass normalization, browser
+projection validation, and re-evaluation of untouched auto-generated mapping
+drafts consume this same policy. Unambiguous source names carry stronger
+identity evidence than shortened aliases such as `sport` and `dport`.
+
+The sample ICMP `source-port=594` and `destination-port=10400` now emit
+`srcport=594` and `dstport=10400` as integers. This owner-directed field
+mapping does **not** prove ICMP has real TCP/UDP ports: consumers must examine
+`proto=1` before applying L4-only analytics. Invalid values, collisions,
+NAT-prefixed source keys, translated-path descendants, and ambiguous abbreviated names are not promoted
+without evidence. Existing user-entered field names are preserved.
+
+Both JavaScript and Python engines are covered by the same independent
+cross-engine conformance corpus (`explicitPortAliasEvidence`), including ICMP,
+UDP, TCP, unknown protocol, and invalid range fixtures. A matching browser
+preview is not by itself native Fluentd or Stellar DP import verification.

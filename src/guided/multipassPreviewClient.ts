@@ -1,5 +1,6 @@
 import {sha256Utf8Hex} from '../sha256';
 import {isUtf8ByteBoundary} from './sourceByteSelection';
+import {explicitPortSourceAlias} from './sourcePortPolicy';
 
 const DICTIONARY_REVISION='stellar-standard-metadata-7.0.xs-2026-10-14';
 const DICTIONARY_URLS=[
@@ -28,7 +29,7 @@ export interface MultiPassDictionaryProjection {
  dictionaryRevision:string;
  sourceUrls:string[];
  mapped:Array<{sourcePath:string;targetField:string;documentedType:string;
-  mappingClass:'EXACT_DICTIONARY_NAME'|'CEF_STANDARD_ALIAS';startByte:number;endByte:number}>;
+  mappingClass:'EXACT_DICTIONARY_NAME'|'CEF_STANDARD_ALIAS'|'EXPLICIT_SOURCE_ALIAS';startByte:number;endByte:number}>;
  unmappedCount:number;issues:string[];
  automaticAliasInference:false;standardizedAliasMapping:true;sourceExtractionPreserved:true;
  nativeVerified:false;targetVerified:false;
@@ -58,6 +59,9 @@ export interface MultiPassBatchPreview {
 function mappingMatchesContract(sourcePath:string,targetField:string,mappingClass:string):boolean{
  if(mappingClass==='EXACT_DICTIONARY_NAME')
   return sourcePath===targetField||sourcePath===`body.${targetField}`;
+ if(mappingClass==='EXPLICIT_SOURCE_ALIAS'){
+  return explicitPortSourceAlias(sourcePath,targetField);
+ }
  if(mappingClass==='CEF_STANDARD_ALIAS'){
   for(const prefix of ['cef_extension.','body.cef_extension.']){
    if(sourcePath.startsWith(prefix))
@@ -89,7 +93,8 @@ function verifyDictionary(raw:unknown,spans:MultiPassSourcePreview['spans'],size
    typeof item.sourcePath!=='string'||!SOURCE_PATH.test(item.sourcePath)||
    typeof item.targetField!=='string'||!TARGET_PATH.test(item.targetField)||
    !DICTIONARY_TYPES.has(item.documentedType)||
-   !['EXACT_DICTIONARY_NAME','CEF_STANDARD_ALIAS'].includes(item.mappingClass)||
+   !['EXACT_DICTIONARY_NAME','CEF_STANDARD_ALIAS','EXPLICIT_SOURCE_ALIAS'].includes(item.mappingClass)||
+   (item.mappingClass==='EXPLICIT_SOURCE_ALIAS'&&item.documentedType!=='integer')||
    !mappingMatchesContract(item.sourcePath,item.targetField,item.mappingClass)||
    !Number.isSafeInteger(item.startByte)||!Number.isSafeInteger(item.endByte)||
    item.startByte<0||item.endByte>size||item.startByte>item.endByte||

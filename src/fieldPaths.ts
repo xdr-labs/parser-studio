@@ -50,7 +50,10 @@ export function hasAmbiguousSourceFields(fields:Record<string,unknown>):boolean{
 }
 
 export function listSafeLeafPaths(
-  fields: Record<string, unknown>, limit: 100 | 101 = MAX_FIELDS,
+  // 1025 is reserved for exhaustive official-candidate reconnaissance
+  // (1024 safe paths plus a fail-closed overflow sentinel). Authoring
+  // remains capped at its existing 100/101 paths.
+  fields: Record<string, unknown>, limit: 100 | 101 | 1025 = MAX_FIELDS,
 ): string[] {
   const results: string[] = [];
   const seen = new Set<string>();
