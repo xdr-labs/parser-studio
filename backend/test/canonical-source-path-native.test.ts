@@ -23,6 +23,40 @@ const generatedPair=compilePair(sampleProject());
 const generatedRuby=generatedPair.files.find(file=>!file.name.endsWith('.conf'));
 assert.ok(generatedRuby,'generated Ruby artifact missing');
 const generatedMethod=method(generatedRuby.content);
+// The target td-agent bundles Ruby 2.4, which rejects an endless range `start..`.
+// Pin the generated native source, not just the independently parsed template.
+test('generated canonical JSON number serialization is Ruby 2.4 syntax compatible',()=>{
+  const canonical=source('canonical-operators.rb.tpl');
+  assert.ok(canonical.includes('digits[position..-1]'));
+  assert.ok(!canonical.includes('digits[position..]'));
+  assert.ok(generatedRuby.content.includes('digits[position..-1]'));
+  assert.ok(!generatedRuby.content.includes('digits[position..]'));
+});
+
+test('generated native parser yields MessagePack-compatible Fluent EventTime when available',()=>{
+  const method=generatedRuby.content.match(/^def parserstudio_event_time\(normalized\)\n[\s\S]*?^end$/m)?.[0];
+  assert.ok(method,'generated event-time method missing');
+  assert.ok(method.includes('Fluent::EventTime.new('));
+  const ruby=spawnSync('ruby',['-v'],{encoding:'utf8'});
+  if(ruby.status!==0)return; // The mandatory CI native gate enforces Ruby availability.
+  const runner=[
+    "require 'json'",
+    "module Fluent; class EventTime",
+    "attr_reader :sec, :nsec",
+    "def initialize(sec, nsec); @sec=sec; @nsec=nsec; end",
+    "end; end",
+    method,
+    "values=[1794195784482, -1, 0].map{|ts| parserstudio_event_time({'timestamp'=>ts})}",
+    "raise 'wrong type' unless values.all?{|v| v.is_a?(Fluent::EventTime)}",
+    "puts JSON.generate(values.map{|v|[v.sec,v.nsec]})",
+  ].join('\n');
+  const out=spawnSync('ruby',['-e',runner],{encoding:'utf8',timeout:15000});
+  assert.equal(out.status,0,out.stderr||String(out.error));
+  assert.deepEqual(JSON.parse(out.stdout),[
+    [1794195784,482000000],[-1,999000000],[0,0],
+  ]);
+});
+
 const ruby=spawnSync('ruby',['-v'],{encoding:'utf8'});
 const required=process.env.PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED==='1';
 

@@ -139,7 +139,7 @@ def parserstudio_json_number(value)
       elsif position >= digits.length
         digits + '0' * (position - digits.length)
       else
-        digits[0...position] + '.' + digits[position..]
+        digits[0...position] + '.' + digits[position..-1]
       end
       return match[1] + expanded.sub(/(\.\d*?)0+\z/, '\\1').sub(/\.\z/, '')
     end
@@ -507,5 +507,11 @@ end
 def parserstudio_event_time(normalized)
   timestamp = normalized['timestamp']
   return nil unless timestamp.is_a?(Integer)
+  # Fluentd's buffered outputs require EventTime (or Integer), not Ruby Time.
+  # Keep the standalone native-runner path independent of Fluentd dependencies.
+  if defined?(Fluent::EventTime)
+    seconds, milliseconds = timestamp.divmod(1000)
+    return Fluent::EventTime.new(seconds, milliseconds * 1_000_000)
+  end
   Time.at(timestamp / 1000.0)
 end
