@@ -68,6 +68,16 @@ describe('Mapping Correctness v2 invariant-first executable contract',()=>{
     expect(result.unresolved).toEqual(['http.status']);
   });
 
+  it('accounts for all paths above the 100-field proposal budget without silently discarding them',()=>{
+    const draft=createDraft();draft.mappings=[];
+    const source=Object.fromEntries(Array.from({length:150},(_,i)=>[
+      'source_field_'+String(i).padStart(3,'0'),String(i)]));
+    const result=suggestUnmappedFieldPlan([source],draft);
+    expect(result.suggestions).toHaveLength(100);
+    expect(result.unresolved.length+result.suggestions.length+
+      result.unaddressableValues).toBeGreaterThanOrEqual(150);
+  });
+
   it('holds legacy unknown provenance unchanged after save/restore and reanalysis',()=>{
     const original=createDraft();
     original.format='json';
