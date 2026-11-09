@@ -106,8 +106,13 @@ export function prepareAutoParserDraft(
           return value!==undefined&&value!==null&&
             !(typeof value==='string'&&value.trim()==='');
         }));
-    if(fieldPlan.unresolved.length>0||fieldPlan.unaddressableValues>0)
-      return failed('MODEL_REVIEW_REQUIRED');
+    // Source values outside the normalized field-path grammar (for example,
+    // nested arrays and intentionally empty CSV cells) remain explicitly
+    // accounted for in the original source and review UI. They MUST NOT
+    // silently become mapped fields, but they need not block authoring a
+    // DRAFT for the independently addressable subset. Only an unresolved
+    // *safe* source-path assignment fails this stage closed.
+    if(fieldPlan.unresolved.length>0)return failed('MODEL_REVIEW_REQUIRED');
     if(suggestions.length===0)return failed('MODEL_REVIEW_REQUIRED');
     const mappings:MappingRule[]=suggestions.map((suggestion,i)=>{
       const rule:MappingRule={id:'auto-'+String(i+1),authoring:{version:1,origin:'AUTO'},source:suggestion.source,

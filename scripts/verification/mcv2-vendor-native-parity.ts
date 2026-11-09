@@ -57,7 +57,7 @@ for(const c of cases){
   if(!adapter.ok)throw Error('MCV2_NO_BACKEND');
   const pair=compilePair(adapter.project);
   assert.equal(pair.manifest.status,'DRAFT');
-  const ruby=pair.files.find(f=>f.name.endsWith('.rb'))?.content;
+  const ruby=pair.files.find(f=>!f.name.endsWith('.conf'))?.content;
   assert.ok(ruby,'Ruby generated from the current MappingPlan');
   const process=spawnSync('ruby',['-e',rubyRunner],{
     encoding:'utf8',timeout:15000,maxBuffer:2*1024*1024,

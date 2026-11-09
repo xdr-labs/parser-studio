@@ -91,6 +91,20 @@ release. Independent full-repository mutation sampling, every Stellar field
 family, and actual customer DP 7.0 import/runtime qualification remain
 separate unverified gates.
 
+### Exact-head integration regression correction
+
+Initial MCV2 CI revealed that treating every non-addressable source value as a
+fatal authoring error broke legitimate AWS WAF array-bearing and empty CSV
+cell inputs. The revised contract distinguishes **unresolved safe source
+paths** (block automatically generated DRAFT) from **unaddressable source
+values** (retain exactly in raw source, count explicitly in UI/plan, and do
+not falsely emit as scalar mappings). Independent unit and Chromium CSV/AWS
+WAF recovery checks are mandatory; the source parser's error ledger remains
+authoritative. The Ruby differential harness selects the actual generated
+non-`.conf` parser file from `compilePair` instead of assuming a `.rb` file
+suffix. These corrections are part of the acceptance gate, not a relaxation
+of no-silent-loss requirements.
+
 ## Scope and release safety
 
 Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.
