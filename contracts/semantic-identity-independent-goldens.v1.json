@@ -1,0 +1,50 @@
+{
+  "contract": "parser-studio.semantic-identity-independent-goldens.v1",
+  "oracleOrigin": "INDEPENDENTLY_AUTHORED_EXPECTED_TARGETS",
+  "notDerivedFrom": ["semantic-policy.v1.json", "normalizationCandidates.ts", "mapping-suggestions.ts"],
+  "scope": "synthetic reviewed source identities, not vendor-wide semantic certification",
+  "cases": [
+    {"id":"source-ip","source":"src_ip","value":"192.0.2.10","target":"srcip","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"destination-ip","source":"dst_ip","value":"198.51.100.12","target":"dstip","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"source-address","source":"source.ip","value":"192.0.2.11","target":"srcip","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"destination-address","source":"destination.ip","value":"198.51.100.13","target":"dstip","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"literal-source-port","source":"source-port","value":"594","target":"srcport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"literal-dest-port","source":"destination-port","value":"10400","target":"dstport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"official-source-port","source":"srcport","value":"37233","target":"srcport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"official-dest-port","source":"dstport","value":"161","target":"dstport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"nested-sd-source","source":"syslog_sd.element_1.params.source-port","value":"594","target":"srcport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"nested-sd-destination","source":"syslog_sd.element_1.params.destination-port","value":"10400","target":"dstport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"ordinary-non-nat-prefix","source":"national.source-port","value":"594","target":"srcport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"action-allow","source":"action","value":"allow","target":"action","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"action-detection-unverified","source":"action","value":"Detection","target":null,"hint":"REVIEW_REQUIRED","safeForBulk":false},
+    {"id":"username-identity","source":"username","value":"alice","target":"username","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"url-identity","source":"url","value":"https://example.test/path","target":"url","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"invalid-source-port-range","source":"source-port","value":"65536","target":"srcport","confidence":"REVIEW","hint":"REVIEW_REQUIRED","safeForBulk":false},
+    {"id":"invalid-source-ip-value","source":"src_ip","value":"not-an-ip","target":"srcip","confidence":"REVIEW","hint":"REVIEW_REQUIRED","safeForBulk":false},
+    {"id":"ambiguous-abbreviated-port-on-icmp","source":"source_port","value":"594","context":{"proto_name":"icmp"},"target":"srcport","confidence":"REVIEW","hint":"REVIEW_REQUIRED","safeForBulk":false},
+    {"id":"explicit-port-on-icmp","source":"source-port","value":"594","context":{"proto_name":"icmp"},"target":"srcport","confidence":"HIGH","hint":"REVIEW_REQUIRED","safeForBulk":true},
+    {"id":"nat-ancestor","source":"nat.source-port","value":"45000","target":null,"hint":null,"safeForBulk":false},
+    {"id":"post-nat-ancestor","source":"post_nat.source-port","value":"45001","target":null,"hint":null,"safeForBulk":false},
+    {"id":"translated-ancestor","source":"translated.destination-port","value":"8443","target":null,"hint":null,"safeForBulk":false},
+    {"id":"nested-nat-ancestor","source":"syslog_sd.nat.source-port","value":"45000","target":null,"hint":null,"safeForBulk":false},
+    {"id":"pre-nat-ancestor","source":"syslog_sd.pre-nat.source-port","value":"45000","target":null,"hint":null,"safeForBulk":false},
+    {"id":"occupied-dest-child","source":"src_ip","value":"192.0.2.1","existingDestinations":["srcip.vendor"],"target":null,"hint":"DESTINATION_CONFLICT","hintTarget":"srcip","safeForBulk":false},
+    {"id":"occupied-dest-exact","source":"src_ip","value":"192.0.2.1","existingDestinations":["srcip"],"target":null,"hint":"EXISTING_MAPPING","hintTarget":"srcip","safeForBulk":false}
+  ],
+  "competingSources": {
+    "sources": ["src_ip", "source.ip"],
+    "expectedTarget": "srcip",
+    "expectedBrowserConfidence": "REVIEW",
+    "expectedSafeForBulk": false,
+    "expectedBackendStatus": "DESTINATION_CONFLICT"
+  },
+  "sparseEvent": {
+    "source": "src_ip",
+    "valueFirst": "192.0.2.8",
+    "expectedTarget": "srcip",
+    "expectedBrowserConfidence": "REVIEW",
+    "expectedSafeForBulk": false,
+    "expectedBackendStatus": "REVIEW_REQUIRED"
+  },
+  "targetIndexedProof": false
+}

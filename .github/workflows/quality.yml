@@ -43,9 +43,17 @@ jobs:
   # customer events, credentials, host filesystem mounts or DP traffic.
   native-isolated-synthetic:
     runs-on: ubuntu-latest
+    env:
+      PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Assert exact PR source commit, not temporary merge ref
+        run: |
+          test "$(git rev-parse HEAD)" = "$PARSER_STUDIO_EXPECTED_SOURCE_HEAD"
+          echo "EXACT_SOURCE_HEAD_PASS=$(git rev-parse HEAD)"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -56,6 +64,16 @@ jobs:
         run: bash scripts/verification/h2-ci-isolated-runner.sh
       - name: Mandatory Ruby 2.4.9 target versus Ruby 3.2.11 synthetic Regex parity
         run: bash scripts/verification/ruby24-regex-container-gate.sh
+      - name: Verify Native-job synthetic parser and ZIP lineage
+        run: |
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-native.json"
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/parser-studio-lineage-native.json");if(r.worktreeDirty||r.sourceHead!==process.env.PARSER_STUDIO_EXPECTED_SOURCE_HEAD||!r.reproducibleWithinBuild||r.stellarTargetImportVerified||r.indexedEventVerified)process.exit(1)'
+      - name: Upload Native synthetic artifact lineage receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-artifact-lineage-native
+          path: ${{ runner.temp }}/parser-studio-lineage-native.json
+          if-no-files-found: error
       - name: Upload sanitized H2 isolated Native receipt
         uses: actions/upload-artifact@v4
         with:
@@ -65,12 +83,20 @@ jobs:
 
   web-quality:
     runs-on: ubuntu-latest
+    env:
+      PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     # Includes native/backend quality plus the full first-user browser matrix.
     # Chromium apt/runtime downloads can consume most of an 18-minute job limit
     # on uncached GitHub runners; preserve all tests rather than cancelling them.
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Assert exact PR source commit, not temporary merge ref
+        run: |
+          test "$(git rev-parse HEAD)" = "$PARSER_STUDIO_EXPECTED_SOURCE_HEAD"
+          echo "EXACT_SOURCE_HEAD_PASS=$(git rev-parse HEAD)"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -79,6 +105,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Executable consumer, policy and runtime contract guard
         run: node scripts/verification/executable-contract-gate.mjs
+      - name: Shipping backend source reachability and legacy-only API exclusion
+        run: node scripts/verification/shipping-entrypoint-reachability.mjs
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants
@@ -127,6 +155,18 @@ jobs:
           PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 npm run test:authoring --prefix backend
       - name: Cross-consumer mapping identity, NAT and collision differential
         run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
+      - name: Independently authored source-to-Stellar semantic oracle
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/independent-semantic-identity-oracle.ts
+      - name: Verify Web-job synthetic parser and ZIP lineage
+        run: |
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-web.json"
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/parser-studio-lineage-web.json");if(r.worktreeDirty||r.sourceHead!==process.env.PARSER_STUDIO_EXPECTED_SOURCE_HEAD||!r.reproducibleWithinBuild||r.stellarTargetImportVerified||r.indexedEventVerified)process.exit(1)'
+      - name: Upload Web synthetic artifact lineage receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-artifact-lineage-web
+          path: ${{ runner.temp }}/parser-studio-lineage-web.json
+          if-no-files-found: error
       - name: Canonical same-source authored Ruby conformance (mandatory native)
         run: |
           set -euo pipefail
@@ -172,7 +212,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5661'
           PARSER_STUDIO_TEST_PORT: '5660'
           PARSER_STUDIO_MULTIPASS_PORT: '5662'
@@ -202,7 +242,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5611'
           PARSER_STUDIO_TEST_PORT: '5610'
           PARSER_STUDIO_MULTIPASS_PORT: '5612'
@@ -220,7 +260,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5541'
           PARSER_STUDIO_TEST_PORT: '5540'
           PARSER_STUDIO_MULTIPASS_PORT: '5542'
@@ -236,7 +276,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5561'
           PARSER_STUDIO_TEST_PORT: '5560'
           PARSER_STUDIO_MULTIPASS_PORT: '5562'
@@ -253,7 +293,7 @@ jobs:
         env:
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5581'
           PARSER_STUDIO_TEST_PORT: '5580'
           PARSER_STUDIO_MULTIPASS_PORT: '5582'
@@ -270,7 +310,7 @@ jobs:
         env:
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5591'
           PARSER_STUDIO_TEST_PORT: '5590'
           PARSER_STUDIO_MULTIPASS_PORT: '5592'
@@ -287,7 +327,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5571'
           PARSER_STUDIO_TEST_PORT: '5570'
           PARSER_STUDIO_MULTIPASS_PORT: '5572'
@@ -311,7 +351,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5451'
           PARSER_STUDIO_TEST_PORT: '5450'
           PARSER_STUDIO_MULTIPASS_PORT: '5452'
@@ -355,7 +395,7 @@ jobs:
           PARSER_STUDIO_SCOPED_AUTHORING_E2E: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '5461'
           PARSER_STUDIO_TEST_PORT: '5460'
           PARSER_STUDIO_MULTIPASS_PORT: '5462'
@@ -405,6 +445,8 @@ jobs:
   browser-regression:
     name: Browser regression (shard ${{ matrix.shard }}/6)
     runs-on: ubuntu-latest
+    env:
+      PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     timeout-minutes: 18
     strategy:
       fail-fast: false
@@ -412,6 +454,8 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -421,7 +465,7 @@ jobs:
       - name: Compile same-exact-HEAD authoring backend
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          test "$(git rev-parse HEAD)" = "$PARSER_STUDIO_EXPECTED_SOURCE_HEAD"
           npm ci --prefix backend --no-audit --no-fund
           npm run build --prefix backend
       - name: Install Chromium
@@ -431,7 +475,7 @@ jobs:
           PARSER_STUDIO_LIVE_BACKEND: '1'
           PARSER_STUDIO_BROWSER_BACKEND: '1'
           PARSER_STUDIO_BACKEND_ROOT: backend
-          PARSER_STUDIO_BACKEND_HEAD: ${{ github.sha }}
+          PARSER_STUDIO_BACKEND_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           PARSER_STUDIO_BACKEND_PORT: '4191'
           PARSER_STUDIO_TEST_PORT: '5180'
           PARSER_STUDIO_TEST_MULTIPASS: '1'

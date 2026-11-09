@@ -53,7 +53,18 @@ function validateNativeProfiles(input){
 }
 validateCanonicalPolicy(policy);
 validateNativeProfiles(profiles);
+const shipping=json('contracts/shipping-surface.v1.json');
+assert.equal(shipping.contract,'parser-studio.shipping-surface.v1');
+assert.equal(shipping.legacyOnlyHttp.mainlineReachable,false);
+assert.ok(existsSync('scripts/verification/shipping-entrypoint-reachability.mjs'));
 assert.equal(matrix.contract,'parser-studio.executable-capability-matrix.v1');
+assert.equal(matrix.independentSemanticCaseCount,26);
+assert.ok(existsSync(matrix.independentSemanticOracle));
+assert.ok(existsSync(matrix.independentSemanticOracleTruth));
+const independent=json(matrix.independentSemanticOracleTruth);
+assert.equal(independent.oracleOrigin,'INDEPENDENTLY_AUTHORED_EXPECTED_TARGETS');
+assert.equal(independent.cases.length,matrix.independentSemanticCaseCount);
+assert.equal(independent.targetIndexedProof,false);
 assert.equal(matrix.independentRuntimeProof,false);
 assert.equal(matrix.stellar7IndexedProof,false);
 assert.deepEqual(
@@ -88,6 +99,9 @@ assert.match(text('runtime/multipass/stellar_dictionary.py'),
   /semantic-policy\.v1\.json/);
 assert.ok(existsSync('scripts/verification/mapping-hints-cross-consumer.ts'));
 assert.match(text('.github/workflows/quality.yml'),/MAPPING_CROSS_CONSUMER_PARITY_PASS|mapping-hints-cross-consumer\.ts/);
+assert.ok(existsSync('scripts/verification/executable-artifact-lineage.ts'));
+assert.match(text('.github/workflows/quality.yml'),/parser-studio-artifact-lineage-native/);
+assert.match(text('.github/workflows/quality.yml'),/parser-studio-artifact-lineage-web/);
 assert.match(text('backend/src/compiler.ts'),/Regexp\.respond_to\?\(:timeout=\)/);
 assert.match(text('backend/src/compiler.ts'),/Native Regex unsupported/);
 const workflow=text('.github/workflows/quality.yml');
@@ -95,7 +109,19 @@ assert.match(workflow,/H4_RELEASE_ELIGIBILITY_NOT_EVALUATED_ON_PR/);
 assert.match(workflow,/GITHUB_EVENT_NAME.*pull_request/);
 assert.match(workflow,/for label in P0 P1/);
 assert.doesNotMatch(workflow,/ref: 03624952a8c097e5423df32b40ec64137f029f49/);
-assert.match(workflow,/PARSER_STUDIO_BACKEND_HEAD: \$\{\{ github\.sha \}\}/);
+const exactPrHeadExpr="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
+assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,3,
+  'all 3 GitHub Actions checkouts must use exact PR source commit');
+assert.ok(workflow.includes('PARSER_STUDIO_BACKEND_HEAD: '+exactPrHeadExpr),
+  'browser backend source must follow exact frontend PR head');
+assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,3,
+  'each checkout job must state the actual source SHA');
+assert.doesNotMatch(workflow,/PARSER_STUDIO_BACKEND_HEAD: \$\{\{ github\.sha \$\}\}/);
+assert.doesNotMatch(workflow,/r\.sourceHead!==process\.env\.GITHUB_SHA/,
+  'lineage receipts must compare actual PR source SHA, not GitHub synthetic merge SHA');
+assert.equal(
+  workflow.split('r.sourceHead!==process.env.PARSER_STUDIO_EXPECTED_SOURCE_HEAD').length-1,
+  2,'both Native and Web receipt verifiers must check the same PR source SHA');
 assert.match(text('playwright.config.ts'),/liveBackend&&actual!==frontendHead/);
 assert.doesNotMatch(workflow,/--grep-invert /);
 // Assert a deliberately corrupted contract is detected by the same

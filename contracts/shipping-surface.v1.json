@@ -1,0 +1,24 @@
+{
+  "contract": "parser-studio.shipping-surface.v1",
+  "sourceMode": "STATIC_REACHABILITY_NOT_DYNAMIC_COVERAGE",
+  "webEntrypoint": "src/main.tsx",
+  "backendEntrypoint": "backend/src/server.ts",
+  "backendRequired": [
+    "backend/src/mainline-authoring-server.ts",
+    "backend/src/compiler.ts",
+    "backend/src/validate.ts"
+  ],
+  "backendUnreachable": [
+    "backend/src/http.ts"
+  ],
+  "legacyOnlyHttp": {
+    "module": "backend/src/http.ts",
+    "route": "/api/v1/parser-pairs/mapping-suggestions",
+    "mainlineReachable": false
+  },
+  "actualPublicApiOracles": [
+    "backend/test/mainline-mapping-hints-reachability.test.ts",
+    "tests/integrated-backend.spec.ts"
+  ],
+  "nativeTargetVerified": false
+}

@@ -59,5 +59,8 @@
     "syslog-regex-body@stellar70-observed-ruby24"
   ],
   "independentRuntimeProof": false,
-  "stellar7IndexedProof": false
+  "stellar7IndexedProof": false,
+  "independentSemanticOracle": "scripts/verification/independent-semantic-identity-oracle.ts",
+  "independentSemanticOracleTruth": "contracts/semantic-identity-independent-goldens.v1.json",
+  "independentSemanticCaseCount": 26
 }

@@ -19,7 +19,8 @@ REQUIRED_JOBS = frozenset(
     [f"Browser regression (shard {i}/6)" for i in range(1, 7)]
 )
 REQUIRED_ARTIFACTS = frozenset(
-    ["parser-studio-native-evidence", "parser-studio-h2-isolated-native-evidence"]
+    ["parser-studio-native-evidence", "parser-studio-h2-isolated-native-evidence",
+     "parser-studio-artifact-lineage-native", "parser-studio-artifact-lineage-web"]
 )
 
 
@@ -110,7 +111,7 @@ def main() -> int:
         for label in ('P0','P1')]
     validate_work_packet(work, severity)
     print("H4_OWNER_RELEASE_GATE_PASS exact_head=" + args.sha +
-          " jobs=9 native_artifacts=2 work_packet_closed=1 open_p0_p1=0")
+          " jobs=9 required_artifacts=4 work_packet_closed=1 open_p0_p1=0")
     return 0
 
 

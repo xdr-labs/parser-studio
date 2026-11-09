@@ -116,3 +116,64 @@ legacy code audit pass. Only the actual Guided mapping path is user-facing.
 The new cross-consumer parity runner tests those separate active/dormant
 paths with explicit evidence strengths. This distinction is mandatory for
 future audits: inventory shipped entrypoints and reachable call paths first.
+
+
+## Independent semantic truth acceptance (R4 added)
+
+The golden targets in
+[`contracts/semantic-identity-independent-goldens.v1.json`](../contracts/semantic-identity-independent-goldens.v1.json)
+are authored independently of both executable engines and the shared
+semantic-policy JSON. They carry **26 literal expected outcomes** across
+reviewed IP/port/action/source identity, nested RFC5424 source paths,
+dangerous NAT prefix variants, invalid values, occupied destinations and
+both orders of competing source fields. The CI runner
+`scripts/verification/independent-semantic-identity-oracle.ts` checks both
+browser decisions and the dormant review-only advisory logic against these
+independent results and refuses any divergent value, skipped case or reduced
+fixture inventory. This is a small explicit truth set; it does NOT claim
+independent proof for every undocumented vendor log or DP index event.
+
+
+## Explicit shipping-surface graph (R1 improvement)
+
+`contracts/shipping-surface.v1.json` identifies the actually shipped
+backend entrypoint, its required compiler path, and legacy-only modules.
+`scripts/verification/shipping-entrypoint-reachability.mjs` checks a
+transitive source-import graph, asserts that `backend/src/http.ts` remains
+unreachable from the shipping server, and kills an injected-import
+mutation. The shipped backend's actual HTTP/404 behavior remains a
+separate browser and runtime test; source graph reachability is
+not a formal replacement for dynamic coverage. This prevents false
+release readiness claims based on tests of dormant helper endpoints.
+
+
+## Same-source artifact lineage (R5 partial)
+
+The fixed-synthetic CI receipt
+`scripts/verification/executable-artifact-lineage.ts` calculates the exact
+Git source HEAD/tree, canonical semantic policy hash, runtime profile hash,
+compiler/template source hash, generated Ruby and CONF SHA256, deterministic
+ZIP SHA256 and artifact revision ID. It reruns the same source compilation
+and packaging and refuses changed outputs, tampered file bytes, dirty tracked
+source, wrong GitHub SHA, or forged target verification status. Both Native
+and Web jobs independently produce sanitized receipts on the same head.
+The H4 operator-release gate requires all four evidence artifacts: two
+existing Native proofs plus these two lineage receipts. The per-job receipts
+are not yet a cross-job cryptographic identity comparison or an actual
+build-once distribution mechanism; those remain R5 hardening, and full DP
+indexed-event confirmation remains NOT VERIFIED.
+
+
+## PR source-vs-merge SHA fidelity (R4 corrective)
+
+Original CI log from PR #287 showed checkout at the GitHub-generated
+`refs/remotes/pull/287/merge` commit `52e91e6e4beed09026b4c9de70c237a46ed2201f`
+rather than the review source HEAD `f300e64605d7b4091ab7fb32f2fc8a2b0399a92c`.
+The original workflow did compare frontend/backend **to the same temporary
+merge commit**, but those tests must not be called exact PR source HEAD.
+All checkout jobs now explicitly select
+`github.event.pull_request.head.sha` for pull requests, fall back to
+`github.sha` for push/manual events, and assert the actual checked-out Git
+commit. The lineage receipts verify that same expected source SHA.
+Integration against a merge candidate remains a distinct concern and is
+enforced by protected main's strict up-to-date requirement and post-merge CI.
