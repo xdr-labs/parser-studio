@@ -178,6 +178,20 @@ fails below 90% raw AST mutation detection on either measured module.
 This is a real bounded sampled mutation baseline, not a claim that every
 branch of `normalizationCandidates.ts` or Stellar DP 7.0 is mutation-tested.
 
+### Source-to-official-field candidate semantic oracle
+
+The `mcv2CandidateSemanticOracle.test.ts` independent expectations cover
+22 positive/negative cases: literal `source-port -> srcport` and
+`destination-port -> dstport` including ICMP numeric values, correct IP and
+protocol values, invalid IP/port/proto ranges, NAT/post-NAT path variants,
+false-friend vendor action/duration/event-type labels, ambiguous aliases,
+mixed-event sparse evidence, unknown names, and manual owner edits. The
+CI also runs `mcv2-semantic-candidate-mutants.mjs`: **12/12 selected
+source-level semantic decision mutants detected**, with real production
+module bundling. Two equivalent/no-op mutations were discarded from the
+selected probe set rather than counted as successful detections. This is
+NOT an AST-wide mutation score for `normalizationCandidates.ts`.
+
 ## Scope and release safety
 
 Maintain source parser Grammar-first / Multi-Pass and do not invent per-vendor case patches. No main merge, public preview rollout, production/sensor restart, permissions/branch-protection change or Stellar DP import/receive is authorized by this roadmap alone. Such changes remain separately gated by the existing repository rules.

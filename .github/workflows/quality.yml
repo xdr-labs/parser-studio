@@ -57,6 +57,7 @@ jobs:
           node scripts/verification/mcv2-mutation-sensitivity.mjs
           node scripts/verification/mcv2-canonical-ast-score.mjs
           node scripts/verification/mcv2-bounded-allocation-ast-score.mjs
+          node scripts/verification/mcv2-semantic-candidate-mutants.mjs
       - name: Typecheck and build
         run: npm run build
       - name: Offline Python standard-library sender grammar
