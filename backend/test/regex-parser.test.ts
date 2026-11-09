@@ -40,6 +40,9 @@ test("bounded named-capture Regex validates and compiles without changing unrela
   const regexPair=compilePair(project);
   const parser=regexPair.files.find(x=>x.name==="customized_regex_firewall")!;
   assert.match(parser.content,/def parserstudio_regex/);
+  assert.match(parser.content,/Regexp.respond_to\?\(:timeout=\)/);
+  assert.match(parser.content,/defined\?\(Regexp::TimeoutError\)/);
+  assert.match(regexPair.manifest.warnings.join(" "),/Ruby 2\.4\.9.*fails closed/);
   assert.equal(parser.content.includes(safePattern),false,"pattern must stay inside encoded reviewed project metadata");
 
   const json=sampleProject();

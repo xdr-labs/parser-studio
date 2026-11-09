@@ -29,51 +29,7 @@ export interface NormalizationCandidate {
   skippedForSemantics:number;
 }
 
-const ALIASES:Record<string,string>={
-  // Common vendor/CEF/LEEF source address spellings. Value/type evidence must
-  // still agree with the official Stellar destination before HIGH confidence.
-  src:'srcip',src_ip:'srcip',source_ip:'srcip',sourceip:'srcip',
-  sourceipaddress:'srcip',sourceaddress:'srcip',srcaddress:'srcip',
-  'source.ip':'srcip','source.address':'srcip','source.ipaddress':'srcip',
-  // RFC5424 Structured Data and Juniper RT_FLOW use literal hyphenated keys.
-  // Preserve their complete source paths; only normalize the destination.
-  'source-address':'srcip',
-  client_ip:'srcip',clientip:'srcip','client.ip':'srcip','client.ipaddress':'srcip',
-  'httprequest.clientip':'srcip',
-  'body.src':'srcip','body.src_ip':'srcip','body.source_ip':'srcip',
-  dst:'dstip',dst_ip:'dstip',destination_ip:'dstip',destinationip:'dstip',
-  dest_ip:'dstip',destip:'dstip',destinationaddress:'dstip',dstaddress:'dstip',
-  'destination.ip':'dstip','destination.address':'dstip','destination.ipaddress':'dstip',
-  'destination-address':'dstip',
-  server_ip:'dstip','server.ip':'dstip',
-  'body.dst':'dstip','body.dst_ip':'dstip','body.destination_ip':'dstip',
-  spt:'srcport',sport:'srcport',src_port:'srcport',source_port:'srcport',sourceport:'srcport',
-  srcport:'srcport','source.port':'srcport',client_port:'srcport',
-  'source-port':'srcport',
-  'body.spt':'srcport','body.srcport':'srcport','body.src_port':'srcport',
-  dpt:'dstport',dport:'dstport',dst_port:'dstport',destination_port:'dstport',destinationport:'dstport',
-  dest_port:'dstport',destport:'dstport',dstport:'dstport',
-  'destination.port':'dstport',server_port:'dstport',
-  'destination-port':'dstport',
-  'body.dpt':'dstport','body.dstport':'dstport','body.dst_port':'dstport',
-  act:'action',event_action:'action',eventaction:'action','event.action':'action',
-  'body.act':'action','body.action':'action',
-  event_time:'timestamp',eventtime:'timestamp','event.time':'timestamp','event.timestamp':'timestamp',
-  '@timestamp':'timestamp',syslog_timestamp:'timestamp',date_time:'timestamp',time:'timestamp',
-  host_name:'hostname',hostname:'hostname',host:'hostname','host.name':'hostname',device_name:'hostname',
-  devicename:'hostname','device.hostname':'hostname',syslog_hostname:'hostname',unit_hostname:'hostname',
-  ip_client:'srcip',protocol:'proto_name',
-  'protocol-id':'proto','policy-name':'rule.name','icmp-type':'icmp_type',
-  policyid:'fw_policy_id',
-  // The explicit unit suffix is required: Stellar duration is milliseconds.
-  duration_ms:'duration',session_duration_ms:'duration',
-  // request_status is not an action alias: an HTTP status code and a security
-  // allow/deny action have different semantics even if both are strings.
-  uri:'url',
-  localip:'hostip',username:'username',processname:'process_name',
-  commandline:'command',parentprocess:'parent_proc_name',
-  eventtype:'event_type',
-};
+const ALIASES:Readonly<Record<string,string>>=semanticPolicy.normalizationAliases;
 
 function overlaps(a:string,b:string):boolean{
   return a===b||a.startsWith(b+'.')||b.startsWith(a+'.');

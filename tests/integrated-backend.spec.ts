@@ -58,7 +58,7 @@ async function verifyGeneratedDraftPair(
   return pair;
 }
 
-test.describe('actual Chromium UI ↔ exact pinned authoring backend; target APIs isolated',()=>{
+test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target APIs isolated',()=>{
   test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',
     'Real integration requires an exact backend HEAD checkout and localhost isolation.');
 

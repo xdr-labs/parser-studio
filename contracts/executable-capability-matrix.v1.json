@@ -1,0 +1,61 @@
+{
+  "contract": "parser-studio.executable-capability-matrix.v1",
+  "scope": "OFFLINE_DRAFT_AND_EXPLICIT_UNVERIFIED_TARGET",
+  "formatOraclePaths": {
+    "json": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "kv": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "csv": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "syslog_rfc5424": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "syslog_rfc3164": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "cef": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "leef": "backend/test/h3-independent-cross-grammar-native.test.ts",
+    "mixed": "backend/test/mixed-family.test.ts",
+    "java_stacktrace": "backend/test/java-stacktrace-framed.test.ts",
+    "generic_structural": "backend/test/generic-structural-helper.test.ts",
+    "regex": "backend/test/portable-regex-ast-native.test.ts"
+  },
+  "consumers": [
+    {
+      "id": "browser-normalization",
+      "source": "src/guided/normalizationCandidates.ts",
+      "policy": "runtime/multipass/semantic-policy.v1.json",
+      "oracle": "src/guided/normalizationCandidates.test.ts",
+      "targetVerified": false
+    },
+    {
+      "id": "python-multipass",
+      "source": "runtime/multipass/stellar_dictionary.py",
+      "policy": "runtime/multipass/semantic-policy.v1.json",
+      "oracle": "tests/test_mapping_correctness_v2.py",
+      "targetVerified": false
+    },
+    {
+      "id": "backend-advisory-hints",
+      "source": "backend/src/mapping-suggestions.ts",
+      "policy": "runtime/multipass/semantic-policy.v1.json",
+      "oracle": "backend/test/mapping-suggestions.test.ts",
+      "targetVerified": false,
+      "autoApplied": false
+    },
+    {
+      "id": "ruby-pair-compiler",
+      "source": "backend/src/compiler.ts",
+      "oracle": "backend/test/h3-independent-cross-grammar-native.test.ts",
+      "syntheticNativeProfile": "ci-synthetic-ruby32",
+      "targetVerified": false
+    },
+    {
+      "id": "browser-http-authoring",
+      "source": "playwright.config.ts",
+      "oracle": "tests/integrated-backend.spec.ts",
+      "backendRevision": "EXACT_HEAD",
+      "targetVerified": false
+    }
+  ],
+  "unsupportedTargetRuntime": [
+    "regex@stellar70-observed-ruby24",
+    "syslog-regex-body@stellar70-observed-ruby24"
+  ],
+  "independentRuntimeProof": false,
+  "stellar7IndexedProof": false
+}

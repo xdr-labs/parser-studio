@@ -6,8 +6,8 @@ import { join, resolve } from 'node:path';
 const port = Number(process.env.PARSER_STUDIO_TEST_PORT || 5180);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid isolated browser test port');
 const liveBackend=process.env.PARSER_STUDIO_LIVE_BACKEND==='1';
-// Ordinary browser regression must use the same pinned, built loopback compiler
-// as the dedicated native/HTTP acceptance suite. Do not silently proxy 4179.
+// Integrated browser regression must use a built backend at the exact
+// checked-out HEAD. Compatibility tests with old backends are separate.
 const browserBackend=liveBackend||process.env.PARSER_STUDIO_BROWSER_BACKEND==='1';
 const backendPort=Number(process.env.PARSER_STUDIO_BACKEND_PORT || (liveBackend?4191:4179));
 if(!Number.isInteger(backendPort)||backendPort<1024||backendPort>65535||backendPort===port)
@@ -25,11 +25,14 @@ if(browserBackend){
   if(!process.env.PARSER_STUDIO_BACKEND_ROOT||
     !/^[a-f0-9]{40}$/.test(process.env.PARSER_STUDIO_BACKEND_HEAD||'')||
     !backendRoot||!existsSync(join(backendRoot,'dist/src/server.js')))
-    throw new Error('Explicit built, pinned backend checkout is required for integrated Chromium tests.');
+    throw new Error('Explicit built backend at the same checkout HEAD is required for Chromium E2E.');
   const actual=execFileSync('git',['-C',backendRoot,'rev-parse','HEAD'],
     {encoding:'utf8',timeout:5000}).trim();
-  if(actual!==process.env.PARSER_STUDIO_BACKEND_HEAD)
-    throw new Error('Integrated backend HEAD does not match the pinned target.');
+  const frontendHead=execFileSync('git',['rev-parse','HEAD'],
+    {encoding:'utf8',timeout:5000}).trim();
+  if(actual!==process.env.PARSER_STUDIO_BACKEND_HEAD||
+     (liveBackend&&actual!==frontendHead))
+    throw new Error('Integrated browser/backend HEAD differs from frontend HEAD.');
 }
 const quote=(s:string)=>"'"+s.replace(/'/g,"'\\''")+"'";
 const viteServer={

@@ -67,6 +67,12 @@ def parserstudio_regex(text, settings)
   raise ArgumentError, 'Invalid Regex parser pattern' unless pattern.is_a?(String) &&
     pattern.bytesize.between?(1, 256) && !pattern.match?(/[\x00-\x1f\x7f]/) &&
     pattern.include?('(?<')
+  # Regexp.new accepts a positional options Hash on Ruby 2.4. That runtime
+  # silently treats timeout: as truthy IGNORECASE and has no Regexp timeout.
+  # Never emit incorrect extracted fields or run unbounded regex there.
+  unless Regexp.respond_to?(:timeout=) && defined?(Regexp::TimeoutError)
+    raise ArgumentError, 'Native Regex unsupported: runtime has no Regexp timeout'
+  end
   begin
     expression = Regexp.new(pattern, timeout: 0.05)
   rescue RegexpError, ArgumentError
@@ -258,6 +264,10 @@ export function compilePair(input: unknown): PairExport {
             project.extraction.mixedFormats?.some(f=>f==="rfc5424_cef"||f==="rfc5424_leef")
           ? "Only explicitly allowlisted RFC5424-wrapped CEF/LEEF mixed events are supported; RFC3164 mixing, arbitrary Syslog/CSV mixing and unframed multiline remain unsupported."
           : "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
+        ...((project.extraction.format==="regex"||
+          project.extraction.syslogBodyFormat==="regex") ? [
+          "Native Regex requires a runtime with Regexp timeout support (Ruby 3.2+); on Stellar 7.0 Ruby 2.4.9 it fails closed and MUST NOT be treated as a deployable parser."
+        ] : []),
         ...(project.extraction.forwarder ? [
           "Only explicitly declared relay-host Syslog envelopes can be unwrapped; sender identity is not authenticated and arbitrary prefixes/rewritten payloads are not certified."
         ] : []),
