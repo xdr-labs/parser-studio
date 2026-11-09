@@ -507,5 +507,11 @@ end
 def parserstudio_event_time(normalized)
   timestamp = normalized['timestamp']
   return nil unless timestamp.is_a?(Integer)
+  # Fluentd's buffered outputs require EventTime (or Integer), not Ruby Time.
+  # Keep the standalone native-runner path independent of Fluentd dependencies.
+  if defined?(Fluent::EventTime)
+    seconds, milliseconds = timestamp.divmod(1000)
+    return Fluent::EventTime.new(seconds, milliseconds * 1_000_000)
+  end
   Time.at(timestamp / 1000.0)
 end
