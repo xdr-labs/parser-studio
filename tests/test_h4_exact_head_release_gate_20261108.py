@@ -19,12 +19,14 @@ def inputs():
                                   'conclusion':'success','head_sha':SHA} for n in JOBS]}
     artifacts={'artifacts':[{'name':n,'expired':False}
              for n in ('parser-studio-native-evidence',
-                       'parser-studio-h2-isolated-native-evidence')]}
+                       'parser-studio-h2-isolated-native-evidence',
+                       'parser-studio-artifact-lineage-native',
+                       'parser-studio-artifact-lineage-web')]}
     pr={'head':{'sha':SHA},'base':{'ref':'main'},
         'state':'open','draft':False}
     return run,jobs,artifacts,pr
 class GateTests(unittest.TestCase):
-    def test_all_9_jobs_and_both_artifacts_pass(self):
+    def test_all_9_jobs_and_four_evidence_artifacts_pass(self):
         gate.validate_release_evidence(*inputs(),expected_sha=SHA)
     def test_active_work_packet_refuses_merge_despite_green_ci(self):
         pending={'state':'open','body':'- [ ] MCV2-C\n- [x] MCV2-A'}
@@ -68,6 +70,16 @@ class GateTests(unittest.TestCase):
         run,jobs,artifacts,pr=inputs();artifacts['artifacts'].pop()
         with self.assertRaisesRegex(ValueError,'NATIVE_ARTIFACTS'):
             gate.validate_release_evidence(run,jobs,artifacts,pr,expected_sha=SHA)
+    def test_missing_one_synthetic_lineage_receipt_rejected(self):
+        for missing in ('parser-studio-artifact-lineage-native',
+                        'parser-studio-artifact-lineage-web'):
+            run,jobs,artifacts,pr=inputs()
+            artifacts['artifacts']=[entry for entry in artifacts['artifacts']
+                if entry['name']!=missing]
+            with self.subTest(missing=missing):
+                with self.assertRaisesRegex(ValueError,'NATIVE_ARTIFACTS'):
+                    gate.validate_release_evidence(run,jobs,artifacts,pr,expected_sha=SHA)
+
     def test_draft_or_wrong_base_rejected(self):
         run,jobs,artifacts,pr=inputs();pr['draft']=True
         with self.assertRaisesRegex(ValueError,'PR_NOT_REVIEWABLE'):

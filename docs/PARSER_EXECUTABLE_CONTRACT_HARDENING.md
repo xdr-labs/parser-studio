@@ -145,3 +145,35 @@ mutation. The shipped backend's actual HTTP/404 behavior remains a
 separate browser and runtime test; source graph reachability is
 not a formal replacement for dynamic coverage. This prevents false
 release readiness claims based on tests of dormant helper endpoints.
+
+
+## Same-source artifact lineage (R5 partial)
+
+The fixed-synthetic CI receipt
+`scripts/verification/executable-artifact-lineage.ts` calculates the exact
+Git source HEAD/tree, canonical semantic policy hash, runtime profile hash,
+compiler/template source hash, generated Ruby and CONF SHA256, deterministic
+ZIP SHA256 and artifact revision ID. It reruns the same source compilation
+and packaging and refuses changed outputs, tampered file bytes, dirty tracked
+source, wrong GitHub SHA, or forged target verification status. Both Native
+and Web jobs independently produce sanitized receipts on the same head.
+The H4 operator-release gate requires all four evidence artifacts: two
+existing Native proofs plus these two lineage receipts. The per-job receipts
+are not yet a cross-job cryptographic identity comparison or an actual
+build-once distribution mechanism; those remain R5 hardening, and full DP
+indexed-event confirmation remains NOT VERIFIED.
+
+
+## PR source-vs-merge SHA fidelity (R4 corrective)
+
+Original CI log from PR #287 showed checkout at the GitHub-generated
+`refs/remotes/pull/287/merge` commit `52e91e6e4beed09026b4c9de70c237a46ed2201f`
+rather than the review source HEAD `f300e64605d7b4091ab7fb32f2fc8a2b0399a92c`.
+The original workflow did compare frontend/backend **to the same temporary
+merge commit**, but those tests must not be called exact PR source HEAD.
+All checkout jobs now explicitly select
+`github.event.pull_request.head.sha` for pull requests, fall back to
+`github.sha` for push/manual events, and assert the actual checked-out Git
+commit. The lineage receipts verify that same expected source SHA.
+Integration against a merge candidate remains a distinct concern and is
+enforced by protected main's strict up-to-date requirement and post-merge CI.
