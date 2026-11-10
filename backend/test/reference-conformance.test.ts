@@ -214,3 +214,42 @@ test("contract MUST/SHOULD levels agree with the declared corpus basis and numbe
     }
   }
 });
+
+// Token rules must read code, not commentary: a comment that merely mentions the
+// required constructs is not a fragment that contains them.
+const skeleton = (parseBody: string, parseDef = "def parse(text)") => [
+  "# STELLAR_INIT_BEGIN", "def initialize(*args)", "  @parser_rule_set = {}", "end", "# STELLAR_INIT_END",
+  "# STELLAR_PARSE_BEGIN", parseDef, parseBody, "end", "# STELLAR_PARSE_END", "",
+].join("\n");
+const REAL_BODY = [
+  "  if text.nil? || text.empty?", "    yield nil, nil", "    return", "  end",
+  "  record = { 'stellar_log_index' => 'syslog' }", "  record['parser_err_msg'] = 'x' if text == 'bad'",
+  "  yield Time.now.to_i, record",
+].join("\n");
+
+test("a minimal real fragment satisfies the token rules (control for the comment attacks)", () => {
+  assert.deepEqual(checkFragmentStructure(skeleton(REAL_BODY)), []);
+});
+
+test("required tokens that appear only in comments do not satisfy the token rules", () => {
+  const commented = skeleton("  # yield nil, nil\n  # record['parser_err_msg'] = 'x'\n  # stellar_log_index = 'syslog'\n  1");
+  assert.deepEqual(checkFragmentStructure(commented).map(f => f.rule).sort(),
+    ["FRAG-EMPTY-INPUT", "FRAG-ERROR-CONTRACT", "FRAG-LOG-INDEX", "FRAG-YIELD"]);
+});
+
+test("required tokens hidden in a =begin/=end block comment do not satisfy the token rules", () => {
+  const block = skeleton("=begin\n  yield nil, nil\n  parser_err_msg stellar_log_index\n=end\n  1");
+  assert.deepEqual(checkFragmentStructure(block).map(f => f.rule).sort(),
+    ["FRAG-EMPTY-INPUT", "FRAG-ERROR-CONTRACT", "FRAG-LOG-INDEX", "FRAG-YIELD"]);
+  const hiddenDef = skeleton(REAL_BODY, "=begin\ndef parse(text)\n=end\ndef parse_other(text)");
+  assert.ok(checkFragmentStructure(hiddenDef).some(f => f.rule === "FRAG-PARSE"));
+});
+
+test("wrapper words inside a =begin/=end block are commentary, not wrapper declarations", () => {
+  const block = skeleton(REAL_BODY).replace("# STELLAR_INIT_END", "=begin\nmodule Fluent\nregister_parser\n=end\n# STELLAR_INIT_END");
+  assert.deepEqual(checkFragmentStructure(block), []);
+});
+
+test("a =begin block does not count as executable code outside the regions", () => {
+  assert.deepEqual(must(checkFragmentStructure("=begin\nnotes\n=end\n" + skeleton(REAL_BODY))), []);
+});

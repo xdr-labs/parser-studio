@@ -49,6 +49,20 @@ const MARKERS = ["STELLAR_INIT_BEGIN", "STELLAR_INIT_END", "STELLAR_PARSE_BEGIN"
 const isBlank = (line: string) => line.trim() === "";
 const isCode = (line: string) => !isBlank(line) && !line.trim().startsWith("#");
 
+/** The lines with comment-only content blanked and line numbers preserved: whole-line `#`
+ *  comments and `=begin`/`=end` block comments (Ruby only opens those at column 0). Token
+ *  rules read this view so commentary that merely mentions a required construct cannot
+ *  satisfy, or trip, a rule. A `#` that trails code on the same line is left alone: telling
+ *  it from a `#` inside a string needs a Ruby tokenizer, which is the container gate's job. */
+function codeLines(lines: string[]): string[] {
+  let inBlock = false;
+  return lines.map(line => {
+    if (inBlock) { if (/^=end\b/.test(line)) inBlock = false; return ""; }
+    if (/^=begin\b/.test(line)) { inBlock = true; return ""; }
+    return line.trim().startsWith("#") ? "" : line;
+  });
+}
+
 export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
   const out: ConformanceFinding[] = [];
   const lines = ruby.split("\n");
@@ -64,7 +78,8 @@ export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
     return out;
   }
   const [initBegin, initEnd, parseBegin, parseEnd] = first as [number, number, number, number];
-  const region = (from: number, to: number) => lines.slice(from + 1, to);
+  const source = codeLines(lines);
+  const region = (from: number, to: number) => source.slice(from + 1, to);
   const code = (from: number, to: number) => region(from, to).filter(isCode);
 
   if (lines.slice(parseEnd + 1).some(line => !isBlank(line)))
@@ -72,7 +87,7 @@ export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
   if (code(-1, initBegin).length || code(initEnd, parseBegin).length)
     out.push(finding("FRAG-REGION-GAP", "Executable code outside the INIT/PARSE regions (before INIT_BEGIN or between INIT_END and PARSE_BEGIN)."));
 
-  const nonComment = lines.filter(line => !line.trim().startsWith("#")).join("\n");
+  const nonComment = source.join("\n");
   if (/^\s*module\s+Fluent\b/m.test(nonComment) || /register_parser/.test(nonComment) ||
       /StellarInnerParseClass/.test(nonComment) || /class\s+Parser_customized/.test(nonComment))
     out.push(finding("FRAG-NO-WRAPPER-DECLS", "The fragment declares platform wrapper constructs."));
