@@ -155,7 +155,7 @@ export function checkConfStructure(conf: string, ctx: ConfContext): ConformanceF
 
   const matches = root.children.filter(node => node.name === "match");
   const match = matches[0];
-  if (matches.length !== 1 || match!.args !== ctx.parserName + ".**" || param(match!, "@type") !== "rewrite_tag_filter") {
+  if (matches.length !== 1 || !match || match.args !== ctx.parserName + ".**" || param(match, "@type") !== "rewrite_tag_filter") {
     out.push(finding("CONF-MATCH", "Expected exactly one <match " + ctx.parserName + ".**> with @type rewrite_tag_filter."));
     return out;
   }

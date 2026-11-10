@@ -52,7 +52,7 @@ test("the variant matrix covers every extraction format, template family and enr
   for (const operator of coverage.operators) assert.ok(operators.has(operator), "no variant for operator " + operator);
   const binds = new Set(variants.map(v => v.project.receiver.bindAddress));
   assert.deepEqual([...binds].sort(), ["0.0.0.0", "127.0.0.1"]);
-  const classes = new Set(variants.flatMap(v => [v.project.classification.defaultIndex, ...v.project.classification.rules.map(r => r.index)]));
+  const classes = new Set<string>(variants.flatMap(v => [v.project.classification.defaultIndex, ...v.project.classification.rules.map(r => r.index)]));
   for (const index of ["syslog", "threat", "session", "winlogevent"]) assert.ok(classes.has(index), "no variant routes " + index);
 });
 
