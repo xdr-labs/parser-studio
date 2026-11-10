@@ -1,6 +1,5 @@
-import {test,expect,type Page,type TestInfo} from '@playwright/test';
+import {test,expect} from '@playwright/test';
 import {createHash} from 'node:crypto';
-import {writeFile} from 'node:fs/promises';
 
 // Synthetic structural examples. The proposed rule is reviewed by the user;
 // no vendor names, semantic field assignments or live AI call are involved.
@@ -30,52 +29,13 @@ const recipe=(omitId=false)=>({
   nativeVerified:false,targetVerified:false,
 });
 
-async function downloadDraft(page:Page,info:TestInfo){
-  await page.getByRole('button',{name:'Review Fields',exact:true}).click();
-  const review=page.getByLabel('Review Fields stage');
-  await expect(review).toBeVisible();
-  await review.getByRole('button',{name:'Map Fields',exact:true}).click();
-  const mapping=page.getByLabel('Map Fields stage');
-  await expect(mapping.getByLabel('Field mapping checks')).toContainText('No mapping problems found');
-  await mapping.getByRole('button',{name:'Create Parser',exact:true}).click();
-  await page.getByLabel('Create Parser Files').click();
-  const generated=page.getByLabel('Generated parser files');
-  await expect(generated).toContainText('Parser files created successfully',{timeout:30000});
-  await expect(generated).toContainText('Native runtime and Stellar target verification are separate; nothing was deployed.');
-  const downloads:Record<string,string>={};
-  for(const filename of ['customized_demo_firewall','customized_demo_firewall.conf']){
-    const pending=page.waitForEvent('download');
-    await generated.getByRole('button',{name:new RegExp(filename.replaceAll('.','\\.')+'$')}).click();
-    const download=await pending;
-    expect(download.suggestedFilename()).toBe(filename);
-    const chunks:Buffer[]=[];
-    for await(const chunk of (await download.createReadStream())!)chunks.push(Buffer.from(chunk));
-    downloads[filename]=Buffer.concat(chunks).toString('utf8');
-    expect(downloads[filename]!.length).toBeGreaterThan(0);
-    await download.saveAs(info.outputPath(filename));
-  }
-  const encoded=/Base64.strict_decode64\('([^']+)'\)/.exec(downloads.customized_demo_firewall!);
-  expect(encoded).not.toBeNull();
-  const project=JSON.parse(Buffer.from(encoded![1]!,'base64').toString('utf8'));
-  expect(project.extraction.format).toBe('regex');
-  expect(project.extraction.pattern).toBe(pattern);
-  const targets=Object.keys({
-    ...project.normalization.topFields,...project.normalization.nsFields,
-    ...project.normalization.vendorFields,
-  });
-  expect(targets).toEqual(expect.arrayContaining(fields));
-  await writeFile(info.outputPath('recovery-source-and-project.json'),JSON.stringify({source,holdout,project},null,2));
-  await page.screenshot({path:info.outputPath('reviewed-recovery-downloads.png'),fullPage:true});
-  await page.getByRole('navigation',{name:'Auto Parser steps'}).getByRole('button',{name:/Add Logs/}).click();
-  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
-}
 
 test.skip(
   process.env.PARSER_STUDIO_LIVE_BACKEND!=='1'&&process.env.PARSER_STUDIO_SCOPED_AUTHORING_E2E!=='1',
   'Requires the scoped local authoring backend and real source-preview service.'
 );
 
-test('a novice preserves partial source values, reviews an independent fix, and downloads Ruby and CONF',async({page},info)=>{
+test('a novice preserves partial source values and local Regex recovery, but target export is denied',async({page})=>{
   test.setTimeout(120000);
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -127,6 +87,15 @@ test('a novice preserves partial source values, reviews an independent fix, and 
   await apply.click();
   await expect(summary).toContainText('2 of 2 log events structurally parsed');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
-  await downloadDraft(page,info);
+  // Parsing evidence and deployability are separate. The observed Stellar 7.0
+  // Ruby 2.4.9 runtime cannot enforce bounded native Regexp deadlines.
+  // No generated Regex Ruby/CONF/ZIP may leave the current target adapter.
+  await page.getByRole('button',{name:'Review Fields',exact:true}).click();
+  await expect(page.getByRole('alert').filter({
+    hasText:/Regex samples may be reviewed in the browser/,
+  })).toContainText('Ruby 2.4.9');
+  await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
+  await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
+  await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
   expect(errors).toEqual([]);
 });

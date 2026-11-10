@@ -116,6 +116,8 @@ function sourceAnalysisLabel(status:string){
 }
 function backendReviewMessage(error:unknown){
  const detail=error instanceof Error?error.message:'';
+ if(error instanceof Error&&'code' in error&&error.code==='TARGET_RUNTIME_REGEX_UNSUPPORTED')
+   return detail;
  if(/HTTP|request failed|fetch|network|unavailable/i.test(detail))
    return 'The parser creation service is unavailable or access was denied. Log analysis succeeded and your parsed fields are preserved. Try again after the local backend is reachable and authorized.';
  if(/capabilit|contract|allowlist|bounded|authoring|verification flags|inconsistent/i.test(detail))

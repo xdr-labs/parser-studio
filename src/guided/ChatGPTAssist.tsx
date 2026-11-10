@@ -353,6 +353,11 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
   }
   async function generateVerifiedDraft(){
     if(!context||context.sample!==sample||!review?.ok||pending||busy||draft.eventProfiles)return;
+    if(review.candidate.sourceFormat==='regex'||review.candidate.bodyFormat==='regex'){
+      setGenerated(null);setRetryFailure(null);
+      setNotice('Browser parsing may pass, but native Regex parser export is blocked for the current Stellar Cyber 7.0 target (Ruby 2.4.9). This runtime has no bounded Regexp timeout. No files were generated; use a supported non-Regex source format.');
+      return;
+    }
     const recovery=review.report.mode==='FULL_RECOVERY';
     const baseline=recovery?null:await buildReviewableRecipe(sample,context.draft,context.suite);
     if(!recovery&&(!baseline||!baseline.ok)){setNotice('No validated baseline is available. No files generated.');return;}
@@ -412,6 +417,12 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
     anchor.href=url;anchor.download=filename;document.body.append(anchor);anchor.click();anchor.remove();
     window.setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
+  // A reviewed Regex can pass local and independent holdout examples,
+  // but it cannot produce a safe parser on the observed Ruby 2.4.9 target.
+  // This is a target/runtime limitation, never a request to try another
+  // Regex prompt or a claim that the browser preview was wrong.
+  const regexTargetBlocked=Boolean(review?.ok&&(
+    review.candidate.sourceFormat==='regex'||review.candidate.bodyFormat==='regex'));
   const baselineUnchanged=Boolean(review?.ok&&context&&
     review.report.addedMappings===0&&review.report.removedMappings===0&&
     review.report.changedStageCount===0);
@@ -555,8 +566,16 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
               ?'I reviewed the extracted fields and approve a sample-only DRAFT. No independent examples or target validation were performed.'
               :'I reviewed the test result and approve applying this fix.'}
           </label>}
+          {regexTargetBlocked&&<p className="auto-parser-warning" role="alert">
+            Regex passed only the browser-level review. Native parser files and
+            ZIP export are blocked for the current Stellar Cyber 7.0 target
+            (Ruby 2.4.9): bounded Regexp execution is unsupported.
+            Use a supported non-Regex source format; retrying the same
+            Regex through ChatGPT cannot enable this runtime capability.
+          </p>}
           <button type="button" className="auto-parser-primary"
-            disabled={busy||pending||(!baselineUnchanged&&(!comparison?.qualified||!candidateApproval))}
+            disabled={regexTargetBlocked||busy||pending||
+              (!baselineUnchanged&&(!comparison?.qualified||!candidateApproval))}
             onClick={()=>{void generateVerifiedDraft();}}>
             {busy?'Creating parser files…':'Apply Fix & Create Parser Files'} <ArrowRight size={15}/>
           </button>

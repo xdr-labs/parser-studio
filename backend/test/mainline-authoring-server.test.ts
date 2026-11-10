@@ -52,9 +52,13 @@ test("shipping backend accepts only true offline authoring HTTP methods",async()
     const downloads=advertised["downloads"] as Record<string,unknown>;
     assert.deepEqual(Object.keys(downloads).sort(),[
       "autoDeploys","exactArtifactRevision","individualGeneratedFiles",
-      "requiresApiKey","requiresDpConnection","zipWithManifest",
+      "requiresApiKey","requiresDpConnection","targetRuntimeProfile","zipWithManifest",
     ]);
     assert.equal(downloads["autoDeploys"],false);
+    assert.deepEqual(downloads["targetRuntimeProfile"],{
+      profile:"stellar70-observed-ruby24",ruby:"2.4.9",fluentd:"1.7.4",
+      regexPreviewSupported:true,regexExportSupported:false,targetImportVerified:false,
+    });
     assert.equal("ownedOfflineRevisionHistoryOptIn" in downloads,false);
     const verification=advertised["verification"] as Record<string,unknown>;
     assert.equal(verification["targetImportVerified"],false);
@@ -128,6 +132,7 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
     // Pure manufacturer namespace predicate; no runtime capabilities.
     "vendor-namespace.ts",
     "canonical-value-contract.ts","unicode-case-map.v1.json",
+    "target-runtime-export.ts",
     // Static pinned Stellar 7.0 scalar catalog; no executable/HTTP-capable module.
     "stellar7-enrichment-types.json",
   ]);

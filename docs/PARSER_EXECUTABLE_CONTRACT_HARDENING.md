@@ -198,3 +198,27 @@ vendor parser, or actual downstream Stellar indexed events. The
 release-eligibility step continues to reject open P0/P1 issues after
 checking evidence. Thus release remains blocked until #285 is
 qualified without suppressing the issue.
+
+
+## R3 final target-runtime export exclusion (2026-11-10)
+
+Observed Stellar Cyber 7.0 uses embedded Ruby 2.4.9 / Fluentd 1.7.4,
+which does not implement a safe per-RegExp timeout. The fixed-synthetic
+Ruby3.2 compiler may produce Regex fragments for independent tests, but
+shipping `host-customized-pair.v0.1` exports now **reject** standalone Regex
+and RFC3164/RFC5424 embedded Regex with HTTP 422
+`TARGET_RUNTIME_REGEX_UNSUPPORTED`. This includes both ParserProject
+generation and ChatGPT ParserRecipe v0.2 validation/generation. The
+ZIP packaging endpoint denies previously constructed Regex pairs as well.
+The exact target adapter capability says
+`regexPreviewSupported=true, regexExportSupported=false`;
+the browser project adapter blocks unsupported exports before generation,
+and the Guided UI displays the target restriction.
+
+`/validate` continues to distinguish syntax valid from deployability using
+`targetExportSupported=false`. Do not describe a passing local Regex
+preview as a native/target-verifiable parser. Existing 2.4 generated Regex
+helper still fails closed, and native 2.4/3.2 synthetic regression remains
+mandatory; no unsupported Ruby2.4 timeout workaround or execution through
+`Timeout.timeout` is introduced. **This is an explicit export exclusion,
+not newly functional Ruby2.4 Regex support.**

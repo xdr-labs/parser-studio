@@ -1351,6 +1351,15 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
               </select>
               <small>RFC3164 strict TAG: messages retain an unknown year and timezone; map header time as text. RFC5424 strict v1 is separately supported. Mixed inputs require an explicit JSON/KV/CEF/LEEF, RFC5424-wrapped CEF/LEEF or RFC3164 TAG: KV allowlist; unknown and multiline inputs require separate review.</small>
             </label>}
+            {(draft.format==='regex'||
+              (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)&&
+               draft.syslogBodyFormat==='regex'))&&
+              <div className="guided-hint" role="alert">
+                <AlertTriangle size={16} /> Regex may be reviewed locally, but generated
+                Regex parser files are blocked for the current Stellar Cyber 7.0
+                target (Ruby 2.4.9). Choose an independently supported non-Regex
+                grammar to create a downloadable parser.
+              </div>}
             <div className="guided-hint"><AlertCircle size={16} /> Browser extraction is a preview. DRAFT output is limited to capability-verified JSON, KV, CSV, bounded RFC3164/RFC5424, standalone CEF/LEEF, and explicit mixed JSON/KV/CEF/LEEF, RFC5424 CEF/LEEF or RFC3164 TAG KV. Generic Syslog, regex and unframed multiline remain unsupported.</div>
             <div className={'guided-family-coverage ' + (familyCoverage.incompatible ? 'attention' : '')}
               aria-label="Sample format distribution">
@@ -1862,7 +1871,11 @@ export default function GuidedBuilder(props: GuidedBuilderProps) {
             <div className="guided-section-title"><span>04</span> Generate and Download Both Files</div>
             <div className="guided-export-actions">
               {qualifiedBackend?.result.ok
-                ? <button type="button" className="guided-cta-main" onClick={() => { void buildDraftPair(); }} disabled={generatingPair || !runState?.suite.counts.total || runState.suite.counts.matched !== runState.suite.counts.total || runState.suite.counts.normalized !== runState.suite.counts.total || runState.suite.counts.failures > 0}>
+                ? <button type="button" className="guided-cta-main" onClick={() => { void buildDraftPair(); }} disabled={generatingPair ||
+                  draft.format==='regex'||
+                  (['syslog_rfc3164','syslog_rfc5424'].includes(draft.format)&&
+                    draft.syslogBodyFormat==='regex') ||
+                  !runState?.suite.counts.total || runState.suite.counts.matched !== runState.suite.counts.total || runState.suite.counts.normalized !== runState.suite.counts.total || runState.suite.counts.failures > 0}>
                   <FileArchive size={15} /> {generatingPair ? 'Generating Draft…' : 'Generate 2 Parser Files (DRAFT)'}
                 </button>
                 : <button type="button" className="guided-cta-main" disabled><FileArchive size={15} /> Generate 2 Parser Files (Backend Required)</button>}

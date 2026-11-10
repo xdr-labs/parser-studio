@@ -106,3 +106,62 @@ describe('read-only backend capabilities (never native target approval)', () => 
     await expect(fetchBackendCapabilities(vi.fn(async () => ({ status:200, json:async () => { throw Error('bad'); } })) as unknown as typeof fetch)).rejects.toThrow();
   });
 });
+
+
+describe('Stellar 7 Ruby2.4 native Regex export boundary',()=>{
+  const regexCapability={
+    ...capabilities,
+    authoring:{
+      ...capabilities.authoring,
+      extractionFormats:['json','kv','csv','regex'],
+      boundedRegexNamedCaptureSubset:true,
+      boundedRegexMaxPatternChars:256,
+      boundedRegexRuntimeTimeoutMs:50,
+    },
+    downloads:{
+      individualGeneratedFiles:true,zipWithManifest:true,
+      requiresDpConnection:false,requiresApiKey:false,autoDeploys:false,
+      exactArtifactRevision:true,
+      targetRuntimeProfile:{
+        profile:'stellar70-observed-ruby24',
+        ruby:'2.4.9',fluentd:'1.7.4',
+        regexPreviewSupported:true,regexExportSupported:false,
+        targetImportVerified:false,
+      },
+    },
+  };
+  const supported=async (source:unknown)=>{
+    return fetchBackendCapabilities(vi.fn(async()=>response(200,source)) as unknown as typeof fetch);
+  };
+  it('keeps normal JSON export but refuses Regex for unsupported native target',async()=>{
+    const cap=await supported(regexCapability);
+    const parser=csvProject();
+    expect(()=>assertBackendProjectSupported(parser,cap)).not.toThrow();
+    parser.extraction={format:'regex',pattern:'^(?<action>ALLOW)$'};
+    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/Ruby 2\.4\.9/);
+    parser.extraction={format:'syslog_rfc5424',syslogBodyFormat:'regex',
+      pattern:'^(?<action>ALLOW)$'};
+    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/cannot safely execute/);
+  });
+  it('refuses Regex export when an older backend omits target profile',async()=>{
+    const old={...regexCapability,
+      downloads:Object.fromEntries(Object.entries(regexCapability.downloads)
+        .filter(([key])=>key!=='targetRuntimeProfile'))};
+    const cap=await supported(old);
+    const parser=csvProject();
+    parser.extraction={format:'regex',pattern:'^(?<action>ALLOW)$'};
+    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/Regex samples may be reviewed/);
+  });
+  it('rejects forged Regex support or target-verification claims',async()=>{
+    const forged={
+      ...regexCapability,downloads:{
+        ...regexCapability.downloads,
+        targetRuntimeProfile:{
+          ...regexCapability.downloads.targetRuntimeProfile,
+          regexExportSupported:true,
+        },
+      },
+    };
+    await expect(supported(forged)).rejects.toThrow(/target Regex export capability/);
+  });
+});
