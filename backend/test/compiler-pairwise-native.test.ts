@@ -14,6 +14,8 @@ import { compilePair } from "../src/compiler.js";
 import { validateProject } from "../src/validate.js";
 import type { ParserProject } from "../src/types.js";
 import { pairwiseVariants } from "./compiler-pairwise.js";
+// @ts-expect-error plain ESM helper shared with the authoring test runner
+import { parsedRubyVersion } from "../scripts/ruby-requirement.mjs";
 
 interface Fixture {
   extraction: ParserProject["extraction"];
@@ -63,7 +65,7 @@ test("pairwise variants are checked on a Ruby runtime (a missing Ruby must not r
   // The target-runtime CI step pins the interpreter (2.4.9) so a shim that fell
   // back to the host Ruby cannot pass as the target.
   const expected = process.env.PARSER_STUDIO_EXPECT_RUBY;
-  if (expected) assert.match(spawnSync("ruby", ["-v"], { encoding: "utf8" }).stdout, new RegExp("^ruby " + expected.replace(/\./g, "\\.")));
+  if (expected) assert.equal(parsedRubyVersion(spawnSync("ruby", ["-v"], { encoding: "utf8" }).stdout), expected, "native Ruby interpreter version must exactly match the pinned profile");
 });
 
 test("every pairwise variant emits the authored values, routing and enrichment when its generated Ruby runs", { skip: !available }, () => {

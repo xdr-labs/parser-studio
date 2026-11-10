@@ -20,4 +20,5 @@ test("a present Ruby passes, and a pinned version must match", () => {
   const pinned = { ...ok, PARSER_STUDIO_EXPECT_RUBY: "2.4.9" };
   assert.equal(rubyRequirementProblem(pinned, ruby(0, "ruby 2.4.9p362")), undefined);
   assert.match(rubyRequirementProblem(pinned, ruby(0, "ruby 3.2.3 (2024)")), /RUBY_VERSION_MISMATCH/);
+  assert.match(rubyRequirementProblem(pinned, ruby(0, "ruby 2.4.90p999")), /RUBY_VERSION_MISMATCH/, "must not accept a version that only shares the prefix");
 });
