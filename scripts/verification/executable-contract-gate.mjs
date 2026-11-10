@@ -124,7 +124,7 @@ assert.doesNotMatch(workflow,/ref: 03624952a8c097e5423df32b40ec64137f029f49/);
 const exactPrHeadExpr="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
 assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,4,
   'all 4 GitHub Actions checkouts must use exact PR source commit');
-assert.match(workflow,/needs: \[native-isolated-synthetic, web-quality\]/);
+assert.match(workflow,/needs: \[native-isolated-synthetic, web-quality, browser-regression\]/);
 assert.match(workflow,/actions\/download-artifact@v4/);
 assert.match(workflow,/reconcile-artifact-lineage\.mjs/);
 assert.ok(workflow.includes('PARSER_STUDIO_BACKEND_HEAD: '+exactPrHeadExpr),
