@@ -25,11 +25,8 @@ interface VendorCase {
 }
 const loadCases = (path: string) => (JSON.parse(readFileSync(resolve(path), 'utf8')) as { cases: VendorCase[] }).cases;
 // Publisher-documented examples only. PROJECT_SYNTHETIC cases are never counted here.
-const vendorCases = [
-  ...loadCases('evals/chatgpt/security-cases.json'),
-  ...loadCases('evals/golden-corpus/vendor-documented-additional.v1.json'),
-  ...loadCases('evals/golden-corpus/vendor-documented-cef.v1.json'),
-].filter(item => item.sampleClass.startsWith('VENDOR_DOCUMENTED'));
+const corpusFiles = (JSON.parse(readFileSync(resolve('evals/golden-corpus/corpus-files.v1.json'), 'utf8')) as { files: string[] }).files;
+const vendorCases = corpusFiles.flatMap(loadCases).filter(item => item.sampleClass.startsWith('VENDOR_DOCUMENTED'));
 const RUNNER = resolve('scripts/verification/ruby-golden-event-runner.rb');
 
 const isObject = (value: unknown): value is Record<string, unknown> =>

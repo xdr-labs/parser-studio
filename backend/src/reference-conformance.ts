@@ -28,6 +28,7 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   { id: "FRAG-LOG-INDEX", level: "MUST", scope: "fragment", description: "The fragment assigns stellar_log_index (the CONF routes on it)." },
   { id: "FRAG-EMPTY-INPUT", level: "SHOULD", scope: "fragment", description: "Nil or empty input yields nil, nil." },
   { id: "CONF-SYNTAX", level: "MUST", scope: "conf", description: "The CONF has balanced Fluentd sections." },
+  { id: "CONF-STRUCTURE", level: "MUST", scope: "conf", description: "Only <source>(<parse>) and <match>(<rule>) sections appear, nothing sits outside a section, and no parameter is repeated within a section." },
   { id: "CONF-SOURCE-TYPES", level: "MUST", scope: "conf", description: "Every <source> is udp or tcp and at least one exists." },
   { id: "CONF-BIND", level: "MUST", scope: "conf", description: "Every <source> has bind 0.0.0.0 or 127.0.0.1 and equals the project's bind when one is declared." },
   { id: "CONF-PORT-SHARED", level: "MUST", scope: "conf", description: "All <source> sections of one CONF use the same port." },
@@ -49,6 +50,20 @@ const MARKERS = ["STELLAR_INIT_BEGIN", "STELLAR_INIT_END", "STELLAR_PARSE_BEGIN"
 const isBlank = (line: string) => line.trim() === "";
 const isCode = (line: string) => !isBlank(line) && !line.trim().startsWith("#");
 
+/** The lines with comment-only content blanked and line numbers preserved: whole-line `#`
+ *  comments and `=begin`/`=end` block comments (Ruby only opens those at column 0). Token
+ *  rules read this view so commentary that merely mentions a required construct cannot
+ *  satisfy, or trip, a rule. A `#` that trails code on the same line is left alone: telling
+ *  it from a `#` inside a string needs a Ruby tokenizer, which is the container gate's job. */
+function codeLines(lines: string[]): string[] {
+  let inBlock = false;
+  return lines.map(line => {
+    if (inBlock) { if (/^=end\b/.test(line)) inBlock = false; return ""; }
+    if (/^=begin\b/.test(line)) { inBlock = true; return ""; }
+    return line.trim().startsWith("#") ? "" : line;
+  });
+}
+
 export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
   const out: ConformanceFinding[] = [];
   const lines = ruby.split("\n");
@@ -64,7 +79,8 @@ export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
     return out;
   }
   const [initBegin, initEnd, parseBegin, parseEnd] = first as [number, number, number, number];
-  const region = (from: number, to: number) => lines.slice(from + 1, to);
+  const source = codeLines(lines);
+  const region = (from: number, to: number) => source.slice(from + 1, to);
   const code = (from: number, to: number) => region(from, to).filter(isCode);
 
   if (lines.slice(parseEnd + 1).some(line => !isBlank(line)))
@@ -72,7 +88,7 @@ export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
   if (code(-1, initBegin).length || code(initEnd, parseBegin).length)
     out.push(finding("FRAG-REGION-GAP", "Executable code outside the INIT/PARSE regions (before INIT_BEGIN or between INIT_END and PARSE_BEGIN)."));
 
-  const nonComment = lines.filter(line => !line.trim().startsWith("#")).join("\n");
+  const nonComment = source.join("\n");
   if (/^\s*module\s+Fluent\b/m.test(nonComment) || /register_parser/.test(nonComment) ||
       /StellarInnerParseClass/.test(nonComment) || /class\s+Parser_customized/.test(nonComment))
     out.push(finding("FRAG-NO-WRAPPER-DECLS", "The fragment declares platform wrapper constructs."));
@@ -129,12 +145,37 @@ function regexOf(value: string | undefined): RegExp | undefined {
   try { return new RegExp(match[1]!); } catch { return undefined; }
 }
 
+// What the generator emits and nothing else. A section the contract never looked at (a stray
+// <filter>, a <source> nested in a <match>) or a repeated parameter (Fluentd keeps the last one,
+// parseFluentConf reads the first) would otherwise pass every other rule unnoticed.
+const CONF_CHILDREN: Readonly<Record<string, readonly string[]>> = {
+  root: ["source", "match"], source: ["parse"], parse: [], match: ["rule"], rule: [],
+};
+
+function confStructureProblems(root: ConfNode): string[] {
+  const problems: string[] = [];
+  const visit = (node: ConfNode, where: string): void => {
+    const keys = node.params.map(p => p.key);
+    for (const key of new Set(keys))
+      if (keys.filter(k => k === key).length > 1) problems.push(key + " is repeated in " + where);
+    for (const child of node.children) {
+      if (!(CONF_CHILDREN[node.name] ?? []).includes(child.name)) problems.push("<" + child.name + "> is not allowed in " + where);
+      else visit(child, "<" + child.name + ">");
+    }
+  };
+  if (root.params.length) problems.push("parameters outside any section");
+  visit(root, "the file");
+  return problems;
+}
+
 export interface ConfContext { parserName: string; expectedBind?: string }
 
 export function checkConfStructure(conf: string, ctx: ConfContext): ConformanceFinding[] {
   const out: ConformanceFinding[] = [];
   const { root, errors } = parseFluentConf(conf);
   if (errors.length) return [finding("CONF-SYNTAX", errors.join("; "))];
+  const structure = confStructureProblems(root);
+  if (structure.length) out.push(finding("CONF-STRUCTURE", structure.join("; ")));
   const sources = root.children.filter(node => node.name === "source");
   if (!sources.length || sources.some(s => !["udp", "tcp"].includes(param(s, "@type") ?? "")))
     out.push(finding("CONF-SOURCE-TYPES", "Expected at least one <source> and only udp/tcp source types."));
