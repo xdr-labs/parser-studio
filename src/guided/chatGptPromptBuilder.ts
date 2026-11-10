@@ -100,6 +100,7 @@ export function composeChatGPTPrompt({
     'contract must be parser-studio.recipe.v0.2, schemaRevision 0.2, compilerMode REVIEW_ONLY, nativeVerified=false, targetVerified=false.',
     'Use the exact projectId above; sample must be {"sha256":sourceHash,"events":sourceCount} with those exact metadata values.',
     'The projectId is Parser Studio\'s reserved local draft identity for a REVIEW_ONLY proposal. It does not mean a parser has compiled or been installed.',
+    'Current Stellar Cyber 7.0 export target runs Ruby 2.4.9, which lacks bounded Regex execution. parse_regex recipes can be reviewed in the browser but CANNOT generate supported Ruby/CONF or ZIP files for that target. Prefer source-proven supported grammars; if only Regex fits, return REVIEW_REQUIRED: target runtime cannot export this source format.',
     'Allowed single-line families: JSON, strict KV, explicitly named CSV, CEF, LEEF, reviewed RFC3164/RFC5424 bodies, reviewed mixed families, Generic Structural Ultra fixed grammar, or bounded named-capture regex.',
     'Stages must be: split_event, optional strict unwrap_syslog or allowlisted dispatch_family, exactly one supported parse stage, zero or more map_field (with adjacent cast_type for typed fields), bounded split_field/merge_fields, classify, fallback_unparsed.',
     'For parse_regex, use only a source-supported <=256-character named-capture pattern without lookbehind, backreferences or unsafe repetition. Never invent a vendor grammar.',
