@@ -158,14 +158,14 @@ function candidateForSource(source:string,events:Record<string,unknown>[],existi
   // contains whitespace, hence the first piece is the value and the rest is
   // trailing free text. Other targets (timestamps, sizes, messages) can span
   // tokens and therefore never accept an atom.
-  const firstAtomKey=firstAtomKeyOf(source);
-  const leaf=firstAtomKey??source.split('.').at(-1)??source;
-  const exact=firstAtomKey?undefined:findStellarMetadataField(source);
+  const atomKey=firstAtomKeyOf(source);
+  const leaf=atomKey===undefined?source.split('.').at(-1)??source:atomKey;
+  const exact=findStellarMetadataField(source);
   const leafExact=findStellarMetadataField(leaf);
   const target=exact?.mappable?source:
     leafExact?.mappable?leaf:
     ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
-  if(firstAtomKey&&target&&!WHITESPACE_FREE_TARGETS.has(target))return null;
+  if(atomKey!==undefined&&target&&!WHITESPACE_FREE_TARGETS.has(target))return null;
   if(!target)return null;
   if((target==='srcport'||target==='dstport')&&sourceHasExcludedPortSegment(source))return null;
   if(incompatibleVendorMeaning(source,target,events))return null;
@@ -249,7 +249,8 @@ export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
     for(const path of paths)sources.add(path);
   }
   const eligible=[...sources].filter(source=>{
-    const leaf=firstAtomKeyOf(source)??source.split('.').at(-1)??source;
+    const atomKey=firstAtomKeyOf(source);
+    const leaf=atomKey===undefined?source.split('.').at(-1)??source:atomKey;
     return Boolean(findStellarMetadataField(source)?.mappable||
       findStellarMetadataField(leaf)?.mappable||
       ALIASES[source.toLowerCase()]||ALIASES[leaf.toLowerCase()]);
