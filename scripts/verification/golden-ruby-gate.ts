@@ -17,6 +17,7 @@
 //   golden-ruby-gate.ts prepare <downloads-dir> <runner-input.json>
 //   golden-ruby-gate.ts compare <downloads-dir> <runner-output.json> [--expect-ruby 2.4.9]
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { compareEventToGolden, type MappingRow } from '../../backend/src/golden-event-comparison.js';
@@ -25,7 +26,8 @@ interface Golden { sourcePath: string; sourceValue: unknown }
 interface VendorCase { id: string; sampleClass: string; rawSample: string; desiredFields: string; goldenSourceValues: Golden[] }
 interface Bundle { contract: string; id: string; raw: string; ruby: string; rubySha256: string; rows: MappingRow[]; required: string[] }
 
-export const CORPUS_FILES = ['evals/chatgpt/security-cases.json', 'evals/golden-corpus/vendor-documented-additional.v1.json'];
+// One registry for the browser spec and this gate (backend/test/golden-corpus-registry.test.ts keeps it complete).
+export const CORPUS_FILES: string[] = (JSON.parse(readFileSync(resolve('evals/golden-corpus/corpus-files.v1.json'), 'utf8')) as { files: string[] }).files;
 
 async function corpus(): Promise<VendorCase[]> {
   const all: VendorCase[] = [];
