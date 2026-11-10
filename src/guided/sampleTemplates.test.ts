@@ -9,6 +9,11 @@ describe('safe synthetic no-code starter templates', () => {
       'json', 'kv', 'csv', 'rfc3164_kv', 'syslog_rfc5424', 'rfc5424_cef', 'rfc5424_leef', 'cef', 'leef', 'mixed', 'mixed_rfc5424', 'mixed_rfc3164', 'mixed_rfc5424_bodies', 'mixed_rfc3164_cefleef', 'java_blanks',
     ]);
   });
+  it('keeps the approved default bind (all interfaces) in every starter, so a sensor can reach the receiver', () => {
+    for (const id of starterTemplateIds) {
+      expect(loadStarterTemplate(id).draft.guided?.receiver.bindPolicy, id).toBe('all');
+    }
+  });
   it.each(['json','kv','csv','syslog_rfc5424','cef','leef'] as const)(
     '%s provides a complete sample and compatible draft without proprietary values', (id) => {
       const template = loadStarterTemplate(id);
