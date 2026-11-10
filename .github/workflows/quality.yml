@@ -37,6 +37,18 @@ jobs:
         with:
           name: parser-studio-artifact-lineage-web
           path: ${{ runner.temp }}/parser-studio-lineage-web
+      - name: Download once-built frontend, backend and Multi-Pass distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: parser-studio-build-once-distribution
+          path: ${{ runner.temp }}/parser-studio-build-once
+      - name: Independently validate exact-HEAD distributed runtime bytes
+        env:
+          PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PARSER_STUDIO_EXPECTED_SOURCE_HEAD"
+          node scripts/verification/build-once-distribution.mjs verify "$RUNNER_TEMP/parser-studio-build-once"
       - name: Fail closed on mismatched exact-HEAD Native and Web artifact receipts
         env:
           PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -501,6 +513,23 @@ jobs:
           PARSER_STUDIO_MULTIPASS_PORT=5392 \
           PARSER_STUDIO_SCOPED_AUTHORING_E2E=1 \
           npx playwright test tests/common-security-logs.spec.ts tests/ai-field-correction.spec.ts tests/chatgpt-full-recovery.spec.ts tests/ai-split-merge-backend.spec.ts tests/beginner-regex-recovery.spec.ts --project=chromium --workers=2
+      # All exact-head source grammars, Native Ruby, security and Chromium
+      # checks above must pass before publishing these exact built bytes.
+      # The consumer release-eligibility job downloads this ONE immutable
+      # distribution instead of independently compiling the final deliverable.
+      - name: Verify and package one exact-HEAD distribution after E2E
+        run: |
+          set -euo pipefail
+          node --test scripts/verification/build-once-distribution.test.mjs
+          node scripts/verification/build-once-distribution.mjs create "$RUNNER_TEMP/parser-studio-build-once"
+          node scripts/verification/build-once-distribution.mjs verify "$RUNNER_TEMP/parser-studio-build-once"
+      - name: Upload once-built, integrity-checked distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-build-once-distribution
+          path: ${{ runner.temp }}/parser-studio-build-once/
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload failure artifacts
         if: failure()
         uses: actions/upload-artifact@v4
