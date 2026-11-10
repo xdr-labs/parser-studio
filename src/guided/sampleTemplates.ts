@@ -167,7 +167,6 @@ export function loadStarterTemplate(id: StarterTemplateId): StarterTemplate {
     guided.eventBoundary='blank-line';
     guided.receiver.protocols=['tcp'];
     guided.receiver.framing='blank_line_java';
-    guided.receiver.bindPolicy='loopback';
     guided.receiver.messageLimit=8192;
     draft.mappings=[
       {id:'java-class',source:'exception_class',target:'custom.exception_class',type:'string'},
