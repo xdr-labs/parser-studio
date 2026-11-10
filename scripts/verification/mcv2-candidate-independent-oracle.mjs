@@ -69,6 +69,41 @@ absent({direction:'inbound',logid:'0001',vd:'root',type:'traffic'},'direction');
 absent({type:'traffic'},'type');
 high({type:4,provider_guid:'abc'},'type','type','string');
 absent({event_type:'alert',alert:{signature_id:1,severity:2}},'alert.severity');
+// Generic Structural space_kv: an unquoted value runs to the next key, so a
+// destination port followed by free text is stored whole under kv and as
+// whitespace-separated pieces under atoms. A port/IP cannot contain whitespace,
+// hence ONLY the first piece of a port/IP key is a valid official source.
+const spaced=(key,pieces)=>({generic:{mode:'space_kv',
+  kv:{[key]:pieces.join(' ')},
+  atoms:Object.fromEntries(pieces.map((p,i)=>[key+'_'+String(i+1).padStart(3,'0'),p]))}});
+high(spaced('dport',['53','pattern:','allow','all']),'generic.atoms.dport_001','dstport','integer');
+high(spaced('sport',['55719','extra']),'generic.atoms.sport_001','srcport','integer');
+high(spaced('src',['192.0.2.7','trailing']),'generic.atoms.src_001','srcip','ip');
+high(spaced('dst',['198.51.100.7','trailing']),'generic.atoms.dst_001','dstip','ip');
+review(spaced('dport',['abc','def']),'generic.atoms.dport_001','dstport');
+review(spaced('dport',['65536','x']),'generic.atoms.dport_001','dstport');
+review(spaced('dport',['53','pattern:','allow','all']),'generic.kv.dport','dstport');
+// The protocol that qualifies a port atom is recorded on the KV carrier, not on the atom.
+const withProtocol=(event,protocol)=>({generic:{...event.generic,kv:{...event.generic.kv,protocol}}});
+review(withProtocol(spaced('dport',['53','trailing']),'icmp'),'generic.atoms.dport_001','dstport');
+review(withProtocol(spaced('dport',['53','trailing']),'icmp reply'),'generic.atoms.dport_001','dstport');
+high(withProtocol(spaced('dport',['53','trailing']),'tcp'),'generic.atoms.dport_001','dstport','integer');
+absent(spaced('dport',['x','53']),'generic.atoms.dport_002');
+absent(spaced('dport',['53','80']),'generic.atoms.dport_002');
+absent(spaced('severity',['3','of','5']),'generic.atoms.severity_001');
+absent(spaced('action',['allow','now']),'generic.atoms.action_001');
+absent(spaced('hostname',['fw01','edge']),'generic.atoms.hostname_001');
+absent(spaced('time',['2026-01-01','10:00:00']),'generic.atoms.time_001');
+absent(spaced('post_nat_sport',['443','x']),'generic.atoms.post_nat_sport_001');
+absent(spaced('unknown_vendor',['53','x']),'generic.atoms.unknown_vendor_001');
+{
+  // The two carriers of one key do not compete: only the atom can be approved.
+  const both=suggest([spaced('dport',['53','pattern:','allow','all'])]);
+  assert.deepEqual(both.filter(r=>r.confidence==='HIGH').map(r=>r.source),
+    ['generic.atoms.dport_001'],'only the first atom is auto-approved');
+  const kv=both.find(r=>r.source==='generic.kv.dport');
+  assert.equal(kv?.safeForBulk,false,'whole-text kv value is never auto-approved');
+}
 const noMapping=[{id:'owner',source:'custom',target:'srcip',type:'ip'}];
 assert.equal(suggest([{src_ip:'192.0.2.1'}],noMapping).length,0,'occupied target');
 const current={id:'auto-1',source:'src_ip',target:'custom.src_ip',type:'string',

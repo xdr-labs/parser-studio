@@ -1,0 +1,132 @@
+{
+ "contract": "parserstudio.golden-corpus.vendor-documented-cef.v1",
+ "sourcePolicy": "VENDOR_DOCUMENTED_PAGE_TEXT_ONLY",
+ "purpose": "Publisher-documented CEF examples cut from the vendor page text; expected values follow the escaping rules stated on that page.",
+ "cases": [
+  {
+   "id": "arcsight_cef_basic_v0",
+   "family": "CEF",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "OpenText ArcSight",
+   "product": "CEF Implementation Standard - syslog transport example",
+   "provenanceUrl": "https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.3/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "35084788fe79e4db96d98762c2dd3beae2032c2b451108a37b27b63cd61d8789",
+    "extraction": "verbatim"
+   },
+   "rawSample": "Sep 19 08:26:10 host CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232",
+   "originalSha256": "1c2e9c28f971903e292ee903b41bc2f3ce7655c743b1a73cfeebb7e8b0822ca3",
+   "sampleCount": 1,
+   "desiredFields": "body.cef_device_vendor, body.cef_device_product, body.cef_device_version, body.cef_signature_id, body.cef_name, body.cef_severity, body.src, body.dst, body.spt",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "body.cef_device_vendor",
+     "sourceValue": "Security"
+    },
+    {
+     "sourcePath": "body.cef_device_product",
+     "sourceValue": "threatmanager"
+    },
+    {
+     "sourcePath": "body.cef_device_version",
+     "sourceValue": "1.0"
+    },
+    {
+     "sourcePath": "body.cef_signature_id",
+     "sourceValue": "100"
+    },
+    {
+     "sourcePath": "body.cef_name",
+     "sourceValue": "worm successfully stopped"
+    },
+    {
+     "sourcePath": "body.cef_severity",
+     "sourceValue": "10"
+    },
+    {
+     "sourcePath": "body.src",
+     "sourceValue": "10.0.0.1"
+    },
+    {
+     "sourcePath": "body.dst",
+     "sourceValue": "2.1.2.2"
+    },
+    {
+     "sourcePath": "body.spt",
+     "sourceValue": "1232"
+    }
+   ]
+  },
+  {
+   "id": "arcsight_cef_escaped_header_pipe",
+   "family": "CEF",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "OpenText ArcSight",
+   "product": "CEF Implementation Standard - escaped pipe in a header value",
+   "provenanceUrl": "https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.3/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "35084788fe79e4db96d98762c2dd3beae2032c2b451108a37b27b63cd61d8789",
+    "extraction": "verbatim"
+   },
+   "rawSample": "Sep 19 08:26:10 host CEF:0|security|threatmanager|1.0|100|detected a \\| in message|10|src=10.0.0.1 act=blocked a | dst=1.1.1.1",
+   "originalSha256": "807102045bd1ccaaebb43244ad14a1bd8b07d4fd22cd192c4c043e65b57dd289",
+   "sampleCount": 1,
+   "desiredFields": "body.cef_name, body.src, body.act, body.dst",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "body.cef_name",
+     "sourceValue": "detected a | in message"
+    },
+    {
+     "sourcePath": "body.src",
+     "sourceValue": "10.0.0.1"
+    },
+    {
+     "sourcePath": "body.act",
+     "sourceValue": "blocked a |"
+    },
+    {
+     "sourcePath": "body.dst",
+     "sourceValue": "1.1.1.1"
+    }
+   ]
+  },
+  {
+   "id": "arcsight_cef_escaped_equals",
+   "family": "CEF",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "OpenText ArcSight",
+   "product": "CEF Implementation Standard - escaped equals sign in an extension value",
+   "provenanceUrl": "https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.3/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "35084788fe79e4db96d98762c2dd3beae2032c2b451108a37b27b63cd61d8789",
+    "extraction": "verbatim"
+   },
+   "rawSample": "Sep 19 08:26:10 host CEF:0|security|threatmanager|1.0|100|detected a = in message|10|src=10.0.0.1 act=blocked a \\= dst=1.1.1.1",
+   "originalSha256": "7c5f617991c10658a91fa386d921efc28339c0055b118018a8b38155677c8eb0",
+   "sampleCount": 1,
+   "desiredFields": "body.cef_name, body.src, body.act, body.dst",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "body.cef_name",
+     "sourceValue": "detected a = in message"
+    },
+    {
+     "sourcePath": "body.src",
+     "sourceValue": "10.0.0.1"
+    },
+    {
+     "sourcePath": "body.act",
+     "sourceValue": "blocked a ="
+    },
+    {
+     "sourcePath": "body.dst",
+     "sourceValue": "1.1.1.1"
+    }
+   ]
+  }
+ ]
+}

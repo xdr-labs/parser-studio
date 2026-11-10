@@ -1,0 +1,8 @@
+{
+  "contract": "parserstudio.golden-corpus.registry.v1",
+  "files": [
+    "evals/chatgpt/security-cases.json",
+    "evals/golden-corpus/vendor-documented-additional.v1.json",
+    "evals/golden-corpus/vendor-documented-cef.v1.json"
+  ]
+}

@@ -1,0 +1,207 @@
+{
+ "contract": "parserstudio.golden-corpus.vendor-documented-additional.v1",
+ "sourcePolicy": "VENDOR_DOCUMENTED_PAGE_TEXT_ONLY",
+ "purpose": "Publisher-documented single-line examples cut from the vendor page text. extraction records any whitespace normalization; no sample is retyped.",
+ "cases": [
+  {
+   "id": "meraki_mr_flows_allow",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "Cisco Meraki",
+   "product": "MR Wireless flows",
+   "provenanceUrl": "https://documentation.meraki.com/Platform_Management/Dashboard_Administration/Operate_and_Maintain/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "5a7806c1db9125e5ae422aaee891191ff7302e08d1bddc70fa723b4b949bfcda",
+    "extraction": "verbatim"
+   },
+   "rawSample": "1380653443.857790533 MR18 flows allow src=192.168.111.253 dst=192.168.111.5 mac=F8:1E:DF:E2:EF:F1 protocol=tcp sport=54252 dport=80",
+   "originalSha256": "b7c6e088e186438d75b148ba1cad037a13f4418bcaa47f0ab00dbcd64c356e3a",
+   "sampleCount": 1,
+   "desiredFields": "src, dst, mac, protocol, sport, dport",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "src",
+     "sourceValue": "192.168.111.253"
+    },
+    {
+     "sourcePath": "dst",
+     "sourceValue": "192.168.111.5"
+    },
+    {
+     "sourcePath": "mac",
+     "sourceValue": "F8:1E:DF:E2:EF:F1"
+    },
+    {
+     "sourcePath": "protocol",
+     "sourceValue": "tcp"
+    },
+    {
+     "sourcePath": "sport",
+     "sourceValue": "54252"
+    },
+    {
+     "sourcePath": "dport",
+     "sourceValue": "80"
+    }
+   ]
+  },
+  {
+   "id": "meraki_mx_flows_pattern",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "Cisco Meraki",
+   "product": "MX Security Appliance flows",
+   "provenanceUrl": "https://documentation.meraki.com/Platform_Management/Dashboard_Administration/Operate_and_Maintain/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "5a7806c1db9125e5ae422aaee891191ff7302e08d1bddc70fa723b4b949bfcda",
+    "extraction": "verbatim"
+   },
+   "rawSample": "1374543986.038687615 MX84 flows src=192.168.1.186 dst=8.8.8.8 mac=58:1F:AA:CE:61:F2 protocol=udp sport=55719 dport=53 pattern: allow all",
+   "originalSha256": "3150070d918f48c40937ae36db2dce373384449be92c71c7799618ff96ca8730",
+   "sampleCount": 1,
+   "desiredFields": "src, dst, mac, protocol, sport, dport",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "src",
+     "sourceValue": "192.168.1.186"
+    },
+    {
+     "sourcePath": "dst",
+     "sourceValue": "8.8.8.8"
+    },
+    {
+     "sourcePath": "mac",
+     "sourceValue": "58:1F:AA:CE:61:F2"
+    },
+    {
+     "sourcePath": "protocol",
+     "sourceValue": "udp"
+    },
+    {
+     "sourcePath": "sport",
+     "sourceValue": "55719"
+    },
+    {
+     "sourcePath": "dport",
+     "sourceValue": "53"
+    }
+   ]
+  },
+  {
+   "id": "meraki_mx_gp_firewall",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "Cisco Meraki",
+   "product": "MX Security Appliance gp_firewall",
+   "provenanceUrl": "https://documentation.meraki.com/Platform_Management/Dashboard_Administration/Operate_and_Maintain/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "5a7806c1db9125e5ae422aaee891191ff7302e08d1bddc70fa723b4b949bfcda",
+    "extraction": "nbsp-to-space"
+   },
+   "rawSample": "1792173599.743929631 MX85 gp_firewall src=10.203.1.19 dst=23.111.186.186 vlan=1 protocol=udp sport=48915 dport=123 decision=allowed rule=vlan:1:id:3705899543372497478",
+   "originalSha256": "3ce89cdbaa4e9ccbdf1696e92e3daca5de242c7c59ccc3d14c6fa9e18dd4ff8e",
+   "sampleCount": 1,
+   "desiredFields": "src, dst, vlan, protocol, sport, dport, decision",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "src",
+     "sourceValue": "10.203.1.19"
+    },
+    {
+     "sourcePath": "dst",
+     "sourceValue": "23.111.186.186"
+    },
+    {
+     "sourcePath": "vlan",
+     "sourceValue": "1"
+    },
+    {
+     "sourcePath": "protocol",
+     "sourceValue": "udp"
+    },
+    {
+     "sourcePath": "sport",
+     "sourceValue": "48915"
+    },
+    {
+     "sourcePath": "dport",
+     "sourceValue": "123"
+    },
+    {
+     "sourcePath": "decision",
+     "sourceValue": "allowed"
+    }
+   ]
+  },
+  {
+   "id": "sophos_sfw_antivirus_ftp",
+   "family": "ANTIVIRUS",
+   "sampleClass": "VENDOR_DOCUMENTED",
+   "publisher": "Sophos",
+   "product": "Sophos Firewall 22.0",
+   "provenanceUrl": "https://docs.sophos.com/nsg/sophos-firewall/22.0/syslog/index.html",
+   "provenance": {
+    "retrievedAt": "2026-11-10",
+    "pageSha256": "bdc52fd416026dabba0b8fbb2b03fc749c35346ca8ab71588a19d77e922ffae5",
+    "extraction": "verbatim"
+   },
+   "rawSample": "device=\"SFW\" date=2018-06-21 time=19:50:23 timezone=\"CEST\" device_name=\"SF01V\" device_id=SFDemo-2df0960 log_id=031006209001 log_type=\"Anti-Virus\" log_component=\"FTP\" log_subtype=\"Virus\" priority=Critical fw_rule_id=0 user_name=\"\" virus=\"EICAR-AV-Test\" FTP_url=\"/var/www//home/ftp-user/ta_test_file_1ta-cl1-46\" FTP_direction=\"Upload\" filename=\"/home/ftp-user/ta_test_file_1ta-cl1-46\" file_size=0 file_path=\"/var/www//home/ftp-user/ta_test_file_1ta-cl1-46\" ftpcommand=\"STOR\" src_ip=10.146.13.49 src_country_code=R1 dst_ip=10.8.142.181 dst_country_code=R1 protocol=\"TCP\" src_port=39910 dst_port=21 dstdomain=\"\" sent_bytes=0 recv_bytes=0",
+   "originalSha256": "566db03eeb31a97cbe67b8cf1894d24814b2dd56ab2fbc443db7877c8fcf6bef",
+   "sampleCount": 1,
+   "desiredFields": "device, date, time, timezone, device_name, device_id, log_id, log_type, log_component, log_subtype, priority, fw_rule_id",
+   "goldenSourceValues": [
+    {
+     "sourcePath": "device",
+     "sourceValue": "SFW"
+    },
+    {
+     "sourcePath": "date",
+     "sourceValue": "2018-06-21"
+    },
+    {
+     "sourcePath": "time",
+     "sourceValue": "19:50:23"
+    },
+    {
+     "sourcePath": "timezone",
+     "sourceValue": "CEST"
+    },
+    {
+     "sourcePath": "device_name",
+     "sourceValue": "SF01V"
+    },
+    {
+     "sourcePath": "device_id",
+     "sourceValue": "SFDemo-2df0960"
+    },
+    {
+     "sourcePath": "log_id",
+     "sourceValue": "031006209001"
+    },
+    {
+     "sourcePath": "log_type",
+     "sourceValue": "Anti-Virus"
+    },
+    {
+     "sourcePath": "log_component",
+     "sourceValue": "FTP"
+    },
+    {
+     "sourcePath": "log_subtype",
+     "sourceValue": "Virus"
+    },
+    {
+     "sourcePath": "priority",
+     "sourceValue": "Critical"
+    },
+    {
+     "sourcePath": "fw_rule_id",
+     "sourceValue": "0"
+    }
+   ]
+  }
+ ]
+}

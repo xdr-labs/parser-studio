@@ -100,6 +100,7 @@ const readable:Record<string,string>={
  BACKEND_UNAVAILABLE:'The local parser creation service is not available. Your analyzed fields are preserved; try again after the service is running.',
  BACKEND_UNTRUSTED:'Parser Studio cannot trust the response from the local parser creation service. No parser files were created.',
  BACKEND_PROFILE_UNSUPPORTED:'The connected parser creation service does not support this draft\'s log structure yet. Update or restart the development backend, then choose Re-check parser support and Review Fields. Your original logs and parsed fields are preserved.',
+ MANUFACTURER_UNSUPPORTED:'The manufacturer name can only use letters, digits, spaces and . _ & ( ) - characters (for example "OISF Suricata" instead of "OISF/Suricata"). Change the manufacturer, then choose Review Fields again. Your original logs were not changed.',
  SOURCE_LIMIT:'The sample is empty or exceeds the safe 64 KiB / 500 event limit.',
  MODEL_REVIEW_REQUIRED:'Parser Studio found source values, but their names, types or repeated occurrences cannot be mapped to one safe parser automatically. Use a trusted log field definition or ChatGPT Assisted Parser to review those choices. No source value was discarded.',
 };

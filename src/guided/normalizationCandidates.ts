@@ -30,6 +30,11 @@ export interface NormalizationCandidate {
 }
 
 const ALIASES:Readonly<Record<string,string>>=semanticPolicy.normalizationAliases;
+const WHITESPACE_FREE_TARGETS=new Set(['srcport','dstport','srcip','dstip']);
+/** The source key behind a Generic Structural `atoms.<key>_001` first piece. */
+function firstAtomKeyOf(source:string):string|undefined{
+  return /^(?:.+\.)?atoms\.([A-Za-z0-9_]+)_001$/.exec(source)?.[1];
+}
 
 function overlaps(a:string,b:string):boolean{
   return a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
@@ -44,14 +49,21 @@ const DOCUMENTED_PROTO_NAMES=new Set(semanticPolicy.officialProtocolNames);
 const TRANSPORT_NUMERIC=new Set<string>(
   semanticPolicy.transportPortProtocols.numeric.map(String));
 const TRANSPORT_NAMES=new Set<string>(semanticPolicy.transportPortProtocols.names);
+/** Where the protocol that qualifies `source` is recorded. An atom such as
+ * `generic.atoms.dport_001` is a slice of `generic.kv.dport`, so the protocol
+ * lives beside the KV carrier, not beside the atom. */
+function protocolContextPrefixes(source:string):string[]{
+  const prefix=source.includes('.')?source.slice(0,source.lastIndexOf('.')+1):'';
+  if(firstAtomKeyOf(source)===undefined)return [prefix];
+  return [prefix,source.slice(0,source.lastIndexOf('atoms.'))+'kv.'];
+}
 /** A protocol observation is not proof of a Layer 4 port unless it names an
  * independently reviewed carrier. Unknown/contradicting evidence is REVIEW. */
 function unsupportedPortProtocolInEvent(
   fields:Record<string,unknown>,source:string,
 ):boolean{
-  const prefix=source.includes('.')?source.slice(0,source.lastIndexOf('.')+1):'';
-  const candidates=[prefix+'protocol-id',prefix+'protocol',prefix+'proto',
-    prefix+'proto_name','protocol-id','protocol','proto','proto_name'];
+  const names=['protocol-id','protocol','proto','proto_name'];
+  const candidates=[...protocolContextPrefixes(source).flatMap(prefix=>names.map(name=>prefix+name)),...names];
   return candidates.some(name=>{
     const found=lookupFieldValue(fields,name);
     if(!found.found)return false;
@@ -147,12 +159,20 @@ export function valueFitsNormalizationTarget(
 }
 function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[],
  existingGroups:Record<string,FieldGroup>):NormalizationCandidate|null{
-  const leaf=source.split('.').at(-1)??source;
+  // Generic Structural space_kv lets an unquoted value run up to the next key,
+  // so `dport=53 pattern: allow all` stores the whole text under kv.dport and
+  // its whitespace-separated pieces under atoms.dport_001... A port or IP never
+  // contains whitespace, hence the first piece is the value and the rest is
+  // trailing free text. Other targets (timestamps, sizes, messages) can span
+  // tokens and therefore never accept an atom.
+  const atomKey=firstAtomKeyOf(source);
+  const leaf=atomKey===undefined?source.split('.').at(-1)??source:atomKey;
   const exact=findStellarMetadataField(source);
   const leafExact=findStellarMetadataField(leaf);
   const target=exact?.mappable?source:
     leafExact?.mappable?leaf:
     ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
+  if(atomKey!==undefined&&target&&!WHITESPACE_FREE_TARGETS.has(target))return null;
   if(!target)return null;
   if((target==='srcport'||target==='dstport')&&sourceHasExcludedPortSegment(source))return null;
   if(incompatibleVendorMeaning(source,target,events))return null;
@@ -236,7 +256,8 @@ export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
     for(const path of paths)sources.add(path);
   }
   const eligible=[...sources].filter(source=>{
-    const leaf=source.split('.').at(-1)??source;
+    const atomKey=firstAtomKeyOf(source);
+    const leaf=atomKey===undefined?source.split('.').at(-1)??source:atomKey;
     return Boolean(findStellarMetadataField(source)?.mappable||
       findStellarMetadataField(leaf)?.mappable||
       ALIASES[source.toLowerCase()]||ALIASES[leaf.toLowerCase()]);
