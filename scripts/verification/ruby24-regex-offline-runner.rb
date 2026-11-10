@@ -17,19 +17,55 @@ abort 'INVALID_FIXED_SYNTHETIC_INPUT' unless
   input.keys.sort == %w[contract records] &&
   input['contract'] == 'parser-studio.synthetic-ruby24-regex.v1' &&
   input['records'].is_a?(Array) &&
-  input['records'].map{|r|r['id']} == %w[regex syslog-regex-body]
+  input['records'].map{|r|r['id']} == %w[regex syslog-regex-body generic-positional-csv csv]
 result_count = 0
 input['records'].each do |item|
   abort 'INVALID_SYNTHETIC_RECORD' unless
     item.keys.sort == %w[compressedRuby id sha256] &&
-    item['compressedRuby'].is_a?(String) && item['compressedRuby'].length < 85000 &&
+    item['compressedRuby'].is_a?(String) && item['compressedRuby'].length < 150000 &&
     item['sha256'].to_s.match?(/\A[0-9a-f]{64}\z/)
   ruby = Zlib::Inflate.inflate(Base64.strict_decode64(item['compressedRuby']))
   abort 'INVALID_ARTIFACT_SHA' unless Digest::SHA256.hexdigest(ruby) == item['sha256']
-  abort 'UNEXPECTED_RUBY_SIZE' unless ruby.bytesize.between?(1000,120000)
+  abort 'UNEXPECTED_RUBY_SIZE' unless ruby.bytesize.between?(1000,180000)
   klass = Class.new
   klass.class_eval(ruby,'synthetic-generated-ruby',1)
   parser = klass.new
+  if item['id'] == 'csv'
+    # Fixed, independently expected CSV values: unquoted edge spaces are
+    # trimmed, quoted whitespace is preserved, embedded comma stays quoted.
+    output=parser.send(:parserstudio_csv,
+      '  alpha  ," quoted, value ",  gamma  ',
+      {'csvColumns'=>%w[alpha bravo charlie],'csvDelimiter'=>','})
+    abort 'CSV_INDEPENDENT_FIELDS_MISMATCH' unless
+      output=={'alpha'=>'alpha','bravo'=>' quoted, value ','charlie'=>'gamma'}
+    # TAB grammar must not silently trim fields.
+    tab=parser.send(:parserstudio_csv,
+      " first\t second\t third ",
+      {'csvColumns'=>%w[alpha bravo charlie],'csvDelimiter'=>"\t"})
+    abort 'CSV_TAB_WHITESPACE_LOST' unless
+      tab=={'alpha'=>' first','bravo'=>' second','charlie'=>' third '}
+    result_count+=2
+    next
+  end
+  if item['id'] == 'generic-positional-csv'
+    # A fixed independent PAN-OS source proves actual generated grammar
+    # execution on both Ruby 2.4.9 and Ruby 3.2.11, not syntax alone.
+    source='<14>Oct 15 00:03:21 PA-FW01 1,2026/10/15 00:03:21,012345678901,TRAFFIC,end,2561,2026/10/15 00:03:20,10.10.20.15,8.8.8.8,203.0.113.10,8.8.8.8,allow-web,,,ssl,vsys1,trust,untrust,ethernet1/1,ethernet1/2,forward-all,2026/10/15 00:03:21,123456,1,51234,443,45001,443,0x400000,tcp,allow,1480,720,760,12,2026/10/15 00:02:55,25,any,0,0x0,10.0.0.0-10.255.255.255,United States,,6,6,tcp-fin,0,0,0,0,,PA-FW01,from-policy'
+    result=parser.send(:parserstudio_generic_rfc3164_positional_csv,source)
+    abort 'PANOS_STRUCTURAL_SOURCE_NOT_PARSED' unless
+      result.is_a?(Hash) && result.dig('syslog','hostname') == 'PA-FW01' &&
+      result.dig('generic','mode') == 'panos_traffic_csv' &&
+      result.dig('generic','fields','src') == '10.10.20.15' &&
+      result.dig('generic','fields','sport') == '51234' &&
+      result.dig('generic','fields','dport') == '443' &&
+      result.dig('generic','fields','action') == 'allow'
+    abort 'INVALID_IPV4_ACCEPTED' if
+      parser.send(:parserstudio_generic_valid_ipv4?,'256.10.20.15')
+    abort 'VALID_IPV4_REJECTED' unless
+      parser.send(:parserstudio_generic_valid_ipv4?,'10.10.20.15')
+    result_count += 3
+    next
+  end
   ['allow', 'ALLOW'].each do |sample|
     if profile == 'ruby24'
       begin
@@ -75,5 +111,5 @@ input['records'].each do |item|
     result_count += 1
   end
 end
-abort 'MISSING_NATIVE_CASES' unless result_count == 10
-puts "SYNTHETIC_NATIVE_REGEX_PROFILE_PASS ruby=#{RUBY_VERSION} cases=#{result_count} profile=#{profile}"
+abort 'MISSING_NATIVE_CASES' unless result_count == 15
+puts "SYNTHETIC_NATIVE_TARGET_PROFILE_PASS ruby=#{RUBY_VERSION} cases=#{result_count} profile=#{profile}"

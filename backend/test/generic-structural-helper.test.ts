@@ -30,11 +30,30 @@ function runRuby(method:string,raw:string):unknown{
 }
 
 
-test("Generic Structural brace-style IP validator uses an explicit begin/rescue/end block",()=>{
-  // This source invariant runs even where a local Ruby binary is unavailable.
-  // The GitHub Actions gate additionally runs ruby -c and native Ruby E2E.
-  assert.match(helper,/valid_ip = lambda \{ \|value\|\s+#[^\n]*\n\s*#[^\n]*\n\s*begin\b/);
-  assert.match(helper,/rescue ArgumentError\s+false\s+end\s+\}/);
+test("Generic Structural positional CSV has one Ruby2.4-compatible shared IPv4 validator",()=>{
+  // Enforce a shared semantic path even when Ruby is unavailable on a local
+  // workstation. The pinned target Ruby 2.4 CI and live DP acceptance execute
+  // the generated code rather than trusting this source-level guard alone.
+  assert.match(helper,/def parserstudio_generic_valid_ipv4\?\(value\)/);
+  assert.match(helper,/candidate\.split\('\.'\)\.all\? \{ \|part\| Integer\(part, 10\)\.between\?\(0, 255\) \}/);
+  assert.match(helper,/rescue ArgumentError\s+false\s+end/);
+  assert.match(helper,/values\[index\]\)/);
+  assert.match(helper,/ips = values\.count \{ \|value\| parserstudio_generic_valid_ipv4\?\(value\) \}/);
+  const positional=helper.slice(helper.indexOf('def parserstudio_generic_rfc3164_positional_csv(text)'),
+    helper.indexOf('def parserstudio_generic_envelope_pri(pri_text)'));
+  assert.doesNotMatch(positional,/rescue ArgumentError/);
+  // 125-column PAN-OS original from public docs must not be refused by
+  // the Ruby source handler when its independent envelope accepts up to 150.
+  assert.match(positional,/values\.length\.between\?\(12, 150\)/);
+});
+
+test("Generic Structural shared native IPv4 validator refuses invalid octets",{skip:!rubyAvailable},()=>{
+  assert.equal(runRuby("parserstudio_generic_valid_ipv4?","10.10.20.15"),true);
+  assert.equal(runRuby("parserstudio_generic_valid_ipv4?","0.0.0.0"),true);
+  assert.equal(runRuby("parserstudio_generic_valid_ipv4?","255.255.255.255"),true);
+  assert.equal(runRuby("parserstudio_generic_valid_ipv4?","256.10.20.15"),false);
+  assert.equal(runRuby("parserstudio_generic_valid_ipv4?","1.2.3"),false);
+  assert.equal(runRuby("parserstudio_generic_valid_ipv4?","10.10.10.1/24"),false);
 });
 
 test("Generic Structural helper keeps Syslog envelope parsing ahead of weak generic fallbacks",()=>{

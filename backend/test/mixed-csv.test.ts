@@ -46,7 +46,9 @@ test('strict mixed CSV compiles TAB safely for Ruby 3.2 while preserving the no-
  assert.equal(validateProject(p).ok,true);
  const pair=compilePair(p);
  const ruby=pair.files[1]!.content;
- assert.match(ruby,/CSV\.parse_line\(text, col_sep: separator, liberal_parsing: false, strip: \(separator != "\\t"\)\)/);
+ // TAB must disable edge stripping, through the Ruby 2.4/3.2-compatible adapter.
+ assert.ok(ruby.includes('row = parserstudio_csv_parse_line(text, separator, separator != "\\t")'));
+ assert.doesNotMatch(ruby,/row = CSV\.parse_line\(text, col_sep: separator/);
  assert.equal(ruby.includes('liberal_parsing: true'),false);
  assert.equal(pair.manifest.engineVerified,false);
  assert.equal(pair.manifest.targetImportVerified,false);

@@ -811,22 +811,23 @@ def parserstudio_generic_rfc3164_delimited_comma_kv(text)
   {'syslog'=>syslog, 'generic'=>body['generic']}
 end
 
+# One Ruby-2.4-safe IPv4 semantic helper for all positional CSV consumers.
+# A method-level rescue avoids a bare rescue inside do/end blocks (a syntax
+# error on the observed Stellar Cyber 7.0 Ruby 2.4.9 target).
+def parserstudio_generic_valid_ipv4?(value)
+  candidate=value.to_s
+  return false unless candidate.match?(/\A(?:\d{1,3}\.){3}\d{1,3}\z/)
+  candidate.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
+rescue ArgumentError
+  false
+end
+
 def parserstudio_generic_panos_traffic_fields(values)
   return nil unless values.length >= 53 && values[3].to_s == 'TRAFFIC'
   values = values.map { |value| value.to_s }
   datetime = /\A\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\z/
-  ip = /\A(?:\d{1,3}\.){3}\d{1,3}\z/
-  valid_ip = lambda { |value|
-    # A rescue clause needs an explicit begin/end inside a brace-style block.
-    # Do not reject otherwise well-formed PAN-style positional CSV messages.
-    begin
-      value.match?(ip) && value.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
-    rescue ArgumentError
-      false
-    end
-  }
   return nil unless [1,6,21,35].all? { |index| values[index].to_s.match?(datetime) }
-  return nil unless [7,8,9,10].all? { |index| valid_ip.call(values[index].to_s) }
+  return nil unless [7,8,9,10].all? { |index| parserstudio_generic_valid_ipv4?(values[index]) }
   return nil unless [24,25,26,27].all? { |index|
     value=values[index].to_s
     value.match?(/\A\d{1,5}\z/) && Integer(value,10).between?(0,65_535)
@@ -857,18 +858,12 @@ def parserstudio_generic_rfc3164_positional_csv(text)
   body = text[head.end(0)..-1].to_s
   return nil if body.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*=/)
   begin
-    values = CSV.parse_line(body, col_sep: ',', liberal_parsing: false, strip: false)
+    values = CSV.parse_line(body, col_sep: ',', liberal_parsing: false)
   rescue CSV::MalformedCSVError
     return nil
   end
-  return nil unless values && values.length.between?(12, 100) && values[0].to_s.match?(/\A[0-9]{1,10}\z/)
-  ip = /\A(?:\d{1,3}\.){3}\d{1,3}\z/
-  ips = values.count do |value|
-    candidate=value.to_s
-    candidate.match?(ip) && candidate.split('.').all? { |part| Integer(part, 10).between?(0, 255) }
-  rescue ArgumentError
-    false
-  end
+  return nil unless values && values.length.between?(12, 150) && values[0].to_s.match?(/\A[0-9]{1,10}\z/)
+  ips = values.count { |value| parserstudio_generic_valid_ipv4?(value) }
   category = /\A(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION)\z/
   return nil unless ips >= 2 && values.any? { |value| value.to_s.match?(category) }
   values=values.map { |value| value.to_s }
@@ -1093,7 +1088,7 @@ def parserstudio_generic_envelope_watchguard(text)
 end
 
 def parserstudio_generic_envelope_csv(text)
-  CSV.parse_line(text,col_sep:',',liberal_parsing:false,strip:false)
+  CSV.parse_line(text,col_sep:',',liberal_parsing:false)
 rescue CSV::MalformedCSVError
   nil
 end
