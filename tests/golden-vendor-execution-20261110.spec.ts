@@ -22,8 +22,12 @@ interface VendorCase {
   id: string; sampleClass: string; rawSample: string; desiredFields: string;
   publisher: string; product: string; goldenSourceValues: Golden[];
 }
-const corpus = JSON.parse(readFileSync(resolve('evals/chatgpt/security-cases.json'), 'utf8')) as { cases: VendorCase[] };
-const vendorCases = corpus.cases.filter(item => item.sampleClass.startsWith('VENDOR_DOCUMENTED'));
+const loadCases = (path: string) => (JSON.parse(readFileSync(resolve(path), 'utf8')) as { cases: VendorCase[] }).cases;
+// Publisher-documented examples only. PROJECT_SYNTHETIC cases are never counted here.
+const vendorCases = [
+  ...loadCases('evals/chatgpt/security-cases.json'),
+  ...loadCases('evals/golden-corpus/vendor-documented-additional.v1.json'),
+].filter(item => item.sampleClass.startsWith('VENDOR_DOCUMENTED'));
 const RUNNER = resolve('scripts/verification/ruby-golden-event-runner.rb');
 
 const isObject = (value: unknown): value is Record<string, unknown> =>

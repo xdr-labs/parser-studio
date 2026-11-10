@@ -89,6 +89,48 @@ test('generic structural source prefix is ignored when matching rows to document
   assert.deepEqual(result.problems, []);
 });
 
+test('a Generic Structural key=value source path is matched by its documented key', () => {
+  const result = compareEventToGolden({
+    golden: [{ sourcePath: 'src', sourceValue: '192.0.2.1' }],
+    rows: [{ source: 'parserstudio_source.generic.kv.src', target: 'srcip', vendorNamespace: false }],
+    required: ['src'],
+    events: [{ time: null, record: { srcip: '192.0.2.1' } }],
+  });
+  assert.deepEqual(result.problems, []);
+});
+
+test('a documented value is found through the first atom when the whole kv value absorbed trailing text', () => {
+  const input = {
+    golden: [{ sourcePath: 'dport', sourceValue: '53' }],
+    rows: [
+      { source: 'parserstudio_source.generic.kv.dport', target: 'dport', vendorNamespace: true },
+      { source: 'parserstudio_source.generic.atoms.dport_001', target: 'dstport', vendorNamespace: false },
+    ],
+    required: ['dport'],
+  };
+  const good = compareEventToGolden({
+    ...input,
+    events: [{ time: null, record: { dstport: 53, cisco_meraki: { dport: '53 pattern: allow all' } } }],
+  });
+  assert.deepEqual(good.problems, []);
+  assert.deepEqual(good.matched.map(m => m.target), ['dstport']);
+  const wrong = compareEventToGolden({
+    ...input,
+    events: [{ time: null, record: { dstport: 80, cisco_meraki: { dport: '53 pattern: allow all' } } }],
+  });
+  assert.deepEqual(wrong.problems.map(p => p.code), ['REQUIRED_FIELD_VALUE_MISMATCH']);
+});
+
+test('only the first atom stands for the documented key', () => {
+  const result = compareEventToGolden({
+    golden: [{ sourcePath: 'dport', sourceValue: '53' }],
+    rows: [{ source: 'parserstudio_source.generic.atoms.dport_002', target: 'dstport', vendorNamespace: false }],
+    required: ['dport'],
+    events: [{ time: null, record: { dstport: 53 } }],
+  });
+  assert.deepEqual(result.problems.map(p => p.code), ['REQUIRED_FIELD_UNMAPPED']);
+});
+
 test('dotted destination names resolve through nested objects', () => {
   const result = compareEventToGolden({
     golden: [{ sourcePath: 'alert.action', sourceValue: 'allowed' }],

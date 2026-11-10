@@ -57,8 +57,20 @@ const SOURCE_PREFIX = 'parserstudio_source.';
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
-const normalizeSource = (source: string): string =>
-  source.startsWith(SOURCE_PREFIX) ? source.slice(SOURCE_PREFIX.length) : source;
+// Generic Structural keeps a space-delimited `key=value` line under
+// `generic.kv.<key>`. The documented key is the part after that prefix.
+// An unquoted value runs up to the next key, so trailing free text stays in the
+// kv value while its whitespace-separated pieces are `generic.atoms.<key>_001`
+// and so on. The first piece is the documented value of the same key.
+const GENERIC_KV_PREFIX = 'generic.kv.';
+const FIRST_ATOM = /^generic\.atoms\.([A-Za-z0-9_]+)_001$/;
+
+const normalizeSource = (source: string): string => {
+  const bare = source.startsWith(SOURCE_PREFIX) ? source.slice(SOURCE_PREFIX.length) : source;
+  const atom = FIRST_ATOM.exec(bare);
+  if (atom) return atom[1]!;
+  return bare.startsWith(GENERIC_KV_PREFIX) ? bare.slice(GENERIC_KV_PREFIX.length) : bare;
+};
 
 function walk(root: Record<string, unknown>, path: string): { found: boolean; value?: unknown } {
   if (Object.prototype.hasOwnProperty.call(root, path)) return { found: true, value: root[path] };
@@ -108,6 +120,40 @@ function sameValue(actual: string, expected: string): boolean {
   return a !== null && a === e;
 }
 
+function evaluateRow(
+  record: Record<string, unknown>, row: MappingRow, path: string, expected: string,
+): { match: { sourcePath: string; target: string; value: string } } | { problem: GoldenProblem } {
+  let lookup: { found: boolean; value?: unknown };
+  if (row.vendorNamespace) {
+    const namespaces = Object.values(record).filter(isPlainObject);
+    const hits = namespaces.map(ns => walk(ns, row.target)).filter(hit => hit.found);
+    if (hits.length > 1) {
+      return { problem: { code: 'AMBIGUOUS_VENDOR_NAMESPACE', sourcePath: path, detail: row.target + ' found in several namespaces' } };
+    }
+    lookup = hits[0] ?? { found: false };
+  } else {
+    lookup = walk(record, row.target);
+  }
+  if (!lookup.found) {
+    return {
+      problem: {
+        code: 'REQUIRED_FIELD_MISSING_IN_EVENT', sourcePath: path,
+        detail: row.target + (row.vendorNamespace ? ' (manufacturer namespace)' : '') + ' absent from the emitted event',
+      },
+    };
+  }
+  const actual = text(lookup.value);
+  if (!sameValue(actual, expected)) {
+    return {
+      problem: {
+        code: 'REQUIRED_FIELD_VALUE_MISMATCH', sourcePath: path,
+        detail: row.target + ' expected ' + expected + ' but the event holds ' + actual,
+      },
+    };
+  }
+  return { match: { sourcePath: path, target: row.target, value: actual } };
+}
+
 export function compareEventToGolden(input: {
   readonly golden: readonly GoldenValue[];
   readonly rows: readonly MappingRow[];
@@ -133,10 +179,10 @@ export function compareEventToGolden(input: {
   }
 
   const goldenByPath = new Map(input.golden.map(item => [item.sourcePath, item.sourceValue] as const));
-  const rowBySource = new Map<string, MappingRow>();
+  const rowsBySource = new Map<string, MappingRow[]>();
   for (const row of input.rows) {
     const key = normalizeSource(row.source);
-    if (!rowBySource.has(key)) rowBySource.set(key, row);
+    rowsBySource.set(key, [...(rowsBySource.get(key) ?? []), row]);
   }
 
   for (const path of input.required) {
@@ -145,44 +191,28 @@ export function compareEventToGolden(input: {
       continue;
     }
     const expected = text(goldenByPath.get(path));
-    const row = rowBySource.get(path);
-    if (!row) {
+    const candidates = rowsBySource.get(path);
+    if (!candidates) {
       problems.push({ code: 'REQUIRED_FIELD_UNMAPPED', sourcePath: path, detail: 'the Map Fields stage has no row for it' });
       continue;
     }
-    let lookup: { found: boolean; value?: unknown };
-    if (row.vendorNamespace) {
-      const namespaces = Object.values(record).filter(isPlainObject);
-      const hits = namespaces.map(ns => walk(ns, row.target)).filter(hit => hit.found);
-      if (hits.length > 1) {
-        problems.push({ code: 'AMBIGUOUS_VENDOR_NAMESPACE', sourcePath: path, detail: row.target + ' found in several namespaces' });
-        continue;
-      }
-      lookup = hits[0] ?? { found: false };
-    } else {
-      lookup = walk(record, row.target);
+    // Several rows can stand for one documented key (the whole kv value and its
+    // first atom). The documented value must be carried by at least one of them;
+    // when none carries it, the first row's disagreement is the one reported.
+    let outcome: ReturnType<typeof evaluateRow> | undefined;
+    let firstFailure: GoldenProblem | undefined;
+    for (const row of candidates) {
+      const result = evaluateRow(record, row, path, expected);
+      if ('match' in result) { outcome = result; break; }
+      firstFailure ??= result.problem;
     }
-    if (!lookup.found) {
-      problems.push({
-        code: 'REQUIRED_FIELD_MISSING_IN_EVENT', sourcePath: path,
-        detail: row.target + (row.vendorNamespace ? ' (manufacturer namespace)' : '') + ' absent from the emitted event',
-      });
-      continue;
-    }
-    const actual = text(lookup.value);
-    if (!sameValue(actual, expected)) {
-      problems.push({
-        code: 'REQUIRED_FIELD_VALUE_MISMATCH', sourcePath: path,
-        detail: row.target + ' expected ' + expected + ' but the event holds ' + actual,
-      });
-      continue;
-    }
-    matched.push({ sourcePath: path, target: row.target, value: actual });
+    if (outcome && 'match' in outcome) matched.push(outcome.match);
+    else if (firstFailure) problems.push(firstFailure);
   }
 
   const requiredSet = new Set(input.required);
   const unrequiredUnmapped = input.golden
     .map(item => item.sourcePath)
-    .filter(path => !requiredSet.has(path) && !rowBySource.has(path));
+    .filter(path => !requiredSet.has(path) && !rowsBySource.has(path));
   return { matched, unrequiredUnmapped, problems };
 }

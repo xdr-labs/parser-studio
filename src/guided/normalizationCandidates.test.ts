@@ -132,4 +132,37 @@ describe('official-catalog normalization candidates',()=>{
       {id:'1',source:'x',target:'srcip',type:'ip'},
     ])).toEqual([]);
   });
+  describe('Generic Structural space_kv trailing text',()=>{
+    const generic=(kv:Record<string,string>,atoms:Record<string,string>)=>({generic:{mode:'space_kv',kv,atoms}});
+    it('maps the first atom of a port value that absorbed trailing free text',()=>{
+      const fields=generic(
+        {protocol:'udp',sport:'55719',dport:'53 pattern: allow all'},
+        {dport_001:'53',dport_002:'pattern:',dport_003:'allow',dport_004:'all'});
+      const candidates=suggestNormalizationCandidates(fields,[]);
+      expect(candidates).toContainEqual(expect.objectContaining({
+        source:'generic.atoms.dport_001',target:'dstport',type:'integer',
+        confidence:'HIGH',safeForBulk:true}));
+      // The whole-value source stays reviewable but is never auto-approved.
+      expect(candidates.find(item=>item.source==='generic.kv.dport'))
+        .toMatchObject({confidence:'REVIEW',safeForBulk:false});
+    });
+    it('does not accept an atom whose own value is not a valid port',()=>{
+      const fields=generic({dport:'abc def'},{dport_001:'abc',dport_002:'def'});
+      const high=suggestNormalizationCandidates(fields,[]).filter(item=>item.confidence==='HIGH');
+      expect(high.some(item=>item.target==='dstport')).toBe(false);
+    });
+    it('does not truncate free-text or timestamp values into official fields',()=>{
+      const fields=generic(
+        {time:'2026-01-01 10:00:00',msg:'53 apples',bytes:'1024 KB'},
+        {time_001:'2026-01-01',time_002:'10:00:00',msg_001:'53',msg_002:'apples',
+          bytes_001:'1024',bytes_002:'KB'});
+      const high=suggestNormalizationCandidates(fields,[]).filter(item=>item.source.includes('atoms.'));
+      expect(high).toEqual([]);
+    });
+    it('does not use a non-first atom as the port value',()=>{
+      const fields=generic({dport:'x 53'},{dport_001:'x',dport_002:'53'});
+      expect(suggestNormalizationCandidates(fields,[])
+        .some(item=>item.source==='generic.atoms.dport_002')).toBe(false);
+    });
+  });
 });

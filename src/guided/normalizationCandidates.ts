@@ -30,6 +30,11 @@ export interface NormalizationCandidate {
 }
 
 const ALIASES:Readonly<Record<string,string>>=semanticPolicy.normalizationAliases;
+const WHITESPACE_FREE_TARGETS=new Set(['srcport','dstport','srcip','dstip']);
+/** The source key behind a Generic Structural `atoms.<key>_001` first piece. */
+function firstAtomKeyOf(source:string):string|undefined{
+  return /^(?:.+\.)?atoms\.([A-Za-z0-9_]+)_001$/.exec(source)?.[1];
+}
 
 function overlaps(a:string,b:string):boolean{
   return a===b||a.startsWith(b+'.')||b.startsWith(a+'.');
@@ -147,12 +152,20 @@ export function valueFitsNormalizationTarget(
 }
 function candidateForSource(source:string,events:Record<string,unknown>[],existing:MappingRule[],
  existingGroups:Record<string,FieldGroup>):NormalizationCandidate|null{
-  const leaf=source.split('.').at(-1)??source;
-  const exact=findStellarMetadataField(source);
+  // Generic Structural space_kv lets an unquoted value run up to the next key,
+  // so `dport=53 pattern: allow all` stores the whole text under kv.dport and
+  // its whitespace-separated pieces under atoms.dport_001... A port or IP never
+  // contains whitespace, hence the first piece is the value and the rest is
+  // trailing free text. Other targets (timestamps, sizes, messages) can span
+  // tokens and therefore never accept an atom.
+  const firstAtomKey=firstAtomKeyOf(source);
+  const leaf=firstAtomKey??source.split('.').at(-1)??source;
+  const exact=firstAtomKey?undefined:findStellarMetadataField(source);
   const leafExact=findStellarMetadataField(leaf);
   const target=exact?.mappable?source:
     leafExact?.mappable?leaf:
     ALIASES[source.toLowerCase()]??ALIASES[leaf.toLowerCase()];
+  if(firstAtomKey&&target&&!WHITESPACE_FREE_TARGETS.has(target))return null;
   if(!target)return null;
   if((target==='srcport'||target==='dstport')&&sourceHasExcludedPortSegment(source))return null;
   if(incompatibleVendorMeaning(source,target,events))return null;
@@ -236,7 +249,7 @@ export function normalizationCandidateScanStatus(suite:SuiteResult|undefined):{
     for(const path of paths)sources.add(path);
   }
   const eligible=[...sources].filter(source=>{
-    const leaf=source.split('.').at(-1)??source;
+    const leaf=firstAtomKeyOf(source)??source.split('.').at(-1)??source;
     return Boolean(findStellarMetadataField(source)?.mappable||
       findStellarMetadataField(leaf)?.mappable||
       ALIASES[source.toLowerCase()]||ALIASES[leaf.toLowerCase()]);
