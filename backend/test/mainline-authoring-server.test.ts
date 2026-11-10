@@ -122,7 +122,7 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
   const path=await import("node:path");
   const root=path.resolve("src");
   const reviewed=new Set([
-    "mainline-authoring-server.ts","capabilities.ts","compiler.ts","validate.ts",
+    "mainline-authoring-server.ts","capabilities.ts","compiler.ts","reference-conformance.ts","validate.ts",
     "import.ts","artifact-package.ts","parser-recipe-v02.ts","unicode.ts","types.ts",
     // Pure browser-shared regex grammar guard, with no I/O, network or target APIs.
     "portable-regex.ts",

@@ -103,7 +103,7 @@ export function defaultGuidedOptions(): GuidedOptions {
     eventBoundary: 'single-line',
     // Preserve the backend-validated classifier mapping; vendor-only is not routable.
     groups: { 'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'top_fields' },
-    receiver: { protocols: ['udp', 'tcp'], port: DEFAULT_PARSER_LISTENER_PORT, bindPolicy: 'loopback', messageLimit: 8192, framing: 'newline' },
+    receiver: { protocols: ['udp', 'tcp'], port: DEFAULT_PARSER_LISTENER_PORT, bindPolicy: 'all', messageLimit: 8192, framing: 'newline' },
     classification: {
       defaultIndex: 'Syslog',
       rules: [

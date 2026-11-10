@@ -21,7 +21,7 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
       receiver: {
         protocols: ['udp', 'tcp'],
         port: 6801,
-        bindAddress: '127.0.0.1',
+        bindAddress: '0.0.0.0',
         messageLengthLimit: 8192,
         tcpFraming: 'line',
       },
@@ -180,4 +180,25 @@ describe('no-code UI to R1.5 backend project schema translation', () => {
     },
   );
 
+});
+
+describe('receiver bind default matches installed Stellar customized parsers', () => {
+  const projectFor = (policy?: 'loopback' | 'all') => {
+    const draft = createDraft();
+    draft.format = 'json';
+    if (policy) draft.guided = { ...defaultGuidedOptions(), receiver: { ...defaultGuidedOptions().receiver, bindPolicy: policy } };
+    const result = toBackendProject(draft);
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    return result.project as { receiver: { bindAddress: string } };
+  };
+
+  it('defaults to all interfaces (0.0.0.0), as in every reference CONF source', () => {
+    expect(defaultGuidedOptions().receiver.bindPolicy).toBe('all');
+    expect(projectFor().receiver.bindAddress).toBe('0.0.0.0');
+  });
+
+  it('keeps an explicit loopback override', () => {
+    expect(projectFor('loopback').receiver.bindAddress).toBe('127.0.0.1');
+    expect(projectFor('all').receiver.bindAddress).toBe('0.0.0.0');
+  });
 });
