@@ -164,6 +164,7 @@ test("every conformance rule has a mutation that triggers it at its declared lev
     "FRAG-LOG-INDEX": () => fragment(a.ruby.split("stellar_log_index").join("stellar_idx")),
     "FRAG-EMPTY-INPUT": () => fragment(a.ruby.replace(/yield\s+nil\s*,\s*nil/g, "return")),
     "CONF-SYNTAX": () => conf(a.conf.replace("</match>", "")),
+    "CONF-STRUCTURE": () => conf(a.conf + "\n<filter x.**>\n</filter>\n"),
     "CONF-SOURCE-TYPES": () => conf(a.conf.replace("@type udp", "@type http")),
     "CONF-BIND": () => conf(a.conf.replace(/bind [0-9.]+/, "bind 10.1.1.1")),
     "CONF-PORT-SHARED": () => conf(a.conf.replace(/port (\d+)/, "port 9")),
@@ -213,4 +214,57 @@ test("contract MUST/SHOULD levels agree with the declared corpus basis and numbe
       assert.equal(rule.basis, "product-rule", rule.id + ": a rule without corpus numbers is a product rule");
     }
   }
+});
+
+// Token rules must read code, not commentary: a comment that merely mentions the
+// required constructs is not a fragment that contains them.
+const skeleton = (parseBody: string, parseDef = "def parse(text)") => [
+  "# STELLAR_INIT_BEGIN", "def initialize(*args)", "  @parser_rule_set = {}", "end", "# STELLAR_INIT_END",
+  "# STELLAR_PARSE_BEGIN", parseDef, parseBody, "end", "# STELLAR_PARSE_END", "",
+].join("\n");
+const REAL_BODY = [
+  "  if text.nil? || text.empty?", "    yield nil, nil", "    return", "  end",
+  "  record = { 'stellar_log_index' => 'syslog' }", "  record['parser_err_msg'] = 'x' if text == 'bad'",
+  "  yield Time.now.to_i, record",
+].join("\n");
+
+test("a minimal real fragment satisfies the token rules (control for the comment attacks)", () => {
+  assert.deepEqual(checkFragmentStructure(skeleton(REAL_BODY)), []);
+});
+
+test("required tokens that appear only in comments do not satisfy the token rules", () => {
+  const commented = skeleton("  # yield nil, nil\n  # record['parser_err_msg'] = 'x'\n  # stellar_log_index = 'syslog'\n  1");
+  assert.deepEqual(checkFragmentStructure(commented).map(f => f.rule).sort(),
+    ["FRAG-EMPTY-INPUT", "FRAG-ERROR-CONTRACT", "FRAG-LOG-INDEX", "FRAG-YIELD"]);
+});
+
+test("required tokens hidden in a =begin/=end block comment do not satisfy the token rules", () => {
+  const block = skeleton("=begin\n  yield nil, nil\n  parser_err_msg stellar_log_index\n=end\n  1");
+  assert.deepEqual(checkFragmentStructure(block).map(f => f.rule).sort(),
+    ["FRAG-EMPTY-INPUT", "FRAG-ERROR-CONTRACT", "FRAG-LOG-INDEX", "FRAG-YIELD"]);
+  const hiddenDef = skeleton(REAL_BODY, "=begin\ndef parse(text)\n=end\ndef parse_other(text)");
+  assert.ok(checkFragmentStructure(hiddenDef).some(f => f.rule === "FRAG-PARSE"));
+});
+
+test("wrapper words inside a =begin/=end block are commentary, not wrapper declarations", () => {
+  const block = skeleton(REAL_BODY).replace("# STELLAR_INIT_END", "=begin\nmodule Fluent\nregister_parser\n=end\n# STELLAR_INIT_END");
+  assert.deepEqual(checkFragmentStructure(block), []);
+});
+
+test("a =begin block does not count as executable code outside the regions", () => {
+  assert.deepEqual(must(checkFragmentStructure("=begin\nnotes\n=end\n" + skeleton(REAL_BODY))), []);
+});
+
+// The CONF allow-list: Parser Studio emits only <source>(<parse>) and <match>(<rule>), each
+// parameter once. Anything else is either a generator bug or content the reference
+// contract never checked, so it fails closed instead of being silently ignored.
+test("CONF allow-list: unknown sections, nesting and duplicate parameters are rejected", () => {
+  const a = artifacts();
+  const conf = (text: string) => must(checkConfStructure(text, { parserName: a.name }));
+  assert.deepEqual(conf(a.conf), []);
+  assert.deepEqual(conf(a.conf.replace(/\n/g, "\r\n")), [], "CRLF line endings are tolerated");
+  assert.deepEqual(conf(a.conf + "\n<filter x.**>\n  @type record_transformer\n</filter>\n"), ["CONF-STRUCTURE"]);
+  assert.deepEqual(conf(a.conf.replace(/(<source>\n)/, "$1  <transport tls>\n    x 1\n  </transport>\n")), ["CONF-STRUCTURE"]);
+  assert.deepEqual(conf(a.conf.replace(/(<source>\n)/, "$1  bind 0.0.0.0\n")), ["CONF-STRUCTURE"]);
+  assert.deepEqual(conf(a.conf.replace(/(<match [^>]+>\n)/, "$1  <source>\n    @type udp\n  </source>\n")), ["CONF-STRUCTURE"]);
 });
