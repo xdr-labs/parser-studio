@@ -19,7 +19,7 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   { id: "FRAG-MARKERS", level: "MUST", scope: "fragment", description: "STELLAR_INIT_BEGIN, INIT_END, PARSE_BEGIN and PARSE_END each occur exactly once, in that order." },
   { id: "FRAG-NO-CODE-AFTER-PARSE-END", level: "MUST", scope: "fragment", description: "Nothing but blank lines follows STELLAR_PARSE_END." },
   { id: "FRAG-REGION-GAP", level: "MUST", scope: "fragment", description: "No executable code before INIT_BEGIN or between INIT_END and PARSE_BEGIN." },
-  { id: "FRAG-NO-WRAPPER-DECLS", level: "MUST", scope: "fragment", description: "The fragment never declares the platform wrapper (module Fluent, register_parser, StellarInnerParseClass, Parser_customized_*)." },
+  { id: "FRAG-NO-WRAPPER-DECLS", level: "MUST", scope: "fragment", description: "The fragment never declares the platform wrapper (module Fluent, a class under Fluent::, a Parser subclass, register_parser, StellarInnerParseClass, Parser_customized_*)." },
   { id: "FRAG-INITIALIZE", level: "MUST", scope: "fragment", description: "def initialize is inside the INIT region." },
   { id: "FRAG-RULESET", level: "MUST", scope: "fragment", description: "@parser_rule_set is assigned inside the INIT region (the wrapper reads it through the inner class)." },
   { id: "FRAG-PARSE", level: "MUST", scope: "fragment", description: "def parse(text) is inside the PARSE region." },
@@ -49,6 +49,19 @@ const finding = (rule: string, message: string): ConformanceFinding => ({ rule, 
 const MARKERS = ["STELLAR_INIT_BEGIN", "STELLAR_INIT_END", "STELLAR_PARSE_BEGIN", "STELLAR_PARSE_END"] as const;
 const isBlank = (line: string) => line.trim() === "";
 const isCode = (line: string) => !isBlank(line) && !line.trim().startsWith("#");
+
+/** Constructs the platform wrapper owns. A fragment is spliced into that wrapper, so declaring
+ *  any of these again would define the plugin twice or shadow the wrapper's own classes. The
+ *  Fluentd-namespace class and Parser-subclass shapes are listed because a wrapper declaration
+ *  does not need a `module Fluent` line to be one. */
+const WRAPPER_DECLARATIONS: readonly RegExp[] = [
+  /^\s*module\s+Fluent\b/m,
+  /^\s*class\s+Fluent::/m,
+  /^\s*class\s+\w+(?:::\w+)*\s*<\s*(?:Fluent::)?(?:Plugin::)?Parser\b/m,
+  /register_parser/,
+  /StellarInnerParseClass/,
+  /class\s+Parser_customized/,
+];
 
 /** The lines with comment-only content blanked and line numbers preserved: whole-line `#`
  *  comments and `=begin`/`=end` block comments (Ruby only opens those at column 0). Token
@@ -89,8 +102,7 @@ export function checkFragmentStructure(ruby: string): ConformanceFinding[] {
     out.push(finding("FRAG-REGION-GAP", "Executable code outside the INIT/PARSE regions (before INIT_BEGIN or between INIT_END and PARSE_BEGIN)."));
 
   const nonComment = source.join("\n");
-  if (/^\s*module\s+Fluent\b/m.test(nonComment) || /register_parser/.test(nonComment) ||
-      /StellarInnerParseClass/.test(nonComment) || /class\s+Parser_customized/.test(nonComment))
+  if (WRAPPER_DECLARATIONS.some(declaration => declaration.test(nonComment)))
     out.push(finding("FRAG-NO-WRAPPER-DECLS", "The fragment declares platform wrapper constructs."));
 
   const init = region(initBegin, initEnd).join("\n");
