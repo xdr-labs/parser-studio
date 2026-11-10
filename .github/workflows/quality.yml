@@ -14,9 +14,9 @@ jobs:
     # Wait for both independent artifact-producing jobs before comparing the
     # source HEAD, policy, template, Ruby/CONF and ZIP hashes. A failed source
     # job must never allow this required status context to succeed.
-    needs: [native-isolated-synthetic, web-quality]
+    needs: [native-isolated-synthetic, web-quality, browser-regression]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     permissions:
       contents: read
       issues: read
@@ -47,6 +47,26 @@ jobs:
           node scripts/verification/reconcile-artifact-lineage.mjs \
             "$RUNNER_TEMP/parser-studio-lineage-native/parser-studio-lineage-native.json" \
             "$RUNNER_TEMP/parser-studio-lineage-web/parser-studio-lineage-web.json"
+      # This job is a required status context, so the downloaded-artifact gate
+      # lives here instead of in a new job: a failure here blocks merging without
+      # any change to branch protection, and `needs: browser-regression` means
+      # every shard has already passed.
+      - name: Download the Ruby/.conf files the browser shards received
+        uses: actions/download-artifact@v4
+        with:
+          pattern: parser-studio-e2e-downloads-shard-*
+          path: ${{ runner.temp }}/e2e-downloads
+      - name: Install backend tooling for the downloaded-artifact gate
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Downloaded Ruby/.conf contract plus offline Ruby 2.4.9 structure gate
+        run: |
+          set -euo pipefail
+          # Requires at least one validated real Fragment and .conf from the shards.
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/validate-downloaded-artifacts.ts \
+            "$RUNNER_TEMP/e2e-downloads" --min-real-fragments 1 --min-real-confs 1 \
+            --ruby-payload "$RUNNER_TEMP/downloaded-ruby-payload.b64"
+          bash scripts/verification/ruby-variant-matrix-container-gate.sh \
+            --payload "$RUNNER_TEMP/downloaded-ruby-payload.b64" --profiles ruby24
       - name: Reject any open P0 or P1 issue before merge
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,6 +157,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Executable consumer, policy and runtime contract guard
         run: node scripts/verification/executable-contract-gate.mjs
+      - name: Every download-capable Playwright spec records its downloads
+        run: |
+          node --test scripts/verification/download-sink-guard.test.mjs
+          node scripts/verification/download-sink-guard.mjs
       - name: Shipping backend source reachability and legacy-only API exclusion
         run: node scripts/verification/shipping-entrypoint-reachability.mjs
       - name: Deterministic unit tests
@@ -512,11 +536,24 @@ jobs:
           PARSER_STUDIO_TEST_PORT: '5180'
           PARSER_STUDIO_TEST_MULTIPASS: '1'
           PARSER_STUDIO_MULTIPASS_PORT: '5292'
+          PARSER_STUDIO_E2E_ARTIFACT_DIR: ${{ runner.temp }}/e2e-downloads
         run: |
           set -euo pipefail
+          mkdir -p "$PARSER_STUDIO_E2E_ARTIFACT_DIR"
           # No historical backend can satisfy this same-HEAD integration gate.
           npx playwright test --project=chromium --workers=2 --shard=${{ matrix.shard }}/6 --reporter=json > /tmp/parser-studio-browser-shard.json
           node -e "const r=require('/tmp/parser-studio-browser-shard.json');const s=r.stats;if(!s.expected||s.unexpected||s.flaky||(r.errors||[]).length){console.error('Browser shard must pass all in-scope tests',s,r.errors);process.exit(1)}console.log('BROWSER_REGRESSION_SHARD_PASS',s)"
+      - name: Validate every file this shard downloaded against the Stellar structure contract
+        run: |
+          node backend/node_modules/tsx/dist/cli.mjs scripts/verification/validate-downloaded-artifacts.ts \
+            "${{ runner.temp }}/e2e-downloads"
+      - name: Keep this shard's downloads for the aggregate Ruby 2.4.9 gate
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-studio-e2e-downloads-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/e2e-downloads
+          if-no-files-found: ignore
+          retention-days: 3
       - name: Upload shard failure evidence
         if: failure()
         uses: actions/upload-artifact@v4

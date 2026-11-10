@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {readFile} from 'node:fs/promises';
 
 test('a first-time desktop user saves logs, generates actual files, and restores the source',async({page},info)=>{

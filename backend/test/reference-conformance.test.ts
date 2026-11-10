@@ -140,3 +140,77 @@ test("contract descriptor and code rules are the same set, with corpus provenanc
   assert.equal(descriptor.provenance.hostChanged, false);
   assert.ok(!JSON.stringify(descriptor).includes("def initialize"), "installed parser source must never be copied into the repository");
 });
+
+// Every rule of the contract must have a mutation that makes exactly that rule
+// fire at its declared level. A rule added to CONFORMANCE_RULES without a
+// mutation here fails the key-set assertion, so no rule can exist untested.
+test("every conformance rule has a mutation that triggers it at its declared level", () => {
+  const a = artifacts();
+  const fragment = (ruby: string) => checkFragmentStructure(ruby);
+  const conf = (text: string) => checkConfStructure(text, { parserName: a.name });
+  const pair = (over: object) => checkPairConformance({ parserName: a.name, ruby: a.ruby, conf: a.conf,
+    expectedBind: a.project.receiver.bindAddress, protocols: a.project.receiver.protocols,
+    classificationIndices: [a.project.classification.defaultIndex], ...over });
+  const mutations: Record<string, () => ReturnType<typeof checkFragmentStructure>> = {
+    "FRAG-MARKERS": () => fragment(a.ruby.replace("# STELLAR_INIT_END", "# not a marker")),
+    "FRAG-NO-CODE-AFTER-PARSE-END": () => fragment(a.ruby + "\ndef late\nend\n"),
+    "FRAG-REGION-GAP": () => fragment(a.ruby.replace("# STELLAR_PARSE_BEGIN", "puts 1\n# STELLAR_PARSE_BEGIN")),
+    "FRAG-NO-WRAPPER-DECLS": () => fragment(a.ruby.replace("# STELLAR_INIT_END", "module Fluent\nend\n# STELLAR_INIT_END")),
+    "FRAG-INITIALIZE": () => fragment(a.ruby.replace("def initialize", "def initialise")),
+    "FRAG-RULESET": () => fragment(a.ruby.split("@parser_rule_set").join("@parser_rules")),
+    "FRAG-PARSE": () => fragment(a.ruby.replace("def parse(text)", "def parse_text(text)")),
+    "FRAG-YIELD": () => fragment(a.ruby.replace(/\byield\b/g, "emit")),
+    "FRAG-ERROR-CONTRACT": () => fragment(a.ruby.split("parser_err_msg").join("parser_failure")),
+    "FRAG-LOG-INDEX": () => fragment(a.ruby.split("stellar_log_index").join("stellar_idx")),
+    "FRAG-EMPTY-INPUT": () => fragment(a.ruby.replace(/yield\s+nil\s*,\s*nil/g, "return")),
+    "CONF-SYNTAX": () => conf(a.conf.replace("</match>", "")),
+    "CONF-SOURCE-TYPES": () => conf(a.conf.replace("@type udp", "@type http")),
+    "CONF-BIND": () => conf(a.conf.replace(/bind [0-9.]+/, "bind 10.1.1.1")),
+    "CONF-PORT-SHARED": () => conf(a.conf.replace(/port (\d+)/, "port 9")),
+    "CONF-TAG": () => conf(a.conf.replace(/tag customized_\S+/, "tag customized_other")),
+    "CONF-PARSE-TYPE": () => conf(a.conf.replace(/<parse>\s*@type \S+/, "<parse>\n    @type customized_other")),
+    "CONF-TCP-INCLUDE": () => conf(a.conf.replace("@include /etc/td-agent/transport_settings.conf", "")),
+    "CONF-MATCH": () => conf(a.conf.replace(/<match [^>]+>/, "<match other.**>")),
+    "CONF-CAPITALIZE": () => conf(a.conf.replace("capitalize_regex_backreference yes", "")),
+    "CONF-RULE-KEY": () => conf(a.conf.replace("key stellar_log_index", "key other_key")),
+    "CONF-RULE-ORDER": () => conf(a.conf.replace("invert true", "")),
+    "PAIR-PROTOCOLS": () => pair({ protocols: ["udp"] }),
+    "PAIR-CLASSIFICATION-ROUTES": () => pair({ classificationIndices: ["syslog", "threat", "session", "winlogevent"] }),
+  };
+  assert.deepEqual(Object.keys(mutations).sort(), CONFORMANCE_RULES.map(r => r.id).sort(),
+    "every rule needs exactly one mutation, and every mutation a rule");
+  for (const rule of CONFORMANCE_RULES) {
+    const found = mutations[rule.id]!().filter(f => f.rule === rule.id);
+    assert.ok(found.length > 0, rule.id + " is never triggered by its mutation");
+    assert.ok(found.every(f => f.level === rule.level), rule.id + " fires at the wrong level");
+  }
+  // The unmutated sample must be completely clean, including SHOULD rules.
+  assert.deepEqual([...fragment(a.ruby), ...conf(a.conf), ...pair({})], []);
+});
+
+// MUST in the contract means "Parser Studio output must satisfy it" and is
+// enforced fail-closed. The corpus frequency alone does not justify that, so each
+// rule declares why it is MUST: invariant in the corpus, or a product rule whose
+// corpus exceptions are explained. SHOULD is reserved for >=95% practice.
+test("contract MUST/SHOULD levels agree with the declared corpus basis and numbers", () => {
+  const descriptor = JSON.parse(readFileSync(new URL("../../contracts/stellar-custom-parser-structure.v1.json", import.meta.url), "utf8"));
+  const levels = new Map(CONFORMANCE_RULES.map(r => [r.id, r.level] as const));
+  for (const rule of descriptor.rules as Array<{ id: string; level: string; basis?: string; corpus?: { matching: number; total: number }; justification?: string; referenceEvidence: string }>) {
+    assert.equal(rule.level, levels.get(rule.id), rule.id + " level differs between contract and checker");
+    assert.ok(["corpus-invariant", "corpus-practice", "product-rule"].includes(rule.basis ?? ""), rule.id + " needs a basis");
+    if (rule.basis === "product-rule") {
+      assert.equal(rule.level, "MUST", rule.id + ": a product rule is enforced as MUST");
+      assert.ok((rule.justification ?? "").length >= 20, rule.id + " needs a justification");
+    }
+    if (rule.corpus) {
+      const { matching, total } = rule.corpus;
+      assert.ok(Number.isInteger(matching) && Number.isInteger(total) && matching <= total && total > 0, rule.id);
+      assert.ok(rule.referenceEvidence.includes(matching + "/" + total), rule.id + " evidence text must quote " + matching + "/" + total);
+      if (rule.basis === "corpus-invariant") { assert.equal(matching, total, rule.id); assert.equal(rule.level, "MUST", rule.id); }
+      if (rule.basis === "corpus-practice") { assert.equal(rule.level, "SHOULD", rule.id); assert.ok(matching / total >= 0.95 && matching < total, rule.id); }
+      if (rule.basis === "product-rule" && matching === total) assert.fail(rule.id + " is corpus-invariant, not a product rule");
+    } else {
+      assert.equal(rule.basis, "product-rule", rule.id + ": a rule without corpus numbers is a product rule");
+    }
+  }
+});

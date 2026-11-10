@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 const fixtures=[
   {name:'Threat',raw:'{"event_type":"threat","src_ip":"192.0.2.10","action":"deny"}'},

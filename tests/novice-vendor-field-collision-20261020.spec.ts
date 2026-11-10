@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 // Purely authored generic CSV; no vendor originals or privileged target access.
 // Field positions are explicitly declared by the user, never inferred from

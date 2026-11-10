@@ -1,4 +1,4 @@
-import {test,expect,type BrowserContext,type Page} from '@playwright/test';
+import {test,expect,type BrowserContext,type Page,attachDownloadSink} from './support/downloadSink';
 import {createHash} from 'node:crypto';
 
 // This is a two-ISOLATED-BROWSER-PROFILE synthetic acceptance test, not a claim
@@ -143,6 +143,8 @@ test('two independent browser profiles complete distinct public beta drafts with
     if(typeof baseURL!=='string')throw new Error('Two-profile test requires one exact origin');
     const userA:BrowserContext=await browser.newContext({baseURL,acceptDownloads:true});
     const userB:BrowserContext=await browser.newContext({baseURL,acceptDownloads:true});
+    const finishDownloadsA=attachDownloadSink(userA,test.info());
+    const finishDownloadsB=attachDownloadSink(userB,test.info());
     try{
       const a=await userA.newPage();
       const b=await userB.newPage();
@@ -218,6 +220,8 @@ test('two independent browser profiles complete distinct public beta drafts with
         },null,2),
       });
     }finally{
+      await finishDownloadsA();
+      await finishDownloadsB();
       await userA.close();
       await userB.close();
     }

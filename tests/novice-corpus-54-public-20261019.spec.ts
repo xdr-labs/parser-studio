@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 // Deliberately authored test-only security logs. No original captures,
 // no manufacturer/firmware attestation, and no Stellar normalization oracle.

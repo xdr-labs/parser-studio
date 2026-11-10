@@ -1,4 +1,4 @@
-import {expect,test} from '@playwright/test';
+import {expect,test} from './support/downloadSink';
 
 const quoted='"allow","198.51.100.10"\n"deny","203.0.113.4"\n"allow","192.0.2.8"';
 

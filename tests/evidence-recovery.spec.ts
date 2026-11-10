@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 /**
  * Owner scope 2026-10-18: the two-path product no longer offers Test Lab

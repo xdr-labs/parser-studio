@@ -1,4 +1,4 @@
-import {test,expect,type Page,type TestInfo} from '@playwright/test';
+import {test,expect,type Page,type TestInfo} from './support/downloadSink';
 import {writeFile} from 'node:fs/promises';
 
 const fixtures={

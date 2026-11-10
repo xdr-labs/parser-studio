@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {createHash} from 'node:crypto';
 
 test('a security parser from an unedited valid first reply compiles despite JSON property ordering',async({page,context})=>{

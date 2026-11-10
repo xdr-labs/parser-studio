@@ -35,8 +35,10 @@ test("every compiler variant yields a fragment+CONF pair that satisfies the Stel
       failures.push(variant.id + " => " + String(error instanceof Error ? error.message.slice(0, 160) : error));
       continue;
     }
-    const musts = findings.filter(f => f.level === "MUST");
-    if (musts.length) failures.push(variant.id + " => " + musts.map(f => f.rule).join(","));
+    // SHOULD findings are failures here too: a variant that Parser Studio itself
+    // generates has no reason to deviate from observed reference practice, and a
+    // silent SHOULD would let drift accumulate unnoticed.
+    if (findings.length) failures.push(variant.id + " => " + findings.map(f => f.level + ":" + f.rule).join(","));
   }
   assert.deepEqual(failures, []);
 });
