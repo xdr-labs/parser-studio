@@ -127,10 +127,23 @@ assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,4,
 assert.match(workflow,/needs: \[native-isolated-synthetic, web-quality\]/);
 assert.match(workflow,/actions\/download-artifact@v4/);
 assert.match(workflow,/reconcile-artifact-lineage\.mjs/);
+assert.ok(existsSync('scripts/verification/build-once-distribution.mjs'));
+assert.ok(existsSync('scripts/verification/build-once-distribution.test.mjs'));
+assert.equal(workflow.split('name: parser-studio-build-once-distribution').length-1,2,
+  'one producer and one release-gate consumer must share the exact bundle');
+assert.match(workflow,/node scripts\/verification\/build-once-distribution\.mjs create/);
+assert.match(workflow,/node scripts\/verification\/build-once-distribution\.mjs verify/);
+assert.ok(workflow.indexOf('Verify and package one exact-HEAD distribution after E2E')>
+  workflow.indexOf('Same-HEAD authoring-only HTTP and beginner Chromium acceptance'),
+  'the CI output must be published only after the complete user E2E');
+assert.ok(workflow.indexOf('Independently validate exact-HEAD distributed runtime bytes')<
+  workflow.indexOf('Reject any open P0 or P1 issue before merge'),
+  'the main release gate must fail closed on divergent real deployment bytes');
+
 assert.ok(workflow.includes('PARSER_STUDIO_BACKEND_HEAD: '+exactPrHeadExpr),
   'browser backend source must follow exact frontend PR head');
-assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,4,
-  'all source-validating and release-reconciliation steps must state the exact source SHA');
+assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,5,
+  'all 5 source-validating and distribution-verifying steps must state the exact source SHA');
 assert.doesNotMatch(workflow,/PARSER_STUDIO_BACKEND_HEAD: \$\{\{ github\.sha \$\}\}/);
 assert.doesNotMatch(workflow,/r\.sourceHead!==process\.env\.GITHUB_SHA/,
   'lineage receipts must compare actual PR source SHA, not GitHub synthetic merge SHA');

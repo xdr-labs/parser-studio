@@ -222,3 +222,54 @@ helper still fails closed, and native 2.4/3.2 synthetic regression remains
 mandatory; no unsupported Ruby2.4 timeout workaround or execution through
 `Timeout.timeout` is introduced. **This is an explicit export exclusion,
 not newly functional Ruby2.4 Regex support.**
+
+## R5 CI build-once distribution gate (2026-11-10)
+
+The preceding identical synthetic Native/Web Ruby/.conf/ZIP receipt
+comparison is retained as **independent reproducibility evidence**.
+It is not a proof of single-build distribution.
+
+The final runnable R5 improvement builds the **actual frontend production
+files, mainline backend runtime and embedded Python Multi-Pass sources once
+in the `web-quality` job**, after the complete same-source Native/Web/browser
+regression inventory succeeds. The job creates one immutable
+`parser-studio-build-once-distribution` artifact with a versioned manifest
+containing:
+
+- exact PR source commit and Git tree SHA
+- package-lock hashes for frontend and backend
+- the canonical semantic policy SHA, byte-for-byte equal to the bundled
+  backend policy snapshot
+- every frontend/backend/Multi-Pass runtime file's relative name, length and
+  SHA-256, with strict symlink, hidden-file, size and path restrictions
+- explicit false claims for deployment, target import, indexed events and
+  inclusion of customer data
+
+The required `release-eligibility` job downloads **those same built bytes**
+from the current workflow run; it independently verifies every file, manifest
+shape, source commit/tree, semantic policy, and lock SHA *before* checking
+open P0/P1 issues. No secondary build is performed in that release gate.
+An unavailable, missing, altered, cross-commit or extra-file artifact
+must fail closed. Artifacts are retained for seven days.
+
+**Limits:** This proves CI build-once distribution and integrity for the
+web/backend/Multi-Pass bundle, not that a user-facing live deployment was
+performed from the new artifact, and not that arbitrary parser pairs are
+Stellar Cyber 7.0 compatible. The already deployed development preview
+`dd8c2456da3adf959ae83472e151fc25485fec7c` was built separately
+before this R5 enhancement. Future preview/release promotion should retrieve
+and verify its exact CI distribution rather than recompile another binary.
+
+### H5 bounded actual Stellar Cyber 7.0 indexing evidence
+
+On 2026-11-10, an owner-authorized lab managed `td-agent` integration
+loaded the exact generated Juniper .rb/.conf pair on embedded Ruby 2.4.9 /
+Fluentd 1.7.4, accepted **UDP 2 + TCP 2** synthetic RFC5424 events and
+routed them into the connected AIO. An independent indexed query found
+**4/4 records** containing the verified `srcip`, `dstip`, `srcport`,
+`dstport`, `proto`, `timestamp` and sensor/ingestion port. Sensor
+configuration/temporary plugin were restored and verified after the test.
+Evidence: GitHub [issue #249 H5 comment](https://github.com/xdr-labs/parser-studio/issues/249#issuecomment-6758857304).
+This qualifies **that one generated Juniper fixture on that target**,
+not all parsers, generic Regex runtime capability or future live imports.
+The global `targetVerified=false` remains intentionally conservative.

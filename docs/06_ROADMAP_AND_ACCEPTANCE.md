@@ -1,5 +1,22 @@
 # Current engineering completion ledger — 2026-10-23
 
+> **2026-11-10 verified checkpoint — source main `dd8c2456da3adf959ae83472e151fc25485fec7c`**:
+> H0–H4 and R0–R4 correctness gates are merged, and main CI
+> [#42753669679](https://github.com/xdr-labs/parser-studio/actions/runs/42753669679)
+> passed **9/9**. Development preview `https://app.parser.xdr.ooo`
+> is deployed from that commit with public Chromium **17/17** and
+> rollback evidence. R3 explicitly blocks Ruby 2.4.9 Regex export while
+> retaining local browser review; **Regex native target support is not
+> claimed**. H5 independently observed **4/4 actual indexed events**
+> for a generated Juniper parser on Stellar 7.0 Modular Sensor, with
+> automatic rollback; this is **fixture-scoped**, not global target
+> certification. Current R5 remaining increment is *CI build-once
+> distribution of actual frontend/backend/Multi-Pass bytes*, with an
+> exact-HEAD release-gate consumer. Older checkpoints below are historical.
+> [Work Packet #249](https://github.com/xdr-labs/parser-studio/issues/249)
+> records live verified receipts.
+
+
 
 ## ACTIVE — Executable Contract and Runtime Fidelity (owner approved 2026-11-10)
 
