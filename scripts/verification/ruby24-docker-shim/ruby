@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Stands in for `ruby` so Node tests that spawn `ruby` run on the pinned Ruby
+# 2.4.9 target image instead of the host interpreter. Arguments and stdin pass
+# through unchanged. The container has no network, no mounts and a read-only
+# root. CI only: needs docker and PARSER_RUBY24_IMAGE (the pinned image ref).
+set -euo pipefail
+: "${PARSER_RUBY24_IMAGE:?PARSER_RUBY24_IMAGE is not set}"
+exec docker run --rm -i --platform linux/amd64 \
+  --network none --ipc none --read-only \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --pids-limit 64 --memory 512m --cpus 1 \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+  --user 65532:65532 \
+  "$PARSER_RUBY24_IMAGE" ruby "$@"

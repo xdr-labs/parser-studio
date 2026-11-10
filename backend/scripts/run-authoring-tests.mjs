@@ -1,6 +1,7 @@
 import {readdirSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {rubyRequirementProblem} from './ruby-requirement.mjs';
 
 /**
  * Explicit product gate inventory. Do not mistake a selective acceptance
@@ -16,6 +17,9 @@ export const NON_PRODUCT_TEST_FILES = Object.freeze([
   'stellar-legacy-http.test.ts',
   'stellar-legacy-plan.test.ts',
 ]);
+
+const rubyProblem=rubyRequirementProblem(process.env);
+if(rubyProblem){process.stderr.write(rubyProblem+'\n');process.exit(1);}
 
 const root=resolve('test');
 const all=readdirSync(root).filter(name=>name.endsWith('.test.ts')).sort();

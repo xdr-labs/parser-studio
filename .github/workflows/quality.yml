@@ -123,6 +123,17 @@ jobs:
         run: bash scripts/verification/ruby24-regex-container-gate.sh
       - name: Mandatory Ruby 2.4.9 and 3.2.11 structure gate for every compiler variant
         run: bash scripts/verification/ruby-variant-matrix-container-gate.sh
+      - name: Pairwise compiler variants executed on the Ruby 2.4.9 target (behaviour, not only structure)
+        run: |
+          set -euo pipefail
+          image=$(node -e 'const c=require("./contracts/target-runtime-profiles.v1.json");const p=c.profiles.find(x=>x.id==="stellar70-observed-ruby24");if(!p?.ciContainerImage?.startsWith("ruby:2.4.9@sha256:"))process.exit(1);process.stdout.write(p.ciContainerImage)')
+          docker pull --platform linux/amd64 "$image" >/dev/null
+          export PARSER_RUBY24_IMAGE="$image"
+          export PATH="$PWD/scripts/verification/ruby24-docker-shim:$PATH"
+          ruby -v | grep -F 'ruby 2.4.9'
+          cd backend
+          PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 PARSER_STUDIO_EXPECT_RUBY=2.4.9 \
+            node node_modules/tsx/dist/cli.mjs --test test/compiler-pairwise-native.test.ts
       - name: Verify Native-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-native.json"
@@ -294,7 +305,7 @@ jobs:
             files+=(tests/docs-jsonata-mapping-assisted-20261104.spec.ts)
             expected=22
           fi
-          npx playwright test "${files[@]}" --project=chromium --workers=1 --reporter=json > /tmp/parserstudio-documentation-corpus.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parserstudio-documentation-corpus.json npx playwright test "${files[@]}" --project=chromium --workers=1 --reporter=json
           EXPECTED_SCENARIO_TESTS="$expected" node -e "const s=JSON.parse(require('fs').readFileSync('/tmp/parserstudio-documentation-corpus.json','utf8')).stats;const n=Number(process.env.EXPECTED_SCENARIO_TESTS);if(s.expected!==n||s.skipped||s.unexpected||s.flaky){console.error('Published scenario exact-head E2E regression',s);process.exit(1)}console.log('PUBLISHED_SCENARIO_EXACT_HEAD_PASS',n+'/'+n)"
 
       # First-time users may review/override the shared CONF listener port
@@ -312,7 +323,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/parser-listener-port-6801.spec.ts tests/first-time-complete-auto-journey-20261023.spec.ts tests/novice-first-viewport-20261023.spec.ts tests/beginner-no-research-tools-20261023.spec.ts tests/beginner-source-header-clarity-20261023.spec.ts tests/private-drain3.spec.ts tests/chatgpt-first-viewport-and-steps-20261023.spec.ts tests/novice-500-events-json-wire-20261023.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-exact-head-first-user-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-studio-exact-head-first-user-browser.json npx playwright test tests/parser-listener-port-6801.spec.ts tests/first-time-complete-auto-journey-20261023.spec.ts tests/novice-first-viewport-20261023.spec.ts tests/beginner-no-research-tools-20261023.spec.ts tests/beginner-source-header-clarity-20261023.spec.ts tests/private-drain3.spec.ts tests/chatgpt-first-viewport-and-steps-20261023.spec.ts tests/novice-500-events-json-wire-20261023.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=require('/tmp/parser-studio-exact-head-first-user-browser.json');const s=r.stats;if(s.expected!==17||s.skipped!==0||s.unexpected!==0||s.flaky!==0||(r.errors||[]).length){console.error('Exact-head parser listener and comprehensive beginner journey 17/17 gate failed',s,r.errors);process.exit(1)}console.log('EXACT_HEAD_FIRST_USER_CHROMIUM_PASS 17/17')"
 
       # Newly approved fixed-7.0 normalization integrity gate. The previous
@@ -330,7 +341,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/stellar7-normalization-safety-20261021.spec.ts tests/stellar7-runtime-semantic-preview-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-stellar7-normalization-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-stellar7-normalization-browser.json npx playwright test tests/stellar7-normalization-safety-20261021.spec.ts tests/stellar7-runtime-semantic-preview-20261021.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-stellar7-normalization-browser.json','utf8'));const x=r.stats;if(x.expected!==4||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Stellar 7.0 safety E2E did not pass 4/4',x,r.errors);process.exit(1)}console.log('STELLAR7_NORMALIZATION_CHROMIUM_PASS 4/4')"
       # Duplicate object keys must never overwrite an earlier source value.
       # Native Ruby execution is part of the offline authoring test scope.
@@ -346,7 +357,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/json-duplicate-source-parity-20261021.spec.ts tests/generic-json-duplicate-source-20261021.spec.ts tests/generic-json-duplicate-browser-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-json-duplicate-source-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-json-duplicate-source-browser.json npx playwright test tests/json-duplicate-source-parity-20261021.spec.ts tests/generic-json-duplicate-source-20261021.spec.ts tests/generic-json-duplicate-browser-20261021.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-json-duplicate-source-browser.json','utf8')); const x=r.stats; if(x.expected!==5||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('JSON duplicate source gate failed',x,r.errors);process.exit(1)}console.log('STRICT_JSON_DUPLICATE_SOURCE_CHROMIUM_PASS 5/5')"
 
       # Explicit RFC5424/RFC3164 JSON and bounded multiline grouping must
@@ -363,7 +374,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/syslog-json-duplicate-boundary-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-syslog-json-boundary-chromium.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-syslog-json-boundary-chromium.json npx playwright test tests/syslog-json-duplicate-boundary-20261021.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-syslog-json-boundary-chromium.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Syslog JSON strict-source 2/2 gate failed',x,r.errors);process.exit(1)}console.log('SYSLOG_JSON_BOUNDARY_CHROMIUM_PASS 2/2')"
 
       # Pre-analysis value-free source census must never call a duplicated
@@ -380,7 +391,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/kv-duplicate-census-safety-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-kv-duplicate-census-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-kv-duplicate-census-browser.json npx playwright test tests/kv-duplicate-census-safety-20261021.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-kv-duplicate-census-browser.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('KV duplicate-key census 2/2 gate failed',x,r.errors);process.exit(1)}console.log('KV_DUPLICATE_CENSUS_BROWSER_PASS 2/2')"
 
       # Fixed 7.0 field suggestions must remain explicitly reviewed per
@@ -397,7 +408,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/stellar7-reviewed-family-mapping-20261021.spec.ts tests/stellar7-event-family-reviewed-browser-20261021.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-stellar7-conditional-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-stellar7-conditional-browser.json npx playwright test tests/stellar7-reviewed-family-mapping-20261021.spec.ts tests/stellar7-event-family-reviewed-browser-20261021.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-stellar7-conditional-browser.json','utf8'));const x=r.stats;if(x.expected!==2||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('Stellar 7.0 reviewed conditional mapping must execute 2/2',x,r.errors);process.exit(1)}console.log('STELLAR7_REVIEWED_CONDITIONAL_BROWSER_PASS 2/2')"
 
       # Historical browser tests require an actual local parser compiler for
@@ -421,7 +432,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test tests/reviewed-event-family-backend.spec.ts tests/explicit-multi-log-input.spec.ts tests/chatgpt-reviewed-conditional-generation-20261021.spec.ts tests/chatgpt-solution-multitype-favicon-20261021.spec.ts tests/named-type-stream-boundaries-20261019.spec.ts tests/advanced-docker-compilability-probe-20261019.spec.ts tests/advanced-mixed-original-source-20261019.spec.ts tests/two-profile-beta-user-journeys-20261020.spec.ts tests/novice-vendor-field-collision-20261020.spec.ts tests/novice-csv-lexical-accounting-20261020.spec.ts tests/novice-csv-embedded-query-20261020.spec.ts tests/browser-rejected-local-version-recovery-20261020.spec.ts tests/novice-quoted-pair-csv-20261020.spec.ts tests/python-sender-auto-csv-query-20261020.spec.ts tests/browser-full-history-restore-20261020.spec.ts tests/browser-local-versions.spec.ts tests/reviewed-csv-local-sender-integration-20261020.spec.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-event-family-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-studio-event-family-browser.json npx playwright test tests/reviewed-event-family-backend.spec.ts tests/explicit-multi-log-input.spec.ts tests/chatgpt-reviewed-conditional-generation-20261021.spec.ts tests/chatgpt-solution-multitype-favicon-20261021.spec.ts tests/named-type-stream-boundaries-20261019.spec.ts tests/advanced-docker-compilability-probe-20261019.spec.ts tests/advanced-mixed-original-source-20261019.spec.ts tests/two-profile-beta-user-journeys-20261020.spec.ts tests/novice-vendor-field-collision-20261020.spec.ts tests/novice-csv-lexical-accounting-20261020.spec.ts tests/novice-csv-embedded-query-20261020.spec.ts tests/browser-rejected-local-version-recovery-20261020.spec.ts tests/novice-quoted-pair-csv-20261020.spec.ts tests/python-sender-auto-csv-query-20261020.spec.ts tests/browser-full-history-restore-20261020.spec.ts tests/browser-local-versions.spec.ts tests/reviewed-csv-local-sender-integration-20261020.spec.ts --project=chromium --workers=1 --reporter=json
           node -e "const s=require('fs').readFileSync('/tmp/parser-studio-event-family-browser.json','utf8'); const x=JSON.parse(s).stats; if(x.expected!==43||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('Expected 43 executed, passing same-HEAD source, ChatGPT reviewed conditional, reviewed CSV, Python sender and local version E2E cases',x);process.exit(1)} console.log('EXACT_HEAD_COMBINED_SOURCE_CSV_SENDER_LOCAL_BROWSER_PASS 43/43');"
 
       # A standalone, scoped verification: real Chromium and the exact-HEAD
@@ -446,7 +457,7 @@ jobs:
             sleep 1
           done
           test "$ready" = 1
-          npx playwright test --config playwright.rfc5424-msg-isolated-20261019.config.ts --project=chromium --workers=1 --reporter=json >/tmp/parser-rfc5424-msg-chromium-ci.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-rfc5424-msg-chromium-ci.json npx playwright test --config playwright.rfc5424-msg-isolated-20261019.config.ts --project=chromium --workers=1 --reporter=json
           node -e "const x=JSON.parse(require('fs').readFileSync('/tmp/parser-rfc5424-msg-chromium-ci.json','utf8')).stats; if(x.expected!==6||x.skipped!==0||x.unexpected!==0||x.flaky!==0){console.error('All six RFC 3164 and 5424 real browser tests must execute and pass',x);process.exit(1)} console.log('SYSLOG_STANDARD_REAL_HTTP_CHROMIUM_PASS 6/6');"
 
       - name: Real Chromium source-container beginner review (same HEAD)
@@ -465,7 +476,7 @@ jobs:
           PARSER_STUDIO_TEST_MULTIPASS: '1'
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.roadmap-followup-20261020.config.ts --project=chromium --workers=1 --reporter=json > /tmp/parser-studio-roadmap-followup-browser.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE=/tmp/parser-studio-roadmap-followup-browser.json npx playwright test --config playwright.roadmap-followup-20261020.config.ts --project=chromium --workers=1 --reporter=json
           node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/parser-studio-roadmap-followup-browser.json','utf8')); const x=r.stats; if(x.expected!==14||x.skipped!==0||x.unexpected!==0||x.flaky!==0||(r.errors||[]).length){console.error('All fourteen original-source, mixed-profile, recovery, bounded batch and cross-engine generated Ruby parity cases must execute and pass',x,r.errors);process.exit(1)} console.log('ROADMAP_FOLLOWUP_REAL_CHROMIUM_PASS 14/14');"
 
       # The independent-backend evergreen browser catalogue runs in the
@@ -548,8 +559,11 @@ jobs:
           set -euo pipefail
           mkdir -p "$PARSER_STUDIO_E2E_ARTIFACT_DIR"
           # No historical backend can satisfy this same-HEAD integration gate.
-          npx playwright test --project=chromium --workers=2 --shard=${{ matrix.shard }}/6 --reporter=json > /tmp/parser-studio-browser-shard.json
-          node -e "const r=require('/tmp/parser-studio-browser-shard.json');const s=r.stats;if(!s.expected||s.unexpected||s.flaky||(r.errors||[]).length){console.error('Browser shard must pass all in-scope tests',s,r.errors);process.exit(1)}console.log('BROWSER_REGRESSION_SHARD_PASS',s)"
+          # Write the machine-readable report through Playwright's dedicated
+          # reporter file, not shared stdout (which other processes may print to).
+          export PLAYWRIGHT_JSON_OUTPUT_FILE="$RUNNER_TEMP/parser-studio-browser-shard.json"
+          npx playwright test --project=chromium --workers=2 --shard=${{ matrix.shard }}/6 --reporter=json
+          node scripts/verification/browser-shard-report.mjs "$PLAYWRIGHT_JSON_OUTPUT_FILE"
       - name: Validate every file this shard downloaded against the Stellar structure contract
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/validate-downloaded-artifacts.ts \
