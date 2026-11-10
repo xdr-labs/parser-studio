@@ -76,7 +76,17 @@ test("every pairwise variant emits documented target behavior (including unsuppo
     unsupported: { feature: string; profile: string; behavior: string }[];
   };
   const profile = profiles.profiles.find(item => item.ruby === rubyVersion);
-  assert.ok(profile, "native runtime must have an explicit target profile: " + rubyVersion);
+  // The pinned target step sets PARSER_STUDIO_EXPECT_RUBY: there the interpreter
+  // must be a declared profile. A plain host run (for example the CI runner's
+  // current Ruby) has no declared profile and is judged by what it can do.
+  if (process.env.PARSER_STUDIO_EXPECT_RUBY) assert.ok(profile, "pinned native runtime must have an explicit target profile: " + rubyVersion);
+  // Ask the interpreter instead of inferring from the version number: Regexp
+  // deadlines exist from Ruby 3.2, and a declared profile must agree with it.
+  const probe = spawnSync("ruby", ["-e", "print(Regexp.respond_to?(:timeout) ? 'capable' : 'incapable')"], { encoding: "utf8", timeout: 3000 });
+  assert.equal(probe.status, 0, "Regexp deadline probe failed: " + String(probe.stderr).slice(0, 200));
+  const regexDeadlineCapable = probe.stdout === "capable";
+  if (profile) assert.equal(profile.regexDeadlineCapable, regexDeadlineCapable,
+    "declared regexDeadlineCapable for Ruby " + rubyVersion + " must match the interpreter");
   let checked = 0;
   let regexClosed = 0;
   for (const variant of pairwiseVariants()) {
@@ -115,7 +125,7 @@ test("every pairwise variant emits documented target behavior (including unsuppo
       // Stellar 7.0 observed Ruby 2.4.9 has no Regexp timeout. The Compiler
       // MUST fail closed at extraction instead of returning an unsafe match.
       // This is a target capability contract, not an exempted/untested case.
-      if (level("extraction") === "regex" && !profile.regexDeadlineCapable) {
+      if (level("extraction") === "regex" && !regexDeadlineCapable) {
         assert.equal(e.parser_err_stage, "extraction", where + " unsupported regex stage");
         assert.equal(e.parser_err_msg, "ArgumentError", where + " unsupported regex diagnostic");
         assert.equal(e.stellar_log_index, "syslog", where + " unsupported regex index");
@@ -154,7 +164,7 @@ test("every pairwise variant emits documented target behavior (including unsuppo
   }
   assert.equal(checked, pairwiseVariants().length, "every pairwise variant must be executed, none skipped");
   assert.ok(checked >= 40, "too few pairwise variants executed: " + checked);
-  if (!profile.regexDeadlineCapable) {
+  if (!regexDeadlineCapable) {
     assert.ok(regexClosed > 0, "unsupported Regex target must execute and reject real negative controls");
     assert.ok(profiles.unsupported.some(item => item.feature === "regex" && item.behavior === "FAIL_CLOSED_RUNTIME"),
       "unsupported regex target must have an explicit declared fail-closed contract");
