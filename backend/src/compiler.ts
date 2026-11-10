@@ -1,3 +1,4 @@
+import { assertPairConformance } from "./reference-conformance.js";
 import {deflateSync} from 'node:zlib';
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -264,15 +265,28 @@ function emitRubyFragment(project: ParserProject): string {
     const omitRaw=project.extraction.omitSourceRaw===true;
     fragment=fragment.replace(GENERIC_STRUCTURAL_NORMALIZE_NEEDLE,
       omitRaw?GENERIC_STRUCTURAL_NORMALIZE_NO_RAW_BRANCH:GENERIC_STRUCTURAL_NORMALIZE_BRANCH);
-    fragment+=GENERIC_STRUCTURAL_HELPER;
-    if(omitRaw)fragment+=SOURCE_RAW_STRIP_HELPER;
+    fragment=insertBeforeParseEnd(fragment,GENERIC_STRUCTURAL_HELPER);
+    if(omitRaw)fragment=insertBeforeParseEnd(fragment,SOURCE_RAW_STRIP_HELPER);
   }
-  if(project.extraction.format==="regex"||regexBody)fragment+=REGEX_RUBY_HELPER;
+  if(project.extraction.format==="regex"||regexBody)fragment=insertBeforeParseEnd(fragment,REGEX_RUBY_HELPER);
   return fragment;
 }
 
 function exportFile(name: string, content: string): ExportFile {
   return { name, content, sha256: checksum(content), bytes: Buffer.byteLength(content, "utf8") };
+}
+
+// Fail-closed Reference Parser Conformance gate: every artifact pair leaving the
+// compiler must satisfy the structure contract observed on the reference host
+// (contracts/stellar-custom-parser-structure.v1.json). A new generation path
+// that violates it cannot produce a file, so it cannot reach a user.
+export function assertCompiledPairConformance(project: ParserProject, conf: string, ruby: string): void {
+  assertPairConformance({
+    parserName: "customized_" + project.slug, ruby, conf,
+    expectedBind: project.receiver.bindAddress,
+    protocols: project.receiver.protocols,
+    classificationIndices: [project.classification.defaultIndex, ...project.classification.rules.map(rule => rule.index)],
+  });
 }
 
 export function compilePair(input: unknown): PairExport {
@@ -283,9 +297,12 @@ export function compilePair(input: unknown): PairExport {
   }
   const project = input as ParserProject;
   const prefix = "customized_" + project.slug;
+  const confContent = emitConfiguration(project);
+  const rubyContent = emitRubyFragment(project);
+  assertCompiledPairConformance(project, confContent, rubyContent);
   const files = [
-    exportFile(prefix + ".conf", emitConfiguration(project)),
-    exportFile(prefix, emitRubyFragment(project)),
+    exportFile(prefix + ".conf", confContent),
+    exportFile(prefix, rubyContent),
   ];
   return {
     contract: "host-customized-pair.v0.1",

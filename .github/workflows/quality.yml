@@ -94,6 +94,8 @@ jobs:
         run: bash scripts/verification/h2-ci-isolated-runner.sh
       - name: Mandatory Ruby 2.4.9 target versus Ruby 3.2.11 synthetic Regex parity
         run: bash scripts/verification/ruby24-regex-container-gate.sh
+      - name: Mandatory Ruby 2.4.9 and 3.2.11 structure gate for every compiler variant
+        run: bash scripts/verification/ruby-variant-matrix-container-gate.sh
       - name: Verify Native-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-native.json"
