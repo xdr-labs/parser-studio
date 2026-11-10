@@ -9,6 +9,7 @@ import {suggestMappingType,suggestNativeJsonType} from './typeSuggestions';
 import {createCanonicalMappingPlan} from './canonicalMappingPlan';
 import {defaultGuidedOptions} from './contract';
 import {toBackendProject} from './backendAdapter';
+import {validManufacturerNamespace} from '../../backend/src/vendor-namespace';
 import {selectDraftFormat} from './draftFormatTransition';
 import {analyzeLogEnvelopes,type EnvelopeLedger,type CompilerAssessment}
   from './autoParserEnvelope';
@@ -17,7 +18,7 @@ export type AutoParserDraftResult=
   | {ok:true;draft:ParserDraft;sourceFieldCount:number;requiresApproval:boolean;automaticMappingCount:number}
   | {ok:false;reason:'UNTRUSTED_PREVIEW'|'SOURCE_CHANGED'|'MIXED_OR_UNKNOWN'|
       'BOUNDARY_REVIEW'|'COMPILER_UNSUPPORTED'|'COLUMNS_REQUIRED'|'BACKEND_UNAVAILABLE'|
-      'BACKEND_UNTRUSTED'|'SOURCE_LIMIT'|'MODEL_REVIEW_REQUIRED'};
+      'BACKEND_UNTRUSTED'|'SOURCE_LIMIT'|'MODEL_REVIEW_REQUIRED'|'MANUFACTURER_UNSUPPORTED'};
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function prepareAutoParserDraft(
   source:string,draft:ParserDraft,suite:SuiteResult|undefined,
@@ -163,6 +164,10 @@ export function prepareAutoParserDraft(
   }
   // All paths must be safe for the actual R1.5 backend translator. A browser
   // preview alone must NEVER upgrade an unsupported parser into DRAFT-ready.
+  // The generated manufacturer namespace has a fixed printable-ASCII policy. Say
+  // so directly: reporting it as a mapping problem sends the user to unrelated
+  // field review while the real fix is one character in the manufacturer box.
+  if(!validManufacturerNamespace(next.vendor.trim()))return failed('MANUFACTURER_UNSUPPORTED');
   const mapped=toBackendProject(next);
   if(!mapped.ok)return failed('MODEL_REVIEW_REQUIRED');
   return {ok:true,draft:next,sourceFieldCount:allFields.size,

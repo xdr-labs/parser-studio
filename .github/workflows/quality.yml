@@ -67,6 +67,13 @@ jobs:
             --ruby-payload "$RUNNER_TEMP/downloaded-ruby-payload.b64"
           bash scripts/verification/ruby-variant-matrix-container-gate.sh \
             --payload "$RUNNER_TEMP/downloaded-ruby-payload.b64" --profiles ruby24
+      - name: Golden vendor logs, downloaded Ruby executed on Ruby 2.4.9 versus documented values
+        run: |
+          set -euo pipefail
+          # Every publisher-documented corpus case must have been executed in a
+          # browser shard, and the Ruby it downloaded must emit the documented
+          # values on the pinned Ruby 2.4.9 target image.
+          bash scripts/verification/ruby-golden-container-gate.sh "$RUNNER_TEMP/e2e-downloads"
       - name: Reject any open P0 or P1 issue before merge
         env:
           GH_TOKEN: ${{ github.token }}
