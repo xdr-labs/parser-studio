@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 const source='{"timestamp":"2026-10-26T00:00:00Z","action":"deny","src_ip":"192.0.2.10"}';
 

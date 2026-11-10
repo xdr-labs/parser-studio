@@ -1,4 +1,4 @@
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './support/downloadSink';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createDraft} from '../src/model';

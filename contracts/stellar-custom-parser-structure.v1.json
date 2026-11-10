@@ -16,40 +16,281 @@
       "wrapperSha256Prefix16": "907b44ef25ff714a",
       "wrapperNote": "The 5 full plugins share one byte-identical 316-line wrapper after slug normalization; the platform owns it. Parser Studio emits the fragment only (decision D-1)."
     },
-    "targetRuntime": { "ruby": "2.4.9", "fluentd": "1.7.4", "csv": "2.4.8" }
+    "targetRuntime": {
+      "ruby": "2.4.9",
+      "fluentd": "1.7.4",
+      "csv": "2.4.8"
+    }
   },
-  "scope": "Rules apply to artifacts Parser Studio generates (udp/tcp receivers, extensionless customized_<slug> fragment plus customized_<slug>.conf). Level MUST is enforced fail-closed in compilePair; the generated-artifact enforcement may be stricter than the corpus frequency where the wrapper contract or the product design requires it.",
+  "scope": "Rules apply to artifacts Parser Studio generates (udp/tcp receivers, extensionless customized_<slug> fragment plus customized_<slug>.conf). Level MUST is enforced fail-closed in compilePair; SHOULD findings are not fatal in production but fail the variant matrix. Each rule declares its basis: corpus-invariant (MUST, matching == total in the reference corpus), corpus-practice (SHOULD, >= 95% but not all), or product-rule (MUST because the wrapper contract or the product design requires it; corpus exceptions are explained in justification). corpus.matching/total count reference artifacts that comply.",
   "rules": [
-    { "id": "FRAG-MARKERS", "level": "MUST", "referenceEvidence": "455/455 fragments contain the four markers once each, in order." },
-    { "id": "FRAG-NO-CODE-AFTER-PARSE-END", "level": "MUST", "referenceEvidence": "455/455 fragments end at STELLAR_PARSE_END (0 lines after). In the wrapper the next tokens are the closing ends of the inner and outer class, Plugin and Fluent; whether the platform splices only the marker region is not verified." },
-    { "id": "FRAG-REGION-GAP", "level": "MUST", "referenceEvidence": "455/455 have no non-comment line between INIT_END and PARSE_BEGIN. 441 of 455 first lines are the INIT_BEGIN marker (indentation varies) and 10 are a date comment; 4 were not classified." },
-    { "id": "FRAG-NO-WRAPPER-DECLS", "level": "MUST", "referenceEvidence": "0/455 fragments contain register_parser, StellarInnerParseClass, module Fluent or class Parser_customized." },
-    { "id": "FRAG-INITIALIZE", "level": "MUST", "referenceEvidence": "454/455 define initialize. Generated parsers always do, because the wrapper constructs the inner class and then calls set_inner_class_params." },
-    { "id": "FRAG-RULESET", "level": "MUST", "referenceEvidence": "453/455 assign @parser_rule_set. The wrapper reads it through stellar_inner_class_get_parser_rule_set." },
-    { "id": "FRAG-PARSE", "level": "MUST", "referenceEvidence": "454/455 define parse(text); the wrapper calls @inner_class.parse(text) with a block." },
-    { "id": "FRAG-YIELD", "level": "MUST", "referenceEvidence": "451/455 contain yield time, record; the wrapper forwards yielded values." },
-    { "id": "FRAG-ERROR-CONTRACT", "level": "MUST", "referenceEvidence": "455/455 contain parser_err_msg; the wrapper skips SaaS processing when record['parser_err_msg'] is set." },
-    { "id": "FRAG-LOG-INDEX", "level": "MUST", "referenceEvidence": "452/455 reference stellar_log_index, the key every CONF routes on." },
-    { "id": "FRAG-EMPTY-INPUT", "level": "SHOULD", "referenceEvidence": "438/455 yield nil, nil for nil or empty input." },
-    { "id": "CONF-SYNTAX", "level": "MUST", "referenceEvidence": "All 454 CONFs have balanced <source>/<match> sections (survey parsed all of them)." },
-    { "id": "CONF-SOURCE-TYPES", "level": "MUST", "referenceEvidence": "886 sources: 434 udp, 433 tcp, 19 other types (beats, netflowipfix, http, syslog) that Parser Studio does not generate." },
-    { "id": "CONF-BIND", "level": "MUST", "referenceEvidence": "bind 0.0.0.0 in 436/436 udp/tcp-only CONFs (886/886 sources overall). Parser Studio may still emit 127.0.0.1 when the user selects loopback (decision D-3: default 0.0.0.0, user override kept)." },
-    { "id": "CONF-PORT-SHARED", "level": "MUST", "referenceEvidence": "454/454 CONFs use exactly one distinct port across their sources." },
-    { "id": "CONF-TAG", "level": "MUST", "referenceEvidence": "431/436 udp/tcp-only CONFs tag every source with the file's parser name; the 5 exceptions share a parent parser's tag. Parser Studio always emits its own name." },
-    { "id": "CONF-PARSE-TYPE", "level": "MUST", "referenceEvidence": "432/436 udp/tcp-only CONFs use <parse> @type equal to the parser name in every source; no source uses a different parse type." },
-    { "id": "CONF-TCP-INCLUDE", "level": "MUST", "referenceEvidence": "433/433 tcp sources include /etc/td-agent/transport_settings.conf." },
-    { "id": "CONF-MATCH", "level": "MUST", "referenceEvidence": "424/436 udp/tcp-only CONFs have exactly one <match <name>.**> with rewrite_tag_filter; the rest share a parent tag." },
-    { "id": "CONF-CAPITALIZE", "level": "MUST", "referenceEvidence": "424/424 such matches set capitalize_regex_backreference yes." },
-    { "id": "CONF-RULE-KEY", "level": "MUST", "referenceEvidence": "stellar_log_index is the rule key in 968 of 975 rules overall; other keys (dstip, ids, log_type) occur only in non-Parser-Studio forwarder style CONFs." },
-    { "id": "CONF-RULE-ORDER", "level": "MUST", "referenceEvidence": "420/424 have exactly one inverted rule, last, tag syslog; in 423/424 its pattern equals the last class pattern. rewrite_tag_filter 2.2.0 returns on the first matching rule, so order is semantic. Rule tags overall: session 442, syslog 445, threat 64, winlogevent 27." },
-    { "id": "PAIR-PROTOCOLS", "level": "MUST", "referenceEvidence": "431/436 udp/tcp-only CONFs carry one udp and one tcp source. Product rule: the CONF sources must equal the project's declared protocols." },
-    { "id": "PAIR-CLASSIFICATION-ROUTES", "level": "MUST", "referenceEvidence": "Every class set by set_log_index (threat, session, winlogevent) has a matching route in the reference CONFs. Product rule: any class the parser can emit needs a route, or events would fall to the syslog guard." }
+    {
+      "id": "FRAG-MARKERS",
+      "level": "MUST",
+      "referenceEvidence": "455/455 fragments contain the four markers once each, in order.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 455,
+        "total": 455
+      }
+    },
+    {
+      "id": "FRAG-NO-CODE-AFTER-PARSE-END",
+      "level": "MUST",
+      "referenceEvidence": "455/455 fragments end at STELLAR_PARSE_END (0 lines after). In the wrapper the next tokens are the closing ends of the inner and outer class, Plugin and Fluent; whether the platform splices only the marker region is not verified.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 455,
+        "total": 455
+      }
+    },
+    {
+      "id": "FRAG-REGION-GAP",
+      "level": "MUST",
+      "referenceEvidence": "455/455 have no non-comment line between INIT_END and PARSE_BEGIN. 441 of 455 first lines are the INIT_BEGIN marker (indentation varies) and 10 are a date comment; 4 were not classified.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 455,
+        "total": 455
+      }
+    },
+    {
+      "id": "FRAG-NO-WRAPPER-DECLS",
+      "level": "MUST",
+      "referenceEvidence": "455/455 fragments contain none of register_parser, StellarInnerParseClass, module Fluent or class Parser_customized (0/455 declare them).",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 455,
+        "total": 455
+      }
+    },
+    {
+      "id": "FRAG-INITIALIZE",
+      "level": "MUST",
+      "referenceEvidence": "454/455 define initialize. Generated parsers always do, because the wrapper constructs the inner class and then calls set_inner_class_params.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 454,
+        "total": 455
+      },
+      "justification": "Parser Studio always generates initialize: the wrapper constructs the inner class and calls set_inner_class_params on it. The one corpus fragment without it is not a pattern the compiler produces."
+    },
+    {
+      "id": "FRAG-RULESET",
+      "level": "MUST",
+      "referenceEvidence": "453/455 assign @parser_rule_set. The wrapper reads it through stellar_inner_class_get_parser_rule_set.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 453,
+        "total": 455
+      },
+      "justification": "The wrapper reads the rule set through stellar_inner_class_get_parser_rule_set, so every generated fragment must assign @parser_rule_set; the corpus exceptions are hand-written fragments."
+    },
+    {
+      "id": "FRAG-PARSE",
+      "level": "MUST",
+      "referenceEvidence": "454/455 define parse(text); the wrapper calls @inner_class.parse(text) with a block.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 454,
+        "total": 455
+      },
+      "justification": "The wrapper calls @inner_class.parse(text) with a block, so a generated fragment without parse(text) cannot work."
+    },
+    {
+      "id": "FRAG-YIELD",
+      "level": "MUST",
+      "referenceEvidence": "451/455 contain yield time, record; the wrapper forwards yielded values.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 451,
+        "total": 455
+      },
+      "justification": "The wrapper forwards values yielded by parse; a generated parser that never yields produces no events."
+    },
+    {
+      "id": "FRAG-ERROR-CONTRACT",
+      "level": "MUST",
+      "referenceEvidence": "455/455 contain parser_err_msg; the wrapper skips SaaS processing when record['parser_err_msg'] is set.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 455,
+        "total": 455
+      }
+    },
+    {
+      "id": "FRAG-LOG-INDEX",
+      "level": "MUST",
+      "referenceEvidence": "452/455 reference stellar_log_index, the key every CONF routes on.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 452,
+        "total": 455
+      },
+      "justification": "Every CONF routes on stellar_log_index, so a generated fragment that never assigns it would be unroutable."
+    },
+    {
+      "id": "FRAG-EMPTY-INPUT",
+      "level": "SHOULD",
+      "referenceEvidence": "438/455 yield nil, nil for nil or empty input.",
+      "basis": "corpus-practice",
+      "corpus": {
+        "matching": 438,
+        "total": 455
+      }
+    },
+    {
+      "id": "CONF-SYNTAX",
+      "level": "MUST",
+      "referenceEvidence": "454/454 CONFs have balanced <source>/<match> sections (survey parsed all of them).",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 454,
+        "total": 454
+      }
+    },
+    {
+      "id": "CONF-SOURCE-TYPES",
+      "level": "MUST",
+      "referenceEvidence": "867/886 sources are udp (434) or tcp (433); the other 19 are other types (beats, netflowipfix, http, syslog) that Parser Studio does not generate.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 867,
+        "total": 886
+      },
+      "justification": "The corpus also contains beats, netflowipfix, http and syslog sources; Parser Studio only generates udp and tcp receivers."
+    },
+    {
+      "id": "CONF-BIND",
+      "level": "MUST",
+      "referenceEvidence": "bind 0.0.0.0 in 436/436 udp/tcp-only CONFs (886/886 sources overall). Parser Studio may still emit 127.0.0.1 when the user selects loopback (decision D-3: default 0.0.0.0, user override kept).",
+      "basis": "product-rule",
+      "justification": "Decision D-3: the generated default is 0.0.0.0 like the reference, but an explicit loopback choice (127.0.0.1) is a supported user override, so the rule is deliberately looser than the corpus."
+    },
+    {
+      "id": "CONF-PORT-SHARED",
+      "level": "MUST",
+      "referenceEvidence": "454/454 CONFs use exactly one distinct port across their sources.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 454,
+        "total": 454
+      }
+    },
+    {
+      "id": "CONF-TAG",
+      "level": "MUST",
+      "referenceEvidence": "431/436 udp/tcp-only CONFs tag every source with the file's parser name; the 5 exceptions share a parent parser's tag. Parser Studio always emits its own name.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 431,
+        "total": 436
+      },
+      "justification": "Parser Studio always tags with its own parser name; the corpus exceptions reuse a parent parser tag, a pattern the compiler does not produce."
+    },
+    {
+      "id": "CONF-PARSE-TYPE",
+      "level": "MUST",
+      "referenceEvidence": "432/436 udp/tcp-only CONFs use <parse> @type equal to the parser name in every source; no source uses a different parse type.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 432,
+        "total": 436
+      },
+      "justification": "Parser Studio always uses its own parser name as the parse type; corpus exceptions reuse another parser."
+    },
+    {
+      "id": "CONF-TCP-INCLUDE",
+      "level": "MUST",
+      "referenceEvidence": "433/433 tcp sources include /etc/td-agent/transport_settings.conf.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 433,
+        "total": 433
+      }
+    },
+    {
+      "id": "CONF-MATCH",
+      "level": "MUST",
+      "referenceEvidence": "424/436 udp/tcp-only CONFs have exactly one <match <name>.**> with rewrite_tag_filter; the rest share a parent tag.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 424,
+        "total": 436
+      },
+      "justification": "Generated classification always uses one rewrite_tag_filter match named after the parser; the corpus exceptions route differently or not at all."
+    },
+    {
+      "id": "CONF-CAPITALIZE",
+      "level": "MUST",
+      "referenceEvidence": "424/424 such matches set capitalize_regex_backreference yes.",
+      "basis": "corpus-invariant",
+      "corpus": {
+        "matching": 424,
+        "total": 424
+      }
+    },
+    {
+      "id": "CONF-RULE-KEY",
+      "level": "MUST",
+      "referenceEvidence": "stellar_log_index is the rule key in 968/975 rules overall; other keys (dstip, ids, log_type) occur only in non-Parser-Studio forwarder style CONFs.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 968,
+        "total": 975
+      },
+      "justification": "Generated rules always key on stellar_log_index, the field the fragment sets; other keys in the corpus belong to hand-written rules."
+    },
+    {
+      "id": "CONF-RULE-ORDER",
+      "level": "MUST",
+      "referenceEvidence": "420/424 have exactly one inverted rule, last, tag syslog; in 423/424 its pattern equals the last class pattern. rewrite_tag_filter 2.2.0 returns on the first matching rule, so order is semantic. Rule tags overall: session 442, syslog 445, threat 64, winlogevent 27.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 420,
+        "total": 424
+      },
+      "justification": "rewrite_tag_filter returns on the first match, so class rules must precede exactly one inverted syslog guard; the corpus exceptions are not generated shapes."
+    },
+    {
+      "id": "PAIR-PROTOCOLS",
+      "level": "MUST",
+      "referenceEvidence": "431/436 udp/tcp-only CONFs carry one udp and one tcp source. Product rule: the CONF sources must equal the project's declared protocols.",
+      "basis": "product-rule",
+      "corpus": {
+        "matching": 431,
+        "total": 436
+      },
+      "justification": "Product rule: the CONF sources equal the protocols chosen in the project."
+    },
+    {
+      "id": "PAIR-CLASSIFICATION-ROUTES",
+      "level": "MUST",
+      "referenceEvidence": "Every class set by set_log_index (threat, session, winlogevent) has a matching route in the reference CONFs. Product rule: any class the parser can emit needs a route, or events would fall to the syslog guard.",
+      "basis": "product-rule",
+      "justification": "Product rule: every non-syslog index the generated parser can emit needs a CONF route, otherwise those events fall through to syslog."
+    }
   ],
   "informational": [
-    { "id": "INFO-MESSAGE-LENGTH-LIMIT", "note": "message_length_limit appears in 245 of 436 udp/tcp-only CONFs (values 4096-65536, mostly 16384). Parser Studio emits the project's value. Not enforced." },
-    { "id": "INFO-PATTERN-ANCHORING", "note": "Reference class patterns are unanchored (/session/, 2/436 anchored); Parser Studio emits anchored patterns, which match the same exact index names. Not enforced." },
-    { "id": "INFO-CONF-HEADER", "note": "Reference CONFs start with '# <date>' and '# Modified: false|true'. Parser Studio emits a generated-artifact comment header. The platform's use of the Modified comment is not verified." },
-    { "id": "INFO-RULESET-SHAPE", "note": "Reference @parser_rule_set is a JSON literal; 433/455 carry top_fields/vendor_fields/ns_fields. Parser Studio encodes its own camelCase JSON as base64. The wrapper reads only vendor and ignore_values, and only when running as SaaS. Compatibility with the platform SaaS utility is not verified." },
-    { "id": "INFO-ERROR-RECORD-SHAPE", "note": "Reference error records carry parser_raw_msg, timestamp, msg_class '<src>_err_msg', dev_type/dev_class. Parser Studio excludes raw text by default (decision D-4); whether the wrapper requires parser_raw_msg is tracked separately." }
+    {
+      "id": "INFO-MESSAGE-LENGTH-LIMIT",
+      "note": "message_length_limit appears in 245 of 436 udp/tcp-only CONFs (values 4096-65536, mostly 16384). Parser Studio emits the project's value. Not enforced."
+    },
+    {
+      "id": "INFO-PATTERN-ANCHORING",
+      "note": "Reference class patterns are unanchored (/session/, 2/436 anchored); Parser Studio emits anchored patterns, which match the same exact index names. Not enforced."
+    },
+    {
+      "id": "INFO-CONF-HEADER",
+      "note": "Reference CONFs start with '# <date>' and '# Modified: false|true'. Parser Studio emits a generated-artifact comment header. The platform's use of the Modified comment is not verified."
+    },
+    {
+      "id": "INFO-RULESET-SHAPE",
+      "note": "Reference @parser_rule_set is a JSON literal; 433/455 carry top_fields/vendor_fields/ns_fields. Parser Studio encodes its own camelCase JSON as base64. The wrapper reads only vendor and ignore_values, and only when running as SaaS. Compatibility with the platform SaaS utility is not verified."
+    },
+    {
+      "id": "INFO-ERROR-RECORD-SHAPE",
+      "note": "Reference error records carry parser_raw_msg, timestamp, msg_class '<src>_err_msg', dev_type/dev_class. Parser Studio excludes raw text by default (decision D-4); whether the wrapper requires parser_raw_msg is tracked separately."
+    }
   ]
 }

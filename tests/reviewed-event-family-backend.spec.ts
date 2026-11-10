@@ -1,4 +1,4 @@
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './support/downloadSink';
 
 async function openReviewedFlow(page:Page,reanalyze=true){
   const review=page.getByRole('button',{name:'Review Fields',exact:true});

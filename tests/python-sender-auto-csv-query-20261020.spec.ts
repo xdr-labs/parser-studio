@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {execFileSync} from 'node:child_process';
 
 const source='allow,gw01,https://example.test/path?user=alice&srcip=192.0.2.10';

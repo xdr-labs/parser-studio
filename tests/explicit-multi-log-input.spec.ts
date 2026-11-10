@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 const threat='{"event_type":"threat","src_ip":"192.0.2.20","action":"deny","message":"탐지"}';
 const user='{"event_type":"user","username":"김민수","action":"login"}';

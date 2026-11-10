@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {test,expect,type Page} from '@playwright/test';
+import {test,expect,type Page} from './support/downloadSink';
 
 const criOut=[
   '2026-10-19T08:20:00Z stdout P 김민',

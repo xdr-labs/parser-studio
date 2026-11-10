@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 
 const source=[
   JSON.stringify({log:'user=김민수\n',stream:'stdout',time:'2026-10-19T08:20:00Z'}),

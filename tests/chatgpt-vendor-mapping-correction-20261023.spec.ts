@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {readFile} from 'node:fs/promises';
 const cases=[
  {name:'FortiGate device identity',vendor:'Fortinet',product:'FortiGate',field:'devname',prior:'devname',target:'device_hostname',

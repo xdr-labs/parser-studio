@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';

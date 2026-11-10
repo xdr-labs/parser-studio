@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {spawn} from 'node:child_process';
 import {createSocket} from 'node:dgram';
 import {createServer} from 'node:net';

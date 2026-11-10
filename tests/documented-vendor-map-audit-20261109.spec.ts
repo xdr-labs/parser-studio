@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 

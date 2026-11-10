@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './support/downloadSink';
 const cases=[
  {id:'Repeated KV occurrences',raw:'<134>Oct 19 09:25:01 fw action=allow action=deny src=192.0.2.3 dst=198.51.100.2'},
  {id:'Wrapped pfSense positional CSV',raw:'<134>Oct 19 08:12:00 pfsense filterlog: 24,,,1000000103,em0,match,block,in,4,0x0,,64,40021,0,none,6,tcp,60,192.0.2.10,198.51.100.2,50100,443,0,S,1234,,65535,,'},
