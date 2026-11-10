@@ -13,8 +13,9 @@
 // reception or indexing result.
 import { test, expect } from './support/downloadSink';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { compareEventToGolden, type MappingRow } from '../backend/src/golden-event-comparison';
 
 interface Golden { sourcePath: string; sourceValue: unknown }
@@ -87,6 +88,19 @@ for (const vendorCase of vendorCases) {
     const download = await downloadPromise;
     const ruby = readFileSync((await download.path())!, 'utf8');
     expect(ruby.length).toBeGreaterThan(0);
+
+    // Hand the exact downloaded Ruby, the raw log and the browser's mapping rows
+    // to the aggregate gate (scripts/verification/ruby-golden-container-gate.sh),
+    // which executes it again on the pinned Ruby 2.4.9 target image. Documented
+    // values are NOT stored here: the gate reads them from the corpus itself.
+    const bundleRoot = process.env.PARSER_STUDIO_E2E_ARTIFACT_DIR;
+    if (bundleRoot) {
+      mkdirSync(join(bundleRoot, 'golden-bundles'), { recursive: true });
+      writeFileSync(join(bundleRoot, 'golden-bundles', vendorCase.id + '.json'), JSON.stringify({
+        contract: 'parser-studio.golden-bundle.v1', id: vendorCase.id, raw: vendorCase.rawSample, ruby,
+        rubySha256: createHash('sha256').update(ruby, 'utf8').digest('hex'), rows, required,
+      }));
+    }
 
     const run = spawnSync(process.env.PARSER_RUBY_BIN || 'ruby', [RUNNER], {
       input: JSON.stringify({ cases: [{ id: vendorCase.id, ruby, raw: vendorCase.rawSample }] }),
