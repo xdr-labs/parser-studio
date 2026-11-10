@@ -7,6 +7,7 @@
 // template or operator that no variant exercises.
 import type { ParserProject } from "../src/types.js";
 import { sampleProject } from "./fixture.js";
+import { pairwiseVariants } from "./compiler-pairwise.js";
 
 export interface CompilerVariant { id: string; axis: string; project: ParserProject }
 
@@ -111,6 +112,9 @@ for (const [name, step] of operators)
   });
 
 export function compilerVariants(): CompilerVariant[] {
-  // Fresh projects per call: callers may mutate them.
-  return variants.map(variant => ({ ...variant, project: structuredClone(variant.project) }));
+  // Fresh projects per call: callers may mutate them. The pairwise set (every
+  // feasible pair of levels across the independent axes, see compiler-pairwise.ts)
+  // is part of the same enumeration so every consumer, including the Ruby 2.4.9
+  // container gate, checks it too.
+  return [...variants, ...pairwiseVariants()].map(variant => ({ ...variant, project: structuredClone(variant.project) }));
 }

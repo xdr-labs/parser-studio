@@ -123,6 +123,17 @@ jobs:
         run: bash scripts/verification/ruby24-regex-container-gate.sh
       - name: Mandatory Ruby 2.4.9 and 3.2.11 structure gate for every compiler variant
         run: bash scripts/verification/ruby-variant-matrix-container-gate.sh
+      - name: Pairwise compiler variants executed on the Ruby 2.4.9 target (behaviour, not only structure)
+        run: |
+          set -euo pipefail
+          image=$(node -e 'const c=require("./contracts/target-runtime-profiles.v1.json");const p=c.profiles.find(x=>x.id==="stellar70-observed-ruby24");if(!p?.ciContainerImage?.startsWith("ruby:2.4.9@sha256:"))process.exit(1);process.stdout.write(p.ciContainerImage)')
+          docker pull --platform linux/amd64 "$image" >/dev/null
+          export PARSER_RUBY24_IMAGE="$image"
+          export PATH="$PWD/scripts/verification/ruby24-docker-shim:$PATH"
+          ruby -v | grep -F 'ruby 2.4.9'
+          cd backend
+          PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 PARSER_STUDIO_EXPECT_RUBY=2.4.9 \
+            node node_modules/tsx/dist/cli.mjs --test test/compiler-pairwise-native.test.ts
       - name: Verify Native-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-native.json"
