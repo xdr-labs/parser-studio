@@ -53,6 +53,25 @@ test("fragment must not carry wrapper declarations owned by the platform", () =>
     assert.ok(must(checkFragmentStructure(ruby.replace("# STELLAR_INIT_END", decl + "# STELLAR_INIT_END"))).includes("FRAG-NO-WRAPPER-DECLS"), decl);
 });
 
+test("wrapper-owned class shapes are rejected even when no `module Fluent` line is present", () => {
+  const { ruby } = artifacts();
+  for (const decl of [
+    "class Fluent::Plugin::CustomParser < Fluent::Plugin::Parser\nend\n",
+    "class Fluent::TextParser::Custom\nend\n",
+    "class MyParser < Fluent::Plugin::Parser\nend\n",
+    "class MyParser < Fluent::Parser\nend\n",
+    "class Parser_customized_example < Parser\nend\n",
+    "module Fluent::Plugin\nend\n",
+  ])
+    assert.ok(must(checkFragmentStructure(ruby.replace("# STELLAR_INIT_END", decl + "# STELLAR_INIT_END"))).includes("FRAG-NO-WRAPPER-DECLS"), decl);
+});
+
+test("a plain helper class is not a wrapper construct (control for the wrapper-shape rule)", () => {
+  const { ruby } = artifacts();
+  for (const helper of ["class RowHelper\n  def call; end\nend\n", "class ParserHelperNotes\nend\n", "# class Fluent::Plugin::Parser in a comment\n"])
+    assert.ok(!must(checkFragmentStructure(ruby.replace("# STELLAR_INIT_END", helper + "# STELLAR_INIT_END"))).includes("FRAG-NO-WRAPPER-DECLS"), helper);
+});
+
 test("executable code between INIT_END and PARSE_BEGIN and before INIT_BEGIN is rejected", () => {
   const { ruby } = artifacts();
   assert.ok(must(checkFragmentStructure(ruby.replace("# STELLAR_PARSE_BEGIN", "puts 1\n# STELLAR_PARSE_BEGIN"))).includes("FRAG-REGION-GAP"));

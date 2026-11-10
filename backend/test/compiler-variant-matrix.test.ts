@@ -66,10 +66,16 @@ test("the project schema cannot gain an extraction format that coverage and the 
   assert.deepEqual([...enumFormats].sort(), [...coverage.extractionFormats].sort());
 });
 
-test("compiler.ts never appends code after the PARSE_END marker; helpers go through insertBeforeParseEnd", () => {
-  const source = readFileSync(new URL("../src/compiler.ts", import.meta.url), "utf8");
-  const appended = source.split("\n").filter(line => /\bfragment\s*\+=/.test(line));
-  assert.deepEqual(appended, [], "use insertBeforeParseEnd(fragment, helper) instead of fragment+=");
+test("no compiler variant ships anything after the PARSE_END marker (helpers are placed before it)", () => {
+  // Judged on the generated file, not on how compiler.ts is written: a source grep for one
+  // spelling of append misses `fragment = fragment + helper` and `fragment << helper`.
+  for (const variant of compilerVariants()) {
+    const lines = split(compilePair(variant.project)).ruby.content.split("\n");
+    const markers = lines.filter(line => /^\s*#\s*STELLAR_PARSE_END\s*$/.test(line)).length;
+    assert.equal(markers, 1, variant.id + ": exactly one PARSE_END marker");
+    const end = lines.findIndex(line => /^\s*#\s*STELLAR_PARSE_END\s*$/.test(line));
+    assert.deepEqual(lines.slice(end + 1).filter(line => line.trim() !== ""), [], variant.id + ": content after PARSE_END");
+  }
 });
 
 test("compilePair itself is fail-closed on the structure contract (new generation paths cannot ship non-conforming files)", async () => {

@@ -57,7 +57,7 @@
     {
       "id": "FRAG-NO-WRAPPER-DECLS",
       "level": "MUST",
-      "referenceEvidence": "455/455 fragments contain none of register_parser, StellarInnerParseClass, module Fluent or class Parser_customized (0/455 declare them).",
+      "referenceEvidence": "455/455 fragments contain none of register_parser, StellarInnerParseClass, module Fluent, class Parser_customized, a class declared under Fluent:: or a class deriving from Parser (0/455 declare them; the last two shapes were counted read-only on 2026-11-11).",
       "basis": "corpus-invariant",
       "corpus": {
         "matching": 455,
