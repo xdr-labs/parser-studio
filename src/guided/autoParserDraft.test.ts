@@ -146,4 +146,17 @@ describe('AP2 zero-forced-format guided novice mapping handoff',()=>{
    expect(prepareAutoParserDraft(json,draft,suite,report,assessment)).toMatchObject({
      ok:false,reason:'UNTRUSTED_PREVIEW'});
  });
+ it('a manufacturer name the generated namespace cannot hold gets its own actionable reason, not a mapping failure',()=>{
+   for(const vendor of ['OISF/Suricata','Check Point / Provider-1','Acme\u00e9','a;b','x'.repeat(129)]){
+     const draft={...createDraft(),vendor};
+     const result=prepare(json,draft);
+     expect(result,vendor).toMatchObject({ok:false,reason:'MANUFACTURER_UNSUPPORTED'});
+   }
+ });
+ it('manufacturer names the namespace policy accepts still produce a draft',()=>{
+   for(const vendor of ['OISF Suricata','Palo Alto Networks','Fortinet, Inc'.replace(',',''),'A&B (EU) v2.0','a-b_c.d']){
+     const draft={...createDraft(),vendor};
+     expect(prepare(json,draft),vendor).toMatchObject({ok:true});
+   }
+ });
 });
