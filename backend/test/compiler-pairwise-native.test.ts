@@ -22,6 +22,8 @@ interface Fixture {
   extraction: ParserProject["extraction"];
   src: string; act: string;
   line: (ip: string, action: "deny" | "allow") => string;
+  /** Mixed extraction only: the same event in the second declared format (the first is `line`). */
+  alt?: (ip: string, action: "deny" | "allow") => string;
 }
 const FIXTURES: Record<string, Fixture> = {
   json: { extraction: { format: "json" }, src: "srcip", act: "action", line: (ip, a) => JSON.stringify({ srcip: ip, action: a }) },
@@ -32,8 +34,8 @@ const FIXTURES: Record<string, Fixture> = {
   regex: { extraction: { format: "regex", pattern: String.raw`^src=(?<srcip>[\d.]+) action=(?<action>deny|allow)$` }, src: "srcip", act: "action", line: (ip, a) => "src=" + ip + " action=" + a },
   "rfc3164-kv": { extraction: { format: "syslog_rfc3164", syslogBodyFormat: "kv" }, src: "body.srcip", act: "body.action", line: (ip, a) => "<134>Nov  7 12:00:00 edge01 app: srcip=" + ip + " action=" + a },
   "rfc5424-json": { extraction: { format: "syslog_rfc5424", syslogBodyFormat: "json" }, src: "body.srcip", act: "body.action", line: (ip, a) => "<134>1 2026-11-07T12:00:00Z edge01 app - ID - " + JSON.stringify({ srcip: ip, action: a }) },
-  "mixed-json-kv": { extraction: { format: "mixed", mixedFormats: ["json", "kv"] }, src: "srcip", act: "action", line: (ip, a) => JSON.stringify({ srcip: ip, action: a }) },
-  "mixed-json-csv": { extraction: { format: "mixed", mixedFormats: ["json", "csv"], csvColumns: ["srcip", "action", "charlie"], csvDelimiter: "," }, src: "srcip", act: "action", line: (ip, a) => JSON.stringify({ srcip: ip, action: a }) },
+  "mixed-json-kv": { extraction: { format: "mixed", mixedFormats: ["json", "kv"] }, src: "srcip", act: "action", line: (ip, a) => JSON.stringify({ srcip: ip, action: a }), alt: (ip, a) => "srcip=" + ip + " action=" + a },
+  "mixed-json-csv": { extraction: { format: "mixed", mixedFormats: ["json", "csv"], csvColumns: ["srcip", "action", "charlie"], csvDelimiter: "," }, src: "srcip", act: "action", line: (ip, a) => JSON.stringify({ srcip: ip, action: a }), alt: (ip, a) => ip + "," + a + ",x" },
   generic: { extraction: { format: "generic_structural" }, src: "generic.kv.srcip", act: "generic.kv.action", line: (ip, a) => "srcip=" + ip + " action=" + a + " proto=tcp aa=1 bb=2" },
 };
 
@@ -108,8 +110,10 @@ test("every pairwise variant emits documented target behavior (including unsuppo
     p.normalization.vendorFields = {};
     if (p.normalization.eventProfiles) p.normalization.eventProfiles = {
       discriminator: fixture.act, unknown: "reject", variants: [
-        { name: "allow", equals: "allow", topFields: {}, nsFields: {}, vendorFields: {} },
-        { name: "deny", equals: "deny", topFields: {}, nsFields: {}, vendorFields: {} },
+        // Each family maps the same source to its own vendor field, so a skipped or
+        // wrong profile selection changes the asserted output.
+        { name: "allow", equals: "allow", topFields: {}, nsFields: {}, vendorFields: { [fixture.src]: { normalized_name: "allow_src", data_type: "ip" } } },
+        { name: "deny", equals: "deny", topFields: {}, nsFields: {}, vendorFields: { [fixture.src]: { normalized_name: "deny_src", data_type: "ip" } } },
       ],
     };
     const valid = validateProject(p);
@@ -117,7 +121,10 @@ test("every pairwise variant emits documented target behavior (including unsuppo
     // Under a declared relay the second log arrives wrapped by relay01 (one hop);
     // it must yield the same event plus exactly one recorded hop.
     const wrap = (raw: string, position: number) => relayed && position === 1 ? "<134>Jan 16 15:19:05 relay01 fw: " + raw : raw;
-    const events = run(p, [wrap(fixture.line("192.0.2.10", "deny"), 0), wrap(fixture.line("192.0.2.11", "allow"), 1)]);
+    // A mixed extraction receives its first declared format at position 0 and its second
+    // at position 1, so every branch of mixedFormats is executed and judged.
+    const raws = [fixture.line("192.0.2.10", "deny"), (fixture.alt ?? fixture.line)("192.0.2.11", "allow")];
+    const events = run(p, raws.map(wrap));
     assert.equal(events.length, 2, variant.id + ": one event per raw log");
     for (const [position, action, ip] of [[0, "deny", "192.0.2.10"], [1, "allow", "192.0.2.11"]] as const) {
       const e = events[position]!;
@@ -138,6 +145,12 @@ test("every pairwise variant emits documented target behavior (including unsuppo
       if (relayed) assert.equal(e.parserstudio_transport?.forwarder_hops?.length ?? 0, position, where + " relay hops");
       assert.equal(e.srcip, ip, where + " srcip");
       assert.equal(e.action, action, where + " action");
+      if (level("event-profiles") === "two-families") {
+        const other = action === "deny" ? "allow" : "deny";
+        assert.equal(e.parserstudio_event_family, action, where + " selected event family");
+        assert.equal(e.Synthetic?.[action + "_src"], ip, where + " mapping of the selected family");
+        assert.equal(e.Synthetic?.[other + "_src"], undefined, where + " mapping of the other family leaked");
+      } else assert.equal(e.parserstudio_event_family, undefined, where + " family without event profiles");
       if (level("enrichment") === "split_field") {
         // The authored action ("deny"/"allow") has no ":" to split on, so the
         // canonical operator contract (CANONICAL_OPERATOR_CONTRACT_V1.enrichment)
@@ -158,7 +171,7 @@ test("every pairwise variant emits documented target behavior (including unsuppo
       // be the only place the raw log appears; every other extraction keeps it out.
       const copy = structuredClone(e);
       if (level("extraction") === "generic") delete copy.parserstudio_source?.generic?.source_raw;
-      assert.ok(!JSON.stringify(copy).includes(fixture.line(ip, action)), where + " raw log leaked into the event");
+      assert.ok(!JSON.stringify(copy).includes(raws[position]!), where + " raw log leaked into the event");
     }
     checked += 1;
   }
