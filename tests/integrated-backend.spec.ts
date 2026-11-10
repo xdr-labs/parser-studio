@@ -3,6 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createDraft} from '../src/model';
 import {toBackendProject} from '../src/guided/backendAdapter';
+import {sampleProject} from '../backend/test/fixture';
 
 const SHA=/^[a-f0-9]{64}$/;
 const sha=(data:string|Uint8Array)=>createHash('sha256').update(data).digest('hex');
@@ -61,6 +62,31 @@ async function verifyGeneratedDraftPair(
 test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target APIs isolated',()=>{
   test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',
     'Real integration requires an exact backend HEAD checkout and localhost isolation.');
+
+  test('same-head backend cannot export unsupported Ruby2.4 Regex or Syslog Regex',async({request})=>{
+    const caps=await request.get('/api/v1/parser-pairs/capabilities');
+    expect(caps.status()).toBe(200);
+    const capability=await caps.json();
+    expect(capability.downloads.targetRuntimeProfile).toMatchObject({
+      profile:'stellar70-observed-ruby24',ruby:'2.4.9',
+      regexPreviewSupported:true,regexExportSupported:false,
+      targetImportVerified:false,
+    });
+    for(const extraction of [
+      {format:'regex' as const,pattern:'^(?<action>ALLOW)$'},
+      {format:'syslog_rfc5424' as const,syslogBodyFormat:'regex' as const,
+        pattern:'^(?<action>ALLOW)$'},
+    ]){
+      const project=sampleProject();
+      project.extraction=extraction;
+      const checked=await request.post('/api/v1/parser-pairs/validate',{data:project});
+      expect(checked.status()).toBe(200);
+      expect((await checked.json()).targetExportSupported).toBe(false);
+      const refused=await request.post('/api/v1/parser-pairs/generate',{data:project});
+      expect(refused.status()).toBe(422);
+      expect((await refused.json()).error).toBe('TARGET_RUNTIME_REGEX_UNSUPPORTED');
+    }
+  });
 
   test('same-head public backend refuses legacy name-only mapping API',async({request})=>{
     const response=await request.get('/api/v1/parser-pairs/capabilities');

@@ -40,6 +40,7 @@ const templateFiles=[
 ];
 const sourceFiles=[
   'backend/src/compiler.ts','backend/src/validate.ts',
+  'backend/src/target-runtime-export.ts','backend/src/mainline-authoring-server.ts',
   'backend/src/portable-regex.ts','backend/src/canonical-operator-contract.ts',
   'runtime/multipass/semantic-policy.v1.json',
   'contracts/target-runtime-profiles.v1.json',

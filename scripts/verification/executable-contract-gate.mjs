@@ -47,7 +47,8 @@ function validateNativeProfiles(input){
   assert.equal(input.targetVerified,false);
   for(const feature of ['regex','syslog-regex-body']){
     assert.ok(input.unsupported.some(f=>f.feature===feature&&
-      f.profile===ruby24.id&&f.behavior==='FAIL_CLOSED_RUNTIME'),
+      f.profile===ruby24.id&&f.behavior==='FAIL_CLOSED_RUNTIME'&&
+      f.shippingExportBehavior==='TARGET_RUNTIME_REGEX_UNSUPPORTED'),
       'unsupported Ruby2.4 regex cannot be misreported as safe');
   }
 }
@@ -102,6 +103,17 @@ assert.match(text('.github/workflows/quality.yml'),/MAPPING_CROSS_CONSUMER_PARIT
 assert.ok(existsSync('scripts/verification/executable-artifact-lineage.ts'));
 assert.match(text('.github/workflows/quality.yml'),/parser-studio-artifact-lineage-native/);
 assert.match(text('.github/workflows/quality.yml'),/parser-studio-artifact-lineage-web/);
+// Ruby 2.4 Regex never escapes the shipping export boundary, even if the
+// internal, synthetic Ruby3.2 compiler can still emit DRAFT parser fragments.
+assert.ok(existsSync('backend/src/target-runtime-export.ts'));
+assert.ok(existsSync('backend/test/r3-target-regex-export-gate.test.ts'));
+assert.match(text('backend/src/mainline-authoring-server.ts'),/requiresUnavailableTargetRegex/);
+assert.match(text('backend/src/mainline-authoring-server.ts'),/pairIncludesUnavailableTargetRegex/);
+assert.match(text('backend/src/mainline-authoring-server.ts'),/TARGET_REGEX_EXPORT_ERROR/);
+assert.match(text('backend/src/target-runtime-export.ts'),/regexExportSupported: false/);
+assert.match(text('backend/src/target-runtime-export.ts'),/ruby: "2.4.9"/);
+assert.match(text('backend/src/target-runtime-export.ts'),/fluentd: "1.7.4"/);
+assert.match(text('src/guided/backendCapabilities.ts'),/TARGET_RUNTIME_REGEX_UNSUPPORTED/);
 assert.match(text('backend/src/compiler.ts'),/Regexp\.respond_to\?\(:timeout=\)/);
 assert.match(text('backend/src/compiler.ts'),/Native Regex unsupported/);
 const workflow=text('.github/workflows/quality.yml');

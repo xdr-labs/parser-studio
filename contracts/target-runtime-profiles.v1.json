@@ -28,13 +28,15 @@
       "feature": "regex",
       "profile": "stellar70-observed-ruby24",
       "behavior": "FAIL_CLOSED_RUNTIME",
-      "reason": "Ruby 2.4 treats a timeout Hash as positional regexp flags and has no Regexp timeout API"
+      "reason": "Ruby 2.4 treats a timeout Hash as positional regexp flags and has no Regexp timeout API",
+      "shippingExportBehavior": "TARGET_RUNTIME_REGEX_UNSUPPORTED"
     },
     {
       "feature": "syslog-regex-body",
       "profile": "stellar70-observed-ruby24",
       "behavior": "FAIL_CLOSED_RUNTIME",
-      "reason": "Same Regexp timeout incompatibility as standalone regex"
+      "reason": "Same Regexp timeout incompatibility as standalone regex",
+      "shippingExportBehavior": "TARGET_RUNTIME_REGEX_UNSUPPORTED"
     }
   ],
   "targetVerified": false

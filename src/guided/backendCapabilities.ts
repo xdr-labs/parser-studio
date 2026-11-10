@@ -91,6 +91,15 @@ export interface BackendCapabilities {
     requiresApiKey: false;
     autoDeploys: false;
     exactArtifactRevision: true;
+    /** Target adapter capability, not a property of the portable project. */
+    targetRuntimeProfile?:{
+      profile:'stellar70-observed-ruby24';
+      ruby:'2.4.9';
+      fluentd:'1.7.4';
+      regexPreviewSupported:true;
+      regexExportSupported:boolean;
+      targetImportVerified:false;
+    };
     /** Optional server-gated metadata, not owner authorization. */
     ownedOfflineRevisionHistoryOptIn?: true;
     ownedOfflineRevisionHttpAvailableWhenInjected?: true;
@@ -269,7 +278,16 @@ export async function fetchBackendCapabilities(
     const dl = cap.downloads;
     const coreKeys='autoDeploys,exactArtifactRevision,individualGeneratedFiles,requiresApiKey,requiresDpConnection,zipWithManifest';
     const extendedKeys='autoDeploys,exactArtifactRevision,individualGeneratedFiles,ownedOfflineRevisionHistoryOptIn,ownedOfflineRevisionHttpAvailableWhenInjected,requiresApiKey,requiresDpConnection,revisionHistoryDurableAcrossRestart,revisionRestorePreviewNeverWritesTarget,zipWithManifest';
-    const actualKeys=Object.keys(dl).sort().join(',');
+    const actualKeys=Object.keys(dl).filter(key=>key!=='targetRuntimeProfile').sort().join(',');
+    const runtime=dl.targetRuntimeProfile;
+    if(runtime!==undefined&&(
+      Object.keys(runtime).sort().join(',')!=='fluentd,profile,regexExportSupported,regexPreviewSupported,ruby,targetImportVerified'||
+      runtime.profile!=='stellar70-observed-ruby24'||
+      runtime.ruby!=='2.4.9'||runtime.fluentd!=='1.7.4'||
+      runtime.regexPreviewSupported!==true||
+      runtime.regexExportSupported!==false||
+      runtime.targetImportVerified!==false))
+      throw new Error('Untrusted or unverified target Regex export capability.');
     if (!dl || typeof dl !== 'object' ||
         (actualKeys !== coreKeys && actualKeys !== extendedKeys) ||
         dl.individualGeneratedFiles !== true || dl.zipWithManifest !== true ||
@@ -335,6 +353,10 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     (extraction.format==='syslog_rfc3164'||extraction.format==='syslog_rfc5424')&&
     extraction.syslogBodyFormat==='regex'&&'pattern' in extraction)
     regexPattern=extraction.pattern;
+  if(regexPattern!==undefined&&cap.downloads?.targetRuntimeProfile?.regexExportSupported!==true)
+    throw Object.assign(new Error(
+      'Regex samples may be reviewed in the browser, but this Stellar Cyber 7.0 Ruby 2.4.9 target cannot safely execute generated Regex parsers. Parser files and ZIP export are blocked; use a supported non-Regex grammar.'),
+      {code:'TARGET_RUNTIME_REGEX_UNSUPPORTED'});
   if(regexPattern!==undefined&&(
     cap.authoring.boundedRegexNamedCaptureSubset!==true||
     cap.authoring.boundedRegexMaxPatternChars!==256||

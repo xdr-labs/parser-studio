@@ -12,6 +12,9 @@ import {hasValidUnicodeJson} from "./unicode.js";
 import projectSchema from "../schema/parser-project.v0.1.schema.json" with {type:"json"};
 import recipeSchema from "../schema/parser-recipe.v0.2.schema.json" with {type:"json"};
 import type {PairExport} from "./types.js";
+import {HOST_CUSTOMIZED_TARGET, TARGET_REGEX_EXPORT_ERROR,
+  TARGET_REGEX_EXPORT_MESSAGE, requiresUnavailableTargetRegex,
+  pairIncludesUnavailableTargetRegex} from "./target-runtime-export.js";
 
 /**
  * Shipping HTTP entrypoint: intentionally imports ONLY offline parser
@@ -53,6 +56,7 @@ export const MAINLINE_AUTHORING_CAPABILITIES=Object.freeze({
     requiresApiKey:false,
     autoDeploys:false,
     exactArtifactRevision:true,
+    targetRuntimeProfile:HOST_CUSTOMIZED_TARGET,
   },
   import:{
     exactInternalPairsEditable:true,
@@ -89,6 +93,7 @@ const RECIPE_AUTHORING_CAPABILITIES=Object.freeze({
     "classify_equals","fallback_unparsed"],
   boundedRegexNamedCaptureSubset:true,boundedRegexMaxPatternChars:256,
   boundedRegexRuntimeTimeoutMs:50,
+  targetRuntimeProfile:HOST_CUSTOMIZED_TARGET,
   unsupported:["rfc3164_timestamp_inference","mixed_rfc3164_unreviewed_bodies",
     "mixed_other_syslog_envelopes","mixed_csv_unreviewed_schema",
     "multiline_unframed_generic","unbounded_or_unsafe_regex","ruby_execution",
@@ -205,6 +210,13 @@ async function handleOfflineRequest(req:IncomingMessage,res:ServerResponse):Prom
       if(!result.ok){
         send(res,422,{error:"UNSUPPORTED_RECIPE_V02",issues:result.issues});return;
       }
+      if(requiresUnavailableTargetRegex((input as {
+        legacyProject?:{extraction?:unknown}}).legacyProject?.extraction)){
+        send(res,422,{error:"UNSUPPORTED_RECIPE_V02",issues:[{
+          code:TARGET_REGEX_EXPORT_ERROR,path:"/legacyProject/extraction",
+          message:TARGET_REGEX_EXPORT_MESSAGE,
+        }]});return;
+      }
       if(path.endsWith("/validate")){
         send(res,200,{ok:true,issues:[],compilerMode:"V01_EQUIVALENT_SUBSET",
           nativeUserParserVerified:false,targetImportVerified:false});return;
@@ -220,6 +232,9 @@ async function handleOfflineRequest(req:IncomingMessage,res:ServerResponse):Prom
         send(res,422,{error:"ARTIFACT_REQUEST_INVALID"});return;
       }
       const request=input as Record<string,unknown>;
+      if(pairIncludesUnavailableTargetRegex(request.pair)){
+        send(res,422,{error:TARGET_REGEX_EXPORT_ERROR});return;
+      }
       const result=buildArtifactPackage(request.pair as PairExport,request.version as string);
       sendPackage(res,result);
     }catch(error){
@@ -244,10 +259,21 @@ async function handleOfflineRequest(req:IncomingMessage,res:ServerResponse):Prom
   try{
     const validated=validateProject(input);
     if(path==="/api/v1/parser-pairs/validate"){
-      send(res,validated.ok?200:422,validated);return;
+      send(res,validated.ok?200:422,{
+        ...validated,
+        targetExportSupported:validated.ok&&!requiresUnavailableTargetRegex(
+          (input as {extraction?:unknown})?.extraction),
+        targetRuntimeProfile:HOST_CUSTOMIZED_TARGET.profile,
+      });return;
     }
     if(!validated.ok){
       send(res,422,{error:"INVALID_PROJECT",issues:validated.issues});return;
+    }
+    if(requiresUnavailableTargetRegex((input as {extraction?:unknown})?.extraction)){
+      send(res,422,{error:TARGET_REGEX_EXPORT_ERROR,issues:[{
+        code:TARGET_REGEX_EXPORT_ERROR,path:"/extraction",
+        message:TARGET_REGEX_EXPORT_MESSAGE,
+      }]});return;
     }
     send(res,200,compilePair(input));
   }catch(error){requestError(error,res,"GENERATION_ERROR");}
