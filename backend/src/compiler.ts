@@ -10,12 +10,67 @@ const CANONICAL_OPERATORS=readFileSync(new URL('../templates/canonical-operators
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
 const RUBY_TEMPLATE = readFileSync(new URL("../templates/ruby-fragment.rb.tpl", import.meta.url), "utf8");
 const RUBY_FORWARDER_FAMILY_TEMPLATE = readFileSync(new URL("../templates/ruby-forwarder-family.rb.tpl", import.meta.url), "utf8");
-// Ruby CSV 3.2 rejects strip:true with TAB as col_sep. Modify only reviewed
-// explicit TAB CSV projects, preserving exact artifact bytes and approved
-// template digests for every other parser family.
-const CSV_TAB_STRIP_NEEDLE = 'row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: true)';
-const CSV_TAB_STRIP_REPLACEMENT = 'row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: (separator != "\\t"))';
+// Only actual CSV projects receive this Ruby 2.4 compatibility helper;
+// unrelated JSON/KV parser bytes and approved artifact hashes stay stable.
+const CSV_RUBY_COMPAT_HELPER = String.raw`
+def parserstudio_csv_strip_field_edges(text, separator)
+  chars=text.each_char.to_a
+  output=''.dup.force_encoding(text.encoding)
+  outside_space=''.dup.force_encoding(text.encoding)
+  within_quotes=false
+  at_field_start=true
+  index=0
+  while index<chars.length
+    char=chars[index]
+    if within_quotes
+      output << char
+      if char == '"'
+        if chars[index+1] == '"'
+          index+=1
+          output << '"'
+        else
+          within_quotes=false
+        end
+      end
+    elsif char == separator
+      outside_space.clear
+      output << char
+      at_field_start=true
+    elsif char == '"' && at_field_start
+      outside_space.clear
+      output << char
+      within_quotes=true
+      at_field_start=false
+    elsif char == ' ' || char == "\t"
+      outside_space << char unless at_field_start
+    else
+      output << outside_space << char
+      outside_space.clear
+      at_field_start=false
+    end
+    index+=1
+  end
+  output
+end
 
+def parserstudio_csv_parse_line(text, separator, strip_edges)
+  if defined?(CSV::DEFAULT_OPTIONS) && CSV::DEFAULT_OPTIONS.key?(:strip)
+    CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: strip_edges)
+  else
+    input=strip_edges ? parserstudio_csv_strip_field_edges(text,separator) : text
+    CSV.parse_line(input, col_sep: separator, liberal_parsing: false)
+  end
+end
+`;
+const PARSE_END_MARKER = "# STELLAR_PARSE_END";
+// Installed Stellar Cyber customized fragments (455/455 observed) end at the
+// PARSE_END marker. Runtime helpers are therefore inserted before it, never
+// appended after it.
+function insertBeforeParseEnd(fragment: string, helper: string): string {
+  if (fragment.split(PARSE_END_MARKER).length !== 2)
+    throw new Error("Fragment must contain exactly one STELLAR_PARSE_END marker");
+  return fragment.replace(PARSE_END_MARKER, () => helper.replace(/\n*$/, "\n") + PARSE_END_MARKER);
+}
 const GENERIC_STRUCTURAL_HELPER = readFileSync(new URL("../templates/generic-structural-helper.rb.tpl", import.meta.url), "utf8");
 const REGEX_EXTRACTOR_NEEDLE = "  when 'leef'\n    parserstudio_leef(text)\n  else";
 const REGEX_EXTRACTOR_BRANCH = "  when 'leef'\n    parserstudio_leef(text)\n  when 'regex'\n    parserstudio_regex(text, settings)\n  else";
@@ -186,15 +241,16 @@ function emitRubyFragment(project: ParserProject): string {
   // The source is a bundled static catalog, never user-controlled data.
   if(/[\\'\r\n]/.test(officialJson))throw new Error("Unsafe official type literal");
   fragment=fragment.replace("__STELLAR7_ENRICH_TYPES_JSON__",officialJson);
-  const tabCsv=project.extraction.csvDelimiter==="\t"&&
-    (project.extraction.format==="csv"||
-      (project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("csv")));
-  if(tabCsv){
-    if(fragment.split(CSV_TAB_STRIP_NEEDLE).length!==2)
-      throw new Error("Strict TAB CSV parser template mismatch");
-    fragment=fragment.replace(CSV_TAB_STRIP_NEEDLE,CSV_TAB_STRIP_REPLACEMENT);
+  const nativeCsv=project.extraction.format==="csv"||
+    (project.extraction.format==="mixed"&&project.extraction.mixedFormats?.includes("csv"));
+  if(nativeCsv){
+    const csvNeedle='row = CSV.parse_line(text, col_sep: separator, liberal_parsing: false, strip: true)';
+    if(fragment.split(csvNeedle).length!==2)
+      throw new Error("Native CSV parser template mismatch");
+    fragment=fragment.replace(csvNeedle,
+      'row = parserstudio_csv_parse_line(text, separator, separator != "\\t")');
+    fragment=insertBeforeParseEnd(fragment,CSV_RUBY_COMPAT_HELPER);
   }
-
   const regexBody=(project.extraction.format==="syslog_rfc3164"||
     project.extraction.format==="syslog_rfc5424")&&
     project.extraction.syslogBodyFormat==="regex";

@@ -86,6 +86,13 @@ test("fragment includes only one set of markers, safe literal payload, and Ruby 
 test("generated CSV parser strips field-edge whitespace without enabling liberal parsing",()=>{
  const ruby=compilePair(sampleProject()).files[1]!.content;
  assert.match(ruby,/CSV\.parse_line\(text, col_sep: separator, liberal_parsing: false, strip: true\)/);
+ const csv=sampleProject();
+ csv.extraction={format:"csv",csvColumns:["one","two","three"],csvDelimiter:","};
+ const generated=compilePair(csv).files.find(file=>!file.name.endsWith(".conf"))!.content;
+ assert.ok(generated.includes("row = parserstudio_csv_parse_line(text, separator, separator != "), "CSV must use target-compatible parser adapter");
+ assert.match(generated,/def parserstudio_csv_strip_field_edges\(text, separator\)/);
+ assert.match(generated,/def parserstudio_csv_parse_line\(text, separator, strip_edges\)/);
+ assert.doesNotMatch(generated,/row = CSV\.parse_line\(text, col_sep: separator/);
  assert.equal(ruby.includes("liberal_parsing: true"),false);
 });
 
@@ -156,4 +163,15 @@ test("Generic Structural compiler is opt-in, bounded and keeps legacy artifact b
  const low=structuredClone(p);low.receiver.port=6799;
  assert.equal(validateProject(low).ok,false);
  assert.ok(validateProject(low).issues.some(x=>x.code==="syslog_port_minimum"));
+});
+
+test("CSV Ruby 2.4 compatibility helper is emitted inside the Stellar marker region, nothing after PARSE_END", () => {
+  const csv=sampleProject();
+  csv.extraction={format:"csv",csvColumns:["one","two","three"],csvDelimiter:","};
+  const generated=compilePair(csv).files.find(file=>!file.name.endsWith(".conf"))!.content;
+  const end=generated.indexOf("# STELLAR_PARSE_END");
+  assert.ok(end>0,"PARSE_END marker present");
+  assert.equal(generated.slice(end+"# STELLAR_PARSE_END".length).trim(),"",
+    "reference fragments end at STELLAR_PARSE_END; no code may follow it");
+  assert.ok(generated.indexOf("def parserstudio_csv_parse_line")<end,"helper belongs to the marker region");
 });

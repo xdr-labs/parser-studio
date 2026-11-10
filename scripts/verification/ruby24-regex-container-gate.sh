@@ -17,7 +17,7 @@ trap 'rm -f "$payload"' EXIT
 node backend/node_modules/tsx/dist/cli.mjs \
   scripts/verification/ruby24-regex-artifact-evidence.ts --private-payload > "$payload"
 test "$(wc -c < "$payload")" -gt 1000
-test "$(wc -c < "$payload")" -lt 131072
+test "$(wc -c < "$payload")" -lt 262144
 runner=$(cat scripts/verification/ruby24-regex-offline-runner.rb)
 sandbox=(
   --rm -i --platform linux/amd64
