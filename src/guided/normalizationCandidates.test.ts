@@ -159,6 +159,22 @@ describe('official-catalog normalization candidates',()=>{
       const high=suggestNormalizationCandidates(fields,[]).filter(item=>item.source.includes('atoms.'));
       expect(high).toEqual([]);
     });
+    it('keeps non-transport protocol context for a first-atom port (review, never bulk)',()=>{
+      const fields=generic(
+        {protocol:'icmp',dport:'53 trailing text'},
+        {dport_001:'53',dport_002:'trailing',dport_003:'text'});
+      const atom=suggestNormalizationCandidates(fields,[])
+        .find(item=>item.source==='generic.atoms.dport_001');
+      expect(atom).toMatchObject({confidence:'REVIEW',safeForBulk:false});
+    });
+    it('keeps an unknown or non-transport protocol that itself carries trailing text',()=>{
+      const fields=generic(
+        {protocol:'icmp reply',sport:'1 x',dport:'53 trailing text'},
+        {protocol_001:'icmp',protocol_002:'reply',dport_001:'53',dport_002:'trailing',dport_003:'text'});
+      const high=suggestNormalizationCandidates(fields,[])
+        .filter(item=>item.confidence==='HIGH'&&/^generic\.atoms\.(s|d)port_001$/.test(item.source));
+      expect(high).toEqual([]);
+    });
     it('does not use a non-first atom as the port value',()=>{
       const fields=generic({dport:'x 53'},{dport_001:'x',dport_002:'53'});
       expect(suggestNormalizationCandidates(fields,[])

@@ -83,6 +83,11 @@ high(spaced('dst',['198.51.100.7','trailing']),'generic.atoms.dst_001','dstip','
 review(spaced('dport',['abc','def']),'generic.atoms.dport_001','dstport');
 review(spaced('dport',['65536','x']),'generic.atoms.dport_001','dstport');
 review(spaced('dport',['53','pattern:','allow','all']),'generic.kv.dport','dstport');
+// The protocol that qualifies a port atom is recorded on the KV carrier, not on the atom.
+const withProtocol=(event,protocol)=>({generic:{...event.generic,kv:{...event.generic.kv,protocol}}});
+review(withProtocol(spaced('dport',['53','trailing']),'icmp'),'generic.atoms.dport_001','dstport');
+review(withProtocol(spaced('dport',['53','trailing']),'icmp reply'),'generic.atoms.dport_001','dstport');
+high(withProtocol(spaced('dport',['53','trailing']),'tcp'),'generic.atoms.dport_001','dstport','integer');
 absent(spaced('dport',['x','53']),'generic.atoms.dport_002');
 absent(spaced('dport',['53','80']),'generic.atoms.dport_002');
 absent(spaced('severity',['3','of','5']),'generic.atoms.severity_001');

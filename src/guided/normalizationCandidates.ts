@@ -49,14 +49,21 @@ const DOCUMENTED_PROTO_NAMES=new Set(semanticPolicy.officialProtocolNames);
 const TRANSPORT_NUMERIC=new Set<string>(
   semanticPolicy.transportPortProtocols.numeric.map(String));
 const TRANSPORT_NAMES=new Set<string>(semanticPolicy.transportPortProtocols.names);
+/** Where the protocol that qualifies `source` is recorded. An atom such as
+ * `generic.atoms.dport_001` is a slice of `generic.kv.dport`, so the protocol
+ * lives beside the KV carrier, not beside the atom. */
+function protocolContextPrefixes(source:string):string[]{
+  const prefix=source.includes('.')?source.slice(0,source.lastIndexOf('.')+1):'';
+  if(firstAtomKeyOf(source)===undefined)return [prefix];
+  return [prefix,source.slice(0,source.lastIndexOf('atoms.'))+'kv.'];
+}
 /** A protocol observation is not proof of a Layer 4 port unless it names an
  * independently reviewed carrier. Unknown/contradicting evidence is REVIEW. */
 function unsupportedPortProtocolInEvent(
   fields:Record<string,unknown>,source:string,
 ):boolean{
-  const prefix=source.includes('.')?source.slice(0,source.lastIndexOf('.')+1):'';
-  const candidates=[prefix+'protocol-id',prefix+'protocol',prefix+'proto',
-    prefix+'proto_name','protocol-id','protocol','proto','proto_name'];
+  const names=['protocol-id','protocol','proto','proto_name'];
+  const candidates=[...protocolContextPrefixes(source).flatMap(prefix=>names.map(name=>prefix+name)),...names];
   return candidates.some(name=>{
     const found=lookupFieldValue(fields,name);
     if(!found.found)return false;
