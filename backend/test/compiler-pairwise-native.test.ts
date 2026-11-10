@@ -112,7 +112,6 @@ test("every pairwise variant emits documented target behavior (including unsuppo
     for (const [position, action, ip] of [[0, "deny", "192.0.2.10"], [1, "allow", "192.0.2.11"]] as const) {
       const e = events[position]!;
       const where = variant.id + " #" + position;
-      if (relayed) assert.equal(e.parserstudio_transport?.forwarder_hops?.length ?? 0, position, where + " relay hops");
       // Stellar 7.0 observed Ruby 2.4.9 has no Regexp timeout. The Compiler
       // MUST fail closed at extraction instead of returning an unsafe match.
       // This is a target capability contract, not an exempted/untested case.
@@ -122,9 +121,11 @@ test("every pairwise variant emits documented target behavior (including unsuppo
         assert.equal(e.stellar_log_index, "syslog", where + " unsupported regex index");
         assert.equal(e.srcip, undefined, where + " unsafe regex emitted srcip");
         assert.equal(e.action, undefined, where + " unsafe regex emitted action");
+        assert.equal(e.parserstudio_transport, undefined, where + " failed extraction leaked relay metadata");
         regexClosed += 1;
         continue;
       }
+      if (relayed) assert.equal(e.parserstudio_transport?.forwarder_hops?.length ?? 0, position, where + " relay hops");
       assert.equal(e.srcip, ip, where + " srcip");
       assert.equal(e.action, action, where + " action");
       if (level("enrichment") === "split_field") {
