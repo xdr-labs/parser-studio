@@ -164,6 +164,7 @@ test("every conformance rule has a mutation that triggers it at its declared lev
     "FRAG-LOG-INDEX": () => fragment(a.ruby.split("stellar_log_index").join("stellar_idx")),
     "FRAG-EMPTY-INPUT": () => fragment(a.ruby.replace(/yield\s+nil\s*,\s*nil/g, "return")),
     "CONF-SYNTAX": () => conf(a.conf.replace("</match>", "")),
+    "CONF-STRUCTURE": () => conf(a.conf + "\n<filter x.**>\n</filter>\n"),
     "CONF-SOURCE-TYPES": () => conf(a.conf.replace("@type udp", "@type http")),
     "CONF-BIND": () => conf(a.conf.replace(/bind [0-9.]+/, "bind 10.1.1.1")),
     "CONF-PORT-SHARED": () => conf(a.conf.replace(/port (\d+)/, "port 9")),
@@ -252,4 +253,18 @@ test("wrapper words inside a =begin/=end block are commentary, not wrapper decla
 
 test("a =begin block does not count as executable code outside the regions", () => {
   assert.deepEqual(must(checkFragmentStructure("=begin\nnotes\n=end\n" + skeleton(REAL_BODY))), []);
+});
+
+// The CONF allow-list: Parser Studio emits only <source>(<parse>) and <match>(<rule>), each
+// parameter once. Anything else is either a generator bug or content the reference
+// contract never checked, so it fails closed instead of being silently ignored.
+test("CONF allow-list: unknown sections, nesting and duplicate parameters are rejected", () => {
+  const a = artifacts();
+  const conf = (text: string) => must(checkConfStructure(text, { parserName: a.name }));
+  assert.deepEqual(conf(a.conf), []);
+  assert.deepEqual(conf(a.conf.replace(/\n/g, "\r\n")), [], "CRLF line endings are tolerated");
+  assert.deepEqual(conf(a.conf + "\n<filter x.**>\n  @type record_transformer\n</filter>\n"), ["CONF-STRUCTURE"]);
+  assert.deepEqual(conf(a.conf.replace(/(<source>\n)/, "$1  <transport tls>\n    x 1\n  </transport>\n")), ["CONF-STRUCTURE"]);
+  assert.deepEqual(conf(a.conf.replace(/(<source>\n)/, "$1  bind 0.0.0.0\n")), ["CONF-STRUCTURE"]);
+  assert.deepEqual(conf(a.conf.replace(/(<match [^>]+>\n)/, "$1  <source>\n    @type udp\n  </source>\n")), ["CONF-STRUCTURE"]);
 });
