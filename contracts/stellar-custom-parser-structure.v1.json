@@ -150,6 +150,13 @@
       }
     },
     {
+      "id": "CONF-STRUCTURE",
+      "level": "MUST",
+      "referenceEvidence": "The survey recorded only <source>/<match> sections for the udp/tcp CONFs it parsed; no per-parameter uniqueness count was taken.",
+      "basis": "product-rule",
+      "justification": "Parser Studio emits exactly <source>(<parse>) and <match>(<rule>). Anything else is a generator defect or content this contract never examined, and a repeated parameter is read differently by Fluentd (last wins) than by the checker (first wins), so it fails closed."
+    },
+    {
       "id": "CONF-SOURCE-TYPES",
       "level": "MUST",
       "referenceEvidence": "867/886 sources are udp (434) or tcp (433); the other 19 are other types (beats, netflowipfix, http, syslog) that Parser Studio does not generate.",
