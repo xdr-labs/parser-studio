@@ -9,6 +9,7 @@
 // logs only. Not a Stellar Cyber import, Syslog reception or indexing result.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { compilePair } from "../src/compiler.js";
 import { validateProject } from "../src/validate.js";
@@ -68,8 +69,16 @@ test("pairwise variants are checked on a Ruby runtime (a missing Ruby must not r
   if (expected) assert.equal(parsedRubyVersion(spawnSync("ruby", ["-v"], { encoding: "utf8" }).stdout), expected, "native Ruby interpreter version must exactly match the pinned profile");
 });
 
-test("every pairwise variant emits the authored values, routing and enrichment when its generated Ruby runs", { skip: !available }, () => {
+test("every pairwise variant emits documented target behavior (including unsupported Regex fail-closed)", { skip: !available }, () => {
+  const rubyVersion = parsedRubyVersion(spawnSync("ruby", ["-v"], { encoding: "utf8" }).stdout);
+  const profiles = JSON.parse(readFileSync(new URL("../../contracts/target-runtime-profiles.v1.json", import.meta.url), "utf8")) as {
+    profiles: { ruby: string; regexDeadlineCapable: boolean }[];
+    unsupported: { feature: string; profile: string; behavior: string }[];
+  };
+  const profile = profiles.profiles.find(item => item.ruby === rubyVersion);
+  assert.ok(profile, "native runtime must have an explicit target profile: " + rubyVersion);
   let checked = 0;
+  let regexClosed = 0;
   for (const variant of pairwiseVariants()) {
     const level = (name: string) => variant.levels.find(l => l.startsWith(name + "="))!.split("=")[1]!;
     const relayed = level("forwarder") === "relay";
@@ -104,6 +113,18 @@ test("every pairwise variant emits the authored values, routing and enrichment w
       const e = events[position]!;
       const where = variant.id + " #" + position;
       if (relayed) assert.equal(e.parserstudio_transport?.forwarder_hops?.length ?? 0, position, where + " relay hops");
+      // Stellar 7.0 observed Ruby 2.4.9 has no Regexp timeout. The Compiler
+      // MUST fail closed at extraction instead of returning an unsafe match.
+      // This is a target capability contract, not an exempted/untested case.
+      if (level("extraction") === "regex" && !profile.regexDeadlineCapable) {
+        assert.equal(e.parser_err_stage, "extraction", where + " unsupported regex stage");
+        assert.equal(e.parser_err_msg, "ArgumentError", where + " unsupported regex diagnostic");
+        assert.equal(e.stellar_log_index, "syslog", where + " unsupported regex index");
+        assert.equal(e.srcip, undefined, where + " unsafe regex emitted srcip");
+        assert.equal(e.action, undefined, where + " unsafe regex emitted action");
+        regexClosed += 1;
+        continue;
+      }
       assert.equal(e.srcip, ip, where + " srcip");
       assert.equal(e.action, action, where + " action");
       if (level("enrichment") === "split_field") {
@@ -132,5 +153,10 @@ test("every pairwise variant emits the authored values, routing and enrichment w
   }
   assert.equal(checked, pairwiseVariants().length, "every pairwise variant must be executed, none skipped");
   assert.ok(checked >= 40, "too few pairwise variants executed: " + checked);
-  process.stdout.write("PAIRWISE_NATIVE executed=" + checked + "\n");
+  if (!profile.regexDeadlineCapable) {
+    assert.ok(regexClosed > 0, "unsupported Regex target must execute and reject real negative controls");
+    assert.ok(profiles.unsupported.some(item => item.feature === "regex" && item.behavior === "FAIL_CLOSED_RUNTIME"),
+      "unsupported regex target must have an explicit declared fail-closed contract");
+  } else assert.equal(regexClosed, 0);
+  process.stdout.write("PAIRWISE_NATIVE executed=" + checked + " regex_rejected_for_unsupported_target=" + regexClosed + "\n");
 });
