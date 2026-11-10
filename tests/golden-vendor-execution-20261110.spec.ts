@@ -28,6 +28,7 @@ const loadCases = (path: string) => (JSON.parse(readFileSync(resolve(path), 'utf
 const vendorCases = [
   ...loadCases('evals/chatgpt/security-cases.json'),
   ...loadCases('evals/golden-corpus/vendor-documented-additional.v1.json'),
+  ...loadCases('evals/golden-corpus/vendor-documented-cef.v1.json'),
 ].filter(item => item.sampleClass.startsWith('VENDOR_DOCUMENTED'));
 const RUNNER = resolve('scripts/verification/ruby-golden-event-runner.rb');
 
