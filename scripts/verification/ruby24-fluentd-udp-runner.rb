@@ -68,7 +68,8 @@ fail_with = lambda do |code|
   %w[fluentd.log stderr.txt stdout.txt].each do |file|
     path = root + '/' + file
     warn '--- ' + file + ' (last 4000 bytes)'
-    warn(File.exist?(path) ? File.read(path)[-4000..-1].to_s : '(missing)')
+    body = File.exist?(path) ? File.read(path) : '(missing)'
+    warn(body.length > 4000 ? body[-4000, 4000] : body)
   end
   Process.kill('TERM', pid) rescue nil
   exit 1
