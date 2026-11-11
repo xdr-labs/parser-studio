@@ -125,7 +125,8 @@ describe('Stellar 7 Ruby2.4 native Regex export boundary',()=>{
       targetRuntimeProfile:{
         profile:'stellar70-observed-ruby24',
         ruby:'2.4.9',fluentd:'1.7.4',
-        regexPreviewSupported:true,regexExportSupported:false,
+        regexPreviewSupported:true,regexExportSupported:true,
+        regexExportMode:'ruby24-static-cost-proof',
         targetImportVerified:false,
       },
     },
@@ -133,15 +134,17 @@ describe('Stellar 7 Ruby2.4 native Regex export boundary',()=>{
   const supported=async (source:unknown)=>{
     return fetchBackendCapabilities(vi.fn(async()=>response(200,source)) as unknown as typeof fetch);
   };
-  it('keeps normal JSON export but refuses Regex for unsupported native target',async()=>{
+  it('keeps normal JSON export, allows statically bounded Regex, refuses unbounded Regex with a reason',async()=>{
     const cap=await supported(regexCapability);
     const parser=csvProject();
     expect(()=>assertBackendProjectSupported(parser,cap)).not.toThrow();
     parser.extraction={format:'regex',pattern:'^(?<action>ALLOW)$'};
-    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/Ruby 2\.4\.9/);
+    expect(()=>assertBackendProjectSupported(parser,cap)).not.toThrow();
+    parser.extraction={format:'regex',pattern:'(?<value>\\d+)'};
+    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/no Regexp timeout.*quadratically/);
     parser.extraction={format:'syslog_rfc5424',syslogBodyFormat:'regex',
-      pattern:'^(?<action>ALLOW)$'};
-    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/cannot safely execute/);
+      pattern:'(?<value>\\d+)'};
+    expect(()=>assertBackendProjectSupported(parser,cap)).toThrow(/cannot be exported/);
   });
   it('refuses Regex export when an older backend omits target profile',async()=>{
     const old={...regexCapability,
@@ -158,7 +161,7 @@ describe('Stellar 7 Ruby2.4 native Regex export boundary',()=>{
         ...regexCapability.downloads,
         targetRuntimeProfile:{
           ...regexCapability.downloads.targetRuntimeProfile,
-          regexExportSupported:true,
+          regexExportSupported:false,
         },
       },
     };

@@ -57,7 +57,8 @@ test("shipping backend accepts only true offline authoring HTTP methods",async()
     assert.equal(downloads["autoDeploys"],false);
     assert.deepEqual(downloads["targetRuntimeProfile"],{
       profile:"stellar70-observed-ruby24",ruby:"2.4.9",fluentd:"1.7.4",
-      regexPreviewSupported:true,regexExportSupported:false,targetImportVerified:false,
+      regexPreviewSupported:true,regexExportSupported:true,
+      regexExportMode:"ruby24-static-cost-proof",targetImportVerified:false,
     });
     assert.equal("ownedOfflineRevisionHistoryOptIn" in downloads,false);
     const verification=advertised["verification"] as Record<string,unknown>;
@@ -126,6 +127,7 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
     "import.ts","artifact-package.ts","parser-recipe-v02.ts","unicode.ts","types.ts",
     // Pure browser-shared regex grammar guard, with no I/O, network or target APIs.
     "portable-regex.ts",
+    "ruby24-regex-cost.ts",
     // Canonical v1 classification comparison is a pure data/typing helper.
     // It exposes no disk, network, target or dynamic execution capability.
     "canonical-operator-contract.ts",

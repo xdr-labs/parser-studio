@@ -202,23 +202,42 @@ qualified without suppressing the issue.
 
 ## R3 final target-runtime export exclusion (2026-11-10)
 
-Observed Stellar Cyber 7.0 uses embedded Ruby 2.4.9 / Fluentd 1.7.4,
-which does not implement a safe per-RegExp timeout. The fixed-synthetic
-Ruby3.2 compiler may produce Regex fragments for independent tests, but
-shipping `host-customized-pair.v0.1` exports now **reject** standalone Regex
-and RFC3164/RFC5424 embedded Regex with HTTP 422
-`TARGET_RUNTIME_REGEX_UNSUPPORTED`. This includes both ParserProject
-generation and ChatGPT ParserRecipe v0.2 validation/generation. The
-ZIP packaging endpoint denies previously constructed Regex pairs as well.
-The exact target adapter capability says
-`regexPreviewSupported=true, regexExportSupported=false`;
-the browser project adapter blocks unsupported exports before generation,
-and the Guided UI displays the target restriction.
+Observed Stellar Cyber 7.0 uses embedded Ruby 2.4.9 / Fluentd 1.7.4.
 
-`/validate` continues to distinguish syntax valid from deployability using
-`targetExportSupported=false`. Do not describe a passing local Regex
-preview as a native/target-verifiable parser. Existing 2.4 generated Regex
-helper still fails closed, and native 2.4/3.2 synthetic regression remains
-mandatory; no unsupported Ruby2.4 timeout workaround or execution through
-`Timeout.timeout` is introduced. **This is an explicit export exclusion,
-not newly functional Ruby2.4 Regex support.**
+**Exact cause of the earlier fail-closed behavior.** Two things combined, and
+only the first is a Ruby constraint:
+
+1. *Ruby.* `Regexp.timeout=` and `Regexp::TimeoutError` first appear in Ruby 3.2.
+   Ruby 2.4.9 (Onigmo, no memoization) cannot bound a backtracking match at run
+   time, and `Regexp.new(pattern, timeout: 0.05)` is not a timeout there: the
+   Hash is a positional options argument and silently becomes IGNORECASE.
+   `Timeout.timeout` cannot interrupt a running regex match either.
+2. *Compiler design.* The generated helper delegated ALL regex safety to that
+   missing runtime timeout. The generation-time gate (`portable-regex.ts`) is
+   documented as a heuristic rejection list, not a bound, so nothing could
+   justify running a pattern without the timeout.
+
+**Fix (this contract).** `backend/src/ruby24-regex-cost.ts` bounds the cost at
+generation time instead. It builds the pattern's Glushkov position automaton and
+accepts only patterns whose number of simultaneously viable backtracking paths is
+bounded by a constant: no exponential or infinite degree of ambiguity (EDA/IDA,
+Weber and Seidl), deterministic alternations and optional elements, at most two
+loops that disagree with what follows them, and an anchored scan (an unanchored
+pattern gets a virtual leading `.*` loop and is refused if any repeat overlaps
+it). Accepted patterns run NATIVELY on Ruby 2.4.9 through the generated helper,
+which additionally refuses input that is longer than 4096 bytes or contains a
+line break (the analysis assumes one short line). Everything else stays refused
+with HTTP 422 `TARGET_RUNTIME_REGEX_UNSUPPORTED` and a precise reason, for
+ParserProject generation, ParserRecipe v0.2 validate/generate and ZIP packaging
+of a client-supplied pair (the proof is re-derived from the embedded project; a
+forged marker does not export an unbounded pair).
+
+The target adapter capability is
+`regexPreviewSupported=true, regexExportSupported=true, regexExportMode=ruby24-static-cost-proof`;
+`/validate` reports per project whether the pattern is exportable through
+`targetExportSupported`. The Ruby 2.4.9 CI gate executes a bounded pattern on
+real operator-style logs (field values compared with hand-authored expectations,
+two events through the plugin callback), adversarial 4096-byte inputs under a
+1 second wall-clock limit, and verifies that an unbounded pattern fails closed.
+**This is a static classification backed by execution, not a general regex
+engine or a claim about Stellar target import/indexing (still NOT VERIFIED).**

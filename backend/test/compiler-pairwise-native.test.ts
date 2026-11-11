@@ -71,7 +71,7 @@ test("pairwise variants are checked on a Ruby runtime (a missing Ruby must not r
   if (expected) assert.equal(parsedRubyVersion(spawnSync("ruby", ["-v"], { encoding: "utf8" }).stdout), expected, "native Ruby interpreter version must exactly match the pinned profile");
 });
 
-test("every pairwise variant emits documented target behavior (including unsupported Regex fail-closed)", { skip: !available }, () => {
+test("every pairwise variant emits the authored values on this runtime (Regex too: bounded Regex executes natively, with or without a Regexp timeout)", { skip: !available }, () => {
   const rubyVersion = parsedRubyVersion(spawnSync("ruby", ["-v"], { encoding: "utf8" }).stdout);
   const profiles = JSON.parse(readFileSync(new URL("../../contracts/target-runtime-profiles.v1.json", import.meta.url), "utf8")) as {
     profiles: { ruby: string; regexDeadlineCapable: boolean }[];
@@ -90,7 +90,7 @@ test("every pairwise variant emits documented target behavior (including unsuppo
   if (profile) assert.equal(profile.regexDeadlineCapable, regexDeadlineCapable,
     "declared regexDeadlineCapable for Ruby " + rubyVersion + " must match the interpreter");
   let checked = 0;
-  let regexClosed = 0;
+  let regexExecuted = 0;
   for (const variant of pairwiseVariants()) {
     const level = (name: string) => variant.levels.find(l => l.startsWith(name + "="))!.split("=")[1]!;
     const relayed = level("forwarder") === "relay";
@@ -129,19 +129,10 @@ test("every pairwise variant emits documented target behavior (including unsuppo
     for (const [position, action, ip] of [[0, "deny", "192.0.2.10"], [1, "allow", "192.0.2.11"]] as const) {
       const e = events[position]!;
       const where = variant.id + " #" + position;
-      // Stellar 7.0 observed Ruby 2.4.9 has no Regexp timeout. The Compiler
-      // MUST fail closed at extraction instead of returning an unsafe match.
-      // This is a target capability contract, not an exempted/untested case.
-      if (level("extraction") === "regex" && !regexDeadlineCapable) {
-        assert.equal(e.parser_err_stage, "extraction", where + " unsupported regex stage");
-        assert.equal(e.parser_err_msg, "ArgumentError", where + " unsupported regex diagnostic");
-        assert.equal(e.stellar_log_index, "syslog", where + " unsupported regex index");
-        assert.equal(e.srcip, undefined, where + " unsafe regex emitted srcip");
-        assert.equal(e.action, undefined, where + " unsafe regex emitted action");
-        assert.equal(e.parserstudio_transport, undefined, where + " failed extraction leaked relay metadata");
-        regexClosed += 1;
-        continue;
-      }
+      // Ruby 2.4.9 (Stellar 7.0) has no Regexp timeout. The fixture pattern passed
+      // the generation-time static cost classification, so it must execute
+      // natively and yield the authored values, exactly as on a timeout-capable Ruby.
+      if (level("extraction") === "regex") regexExecuted += 1;
       if (relayed) assert.equal(e.parserstudio_transport?.forwarder_hops?.length ?? 0, position, where + " relay hops");
       assert.equal(e.srcip, ip, where + " srcip");
       assert.equal(e.action, action, where + " action");
@@ -177,10 +168,14 @@ test("every pairwise variant emits documented target behavior (including unsuppo
   }
   assert.equal(checked, pairwiseVariants().length, "every pairwise variant must be executed, none skipped");
   assert.ok(checked >= 40, "too few pairwise variants executed: " + checked);
+  assert.ok(regexExecuted > 0, "Regex variants must be executed, not skipped");
   if (!regexDeadlineCapable) {
-    assert.ok(regexClosed > 0, "unsupported Regex target must execute and reject real negative controls");
-    assert.ok(profiles.unsupported.some(item => item.feature === "regex" && item.behavior === "FAIL_CLOSED_RUNTIME"),
-      "unsupported regex target must have an explicit declared fail-closed contract");
-  } else assert.equal(regexClosed, 0);
-  process.stdout.write("PAIRWISE_NATIVE executed=" + checked + " regex_rejected_for_unsupported_target=" + regexClosed + "\n");
+    const target = JSON.parse(readFileSync(new URL("../../contracts/target-runtime-profiles.v1.json", import.meta.url), "utf8")) as
+      { supported: { feature: string; behavior: string }[]; unsupported: { feature: string; behavior: string }[] };
+    assert.ok(target.supported.some(item => item.feature === "regex-bounded" && item.behavior === "NATIVE_EXECUTION_STATIC_COST_PROOF"),
+      "a runtime without Regexp timeout must declare its bounded-Regex proof basis");
+    assert.ok(target.unsupported.some(item => item.feature === "regex-unbounded" && item.behavior === "FAIL_CLOSED_RUNTIME"),
+      "a runtime without Regexp timeout must declare unbounded Regex as fail-closed");
+  }
+  process.stdout.write("PAIRWISE_NATIVE executed=" + checked + " regex_executed=" + regexExecuted + " regexp_timeout_capable=" + regexDeadlineCapable + "\n");
 });
