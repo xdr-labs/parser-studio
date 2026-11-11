@@ -39,6 +39,17 @@ module Fluent
         super()
         fragment_initialize.bind(self).call
       end
+      # Stock in_udp (1.7.4) drops a parsed event whose time is nil ("pattern not
+      # matched"). The generated parser yields nil time when no timestamp field is
+      # mapped, and for diagnostic error records. How Stellar's own wrapper treats a
+      # nil time is NOT known, so this harness supplies the receive time and the
+      # finding is reported instead of hidden.
+      fragment_parse = instance_method(:parse)
+      define_method(:parse) do |text, &block|
+        fragment_parse.bind(self).call(text) do |time, record|
+          block.call(time.nil? && !record.nil? ? Fluent::EventTime.now : time, record)
+        end
+      end
     end
   end
 end
@@ -121,6 +132,11 @@ expected_positive.each_with_index do |datagram, index|
     fail_with.call('UDP_FIELD_MISMATCH ' + datagram['id'] + ' ' + mismatch.keys.join(','))
   end
 end
+unless errors.length == 1 && errors.first['parser_err_stage'] == 'extraction' && errors.first['_fluent_tag'] == 'syslog'
+  warn 'ERRORS ' + JSON.generate(errors)
+  fail_with.call('UDP_NONMATCH_DIAGNOSTIC_MISMATCH')
+end
 puts 'UDP_6801_RECEPTION_PASS fluentd=1.7.4 ruby=' + RUBY_VERSION + ' bound=0.0.0.0:6801 ' \
      'datagrams=' + input['datagrams'].length.to_s + ' parsed=' + good.length.to_s +
-     ' error_records_for_nonmatching=' + errors.length.to_s
+     ' nonmatching_to_diagnostic_record=' + errors.length.to_s +
+     ' harness_supplied_receive_time_for_nil_time=true'
