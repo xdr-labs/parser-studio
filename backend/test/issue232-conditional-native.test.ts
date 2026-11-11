@@ -78,6 +78,50 @@ test('Issue #232: backend rejects unsupported, unbounded or unsafe mapping predi
   }
 });
 
+test('Juniper vendor-only classifier compiles an explicit, unmodified normalized-path rule',()=>{
+  const p=project();
+  p.vendor='Juniper';
+  p.normalization.vendorFields['syslog_msgid']={normalized_name:'syslog_msgid',data_type:'string'};
+  p.classification.rules=[
+    {field:'Juniper.syslog_msgid',operator:'equals',value:'RT_FLOW_SESSION_CREATE',index:'session'},
+    {field:'Juniper.syslog_msgid',operator:'equals',value:'RT_FLOW_SESSION_CLOSE',index:'session'},
+  ];
+  assert.deepEqual(validateProject(p),{ok:true,issues:[]});
+  const compiled=compilePair(p);
+  const ruby=compiled.files.find(file=>!file.name.endsWith('.conf'))?.content;
+  assert.ok(ruby);
+  const blob=ruby.match(/@parser_rule_set = JSON\.parse\(Base64\.strict_decode64\('([^']+)'\)\)/)?.[1];
+  assert.ok(blob);
+  const embedded=JSON.parse(Buffer.from(blob,'base64').toString('utf8')) as ParserProject;
+  assert.deepEqual(embedded.classification,p.classification);
+});
+
+test('Juniper vendor-only RFC5424 message ID classifies session events in generated native Ruby',
+  {skip:!rubyAvailable},()=>{
+    const p=project();
+    p.vendor='Juniper';
+    p.normalization.vendorFields['syslog_msgid']={normalized_name:'syslog_msgid',data_type:'string'};
+    p.classification.rules=[
+      {field:'Juniper.syslog_msgid',operator:'equals',value:'RT_FLOW_SESSION_CREATE',index:'session'},
+      {field:'Juniper.syslog_msgid',operator:'equals',value:'RT_FLOW_SESSION_CLOSE',index:'session'},
+    ];
+    assert.deepEqual(validateProject(p),{ok:true,issues:[]});
+    const seed=original[1]!;
+    assert.match(seed,/RT_FLOW_SESSION_[A-Z_]+/);
+    const make=(messageId:string)=>seed.replace(/RT_FLOW_SESSION_[A-Z_]+/,messageId);
+    const rows=runNative(p,[
+      make('RT_FLOW_SESSION_CREATE'),
+      make('RT_FLOW_SESSION_CLOSE'),
+      make('RT_FLOW_OTHER'),
+    ]);
+    assert.equal(rows.length,3);
+    assert.deepEqual(rows.map(row=>row.stellar_log_index),['session','session','syslog']);
+    assert.deepEqual(rows.map(row=>row.Juniper?.syslog_msgid),[
+      'RT_FLOW_SESSION_CREATE','RT_FLOW_SESSION_CLOSE','RT_FLOW_OTHER',
+    ]);
+    assert.ok(rows.every(row=>row.parser_err_msg===undefined),JSON.stringify(rows));
+  });
+
 for(const withFamily of [false,true]){
   test('Issue #232: '+(withFamily?'family-aware':'standard')+
     ' native Ruby preserves ICMP vendor values and emits only UDP L4 ports',
