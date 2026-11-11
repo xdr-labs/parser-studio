@@ -149,7 +149,10 @@ test('mixed profile preserves existing V15 extraction and does not weaken normal
   const legacy=structuredClone(project);delete legacy.extraction.genericStructuralProfile;
   const expectedLegacy=replay(artifact(legacy),[raw]);
   assert.ok(expectedLegacy[0]!.record?.parserstudio_source);
-  assert.deepEqual(replay(artifact(project),[raw]),expectedLegacy);
+  const current=replay(artifact(project),[raw]);
+  // Both replays carry their own receive time; everything else must be identical.
+  assert.deepEqual(current.map(call=>call.record),expectedLegacy.map(call=>call.record));
+  assert.ok([...current,...expectedLegacy].every(call=>typeof call.time==='number'));
   project.normalization.topFields={
     'generic.kv.src':{normalized_name:'srcip',data_type:'ip'},
     'leef_extension.src':{normalized_name:'srcip',data_type:'ip'},
