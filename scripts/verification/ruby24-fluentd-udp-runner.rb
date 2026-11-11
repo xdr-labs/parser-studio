@@ -109,13 +109,22 @@ input['datagrams'].each do |datagram|
   sleep 0.2
 end
 expected_positive = input['datagrams'].select { |d| d['expectedMatch'] }
-# out_stdout writes through a block-buffered file descriptor, so records only reach the
-# file when fluentd flushes at shutdown. Give the datagrams time to be processed, then
-# stop fluentd gracefully (TERM flushes) and read what it wrote.
-sleep 2
+# Fluentd 1.7.4 out_stdout writes through $log, so the formatted records land in the file given
+# with `-o` (fluentd.log), interleaved with "[info]" lines, and not in the process stdout. Wait
+# (bounded) until every expected record, plus the one extraction diagnostic, has been written, then
+# stop fluentd gracefully and parse the JSON lines it wrote.
+read_records = lambda do
+  next [] unless File.exist?(log_path)
+  File.read(log_path).lines.select { |l| l.start_with?('{') }.map { |l| JSON.parse(l) rescue nil }.compact
+end
+wanted = expected_positive.length + input['datagrams'].count { |d| !d['expectedMatch'] }
+50.times do
+  break if read_records.call.length >= wanted
+  sleep 0.2
+end
 Process.kill('TERM', pid)
 Process.waitpid(pid)
-records = File.exist?(stdout_path) ? File.read(stdout_path).lines.map { |l| JSON.parse(l) rescue nil }.compact : []
+records = read_records.call
 
 good = records.reject { |r| r.key?('parser_err_stage') }
 errors = records.select { |r| r.key?('parser_err_stage') }
