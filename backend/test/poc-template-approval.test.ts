@@ -15,6 +15,8 @@ import {createHash} from "node:crypto";
 // is only checked for consistency with the template the current compiler produces.
 
 const tenant = "tenant-test-123";
+// Owner approval of 2026-11-11 for the template generated at main 8767301 (also see KNOWN_TEMPLATES).
+const APPROVED_CURRENT_TEMPLATE_SHA256 = "4e135cdecbfef12efb8f6551b4c9e5bbba362a2d91f31fdfbf9c40fac673d980";
 const digest = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 
 function pocPair(): PairExport {
@@ -39,18 +41,16 @@ function tampered(pair: PairExport, patch: (x: PairExport) => void): PairExport 
   return x;
 }
 
-test("the real reviewed list accepts the current template exactly when its hash is listed", () => {
+test("the real reviewed list accepts exactly the owner-approved current template and rejects any altered one", () => {
   const pair = pocPair();
   const sha = pocTemplateSha256(rubyOf(pair)).templateSha;
-  const listed = REVIEWED_POC_TEMPLATE_SHA256S.has(sha);
-  // Reproducible measurement for the owner review: the hash depends on the zlib build of the
-  // Node runtime (the deflated Unicode table is part of the hashed text); CI pins Node 22.
-  console.log("POC_TEMPLATE_STATUS node=" + process.version + " sha256=" + sha + " listed=" + listed);
-  if (listed) {
-    assert.equal(guard(pair).templateSha256, sha);
-  } else {
-    assert.throws(() => guard(pair), /POC_RUBY_UNREVIEWED/);
-  }
+  // The hash depends on the zlib build of the Node runtime (the deflated Unicode table is part of
+  // the hashed text); CI pins Node 22. This line makes a drift visible in the CI log.
+  console.log("POC_TEMPLATE_STATUS node=" + process.version + " sha256=" + sha + " listed=" + REVIEWED_POC_TEMPLATE_SHA256S.has(sha));
+  assert.equal(sha, APPROVED_CURRENT_TEMPLATE_SHA256, "the generated POC template changed: it needs a new owner review");
+  assert.ok(REVIEWED_POC_TEMPLATE_SHA256S.has(sha));
+  assert.equal(guard(pair).templateSha256, sha);
+  assert.throws(() => guard(tampered(pair, x => { x.files[1]!.content += "\n# injected Ruby"; })), /POC_RUBY_UNREVIEWED/);
 });
 
 test("an approved template is accepted and the proof carries its hash", () => {

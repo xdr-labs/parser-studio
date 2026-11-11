@@ -19,6 +19,10 @@ const VERSION=/^[A-Za-z0-9._/-]{1,64}$/;
 const FILE_HASH=/^[0-9a-f]{64}$/;
 const B64_CALL=/Base64\.strict_decode64\('([A-Za-z0-9+/=]{8,35000})'\)/g;
 const KNOWN_TEMPLATES=new Set([
+  // Owner-approved 2026-11-11 for exactly this generated Ruby template (main 8767301): Ruby 2.4.9
+  // compatible (#281) and receive-time fallback for events without a timestamp (#303). Same hash on CI
+  // Node 22 and Node 24. The approval covers the template only; IR, transport and owner/tenant gates are unchanged.
+  "4e135cdecbfef12efb8f6551b4c9e5bbba362a2d91f31fdfbf9c40fac673d980",
   // Reviewed current compiler: fixed Unicode case-fold map embedded as a second
   // Base64 literal. Its exact bytes remain covered by the normalized template SHA.
   "439b1c9f31e827ad6ff92746ef9309f8ad5f2dbaa7952cdb77118f00e0a9f5f7",
