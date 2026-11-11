@@ -1,9 +1,10 @@
 import {test,expect} from './support/downloadSink';
 import {execFileSync} from 'node:child_process';
+import {generatePythonSenderForSample} from './support/pythonSenderJourney';
 
 const source='allow,gw01,https://example.test/path?user=alice&srcip=192.0.2.10';
 
-test('downloaded auto Python test sender preserves all positional CSV URL query parameters offline',async({page})=>{
+test('downloaded reviewed CSV Python test sender preserves all positional CSV URL query parameters offline',async({page})=>{
   const apiWrites:string[]=[];
   const pageErrors:string[]=[];
   page.on('request',request=>{
@@ -11,9 +12,8 @@ test('downloaded auto Python test sender preserves all positional CSV URL query 
       apiWrites.push(request.url());
   });
   page.on('pageerror',error=>pageErrors.push(error.message));
-  await page.goto('/');
-  const input=page.getByLabel('Auto Parser raw logs');
-  await input.fill(source);
+  await generatePythonSenderForSample(page,source,'action,gateway,url');
+  const writesBeforeSenderDownload=apiWrites.length;
   const panel=page.getByRole('group',{name:'Python test sender'});
   await panel.locator('summary').click();
   const requested=page.waitForEvent('download');
@@ -38,7 +38,7 @@ test('downloaded auto Python test sender preserves all positional CSV URL query 
     encoding:'utf8',timeout:5000,maxBuffer:200000,
   });
   const result=JSON.parse(output) as {format:string;original:string;mutated:string};
-  expect(result.format).toBe('auto');
+  expect(result.format).toBe('csv');
   expect(result.original).toBe(source);
   const columns=result.mutated.split(',');
   expect(columns).toHaveLength(3);
@@ -49,6 +49,6 @@ test('downloaded auto Python test sender preserves all positional CSV URL query 
   // 192.0.2.107 still contains 192.0.2.10 as a text prefix.
   expect(query.get('srcip')).toMatch(/^(?:\d{1,3}\.){3}\d{1,3}$/);
   expect(query.get('srcip')).not.toBe('192.0.2.10');
-  expect(apiWrites).toEqual([]);
+  expect(apiWrites.slice(writesBeforeSenderDownload)).toEqual([]);
   expect(pageErrors).toEqual([]);
 });

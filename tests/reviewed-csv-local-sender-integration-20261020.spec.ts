@@ -42,6 +42,26 @@ test('reviewed two-column CSV survives local restore and downloaded Python trans
     .getByRole('button',{name:'Restore',exact:true}).click();
   await expect(input).toHaveValue(source);
 
+  // Restored source must be re-analysed and CSV columns re-approved before
+  // native parser generation. Local restore never silently reuses approval.
+  await page.getByRole('button',{name:'Analyze Logs',exact:true}).click();
+  const restoredCsv=page.getByLabel('Review CSV column names');
+  if(await restoredCsv.count()){
+    await restoredCsv.getByLabel('Reviewed CSV column names').fill('action,url');
+    await restoredCsv.getByRole('button',{name:'I Confirm These CSV Column Names'}).click();
+  }
+  const review=page.getByRole('button',{name:'Review Fields',exact:true});
+  await expect(review).toBeEnabled({timeout:20000});
+  await review.click();
+  await page.getByLabel('Review Fields stage').getByRole('button',{name:'Map Fields'}).click();
+  const map=page.getByLabel('Map Fields stage');
+  const create=map.getByRole('button',{name:'Create Parser',exact:true});
+  await expect(create).toBeEnabled();
+  await create.click();
+  await page.getByRole('button',{name:'Create Parser Files'}).click();
+  await expect(page.getByLabel('Generated parser files'))
+    .toContainText('Parser files created successfully',{timeout:25000});
+
   const sender=page.getByRole('group',{name:'Python test sender'});
   await sender.locator('summary').click();
   const requested=page.waitForEvent('download');
@@ -83,6 +103,8 @@ test('reviewed two-column CSV survives local restore and downloaded Python trans
     expect(after.searchParams.get('user')).toBe(before.searchParams.get('user'));
     expect(after.searchParams.get('srcip')).not.toBe(before.searchParams.get('srcip'));
   }
+  await page.getByRole('navigation',{name:'Auto Parser steps'})
+    .getByRole('button',{name:/Add Logs/}).click();
   await expect(input).toHaveValue(source);
   expect(pageErrors).toEqual([]);expect(httpFailures).toEqual([]);expect(externalRequests).toEqual([]);
 });

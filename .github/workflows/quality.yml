@@ -299,8 +299,12 @@ jobs:
             sudo apt-get install -y nginx
           fi
           python3 -m unittest discover -s tests -p 'test_*.py' -q
-      - name: Install isolated Chromium and dependencies
-        run: npx playwright install --with-deps chromium
+      # On hosted runners, Playwright's --with-deps invokes apt and can fail
+      # when Ubuntu package-mirror DNS is unavailable even though Node and
+      # Chromium distribution endpoints are reachable. Browser launch and
+      # every same-HEAD Chromium assertion below remain required gates.
+      - name: Install isolated Chromium
+        run: npx playwright install chromium
 
       - name: Published security scenarios - same-HEAD mapping and authoring Chromium
         env:
@@ -563,8 +567,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "$PARSER_STUDIO_EXPECTED_SOURCE_HEAD"
           npm ci --prefix backend --no-audit --no-fund
           npm run build --prefix backend
+      # Do not couple actual browser verification to a separate apt-mirror
+      # round trip on GitHub-hosted runners. No E2E test is skipped.
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Run same-HEAD browser catalogue shard with real HTTP and draft guards
         env:
           PARSER_STUDIO_LIVE_BACKEND: '1'

@@ -798,7 +798,6 @@ export default function AutoParser({
          onCancel={analysisRun.cancel}/>
        <ManualSourceBoundaryReview source={sample} sourceInput={sourceLogRef}/>
        <DeclaredRelayProfilePanel sample={sample} draft={draft} setDraft={setDraft}/>
-       <PythonTestSenderPanel source={sample} draft={draft}/>
        {multiPassNotice&&<p className="beginner-analysis-error" role="alert">
          {multiPassNotice===ANALYSIS_UNAVAILABLE_NOTICE?ANALYSIS_FAILED_MESSAGE:multiPassNotice}
        </p>}
@@ -1269,6 +1268,7 @@ export default function AutoParser({
          </details>}
        </div>}
        {currentPair&&<AutoParserLocalReplay sample={sample} draft={draft}/>}
+       {currentPair&&<PythonTestSenderPanel source={sample} draft={draft}/>}
        <p className="auto-parser-note" role="status">
          Parser Studio re-tested the complete current sample before creating these files.
          To test additional log variants, add them to the input sample and analyze again.

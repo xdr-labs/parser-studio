@@ -1,4 +1,4 @@
-import {supportsCanonicalClassificationOperator} from '../../backend/src/canonical-operator-contract';
+import {supportsCanonicalClassificationOperator,validCanonicalSourcePath} from '../../backend/src/canonical-operator-contract';
 import type { ParserDraft } from '../model';
 import {validMappingWhen} from '../fieldPaths';
 import {isGenericStructuralProfile,type GenericStructuralProfile} from '../genericStructuralProfiles';
@@ -123,7 +123,12 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
   const fieldsByGroup: Record<FieldGroup, Record<string, BackendField>> = {
     top_fields: topFields, ns_fields: nsFields, vendor_fields: vendorFields,
   };
-  const destinationForSource = new Map<string, string>();
+  // A classifier observes the normalized record, including the literal
+  // manufacturer namespace. Do not discard vendor-only mappings or silently
+  // choose between competing normalized destinations for the same source.
+  const classificationTargets = new Map<string, Array<{
+    field: string; type: BackendFieldType; group: FieldGroup;
+  }>>();
   for (const [index, mapping] of draft.mappings.entries()) {
     if(mapping.when!==undefined&&!validMappingWhen(mapping.when)){
       issues.push({code:'INVALID_MAPPING_WHEN',path:'/mappings/'+index,
@@ -152,29 +157,42 @@ export function toBackendProject(draft: ParserDraft): BackendProjectResult {
       ...(mapping.when?{when:mapping.when}:{}),
       ...(data_type === 'date' ? { time_format: 'iso8601' as const, timezone: 'UTC' as const } : {}),
     };
-    // Backend classification is evaluated after normalization and currently
-    // reads only top/namespace fields; vendor names need explicit remapping.
-    if (group !== 'vendor_fields') destinationForSource.set(mapping.source, mapping.target);
+    const normalized = group === 'vendor_fields'
+      ? vendorNamespace + '.' + mapping.target : mapping.target;
+    const targets = classificationTargets.get(mapping.source) ?? [];
+    targets.push({field: normalized, type: data_type, group});
+    classificationTargets.set(mapping.source, targets);
   }
   const rules: BackendParserProject['classification']['rules'] = [];
   for (const [index, rule] of options.classification.rules.entries()) {
-    const normalized = destinationForSource.get(rule.sourceField);
-    if (!normalized) {
+    const mapped = classificationTargets.get(rule.sourceField) ?? [];
+    const common = mapped.filter(target => target.group !== 'vendor_fields');
+    // A unique common destination takes precedence over vendor retention;
+    // otherwise a vendor-only source may classify using Vendor.field.
+    const eligible = common.length ? common : mapped;
+    if (eligible.length !== 1) {
       issues.push({
-        code: 'CLASSIFICATION_SOURCE_NOT_AVAILABLE',
+        code: eligible.length ? 'CLASSIFICATION_SOURCE_AMBIGUOUS' : 'CLASSIFICATION_SOURCE_NOT_AVAILABLE',
         path: '/classification/rules/' + index,
-        message: 'Classification rule ' + (index + 1) + ': ' + rule.sourceField + ' must map to Common or Network Fields to support classification on this backend.',
+        message: 'Classification rule ' + (index + 1) + ': ' + rule.sourceField +
+          (eligible.length ? ' has multiple normalized destinations. Select one unambiguous field.'
+            : ' has no reviewed normalized destination.'),
       });
       continue;
     }
-    const mapping=draft.mappings.find(candidate=>candidate.source===rule.sourceField&&
-      (options.groups[candidate.id]??'vendor_fields')!=='vendor_fields');
-    if(!supportsCanonicalClassificationOperator('equals',mapping?.type)){
+    const target = eligible[0]!;
+    if (!validCanonicalSourcePath(target.field)) {
+      issues.push({code:'CLASSIFICATION_FIELD_PATH_UNSUPPORTED',
+        path:'/classification/rules/'+index,
+        message:'Classification requires a canonical normalized path. The manufacturer namespace or field name contains unsupported characters.'});
+      continue;
+    }
+    if(!supportsCanonicalClassificationOperator('equals',target.type)){
       issues.push({code:'CLASSIFICATION_NONSTRING_FIELD',path:'/classification/rules/'+index,
         message:'String equals classification requires a reviewed text mapping. Numeric and boolean fields cannot be compared to text in generated Ruby.'});
       continue;
     }
-    rules.push({ field: normalized, operator: 'equals', value: rule.equals, index: indexMap[rule.index] });
+    rules.push({ field: target.field, operator: 'equals', value: rule.equals, index: indexMap[rule.index] });
   }
   const category = options.sourceCategory ?? 'network';
   if (!SOURCE_CATEGORIES.includes(category)) {

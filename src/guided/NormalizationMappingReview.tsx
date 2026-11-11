@@ -64,7 +64,7 @@ function catalogState(mapping:MappingRule,group:string){
 const FINDING_LABEL:Record<NormalizationFindingCode,string>={
   TARGET_COLLISION:'Two fields use the same Stellar destination',
   TYPE_ERROR:'A sample value does not fit the selected value type',
-  SOURCE_NOT_FOUND:'This source field is missing from some sample logs',
+  SOURCE_NOT_FOUND:'This source field was not found in any applicable sample log',
   UNVERIFIED_TARGET:'This destination is not in the checked Stellar field list',
   CATALOG_TYPE_MISMATCH:'The selected value type does not match the Stellar field',
   TARGET_RESERVED:'This Stellar field is managed by the system',
@@ -109,7 +109,7 @@ export default function NormalizationMappingReview({
   const vendorCount=draft.mappings.filter(mapping=>(groups[mapping.id]??'vendor_fields')==='vendor_fields').length;
   const blocking=findings.filter(finding=>isBlockingNormalizationFinding(finding.code));
   const unplanned=canonicalPlan.entries.filter(entry=>entry.disposition==='REVIEW_REQUIRED');
-  // Notes that do not block (a field some sample logs simply do not carry).
+  // Notes that do not block (a source path absent from every applicable event).
   const noteSources=new Set(findings.filter(finding=>!isBlockingNormalizationFinding(finding.code)).map(finding=>finding.source));
   const candidateView=candidates.filter(candidate=>{
     const needle=search.trim().toLowerCase();

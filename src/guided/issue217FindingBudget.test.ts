@@ -27,20 +27,20 @@ describe('Issue #217: bounded findings never hide blocking late values',()=>{
   it('reports late invalid official IP after more than 300 nonblocking omissions',()=>{
     const suite=dataset('999.999.999.999');
     const reviewed=reviewNormalizationMappings(suite,mappings,groups);
-    expect(reviewed.totalFindings).toBeGreaterThan(300);
+    expect(reviewed.totalFindings).toBe(1);
     expect(reviewed.totalBlocking).toBe(1);
-    expect(reviewed.findings).toHaveLength(300);
+    expect(reviewed.findings).toHaveLength(1);
     expect(reviewed.findings[0]).toMatchObject({
       code:'TYPE_ERROR',source:'srcip',target:'srcip',event:10,
     });
     expect(validateNormalizationMappings(suite,mappings,groups)
       .some(finding=>isBlockingNormalizationFinding(finding.code))).toBe(true);
   });
-  it('keeps heterogeneous missing vendor fields nonblocking and bounded',()=>{
+  it('accepts optional heterogeneous fields without inventing missing-data warnings',()=>{
     const reviewed=reviewNormalizationMappings(dataset('192.0.2.2'),mappings,groups);
-    expect(reviewed.totalFindings).toBeGreaterThan(300);
+    expect(reviewed.totalFindings).toBe(0);
     expect(reviewed.totalBlocking).toBe(0);
-    expect(reviewed.findings).toHaveLength(300);
-    expect(reviewed.findings.every(finding=>finding.code==='SOURCE_NOT_FOUND')).toBe(true);
+    expect(reviewed.findings).toHaveLength(0);
+    expect(reviewed.findings).toEqual([]);
   });
 });

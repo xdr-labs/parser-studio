@@ -28,7 +28,7 @@ test('single Analyze path shows contextual tools without the removed advanced-mo
   await expect(page.getByLabel('Existing parser review and import')).toHaveCount(0);
   await expect(page.getByLabel('Private text grouping tool')).toHaveCount(0);
   await expect(page.getByLabel('Known log shape matcher')).toHaveCount(0);
-  await expect(page.getByLabel('Python test sender',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Python test sender',{exact:true})).toHaveCount(0);
   await expect(page.getByLabel('Manually mark a log prefix or postfix')).toBeVisible();
   await expect(page.getByLabel('Multi-line event boundary tool')).toHaveCount(0);
   await expect(page.getByText('Run Local Multi-Pass Source Preview')).toHaveCount(0);

@@ -2,6 +2,7 @@ import {test,expect} from './support/downloadSink';
 import {spawn} from 'node:child_process';
 import {createSocket} from 'node:dgram';
 import {createServer} from 'node:net';
+import {generatePythonSenderForSample} from './support/pythonSenderJourney';
 
 const synthetic=JSON.stringify({
   timestamp:'2020-10-17T11:12:13Z',src_ip:'192.0.2.10',
@@ -28,8 +29,8 @@ test('user downloads self-contained Python, approves network destination and sen
   page.on('request',request=>{
     if(request.url().includes('/api/')&&request.method()!=='GET')network.push(request.url());
   });
-  await page.goto('/');
-  await page.getByLabel('Auto Parser raw logs').fill(synthetic);
+  await generatePythonSenderForSample(page,synthetic);
+  const writesBeforeSenderDownload=network.length;
   const panel=page.getByRole('group',{name:'Python test sender'});
   await panel.locator('summary').click();
   await expect(panel).toContainText('encoded as base64, not encrypted');
@@ -38,7 +39,7 @@ test('user downloads self-contained Python, approves network destination and sen
   const downloaded=await downloadPromise;
   expect(downloaded.suggestedFilename()).toBe('parser_studio_test_sender.py');
   await expect(panel.getByRole('status')).toContainText('No log was transmitted by Parser Studio.');
-  expect(network).toEqual([]);
+  expect(network.slice(writesBeforeSenderDownload)).toEqual([]);
   const localFile=await downloaded.path();
   expect(localFile).toBeTruthy();
 
@@ -75,9 +76,8 @@ test('user downloads self-contained Python, approves network destination and sen
 });
 
 test('downloaded sender transmits bounded LF-framed TCP messages without third-party dependencies',async({page})=>{
-  await page.goto('/');
-  await page.getByLabel('Auto Parser raw logs')
-    .fill('date=2020-01-01 time=08:00:00 action=deny srcip=192.0.2.10 user=alice');
+  await generatePythonSenderForSample(page,
+    'date=2020-01-01 time=08:00:00 action=deny srcip=192.0.2.10 user=alice');
   const panel=page.getByRole('group',{name:'Python test sender'});
   await panel.locator('summary').click();
   const request=page.waitForEvent('download');

@@ -101,7 +101,8 @@ export function defaultGuidedOptions(): GuidedOptions {
     slug: 'demo_firewall',
     sourceCategory: 'network',
     eventBoundary: 'single-line',
-    // Preserve the backend-validated classifier mapping; vendor-only is not routable.
+    // Keep the example's classifier on a reviewed common field; vendor-only
+    // classifications are also supported after native namespace qualification.
     groups: { 'source-ip': 'top_fields', 'target-port': 'ns_fields', action: 'top_fields' },
     receiver: { protocols: ['udp', 'tcp'], port: DEFAULT_PARSER_LISTENER_PORT, bindPolicy: 'all', messageLimit: 8192, framing: 'newline' },
     classification: {

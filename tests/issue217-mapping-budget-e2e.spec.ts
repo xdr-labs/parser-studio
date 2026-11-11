@@ -35,14 +35,15 @@ async function prepareMapping(page:Page,lateIp:string){
   return map;
 }
 
-test('Issue #217 late invalid official IP blocks mapping despite >300 optional-field notes',async({page})=>{
+test('Issue #217 late invalid official IP blocks mapping after optional-field warnings are suppressed',async({page})=>{
   test.setTimeout(90000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const map=await prepareMapping(page,'999.999.999.999');
   const checks=map.getByLabel('Field mapping checks');
   await expect(checks).toContainText('A sample value does not fit the selected value type');
   await expect(checks).toContainText('event 10');
-  await expect(checks).toContainText('Showing 300 of');
+  await expect(checks).not.toContainText('Showing 300 of');
+  await expect(checks).not.toContainText('This source field is missing from some sample logs');
   await expect(map.getByLabel('Field mapping summary')).toContainText('Must fix before continuing');
   await expect(map.getByRole('button',{name:'Create Parser',exact:true})).toBeDisabled();
   expect(errors).toEqual([]);
@@ -52,7 +53,7 @@ test('Issue #217 optional fields remain nonblocking for all valid IP values',asy
   test.setTimeout(90000);
   const map=await prepareMapping(page,'192.0.2.2');
   const checks=map.getByLabel('Field mapping checks');
-  await expect(checks).toContainText('You can still continue.');
-  await expect(checks).toContainText('Showing 300 of');
+  await expect(checks).toContainText('No mapping problems found');
+  await expect(checks).not.toContainText('This source field is missing from some sample logs');
   await expect(map.getByRole('button',{name:'Create Parser',exact:true})).toBeEnabled();
 });
