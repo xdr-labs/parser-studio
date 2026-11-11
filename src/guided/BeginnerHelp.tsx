@@ -1,9 +1,18 @@
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {CircleHelp,Compass} from 'lucide-react';
 
 export function HelpTip({text,label='What is this?'}:{text:string;label?:string}){
   const [open,setOpen]=useState(false);
-  return <span className={'beginner-help-tip'+(open?' open':'')}
+  const root=useRef<HTMLSpanElement>(null);
+  useEffect(()=>{
+    if(!open)return;
+    const dismiss=(event:PointerEvent)=>{
+      if(!root.current?.contains(event.target as Node))setOpen(false);
+    };
+    document.addEventListener('pointerdown',dismiss);
+    return ()=>document.removeEventListener('pointerdown',dismiss);
+  },[open]);
+  return <span ref={root} className={'beginner-help-tip'+(open?' open':'')}
     role="button" tabIndex={0} aria-label={'Help: '+label} aria-expanded={open}
     onClick={event=>{event.stopPropagation();setOpen(value=>!value);}}
     onKeyDown={event=>{

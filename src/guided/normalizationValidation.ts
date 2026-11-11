@@ -58,13 +58,19 @@ export function reviewNormalizationMappings(
       }
     }
   }
+  const eligibleSources=new Set<string>();
+  const observedSources=new Set<string>();
   for(let i=0;i<suite.events.length;i++){
     const fields=suite.events[i]!.fields;
     for(const mapping of mappings){
       if(!mappingWhenApplies(fields,mapping.when))continue;
+      eligibleSources.add(mapping.id);
       const found=lookupFieldValue(fields,mapping.source,mapping.sourcePathKind);
-      if(!found.found)findings.push({code:'SOURCE_NOT_FOUND',source:mapping.source,target:mapping.target,event:i+1});
-      else if(!(groups[mapping.id]==='vendor_fields'
+      // Different event families legitimately carry different subsets of
+      // fields. Missing in one event does not imply source data was dropped.
+      if(!found.found)continue;
+      observedSources.add(mapping.id);
+      if(!(groups[mapping.id]==='vendor_fields'
         // Vendor-local names can coincide with official Stellar names (for
         // example qualitative severity). Apply the chosen value type, not
         // an official field's numeric/range constraint, until the user
@@ -73,6 +79,12 @@ export function reviewNormalizationMappings(
         :valueFitsNormalizationTarget(mapping.target,mapping.type,found.value)))
         findings.push({code:'TYPE_ERROR',source:mapping.source,target:mapping.target,event:i+1});
     }
+  }
+  // A completely wrong source path is actionable; an optional path that
+  // appears in at least one applicable event is not a missing-data warning.
+  for(const mapping of mappings){
+    if(eligibleSources.has(mapping.id)&&!observedSources.has(mapping.id))
+      findings.push({code:'SOURCE_NOT_FOUND',source:mapping.source,target:mapping.target,event:null});
   }
   const official=(target:string)=>mappings.find(m=>m.target===target&&
     ['top_fields','ns_fields'].includes(groups[m.id]??'vendor_fields'));
