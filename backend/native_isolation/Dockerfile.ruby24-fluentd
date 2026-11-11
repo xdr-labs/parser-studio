@@ -8,7 +8,7 @@ FROM ${BASE_IMAGE}
 # dependencies and would pick gems that do not load on 2.4.9.
 RUN ruby -e "abort 'WRONG_RUBY' unless RUBY_VERSION == '2.4.9'" && \
     gem update --system 3.2.34 --no-document && \
-    gem install fluentd -v 1.7.4 --no-document && \
-    gem install fluent-plugin-rewrite-tag-filter -v 2.4.0 --no-document && \
+    gem install fluentd:1.7.4 fluent-plugin-rewrite-tag-filter:2.4.0 --no-document && \
+    test "$(gem list -e fluentd)" = "fluentd (1.7.4)" && \
     test "$(fluentd --version)" = "fluentd 1.7.4"
 ENV HOME=/tmp
