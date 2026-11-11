@@ -161,7 +161,11 @@ for(const [profile,cases] of [
     const outputs=replay(cases.map(item=>({artifact:artifact(item.project),events:[item.sample.raw]})));
     outputs.forEach((output,index)=>{
       const callback=output.events[0]!.callbacks[0]!;
-      assert.equal(callback.time,null,'No event time may be invented from an absent year or timestamp');
+      // The log carries no usable year or timestamp, so the event time is the receive time
+      // (never derived from the log, and never nil: Stellar's receivers report a nil time
+      // as "pattern not matched").
+      assert.equal(typeof callback.time,'number','a parsed event must carry the receive time');
+      assert.ok(Math.abs((callback.time as number)-Date.now()/1000)<60,'event time is the receive time');
       assert.deepEqual(callback.record,cases[index]!.expectedRecord,cases[index]!.sample.name);
     });
   });
