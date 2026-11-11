@@ -151,6 +151,27 @@ jobs:
           path: ${{ runner.temp }}/parser-studio-h2-isolated-evidence.json
           if-no-files-found: error
 
+  # Real Fluentd 1.7.4 on the pinned Ruby 2.4.9 target image: UDP 6801 reception of
+  # the generated .conf with a generated Regex parser. Fixed Cisco-published inputs;
+  # sealed execution; the image build is the only step that reaches the gem registry.
+  ruby24-fluentd-udp-reception:
+    runs-on: ubuntu-latest
+    env:
+      PARSER_STUDIO_EXPECTED_SOURCE_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install fixed synthetic fixture compiler dependencies
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Real UDP 6801 reception through Fluentd 1.7.4 on Ruby 2.4.9
+        run: bash scripts/verification/ruby24-fluentd-udp-gate.sh
+
   web-quality:
     runs-on: ubuntu-latest
     env:
@@ -300,7 +321,7 @@ jobs:
             tests/docs-fortigate-multiple-types-20261104.spec.ts
             tests/issue232-semantic-auto-parser.spec.ts
           )
-          expected=21
+          expected=28
           if test -f tests/docs-jsonata-mapping-assisted-20261104.spec.ts; then
             files+=(tests/docs-jsonata-mapping-assisted-20261104.spec.ts)
             expected=22

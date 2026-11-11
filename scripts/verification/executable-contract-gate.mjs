@@ -132,14 +132,14 @@ assert.match(workflow,/GITHUB_EVENT_NAME.*pull_request/);
 assert.match(workflow,/for label in P0 P1/);
 assert.doesNotMatch(workflow,/ref: 03624952a8c097e5423df32b40ec64137f029f49/);
 const exactPrHeadExpr="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}";
-assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,4,
-  'all 4 GitHub Actions checkouts must use exact PR source commit');
+assert.equal(workflow.split('ref: '+exactPrHeadExpr).length-1,5,
+  'all 5 GitHub Actions checkouts must use exact PR source commit');
 assert.match(workflow,/needs: \[native-isolated-synthetic, web-quality, browser-regression\]/);
 assert.match(workflow,/actions\/download-artifact@v4/);
 assert.match(workflow,/reconcile-artifact-lineage\.mjs/);
 assert.ok(workflow.includes('PARSER_STUDIO_BACKEND_HEAD: '+exactPrHeadExpr),
   'browser backend source must follow exact frontend PR head');
-assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,4,
+assert.equal(workflow.split('PARSER_STUDIO_EXPECTED_SOURCE_HEAD: '+exactPrHeadExpr).length-1,5,
   'all source-validating and release-reconciliation steps must state the exact source SHA');
 assert.doesNotMatch(workflow,/PARSER_STUDIO_BACKEND_HEAD: \$\{\{ github\.sha \$\}\}/);
 assert.doesNotMatch(workflow,/r\.sourceHead!==process\.env\.GITHUB_SHA/,
@@ -162,3 +162,8 @@ const forged=structuredClone(profiles);
 forged.profiles.find(p=>p.id==='stellar70-observed-ruby24').regexDeadlineCapable=true;
 assert.throws(()=>validateNativeProfiles(forged));
 console.log('EXECUTABLE_CONTRACT_GATE_PASS: policy, consumers, oracle inventory, runtime truth and same-HEAD CI; targetIndexedProof=false');
+// The real UDP reception gate must stay wired to the pinned Ruby 2.4.9 image and the
+// shipped Fluentd release, and must run sealed (no network namespace at execution).
+assert.match(workflow,/ruby24-fluentd-udp-reception:/);
+assert.match(text('scripts/verification/ruby24-fluentd-udp-gate.sh'),/--network none/);
+assert.match(text('backend/native_isolation/Dockerfile.ruby24-fluentd'),/fluentd -v 1\.7\.4/);

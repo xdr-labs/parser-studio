@@ -6,6 +6,7 @@
 import {deflateSync} from 'node:zlib';
 import {compilePair} from '../../backend/src/compiler';
 import {sampleProject} from '../../backend/test/fixture';
+import {ASA_CORPUS,ASA_PATTERN,applyAsaNormalization} from './cisco-asa-fixture';
 
 // Independently authored operator-style pattern (statically bounded: anchored,
 // one scan loop). The raw FTD lines and expected values live in the offline
@@ -16,6 +17,7 @@ const FTD_PATTERN=String.raw`^.*%FTD-\d-(?<event_id>\d+): Built inbound (?<proto
 const UNBOUNDED_PATTERN=String.raw`(?<action>\d+)`;
 const fixtures=[
   {id:'regex',pattern:FTD_PATTERN,extraction:{format:'regex' as const,pattern:FTD_PATTERN}},
+  {id:'regex-cisco-asa',pattern:ASA_PATTERN,extraction:{format:'regex' as const,pattern:ASA_PATTERN}},
   {id:'syslog-regex-body',pattern:'^(?<action>ALLOW)$',extraction:{
     format:'syslog_rfc5424' as const,syslogBodyFormat:'regex' as const,
     pattern:'^(?<action>ALLOW)$',
@@ -44,6 +46,7 @@ const records=fixtures.map(({id,pattern,extraction})=>{
     };
     project.normalization.vendorFields={};
   }
+  if(id==='regex-cisco-asa')applyAsaNormalization(project);
   const pair=compilePair(project);
   const ruby=pair.files.find(f=>!f.name.endsWith('.conf'));
   const bounded=/def parserstudio_regex_cost_proven\?\n  true\nend/.test(ruby?.content??'');
@@ -62,6 +65,7 @@ const records=fixtures.map(({id,pattern,extraction})=>{
     throw new Error('RUBY24_NATIVE_TARGET_GRAMMAR_GUARD_NOT_EMITTED '+id);
   return {
     id,sha256:ruby.sha256,...(pattern===undefined?{}:{pattern}),
+    ...(id==='regex-cisco-asa'?{corpus:ASA_CORPUS}:{}),
     compressedRuby:deflateSync(Buffer.from(ruby.content,'utf8')).toString('base64'),
   };
 });

@@ -17,12 +17,13 @@ abort 'INVALID_FIXED_SYNTHETIC_INPUT' unless
   input.keys.sort == %w[contract records] &&
   input['contract'] == 'parser-studio.synthetic-ruby24-regex.v1' &&
   input['records'].is_a?(Array) &&
-  input['records'].map{|r|r['id']} == %w[regex syslog-regex-body regex-unbounded generic-positional-csv csv]
+  input['records'].map{|r|r['id']} == %w[regex regex-cisco-asa syslog-regex-body regex-unbounded generic-positional-csv csv]
 result_count = 0
 input['records'].each do |item|
   abort 'INVALID_SYNTHETIC_RECORD' unless
     (item.keys.sort == %w[compressedRuby id sha256] ||
-     item.keys.sort == %w[compressedRuby id pattern sha256]) &&
+     item.keys.sort == %w[compressedRuby id pattern sha256] ||
+     item.keys.sort == %w[compressedRuby corpus id pattern sha256]) &&
     item['compressedRuby'].is_a?(String) && item['compressedRuby'].length < 150000 &&
     item['sha256'].to_s.match?(/\A[0-9a-f]{64}\z/)
   ruby = Zlib::Inflate.inflate(Base64.strict_decode64(item['compressedRuby']))
@@ -127,6 +128,33 @@ input['records'].each do |item|
     result_count += 9
     next
   end
+  if item['id'] == 'regex-cisco-asa'
+    # Cisco-published ASA examples (VENDOR_PUBLISHED_TEXT: page bytes were not
+    # capturable, so these are never labelled VENDOR_DOCUMENTED). Raw lines and
+    # expected values come from the corpus file, authored independently of the
+    # generated Ruby, which must reproduce every value on this runtime.
+    corpus = item.fetch('corpus')
+    abort 'ASA_CORPUS_SHAPE' unless corpus.is_a?(Array) && corpus.length == 4 &&
+      corpus.all? { |c| c['sampleClass'] == 'VENDOR_PUBLISHED_TEXT' }
+    corpus.each do |c|
+      raw = c.fetch('rawSample')
+      if c['expectedMatch']
+        abort 'ASA_VALUES_MISMATCH ' + c['id'] unless
+          parser.send(:parserstudio_regex, raw, settings) == c.fetch('expectedFields')
+        record = callback.call(raw)[1]
+        stellar = c.fetch('expectedStellarFields')
+        abort 'ASA_CALLBACK_MISMATCH ' + c['id'] unless
+          !record.key?('parser_err_stage') &&
+          stellar.all? { |key, value| record[key] == value }
+        result_count += 2
+      else
+        abort 'ASA_NONMATCH_ACCEPTED ' + c['id'] unless
+          helper_error.call(raw) == 'Regex parser did not match event'
+        result_count += 1
+      end
+    end
+    next
+  end
   if item['id'] == 'regex-unbounded'
     if profile == 'ruby24'
       abort 'UNPROVEN_REGEX_NOT_FAILED_CLOSED' unless helper_error.call('12345') == unsupported
@@ -163,5 +191,5 @@ input['records'].each do |item|
     result_count += 1
   end
 end
-abort 'MISSING_NATIVE_CASES' unless result_count == 21
+abort 'MISSING_NATIVE_CASES' unless result_count == 28
 puts "SYNTHETIC_NATIVE_TARGET_PROFILE_PASS ruby=#{RUBY_VERSION} cases=#{result_count} profile=#{profile}"
