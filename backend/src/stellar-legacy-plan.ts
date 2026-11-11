@@ -69,6 +69,13 @@ const KNOWN_TEMPLATES=new Set([
   // Reviewed strict mixed family dispatcher, exact template bytes only.
   "032a6b92c962cc0e9ad70f9c91e545b967d299c83036170eb3ac63950001db02",
 ]);
+/**
+ * Read-only view of the reviewed template list, for tests and review tooling. Adding an
+ * entry is an owner approval of that exact generated Ruby template for the disposable POC
+ * upload path; it must never be derived at runtime.
+ */
+export const REVIEWED_POC_TEMPLATE_SHA256S:ReadonlySet<string>=KNOWN_TEMPLATES;
+
 
 export const LEGACY_POC_CAPABILITIES=Object.freeze({
   contract:"stellar-legacy-poc.v0.1",
@@ -179,8 +186,13 @@ export function makeLegacyUploadPlan(pair:PairExport,tenant:string,version:strin
   return new LegacyUploadPlan(pair,tenant,version);
 }
 
-function reviewedRuby(ruby:Buffer,name:string,port:number,protocols:readonly string[]):string{
-  const text=ruby.toString("utf8");
+/**
+ * The reviewed-template hash rule: SHA-256 over the UTF-8 Ruby text with the first Base64
+ * literal (the project IR) replaced by a fixed token. The optional second literal is the
+ * compiler-owned deflated Unicode case-fold table and stays in the hashed text, so the hash
+ * also depends on the zlib build of the Node runtime that compiled it (CI pins Node 22).
+ */
+export function pocTemplateSha256(text:string):{templateSha:string;token:string}{
   const matches=Array.from(text.matchAll(B64_CALL));
   // The first literal is the project IR. The second, when present, is the
   // compiler-owned compressed Unicode case-fold table. Never interpret it as
@@ -191,8 +203,14 @@ function reviewedRuby(ruby:Buffer,name:string,port:number,protocols:readonly str
     fail("POC_RUBY_UNREVIEWED");
   const token=matches[0]![1]!;
   const normalized=text.replace(token,"__PARSER_PROJECT_B64__");
-  const templateSha=sha256(normalized);
-  if(!KNOWN_TEMPLATES.has(templateSha))fail("POC_RUBY_UNREVIEWED");
+  return {templateSha:sha256(normalized),token};
+}
+
+function reviewedRuby(ruby:Buffer,name:string,port:number,protocols:readonly string[],
+  approvedTemplates:ReadonlySet<string>):string{
+  const text=ruby.toString("utf8");
+  const {templateSha,token}=pocTemplateSha256(text);
+  if(!approvedTemplates.has(templateSha))fail("POC_RUBY_UNREVIEWED");
   const decoded=Buffer.from(token,"base64");
   if(!decoded.length||decoded.length>24000||decoded.toString("base64")!==token)
     fail("POC_RUBY_IR_INVALID");
@@ -226,7 +244,12 @@ function disposableConfig(name:string,port:number,protocols:readonly string[]):s
   return lines.join("\n")+"\n";
 }
 
-export function requireDisposablePocWrite(plan:LegacyUploadPlan):DisposablePocProof{
+/**
+ * `approvedTemplates` exists only so tests can exercise the accept and reject paths of the
+ * reviewed-template check deterministically. Production callers must use the default.
+ */
+export function requireDisposablePocWrite(plan:LegacyUploadPlan,
+  approvedTemplates:ReadonlySet<string>=KNOWN_TEMPLATES):DisposablePocProof{
   if(!(plan instanceof LegacyUploadPlan))fail("POC_PLAN_INVALID");
   if(!TEST_NAME.test(plan.name))fail("POC_NAME_UNSAFE");
   if(plan.port<7800||plan.port>7999)fail("POC_PORT_UNSAFE");
@@ -240,7 +263,7 @@ export function requireDisposablePocWrite(plan:LegacyUploadPlan):DisposablePocPr
      new Set(protocols).size!==protocols.length||
      conf!==disposableConfig(plan.name,plan.port,protocols))
     fail("POC_CONF_UNSAFE");
-  const templateSha256=reviewedRuby(files[0]!.body,plan.name,plan.port,protocols);
+  const templateSha256=reviewedRuby(files[0]!.body,plan.name,plan.port,protocols,approvedTemplates);
   return {port:plan.port,protocols,templateSha256,
     syntheticFixtureOnly:true,runtimeParsingVerified:false};
 }
