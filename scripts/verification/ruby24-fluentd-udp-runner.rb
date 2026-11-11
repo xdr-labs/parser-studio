@@ -109,14 +109,13 @@ input['datagrams'].each do |datagram|
   sleep 0.2
 end
 expected_positive = input['datagrams'].select { |d| d['expectedMatch'] }
-records = []
-40.times do
-  sleep 0.25
-  records = File.exist?(stdout_path) ? File.read(stdout_path).lines.map { |l| JSON.parse(l) rescue nil }.compact : []
-  break if records.reject { |r| r.key?('parser_err_stage') }.length >= expected_positive.length
-end
+# out_stdout writes through a block-buffered file descriptor, so records only reach the
+# file when fluentd flushes at shutdown. Give the datagrams time to be processed, then
+# stop fluentd gracefully (TERM flushes) and read what it wrote.
+sleep 2
 Process.kill('TERM', pid)
 Process.waitpid(pid)
+records = File.exist?(stdout_path) ? File.read(stdout_path).lines.map { |l| JSON.parse(l) rescue nil }.compact : []
 
 good = records.reject { |r| r.key?('parser_err_stage') }
 errors = records.select { |r| r.key?('parser_err_stage') }
