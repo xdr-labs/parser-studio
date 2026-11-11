@@ -63,19 +63,19 @@ test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target 
   test.skip(process.env.PARSER_STUDIO_LIVE_BACKEND!=='1',
     'Real integration requires an exact backend HEAD checkout and localhost isolation.');
 
-  test('same-head backend cannot export unsupported Ruby2.4 Regex or Syslog Regex',async({request})=>{
+  test('same-head backend exports only statically bounded Ruby2.4 Regex and refuses the rest with a reason',async({request})=>{
     const caps=await request.get('/api/v1/parser-pairs/capabilities');
     expect(caps.status()).toBe(200);
     const capability=await caps.json();
     expect(capability.downloads.targetRuntimeProfile).toMatchObject({
       profile:'stellar70-observed-ruby24',ruby:'2.4.9',
-      regexPreviewSupported:true,regexExportSupported:false,
-      targetImportVerified:false,
+      regexPreviewSupported:true,regexExportSupported:true,
+      regexExportMode:'ruby24-static-cost-proof',targetImportVerified:false,
     });
     for(const extraction of [
-      {format:'regex' as const,pattern:'^(?<action>ALLOW)$'},
+      {format:'regex' as const,pattern:'(?<action>\\d+)'},
       {format:'syslog_rfc5424' as const,syslogBodyFormat:'regex' as const,
-        pattern:'^(?<action>ALLOW)$'},
+        pattern:'(?<action>\\d+)'},
     ]){
       const project=sampleProject();
       project.extraction=extraction;
@@ -84,7 +84,21 @@ test.describe('actual Chromium UI ↔ exact same-HEAD authoring backend; target 
       expect((await checked.json()).targetExportSupported).toBe(false);
       const refused=await request.post('/api/v1/parser-pairs/generate',{data:project});
       expect(refused.status()).toBe(422);
-      expect((await refused.json()).error).toBe('TARGET_RUNTIME_REGEX_UNSUPPORTED');
+      const body=await refused.json();
+      expect(body.error).toBe('TARGET_RUNTIME_REGEX_UNSUPPORTED');
+      expect(body.issues[0].message).toContain('Reason:');
+    }
+    for(const extraction of [
+      {format:'regex' as const,pattern:'^(?<action>ALLOW)$'},
+      {format:'syslog_rfc5424' as const,syslogBodyFormat:'regex' as const,
+        pattern:'^(?<action>ALLOW)$'},
+    ]){
+      const project=sampleProject();
+      project.extraction=extraction;
+      const checked=await request.post('/api/v1/parser-pairs/validate',{data:project});
+      expect((await checked.json()).targetExportSupported).toBe(true);
+      const generated=await request.post('/api/v1/parser-pairs/generate',{data:project});
+      expect(generated.status()).toBe(200);
     }
   });
 

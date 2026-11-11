@@ -1,3 +1,4 @@
+import {analyzeRuby24RegexCost,RUBY24_REGEX_REJECTION_TEXT} from '../../backend/src/ruby24-regex-cost';
 import type { BackendParserProject } from './backendAdapter';
 import {validatePreviewRegexPattern} from '../regexSafety';
 import {GENERIC_STRUCTURAL_SINGLE_PROFILES,GENERIC_STRUCTURAL_MIXED_PROFILE_V1,
@@ -97,7 +98,8 @@ export interface BackendCapabilities {
       ruby:'2.4.9';
       fluentd:'1.7.4';
       regexPreviewSupported:true;
-      regexExportSupported:boolean;
+      regexExportSupported:true;
+      regexExportMode:'ruby24-static-cost-proof';
       targetImportVerified:false;
     };
     /** Optional server-gated metadata, not owner authorization. */
@@ -281,11 +283,12 @@ export async function fetchBackendCapabilities(
     const actualKeys=Object.keys(dl).filter(key=>key!=='targetRuntimeProfile').sort().join(',');
     const runtime=dl.targetRuntimeProfile;
     if(runtime!==undefined&&(
-      Object.keys(runtime).sort().join(',')!=='fluentd,profile,regexExportSupported,regexPreviewSupported,ruby,targetImportVerified'||
+      Object.keys(runtime).sort().join(',')!=='fluentd,profile,regexExportMode,regexExportSupported,regexPreviewSupported,ruby,targetImportVerified'||
       runtime.profile!=='stellar70-observed-ruby24'||
       runtime.ruby!=='2.4.9'||runtime.fluentd!=='1.7.4'||
       runtime.regexPreviewSupported!==true||
-      runtime.regexExportSupported!==false||
+      runtime.regexExportSupported!==true||
+      runtime.regexExportMode!=='ruby24-static-cost-proof'||
       runtime.targetImportVerified!==false))
       throw new Error('Untrusted or unverified target Regex export capability.');
     if (!dl || typeof dl !== 'object' ||
@@ -355,8 +358,16 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
     regexPattern=extraction.pattern;
   if(regexPattern!==undefined&&cap.downloads?.targetRuntimeProfile?.regexExportSupported!==true)
     throw Object.assign(new Error(
-      'Regex samples may be reviewed in the browser, but this Stellar Cyber 7.0 Ruby 2.4.9 target cannot safely execute generated Regex parsers. Parser files and ZIP export are blocked; use a supported non-Regex grammar.'),
+      'Regex samples may be reviewed in the browser, but this backend does not advertise Regex export for the Stellar Cyber 7.0 Ruby 2.4.9 target. Parser files and ZIP export are blocked; use a supported non-Regex grammar.'),
       {code:'TARGET_RUNTIME_REGEX_UNSUPPORTED'});
+  if(regexPattern!==undefined){
+    const cost=analyzeRuby24RegexCost(regexPattern);
+    if(!cost.ok)
+      throw Object.assign(new Error(
+        'This Regex can be reviewed in the browser but cannot be exported for Stellar Cyber 7.0 (Ruby 2.4.9 has no Regexp timeout, so only anchored patterns with statically bounded backtracking are allowed): '+
+        RUBY24_REGEX_REJECTION_TEXT[cost.reason]+'.'),
+        {code:'TARGET_RUNTIME_REGEX_UNSUPPORTED'});
+  }
   if(regexPattern!==undefined&&(
     cap.authoring.boundedRegexNamedCaptureSubset!==true||
     cap.authoring.boundedRegexMaxPatternChars!==256||

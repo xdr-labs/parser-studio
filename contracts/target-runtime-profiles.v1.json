@@ -20,22 +20,43 @@
       "realStellarTarget": true,
       "regexDeadlineCapable": false,
       "targetIndexedEventVerified": false,
-      "ciContainerImage": "ruby:2.4.9@sha256:c56ec7f366f95cd6c83552ccb054c0fd95e491ee8ad637812ae3ea37b95ef2c4"
+      "ciContainerImage": "ruby:2.4.9@sha256:c56ec7f366f95cd6c83552ccb054c0fd95e491ee8ad637812ae3ea37b95ef2c4",
+      "regexStaticCostProof": {
+        "contract": "parser-studio.ruby24-regex-cost.v1",
+        "maxInputBytes": 4096,
+        "singleLineInputOnly": true
+      }
+    }
+  ],
+  "supported": [
+    {
+      "feature": "regex-bounded",
+      "profile": "stellar70-observed-ruby24",
+      "behavior": "NATIVE_EXECUTION_STATIC_COST_PROOF",
+      "reason": "Ruby 2.4.9 has no Regexp timeout (Ruby 3.2+). A pattern runs natively only when the generation-time static backtracking-cost classification (no EDA/IDA, deterministic choices, anchored scan) accepts it; input is limited to one line of at most 4096 bytes.",
+      "shippingExportBehavior": "EXPORT_ALLOWED"
+    },
+    {
+      "feature": "syslog-regex-body-bounded",
+      "profile": "stellar70-observed-ruby24",
+      "behavior": "NATIVE_EXECUTION_STATIC_COST_PROOF",
+      "reason": "Same helper and classification as standalone regex.",
+      "shippingExportBehavior": "EXPORT_ALLOWED"
     }
   ],
   "unsupported": [
     {
-      "feature": "regex",
+      "feature": "regex-unbounded",
       "profile": "stellar70-observed-ruby24",
       "behavior": "FAIL_CLOSED_RUNTIME",
-      "reason": "Ruby 2.4 treats a timeout Hash as positional regexp flags and has no Regexp timeout API",
+      "reason": "A pattern that fails the static backtracking-cost classification cannot be time-bounded on Ruby 2.4.9, which has no Regexp timeout API and treats a timeout Hash as positional regexp flags",
       "shippingExportBehavior": "TARGET_RUNTIME_REGEX_UNSUPPORTED"
     },
     {
-      "feature": "syslog-regex-body",
+      "feature": "syslog-regex-body-unbounded",
       "profile": "stellar70-observed-ruby24",
       "behavior": "FAIL_CLOSED_RUNTIME",
-      "reason": "Same Regexp timeout incompatibility as standalone regex",
+      "reason": "Same incompatibility as standalone unbounded regex",
       "shippingExportBehavior": "TARGET_RUNTIME_REGEX_UNSUPPORTED"
     }
   ],

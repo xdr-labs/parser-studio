@@ -11,7 +11,9 @@ const holdout=[
   '[client 203.0.113.7] Edge: Request denied with code 429 (phase 3). [id "942200"] [msg "Request limit reached"]',
   '[client 192.0.2.9] Edge: Request denied with code 400 (phase 4). [id "942210"] [msg "사용자 요청 검토"]',
 ].join('\n');
-const pattern='^(?<raw_event>\\[client (?<address>[^\\]]+)\\] (?<description>[^\\[]+)\\[id "(?<id>[^"]+)"\\] \\[msg "(?<message>[^"]+)"\\])$';
+// Deliberately unanchored: the implicit scan loop overlaps every repeat, so the
+// Ruby 2.4.9 static cost classification refuses export and the UI shows why.
+const pattern='(?<raw_event>\\[client (?<address>[^\\]]+)\\] (?<description>[^\\[]+)\\[id "(?<id>[^"]+)"\\] \\[msg "(?<message>[^"]+)"\\])$';
 const fields=['address','description','id','message','raw_event'];
 const recipe=(omitId=false)=>({
   contract:'parser-studio.recipe.v0.2',schemaRevision:'0.2',compilerMode:'REVIEW_ONLY',
@@ -88,8 +90,8 @@ test('a novice preserves partial source values and local Regex recovery, but tar
   await expect(summary).toContainText('2 of 2 log events structurally parsed');
   await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeEnabled();
   // Parsing evidence and deployability are separate. The observed Stellar 7.0
-  // Ruby 2.4.9 runtime cannot enforce bounded native Regexp deadlines.
-  // No generated Regex Ruby/CONF/ZIP may leave the current target adapter.
+  // Ruby 2.4.9 runtime has no Regexp timeout, so only patterns with a static
+  // backtracking-cost proof may leave the target adapter; this one has none.
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await expect(page.getByRole('alert').filter({
     hasText:/Regex samples may be reviewed in the browser/,

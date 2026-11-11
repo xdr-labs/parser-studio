@@ -45,12 +45,19 @@ function validateNativeProfiles(input){
   assert.equal(ruby24?.fluentd,'1.7.4');
   assert.equal(ruby24?.regexDeadlineCapable,false);
   assert.equal(input.targetVerified,false);
-  for(const feature of ['regex','syslog-regex-body']){
+  for(const feature of ['regex-unbounded','syslog-regex-body-unbounded']){
     assert.ok(input.unsupported.some(f=>f.feature===feature&&
       f.profile===ruby24.id&&f.behavior==='FAIL_CLOSED_RUNTIME'&&
       f.shippingExportBehavior==='TARGET_RUNTIME_REGEX_UNSUPPORTED'),
-      'unsupported Ruby2.4 regex cannot be misreported as safe');
+      'an unbounded Ruby2.4 regex cannot be misreported as safe');
   }
+  for(const feature of ['regex-bounded','syslog-regex-body-bounded']){
+    assert.ok(input.supported.some(f=>f.feature===feature&&
+      f.profile===ruby24.id&&f.behavior==='NATIVE_EXECUTION_STATIC_COST_PROOF'),
+      'bounded Ruby2.4 regex support must be declared with its proof basis');
+  }
+  assert.equal(ruby24.regexStaticCostProof?.contract,'parser-studio.ruby24-regex-cost.v1');
+  assert.equal(ruby24.regexStaticCostProof?.maxInputBytes,4096);
 }
 validateCanonicalPolicy(policy);
 validateNativeProfiles(profiles);
@@ -103,14 +110,17 @@ assert.match(text('.github/workflows/quality.yml'),/MAPPING_CROSS_CONSUMER_PARIT
 assert.ok(existsSync('scripts/verification/executable-artifact-lineage.ts'));
 assert.match(text('.github/workflows/quality.yml'),/parser-studio-artifact-lineage-native/);
 assert.match(text('.github/workflows/quality.yml'),/parser-studio-artifact-lineage-web/);
-// Ruby 2.4 Regex never escapes the shipping export boundary, even if the
-// internal, synthetic Ruby3.2 compiler can still emit DRAFT parser fragments.
+// Ruby 2.4 Regex leaves the shipping export boundary only with a static
+// backtracking-cost proof; every other Regex stays refused.
 assert.ok(existsSync('backend/src/target-runtime-export.ts'));
 assert.ok(existsSync('backend/test/r3-target-regex-export-gate.test.ts'));
 assert.match(text('backend/src/mainline-authoring-server.ts'),/requiresUnavailableTargetRegex/);
 assert.match(text('backend/src/mainline-authoring-server.ts'),/pairIncludesUnavailableTargetRegex/);
 assert.match(text('backend/src/mainline-authoring-server.ts'),/TARGET_REGEX_EXPORT_ERROR/);
-assert.match(text('backend/src/target-runtime-export.ts'),/regexExportSupported: false/);
+assert.match(text('backend/src/target-runtime-export.ts'),/regexExportSupported: true/);
+assert.match(text('backend/src/target-runtime-export.ts'),/regexExportMode: "ruby24-static-cost-proof"/);
+assert.ok(existsSync('backend/src/ruby24-regex-cost.ts'));
+assert.ok(existsSync('backend/test/ruby24-regex-cost.test.ts'));
 assert.match(text('backend/src/target-runtime-export.ts'),/ruby: "2.4.9"/);
 assert.match(text('backend/src/target-runtime-export.ts'),/fluentd: "1.7.4"/);
 assert.match(text('src/guided/backendCapabilities.ts'),/TARGET_RUNTIME_REGEX_UNSUPPORTED/);

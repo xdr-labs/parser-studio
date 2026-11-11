@@ -42,7 +42,14 @@ test("bounded named-capture Regex validates and compiles without changing unrela
   assert.match(parser.content,/def parserstudio_regex/);
   assert.match(parser.content,/Regexp.respond_to\?\(:timeout=\)/);
   assert.match(parser.content,/defined\?\(Regexp::TimeoutError\)/);
-  assert.match(regexPair.manifest.warnings.join(" "),/Ruby 2\.4\.9.*fails closed/);
+  assert.match(regexPair.manifest.warnings.join(" "),/Ruby 2\.4\.9.*static backtracking-cost classification/);
+  assert.match(parser.content,/def parserstudio_regex_cost_proven\?\n  true\nend/);
+  const unbounded=regexProject();
+  unbounded.extraction={format:"regex",pattern:String.raw`(?<value>\d+)`};
+  const unboundedPair=compilePair(unbounded);
+  assert.match(unboundedPair.manifest.warnings.join(" "),/Ruby 2\.4\.9 it fails closed/);
+  assert.match(unboundedPair.files.find(x=>x.name==="customized_regex_firewall")!.content,
+    /def parserstudio_regex_cost_proven\?\n  false\nend/);
   assert.equal(parser.content.includes(safePattern),false,"pattern must stay inside encoded reviewed project metadata");
 
   const json=sampleProject();

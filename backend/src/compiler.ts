@@ -6,6 +6,7 @@ import type { PairExport, ParserProject, ExportFile } from "./types.js";
 import unicodeCaseMap from './unicode-case-map.v1.json' with {type:'json'};
 import officialEnrichmentTypes from "./stellar7-enrichment-types.json" with { type: "json" };
 import { canonicalJson, validateProject } from "./validate.js";
+import { analyzeRuby24RegexCost, RUBY24_REGEX_MAX_INPUT_BYTES } from "./ruby24-regex-cost.js";
 
 const CANONICAL_OPERATORS=readFileSync(new URL('../templates/canonical-operators.rb.tpl',import.meta.url),'utf8');
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
@@ -123,21 +124,34 @@ def parserstudio_regex(text, settings)
   raise ArgumentError, 'Invalid Regex parser pattern' unless pattern.is_a?(String) &&
     pattern.bytesize.between?(1, 256) && !pattern.match?(/[\x00-\x1f\x7f]/) &&
     pattern.include?('(?<')
-  # Regexp.new accepts a positional options Hash on Ruby 2.4. That runtime
-  # silently treats timeout: as truthy IGNORECASE and has no Regexp timeout.
-  # Never emit incorrect extracted fields or run unbounded regex there.
-  unless Regexp.respond_to?(:timeout=) && defined?(Regexp::TimeoutError)
-    raise ArgumentError, 'Native Regex unsupported: runtime has no Regexp timeout'
+  # Regexp.timeout= and Regexp::TimeoutError exist only from Ruby 3.2, and
+  # Regexp.new accepts a positional options Hash on Ruby 2.4 that silently
+  # treats timeout: as truthy IGNORECASE. Where no timeout exists (Stellar 7.0,
+  # Ruby 2.4.9) the pattern runs natively only with a generation-time static
+  # backtracking-cost proof; otherwise it fails closed. The proof assumes one
+  # short line of input, so that bound is enforced here.
+  raise ArgumentError, 'Regex parser input must be a String' unless text.is_a?(String)
+  timeout_capable = false
+  timeout_capable = true if Regexp.respond_to?(:timeout=) && defined?(Regexp::TimeoutError)
+  proven = parserstudio_regex_cost_proven?
+  unless timeout_capable || proven
+    raise ArgumentError, 'Native Regex unsupported: runtime has no Regexp timeout and the pattern has no static cost proof'
+  end
+  if proven && (text.bytesize > __PARSERSTUDIO_REGEX_MAX_INPUT_BYTES__ || text.include?("\n"))
+    raise ArgumentError, 'Regex parser input exceeds the proven bound'
   end
   begin
-    expression = Regexp.new(pattern, timeout: 0.05)
+    expression = timeout_capable ? Regexp.new(pattern, timeout: 0.05) : Regexp.new(pattern)
   rescue RegexpError, ArgumentError
     raise ArgumentError, 'Invalid Regex parser pattern'
   end
   begin
     match = expression.match(text)
-  rescue Regexp::TimeoutError
-    raise ArgumentError, 'Regex parser timed out'
+  rescue StandardError => error
+    if timeout_capable && error.is_a?(Regexp::TimeoutError)
+      raise ArgumentError, 'Regex parser timed out'
+    end
+    raise ArgumentError, 'Regex parser input rejected'
   end
   raise ArgumentError, 'Regex parser did not match event' unless match
   result = {}
@@ -155,6 +169,10 @@ def parserstudio_regex(text, settings)
     raise ArgumentError, 'Invalid reviewed temporal capture'
   end
   result
+end
+
+def parserstudio_regex_cost_proven?
+  __PARSERSTUDIO_REGEX_COST_PROVEN__
 end
 `;
 
@@ -268,7 +286,13 @@ function emitRubyFragment(project: ParserProject): string {
     fragment=insertBeforeParseEnd(fragment,GENERIC_STRUCTURAL_HELPER);
     if(omitRaw)fragment=insertBeforeParseEnd(fragment,SOURCE_RAW_STRIP_HELPER);
   }
-  if(project.extraction.format==="regex"||regexBody)fragment=insertBeforeParseEnd(fragment,REGEX_RUBY_HELPER);
+  if(project.extraction.format==="regex"||regexBody){
+    const proven=typeof project.extraction.pattern==="string"&&
+      analyzeRuby24RegexCost(project.extraction.pattern).ok;
+    fragment=insertBeforeParseEnd(fragment,REGEX_RUBY_HELPER
+      .replace("__PARSERSTUDIO_REGEX_COST_PROVEN__",proven?"true":"false")
+      .replace("__PARSERSTUDIO_REGEX_MAX_INPUT_BYTES__",String(RUBY24_REGEX_MAX_INPUT_BYTES)));
+  }
   return fragment;
 }
 
@@ -339,7 +363,9 @@ export function compilePair(input: unknown): PairExport {
           : "Supported bounded subset: JSON/KV/CSV, RFC3164/RFC5424 explicit body, CEF/LEEF and allowlisted mixed JSON/KV/CEF/LEEF; mixed Syslog and multiline remain unsupported.",
         ...((project.extraction.format==="regex"||
           project.extraction.syslogBodyFormat==="regex") ? [
-          "Native Regex requires a runtime with Regexp timeout support (Ruby 3.2+); on Stellar 7.0 Ruby 2.4.9 it fails closed and MUST NOT be treated as a deployable parser."
+          analyzeRuby24RegexCost(project.extraction.pattern??"").ok
+            ? "Native Regex on Stellar 7.0 Ruby 2.4.9 (no Regexp timeout) runs only because this pattern passed a generation-time static backtracking-cost classification; the generated parser rejects input over "+RUBY24_REGEX_MAX_INPUT_BYTES+" bytes or with a line break. Target import and indexing remain unverified."
+            : "Native Regex requires a runtime with Regexp timeout support (Ruby 3.2+) because this pattern has no static cost proof; on Stellar 7.0 Ruby 2.4.9 it fails closed and MUST NOT be treated as a deployable parser."
         ] : []),
         ...(project.extraction.forwarder ? [
           "Only explicitly declared relay-host Syslog envelopes can be unwrapped; sender identity is not authenticated and arbitrary prefixes/rewritten payloads are not certified."

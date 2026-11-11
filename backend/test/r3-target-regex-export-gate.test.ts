@@ -8,11 +8,15 @@ import {recipeFromLegacyProject} from "../src/parser-recipe-v02.js";
 import {compilePair} from "../src/compiler.js";
 import {sampleProject} from "./fixture.js";
 
-function regexProject(format:"regex"|"syslog_rfc3164"|"syslog_rfc5424"){
+/** Anchored, loop-free: statically bounded, so exportable to Ruby 2.4.9. */
+const PROVABLE="^(?<action>ALLOW)$";
+/** Unanchored repeat: the implicit scan makes it quadratic, so it is refused. */
+const UNPROVABLE="(?<value>\\d+)";
+function regexProject(format:"regex"|"syslog_rfc3164"|"syslog_rfc5424",pattern=UNPROVABLE){
   const p=sampleProject();
   p.extraction=format==="regex"?
-    {format:"regex" as const,pattern:"^(?<action>ALLOW)$"}:
-    {format,syslogBodyFormat:"regex" as const,pattern:"^(?<action>ALLOW)$"};
+    {format:"regex" as const,pattern}:
+    {format,syslogBodyFormat:"regex" as const,pattern};
   return p;
 }
 async function runWithServer(fn:(base:string)=>Promise<void>){
@@ -24,24 +28,25 @@ async function runWithServer(fn:(base:string)=>Promise<void>){
 function post(base:string,path:string,body:unknown){
   return fetch(base+path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
 }
-test("shipped Ruby2.4 target profile disables Regex export, keeps local review and runtime truth",async()=>{
+test("shipped Ruby2.4 target profile advertises statically bounded Regex export only, keeps runtime truth",async()=>{
   await runWithServer(async base=>{
     const capability=await (await fetch(base+"/api/v1/parser-pairs/capabilities")).json() as {
       authoring:{boundedRegexNamedCaptureSubset:boolean};
-      downloads:{targetRuntimeProfile:{profile:string;regexPreviewSupported:boolean;regexExportSupported:boolean;targetImportVerified:boolean}};
+      downloads:{targetRuntimeProfile:{profile:string;regexPreviewSupported:boolean;regexExportSupported:boolean;regexExportMode:string;targetImportVerified:boolean}};
     };
     assert.equal(capability.authoring.boundedRegexNamedCaptureSubset,true);
     assert.deepEqual(capability.downloads.targetRuntimeProfile,{
       profile:"stellar70-observed-ruby24",ruby:"2.4.9",fluentd:"1.7.4",
-      regexPreviewSupported:true,regexExportSupported:false,targetImportVerified:false,
+      regexPreviewSupported:true,regexExportSupported:true,
+      regexExportMode:"ruby24-static-cost-proof",targetImportVerified:false,
     });
     const recipeCaps=await (await fetch(base+"/api/v1/parser-pairs/recipe/v0.2/capabilities")).json() as {
       targetRuntimeProfile:{regexExportSupported:boolean};
     };
-    assert.equal(recipeCaps.targetRuntimeProfile.regexExportSupported,false);
+    assert.equal(recipeCaps.targetRuntimeProfile.regexExportSupported,true);
   });
 });
-test("standalone and RFC3164/5424 Regex validation is browser-safe, never exported",async()=>{
+test("standalone and RFC3164/5424 Regex without a static cost proof is browser-safe, never exported",async()=>{
   await runWithServer(async base=>{
     for(const format of ["regex","syslog_rfc3164","syslog_rfc5424"] as const){
       const project=regexProject(format);
@@ -57,6 +62,7 @@ test("standalone and RFC3164/5424 Regex validation is browser-safe, never export
       assert.equal(refusal.error,TARGET_REGEX_EXPORT_ERROR);
       assert.deepEqual(refusal.issues.map(x=>x.code),[TARGET_REGEX_EXPORT_ERROR]);
       assert.match(refusal.issues[0]!.message,/Ruby 2\.4\.9/);
+      assert.match(refusal.issues[0]!.message,/Reason: .*quadratically/);
       // Even a genuine local compiled DRAFT with internally matching hashes
       // cannot be re-packaged through the shipping endpoint.
       const compiled=compilePair(project);
@@ -69,7 +75,7 @@ test("standalone and RFC3164/5424 Regex validation is browser-safe, never export
     }
   });
 });
-test("v0.2 ChatGPT-assisted recipe validate/generate are both refused for Ruby2.4 Regex",async()=>{
+test("v0.2 ChatGPT-assisted recipe validate/generate are both refused for unbounded Ruby2.4 Regex",async()=>{
   await runWithServer(async base=>{
     for(const format of ["regex","syslog_rfc5424"] as const){
       const project=regexProject(format);
@@ -107,5 +113,34 @@ test("non-Regex JSON/KV and RFC5424 body remain downloadable, no false target ve
       assert.equal(packaged.status,200);
       assert.equal(packaged.headers.get("content-type"),"application/zip");
     }
+  });
+});
+
+test("statically bounded Regex is exportable: validate, generate and package succeed for all three grammars",async()=>{
+  await runWithServer(async base=>{
+    for(const format of ["regex","syslog_rfc3164","syslog_rfc5424"] as const){
+      const project=regexProject(format,PROVABLE);
+      assert.equal(requiresUnavailableTargetRegex(project.extraction),false);
+      const validate=await (await post(base,"/api/v1/parser-pairs/validate",project)).json() as
+        {ok:boolean;targetExportSupported:boolean};
+      assert.equal(validate.targetExportSupported,true,format);
+      const generate=await post(base,"/api/v1/parser-pairs/generate",project);
+      assert.equal(generate.status,200,format);
+      const pair=await generate.json();
+      assert.equal(pairIncludesUnavailableTargetRegex(pair),false,format);
+      const archive=await post(base,"/api/v1/parser-pairs/package",{pair,version:"1.0.0"});
+      assert.equal(archive.status,200,format);
+    }
+  });
+});
+test("a forged proof marker cannot export an unbounded Regex pair",async()=>{
+  await runWithServer(async base=>{
+    const compiled=compilePair(regexProject("regex",UNPROVABLE));
+    const forged={...compiled,files:compiled.files.map(file=>({...file,
+      content:file.content.replace(/(def parserstudio_regex_cost_proven\?\n  )false/,"$1true")}))};
+    assert.notDeepEqual(forged.files,compiled.files,"fixture must actually flip the marker");
+    assert.equal(pairIncludesUnavailableTargetRegex(forged),true);
+    const archive=await post(base,"/api/v1/parser-pairs/package",{pair:forged,version:"1.0.0"});
+    assert.equal(archive.status,422);
   });
 });
