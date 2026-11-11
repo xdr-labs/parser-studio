@@ -3,24 +3,15 @@
  * native runtime CI test. Private stdout includes generated code and must not
  * be uploaded as an artifact or logged.
  */
-import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
 import {deflateSync} from 'node:zlib';
 import {compilePair} from '../../backend/src/compiler';
 import {sampleProject} from '../../backend/test/fixture';
+import {ASA_CORPUS,ASA_PATTERN,applyAsaNormalization} from './cisco-asa-fixture';
 
 // Independently authored operator-style pattern (statically bounded: anchored,
 // one scan loop). The raw FTD lines and expected values live in the offline
 // runner and are written by hand from the log text, not read back from Ruby.
 const FTD_PATTERN=String.raw`^.*%FTD-\d-(?<event_id>\d+): Built inbound (?<protocol>TCP|UDP) connection \d+ for \w+:(?<srcip>[\d.]+)/(?<srcport>\d+) \([\d.]+/\d+\) to \w+:(?<dstip>[\d.]+)/(?<dstport>\d+) \([\d.]+/\d+\)$`;
-// Cisco ASA 302013 (Built inbound|outbound ...). Pattern authored from Cisco's
-// documented message grammar; the raw lines and expected values come from the
-// VENDOR_PUBLISHED_TEXT corpus file, never from generated Ruby.
-const ASA_PATTERN=String.raw`^.*%ASA-\d-(?<event_id>\d+): Built (?<direction>inbound|outbound) (?<protocol>TCP|UDP) connection (?<connection_id>\d+) for \w+:(?<src_ip>[\d.]+)/(?<src_port>\d+) \([\d.]+/\d+\) to \w+:(?<dst_ip>[\d.]+)/(?<dst_port>\d+) \((?<dst_mapped_ip>[\d.]+)/\d+\)$`;
-const ASA_CORPUS=(JSON.parse(readFileSync(resolve(import.meta.dirname,'../../evals/golden-corpus/vendor-published-text-cisco-asa.v1.json'),'utf8')) as {
-  cases:{id:string;sampleClass:string;rawSample:string;expectedMatch:boolean;expectedFields:Record<string,string>;expectedStellarFields:Record<string,string>}[];
-}).cases.map(({id,sampleClass,rawSample,expectedMatch,expectedFields,expectedStellarFields})=>
-  ({id,sampleClass,rawSample,expectedMatch,expectedFields,expectedStellarFields}));
 // Unanchored repeat: the implicit scan makes it quadratic, so it has no static
 // cost proof and MUST fail closed on a runtime without a Regexp timeout.
 const UNBOUNDED_PATTERN=String.raw`(?<action>\d+)`;
@@ -55,19 +46,7 @@ const records=fixtures.map(({id,pattern,extraction})=>{
     };
     project.normalization.vendorFields={};
   }
-  if(id==='regex-cisco-asa'){
-    project.normalization.topFields={
-      src_ip:{normalized_name:'srcip',data_type:'ip'},
-      dst_ip:{normalized_name:'dstip',data_type:'ip'},
-      protocol:{normalized_name:'protocol',data_type:'string'},
-    };
-    project.normalization.nsFields={
-      src_port:{normalized_name:'srcport',data_type:'port'},
-      dst_port:{normalized_name:'dstport',data_type:'port'},
-      event_id:{normalized_name:'log.event_id',data_type:'integer'},
-    };
-    project.normalization.vendorFields={};
-  }
+  if(id==='regex-cisco-asa')applyAsaNormalization(project);
   const pair=compilePair(project);
   const ruby=pair.files.find(f=>!f.name.endsWith('.conf'));
   const bounded=/def parserstudio_regex_cost_proven\?\n  true\nend/.test(ruby?.content??'');
