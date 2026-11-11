@@ -504,9 +504,18 @@ def parserstudio_classify(normalized)
   @parser_rule_set['classification']['defaultIndex']
 end
 
+# A successfully parsed event must never carry a nil time. Stellar's in_udp, in_tcp
+# and in_syslog (Fluentd 1.7.4) send every event whose time is nil to the raw
+# "pattern not matched" report instead of emitting it, and the installed reference
+# parsers fall back to the receive time (Time.now) when the record has no timestamp.
+def parserstudio_receive_time
+  return Fluent::EventTime.now if defined?(Fluent::EventTime)
+  Time.now
+end
+
 def parserstudio_event_time(normalized)
   timestamp = normalized['timestamp']
-  return nil unless timestamp.is_a?(Integer)
+  return parserstudio_receive_time unless timestamp.is_a?(Integer)
   # Fluentd's buffered outputs require EventTime (or Integer), not Ruby Time.
   # Keep the standalone native-runner path independent of Fluentd dependencies.
   if defined?(Fluent::EventTime)

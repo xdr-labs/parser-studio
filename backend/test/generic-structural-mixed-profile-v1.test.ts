@@ -116,7 +116,13 @@ for(const reverse of [false,true]){
     const project=prepared();
     const samples=reverse?[...fixture.positive].reverse():fixture.positive;
     const output=replay(artifact(project),samples.map(sample=>sample.raw));
-    assert.deepEqual(output,samples.map(sample=>({time:null,record:expected(project,sample)})));
+    // No timestamp is mapped, so each event carries the receive time (never nil):
+    // Stellar's receivers would otherwise report it as "pattern not matched".
+    assert.deepEqual(output.map(call=>call.record),samples.map(sample=>expected(project,sample)));
+    for(const call of output){
+      assert.equal(typeof call.time,'number');
+      assert.ok(Math.abs((call.time as number)-Date.now()/1000)<60,'event time is the receive time');
+    }
   });
 }
 

@@ -57,6 +57,48 @@ test('generated native parser yields MessagePack-compatible Fluent EventTime whe
   ]);
 });
 
+// Regression: Stellar's in_udp/in_tcp/in_syslog (Fluentd 1.7.4) report an event whose
+// time is nil as a raw "pattern not matched" line instead of emitting it, and the
+// installed reference parsers fall back to the receive time. A parsed record without a
+// mapped timestamp therefore must still yield a real event time.
+test('generated native parser falls back to the receive time when no timestamp is mapped',()=>{
+  const eventTime=generatedRuby.content.match(/^def parserstudio_event_time\(normalized\)\n[\s\S]*?^end$/m)?.[0];
+  const receiveTime=generatedRuby.content.match(/^def parserstudio_receive_time\n[\s\S]*?^end$/m)?.[0];
+  assert.ok(eventTime&&receiveTime,'generated event-time methods missing');
+  assert.ok(!/return nil unless timestamp/.test(eventTime),'a missing timestamp must not yield a nil time');
+  assert.ok(receiveTime.includes('Fluent::EventTime.now'));
+  const ruby=spawnSync('ruby',['-v'],{encoding:'utf8'});
+  if(ruby.status!==0)return; // The mandatory CI native gate enforces Ruby availability.
+  const missing="[{}, {'timestamp'=>nil}, {'timestamp'=>'2026-01-01T00:00:00Z'}, {'timestamp'=>1.5}]";
+  const withFluent=[
+    "require 'json'",
+    "module Fluent; class EventTime",
+    "attr_reader :sec, :nsec",
+    "def initialize(sec, nsec); @sec=sec; @nsec=nsec; end",
+    "def self.now; t=Time.now; new(t.to_i, t.nsec); end",
+    "end; end",
+    receiveTime,eventTime,
+    "values="+missing+".map{|n| parserstudio_event_time(n)}",
+    "raise 'nil time' if values.any?(&:nil?)",
+    "raise 'wrong type' unless values.all?{|v| v.is_a?(Fluent::EventTime)}",
+    "raise 'not the receive time' unless values.all?{|v| (v.sec - Time.now.to_i).abs <= 5}",
+    "puts 'EVENT_TIME_FALLBACK_OK'",
+  ].join('\n');
+  const a=spawnSync('ruby',['-e',withFluent],{encoding:'utf8',timeout:15000});
+  assert.equal(a.status,0,a.stderr||String(a.error));
+  assert.match(a.stdout,/EVENT_TIME_FALLBACK_OK/);
+  const standalone=[
+    receiveTime,eventTime,
+    "values="+missing+".map{|n| parserstudio_event_time(n)}",
+    "raise 'nil time' if values.any?(&:nil?)",
+    "raise 'wrong type' unless values.all?{|v| v.is_a?(Time) && (v.to_i - Time.now.to_i).abs <= 5}",
+    "puts 'EVENT_TIME_FALLBACK_STANDALONE_OK'",
+  ].join('\n');
+  const b=spawnSync('ruby',['-e',standalone],{encoding:'utf8',timeout:15000});
+  assert.equal(b.status,0,b.stderr||String(b.error));
+  assert.match(b.stdout,/EVENT_TIME_FALLBACK_STANDALONE_OK/);
+});
+
 const ruby=spawnSync('ruby',['-v'],{encoding:'utf8'});
 const required=process.env.PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED==='1';
 

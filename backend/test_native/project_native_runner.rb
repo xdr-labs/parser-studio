@@ -110,7 +110,16 @@ begin
     event_time, record = outputs.first
     actual_hash = Digest::SHA256.hexdigest(canonical(record))
     fail_native unless actual_hash == entry['recordSha256']
-    fail_native unless event_time_ms(event_time) == entry['eventTimeMs']
+    if entry['eventTimeMs'].nil?
+      # No record timestamp is mapped. The generated parser must then hand the receive
+      # time to the wrapper: Stellar's receivers report a nil time as "pattern not
+      # matched" instead of emitting the event.
+      actual_ms = event_time_ms(event_time)
+      fail_native if actual_ms.nil?
+      fail_native unless (actual_ms - (Time.now.to_r * 1000).to_i).abs <= 60_000
+    else
+      fail_native unless event_time_ms(event_time) == entry['eventTimeMs']
+    end
     passed += 1
   end
 

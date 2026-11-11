@@ -39,17 +39,6 @@ module Fluent
         super()
         fragment_initialize.bind(self).call
       end
-      # Stock in_udp (1.7.4) drops a parsed event whose time is nil ("pattern not
-      # matched"). The generated parser yields nil time when no timestamp field is
-      # mapped, and for diagnostic error records. How Stellar's own wrapper treats a
-      # nil time is NOT known, so this harness supplies the receive time and the
-      # finding is reported instead of hidden.
-      fragment_parse = instance_method(:parse)
-      define_method(:parse) do |text, &block|
-        fragment_parse.bind(self).call(text) do |time, record|
-          block.call(time.nil? && !record.nil? ? Fluent::EventTime.now : time, record)
-        end
-      end
     end
   end
 end
@@ -60,6 +49,8 @@ harness_tail = <<-CONF
   @type stdout
   <inject>
     tag_key _fluent_tag
+    time_key _fluent_time
+    time_type float
   </inject>
   <format>
     @type json
@@ -111,15 +102,15 @@ end
 expected_positive = input['datagrams'].select { |d| d['expectedMatch'] }
 # Fluentd 1.7.4 out_stdout writes through $log, so the formatted records land in the file given
 # with `-o` (fluentd.log), interleaved with "[info]" lines, and not in the process stdout. Wait
-# (bounded) until every expected record, plus the one extraction diagnostic, has been written, then
-# stop fluentd gracefully and parse the JSON lines it wrote.
+# (bounded) until every expected record has been written and the non-matching datagram has been
+# reported, then stop fluentd gracefully and parse the JSON lines it wrote.
 read_records = lambda do
   next [] unless File.exist?(log_path)
   File.read(log_path).lines.select { |l| l.start_with?('{') }.map { |l| JSON.parse(l) rescue nil }.compact
 end
-wanted = expected_positive.length + input['datagrams'].count { |d| !d['expectedMatch'] }
 50.times do
-  break if read_records.call.length >= wanted
+  break if read_records.call.length >= expected_positive.length &&
+           File.exist?(log_path) && File.read(log_path).include?('pattern not matched')
   sleep 0.2
 end
 Process.kill('TERM', pid)
@@ -140,11 +131,25 @@ expected_positive.each_with_index do |datagram, index|
     fail_with.call('UDP_FIELD_MISMATCH ' + datagram['id'] + ' ' + mismatch.keys.join(','))
   end
 end
-unless errors.length == 1 && errors.first['parser_err_stage'] == 'extraction' && errors.first['_fluent_tag'] == 'syslog'
+# Every parsed event must reach the output with a real event time. The ASA corpus maps no
+# timestamp, so this only holds when the generated parser itself supplies the receive time.
+# (Stock and Stellar receivers send an event with a nil time to the "pattern not matched"
+# path instead of emitting it.) Nothing in this harness fills in a missing time.
+now = Time.now.to_f
+good.each_with_index do |record, index|
+  time = record['_fluent_time']
+  unless time.is_a?(Numeric) && (time - now).abs <= 120
+    warn 'RECORD ' + JSON.generate(record)
+    fail_with.call('UDP_EVENT_TIME_NOT_RECEIVE_TIME index=' + index.to_s)
+  end
+end
+# The extraction-failure datagram yields a diagnostic record without an event time. A
+# receiver must not emit it as a parsed event: it is reported as "pattern not matched".
+not_matched = File.read(log_path).scan('pattern not matched').length
+unless errors.empty? && not_matched == 1
   warn 'ERRORS ' + JSON.generate(errors)
-  fail_with.call('UDP_NONMATCH_DIAGNOSTIC_MISMATCH')
+  fail_with.call('UDP_NONMATCH_NOT_REPORTED errors=' + errors.length.to_s + ' pattern_not_matched=' + not_matched.to_s)
 end
 puts 'UDP_6801_RECEPTION_PASS fluentd=1.7.4 ruby=' + RUBY_VERSION + ' bound=0.0.0.0:6801 ' \
      'datagrams=' + input['datagrams'].length.to_s + ' parsed=' + good.length.to_s +
-     ' nonmatching_to_diagnostic_record=' + errors.length.to_s +
-     ' harness_supplied_receive_time_for_nil_time=true'
+     ' pattern_not_matched=' + not_matched.to_s + ' harness_time_compensation=false'
