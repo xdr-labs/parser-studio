@@ -1,0 +1,165 @@
+{
+ "contract": "parserstudio.golden-corpus.vendor-published-text.v1",
+ "sourcePolicy": "VENDOR_PUBLISHED_TEXT_NO_PAGE_BYTES",
+ "purpose": "Cisco-published ASA syslog examples whose page bytes could not be hashed. They are NOT VENDOR_DOCUMENTED and are not counted as such; the Ruby 2.4.9 gate executes them against hand-authored expected values.",
+ "cases": [
+  {
+   "id": "cisco_asa_302013_inbound_outside_to_inside",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_PUBLISHED_TEXT",
+   "publisher": "Cisco",
+   "product": "Cisco ASA",
+   "provenanceUrl": "https://www.cisco.com/c/en/us/support/docs/security/adaptive-security-appliance-asa-software/116149-qanda-ASA-00.html",
+   "provenance": {
+    "documentId": "116149",
+    "documentUpdated": "August 19, 2015",
+    "retrievedAt": "2026-11-11",
+    "retrievalMethod": "WebFetch page-text extraction",
+    "pageBytesCaptured": false,
+    "pageSha256": null,
+    "blocker": "cisco.com page bytes not capturable from the sandbox (redirects to a support index; circumventing the bot gate is not permitted). Text was read via WebFetch.",
+    "scenario": "Traffic through the ASA from the outside host to the inside host",
+    "extraction": "published-line-wrap-joined-with-single-space",
+    "publishedFragments": [
+     "%ASA-6-302013: Built inbound TCP connection 11 for outside:10.1.2.1/21647",
+     "(10.1.2.1/21647) to inside:10.1.1.2/22 (10.1.1.2/22)"
+    ]
+   },
+   "rawSample": "%ASA-6-302013: Built inbound TCP connection 11 for outside:10.1.2.1/21647 (10.1.2.1/21647) to inside:10.1.1.2/22 (10.1.1.2/22)",
+   "originalSha256": "fa3ff0b460e3a188a527360fde9c32857bfbff0cfec9be68004c6588863d87cf",
+   "sampleCount": 1,
+   "expectedMatch": true,
+   "expectedFields": {
+    "event_id": "302013",
+    "direction": "inbound",
+    "protocol": "TCP",
+    "connection_id": "11",
+    "src_ip": "10.1.2.1",
+    "src_port": "21647",
+    "dst_ip": "10.1.1.2",
+    "dst_port": "22",
+    "dst_mapped_ip": "10.1.1.2"
+   },
+   "expectedStellarFields": {
+    "srcip": "10.1.2.1",
+    "dstip": "10.1.1.2",
+    "protocol": "TCP"
+   }
+  },
+  {
+   "id": "cisco_asa_302013_outbound_outside_to_inside",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_PUBLISHED_TEXT",
+   "publisher": "Cisco",
+   "product": "Cisco ASA",
+   "provenanceUrl": "https://www.cisco.com/c/en/us/support/docs/security/adaptive-security-appliance-asa-software/116149-qanda-ASA-00.html",
+   "provenance": {
+    "documentId": "116149",
+    "documentUpdated": "August 19, 2015",
+    "retrievedAt": "2026-11-11",
+    "retrievalMethod": "WebFetch page-text extraction",
+    "pageBytesCaptured": false,
+    "pageSha256": null,
+    "blocker": "cisco.com page bytes not capturable from the sandbox (redirects to a support index; circumventing the bot gate is not permitted). Text was read via WebFetch.",
+    "scenario": "Traffic through the ASA from the inside host to the outside host",
+    "extraction": "published-line-wrap-joined-with-single-space",
+    "publishedFragments": [
+     "%ASA-6-302013: Built outbound TCP connection 9 for outside:10.1.2.1/22 (10.1.2.1/22)",
+     "to inside:10.1.1.2/53496 (10.1.1.2/53496)"
+    ]
+   },
+   "rawSample": "%ASA-6-302013: Built outbound TCP connection 9 for outside:10.1.2.1/22 (10.1.2.1/22) to inside:10.1.1.2/53496 (10.1.1.2/53496)",
+   "originalSha256": "c71aed618568dec1244e69c7e31a96136265e3bd0a3a2d46ef3db7d83bb31942",
+   "sampleCount": 1,
+   "expectedMatch": true,
+   "expectedFields": {
+    "event_id": "302013",
+    "direction": "outbound",
+    "protocol": "TCP",
+    "connection_id": "9",
+    "src_ip": "10.1.2.1",
+    "src_port": "22",
+    "dst_ip": "10.1.1.2",
+    "dst_port": "53496",
+    "dst_mapped_ip": "10.1.1.2"
+   },
+   "expectedStellarFields": {
+    "srcip": "10.1.2.1",
+    "dstip": "10.1.1.2",
+    "protocol": "TCP"
+   }
+  },
+  {
+   "id": "cisco_asa_302013_inbound_mapped_destination_differs",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_PUBLISHED_TEXT",
+   "publisher": "Cisco",
+   "product": "Cisco ASA",
+   "provenanceUrl": "https://www.cisco.com/c/en/us/support/docs/security/adaptive-security-appliance-asa-software/116149-qanda-ASA-00.html",
+   "provenance": {
+    "documentId": "116149",
+    "documentUpdated": "August 19, 2015",
+    "retrievedAt": "2026-11-11",
+    "retrievalMethod": "WebFetch page-text extraction",
+    "pageBytesCaptured": false,
+    "pageSha256": null,
+    "blocker": "cisco.com page bytes not capturable from the sandbox (redirects to a support index; circumventing the bot gate is not permitted). Text was read via WebFetch.",
+    "scenario": "Same-security interfaces, traffic from the outside host to the inside host",
+    "extraction": "published-line-wrap-joined-with-single-space",
+    "publishedFragments": [
+     "%ASA-6-302013: Built inbound TCP connection 1 for outside:10.1.2.1/17891 (10.1.2.1/17891)",
+     "to inside:10.1.1.2/23 (10.1.2.5/23)"
+    ]
+   },
+   "rawSample": "%ASA-6-302013: Built inbound TCP connection 1 for outside:10.1.2.1/17891 (10.1.2.1/17891) to inside:10.1.1.2/23 (10.1.2.5/23)",
+   "originalSha256": "6f458b6d5938c6492c04c5444e97f5a91cd5981ae5a1ba24ffe81ee3c5af4c9a",
+   "sampleCount": 1,
+   "expectedMatch": true,
+   "expectedFields": {
+    "event_id": "302013",
+    "direction": "inbound",
+    "protocol": "TCP",
+    "connection_id": "1",
+    "src_ip": "10.1.2.1",
+    "src_port": "17891",
+    "dst_ip": "10.1.1.2",
+    "dst_port": "23",
+    "dst_mapped_ip": "10.1.2.5"
+   },
+   "expectedStellarFields": {
+    "srcip": "10.1.2.1",
+    "dstip": "10.1.1.2",
+    "protocol": "TCP"
+   }
+  },
+  {
+   "id": "cisco_asa_302014_teardown_is_a_different_message",
+   "family": "FIREWALL",
+   "sampleClass": "VENDOR_PUBLISHED_TEXT",
+   "publisher": "Cisco",
+   "product": "Cisco ASA",
+   "provenanceUrl": "https://www.cisco.com/c/en/us/support/docs/security/adaptive-security-appliance-asa-software/116149-qanda-ASA-00.html",
+   "provenance": {
+    "documentId": "116149",
+    "documentUpdated": "August 19, 2015",
+    "retrievedAt": "2026-11-11",
+    "retrievalMethod": "WebFetch page-text extraction",
+    "pageBytesCaptured": false,
+    "pageSha256": null,
+    "blocker": "cisco.com page bytes not capturable from the sandbox (redirects to a support index; circumventing the bot gate is not permitted). Text was read via WebFetch.",
+    "scenario": "Teardown of the same-security scenario 2 connection",
+    "extraction": "published-line-wrap-joined-with-single-space",
+    "publishedFragments": [
+     "%ASA-6-302014: Teardown TCP connection 1 for outside:10.1.2.1/17891 to inside:10.1.1.2/23",
+     "duration 0:00:08 bytes 165 TCP FIN"
+    ]
+   },
+   "rawSample": "%ASA-6-302014: Teardown TCP connection 1 for outside:10.1.2.1/17891 to inside:10.1.1.2/23 duration 0:00:08 bytes 165 TCP FIN",
+   "originalSha256": "c0ba1166c8aa80ea4c05ac7ed19b48014048ad0d7b9fe0991bbdbc54a21f3500",
+   "sampleCount": 1,
+   "expectedMatch": false,
+   "expectedFields": {},
+   "expectedStellarFields": {}
+  }
+ ]
+}

@@ -300,7 +300,7 @@ jobs:
             tests/docs-fortigate-multiple-types-20261104.spec.ts
             tests/issue232-semantic-auto-parser.spec.ts
           )
-          expected=21
+          expected=28
           if test -f tests/docs-jsonata-mapping-assisted-20261104.spec.ts; then
             files+=(tests/docs-jsonata-mapping-assisted-20261104.spec.ts)
             expected=22

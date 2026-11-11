@@ -3,6 +3,8 @@
  * native runtime CI test. Private stdout includes generated code and must not
  * be uploaded as an artifact or logged.
  */
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {deflateSync} from 'node:zlib';
 import {compilePair} from '../../backend/src/compiler';
 import {sampleProject} from '../../backend/test/fixture';
@@ -11,11 +13,20 @@ import {sampleProject} from '../../backend/test/fixture';
 // one scan loop). The raw FTD lines and expected values live in the offline
 // runner and are written by hand from the log text, not read back from Ruby.
 const FTD_PATTERN=String.raw`^.*%FTD-\d-(?<event_id>\d+): Built inbound (?<protocol>TCP|UDP) connection \d+ for \w+:(?<srcip>[\d.]+)/(?<srcport>\d+) \([\d.]+/\d+\) to \w+:(?<dstip>[\d.]+)/(?<dstport>\d+) \([\d.]+/\d+\)$`;
+// Cisco ASA 302013 (Built inbound|outbound ...). Pattern authored from Cisco's
+// documented message grammar; the raw lines and expected values come from the
+// VENDOR_PUBLISHED_TEXT corpus file, never from generated Ruby.
+const ASA_PATTERN=String.raw`^.*%ASA-\d-(?<event_id>\d+): Built (?<direction>inbound|outbound) (?<protocol>TCP|UDP) connection (?<connection_id>\d+) for \w+:(?<src_ip>[\d.]+)/(?<src_port>\d+) \([\d.]+/\d+\) to \w+:(?<dst_ip>[\d.]+)/(?<dst_port>\d+) \((?<dst_mapped_ip>[\d.]+)/\d+\)$`;
+const ASA_CORPUS=(JSON.parse(readFileSync(resolve(import.meta.dirname,'../../evals/golden-corpus/vendor-published-text-cisco-asa.v1.json'),'utf8')) as {
+  cases:{id:string;sampleClass:string;rawSample:string;expectedMatch:boolean;expectedFields:Record<string,string>;expectedStellarFields:Record<string,string>}[];
+}).cases.map(({id,sampleClass,rawSample,expectedMatch,expectedFields,expectedStellarFields})=>
+  ({id,sampleClass,rawSample,expectedMatch,expectedFields,expectedStellarFields}));
 // Unanchored repeat: the implicit scan makes it quadratic, so it has no static
 // cost proof and MUST fail closed on a runtime without a Regexp timeout.
 const UNBOUNDED_PATTERN=String.raw`(?<action>\d+)`;
 const fixtures=[
   {id:'regex',pattern:FTD_PATTERN,extraction:{format:'regex' as const,pattern:FTD_PATTERN}},
+  {id:'regex-cisco-asa',pattern:ASA_PATTERN,extraction:{format:'regex' as const,pattern:ASA_PATTERN}},
   {id:'syslog-regex-body',pattern:'^(?<action>ALLOW)$',extraction:{
     format:'syslog_rfc5424' as const,syslogBodyFormat:'regex' as const,
     pattern:'^(?<action>ALLOW)$',
@@ -44,6 +55,19 @@ const records=fixtures.map(({id,pattern,extraction})=>{
     };
     project.normalization.vendorFields={};
   }
+  if(id==='regex-cisco-asa'){
+    project.normalization.topFields={
+      src_ip:{normalized_name:'srcip',data_type:'ip'},
+      dst_ip:{normalized_name:'dstip',data_type:'ip'},
+      protocol:{normalized_name:'protocol',data_type:'string'},
+    };
+    project.normalization.nsFields={
+      src_port:{normalized_name:'srcport',data_type:'port'},
+      dst_port:{normalized_name:'dstport',data_type:'port'},
+      event_id:{normalized_name:'log.event_id',data_type:'integer'},
+    };
+    project.normalization.vendorFields={};
+  }
   const pair=compilePair(project);
   const ruby=pair.files.find(f=>!f.name.endsWith('.conf'));
   const bounded=/def parserstudio_regex_cost_proven\?\n  true\nend/.test(ruby?.content??'');
@@ -62,6 +86,7 @@ const records=fixtures.map(({id,pattern,extraction})=>{
     throw new Error('RUBY24_NATIVE_TARGET_GRAMMAR_GUARD_NOT_EMITTED '+id);
   return {
     id,sha256:ruby.sha256,...(pattern===undefined?{}:{pattern}),
+    ...(id==='regex-cisco-asa'?{corpus:ASA_CORPUS}:{}),
     compressedRuby:deflateSync(Buffer.from(ruby.content,'utf8')).toString('base64'),
   };
 });
