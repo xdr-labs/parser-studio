@@ -94,8 +94,8 @@ test('a novice preserves partial source values and local Regex recovery, but tar
   // backtracking-cost proof may leave the target adapter; this one has none.
   await page.getByRole('button',{name:'Review Fields',exact:true}).click();
   await expect(page.getByRole('alert').filter({
-    hasText:/Regex samples may be reviewed in the browser/,
-  })).toContainText('Ruby 2.4.9');
+    hasText:/can be reviewed in the browser but cannot be exported/,
+  })).toContainText('Ruby 2.4.9 has no Regexp timeout');
   await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
   await expect(page.getByLabel('Generated parser files')).toHaveCount(0);
   await expect(page.getByLabel('Auto Parser raw logs')).toHaveValue(source);
