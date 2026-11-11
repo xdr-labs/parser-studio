@@ -7,7 +7,7 @@ test('first-time Auto Parser keeps only actionable options, not research-only gr
   await expect(page.getByLabel('Known log shape matcher')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Group Similar Unknown Shapes'})).toHaveCount(0);
   await expect(page.getByLabel('Manually mark a log prefix or postfix')).toBeVisible();
-  await expect(page.getByLabel('Python test sender',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Python test sender',{exact:true})).toHaveCount(0);
   await expect(page.getByLabel('Existing parser review and import')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Analyze Logs',exact:true})).toBeDisabled();
   await page.getByLabel('Auto Parser raw logs').fill(
