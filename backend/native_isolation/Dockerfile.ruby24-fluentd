@@ -4,11 +4,16 @@
 # run with a network: the build may fetch gems, execution may not.
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
+# The plugin and its helper are installed WITHOUT dependency resolution: otherwise
+# RubyGems fetches the newest Fluentd and shadows the Stellar 7.0 release (verified:
+# it pulled 1.16.6). The version assertions below prove the outcome.
 # RubyGems 2.6 (Ruby 2.4) ignores required_ruby_version while resolving
 # dependencies and would pick gems that do not load on 2.4.9.
 RUN ruby -e "abort 'WRONG_RUBY' unless RUBY_VERSION == '2.4.9'" && \
     gem update --system 3.2.34 --no-document && \
-    gem install fluentd:1.7.4 fluent-plugin-rewrite-tag-filter:2.4.0 --no-document && \
+    gem install fluentd -v 1.7.4 --no-document && \
+    gem install fluent-config-regexp-type -v 1.0.0 --ignore-dependencies --no-document && \
+    gem install fluent-plugin-rewrite-tag-filter -v 2.4.0 --ignore-dependencies --no-document && \
     test "$(gem list -e fluentd)" = "fluentd (1.7.4)" && \
     test "$(fluentd --version)" = "fluentd 1.7.4"
 ENV HOME=/tmp

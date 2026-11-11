@@ -166,4 +166,4 @@ console.log('EXECUTABLE_CONTRACT_GATE_PASS: policy, consumers, oracle inventory,
 // shipped Fluentd release, and must run sealed (no network namespace at execution).
 assert.match(workflow,/ruby24-fluentd-udp-reception:/);
 assert.match(text('scripts/verification/ruby24-fluentd-udp-gate.sh'),/--network none/);
-assert.match(text('backend/native_isolation/Dockerfile.ruby24-fluentd'),/fluentd:1\.7\.4/);
+assert.match(text('backend/native_isolation/Dockerfile.ruby24-fluentd'),/fluentd -v 1\.7\.4/);
