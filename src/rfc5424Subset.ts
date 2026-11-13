@@ -3,6 +3,8 @@
  * Mirrors only the reviewed backend's synthetic qualified subset. It never
  * establishes native Fluentd or proprietary target loader compatibility.
  */
+import { matchRfc5424Header } from './grammar/syslogHeader';
+
 export interface Rfc5424SdElement {
   sd_id: string;
   params: Record<string,string>;
@@ -112,25 +114,18 @@ function scanStructuredData(rest: string): {
 
 export function parseRfc5424Subset(text:string):Rfc5424Scan {
   if (text.includes('\n') || text.includes('\r')) return {ok:false,error:'RFC5424 multi-line message unsupported'};
-  const match=/^<(\d{1,3})>(\d{1,2}) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)$/.exec(text);
-  if (!match || Number(match[1])>191 || match[2]!=='1') {
-    return {ok:false,error:'Unsupported RFC5424 version or header'};
-  }
-  const limits=[255,48,128,32];
-  for (const [index,maximum] of limits.entries()) {
-    const token=match[index+4];
-    if(!token || new TextEncoder().encode(token).length>maximum || !/^[!-~]+$/.test(token)) {
-      return {ok:false,error:'Unsupported RFC5424 header token'};
-    }
-  }
-  if (!safeTimestamp(match[3])) return {ok:false,error:'Unsupported RFC5424 timestamp'};
-  const parsed=scanStructuredData(match[8]);
+  // Header grammar, token length limits, PRI range and the supported VERSION
+  // list come from contracts/syslog-header-grammar.v1.json.
+  const header=matchRfc5424Header(text);
+  if (!header.ok) return {ok:false,error:'Unsupported RFC5424 version or header'};
+  if (!safeTimestamp(header.timestamp)) return {ok:false,error:'Unsupported RFC5424 timestamp'};
+  const parsed=scanStructuredData(header.rest);
   if (!parsed) return {ok:false,error:'Unsupported RFC5424 structured data syntax'};
   return {ok:true,fields:{
-    syslog_pri:Number(match[1]),syslog_version:1,
-    syslog_timestamp:match[3],syslog_hostname:match[4],
-    syslog_appname:match[5],syslog_procid:match[6],
-    syslog_msgid:match[7],syslog_structured_data:parsed.structured,
+    syslog_pri:header.pri,syslog_version:1,
+    syslog_timestamp:header.timestamp,syslog_hostname:header.hostname,
+    syslog_appname:header.appname,syslog_procid:header.procid,
+    syslog_msgid:header.msgid,syslog_structured_data:parsed.structured,
     ...(Object.keys(parsed.elements).length?{syslog_sd:parsed.elements}:{}),
   },message:parsed.message};
 }

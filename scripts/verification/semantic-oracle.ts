@@ -27,7 +27,7 @@ import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslo
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
 import { SYSLOG_HEADER_RULES, type SyslogHeaderRuleName } from '../../src/grammar/syslogHeaderGrammar.generated';
 // @ts-expect-error plain ESM generator without type declarations
-import { compileRule } from '../grammar/generate-grammar.mjs';
+import { CONTRACT_PATH, compileRule, generateTypeScript, rubyGrammarPlaceholders } from '../grammar/generate-grammar.mjs';
 import { compilePair } from '../../backend/src/compiler.js';
 import { sampleProject } from '../../backend/test/fixture.js';
 
@@ -137,19 +137,29 @@ function report(label: string, failures: string[]): void {
 }
 
 // ---------------------------------------------------------------- TypeScript
+// A mutant either edits one product source file or, with file 'contract', edits the grammar contract and
+// regenerates its consumers: the second kind proves that a wrong contract cannot ship either.
+const CONTRACT_MUTANTS: Mutant[] = [
+  // Re-introduces F-1: HOSTNAME may again swallow a key=value token.
+  { id: 'contract-hostname-any-printable', file: 'contract', find: '"pattern": "(?!\\\\{|CEF:|LEEF:)[!-<>-~]{1,255}"', replace: '"pattern": "[!-~]{1,255}"' },
+  { id: 'contract-rest-ascii-only', file: 'contract', find: '"REST": { "pattern": "[^\\\\r\\\\n]+"', replace: '"REST": { "pattern": "[!-~ ]+"' },
+  { id: 'contract-hostless-rule-removed', file: 'contract', find: '[ "rfc3164_tagged", "rfc3164_tagless", "rfc3164_hostless" ]', replace: '[ "rfc3164_tagged", "rfc3164_tagless" ]' },
+];
 const TS_MUTANTS: Mutant[] = [
-  { id: 'ts-hostname-wrong-capture', file: 'src/structuredFamilies.ts', find: ' syslog_hostname:match[7],', replace: ' syslog_hostname:match[2],' },
-  { id: 'ts-pri-range-dropped', file: 'src/structuredFamilies.ts', find: '(priority!==undefined&&priority>191)||', replace: '' },
-  { id: 'ts-calendar-widened', file: 'src/structuredFamilies.ts', find: 'day>DAYS[month]', replace: 'day>31' },
+  ...CONTRACT_MUTANTS,
+  { id: 'ts-hostname-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_hostname:header.hostname', replace: 'syslog_hostname:header.timestamp' },
   { id: 'ts-body-fields-dropped', file: 'src/structuredFamilies.ts', find: 'return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};', replace: 'return body.errors.length?body:{fields:{...fields},errors:[]};' },
-  { id: 'ts-procid-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_procid:match[9]', replace: 'syslog_procid:match[8]' },
-  { id: 'ts-tagged-first-field-lost', file: 'src/structuredFamilies.ts', find: 'const message=tagged?match[10]!:match[8]!;', replace: "const message=tagged?match[10]!.replace(/^\\S+ /,''):match[8]!;" },
-  { id: 'ts-rfc5424-any-version', file: 'src/rfc5424Subset.ts', find: " || match[2]!=='1'", replace: '' },
-  { id: 'ts-rfc5424-appname-procid-swapped', file: 'src/rfc5424Subset.ts', find: 'syslog_appname:match[5],syslog_procid:match[6],', replace: 'syslog_appname:match[6],syslog_procid:match[5],' },
+  { id: 'ts-procid-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_procid:header.procid', replace: 'syslog_procid:header.tag' },
+  { id: 'ts-tagged-first-field-lost', file: 'src/structuredFamilies.ts', find: ' const message=header.message;', replace: " const message=tagged?header.message.replace(/^\\S+ /,''):header.message;" },
+  { id: 'ts-pri-range-dropped', file: 'src/grammar/syslogHeader.ts', find: 'pri !== undefined && pri > SYSLOG_HEADER_SEMANTICS.priMax', replace: 'false' },
+  { id: 'ts-calendar-widened', file: 'src/grammar/syslogHeader.ts', find: 'day < 1 || day > days ||', replace: 'day < 1 || day > 31 ||' },
+  { id: 'ts-rfc5424-any-version', file: 'src/grammar/syslogHeader.ts', find: 'if (!isSupportedRfc5424Version(captures.version!)) return', replace: 'if (false) return' },
+  { id: 'ts-rfc5424-appname-procid-swapped', file: 'src/rfc5424Subset.ts', find: 'syslog_appname:header.appname,syslog_procid:header.procid,', replace: 'syslog_appname:header.procid,syslog_procid:header.appname,' },
 ];
 
 function applyMutant(text: string, mutant: Mutant): string {
   if (text.split(mutant.find).length !== 2) throw new Error(`MUTANT_NOT_APPLICABLE ${mutant.id}: target text must occur exactly once in ${mutant.file}`);
+  if (mutant.replace === mutant.find) throw new Error(`MUTANT_IS_IDENTITY ${mutant.id}`);
   return text.replace(mutant.find, () => mutant.replace);
 }
 
@@ -170,7 +180,10 @@ async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extr
   for (const shared of ['contracts', 'backend']) symlinkSync(join(REPO, shared), join(root, shared));
   const dispose = () => rmSync(root, { recursive: true, force: true });
   try {
-    if (mutant) {
+    if (mutant && mutant.file === 'contract') {
+      const mutated = applyMutant(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
+      writeFileSync(join(root, 'src/grammar/syslogHeaderGrammar.generated.ts'), generateTypeScript(mutated) as string);
+    } else if (mutant) {
       const target = join(root, mutant.file);
       writeFileSync(target, applyMutant(readFileSync(target, 'utf8'), mutant));
     }
@@ -224,12 +237,30 @@ async function runTs(): Promise<number> {
 
 // ---------------------------------------------------------------------- Ruby
 const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar'] }> = [
-  { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: '!priority.between?(0, 191)', replace: '!priority.between?(0, 999)' },
+  ...CONTRACT_MUTANTS.map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const })),
+  { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)", replace: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 999)" },
   { id: 'rb-calendar-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: 'day.between?(1, days) && hour.between?(0, 23)', replace: 'day.between?(1, 31) && hour.between?(0, 23)' },
-  { id: 'rb-tagged-first-field-lost', grammar: 'syslog_rfc3164', file: 'fragment', find: '    message = match[10]\n', replace: "    message = match[10].sub(/\\A\\S+ /, '')\n" },
-  { id: 'rb-hostname-wrong-capture', grammar: 'syslog_rfc3164', file: 'fragment', find: "'syslog_hostname' => match[7]", replace: "'syslog_hostname' => match[2]" },
-  { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "unless match[2] == '1'", replace: 'unless match[2] =~ /\\A[0-9]+\\z/' },
+  { id: 'rb-tagged-first-field-lost', grammar: 'syslog_rfc3164', file: 'fragment', find: "  message = header['message']\n", replace: "  message = tagged ? header['message'].sub(/\\A\\S+ /, '') : header['message']\n" },
+  { id: 'rb-hostname-wrong-capture', grammar: 'syslog_rfc3164', file: 'fragment', find: "record['syslog_hostname'] = header['hostname'] if header['hostname']", replace: "record['syslog_hostname'] = header['month'] if header['hostname']" },
+  { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "raise ArgumentError, 'Unsupported RFC5424 version' unless ['1'].include?(header['version'])", replace: "raise ArgumentError, 'Unsupported RFC5424 version' unless header['version']" },
 ];
+
+/** Applies a mutant to a compiled Fragment; a contract mutant swaps the injected grammar for the mutated contract's grammar. */
+function mutateFragment(fragment: string, mutant: Mutant): string {
+  if (mutant.file !== 'contract') return applyMutant(fragment, mutant);
+  const contractText = readFileSync(join(REPO, CONTRACT_PATH), 'utf8');
+  const before = rubyGrammarPlaceholders(contractText) as Record<string, string>;
+  const after = rubyGrammarPlaceholders(applyMutant(contractText, mutant)) as Record<string, string>;
+  let out = fragment;
+  let changed = 0;
+  for (const [placeholder, source] of Object.entries(before)) {
+    if (after[placeholder] === source || !out.includes(source)) continue;
+    out = out.split(source).join(after[placeholder]!);
+    changed += 1;
+  }
+  if (changed === 0) throw new Error(`MUTANT_NOT_APPLICABLE ${mutant.id}: the mutated contract does not change this Fragment`);
+  return out;
+}
 
 function compileFragment(grammar: OracleCase['grammar']): string {
   const profile = goldens.profiles['fw-kv']!;
@@ -257,7 +288,7 @@ function runNative(): number {
   };
   const payloadCases = cases.map(item => ({ id: item.id, fragment: item.grammar, raw: item.raw }));
   for (const mutant of RUBY_MUTANTS) {
-    fragments[mutant.id] = applyMutant(fragments[mutant.grammar]!, mutant);
+    fragments[mutant.id] = mutateFragment(fragments[mutant.grammar]!, mutant);
     for (const item of mutantCases)
       if (item.grammar === mutant.grammar) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
   }

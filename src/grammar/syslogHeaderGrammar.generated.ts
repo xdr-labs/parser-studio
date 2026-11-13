@@ -60,6 +60,23 @@ export const SYSLOG_HEADER_RULES = {
     ]
   }
 } as const satisfies Record<string, CompiledHeaderRule>;
+export const SYSLOG_HEADER_TOKENS = {
+  "PRI": "[0-9]{1,3}",
+  "BSD_MONTH": "[A-Z][a-z]{2}",
+  "BSD_DAY": "[0-9]{1,2}",
+  "CLOCK2": "[0-9]{2}",
+  "BSD_HOSTNAME": "(?!\\{|CEF:|LEEF:)[!-<>-~]{1,255}",
+  "TAG": "[A-Za-z_][A-Za-z0-9_.-]{0,95}",
+  "PROCID_NUM": "[0-9]{1,8}",
+  "REST": "[^\\r\\n]+",
+  "STRUCTURED_BODY": "(?:\\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]{0,95}=)[^\\r\\n]*",
+  "RFC5424_VERSION": "[1-9][0-9]{0,2}",
+  "RFC5424_TIMESTAMP": "[!-~]{1,64}",
+  "RFC5424_HOSTNAME": "[!-~]{1,255}",
+  "RFC5424_APPNAME": "[!-~]{1,48}",
+  "RFC5424_PROCID": "[!-~]{1,128}",
+  "RFC5424_MSGID": "[!-~]{1,32}"
+} as const;
 export const SYSLOG_HEADER_ALTERNATIVES = {
   "rfc3164": [
     "rfc3164_tagged",

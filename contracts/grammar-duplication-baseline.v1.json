@@ -1,17 +1,13 @@
 {
   "schema": "parserstudio.grammar-duplication-baseline.v1",
   "purpose": "Hand-written copies of Syslog header grammar tokens that still exist outside contracts/syslog-header-grammar.v1.json. The numbers may only decrease; scripts/verification/grammar-duplication-ratchet.mjs enforces it.",
-  "total": 148,
+  "total": 122,
   "signatures": {
     "hostname-printable-ascii-255": {
       "literal": "[!-~]{1,255}",
       "files": {
         "src/genericStructural.ts": 7,
-        "src/guided/autoParserEnvelope.ts": 1,
-        "src/structuredFamilies.ts": 3,
         "backend/templates/generic-structural-helper.rb.tpl": 6,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 2,
-        "backend/templates/ruby-fragment.rb.tpl": 2,
         "runtime/multipass/generic_structural_poc.py": 2,
         "runtime/multipass/security_envelope.py": 3
       }
@@ -21,15 +17,14 @@
       "files": {
         "src/genericStructural.ts": 11,
         "src/guided/autoParserDraft.ts": 1,
-        "src/guided/autoParserEnvelope.ts": 1,
         "src/guided/localPatternMining.ts": 1,
         "src/guided/parserRecipeV2.ts": 1,
         "src/parser.ts": 3,
-        "src/structuredFamilies.ts": 4,
+        "src/structuredFamilies.ts": 1,
         "src/syslogEnvelope.ts": 4,
         "backend/templates/generic-structural-helper.rb.tpl": 14,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 3,
-        "backend/templates/ruby-fragment.rb.tpl": 3,
+        "backend/templates/ruby-forwarder-family.rb.tpl": 1,
+        "backend/templates/ruby-fragment.rb.tpl": 1,
         "runtime/multipass/generic_partial_envelope.py": 3,
         "runtime/multipass/generic_structural_poc.py": 2,
         "runtime/multipass/security_asa.py": 1,
@@ -43,14 +38,10 @@
       "literal": "(\\d{1,3})>",
       "files": {
         "src/genericStructural.ts": 17,
-        "src/guided/autoParserEnvelope.ts": 2,
+        "src/guided/autoParserEnvelope.ts": 1,
         "src/parser.ts": 1,
-        "src/rfc5424Subset.ts": 1,
-        "src/structuredFamilies.ts": 2,
         "src/syslogEnvelope.ts": 1,
-        "backend/templates/generic-structural-helper.rb.tpl": 18,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 3,
-        "backend/templates/ruby-fragment.rb.tpl": 3
+        "backend/templates/generic-structural-helper.rb.tpl": 18
       }
     },
     "rfc5424-version-any-digits": {

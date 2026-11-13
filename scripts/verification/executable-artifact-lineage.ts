@@ -44,6 +44,8 @@ const sourceFiles=[
   'backend/src/portable-regex.ts','backend/src/canonical-operator-contract.ts',
   'runtime/multipass/semantic-policy.v1.json',
   'contracts/target-runtime-profiles.v1.json',
+  // The generated Ruby takes its Syslog header grammar from this contract through the generated module.
+  'contracts/syslog-header-grammar.v1.json','backend/src/syslog-header-grammar.generated.ts',
 ];
 const digestOfFiles=(files:string[])=>sha(Buffer.concat(
   files.map(name=>Buffer.concat([Buffer.from(name+'\0'),readFileSync(name),Buffer.from('\0')]))));

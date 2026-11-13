@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {injectHeaderGrammar} from '../src/compiler.js';
 import test from 'node:test';
 
 const templates=['ruby-fragment.rb.tpl','ruby-forwarder-family.rb.tpl'];
@@ -8,7 +9,7 @@ const rubyAvailable=spawnSync('ruby',['-v'],{encoding:'utf8'}).status===0;
 
 test('both DRAFT native templates use the same strict JSON duplicate-key guard',()=>{
   for(const filename of templates){
-    const body=readFileSync(new URL('../templates/'+filename,import.meta.url),'utf8');
+    const body=injectHeaderGrammar(readFileSync(new URL('../templates/'+filename,import.meta.url),'utf8'));
     assert.match(body,/def parserstudio_json_duplicate_keys\?\(raw\)/);
     assert.match(body,/raise ArgumentError, 'Duplicate JSON object key' if parserstudio_json_duplicate_keys\?\(text\)/);
   }
@@ -26,7 +27,7 @@ test('native Ruby DRAFT parser refuses duplicate root/nested/escaped keys and pr
       '{"arr":[{"event":"one"},{"event":"two"}]}',
     ];
     for(const filename of templates){
-      const ruby=readFileSync(new URL('../templates/'+filename,import.meta.url),'utf8');
+      const ruby=injectHeaderGrammar(readFileSync(new URL('../templates/'+filename,import.meta.url),'utf8'));
       for(const [source,shouldReject] of [
         ...invalid.map(raw=>[raw,true] as const),
         ...accepted.map(raw=>[raw,false] as const),

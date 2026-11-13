@@ -7,6 +7,20 @@ import unicodeCaseMap from './unicode-case-map.v1.json' with {type:'json'};
 import officialEnrichmentTypes from "./stellar7-enrichment-types.json" with { type: "json" };
 import { canonicalJson, validateProject } from "./validate.js";
 import { analyzeRuby24RegexCost, RUBY24_REGEX_MAX_INPUT_BYTES } from "./ruby24-regex-cost.js";
+import { RUBY_GRAMMAR_PLACEHOLDERS } from "./syslog-header-grammar.generated.js";
+
+/**
+ * The Ruby templates carry no hand-written Syslog header grammar. Their
+ * __PS_GRAMMAR_*__ placeholders are filled from the code generated out of
+ * contracts/syslog-header-grammar.v1.json, the same contract the browser uses.
+ */
+export function injectHeaderGrammar(fragment: string, placeholders: Readonly<Record<string, string>> = RUBY_GRAMMAR_PLACEHOLDERS): string {
+  let out = fragment;
+  for (const [placeholder, rubySource] of Object.entries(placeholders)) out = out.split(placeholder).join(rubySource);
+  const unresolved = /__PS_GRAMMAR_[A-Z0-9_]+__/.exec(out);
+  if (unresolved) throw new Error("Grammar contract placeholder is not generated: " + unresolved[0]);
+  return out;
+}
 
 const CANONICAL_OPERATORS=readFileSync(new URL('../templates/canonical-operators.rb.tpl',import.meta.url),'utf8');
 const INDEX_ORDER = ["threat", "session", "winlogevent", "syslog"] as const;
@@ -293,7 +307,7 @@ function emitRubyFragment(project: ParserProject): string {
       .replace("__PARSERSTUDIO_REGEX_COST_PROVEN__",proven?"true":"false")
       .replace("__PARSERSTUDIO_REGEX_MAX_INPUT_BYTES__",String(RUBY24_REGEX_MAX_INPUT_BYTES)));
   }
-  return fragment;
+  return injectHeaderGrammar(fragment);
 }
 
 function exportFile(name: string, content: string): ExportFile {

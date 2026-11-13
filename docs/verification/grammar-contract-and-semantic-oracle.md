@@ -21,7 +21,7 @@ standard for adding or changing a parsing grammar or a field mapping.
 contracts/syslog-header-grammar.v1.json        one declarative grammar (tokens, rules, alternatives, semantic limits)
         |  scripts/grammar/generate-grammar.mjs  (portable-subset validator, --verify in CI)
         +--> src/grammar/syslogHeaderGrammar.generated.ts   ECMAScript dialect  -> src/grammar/syslogHeader.ts
-        +--> Ruby dialect (same rule, \A...\z)               -> injected into the Ruby templates by the compiler
+        +--> backend/src/syslog-header-grammar.generated.ts  Ruby dialect        -> injected into the Ruby templates by the compiler
         +--> Python dialect                                  -> Multi-Pass (roadmap)
 
 contracts/semantic-goldens.v1.json             hand-authored expectations (raw text + RFC citation)
@@ -72,6 +72,28 @@ private copy of `src/` (TypeScript) and into the generated Fragment (Ruby); ever
 fault must be reported and the unmutated copy must reproduce the product result.
 A `knownDefect` case is a strict expected failure: it must fail on the listed
 engines and the gate fails when it starts to pass.
+
+## Migration status
+
+| Consumer | State |
+|---|---|
+| `src/structuredFamilies.ts` (RFC 3164 extraction and detection), `src/rfc5424Subset.ts`, `src/guided/autoParserEnvelope.ts` (tagless front door) | contract (`src/grammar/syslogHeader.ts`) |
+| `backend/templates/ruby-fragment.rb.tpl`, `ruby-forwarder-family.rb.tpl` (`parserstudio_syslog_rfc3164`, `parserstudio_syslog_rfc5424`) | contract, injected by `injectHeaderGrammar` in `backend/src/compiler.ts`; a template with an unresolved `__PS_GRAMMAR_*__` placeholder does not compile |
+| `src/syslogEnvelope.ts`, Generic Structural Ruby helper | VERSION policy from the contract; the loose envelope expressions are still hand-written |
+| `src/genericStructural.ts`, the rest of the Generic Structural helper, `runtime/multipass/*.py` | hand-written, counted by the ratchet (122 copies, down from 148) |
+
+Resolved by the contract: F-1 (field loss when HOSTNAME is omitted), F-2 (one
+RFC 5424 VERSION policy), F-3 (U+2028 inside a value). The corresponding
+goldens and property variants are ordinary must-pass cases; the fault
+`contract-hostname-any-printable` re-introduces F-1 in the contract and must be
+reported by both executors.
+
+Known remaining difference, found by the Chromium journey on 2026-11-13: the
+Auto Parser analysis path tokenizes a key=value body with a whitespace notion
+that includes U+2028, so a value that contains U+2028 is shown as "needs
+attention" instead of parsed. The user is blocked honestly, no wrong field is
+produced. The key=value body grammar is the next grammar to move into the
+contract.
 
 ## Rules for adding or changing a grammar or a mapping
 
