@@ -26,3 +26,6 @@ __pycache__/
 tsconfig.tsbuildinfo
 test-results/
 playwright-report/
+
+# Semantic oracle fault-injection scratch copies
+.oracle-mutant-*/

@@ -135,6 +135,15 @@ jobs:
           PARSER_STUDIO_NATIVE_CONFORMANCE_REQUIRED=1 PARSER_STUDIO_EXPECT_RUBY=2.4.9 \
             node node_modules/tsx/dist/cli.mjs --test test/compiler-pairwise-native.test.ts \
             test/generic-structural-helper.test.ts test/mixed-rfc3164-tagless-native.test.ts
+      - name: Semantic Golden oracle, grammar dialect equivalence and fault injection on the Ruby 2.4.9 target
+        run: |
+          set -euo pipefail
+          image=$(node -e 'const c=require("./contracts/target-runtime-profiles.v1.json");const p=c.profiles.find(x=>x.id==="stellar70-observed-ruby24");if(!p?.ciContainerImage?.startsWith("ruby:2.4.9@sha256:"))process.exit(1);process.stdout.write(p.ciContainerImage)')
+          docker pull --platform linux/amd64 "$image" >/dev/null
+          export PARSER_RUBY24_IMAGE="$image"
+          export PATH="$PWD/scripts/verification/ruby24-docker-shim:$PATH"
+          ruby -v | grep -F 'ruby 2.4.9'
+          PARSER_STUDIO_EXPECT_RUBY=2.4.9 node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts native
       - name: Verify Native-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-native.json"
@@ -203,6 +212,11 @@ jobs:
           node scripts/verification/download-sink-guard.mjs
       - name: Shipping backend source reachability and legacy-only API exclusion
         run: node scripts/verification/shipping-entrypoint-reachability.mjs
+      - name: Grammar contract - generated consumers in sync, portable subset and duplication ratchet
+        run: |
+          node scripts/grammar/generate-grammar.mjs --verify
+          node --test scripts/grammar/generate-grammar.test.mjs
+          node scripts/verification/grammar-duplication-ratchet.mjs
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants
@@ -253,6 +267,8 @@ jobs:
         run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
       - name: Independently authored source-to-Stellar semantic oracle
         run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/independent-semantic-identity-oracle.ts
+      - name: Semantic Golden oracle, model-based properties and fault injection (browser TypeScript)
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts ts
       - name: Verify Web-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-web.json"
