@@ -54,6 +54,10 @@ def parserstudio_generic_structural(text)
   return result if result
   result = parserstudio_generic_space_kv(text)
   return result if result
+  result = parserstudio_generic_bsd_classic_pid_message(text)
+  return result if result
+  result = parserstudio_generic_bsd_tagged_message(text)
+  return result if result
   if profile == 'syslog_prefix_kv' || mixed_profile
     result = parserstudio_generic_syslog_prefix_kv(text)
     return result if result
@@ -162,7 +166,7 @@ def parserstudio_generic_prefixed_json(text)
   }
 end
 
-def parserstudio_split_escaped(text, delimiter)
+def parserstudio_generic_split_escaped(text, delimiter)
   parts = []
   token = +''
   quote = nil
@@ -331,7 +335,7 @@ def parserstudio_generic_bracket_colon_kv(text)
 end
 
 def parserstudio_generic_comma_kv(text)
-  parts = parserstudio_split_escaped(text, ',')
+  parts = parserstudio_generic_split_escaped(text, ',')
   return nil unless parts && parts.length >= 3
   prefix = parts[0].to_s.strip
   syslog = {}
@@ -642,7 +646,7 @@ def parserstudio_generic_iso_pri_positional(text)
   end
   {
     'syslog'=>{'pri'=>match[1],'date'=>match[2],'time'=>match[3],'timezone'=>match[4]},
-    'generic'=>{'mode'=>'iso_pri_positional','source_raw'=>text, **body}
+    'generic'=>{'mode'=>'iso_pri_positional','source_raw'=>text}.merge(body)
   }
 rescue StandardError
   nil
@@ -735,6 +739,42 @@ rescue StandardError
   nil
 end
 
+# Mirrors src/genericStructural.ts bsdClassicPidMessageProfile: the legacy
+# "Mon DD HH:MM:SS app[pid]: TAG: message" shape has no separate host token.
+def parserstudio_generic_bsd_classic_pid_message(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +(.+)\z/.match(text)
+  return nil unless match && parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
+  return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
+  syslog={'month'=>match[2],'day'=>match[3],'time'=>match[4],
+          'hostname'=>match[5],'app_tag'=>match[7]}
+  syslog['pri']=match[1] if match[1]
+  {'syslog'=>syslog,
+   'generic'=>{'mode'=>'bsd_classic_pid_message','source_raw'=>text,
+               'pid'=>match[6],'message'=>match[8]}}
+rescue StandardError
+  nil
+end
+
+# Mirrors src/genericStructural.ts bsdTaggedMessageProfile ("Mon DD HH:MM:SS
+# host TAG: message"). Malformed known structures must not fall into it.
+def parserstudio_generic_bsd_tagged_message(text)
+  return nil if text.bytesize > 8192 || text.include?("\x00")
+  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)\z/.match(text)
+  return nil unless match && parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
+  return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
+  return nil if match[7] =~ /\A\[\d+\]:/
+  return nil if match[6] == 'RT_FLOW' && match[7] =~ /\ART_FLOW_SESSION_/
+  syslog={'month'=>match[2],'day'=>match[3],'time'=>match[4],
+          'hostname'=>match[5],'app_tag'=>match[6]}
+  syslog['pri']=match[1] if match[1]
+  {'syslog'=>syslog,
+   'generic'=>{'mode'=>'bsd_tagged_message','source_raw'=>text,
+               'message'=>match[7]}}
+rescue StandardError
+  nil
+end
+
 def parserstudio_generic_juniper_legacy(text)
   head = /\A([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.match(text)
   return nil unless head && head[5] == 'RT_FLOW'
@@ -748,13 +788,13 @@ def parserstudio_generic_juniper_legacy(text)
   {
     'syslog'=>{'month'=>head[1], 'day'=>head[2], 'time'=>head[3],
                'hostname'=>head[4], 'app_tag'=>head[5]},
-    'juniper'=>{'event'=>event[1], **body}
+    'juniper'=>{'event'=>event[1]}.merge(body)
   }
 end
 
 def parserstudio_generic_delimited_comma_kv(text)
   return nil if text.bytesize > 8192
-  parts = parserstudio_split_escaped(text, ',')
+  parts = parserstudio_generic_split_escaped(text, ',')
   return nil unless parts && parts.length >= 4
   fields = {}
   prefix = ''
@@ -926,7 +966,7 @@ def parserstudio_generic_syslog_envelope(text)
   return nil unless pri_fields
 
   if pri
-    rfc=/\A(1) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
+    rfc=/\A([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
     if rfc
       timestamp=rfc[2]
       return nil unless timestamp=='-' ||
@@ -941,7 +981,7 @@ def parserstudio_generic_syslog_envelope(text)
       rescue StandardError
         return nil
       end
-      syslog={'variant'=>'rfc5424','confidence'=>'strict',**pri_fields,'version'=>'1'}
+      syslog={'variant'=>'rfc5424','confidence'=>'strict'}.merge(pri_fields).merge('version'=>rfc[1])
       syslog['timestamp']=timestamp unless timestamp=='-'
       syslog['hostname']=rfc[3] unless rfc[3]=='-'
       syslog['appname']=rfc[4] unless rfc[4]=='-'
@@ -957,24 +997,24 @@ def parserstudio_generic_syslog_envelope(text)
   before=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if before && parserstudio_generic_valid_bsd_clock(before[1],before[2],before[4]) &&
      Integer(before[3],10).between?(1900,9999)
-    syslog={'variant'=>'rfc3164_year_before_time','confidence'=>'strong',**pri_fields,
+    syslog={'variant'=>'rfc3164_year_before_time','confidence'=>'strong'}.merge(pri_fields).merge(
             'month'=>before[1],'day'=>before[2],'year'=>before[3],
-            'time'=>before[4],'hostname'=>before[5]}
+            'time'=>before[4],'hostname'=>before[5])
     return parserstudio_generic_envelope_decorate(syslog,before[6].to_s)
   end
   after=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if after && parserstudio_generic_valid_bsd_clock(after[1],after[2],after[3]) &&
      Integer(after[4],10).between?(1900,9999)
-    syslog={'variant'=>'rfc3164_year_after_time','confidence'=>'strong',**pri_fields,
+    syslog={'variant'=>'rfc3164_year_after_time','confidence'=>'strong'}.merge(pri_fields).merge(
             'month'=>after[1],'day'=>after[2],'time'=>after[3],
-            'year'=>after[4],'hostname'=>after[5]}
+            'year'=>after[4],'hostname'=>after[5])
     return parserstudio_generic_envelope_decorate(syslog,after[6].to_s)
   end
   classic=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if classic && parserstudio_generic_valid_bsd_clock(classic[1],classic[2],classic[3])
-    syslog={'variant'=>'rfc3164','confidence'=>'strict',**pri_fields,
+    syslog={'variant'=>'rfc3164','confidence'=>'strict'}.merge(pri_fields).merge(
             'month'=>classic[1],'day'=>classic[2],'time'=>classic[3],
-            'hostname'=>classic[4]}
+            'hostname'=>classic[4])
     return parserstudio_generic_envelope_decorate(syslog,classic[5].to_s)
   end
 
@@ -982,8 +1022,8 @@ def parserstudio_generic_syslog_envelope(text)
   if rfc3339
     begin
       Time.iso8601(rfc3339[1])
-      syslog={'variant'=>'rfc3339_loose','confidence'=>'strong',**pri_fields,
-              'timestamp'=>rfc3339[1],'hostname'=>rfc3339[2]}
+      syslog={'variant'=>'rfc3339_loose','confidence'=>'strong'}.merge(pri_fields).merge(
+              'timestamp'=>rfc3339[1],'hostname'=>rfc3339[2])
       return parserstudio_generic_envelope_decorate(syslog,rfc3339[3].to_s)
     rescue StandardError
       return nil
@@ -992,23 +1032,23 @@ def parserstudio_generic_syslog_envelope(text)
 
   iso=/\A(\d{4})-(\d{2})-(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(?: +(Z|[+-]\d{2}:?\d{2}))? +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if iso && parserstudio_generic_envelope_calendar(iso[1],iso[2],iso[3],iso[4],iso[5]||'+00:00')
-    syslog={'variant'=>'iso_space','confidence'=>'strong',**pri_fields,
+    syslog={'variant'=>'iso_space','confidence'=>'strong'}.merge(pri_fields).merge(
             'year'=>iso[1],'timestamp'=>"#{iso[1]}-#{iso[2]}-#{iso[3]} #{iso[4]}",
-            'time'=>iso[4],'hostname'=>iso[6]}
+            'time'=>iso[4],'hostname'=>iso[6])
     syslog['timezone']=iso[5] if iso[5]
     return parserstudio_generic_envelope_decorate(syslog,iso[7].to_s)
   end
 
   slash=/\A(\d{4})\/(\d{2})\/(\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(?: +(Z|[+-]\d{2}:?\d{2}))? +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if slash && parserstudio_generic_envelope_calendar(slash[1],slash[2],slash[3],slash[4],slash[5]||'+00:00')
-    syslog={'variant'=>'slash_date','confidence'=>'strong',**pri_fields,
+    syslog={'variant'=>'slash_date','confidence'=>'strong'}.merge(pri_fields).merge(
             'year'=>slash[1],'timestamp'=>"#{slash[1]}/#{slash[2]}/#{slash[3]} #{slash[4]}",
-            'time'=>slash[4],'hostname'=>slash[6]}
+            'time'=>slash[4],'hostname'=>slash[6])
     syslog['timezone']=slash[5] if slash[5]
     return parserstudio_generic_envelope_decorate(syslog,slash[7].to_s)
   end
 
-  return [{'variant'=>'pri_only','confidence'=>'partial',**pri_fields},rest] if pri
+  return [{'variant'=>'pri_only','confidence'=>'partial'}.merge(pri_fields),rest] if pri
   nil
 rescue StandardError
   nil
@@ -1033,7 +1073,7 @@ end
 
 def parserstudio_generic_envelope_bracket_kv(text)
   return nil unless text.start_with?('[') && text.end_with?(']') && text.bytesize<=8192
-  parts=parserstudio_split_escaped(text[1...-1],';')
+  parts=parserstudio_generic_split_escaped(text[1...-1],';')
   return nil unless parts
   fields={}
   parts.each do |raw_segment|
@@ -1061,7 +1101,7 @@ def parserstudio_generic_envelope_juniper(text)
   return nil unless body && body['tokens'].any? {
     |value| value.match?(/\A[^\/\s]+\/[0-9]{1,5}->[^\/\s]+\/[0-9]{1,5}\z/)
   }
-  {'event'=>event[1],**body}
+  {'event'=>event[1]}.merge(body)
 end
 
 def parserstudio_generic_envelope_watchguard(text)

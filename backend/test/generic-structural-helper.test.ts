@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {spawnSync} from "node:child_process";
+import {sampleProject} from "./fixture.js";
+import {compilePair} from "../src/compiler.js";
 
 const jsonFragment=readFileSync(new URL("../templates/ruby-fragment.rb.tpl",import.meta.url),"utf8");
 const jsonStart=jsonFragment.indexOf('def parserstudio_json_duplicate_keys?(raw)');
@@ -241,4 +243,148 @@ test("Generic Structural V10 Ruby helper rejects prototype-bearing keys",{skip:!
   assert.equal(runRuby("parserstudio_generic_comma_kv",comma),null);
   const spaced='device="SFW" date=2017-01-31 time=14:16:19 timezone="IST" constructor=bad status="Allow"';
   assert.equal(runRuby("parserstudio_generic_space_kv",spaced),null);
+});
+
+// Browser and native engines implement the same bounded grammar chain. A
+// profile that only the browser knows reaches the user as "passes the current
+// sample" while the generated Ruby emits a parser_err_msg record for it.
+test("Generic Structural Ruby dispatcher covers every browser profile in the same order",()=>{
+  const ts=readFileSync(new URL("../../src/genericStructural.ts",import.meta.url),"utf8");
+  const start=ts.indexOf("const fields=shortRfc5424Structured(raw)");
+  const end=ts.indexOf("return fields?{fields,errors:[]}",start);
+  assert.ok(start>=0&&end>start,"browser profile chain must remain discoverable");
+  const aliases:Record<string,string>={syslogEnvelopeStructuredFallback:"syslog_envelope_structured",
+    syslogPrefixedKeyValues:"syslog_prefix_kv"};
+  const snake=(name:string)=>aliases[name]??name.replace(/Profile$/,"")
+    .replace(/([a-z0-9])([A-Z])/g,"$1_$2").toLowerCase();
+  const browser=[...ts.slice(start,end).matchAll(/\b([A-Za-z0-9]+)\(raw\)/g)]
+    .map(match=>snake(match[1]!)).filter(name=>name!=="extract_generic_structural");
+  const dispatcher=helper.slice(helper.indexOf("def parserstudio_generic_structural(text)"),
+    helper.indexOf("# This additional grammar is selected by its own project profile"));
+  const native=[...dispatcher.matchAll(/result = parserstudio_generic_([a-z0-9_]+)\(text\)/g)]
+    .map(match=>match[1]!).filter(name=>name!=="leef2_implicit_tab");
+  assert.ok(browser.length>=20,"browser chain was not parsed: "+browser.join(","));
+  assert.deepEqual(native,browser);
+});
+
+test("Generic Structural Ruby helper parses BSD tagged and classic PID messages like the browser",{skip:!rubyAvailable},()=>{
+  const tagged="<34>Oct 11 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8";
+  const t=runRuby("parserstudio_generic_structural",tagged) as any;
+  assert.deepEqual(t.syslog,{pri:"34",month:"Oct",day:"11",time:"22:14:15",hostname:"mymachine",app_tag:"su"});
+  assert.equal(t.generic.mode,"bsd_tagged_message");
+  assert.equal(t.generic.source_raw,tagged);
+  assert.equal(t.generic.message,"'su root' failed for lonvick on /dev/pts/8");
+  const bare=runRuby("parserstudio_generic_structural","Jan 27 05:21:06 ssb FLOW_REASSEMBLE_SUCCEED: : Packet merged") as any;
+  assert.equal(bare.syslog.pri,undefined);
+  assert.equal(bare.generic.message,": Packet merged");
+  const classic="Oct 26 19:58:50 undeomni.exe[4938]: RPD_ISIS_LSPCKSUM: : IS-IS 715 LSP checksum error";
+  const c=runRuby("parserstudio_generic_structural",classic) as any;
+  assert.deepEqual(c.syslog,{month:"Oct",day:"26",time:"19:58:50",hostname:"undeomni.exe",app_tag:"RPD_ISIS_LSPCKSUM"});
+  assert.equal(c.generic.mode,"bsd_classic_pid_message");
+  assert.equal(c.generic.pid,"4938");
+  assert.equal(c.generic.message,": IS-IS 715 LSP checksum error");
+  // A bracketed PID body belongs to the separate bsd_bracket_pid_message grammar.
+  const bracket=runRuby("parserstudio_generic_structural",tagged.replace("'su root' failed","[123]: failed")) as any;
+  assert.equal(bracket.generic.mode,"bsd_bracket_pid_message");
+  // Negative controls mirror the browser guards: invalid PRI/calendar and
+  // Junos RT_FLOW session bodies are not this grammar.
+  for(const bad of [tagged.replace("<34>","<192>"),tagged.replace("Oct 11","Feb 30"),
+    tagged.replace("22:14:15","25:14:15"),
+    "Oct 11 22:14:15 mymachine RT_FLOW: RT_FLOW_SESSION_CREATE: session created",
+    "just some words without any syslog header"])
+    assert.throws(()=>runRuby("parserstudio_generic_structural",bad),/Unsupported generic structural event/,bad);
+});
+
+// Ruby < 2.7 raises TypeError ("wrong argument type String (expected Symbol)")
+// for `{**variable}` when the variable has String keys. The generated parser
+// must run on the observed Stellar Ruby 2.4.9, whatever Ruby CI happens to use.
+test("compiler templates avoid double-splat of String-keyed hashes (Ruby 2.4 dialect)",async()=>{
+  const {readdirSync}=await import("node:fs");
+  const dir=new URL("../templates/",import.meta.url);
+  const offenders:string[]=[];
+  for(const name of readdirSync(dir).filter(file=>file.endsWith(".tpl"))){
+    readFileSync(new URL(name,dir),"utf8").split("\n").forEach((line,index)=>{
+      if(/(?:\{|,)\s*\*\*[A-Za-z_]/.test(line.replace(/#.*$/,""))) offenders.push(`${name}:${index+1}`);
+    });
+  }
+  assert.deepEqual(offenders,[],"use Hash#merge instead of **variable: "+offenders.join(", "));
+});
+
+// The helper is appended to the shared fragment inside one Ruby class. A second
+// `def` of the same name silently replaces the first, so a method with a
+// different arity breaks every caller of the other definition.
+function compiledGenericRuby():string{
+  const project=sampleProject();
+  project.extraction={format:"generic_structural"} as typeof project.extraction;
+  return compilePair(project).files[1]!.content;
+}
+
+test("compiled Generic Structural artifact defines each top-level Ruby method once",()=>{
+  const names=[...compiledGenericRuby().matchAll(/^def ([A-Za-z_][A-Za-z0-9_?!]*)/gm)].map(match=>match[1]!);
+  assert.ok(names.length>50,"compiled helper methods were not found");
+  const duplicates=names.filter((name,index)=>names.indexOf(name)!==index);
+  assert.deepEqual([...new Set(duplicates)],[]);
+});
+
+test("compiled Generic Structural artifact decodes RFC5424-wrapped CEF and LEEF bodies",{skip:!rubyAvailable},()=>{
+  const probe=[
+    "require 'json'","require 'time'","require 'csv'","require 'base64'","require 'ipaddr'",
+    "class QuietLog; def method_missing(*); nil; end; def respond_to_missing?(*); true; end; end",
+    "class BaseParser; def initialize(*); end; def configure(*); end; def log; @log ||= QuietLog.new; end; end",
+    "input = JSON.parse(STDIN.read)",
+    "inner = Class.new(BaseParser) { def set_inner_class_params(*); end; def stellar_inner_class_get_parser_rule_set; @parser_rule_set; end }",
+    "inner.class_eval(input['ruby'], 'artifact', 1)",
+    "parser = inner.new",
+    "begin; parser.parse('x') { |*_| }; rescue StandardError; end",
+    "out = input['cases'].map { |raw| begin; parser.send(:parserstudio_generic_structural, raw); rescue Exception => e; {'error' => e.message}; end }",
+    "STDOUT.write(JSON.generate(out))",
+  ].join("\n");
+  const cef="<165>1 2026-10-12T01:02:03Z edge fw 122 ID - CEF:0|Synthetic|FW|1|42|Blocked|8|src=192.0.2.11 dpt=443 act=deny";
+  const leef="<165>1 2026-10-12T01:02:03Z edge fw 122 ID - LEEF:2.0|Synthetic|FW|1|501|^|src=203.0.113.8^dstPort=80^act=allow";
+  const out=spawnSync("ruby",["-e",probe],{input:JSON.stringify({ruby:compiledGenericRuby(),cases:[cef,leef]}),
+    encoding:"utf8",timeout:20000,maxBuffer:1024*1024});
+  assert.equal(out.status,0,out.stderr||String(out.error));
+  const [c,l]=JSON.parse(out.stdout) as any[];
+  assert.equal(c.error,undefined,c.error);
+  assert.equal(c.generic.mode,"syslog_envelope_cef");
+  assert.equal(c.body.src,"192.0.2.11");
+  assert.equal(c.body.act,"deny");
+  assert.equal(l.error,undefined,l.error);
+  assert.equal(l.generic.mode,"syslog_envelope_leef");
+  assert.equal(l.body.dstPort,"80");
+});
+
+function compiledEnvelope(raws:string[]):any[]{
+  const probe=[
+    "require 'json'","require 'time'","require 'csv'","require 'base64'","require 'ipaddr'",
+    "class QuietLog; def method_missing(*); nil; end; def respond_to_missing?(*); true; end; end",
+    "class BaseParser; def initialize(*); end; def configure(*); end; def log; @log ||= QuietLog.new; end; end",
+    "input = JSON.parse(STDIN.read)",
+    "inner = Class.new(BaseParser) { def set_inner_class_params(*); end; def stellar_inner_class_get_parser_rule_set; @parser_rule_set; end }",
+    "inner.class_eval(input['ruby'], 'artifact', 1)",
+    "parser = inner.new",
+    "begin; parser.parse('x') { |*_| }; rescue StandardError; end",
+    "out = input['cases'].map { |raw| begin; parser.send(:parserstudio_generic_syslog_envelope, raw); rescue Exception => e; {'error' => e.message}; end }",
+    "STDOUT.write(JSON.generate(out))",
+  ].join("\n");
+  const out=spawnSync("ruby",["-e",probe],{input:JSON.stringify({ruby:compiledGenericRuby(),cases:raws}),
+    encoding:"utf8",timeout:20000,maxBuffer:1024*1024});
+  assert.equal(out.status,0,out.stderr||String(out.error));
+  return JSON.parse(out.stdout);
+}
+
+test("Generic Structural Ruby envelope accepts the same RFC5424 VERSION digits as the browser and keeps the value",{skip:!rubyAvailable},()=>{
+  // Browser grammar (src/syslogEnvelope.ts parseRfc5424): VERSION is ([1-9]\d{0,2}) and is kept as written.
+  const browser=readFileSync(new URL("../../src/syslogEnvelope.ts",import.meta.url),"utf8");
+  assert.ok(browser.includes("/^([1-9]\\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/"),
+    "the browser RFC5424 VERSION grammar changed; update the Ruby helper and this test together");
+  const good="<165>2 2026-10-12T01:02:03Z edge fw 122 ID - hello";
+  const bad=["<165>0 2026-10-12T01:02:03Z edge fw 122 ID - x","<165>01 2026-10-12T01:02:03Z edge fw 122 ID - x"];
+  const [g,...b]=compiledEnvelope([good,...bad]);
+  assert.ok(Array.isArray(g),"Ruby envelope must parse VERSION 2 like the browser");
+  assert.equal(g[0].variant,"rfc5424");
+  assert.equal(g[0].version,"2");
+  assert.equal(g[1],"hello");
+  // Negative controls: VERSION 0 and leading-zero VERSION are not RFC5424.
+  b.forEach((rb,i)=>assert.ok(!(Array.isArray(rb)&&rb[0].variant==="rfc5424"),bad[i]));
 });

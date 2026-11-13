@@ -439,8 +439,11 @@ def parserstudio_syslog_rfc3164(text, settings)
     message = match[8]
   end
   format = settings['syslogBodyFormat'] || 'raw'
+  # The mixed router classifies the body itself and rejects anything that is
+  # not an explicitly allowlisted structured family, so it may request a raw
+  # tagless parse. Standalone RFC3164 still requires a declared body format.
   raise ArgumentError, 'Tagless RFC3164 requires an explicit structured body' if
-    tagless && !%w[json kv cef leef regex].include?(format)
+    tagless && !settings['taglessStructuredRouter'] && !%w[json kv cef leef regex].include?(format)
   case format
   when 'raw'
     record['message'] = message
@@ -473,7 +476,7 @@ def parserstudio_mixed(text, settings)
       'cef'
     elsif text.start_with?('LEEF:')
       'leef'
-    elsif text.match?(/\A<\d{1,3}>[A-Z][a-z]{2} /)
+    elsif text.match?(/\A(?:<\d{1,3}>)?[A-Z][a-z]{2} +\d{1,2} +\d{2}:/)
       # Strict RFC3164 tag/body grammar is validated below; year and zone
       # are intentionally never inferred. All other malformed envelopes fail.
       'rfc3164_envelope'
@@ -495,7 +498,7 @@ def parserstudio_mixed(text, settings)
   if family == 'rfc3164_envelope'
     # Reuse the exact yearless RFC3164 TAG: parser, then decode only
     # explicitly allowlisted CEF/LEEF/KV bodies. No body-to-KV fallback.
-    syslog = parserstudio_syslog_rfc3164(text, {'syslogBodyFormat'=>'raw'})
+    syslog = parserstudio_syslog_rfc3164(text, {'syslogBodyFormat'=>'raw', 'taglessStructuredRouter'=>true})
     message = syslog.delete('message')
     branch = if message && message.start_with?('CEF:')
       'rfc3164_cef'
