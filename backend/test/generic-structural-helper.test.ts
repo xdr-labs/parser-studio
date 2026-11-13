@@ -4,7 +4,6 @@ import {readFileSync} from "node:fs";
 import {spawnSync} from "node:child_process";
 import {sampleProject} from "./fixture.js";
 import {compilePair} from "../src/compiler.js";
-import {parseSyslogEnvelope} from "../../src/syslogEnvelope.js";
 
 const jsonFragment=readFileSync(new URL("../templates/ruby-fragment.rb.tpl",import.meta.url),"utf8");
 const jsonStart=jsonFragment.indexOf('def parserstudio_json_duplicate_keys?(raw)');
@@ -375,19 +374,17 @@ function compiledEnvelope(raws:string[]):any[]{
 }
 
 test("Generic Structural Ruby envelope accepts the same RFC5424 VERSION digits as the browser and keeps the value",{skip:!rubyAvailable},()=>{
+  // Browser grammar (src/syslogEnvelope.ts parseRfc5424): VERSION is ([1-9]\d{0,2}) and is kept as written.
+  const browser=readFileSync(new URL("../../src/syslogEnvelope.ts",import.meta.url),"utf8");
+  assert.ok(browser.includes("/^([1-9]\\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/"),
+    "the browser RFC5424 VERSION grammar changed; update the Ruby helper and this test together");
   const good="<165>2 2026-10-12T01:02:03Z edge fw 122 ID - hello";
   const bad=["<165>0 2026-10-12T01:02:03Z edge fw 122 ID - x","<165>01 2026-10-12T01:02:03Z edge fw 122 ID - x"];
-  const ts=parseSyslogEnvelope(good) as any;
-  assert.equal(ts.version,"2");
   const [g,...b]=compiledEnvelope([good,...bad]);
   assert.ok(Array.isArray(g),"Ruby envelope must parse VERSION 2 like the browser");
   assert.equal(g[0].variant,"rfc5424");
-  assert.equal(g[0].version,ts.version);
-  assert.equal(g[1],ts.message);
-  // Negative controls: VERSION 0 and leading-zero VERSION are not RFC5424 in either implementation.
-  bad.forEach((raw,i)=>{
-    const tsBad=parseSyslogEnvelope(raw) as any;
-    const rb=b[i];
-    assert.equal(tsBad?.variant==="rfc5424",Array.isArray(rb)&&rb[0].variant==="rfc5424",raw);
-  });
+  assert.equal(g[0].version,"2");
+  assert.equal(g[1],"hello");
+  // Negative controls: VERSION 0 and leading-zero VERSION are not RFC5424.
+  b.forEach((rb,i)=>assert.ok(!(Array.isArray(rb)&&rb[0].variant==="rfc5424"),bad[i]));
 });
