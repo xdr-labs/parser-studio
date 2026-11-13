@@ -11,6 +11,7 @@ import {
   SYSLOG_HEADER_ALTERNATIVES,
   SYSLOG_HEADER_RULES,
   SYSLOG_HEADER_SEMANTICS,
+  SYSLOG_HEADER_TOKENS,
   type SyslogHeaderRuleName,
 } from './syslogHeaderGrammar.generated';
 
@@ -30,6 +31,18 @@ export function matchHeaderRule(rule: SyslogHeaderRuleName, text: string): Heade
   const captures: Record<string, string | undefined> = {};
   for (const name of SYSLOG_HEADER_RULES[rule].captures) captures[name] = match.groups?.[name];
   return captures;
+}
+
+const compiledTokens = new Map<string, RegExp>();
+
+/** True when the whole text is one contract token (for example a STRUCTURED_BODY). */
+export function matchesHeaderToken(token: keyof typeof SYSLOG_HEADER_TOKENS, text: string): boolean {
+  let expression = compiledTokens.get(token);
+  if (!expression) {
+    expression = new RegExp('^(?:' + SYSLOG_HEADER_TOKENS[token] + ')$');
+    compiledTokens.set(token, expression);
+  }
+  return expression.test(text);
 }
 
 export type Rfc3164Rule = (typeof SYSLOG_HEADER_ALTERNATIVES.rfc3164)[number];

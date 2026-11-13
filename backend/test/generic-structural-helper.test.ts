@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {spawnSync} from "node:child_process";
 import {sampleProject} from "./fixture.js";
-import {compilePair} from "../src/compiler.js";
+import {compilePair,injectHeaderGrammar} from "../src/compiler.js";
 
-const jsonFragment=readFileSync(new URL("../templates/ruby-fragment.rb.tpl",import.meta.url),"utf8");
+const jsonFragment=injectHeaderGrammar(readFileSync(new URL("../templates/ruby-fragment.rb.tpl",import.meta.url),"utf8"));
 const jsonStart=jsonFragment.indexOf('def parserstudio_json_duplicate_keys?(raw)');
 const jsonEnd=jsonFragment.indexOf('\ndef parserstudio_unescape(text)',jsonStart);
 assert.ok(jsonStart>=0&&jsonEnd>jsonStart,'The compiled JSON duplicate guard must remain available');
@@ -13,7 +13,7 @@ const sharedJsonDecoder=jsonFragment.slice(jsonStart,jsonEnd);
 // Standalone native helper acceptance uses the exact shared parser code
 // from the compiled Ruby fragment, not a permissive JSON.parse substitute.
 const helper=sharedJsonDecoder+'\n'+
-  readFileSync(new URL("../templates/generic-structural-helper.rb.tpl",import.meta.url),"utf8");
+  injectHeaderGrammar(readFileSync(new URL("../templates/generic-structural-helper.rb.tpl",import.meta.url),"utf8"));
 const rubyAvailable=spawnSync("ruby",["-v"],{encoding:"utf8"}).status===0;
 
 function runRuby(method:string,raw:string):unknown{
@@ -373,18 +373,20 @@ function compiledEnvelope(raws:string[]):any[]{
   return JSON.parse(out.stdout);
 }
 
-test("Generic Structural Ruby envelope accepts the same RFC5424 VERSION digits as the browser and keeps the value",{skip:!rubyAvailable},()=>{
-  // Browser grammar (src/syslogEnvelope.ts parseRfc5424): VERSION is ([1-9]\d{0,2}) and is kept as written.
-  const browser=readFileSync(new URL("../../src/syslogEnvelope.ts",import.meta.url),"utf8");
-  assert.ok(browser.includes("/^([1-9]\\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/"),
-    "the browser RFC5424 VERSION grammar changed; update the Ruby helper and this test together");
-  const good="<165>2 2026-10-12T01:02:03Z edge fw 122 ID - hello";
-  const bad=["<165>0 2026-10-12T01:02:03Z edge fw 122 ID - x","<165>01 2026-10-12T01:02:03Z edge fw 122 ID - x"];
+test("Generic Structural Ruby envelope follows the contract RFC5424 VERSION policy",{skip:!rubyAvailable},()=>{
+  // One policy for every consumer: contracts/syslog-header-grammar.v1.json lists the supported VERSION
+  // values (semantics.rfc5424SupportedVersions). The browser reads the same list through
+  // src/grammar/syslogHeader.ts; scripts/verification/semantic-oracle.ts compares both with the goldens.
+  const contract=JSON.parse(readFileSync(new URL("../../contracts/syslog-header-grammar.v1.json",import.meta.url),"utf8"));
+  assert.deepEqual(contract.semantics.rfc5424SupportedVersions,["1"]);
+  const good="<165>1 2026-10-12T01:02:03Z edge fw 122 ID - hello";
+  // VERSION 2 and 12 are syntactically valid but undefined by RFC 5424; 0 and 01 are not a VERSION at all.
+  const bad=["<165>2 2026-10-12T01:02:03Z edge fw 122 ID - x","<165>12 2026-10-12T01:02:03Z edge fw 122 ID - x",
+    "<165>0 2026-10-12T01:02:03Z edge fw 122 ID - x","<165>01 2026-10-12T01:02:03Z edge fw 122 ID - x"];
   const [g,...b]=compiledEnvelope([good,...bad]);
-  assert.ok(Array.isArray(g),"Ruby envelope must parse VERSION 2 like the browser");
+  assert.ok(Array.isArray(g),"Ruby envelope must parse a supported VERSION");
   assert.equal(g[0].variant,"rfc5424");
-  assert.equal(g[0].version,"2");
+  assert.equal(g[0].version,"1");
   assert.equal(g[1],"hello");
-  // Negative controls: VERSION 0 and leading-zero VERSION are not RFC5424.
   b.forEach((rb,i)=>assert.ok(!(Array.isArray(rb)&&rb[0].variant==="rfc5424"),bad[i]));
 });

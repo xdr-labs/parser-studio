@@ -2,6 +2,7 @@ import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
 import {jsonSourceValueValid} from './jsonSourceSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
+import { matchRfc3164Header, matchesHeaderToken } from './grammar/syslogHeader';
 import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -17,9 +18,11 @@ export function detectStructuredFamily(input: string): StructuredFamily | null {
   if (/^LEEF:(?:1\.0|2\.0)\|/.test(input)) return 'leef';
   if (/^<\d{1,3}>[1-9]\d? \S+ \S+ \S+ /.test(input)) return 'syslog_rfc5424';
   if (/^<\d{1,3}>[A-Z][a-z]{2} +\d{1,2} +\d{2}:\d{2}:\d{2} /.test(input)) return 'syslog_rfc3164';
-  // Bounded tagless BSD security envelope: timestamp + host followed
-  // immediately by an explicit structured body. Free-form prose is excluded.
-  if (/^(?:<\d{1,3}>)?[A-Z][a-z]{2} +\d{1,2} +\d{2}:\d{2}:\d{2} +[!-~]{1,255} +(?:\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]{0,95}=)/.test(input))
+  // Bounded BSD security envelope without TAG: timestamp, an optional host
+  // and then an explicit structured body. Free-form prose is excluded. The
+  // header grammar comes from contracts/syslog-header-grammar.v1.json.
+  const bsd = matchRfc3164Header(input);
+  if (bsd.ok && bsd.rule !== 'rfc3164_tagged' && matchesHeaderToken('STRUCTURED_BODY', bsd.message))
     return 'syslog_rfc3164';
   return null;
 }
@@ -159,31 +162,24 @@ function parsedBody(message:string,mode:'raw'|'json'|'kv'|'cef'|'leef'|'regex',r
   extractStructuredFamily(message,mode);
  return result.errors.length?result:{fields:{body:result.fields},errors:[]};
 }
-const DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,
- Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
 function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'regex'|'auto',regexPattern?:string):
  StructuredExtraction{
- const tagged=/^<(\d{1,3})>([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}):(\d{2}):(\d{2}) +([!-~]{1,255}) +([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?: +(.+)$/.exec(input);
- const tagless=tagged?null:/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}):(\d{2}):(\d{2}) +([!-~]{1,255}) +(.+)$/.exec(input);
- const match=tagged??tagless;
- if(!match)return failure('RFC3164 bounded BSD security header required');
- const priority=match[1]===undefined?undefined:Number(match[1]);
- const [month,day,hour,minute,second]=[
-  match[2]!,Number(match[3]),Number(match[4]),Number(match[5]),Number(match[6])];
- if((priority!==undefined&&priority>191)||!DAYS[month]||day<1||day>DAYS[month]||
-   hour>23||minute>59||second>59)
-  return failure('RFC3164 PRI or calendar value is invalid');
- const unzoned=month+' '+String(day).padStart(2,' ')+
-   ' '+match[4]+':'+match[5]+':'+match[6];
+ // Header grammar, capture names, PRI range and calendar come from
+ // contracts/syslog-header-grammar.v1.json (src/grammar/syslogHeader.ts).
+ const header=matchRfc3164Header(input);
+ if(!header.ok)return failure(header.reason==='NO_MATCH'
+  ?'RFC3164 bounded BSD security header required'
+  :'RFC3164 PRI or calendar value is invalid');
+ const tagged=header.rule==='rfc3164_tagged';
  const fields:Record<string,unknown>={
-  ...(priority!==undefined?{syslog_pri:priority}:{}),
-  syslog_timestamp:unzoned,syslog_time_policy:'YEAR_AND_ZONE_UNKNOWN',
-  syslog_hostname:match[7],
-  ...(tagged?{syslog_appname:match[8],...(match[9]?{syslog_procid:match[9]}:{})}:{}),
+  ...(header.pri!==undefined?{syslog_pri:header.pri}:{}),
+  syslog_timestamp:header.timestamp,syslog_time_policy:'YEAR_AND_ZONE_UNKNOWN',
+  ...(header.hostname!==undefined?{syslog_hostname:header.hostname}:{}),
+  ...(tagged?{syslog_appname:header.tag,...(header.procid?{syslog_procid:header.procid}:{})}:{}),
  };
- const message=tagged?match[10]!:match[8]!;
+ const message=header.message;
  const mode=choice==='auto'?deterministicBody(message):choice;
- if(tagless&&mode==='raw')
+ if(!tagged&&mode==='raw')
   return failure('Tagless RFC3164 requires an explicit structured security body');
  const body=parsedBody(message,mode,regexPattern);
  return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};

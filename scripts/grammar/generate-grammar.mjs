@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 export const CONTRACT_PATH = 'contracts/syslog-header-grammar.v1.json';
 export const GENERATED_TS_PATH = 'src/grammar/syslogHeaderGrammar.generated.ts';
+export const GENERATED_BACKEND_PATH = 'backend/src/syslog-header-grammar.generated.ts';
 export const DIALECTS = Object.freeze(['js', 'ruby', 'python']);
 
 const ALLOWED_ESCAPES = new Set(['\\', '{', '}', '[', ']', '(', ')', '|', '.', '+', '*', '?', '^', '$', 'r', 'n', 't', '-']);
@@ -153,6 +154,7 @@ export function generateTypeScript(contractText) {
     `export const GRAMMAR_CONTRACT_REVISION = ${contract.revision};`,
     'export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }',
     `export const SYSLOG_HEADER_RULES = ${JSON.stringify(rules, null, 2)} as const satisfies Record<string, CompiledHeaderRule>;`,
+    `export const SYSLOG_HEADER_TOKENS = ${JSON.stringify(Object.fromEntries(Object.entries(contract.tokens).map(([name, token]) => [name, token.pattern])), null, 2)} as const;`,
     `export const SYSLOG_HEADER_ALTERNATIVES = ${JSON.stringify(contract.alternatives, null, 2)} as const;`,
     `export const SYSLOG_HEADER_SEMANTICS = ${JSON.stringify(contract.semantics, null, 2)} as const;`,
     'export type SyslogHeaderRuleName = keyof typeof SYSLOG_HEADER_RULES;',
@@ -160,10 +162,54 @@ export function generateTypeScript(contractText) {
   ].join('\n');
 }
 
+/**
+ * Generated backend module: the Ruby-dialect grammar the compiler injects into
+ * the Ruby templates. Each key is a placeholder that appears in a template; the
+ * value is Ruby source text.
+ */
+export function rubyGrammarPlaceholders(contractText) {
+  const contract = JSON.parse(contractText);
+  validateContract(contract);
+  const placeholders = {};
+  for (const name of Object.keys(contract.rules))
+    placeholders[`__PS_GRAMMAR_RX_${name.toUpperCase()}__`] = compileRule(contract, name, 'ruby').source;
+  // Ordered alternatives as a Ruby array of [rule name, Regexp], so the order is contract data too.
+  for (const [name, rules] of Object.entries(contract.alternatives))
+    placeholders[`__PS_GRAMMAR_${name.toUpperCase()}_ALTERNATIVES__`] =
+      '[' + rules.map(rule => `['${rule}', /${compileRule(contract, rule, 'ruby').source}/]`).join(', ') + ']';
+  const semantics = contract.semantics;
+  for (const [month, days] of Object.entries(semantics.bsdMonthDays))
+    if (!/^[A-Z][a-z]{2}$/.test(month) || !Number.isInteger(days)) throw new Error('GRAMMAR_SEMANTICS_INVALID month');
+  for (const version of semantics.rfc5424SupportedVersions)
+    if (!/^[1-9][0-9]{0,2}$/.test(version)) throw new Error('GRAMMAR_SEMANTICS_INVALID version');
+  placeholders.__PS_GRAMMAR_PRI_MAX__ = String(semantics.priMax);
+  placeholders.__PS_GRAMMAR_BSD_MONTH_DAYS__ = '{' + Object.entries(semantics.bsdMonthDays).map(([month, days]) => `'${month}'=>${days}`).join(',') + '}';
+  placeholders.__PS_GRAMMAR_RFC5424_VERSIONS__ = '[' + semantics.rfc5424SupportedVersions.map(version => `'${version}'`).join(',') + ']';
+  return placeholders;
+}
+
+export function generateBackendTypeScript(contractText) {
+  const contract = JSON.parse(contractText);
+  const placeholders = rubyGrammarPlaceholders(contractText);
+  return [
+    '// GENERATED FILE - DO NOT EDIT.',
+    `// Source: ${CONTRACT_PATH} (revision ${contract.revision}); regenerate with`,
+    '//   node scripts/grammar/generate-grammar.mjs --write',
+    '// CI runs the generator with --verify, so a hand edit of this file fails the gate.',
+    `export const GRAMMAR_CONTRACT_SHA256 = ${JSON.stringify(contractSha256(contractText))};`,
+    '/** Template placeholder -> Ruby source text (Ruby 2.4 compatible). */',
+    `export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = ${JSON.stringify(placeholders, null, 2)};`,
+    '',
+  ].join('\n');
+}
+
 function main(argv) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const contractText = readFileSync(resolve(root, CONTRACT_PATH), 'utf8');
-  const outputs = { [GENERATED_TS_PATH]: generateTypeScript(contractText) };
+  const outputs = {
+    [GENERATED_TS_PATH]: generateTypeScript(contractText),
+    [GENERATED_BACKEND_PATH]: generateBackendTypeScript(contractText),
+  };
   if (argv.includes('--write')) {
     for (const [path, content] of Object.entries(outputs)) writeFileSync(resolve(root, path), content);
     process.stdout.write(`GRAMMAR_GENERATED files=${Object.keys(outputs).length} contract=${contractSha256(contractText).slice(0, 16)}\n`);

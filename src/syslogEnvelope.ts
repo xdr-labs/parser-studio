@@ -1,3 +1,5 @@
+import { isSupportedRfc5424Version } from './grammar/syslogHeader';
+
 export type SyslogEnvelopeVariant=
   'rfc5424'|
   'rfc3164'|
@@ -140,6 +142,9 @@ function parseRfc5424(pri:string|undefined,rest:string):SyslogEnvelope|null{
   if(!match)return null;
   const version=match[1]!,timestamp=match[2]!,hostname=match[3]!,appname=match[4]!,
     procid=match[5]!,msgid=match[6]!;
+  // One VERSION policy for every consumer (contracts/syslog-header-grammar.v1.json):
+  // an RFC 5424 shaped header with an unsupported VERSION is not an RFC 5424 envelope.
+  if(!isSupportedRfc5424Version(version))return null;
   if(!(timestamp==='-'||validIsoTimestamp(timestamp,true))||
      !fieldTokenValid(hostname,255)||!fieldTokenValid(appname,48)||
      !fieldTokenValid(procid,128)||!fieldTokenValid(msgid,32))return null;

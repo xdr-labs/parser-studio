@@ -967,7 +967,9 @@ def parserstudio_generic_syslog_envelope(text)
 
   if pri
     rfc=/\A([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
-    if rfc
+    # One VERSION policy for every consumer (contracts/syslog-header-grammar.v1.json):
+    # an RFC 5424 shaped header with an unsupported VERSION is not an RFC 5424 envelope.
+    if rfc && __PS_GRAMMAR_RFC5424_VERSIONS__.include?(rfc[1])
       timestamp=rfc[2]
       return nil unless timestamp=='-' ||
         (timestamp.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})\z/) &&

@@ -343,37 +343,33 @@ end
 
 # RFC5424 strict profile; multiline and arbitrary/oversized SD remain unsupported.
 def parserstudio_syslog_rfc5424(text, settings)
-  pattern = /\A<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)\z/
-  match = pattern.match(text)
+  # Header grammar generated from contracts/syslog-header-grammar.v1.json.
+  # Do not edit this expression: change the contract and regenerate. The
+  # contract bounds every HEADER token to printable US-ASCII and its RFC length.
+  match = /__PS_GRAMMAR_RX_RFC5424__/.match(text)
   raise ArgumentError, 'Unsupported RFC5424 syslog header' unless match
-  # This export implements the RFC5424 VERSION=1 subset only. Reject all
-  # future/unknown versions before normalization can imply support.
-  raise ArgumentError, 'Unsupported RFC5424 version' unless match[2] == '1'
-  # RFC5424 printable US-ASCII HEADER fields with bounded octet lengths;
-  # "-" is a valid NILVALUE within those bounds.
-  {4 => 255, 5 => 48, 6 => 128, 7 => 32}.each do |field, maximum|
-    token = match[field]
-    raise ArgumentError, 'Invalid RFC5424 header token' unless
-      token.bytesize <= maximum && token.match?(/\A[!-~]+\z/)
-  end
-  priority = Integer(match[1], 10)
-  raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= 191
+  header = Hash[match.names.zip(match.captures)]
+  # Only the VERSION values the contract lists are parsed. The layout of any
+  # other version is unknown and must not be read as version 1.
+  raise ArgumentError, 'Unsupported RFC5424 version' unless __PS_GRAMMAR_RFC5424_VERSIONS__.include?(header['version'])
+  priority = Integer(header['pri'], 10)
+  raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= __PS_GRAMMAR_PRI_MAX__
   # RFC5424 timestamp is NILVALUE or explicit offset-bearing RFC3339.
   # Reject malformed metadata before downstream optional field selection.
-  if match[3] != '-'
+  if header['timestamp'] != '-'
     raise ArgumentError, 'Invalid RFC5424 timestamp' unless
-      match[3].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
-    Time.iso8601(match[3])
+      header['timestamp'].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
+    Time.iso8601(header['timestamp'])
   end
-  structured_data, message, sd_elements = parserstudio_rfc5424_sd(match[8])
+  structured_data, message, sd_elements = parserstudio_rfc5424_sd(header['rest'])
   record = {
     'syslog_pri' => priority,
-    'syslog_version' => Integer(match[2], 10),
-    'syslog_timestamp' => match[3],
-    'syslog_hostname' => match[4],
-    'syslog_appname' => match[5],
-    'syslog_procid' => match[6],
-    'syslog_msgid' => match[7],
+    'syslog_version' => Integer(header['version'], 10),
+    'syslog_timestamp' => header['timestamp'],
+    'syslog_hostname' => header['hostname'],
+    'syslog_appname' => header['appname'],
+    'syslog_procid' => header['procid'],
+    'syslog_msgid' => header['msgid'],
     'syslog_structured_data' => structured_data
   }
   record['syslog_sd'] = sd_elements unless sd_elements.empty?
@@ -403,41 +399,49 @@ end
 # Unlike RFC5424, RFC3164's month/day/time has NO year or timezone.
 # Never synthesize either, even when the host clock happens to be available.
 def parserstudio_syslog_rfc3164(text, settings)
-  tagged = /\A<(\d{1,3})>([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?:[ ]+(.+)\z/.match(text)
-  # Some security appliances emit the BSD timestamp + host header without PRI
-  # and TAG, followed immediately by an explicit structured body. This remains
-  # a bounded grammar: raw/prose bodies are never accepted by the tagless path.
-  tagless = tagged.nil? ? /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+(.+)\z/.match(text) : nil
-  match = tagged || tagless
+  # Header grammar generated from contracts/syslog-header-grammar.v1.json.
+  # The expressions and their order are contract data: change the contract and
+  # regenerate. The tagged rule is tried before the tagless rule. A line whose
+  # HOSTNAME is omitted matches only the hostless rule, so its first key=value
+  # field stays in the body and is never taken as the host name.
+  rule = nil
+  match = nil
+  __PS_GRAMMAR_RFC3164_ALTERNATIVES__.each do |name, expression|
+    match = expression.match(text)
+    if match
+      rule = name
+      break
+    end
+  end
   raise ArgumentError, 'Unsupported RFC3164 header' unless match
-  priority = match[1] ? Integer(match[1], 10) : nil
-  raise ArgumentError, 'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)
-  months = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
-    'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
-  days = months[match[2]]
-  day = Integer(match[3], 10)
-  hour = Integer(match[4], 10)
-  minute = Integer(match[5], 10)
-  second = Integer(match[6], 10)
+  header = Hash[match.names.zip(match.captures)]
+  priority = header['pri'] ? Integer(header['pri'], 10) : nil
+  raise ArgumentError, 'RFC3164 PRI out of range' if priority && !priority.between?(0, __PS_GRAMMAR_PRI_MAX__)
+  months = __PS_GRAMMAR_BSD_MONTH_DAYS__
+  days = months[header['month']]
+  day = Integer(header['day'], 10)
+  hour = Integer(header['hour'], 10)
+  minute = Integer(header['minute'], 10)
+  second = Integer(header['second'], 10)
   raise ArgumentError, 'RFC3164 calendar value is invalid' unless days &&
     day.between?(1, days) && hour.between?(0, 23) &&
     minute.between?(0, 59) && second.between?(0, 59)
   # The year may be leap-year or non-leap-year: Feb 29 is not fabricated.
   # An operator must supply a separate explicit timestamp policy to resolve it.
-  timestamp = "#{match[2]} #{day.to_s.rjust(2, ' ')} #{match[4]}:#{match[5]}:#{match[6]}"
+  timestamp = "#{header['month']} #{day.to_s.rjust(2, ' ')} #{header['hour']}:#{header['minute']}:#{header['second']}"
   record = {
     'syslog_timestamp' => timestamp,
-    'syslog_time_policy' => 'YEAR_AND_ZONE_UNKNOWN',
-    'syslog_hostname' => match[7]
+    'syslog_time_policy' => 'YEAR_AND_ZONE_UNKNOWN'
   }
+  record['syslog_hostname'] = header['hostname'] if header['hostname']
   record['syslog_pri'] = priority if priority
+  tagged = rule == 'rfc3164_tagged'
+  tagless = !tagged
   if tagged
-    record['syslog_appname'] = match[8]
-    record['syslog_procid'] = match[9] if match[9]
-    message = match[10]
-  else
-    message = match[8]
+    record['syslog_appname'] = header['tag']
+    record['syslog_procid'] = header['procid'] if header['procid']
   end
+  message = header['message']
   format = settings['syslogBodyFormat'] || 'raw'
   # The mixed router classifies the body itself and rejects anything that is
   # not an explicitly allowlisted structured family, so it may request a raw
