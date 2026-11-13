@@ -129,16 +129,19 @@ function parseStructuredData(input:string):{structuredData:string;message:string
   return {structuredData,message:rest.trimStart()};
 }
 
+// Every expression below that captures the message with '.' carries the dotAll flag: the input never
+// contains CR or LF (parseSyslogEnvelope rejects them), and without the flag '.' would stop at U+2028,
+// which the Ruby export (/m) reads as ordinary message text.
 function decorateMessage(envelope:SyslogEnvelope):SyslogEnvelope{
   const body=envelope.message;
-  const tag=/^([A-Za-z0-9_.@\/-]{1,128})(?:\[(\d{1,10})\])?:[ \t]*(.*)$/.exec(body);
+  const tag=/^([A-Za-z0-9_.@\/-]{1,128})(?:\[(\d{1,10})\])?:[ \t]*(.*)$/s.exec(body);
   if(!tag||tag[1]==='CEF'||tag[1]==='LEEF')return envelope;
   return {...envelope,appname:tag[1],...(tag[2]?{procid:tag[2]}:{}),message:tag[3]!};
 }
 
 function parseRfc5424(pri:string|undefined,rest:string):SyslogEnvelope|null{
   if(pri===undefined)return null;
-  const match=/^([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/.exec(rest);
+  const match=/^([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/s.exec(rest);
   if(!match)return null;
   const version=match[1]!,timestamp=match[2]!,hostname=match[3]!,appname=match[4]!,
     procid=match[5]!,msgid=match[6]!;
@@ -169,7 +172,7 @@ function withPri(pri:string|undefined):Pick<SyslogEnvelope,'pri'|'facility'|'sev
 }
 
 function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
-  const yearBefore=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  const yearBefore=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/s.exec(rest);
   if(yearBefore&&validBsdTimestamp(yearBefore[1]!,yearBefore[2]!,yearBefore[4]!)&&
      Number(yearBefore[3])>=1900&&Number(yearBefore[3])<=9999){
     return decorateMessage({
@@ -179,7 +182,7 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
-  const yearAfter=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  const yearAfter=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?$/s.exec(rest);
   if(yearAfter&&validBsdTimestamp(yearAfter[1]!,yearAfter[2]!,yearAfter[3]!)&&
      Number(yearAfter[4])>=1900&&Number(yearAfter[4])<=9999){
     return decorateMessage({
@@ -189,7 +192,7 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
-  const classic=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  const classic=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/s.exec(rest);
   if(classic&&validBsdTimestamp(classic[1]!,classic[2]!,classic[3]!)){
     return decorateMessage({
       variant:'rfc3164',confidence:'strict',...withPri(pri),
@@ -200,7 +203,7 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
 }
 
 function parseRfc3339Loose(pri:string|undefined,rest:string):SyslogEnvelope|null{
-  const match=/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  const match=/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})?) +(\S{1,255})(?: +(.*))?$/s.exec(rest);
   if(!match||!validIsoTimestamp(match[1]!,false))return null;
   return decorateMessage({
     variant:'rfc3339_loose',confidence:'strong',...withPri(pri),
@@ -212,7 +215,7 @@ function parseSeparatedDate(pri:string|undefined,rest:string,slash:boolean):Sysl
   const datePattern=slash?'(\\d{4})\\/(\\d{2})\\/(\\d{2})':'(\\d{4})-(\\d{2})-(\\d{2})';
   const match=new RegExp(
     '^'+datePattern+' +(\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?)'+
-    '(?: +(Z|[+-]\\d{2}:?\\d{2}))? +(\\S{1,255})(?: +(.*))?$'
+    '(?: +(Z|[+-]\\d{2}:?\\d{2}))? +(\\S{1,255})(?: +(.*))?$','s'
   ).exec(rest);
   if(!match)return null;
   const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
@@ -226,7 +229,7 @@ function parseSeparatedDate(pri:string|undefined,rest:string,slash:boolean):Sysl
 }
 
 function parseColonDate(pri:string|undefined,rest:string):SyslogEnvelope|null{
-  const match=/^(\d{4}):(\d{2}):(\d{2})-(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/.exec(rest);
+  const match=/^(\d{4}):(\d{2}):(\d{2})-(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?$/s.exec(rest);
   if(!match||!validCalendarDate(Number(match[1]),Number(match[2]),Number(match[3]))||!validClock(match[4]!))return null;
   return decorateMessage({
     variant:'colon_date',confidence:'strong',...withPri(pri),

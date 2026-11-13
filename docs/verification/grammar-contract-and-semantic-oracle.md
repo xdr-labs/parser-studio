@@ -82,18 +82,32 @@ engines and the gate fails when it starts to pass.
 | `src/syslogEnvelope.ts`, Generic Structural Ruby helper | VERSION policy from the contract; the loose envelope expressions are still hand-written |
 | `src/genericStructural.ts`, the rest of the Generic Structural helper, `runtime/multipass/*.py` | hand-written, counted by the ratchet (122 copies, down from 148) |
 
-Resolved by the contract: F-1 (field loss when HOSTNAME is omitted), F-2 (one
-RFC 5424 VERSION policy), F-3 (U+2028 inside a value). The corresponding
-goldens and property variants are ordinary must-pass cases; the fault
-`contract-hostname-any-printable` re-introduces F-1 in the contract and must be
-reported by both executors.
+Resolved: F-1 (field loss when HOSTNAME is omitted), F-2 (one RFC 5424 VERSION
+policy, including `detectStructuredFamily`), F-3 (U+2028 inside a value, on the
+structured path and in the message of the generic envelope), F-4 (RFC 5424
+TIMESTAMP with an impossible day: the browser rejected it, Ruby `Time.iso8601`
+rolled it over), F-5 (a TAG such as `kernel:` read as HOSTNAME when HOSTNAME is
+omitted). F-4 and F-5 were found by the independent audit of 2026-11-13. The
+corresponding goldens and property variants are ordinary must-pass cases; the
+faults `contract-hostname-any-printable` and `contract-hostname-trailing-colon`
+re-introduce F-1 and F-5 in the contract and must be reported by both
+executors. The native oracle runs every case through both Ruby templates
+(`ruby-fragment` and `ruby-forwarder-family`).
 
-Known remaining difference, found by the Chromium journey on 2026-11-13: the
-Auto Parser analysis path tokenizes a key=value body with a whitespace notion
-that includes U+2028, so a value that contains U+2028 is shown as "needs
-attention" instead of parsed. The user is blocked honestly, no wrong field is
-produced. The key=value body grammar is the next grammar to move into the
-contract.
+Known differences that remain (evidence: independent audit, 2026-11-13):
+
+- Python Multi-Pass (`runtime/multipass/security_envelope.py`) still has F-1:
+  it is not a contract consumer yet (W5).
+- Auto Parser front door, tagged path and key=value validation: a value that
+  contains U+2028 is reported as malformed (honest block, W3/W4).
+- Generic envelope, browser versus Ruby: 34 of 3,897 audit lines differ - a
+  host token that contains U+2028 (`\S` differs between the runtimes) and BOM
+  or double-space handling in an RFC 5424 message (W4).
+- The oracle covers the structured RFC 3164 / RFC 5424 path with a key=value
+  body. JSON, CEF, LEEF and raw bodies, the mixed router and the Generic
+  Structural extractor are not in it yet (W4, W6).
+- The duplication ratchet counts exact literal copies; a re-spelled copy is not
+  counted.
 
 ## Rules for adding or changing a grammar or a mapping
 

@@ -357,8 +357,12 @@ def parserstudio_syslog_rfc5424(text, settings)
   # RFC5424 timestamp is NILVALUE or explicit offset-bearing RFC3339.
   # Reject malformed metadata before downstream optional field selection.
   if header['timestamp'] != '-'
-    raise ArgumentError, 'Invalid RFC5424 timestamp' unless
-      header['timestamp'].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
+    stamp = /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-](\d{2}):(\d{2}))\z/.match(header['timestamp'])
+    # Time.iso8601 rolls an impossible day over (Feb 30 becomes Mar 2); the browser rejects it, so does this.
+    raise ArgumentError, 'Invalid RFC5424 timestamp' unless stamp &&
+      Date.valid_date?(stamp[1].to_i, stamp[2].to_i, stamp[3].to_i) &&
+      stamp[4].to_i <= 23 && stamp[5].to_i <= 59 && stamp[6].to_i <= 59 &&
+      (stamp[7].nil? || (stamp[7].to_i <= 23 && stamp[8].to_i <= 59))
     Time.iso8601(header['timestamp'])
   end
   structured_data, message, sd_elements = parserstudio_rfc5424_sd(header['rest'])

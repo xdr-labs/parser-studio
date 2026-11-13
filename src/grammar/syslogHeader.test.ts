@@ -3,6 +3,8 @@ import { independentKeyValuePairs, classifyStructuredParse } from './parseStatus
 import { isSupportedRfc5424Version, matchHeaderRule, matchRfc3164Header, matchRfc5424Header } from './syslogHeader';
 import { SYSLOG_HEADER_RULES, SYSLOG_HEADER_SEMANTICS } from './syslogHeaderGrammar.generated';
 import { generateRfc3164KvCases } from './syslogHeaderModel';
+import { detectStructuredFamily, extractStructuredFamily } from '../structuredFamilies';
+import { parseSyslogEnvelope } from '../syslogEnvelope';
 
 describe('contract-driven RFC 3164 header', () => {
   it('reads a tagged header by capture name', () => {
@@ -105,7 +107,7 @@ function strictPairs(message: string): Array<[string, string]> | null {
 describe('model-based properties of the contract grammar', () => {
   it('meets every independently stated expectation, including the variants the legacy grammar fails', () => {
     const cases = generateRfc3164KvCases(300, 20261113);
-    expect(cases.length).toBe(2700);
+    expect(cases.length).toBeGreaterThan(2700);
     for (const item of cases) {
       const header = matchRfc3164Header(item.raw);
       const pairs = header.ok ? strictPairs(header.message) : null;
@@ -150,5 +152,37 @@ describe('parsing success contract', () => {
 
   it('does not report a pair that only exists inside a quoted value', () => {
     expect(independentKeyValuePairs('a=1 msg="x=y z=w" b=2').map(pair => pair.key)).toEqual(['a', 'msg', 'b']);
+  });
+});
+
+describe('consumers follow the contract', () => {
+  it('labels an RFC 5424 shaped line as RFC 5424 only for a supported VERSION (F-2)', () => {
+    const line = (version: string) => `<34>${version} 2026-10-11T22:14:15Z host app 123 ID47 - a=1 b=2`;
+    expect(detectStructuredFamily(line('1'))).toBe('syslog_rfc5424');
+    for (const version of ['2', '10']) {
+      expect(detectStructuredFamily(line(version)), version).not.toBe('syslog_rfc5424');
+      expect(parseSyslogEnvelope(line(version)), version).toBeNull();
+      expect(extractStructuredFamily(line(version), 'syslog_rfc5424', 'kv').errors.length, version).toBe(1);
+    }
+  });
+
+  it('detects the BSD forms by syntax and leaves calendar errors to extraction', () => {
+    expect(detectStructuredFamily('Feb 30 00:00:00 fw01 a=1 b=2')).toBe('syslog_rfc3164');
+    expect(extractStructuredFamily('Feb 30 00:00:00 fw01 a=1 b=2', 'syslog_rfc3164', 'kv').errors).toEqual(['RFC3164 PRI or calendar value is invalid']);
+    expect(detectStructuredFamily('<134>Nov 13 10:00:00 srcip=10.1.1.1 action=accept')).toBe('syslog_rfc3164');
+  });
+
+  it('never reads a TAG as the host name when HOSTNAME is omitted (F-5)', () => {
+    for (const raw of ['<13>Oct 11 22:14:15 kernel: a=1 b=2', 'Oct 11 22:14:15 sshd[123]: a=1 b=2']) {
+      const result = extractStructuredFamily(raw, 'syslog_rfc3164', 'kv');
+      expect(result.fields.syslog_hostname, raw).toBeUndefined();
+      expect(result.errors.length, raw).toBe(1);
+    }
+  });
+
+  it('keeps U+2028 inside the message of a generic Syslog envelope, like the Ruby export (F-3)', () => {
+    const envelope = parseSyslogEnvelope('<34>1 2026-10-11T22:14:15Z host app 123 ID47 - user=a\u2028b x=1');
+    expect(envelope?.variant).toBe('rfc5424');
+    expect(envelope?.message).toBe('user=a\u2028b x=1');
   });
 });

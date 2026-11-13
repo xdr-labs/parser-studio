@@ -153,6 +153,9 @@ export function generateRfc3164KvCases(count: number, seed: number): OracleCase[
     add('no-pri', render(model, { pri: null }), tagged
       ? { ...fullExpectation(model, { pri: false, host: true, tag: true }), neverWrong: true }
       : fullExpectation(model, { pri: false, host: true, tag: false }));
+    // A TAG directly after the timestamp (HOSTNAME omitted) must never be read as the host name.
+    if (model.tag) add('tag-without-host', render(model, { host: null }),
+      { ...fullExpectation(model, { pri: true, host: false, tag: true }), neverWrong: true });
     // The grammar separates header tokens with SP only; a TAB is not a separator.
     add('tab-before-host', render(model, { hostSeparator: '\t' }), UNKNOWN);
     add('pri-out-of-range', render(model, { pri: 192 + (index % 808) }), UNKNOWN);
