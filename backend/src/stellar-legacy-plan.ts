@@ -23,6 +23,11 @@ const KNOWN_TEMPLATES=new Set([
   // compatible (#281) and receive-time fallback for events without a timestamp (#303). Same hash on CI
   // Node 22 and Node 24. The approval covers the template only; IR, transport and owner/tenant gates are unchanged.
   "4e135cdecbfef12efb8f6551b4c9e5bbba362a2d91f31fdfbf9c40fac673d980",
+  // Owner-approved 2026-11-13: exact Ruby 2.4.9-reviewed template from PR #307.
+  // Fixes browser/native Generic Structural + mixed routing parity, Ruby 2.4 hash
+  // handling, escaped delimiter dispatch and RFC5424 version retention.
+  // Approval remains synthetic POC-only; no target import or general writes.
+  "95d2bdc6466d1d82f728aec7c0fc2ac222f1afd49a9bcbdf10f17f1ee6c88a2c",
   // Reviewed current compiler: fixed Unicode case-fold map embedded as a second
   // Base64 literal. Its exact bytes remain covered by the normalized template SHA.
   "439b1c9f31e827ad6ff92746ef9309f8ad5f2dbaa7952cdb77118f00e0a9f5f7",
