@@ -454,7 +454,8 @@ export default function ChatGPTAssist({draft,setDraft,sample,setSample,suite,
             placeholder="Paste the logs you want to parse."
             onChange={e=>{if(!namedLogTypes)setSample(e.target.value);}}/>
         </label>
-        <ParserIdentityCard draft={draft} setDraft={setDraft} assisted/>
+        <ParserIdentityCard draft={draft} setDraft={setDraft} assisted
+          warnIfPlaceholder={Boolean(review?.ok)||Boolean(generated)}/>
         {namedLogTypes&&namedLogTypes.length>=2&&
           <section className="auto-parser-recipe" aria-label="Combined parser routing review">
             <ChatGPTConditionalDraft draft={draft} setDraft={setDraft} sample={sample}
