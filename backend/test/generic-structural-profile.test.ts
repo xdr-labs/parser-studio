@@ -4,14 +4,14 @@ import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {sampleProject} from './fixture.js';
 import {validateProject} from '../src/validate.js';
-import {compilePair} from '../src/compiler.js';
+import {compilePair,injectHeaderGrammar} from '../src/compiler.js';
 import {BACKEND_CAPABILITIES} from '../src/capabilities.js';
 
 const fixture=JSON.parse(readFileSync(new URL('../../tests/fixtures/roadmap-syslog-prefix-kv-20261020.json',import.meta.url),'utf8')) as {
   positive:Array<{name:string;raw:string;prefix:string;kv:Record<string,string>}>;
   negative:Array<{name:string;raw:string}>;
 };
-const helper=readFileSync(new URL('../templates/generic-structural-helper.rb.tpl',import.meta.url),'utf8');
+const helper=injectHeaderGrammar(readFileSync(new URL('../templates/generic-structural-helper.rb.tpl',import.meta.url),'utf8'));
 const ruby=process.env.PARSER_NATIVE_RUBY||'ruby';
 function runRuby(raw:string,profile?:string):{ok:boolean;fields?:Record<string,unknown>}{
   const source=["require 'json'","require 'csv'","require 'base64'","require 'ipaddr'","require 'time'",helper,

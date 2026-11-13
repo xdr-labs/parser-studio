@@ -137,6 +137,9 @@ test("shipping module graph excludes all legacy target-capable HTTP handlers",as
     "target-runtime-export.ts",
     // Static pinned Stellar 7.0 scalar catalog; no executable/HTTP-capable module.
     "stellar7-enrichment-types.json",
+    // Generated Ruby-dialect Syslog header grammar (contracts/syslog-header-grammar.v1.json):
+    // constant strings only, no I/O, network, target or dynamic execution capability.
+    "syslog-header-grammar.generated.ts",
   ]);
   const visited=new Set<string>();
   const walk=async(file:string):Promise<void>=>{

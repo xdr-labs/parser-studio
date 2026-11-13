@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 export const CONTRACT_PATH = 'contracts/syslog-header-grammar.v1.json';
 export const GENERATED_TS_PATH = 'src/grammar/syslogHeaderGrammar.generated.ts';
+export const GENERATED_BACKEND_PATH = 'backend/src/syslog-header-grammar.generated.ts';
 export const DIALECTS = Object.freeze(['js', 'ruby', 'python']);
 
 const ALLOWED_ESCAPES = new Set(['\\', '{', '}', '[', ']', '(', ')', '|', '.', '+', '*', '?', '^', '$', 'r', 'n', 't', '-']);
@@ -24,7 +25,7 @@ const ALLOWED_ESCAPES = new Set(['\\', '{', '}', '[', ']', '(', ')', '|', '.', '
 export function validateTokenPattern(name, pattern) {
   const fail = why => { throw new Error(`GRAMMAR_TOKEN_NOT_PORTABLE ${name}: ${why}`); };
   if (typeof pattern !== 'string' || pattern.length === 0) fail('empty pattern');
-  let i = 0, inClass = false, depth = 0;
+  let i = 0, inClass = false, depth = 0, negatedClass = false, afterNegatedClass = false;
   while (i < pattern.length) {
     const c = pattern[i];
     const code = c.charCodeAt(0);
@@ -36,11 +37,16 @@ export function validateTokenPattern(name, pattern) {
     }
     if (inClass) {
       if (c === '[') fail('nested bracket class');
-      if (c === ']') inClass = false;
+      // Ruby reads && inside a class as set intersection; ECMAScript and Python read two literal ampersands.
+      if (c === '&' && pattern[i + 1] === '&') fail('&& inside a bracket class');
+      if (c === ']') { inClass = false; afterNegatedClass = negatedClass; }
       i += 1; continue;
     }
+    const wasAfterNegatedClass = afterNegatedClass;
+    afterNegatedClass = false;
     if (c === '[') {
       inClass = true; i += 1;
+      negatedClass = pattern[i] === '^';
       if (pattern[i] === '^') i += 1;
       if (pattern[i] === ']') fail('empty or leading-] bracket class');
       continue;
@@ -54,6 +60,9 @@ export function validateTokenPattern(name, pattern) {
     if (c === '{') {
       const m = /^\{[0-9]+(?:,[0-9]*)?\}/.exec(pattern.slice(i));
       if (!m) fail('malformed bounded quantifier');
+      // A negated class can match a non-BMP character, which ECMAScript counts as two units and Ruby and
+      // Python as one, so a bound on it would mean a different length per runtime.
+      if (wasAfterNegatedClass) fail('bounded quantifier on a negated class');
       i += m[0].length;
       if (pattern[i] === '?' || pattern[i] === '+') fail('lazy or possessive quantifier');
       continue;
@@ -104,6 +113,14 @@ export function compileRule(contract, ruleName, dialect) {
   return { source: open + body + close, captures };
 }
 
+/** Rule and capture names the executable consumers read; a contract that renames or drops one must not generate. */
+const REQUIRED_CAPTURES = Object.freeze({
+  rfc3164_tagged: ['pri', 'month', 'day', 'hour', 'minute', 'second', 'hostname', 'tag', 'procid', 'message'],
+  rfc3164_tagless: ['pri', 'month', 'day', 'hour', 'minute', 'second', 'hostname', 'message'],
+  rfc3164_hostless: ['pri', 'month', 'day', 'hour', 'minute', 'second', 'message'],
+  rfc5424: ['pri', 'version', 'timestamp', 'hostname', 'appname', 'procid', 'msgid', 'rest'],
+});
+
 export function validateContract(contract) {
   if (contract.schema !== 'parserstudio.grammar-contract.v1' || !Number.isInteger(contract.revision))
     throw new Error('GRAMMAR_CONTRACT_SCHEMA');
@@ -130,9 +147,20 @@ export function validateContract(contract) {
     if (!used.has(name)) throw new Error(`GRAMMAR_TOKEN_UNUSED ${name}`);
   for (const [name, list] of Object.entries(contract.alternatives ?? {}))
     for (const rule of list) if (!contract.rules[rule]) throw new Error(`GRAMMAR_ALTERNATIVE_UNKNOWN ${name}/${rule}`);
+  for (const [name, captures] of Object.entries(REQUIRED_CAPTURES)) {
+    if (!contract.rules[name]) throw new Error(`GRAMMAR_RULE_REQUIRED ${name}`);
+    if (compileRule(contract, name, 'js').captures.join() !== captures.join()) throw new Error(`GRAMMAR_CAPTURES_REQUIRED ${name}: ${captures.join()}`);
+  }
+  const bsd = contract.alternatives?.rfc3164;
+  if (!Array.isArray(bsd) || bsd.length === 0 || bsd.some(rule => !rule.startsWith('rfc3164_')) || new Set(bsd).size !== bsd.length)
+    throw new Error('GRAMMAR_ALTERNATIVES_INVALID rfc3164');
   const semantics = contract.semantics;
-  if (!Number.isInteger(semantics.priMax) || !Array.isArray(semantics.rfc5424SupportedVersions) ||
-      Object.keys(semantics.bsdMonthDays).length !== 12) throw new Error('GRAMMAR_SEMANTICS_INVALID');
+  const versions = semantics.rfc5424SupportedVersions;
+  if (!Number.isInteger(semantics.priMax) || semantics.priMax < 0 || semantics.priMax > 191 ||
+      !Array.isArray(versions) || versions.length === 0 || versions.some(version => !/^[1-9][0-9]{0,2}$/.test(version)) ||
+      Object.keys(semantics.bsdMonthDays).length !== 12 ||
+      Object.values(semantics.bsdMonthDays).some(days => !Number.isInteger(days) || days < 28 || days > 31))
+    throw new Error('GRAMMAR_SEMANTICS_INVALID');
 }
 
 export function contractSha256(text) {
@@ -153,6 +181,7 @@ export function generateTypeScript(contractText) {
     `export const GRAMMAR_CONTRACT_REVISION = ${contract.revision};`,
     'export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }',
     `export const SYSLOG_HEADER_RULES = ${JSON.stringify(rules, null, 2)} as const satisfies Record<string, CompiledHeaderRule>;`,
+    `export const SYSLOG_HEADER_TOKENS = ${JSON.stringify(Object.fromEntries(Object.entries(contract.tokens).map(([name, token]) => [name, token.pattern])), null, 2)} as const;`,
     `export const SYSLOG_HEADER_ALTERNATIVES = ${JSON.stringify(contract.alternatives, null, 2)} as const;`,
     `export const SYSLOG_HEADER_SEMANTICS = ${JSON.stringify(contract.semantics, null, 2)} as const;`,
     'export type SyslogHeaderRuleName = keyof typeof SYSLOG_HEADER_RULES;',
@@ -160,10 +189,57 @@ export function generateTypeScript(contractText) {
   ].join('\n');
 }
 
+/**
+ * Generated backend module: the Ruby-dialect grammar the compiler injects into
+ * the Ruby templates. Each key is a placeholder that appears in a template; the
+ * value is Ruby source text.
+ */
+export function rubyGrammarPlaceholders(contractText) {
+  const contract = JSON.parse(contractText);
+  validateContract(contract);
+  const placeholders = {};
+  for (const name of Object.keys(contract.rules))
+    placeholders[`__PS_GRAMMAR_RX_${name.toUpperCase()}__`] = compileRule(contract, name, 'ruby').source;
+  // Ordered alternatives as a Ruby array of [rule name, Regexp], so the order is contract data too.
+  // Single tokens, for the few template expressions that need one token of the grammar.
+  for (const [name, token] of Object.entries(contract.tokens))
+    placeholders[`__PS_GRAMMAR_TOKEN_${name}__`] = token.pattern;
+  for (const [name, rules] of Object.entries(contract.alternatives))
+    placeholders[`__PS_GRAMMAR_${name.toUpperCase()}_ALTERNATIVES__`] =
+      '[' + rules.map(rule => `['${rule}', /${compileRule(contract, rule, 'ruby').source}/]`).join(', ') + ']';
+  const semantics = contract.semantics;
+  for (const [month, days] of Object.entries(semantics.bsdMonthDays))
+    if (!/^[A-Z][a-z]{2}$/.test(month) || !Number.isInteger(days)) throw new Error('GRAMMAR_SEMANTICS_INVALID month');
+  for (const version of semantics.rfc5424SupportedVersions)
+    if (!/^[1-9][0-9]{0,2}$/.test(version)) throw new Error('GRAMMAR_SEMANTICS_INVALID version');
+  placeholders.__PS_GRAMMAR_PRI_MAX__ = String(semantics.priMax);
+  placeholders.__PS_GRAMMAR_BSD_MONTH_DAYS__ = '{' + Object.entries(semantics.bsdMonthDays).map(([month, days]) => `'${month}'=>${days}`).join(',') + '}';
+  placeholders.__PS_GRAMMAR_RFC5424_VERSIONS__ = '[' + semantics.rfc5424SupportedVersions.map(version => `'${version}'`).join(',') + ']';
+  return placeholders;
+}
+
+export function generateBackendTypeScript(contractText) {
+  const contract = JSON.parse(contractText);
+  const placeholders = rubyGrammarPlaceholders(contractText);
+  return [
+    '// GENERATED FILE - DO NOT EDIT.',
+    `// Source: ${CONTRACT_PATH} (revision ${contract.revision}); regenerate with`,
+    '//   node scripts/grammar/generate-grammar.mjs --write',
+    '// CI runs the generator with --verify, so a hand edit of this file fails the gate.',
+    `export const GRAMMAR_CONTRACT_SHA256 = ${JSON.stringify(contractSha256(contractText))};`,
+    '/** Template placeholder -> Ruby source text (Ruby 2.4 compatible). */',
+    `export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = ${JSON.stringify(placeholders, null, 2)};`,
+    '',
+  ].join('\n');
+}
+
 function main(argv) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const contractText = readFileSync(resolve(root, CONTRACT_PATH), 'utf8');
-  const outputs = { [GENERATED_TS_PATH]: generateTypeScript(contractText) };
+  const outputs = {
+    [GENERATED_TS_PATH]: generateTypeScript(contractText),
+    [GENERATED_BACKEND_PATH]: generateBackendTypeScript(contractText),
+  };
   if (argv.includes('--write')) {
     for (const [path, content] of Object.entries(outputs)) writeFileSync(resolve(root, path), content);
     process.stdout.write(`GRAMMAR_GENERATED files=${Object.keys(outputs).length} contract=${contractSha256(contractText).slice(0, 16)}\n`);

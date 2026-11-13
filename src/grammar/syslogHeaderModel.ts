@@ -148,11 +148,14 @@ export function generateRfc3164KvCases(count: number, seed: number): OracleCase[
     add('pairs-reversed', render(model, { pairs: [...model.pairs].reverse() }),
       fullExpectation(model, { pri: true, host: true, tag: true }, [...model.pairs].reverse()));
     // HOSTNAME omitted by the sender: nothing may be lost into the header.
-    add('hostless', render(model, { host: null, tag: null }), fullExpectation(model, { pri: true, host: false, tag: false }), 'F-1');
+    add('hostless', render(model, { host: null, tag: null }), fullExpectation(model, { pri: true, host: false, tag: false }));
     // PRI is optional only for the tagless form; a tagged line without PRI may be declined but never mis-parsed.
     add('no-pri', render(model, { pri: null }), tagged
       ? { ...fullExpectation(model, { pri: false, host: true, tag: true }), neverWrong: true }
       : fullExpectation(model, { pri: false, host: true, tag: false }));
+    // A TAG directly after the timestamp (HOSTNAME omitted) must never be read as the host name.
+    if (model.tag) add('tag-without-host', render(model, { host: null }),
+      { ...fullExpectation(model, { pri: true, host: false, tag: true }), neverWrong: true });
     // The grammar separates header tokens with SP only; a TAB is not a separator.
     add('tab-before-host', render(model, { hostSeparator: '\t' }), UNKNOWN);
     add('pri-out-of-range', render(model, { pri: 192 + (index % 808) }), UNKNOWN);
@@ -160,7 +163,7 @@ export function generateRfc3164KvCases(count: number, seed: number): OracleCase[
     // U+2028 is not a line terminator in Syslog; '.' excludes it in ECMAScript but not in Ruby.
     const withSeparator = [...model.pairs.filter(([key]) => key !== 'user'), ['user', 'a b'] as [string, string]];
     add('u2028-in-value', render(model, { pairs: withSeparator }),
-      fullExpectation(model, { pri: true, host: true, tag: true }, withSeparator), 'F-3');
+      fullExpectation(model, { pri: true, host: true, tag: true }, withSeparator));
   }
   return cases;
 }

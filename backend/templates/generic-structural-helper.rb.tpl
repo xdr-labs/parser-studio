@@ -967,19 +967,31 @@ def parserstudio_generic_syslog_envelope(text)
 
   if pri
     rfc=/\A([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
-    if rfc
+    # One VERSION policy for every consumer (contracts/syslog-header-grammar.v1.json):
+    # an RFC 5424 shaped header with an unsupported VERSION is not an RFC 5424 envelope.
+    # Like the browser's parseRfc5424, a header that has the RFC 5424 shape but fails validation is not an
+    # RFC 5424 envelope; the remaining envelope variants are still tried (throw leaves only this block).
+    catch(:parserstudio_not_rfc5424) do
+    if rfc && __PS_GRAMMAR_RFC5424_VERSIONS__.include?(rfc[1])
       timestamp=rfc[2]
-      return nil unless timestamp=='-' ||
+      # Calendar-checked like the browser: Time.iso8601 alone rolls an impossible day over (Feb 30 -> Mar 2).
+      # The parsed time must still show the written month and day.
+      throw :parserstudio_not_rfc5424 unless timestamp=='-' ||
         (timestamp.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})\z/) &&
-         begin Time.iso8601(timestamp); true rescue false end)
+         begin
+           parsed_time=Time.iso8601(timestamp)
+           parsed_time.month==timestamp[5,2].to_i && parsed_time.day==timestamp[8,2].to_i
+         rescue StandardError
+           false
+         end)
       [[rfc[3],255],[rfc[4],48],[rfc[5],128],[rfc[6],32]].each do |pair|
         token,maximum=pair
-        return nil unless token.bytesize<=maximum && token.match?(/\A[!-~]+\z/)
+        throw :parserstudio_not_rfc5424 unless token.bytesize<=maximum && token.match?(/\A[!-~]+\z/)
       end
       begin
         structured,message=parserstudio_rfc5424_sd(rfc[7])
       rescue StandardError
-        return nil
+        throw :parserstudio_not_rfc5424
       end
       syslog={'variant'=>'rfc5424','confidence'=>'strict'}.merge(pri_fields).merge('version'=>rfc[1])
       syslog['timestamp']=timestamp unless timestamp=='-'
@@ -989,6 +1001,7 @@ def parserstudio_generic_syslog_envelope(text)
       syslog['msgid']=rfc[6] unless rfc[6]=='-'
       syslog['structuredData']=structured
       return [syslog,message.to_s]
+    end
     end
   end
 
@@ -1048,6 +1061,10 @@ def parserstudio_generic_syslog_envelope(text)
     return parserstudio_generic_envelope_decorate(syslog,slash[7].to_s)
   end
 
+  # Same guard as the browser (src/syslogEnvelope.ts looksLikeMalformedTimestamp): a header that looks like
+  # a timestamp or an RFC 5424 VERSION but did not validate is not downgraded to a PRI-only envelope.
+  return nil if rest.match?(/\A__PS_GRAMMAR_TOKEN_BSD_MONTH__ +\d{1,2} +/) ||
+    rest.match?(/\A\d{4}[-\/:]\d{2}[-\/:]\d{2}/) || rest.match?(/\A\d{1,3} +\d{4}-\d{2}-\d{2}T/)
   return [{'variant'=>'pri_only','confidence'=>'partial'}.merge(pri_fields),rest] if pri
   nil
 rescue StandardError

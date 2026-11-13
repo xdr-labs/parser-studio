@@ -27,7 +27,7 @@ import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslo
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
 import { SYSLOG_HEADER_RULES, type SyslogHeaderRuleName } from '../../src/grammar/syslogHeaderGrammar.generated';
 // @ts-expect-error plain ESM generator without type declarations
-import { compileRule } from '../grammar/generate-grammar.mjs';
+import { CONTRACT_PATH, compileRule, generateTypeScript, rubyGrammarPlaceholders } from '../grammar/generate-grammar.mjs';
 import { compilePair } from '../../backend/src/compiler.js';
 import { sampleProject } from '../../backend/test/fixture.js';
 
@@ -137,19 +137,31 @@ function report(label: string, failures: string[]): void {
 }
 
 // ---------------------------------------------------------------- TypeScript
+// A mutant either edits one product source file or, with file 'contract', edits the grammar contract and
+// regenerates its consumers: the second kind proves that a wrong contract cannot ship either.
+const CONTRACT_MUTANTS: Mutant[] = [
+  // Re-introduces F-1: HOSTNAME may again swallow a key=value token.
+  { id: 'contract-hostname-any-printable', file: 'contract', find: '"pattern": "(?!\\\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~]"', replace: '"pattern": "[!-~]{1,255}"' },
+  // A TAG such as "kernel:" may again be read as the host name.
+  { id: 'contract-hostname-trailing-colon', file: 'contract', find: '[!-<>-~]{0,254}[!-9;<>-~]"', replace: '[!-<>-~]{0,254}[!-<>-~]"' },
+  { id: 'contract-rest-ascii-only', file: 'contract', find: '"REST": { "pattern": "[^\\\\r\\\\n]+"', replace: '"REST": { "pattern": "[!-~ ]+"' },
+  { id: 'contract-hostless-rule-removed', file: 'contract', find: '[ "rfc3164_tagged", "rfc3164_tagless", "rfc3164_hostless" ]', replace: '[ "rfc3164_tagged", "rfc3164_tagless" ]' },
+];
 const TS_MUTANTS: Mutant[] = [
-  { id: 'ts-hostname-wrong-capture', file: 'src/structuredFamilies.ts', find: ' syslog_hostname:match[7],', replace: ' syslog_hostname:match[2],' },
-  { id: 'ts-pri-range-dropped', file: 'src/structuredFamilies.ts', find: '(priority!==undefined&&priority>191)||', replace: '' },
-  { id: 'ts-calendar-widened', file: 'src/structuredFamilies.ts', find: 'day>DAYS[month]', replace: 'day>31' },
+  ...CONTRACT_MUTANTS,
+  { id: 'ts-hostname-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_hostname:header.hostname', replace: 'syslog_hostname:header.timestamp' },
   { id: 'ts-body-fields-dropped', file: 'src/structuredFamilies.ts', find: 'return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};', replace: 'return body.errors.length?body:{fields:{...fields},errors:[]};' },
-  { id: 'ts-procid-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_procid:match[9]', replace: 'syslog_procid:match[8]' },
-  { id: 'ts-tagged-first-field-lost', file: 'src/structuredFamilies.ts', find: 'const message=tagged?match[10]!:match[8]!;', replace: "const message=tagged?match[10]!.replace(/^\\S+ /,''):match[8]!;" },
-  { id: 'ts-rfc5424-any-version', file: 'src/rfc5424Subset.ts', find: " || match[2]!=='1'", replace: '' },
-  { id: 'ts-rfc5424-appname-procid-swapped', file: 'src/rfc5424Subset.ts', find: 'syslog_appname:match[5],syslog_procid:match[6],', replace: 'syslog_appname:match[6],syslog_procid:match[5],' },
+  { id: 'ts-procid-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_procid:header.procid', replace: 'syslog_procid:header.tag' },
+  { id: 'ts-tagged-first-field-lost', file: 'src/structuredFamilies.ts', find: ' const message=header.message;', replace: " const message=tagged?header.message.replace(/^\\S+ /,''):header.message;" },
+  { id: 'ts-pri-range-dropped', file: 'src/grammar/syslogHeader.ts', find: 'pri !== undefined && pri > SYSLOG_HEADER_SEMANTICS.priMax', replace: 'false' },
+  { id: 'ts-calendar-widened', file: 'src/grammar/syslogHeader.ts', find: 'day < 1 || day > days ||', replace: 'day < 1 || day > 31 ||' },
+  { id: 'ts-rfc5424-any-version', file: 'src/grammar/syslogHeader.ts', find: 'if (!isSupportedRfc5424Version(captures.version!)) return', replace: 'if (false) return' },
+  { id: 'ts-rfc5424-appname-procid-swapped', file: 'src/rfc5424Subset.ts', find: 'syslog_appname:header.appname,syslog_procid:header.procid,', replace: 'syslog_appname:header.procid,syslog_procid:header.appname,' },
 ];
 
 function applyMutant(text: string, mutant: Mutant): string {
   if (text.split(mutant.find).length !== 2) throw new Error(`MUTANT_NOT_APPLICABLE ${mutant.id}: target text must occur exactly once in ${mutant.file}`);
+  if (mutant.replace === mutant.find) throw new Error(`MUTANT_IS_IDENTITY ${mutant.id}`);
   return text.replace(mutant.find, () => mutant.replace);
 }
 
@@ -170,7 +182,10 @@ async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extr
   for (const shared of ['contracts', 'backend']) symlinkSync(join(REPO, shared), join(root, shared));
   const dispose = () => rmSync(root, { recursive: true, force: true });
   try {
-    if (mutant) {
+    if (mutant && mutant.file === 'contract') {
+      const mutated = applyMutant(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
+      writeFileSync(join(root, 'src/grammar/syslogHeaderGrammar.generated.ts'), generateTypeScript(mutated) as string);
+    } else if (mutant) {
       const target = join(root, mutant.file);
       writeFileSync(target, applyMutant(readFileSync(target, 'utf8'), mutant));
     }
@@ -223,19 +238,40 @@ async function runTs(): Promise<number> {
 }
 
 // ---------------------------------------------------------------------- Ruby
-const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar'] }> = [
-  { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: '!priority.between?(0, 191)', replace: '!priority.between?(0, 999)' },
+const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar']; target?: string }> = [
+  // Forwarder-family template: the relay probe must not reject a direct event that has no TAG.
+  { id: 'rb-forwarder-probe-rejects-tagless', grammar: 'syslog_rfc3164', target: 'forwarder:syslog_rfc3164', file: 'fragment', find: "{'syslogBodyFormat'=>'raw','taglessStructuredRouter'=>true}", replace: "{'syslogBodyFormat'=>'raw'}" },
+  ...CONTRACT_MUTANTS.map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const })),
+  { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)", replace: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 999)" },
   { id: 'rb-calendar-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: 'day.between?(1, days) && hour.between?(0, 23)', replace: 'day.between?(1, 31) && hour.between?(0, 23)' },
-  { id: 'rb-tagged-first-field-lost', grammar: 'syslog_rfc3164', file: 'fragment', find: '    message = match[10]\n', replace: "    message = match[10].sub(/\\A\\S+ /, '')\n" },
-  { id: 'rb-hostname-wrong-capture', grammar: 'syslog_rfc3164', file: 'fragment', find: "'syslog_hostname' => match[7]", replace: "'syslog_hostname' => match[2]" },
-  { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "unless match[2] == '1'", replace: 'unless match[2] =~ /\\A[0-9]+\\z/' },
+  { id: 'rb-tagged-first-field-lost', grammar: 'syslog_rfc3164', file: 'fragment', find: "  message = header['message']\n", replace: "  message = tagged ? header['message'].sub(/\\A\\S+ /, '') : header['message']\n" },
+  { id: 'rb-hostname-wrong-capture', grammar: 'syslog_rfc3164', file: 'fragment', find: "record['syslog_hostname'] = header['hostname'] if header['hostname']", replace: "record['syslog_hostname'] = header['month'] if header['hostname']" },
+  { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "raise ArgumentError, 'Unsupported RFC5424 version' unless ['1'].include?(header['version'])", replace: "raise ArgumentError, 'Unsupported RFC5424 version' unless header['version']" },
 ];
 
-function compileFragment(grammar: OracleCase['grammar']): string {
+/** Applies a mutant to a compiled Fragment; a contract mutant swaps the injected grammar for the mutated contract's grammar. */
+function mutateFragment(fragment: string, mutant: Mutant): string {
+  if (mutant.file !== 'contract') return applyMutant(fragment, mutant);
+  const contractText = readFileSync(join(REPO, CONTRACT_PATH), 'utf8');
+  const before = rubyGrammarPlaceholders(contractText) as Record<string, string>;
+  const after = rubyGrammarPlaceholders(applyMutant(contractText, mutant)) as Record<string, string>;
+  let out = fragment;
+  let changed = 0;
+  for (const [placeholder, source] of Object.entries(before)) {
+    if (after[placeholder] === source || !out.includes(source)) continue;
+    out = out.split(source).join(after[placeholder]!);
+    changed += 1;
+  }
+  if (changed === 0) throw new Error(`MUTANT_NOT_APPLICABLE ${mutant.id}: the mutated contract does not change this Fragment`);
+  return out;
+}
+
+function compileFragment(grammar: OracleCase['grammar'], forwarder = false): string {
   const profile = goldens.profiles['fw-kv']!;
   const fields = (spec: FieldSpec) => Object.fromEntries(Object.entries(spec).map(([source, [name, type]]) => [source, { normalized_name: name, data_type: type }]));
   const project = sampleProject() as unknown as Record<string, any>;
-  project.extraction = { format: grammar, syslogBodyFormat: 'kv' };
+  // A declared forwarder selects the forwarder-family template; direct events must parse exactly the same.
+  project.extraction = { format: grammar, syslogBodyFormat: 'kv', ...(forwarder ? { forwarder: { maxHops: 2, relayHosts: ['oracle-relay'] } } : {}) };
   project.normalization.topFields = fields(profile.topFields);
   project.normalization.nsFields = {};
   project.normalization.vendorFields = fields(profile.vendorFields);
@@ -256,8 +292,13 @@ function runNative(): number {
     syslog_rfc5424: compileFragment('syslog_rfc5424'),
   };
   const payloadCases = cases.map(item => ({ id: item.id, fragment: item.grammar, raw: item.raw }));
+  for (const grammar of ['syslog_rfc3164', 'syslog_rfc5424'] as const) {
+    fragments[`forwarder:${grammar}`] = compileFragment(grammar, true);
+    if (fragments[`forwarder:${grammar}`] === fragments[grammar]) throw new Error('FORWARDER_TEMPLATE_NOT_SELECTED');
+  }
+  for (const item of cases) payloadCases.push({ id: `forwarder::${item.id}`, fragment: `forwarder:${item.grammar}`, raw: item.raw });
   for (const mutant of RUBY_MUTANTS) {
-    fragments[mutant.id] = applyMutant(fragments[mutant.grammar]!, mutant);
+    fragments[mutant.id] = mutateFragment(fragments[mutant.target ?? mutant.grammar]!, mutant);
     for (const item of mutantCases)
       if (item.grammar === mutant.grammar) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
   }
@@ -295,6 +336,8 @@ function runNative(): number {
   report('GRAMMAR_DIALECT_DRIFT', dialectDrift);
   const product = score('ruby', cases, item => evaluateRuby(item, output.results[item.id]));
   report('SEMANTIC_ORACLE_NATIVE', product.failures);
+  const forwarder = score('ruby', cases, item => evaluateRuby(item, output.results[`forwarder::${item.id}`]));
+  report('SEMANTIC_ORACLE_NATIVE_FORWARDER_TEMPLATE', forwarder.failures);
   const productFailing = new Set(cases.filter(item => evaluateRuby(item, output.results[item.id]).length > 0).map(item => item.id));
   const survivors: string[] = [];
   for (const mutant of RUBY_MUTANTS) {
@@ -305,7 +348,8 @@ function runNative(): number {
     if (reported === 0) survivors.push(mutant.id);
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
-  const ok = product.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
+  const ok = product.failures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
+  process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
   process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length}\n`);
   return ok ? 0 : 1;
