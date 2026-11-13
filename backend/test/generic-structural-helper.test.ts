@@ -388,5 +388,7 @@ test("Generic Structural Ruby envelope follows the contract RFC5424 VERSION poli
   assert.equal(g[0].variant,"rfc5424");
   assert.equal(g[0].version,"1");
   assert.equal(g[1],"hello");
-  b.forEach((rb,i)=>assert.ok(!(Array.isArray(rb)&&rb[0].variant==="rfc5424"),bad[i]));
+  // Exactly what the browser returns for these lines (parseSyslogEnvelope: null). A helper that parsed the
+  // RFC 5424 layout under another label, or fell back to a PRI-only envelope, fails here.
+  b.forEach((rb,i)=>assert.equal(rb,null,bad[i]+" => "+JSON.stringify(rb)));
 });

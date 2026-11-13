@@ -17,7 +17,7 @@ import { RUBY_GRAMMAR_PLACEHOLDERS } from "./syslog-header-grammar.generated.js"
 export function injectHeaderGrammar(fragment: string, placeholders: Readonly<Record<string, string>> = RUBY_GRAMMAR_PLACEHOLDERS): string {
   let out = fragment;
   for (const [placeholder, rubySource] of Object.entries(placeholders)) out = out.split(placeholder).join(rubySource);
-  const unresolved = /__PS_GRAMMAR_[A-Z0-9_]+__/.exec(out);
+  const unresolved = /__PS_GR[A-Za-z0-9_]*__/i.exec(out);
   if (unresolved) throw new Error("Grammar contract placeholder is not generated: " + unresolved[0]);
   return out;
 }

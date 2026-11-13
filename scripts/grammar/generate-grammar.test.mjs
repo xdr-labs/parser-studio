@@ -32,7 +32,7 @@ test('dialects differ only in anchors and the named-group prefix', () => {
 });
 
 test('runtime-dependent constructs are rejected', () => {
-  for (const pattern of ['.+', '\\d{1,3}', '\\S+', '\\w+', 'a\\b', '^a', 'a$', '(a)', '(?<n>a)', '(?=a)b', 'a+?', 'a{1,2}?', 'a++', '[[:alpha:]]', 'a/b', 'a#b', 'é', '[a', '(?:a', 'a{,2}'])
+  for (const pattern of ['.+', '\\d{1,3}', '\\S+', '\\w+', 'a\\b', '^a', 'a$', '(a)', '(?<n>a)', '(?=a)b', 'a+?', 'a{1,2}?', 'a++', '[[:alpha:]]', 'a/b', 'a#b', 'é', '[a', '(?:a', 'a{,2}', '[a-z&&aeiou]', '[^ =]{1,4}'])
     assert.throws(() => validateTokenPattern('T', pattern), /GRAMMAR_TOKEN_NOT_PORTABLE/, pattern);
   for (const pattern of ['[0-9]{1,3}', '(?!\\{|CEF:)[!-<>-~]{1,255}', '[^\\r\\n]+', '(?:a|b)*c?', '[A-Za-z_][A-Za-z0-9_.-]{0,95}'])
     assert.doesNotThrow(() => validateTokenPattern('T', pattern), pattern);
@@ -45,6 +45,15 @@ test('contract mistakes fail generation instead of shipping', () => {
   assert.throws(() => validateContract(mutate(c => { c.rules.rfc5424.sequence[1].cap = 'hostname'; })), /duplicate capture/);
   assert.throws(() => validateContract(mutate(c => { c.rules.rfc5424.sequence[1].token = 'MISSING'; })), /unknown token/);
   assert.throws(() => validateContract(mutate(c => { c.alternatives.rfc3164.push('nope'); })), /ALTERNATIVE_UNKNOWN/);
+  // Mistakes that used to generate without an error and would only break a consumer at run time.
+  assert.throws(() => validateContract(mutate(c => { c.rules.rfc3164_tagless.sequence.find(item => item.cap === 'hostname').cap = 'host'; })), /CAPTURES_REQUIRED/);
+  assert.throws(() => validateContract(mutate(c => { delete c.rules.rfc3164_tagged.sequence.find(item => item.cap === 'month').cap; })), /CAPTURES_REQUIRED/);
+  assert.throws(() => validateContract(mutate(c => { delete c.rules.rfc5424; })), /RULE_REQUIRED|TOKEN_UNUSED/);
+  assert.throws(() => validateContract(mutate(c => { c.alternatives.rfc3164 = []; })), /ALTERNATIVES_INVALID/);
+  assert.throws(() => validateContract(mutate(c => { delete c.alternatives.rfc3164; })), /ALTERNATIVES_INVALID/);
+  for (const priMax of [-5, 99999, 1.5]) assert.throws(() => validateContract(mutate(c => { c.semantics.priMax = priMax; })), /SEMANTICS_INVALID/);
+  assert.throws(() => validateContract(mutate(c => { c.semantics.bsdMonthDays.Feb = 0; })), /SEMANTICS_INVALID/);
+  assert.throws(() => validateContract(mutate(c => { c.semantics.rfc5424SupportedVersions = []; })), /SEMANTICS_INVALID/);
 });
 
 test('the F-1 guard is part of the contract, not of a consumer', () => {
@@ -52,5 +61,6 @@ test('the F-1 guard is part of the contract, not of a consumer', () => {
   const expression = new RegExp('^(?:' + hostname + ')$');
   assert.equal(expression.test('fw01'), true);
   assert.equal(expression.test('fe80::1'), true);
-  for (const body of ['srcip=10.1.1.1', '{"a":1}', 'CEF:0|x', 'LEEF:1.0|x']) assert.equal(expression.test(body), false, body);
+  assert.equal(expression.test('a'.repeat(255)), true);
+  for (const body of ['srcip=10.1.1.1', '{"a":1}', 'CEF:0|x', 'LEEF:1.0|x', 'kernel:', 'sshd[123]:', 'a'.repeat(256)]) assert.equal(expression.test(body), false, body);
 });

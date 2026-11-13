@@ -11,7 +11,7 @@ export interface Rfc5424SdElement {
 }
 export interface Rfc5424Fields {
   syslog_pri: number;
-  syslog_version: 1;
+  syslog_version: number;
   syslog_timestamp: string;
   syslog_hostname: string;
   syslog_appname: string;
@@ -122,7 +122,7 @@ export function parseRfc5424Subset(text:string):Rfc5424Scan {
   const parsed=scanStructuredData(header.rest);
   if (!parsed) return {ok:false,error:'Unsupported RFC5424 structured data syntax'};
   return {ok:true,fields:{
-    syslog_pri:header.pri,syslog_version:1,
+    syslog_pri:header.pri,syslog_version:Number(header.version),
     syslog_timestamp:header.timestamp,syslog_hostname:header.hostname,
     syslog_appname:header.appname,syslog_procid:header.procid,
     syslog_msgid:header.msgid,syslog_structured_data:parsed.structured,

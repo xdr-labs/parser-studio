@@ -2,7 +2,7 @@
   "schema": "parserstudio.grammar-contract.v1",
   "id": "syslog-header",
   "revision": 1,
-  "purpose": "Single declarative definition of the Syslog header grammar. Every executable consumer (browser TypeScript, generated Ruby Fragment, Python Multi-Pass) must take its header regular expressions, capture names and semantic limits from the code generated from this file (scripts/grammar/generate-grammar.mjs). Hand-written copies are counted and ratcheted down by scripts/verification/grammar-duplication-ratchet.mjs.",
+  "purpose": "Single declarative definition of the Syslog header grammar. The browser TypeScript and the generated Ruby Fragment take their structured-path header regular expressions, capture names and semantic limits from the code generated from this file (scripts/grammar/generate-grammar.mjs). Not migrated yet (Issue #249 W4, W5): the Generic Structural sites and the Python Multi-Pass engine, which still carry hand-written copies; those copies are counted and ratcheted down by scripts/verification/grammar-duplication-ratchet.mjs.",
   "authority": [
     "RFC 3164 section 4.1 (PRI, HEADER = TIMESTAMP HOSTNAME, MSG = TAG CONTENT)",
     "RFC 5424 section 6 (HEADER = PRI VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID; VERSION = NONZERO-DIGIT 0*2DIGIT; only VERSION 1 is defined)",
@@ -15,8 +15,8 @@
     "BSD_DAY": { "pattern": "[0-9]{1,2}", "semantic": "1..semantics.bsdMonthDays[month]" },
     "CLOCK2": { "pattern": "[0-9]{2}", "semantic": "hour 0..23, minute and second 0..59" },
     "BSD_HOSTNAME": {
-      "pattern": "(?!\\{|CEF:|LEEF:)[!-<>-~]{1,255}",
-      "semantic": "Printable ASCII without '='. A token that contains '=' or opens a structured body ('{', 'CEF:', 'LEEF:') is body content, never a host name: a line whose HOSTNAME is omitted must not lose its first key=value field into the header."
+      "pattern": "(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~]",
+      "semantic": "1 to 255 printable ASCII characters without '=' and not ending in ':'. A token that contains '=' or opens a structured body ('{', 'CEF:', 'LEEF:') is body content, and a token that ends in ':' is a TAG, never a host name: a line whose HOSTNAME is omitted must not lose its first field or its TAG into the header."
     },
     "TAG": { "pattern": "[A-Za-z_][A-Za-z0-9_.-]{0,95}" },
     "PROCID_NUM": { "pattern": "[0-9]{1,8}" },
@@ -88,7 +88,6 @@
   "semantics": {
     "priMax": 191,
     "bsdMonthDays": { "Jan": 31, "Feb": 29, "Mar": 31, "Apr": 30, "May": 31, "Jun": 30, "Jul": 31, "Aug": 31, "Sep": 30, "Oct": 31, "Nov": 30, "Dec": 31 },
-    "rfc5424SupportedVersions": [ "1" ],
-    "rfc3164TaglessRequiresStructuredBody": true
+    "rfc5424SupportedVersions": [ "1" ]
   }
 }

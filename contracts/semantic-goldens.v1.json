@@ -340,6 +340,46 @@
         "status": "UNKNOWN",
         "event": null
       }
+    },
+    {
+      "id": "rfc3164-tag-without-hostname",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<13>Oct 11 22:14:15 kernel: srcip=10.1.1.1 action=deny",
+      "provenance": "RFC 3164 4.1.3: 'kernel:' is a TAG with its terminating colon, not a HOSTNAME (RFC 952/1123 host names never end in ':'). Until a host-omitted tagged rule exists the line may be declined, but the TAG must never become the host name. Found by the independent audit of 2026-11-13.",
+      "expect": {
+        "status": "FULL",
+        "neverWrong": true,
+        "source": {
+          "syslog_pri": 13,
+          "syslog_timestamp": "Oct 11 22:14:15",
+          "syslog_appname": "kernel",
+          "body.srcip": "10.1.1.1",
+          "body.action": "deny"
+        },
+        "sourceAbsent": [
+          "syslog_hostname"
+        ],
+        "event": {
+          "srcip": "10.1.1.1",
+          "action": "deny",
+          "stellar_log_index": "threat"
+        },
+        "eventAbsent": [
+          "Synthetic.syslog_hostname"
+        ]
+      }
+    },
+    {
+      "id": "rfc5424-day-30-february",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<34>1 2026-02-30T22:14:15Z host app 123 ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.3 / RFC 3339 5.7: 2026-02-30 is not a date. Found by the independent audit of 2026-11-13 (the browser rejected it, Ruby Time.iso8601 rolled it over).",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
     }
   ],
   "envelopeCases": [
@@ -371,6 +411,8 @@
   "resolvedDefects": {
     "F-1": "RFC 3164 line without HOSTNAME lost its first key=value field into the header in both executors. Resolved by BSD_HOSTNAME and the rfc3164_hostless rule of contracts/syslog-header-grammar.v1.json.",
     "F-2": "RFC 5424 VERSION policy differed between consumers. Resolved by semantics.rfc5424SupportedVersions, read by every consumer.",
-    "F-3": "U+2028 inside a value was rejected by the browser and parsed by the generated Ruby. Resolved by the portable token REST = [^\\r\\n]+."
+    "F-3": "U+2028 inside a value was rejected by the browser and parsed by the generated Ruby. Resolved by the portable token REST = [^\\r\\n]+.",
+    "F-4": "RFC 5424 TIMESTAMP with an impossible calendar day was rejected by the browser and parsed by the generated Ruby. Resolved by an explicit calendar check beside Time.iso8601 in both Ruby templates.",
+    "F-5": "A TAG directly after the timestamp ('kernel:', 'sshd[123]:') was read as HOSTNAME by both executors when HOSTNAME was omitted. Resolved by BSD_HOSTNAME not ending in ':'; the line is declined."
   }
 }

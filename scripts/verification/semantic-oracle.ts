@@ -141,7 +141,9 @@ function report(label: string, failures: string[]): void {
 // regenerates its consumers: the second kind proves that a wrong contract cannot ship either.
 const CONTRACT_MUTANTS: Mutant[] = [
   // Re-introduces F-1: HOSTNAME may again swallow a key=value token.
-  { id: 'contract-hostname-any-printable', file: 'contract', find: '"pattern": "(?!\\\\{|CEF:|LEEF:)[!-<>-~]{1,255}"', replace: '"pattern": "[!-~]{1,255}"' },
+  { id: 'contract-hostname-any-printable', file: 'contract', find: '"pattern": "(?!\\\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~]"', replace: '"pattern": "[!-~]{1,255}"' },
+  // A TAG such as "kernel:" may again be read as the host name.
+  { id: 'contract-hostname-trailing-colon', file: 'contract', find: '[!-<>-~]{0,254}[!-9;<>-~]"', replace: '[!-<>-~]{0,254}[!-<>-~]"' },
   { id: 'contract-rest-ascii-only', file: 'contract', find: '"REST": { "pattern": "[^\\\\r\\\\n]+"', replace: '"REST": { "pattern": "[!-~ ]+"' },
   { id: 'contract-hostless-rule-removed', file: 'contract', find: '[ "rfc3164_tagged", "rfc3164_tagless", "rfc3164_hostless" ]', replace: '[ "rfc3164_tagged", "rfc3164_tagless" ]' },
 ];
@@ -236,7 +238,9 @@ async function runTs(): Promise<number> {
 }
 
 // ---------------------------------------------------------------------- Ruby
-const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar'] }> = [
+const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar']; target?: string }> = [
+  // Forwarder-family template: the relay probe must not reject a direct event that has no TAG.
+  { id: 'rb-forwarder-probe-rejects-tagless', grammar: 'syslog_rfc3164', target: 'forwarder:syslog_rfc3164', file: 'fragment', find: "{'syslogBodyFormat'=>'raw','taglessStructuredRouter'=>true}", replace: "{'syslogBodyFormat'=>'raw'}" },
   ...CONTRACT_MUTANTS.map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const })),
   { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)", replace: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 999)" },
   { id: 'rb-calendar-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: 'day.between?(1, days) && hour.between?(0, 23)', replace: 'day.between?(1, 31) && hour.between?(0, 23)' },
@@ -262,11 +266,12 @@ function mutateFragment(fragment: string, mutant: Mutant): string {
   return out;
 }
 
-function compileFragment(grammar: OracleCase['grammar']): string {
+function compileFragment(grammar: OracleCase['grammar'], forwarder = false): string {
   const profile = goldens.profiles['fw-kv']!;
   const fields = (spec: FieldSpec) => Object.fromEntries(Object.entries(spec).map(([source, [name, type]]) => [source, { normalized_name: name, data_type: type }]));
   const project = sampleProject() as unknown as Record<string, any>;
-  project.extraction = { format: grammar, syslogBodyFormat: 'kv' };
+  // A declared forwarder selects the forwarder-family template; direct events must parse exactly the same.
+  project.extraction = { format: grammar, syslogBodyFormat: 'kv', ...(forwarder ? { forwarder: { maxHops: 2, relayHosts: ['oracle-relay'] } } : {}) };
   project.normalization.topFields = fields(profile.topFields);
   project.normalization.nsFields = {};
   project.normalization.vendorFields = fields(profile.vendorFields);
@@ -287,8 +292,13 @@ function runNative(): number {
     syslog_rfc5424: compileFragment('syslog_rfc5424'),
   };
   const payloadCases = cases.map(item => ({ id: item.id, fragment: item.grammar, raw: item.raw }));
+  for (const grammar of ['syslog_rfc3164', 'syslog_rfc5424'] as const) {
+    fragments[`forwarder:${grammar}`] = compileFragment(grammar, true);
+    if (fragments[`forwarder:${grammar}`] === fragments[grammar]) throw new Error('FORWARDER_TEMPLATE_NOT_SELECTED');
+  }
+  for (const item of cases) payloadCases.push({ id: `forwarder::${item.id}`, fragment: `forwarder:${item.grammar}`, raw: item.raw });
   for (const mutant of RUBY_MUTANTS) {
-    fragments[mutant.id] = mutateFragment(fragments[mutant.grammar]!, mutant);
+    fragments[mutant.id] = mutateFragment(fragments[mutant.target ?? mutant.grammar]!, mutant);
     for (const item of mutantCases)
       if (item.grammar === mutant.grammar) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
   }
@@ -326,6 +336,8 @@ function runNative(): number {
   report('GRAMMAR_DIALECT_DRIFT', dialectDrift);
   const product = score('ruby', cases, item => evaluateRuby(item, output.results[item.id]));
   report('SEMANTIC_ORACLE_NATIVE', product.failures);
+  const forwarder = score('ruby', cases, item => evaluateRuby(item, output.results[`forwarder::${item.id}`]));
+  report('SEMANTIC_ORACLE_NATIVE_FORWARDER_TEMPLATE', forwarder.failures);
   const productFailing = new Set(cases.filter(item => evaluateRuby(item, output.results[item.id]).length > 0).map(item => item.id));
   const survivors: string[] = [];
   for (const mutant of RUBY_MUTANTS) {
@@ -336,7 +348,8 @@ function runNative(): number {
     if (reported === 0) survivors.push(mutant.id);
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
-  const ok = product.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
+  const ok = product.failures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
+  process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
   process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length}\n`);
   return ok ? 0 : 1;

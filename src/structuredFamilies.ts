@@ -2,7 +2,8 @@ import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
 import {jsonSourceValueValid} from './jsonSourceSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
-import { matchRfc3164Header, matchesHeaderToken } from './grammar/syslogHeader';
+import { isSupportedRfc5424Version, matchHeaderRule, matchesHeaderToken } from './grammar/syslogHeader';
+import { matchRfc3164Header } from './grammar/syslogHeader';
 import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -16,13 +17,19 @@ const failure = (message: string): StructuredExtraction => ({ fields: {}, errors
 export function detectStructuredFamily(input: string): StructuredFamily | null {
   if (/^CEF:\d+\|/.test(input)) return 'cef';
   if (/^LEEF:(?:1\.0|2\.0)\|/.test(input)) return 'leef';
-  if (/^<\d{1,3}>[1-9]\d? \S+ \S+ \S+ /.test(input)) return 'syslog_rfc5424';
+  // An RFC 5424 shaped header is labelled RFC 5424 only for a VERSION the contract supports.
+  const ietf = /^<\d{1,3}>([1-9]\d?) \S+ \S+ \S+ /.exec(input);
+  if (ietf && isSupportedRfc5424Version(ietf[1]!)) return 'syslog_rfc5424';
   if (/^<\d{1,3}>[A-Z][a-z]{2} +\d{1,2} +\d{2}:\d{2}:\d{2} /.test(input)) return 'syslog_rfc3164';
   // Bounded BSD security envelope without TAG: timestamp, an optional host
   // and then an explicit structured body. Free-form prose is excluded. The
   // header grammar comes from contracts/syslog-header-grammar.v1.json.
-  const bsd = matchRfc3164Header(input);
-  if (bsd.ok && bsd.rule !== 'rfc3164_tagged' && matchesHeaderToken('STRUCTURED_BODY', bsd.message))
+  // Detection is syntax only on the first line, like the PRI check above;
+  // calendar and PRI range errors are reported by extraction.
+  const first = input.split(/\r?\n/, 1)[0] ?? '';
+  const bsd = matchHeaderRule('rfc3164_tagged', first) ? null
+    : matchHeaderRule('rfc3164_tagless', first) ?? matchHeaderRule('rfc3164_hostless', first);
+  if (bsd && matchesHeaderToken('STRUCTURED_BODY', bsd.message ?? ''))
     return 'syslog_rfc3164';
   return null;
 }
