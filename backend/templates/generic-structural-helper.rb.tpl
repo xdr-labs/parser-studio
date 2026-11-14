@@ -5,6 +5,11 @@ def parserstudio_generic_structural(text)
   # Do not reinterpret physical C0 record separators as KV/token whitespace.
   raise ArgumentError, 'Unsupported generic structural control separator' if
     text.match?(/[\x0b\x0c\x0d\x1c-\x1f]/)
+  # VERSION 1 only (contracts/syslog-header-grammar.v1.json): a line that claims to be RFC 5424 with another
+  # VERSION is not parsed by any generic grammar either.
+  version_head = /__PS_GRAMMAR_FRAGMENT_RFC5424_VERSION_HEAD__/.match(text)
+  raise ArgumentError, 'Unsupported RFC5424 version' if version_head &&
+    !__PS_GRAMMAR_RFC5424_VERSIONS__.include?(version_head[:version])
   profile = @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')
   mixed_profile = profile == 'syslog_prefix_kv_leef2_implicit_tab_v1'
   # The selected standalone LEEF 2.0 family must not fall through to an older

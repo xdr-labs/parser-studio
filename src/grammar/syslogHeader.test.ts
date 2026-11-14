@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { independentKeyValuePairs, classifyStructuredParse } from './parseStatus';
-import { isSupportedRfc5424Version, matchHeaderRule, matchRfc3164Header, matchRfc5424Header } from './syslogHeader';
+import { isSupportedRfc5424Version, matchHeaderRule, matchRfc3164Header, matchRfc5424Header, unsupportedRfc5424Version } from './syslogHeader';
+import { extractGenericStructural } from '../genericStructural';
 import { SYSLOG_HEADER_RULES, SYSLOG_HEADER_SEMANTICS } from './syslogHeaderGrammar.generated';
 import { generateRfc3164KvCases } from './syslogHeaderModel';
 import { detectStructuredFamily, extractStructuredFamily } from '../structuredFamilies';
@@ -184,5 +185,28 @@ describe('consumers follow the contract', () => {
     const envelope = parseSyslogEnvelope('<34>1 2026-10-11T22:14:15Z host app 123 ID47 - user=a\u2028b x=1');
     expect(envelope?.variant).toBe('rfc5424');
     expect(envelope?.message).toBe('user=a\u2028b x=1');
+  });
+});
+
+describe('VERSION 1 only at every entry point', () => {
+  it('recognizes a line that claims to be RFC 5424 with an unsupported VERSION', () => {
+    expect(unsupportedRfc5424Version('<34>2 2026-10-11T22:14:15Z host app 123 ID47 - x')).toBe('2');
+    expect(unsupportedRfc5424Version('<34>12 - host app 123 ID47 - x')).toBe('12');
+    expect(unsupportedRfc5424Version('<34>999 2026-10-11T22:14:15Z host {"a":1}')).toBe('999');
+    expect(unsupportedRfc5424Version('<34>1 2026-10-11T22:14:15Z host app 123 ID47 - x')).toBeNull();
+  });
+
+  it('does not mistake a message that starts with a number for an RFC 5424 VERSION', () => {
+    expect(unsupportedRfc5424Version('<134>2 packets dropped by rule 7')).toBeNull();
+    expect(unsupportedRfc5424Version('<134>Nov 13 10:00:00 fw01 a=1')).toBeNull();
+    expect(unsupportedRfc5424Version('2 2026-10-11T22:14:15Z no pri')).toBeNull();
+  });
+
+  it('keeps the Generic Structural extractor from parsing such a line through another grammar', () => {
+    const body = 'id=firewall sn=ABC fw=10.0.0.1 pri=6 src=10.1.1.1 dst=10.2.2.2';
+    const v2 = extractGenericStructural('<34>2 2026-10-11T22:14:15Z host app 123 ID47 - ' + body);
+    expect(v2.fields).toEqual({});
+    expect(v2.errors).toEqual(['Unsupported RFC5424 version 2: only VERSION 1 is supported']);
+    expect(extractGenericStructural('<34>1 2026-10-11T22:14:15Z host app 123 ID47 - ' + body).errors).toEqual([]);
   });
 });

@@ -104,12 +104,18 @@ Known differences that remain (evidence: independent audit, 2026-11-13):
   still hand-written (ratchet).
 - Auto Parser front door, tagged path: still a hand-written header expression
   (W4). Its key=value validation now uses the contract parser.
-- Generic envelope, browser versus Ruby: 34 of 3,897 audit lines differ - a
-  host token that contains U+2028 (`\S` differs between the runtimes) and BOM
-  or double-space handling in an RFC 5424 message (W4).
+- Generic envelope and Generic Structural extractor, browser versus Ruby 2.4.9
+  (W4): the 34 differing audit lines are resolved (host token delimited by
+  ASCII white space, exactly one SP removed before an RFC 5424 MSG, BOM kept,
+  `.` spelled out in the BSD message profiles). On the audit's 3,897 lines the
+  envelope is identical on all of them and the extractor has no one-sided
+  accept and no field difference (707 parsed identically, 3,190 rejected by
+  both). The grammar of the Generic Structural sub-profiles is still
+  hand-written in TypeScript and Ruby; what is shared is the VERSION gate, the
+  goldens (`genericCases`) and the faults.
 - The oracle covers the structured RFC 3164 / RFC 5424 path with a key=value
-  body. JSON, CEF, LEEF and raw bodies, the mixed router and the Generic
-  Structural extractor are not in it yet (W4, W6).
+  body, the forwarder-family template and Generic Structural goldens. JSON,
+  CEF, LEEF and raw bodies and the mixed router are not in it yet (W6).
 - The duplication ratchet counts exact literal copies; a re-spelled copy is not
   counted.
 
@@ -139,8 +145,16 @@ labelled or shown as RFC 5424 and never FULL; the original line is kept and the
 reason is reported as unsupported. The list lives in
 `semantics.rfc5424SupportedVersions`; TypeScript, the Ruby export and the
 Python Multi-Pass entry points all read it. Goldens cover 1, 2, 12, 999, 0, 01
-and 1000; the Python engine probes four entry points per VERSION; the fault
+and 1000; the Python engine probes five entry points per VERSION; the fault
 `contract-version-2-supported` must be reported.
+
+`fragments.rfc5424_version_head` (`<PRI>VERSION SP` followed by NILVALUE or the
+start of an RFC 3339 date) is how every entry point recognizes a line that
+claims to be RFC 5424. The Generic Structural extractors use it as a gate
+before any other grammar: such a line used to succeed in the browser and in
+Ruby as space-separated key=value with the header kept as opaque prefix tokens,
+and in Python a three-digit VERSION slipped past a two-digit header expression
+and came back as SOURCE_PARSED (found by the VERSION probe).
 
 ## Rules for adding or changing a grammar or a mapping
 

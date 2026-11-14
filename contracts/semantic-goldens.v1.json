@@ -489,6 +489,24 @@
       "expect": {
         "variantNot": "rfc5424"
       }
+    },
+    {
+      "id": "envelope-rfc5424-message-keeps-second-space",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 -  a=1",
+      "provenance": "RFC 5424 6: exactly one SP separates STRUCTURED-DATA from MSG; the second space is message data",
+      "expect": {
+        "variant": "rfc5424",
+        "message": " a=1"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-message-keeps-bom",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 - \ufeffa=1",
+      "provenance": "RFC 5424 6.4: MSG-UTF8 = BOM UTF-8-STRING; the BOM is part of MSG and is preserved",
+      "expect": {
+        "variant": "rfc5424",
+        "message": "\ufeffa=1"
+      }
     }
   ],
   "resolvedDefects": {
@@ -497,5 +515,87 @@
     "F-3": "U+2028 inside a value was rejected by the browser and parsed by the generated Ruby. Resolved by the portable token REST = [^\\r\\n]+.",
     "F-4": "RFC 5424 TIMESTAMP with an impossible calendar day was rejected by the browser and parsed by the generated Ruby. Resolved by an explicit calendar check beside Time.iso8601 in both Ruby templates.",
     "F-5": "A TAG directly after the timestamp ('kernel:', 'sshd[123]:') was read as HOSTNAME by both executors when HOSTNAME was omitted. Resolved by BSD_HOSTNAME not ending in ':'; the line is declined."
-  }
+  },
+  "genericCases": [
+    {
+      "id": "generic-bsd-tagged-message-u2028",
+      "raw": "<13>Oct 11 22:14:15 fw01 kernel: user=a\u2028b x=1",
+      "provenance": "RFC 3164 4.1: PRI 13, TIMESTAMP, HOSTNAME fw01, TAG kernel, CONTENT after ': '. U+2028 is not a line terminator in Syslog, so it is message text (the browser used to reject this line while the generated Ruby parsed it)",
+      "expect": {
+        "fields": {
+          "syslog.pri": "13",
+          "syslog.hostname": "fw01",
+          "syslog.app_tag": "kernel",
+          "generic.mode": "bsd_tagged_message",
+          "generic.message": "user=a\u2028b x=1"
+        }
+      }
+    },
+    {
+      "id": "generic-bsd-tagged-message-plain",
+      "raw": "<13>Oct 11 22:14:15 10.0.0.1 sshd: Accepted password for alice",
+      "provenance": "RFC 3164 4.1 with an IPv4 HOSTNAME",
+      "expect": {
+        "fields": {
+          "syslog.hostname": "10.0.0.1",
+          "syslog.app_tag": "sshd",
+          "generic.mode": "bsd_tagged_message",
+          "generic.message": "Accepted password for alice"
+        }
+      }
+    },
+    {
+      "id": "generic-bsd-tagged-message-day-30-february",
+      "raw": "<13>Feb 30 22:14:15 fw01 kernel: hello there",
+      "provenance": "February never has a 30th day; an impossible TIMESTAMP is not a BSD header",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-2",
+      "raw": "<165>2 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "VERSION 1 only policy: the Generic Structural extractor must not parse another VERSION either",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-1-asa",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 - %ASA-6-302013: Built outbound TCP connection 1 for outside:10.1.1.1/80 (10.1.1.1/80) to inside:10.2.2.2/1234 (10.2.2.2/1234)",
+      "provenance": "RFC 5424 6 header with VERSION 1, HOSTNAME host, APP-NAME app; Cisco ASA 302013 message text as MSG",
+      "expect": {
+        "fields": {
+          "syslog.variant": "rfc5424",
+          "syslog.version": "1",
+          "syslog.hostname": "host",
+          "syslog.appname": "app"
+        }
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-2-asa",
+      "raw": "<34>2 2026-10-11T22:14:15Z host app 123 ID47 - %ASA-6-302013: Built outbound TCP connection 1 for outside:10.1.1.1/80 (10.1.1.1/80) to inside:10.2.2.2/1234 (10.2.2.2/1234)",
+      "provenance": "VERSION 1 only policy: the same line with VERSION 2 is not parsed",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-2-space-kv",
+      "raw": "<34>2 2026-10-11T22:14:15Z host app 123 ID47 - id=firewall sn=ABC fw=10.0.0.1 pri=6 src=10.1.1.1 dst=10.2.2.2",
+      "provenance": "VERSION 1 only policy: before 2026-11-14 this line was parsed as space-separated key=value with the RFC 5424 header kept as opaque prefix tokens. A line that claims to be RFC 5424 with an unsupported VERSION must not succeed through another grammar",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-12-nil-timestamp",
+      "raw": "<34>12 - host app 123 ID47 - id=firewall sn=ABC src=10.1.1.1 dst=10.2.2.2",
+      "provenance": "Same policy with a NILVALUE TIMESTAMP",
+      "expect": {
+        "reject": true
+      }
+    }
+  ]
 }
