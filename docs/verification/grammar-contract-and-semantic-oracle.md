@@ -243,6 +243,21 @@ missing, PRI above 191, a day that is not on the calendar, plus the VERSION
 policy. The browser, both Ruby templates on Ruby 2.4.9 and the Python preview
 meet every expectation without a change.
 
+## JSON model (W8)
+
+`src/grammar/jsonModel.ts` renders a JSON object event from meant values in
+spellings RFC 8259 defines as equal (compact, insignificant white space, every
+non-ASCII character and `/` escaped, members reversed) and lists texts the RFC
+does not allow (trailing comma, single-quoted or bare names, truncation, text
+after the object, a leading-zero number, NaN). A repeated member name is
+declined by product policy. The browser, the generated Ruby and the Python
+preview meet every expectation without a change.
+
+One difference is pinned, not changed: an integer beyond 2^53. The browser and
+the generated Ruby decline the event (review safety); the Python preview keeps
+it and reports exactly the digits written. The oracle allows a decline and
+requires exact digits from whoever parses it, so a rounding engine fails.
+
 ## Parse status and Generic Structural (measured, not wired)
 
 Applying the pair accounting of `classifyStructuredParse` to Generic Structural

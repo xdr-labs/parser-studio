@@ -29,6 +29,7 @@ import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
 import { generateRfc5424KvCases } from '../../src/grammar/rfc5424Model';
 import { generateCefLeefCases, type FamilyCase } from '../../src/grammar/cefLeefModel';
 import { generateCsvCases, type CsvCase } from '../../src/grammar/csvModel';
+import { generateJsonCases, type JsonCase, type JsonValue } from '../../src/grammar/jsonModel';
 import { extractFields } from '../../src/parser';
 import { createDraft } from '../../src/model';
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
@@ -54,6 +55,7 @@ interface Goldens {
   genericCases: GenericCase[];
   familyCases: FamilyCase[];
   csvCases: CsvCase[];
+  jsonCases: JsonCase[];
 }
 interface RubyResult { calls?: Array<[unknown, Record<string, unknown> | null]>; raised?: string }
 interface Mutant { id: string; file: string; find: string; replace: string; set?: { path: string[]; value: unknown } }
@@ -79,6 +81,7 @@ function goldenSelfCheck(): string[] {
   }
   for (const item of goldens.familyCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
   for (const item of goldens.csvCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
+  for (const item of goldens.jsonCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
   for (const item of goldens.cases) {
     if (!item.provenance) problems.push(`${item.id}: provenance missing`);
     for (const [path, value] of Object.entries(item.expect.source ?? {}))
@@ -305,8 +308,9 @@ async function runTs(): Promise<number> {
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const family = await runFamilyTs();
   const csv = await runCsvTs();
-  const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0 && family.ok && csv.ok;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary}\n`);
+  const jsonResult = await runJsonTs();
+  const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0 && family.ok && csv.ok && jsonResult.ok;
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary} ${jsonResult.summary}\n`);
   return ok ? 0 : 1;
 }
 
@@ -403,6 +407,7 @@ function runNative(): number {
   }
   const evaluateFamily = prepareFamilyNative(fragments, payloadCases);
   const evaluateCsv = prepareCsvNative(fragments, payloadCases);
+  const evaluateJson = prepareJsonNative(fragments, payloadCases);
   // Grammar dialect equivalence: the contract's Ruby regular expressions must capture exactly what its
   // ECMAScript regular expressions capture, on the target Ruby, for every golden and property line.
   const contract = JSON.parse(readFileSync(join(REPO, 'contracts/syslog-header-grammar.v1.json'), 'utf8'));
@@ -474,10 +479,11 @@ function runNative(): number {
   process.stdout.write(`GENERIC_STRUCTURAL_GOLDENS passed=${goldens.genericCases.length - new Set(genericFailures.map(line => line.split(':')[0])).size} failed=${genericFailures.length}\n`);
   const family = evaluateFamily(output.results);
   const csv = evaluateCsv(output.results);
-  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok && csv.ok;
+  const jsonResult = evaluateJson(output.results);
+  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok && csv.ok && jsonResult.ok;
   process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary} ${jsonResult.summary}\n`);
   return ok ? 0 : 1;
 }
 
@@ -678,7 +684,7 @@ const TS_CSV_MUTANTS: Mutant[] = [
 ];
 
 /** Loads the whole preview pipeline (src/parser.ts and what it imports) from a private copy with one injected fault. */
-async function parserFromCopy(mutant: Mutant): Promise<{ extract: CsvExtract; dispose: () => void }> {
+async function pipelineFromCopy(mutant: Mutant): Promise<{ extractFields: typeof extractFields; createDraft: typeof createDraft; dispose: () => void }> {
   const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
   const source = join(REPO, 'src');
   cpSync(source, join(root, 'src'), { recursive: true, filter: path => statSync(path).isDirectory() || (/\.(ts|tsx|json)$/.test(path) && !/\.test\.tsx?$/.test(path)) });
@@ -689,7 +695,7 @@ async function parserFromCopy(mutant: Mutant): Promise<{ extract: CsvExtract; di
     writeFileSync(target, applyMutant(readFileSync(target, 'utf8'), mutant));
     const parser = await import(pathToFileURL(join(root, 'src/parser.ts')).href) as { extractFields: typeof extractFields };
     const model = await import(pathToFileURL(join(root, 'src/model.ts')).href) as { createDraft: typeof createDraft };
-    return { extract: csvExtractWith(parser.extractFields, model.createDraft), dispose };
+    return { extractFields: parser.extractFields, createDraft: model.createDraft, dispose };
   } catch (error) {
     dispose();
     throw error;
@@ -702,8 +708,8 @@ async function runCsvTs(): Promise<{ ok: boolean; summary: string }> {
   report('SEMANTIC_ORACLE_TS_CSV', failures);
   const survivors: string[] = [];
   for (const mutant of TS_CSV_MUTANTS) {
-    const loaded = await parserFromCopy(mutant);
-    const failing = csvTsFailures(loaded.extract, cases).length;
+    const loaded = await pipelineFromCopy(mutant);
+    const failing = csvTsFailures(csvExtractWith(loaded.extractFields, loaded.createDraft), cases).length;
     loaded.dispose();
     process.stdout.write(`TS_MUTANT ${mutant.id} ${failing > failures.length ? 'KILLED' : 'SURVIVED'} failing_cases=${failing}\n`);
     if (failing <= failures.length) survivors.push(mutant.id);
@@ -802,10 +808,134 @@ function csvPythonFailures(cases: CsvCase[], results: PythonCsv[]): string[] {
   return failures;
 }
 
+// --------------------------------------------------------------------- JSON
+// A JSON object event: RFC 8259 goldens (jsonCases) plus objects rendered from meant values in several
+// spellings the RFC defines as equal (src/grammar/jsonModel.ts), applied to the browser extractor, the
+// generated Ruby and the Python preview. Numbers are compared by value and booleans by truth, so an
+// engine that maps them to text is not penalised; null and "absent" are the same statement.
+interface JsonObservation { parsed: boolean; value: (path: string) => unknown }
+const jsonCases = (properties: number): JsonCase[] => [...goldens.jsonCases, ...generateJsonCases(properties, PROPERTY_SEED)];
+
+function jsonSame(got: unknown, want: JsonValue, emptyTextMayBeAbsent: boolean): boolean {
+  if (want === null) return got === null || got === undefined;
+  if (typeof want === 'number') return typeof got === 'number' ? got === want : typeof got === 'string' && got.trim() !== '' && Number(got) === want;
+  if (typeof want === 'boolean') return got === want || got === String(want);
+  return got === want || (emptyTextMayBeAbsent && want === '' && got === undefined);
+}
+
+function jsonProblems(item: JsonCase, got: JsonObservation | undefined, emptyTextMayBeAbsent = false): string[] {
+  if (!got) return ['no result'];
+  if (item.expect.status === 'UNKNOWN') return got.parsed ? ['parsed, expected a declined event'] : [];
+  if (!got.parsed) return item.expect.neverWrong ? [] : ['declined, expected a parse'];
+  const problems: string[] = [];
+  for (const [path, want] of Object.entries(item.expect.values ?? {}))
+    if (!jsonSame(got.value(path), want, emptyTextMayBeAbsent)) problems.push(`${path}=${JSON.stringify(got.value(path))}, expected ${JSON.stringify(want)}`);
+  for (const [path, digits] of Object.entries(item.expect.exactDigits ?? {}))
+    if (String(got.value(path)) !== digits) problems.push(`${path}=${String(got.value(path))}, expected exactly ${digits}`);
+  return problems;
+}
+
+type JsonExtract = (raw: string) => { fields: Record<string, unknown>; errors: string[] };
+const jsonExtractWith = (extract: typeof extractFields, draft: typeof createDraft): JsonExtract => raw => extract(raw, 'json', { ...draft(), format: 'json' });
+function jsonTsFailures(extract: JsonExtract, cases: JsonCase[]): string[] {
+  const failures: string[] = [];
+  for (const item of cases) {
+    let out: { fields: Record<string, unknown>; errors: string[] };
+    try { out = extract(item.raw); } catch (error) { failures.push(`${item.id}: extractor raised ${String(error)}`); continue; }
+    const fields = out.fields;
+    const problems = jsonProblems(item, { parsed: out.errors.length === 0, value: path => deepGet(fields, path) });
+    if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+  }
+  return failures;
+}
+const TS_JSON_MUTANTS: Mutant[] = [
+  { id: 'ts-json-repeated-name-accepted', file: 'src/parser.ts', find: 'if(hasDuplicateJsonObjectKeys(raw))', replace: 'if(false)' },
+  // Without the guard JSON.parse rounds 12345678901234567890 to 12345678901234567000.
+  { id: 'ts-json-large-integer-rounded', file: 'src/parser.ts', find: 'if(hasUnsafeJsonNumbers(raw))', replace: 'if(false)' },
+];
+
+async function runJsonTs(): Promise<{ ok: boolean; summary: string }> {
+  const cases = jsonCases(200);
+  const failures = jsonTsFailures(jsonExtractWith(extractFields, createDraft), cases);
+  report('SEMANTIC_ORACLE_TS_JSON', failures);
+  const survivors: string[] = [];
+  for (const mutant of TS_JSON_MUTANTS) {
+    const loaded = await pipelineFromCopy(mutant);
+    const failing = jsonTsFailures(jsonExtractWith(loaded.extractFields, loaded.createDraft), cases).length;
+    loaded.dispose();
+    process.stdout.write(`TS_MUTANT ${mutant.id} ${failing > failures.length ? 'KILLED' : 'SURVIVED'} failing_cases=${failing}\n`);
+    if (failing <= failures.length) survivors.push(mutant.id);
+  }
+  if (survivors.length) report('MUTANT_SURVIVED', survivors);
+  return { ok: failures.length === 0 && survivors.length === 0, summary: `json_cases=${cases.length} json_mutants_killed=${TS_JSON_MUTANTS.length - survivors.length}/${TS_JSON_MUTANTS.length}` };
+}
+
+const RUBY_JSON_MUTANTS: Mutant[] = [
+  { id: 'rb-json-repeated-name-accepted', file: 'fragment', find: "  raise ArgumentError, 'Duplicate JSON object key' if parserstudio_json_duplicate_keys?(text)\n", replace: '' },
+];
+
+function jsonFragment(paths: string[]): string {
+  const project = sampleProject() as unknown as Record<string, any>;
+  project.extraction = { format: 'json' };
+  project.normalization.topFields = {};
+  project.normalization.nsFields = {};
+  project.normalization.vendorFields = Object.fromEntries(paths.map(path => [path, { normalized_name: familyKey(path), data_type: 'string' }]));
+  project.classification = { defaultIndex: 'syslog', rules: [] };
+  return compilePair(project).files.find(file => !file.name.endsWith('.conf'))!.content;
+}
+
+/** Adds the JSON fragment and cases to the Ruby payload; returns the evaluation to run on the results. */
+function prepareJsonNative(fragments: Record<string, string>, payloadCases: Array<{ id: string; fragment: string; raw: string }>):
+  (results: Record<string, RubyResult>) => { ok: boolean; summary: string } {
+  const cases = jsonCases(50);
+  const mutantCases = jsonCases(15);
+  const paths = [...new Set(cases.flatMap(item => [...Object.keys(item.expect.values ?? {}), ...Object.keys(item.expect.exactDigits ?? {})]))];
+  fragments.json = jsonFragment(paths);
+  for (const item of cases) payloadCases.push({ id: `json::${item.id}`, fragment: 'json', raw: item.raw });
+  for (const mutant of RUBY_JSON_MUTANTS) {
+    fragments[mutant.id] = applyMutant(fragments.json, mutant);
+    for (const item of mutantCases) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
+  }
+  const observe = (result: RubyResult | undefined): JsonObservation | undefined => {
+    if (!result || result.raised) return undefined;
+    const events = (result.calls ?? []).filter(([time, record]) => time !== null && record !== null && record.parser_err_msg === undefined);
+    return { parsed: events.length === 1, value: path => deepGet(events[0]![1], 'Synthetic.' + familyKey(path)) };
+  };
+  return results => {
+    const failures: string[] = [];
+    for (const item of cases) {
+      const result = results[`json::${item.id}`];
+      // The event shows mapped vendor fields; an empty text value is not emitted as a field by the mapping stage.
+      const problems = result?.raised ? [`artifact raised ${result.raised}`] : jsonProblems(item, observe(result), true);
+      if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+    }
+    report('SEMANTIC_ORACLE_NATIVE_JSON', failures);
+    const survivors: string[] = [];
+    for (const mutant of RUBY_JSON_MUTANTS) {
+      const reported = mutantCases.filter(item => jsonProblems(item, observe(results[`${mutant.id}::${item.id}`]), true).length > 0).length;
+      process.stdout.write(`RUBY_MUTANT ${mutant.id} ${reported > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${reported}\n`);
+      if (reported === 0) survivors.push(mutant.id);
+    }
+    if (survivors.length) report('MUTANT_SURVIVED', survivors);
+    return { ok: failures.length === 0 && survivors.length === 0, summary: `json_cases=${cases.length} json_mutants_killed=${RUBY_JSON_MUTANTS.length - survivors.length}/${RUBY_JSON_MUTANTS.length}` };
+  };
+}
+
+interface PythonJson { status: string; fields: Record<string, unknown> }
+function jsonPythonFailures(cases: JsonCase[], results: PythonJson[]): string[] {
+  const failures: string[] = [];
+  cases.forEach((item, index) => {
+    const result = results[index];
+    const problems = jsonProblems(item, result && { parsed: result.status === 'SOURCE_PARSED', value: path => deepGet(result.fields, path) });
+    if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+  });
+  return failures;
+}
+
 // -------------------------------------------------------------------- Python
 interface PythonEnvelope { syslog: Record<string, string>; start: number }
 interface PythonKv { status: string; body: Record<string, unknown> }
-interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[]; family: PythonFamily[]; csv: PythonCsv[] }
+interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[]; family: PythonFamily[]; csv: PythonCsv[]; json: PythonJson[] }
 const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
 const PYTHON_MUTANTS: Mutant[] = [
   ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname') || mutant.id.startsWith('contract-kv')),
@@ -820,6 +950,8 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-csv-doubled-quote-kept', file: 'engine.py', find: "chars.append('\"');pos+=2", replace: "chars.append('\"\"');pos+=2" },
   // Re-introduces F-12: csv.reader alone accepts a double quote inside a bare field.
   { id: 'py-csv-quote-inside-bare-field-accepted', file: 'engine.py', find: "if '\"' in value:", replace: 'if False:' },
+  { id: 'py-json-repeated-name-accepted', file: 'engine.py', find: 'if not isinstance(key,str) or key in out or key in {"__proto__","constructor","prototype"}:', replace: 'if not isinstance(key,str) or key in {"__proto__","constructor","prototype"}:' },
+  { id: 'py-json-text-after-object-accepted', file: 'engine.py', find: 'raise ValueError("JSON_TRAILING_DATA")', replace: 'pass' },
   { id: 'py-generic-family-claim-gate-removed', file: 'generic_structural_poc.py', find: "if STRUCTURED_FAMILY_CLAIM.match(raw) is not None and standard.status!='SOURCE_PARSED':", replace: 'if False:' },
 ];
 
@@ -871,9 +1003,10 @@ function evaluatePythonEnvelope(item: OracleCase, result: PythonEnvelope | null 
 
 const PYTHON_FAMILY_CASES = familyCases(60);
 const PYTHON_CSV_CASES = csvCases(180).filter(item => item.delimiter === ',');
+const PYTHON_JSON_CASES = jsonCases(40);
 function pythonRun(moduleDir: string, cases: OracleCase[], kvCases: OracleCase[]): PythonOutput {
   const run = spawnSync('python3', [join(REPO, 'scripts/verification/semantic-oracle-python-runner.py')], {
-    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), familyLines: PYTHON_FAMILY_CASES.map(item => ({ family: item.family, raw: item.raw })), csvLines: PYTHON_CSV_CASES.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
+    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), familyLines: PYTHON_FAMILY_CASES.map(item => ({ family: item.family, raw: item.raw })), csvLines: PYTHON_CSV_CASES.map(item => item.raw), jsonLines: PYTHON_JSON_CASES.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
     encoding: 'utf8', maxBuffer: 1 << 28, timeout: 120000,
   });
   if (run.status !== 0) throw new Error(`SEMANTIC_ORACLE_PYTHON_RUNNER_FAILED ${String(run.stderr).slice(-600)}`);
@@ -902,7 +1035,7 @@ function runPython(): number {
   const failuresOf = (output: PythonOutput) => {
     const failures = score('ruby', cases, item => evaluatePythonEnvelope(item, output.envelope[index.get(item)!])).failures;
     const kvFailures = score('ruby', kvCases, item => evaluatePythonKv(item, output.kv[kvIndex.get(item)!])).failures;
-    return [...failures, ...kvFailures, ...familyPythonFailures(PYTHON_FAMILY_CASES, output.family), ...csvPythonFailures(PYTHON_CSV_CASES, output.csv), ...pythonFailures({ ...output, envelope: [] }, [])];
+    return [...failures, ...kvFailures, ...familyPythonFailures(PYTHON_FAMILY_CASES, output.family), ...csvPythonFailures(PYTHON_CSV_CASES, output.csv), ...jsonPythonFailures(PYTHON_JSON_CASES, output.json), ...pythonFailures({ ...output, envelope: [] }, [])];
   };
   const moduleDir = join(REPO, 'runtime/multipass');
   const product = pythonRun(moduleDir, cases, kvCases);
@@ -928,7 +1061,7 @@ function runPython(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const ok = productFailures.length === 0 && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} family_cases=${PYTHON_FAMILY_CASES.length} csv_cases=${PYTHON_CSV_CASES.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} family_cases=${PYTHON_FAMILY_CASES.length} csv_cases=${PYTHON_CSV_CASES.length} json_cases=${PYTHON_JSON_CASES.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 
