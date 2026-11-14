@@ -38,6 +38,11 @@ export interface ParserProject {
       "syslog_prefix_kv_leef2_implicit_tab_v1";
     /** Generic Structural only: leave the full raw line (source_raw) out of parserstudio_source. */
     omitSourceRaw?: true;
+    /**
+     * Generic Structural only (owner policy D-2). "dedicated": a line that claims to be CEF or LEEF is read by the
+     * CEF/LEEF grammar or declined. Absent keeps the V15 legacy route of existing projects.
+     */
+    genericStructuralFamilyGrammar?: "dedicated";
     maxDepth?: number;
   };
   normalization: {

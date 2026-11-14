@@ -45,6 +45,12 @@ export interface ParserDraft {
   genericStructuralProfile?: GenericStructuralProfile;
   /** Generic Structural only: leave the full raw line (source_raw) out of parserstudio_source. Absent keeps it. */
   omitSourceRaw?: true;
+  /**
+   * Generic Structural only (owner policy D-2). 'dedicated': a line that claims to be CEF or LEEF is read by the
+   * CEF/LEEF grammar or declined, never as generic key=value. Set for every newly created Generic Structural
+   * parser. Absent keeps the V15 behaviour of existing projects (legacy compatibility route).
+   */
+  genericStructuralFamilyGrammar?: 'dedicated';
   /** Explicit supported one-line families only; no implicit fallback. */
   mixedFormats?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
   mappings: MappingRule[];

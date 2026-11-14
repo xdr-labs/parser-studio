@@ -19,6 +19,18 @@ def parserstudio_generic_structural(text)
     return result if result
     raise ArgumentError, 'Unsupported generic structural event'
   end
+  # Owner policy D-2. extraction.genericStructuralFamilyGrammar "dedicated" is set for every newly created
+  # Generic Structural parser: a line that claims to be CEF or LEEF (contract fragment structured_family_claim)
+  # is read by the CEF/LEEF grammar or declined, never by a generic key=value route. Absent keeps the V15
+  # routes below unchanged for existing projects.
+  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralFamilyGrammar') == 'dedicated'
+    claim = /__PS_GRAMMAR_FRAGMENT_STRUCTURED_FAMILY_CLAIM__/.match(text)
+    if claim
+      body = claim[:family] == 'CEF' ? parserstudio_cef(text) : parserstudio_leef(text)
+      return {'body'=>body,
+              'generic'=>{'mode'=>(claim[:family] == 'CEF' ? 'structured_family_cef' : 'structured_family_leef'),'source_raw'=>text}}
+    end
+  end
   result = parserstudio_generic_short_rfc5424_structured(text)
   return result if result
   result = parserstudio_generic_short_rfc5424_json(text)

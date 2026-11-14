@@ -1,6 +1,7 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventParseStatus, EventResult, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { classifyStructuredParse } from './grammar/parseStatus';
+import { classifyGenericStructural } from './grammar/genericParseStatus';
 import { bodyKindOf, detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
@@ -256,7 +257,7 @@ export function extractFields(raw: string, format: ConcreteFormat, draft: Parser
     case 'kv': return extractKV(raw);
     case 'csv': return extractCSV(raw, draft.csvColumns, draft.csvDelimiter ?? ',');
     case 'java_stacktrace': return parseJavaStacktrace(raw);
-    case 'generic_structural': return extractGenericStructural(raw,draft.genericStructuralProfile);
+    case 'generic_structural': return extractGenericStructural(raw,draft.genericStructuralProfile,draft.genericStructuralFamilyGrammar);
     case 'mixed': {
       const selected=draft.mixedFormats??[];
       if(selected.length<2||selected.length>4||
@@ -382,8 +383,16 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     // branches of a mixed allowlist). Either one is enough, so the check cannot be skipped by losing the tag.
     const keyValueBody = effectiveFormat === 'kv' || bodyKindOf(extraction) === 'kv' ||
       ((effectiveFormat === 'syslog_rfc3164' || effectiveFormat === 'syslog_rfc5424') && draft.format !== 'auto' && draft.syslogBodyFormat === 'kv');
-    const verdict = classifyStructuredParse(eventSource, extraction, keyValueBody ? 'kv' : 'other');
+    const verdict = effectiveFormat === 'generic_structural'
+      ? classifyGenericStructural(eventSource, extraction)
+      : classifyStructuredParse(eventSource, extraction, keyValueBody ? 'kv' : 'other');
     parseStatus = verdict.status;
+    // Generic Structural (W7, owner policy D-2): a result that is not provably complete is never FULL. It is
+    // reported as a warning, not as a failure, so that the legacy route of an existing project keeps working.
+    if (effectiveFormat === 'generic_structural' && verdict.status === 'PARTIAL')
+      diagnostics.push({ stage: 'extract', severity: 'warning', code: 'GENERIC_STRUCTURAL_NOT_FULL',
+        message: 'This event is not completely parsed: ' + verdict.reasons.slice(0, 3).join('; ') + '.' });
+    else
     if (verdict.status === 'PARTIAL' && verdict.lostPairs.length > 0)
       error('extract', 'FIELD_LOSS_NOT_FULL',
         'A key=value pair of the original log is missing from the parsed result: ' +

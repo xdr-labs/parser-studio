@@ -23,6 +23,7 @@ import { pathToFileURL } from 'node:url';
 import { extractStructuredFamily } from '../../src/structuredFamilies';
 import { parseSyslogEnvelope } from '../../src/syslogEnvelope';
 import { extractGenericStructural } from '../../src/genericStructural';
+import { classifyGenericStructural } from '../../src/grammar/genericParseStatus';
 import { classifyStructuredParse } from '../../src/grammar/parseStatus';
 import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslogHeaderModel';
 import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
@@ -44,7 +45,8 @@ type Extract = (raw: string, grammar: string, body: string) => { fields: Record<
 interface FieldSpec { [source: string]: [string, string] }
 interface Profile { topFields: FieldSpec; vendorFields: FieldSpec; classification: unknown }
 interface EnvelopeCase { id: string; raw: string; knownDefect?: string; expect: { variant?: string; variantNot?: string; message?: string } }
-interface GenericCase { id: string; raw: string; provenance: string; expect: { fields?: Record<string, unknown>; reject?: boolean } }
+/** familyGrammar 'dedicated' is what every newly created Generic Structural parser carries (owner policy D-2); absent is the V15 legacy route. */
+interface GenericCase { id: string; raw: string; provenance: string; familyGrammar?: 'dedicated'; expect: { fields?: Record<string, unknown>; reject?: boolean; status?: 'FULL' | 'PARTIAL' } }
 interface Goldens {
   profiles: Record<string, Profile>;
   knownDefects: Record<string, { engines: Engine[] }>;
@@ -82,6 +84,11 @@ function goldenSelfCheck(): string[] {
     if (item.knownDefect && !goldens.knownDefects[item.knownDefect]) problems.push(`${item.id}: unknown defect ${item.knownDefect}`);
   }
   for (const item of goldens.familyCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
+  for (const item of goldens.genericCases) {
+    if (!item.provenance) problems.push(`${item.id}: provenance missing`);
+    if (ids.has(item.id)) problems.push(`duplicate golden id ${item.id}`);
+    ids.add(item.id);
+  }
   for (const item of goldens.csvCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
   for (const item of goldens.jsonCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
   for (const item of goldens.cases) {
@@ -219,7 +226,7 @@ function applyMutant(text: string, mutant: Mutant): string {
 }
 
 /** Loads the product extractor from a private copy of src/, optionally with one injected fault. */
-async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extract; extractGeneric: GenericExtract; envelope: (raw: string) => { variant?: string } | null; dispose: () => void }> {
+async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extract; extractGeneric: GenericExtract; classifyGeneric: GenericClassify; envelope: (raw: string) => { variant?: string } | null; dispose: () => void }> {
   const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
   const source = join(REPO, 'src');
   cpSync(source, join(root, 'src'), {
@@ -245,27 +252,36 @@ async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extr
     const module = await import(pathToFileURL(join(root, 'src/structuredFamilies.ts')).href) as { extractStructuredFamily: Extract };
     const generic = await import(pathToFileURL(join(root, 'src/genericStructural.ts')).href) as { extractGenericStructural: GenericExtract };
     const envelope = await import(pathToFileURL(join(root, 'src/syslogEnvelope.ts')).href) as { parseSyslogEnvelope: (raw: string) => { variant?: string } | null };
-    return { extract: module.extractStructuredFamily, extractGeneric: generic.extractGenericStructural, envelope: envelope.parseSyslogEnvelope, dispose };
+    const verdict = await import(pathToFileURL(join(root, 'src/grammar/genericParseStatus.ts')).href) as { classifyGenericStructural: GenericClassify };
+    return { extract: module.extractStructuredFamily, extractGeneric: generic.extractGenericStructural, classifyGeneric: verdict.classifyGenericStructural, envelope: envelope.parseSyslogEnvelope, dispose };
   } catch (error) {
     dispose();
     throw error;
   }
 }
 
-type GenericExtract = (raw: string) => { fields: Record<string, unknown>; errors: string[] };
-function genericTsFailures(extract: GenericExtract): string[] {
+type GenericExtract = (raw: string, profile?: undefined, familyGrammar?: 'dedicated') => { fields: Record<string, unknown>; errors: string[] };
+type GenericClassify = (raw: string, outcome: { fields: Record<string, unknown>; errors: string[] }) => { status: string };
+function genericTsFailures(extract: GenericExtract, classify: GenericClassify): string[] {
   const failures: string[] = [];
   for (const item of goldens.genericCases) {
-    const result = extract(item.raw);
+    const result = extract(item.raw, undefined, item.familyGrammar);
     const accepted = result.errors.length === 0 && Object.keys(result.fields).length > 0;
     if (item.expect.reject) { if (accepted) failures.push(`${item.id}: Generic Structural parsed it as ${JSON.stringify(deepGet(result.fields, 'generic.mode'))}`); continue; }
     if (!accepted) { failures.push(`${item.id}: Generic Structural rejected it`); continue; }
     for (const [path, want] of Object.entries(item.expect.fields ?? {}))
       if (!same(deepGet(result.fields, path), want)) failures.push(`${item.id}: ${path}=${JSON.stringify(deepGet(result.fields, path))}, expected ${JSON.stringify(want)}`);
+    // Owner policy D-2: the verdict the product shows for this result (never FULL on the legacy CEF/LEEF route).
+    const status = classify(item.raw, result).status;
+    if (item.expect.status !== undefined && status !== item.expect.status) failures.push(`${item.id}: verdict ${status}, expected ${item.expect.status}`);
   }
   return failures;
 }
 const TS_GENERIC_MUTANTS: Mutant[] = [
+  // Owner policy D-2: a new parser reads a CEF/LEEF claim through the generic key=value routes again.
+  { id: 'ts-generic-dedicated-gate-removed', file: 'src/genericStructural.ts', find: "const claim=familyGrammar==='dedicated'?structuredFamilyClaim(raw):null;", replace: 'const claim=null as string|null;' },
+  // Owner policy D-2: the legacy route's result for a CEF/LEEF claim is shown as a complete parse.
+  { id: 'ts-generic-claim-verdict-full', file: 'src/grammar/genericParseStatus.ts', find: 'if (claim && !GENERIC_FAMILY_MODES.includes(mode))', replace: 'if (false)' },
   { id: 'ts-generic-host-and-tag-swapped', file: 'src/genericStructural.ts', find: "time:match[4],hostname:match[5],app_tag:match[6]},\n    generic:{mode:'bsd_tagged_message'", replace: "time:match[4],hostname:match[6],app_tag:match[5]},\n    generic:{mode:'bsd_tagged_message'" },
   // Re-introduces the browser-only rejection of U+2028 in a BSD tagged message.
   { id: 'ts-generic-message-stops-at-u2028', file: 'src/genericStructural.ts', find: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\\n]+)$/.exec(raw);", replace: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);" },
@@ -293,7 +309,7 @@ async function runTs(): Promise<number> {
     else if (wrong) envelopeFailures.push(`${item.id}: envelope variant ${String(variant)}`);
   }
   // Generic Structural extractor versus hand-authored goldens.
-  envelopeFailures.push(...genericTsFailures(extractGenericStructural as GenericExtract));
+  envelopeFailures.push(...genericTsFailures(extractGenericStructural as GenericExtract, classifyGenericStructural as GenericClassify));
   report('SEMANTIC_ORACLE_TS', [...product.failures, ...envelopeFailures]);
 
   // Fault injection: an unmutated private copy must behave like the product, every mutant must be reported.
@@ -313,7 +329,7 @@ async function runTs(): Promise<number> {
   }
   for (const mutant of TS_GENERIC_MUTANTS) {
     const loaded = await extractorFromCopy(mutant);
-    const failing = genericTsFailures(loaded.extractGeneric).length +
+    const failing = genericTsFailures(loaded.extractGeneric, loaded.classifyGeneric).length +
       goldens.envelopeCases.filter(item => item.expect.variantNot !== undefined && loaded.envelope(item.raw)?.variant === item.expect.variantNot).length;
     loaded.dispose();
     process.stdout.write(`TS_MUTANT ${mutant.id} ${failing > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${failing}\n`);
@@ -352,6 +368,8 @@ const RUBY_GENERIC_MUTANTS: Mutant[] = [
   // The envelope-level VERSION check is covered by backend/test/generic-structural-helper.test.ts; at the
   // extractor level the gate below decides, so that is what is removed here.
   { id: 'rb-generic-version-gate-removed', file: 'fragment', find: "  raise ArgumentError, 'Unsupported RFC5424 version' if version_head &&\n    !['1'].include?(version_head[:version])\n", replace: '' },
+  // Owner policy D-2: the generated Ruby of a new parser reads a CEF/LEEF claim through the generic routes again.
+  { id: 'rb-generic-dedicated-gate-removed', file: 'fragment', find: "  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralFamilyGrammar') == 'dedicated'\n", replace: '  if false\n' },
 ];
 
 /** Applies a mutant to a compiled Fragment; a contract mutant swaps the injected grammar for the mutated contract's grammar. */
@@ -431,10 +449,17 @@ function runNative(): number {
   genericProject.normalization.vendorFields = Object.fromEntries(genericPaths.map(path => [path, { normalized_name: genericName(path), data_type: 'string' }]));
   genericProject.classification = { defaultIndex: 'syslog', rules: [] };
   fragments.generic_structural = compilePair(genericProject).files.find(file => !file.name.endsWith('.conf'))!.content;
-  for (const item of goldens.genericCases) payloadCases.push({ id: `generic::${item.id}`, fragment: 'generic_structural', raw: item.raw });
+  // Owner policy D-2: the same project as a newly created parser (dedicated CEF/LEEF grammar); a case runs
+  // against the artifact of the route it names.
+  genericProject.extraction = { format: 'generic_structural', genericStructuralFamilyGrammar: 'dedicated' };
+  fragments['generic_structural@dedicated'] = compilePair(genericProject).files.find(file => !file.name.endsWith('.conf'))!.content;
+  if (fragments['generic_structural@dedicated'] === fragments.generic_structural) throw new Error('GENERIC_DEDICATED_MARKER_NOT_COMPILED');
+  const genericFragment = (item: GenericCase, base: string) => item.familyGrammar === 'dedicated' ? `${base}@dedicated` : base;
+  for (const item of goldens.genericCases) payloadCases.push({ id: `generic::${item.id}`, fragment: genericFragment(item, 'generic_structural'), raw: item.raw });
   for (const mutant of RUBY_GENERIC_MUTANTS) {
     fragments[mutant.id] = applyMutant(fragments.generic_structural, mutant);
-    for (const item of goldens.genericCases) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
+    fragments[`${mutant.id}@dedicated`] = applyMutant(fragments['generic_structural@dedicated'], mutant);
+    for (const item of goldens.genericCases) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: genericFragment(item, mutant.id), raw: item.raw });
   }
   for (const grammar of ['syslog_rfc3164', 'syslog_rfc5424'] as const) {
     fragments[`forwarder:${grammar}`] = compileFragment(grammar, true);
@@ -556,7 +581,7 @@ function runNative(): number {
 // (src/grammar/cefLeefModel.ts). Each engine reports whether it parsed the line and the value of a field;
 // the same expectation is applied to the browser extractor, the generated Ruby and the Python preview.
 // The Python preview also declines a line that claims to be CEF or LEEF and is not; for the browser and Ruby
-// Generic Structural routes that is policy divergence D-2 (legacy V15 compatibility, owner decision pending).
+// Generic Structural routes that is owner policy D-2: declined by a new parser, PARTIAL on the legacy route (genericCases).
 interface FamilyObservation {
   parsed: boolean; value: (key: string) => unknown;
   /** Browser extractor: its error messages. */

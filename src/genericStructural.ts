@@ -3,6 +3,7 @@ import {unsupportedRfc5424Version} from './grammar/syslogHeader';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {extractLeef2ImplicitTab} from './leef2ImplicitTab';
 import {GENERIC_STRUCTURAL_MIXED_PROFILE_V1,type GenericStructuralProfile} from './genericStructuralProfiles';
+import {GRAMMAR_FRAGMENTS} from './grammar/syslogHeaderGrammar.generated';
 import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
 export type {GenericStructuralProfile} from './genericStructuralProfiles';
 
@@ -961,7 +962,23 @@ function syslogPrefixedKeyValues(raw:string):Record<string,unknown>|null{
   };
 }
 
-export function extractGenericStructural(raw:string,profile?:GenericStructuralProfile):GenericStructuralExtraction{
+const FAMILY_CLAIM=new RegExp(GRAMMAR_FRAGMENTS.structured_family_claim.source,'y');
+/** 'CEF' or 'LEEF' when the line claims to be such an event (contract fragment structured_family_claim). */
+export function structuredFamilyClaim(raw:string):'CEF'|'LEEF'|null{
+  FAMILY_CLAIM.lastIndex=0;
+  const match=FAMILY_CLAIM.exec(raw);
+  return match?match.groups!.family as 'CEF'|'LEEF':null;
+}
+/** Modes that read a CEF/LEEF event with the CEF/LEEF grammar. */
+export const GENERIC_FAMILY_MODES:readonly string[]=['structured_family_cef','structured_family_leef','syslog_envelope_cef','syslog_envelope_leef','leef2_implicit_tab'];
+
+/**
+ * familyGrammar (owner policy D-2): 'dedicated' is set for every newly created Generic Structural parser; a
+ * line that claims to be CEF or LEEF is then read by the CEF/LEEF grammar or declined, never by a generic
+ * key=value route. Absent keeps the V15 behaviour of existing projects unchanged (legacy compatibility
+ * route); the parse verdict of such a line is PARTIAL, never FULL (src/grammar/genericParseStatus.ts).
+ */
+export function extractGenericStructural(raw:string,profile?:GenericStructuralProfile,familyGrammar?:'dedicated'):GenericStructuralExtraction{
   // Physical C0 control separators must not be misread as unquoted KV spacing.
   if(/[\x0b\x0c\x0d\x1c-\x1f]/.test(raw))
     return {fields:{},errors:['Unsupported physical control separator in Generic Structural source']};
@@ -978,6 +995,14 @@ export function extractGenericStructural(raw:string,profile?:GenericStructuralPr
     const fields=extractLeef2ImplicitTab(raw);
     return fields?{fields,errors:[]}:
       {fields:{},errors:['Event does not match the bounded Generic Structural compiler grammar']};
+  }
+  const claim=familyGrammar==='dedicated'?structuredFamilyClaim(raw):null;
+  if(claim){
+    const parsed=extractStructuredFamily(raw,claim==='CEF'?'cef':'leef');
+    if(parsed.errors.length)
+      return {fields:{},errors:['The event claims to be '+claim+' but does not match the '+claim+' grammar; it is not read as generic key=value']};
+    return {fields:{body:parsed.fields,
+      generic:{mode:claim==='CEF'?'structured_family_cef':'structured_family_leef',source_raw:raw}},errors:[]};
   }
   const fields=shortRfc5424Structured(raw)??shortRfc5424Json(raw)??prefixedJson(raw)??isoPriMixed(raw)??isoPriPositional(raw)??asa(raw)??watchguardProfile(raw)??watchguardMessageProfile(raw)??dualTimestampSessionProfile(raw)??bsdBracketPidMessageProfile(raw)??
     juniperLegacyProfile(raw)??junosRfc5424Sd(raw)??bracketColonKv(raw)??

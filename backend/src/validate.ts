@@ -198,6 +198,10 @@ export function validateProject(input: unknown): ValidationResult {
   if(extraction.genericStructuralProfile!==undefined&&extraction.format!=="generic_structural")
     issue(issues,"generic_structural_profile","/extraction/genericStructuralProfile",
       "A Generic Structural profile requires the Generic Structural extraction format.");
+  if(extraction.genericStructuralFamilyGrammar!==undefined&&
+      (extraction.genericStructuralFamilyGrammar!=="dedicated"||extraction.format!=="generic_structural"))
+    issue(issues,"generic_structural_family_grammar","/extraction/genericStructuralFamilyGrammar",
+      "genericStructuralFamilyGrammar may only be \"dedicated\" and only with the Generic Structural extraction format.");
   if(extraction.omitSourceRaw!==undefined&&
       (extraction.omitSourceRaw!==true||extraction.format!=="generic_structural"))
     issue(issues,"omit_source_raw","/extraction/omitSourceRaw",

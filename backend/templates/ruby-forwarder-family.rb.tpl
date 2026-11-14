@@ -145,6 +145,8 @@ def parserstudio_collect_leaves(value, key, leaves)
 end
 
 # key=value pairs that start a white-space separated token of the original text, as [key, value, written].
+# The key and the quoted-value tokens are the contract's (no second literal of them); what is separate from
+# the grammar is the control flow: every token of the line is visited, with no header and no pair order.
 # The five positional header fields after "<PRI>VERSION" of an RFC 5424 line are never pairs.
 def parserstudio_independent_pairs(text)
   rest = text
@@ -154,7 +156,7 @@ def parserstudio_independent_pairs(text)
     rest = positional.post_match
   end
   pairs = []
-  rest.scan(/(__PS_GRAMMAR_TOKEN_KV_KEY__)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^ \t\\])*\\?))|[^ \t]+|[ \t]+/m) do |key, double, single, bare|
+  rest.scan(/(__PS_GRAMMAR_TOKEN_KV_KEY__)=(?:"(__PS_GRAMMAR_TOKEN_KV_DQ__)"|'(__PS_GRAMMAR_TOKEN_KV_SQ__)'|((?:\\.|[^ \t\\])*\\?))|[^ \t]+|[ \t]+/m) do |key, double, single, bare|
     next if key.nil?
     quoted = double || single
     pairs << (quoted ? [key, quoted.gsub(/\\(.)/m, '\1'), quoted] : [key, bare, bare])

@@ -72,8 +72,26 @@ shape does not change) and the pipeline applies pair accounting whenever that
 is key=value. The draft-based condition stays in place, so losing the record
 cannot switch the check off.
 
-Not yet covered by the verdict: Generic Structural and the generated Ruby at
-run time (a line that never appeared as a sample).
+Generated Ruby at run time (W7). A line that never appeared as a sample is
+checked by the artifact itself: `parserstudio_extract` ends with
+`parserstudio_assert_no_field_loss(text, result)` in both templates. For a
+key=value body the original text is read again by a separate control flow
+(every white-space separated token is visited, with no header and no pair
+order; the key and quoted-value tokens are the contract's) and a pair that is
+missing, has another value, or occurs more often in the text than in the
+result raises, so the event becomes an error record instead of a parsed event
+that lacks a field. A TAG (`kernel:`) or a pair read as the RFC 3164 host name
+is refused the same way (RFC 5424 HOSTNAME is positional and exempt). The
+browser applies the same two rules (`src/grammar/parseStatus.ts`,
+`HEADER_MISREAD_NOT_FULL`). Proof: the native oracle injects three grammar
+faults that lose a pair silently and prints, per fault,
+`RUNTIME_FIELD_LOSS_GUARD ... wrong_events_without_guard=N
+wrong_events_with_guard=0`; `backend/test/runtime-field-loss-guard.test.ts`
+injects pair loss, value truncation and a skipped first pair on six routes in
+both templates.
+
+Not covered by the run-time check: CSV, JSON, CEF and LEEF bodies (the oracle
+holds those), and Generic Structural, whose verdict is described below.
 
 ### D. Property-based and metamorphic cases
 Every variant has its own expectation: base, double spaces, reversed pairs,
@@ -192,7 +210,7 @@ lists them).
 
 `parse_quoted_kv` in `runtime/multipass/engine.py` keeps its own pair expression; it has no caller (see below).
 
-## CEF and LEEF (W6, first slice)
+## CEF and LEEF (W6)
 
 Covered by the oracle in all three engines: hand-written goldens taken from the
 ArcSight CEF and IBM LEEF format guides (`familyCases`) and bodies rendered from
@@ -218,11 +236,26 @@ Defects this found:
 - F-10: the Python preview reported a malformed CEF/LEEF line as parsed through
   its permissive generic fallback. Fixed with `fragments.structured_family_claim`.
 
-Policy divergence D-2 (owner decision needed): Generic Structural without a
-selected profile still parses a line that starts with `CEF:` or `LEEF:` with
-its legacy space-separated key=value route in the browser and Ruby. Three
-existing tests keep that on purpose for existing V15 projects, so it was not
-changed.
+Owner policy D-2 (decided 2026-11-14): inside Generic Structural a line that
+claims to be CEF or LEEF (`fragments.structured_family_claim`) is, for every
+newly created parser, read by the CEF/LEEF grammar or declined. The marker is
+`extraction.genericStructuralFamilyGrammar: "dedicated"` (draft, project
+schema, validator, capability `genericStructuralDedicatedFamilies`); it is set
+when Generic Structural is selected, built automatically or taken from an AI
+recipe, and kept as stored on import. The result is
+`{body: <CEF/LEEF fields>, generic: {mode: structured_family_cef |
+structured_family_leef, source_raw}}`. A project without the marker keeps its
+V15 output (legacy compatibility route: the three existing tests still pass
+unchanged); its verdict for such a line is PARTIAL with the warning
+`GENERIC_STRUCTURAL_NOT_FULL`, never FULL. A backend that does not advertise
+the capability is refused before download (`BACKEND_PROFILE_UNSUPPORTED`).
+Enforced by `ownerPolicies.D-2`: `genericCases` with `familyGrammar` and
+`expect.status` run against the browser extractor and verdict and against two
+compiled Ruby artifacts (with and without the marker) on Ruby 2.4.9; faults
+`ts-generic-dedicated-gate-removed`, `ts-generic-claim-verdict-full`,
+`rb-generic-dedicated-gate-removed`, `py-generic-family-claim-gate-removed`;
+`src/ownerPolicyD2GenericFamilies20261114.test.ts` and
+`backend/test/owner-policy-d2-generic-families.test.ts` read the same goldens.
 
 Contract values (revision 5): the CEF extension key token (`CEF_KEY`), the
 LEEF attribute key token (`LEEF_KEY`), `cefSupportedVersions`,
@@ -239,10 +272,21 @@ The Python LEEF pass (`decode_cef_or_leef` in `structured_source.py`) reads
 bounded key expression used to reject an attribute key longer than 128
 characters that the browser and Ruby accept.
 
-Still hand-written per language: the control flow of the CEF extension scanner
-(a value runs to the last white-space character before the next key) and of
-the LEEF attribute splitter. Their behaviour is held together by the oracle
-and the faults.
+Control flow (contract revision 6). The CEF extension and the LEEF delimiter
+are contract fragments (`cef_pair`, `leef_delimiter`, `leef_attribute`; tokens
+`CEF_WS`, `CEF_WS_RUN`, `CEF_NOT_WS`, `CEF_ESCAPE`, `CEF_PLAIN`,
+`LEEF_DELIMITER_LITERAL`, `LEEF_HEX_DIGITS`; semantics
+`leefDelimiterFieldVersions`, `leefHeaderFields`, `leefDefaultDelimiter`,
+`leefDelimiterExtraCodePoints`). The five hand-written CEF extension scanners
+are gone (one fragment plus a short loop per engine) and the five copies of
+the LEEF delimiter rule, which had three different behaviours, are one. All
+three engines now agree: a LEEF hex delimiter is `0x` or `x` plus one to four
+hex digits, a white-space delimiter is refused, an empty attribute or a
+trailing delimiter is refused, trailing white space of a CEF line is grammar.
+`ruby-forwarder-family.rb.tpl` is generated from `ruby-fragment.rb.tpl` plus
+an overlay (`scripts/grammar/generate-forwarder-template.mjs`; `--verify` in
+CI), which removed 723 duplicated lines. Scanning is linear (200,000 spaces:
+milliseconds in JavaScript, Ruby 2.4.9 and Python).
 
 ## RFC 5424 model (W8)
 
@@ -269,15 +313,21 @@ the generated Ruby decline the event (review safety); the Python preview keeps
 it and reports exactly the digits written. The oracle allows a decline and
 requires exact digits from whoever parses it, so a rounding engine fails.
 
-## Parse status and Generic Structural (measured, not wired)
+## Parse status and Generic Structural (wired)
 
-Applying the pair accounting of `classifyStructuredParse` to Generic Structural
-results as they are would report correct parses as PARTIAL: the message
-profiles keep the message as one text field, SD-PARAMs are stored under their
-SD-ELEMENT, and `space_kv` gives the last pair the rest of the line and exposes
-its words as atoms (`dport=53 pattern: allow all` -> `kv.dport` plus
-`atoms.dport_001 = 53`). A verdict for Generic Structural therefore needs
-per-mode accounting; it is not wired.
+The strict pair accounting of `classifyStructuredParse` would report correct
+Generic Structural parses as PARTIAL (message profiles keep the message as one
+text field, SD-PARAMs sit under their SD-ELEMENT, `space_kv` gives the last
+pair the rest of the line). `classifyGenericStructural`
+(`src/grammar/genericParseStatus.ts`) therefore decides from the original line
+and the result, the same way for every mode: a raw pair is accounted for when
+a field of that name holds its value or a kept text field holds the pair as
+written; the provenance copies `source_raw` and `message_raw` are not fields.
+FULL needs every pair accounted for and the line read by the grammar it
+claims; otherwise PARTIAL, reported as the warning
+`GENERIC_STRUCTURAL_NOT_FULL` (a warning, not a failure, so an existing
+project keeps working). A declined line is UNKNOWN. `processEvent` uses this
+verdict for format `generic_structural`.
 
 `parse_event` / `parse_quoted_kv` in `runtime/multipass/engine.py` have no
 caller in the repository (preview API, tests, scripts), so that legacy

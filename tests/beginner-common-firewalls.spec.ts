@@ -7,7 +7,7 @@ const cap={
   authoring:{
     receiverProtocols:['udp','tcp'],
     extractionFormats:['generic_structural'],
-    genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',
+    genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',genericStructuralDedicatedFamilies:true,
     formatCoverage:'reviewed-bounded-subset',
     httpReceiver:false,multipleDistinctReceiverPorts:false,multiline:false,arbitraryRuby:false,
   },

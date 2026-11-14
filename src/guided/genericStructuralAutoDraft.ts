@@ -83,6 +83,8 @@ export function buildAutomaticGenericStructuralDraft(
   };
   if(discovery.profile)candidate.genericStructuralProfile=discovery.profile;
   else delete candidate.genericStructuralProfile;
+  // A new parser: CEF/LEEF lines are read by the dedicated grammar or declined (owner policy D-2).
+  candidate.genericStructuralFamilyGrammar='dedicated';
   let candidateSuite=preview(source,candidate);
 
   const suggestions=suggestNormalizationCandidatesFromSuite(

@@ -209,7 +209,9 @@ export function proposeV01RecoveryParserFromAI(imported:AIImportResult,draft:Par
  if(recipe.sourceFormat==='generic_structural'){
    if(parseGeneric?.profile)candidate.genericStructuralProfile=parseGeneric.profile;
    else delete candidate.genericStructuralProfile;
- }
+   // A full replacement is a new parser: CEF/LEEF lines use the dedicated grammar (owner policy D-2).
+   candidate.genericStructuralFamilyGrammar='dedicated';
+ }else delete candidate.genericStructuralFamilyGrammar;
  if(!toBackendProject(candidate).ok)return deny('BACKEND_UNSUPPORTED');
  return {ok:true,candidate,approvalRequired:true,backendCompilerVerified:false,replacement:'FULL_PARSER'};
 }

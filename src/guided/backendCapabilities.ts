@@ -16,6 +16,7 @@ export interface BackendCapabilities {
     /** The explicit two-grammar combination is separate from the original profile list. */
     genericStructuralMixedProfileV1?: boolean;
     genericStructuralOmitSourceRaw?: boolean;
+    genericStructuralDedicatedFamilies?: boolean;
     formatCoverage: 'reviewed-bounded-subset';
     /** Mixed routing must be explicit; arbitrary vendor regex is never selected. */
     strictMixedSingleLineFamilies?: Array<'json'|'kv'|'cef'|'leef'|'rfc5424_cef'|'rfc5424_leef'|'rfc3164_kv'|'rfc5424_json'|'rfc5424_kv'|'rfc3164_cef'|'rfc3164_leef'|'csv'>;
@@ -235,6 +236,9 @@ export async function fetchBackendCapabilities(
   if(a.genericStructuralMixedProfileV1!==undefined&&(
     !genericStructuralAdvertised||typeof a.genericStructuralMixedProfileV1!=='boolean'))
     throw new Error('Untrusted combined Generic Structural profile capability.');
+  if(a.genericStructuralDedicatedFamilies!==undefined&&(
+    !genericStructuralAdvertised||typeof a.genericStructuralDedicatedFamilies!=='boolean'))
+    throw new Error('Untrusted Generic Structural dedicated CEF/LEEF grammar capability.');
   if(a.genericStructuralOmitSourceRaw!==undefined&&(
     !genericStructuralAdvertised||typeof a.genericStructuralOmitSourceRaw!=='boolean'))
     throw new Error('Untrusted Generic Structural raw-line option capability.');
@@ -390,6 +394,11 @@ export function assertBackendProjectSupported(project: BackendParserProject, cap
       throw Object.assign(new Error('The backend does not advertise the selected Generic Structural profile.'),
         {code:'BACKEND_PROFILE_UNSUPPORTED'});
   }
+  if(project.extraction.genericStructuralFamilyGrammar!==undefined&&(
+    project.extraction.format!=='generic_structural'||project.extraction.genericStructuralFamilyGrammar!=='dedicated'||
+    cap.authoring.genericStructuralDedicatedFamilies!==true))
+    throw Object.assign(new Error('The backend does not support the dedicated CEF/LEEF grammar inside Generic Structural.'),
+      {code:'BACKEND_PROFILE_UNSUPPORTED'});
   if(project.extraction.omitSourceRaw!==undefined&&(
     project.extraction.format!=='generic_structural'||project.extraction.omitSourceRaw!==true||
     cap.authoring.genericStructuralOmitSourceRaw!==true))

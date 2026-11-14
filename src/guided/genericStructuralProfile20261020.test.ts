@@ -10,7 +10,7 @@ function capability():BackendCapabilities{
   return {
     contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
     authoring:{receiverProtocols:['udp','tcp'],extractionFormats:['generic_structural'],
-      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',
+      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',genericStructuralDedicatedFamilies:true,
       genericStructuralProfiles:['syslog_prefix_kv'],formatCoverage:'reviewed-bounded-subset',
       httpReceiver:false,multipleDistinctReceiverPorts:false,multiline:false,arbitraryRuby:false},
     import:{exactInternalPairsEditable:true,unknownLegacyRubyEditable:false,structuralInspectionOnly:true},
@@ -37,7 +37,7 @@ describe('explicit Syslog prefix and KV compiler profile',()=>{
       const converted=toBackendProject(result!.draft);
       expect(converted.ok).toBe(true);
       if(!converted.ok)throw new Error('Profile translation failed');
-      expect(converted.project.extraction).toEqual({format:'generic_structural',genericStructuralProfile:'syslog_prefix_kv'});
+      expect(converted.project.extraction).toEqual({format:'generic_structural',genericStructuralProfile:'syslog_prefix_kv',genericStructuralFamilyGrammar:'dedicated'});
       expect(()=>assertBackendProjectSupported(converted.project,capability())).not.toThrow();
       const old=capability();delete old.authoring.genericStructuralProfiles;
       expect(()=>assertBackendProjectSupported(converted.project,old)).toThrow(/selected Generic Structural profile/);

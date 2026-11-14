@@ -50,6 +50,9 @@ export const BACKEND_CAPABILITIES = Object.freeze({
     genericStructuralMixedProfileV1: true,
     // Additive scalar: extraction.omitSourceRaw leaves source_raw out of parserstudio_source.
     genericStructuralOmitSourceRaw: true,
+    // Additive scalar (owner policy D-2): extraction.genericStructuralFamilyGrammar "dedicated" reads CEF/LEEF
+    // lines with the CEF/LEEF grammar or declines them; absent keeps the V15 legacy route.
+    genericStructuralDedicatedFamilies: true,
     rfc3164StrictTaggedMessageSubset: true,
     rfc3164TaglessStructuredSecuritySubset: true,
     rfc3164TimePolicy: "YEAR_AND_ZONE_UNKNOWN" as const,

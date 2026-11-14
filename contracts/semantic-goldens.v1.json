@@ -598,7 +598,7 @@
     "F-7": "The strict key=value path of the browser and the generated Ruby accepted U+001C..U+001F as value data while Generic Structural and the Python preview declined the line (issue #214). Resolved by KV_BARE excluding U+001C..U+001F.",
     "F-8": "The Python Multi-Pass key=value scanner split pairs at Unicode white space (NBSP, U+2028) and decoded a different escape set than the browser and Ruby. Resolved by the scanner reading fragments.kv_pair and semantics.kvUnescapedAfterBackslash.",
     "F-9": "A CEF or LEEF line with U+2028 inside a value was rejected by the browser ('.' excludes it in ECMAScript) and parsed by the generated Ruby and the Python preview. Resolved by dotAll on the two family head expressions.",
-    "F-10": "The Python preview reported a line that claims to be CEF or LEEF but is not valid (six header fields, LEEF 3.0) as parsed through its permissive Generic Structural fallback, with multi-word values cut at the first space. Resolved for the Python preview by fragments.structured_family_claim. The browser and Ruby side is policy divergence D-2.",
+    "F-10": "The Python preview reported a line that claims to be CEF or LEEF but is not valid (six header fields, LEEF 3.0) as parsed through its permissive Generic Structural fallback, with multi-word values cut at the first space. Resolved for the Python preview by fragments.structured_family_claim. The browser and Ruby side is owner policy D-2.",
     "F-11": "CEF and LEEF: the header splitter also decoded backslash escapes in the extension, which the extension grammar then decoded a second time, identically in the browser and the generated Ruby. 'filePath=C:\\\\\\\\Users\\\\\\\\new' came out as 'C:\\\\Users' LF 'ew', and the standard's own example 'act=blocked a \\\\\\\\ dst=1.1.1.1' lost dst. Resolved by keeping the text after the last header delimiter exactly as written.",
     "F-12": "The Python preview offered a comma row with a double quote inside a bare field (aaa,b\\\"bb,ccc) as a CSV candidate; RFC 4180 forbids it and the browser tokenizer and Ruby's CSV.parse_line reject the row. Resolved in parse_csv_spans.",
     "F-13": "The Python preview parsed a CEF:1 line while the browser and the generated Ruby implement CEF version 0 only, so the Analyze step showed a line as parsed that the generated parser rejects. Resolved by semantics.cefSupportedVersions, read by every engine."
@@ -683,6 +683,174 @@
       "expect": {
         "reject": true
       }
+    },
+    {
+      "id": "generic-d2-legacy-cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route: a Generic Structural project created before D-2 carries no familyGrammar marker and keeps the V15 output exactly (the ArcSight CEF example read as space-separated key=value; the header and the first extension field stay in prefix text). The verdict is PARTIAL, never FULL, because the CEF header is not parsed.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.dst": "2.1.2.2",
+          "generic.kv.spt": "1232",
+          "generic.kv.dpt": "80",
+          "generic.kv.act": "blocked",
+          "generic.kv.proto": "tcp",
+          "generic.prefix_003": "stopped|10|src=10.0.0.1"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-legacy-cef-version-1",
+      "raw": "CEF:1|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route, unsupported CEF version: the V15 output is unchanged and the verdict is PARTIAL.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.dst": "2.1.2.2",
+          "generic.kv.spt": "1232",
+          "generic.kv.dpt": "80",
+          "generic.kv.act": "blocked",
+          "generic.kv.proto": "tcp"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-legacy-leef-leading-tab",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|\tfirst=one\tsecond=two\tthird=three\tfourth=four\tfifth=five",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route: a LEEF 2.0 line whose attributes start with the delimiter (an empty first attribute, not valid LEEF) is still read as space/TAB-separated key=value by a project without the marker; verdict PARTIAL.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.first": "one",
+          "generic.kv.second": "two",
+          "generic.kv.fifth": "five"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-legacy-leef-version-3",
+      "raw": "LEEF:3.0|Acme Corp|Gateway|1|event|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route, LEEF version 3.0 does not exist: the V15 output is unchanged and the verdict is PARTIAL.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.dst": "2.1.2.2",
+          "generic.kv.spt": "1232",
+          "generic.kv.dpt": "80",
+          "generic.kv.act": "blocked",
+          "generic.kv.proto": "tcp"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: ArcSight CEF Implementation Standard example. Seven header fields then the extension; Name is the sixth header field with its spaces, src is the first extension field.",
+      "expect": {
+        "fields": {
+          "generic.mode": "structured_family_cef",
+          "body.cef_version": "0",
+          "body.cef_device_vendor": "Security",
+          "body.cef_name": "worm successfully stopped",
+          "body.cef_severity": "10",
+          "body.src": "10.0.0.1",
+          "body.dst": "2.1.2.2",
+          "body.proto": "tcp"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef2",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|first=one\tsecond=two words\tthird=three\tfourth=four\tfifth=five",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: IBM QRadar LEEF 2.0 with the delimiter field 0x09 (TAB); a value keeps its spaces up to the next delimiter.",
+      "expect": {
+        "fields": {
+          "generic.mode": "structured_family_leef",
+          "body.leef_version": "2.0",
+          "body.leef_vendor": "Acme Corp",
+          "body.leef_event_id": "event",
+          "body.first": "one",
+          "body.second": "two words",
+          "body.fifth": "five"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef1",
+      "raw": "LEEF:1.0|Acme|Gateway|1|event|src=10.0.0.1\tdst=10.0.0.2\tusrName=alice\tproto=tcp\tsev=5",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: IBM QRadar LEEF 1.0, attributes separated by TAB.",
+      "expect": {
+        "fields": {
+          "generic.mode": "structured_family_leef",
+          "body.leef_version": "1.0",
+          "body.leef_vendor": "Acme",
+          "body.src": "10.0.0.1",
+          "body.usrName": "alice",
+          "body.sev": "5"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-cef-version-1-declined",
+      "raw": "CEF:1|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a line that claims CEF with a version other than 0 is declined, never read as generic key=value.",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-cef-four-header-fields-declined",
+      "raw": "CEF:0|only|three|fields src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a CEF claim with four of the seven header fields is declined.",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef-leading-tab-declined",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|\tfirst=one\tsecond=two\tthird=three\tfourth=four\tfifth=five",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a LEEF 2.0 line with an empty first attribute is not valid LEEF; it is declined, not read as key=value (the legacy route parses this very line).",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef-version-3-declined",
+      "raw": "LEEF:3.0|Acme Corp|Gateway|1|event|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: LEEF 3.0 does not exist; the claim is declined (the legacy route parses this very line).",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-plain-generic-line",
+      "raw": "<13>Oct 11 22:14:15 10.0.0.1 sshd: Accepted password for alice",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a line that claims neither CEF nor LEEF is read exactly as before (RFC 3164 4.1 tagged message).",
+      "expect": {
+        "fields": {
+          "syslog.hostname": "10.0.0.1",
+          "syslog.app_tag": "sshd",
+          "generic.mode": "bsd_tagged_message",
+          "generic.message": "Accepted password for alice"
+        },
+        "status": "FULL"
+      }
     }
   ],
   "ownerPolicies": {
@@ -694,18 +862,19 @@
         "familyCases with expect.repeated (CEF, LEEF 1.0, LEEF 2.0)",
         "fault injection: ts-kv-duplicate-key-overwrites, ts-kv-duplicate-key-not-named, ts-cef-duplicate-field-overwrites, ts-leef-duplicate-field-overwrites, rb-kv-duplicate-key-overwrites, rb-cef-duplicate-field-overwrites, rb-leef-duplicate-field-overwrites, py-kv-repeated-key-overwrites, py-kv-repeated-key-keeps-first-only, py-kv-repeated-key-reported-as-parsed, py-leef-repeated-field-reported-as-parsed"
       ]
-    }
-  },
-  "policyDivergences": {
+    },
     "D-2": {
-      "engines": [
-        "ts",
-        "ruby"
-      ],
-      "variant": "generic-family-claim",
-      "statement": "A line that starts with CEF: or LEEF: handed to Generic Structural WITHOUT a selected profile: the browser and the generated Ruby still parse it with the legacy space-separated key=value route, which leaves the header and the first attribute as unparsed text (kept deliberately for existing V15 projects: src/guided/leef2ProfilePrecedence20261020.test.ts, backend/test/leef2-profile-precedence.test.ts, backend/test/generic-structural-mixed-profile-v1.test.ts). The Python preview declines such a line when it is not valid CEF/LEEF. Declining it in the browser and Ruby as well changes the output of existing projects and needs an owner decision."
+      "decidedOn": "2026-11-14",
+      "statement": "Inside Generic Structural a line that claims to be CEF or LEEF (contract fragment structured_family_claim) is, for every newly created parser (extraction.genericStructuralFamilyGrammar \"dedicated\"), read by the CEF/LEEF grammar or declined; it is never read by a generic key=value route and reported FULL. A project created before this decision carries no marker and keeps its V15 output byte for byte (legacy compatibility route); its verdict for such a line is PARTIAL with the warning GENERIC_STRUCTURAL_NOT_FULL, never FULL. The Python preview already declines an invalid claim (F-10).",
+      "enforcedBy": [
+        "genericCases with familyGrammar \"dedicated\" (valid CEF, LEEF 1.0, LEEF 2.0; declined claims; an ordinary Generic Structural line)",
+        "genericCases generic-d2-legacy-* (V15 output unchanged, expect.status PARTIAL)",
+        "fault injection: ts-generic-dedicated-gate-removed, ts-generic-claim-verdict-full, rb-generic-dedicated-gate-removed, py-generic-family-claim-gate-removed",
+        "src/ownerPolicyD2GenericFamilies20261114.test.ts, backend/test/owner-policy-d2-generic-families.test.ts"
+      ]
     }
   },
+  "policyDivergences": {},
   "familyCases": [
     {
       "id": "cef-standard-example",
