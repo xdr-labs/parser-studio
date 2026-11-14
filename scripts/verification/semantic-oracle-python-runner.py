@@ -6,6 +6,7 @@ Input (stdin, JSON):
    "kvLines": ["<raw line with a key=value body>", ...],
    "familyLines": [{"family": "cef" | "leef", "raw": "<raw line>"}, ...],
    "csvLines": ["<comma-separated row>", ...],
+   "jsonLines": ["<JSON object event>", ...],
    "versions": ["1", "2", ...]}
 Output (stdout, JSON):
   {"python": "<version>",
@@ -13,6 +14,7 @@ Output (stdout, JSON):
    "kv": [{"status": "<preview status>", "body": {<key>: <value> | [<values>]}}, ...],
    "family": [{"status": "<preview status>", "header": {...}, "extension": {...}}, ...],
    "csv": [{"candidate": bool, "values": [<field>, ...]}, ...],
+   "json": [{"status": "<preview status>", "fields": {...}}, ...],
    "rfc5424": {"<version>": {"extract_rfc5424": bool, "extract_pair_envelope": bool,
                              "short_rfc5424_json": bool, "short_ietf_csv": bool,
                              "parse_generic_structural": bool}}}
@@ -82,4 +84,24 @@ for raw in request.get("csvLines", []):
         values.append(fields["column_%d" % len(values)])
     csv_rows.append({"candidate": candidate, "values": values})
 
-json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv, "family": family, "csv": csv_rows}, sys.stdout)
+# JSON object events. The oracle reads this output with a JavaScript JSON parser, which cannot hold an integer
+# beyond 2^53 exactly; such an integer is handed over as its decimal digits so the comparison stays exact.
+def exact(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and abs(value) > 2 ** 53 - 1:
+        return str(value)
+    if isinstance(value, dict):
+        return {key: exact(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [exact(item) for item in value]
+    return value
+
+
+json_events = []
+for raw in request.get("jsonLines", []):
+    result = multipass_preview_api.preview(raw)
+    json_events.append({"status": result["status"], "fields": exact(result.get("fields") or {})})
+
+json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv, "family": family, "csv": csv_rows,
+           "json": json_events}, sys.stdout)

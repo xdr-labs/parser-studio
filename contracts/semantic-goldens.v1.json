@@ -1043,5 +1043,63 @@
         ]
       }
     }
+  ],
+  "jsonCases": [
+    {
+      "id": "json-rfc8259-object",
+      "raw": "{\"Latitude\":37.7668,\"Longitude\":-122.3959,\"City\":\"SAN FRANCISCO\",\"Zip\":\"94107\",\"Precision\":\"zip\"}",
+      "provenance": "RFC 8259: section 13 example (one object of the array): numbers and strings as members of an object",
+      "expect": {
+        "status": "FULL",
+        "values": {
+          "Latitude": 37.7668,
+          "Longitude": -122.3959,
+          "City": "SAN FRANCISCO",
+          "Zip": "94107",
+          "Precision": "zip"
+        }
+      }
+    },
+    {
+      "id": "json-string-escapes",
+      "raw": "{\"s\":\"\\u0041\\u00e9 \\ud83d\\ude00 a\\/b \\\\ \\\"q\\\" \\n\",\"t\":true,\"n\":null}",
+      "provenance": "RFC 8259: section 7: \\uXXXX (with a surrogate pair for U+1F600), \\/, \\\\, \\\" and \\n name single characters",
+      "expect": {
+        "status": "FULL",
+        "values": {
+          "s": "Aé 😀 a/b \\ \"q\" \n",
+          "t": true,
+          "n": null
+        }
+      }
+    },
+    {
+      "id": "json-line-separator-unescaped-in-string",
+      "raw": "{\"a\":\"x y\",\"b\":1}",
+      "provenance": "RFC 8259: section 7: only quotation mark, reverse solidus and U+0000..U+001F must be escaped; U+2028 may appear as itself",
+      "expect": {
+        "status": "FULL",
+        "values": {
+          "a": "x y",
+          "b": 1
+        }
+      }
+    },
+    {
+      "id": "json-trailing-comma",
+      "raw": "{\"a\":1,}",
+      "provenance": "RFC 8259: section 4: members are separated by commas; a comma is not followed by the closing brace",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "json-repeated-name",
+      "raw": "{\"a\":1,\"a\":2}",
+      "provenance": "Product policy on RFC 8259 section 4 (names SHOULD be unique; behaviour for repeated names is unpredictable): an object with a repeated name is declined by every engine rather than keeping one of the values",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    }
   ]
 }
