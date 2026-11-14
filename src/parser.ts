@@ -1,7 +1,7 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
 import type { ConcreteFormat, Detection, Diagnostic, EventParseStatus, EventResult, Format, ParserDraft, SuiteResult, TraceStep } from './model';
 import { classifyStructuredParse } from './grammar/parseStatus';
-import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
+import { bodyKindOf, detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import {coerceCanonicalValue as convertValue} from '../backend/src/canonical-value-contract';
@@ -377,7 +377,10 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     // Parsing Success Contract: the extractor's own "no errors" is not proof. For a key=value body the
     // original line is re-read by an independent tokenizer, and a pair that is visible there but missing
     // from the result makes the event PARTIAL - reported as a failure, never as a complete parse.
-    const keyValueBody = effectiveFormat === 'kv' ||
+    // A key=value body is known either from the draft (format kv, or Syslog with body kv) or from what the
+    // extractor says it parsed (bodyKindOf: an `auto` body that resolved to key=value, the key=value
+    // branches of a mixed allowlist). Either one is enough, so the check cannot be skipped by losing the tag.
+    const keyValueBody = effectiveFormat === 'kv' || bodyKindOf(extraction) === 'kv' ||
       ((effectiveFormat === 'syslog_rfc3164' || effectiveFormat === 'syslog_rfc5424') && draft.format !== 'auto' && draft.syslogBodyFormat === 'kv');
     const verdict = classifyStructuredParse(eventSource, extraction, keyValueBody ? 'kv' : 'other');
     parseStatus = verdict.status;

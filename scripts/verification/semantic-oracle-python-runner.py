@@ -5,12 +5,14 @@ Input (stdin, JSON):
    "lines": ["<raw line>", ...],
    "kvLines": ["<raw line with a key=value body>", ...],
    "familyLines": [{"family": "cef" | "leef", "raw": "<raw line>"}, ...],
+   "csvLines": ["<comma-separated row>", ...],
    "versions": ["1", "2", ...]}
 Output (stdout, JSON):
   {"python": "<version>",
    "envelope": [null | {"syslog": {...}, "start": <payload offset>}, ...],
    "kv": [{"status": "<preview status>", "body": {<key>: <value> | [<values>]}}, ...],
    "family": [{"status": "<preview status>", "header": {...}, "extension": {...}}, ...],
+   "csv": [{"candidate": bool, "values": [<field>, ...]}, ...],
    "rfc5424": {"<version>": {"extract_rfc5424": bool, "extract_pair_envelope": bool,
                              "short_rfc5424_json": bool, "short_ietf_csv": bool,
                              "parse_generic_structural": bool}}}
@@ -66,4 +68,18 @@ for item in request.get("familyLines", []):
     family.append({"status": result["status"], "header": fields.get(item["family"] + "_header") or {},
                    "extension": fields.get(item["family"] + "_extension") or {}})
 
-json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv, "family": family}, sys.stdout)
+# Comma-separated rows. The preview offers a headerless row as a candidate (column_0, column_1, ...) that
+# still needs corpus confirmation; a row it finds malformed is not offered.
+csv_rows = []
+for raw in request.get("csvLines", []):
+    result = multipass_preview_api.preview(raw)
+    fields = result.get("fields") or {}
+    candidate = ("CSV_UNLABELED_CANDIDATE" in (result.get("syntax") or "")
+                 and not any(issue.startswith("SOURCE_SYNTAX_ERROR") for issue in result.get("issues") or [])
+                 and "column_0" in fields)
+    values = []
+    while candidate and ("column_%d" % len(values)) in fields:
+        values.append(fields["column_%d" % len(values)])
+    csv_rows.append({"candidate": candidate, "values": values})
+
+json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv, "family": family, "csv": csv_rows}, sys.stdout)

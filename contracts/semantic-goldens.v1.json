@@ -544,7 +544,8 @@
     "F-8": "The Python Multi-Pass key=value scanner split pairs at Unicode white space (NBSP, U+2028) and decoded a different escape set than the browser and Ruby. Resolved by the scanner reading fragments.kv_pair and semantics.kvUnescapedAfterBackslash.",
     "F-9": "A CEF or LEEF line with U+2028 inside a value was rejected by the browser ('.' excludes it in ECMAScript) and parsed by the generated Ruby and the Python preview. Resolved by dotAll on the two family head expressions.",
     "F-10": "The Python preview reported a line that claims to be CEF or LEEF but is not valid (six header fields, LEEF 3.0) as parsed through its permissive Generic Structural fallback, with multi-word values cut at the first space. Resolved for the Python preview by fragments.structured_family_claim. The browser and Ruby side is policy divergence D-2.",
-    "F-11": "CEF and LEEF: the header splitter also decoded backslash escapes in the extension, which the extension grammar then decoded a second time, identically in the browser and the generated Ruby. 'filePath=C:\\\\\\\\Users\\\\\\\\new' came out as 'C:\\\\Users' LF 'ew', and the standard's own example 'act=blocked a \\\\\\\\ dst=1.1.1.1' lost dst. Resolved by keeping the text after the last header delimiter exactly as written."
+    "F-11": "CEF and LEEF: the header splitter also decoded backslash escapes in the extension, which the extension grammar then decoded a second time, identically in the browser and the generated Ruby. 'filePath=C:\\\\\\\\Users\\\\\\\\new' came out as 'C:\\\\Users' LF 'ew', and the standard's own example 'act=blocked a \\\\\\\\ dst=1.1.1.1' lost dst. Resolved by keeping the text after the last header delimiter exactly as written.",
+    "F-12": "The Python preview offered a comma row with a double quote inside a bare field (aaa,b\\\"bb,ccc) as a CSV candidate; RFC 4180 forbids it and the browser tokenizer and Ruby's CSV.parse_line reject the row. Resolved in parse_csv_spans."
   },
   "genericCases": [
     {
@@ -931,6 +932,105 @@
           "share": "\\\\server\\reports",
           "src": "10.1.1.1"
         }
+      }
+    }
+  ],
+  "csvCases": [
+    {
+      "id": "csv-rfc4180-plain",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,bbb,ccc",
+      "provenance": "RFC 4180 section 2: rule 4, fields are separated by commas",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "bbb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-enclosed",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "\"aaa\",\"bbb\",\"ccc\"",
+      "provenance": "RFC 4180 section 2: rule 5, each field may be enclosed in double quotes",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "bbb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-comma-inside-enclosed-field",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "\"aaa\",\"b,bb\",\"ccc\"",
+      "provenance": "RFC 4180 section 2: rule 6, a field containing a comma is enclosed in double quotes",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "b,bb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-doubled-quote",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "\"aaa\",\"b\"\"bb\",\"ccc\"",
+      "provenance": "RFC 4180 section 2: rule 7, a double quote inside an enclosed field is escaped by a preceding double quote",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "b\"bb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-quote-in-bare-field",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,b\"bb,ccc",
+      "provenance": "RFC 4180 section 2: rule 5, double quotes may not appear inside a field that is not enclosed",
+      "expect": {
+        "status": "UNKNOWN",
+        "rejected": "syntax"
+      }
+    },
+    {
+      "id": "csv-enclosed-field-never-closed",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,\"bbb,ccc",
+      "provenance": "RFC 4180 section 2: rule 5, an enclosed field ends with a double quote",
+      "expect": {
+        "status": "UNKNOWN",
+        "rejected": "syntax"
+      }
+    },
+    {
+      "id": "csv-line-separator-in-field",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,b b,ccc",
+      "provenance": "RFC 4180 section 2: U+2028 is not CR or LF; it is an ordinary character of the field",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "b b",
+          "ccc"
+        ]
       }
     }
   ]
