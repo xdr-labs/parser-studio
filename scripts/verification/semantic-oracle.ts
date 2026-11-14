@@ -24,6 +24,7 @@ import { extractStructuredFamily } from '../../src/structuredFamilies';
 import { parseSyslogEnvelope } from '../../src/syslogEnvelope';
 import { classifyStructuredParse } from '../../src/grammar/parseStatus';
 import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslogHeaderModel';
+import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
 import { SYSLOG_HEADER_RULES, type SyslogHeaderRuleName } from '../../src/grammar/syslogHeaderGrammar.generated';
 // @ts-expect-error plain ESM generator without type declarations
@@ -43,7 +44,7 @@ interface Goldens {
   envelopeCases: EnvelopeCase[];
 }
 interface RubyResult { calls?: Array<[unknown, Record<string, unknown> | null]>; raised?: string }
-interface Mutant { id: string; file: string; find: string; replace: string }
+interface Mutant { id: string; file: string; find: string; replace: string; set?: { path: string[]; value: unknown } }
 
 const REPO = resolve('.');
 const goldens = JSON.parse(readFileSync(join(REPO, 'contracts/semantic-goldens.v1.json'), 'utf8')) as Goldens;
@@ -139,14 +140,32 @@ function report(label: string, failures: string[]): void {
 // ---------------------------------------------------------------- TypeScript
 // A mutant either edits one product source file or, with file 'contract', edits the grammar contract and
 // regenerates its consumers: the second kind proves that a wrong contract cannot ship either.
+// Contract mutants set one JSON value of the grammar contract; the consumers are then regenerated from it.
+const contractMutant = (id: string, path: string[], value: unknown): Mutant => ({ id, file: 'contract', find: '', replace: '', set: { path, value } });
 const CONTRACT_MUTANTS: Mutant[] = [
   // Re-introduces F-1: HOSTNAME may again swallow a key=value token.
-  { id: 'contract-hostname-any-printable', file: 'contract', find: '"pattern": "(?!\\\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~]"', replace: '"pattern": "[!-~]{1,255}"' },
-  // A TAG such as "kernel:" may again be read as the host name.
-  { id: 'contract-hostname-trailing-colon', file: 'contract', find: '[!-<>-~]{0,254}[!-9;<>-~]"', replace: '[!-<>-~]{0,254}[!-<>-~]"' },
-  { id: 'contract-rest-ascii-only', file: 'contract', find: '"REST": { "pattern": "[^\\\\r\\\\n]+"', replace: '"REST": { "pattern": "[!-~ ]+"' },
-  { id: 'contract-hostless-rule-removed', file: 'contract', find: '[ "rfc3164_tagged", "rfc3164_tagless", "rfc3164_hostless" ]', replace: '[ "rfc3164_tagged", "rfc3164_tagless" ]' },
+  contractMutant('contract-hostname-any-printable', ['tokens', 'BSD_HOSTNAME', 'pattern'], '[!-~]{1,255}'),
+  // Re-introduces F-5: a TAG such as "kernel:" may again be read as the host name.
+  contractMutant('contract-hostname-trailing-colon', ['tokens', 'BSD_HOSTNAME', 'pattern'], '(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-<>-~]'),
+  contractMutant('contract-rest-ascii-only', ['tokens', 'REST', 'pattern'], '[!-~ ]+'),
+  contractMutant('contract-hostless-rule-removed', ['alternatives', 'rfc3164'], ['rfc3164_tagged', 'rfc3164_tagless']),
+  // key=value body grammar
+  contractMutant('contract-kv-quoted-value-without-escapes', ['tokens', 'KV_DQ', 'pattern'], '[^"\\\\]*'),
+  contractMutant('contract-kv-bare-value-ascii-only', ['tokens', 'KV_BARE', 'pattern'], '(?:\\\\[^\\r\\n]|[!-&(-\\[\\]-~])+'),
+  contractMutant('contract-kv-pair-limit-3', ['semantics', 'kvMaxPairs'], 3),
+  contractMutant('contract-kv-nothing-unescaped', ['semantics', 'kvUnescapedAfterBackslash'], ['\\']),
 ];
+/** Contract text with one mutant applied. */
+function mutateContract(text: string, mutant: Mutant): string {
+  if (!mutant.set) return applyMutant(text, mutant);
+  const contract = JSON.parse(text) as Record<string, any>;
+  let node = contract;
+  for (const key of mutant.set.path.slice(0, -1)) node = node[key];
+  const last = mutant.set.path[mutant.set.path.length - 1]!;
+  if (node === undefined || !(last in node) || same(node[last], mutant.set.value)) throw new Error(`MUTANT_NOT_APPLICABLE ${mutant.id}`);
+  node[last] = mutant.set.value;
+  return JSON.stringify(contract, null, 2) + '\n';
+}
 const TS_MUTANTS: Mutant[] = [
   ...CONTRACT_MUTANTS,
   { id: 'ts-hostname-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_hostname:header.hostname', replace: 'syslog_hostname:header.timestamp' },
@@ -156,6 +175,8 @@ const TS_MUTANTS: Mutant[] = [
   { id: 'ts-pri-range-dropped', file: 'src/grammar/syslogHeader.ts', find: 'pri !== undefined && pri > SYSLOG_HEADER_SEMANTICS.priMax', replace: 'false' },
   { id: 'ts-calendar-widened', file: 'src/grammar/syslogHeader.ts', find: 'day < 1 || day > days ||', replace: 'day < 1 || day > 31 ||' },
   { id: 'ts-rfc5424-any-version', file: 'src/grammar/syslogHeader.ts', find: 'if (!isSupportedRfc5424Version(captures.version!)) return', replace: 'if (false) return' },
+  { id: 'ts-kv-every-backslash-decoded', file: 'src/grammar/kvBody.ts', find: "out += UNESCAPED.includes(next) ? next : '\\\\' + next;", replace: 'out += next;' },
+  { id: 'ts-kv-duplicate-key-overwrites', file: 'src/grammar/kvBody.ts', find: "if (seen.has(key)) return { ok: false, reason: 'DUPLICATE_KEY' };", replace: '' },
   { id: 'ts-rfc5424-appname-procid-swapped', file: 'src/rfc5424Subset.ts', find: 'syslog_appname:header.appname,syslog_procid:header.procid,', replace: 'syslog_appname:header.procid,syslog_procid:header.appname,' },
 ];
 
@@ -183,7 +204,7 @@ async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extr
   const dispose = () => rmSync(root, { recursive: true, force: true });
   try {
     if (mutant && mutant.file === 'contract') {
-      const mutated = applyMutant(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
+      const mutated = mutateContract(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
       writeFileSync(join(root, 'src/grammar/syslogHeaderGrammar.generated.ts'), generateTypeScript(mutated) as string);
     } else if (mutant) {
       const target = join(root, mutant.file);
@@ -200,7 +221,7 @@ async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extr
 async function runTs(): Promise<number> {
   const selfCheck = goldenSelfCheck();
   if (selfCheck.length) { report('GOLDEN_SELF_CHECK', selfCheck); return 1; }
-  const properties = generateRfc3164KvCases(300, PROPERTY_SEED);
+  const properties = [...generateRfc3164KvCases(300, PROPERTY_SEED), ...generateKvBodyCases(200, PROPERTY_SEED)];
   const cases = [...goldens.cases, ...properties];
   const product = score('ts', cases, item => evaluateTs(item, extractStructuredFamily as Extract));
   const envelopeFailures: string[] = [];
@@ -241,11 +262,14 @@ async function runTs(): Promise<number> {
 const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar']; target?: string }> = [
   // Forwarder-family template: the relay probe must not reject a direct event that has no TAG.
   { id: 'rb-forwarder-probe-rejects-tagless', grammar: 'syslog_rfc3164', target: 'forwarder:syslog_rfc3164', file: 'fragment', find: "{'syslogBodyFormat'=>'raw','taglessStructuredRouter'=>true}", replace: "{'syslogBodyFormat'=>'raw'}" },
-  ...CONTRACT_MUTANTS.map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const })),
+  ...CONTRACT_MUTANTS.filter(mutant => mutant.id !== 'contract-kv-pair-limit-3').map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const })),
+  { id: 'rb-kv-pair-limit-3', grammar: 'syslog_rfc3164', file: 'fragment', find: "raise ArgumentError, 'Too many key value fields' if record.length >= 100", replace: "raise ArgumentError, 'Too many key value fields' if record.length >= 3" },
   { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)", replace: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 999)" },
   { id: 'rb-calendar-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: 'day.between?(1, days) && hour.between?(0, 23)', replace: 'day.between?(1, 31) && hour.between?(0, 23)' },
   { id: 'rb-tagged-first-field-lost', grammar: 'syslog_rfc3164', file: 'fragment', find: "  message = header['message']\n", replace: "  message = tagged ? header['message'].sub(/\\A\\S+ /, '') : header['message']\n" },
   { id: 'rb-hostname-wrong-capture', grammar: 'syslog_rfc3164', file: 'fragment', find: "record['syslog_hostname'] = header['hostname'] if header['hostname']", replace: "record['syslog_hostname'] = header['month'] if header['hostname']" },
+  { id: 'rb-kv-every-backslash-decoded', grammar: 'syslog_rfc3164', file: 'fragment', find: '.include?(next_char) ? next_char : escaped', replace: '.include?(next_char) ? next_char : next_char' },
+  { id: 'rb-kv-duplicate-key-overwrites', grammar: 'syslog_rfc3164', file: 'fragment', find: "    raise ArgumentError, 'Duplicate key value field' if record.key?(key)\n", replace: '' },
   { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "raise ArgumentError, 'Unsupported RFC5424 version' unless ['1'].include?(header['version'])", replace: "raise ArgumentError, 'Unsupported RFC5424 version' unless header['version']" },
 ];
 
@@ -254,11 +278,12 @@ function mutateFragment(fragment: string, mutant: Mutant): string {
   if (mutant.file !== 'contract') return applyMutant(fragment, mutant);
   const contractText = readFileSync(join(REPO, CONTRACT_PATH), 'utf8');
   const before = rubyGrammarPlaceholders(contractText) as Record<string, string>;
-  const after = rubyGrammarPlaceholders(applyMutant(contractText, mutant)) as Record<string, string>;
+  const after = rubyGrammarPlaceholders(mutateContract(contractText, mutant)) as Record<string, string>;
   let out = fragment;
   let changed = 0;
   for (const [placeholder, source] of Object.entries(before)) {
-    if (after[placeholder] === source || !out.includes(source)) continue;
+    // A short scalar (a limit such as 100) is not unique text in a Fragment; those faults are injected as text mutants below.
+    if (after[placeholder] === source || source.length < 12 || !out.includes(source)) continue;
     out = out.split(source).join(after[placeholder]!);
     changed += 1;
   }
@@ -285,8 +310,8 @@ function runNative(): number {
   const selfCheck = goldenSelfCheck();
   if (selfCheck.length) { report('GOLDEN_SELF_CHECK', selfCheck); return 1; }
   const expectedRuby = process.env.PARSER_STUDIO_EXPECT_RUBY ?? '2.4.9';
-  const cases = [...goldens.cases, ...generateRfc3164KvCases(60, PROPERTY_SEED)];
-  const mutantCases = [...goldens.cases, ...generateRfc3164KvCases(15, PROPERTY_SEED)];
+  const cases = [...goldens.cases, ...generateRfc3164KvCases(60, PROPERTY_SEED), ...generateKvBodyCases(60, PROPERTY_SEED)];
+  const mutantCases = [...goldens.cases, ...generateRfc3164KvCases(15, PROPERTY_SEED), ...generateKvBodyCases(25, PROPERTY_SEED)];
   const fragments: Record<string, string> = {
     syslog_rfc3164: compileFragment('syslog_rfc3164'),
     syslog_rfc5424: compileFragment('syslog_rfc5424'),
@@ -361,7 +386,7 @@ interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>;
 const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
 const PYTHON_MUTANTS: Mutant[] = [
   ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname')),
-  { id: 'contract-version-2-supported', file: 'contract', find: '"rfc5424SupportedVersions": [ "1" ]', replace: '"rfc5424SupportedVersions": [ "1", "2" ]' },
+  contractMutant('contract-version-2-supported', ['semantics', 'rfc5424SupportedVersions'], ['1', '2']),
 ];
 
 /** The Multi-Pass envelope pass reads the header only: host name, PRI and where the structured payload starts. */
@@ -426,7 +451,7 @@ function runPython(): number {
     const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
     try {
       cpSync(moduleDir, join(root, 'multipass'), { recursive: true, filter: path => !path.includes('__pycache__') });
-      const mutated = applyMutant(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
+      const mutated = mutateContract(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
       writeFileSync(join(root, 'multipass', (GENERATED_PYTHON_PATH as string).split('/').pop()!), generatePython(mutated) as string);
       const failures = failuresOf(pythonRun(join(root, 'multipass'), cases));
       const killed = failures.length > productFailures.length;

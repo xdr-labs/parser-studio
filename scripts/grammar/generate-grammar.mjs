@@ -20,7 +20,7 @@ export const GENERATED_BACKEND_PATH = 'backend/src/syslog-header-grammar.generat
 export const GENERATED_PYTHON_PATH = 'runtime/multipass/syslog_header_grammar_generated.py';
 export const DIALECTS = Object.freeze(['js', 'ruby', 'python']);
 
-const ALLOWED_ESCAPES = new Set(['\\', '{', '}', '[', ']', '(', ')', '|', '.', '+', '*', '?', '^', '$', 'r', 'n', 't', '-']);
+const ALLOWED_ESCAPES = new Set(['\\', '{', '}', '[', ']', '(', ')', '|', '.', '+', '*', '?', '^', '$', 'r', 'n', 't', 'f', 'v', '-']);
 
 /** Rejects every construct whose meaning differs between ECMAScript, Ruby 2.4 and Python. */
 export function validateTokenPattern(name, pattern) {
@@ -90,6 +90,8 @@ function emitSequence(sequence, contract, dialect, captures, ruleName) {
     if (keys.length === 1 && item.sp === '1') return '[ ]';
     if (keys.length === 1 && Array.isArray(item.optional))
       return '(?:' + emitSequence(item.optional, contract, dialect, captures, ruleName) + ')?';
+    if (keys.length === 1 && Array.isArray(item.alt) && item.alt.length >= 2)
+      return '(?:' + item.alt.map(branch => emitSequence(branch, contract, dialect, captures, ruleName)).join('|') + ')';
     if (typeof item.token === 'string' && keys.every(key => key === 'token' || key === 'cap')) {
       const token = contract.tokens[item.token];
       if (!token) throw new Error(`GRAMMAR_RULE_INVALID ${ruleName}: unknown token ${item.token}`);
@@ -122,6 +124,21 @@ const REQUIRED_CAPTURES = Object.freeze({
   rfc5424: ['pri', 'version', 'timestamp', 'hostname', 'appname', 'procid', 'msgid', 'rest'],
 });
 
+/**
+ * Compiles a fragment: an unanchored pattern meant to be matched AT a position
+ * (ECMAScript sticky flag, Ruby \\G, Python pattern.match(text, pos)).
+ */
+export function compileFragment(contract, fragmentName, dialect) {
+  if (!DIALECTS.includes(dialect)) throw new Error(`GRAMMAR_DIALECT_UNKNOWN ${dialect}`);
+  const fragment = contract.fragments?.[fragmentName];
+  if (!fragment) throw new Error(`GRAMMAR_FRAGMENT_UNKNOWN ${fragmentName}`);
+  const captures = [];
+  const body = emitSequence(fragment.sequence, contract, dialect, captures, fragmentName);
+  return { source: (dialect === 'ruby' ? '\\G' : '') + body, captures };
+}
+
+const REQUIRED_FRAGMENT_CAPTURES = Object.freeze({ kv_pair: ['key', 'dq', 'sq', 'bare'] });
+
 export function validateContract(contract) {
   if (contract.schema !== 'parserstudio.grammar-contract.v1' || !Number.isInteger(contract.revision))
     throw new Error('GRAMMAR_CONTRACT_SCHEMA');
@@ -133,7 +150,24 @@ export function validateContract(contract) {
   const walk = sequence => sequence.forEach(item => {
     if (item.token) used.add(item.token);
     if (item.optional) walk(item.optional);
+    if (item.alt) item.alt.forEach(walk);
   });
+  for (const name of contract.standaloneTokens ?? []) {
+    if (!contract.tokens[name]) throw new Error(`GRAMMAR_STANDALONE_TOKEN_UNKNOWN ${name}`);
+    used.add(name);
+  }
+  for (const [name, fragment] of Object.entries(contract.fragments ?? {})) {
+    if (!/^[a-z][a-z0-9_]{0,47}$/.test(name)) throw new Error(`GRAMMAR_FRAGMENT_NAME ${name}`);
+    walk(fragment.sequence);
+    const reference = compileFragment(contract, name, 'js');
+    for (const dialect of DIALECTS)
+      if (compileFragment(contract, name, dialect).captures.join() !== reference.captures.join()) throw new Error(`GRAMMAR_CAPTURE_DRIFT ${name}`);
+    new RegExp(reference.source, 'y');
+  }
+  for (const [name, captures] of Object.entries(REQUIRED_FRAGMENT_CAPTURES)) {
+    if (!contract.fragments?.[name]) throw new Error(`GRAMMAR_FRAGMENT_REQUIRED ${name}`);
+    if (compileFragment(contract, name, 'js').captures.join() !== captures.join()) throw new Error(`GRAMMAR_CAPTURES_REQUIRED ${name}: ${captures.join()}`);
+  }
   for (const [name, rule] of Object.entries(contract.rules)) {
     if (!/^[a-z][a-z0-9_]{0,47}$/.test(name)) throw new Error(`GRAMMAR_RULE_NAME ${name}`);
     walk(rule.sequence);
@@ -160,7 +194,10 @@ export function validateContract(contract) {
   if (!Number.isInteger(semantics.priMax) || semantics.priMax < 0 || semantics.priMax > 191 ||
       !Array.isArray(versions) || versions.length === 0 || versions.some(version => !/^[1-9][0-9]{0,2}$/.test(version)) ||
       Object.keys(semantics.bsdMonthDays).length !== 12 ||
-      Object.values(semantics.bsdMonthDays).some(days => !Number.isInteger(days) || days < 28 || days > 31))
+      Object.values(semantics.bsdMonthDays).some(days => !Number.isInteger(days) || days < 28 || days > 31) ||
+      !Number.isInteger(semantics.kvMaxPairs) || semantics.kvMaxPairs < 1 || semantics.kvMaxPairs > 1000 ||
+      !Array.isArray(semantics.kvForbiddenKeys) || !['__proto__', 'constructor', 'prototype'].every(key => semantics.kvForbiddenKeys.includes(key)) ||
+      !Array.isArray(semantics.kvUnescapedAfterBackslash) || semantics.kvUnescapedAfterBackslash.some(ch => typeof ch !== 'string' || !/^[\x21-\x7e]$/.test(ch)))
     throw new Error('GRAMMAR_SEMANTICS_INVALID');
 }
 
@@ -173,6 +210,7 @@ export function generateTypeScript(contractText) {
   const contract = JSON.parse(contractText);
   validateContract(contract);
   const rules = Object.fromEntries(Object.keys(contract.rules).map(name => [name, compileRule(contract, name, 'js')]));
+  const fragments = Object.fromEntries(Object.keys(contract.fragments ?? {}).map(name => [name, compileFragment(contract, name, 'js')]));
   return [
     '// GENERATED FILE - DO NOT EDIT.',
     `// Source: ${CONTRACT_PATH} (revision ${contract.revision}); regenerate with`,
@@ -182,6 +220,8 @@ export function generateTypeScript(contractText) {
     `export const GRAMMAR_CONTRACT_REVISION = ${contract.revision};`,
     'export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }',
     `export const SYSLOG_HEADER_RULES = ${JSON.stringify(rules, null, 2)} as const satisfies Record<string, CompiledHeaderRule>;`,
+    '/** Unanchored patterns matched at a position; compile them with the sticky flag. */',
+    `export const GRAMMAR_FRAGMENTS = ${JSON.stringify(fragments, null, 2)} as const satisfies Record<string, CompiledHeaderRule>;`,
     `export const SYSLOG_HEADER_TOKENS = ${JSON.stringify(Object.fromEntries(Object.entries(contract.tokens).map(([name, token]) => [name, token.pattern])), null, 2)} as const;`,
     `export const SYSLOG_HEADER_ALTERNATIVES = ${JSON.stringify(contract.alternatives, null, 2)} as const;`,
     `export const SYSLOG_HEADER_SEMANTICS = ${JSON.stringify(contract.semantics, null, 2)} as const;`,
@@ -202,6 +242,11 @@ export function rubyGrammarPlaceholders(contractText) {
   for (const name of Object.keys(contract.rules))
     placeholders[`__PS_GRAMMAR_RX_${name.toUpperCase()}__`] = compileRule(contract, name, 'ruby').source;
   // Ordered alternatives as a Ruby array of [rule name, Regexp], so the order is contract data too.
+  for (const name of Object.keys(contract.fragments ?? {}))
+    placeholders[`__PS_GRAMMAR_FRAGMENT_${name.toUpperCase()}__`] = compileFragment(contract, name, 'ruby').source;
+  placeholders.__PS_GRAMMAR_KV_MAX_PAIRS__ = String(contract.semantics.kvMaxPairs);
+  placeholders.__PS_GRAMMAR_KV_UNESCAPED__ = '[' + contract.semantics.kvUnescapedAfterBackslash
+    .map(ch => "'" + ch.replace(/[\\']/g, '\\$&') + "'").join(', ') + ']';
   // Single tokens, for the few template expressions that need one token of the grammar.
   for (const [name, token] of Object.entries(contract.tokens))
     placeholders[`__PS_GRAMMAR_TOKEN_${name}__`] = token.pattern;
@@ -240,8 +285,9 @@ export function generatePython(contractText) {
   validateContract(contract);
   const rules = Object.fromEntries(Object.keys(contract.rules).map(name => [name, compileRule(contract, name, 'python')]));
   const tokens = Object.fromEntries(Object.entries(contract.tokens).map(([name, token]) => [name, token.pattern]));
+  const fragments = Object.fromEntries(Object.keys(contract.fragments ?? {}).map(name => [name, compileFragment(contract, name, 'python')]));
   const literal = value => JSON.stringify(value, null, 2);
-  for (const text of [literal(rules), literal(tokens), literal(contract.alternatives), literal(contract.semantics)])
+  for (const text of [literal(rules), literal(tokens), literal(fragments), literal(contract.alternatives), literal(contract.semantics)])
     if (/\b(?:true|false|null)\b/.test(text) || /[^\x00-\x7f]/.test(text)) throw new Error('GRAMMAR_PYTHON_LITERAL_UNSAFE');
   return [
     '# GENERATED FILE - DO NOT EDIT.',
@@ -252,6 +298,7 @@ export function generatePython(contractText) {
     `GRAMMAR_CONTRACT_SHA256 = ${JSON.stringify(contractSha256(contractText))}`,
     `TOKENS = ${literal(tokens)}`,
     `RULES = ${literal(rules)}`,
+    `FRAGMENTS = ${literal(fragments)}`,
     `ALTERNATIVES = ${literal(contract.alternatives)}`,
     `SEMANTICS = ${literal(contract.semantics)}`,
     "PRI_MAX = SEMANTICS['priMax']",

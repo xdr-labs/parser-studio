@@ -1,9 +1,9 @@
 # GENERATED FILE - DO NOT EDIT.
-# Source: contracts/syslog-header-grammar.v1.json (revision 1); regenerate with
+# Source: contracts/syslog-header-grammar.v1.json (revision 2); regenerate with
 #   node scripts/grammar/generate-grammar.mjs --write
 # CI runs the generator with --verify, so a hand edit of this file fails the gate.
 # Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.
-GRAMMAR_CONTRACT_SHA256 = "7d666ef2de165dbd6f1a4e327638327ae982d049c8b2a0fc27f62777c69ff03d"
+GRAMMAR_CONTRACT_SHA256 = "be31ffb74393c162a84285d6b3c75aaa2a6e2b4443754b2e3964a80cd1bf20fb"
 TOKENS = {
   "PRI": "[0-9]{1,3}",
   "BSD_MONTH": "[A-Z][a-z]{2}",
@@ -19,7 +19,13 @@ TOKENS = {
   "RFC5424_HOSTNAME": "[!-~]{1,255}",
   "RFC5424_APPNAME": "[!-~]{1,48}",
   "RFC5424_PROCID": "[!-~]{1,128}",
-  "RFC5424_MSGID": "[!-~]{1,32}"
+  "RFC5424_MSGID": "[!-~]{1,32}",
+  "KV_GAP": "[ \\t]*",
+  "KV_KEY": "[A-Za-z_][A-Za-z0-9_.-]{0,95}",
+  "KV_DQ": "(?:\\\\[^\\r\\n]|[^\"\\\\])*",
+  "KV_SQ": "(?:\\\\[^\\r\\n]|[^'\\\\])*",
+  "KV_BARE": "(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v\"'\\\\])+",
+  "KV_TRAILING": "[ \\t\\n\\r\\f\\v]*"
 }
 RULES = {
   "rfc3164_tagged": {
@@ -76,6 +82,17 @@ RULES = {
     ]
   }
 }
+FRAGMENTS = {
+  "kv_pair": {
+    "source": "(?:[ \\t]*)(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:\"(?P<dq>(?:\\\\[^\\r\\n]|[^\"\\\\])*)\"|'(?P<sq>(?:\\\\[^\\r\\n]|[^'\\\\])*)'|(?P<bare>(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v\"'\\\\])+))",
+    "captures": [
+      "key",
+      "dq",
+      "sq",
+      "bare"
+    ]
+  }
+}
 ALTERNATIVES = {
   "rfc3164": [
     "rfc3164_tagged",
@@ -101,6 +118,18 @@ SEMANTICS = {
   },
   "rfc5424SupportedVersions": [
     "1"
+  ],
+  "kvMaxPairs": 100,
+  "kvForbiddenKeys": [
+    "__proto__",
+    "constructor",
+    "prototype"
+  ],
+  "kvUnescapedAfterBackslash": [
+    "\\",
+    "\"",
+    "'",
+    "="
   ]
 }
 PRI_MAX = SEMANTICS['priMax']
