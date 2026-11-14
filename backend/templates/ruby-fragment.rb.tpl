@@ -610,47 +610,22 @@ def parserstudio_cef_extensions(text)
   record = {}
   position = 0
   count = 0
-  # Key token, field limit, escape table, versions and forbidden keys: contracts/syslog-header-grammar.v1.json.
-  key_pattern = /\G(__PS_GRAMMAR_TOKEN_CEF_KEY__)=/
-  while position < text.length
-    position += 1 while position < text.length && [' ', "\t"].include?(text[position])
-    break if position >= text.length
+  # One pair expression (fragments.cef_pair), the escape token, the field limit, the escape table and the
+  # forbidden keys all come from contracts/syslog-header-grammar.v1.json. The browser and the Python
+  # preview compile the same fragment, so the three scanners share one control flow.
+  pair = /__PS_GRAMMAR_FRAGMENT_CEF_PAIR__/
+  while (match = pair.match(text, position))
     raise ArgumentError, 'CEF extension field limit exceeded' if count >= __PS_GRAMMAR_CEF_MAX_FIELDS__
-    match = key_pattern.match(text, position)
-    raise ArgumentError, 'Unsupported CEF extension key boundary' if match.nil? || match.begin(0) != position
-    key = match[1]
+    key = match[:key]
     raise ArgumentError, 'Unsafe CEF extension key' if __PS_GRAMMAR_FORBIDDEN_KEYS__.include?(key)
     raise ArgumentError, 'Duplicate CEF extension field' if record.key?(key)
-    cursor = match.end(0)
-    value = +''
-    boundary = nil
-    while cursor < text.length
-      char = text[cursor]
-      if char == '\\'
-        raise ArgumentError, 'Truncated CEF escape' if cursor + 1 >= text.length
-        following = text[cursor + 1]
-        value << __PS_GRAMMAR_CEF_ESCAPES__.fetch(following) { "\\" + following }
-        cursor += 2
-        next
-      end
-      if char == ' ' || char == "\t"
-        run_end = cursor
-        run_end += 1 while run_end < text.length && [' ', "\t"].include?(text[run_end])
-        next_key = key_pattern.match(text, run_end)
-        if next_key && next_key.begin(0) == run_end
-          value << text[cursor...(run_end - 1)] if run_end - cursor > 1
-          boundary = run_end - 1
-          break
-        end
-      end
-      value << char
-      cursor += 1
-    end
-    value = value.sub(/[ \t]+\z/, '') if boundary.nil?
-    record[key] = value
+    # A backslash pair listed in the contract is decoded; any other pair is kept as written.
+    record[key] = match[:value].gsub(/__PS_GRAMMAR_TOKEN_CEF_ESCAPE__/) { |found| (__PS_GRAMMAR_CEF_ESCAPES__).fetch(found[1]) { found } }
     count += 1
-    position = boundary.nil? ? text.length : boundary + 1
+    position = match.end(0)
   end
+  # Text the pair grammar does not account for: a broken key boundary or a backslash that escapes nothing.
+  raise ArgumentError, 'Unsupported CEF extension key boundary' unless position == text.length
   raise ArgumentError, 'No CEF extension fields parsed' if record.empty?
   record
 end
@@ -688,7 +663,12 @@ def parserstudio_leef(text)
   match = /\ALEEF:([0-9.]+)\|(.*)\z/m.match(text)
   raise ArgumentError, 'Invalid LEEF preamble' unless match && __PS_GRAMMAR_LEEF_VERSIONS__.include?(match[1])
   version = match[1]
-  parts = parserstudio_split_escaped(match[2], '|', version == '2.0' ? 5 : 4)
+  # Header field count, the versions that carry a delimiter field, its spellings, the default delimiter and
+  # the start of an attribute come from contracts/syslog-header-grammar.v1.json (fragments.leef_delimiter,
+  # fragments.leef_attribute); the browser and the Python preview read the same values.
+  carries_delimiter = __PS_GRAMMAR_LEEF_DELIMITER_VERSIONS__.include?(version)
+  header_fields = __PS_GRAMMAR_LEEF_HEADER_FIELDS__
+  parts = parserstudio_split_escaped(match[2], '|', header_fields + (carries_delimiter ? 1 : 0))
   record = {
     'leef_version' => version,
     'leef_vendor' => parts[0],
@@ -696,26 +676,34 @@ def parserstudio_leef(text)
     'leef_product_version' => parts[2],
     'leef_event_id' => parts[3]
   }
-  delimiter = version == '2.0' ? parts[4] : "\t"
-  if version == '2.0' && (hex = /\A0x([0-9a-fA-F]{1,2})\z/.match(delimiter))
-    delimiter = Integer(hex[1], 16).chr
+  delimiter = __PS_GRAMMAR_LEEF_DEFAULT_DELIMITER__
+  if carries_delimiter
+    field = parts[header_fields]
+    spelled = /__PS_GRAMMAR_FRAGMENT_LEEF_DELIMITER__/.match(field)
+    delimiter = spelled && spelled[:literal]
+    if delimiter.nil?
+      # Hexadecimal spelling, or one literal character from the contract list outside printable ASCII.
+      code = spelled ? Integer(spelled[:hex], 16) : (field.length == 1 ? field.ord : -1)
+      if __PS_GRAMMAR_LEEF_EXTRA_DELIMITERS__.include?(code)
+        delimiter = code.chr(Encoding::UTF_8)
+      else
+        raise ArgumentError, 'Unsupported LEEF delimiter' unless spelled && code <= 126
+        delimiter = code.chr
+        raise ArgumentError, 'Unsupported LEEF delimiter' unless /\A(?:__PS_GRAMMAR_TOKEN_LEEF_DELIMITER_LITERAL__)\z/.match?(delimiter)
+      end
+    end
   end
-  # Keep key=value unambiguous. Bounded accepted separators: TAB or
-  # printable ASCII excluding space, equals and backslash.
-  valid_separator = delimiter.bytesize == 1 &&
-    (delimiter == "\t" ||
-     (delimiter.ord >= 33 && delimiter.ord <= 126 &&
-      delimiter != '=' && delimiter != '\\'))
-  raise ArgumentError, 'Unsupported LEEF delimiter' unless valid_separator
   extension = parts.last
   unless extension.nil? || extension.empty?
+    attribute = /__PS_GRAMMAR_FRAGMENT_LEEF_ATTRIBUTE__/
     extension.split(delimiter, -1).each do |piece|
-      raise ArgumentError, 'Empty LEEF extension token' if piece.empty?
-      key, value = piece.split('=', 2)
-      raise ArgumentError, 'Malformed LEEF extension' unless key && value && key.match?(/\A(?:__PS_GRAMMAR_TOKEN_LEEF_KEY__)\z/)
+      # KEY= at the start of the piece; the value is the rest, exactly as written. An empty piece is declined.
+      found = attribute.match(piece)
+      raise ArgumentError, 'Malformed LEEF extension' unless found
+      key = found[:key]
       raise ArgumentError, 'Unsafe LEEF field' if __PS_GRAMMAR_FORBIDDEN_KEYS__.include?(key)
       raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)
-      record[key] = value
+      record[key] = found.post_match
     end
   end
   record

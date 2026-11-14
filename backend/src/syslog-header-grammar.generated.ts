@@ -1,8 +1,8 @@
 // GENERATED FILE - DO NOT EDIT.
-// Source: contracts/syslog-header-grammar.v1.json (revision 5); regenerate with
+// Source: contracts/syslog-header-grammar.v1.json (revision 6); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "a4a20fc2a5355952d5d87e6e65b3020e8d6ab23b77b65a856c89431f6c16884e";
+export const GRAMMAR_CONTRACT_SHA256 = "8ba80890032304c52cd927066ea0d92cd476a39832e359df397298b4c26f8247";
 /** Template placeholder -> Ruby source text (Ruby 2.4 compatible). */
 export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_RX_RFC3164_TAGGED__": "\\A<(?<pri>[0-9]{1,3})>(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)\\z",
@@ -12,6 +12,9 @@ export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_FRAGMENT_KV_PAIR__": "\\G(?:[ \\t]*)(?<key>[A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:\"(?<dq>(?:\\\\[^\\r\\n]|[^\"\\\\])*)\"|'(?<sq>(?:\\\\[^\\r\\n]|[^'\\\\])*)'|(?<bare>(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+))",
   "__PS_GRAMMAR_FRAGMENT_RFC5424_VERSION_HEAD__": "\\G<(?<pri>[0-9]{1,3})>(?<version>[1-9][0-9]{0,2})[ ](?:-[ ]|(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T))",
   "__PS_GRAMMAR_FRAGMENT_STRUCTURED_FAMILY_CLAIM__": "\\G(?<family>(?:CEF|LEEF)):(?:[0-9])",
+  "__PS_GRAMMAR_FRAGMENT_CEF_PAIR__": "\\G(?:(?:[ \\t]))*(?<key>[A-Za-z_][A-Za-z0-9_.-]{0,127})=(?<value>(?:(?:(?:\\\\(?:[^\\\\]|\\\\))|(?:[^\\\\ \\t])|(?:[ \\t]+)(?=(?:[^ \\t]))(?!(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)|(?:[ \\t]+)(?=(?:[ \\t])(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)))*)(?:(?:(?:[ \\t]))*\\z|(?:[ \\t])(?=(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=))",
+  "__PS_GRAMMAR_FRAGMENT_LEEF_DELIMITER__": "\\G(?:(?<literal>[\\t!-<>-\\[\\]-~])|(?:0x|x)(?<hex>[0-9A-Fa-f]{1,4}))\\z",
+  "__PS_GRAMMAR_FRAGMENT_LEEF_ATTRIBUTE__": "\\G(?<key>[A-Za-z_][A-Za-z0-9_.-]*)=",
   "__PS_GRAMMAR_KV_MAX_PAIRS__": "100",
   "__PS_GRAMMAR_KV_UNESCAPED__": "['\\\\', '\"', '\\'', '=']",
   "__PS_GRAMMAR_TOKEN_PRI__": "[0-9]{1,3}",
@@ -40,7 +43,18 @@ export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_TOKEN_ASCII_DIGIT__": "[0-9]",
   "__PS_GRAMMAR_TOKEN_CEF_KEY__": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
   "__PS_GRAMMAR_TOKEN_LEEF_KEY__": "[A-Za-z_][A-Za-z0-9_.-]*",
+  "__PS_GRAMMAR_TOKEN_CEF_WS__": "[ \\t]",
+  "__PS_GRAMMAR_TOKEN_CEF_WS_RUN__": "[ \\t]+",
+  "__PS_GRAMMAR_TOKEN_CEF_NOT_WS__": "[^ \\t]",
+  "__PS_GRAMMAR_TOKEN_CEF_ESCAPE__": "\\\\(?:[^\\\\]|\\\\)",
+  "__PS_GRAMMAR_TOKEN_CEF_PLAIN__": "[^\\\\ \\t]",
+  "__PS_GRAMMAR_TOKEN_LEEF_DELIMITER_LITERAL__": "[\\t!-<>-\\[\\]-~]",
+  "__PS_GRAMMAR_TOKEN_LEEF_HEX_DIGITS__": "[0-9A-Fa-f]{1,4}",
   "__PS_GRAMMAR_RFC3164_ALTERNATIVES__": "[['rfc3164_tagged', /\\A<(?<pri>[0-9]{1,3})>(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)\\z/], ['rfc3164_tagless', /\\A(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<message>[^\\r\\n]+)\\z/], ['rfc3164_hostless', /\\A(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<message>(?:\\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]{0,95}=)[^\\r\\n]*)\\z/]]",
+  "__PS_GRAMMAR_LEEF_DELIMITER_VERSIONS__": "['2.0']",
+  "__PS_GRAMMAR_LEEF_HEADER_FIELDS__": "4",
+  "__PS_GRAMMAR_LEEF_EXTRA_DELIMITERS__": "[166]",
+  "__PS_GRAMMAR_LEEF_DEFAULT_DELIMITER__": "\"\\t\"",
   "__PS_GRAMMAR_CEF_VERSIONS__": "['0']",
   "__PS_GRAMMAR_LEEF_VERSIONS__": "['1.0','2.0']",
   "__PS_GRAMMAR_CEF_MAX_FIELDS__": "1024",

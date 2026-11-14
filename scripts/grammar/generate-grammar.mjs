@@ -97,6 +97,25 @@ function emitSequence(sequence, contract, dialect, captures, ruleName) {
       return '(?:' + emitSequence(item.optional, contract, dialect, captures, ruleName) + ')?';
     if (keys.length === 1 && Array.isArray(item.alt) && item.alt.length >= 2)
       return '(?:' + item.alt.map(branch => emitSequence(branch, contract, dialect, captures, ruleName)).join('|') + ')';
+    // Zero or more repetitions of a sub-sequence. No capture inside: a repeated capture keeps a different
+    // occurrence per runtime.
+    if (keys.length === 1 && Array.isArray(item.repeat))
+      return '(?:' + emitUncaptured(item.repeat, contract, dialect, ruleName, 'repeat') + ')*';
+    // One named capture around a sub-sequence (a value made of several token alternatives).
+    if (keys.length === 2 && Array.isArray(item.group) && typeof item.cap === 'string') {
+      if (!/^[a-z][a-z0-9_]{0,31}$/.test(item.cap) || captures.includes(item.cap))
+        throw new Error(`GRAMMAR_RULE_INVALID ${ruleName}: bad or duplicate capture ${item.cap}`);
+      captures.push(item.cap);
+      return (dialect === 'python' ? '(?P<' : '(?<') + item.cap + '>' + emitUncaptured(item.group, contract, dialect, ruleName, 'group') + ')';
+    }
+    // Zero-width conditions on what follows. They consume nothing and capture nothing.
+    if (keys.length === 1 && Array.isArray(item.followedBy))
+      return '(?=' + emitUncaptured(item.followedBy, contract, dialect, ruleName, 'followedBy') + ')';
+    if (keys.length === 1 && Array.isArray(item.notFollowedBy))
+      return '(?!' + emitUncaptured(item.notFollowedBy, contract, dialect, ruleName, 'notFollowedBy') + ')';
+    // End of the input text: spelled differently by every runtime ('$' also matches before a final line
+    // feed in Python and Ruby, so it is never used there).
+    if (keys.length === 1 && item.end === true) return dialect === 'js' ? '$' : dialect === 'ruby' ? '\\z' : '\\Z';
     if (typeof item.token === 'string' && keys.every(key => key === 'token' || key === 'cap')) {
       const token = contract.tokens[item.token];
       if (!token) throw new Error(`GRAMMAR_RULE_INVALID ${ruleName}: unknown token ${item.token}`);
@@ -108,6 +127,13 @@ function emitSequence(sequence, contract, dialect, captures, ruleName) {
     }
     throw new Error(`GRAMMAR_RULE_INVALID ${ruleName}: unsupported sequence item ${JSON.stringify(item)}`);
   }).join('');
+}
+
+function emitUncaptured(sequence, contract, dialect, ruleName, what) {
+  const inner = [];
+  const source = emitSequence(sequence, contract, dialect, inner, ruleName);
+  if (inner.length) throw new Error(`GRAMMAR_RULE_INVALID ${ruleName}: capture ${inner[0]} inside ${what}`);
+  return source;
 }
 
 /** Compiles one rule to an anchored whole-line pattern for a runtime dialect. */
@@ -142,7 +168,10 @@ export function compileFragment(contract, fragmentName, dialect) {
   return { source: (dialect === 'ruby' ? '\\G' : '') + body, captures };
 }
 
-const REQUIRED_FRAGMENT_CAPTURES = Object.freeze({ kv_pair: ['key', 'dq', 'sq', 'bare'], rfc5424_version_head: ['pri', 'version'], structured_family_claim: ['family'] });
+const REQUIRED_FRAGMENT_CAPTURES = Object.freeze({
+  kv_pair: ['key', 'dq', 'sq', 'bare'], rfc5424_version_head: ['pri', 'version'], structured_family_claim: ['family'],
+  cef_pair: ['key', 'value'], leef_delimiter: ['literal', 'hex'], leef_attribute: ['key'],
+});
 
 export function validateContract(contract) {
   if (contract.schema !== 'parserstudio.grammar-contract.v1' || !Number.isInteger(contract.revision))
@@ -156,6 +185,7 @@ export function validateContract(contract) {
     if (item.token) used.add(item.token);
     if (item.optional) walk(item.optional);
     if (item.alt) item.alt.forEach(walk);
+    for (const nested of ['repeat', 'group', 'followedBy', 'notFollowedBy']) if (item[nested]) walk(item[nested]);
   });
   for (const name of contract.standaloneTokens ?? []) {
     if (!contract.tokens[name]) throw new Error(`GRAMMAR_STANDALONE_TOKEN_UNKNOWN ${name}`);
@@ -272,8 +302,16 @@ export function rubyGrammarPlaceholders(contractText) {
       !Number.isInteger(semantics.cefMaxExtensionFields) || semantics.cefMaxExtensionFields < 1 || semantics.cefMaxExtensionFields > 10000 ||
       typeof semantics.cefExtensionEscapes !== 'object' || semantics.cefExtensionEscapes === null ||
       Object.entries(semantics.cefExtensionEscapes).some(([key, value]) => !/^[\x21-\x7e]$/.test(key) || typeof value !== 'string' || [...value].length !== 1) ||
-      semantics.cefExtensionEscapes['\\'] !== '\\' || semantics.cefExtensionEscapes['='] !== '=')
+      semantics.cefExtensionEscapes['\\'] !== '\\' || semantics.cefExtensionEscapes['='] !== '=' ||
+      !Array.isArray(semantics.leefDelimiterFieldVersions) || semantics.leefDelimiterFieldVersions.some(version => !semantics.leefSupportedVersions.includes(version)) ||
+      !Array.isArray(semantics.leefDelimiterExtraCodePoints) || semantics.leefDelimiterExtraCodePoints.some(code => !Number.isInteger(code) || code < 128 || code > 65535 || (code >= 0xd800 && code <= 0xdfff)) ||
+      !Number.isInteger(semantics.leefHeaderFields) || semantics.leefHeaderFields < 1 || semantics.leefHeaderFields > 16 ||
+      typeof semantics.leefDefaultDelimiter !== 'string' || !new RegExp('^(?:' + contract.tokens.LEEF_DELIMITER_LITERAL.pattern + ')$').test(semantics.leefDefaultDelimiter))
     throw new Error('GRAMMAR_SEMANTICS_INVALID cef/leef');
+  placeholders.__PS_GRAMMAR_LEEF_DELIMITER_VERSIONS__ = '[' + semantics.leefDelimiterFieldVersions.map(rubySingle).join(',') + ']';
+  placeholders.__PS_GRAMMAR_LEEF_HEADER_FIELDS__ = String(semantics.leefHeaderFields);
+  placeholders.__PS_GRAMMAR_LEEF_EXTRA_DELIMITERS__ = '[' + semantics.leefDelimiterExtraCodePoints.join(',') + ']';
+  placeholders.__PS_GRAMMAR_LEEF_DEFAULT_DELIMITER__ = rubyDouble(semantics.leefDefaultDelimiter).replace('\t', '\\t');
   placeholders.__PS_GRAMMAR_CEF_VERSIONS__ = '[' + semantics.cefSupportedVersions.map(rubySingle).join(',') + ']';
   placeholders.__PS_GRAMMAR_LEEF_VERSIONS__ = '[' + semantics.leefSupportedVersions.map(rubySingle).join(',') + ']';
   placeholders.__PS_GRAMMAR_CEF_MAX_FIELDS__ = String(semantics.cefMaxExtensionFields);

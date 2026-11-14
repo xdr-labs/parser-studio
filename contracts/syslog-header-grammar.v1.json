@@ -1,7 +1,7 @@
 {
   "schema": "parserstudio.grammar-contract.v1",
   "id": "syslog-header",
-  "revision": 5,
+  "revision": 6,
   "purpose": "Single declarative definition of the Syslog header grammar and of the strict key=value body grammar (fragments.kv_pair). The browser TypeScript and the generated Ruby Fragment take their structured-path header regular expressions, capture names and semantic limits from the code generated from this file (scripts/grammar/generate-grammar.mjs). Not migrated yet (Issue #249 W4, W5): the Generic Structural sites and the Python Multi-Pass engine, which still carry hand-written copies; those copies are counted and ratcheted down by scripts/verification/grammar-duplication-ratchet.mjs.",
   "authority": [
     "RFC 3164 section 4.1 (PRI, HEADER = TIMESTAMP HOSTNAME, MSG = TAG CONTENT)",
@@ -104,6 +104,34 @@
     "LEEF_KEY": {
       "pattern": "[A-Za-z_][A-Za-z0-9_.-]*",
       "semantic": "LEEF attribute key (text before the first \"=\" of an attribute)"
+    },
+    "CEF_WS": {
+      "pattern": "[ \\t]",
+      "semantic": "CEF extension white space: SP or TAB only. Any other character is value data."
+    },
+    "CEF_WS_RUN": {
+      "pattern": "[ \\t]+",
+      "semantic": "A run of CEF extension white space"
+    },
+    "CEF_NOT_WS": {
+      "pattern": "[^ \\t]",
+      "semantic": "Any character that is not CEF extension white space (a line feed and a backslash included)"
+    },
+    "CEF_ESCAPE": {
+      "pattern": "\\\\(?:[^\\\\]|\\\\)",
+      "semantic": "A backslash and the character after it. semantics.cefExtensionEscapes says what the pair means; a pair that is not listed there is kept as written."
+    },
+    "CEF_PLAIN": {
+      "pattern": "[^\\\\ \\t]",
+      "semantic": "One character of a CEF extension value that is neither a backslash nor white space"
+    },
+    "LEEF_DELIMITER_LITERAL": {
+      "pattern": "[\\t!-<>-\\[\\]-~]",
+      "semantic": "A LEEF attribute delimiter: TAB or one printable ASCII character other than SP, \"=\" and backslash, so that key=value stays unambiguous"
+    },
+    "LEEF_HEX_DIGITS": {
+      "pattern": "[0-9A-Fa-f]{1,4}",
+      "semantic": "Hexadecimal spelling of a LEEF 2.0 delimiter after the prefix 0x or x; the character it names must be a LEEF_DELIMITER_LITERAL or one of semantics.leefDelimiterExtraCodePoints"
     }
   },
   "rules": {
@@ -436,6 +464,14 @@
     "leefSupportedVersions": [
       "1.0",
       "2.0"
+    ],
+    "leefDelimiterFieldVersions": [
+      "2.0"
+    ],
+    "leefDefaultDelimiter": "\t",
+    "leefHeaderFields": 4,
+    "leefDelimiterExtraCodePoints": [
+      166
     ]
   },
   "fragments": {
@@ -539,6 +575,169 @@
         },
         {
           "token": "ASCII_DIGIT"
+        }
+      ]
+    },
+    "cef_pair": {
+      "description": "One CEF extension pair at the current position: KEY=value. A value is made of escape pairs, plain characters and white space. White space is value data unless it ends the text or its last character stands directly before the next KEY=; that last character is the separator. Every engine reads CEF extensions with this one expression and decodes the value with semantics.cefExtensionEscapes.",
+      "sequence": [
+        {
+          "repeat": [
+            {
+              "token": "CEF_WS"
+            }
+          ]
+        },
+        {
+          "token": "CEF_KEY",
+          "cap": "key"
+        },
+        {
+          "lit": "="
+        },
+        {
+          "group": [
+            {
+              "repeat": [
+                {
+                  "alt": [
+                    [
+                      {
+                        "token": "CEF_ESCAPE"
+                      }
+                    ],
+                    [
+                      {
+                        "token": "CEF_PLAIN"
+                      }
+                    ],
+                    [
+                      {
+                        "token": "CEF_WS_RUN"
+                      },
+                      {
+                        "followedBy": [
+                          {
+                            "token": "CEF_NOT_WS"
+                          }
+                        ]
+                      },
+                      {
+                        "notFollowedBy": [
+                          {
+                            "token": "CEF_KEY"
+                          },
+                          {
+                            "lit": "="
+                          }
+                        ]
+                      }
+                    ],
+                    [
+                      {
+                        "token": "CEF_WS_RUN"
+                      },
+                      {
+                        "followedBy": [
+                          {
+                            "token": "CEF_WS"
+                          },
+                          {
+                            "token": "CEF_KEY"
+                          },
+                          {
+                            "lit": "="
+                          }
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "cap": "value"
+        },
+        {
+          "alt": [
+            [
+              {
+                "repeat": [
+                  {
+                    "token": "CEF_WS"
+                  }
+                ]
+              },
+              {
+                "end": true
+              }
+            ],
+            [
+              {
+                "token": "CEF_WS"
+              },
+              {
+                "followedBy": [
+                  {
+                    "token": "CEF_KEY"
+                  },
+                  {
+                    "lit": "="
+                  }
+                ]
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    "leef_delimiter": {
+      "description": "The whole delimiter field of a LEEF header: one literal delimiter character, or its hexadecimal spelling with the prefix 0x or x (IBM LEEF 2.0). semantics.leefDelimiterExtraCodePoints lists the characters outside printable ASCII that are also accepted, literally or in hexadecimal (U+00A6 BROKEN BAR, seen as xa6 in the field).",
+      "sequence": [
+        {
+          "alt": [
+            [
+              {
+                "token": "LEEF_DELIMITER_LITERAL",
+                "cap": "literal"
+              }
+            ],
+            [
+              {
+                "alt": [
+                  [
+                    {
+                      "lit": "0x"
+                    }
+                  ],
+                  [
+                    {
+                      "lit": "x"
+                    }
+                  ]
+                ]
+              },
+              {
+                "token": "LEEF_HEX_DIGITS",
+                "cap": "hex"
+              }
+            ]
+          ]
+        },
+        {
+          "end": true
+        }
+      ]
+    },
+    "leef_attribute": {
+      "description": "The start of one LEEF attribute (the text between two delimiters): KEY=. The value is everything after it, exactly as written; LEEF has no escaping. A piece that does not start this way, an empty piece included, is not an attribute and the event is declined.",
+      "sequence": [
+        {
+          "token": "LEEF_KEY",
+          "cap": "key"
+        },
+        {
+          "lit": "="
         }
       ]
     }

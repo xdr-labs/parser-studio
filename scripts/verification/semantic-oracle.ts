@@ -553,15 +553,34 @@ function familyTsFailures(extract: Extract, cases: FamilyCase[]): string[] {
 const CEF_ESCAPE_CONTRACT_MUTANT = contractMutant('contract-cef-line-feed-escape-dropped', ['semantics', 'cefExtensionEscapes'], { r: '\r', '=': '=', '\\': '\\' });
 const CEF_VERSION_CONTRACT_MUTANT = contractMutant('contract-cef-version-1-supported', ['semantics', 'cefSupportedVersions'], ['0', '1']);
 const LEEF_VERSION_CONTRACT_MUTANT = contractMutant('contract-leef-version-3-supported', ['semantics', 'leefSupportedVersions'], ['1.0', '2.0', '3.0']);
+// The CEF pair expression and the LEEF delimiter rules are contract fragments compiled by every engine, so a
+// fault in them is a contract fault: one mutant, three engines.
+const CEF_WS_RUN = { token: 'CEF_WS_RUN' };
+const FAMILY_CONTRACT_MUTANTS: Mutant[] = [
+  // White space is never value data: a value with a space in it no longer parses.
+  contractMutant('contract-cef-value-stops-at-first-space', ['fragments', 'cef_pair', 'sequence', '3', 'group', '0', 'repeat', '0', 'alt', '2'],
+    [CEF_WS_RUN, { followedBy: [{ token: 'CEF_NOT_WS' }] }, { notFollowedBy: [{ token: 'CEF_NOT_WS' }] }]),
+  // White space before the next KEY= is value data: a value swallows the pairs after it.
+  contractMutant('contract-cef-next-key-swallowed', ['fragments', 'cef_pair', 'sequence', '3', 'group', '0', 'repeat', '0', 'alt', '2'],
+    [CEF_WS_RUN, { followedBy: [{ token: 'CEF_NOT_WS' }] }]),
+  // A TAB no longer separates pairs.
+  contractMutant('contract-cef-tab-is-value-data', ['tokens', 'CEF_WS', 'pattern'], '[ ]'),
+  // SP becomes an acceptable LEEF attribute delimiter.
+  contractMutant('contract-leef-space-delimiter-accepted', ['tokens', 'LEEF_DELIMITER_LITERAL', 'pattern'], '[\\t -<>-\\[\\]-~]'),
+  // The x prefix of the hexadecimal delimiter spelling is dropped (only 0x remains).
+  contractMutant('contract-leef-x-prefix-dropped', ['fragments', 'leef_delimiter', 'sequence', '0', 'alt', '1', '0'], { lit: '0x' }),
+];
 const TS_FAMILY_MUTANTS: Mutant[] = [
-  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT,
+  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT, ...FAMILY_CONTRACT_MUTANTS,
+  contractMutant('contract-leef-broken-bar-delimiter-dropped', ['semantics', 'leefDelimiterExtraCodePoints'], []),
+  { id: 'ts-cef-escapes-not-decoded', file: 'src/structuredFamilies.ts', find: 'Object.prototype.hasOwnProperty.call(CEF_ESCAPES,pair[1]!)?CEF_ESCAPES[pair[1]!]!:pair);', replace: 'pair);' },
+  { id: 'ts-leef-value-cut-at-second-equals', file: 'src/structuredFamilies.ts', find: 'record[key] = part.slice(LEEF_ATTRIBUTE.lastIndex);', replace: "record[key] = part.slice(LEEF_ATTRIBUTE.lastIndex).split('=')[0]!;" },
+  { id: 'ts-leef-empty-attribute-skipped', file: 'src/structuredFamilies.ts', find: "for (const part of parts[parts.length - 1].split(delimiter)) {", replace: "for (const part of parts[parts.length - 1].split(delimiter).filter(Boolean)) {" },
   // Owner policy D-1: a repeated extension field is declined, never overwritten.
   { id: 'ts-cef-duplicate-field-overwrites', file: 'src/structuredFamilies.ts', find: 'if(Object.prototype.hasOwnProperty.call(values,key))return failure(duplicateFieldMessage(key));', replace: '' },
   { id: 'ts-leef-duplicate-field-overwrites', file: 'src/structuredFamilies.ts', find: 'if (Object.prototype.hasOwnProperty.call(record, key)) return failure(duplicateFieldMessage(key));', replace: '' },
-  { id: 'ts-cef-value-stops-at-first-space', file: 'src/structuredFamilies.ts', find: 'if(next&&next.index===runEnd){', replace: 'if(true){' },
   { id: 'ts-cef-header-fields-shifted', file: 'src/structuredFamilies.ts', find: 'cef_device_product: parts[1], cef_device_version: parts[2],', replace: 'cef_device_product: parts[2], cef_device_version: parts[1],' },
   { id: 'ts-cef-dot-excludes-line-separator', file: 'src/structuredFamilies.ts', find: '/^CEF:(\\d+)\\|(.*)$/s.exec(input)', replace: '/^CEF:(\\d+)\\|(.*)$/.exec(input)' },
-  { id: 'ts-leef-value-cut-at-second-equals', file: 'src/structuredFamilies.ts', find: 'record[key] = part.slice(location + 1);', replace: "record[key] = part.slice(location + 1).split('=')[0]!;" },
   // Re-introduces F-11: header escapes decoded in the extension as well, so a value is decoded twice.
   { id: 'ts-family-extension-decoded-twice', file: 'src/structuredFamilies.ts', find: "if (output.length > splits) { output[output.length - 1] += char; continue; }", replace: '' },
 ];
@@ -584,15 +603,19 @@ async function runFamilyTs(): Promise<{ ok: boolean; summary: string }> {
 
 const RUBY_FAMILY_MUTANTS: Array<Mutant & { family: FamilyCase['family']; target: string }> = [
   { ...CEF_ESCAPE_CONTRACT_MUTANT, family: 'cef', target: 'family:cef' },
+  ...FAMILY_CONTRACT_MUTANTS.map(mutant => ({ ...mutant, family: (mutant.id.startsWith('contract-cef') ? 'cef' : 'leef') as FamilyCase['family'], target: mutant.id.startsWith('contract-cef') ? 'family:cef' : 'family:leef' })),
+  // The list of extra delimiter code points is a short literal in the compiled Fragment, so this contract fault is injected as text.
+  { id: 'rb-leef-broken-bar-delimiter-dropped', family: 'leef', target: 'family:leef', file: 'fragment', find: 'if [166].include?(code)', replace: 'if [].include?(code)' },
+  { id: 'rb-cef-escapes-not-decoded', family: 'cef', target: 'family:cef', file: 'fragment', find: '.fetch(found[1]) { found } }', replace: '.fetch(found[0]) { found } }' },
+  { id: 'rb-leef-value-cut-at-second-equals', family: 'leef', target: 'family:leef', file: 'fragment', find: 'record[key] = found.post_match', replace: "record[key] = found.post_match.split('=')[0].to_s" },
+  { id: 'rb-leef-empty-attribute-skipped', family: 'leef', target: 'family:leef', file: 'fragment', find: 'extension.split(delimiter, -1).each do |piece|', replace: 'extension.split(delimiter, -1).reject(&:empty?).each do |piece|' },
   // The version lists are short literals in the compiled Fragment, so these two contract faults are injected as text.
   { id: 'rb-cef-version-1-supported', family: 'cef', target: 'family:cef', file: 'fragment', find: "raise ArgumentError, 'Unsupported CEF version' unless ['0'].include?(match[1])", replace: "raise ArgumentError, 'Unsupported CEF version' unless ['0','1'].include?(match[1])" },
   { id: 'rb-leef-version-3-supported', family: 'leef', target: 'family:leef', file: 'fragment', find: "unless match && ['1.0','2.0'].include?(match[1])", replace: "unless match && ['1.0','2.0','3.0'].include?(match[1])" },
   // Owner policy D-1: a repeated extension field is declined, never overwritten.
   { id: 'rb-cef-duplicate-field-overwrites', family: 'cef', target: 'family:cef', file: 'fragment', find: "    raise ArgumentError, 'Duplicate CEF extension field' if record.key?(key)\n", replace: '' },
   { id: 'rb-leef-duplicate-field-overwrites', family: 'leef', target: 'family:leef', file: 'fragment', find: "      raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)\n", replace: '' },
-  { id: 'rb-cef-value-stops-at-first-space', family: 'cef', target: 'family:cef', file: 'fragment', find: 'if next_key && next_key.begin(0) == run_end', replace: 'if true' },
   { id: 'rb-cef-header-fields-shifted', family: 'cef', target: 'family:cef', file: 'fragment', find: "'cef_device_product' => fields[1],", replace: "'cef_device_product' => fields[2]," },
-  { id: 'rb-leef-value-cut-at-second-equals', family: 'leef', target: 'family:leef', file: 'fragment', find: "key, value = piece.split('=', 2)", replace: "key, value = piece.split('=', 3)" },
   { id: 'rb-cef-extension-decoded-twice', family: 'cef', target: 'family:cef', file: 'fragment', find: "    if parts.length == maximum_splits\n      buffer << character\n    elsif escaped\n", replace: "    if escaped\n" },
 ];
 
@@ -986,9 +1009,11 @@ const PYTHON_MUTANTS: Mutant[] = [
   // LEEF attributes go through this one place. (For CEF two merged candidates each report the issue, so removing one is not observable.)
   { id: 'py-leef-repeated-field-reported-as-parsed', file: 'structured_source.py', find: '        issues.append("DUPLICATE_SOURCE_FIELD")', replace: '        pass' },
   { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
-  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT,
-  { id: 'py-cef-value-stops-at-first-space', file: 'security_cef.py', find: 'next_key=KEY.match(raw,run_end)', replace: 'next_key=True' },
-  { id: 'py-cef-escapes-not-decoded', file: 'security_cef.py', find: 'if nxt in ESCAPES:decoded.append(ESCAPES[nxt])', replace: 'if nxt in ESCAPES:decoded.append(raw[cursor:cursor+2])' },
+  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT, ...FAMILY_CONTRACT_MUTANTS,
+  contractMutant('contract-leef-broken-bar-delimiter-dropped', ['semantics', 'leefDelimiterExtraCodePoints'], []),
+  { id: 'py-cef-escapes-not-decoded', file: 'structured_source.py', find: 'CEF_ESCAPES.get(found[0][1],found[0])', replace: 'found[0]' },
+  { id: 'py-leef-value-cut-at-second-equals', file: 'structured_source.py', find: '_pair(ext.fields,key,raw[matched.end():end],ext.issues)', replace: "_pair(ext.fields,key,raw[matched.end():end].split('=')[0],ext.issues)" },
+  { id: 'py-leef-empty-attribute-skipped', file: 'structured_source.py', find: 'if end==i and skip_empty:', replace: 'if end==i:' },
   { id: 'py-csv-doubled-quote-kept', file: 'engine.py', find: "chars.append('\"');pos+=2", replace: "chars.append('\"\"');pos+=2" },
   // Re-introduces F-12: csv.reader alone accepts a double quote inside a bare field.
   { id: 'py-csv-quote-inside-bare-field-accepted', file: 'engine.py', find: "if '\"' in value:", replace: 'if False:' },

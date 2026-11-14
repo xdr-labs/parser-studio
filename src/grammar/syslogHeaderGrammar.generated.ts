@@ -1,9 +1,9 @@
 // GENERATED FILE - DO NOT EDIT.
-// Source: contracts/syslog-header-grammar.v1.json (revision 5); regenerate with
+// Source: contracts/syslog-header-grammar.v1.json (revision 6); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "a4a20fc2a5355952d5d87e6e65b3020e8d6ab23b77b65a856c89431f6c16884e";
-export const GRAMMAR_CONTRACT_REVISION = 5;
+export const GRAMMAR_CONTRACT_SHA256 = "8ba80890032304c52cd927066ea0d92cd476a39832e359df397298b4c26f8247";
+export const GRAMMAR_CONTRACT_REVISION = 6;
 export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }
 export const SYSLOG_HEADER_RULES = {
   "rfc3164_tagged": {
@@ -83,6 +83,26 @@ export const GRAMMAR_FRAGMENTS = {
     "captures": [
       "family"
     ]
+  },
+  "cef_pair": {
+    "source": "(?:(?:[ \\t]))*(?<key>[A-Za-z_][A-Za-z0-9_.-]{0,127})=(?<value>(?:(?:(?:\\\\(?:[^\\\\]|\\\\))|(?:[^\\\\ \\t])|(?:[ \\t]+)(?=(?:[^ \\t]))(?!(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)|(?:[ \\t]+)(?=(?:[ \\t])(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)))*)(?:(?:(?:[ \\t]))*$|(?:[ \\t])(?=(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=))",
+    "captures": [
+      "key",
+      "value"
+    ]
+  },
+  "leef_delimiter": {
+    "source": "(?:(?<literal>[\\t!-<>-\\[\\]-~])|(?:0x|x)(?<hex>[0-9A-Fa-f]{1,4}))$",
+    "captures": [
+      "literal",
+      "hex"
+    ]
+  },
+  "leef_attribute": {
+    "source": "(?<key>[A-Za-z_][A-Za-z0-9_.-]*)=",
+    "captures": [
+      "key"
+    ]
   }
 } as const satisfies Record<string, CompiledHeaderRule>;
 export const SYSLOG_HEADER_TOKENS = {
@@ -111,7 +131,14 @@ export const SYSLOG_HEADER_TOKENS = {
   "FAMILY_NAME": "(?:CEF|LEEF)",
   "ASCII_DIGIT": "[0-9]",
   "CEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
-  "LEEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]*"
+  "LEEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]*",
+  "CEF_WS": "[ \\t]",
+  "CEF_WS_RUN": "[ \\t]+",
+  "CEF_NOT_WS": "[^ \\t]",
+  "CEF_ESCAPE": "\\\\(?:[^\\\\]|\\\\)",
+  "CEF_PLAIN": "[^\\\\ \\t]",
+  "LEEF_DELIMITER_LITERAL": "[\\t!-<>-\\[\\]-~]",
+  "LEEF_HEX_DIGITS": "[0-9A-Fa-f]{1,4}"
 } as const;
 export const SYSLOG_HEADER_ALTERNATIVES = {
   "rfc3164": [
@@ -172,6 +199,14 @@ export const SYSLOG_HEADER_SEMANTICS = {
   "leefSupportedVersions": [
     "1.0",
     "2.0"
+  ],
+  "leefDelimiterFieldVersions": [
+    "2.0"
+  ],
+  "leefDefaultDelimiter": "\t",
+  "leefHeaderFields": 4,
+  "leefDelimiterExtraCodePoints": [
+    166
   ]
 } as const;
 export type SyslogHeaderRuleName = keyof typeof SYSLOG_HEADER_RULES;

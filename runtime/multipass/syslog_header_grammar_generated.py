@@ -1,9 +1,9 @@
 # GENERATED FILE - DO NOT EDIT.
-# Source: contracts/syslog-header-grammar.v1.json (revision 5); regenerate with
+# Source: contracts/syslog-header-grammar.v1.json (revision 6); regenerate with
 #   node scripts/grammar/generate-grammar.mjs --write
 # CI runs the generator with --verify, so a hand edit of this file fails the gate.
 # Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.
-GRAMMAR_CONTRACT_SHA256 = "a4a20fc2a5355952d5d87e6e65b3020e8d6ab23b77b65a856c89431f6c16884e"
+GRAMMAR_CONTRACT_SHA256 = "8ba80890032304c52cd927066ea0d92cd476a39832e359df397298b4c26f8247"
 TOKENS = {
   "PRI": "[0-9]{1,3}",
   "BSD_MONTH": "[A-Z][a-z]{2}",
@@ -30,7 +30,14 @@ TOKENS = {
   "FAMILY_NAME": "(?:CEF|LEEF)",
   "ASCII_DIGIT": "[0-9]",
   "CEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
-  "LEEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]*"
+  "LEEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]*",
+  "CEF_WS": "[ \\t]",
+  "CEF_WS_RUN": "[ \\t]+",
+  "CEF_NOT_WS": "[^ \\t]",
+  "CEF_ESCAPE": "\\\\(?:[^\\\\]|\\\\)",
+  "CEF_PLAIN": "[^\\\\ \\t]",
+  "LEEF_DELIMITER_LITERAL": "[\\t!-<>-\\[\\]-~]",
+  "LEEF_HEX_DIGITS": "[0-9A-Fa-f]{1,4}"
 }
 RULES = {
   "rfc3164_tagged": {
@@ -109,6 +116,26 @@ FRAGMENTS = {
     "captures": [
       "family"
     ]
+  },
+  "cef_pair": {
+    "source": "(?:(?:[ \\t]))*(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,127})=(?P<value>(?:(?:(?:\\\\(?:[^\\\\]|\\\\))|(?:[^\\\\ \\t])|(?:[ \\t]+)(?=(?:[^ \\t]))(?!(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)|(?:[ \\t]+)(?=(?:[ \\t])(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=)))*)(?:(?:(?:[ \\t]))*\\Z|(?:[ \\t])(?=(?:[A-Za-z_][A-Za-z0-9_.-]{0,127})=))",
+    "captures": [
+      "key",
+      "value"
+    ]
+  },
+  "leef_delimiter": {
+    "source": "(?:(?P<literal>[\\t!-<>-\\[\\]-~])|(?:0x|x)(?P<hex>[0-9A-Fa-f]{1,4}))\\Z",
+    "captures": [
+      "literal",
+      "hex"
+    ]
+  },
+  "leef_attribute": {
+    "source": "(?P<key>[A-Za-z_][A-Za-z0-9_.-]*)=",
+    "captures": [
+      "key"
+    ]
   }
 }
 ALTERNATIVES = {
@@ -170,6 +197,14 @@ SEMANTICS = {
   "leefSupportedVersions": [
     "1.0",
     "2.0"
+  ],
+  "leefDelimiterFieldVersions": [
+    "2.0"
+  ],
+  "leefDefaultDelimiter": "\t",
+  "leefHeaderFields": 4,
+  "leefDelimiterExtraCodePoints": [
+    166
   ]
 }
 PRI_MAX = SEMANTICS['priMax']

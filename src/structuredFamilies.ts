@@ -5,7 +5,7 @@ import { parseRfc5424Subset } from './rfc5424Subset';
 import { isSupportedRfc5424Version, matchHeaderRule, matchesHeaderToken } from './grammar/syslogHeader';
 import { matchRfc3164Header } from './grammar/syslogHeader';
 import { parseStrictKeyValues } from './grammar/kvBody';
-import { SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from './grammar/syslogHeaderGrammar.generated';
+import { GRAMMAR_FRAGMENTS, SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from './grammar/syslogHeaderGrammar.generated';
 import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -93,56 +93,58 @@ export function strictKeyValues(input: string): StructuredExtraction {
 
 // Key token, field limit, escape table, supported versions and forbidden keys come from the shared grammar
 // contract; the generated Ruby and the Python preview read the same values.
-const CEF_KEY=new RegExp('(?:'+SYSLOG_HEADER_TOKENS.CEF_KEY+')=','y');
+// CEF and LEEF read their grammar from the shared contract (contracts/syslog-header-grammar.v1.json): the
+// generated Ruby and the Python preview compile the same fragments, so the three scanners have one control flow.
+const CEF_PAIR=new RegExp(GRAMMAR_FRAGMENTS.cef_pair.source,'y');
+const CEF_ESCAPE=new RegExp(SYSLOG_HEADER_TOKENS.CEF_ESCAPE,'g');
 const CEF_ESCAPES:Readonly<Record<string,string>>=SYSLOG_HEADER_SEMANTICS.cefExtensionEscapes;
 const CEF_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.cefSupportedVersions;
 const LEEF_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.leefSupportedVersions;
-const LEEF_KEY=new RegExp('^(?:'+SYSLOG_HEADER_TOKENS.LEEF_KEY+')$');
+const LEEF_DELIMITER_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.leefDelimiterFieldVersions;
+const LEEF_DELIMITER=new RegExp(GRAMMAR_FRAGMENTS.leef_delimiter.source,'y');
+const LEEF_EXTRA_DELIMITERS:readonly number[]=SYSLOG_HEADER_SEMANTICS.leefDelimiterExtraCodePoints;
+const LEEF_ATTRIBUTE=new RegExp(GRAMMAR_FRAGMENTS.leef_attribute.source,'y');
 const FORBIDDEN_KEYS:readonly string[]=SYSLOG_HEADER_SEMANTICS.kvForbiddenKeys;
+/** A backslash pair listed in the contract is decoded; any other pair is kept as written. */
+const decodeCefValue=(raw:string):string=>raw.replace(CEF_ESCAPE,pair=>
+  Object.prototype.hasOwnProperty.call(CEF_ESCAPES,pair[1]!)?CEF_ESCAPES[pair[1]!]!:pair);
 function cefExtensionValues(input:string):StructuredExtraction{
   const values:Record<string,unknown>=Object.create(null);
   let cursor=0,count=0;
-  while(cursor<input.length){
-    while(cursor<input.length&&(input[cursor]===' '||input[cursor]==='\t'))cursor++;
-    if(cursor===input.length)break;
+  for(;;){
+    CEF_PAIR.lastIndex=cursor;
+    const match=CEF_PAIR.exec(input);
+    if(!match)break;
     if(count++>=SYSLOG_HEADER_SEMANTICS.cefMaxExtensionFields)return failure('CEF extension field limit exceeded');
-    CEF_KEY.lastIndex=cursor;
-    const match=CEF_KEY.exec(input);
-    if(!match||match.index!==cursor)return failure('Unsupported CEF extension key boundary');
-    const key=match[0].slice(0,-1);
+    const key=match.groups!.key!;
     if(FORBIDDEN_KEYS.includes(key))return failure('Unsupported CEF extension field');
     if(Object.prototype.hasOwnProperty.call(values,key))return failure(duplicateFieldMessage(key));
-    let pos=CEF_KEY.lastIndex;
-    let decoded='';
-    let boundary=input.length;
-    while(pos<input.length){
-      const ch=input[pos]!;
-      if(ch==='\\'){
-        if(pos+1>=input.length)return failure('Truncated CEF escape');
-        const next=input[pos+1]!;
-        decoded+=Object.prototype.hasOwnProperty.call(CEF_ESCAPES,next)?CEF_ESCAPES[next]!:'\\'+next;
-        pos+=2;continue;
-      }
-      if(ch===' '||ch==='\t'){
-        let runEnd=pos;
-        while(runEnd<input.length&&(input[runEnd]===' '||input[runEnd]==='\t'))runEnd++;
-        CEF_KEY.lastIndex=runEnd;
-        const next=CEF_KEY.exec(input);
-        if(next&&next.index===runEnd){
-          if(runEnd-pos>1)decoded+=input.slice(pos,runEnd-1);
-          boundary=runEnd-1;
-          pos=runEnd;
-          break;
-        }
-      }
-      decoded+=ch;pos++;
-    }
-    if(boundary===input.length)decoded=decoded.replace(/[ \t]+$/,'');
-    values[key]=decoded;
-    cursor=boundary===input.length?input.length:boundary+1;
+    values[key]=decodeCefValue(match.groups!.value!);
+    cursor=CEF_PAIR.lastIndex;
   }
+  // Text the pair grammar does not account for (a broken key boundary, a backslash that escapes nothing).
+  if(cursor!==input.length)return failure('Unsupported CEF extension key boundary');
   if(!Object.keys(values).length)return failure('No CEF extension fields parsed');
   return {fields:values,errors:[]};
+}
+
+/**
+ * The attribute delimiter of a LEEF event: the contract default, or the delimiter field of the versions that
+ * carry one, written as the character itself or in hexadecimal (0x or x prefix).
+ */
+function leefDelimiter(field:string|undefined):string|null{
+  if(field===undefined)return SYSLOG_HEADER_SEMANTICS.leefDefaultDelimiter;
+  LEEF_DELIMITER.lastIndex=0;
+  const match=LEEF_DELIMITER.exec(field);
+  if(match?.groups!.literal!==undefined)return match.groups!.literal;
+  // Hexadecimal spelling, or one literal character from the contract list outside printable ASCII.
+  const code=match?parseInt(match.groups!.hex!,16):([...field].length===1?field.codePointAt(0)!:-1);
+  if(LEEF_EXTRA_DELIMITERS.includes(code))return String.fromCharCode(code);
+  if(!match||code>126)return null;
+  const named=String.fromCharCode(code);
+  LEEF_DELIMITER.lastIndex=0;
+  const valid=LEEF_DELIMITER.exec(named);
+  return valid&&valid.groups!.literal!==undefined?named:null;
 }
 
 /** Mirror the reviewed backend's bounded JSON object body shape. */
@@ -259,25 +261,24 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   }
   const match = /^LEEF:([0-9.]+)\|(.*)$/s.exec(input);
   if (!match || !LEEF_VERSIONS.includes(match[1]!)) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
-  const isV2 = match[1] === '2.0';
-  const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
+  const carriesDelimiter = LEEF_DELIMITER_VERSIONS.includes(match[1]!);
+  const headerFields = SYSLOG_HEADER_SEMANTICS.leefHeaderFields;
+  const parts = splitEscaped(match[2], '|', headerFields + (carriesDelimiter ? 1 : 0));
   if (!parts) return failure('LEEF header or declared delimiter is incomplete');
-  const hex = isV2 ? /^0x([0-9a-fA-F]{1,2})$/.exec(parts[4]) : null;
-  const delimiter = isV2 ? (hex ? String.fromCharCode(parseInt(hex[1], 16)) : parts[4]) : '\t';
-  if (!(delimiter === '\t' || (/^[!-~]$/.test(delimiter) && delimiter !== '=' && delimiter !== '\\'))) {
-    return failure('Unsupported LEEF 2.0 data delimiter');
-  }
+  const delimiter = leefDelimiter(carriesDelimiter ? parts[headerFields] : undefined);
+  if (delimiter === null) return failure('Unsupported LEEF 2.0 data delimiter');
   const record: Record<string, unknown> = Object.assign(Object.create(null), {
     leef_version: match[1], leef_vendor: parts[0], leef_product: parts[1],
     leef_product_version: parts[2], leef_event_id: parts[3],
   });
   if (parts[parts.length - 1]) {
     for (const part of parts[parts.length - 1].split(delimiter)) {
-      const location = part.indexOf('=');
-      const key = part.slice(0, location);
-      if (location < 0 || !LEEF_KEY.test(key) || FORBIDDEN_KEYS.includes(key)) return failure('Unsupported LEEF extension token');
+      LEEF_ATTRIBUTE.lastIndex = 0;
+      const attribute = LEEF_ATTRIBUTE.exec(part);
+      const key = attribute?.groups!.key;
+      if (key === undefined || FORBIDDEN_KEYS.includes(key)) return failure('Unsupported LEEF extension token');
       if (Object.prototype.hasOwnProperty.call(record, key)) return failure(duplicateFieldMessage(key));
-      record[key] = part.slice(location + 1);
+      record[key] = part.slice(LEEF_ATTRIBUTE.lastIndex);
     }
   }
   return { fields: record, errors: [] };
