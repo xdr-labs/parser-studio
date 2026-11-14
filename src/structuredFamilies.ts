@@ -4,6 +4,8 @@ import {jsonSourceValueValid} from './jsonSourceSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
 import { isSupportedRfc5424Version, matchHeaderRule, matchesHeaderToken } from './grammar/syslogHeader';
 import { matchRfc3164Header } from './grammar/syslogHeader';
+import { parseStrictKeyValues } from './grammar/kvBody';
+import { SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from './grammar/syslogHeaderGrammar.generated';
 import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -13,6 +15,16 @@ export interface StructuredExtraction {
   errors: string[];
 }
 const failure = (message: string): StructuredExtraction => ({ fields: {}, errors: [message] });
+
+// Which body dialect an extraction actually parsed. Kept beside the result instead of inside it so the
+// result shape (fields, errors) stays what every consumer and test already expects.
+const BODY_KIND = new WeakMap<object, string>();
+const withBodyKind = <T extends StructuredExtraction>(extraction: T, kind: string | undefined): T => {
+  if (kind !== undefined && extraction.errors.length === 0) BODY_KIND.set(extraction, kind);
+  return extraction;
+};
+/** 'kv', 'json', 'cef', 'leef', 'regex' or 'raw' when the extractor resolved a body dialect for this result (also for `auto`). */
+export const bodyKindOf = (extraction: StructuredExtraction): string | undefined => BODY_KIND.get(extraction);
 
 export function detectStructuredFamily(input: string): StructuredFamily | null {
   if (/^CEF:\d+\|/.test(input)) return 'cef';
@@ -38,6 +50,9 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
   const output = [''];
   let escaped = false;
   for (const char of text) {
+    // Everything after the last header delimiter belongs to the extension grammar and is kept exactly as
+    // written. Decoding header escapes there as well decoded a value twice: "C:\\new" became "C:" LF "ew".
+    if (output.length > splits) { output[output.length - 1] += char; continue; }
     if (escaped) {
       output[output.length - 1] += char === delimiter || char === '\\' ? char : '\\' + char;
       escaped = false;
@@ -54,43 +69,41 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
 }
 
 export function strictKeyValues(input: string): StructuredExtraction {
+  // Pair grammar, separators, limits and escapes come from the shared grammar
+  // contract (src/grammar/kvBody.ts); the Ruby export reads the same fragment.
+  const body = parseStrictKeyValues(input);
+  if (!body.ok) return failure({
+    MALFORMED_PAIR: 'Unsupported or malformed extension key=value segment',
+    FORBIDDEN_KEY: 'Unsafe or duplicate extension field',
+    DUPLICATE_KEY: 'Unsafe or duplicate extension field',
+    TOO_MANY_PAIRS: 'KV field limit exceeded: maximum 100 keys per event',
+    NO_PAIRS: 'No extension fields parsed',
+  }[body.reason]);
   const values: Record<string, unknown> = Object.create(null);
-  // Ruby's /\s/ and String#strip have ASCII whitespace semantics. JS /\s/
-  // includes NBSP/BOM/EM SPACE and must NOT silently alter source field values.
-  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^ \t\n\r\f\v"'\\])+))/y;
-  let cursor = 0;
-  let count = 0;
-  while (cursor < input.length) {
-    if (/^[ \t\n\r\f\v]*$/.test(input.slice(cursor))) break;
-    pattern.lastIndex = cursor;
-    const token = pattern.exec(input);
-    if (!token || token.index !== cursor) return failure('Unsupported or malformed extension key=value segment');
-    const key = token[1];
-    if (['__proto__','constructor','prototype'].includes(key) ||
-        Object.prototype.hasOwnProperty.call(values, key)) return failure('Unsafe or duplicate extension field');
-    if (count >= 100) return failure('KV field limit exceeded: maximum 100 keys per event');
-    count++;
-    // Only defined escapes are decoded. Literal Windows path separators survive.
-    values[key] = (token[2] ?? token[3] ?? token[4] ?? '').replace(/\\([\\"'=])/g, '$1');
-    cursor = pattern.lastIndex;
-  }
-  if (!Object.keys(values).length) return failure('No extension fields parsed');
-  return { fields: values, errors: [] };
+  for (const [key, value] of body.pairs) values[key] = value;
+  return withBodyKind({ fields: values, errors: [] }, 'kv');
 }
 
-const CEF_KEY=/[A-Za-z_][A-Za-z0-9_.-]{0,127}=/y;
+// Key token, field limit, escape table, supported versions and forbidden keys come from the shared grammar
+// contract; the generated Ruby and the Python preview read the same values.
+const CEF_KEY=new RegExp('(?:'+SYSLOG_HEADER_TOKENS.CEF_KEY+')=','y');
+const CEF_ESCAPES:Readonly<Record<string,string>>=SYSLOG_HEADER_SEMANTICS.cefExtensionEscapes;
+const CEF_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.cefSupportedVersions;
+const LEEF_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.leefSupportedVersions;
+const LEEF_KEY=new RegExp('^(?:'+SYSLOG_HEADER_TOKENS.LEEF_KEY+')$');
+const FORBIDDEN_KEYS:readonly string[]=SYSLOG_HEADER_SEMANTICS.kvForbiddenKeys;
 function cefExtensionValues(input:string):StructuredExtraction{
   const values:Record<string,unknown>=Object.create(null);
   let cursor=0,count=0;
   while(cursor<input.length){
     while(cursor<input.length&&(input[cursor]===' '||input[cursor]==='\t'))cursor++;
     if(cursor===input.length)break;
-    if(count++>=1024)return failure('CEF extension field limit exceeded');
+    if(count++>=SYSLOG_HEADER_SEMANTICS.cefMaxExtensionFields)return failure('CEF extension field limit exceeded');
     CEF_KEY.lastIndex=cursor;
     const match=CEF_KEY.exec(input);
     if(!match||match.index!==cursor)return failure('Unsupported CEF extension key boundary');
     const key=match[0].slice(0,-1);
-    if(['__proto__','constructor','prototype'].includes(key)||
+    if(FORBIDDEN_KEYS.includes(key)||
        Object.prototype.hasOwnProperty.call(values,key))
       return failure('Unsupported or duplicate CEF extension field');
     let pos=CEF_KEY.lastIndex;
@@ -101,8 +114,7 @@ function cefExtensionValues(input:string):StructuredExtraction{
       if(ch==='\\'){
         if(pos+1>=input.length)return failure('Truncated CEF escape');
         const next=input[pos+1]!;
-        decoded+=next==='n'?'\n':next==='r'?'\r':
-          next==='='?'=':next==='\\'?'\\':'\\'+next;
+        decoded+=Object.prototype.hasOwnProperty.call(CEF_ESCAPES,next)?CEF_ESCAPES[next]!:'\\'+next;
         pos+=2;continue;
       }
       if(ch===' '||ch==='\t'){
@@ -167,7 +179,7 @@ function parsedBody(message:string,mode:'raw'|'json'|'kv'|'cef'|'leef'|'regex',r
   mode==='kv'?strictKeyValues(message):
   mode==='regex'?regexBody(message,regexPattern):
   extractStructuredFamily(message,mode);
- return result.errors.length?result:{fields:{body:result.fields},errors:[]};
+ return result.errors.length?result:withBodyKind({fields:{body:result.fields},errors:[]},mode);
 }
 function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'regex'|'auto',regexPattern?:string):
  StructuredExtraction{
@@ -189,7 +201,7 @@ function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'
  if(!tagged&&mode==='raw')
   return failure('Tagless RFC3164 requires an explicit structured security body');
  const body=parsedBody(message,mode,regexPattern);
- return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};
+ return body.errors.length?body:withBodyKind({fields:{...fields,...body.fields},errors:[]},bodyKindOf(body));
 }
 
 export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex' | 'auto' = 'raw', regexPattern?:string): StructuredExtraction {
@@ -199,8 +211,10 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     const scanned=parseRfc5424Subset(input);
     if (!scanned.ok) return failure(scanned.error);
     const body: Record<string, unknown> = {};
+    let bodyKind: string | undefined;
     if (scanned.message) {
       const mode=bodyFormat==='auto'?deterministicBody(scanned.message):bodyFormat;
+      bodyKind = mode;
       if (mode === 'raw') body.message = scanned.message;
       else if (['json','kv','cef','leef','regex'].includes(mode)) {
         const nested = mode === 'json'
@@ -214,11 +228,12 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
         body.body = nested.fields;
       } else return failure('Unsupported RFC5424 body dialect');
     }
-    return { fields: { ...scanned.fields, ...body }, errors: [] };
+    return withBodyKind({ fields: { ...scanned.fields, ...body }, errors: [] }, bodyKind);
   }
   if (format === 'cef') {
-    const match = /^CEF:(\d+)\|(.*)$/.exec(input);
-    if (!match || match[1] !== '0') return failure('Only standalone CEF version zero events are supported');
+    // dotAll: a value may hold U+2028/U+2029, which '.' alone excludes in ECMAScript but not in Ruby or Python.
+    const match = /^CEF:(\d+)\|(.*)$/s.exec(input);
+    if (!match || !CEF_VERSIONS.includes(match[1]!)) return failure('Only standalone CEF version zero events are supported');
     const parts = splitEscaped(match[2], '|', 6);
     if (!parts) return failure('CEF requires six header fields and an extension slot');
     const record: Record<string, unknown> = {
@@ -236,8 +251,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     }
     return { fields: record, errors: [] };
   }
-  const match = /^LEEF:(1\.0|2\.0)\|(.*)$/.exec(input);
-  if (!match) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
+  const match = /^LEEF:([0-9.]+)\|(.*)$/s.exec(input);
+  if (!match || !LEEF_VERSIONS.includes(match[1]!)) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
   if (!parts) return failure('LEEF header or declared delimiter is incomplete');
@@ -254,8 +269,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     for (const part of parts[parts.length - 1].split(delimiter)) {
       const location = part.indexOf('=');
       const key = part.slice(0, location);
-      if (location < 0 || !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(key) ||
-          ['__proto__','constructor','prototype'].includes(key) ||
+      if (location < 0 || !LEEF_KEY.test(key) ||
+          FORBIDDEN_KEYS.includes(key) ||
           Object.prototype.hasOwnProperty.call(record, key)) return failure('Unsupported or duplicate LEEF extension token');
       record[key] = part.slice(location + 1);
     }

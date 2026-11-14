@@ -1,6 +1,7 @@
 import {meetsStellar7ValueConstraints,officialProtocolPairConflict} from './stellar7ValueConstraints';
-import type { ConcreteFormat, Detection, Diagnostic, EventResult, Format, ParserDraft, SuiteResult, TraceStep } from './model';
-import { detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
+import type { ConcreteFormat, Detection, Diagnostic, EventParseStatus, EventResult, Format, ParserDraft, SuiteResult, TraceStep } from './model';
+import { classifyStructuredParse } from './grammar/parseStatus';
+import { bodyKindOf, detectStructuredFamily, extractStructuredFamily,strictKeyValues } from './structuredFamilies';
 import { hasAmbiguousFieldPath,lookupFieldValue,mappingWhenApplies } from './fieldPaths';
 import {parseJavaStacktrace} from './javaStacktrace';
 import {coerceCanonicalValue as convertValue} from '../backend/src/canonical-value-contract';
@@ -357,6 +358,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
   trace.push({ stage: 'Detection', detail: detected.format + ' · ' + detected.reason, ok: detected.format !== 'unknown' });
   let fields: Record<string, unknown> = {};
   let matched = false;
+  let parseStatus: EventParseStatus = 'UNKNOWN';
   if (raw.length > MAX_LINE_CHARS) {
     error('break', 'LINE_TOO_LONG', 'Event exceeds ' + MAX_LINE_CHARS + ' characters');
   } else if(new TextEncoder().encode(raw).byteLength>(draft.guided?.receiver.messageLimit??65536)){
@@ -372,6 +374,20 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     extraction.errors.forEach((message) => error('extract', 'EXTRACTION_FAILED', message));
     fields = extraction.fields;
     matched = Object.keys(fields).length > 0;
+    // Parsing Success Contract: the extractor's own "no errors" is not proof. For a key=value body the
+    // original line is re-read by an independent tokenizer, and a pair that is visible there but missing
+    // from the result makes the event PARTIAL - reported as a failure, never as a complete parse.
+    // A key=value body is known either from the draft (format kv, or Syslog with body kv) or from what the
+    // extractor says it parsed (bodyKindOf: an `auto` body that resolved to key=value, the key=value
+    // branches of a mixed allowlist). Either one is enough, so the check cannot be skipped by losing the tag.
+    const keyValueBody = effectiveFormat === 'kv' || bodyKindOf(extraction) === 'kv' ||
+      ((effectiveFormat === 'syslog_rfc3164' || effectiveFormat === 'syslog_rfc5424') && draft.format !== 'auto' && draft.syslogBodyFormat === 'kv');
+    const verdict = classifyStructuredParse(eventSource, extraction, keyValueBody ? 'kv' : 'other');
+    parseStatus = verdict.status;
+    if (verdict.status === 'PARTIAL')
+      error('extract', 'FIELD_LOSS_NOT_FULL',
+        'A key=value pair of the original log is missing from the parsed result: ' +
+        verdict.lostPairs.slice(0, 5).map(pair => pair.key).join(', ') + '. The event is not treated as fully parsed.');
   }
   trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
   const normalized: Record<string, unknown> = draft.format==='generic_structural'&&matched
@@ -594,6 +610,7 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
     ...(draft.eventProfiles?{eventFamily:family.name}:{}),
     ...(wrapped.hops.length?{forwarderHops:wrapped.hops}:{}),
     matched, extracted: matched, normalizedOk,
+    parseStatus,
     status: hasErrors || !matched ? 'fail' : diagnostics.length ? 'warning' : 'pass',
     diagnostics, trace,
   };

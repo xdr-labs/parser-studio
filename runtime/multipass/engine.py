@@ -13,6 +13,7 @@ import ipaddress
 import json
 import math
 import re
+from syslog_header_grammar_generated import KV_ASCII_WHITESPACE
 from typing import Any
 
 MAX_RAW_BYTES = 131072
@@ -255,7 +256,7 @@ def parse_quoted_kv(result:ParseResult, begin:int) -> dict[str,tuple[str,int,int
     out:dict[str,tuple[str,int,int]]={}
     while i<n:
         start=i
-        while i<n and s[i].isspace():
+        while i<n and s[i] in KV_ASCII_WHITESPACE:
             i+=1
         if i>start:result.covered.append((start,i))
         if i>=n:break
@@ -285,12 +286,12 @@ def parse_quoted_kv(result:ParseResult, begin:int) -> dict[str,tuple[str,int,int
             else:
                 result.issues.append("KV_QUOTE_UNCLOSED")
                 return out
-            if i<n and not s[i].isspace():
+            if i<n and not s[i] in KV_ASCII_WHITESPACE:
                 result.issues.append("KV_AFTER_QUOTE_INVALID");return out
             value="".join(decoded)
             val_span=(val_start+1,i-1)
         else:
-            while i<n and not s[i].isspace():
+            while i<n and not s[i] in KV_ASCII_WHITESPACE:
                 i+=1
             value=s[val_start:i]
             val_span=(val_start,i)
@@ -342,6 +343,10 @@ def parse_csv_spans(result:ParseResult,begin:int) -> list[tuple[str,int,int]]:
             captured_end=pos
             if result.raw[captured_start:captured_end]!=value:
                 raise ValueError("CSV_VALUE_MISMATCH")
+            # RFC 4180 rule 5: a double quote may not appear inside a field that is not enclosed. csv.reader
+            # accepts it even in strict mode; the browser tokenizer and Ruby's CSV.parse_line reject the row.
+            if '"' in value:
+                raise ValueError("CSV_GRAMMAR_INVALID")
         parts.append((value,captured_start,captured_end))
         if pos<len(result.raw):
             if result.raw[pos]!=',':raise ValueError("CSV_DELIMITER_INVALID")

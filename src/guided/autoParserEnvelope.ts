@@ -8,6 +8,7 @@ import {hasUnsafeJsonNumbers} from '../jsonNumberSafety';
 import {jsonSourceValueValid} from '../jsonSourceSafety';
 import {parseRfc5424Subset} from '../rfc5424Subset';
 import {matchRfc3164Header,matchesHeaderToken} from '../grammar/syslogHeader';
+import {parseStrictKeyValues} from '../grammar/kvBody';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import type {BackendCapabilities} from './backendCapabilities';
@@ -50,25 +51,11 @@ const EMPTY=(status:EnvelopeLedger['status'],boundary:EventBoundary,sourceCount=
   boundary,events:[],families:[],nativeVerified:false,targetVerified:false,
 });
 const MONTH_DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
-const KV_TOKEN=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'\\]+)(?=\s|$)/;
+// Source event accounting must agree with the strict KV compiler, so the front
+// door asks the same contract-driven parser (src/grammar/kvBody.ts): the same
+// separators (SP and TAB only), duplicate-key rule and pair limit as extraction.
 function kvValid(input:string):boolean{
-  let index=0,count=0;
-  const fieldNames=new Set<string>();
-  while(index<input.length){
-    while(index<input.length&&/\s/.test(input[index]!))index++;
-    if(index===input.length)break;
-    const match=KV_TOKEN.exec(input.slice(index));
-    if(!match)return false;
-    // Source event accounting must agree with the existing strict KV
-    // compiler: a later duplicate key cannot overwrite its first value.
-    // Only field-name identity is retained, never customer field values.
-    const key=match[1]!;
-    if(['__proto__','prototype','constructor'].includes(key)||fieldNames.has(key))return false;
-    fieldNames.add(key);
-    count++;if(count>100)return false;
-    index+=match[0].length;
-  }
-  return count>0;
+  return parseStrictKeyValues(input).ok;
 }
 function jsonValid(input:string):boolean{
   try{

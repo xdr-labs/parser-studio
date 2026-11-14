@@ -10,9 +10,17 @@ from __future__ import annotations
 from dataclasses import dataclass,field
 import re
 from typing import Any
+from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS,SEMANTICS,TOKENS
 
 SAFE_KEY=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}\Z")
-KEY_START=re.compile(r"([A-Za-z_][A-Za-z0-9_.-]{0,127})=")
+# CEF extension key token and supported CEF versions: shared grammar contract.
+KEY_START=re.compile('('+TOKENS['CEF_KEY']+')=')
+CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
+# LEEF attribute key token and supported LEEF versions: shared grammar contract. The browser and the generated
+# Ruby read the same token; a bounded copy here used to reject a key longer than 128 characters that they accept.
+LEEF_KEY=re.compile('(?:'+TOKENS['LEEF_KEY']+')')
+LEEF_VERSIONS=tuple(SEMANTICS['leefSupportedVersions'])
+FORBIDDEN_KEYS=frozenset(SEMANTICS['kvForbiddenKeys'])
 ESCAPE_MAP={"n":"\n","r":"\r","t":"\t"}
 UNSAFE={"__proto__","prototype","constructor"}
 MONTHS={"Jan":31,"Feb":29,"Mar":31,"Apr":30,"May":31,
@@ -155,7 +163,7 @@ def _leef_extension(raw:str,begin:int,delimiter:str)->Fragment:
         if end>i:
             content=raw[i:end]
             split=content.find("=")
-            if split<1 or not SAFE_KEY.fullmatch(content[:split]) or content[:split] in UNSAFE:
+            if split<1 or not LEEF_KEY.fullmatch(content[:split]) or content[:split] in FORBIDDEN_KEYS:
                 ext.issues.append("LEEF_INVALID_EXTENSION_TOKEN")
                 break
             key=content[:split]
@@ -187,7 +195,7 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         except ValueError as exc:
             out.issues.append(str(exc))
             return out
-        if parts[0][0] not in ("0","1"):
+        if parts[0][0] not in CEF_VERSIONS:
             out.issues.append("CEF_VERSION_UNSUPPORTED")
             return out
         out.fields["cef_header"]={name:item[0] for name,item in zip(names,parts)}
@@ -199,9 +207,10 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         out.fields["cef_extension"]=extension.fields
     elif raw.startswith("LEEF:",offset):
         start=offset+5
+        # LEEF 2.0 is the version that carries the separator in a sixth header field; which versions are
+        # accepted at all is contract data.
         is_v2=raw.startswith("LEEF:2.0|",offset)
-        is_v1=raw.startswith("LEEF:1.0|",offset)
-        if not (is_v1 or is_v2):
+        if not any(raw.startswith("LEEF:"+version+"|",offset) for version in LEEF_VERSIONS):
             out.issues.append("LEEF_VERSION_UNSUPPORTED")
             return out
         names=("version","vendor","product","product_version","event_id")
@@ -211,7 +220,7 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         except ValueError as exc:
             out.issues.append(str(exc))
             return out
-        if parts[0][0] not in ("1.0","2.0"):
+        if parts[0][0] not in LEEF_VERSIONS:
             out.issues.append("LEEF_VERSION_INVALID")
             return out
         if is_v2:
@@ -289,7 +298,7 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
         return None
     result=Fragment()
     values=match.groupdict()
-    if int(values["pri"])>191 or values["version"]!="1":
+    if int(values["pri"])>PRI_MAX or values["version"] not in RFC5424_SUPPORTED_VERSIONS:
         result.issues.append("RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED")
         return result,None
     timestamp=values["timestamp"]
