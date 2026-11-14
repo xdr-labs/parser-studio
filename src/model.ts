@@ -76,6 +76,8 @@ export interface TraceStep {
 }
 
 export type EventStatus = 'pass' | 'warning' | 'fail';
+/** Parsing Success Contract (src/grammar/parseStatus.ts): FULL is never reported when a field visible in the original log is missing. */
+export type EventParseStatus = 'FULL' | 'PARTIAL' | 'UNKNOWN' | 'ERROR';
 export interface EventResult {
   id: string;
   line: number;
@@ -91,6 +93,8 @@ export interface EventResult {
   extracted: boolean;
   normalizedOk: boolean;
   status: EventStatus;
+  /** Set by the preview pipeline for every event. */
+  parseStatus?: EventParseStatus;
   diagnostics: Diagnostic[];
   trace: TraceStep[];
 }

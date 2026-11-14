@@ -22,6 +22,23 @@ export interface ParseVerdict { status: ParseStatus; lostPairs: RawPair[]; reaso
 const KEY_AT_TOKEN_START = /^[A-Za-z_][A-Za-z0-9_.-]{0,95}=/;
 
 /**
+ * RFC 5424 section 6: after "<PRI>VERSION" come five header fields, each separated by exactly one SP and
+ * each defined by its position alone. A HOSTNAME written "a=b" is a host name, not a pair, so pair
+ * accounting starts after the sixth token. An RFC 3164 header gets no such exemption: its HOSTNAME is
+ * optional, which is exactly how a first key=value pair was once lost into it (F-1).
+ */
+function positionalHeaderEnd(raw: string): number {
+  if (!/^<[0-9]{1,3}>[0-9]{1,3} /.test(raw)) return 0;
+  let index = 0;
+  for (let token = 0; token < 6; token += 1) {
+    const space = raw.indexOf(' ', index);
+    if (space < 0) return raw.length;
+    index = space + 1;
+  }
+  return index;
+}
+
+/**
  * Independent evidence: key=value pairs that start a whitespace-separated token
  * of the raw line. Values in double or single quotes are consumed whole, so a
  * '=' inside a quoted value is never reported as a pair of its own. This is intentionally not the
@@ -30,7 +47,7 @@ const KEY_AT_TOKEN_START = /^[A-Za-z_][A-Za-z0-9_.-]{0,95}=/;
 export function independentKeyValuePairs(raw: string): RawPair[] {
   const pairs: RawPair[] = [];
   const length = raw.length;
-  let index = 0;
+  let index = positionalHeaderEnd(raw);
   while (index < length) {
     while (index < length && (raw[index] === ' ' || raw[index] === '\t')) index += 1;
     const start = index;
