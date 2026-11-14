@@ -16,6 +16,11 @@ SAFE_KEY=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}\Z")
 # CEF extension key token and supported CEF versions: shared grammar contract.
 KEY_START=re.compile('('+TOKENS['CEF_KEY']+')=')
 CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
+# LEEF attribute key token and supported LEEF versions: shared grammar contract. The browser and the generated
+# Ruby read the same token; a bounded copy here used to reject a key longer than 128 characters that they accept.
+LEEF_KEY=re.compile('(?:'+TOKENS['LEEF_KEY']+')')
+LEEF_VERSIONS=tuple(SEMANTICS['leefSupportedVersions'])
+FORBIDDEN_KEYS=frozenset(SEMANTICS['kvForbiddenKeys'])
 ESCAPE_MAP={"n":"\n","r":"\r","t":"\t"}
 UNSAFE={"__proto__","prototype","constructor"}
 MONTHS={"Jan":31,"Feb":29,"Mar":31,"Apr":30,"May":31,
@@ -158,7 +163,7 @@ def _leef_extension(raw:str,begin:int,delimiter:str)->Fragment:
         if end>i:
             content=raw[i:end]
             split=content.find("=")
-            if split<1 or not SAFE_KEY.fullmatch(content[:split]) or content[:split] in UNSAFE:
+            if split<1 or not LEEF_KEY.fullmatch(content[:split]) or content[:split] in FORBIDDEN_KEYS:
                 ext.issues.append("LEEF_INVALID_EXTENSION_TOKEN")
                 break
             key=content[:split]
@@ -202,9 +207,10 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         out.fields["cef_extension"]=extension.fields
     elif raw.startswith("LEEF:",offset):
         start=offset+5
+        # LEEF 2.0 is the version that carries the separator in a sixth header field; which versions are
+        # accepted at all is contract data.
         is_v2=raw.startswith("LEEF:2.0|",offset)
-        is_v1=raw.startswith("LEEF:1.0|",offset)
-        if not (is_v1 or is_v2):
+        if not any(raw.startswith("LEEF:"+version+"|",offset) for version in LEEF_VERSIONS):
             out.issues.append("LEEF_VERSION_UNSUPPORTED")
             return out
         names=("version","vendor","product","product_version","event_id")
@@ -214,7 +220,7 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         except ValueError as exc:
             out.issues.append(str(exc))
             return out
-        if parts[0][0] not in ("1.0","2.0"):
+        if parts[0][0] not in LEEF_VERSIONS:
             out.issues.append("LEEF_VERSION_INVALID")
             return out
         if is_v2:

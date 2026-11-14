@@ -26,6 +26,7 @@ import { extractGenericStructural } from '../../src/genericStructural';
 import { classifyStructuredParse } from '../../src/grammar/parseStatus';
 import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslogHeaderModel';
 import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
+import { generateRfc5424KvCases } from '../../src/grammar/rfc5424Model';
 import { generateCefLeefCases, type FamilyCase } from '../../src/grammar/cefLeefModel';
 import { generateCsvCases, type CsvCase } from '../../src/grammar/csvModel';
 import { extractFields } from '../../src/parser';
@@ -258,7 +259,7 @@ const TS_GENERIC_MUTANTS: Mutant[] = [
 async function runTs(): Promise<number> {
   const selfCheck = goldenSelfCheck();
   if (selfCheck.length) { report('GOLDEN_SELF_CHECK', selfCheck); return 1; }
-  const properties = [...generateRfc3164KvCases(300, PROPERTY_SEED), ...generateKvBodyCases(200, PROPERTY_SEED)];
+  const properties = [...generateRfc3164KvCases(300, PROPERTY_SEED), ...generateKvBodyCases(200, PROPERTY_SEED), ...generateRfc5424KvCases(150, PROPERTY_SEED)];
   const cases = [...goldens.cases, ...properties];
   const product = score('ts', cases, item => evaluateTs(item, extractStructuredFamily as Extract));
   const envelopeFailures: string[] = [];
@@ -368,8 +369,8 @@ function runNative(): number {
   const selfCheck = goldenSelfCheck();
   if (selfCheck.length) { report('GOLDEN_SELF_CHECK', selfCheck); return 1; }
   const expectedRuby = process.env.PARSER_STUDIO_EXPECT_RUBY ?? '2.4.9';
-  const cases = [...goldens.cases, ...generateRfc3164KvCases(60, PROPERTY_SEED), ...generateKvBodyCases(60, PROPERTY_SEED)];
-  const mutantCases = [...goldens.cases, ...generateRfc3164KvCases(15, PROPERTY_SEED), ...generateKvBodyCases(25, PROPERTY_SEED)];
+  const cases = [...goldens.cases, ...generateRfc3164KvCases(60, PROPERTY_SEED), ...generateKvBodyCases(60, PROPERTY_SEED), ...generateRfc5424KvCases(40, PROPERTY_SEED)];
+  const mutantCases = [...goldens.cases, ...generateRfc3164KvCases(15, PROPERTY_SEED), ...generateKvBodyCases(25, PROPERTY_SEED), ...generateRfc5424KvCases(10, PROPERTY_SEED)];
   const fragments: Record<string, string> = {
     syslog_rfc3164: compileFragment('syslog_rfc3164'),
     syslog_rfc5424: compileFragment('syslog_rfc5424'),
@@ -813,7 +814,7 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-kv-escapes-not-decoded', file: 'source_kv.py', find: 'value=unescape_kv_value(match[group])', replace: 'value=match[group]' },
   { id: 'py-kv-repeated-key-overwrites', file: 'source_kv.py', find: 'else:out.fields[key]=[previous,value]', replace: 'else:out.fields[key]=value' },
   { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
-  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT,
+  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT,
   { id: 'py-cef-value-stops-at-first-space', file: 'security_cef.py', find: 'next_key=KEY.match(raw,run_end)', replace: 'next_key=True' },
   { id: 'py-cef-escapes-not-decoded', file: 'security_cef.py', find: 'if nxt in ESCAPES:decoded.append(ESCAPES[nxt])', replace: 'if nxt in ESCAPES:decoded.append(raw[cursor:cursor+2])' },
   { id: 'py-csv-doubled-quote-kept', file: 'engine.py', find: "chars.append('\"');pos+=2", replace: "chars.append('\"\"');pos+=2" },
@@ -896,7 +897,7 @@ function runPython(): number {
   const index = new Map(cases.map((item, position) => [item, position]));
   // key=value bodies: goldens with a key=value body under an RFC 3164 header, plus the model-rendered bodies.
   const kvCases = [...goldens.cases.filter(item => item.grammar === 'syslog_rfc3164' && item.expect.source?.syslog_appname === undefined && !item.expect.neverWrong),
-    ...generateKvBodyCases(40, PROPERTY_SEED)];
+    ...generateKvBodyCases(40, PROPERTY_SEED), ...generateRfc5424KvCases(40, PROPERTY_SEED)];
   const kvIndex = new Map(kvCases.map((item, position) => [item, position]));
   const failuresOf = (output: PythonOutput) => {
     const failures = score('ruby', cases, item => evaluatePythonEnvelope(item, output.envelope[index.get(item)!])).failures;

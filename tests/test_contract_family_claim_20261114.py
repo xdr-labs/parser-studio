@@ -44,5 +44,26 @@ class StructuredFamilyClaim(unittest.TestCase):
         self.assertEqual({"share": "\\\\server\\reports", "src": "10.1.1.1"}, result["fields"]["leef_extension"])
 
 
+class LeefContractValues(unittest.TestCase):
+    def test_a_long_attribute_key_is_accepted_like_the_browser_and_ruby_accept_it(self):
+        # LEEF does not bound the key length; the shared LEEF_KEY token does not either.
+        key = "k" * 140
+        result = preview("LEEF:1.0|Acme|FW|1.0|100|src=10.1.1.1\t" + key + "=v\tdst=10.2.2.2")
+        self.assertEqual("SOURCE_PARSED", result["status"])
+        self.assertEqual({"src": "10.1.1.1", key: "v", "dst": "10.2.2.2"}, result["fields"]["leef_extension"])
+
+    def test_only_the_contract_versions_are_leef(self):
+        self.assertEqual("SOURCE_PARSED", preview("LEEF:1.0|Acme|FW|1.0|100|src=10.1.1.1\tdst=10.2.2.2")["status"])
+        self.assertEqual("SOURCE_PARSED", preview("LEEF:2.0|Acme|FW|1.0|100|^|src=10.1.1.1^dst=10.2.2.2")["status"])
+        for raw in ("LEEF:3.0|Acme|FW|1.0|100|src=10.1.1.1\tdst=10.2.2.2", "LEEF:1.1|Acme|FW|1.0|100|src=10.1.1.1\tdst=10.2.2.2"):
+            with self.subTest(raw=raw):
+                self.assertNotEqual("SOURCE_PARSED", preview(raw)["status"])
+
+    def test_cef_version_1_is_declined_like_the_generated_parser_declines_it(self):
+        result = preview("CEF:1|Acme|FW|1.0|100|Name|5|src=10.1.1.1 dst=10.2.2.2")
+        self.assertNotEqual("SOURCE_PARSED", result["status"])
+        self.assertEqual("SOURCE_PARSED", preview("CEF:0|Acme|FW|1.0|100|Name|5|src=10.1.1.1 dst=10.2.2.2")["status"])
+
+
 if __name__ == "__main__":
     unittest.main()
