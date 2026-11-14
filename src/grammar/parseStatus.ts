@@ -84,6 +84,8 @@ export function independentKeyValuePairs(raw: string): RawPair[] {
 }
 
 function collectLeaves(value: unknown, key: string, out: Map<string, string[]>): void {
+  // The values of a list belong to the field that holds the list.
+  if (Array.isArray(value)) { for (const child of value) collectLeaves(child, key, out); return; }
   if (value !== null && typeof value === 'object') {
     for (const [childKey, child] of Object.entries(value as Record<string, unknown>)) collectLeaves(child, childKey, out);
     return;
@@ -108,21 +110,35 @@ export function classifyStructuredParse(
   if ('thrown' in outcome) return { status: 'ERROR', lostPairs: [], reasons: ['extractor raised: ' + String(outcome.thrown)] };
   if (outcome.errors.length > 0) return { status: 'UNKNOWN', lostPairs: [], reasons: outcome.errors.slice(0, 4) };
   if (Object.keys(outcome.fields).length === 0) return { status: 'UNKNOWN', lostPairs: [], reasons: ['no field was extracted'] };
-  if (bodyFormat !== 'kv') return { status: 'FULL', lostPairs: [], reasons: [] };
+  // A TAG ("kernel:") or a pair ("srcip=10.1.1.1") read as the RFC 3164 host name is a misread header, whatever
+  // the grammar matched. RFC 5424 HOSTNAME is positional and may hold any printable text, so it is exempt.
+  const host = outcome.fields.syslog_hostname;
+  const headerReasons = typeof host === 'string' && !/^<[0-9]{1,3}>[0-9]{1,3} /.test(raw) && (host.includes('=') || host.endsWith(':'))
+    ? ['a TAG or a key=value pair was taken as the host name'] : [];
+  if (bodyFormat !== 'kv') return { status: headerReasons.length ? 'PARTIAL' : 'FULL', lostPairs: [], reasons: headerReasons };
   const leaves = new Map<string, string[]>();
   collectLeaves(outcome.fields, '', leaves);
+  // Every pair of the raw line needs a value of its own in the result: a field written twice and present
+  // once is a lost occurrence (owner policy D-1), so a matched value is consumed.
+  const taken = new Map<string, Set<number>>();
   const lostPairs = independentKeyValuePairs(raw).filter(pair => {
     // Which backslashes a grammar decodes is the grammar's business; presence of the value is what is
     // accounted here, so both sides are compared with backslashes removed.
     const written = pair.rawValue.split('\\').join('');
     const values = leaves.get(pair.key) ?? [];
-    return !values.some(value => value === pair.value || value === pair.rawValue || value.split('\\').join('') === written);
+    const consumed = taken.get(pair.key) ?? new Set<number>();
+    const at = values.findIndex((value, index) => !consumed.has(index) &&
+      (value === pair.value || value === pair.rawValue || value.split('\\').join('') === written));
+    if (at < 0) return true;
+    consumed.add(at);
+    taken.set(pair.key, consumed);
+    return false;
   });
-  if (lostPairs.length > 0) {
+  if (lostPairs.length > 0 || headerReasons.length > 0) {
     return {
       status: 'PARTIAL',
       lostPairs,
-      reasons: lostPairs.slice(0, 4).map(pair => `raw pair ${pair.key}= is not present with its value in the extracted fields`),
+      reasons: [...headerReasons, ...lostPairs.slice(0, 4).map(pair => `raw pair ${pair.key}= is not present with its value in the extracted fields`)],
     };
   }
   return { status: 'FULL', lostPairs: [], reasons: [] };

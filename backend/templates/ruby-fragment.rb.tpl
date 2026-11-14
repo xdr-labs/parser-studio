@@ -27,7 +27,7 @@ def parserstudio_extract(text)
   elsif settings['format'] != 'json' && (text.include?("\n") || text.include?("\r"))
     raise ArgumentError, 'Multiline unframed event is unsupported'
   end
-  case settings['format']
+  result = case settings['format']
   when 'json'
     parserstudio_json_object(text)
   when 'java_stacktrace'
@@ -49,6 +49,67 @@ def parserstudio_extract(text)
   else
     raise ArgumentError, 'Unsupported extraction format'
   end
+  # Parsing Success Contract at run time: never a parsed event with a missing key=value field.
+  parserstudio_assert_no_field_loss(text, result)
+end
+
+# A key=value body is complete only when every key=value pair visible in the original text is present, with
+# its value, in the parsed fields. The original text is re-read here by a deliberately separate and much
+# simpler tokenizer than the grammar that produced the fields, so a grammar fault that moves a pair into
+# another field (the first pair into the host name, for example) becomes an error record with the original
+# text instead of a parsed event that silently lacks a field.
+def parserstudio_assert_no_field_loss(text, result)
+  return result unless result.is_a?(Hash)
+  # A TAG ("kernel:") or a pair ("srcip=10.1.1.1") read as the RFC 3164 host name is a misread header, whatever
+  # the grammar matched. RFC 5424 HOSTNAME is positional and may hold any printable text, so it is exempt.
+  host = result['syslog_hostname']
+  if host.is_a?(String) && !/\A<[0-9]{1,3}>[0-9]{1,3} /.match?(text)
+    raise ArgumentError, 'Header misread: a TAG or a key=value pair was taken as the host name' if host.include?('=') || host.end_with?(':')
+  end
+  body = result['body']
+  return result unless result.instance_variable_get(:@parserstudio_kv_body) ||
+    (body.is_a?(Hash) && body.instance_variable_get(:@parserstudio_kv_body))
+  leaves = {}
+  parserstudio_collect_leaves(result, '', leaves)
+  parserstudio_independent_pairs(text).each do |key, value, written|
+    # Which backslashes a grammar decodes is the grammar's business; presence of the value is what counts.
+    stripped = written.delete('\\')
+    candidates = leaves[key] || []
+    at = candidates.index do |candidate|
+      candidate == value || candidate == written || candidate.delete('\\') == stripped
+    end
+    raise ArgumentError, 'Field loss: a key=value pair of the event is missing from the parsed fields' if at.nil?
+    # Every pair needs a value of its own: a field written twice and present once is a lost occurrence.
+    candidates.delete_at(at)
+  end
+  result
+end
+
+def parserstudio_collect_leaves(value, key, leaves)
+  case value
+  when Hash then value.each { |child_key, child| parserstudio_collect_leaves(child, child_key.to_s, leaves) }
+  when Array then value.each { |child| parserstudio_collect_leaves(child, key, leaves) }
+  when nil then nil
+  else (leaves[key] ||= []) << value.to_s
+  end
+end
+
+# key=value pairs that start a white-space separated token of the original text, as [key, value, written].
+# The five positional header fields after "<PRI>VERSION" of an RFC 5424 line are never pairs.
+def parserstudio_independent_pairs(text)
+  rest = text
+  if /\A<[0-9]{1,3}>[0-9]{1,3} /.match?(text)
+    positional = /\A<[0-9]{1,3}>[0-9]{1,3} (?:[^ ]* ){5}/.match(text)
+    return [] if positional.nil?
+    rest = positional.post_match
+  end
+  pairs = []
+  rest.scan(/(__PS_GRAMMAR_TOKEN_KV_KEY__)=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^ \t\\])*\\?))|[^ \t]+|[ \t]+/m) do |key, double, single, bare|
+    next if key.nil?
+    quoted = double || single
+    pairs << (quoted ? [key, quoted.gsub(/\\(.)/m, '\1'), quoted] : [key, bare, bare])
+  end
+  pairs
 end
 
 # Strict Java exception/stack-frame grammar; not Java code execution.
@@ -246,6 +307,8 @@ def parserstudio_key_values(text)
     position = match.end(0)
   end
   raise ArgumentError, 'No key value pairs found' if record.empty?
+  # Marks the result as a key=value body for the run-time field-loss check (parserstudio_assert_no_field_loss).
+  record.instance_variable_set(:@parserstudio_kv_body, true)
   record
 end
 

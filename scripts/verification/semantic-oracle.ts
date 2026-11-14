@@ -329,17 +329,21 @@ async function runTs(): Promise<number> {
 }
 
 // ---------------------------------------------------------------------- Ruby
-const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar']; target?: string }> = [
+const RUNTIME_GUARDED_FAULTS = ['contract-hostname-any-printable', 'contract-hostname-trailing-colon'];
+const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar']; target?: string; unguarded?: boolean }> = [
   // Forwarder-family template: the relay probe must not reject a direct event that has no TAG.
   { id: 'rb-forwarder-probe-rejects-tagless', grammar: 'syslog_rfc3164', target: 'forwarder:syslog_rfc3164', file: 'fragment', find: "{'syslogBodyFormat'=>'raw','taglessStructuredRouter'=>true}", replace: "{'syslogBodyFormat'=>'raw'}" },
-  ...CONTRACT_MUTANTS.filter(mutant => mutant.id !== 'contract-kv-pair-limit-3').map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const })),
+  // Faults whose wrong events the run-time guard turns into error records are judged with that guard removed
+  // (see RUNTIME_FIELD_LOSS_GUARD below for the guard's own proof).
+  ...CONTRACT_MUTANTS.filter(mutant => mutant.id !== 'contract-kv-pair-limit-3').map(mutant => ({ ...mutant, grammar: 'syslog_rfc3164' as const,
+    ...(RUNTIME_GUARDED_FAULTS.includes(mutant.id) ? { unguarded: true } : {}) })),
   { id: 'rb-kv-pair-limit-3', grammar: 'syslog_rfc3164', file: 'fragment', find: "raise ArgumentError, 'Too many key value fields' if record.length >= 100", replace: "raise ArgumentError, 'Too many key value fields' if record.length >= 3" },
   { id: 'rb-pri-range-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)", replace: "'RFC3164 PRI out of range' if priority && !priority.between?(0, 999)" },
   { id: 'rb-calendar-widened', grammar: 'syslog_rfc3164', file: 'fragment', find: 'day.between?(1, days) && hour.between?(0, 23)', replace: 'day.between?(1, 31) && hour.between?(0, 23)' },
   { id: 'rb-tagged-first-field-lost', grammar: 'syslog_rfc3164', file: 'fragment', find: "  message = header['message']\n", replace: "  message = tagged ? header['message'].sub(/\\A\\S+ /, '') : header['message']\n" },
   { id: 'rb-hostname-wrong-capture', grammar: 'syslog_rfc3164', file: 'fragment', find: "record['syslog_hostname'] = header['hostname'] if header['hostname']", replace: "record['syslog_hostname'] = header['month'] if header['hostname']" },
   { id: 'rb-kv-every-backslash-decoded', grammar: 'syslog_rfc3164', file: 'fragment', find: '.include?(next_char) ? next_char : escaped', replace: '.include?(next_char) ? next_char : next_char' },
-  { id: 'rb-kv-duplicate-key-overwrites', grammar: 'syslog_rfc3164', file: 'fragment', find: "    raise ArgumentError, 'Duplicate key value field' if record.key?(key)\n", replace: '' },
+  { id: 'rb-kv-duplicate-key-overwrites', grammar: 'syslog_rfc3164', unguarded: true, file: 'fragment', find: "    raise ArgumentError, 'Duplicate key value field' if record.key?(key)\n", replace: '' },
   { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "raise ArgumentError, 'Unsupported RFC5424 version' unless ['1'].include?(header['version'])", replace: "raise ArgumentError, 'Unsupported RFC5424 version' unless header['version']" },
 ];
 
@@ -351,6 +355,29 @@ const RUBY_GENERIC_MUTANTS: Mutant[] = [
 ];
 
 /** Applies a mutant to a compiled Fragment; a contract mutant swaps the injected grammar for the mutated contract's grammar. */
+// Grammar faults that lose a key=value pair without any error, and the one-line removal of the run-time guard.
+const RUNTIME_GUARD_REMOVED: Mutant = { id: 'runtime-guard-removed', file: 'fragment', find: '  parserstudio_assert_no_field_loss(text, result)\n', replace: '  result\n' };
+const RUNTIME_LOSS_FAULTS: Array<{ id: string; grammar: OracleCase['grammar']; mutant: Mutant }> = [
+  // F-1: the first pair is read as the host name.
+  { id: 'first-pair-read-as-hostname', grammar: 'syslog_rfc3164', mutant: contractMutant('contract-hostname-any-printable', ['tokens', 'BSD_HOSTNAME', 'pattern'], '[!-~]{1,255}') },
+  // A body offset one token too far: the first pair of the body is skipped.
+  { id: 'rfc3164-body-skips-first-pair', grammar: 'syslog_rfc3164', mutant: { id: 'rb-rfc3164-body-skips-first-pair', file: 'fragment',
+    find: "\n  when 'kv'\n    record['body'] = parserstudio_key_values(message)\n", replace: "\n  when 'kv'\n    record['body'] = parserstudio_key_values(message.sub(/\\A[^ ]+ +/, ''))\n" } },
+  { id: 'rfc5424-body-skips-first-pair', grammar: 'syslog_rfc5424', mutant: { id: 'rb-rfc5424-body-skips-first-pair', file: 'fragment',
+    find: "\n    when 'kv'\n      record['body'] = parserstudio_key_values(message)\n", replace: "\n    when 'kv'\n      record['body'] = parserstudio_key_values(message.sub(/\\A[^ ]+ +/, ''))\n" } },
+];
+/** True when the artifact emitted a parsed event whose fields differ from the expectation (declining is not wrong). */
+function emitsWrongEvent(item: OracleCase, result: RubyResult | undefined): boolean {
+  const events = (result?.calls ?? []).filter(([time, record]) =>
+    time !== null && record !== null && typeof record === 'object' && record.parser_err_msg === undefined);
+  if (events.length === 0) return false;
+  if (item.expect.status === 'UNKNOWN' || item.expect.event === null) return true;
+  const record = events[0]![1];
+  return events.length !== 1 ||
+    Object.entries(item.expect.event ?? {}).some(([path, want]) => !same(deepGet(record, path), want)) ||
+    (item.expect.eventAbsent ?? []).some(path => deepGet(record, path) !== undefined);
+}
+
 function mutateFragment(fragment: string, mutant: Mutant): string {
   if (mutant.file !== 'contract') return applyMutant(fragment, mutant);
   const contractText = readFileSync(join(REPO, CONTRACT_PATH), 'utf8');
@@ -416,8 +443,21 @@ function runNative(): number {
   for (const item of cases) payloadCases.push({ id: `forwarder::${item.id}`, fragment: `forwarder:${item.grammar}`, raw: item.raw });
   for (const mutant of RUBY_MUTANTS) {
     fragments[mutant.id] = mutateFragment(fragments[mutant.target ?? mutant.grammar]!, mutant);
+    // A fault the run-time guard turns into error records is no longer visible in the output; the oracle
+    // is then shown to detect the faulty grammar on its own, with that guard removed.
+    if (mutant.unguarded) fragments[mutant.id] = applyMutant(fragments[mutant.id]!, RUNTIME_GUARD_REMOVED);
     for (const item of mutantCases)
       if (item.grammar === mutant.grammar) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
+  }
+  // Run-time field-loss guard (W7). The same grammar fault is compiled twice: with the guard the generated
+  // Ruby carries (parserstudio_assert_no_field_loss) and with that one call removed. The guard is proven when
+  // the guarded Fragment never emits a parsed event with a wrong or missing field while the unguarded one does.
+  for (const fault of RUNTIME_LOSS_FAULTS) {
+    const faulty = mutateFragment(fragments[fault.grammar]!, fault.mutant);
+    fragments[`guarded:${fault.id}`] = faulty;
+    fragments[`unguarded:${fault.id}`] = applyMutant(faulty, RUNTIME_GUARD_REMOVED);
+    for (const item of mutantCases) if (item.grammar === fault.grammar)
+      for (const variant of ['guarded', 'unguarded']) payloadCases.push({ id: `${variant}:${fault.id}::${item.id}`, fragment: `${variant}:${fault.id}`, raw: item.raw });
   }
   const evaluateFamily = prepareFamilyNative(fragments, payloadCases);
   const evaluateCsv = prepareCsvNative(fragments, payloadCases);
@@ -491,10 +531,20 @@ function runNative(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   process.stdout.write(`GENERIC_STRUCTURAL_GOLDENS passed=${goldens.genericCases.length - new Set(genericFailures.map(line => line.split(':')[0])).size} failed=${genericFailures.length}\n`);
+  const guardFailures: string[] = [];
+  for (const fault of RUNTIME_LOSS_FAULTS) {
+    const selected = mutantCases.filter(item => item.grammar === fault.grammar);
+    const wrong = (variant: string) => selected.filter(item => emitsWrongEvent(item, output.results[`${variant}:${fault.id}::${item.id}`]));
+    const guarded = wrong('guarded'), unguarded = wrong('unguarded');
+    process.stdout.write(`RUNTIME_FIELD_LOSS_GUARD ${fault.id} wrong_events_without_guard=${unguarded.length} wrong_events_with_guard=${guarded.length}\n`);
+    if (unguarded.length === 0) guardFailures.push(`${fault.id}: the injected fault produced no wrong event, so the guard is not exercised`);
+    for (const item of guarded.slice(0, 5)) guardFailures.push(`${fault.id}: ${item.id} still emitted a parsed event with a wrong or missing field`);
+  }
+  report('RUNTIME_FIELD_LOSS_GUARD', guardFailures);
   const family = evaluateFamily(output.results);
   const csv = evaluateCsv(output.results);
   const jsonResult = evaluateJson(output.results);
-  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok && csv.ok && jsonResult.ok;
+  const ok = guardFailures.length === 0 && product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok && csv.ok && jsonResult.ok;
   process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
   process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary} ${jsonResult.summary}\n`);

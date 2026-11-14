@@ -1,7 +1,7 @@
 {
   "schema": "parserstudio.grammar-duplication-baseline.v1",
   "purpose": "Hand-written copies of Syslog header grammar tokens that still exist outside contracts/syslog-header-grammar.v1.json. The numbers may only decrease; scripts/verification/grammar-duplication-ratchet.mjs enforces it.",
-  "total": 133,
+  "total": 142,
   "signatures": {
     "hostname-printable-ascii-255": {
       "literal": "[!-~]{1,255}",
@@ -22,7 +22,6 @@
         "src/structuredFamilies.ts": 1,
         "src/syslogEnvelope.ts": 4,
         "backend/templates/generic-structural-helper.rb.tpl": 14,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 1,
         "backend/templates/ruby-fragment.rb.tpl": 1,
         "runtime/multipass/generic_partial_envelope.py": 3,
         "runtime/multipass/generic_structural_poc.py": 2,
@@ -50,7 +49,6 @@
         "backend/src/canonical-value-contract.ts": 1,
         "backend/src/testlab-synthetic.ts": 1,
         "backend/templates/generic-structural-helper.rb.tpl": 1,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 1,
         "backend/templates/ruby-fragment.rb.tpl": 1
       }
     },
@@ -83,6 +81,31 @@
     },
     "kv-double-quoted-value": {
       "literal": "(?:\\\\.|[^\"\\\\])*",
+      "files": {}
+    },
+    "cef-key-token": {
+      "literal": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
+      "files": {
+        "src/genericStructural.ts": 1,
+        "src/guided/fieldMappingSuggestions.ts": 1,
+        "src/guided/vendorFieldNames.ts": 1,
+        "backend/src/testlab-synthetic.ts": 1,
+        "backend/templates/generic-structural-helper.rb.tpl": 1,
+        "runtime/multipass/generic_text_envelope.py": 1,
+        "runtime/multipass/security_envelope.py": 1,
+        "runtime/multipass/security_profile_tokens.py": 1,
+        "runtime/multipass/source_parse.py": 1,
+        "runtime/multipass/source_schema_stream.py": 1
+      }
+    },
+    "leef-hex-delimiter": {
+      "literal": "[0-9a-fA-F]{1,2}",
+      "files": {
+        "backend/src/testlab-synthetic.ts": 1
+      }
+    },
+    "leef-hex-delimiter-two-digits": {
+      "literal": "0x[0-9a-fA-F]{2}",
       "files": {}
     }
   }

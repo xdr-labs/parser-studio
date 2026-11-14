@@ -216,6 +216,9 @@ jobs:
         run: |
           node scripts/grammar/generate-grammar.mjs --verify
           node --test scripts/grammar/generate-grammar.test.mjs
+          # The forwarder-family Ruby template is derived from the Fragment template; it is never edited by hand.
+          node scripts/grammar/generate-forwarder-template.mjs --verify
+          node --test scripts/grammar/generate-forwarder-template.test.mjs
           node scripts/verification/grammar-duplication-ratchet.mjs
       # The semantic oracles run before the template-approval gate of the
       # backend step below: a pending template approval must not hide a wrong

@@ -384,10 +384,13 @@ function processEvent(raw: string, line: number, index: number, draft: ParserDra
       ((effectiveFormat === 'syslog_rfc3164' || effectiveFormat === 'syslog_rfc5424') && draft.format !== 'auto' && draft.syslogBodyFormat === 'kv');
     const verdict = classifyStructuredParse(eventSource, extraction, keyValueBody ? 'kv' : 'other');
     parseStatus = verdict.status;
-    if (verdict.status === 'PARTIAL')
+    if (verdict.status === 'PARTIAL' && verdict.lostPairs.length > 0)
       error('extract', 'FIELD_LOSS_NOT_FULL',
         'A key=value pair of the original log is missing from the parsed result: ' +
         verdict.lostPairs.slice(0, 5).map(pair => pair.key).join(', ') + '. The event is not treated as fully parsed.');
+    else if (verdict.status === 'PARTIAL')
+      error('extract', 'HEADER_MISREAD_NOT_FULL',
+        'The Syslog header was not read correctly: ' + verdict.reasons.join('; ') + '. The event is not treated as fully parsed.');
   }
   trace.push({ stage: 'Extraction', detail: matched ? Object.keys(fields).length + ' fields extracted' : 'No fields extracted', ok: matched });
   const normalized: Record<string, unknown> = draft.format==='generic_structural'&&matched

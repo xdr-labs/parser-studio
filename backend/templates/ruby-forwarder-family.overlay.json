@@ -17,26 +17,10 @@
       ]
     },
     {
-      "id": "keep-extraction-result",
-      "op": "replace",
-      "anchor": [
-        "  case settings['format']",
-        "  when 'json'",
-        "    parserstudio_json_object(text)"
-      ],
-      "lines": [
-        "  result = case settings['format']",
-        "  when 'json'",
-        "    parserstudio_json_object(text)"
-      ]
-    },
-    {
       "id": "attach-relay-hops-and-define-unwrapping",
       "op": "insertAfter",
       "anchor": [
-        "  else",
-        "    raise ArgumentError, 'Unsupported extraction format'",
-        "  end"
+        "  parserstudio_assert_no_field_loss(text, result)"
       ],
       "lines": [
         "  result['__parserstudio_forwarder_hops'] = relay_hops unless relay_hops.empty?",

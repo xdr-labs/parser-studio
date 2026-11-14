@@ -84,3 +84,52 @@ test('the key=value fragment is the same expression in every dialect and matches
   assert.throws(() => validateContract(mutate(c => { c.semantics.kvForbiddenKeys = []; })), /SEMANTICS_INVALID/);
   assert.throws(() => validateContract(mutate(c => { c.standaloneTokens.push('NOPE'); })), /STANDALONE_TOKEN_UNKNOWN/);
 });
+
+test('repeat, group, look-ahead and end-of-input items compile per dialect and never capture inside', () => {
+  const pair = dialect => compileFragment(contract, 'cef_pair', dialect);
+  assert.deepEqual(pair('js').captures, ['key', 'value']);
+  // End of input is the only construct spelled differently besides the anchors and the named-group prefix.
+  assert.equal(pair('ruby').source, '\\G' + pair('js').source.replace('*$', '*\\z'));
+  assert.equal(pair('python').source, pair('js').source.replace(/\(\?</g, '(?P<').replace('*$', '*\\Z'));
+  const mutate = change => { const copy = JSON.parse(contractText); change(copy); return copy; };
+  for (const nested of ['repeat', 'followedBy', 'notFollowedBy'])
+    assert.throws(() => validateContract(mutate(c => { c.fragments.bad = { sequence: [{ [nested]: [{ token: 'CEF_KEY', cap: 'inner' }] }] }; })), /capture inner inside/, nested);
+  assert.throws(() => validateContract(mutate(c => { c.fragments.bad = { sequence: [{ group: [{ token: 'CEF_KEY', cap: 'inner' }], cap: 'outer' }] }; })), /capture inner inside group/);
+  assert.throws(() => validateContract(mutate(c => { c.fragments.bad = { sequence: [{ end: false }] }; })), /unsupported sequence item/);
+});
+
+test('the CEF pair fragment reads values the way the CEF rules state them', () => {
+  const sticky = new RegExp(compileFragment(contract, 'cef_pair', 'js').source, 'y');
+  const read = text => {
+    const pairs = []; let cursor = 0;
+    for (;;) { sticky.lastIndex = cursor; const match = sticky.exec(text); if (!match) break; pairs.push([match.groups.key, match.groups.value]); cursor = sticky.lastIndex; }
+    return cursor === text.length ? pairs : null;
+  };
+  // All white space but the last character before the next KEY= belongs to the value; white space at the end does not.
+  assert.deepEqual(read('msg=hello  world  dst=10.0.0.2 \t'), [['msg', 'hello  world '], ['dst', '10.0.0.2']]);
+  assert.deepEqual(read(' a=1\tb=two words'), [['a', '1'], ['b', 'two words']]);
+  // An escaped "=" does not start a key; the raw text is captured and decoded by the consumer.
+  assert.deepEqual(read('msg=x a\\=b c=3'), [['msg', 'x a\\=b'], ['c', '3']]);
+  assert.deepEqual(read('k='), [['k', '']]);
+  assert.deepEqual(read('k= j=1'), [['k', ''], ['j', '1']]);
+  // A backslash that escapes nothing, or text that is not KEY=, is not accounted for.
+  assert.equal(read('k=tail\\'), null);
+  assert.equal(read('junk k=1'), null);
+  // Linear time on a long run of white space (the previous hand-written scanners were quadratic here).
+  const started = Date.now();
+  assert.deepEqual(read('k=a' + ' '.repeat(200000) + 'b'), [['k', 'a' + ' '.repeat(200000) + 'b']]);
+  assert.deepEqual(read('k=a' + ' '.repeat(200000)), [['k', 'a']]);
+  assert.ok(Date.now() - started < 2000);
+});
+
+test('the LEEF delimiter fragment accepts a literal or a hexadecimal spelling of the whole field', () => {
+  const sticky = new RegExp(compileFragment(contract, 'leef_delimiter', 'js').source, 'y');
+  const read = field => { sticky.lastIndex = 0; const match = sticky.exec(field); return match && { ...match.groups }; };
+  assert.deepEqual(read('^'), { literal: '^', hex: undefined });
+  assert.deepEqual(read('\t'), { literal: '\t', hex: undefined });
+  assert.deepEqual(read('x'), { literal: 'x', hex: undefined });
+  assert.deepEqual(read('x09'), { literal: undefined, hex: '09' });
+  assert.deepEqual(read('0x9'), { literal: undefined, hex: '9' });
+  assert.deepEqual(read('xa6'), { literal: undefined, hex: 'a6' });
+  for (const field of ['', ' ', '=', '\\', '^^', 'xZZ', '0x', 'x12345', '09']) assert.equal(read(field), null, JSON.stringify(field));
+});
