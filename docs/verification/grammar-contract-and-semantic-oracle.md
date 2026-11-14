@@ -96,8 +96,12 @@ executors. The native oracle runs every case through both Ruby templates
 
 Known differences that remain (evidence: independent audit, 2026-11-13):
 
-- Python Multi-Pass (`runtime/multipass/security_envelope.py`) still has F-1:
-  it is not a contract consumer yet (W5).
+- Python Multi-Pass: `security_envelope.py` (BSD envelope) and the RFC 5424
+  VERSION / PRI checks of `structured_source.py`, `security_pairs.py` and
+  `generic_structural_poc.py` read the generated
+  `syslog_header_grammar_generated.py`; F-1 and F-5 are gone there and the
+  oracle has a `python` engine. The other Multi-Pass header expressions are
+  still hand-written (ratchet).
 - Auto Parser front door, tagged path and key=value validation: a value that
   contains U+2028 is reported as malformed (honest block, W3/W4).
 - Generic envelope, browser versus Ruby: 34 of 3,897 audit lines differ - a
@@ -108,6 +112,16 @@ Known differences that remain (evidence: independent audit, 2026-11-13):
   Structural extractor are not in it yet (W4, W6).
 - The duplication ratchet counts exact literal copies; a re-spelled copy is not
   counted.
+
+## RFC 5424 VERSION policy (owner decision, 2026-11-13)
+
+Only VERSION 1 is supported. A line with any other VERSION is never parsed,
+labelled or shown as RFC 5424 and never FULL; the original line is kept and the
+reason is reported as unsupported. The list lives in
+`semantics.rfc5424SupportedVersions`; TypeScript, the Ruby export and the
+Python Multi-Pass entry points all read it. Goldens cover 1, 2, 12, 999, 0, 01
+and 1000; the Python engine probes four entry points per VERSION; the fault
+`contract-version-2-supported` must be reported.
 
 ## Rules for adding or changing a grammar or a mapping
 
@@ -131,6 +145,7 @@ node --test scripts/grammar/generate-grammar.test.mjs
 node scripts/verification/grammar-duplication-ratchet.mjs [--write]
 node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts ts
 PARSER_STUDIO_EXPECT_RUBY=2.4.9 node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts native
+node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts python
 ```
 
 ## Scope

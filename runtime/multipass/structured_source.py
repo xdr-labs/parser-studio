@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass,field
 import re
 from typing import Any
+from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS
 
 SAFE_KEY=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}\Z")
 KEY_START=re.compile(r"([A-Za-z_][A-Za-z0-9_.-]{0,127})=")
@@ -289,7 +290,7 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
         return None
     result=Fragment()
     values=match.groupdict()
-    if int(values["pri"])>191 or values["version"]!="1":
+    if int(values["pri"])>PRI_MAX or values["version"] not in RFC5424_SUPPORTED_VERSIONS:
         result.issues.append("RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED")
         return result,None
     timestamp=values["timestamp"]

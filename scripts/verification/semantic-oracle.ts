@@ -27,7 +27,7 @@ import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslo
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
 import { SYSLOG_HEADER_RULES, type SyslogHeaderRuleName } from '../../src/grammar/syslogHeaderGrammar.generated';
 // @ts-expect-error plain ESM generator without type declarations
-import { CONTRACT_PATH, compileRule, generateTypeScript, rubyGrammarPlaceholders } from '../grammar/generate-grammar.mjs';
+import { CONTRACT_PATH, GENERATED_PYTHON_PATH, compileRule, generatePython, generateTypeScript, rubyGrammarPlaceholders } from '../grammar/generate-grammar.mjs';
 import { compilePair } from '../../backend/src/compiler.js';
 import { sampleProject } from '../../backend/test/fixture.js';
 
@@ -355,7 +355,93 @@ function runNative(): number {
   return ok ? 0 : 1;
 }
 
+// -------------------------------------------------------------------- Python
+interface PythonEnvelope { syslog: Record<string, string>; start: number }
+interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>> }
+const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
+const PYTHON_MUTANTS: Mutant[] = [
+  ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname')),
+  { id: 'contract-version-2-supported', file: 'contract', find: '"rfc5424SupportedVersions": [ "1" ]', replace: '"rfc5424SupportedVersions": [ "1", "2" ]' },
+];
+
+/** The Multi-Pass envelope pass reads the header only: host name, PRI and where the structured payload starts. */
+function evaluatePythonEnvelope(item: OracleCase, result: PythonEnvelope | null | undefined): string[] {
+  if (result === undefined) return ['no result from the Python runner'];
+  const expect = item.expect;
+  if (expect.status === 'UNKNOWN') return result === null ? [] : [`envelope ${JSON.stringify(result.syslog)}, expected none`];
+  const tagged = expect.source?.syslog_appname !== undefined;
+  // A colon-terminated TAG followed by SP is handled by another pass; declining is correct, a wrong host is not.
+  if (result === null) return tagged || expect.neverWrong ? [] : ['no envelope'];
+  const problems: string[] = [];
+  // A field is checked when the expectation states it, either as a value or as absent.
+  const stated = (key: string) => expect.source?.[key] !== undefined || (expect.sourceAbsent ?? []).includes(key);
+  const wantHost = expect.source?.syslog_hostname;
+  if (stated('syslog_hostname') && result.syslog.hostname !== wantHost)
+    problems.push(`hostname=${JSON.stringify(result.syslog.hostname)}, expected ${JSON.stringify(wantHost)}`);
+  const wantPri = expect.source?.syslog_pri;
+  const gotPri = result.syslog.pri === undefined ? undefined : Number(result.syslog.pri);
+  if (stated('syslog_pri') && gotPri !== wantPri) problems.push(`pri=${String(gotPri)}, expected ${String(wantPri)}`);
+  const firstBodyKey = Object.keys(expect.source ?? {}).find(key => key.startsWith('body.'));
+  if (!tagged && firstBodyKey) {
+    const wantStart = item.raw.indexOf(firstBodyKey.slice(5) + '=');
+    if (result.start !== wantStart) problems.push(`payload starts at ${result.start}, expected ${wantStart}`);
+  }
+  return problems;
+}
+
+function pythonRun(moduleDir: string, cases: OracleCase[]): PythonOutput {
+  const run = spawnSync('python3', [join(REPO, 'scripts/verification/semantic-oracle-python-runner.py')], {
+    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
+    encoding: 'utf8', maxBuffer: 1 << 28, timeout: 120000,
+  });
+  if (run.status !== 0) throw new Error(`SEMANTIC_ORACLE_PYTHON_RUNNER_FAILED ${String(run.stderr).slice(-600)}`);
+  return JSON.parse(run.stdout) as PythonOutput;
+}
+
+function pythonFailures(output: PythonOutput, cases: OracleCase[]): string[] {
+  const failures = score('ruby', cases, (item) => evaluatePythonEnvelope(item, output.envelope[cases.indexOf(item)])).failures;
+  const supported = (JSON.parse(readFileSync(join(REPO, CONTRACT_PATH), 'utf8')) as { semantics: { rfc5424SupportedVersions: string[] } }).semantics.rfc5424SupportedVersions;
+  for (const version of RFC5424_VERSION_PROBES)
+    for (const [entryPoint, accepted] of Object.entries(output.rfc5424[version] ?? {}))
+      if (accepted !== supported.includes(version)) failures.push(`RFC 5424 VERSION ${version}: ${entryPoint} ${accepted ? 'accepted' : 'rejected'} it`);
+  if (Object.keys(output.rfc5424).length !== RFC5424_VERSION_PROBES.length) failures.push('RFC 5424 VERSION probes missing');
+  return failures;
+}
+
+function runPython(): number {
+  const selfCheck = goldenSelfCheck();
+  if (selfCheck.length) { report('GOLDEN_SELF_CHECK', selfCheck); return 1; }
+  const cases = [...goldens.cases, ...generateRfc3164KvCases(120, PROPERTY_SEED)].filter(item => item.grammar === 'syslog_rfc3164');
+  const index = new Map(cases.map((item, position) => [item, position]));
+  const failuresOf = (output: PythonOutput) => {
+    const failures = score('ruby', cases, item => evaluatePythonEnvelope(item, output.envelope[index.get(item)!])).failures;
+    return [...failures, ...pythonFailures({ ...output, envelope: [] }, [])];
+  };
+  const moduleDir = join(REPO, 'runtime/multipass');
+  const product = pythonRun(moduleDir, cases);
+  const productFailures = failuresOf(product);
+  report('SEMANTIC_ORACLE_PYTHON', productFailures);
+  const survivors: string[] = [];
+  for (const mutant of PYTHON_MUTANTS) {
+    const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
+    try {
+      cpSync(moduleDir, join(root, 'multipass'), { recursive: true, filter: path => !path.includes('__pycache__') });
+      const mutated = applyMutant(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
+      writeFileSync(join(root, 'multipass', (GENERATED_PYTHON_PATH as string).split('/').pop()!), generatePython(mutated) as string);
+      const failures = failuresOf(pythonRun(join(root, 'multipass'), cases));
+      const killed = failures.length > productFailures.length;
+      process.stdout.write(`PYTHON_MUTANT ${mutant.id} ${killed ? 'KILLED' : 'SURVIVED'} failing=${failures.length}\n`);
+      if (!killed) survivors.push(mutant.id);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  }
+  if (survivors.length) report('MUTANT_SURVIVED', survivors);
+  const ok = productFailures.length === 0 && survivors.length === 0;
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} version_probes=${RFC5424_VERSION_PROBES.length}x4 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
+  return ok ? 0 : 1;
+}
+
 const mode = process.argv[2];
 if (mode === 'ts') process.exit(await runTs());
 else if (mode === 'native') process.exit(runNative());
-else { process.stderr.write('usage: semantic-oracle.ts ts|native\n'); process.exit(2); }
+else if (mode === 'python') process.exit(runPython());
+else { process.stderr.write('usage: semantic-oracle.ts ts|native|python\n'); process.exit(2); }

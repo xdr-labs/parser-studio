@@ -380,6 +380,61 @@
         "status": "UNKNOWN",
         "event": null
       }
+    },
+    {
+      "id": "rfc5424-version-12",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>12 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2 defines only VERSION 1. Owner policy 2026-11-13: any other VERSION is never parsed or shown as RFC 5424; the original line is kept and reported as unsupported",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-999",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>999 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "Same policy: the largest syntactically valid VERSION is still unsupported",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-0",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>0 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2: VERSION = NONZERO-DIGIT 0*2DIGIT, so 0 is not a VERSION",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-01",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>01 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2: a leading zero is not a VERSION",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-1000",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>1000 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2: at most three digits",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
     }
   ],
   "envelopeCases": [
@@ -403,6 +458,22 @@
       "id": "envelope-rfc5424-version-12",
       "raw": "<134>12 2026-11-13T10:00:00Z fw01 app 1 ID1 - srcip=10.1.1.1 dstip=10.2.2.2",
       "provenance": "RFC 5424 6.2.2: VERSION 12 is not defined",
+      "expect": {
+        "variantNot": "rfc5424"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-version-999",
+      "raw": "<134>999 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
+      "provenance": "RFC 5424 6.2.2 and the VERSION 1 only policy",
+      "expect": {
+        "variantNot": "rfc5424"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-version-01",
+      "raw": "<134>01 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
+      "provenance": "RFC 5424 6.2.2: leading zero",
       "expect": {
         "variantNot": "rfc5424"
       }

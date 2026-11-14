@@ -14,6 +14,7 @@ import re
 from typing import Any
 
 from engine import MAX_RAW_BYTES,PRI
+from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS
 from security_cef import parse_security_cef
 from security_leef import parse_security_leef
 from security_source import parse_security_source
@@ -813,7 +814,7 @@ def _short_rfc5424_json(raw:str)->SourceEvent|None:
     match=SHORT_RFC5424_JSON_HEAD.match(raw)
     if match is None:
         return None
-    if int(match.group('pri'))>191 or match.group('version')!='1':
+    if int(match.group('pri'))>PRI_MAX or match.group('version') not in RFC5424_SUPPORTED_VERSIONS:
         return None
     timestamp=match.group('timestamp')
     try:
