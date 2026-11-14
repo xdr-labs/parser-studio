@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 export const CONTRACT_PATH = 'contracts/syslog-header-grammar.v1.json';
 export const GENERATED_TS_PATH = 'src/grammar/syslogHeaderGrammar.generated.ts';
 export const GENERATED_BACKEND_PATH = 'backend/src/syslog-header-grammar.generated.ts';
+export const GENERATED_PYTHON_PATH = 'runtime/multipass/syslog_header_grammar_generated.py';
 export const DIALECTS = Object.freeze(['js', 'ruby', 'python']);
 
 const ALLOWED_ESCAPES = new Set(['\\', '{', '}', '[', ']', '(', ')', '|', '.', '+', '*', '?', '^', '$', 'r', 'n', 't', '-']);
@@ -233,12 +234,40 @@ export function generateBackendTypeScript(contractText) {
   ].join('\n');
 }
 
+/** Generated Python consumer (Multi-Pass). JSON text is also a valid Python literal for these values. */
+export function generatePython(contractText) {
+  const contract = JSON.parse(contractText);
+  validateContract(contract);
+  const rules = Object.fromEntries(Object.keys(contract.rules).map(name => [name, compileRule(contract, name, 'python')]));
+  const tokens = Object.fromEntries(Object.entries(contract.tokens).map(([name, token]) => [name, token.pattern]));
+  const literal = value => JSON.stringify(value, null, 2);
+  for (const text of [literal(rules), literal(tokens), literal(contract.alternatives), literal(contract.semantics)])
+    if (/\b(?:true|false|null)\b/.test(text) || /[^\x00-\x7f]/.test(text)) throw new Error('GRAMMAR_PYTHON_LITERAL_UNSAFE');
+  return [
+    '# GENERATED FILE - DO NOT EDIT.',
+    `# Source: ${CONTRACT_PATH} (revision ${contract.revision}); regenerate with`,
+    '#   node scripts/grammar/generate-grammar.mjs --write',
+    '# CI runs the generator with --verify, so a hand edit of this file fails the gate.',
+    '# Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.',
+    `GRAMMAR_CONTRACT_SHA256 = ${JSON.stringify(contractSha256(contractText))}`,
+    `TOKENS = ${literal(tokens)}`,
+    `RULES = ${literal(rules)}`,
+    `ALTERNATIVES = ${literal(contract.alternatives)}`,
+    `SEMANTICS = ${literal(contract.semantics)}`,
+    "PRI_MAX = SEMANTICS['priMax']",
+    "BSD_MONTH_DAYS = SEMANTICS['bsdMonthDays']",
+    "RFC5424_SUPPORTED_VERSIONS = frozenset(SEMANTICS['rfc5424SupportedVersions'])",
+    '',
+  ].join('\n');
+}
+
 function main(argv) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const contractText = readFileSync(resolve(root, CONTRACT_PATH), 'utf8');
   const outputs = {
     [GENERATED_TS_PATH]: generateTypeScript(contractText),
     [GENERATED_BACKEND_PATH]: generateBackendTypeScript(contractText),
+    [GENERATED_PYTHON_PATH]: generatePython(contractText),
   };
   if (argv.includes('--write')) {
     for (const [path, content] of Object.entries(outputs)) writeFileSync(resolve(root, path), content);

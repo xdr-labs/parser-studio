@@ -19,7 +19,7 @@ import { join, relative, resolve } from 'node:path';
 const ROOT = resolve('.');
 const BASELINE = 'contracts/grammar-duplication-baseline.v1.json';
 const SCAN_ROOTS = ['src', 'backend/src', 'backend/templates', 'runtime/multipass'];
-const GENERATED = new Set(['src/grammar/syslogHeaderGrammar.generated.ts', 'backend/src/syslog-header-grammar.generated.ts']);
+const GENERATED = new Set(['src/grammar/syslogHeaderGrammar.generated.ts', 'backend/src/syslog-header-grammar.generated.ts', 'runtime/multipass/syslog_header_grammar_generated.py']);
 /** Literal source text that identifies a hand-written copy of a contract token. */
 export const SIGNATURES = Object.freeze({
   'hostname-printable-ascii-255': '[!-~]{1,255}',
