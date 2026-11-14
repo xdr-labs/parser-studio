@@ -102,8 +102,8 @@ Known differences that remain (evidence: independent audit, 2026-11-13):
   `syslog_header_grammar_generated.py`; F-1 and F-5 are gone there and the
   oracle has a `python` engine. The other Multi-Pass header expressions are
   still hand-written (ratchet).
-- Auto Parser front door, tagged path and key=value validation: a value that
-  contains U+2028 is reported as malformed (honest block, W3/W4).
+- Auto Parser front door, tagged path: still a hand-written header expression
+  (W4). Its key=value validation now uses the contract parser.
 - Generic envelope, browser versus Ruby: 34 of 3,897 audit lines differ - a
   host token that contains U+2028 (`\S` differs between the runtimes) and BOM
   or double-space handling in an RFC 5424 message (W4).
@@ -112,6 +112,25 @@ Known differences that remain (evidence: independent audit, 2026-11-13):
   Structural extractor are not in it yet (W4, W6).
 - The duplication ratchet counts exact literal copies; a re-spelled copy is not
   counted.
+
+## Key=value body grammar (W3)
+
+`fragments.kv_pair` in the contract is the one definition of a strict key=value
+pair: `KEY="..."`, `KEY='...'` or `KEY=bare`, matched at a position (sticky in
+ECMAScript, `\G` in Ruby, `pattern.match(text, pos)` in Python). SP and TAB
+separate pairs; every other character, NBSP and U+2028 included, is value data.
+The pair limit, the forbidden keys and the characters that are decoded after a
+backslash are contract semantics.
+
+Consumers: `src/grammar/kvBody.ts` (used by `strictKeyValues` and by the Auto
+Parser front door, which previously had its own token expression with a
+different white-space notion), and `parserstudio_key_values` /
+`parserstudio_unescape` in both Ruby templates. `src/grammar/kvBodyModel.ts`
+renders bodies from meant values (quotes of both kinds, escaped quotes,
+Windows paths, escaped `=`, U+2028, NBSP, UTF-8, adjacency after a quote,
+100/101 pairs, duplicate and forbidden keys, unterminated quotes) and the
+oracle runs them through both executors and both Ruby templates. Not migrated:
+the CEF/LEEF extension tokenizers (W6) and the Python key=value passes.
 
 ## RFC 5424 VERSION policy (owner decision, 2026-11-13)
 

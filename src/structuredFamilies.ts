@@ -4,6 +4,7 @@ import {jsonSourceValueValid} from './jsonSourceSafety';
 import { parseRfc5424Subset } from './rfc5424Subset';
 import { isSupportedRfc5424Version, matchHeaderRule, matchesHeaderToken } from './grammar/syslogHeader';
 import { matchRfc3164Header } from './grammar/syslogHeader';
+import { parseStrictKeyValues } from './grammar/kvBody';
 import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -54,27 +55,18 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
 }
 
 export function strictKeyValues(input: string): StructuredExtraction {
+  // Pair grammar, separators, limits and escapes come from the shared grammar
+  // contract (src/grammar/kvBody.ts); the Ruby export reads the same fragment.
+  const body = parseStrictKeyValues(input);
+  if (!body.ok) return failure({
+    MALFORMED_PAIR: 'Unsupported or malformed extension key=value segment',
+    FORBIDDEN_KEY: 'Unsafe or duplicate extension field',
+    DUPLICATE_KEY: 'Unsafe or duplicate extension field',
+    TOO_MANY_PAIRS: 'KV field limit exceeded: maximum 100 keys per event',
+    NO_PAIRS: 'No extension fields parsed',
+  }[body.reason]);
   const values: Record<string, unknown> = Object.create(null);
-  // Ruby's /\s/ and String#strip have ASCII whitespace semantics. JS /\s/
-  // includes NBSP/BOM/EM SPACE and must NOT silently alter source field values.
-  const pattern = /[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^ \t\n\r\f\v"'\\])+))/y;
-  let cursor = 0;
-  let count = 0;
-  while (cursor < input.length) {
-    if (/^[ \t\n\r\f\v]*$/.test(input.slice(cursor))) break;
-    pattern.lastIndex = cursor;
-    const token = pattern.exec(input);
-    if (!token || token.index !== cursor) return failure('Unsupported or malformed extension key=value segment');
-    const key = token[1];
-    if (['__proto__','constructor','prototype'].includes(key) ||
-        Object.prototype.hasOwnProperty.call(values, key)) return failure('Unsafe or duplicate extension field');
-    if (count >= 100) return failure('KV field limit exceeded: maximum 100 keys per event');
-    count++;
-    // Only defined escapes are decoded. Literal Windows path separators survive.
-    values[key] = (token[2] ?? token[3] ?? token[4] ?? '').replace(/\\([\\"'=])/g, '$1');
-    cursor = pattern.lastIndex;
-  }
-  if (!Object.keys(values).length) return failure('No extension fields parsed');
+  for (const [key, value] of body.pairs) values[key] = value;
   return { fields: values, errors: [] };
 }
 

@@ -39,6 +39,18 @@
         "syslog_hostname": [
           "syslog_hostname",
           "string"
+        ],
+        "body.note": [
+          "note",
+          "string"
+        ],
+        "body.path": [
+          "path",
+          "string"
+        ],
+        "body.user": [
+          "user",
+          "string"
         ]
       },
       "vendorNamespace": "Synthetic",

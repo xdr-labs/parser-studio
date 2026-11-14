@@ -270,25 +270,27 @@ def parserstudio_unescape(text)
   # including Windows path separators, stay byte-for-byte intact.
   text.gsub(/\\(.)/m) do |escaped|
     next_char = escaped[1]
-    ['\\', '"', "'", '='].include?(next_char) ? next_char : escaped
+    __PS_GRAMMAR_KV_UNESCAPED__.include?(next_char) ? next_char : escaped
   end
 end
 
 # A strict small-subset token parser. No unmatched suffix can be silently lost.
 def parserstudio_key_values(text)
+  # Pair grammar generated from contracts/syslog-header-grammar.v1.json (fragments.kv_pair): SP and TAB
+  # separate pairs, every other character is value data. Do not edit the expressions here.
   record = {}
-  pattern = /\G[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/
+  pattern = /__PS_GRAMMAR_FRAGMENT_KV_PAIR__/
   position = 0
   while position < text.length
     tail = text[position..-1]
-    break if tail.nil? || tail.strip.empty?
+    break if tail.nil? || tail.match?(/\A(?:__PS_GRAMMAR_TOKEN_KV_TRAILING__)\z/)
     match = pattern.match(text, position)
     raise ArgumentError, 'Unsupported or malformed key value segment' if match.nil?
-    key = match[1]
+    key = match[:key]
     raise ArgumentError, 'Unsafe key value field' if ['__proto__', 'constructor', 'prototype'].include?(key)
-    raise ArgumentError, 'Too many key value fields' if record.length >= 100
+    raise ArgumentError, 'Too many key value fields' if record.length >= __PS_GRAMMAR_KV_MAX_PAIRS__
     raise ArgumentError, 'Duplicate key value field' if record.key?(key)
-    value = match[2] || match[3] || match[4]
+    value = match[:dq] || match[:sq] || match[:bare]
     record[key] = parserstudio_unescape(value)
     raise ArgumentError, 'No progress parsing key value pairs' if match.end(0) <= position
     position = match.end(0)

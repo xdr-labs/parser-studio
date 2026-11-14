@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  CONTRACT_PATH, DIALECTS, GENERATED_TS_PATH, compileRule, generateTypeScript, validateContract, validateTokenPattern,
+  CONTRACT_PATH, DIALECTS, GENERATED_BACKEND_PATH, GENERATED_PYTHON_PATH, GENERATED_TS_PATH, compileFragment, compileRule,
+  generateBackendTypeScript, generatePython, generateTypeScript, validateContract, validateTokenPattern,
 } from './generate-grammar.mjs';
 
 const contractText = readFileSync(CONTRACT_PATH, 'utf8');
@@ -11,6 +12,8 @@ const contract = JSON.parse(contractText);
 
 test('the committed generated consumer is exactly what the contract produces', () => {
   assert.equal(readFileSync(GENERATED_TS_PATH, 'utf8'), generateTypeScript(contractText));
+  assert.equal(readFileSync(GENERATED_BACKEND_PATH, 'utf8'), generateBackendTypeScript(contractText));
+  assert.equal(readFileSync(GENERATED_PYTHON_PATH, 'utf8'), generatePython(contractText));
 });
 
 test('the contract validates and every dialect shares capture names', () => {
@@ -63,4 +66,21 @@ test('the F-1 guard is part of the contract, not of a consumer', () => {
   assert.equal(expression.test('fe80::1'), true);
   assert.equal(expression.test('a'.repeat(255)), true);
   for (const body of ['srcip=10.1.1.1', '{"a":1}', 'CEF:0|x', 'LEEF:1.0|x', 'kernel:', 'sshd[123]:', 'a'.repeat(256)]) assert.equal(expression.test(body), false, body);
+});
+
+test('the key=value fragment is the same expression in every dialect and matches at a position', () => {
+  const js = compileFragment(contract, 'kv_pair', 'js');
+  assert.equal(compileFragment(contract, 'kv_pair', 'ruby').source, '\\G' + js.source);
+  assert.equal(compileFragment(contract, 'kv_pair', 'python').source, js.source.replace(/\(\?</g, '(?P<'));
+  assert.deepEqual(js.captures, ['key', 'dq', 'sq', 'bare']);
+  const sticky = new RegExp(js.source, 'y');
+  sticky.lastIndex = 4;
+  const match = sticky.exec('a=1 msg="x y" c=3');
+  assert.equal(match.groups.key, 'msg');
+  assert.equal(match.groups.dq, 'x y');
+  const mutate = change => { const copy = JSON.parse(contractText); change(copy); return copy; };
+  assert.throws(() => validateContract(mutate(c => { delete c.fragments.kv_pair; })), /FRAGMENT_REQUIRED|TOKEN_UNUSED/);
+  assert.throws(() => validateContract(mutate(c => { c.semantics.kvMaxPairs = 0; })), /SEMANTICS_INVALID/);
+  assert.throws(() => validateContract(mutate(c => { c.semantics.kvForbiddenKeys = []; })), /SEMANTICS_INVALID/);
+  assert.throws(() => validateContract(mutate(c => { c.standaloneTokens.push('NOPE'); })), /STANDALONE_TOKEN_UNKNOWN/);
 });

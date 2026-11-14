@@ -23,8 +23,8 @@ const KEY_AT_TOKEN_START = /^[A-Za-z_][A-Za-z0-9_.-]{0,95}=/;
 
 /**
  * Independent evidence: key=value pairs that start a whitespace-separated token
- * of the raw line. Quoted values are consumed whole, so a '=' inside a quoted
- * value is never reported as a pair of its own. This is intentionally not the
+ * of the raw line. Values in double or single quotes are consumed whole, so a
+ * '=' inside a quoted value is never reported as a pair of its own. This is intentionally not the
  * product KV parser.
  */
 export function independentKeyValuePairs(raw: string): RawPair[] {
@@ -37,13 +37,14 @@ export function independentKeyValuePairs(raw: string): RawPair[] {
     const key = KEY_AT_TOKEN_START.exec(raw.slice(index, index + 98));
     if (key) {
       index += key[0].length;
-      if (raw[index] === '"') {
+      const quote = raw[index];
+      if (quote === '"' || quote === "'") {
         let cursor = index + 1;
         let value = '';
         let closed = false;
         while (cursor < length) {
           if (raw[cursor] === '\\' && cursor + 1 < length) { value += raw[cursor + 1]; cursor += 2; continue; }
-          if (raw[cursor] === '"') { closed = true; break; }
+          if (raw[cursor] === quote) { closed = true; break; }
           value += raw[cursor]; cursor += 1;
         }
         if (closed) {
@@ -53,7 +54,7 @@ export function independentKeyValuePairs(raw: string): RawPair[] {
         }
       }
       let end = index;
-      while (end < length && raw[end] !== ' ' && raw[end] !== '\t') end += 1;
+      while (end < length && raw[end] !== ' ' && raw[end] !== '\t') end += raw[end] === '\\' && end + 1 < length ? 2 : 1;
       const value = raw.slice(index, end);
       pairs.push({ key: key[0].slice(0, -1), value, rawValue: value });
       index = end;
@@ -94,8 +95,11 @@ export function classifyStructuredParse(
   const leaves = new Map<string, string[]>();
   collectLeaves(outcome.fields, '', leaves);
   const lostPairs = independentKeyValuePairs(raw).filter(pair => {
+    // Which backslashes a grammar decodes is the grammar's business; presence of the value is what is
+    // accounted here, so both sides are compared with backslashes removed.
+    const written = pair.rawValue.split('\\').join('');
     const values = leaves.get(pair.key) ?? [];
-    return !values.some(value => value === pair.value || value === pair.rawValue);
+    return !values.some(value => value === pair.value || value === pair.rawValue || value.split('\\').join('') === written);
   });
   if (lostPairs.length > 0) {
     return {
