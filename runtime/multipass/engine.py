@@ -343,6 +343,10 @@ def parse_csv_spans(result:ParseResult,begin:int) -> list[tuple[str,int,int]]:
             captured_end=pos
             if result.raw[captured_start:captured_end]!=value:
                 raise ValueError("CSV_VALUE_MISMATCH")
+            # RFC 4180 rule 5: a double quote may not appear inside a field that is not enclosed. csv.reader
+            # accepts it even in strict mode; the browser tokenizer and Ruby's CSV.parse_line reject the row.
+            if '"' in value:
+                raise ValueError("CSV_GRAMMAR_INVALID")
         parts.append((value,captured_start,captured_end))
         if pos<len(result.raw):
             if result.raw[pos]!=',':raise ValueError("CSV_DELIMITER_INVALID")

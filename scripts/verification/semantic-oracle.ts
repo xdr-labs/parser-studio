@@ -27,6 +27,9 @@ import { classifyStructuredParse } from '../../src/grammar/parseStatus';
 import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslogHeaderModel';
 import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
 import { generateCefLeefCases, type FamilyCase } from '../../src/grammar/cefLeefModel';
+import { generateCsvCases, type CsvCase } from '../../src/grammar/csvModel';
+import { extractFields } from '../../src/parser';
+import { createDraft } from '../../src/model';
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
 import { SYSLOG_HEADER_RULES, type SyslogHeaderRuleName } from '../../src/grammar/syslogHeaderGrammar.generated';
 // @ts-expect-error plain ESM generator without type declarations
@@ -49,6 +52,7 @@ interface Goldens {
   envelopeCases: EnvelopeCase[];
   genericCases: GenericCase[];
   familyCases: FamilyCase[];
+  csvCases: CsvCase[];
 }
 interface RubyResult { calls?: Array<[unknown, Record<string, unknown> | null]>; raised?: string }
 interface Mutant { id: string; file: string; find: string; replace: string; set?: { path: string[]; value: unknown } }
@@ -73,6 +77,7 @@ function goldenSelfCheck(): string[] {
     if (item.knownDefect && !goldens.knownDefects[item.knownDefect]) problems.push(`${item.id}: unknown defect ${item.knownDefect}`);
   }
   for (const item of goldens.familyCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
+  for (const item of goldens.csvCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
   for (const item of goldens.cases) {
     if (!item.provenance) problems.push(`${item.id}: provenance missing`);
     for (const [path, value] of Object.entries(item.expect.source ?? {}))
@@ -178,7 +183,7 @@ function mutateContract(text: string, mutant: Mutant): string {
 const TS_MUTANTS: Mutant[] = [
   ...CONTRACT_MUTANTS,
   { id: 'ts-hostname-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_hostname:header.hostname', replace: 'syslog_hostname:header.timestamp' },
-  { id: 'ts-body-fields-dropped', file: 'src/structuredFamilies.ts', find: 'return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};', replace: 'return body.errors.length?body:{fields:{...fields},errors:[]};' },
+  { id: 'ts-body-fields-dropped', file: 'src/structuredFamilies.ts', find: 'return body.errors.length?body:withBodyKind({fields:{...fields,...body.fields},errors:[]},bodyKindOf(body));', replace: 'return body.errors.length?body:withBodyKind({fields:{...fields},errors:[]},bodyKindOf(body));' },
   { id: 'ts-procid-wrong-capture', file: 'src/structuredFamilies.ts', find: 'syslog_procid:header.procid', replace: 'syslog_procid:header.tag' },
   { id: 'ts-tagged-first-field-lost', file: 'src/structuredFamilies.ts', find: ' const message=header.message;', replace: " const message=tagged?header.message.replace(/^\\S+ /,''):header.message;" },
   { id: 'ts-pri-range-dropped', file: 'src/grammar/syslogHeader.ts', find: 'pri !== undefined && pri > SYSLOG_HEADER_SEMANTICS.priMax', replace: 'false' },
@@ -298,8 +303,9 @@ async function runTs(): Promise<number> {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const family = await runFamilyTs();
-  const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0 && family.ok;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length} ${family.summary}\n`);
+  const csv = await runCsvTs();
+  const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0 && family.ok && csv.ok;
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary}\n`);
   return ok ? 0 : 1;
 }
 
@@ -395,6 +401,7 @@ function runNative(): number {
       if (item.grammar === mutant.grammar) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
   }
   const evaluateFamily = prepareFamilyNative(fragments, payloadCases);
+  const evaluateCsv = prepareCsvNative(fragments, payloadCases);
   // Grammar dialect equivalence: the contract's Ruby regular expressions must capture exactly what its
   // ECMAScript regular expressions capture, on the target Ruby, for every golden and property line.
   const contract = JSON.parse(readFileSync(join(REPO, 'contracts/syslog-header-grammar.v1.json'), 'utf8'));
@@ -465,10 +472,11 @@ function runNative(): number {
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   process.stdout.write(`GENERIC_STRUCTURAL_GOLDENS passed=${goldens.genericCases.length - new Set(genericFailures.map(line => line.split(':')[0])).size} failed=${genericFailures.length}\n`);
   const family = evaluateFamily(output.results);
-  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok;
+  const csv = evaluateCsv(output.results);
+  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok && csv.ok;
   process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length} ${family.summary}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length} ${family.summary} ${csv.summary}\n`);
   return ok ? 0 : 1;
 }
 
@@ -615,10 +623,179 @@ function familyPythonFailures(cases: FamilyCase[], results: PythonFamily[]): str
   return failures;
 }
 
+// ---------------------------------------------------------------------- CSV
+// Delimiter-separated rows: RFC 4180 goldens (csvCases) plus rows rendered from meant values
+// (src/grammar/csvModel.ts), applied to the browser tokenizer, the generated Ruby (CSV.parse_line on the
+// target Ruby) and the Python preview. The Python preview reads comma rows only and never knows the
+// expected column count, so it is held to the comma cases and to "never a different value".
+interface CsvObservation { parsed: boolean; value: (index: number) => unknown }
+const csvCases = (properties: number): CsvCase[] => [...goldens.csvCases, ...generateCsvCases(properties, PROPERTY_SEED)];
+const csvColumnNames = (count: number) => Array.from({ length: count }, (_unused, at) => 'c' + at);
+
+function csvProblems(item: CsvCase, got: CsvObservation | undefined): string[] {
+  if (!got) return ['no result'];
+  if (item.expect.status === 'UNKNOWN') return got.parsed ? ['parsed, expected a declined row'] : [];
+  if (!got.parsed) return ['declined, expected a parse'];
+  const problems: string[] = [];
+  (item.expect.values ?? []).forEach((want, index) => {
+    const value = got.value(index);
+    // An empty field is "no value": an empty string and an absent field both state that.
+    if (!(value === want || (want === '' && (value === null || value === undefined))))
+      problems.push(`field ${index}=${JSON.stringify(value)}, expected ${JSON.stringify(want)}`);
+  });
+  return problems;
+}
+
+type CsvExtract = (raw: string, delimiter: string, columns: number) => { fields: Record<string, unknown>; errors: string[] };
+const csvExtractWith = (extract: typeof extractFields, draft: typeof createDraft): CsvExtract => (raw, delimiter, columns) =>
+  extract(raw, 'csv', { ...draft(), format: 'csv', csvColumns: csvColumnNames(columns).join(','), csvDelimiter: delimiter as ',' | ';' | '\t' });
+
+function csvTsFailures(extract: CsvExtract, cases: CsvCase[]): string[] {
+  const failures: string[] = [];
+  for (const item of cases) {
+    let out: { fields: Record<string, unknown>; errors: string[] };
+    try { out = extract(item.raw, item.delimiter, item.columns); } catch (error) { failures.push(`${item.id}: extractor raised ${String(error)}`); continue; }
+    const fields = out.fields;
+    const problems = csvProblems(item, { parsed: out.errors.length === 0 && Object.keys(fields).length > 0, value: index => fields['c' + index] });
+    if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+  }
+  return failures;
+}
+const TS_CSV_MUTANTS: Mutant[] = [
+  { id: 'ts-csv-doubled-quote-kept', file: 'src/parser.ts', find: "if (raw[i + 1] === '\"') { token += '\"'; i++; }", replace: "if (raw[i + 1] === '\"') { token += '\"\"'; i++; }" },
+  { id: 'ts-csv-quote-inside-bare-field-accepted', file: 'src/parser.ts', find: "if (state !== 'start') return null;", replace: "if (state !== 'start') { token += c; continue; }" },
+  { id: 'ts-csv-column-count-unchecked', file: 'src/parser.ts', find: 'if (values.length !== names.length) {', replace: 'if (false) {' },
+];
+
+/** Loads the whole preview pipeline (src/parser.ts and what it imports) from a private copy with one injected fault. */
+async function parserFromCopy(mutant: Mutant): Promise<{ extract: CsvExtract; dispose: () => void }> {
+  const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
+  const source = join(REPO, 'src');
+  cpSync(source, join(root, 'src'), { recursive: true, filter: path => statSync(path).isDirectory() || (/\.(ts|tsx|json)$/.test(path) && !/\.test\.tsx?$/.test(path)) });
+  for (const shared of ['contracts', 'backend']) symlinkSync(join(REPO, shared), join(root, shared));
+  const dispose = () => rmSync(root, { recursive: true, force: true });
+  try {
+    const target = join(root, mutant.file);
+    writeFileSync(target, applyMutant(readFileSync(target, 'utf8'), mutant));
+    const parser = await import(pathToFileURL(join(root, 'src/parser.ts')).href) as { extractFields: typeof extractFields };
+    const model = await import(pathToFileURL(join(root, 'src/model.ts')).href) as { createDraft: typeof createDraft };
+    return { extract: csvExtractWith(parser.extractFields, model.createDraft), dispose };
+  } catch (error) {
+    dispose();
+    throw error;
+  }
+}
+
+async function runCsvTs(): Promise<{ ok: boolean; summary: string }> {
+  const cases = csvCases(300);
+  const failures = csvTsFailures(csvExtractWith(extractFields, createDraft), cases);
+  report('SEMANTIC_ORACLE_TS_CSV', failures);
+  const survivors: string[] = [];
+  for (const mutant of TS_CSV_MUTANTS) {
+    const loaded = await parserFromCopy(mutant);
+    const failing = csvTsFailures(loaded.extract, cases).length;
+    loaded.dispose();
+    process.stdout.write(`TS_MUTANT ${mutant.id} ${failing > failures.length ? 'KILLED' : 'SURVIVED'} failing_cases=${failing}\n`);
+    if (failing <= failures.length) survivors.push(mutant.id);
+  }
+  if (survivors.length) report('MUTANT_SURVIVED', survivors);
+  return { ok: failures.length === 0 && survivors.length === 0, summary: `csv_cases=${cases.length} csv_mutants_killed=${TS_CSV_MUTANTS.length - survivors.length}/${TS_CSV_MUTANTS.length}` };
+}
+
+const RUBY_CSV_MUTANTS: Mutant[] = [
+  { id: 'rb-csv-liberal-parsing', file: 'fragment', find: 'liberal_parsing: false', replace: 'liberal_parsing: true' },
+  { id: 'rb-csv-column-count-unchecked', file: 'fragment', find: "  raise ArgumentError, 'CSV column count mismatch' unless row.length == fields.length\n", replace: '' },
+];
+
+// The product does not combine a declared forwarder with CSV (validation code forwarder_format), so there is
+// no forwarder-family variant to run here.
+function csvFragment(delimiter: string, columns: number): string {
+  const names = csvColumnNames(columns);
+  const project = sampleProject() as unknown as Record<string, any>;
+  project.extraction = { format: 'csv', csvColumns: names, csvDelimiter: delimiter };
+  project.normalization.topFields = {};
+  project.normalization.nsFields = {};
+  project.normalization.vendorFields = Object.fromEntries(names.map(name => [name, { normalized_name: familyKey(name), data_type: 'string' }]));
+  project.classification = { defaultIndex: 'syslog', rules: [] };
+  return compilePair(project).files.find(file => !file.name.endsWith('.conf'))!.content;
+}
+
+/** Adds the CSV fragments and cases to the Ruby payload; returns the evaluation to run on the results. */
+function prepareCsvNative(fragments: Record<string, string>, payloadCases: Array<{ id: string; fragment: string; raw: string }>):
+  (results: Record<string, RubyResult>) => { ok: boolean; summary: string } {
+  const cases = csvCases(90);
+  const mutantCases = csvCases(30);
+  const keyOf = (item: CsvCase) => `csv:${item.delimiter.charCodeAt(0)}:${item.columns}`;
+  for (const item of cases) {
+    const key = keyOf(item);
+    if (!fragments[key]) fragments[key] = csvFragment(item.delimiter, item.columns);
+    payloadCases.push({ id: `csv::${item.id}`, fragment: key, raw: item.raw });
+  }
+  for (const mutant of RUBY_CSV_MUTANTS)
+    for (const item of mutantCases) {
+      const key = `${mutant.id}:${keyOf(item)}`;
+      if (!fragments[key]) {
+        // The compiled Fragment may carry the statement more than once (direct and routed CSV); every copy is mutated.
+        const original = fragments[keyOf(item)]!;
+        if (!original.includes(mutant.find)) throw new Error(`MUTANT_NOT_APPLICABLE ${mutant.id}`);
+        fragments[key] = original.split(mutant.find).join(mutant.replace);
+      }
+      payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: key, raw: item.raw });
+    }
+  const observe = (result: RubyResult | undefined): CsvObservation | undefined => {
+    if (!result || result.raised) return undefined;
+    const events = (result.calls ?? []).filter(([time, record]) => time !== null && record !== null && record.parser_err_msg === undefined);
+    return { parsed: events.length === 1, value: index => deepGet(events[0]![1], 'Synthetic.' + familyKey('c' + index)) };
+  };
+  return results => {
+    const failures: string[] = [];
+    for (const item of cases) {
+      const result = results[`csv::${item.id}`];
+      const problems = result?.raised ? [`artifact raised ${result.raised}`] : csvProblems(item, observe(result));
+      if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+    }
+    report('SEMANTIC_ORACLE_NATIVE_CSV', failures);
+    const survivors: string[] = [];
+    for (const mutant of RUBY_CSV_MUTANTS) {
+      const reported = mutantCases.filter(item => csvProblems(item, observe(results[`${mutant.id}::${item.id}`])).length > 0).length;
+      process.stdout.write(`RUBY_MUTANT ${mutant.id} ${reported > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${reported}\n`);
+      if (reported === 0) survivors.push(mutant.id);
+    }
+    if (survivors.length) report('MUTANT_SURVIVED', survivors);
+    return { ok: failures.length === 0 && survivors.length === 0, summary: `csv_cases=${cases.length} csv_mutants_killed=${RUBY_CSV_MUTANTS.length - survivors.length}/${RUBY_CSV_MUTANTS.length}` };
+  };
+}
+
+interface PythonCsv { candidate: boolean; values: unknown[] }
+/**
+ * Comma rows only. The preview detects the format by itself, so it may read a valid row as another format
+ * (a row whose first field is "k=v" is also a key=value line); it is held to: a row it offers as CSV carries
+ * exactly the meant values, a malformed row is never offered, and most valid rows are offered.
+ */
+function csvPythonFailures(cases: CsvCase[], results: PythonCsv[]): string[] {
+  const failures: string[] = [];
+  let valid = 0, offered = 0;
+  cases.forEach((item, index) => {
+    if (item.expect.rejected === 'column-count') return;
+    const result = results[index];
+    if (!result) { failures.push(`${item.id}: no result`); return; }
+    if (item.expect.status === 'FULL') {
+      valid += 1;
+      if (!result.candidate) return;
+      offered += 1;
+    }
+    const problems = csvProblems(item, { parsed: result.candidate, value: at => result.values[at] });
+    if (item.expect.status === 'FULL' && result.values.length !== item.columns) problems.push(`${result.values.length} fields, expected ${item.columns}`);
+    if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+  });
+  if (offered * 10 < valid * 8) failures.push(`only ${offered} of ${valid} valid comma rows were offered as CSV`);
+  return failures;
+}
+
 // -------------------------------------------------------------------- Python
 interface PythonEnvelope { syslog: Record<string, string>; start: number }
 interface PythonKv { status: string; body: Record<string, unknown> }
-interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[]; family: PythonFamily[] }
+interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[]; family: PythonFamily[]; csv: PythonCsv[] }
 const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
 const PYTHON_MUTANTS: Mutant[] = [
   ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname') || mutant.id.startsWith('contract-kv')),
@@ -629,6 +806,9 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
   { id: 'py-cef-value-stops-at-first-space', file: 'security_cef.py', find: 'next_key=KEY.match(raw,run_end)', replace: 'next_key=True' },
   { id: 'py-cef-escapes-not-decoded', file: 'security_cef.py', find: 'if nxt in ESCAPES:decoded.append(ESCAPES[nxt])', replace: 'if nxt in ESCAPES:decoded.append(raw[cursor:cursor+2])' },
+  { id: 'py-csv-doubled-quote-kept', file: 'engine.py', find: "chars.append('\"');pos+=2", replace: "chars.append('\"\"');pos+=2" },
+  // Re-introduces F-12: csv.reader alone accepts a double quote inside a bare field.
+  { id: 'py-csv-quote-inside-bare-field-accepted', file: 'engine.py', find: "if '\"' in value:", replace: 'if False:' },
   { id: 'py-generic-family-claim-gate-removed', file: 'generic_structural_poc.py', find: "if STRUCTURED_FAMILY_CLAIM.match(raw) is not None and standard.status!='SOURCE_PARSED':", replace: 'if False:' },
 ];
 
@@ -679,9 +859,10 @@ function evaluatePythonEnvelope(item: OracleCase, result: PythonEnvelope | null 
 }
 
 const PYTHON_FAMILY_CASES = familyCases(60);
+const PYTHON_CSV_CASES = csvCases(180).filter(item => item.delimiter === ',');
 function pythonRun(moduleDir: string, cases: OracleCase[], kvCases: OracleCase[]): PythonOutput {
   const run = spawnSync('python3', [join(REPO, 'scripts/verification/semantic-oracle-python-runner.py')], {
-    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), familyLines: PYTHON_FAMILY_CASES.map(item => ({ family: item.family, raw: item.raw })), versions: RFC5424_VERSION_PROBES }),
+    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), familyLines: PYTHON_FAMILY_CASES.map(item => ({ family: item.family, raw: item.raw })), csvLines: PYTHON_CSV_CASES.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
     encoding: 'utf8', maxBuffer: 1 << 28, timeout: 120000,
   });
   if (run.status !== 0) throw new Error(`SEMANTIC_ORACLE_PYTHON_RUNNER_FAILED ${String(run.stderr).slice(-600)}`);
@@ -710,7 +891,7 @@ function runPython(): number {
   const failuresOf = (output: PythonOutput) => {
     const failures = score('ruby', cases, item => evaluatePythonEnvelope(item, output.envelope[index.get(item)!])).failures;
     const kvFailures = score('ruby', kvCases, item => evaluatePythonKv(item, output.kv[kvIndex.get(item)!])).failures;
-    return [...failures, ...kvFailures, ...familyPythonFailures(PYTHON_FAMILY_CASES, output.family), ...pythonFailures({ ...output, envelope: [] }, [])];
+    return [...failures, ...kvFailures, ...familyPythonFailures(PYTHON_FAMILY_CASES, output.family), ...csvPythonFailures(PYTHON_CSV_CASES, output.csv), ...pythonFailures({ ...output, envelope: [] }, [])];
   };
   const moduleDir = join(REPO, 'runtime/multipass');
   const product = pythonRun(moduleDir, cases, kvCases);
@@ -736,7 +917,7 @@ function runPython(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const ok = productFailures.length === 0 && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} family_cases=${PYTHON_FAMILY_CASES.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} family_cases=${PYTHON_FAMILY_CASES.length} csv_cases=${PYTHON_CSV_CASES.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 

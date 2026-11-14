@@ -65,8 +65,15 @@ optional. `src/parseStatusGate.test.ts` injects an F-1 style loss into the
 extractor and requires `fail`. On the 3,897 audit lines no correctly parsed
 line is classified PARTIAL (281 key=value parses, all FULL).
 
-Not yet covered by the verdict: `auto` and `mixed` bodies, Generic Structural,
-and the generated Ruby at run time (a line that never appeared as a sample).
+`auto` bodies and the key=value branches of a `mixed` allowlist are covered as
+well: the extractor records which body dialect it actually parsed
+(`bodyKindOf` in `src/structuredFamilies.ts`, kept beside the result so its
+shape does not change) and the pipeline applies pair accounting whenever that
+is key=value. The draft-based condition stays in place, so losing the record
+cannot switch the check off.
+
+Not yet covered by the verdict: Generic Structural and the generated Ruby at
+run time (a line that never appeared as a sample).
 
 ### D. Property-based and metamorphic cases
 Every variant has its own expectation: base, double spaces, reversed pairs,
@@ -210,9 +217,25 @@ changed.
 
 Not migrated: the CEF extension tokenizer, the LEEF attribute splitter and
 their limits are still hand-written in each language; what is shared so far is
-the oracle, the faults and the claim fragment. CSV is not covered yet. The
+the oracle, the faults and the claim fragment. The
 Python preview accepts `CEF:1|` while the browser and Ruby accept only
 `CEF:0|`.
+
+## CSV (W6)
+
+RFC 4180 goldens (`csvCases`) and rows rendered from meant values
+(`src/grammar/csvModel.ts`: comma, semicolon and TAB; enclosed fields, doubled
+quotes, the delimiter inside a field, U+2028, UTF-8, empty fields; unterminated
+quotes, a quote inside a bare field, text after a closing quote, one field
+missing or extra). The browser tokenizer and the generated Ruby
+(`CSV.parse_line` on Ruby 2.4.9) meet every expectation. The Python preview
+reads comma rows only and detects the format by itself; it is held to "a row
+offered as CSV carries exactly the meant values, a malformed row is never
+offered". Defect F-12: the Python preview offered a row with a double quote
+inside a bare field, which RFC 4180 forbids and the other two reject.
+
+The product does not combine a declared forwarder with CSV, so there is no
+forwarder-family variant for it.
 
 ## RFC 5424 VERSION policy (owner decision, 2026-11-13)
 

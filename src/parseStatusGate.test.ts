@@ -20,7 +20,9 @@ vi.mock('./structuredFamilies', async (original) => {
       const first = Object.keys(body)[0]!;
       const swallowed = first + '=' + String(body[first]);
       delete body[first];
-      return { errors: [], fields: { ...out.fields, syslog_hostname: swallowed, body } };
+      // Edited in place, as a faulty grammar would produce it: the result keeps whatever the extractor attached to it.
+      out.fields = { ...out.fields, syslog_hostname: swallowed, body };
+      return out;
     },
   };
 });
@@ -59,6 +61,21 @@ describe('Parsing Success Contract in the preview pipeline', () => {
       expect(loss[0]!.message).toContain('srcip');
       expect(event.raw).toBe(raw);
     });
+
+  it.each([
+    ['auto', { ...createDraft(), format: 'auto' as const }],
+    ['syslog with an auto body', { ...createDraft(), format: 'syslog_rfc3164' as const, syslogBodyFormat: 'auto' as const }],
+    ['mixed allowlist', { ...createDraft(), format: 'mixed' as const, mixedFormats: ['rfc3164_kv', 'rfc5424_kv'] as const }],
+  ])('applies the same verdict when the key=value body is reached through %s', (_name, selected) => {
+    const full = preview(RFC3164, selected as never).events[0]!;
+    expect(full.parseStatus).toBe('FULL');
+    expect(full.diagnostics.filter(item => item.code === 'FIELD_LOSS_NOT_FULL')).toEqual([]);
+    fault.loseFirstPair = true;
+    const lossy = preview(RFC3164, selected as never).events[0]!;
+    expect(lossy.parseStatus).toBe('PARTIAL');
+    expect(lossy.status).toBe('fail');
+    expect(lossy.diagnostics.some(item => item.code === 'FIELD_LOSS_NOT_FULL')).toBe(true);
+  });
 
   it('reports UNKNOWN, not FULL, for a line the grammar declines', () => {
     const event = preview('<134>Nov 13 10:00:00 fw01 srcip=10.1.1.1 stray action=deny', draft('syslog_rfc3164')).events[0]!;

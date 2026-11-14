@@ -15,6 +15,16 @@ export interface StructuredExtraction {
 }
 const failure = (message: string): StructuredExtraction => ({ fields: {}, errors: [message] });
 
+// Which body dialect an extraction actually parsed. Kept beside the result instead of inside it so the
+// result shape (fields, errors) stays what every consumer and test already expects.
+const BODY_KIND = new WeakMap<object, string>();
+const withBodyKind = <T extends StructuredExtraction>(extraction: T, kind: string | undefined): T => {
+  if (kind !== undefined && extraction.errors.length === 0) BODY_KIND.set(extraction, kind);
+  return extraction;
+};
+/** 'kv', 'json', 'cef', 'leef', 'regex' or 'raw' when the extractor resolved a body dialect for this result (also for `auto`). */
+export const bodyKindOf = (extraction: StructuredExtraction): string | undefined => BODY_KIND.get(extraction);
+
 export function detectStructuredFamily(input: string): StructuredFamily | null {
   if (/^CEF:\d+\|/.test(input)) return 'cef';
   if (/^LEEF:(?:1\.0|2\.0)\|/.test(input)) return 'leef';
@@ -70,7 +80,7 @@ export function strictKeyValues(input: string): StructuredExtraction {
   }[body.reason]);
   const values: Record<string, unknown> = Object.create(null);
   for (const [key, value] of body.pairs) values[key] = value;
-  return { fields: values, errors: [] };
+  return withBodyKind({ fields: values, errors: [] }, 'kv');
 }
 
 const CEF_KEY=/[A-Za-z_][A-Za-z0-9_.-]{0,127}=/y;
@@ -162,7 +172,7 @@ function parsedBody(message:string,mode:'raw'|'json'|'kv'|'cef'|'leef'|'regex',r
   mode==='kv'?strictKeyValues(message):
   mode==='regex'?regexBody(message,regexPattern):
   extractStructuredFamily(message,mode);
- return result.errors.length?result:{fields:{body:result.fields},errors:[]};
+ return result.errors.length?result:withBodyKind({fields:{body:result.fields},errors:[]},mode);
 }
 function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'regex'|'auto',regexPattern?:string):
  StructuredExtraction{
@@ -184,7 +194,7 @@ function parseRfc3164Strict(input:string,choice:'raw'|'json'|'kv'|'cef'|'leef'|'
  if(!tagged&&mode==='raw')
   return failure('Tagless RFC3164 requires an explicit structured security body');
  const body=parsedBody(message,mode,regexPattern);
- return body.errors.length?body:{fields:{...fields,...body.fields},errors:[]};
+ return body.errors.length?body:withBodyKind({fields:{...fields,...body.fields},errors:[]},bodyKindOf(body));
 }
 
 export function extractStructuredFamily(input: string, format: StructuredFamily, bodyFormat: 'raw' | 'json' | 'kv' | 'cef' | 'leef' | 'regex' | 'auto' = 'raw', regexPattern?:string): StructuredExtraction {
@@ -194,8 +204,10 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     const scanned=parseRfc5424Subset(input);
     if (!scanned.ok) return failure(scanned.error);
     const body: Record<string, unknown> = {};
+    let bodyKind: string | undefined;
     if (scanned.message) {
       const mode=bodyFormat==='auto'?deterministicBody(scanned.message):bodyFormat;
+      bodyKind = mode;
       if (mode === 'raw') body.message = scanned.message;
       else if (['json','kv','cef','leef','regex'].includes(mode)) {
         const nested = mode === 'json'
@@ -209,7 +221,7 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
         body.body = nested.fields;
       } else return failure('Unsupported RFC5424 body dialect');
     }
-    return { fields: { ...scanned.fields, ...body }, errors: [] };
+    return withBodyKind({ fields: { ...scanned.fields, ...body }, errors: [] }, bodyKind);
   }
   if (format === 'cef') {
     // dotAll: a value may hold U+2028/U+2029, which '.' alone excludes in ECMAScript but not in Ruby or Python.
