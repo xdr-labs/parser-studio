@@ -545,7 +545,8 @@
     "F-9": "A CEF or LEEF line with U+2028 inside a value was rejected by the browser ('.' excludes it in ECMAScript) and parsed by the generated Ruby and the Python preview. Resolved by dotAll on the two family head expressions.",
     "F-10": "The Python preview reported a line that claims to be CEF or LEEF but is not valid (six header fields, LEEF 3.0) as parsed through its permissive Generic Structural fallback, with multi-word values cut at the first space. Resolved for the Python preview by fragments.structured_family_claim. The browser and Ruby side is policy divergence D-2.",
     "F-11": "CEF and LEEF: the header splitter also decoded backslash escapes in the extension, which the extension grammar then decoded a second time, identically in the browser and the generated Ruby. 'filePath=C:\\\\\\\\Users\\\\\\\\new' came out as 'C:\\\\Users' LF 'ew', and the standard's own example 'act=blocked a \\\\\\\\ dst=1.1.1.1' lost dst. Resolved by keeping the text after the last header delimiter exactly as written.",
-    "F-12": "The Python preview offered a comma row with a double quote inside a bare field (aaa,b\\\"bb,ccc) as a CSV candidate; RFC 4180 forbids it and the browser tokenizer and Ruby's CSV.parse_line reject the row. Resolved in parse_csv_spans."
+    "F-12": "The Python preview offered a comma row with a double quote inside a bare field (aaa,b\\\"bb,ccc) as a CSV candidate; RFC 4180 forbids it and the browser tokenizer and Ruby's CSV.parse_line reject the row. Resolved in parse_csv_spans.",
+    "F-13": "The Python preview parsed a CEF:1 line while the browser and the generated Ruby implement CEF version 0 only, so the Analyze step showed a line as parsed that the generated parser rejects. Resolved by semantics.cefSupportedVersions, read by every engine."
   },
   "genericCases": [
     {
@@ -932,6 +933,15 @@
           "share": "\\\\server\\reports",
           "src": "10.1.1.1"
         }
+      }
+    },
+    {
+      "id": "cef-version-1-is-not-supported",
+      "family": "cef",
+      "raw": "CEF:1|Acme|FW|1.0|100|Name|5|src=10.1.1.1 dst=10.2.2.2",
+      "provenance": "Product policy in the grammar contract (semantics.cefSupportedVersions = [\"0\"]): the generated parser implements CEF version 0 only, so a CEF:1 line is declined by every engine instead of being shown as parsed by the preview and then rejected by the artifact",
+      "expect": {
+        "status": "UNKNOWN"
       }
     }
   ],

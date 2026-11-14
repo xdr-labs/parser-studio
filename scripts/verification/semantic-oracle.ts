@@ -511,7 +511,12 @@ function familyTsFailures(extract: Extract, cases: FamilyCase[]): string[] {
   }
   return failures;
 }
+// Contract faults for the CEF/LEEF values every engine reads from the grammar contract.
+const CEF_ESCAPE_CONTRACT_MUTANT = contractMutant('contract-cef-line-feed-escape-dropped', ['semantics', 'cefExtensionEscapes'], { r: '\r', '=': '=', '\\': '\\' });
+const CEF_VERSION_CONTRACT_MUTANT = contractMutant('contract-cef-version-1-supported', ['semantics', 'cefSupportedVersions'], ['0', '1']);
+const LEEF_VERSION_CONTRACT_MUTANT = contractMutant('contract-leef-version-3-supported', ['semantics', 'leefSupportedVersions'], ['1.0', '2.0', '3.0']);
 const TS_FAMILY_MUTANTS: Mutant[] = [
+  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT,
   { id: 'ts-cef-value-stops-at-first-space', file: 'src/structuredFamilies.ts', find: 'if(next&&next.index===runEnd){', replace: 'if(true){' },
   { id: 'ts-cef-header-fields-shifted', file: 'src/structuredFamilies.ts', find: 'cef_device_product: parts[1], cef_device_version: parts[2],', replace: 'cef_device_product: parts[2], cef_device_version: parts[1],' },
   { id: 'ts-cef-dot-excludes-line-separator', file: 'src/structuredFamilies.ts', find: '/^CEF:(\\d+)\\|(.*)$/s.exec(input)', replace: '/^CEF:(\\d+)\\|(.*)$/.exec(input)' },
@@ -537,6 +542,10 @@ async function runFamilyTs(): Promise<{ ok: boolean; summary: string }> {
 }
 
 const RUBY_FAMILY_MUTANTS: Array<Mutant & { family: FamilyCase['family']; target: string }> = [
+  { ...CEF_ESCAPE_CONTRACT_MUTANT, family: 'cef', target: 'family:cef' },
+  // The version lists are short literals in the compiled Fragment, so these two contract faults are injected as text.
+  { id: 'rb-cef-version-1-supported', family: 'cef', target: 'family:cef', file: 'fragment', find: "raise ArgumentError, 'Unsupported CEF version' unless ['0'].include?(match[1])", replace: "raise ArgumentError, 'Unsupported CEF version' unless ['0','1'].include?(match[1])" },
+  { id: 'rb-leef-version-3-supported', family: 'leef', target: 'family:leef', file: 'fragment', find: "unless match && ['1.0','2.0'].include?(match[1])", replace: "unless match && ['1.0','2.0','3.0'].include?(match[1])" },
   { id: 'rb-cef-value-stops-at-first-space', family: 'cef', target: 'family:cef', file: 'fragment', find: 'if next_key && next_key.begin(0) == run_end', replace: 'if true' },
   { id: 'rb-cef-header-fields-shifted', family: 'cef', target: 'family:cef', file: 'fragment', find: "'cef_device_product' => fields[1],", replace: "'cef_device_product' => fields[2]," },
   { id: 'rb-leef-value-cut-at-second-equals', family: 'leef', target: 'family:leef', file: 'fragment', find: "key, value = piece.split('=', 2)", replace: "key, value = piece.split('=', 3)" },
@@ -570,7 +579,7 @@ function prepareFamilyNative(fragments: Record<string, string>, payloadCases: Ar
     payloadCases.push({ id: `familyforwarder::${item.id}`, fragment: `familyforwarder:${item.family}`, raw: item.raw });
   }
   for (const mutant of RUBY_FAMILY_MUTANTS) {
-    fragments[mutant.id] = applyMutant(fragments[mutant.target]!, mutant);
+    fragments[mutant.id] = mutant.file === 'contract' ? mutateFragment(fragments[mutant.target]!, mutant) : applyMutant(fragments[mutant.target]!, mutant);
     for (const item of mutantCases) if (item.family === mutant.family) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
   }
   const parsedEvents = (result: RubyResult | undefined) => (result?.calls ?? []).filter(([time, record]) => time !== null && record !== null && record.parser_err_msg === undefined);
@@ -804,6 +813,7 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-kv-escapes-not-decoded', file: 'source_kv.py', find: 'value=unescape_kv_value(match[group])', replace: 'value=match[group]' },
   { id: 'py-kv-repeated-key-overwrites', file: 'source_kv.py', find: 'else:out.fields[key]=[previous,value]', replace: 'else:out.fields[key]=value' },
   { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
+  CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT,
   { id: 'py-cef-value-stops-at-first-space', file: 'security_cef.py', find: 'next_key=KEY.match(raw,run_end)', replace: 'next_key=True' },
   { id: 'py-cef-escapes-not-decoded', file: 'security_cef.py', find: 'if nxt in ESCAPES:decoded.append(ESCAPES[nxt])', replace: 'if nxt in ESCAPES:decoded.append(raw[cursor:cursor+2])' },
   { id: 'py-csv-doubled-quote-kept', file: 'engine.py', find: "chars.append('\"');pos+=2", replace: "chars.append('\"\"');pos+=2" },

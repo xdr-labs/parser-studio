@@ -215,11 +215,20 @@ its legacy space-separated key=value route in the browser and Ruby. Three
 existing tests keep that on purpose for existing V15 projects, so it was not
 changed.
 
-Not migrated: the CEF extension tokenizer, the LEEF attribute splitter and
-their limits are still hand-written in each language; what is shared so far is
-the oracle, the faults and the claim fragment. The
-Python preview accepts `CEF:1|` while the browser and Ruby accept only
-`CEF:0|`.
+Contract values (revision 5): the CEF extension key token (`CEF_KEY`), the
+LEEF attribute key token (`LEEF_KEY`), `cefSupportedVersions`,
+`leefSupportedVersions`, `cefMaxExtensionFields`, `cefExtensionEscapes` and the
+forbidden keys are read from the contract by the browser extractor, by both
+Ruby templates (`__PS_GRAMMAR_TOKEN_CEF_KEY__`, `__PS_GRAMMAR_CEF_*__`,
+`__PS_GRAMMAR_LEEF_VERSIONS__`, `__PS_GRAMMAR_FORBIDDEN_KEYS__`) and by the
+Python CEF passes. Defect F-13: the Python preview parsed `CEF:1|` while the
+browser and Ruby implement CEF version 0 only; all three now read
+`cefSupportedVersions`.
+
+Still hand-written per language: the control flow of the CEF extension scanner
+(a value runs to the last white-space character before the next key) and of
+the LEEF attribute splitter, and the Python LEEF passes, which do not read the
+contract yet. Their behaviour is held together by the oracle and the faults.
 
 ## CSV (W6)
 

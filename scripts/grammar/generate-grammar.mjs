@@ -264,6 +264,21 @@ export function rubyGrammarPlaceholders(contractText) {
     if (!/^[A-Z][a-z]{2}$/.test(month) || !Number.isInteger(days)) throw new Error('GRAMMAR_SEMANTICS_INVALID month');
   for (const version of semantics.rfc5424SupportedVersions)
     if (!/^[1-9][0-9]{0,2}$/.test(version)) throw new Error('GRAMMAR_SEMANTICS_INVALID version');
+  // CEF / LEEF: versions, the extension field limit, the escape table and the forbidden keys.
+  const rubyDouble = text => '"' + [...text].map(ch => (ch === '\n' ? '\\n' : ch === '\r' ? '\\r' : ch === '\\' ? '\\\\' : ch === '"' ? '\\"' : ch)).join('') + '"';
+  const rubySingle = text => "'" + text.replace(/[\\']/g, '\\$&') + "'";
+  if (!Array.isArray(semantics.cefSupportedVersions) || semantics.cefSupportedVersions.length === 0 || semantics.cefSupportedVersions.some(version => !/^[0-9]{1,2}$/.test(version)) ||
+      !Array.isArray(semantics.leefSupportedVersions) || semantics.leefSupportedVersions.length === 0 || semantics.leefSupportedVersions.some(version => !/^[0-9]\.[0-9]$/.test(version)) ||
+      !Number.isInteger(semantics.cefMaxExtensionFields) || semantics.cefMaxExtensionFields < 1 || semantics.cefMaxExtensionFields > 10000 ||
+      typeof semantics.cefExtensionEscapes !== 'object' || semantics.cefExtensionEscapes === null ||
+      Object.entries(semantics.cefExtensionEscapes).some(([key, value]) => !/^[\x21-\x7e]$/.test(key) || typeof value !== 'string' || [...value].length !== 1) ||
+      semantics.cefExtensionEscapes['\\'] !== '\\' || semantics.cefExtensionEscapes['='] !== '=')
+    throw new Error('GRAMMAR_SEMANTICS_INVALID cef/leef');
+  placeholders.__PS_GRAMMAR_CEF_VERSIONS__ = '[' + semantics.cefSupportedVersions.map(rubySingle).join(',') + ']';
+  placeholders.__PS_GRAMMAR_LEEF_VERSIONS__ = '[' + semantics.leefSupportedVersions.map(rubySingle).join(',') + ']';
+  placeholders.__PS_GRAMMAR_CEF_MAX_FIELDS__ = String(semantics.cefMaxExtensionFields);
+  placeholders.__PS_GRAMMAR_CEF_ESCAPES__ = '{' + Object.entries(semantics.cefExtensionEscapes).map(([key, value]) => rubySingle(key) + '=>' + rubyDouble(value)).join(',') + '}';
+  placeholders.__PS_GRAMMAR_FORBIDDEN_KEYS__ = '[' + semantics.kvForbiddenKeys.map(rubySingle).join(',') + ']';
   placeholders.__PS_GRAMMAR_PRI_MAX__ = String(semantics.priMax);
   placeholders.__PS_GRAMMAR_BSD_MONTH_DAYS__ = '{' + Object.entries(semantics.bsdMonthDays).map(([month, days]) => `'${month}'=>${days}`).join(',') + '}';
   placeholders.__PS_GRAMMAR_RFC5424_VERSIONS__ = '[' + semantics.rfc5424SupportedVersions.map(version => `'${version}'`).join(',') + ']';

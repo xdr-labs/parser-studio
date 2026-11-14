@@ -5,6 +5,7 @@ import { parseRfc5424Subset } from './rfc5424Subset';
 import { isSupportedRfc5424Version, matchHeaderRule, matchesHeaderToken } from './grammar/syslogHeader';
 import { matchRfc3164Header } from './grammar/syslogHeader';
 import { parseStrictKeyValues } from './grammar/kvBody';
+import { SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from './grammar/syslogHeaderGrammar.generated';
 import {extractPortableRegexFields} from './portableRegexExtraction';
 /* Browser-only structural subset of RFC5424, CEF and LEEF.
    Does not execute Ruby or imply native Fluentd target compatibility. */
@@ -83,19 +84,26 @@ export function strictKeyValues(input: string): StructuredExtraction {
   return withBodyKind({ fields: values, errors: [] }, 'kv');
 }
 
-const CEF_KEY=/[A-Za-z_][A-Za-z0-9_.-]{0,127}=/y;
+// Key token, field limit, escape table, supported versions and forbidden keys come from the shared grammar
+// contract; the generated Ruby and the Python preview read the same values.
+const CEF_KEY=new RegExp('(?:'+SYSLOG_HEADER_TOKENS.CEF_KEY+')=','y');
+const CEF_ESCAPES:Readonly<Record<string,string>>=SYSLOG_HEADER_SEMANTICS.cefExtensionEscapes;
+const CEF_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.cefSupportedVersions;
+const LEEF_VERSIONS:readonly string[]=SYSLOG_HEADER_SEMANTICS.leefSupportedVersions;
+const LEEF_KEY=new RegExp('^(?:'+SYSLOG_HEADER_TOKENS.LEEF_KEY+')$');
+const FORBIDDEN_KEYS:readonly string[]=SYSLOG_HEADER_SEMANTICS.kvForbiddenKeys;
 function cefExtensionValues(input:string):StructuredExtraction{
   const values:Record<string,unknown>=Object.create(null);
   let cursor=0,count=0;
   while(cursor<input.length){
     while(cursor<input.length&&(input[cursor]===' '||input[cursor]==='\t'))cursor++;
     if(cursor===input.length)break;
-    if(count++>=1024)return failure('CEF extension field limit exceeded');
+    if(count++>=SYSLOG_HEADER_SEMANTICS.cefMaxExtensionFields)return failure('CEF extension field limit exceeded');
     CEF_KEY.lastIndex=cursor;
     const match=CEF_KEY.exec(input);
     if(!match||match.index!==cursor)return failure('Unsupported CEF extension key boundary');
     const key=match[0].slice(0,-1);
-    if(['__proto__','constructor','prototype'].includes(key)||
+    if(FORBIDDEN_KEYS.includes(key)||
        Object.prototype.hasOwnProperty.call(values,key))
       return failure('Unsupported or duplicate CEF extension field');
     let pos=CEF_KEY.lastIndex;
@@ -106,8 +114,7 @@ function cefExtensionValues(input:string):StructuredExtraction{
       if(ch==='\\'){
         if(pos+1>=input.length)return failure('Truncated CEF escape');
         const next=input[pos+1]!;
-        decoded+=next==='n'?'\n':next==='r'?'\r':
-          next==='='?'=':next==='\\'?'\\':'\\'+next;
+        decoded+=Object.prototype.hasOwnProperty.call(CEF_ESCAPES,next)?CEF_ESCAPES[next]!:'\\'+next;
         pos+=2;continue;
       }
       if(ch===' '||ch==='\t'){
@@ -226,7 +233,7 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
   if (format === 'cef') {
     // dotAll: a value may hold U+2028/U+2029, which '.' alone excludes in ECMAScript but not in Ruby or Python.
     const match = /^CEF:(\d+)\|(.*)$/s.exec(input);
-    if (!match || match[1] !== '0') return failure('Only standalone CEF version zero events are supported');
+    if (!match || !CEF_VERSIONS.includes(match[1]!)) return failure('Only standalone CEF version zero events are supported');
     const parts = splitEscaped(match[2], '|', 6);
     if (!parts) return failure('CEF requires six header fields and an extension slot');
     const record: Record<string, unknown> = {
@@ -244,8 +251,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     }
     return { fields: record, errors: [] };
   }
-  const match = /^LEEF:(1\.0|2\.0)\|(.*)$/s.exec(input);
-  if (!match) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
+  const match = /^LEEF:([0-9.]+)\|(.*)$/s.exec(input);
+  if (!match || !LEEF_VERSIONS.includes(match[1]!)) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
   if (!parts) return failure('LEEF header or declared delimiter is incomplete');
@@ -262,8 +269,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     for (const part of parts[parts.length - 1].split(delimiter)) {
       const location = part.indexOf('=');
       const key = part.slice(0, location);
-      if (location < 0 || !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(key) ||
-          ['__proto__','constructor','prototype'].includes(key) ||
+      if (location < 0 || !LEEF_KEY.test(key) ||
+          FORBIDDEN_KEYS.includes(key) ||
           Object.prototype.hasOwnProperty.call(record, key)) return failure('Unsupported or duplicate LEEF extension token');
       record[key] = part.slice(location + 1);
     }
