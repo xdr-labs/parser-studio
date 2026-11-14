@@ -24,6 +24,8 @@ export interface FamilyExpectation {
   neverWrong?: boolean;
   header?: Record<string, string>;
   extension?: Record<string, string>;
+  /** Owner policy D-1, UNKNOWN only: fields written more than once, with every meant value in wire order. */
+  repeated?: Record<string, string[]>;
 }
 export interface FamilyCase { id: string; family: 'cef' | 'leef'; raw: string; provenance: string; expect: FamilyExpectation }
 
@@ -90,6 +92,9 @@ export function generateCefLeefCases(count: number, seed: number): FamilyCase[] 
     cef('severity-field-missing', 'CEF:0|' + header.slice(0, 5).map(([, meant]) => cefHeaderText(meant)).join('|') + '|' + extensionText(pairs), UNKNOWN);
     // A backslash at the very end escapes nothing.
     cef('escape-truncated', headerText + extensionText(pairs) + ' cs2=tail\\', UNKNOWN);
+    // Owner policy D-1: the first field is written again at the end with another value.
+    const again = (list: Array<[string, string]>): FamilyExpectation => ({ status: 'UNKNOWN', repeated: { [list[0]![0]]: [list[0]![1], 'again'] } });
+    cef('duplicate-field', headerText + extensionText([...pairs, [pairs[0]![0], 'again']]), again(pairs));
 
     // ----------------------------------------------------------------- LEEF
     const leefHeader = LEEF_HEADER.map(([name, pool]) => [name, pick(pool)] as [string, string]);
@@ -108,6 +113,8 @@ export function generateCefLeefCases(count: number, seed: number): FamilyCase[] 
     // The hexadecimal spelling of the separator is allowed by LEEF 2.0; an engine may decline it but must not misread it.
     leef('v2-hex-tab', head('2.0') + 'x09|' + body(attributes, '\t'), leefFull('2.0', attributes, true));
     leef('version-3', head('3.0') + body(attributes, '\t'), UNKNOWN);
+    leef('v1-duplicate-field', head('1.0') + body([...attributes, [attributes[0]![0], 'again']], '\t'), again(attributes));
+    leef('v2-duplicate-field', head('2.0') + '^|' + body([...attributes, [attributes[0]![0], 'again']], '^'), again(attributes));
   }
   return cases;
 }

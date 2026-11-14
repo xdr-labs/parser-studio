@@ -48,6 +48,8 @@ interface GenericCase { id: string; raw: string; provenance: string; expect: { f
 interface Goldens {
   profiles: Record<string, Profile>;
   knownDefects: Record<string, { engines: Engine[] }>;
+  /** A decision the owner has made; the oracle enforces it in every engine. */
+  ownerPolicies: Record<string, { decidedOn: string; statement: string; enforcedBy: string[] }>;
   /** A documented, owner-visible difference between engines; the oracle pins both sides exactly. */
   policyDivergences: Record<string, { engines: Engine[]; variant: string; statement: string }>;
   cases: OracleCase[];
@@ -90,11 +92,21 @@ function goldenSelfCheck(): string[] {
   return problems;
 }
 
+/** Owner policy D-1: a rejection is useful to the reviewer only when it says which field is repeated. */
+const namesRepeatedField = (messages: string[], repeated: Record<string, string[]>): boolean =>
+  messages.some(message => /duplicate/i.test(message) && Object.keys(repeated).some(key => message.includes('"' + key + '"')));
+
 function evaluateTs(item: OracleCase, extract: Extract): string[] {
   let outcome: { fields: Record<string, unknown>; errors: string[] } | { thrown: unknown };
   try { outcome = extract(item.raw, item.grammar, item.body); } catch (error) { outcome = { thrown: error }; }
   const verdict = classifyStructuredParse(item.raw, outcome, item.body);
   const expect = item.expect;
+  if (expect.repeated) {
+    // Owner policy D-1: declined, and the reviewer is told which field is repeated.
+    const errors = 'errors' in outcome ? outcome.errors : [];
+    return [...(verdict.status === 'UNKNOWN' ? [] : [`status ${verdict.status}, expected UNKNOWN`]),
+      ...(namesRepeatedField(errors, expect.repeated) ? [] : [`the rejection does not name a repeated field: ${JSON.stringify(errors).slice(0, 160)}`])];
+  }
   if (expect.status === 'UNKNOWN') return verdict.status === 'UNKNOWN' ? [] : [`status ${verdict.status}, expected UNKNOWN`];
   const problems: string[] = [];
   if (verdict.status !== 'FULL') {
@@ -194,7 +206,9 @@ const TS_MUTANTS: Mutant[] = [
   { id: 'ts-calendar-widened', file: 'src/grammar/syslogHeader.ts', find: 'day < 1 || day > days ||', replace: 'day < 1 || day > 31 ||' },
   { id: 'ts-rfc5424-any-version', file: 'src/grammar/syslogHeader.ts', find: 'if (!isSupportedRfc5424Version(captures.version!)) return', replace: 'if (false) return' },
   { id: 'ts-kv-every-backslash-decoded', file: 'src/grammar/kvBody.ts', find: "out += UNESCAPED.includes(next) ? next : '\\\\' + next;", replace: 'out += next;' },
-  { id: 'ts-kv-duplicate-key-overwrites', file: 'src/grammar/kvBody.ts', find: "if (seen.has(key)) return { ok: false, reason: 'DUPLICATE_KEY' };", replace: '' },
+  { id: 'ts-kv-duplicate-key-overwrites', file: 'src/grammar/kvBody.ts', find: "if (seen.has(key)) return { ok: false, reason: 'DUPLICATE_KEY', key };", replace: '' },
+  // Owner policy D-1: the rejection must say which field is repeated.
+  { id: 'ts-kv-duplicate-key-not-named', file: 'src/structuredFamilies.ts', find: 'DUPLICATE_KEY: duplicateFieldMessage(String(body.key)),', replace: "DUPLICATE_KEY: 'Unsafe or duplicate extension field'," },
   { id: 'ts-rfc5424-appname-procid-swapped', file: 'src/rfc5424Subset.ts', find: 'syslog_appname:header.appname,syslog_procid:header.procid,', replace: 'syslog_appname:header.procid,syslog_procid:header.appname,' },
 ];
 
@@ -493,12 +507,29 @@ function runNative(): number {
 // the same expectation is applied to the browser extractor, the generated Ruby and the Python preview.
 // The Python preview also declines a line that claims to be CEF or LEEF and is not; for the browser and Ruby
 // Generic Structural routes that is policy divergence D-2 (legacy V15 compatibility, owner decision pending).
-interface FamilyObservation { parsed: boolean; value: (key: string) => unknown }
+interface FamilyObservation {
+  parsed: boolean; value: (key: string) => unknown;
+  /** Browser extractor: its error messages. */
+  errors?: string[];
+  /** Python preview: its issue codes. */
+  issues?: string[];
+}
 const familyCases = (properties: number): FamilyCase[] => [...goldens.familyCases, ...generateCefLeefCases(properties, PROPERTY_SEED)];
 const familyKey = (path: string) => 'f_' + path.replace(/[^A-Za-z0-9]/g, '_');
 
 function familyProblems(item: FamilyCase, got: FamilyObservation | undefined): string[] {
   if (!got) return ['no result'];
+  if (item.expect.repeated) {
+    // Owner policy D-1: never a complete parse. The browser names the field; the preview keeps every value in order.
+    const problems = got.parsed ? ['reported as completely parsed although a field is repeated'] : [];
+    if (got.errors && !namesRepeatedField(got.errors, item.expect.repeated)) problems.push(`the rejection does not name a repeated field: ${JSON.stringify(got.errors).slice(0, 160)}`);
+    if (got.issues) {
+      if (!got.issues.includes('DUPLICATE_SOURCE_FIELD')) problems.push(`issues ${JSON.stringify(got.issues)}, expected DUPLICATE_SOURCE_FIELD`);
+      for (const [key, want] of Object.entries(item.expect.repeated))
+        if (JSON.stringify(got.value(key)) !== JSON.stringify(want)) problems.push(`${key}=${JSON.stringify(got.value(key))}, expected every value in order ${JSON.stringify(want)}`);
+    }
+    return problems;
+  }
   if (item.expect.status === 'UNKNOWN') return got.parsed ? ['parsed, expected a declined line'] : [];
   if (!got.parsed) return item.expect.neverWrong ? [] : ['declined, expected a parse'];
   const problems: string[] = [];
@@ -513,7 +544,7 @@ function familyTsFailures(extract: Extract, cases: FamilyCase[]): string[] {
     let out: { fields: Record<string, unknown>; errors: string[] };
     try { out = extract(item.raw, item.family, 'raw'); } catch (error) { failures.push(`${item.id}: extractor raised ${String(error)}`); continue; }
     const fields = out.fields;
-    const problems = familyProblems(item, { parsed: out.errors.length === 0 && Object.keys(fields).length > 0, value: key => fields[key] });
+    const problems = familyProblems(item, { parsed: out.errors.length === 0 && Object.keys(fields).length > 0, value: key => fields[key], errors: out.errors });
     if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
   }
   return failures;
@@ -524,6 +555,9 @@ const CEF_VERSION_CONTRACT_MUTANT = contractMutant('contract-cef-version-1-suppo
 const LEEF_VERSION_CONTRACT_MUTANT = contractMutant('contract-leef-version-3-supported', ['semantics', 'leefSupportedVersions'], ['1.0', '2.0', '3.0']);
 const TS_FAMILY_MUTANTS: Mutant[] = [
   CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT,
+  // Owner policy D-1: a repeated extension field is declined, never overwritten.
+  { id: 'ts-cef-duplicate-field-overwrites', file: 'src/structuredFamilies.ts', find: 'if(Object.prototype.hasOwnProperty.call(values,key))return failure(duplicateFieldMessage(key));', replace: '' },
+  { id: 'ts-leef-duplicate-field-overwrites', file: 'src/structuredFamilies.ts', find: 'if (Object.prototype.hasOwnProperty.call(record, key)) return failure(duplicateFieldMessage(key));', replace: '' },
   { id: 'ts-cef-value-stops-at-first-space', file: 'src/structuredFamilies.ts', find: 'if(next&&next.index===runEnd){', replace: 'if(true){' },
   { id: 'ts-cef-header-fields-shifted', file: 'src/structuredFamilies.ts', find: 'cef_device_product: parts[1], cef_device_version: parts[2],', replace: 'cef_device_product: parts[2], cef_device_version: parts[1],' },
   { id: 'ts-cef-dot-excludes-line-separator', file: 'src/structuredFamilies.ts', find: '/^CEF:(\\d+)\\|(.*)$/s.exec(input)', replace: '/^CEF:(\\d+)\\|(.*)$/.exec(input)' },
@@ -553,6 +587,9 @@ const RUBY_FAMILY_MUTANTS: Array<Mutant & { family: FamilyCase['family']; target
   // The version lists are short literals in the compiled Fragment, so these two contract faults are injected as text.
   { id: 'rb-cef-version-1-supported', family: 'cef', target: 'family:cef', file: 'fragment', find: "raise ArgumentError, 'Unsupported CEF version' unless ['0'].include?(match[1])", replace: "raise ArgumentError, 'Unsupported CEF version' unless ['0','1'].include?(match[1])" },
   { id: 'rb-leef-version-3-supported', family: 'leef', target: 'family:leef', file: 'fragment', find: "unless match && ['1.0','2.0'].include?(match[1])", replace: "unless match && ['1.0','2.0','3.0'].include?(match[1])" },
+  // Owner policy D-1: a repeated extension field is declined, never overwritten.
+  { id: 'rb-cef-duplicate-field-overwrites', family: 'cef', target: 'family:cef', file: 'fragment', find: "    raise ArgumentError, 'Duplicate CEF extension field' if record.key?(key)\n", replace: '' },
+  { id: 'rb-leef-duplicate-field-overwrites', family: 'leef', target: 'family:leef', file: 'fragment', find: "      raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)\n", replace: '' },
   { id: 'rb-cef-value-stops-at-first-space', family: 'cef', target: 'family:cef', file: 'fragment', find: 'if next_key && next_key.begin(0) == run_end', replace: 'if true' },
   { id: 'rb-cef-header-fields-shifted', family: 'cef', target: 'family:cef', file: 'fragment', find: "'cef_device_product' => fields[1],", replace: "'cef_device_product' => fields[2]," },
   { id: 'rb-leef-value-cut-at-second-equals', family: 'leef', target: 'family:leef', file: 'fragment', find: "key, value = piece.split('=', 2)", replace: "key, value = piece.split('=', 3)" },
@@ -625,13 +662,13 @@ const PYTHON_FAMILY_HEADER: Record<string, string> = {
   cef_signature_id: 'signature_id', cef_name: 'name', cef_severity: 'severity',
   leef_version: 'version', leef_vendor: 'vendor', leef_product: 'product', leef_product_version: 'product_version', leef_event_id: 'event_id',
 };
-interface PythonFamily { status: string; header: Record<string, unknown>; extension: Record<string, unknown> }
+interface PythonFamily { status: string; issues: string[]; header: Record<string, unknown>; extension: Record<string, unknown> }
 function familyPythonFailures(cases: FamilyCase[], results: PythonFamily[]): string[] {
   const failures: string[] = [];
   cases.forEach((item, index) => {
     const result = results[index];
     const problems = familyProblems(item, result && {
-      parsed: result.status === 'SOURCE_PARSED',
+      parsed: result.status === 'SOURCE_PARSED', issues: result.issues,
       value: key => (key in PYTHON_FAMILY_HEADER ? result.header[PYTHON_FAMILY_HEADER[key]!] : result.extension[key]),
     });
     if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
@@ -934,7 +971,7 @@ function jsonPythonFailures(cases: JsonCase[], results: PythonJson[]): string[] 
 
 // -------------------------------------------------------------------- Python
 interface PythonEnvelope { syslog: Record<string, string>; start: number }
-interface PythonKv { status: string; body: Record<string, unknown> }
+interface PythonKv { status: string; issues: string[]; body: Record<string, unknown> }
 interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[]; family: PythonFamily[]; csv: PythonCsv[]; json: PythonJson[] }
 const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
 const PYTHON_MUTANTS: Mutant[] = [
@@ -943,6 +980,11 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-kv-unicode-white-space-separates', file: 'source_kv.py', find: "PAIR=re.compile(FRAGMENTS['kv_pair']['source'])", replace: "PAIR=re.compile(FRAGMENTS['kv_pair']['source'].replace('[^ ','[^\\u00a0\\u2028 '))" },
   { id: 'py-kv-escapes-not-decoded', file: 'source_kv.py', find: 'value=unescape_kv_value(match[group])', replace: 'value=match[group]' },
   { id: 'py-kv-repeated-key-overwrites', file: 'source_kv.py', find: 'else:out.fields[key]=[previous,value]', replace: 'else:out.fields[key]=value' },
+  // Owner policy D-1: a repeated field is never a complete parse, in the key=value preview as in CEF and LEEF.
+  { id: 'py-kv-repeated-key-reported-as-parsed', file: 'source_kv.py', find: "if 'DUPLICATE_SOURCE_FIELD' not in out.issues:out.issues.append('DUPLICATE_SOURCE_FIELD')", replace: 'pass' },
+  { id: 'py-kv-repeated-key-keeps-first-only', file: 'source_kv.py', find: 'else:out.fields[key]=[previous,value]', replace: 'else:out.fields[key]=previous' },
+  // LEEF attributes go through this one place. (For CEF two merged candidates each report the issue, so removing one is not observable.)
+  { id: 'py-leef-repeated-field-reported-as-parsed', file: 'structured_source.py', find: '        issues.append("DUPLICATE_SOURCE_FIELD")', replace: '        pass' },
   { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
   CEF_ESCAPE_CONTRACT_MUTANT, CEF_VERSION_CONTRACT_MUTANT, LEEF_VERSION_CONTRACT_MUTANT,
   { id: 'py-cef-value-stops-at-first-space', file: 'security_cef.py', find: 'next_key=KEY.match(raw,run_end)', replace: 'next_key=True' },
@@ -955,16 +997,18 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-generic-family-claim-gate-removed', file: 'generic_structural_poc.py', find: "if STRUCTURED_FAMILY_CLAIM.match(raw) is not None and standard.status!='SOURCE_PARSED':", replace: 'if False:' },
 ];
 
-/** The Python preview must report the meant value of every pair, or decline; a repeated key follows policy divergence D-1. */
+/** The Python preview must report the meant value of every pair, or decline; a repeated key follows owner policy D-1. */
 function evaluatePythonKv(item: OracleCase, result: PythonKv | undefined): string[] {
   if (result === undefined) return ['no result from the Python runner'];
   const expect = item.expect;
   const parsed = result.status === 'SOURCE_PARSED';
-  const divergence = Object.values(goldens.policyDivergences).find(entry => entry.engines.includes('python') && item.id.endsWith('-' + entry.variant));
-  if (divergence) {
-    const repeated = Object.values(result.body).filter(value => Array.isArray(value));
-    return parsed && repeated.length === 1 && (repeated[0] as unknown[]).length === 2 && (repeated[0] as unknown[])[1] === 'again'
-      ? [] : [`status ${result.status}, repeated=${JSON.stringify(repeated)}; D-1 requires both occurrences in order`];
+  if (expect.repeated) {
+    // Owner policy D-1: every value kept in wire order, and never reported as a complete parse.
+    const problems = parsed ? ['status SOURCE_PARSED although a field is repeated'] : [];
+    if (!result.issues.includes('DUPLICATE_SOURCE_FIELD')) problems.push(`issues ${JSON.stringify(result.issues)}, expected DUPLICATE_SOURCE_FIELD`);
+    for (const [key, want] of Object.entries(expect.repeated))
+      if (JSON.stringify(result.body[key]) !== JSON.stringify(want)) problems.push(`${key}=${JSON.stringify(result.body[key])}, expected every value in order ${JSON.stringify(want)}`);
+    return problems;
   }
   if (expect.status === 'UNKNOWN') return parsed ? [`status SOURCE_PARSED with ${JSON.stringify(result.body).slice(0, 120)}, expected a declined line`] : [];
   if (!parsed) return expect.neverWrong ? [] : [`status ${result.status}, expected SOURCE_PARSED`];

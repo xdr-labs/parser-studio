@@ -13,7 +13,7 @@ import { GRAMMAR_FRAGMENTS, SYSLOG_HEADER_SEMANTICS, SYSLOG_HEADER_TOKENS } from
 export type KvFailure = 'MALFORMED_PAIR' | 'FORBIDDEN_KEY' | 'DUPLICATE_KEY' | 'TOO_MANY_PAIRS' | 'NO_PAIRS';
 export type KvBody =
   | { ok: true; pairs: Array<[key: string, value: string]> }
-  | { ok: false; reason: KvFailure };
+  | { ok: false; reason: KvFailure; key?: string };
 
 const PAIR = new RegExp(GRAMMAR_FRAGMENTS.kv_pair.source, 'y');
 const TRAILING = new RegExp('^(?:' + SYSLOG_HEADER_TOKENS.KV_TRAILING + ')$');
@@ -43,8 +43,9 @@ export function parseStrictKeyValues(input: string): KvBody {
     const match = PAIR.exec(input);
     if (!match || match.index !== cursor || PAIR.lastIndex <= cursor) return { ok: false, reason: 'MALFORMED_PAIR' };
     const key = match.groups!.key!;
-    if (FORBIDDEN.includes(key)) return { ok: false, reason: 'FORBIDDEN_KEY' };
-    if (seen.has(key)) return { ok: false, reason: 'DUPLICATE_KEY' };
+    if (FORBIDDEN.includes(key)) return { ok: false, reason: 'FORBIDDEN_KEY', key };
+    // Owner policy D-1: a repeated key is never resolved by keeping one of its values.
+    if (seen.has(key)) return { ok: false, reason: 'DUPLICATE_KEY', key };
     if (pairs.length >= SYSLOG_HEADER_SEMANTICS.kvMaxPairs) return { ok: false, reason: 'TOO_MANY_PAIRS' };
     seen.add(key);
     pairs.push([key, unescapeKvValue(match.groups!.dq ?? match.groups!.sq ?? match.groups!.bare ?? '')]);

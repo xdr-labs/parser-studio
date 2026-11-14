@@ -21,6 +21,12 @@ export interface OracleExpectation {
   sourceAbsent?: string[];
   event?: Record<string, unknown> | null;
   eventAbsent?: string[];
+  /**
+   * Owner policy D-1, UNKNOWN only: fields the sender wrote more than once, with every meant value in wire
+   * order. No engine may report the line as completely parsed; the strict parsers name the field they
+   * declined, and the source preview keeps exactly these values in this order.
+   */
+  repeated?: Record<string, string[]>;
 }
 export interface OracleCase {
   id: string;

@@ -173,11 +173,22 @@ browser and of the generated Ruby now declines such a line the same way
 Generic Structural and the Python preview already did (defect F-7). The
 portable regex subset gained `\xHH` for ASCII code points for this purpose.
 
-Policy divergence D-1 (owner decision needed): a repeated key. The strict
-browser and Ruby parsers reject the body; the Python source preview keeps every
-occurrence in order as a list (release gate H3). The oracle pins both sides
-exactly (`policyDivergences` in `contracts/semantic-goldens.v1.json`), so
-neither can drift silently.
+Owner policy D-1 (decided 2026-11-14): a field written more than once in one
+event is never resolved by keeping one of its values.
+
+| Engine | Behaviour |
+| --- | --- |
+| Python source preview | keeps the original key and every value in wire order; issue `DUPLICATE_SOURCE_FIELD`, status never `SOURCE_PARSED` |
+| Browser extractor | declines the event; the message names the repeated field (`duplicateFieldMessage`) |
+| Generated Ruby | declines the event (error record, no parsed event) |
+
+It applies to key=value bodies (bare and under RFC 3164 / RFC 5424), CEF and
+LEEF 1.0 / 2.0. The Analyze step names the repeated fields in plain words and
+does not offer parser files while a field is repeated. The oracle enforces it
+with hand-written goldens and model-rendered cases that carry
+`expect.repeated` (every meant value, in order) and with fault injection in all
+three engines (`ownerPolicies.D-1` in `contracts/semantic-goldens.v1.json`
+lists them).
 
 `parse_quoted_kv` in `runtime/multipass/engine.py` keeps its own pair expression; it has no caller (see below).
 

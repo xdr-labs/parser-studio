@@ -6,9 +6,9 @@ generated out of contracts/syslog-header-grammar.v1.json. The browser parser
 (src/grammar/kvBody.ts) and the generated Ruby Fragment read the same contract,
 so a body is split at the same characters and decoded to the same values by
 every executor: NBSP and U+2028 are value data and only the listed escapes are
-decoded. One deliberate difference remains: this source preview keeps every
-occurrence of a repeated key (release gate H3) where the strict parsers reject
-the body.
+decoded. A repeated key (owner policy D-1): the strict parsers decline the body;
+this source preview keeps every value in order and reports the event as not
+completely parsed (DUPLICATE_SOURCE_FIELD), so no engine reports it as FULL.
 
 The issue code attached to a rejected body is diagnostic only; whether a body
 is accepted is decided by the contract expressions alone. A rejected tail stays
@@ -75,12 +75,13 @@ def decode_source_kv(raw:str,begin:int=0,*,max_fields:int=MAX_FIELDS)->Fragment:
         group=next(name for name in ('dq','sq','bare') if match[name] is not None)
         value=unescape_kv_value(match[group])
         if key in out.fields:
-            # Source preview keeps every occurrence of a repeated key, in order
-            # (release gate H3). The strict browser and Ruby parsers reject the
-            # body instead; the difference is tracked as D-1 in the Semantic Oracle.
+            # Source preview keeps every occurrence of a repeated key, in order (release gate H3).
             previous=out.fields[key]
             if isinstance(previous,list):previous.append(value)
             else:out.fields[key]=[previous,value]
+            # Owner policy D-1: every value is kept in order, and the event is never reported as
+            # completely parsed while a field is repeated (same issue code as CEF and JSON use).
+            if 'DUPLICATE_SOURCE_FIELD' not in out.issues:out.issues.append('DUPLICATE_SOURCE_FIELD')
         else:out.fields[key]=value
         out.spans.append((key,*match.span(group)))
         out.primitive_fields+=1

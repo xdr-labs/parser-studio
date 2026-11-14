@@ -60,14 +60,15 @@ for version in request["versions"]:
 kv = []
 for raw in request.get("kvLines", []):
     result = multipass_preview_api.preview(raw)
-    kv.append({"status": result["status"], "body": (result.get("fields") or {}).get("body") or {}})
+    kv.append({"status": result["status"], "issues": result.get("issues") or [],
+               "body": (result.get("fields") or {}).get("body") or {}})
 
 # Standalone CEF/LEEF events, through the same preview entry point.
 family = []
 for item in request.get("familyLines", []):
     result = multipass_preview_api.preview(item["raw"])
     fields = result.get("fields") or {}
-    family.append({"status": result["status"], "header": fields.get(item["family"] + "_header") or {},
+    family.append({"status": result["status"], "issues": result.get("issues") or [], "header": fields.get(item["family"] + "_header") or {},
                    "extension": fields.get(item["family"] + "_extension") or {}})
 
 # Comma-separated rows. The preview offers a headerless row as a candidate (column_0, column_1, ...) that

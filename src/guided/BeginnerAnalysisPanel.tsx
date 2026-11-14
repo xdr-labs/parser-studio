@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {independentKeyValuePairs} from '../grammar/parseStatus';
 import {Bot,CheckCircle2,Clipboard,TriangleAlert,Wrench} from 'lucide-react';
 import type {MultiPassSourcePreview} from './multipassPreviewClient';
 import type {ParserDraft,SuiteResult} from '../model';
@@ -54,7 +55,24 @@ function isZeekHeader(raw:string):boolean{
 function isWindowsEventXml(raw:string):boolean{
   return /^<Event(?:\s|>)/.test(raw.trimStart());
 }
-function plainIssue(code:string,raw=''):string{
+/**
+ * Owner policy D-1: the names of fields written more than once. Two independent readings are joined: the
+ * raw line (key=value tokens) and the preview itself, which keeps the values of a repeated field as a list.
+ */
+function repeatedFieldNames(raw:string,preview?:MultiPassSourcePreview):string[]{
+  const counts=new Map<string,number>();
+  for(const pair of independentKeyValuePairs(raw))counts.set(pair.key,(counts.get(pair.key)??0)+1);
+  const names=new Set([...counts].filter(([,count])=>count>1).map(([key])=>key));
+  if(preview&&!/JSON/.test(preview.syntax)){
+    const fields=preview.fields as Record<string,unknown>;
+    for(const container of [fields,fields.body,fields.cef_extension,fields.leef_extension]){
+      if(!container||typeof container!=='object'||Array.isArray(container))continue;
+      for(const [key,value] of Object.entries(container))if(Array.isArray(value)&&value.length>1)names.add(key);
+    }
+  }
+  return [...names];
+}
+function plainIssue(code:string,raw='',preview?:MultiPassSourcePreview):string{
   if(isZeekHeader(raw))
     return 'This is a Zeek log header describing fields, not an event. Copy the declared column names and separator before reviewing the data rows separately.';
   if(isWindowsEventXml(raw))
@@ -63,6 +81,12 @@ function plainIssue(code:string,raw=''):string{
     return 'This event contains valid JSON after a short text prefix, so its wrapper must be handled separately.';
   if(prefixedJson(raw)&&code==='SOURCE_SYNTAX_ERROR:CSV_GRAMMAR_INVALID')
     return 'The short text prefix prevents the normal JSON path from being used even though the JSON payload itself is valid.';
+  if(code==='DUPLICATE_SOURCE_FIELD'){
+    // Owner policy D-1: name the repeated fields; every value stays visible in its original order.
+    const repeated=repeatedFieldNames(raw,preview);
+    return 'The same field name appears more than once in this event'+(repeated.length?' ('+repeated.slice(0,5).join(', ')+')':'')+
+      '. Every value is kept in its original order and none is overwritten, but parser files are not created automatically while a field is repeated.';
+  }
   const known:Record<string,string>={
     FRAMING_ORIGINAL_CONTAINER_NOT_IN_DRAFT_COMPILER:'Parser Studio recognized the original stream boundaries and useful values. The downloadable parser cannot yet be verified for this exact transport or container: review the values before creating a draft.',
     FRAMING_JOURNAL_FIELD_INVALID_OR_DUPLICATE:'A system journal entry has an invalid or repeated field; it was retained for manual review.',
@@ -397,7 +421,7 @@ export default function BeginnerAnalysisPanel({source,events,onOpenAssisted,draf
           {parserRuleReviewRequired
             ?<p>The source field values are available. Parser Studio has not yet validated a downloadable parser rule for this log shape.</p>
             :current.event.preview.issues.length
-              ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code,raw)}</li>)}</ul>
+              ?<ul>{current.event.preview.issues.map(code=><li key={code}>{plainIssue(code,raw,current.event.preview)}</li>)}</ul>
               :<p>Parser Studio could not produce a complete trustworthy field set for this event.</p>}
         </div>
         <div><strong>{parserRuleReviewRequired?'What Parser Studio still needs':metadataOnlyReview(current.event.preview)?'Time or header review':'Text not yet assigned to fields'}</strong>

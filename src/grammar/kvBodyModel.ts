@@ -103,7 +103,9 @@ export function generateKvBodyCases(count: number, seed: number): OracleCase[] {
     // No separator after a closing quote is still one pair boundary.
     add('adjacent-after-quote', renderBody(pairs, (_at, previous) => (quoted(previous) ? '' : ' ')), full(pairs));
     add('reversed', renderBody([...pairs].reverse(), () => ' '), full([...pairs].reverse()));
-    add('duplicate-key', renderBody([...pairs, { ...pairs[0]!, value: 'again', text: 'again' }], () => ' '), UNKNOWN);
+    // Owner policy D-1: the first field is written again at the end with another value.
+    add('duplicate-key', renderBody([...pairs, { ...pairs[0]!, value: 'again', text: 'again' }], () => ' '),
+      { status: 'UNKNOWN', event: null, repeated: { [pairs[0]!.key]: [pairs[0]!.value, 'again'] } });
     add('forbidden-key', renderBody([...pairs, { key: '__proto__', value: '1', text: '1' }], () => ' '), UNKNOWN);
     add('token-without-equals', renderBody(pairs, at => (at === 1 ? ' stray ' : ' ')), UNKNOWN);
     add('unterminated-quote', renderBody(pairs, () => ' ') + ' tail="never closed', UNKNOWN);

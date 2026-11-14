@@ -68,14 +68,21 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
   return output.length === splits + 1 ? output : null;
 }
 
+/**
+ * Owner policy D-1: a field that appears more than once is never reduced to one of its values. The event
+ * is declined, and the message names the field so the reviewer can see what has to be resolved.
+ */
+export const duplicateFieldMessage = (key: string): string =>
+  'Duplicate field "' + key + '": the same name appears more than once in the event. No value is overwritten, and the event is not parsed automatically.';
+
 export function strictKeyValues(input: string): StructuredExtraction {
   // Pair grammar, separators, limits and escapes come from the shared grammar
   // contract (src/grammar/kvBody.ts); the Ruby export reads the same fragment.
   const body = parseStrictKeyValues(input);
   if (!body.ok) return failure({
     MALFORMED_PAIR: 'Unsupported or malformed extension key=value segment',
-    FORBIDDEN_KEY: 'Unsafe or duplicate extension field',
-    DUPLICATE_KEY: 'Unsafe or duplicate extension field',
+    FORBIDDEN_KEY: 'Unsafe field name: ' + String(body.key),
+    DUPLICATE_KEY: duplicateFieldMessage(String(body.key)),
     TOO_MANY_PAIRS: 'KV field limit exceeded: maximum 100 keys per event',
     NO_PAIRS: 'No extension fields parsed',
   }[body.reason]);
@@ -103,9 +110,8 @@ function cefExtensionValues(input:string):StructuredExtraction{
     const match=CEF_KEY.exec(input);
     if(!match||match.index!==cursor)return failure('Unsupported CEF extension key boundary');
     const key=match[0].slice(0,-1);
-    if(FORBIDDEN_KEYS.includes(key)||
-       Object.prototype.hasOwnProperty.call(values,key))
-      return failure('Unsupported or duplicate CEF extension field');
+    if(FORBIDDEN_KEYS.includes(key))return failure('Unsupported CEF extension field');
+    if(Object.prototype.hasOwnProperty.call(values,key))return failure(duplicateFieldMessage(key));
     let pos=CEF_KEY.lastIndex;
     let decoded='';
     let boundary=input.length;
@@ -269,9 +275,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     for (const part of parts[parts.length - 1].split(delimiter)) {
       const location = part.indexOf('=');
       const key = part.slice(0, location);
-      if (location < 0 || !LEEF_KEY.test(key) ||
-          FORBIDDEN_KEYS.includes(key) ||
-          Object.prototype.hasOwnProperty.call(record, key)) return failure('Unsupported or duplicate LEEF extension token');
+      if (location < 0 || !LEEF_KEY.test(key) || FORBIDDEN_KEYS.includes(key)) return failure('Unsupported LEEF extension token');
+      if (Object.prototype.hasOwnProperty.call(record, key)) return failure(duplicateFieldMessage(key));
       record[key] = part.slice(location + 1);
     }
   }

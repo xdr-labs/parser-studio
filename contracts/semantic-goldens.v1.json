@@ -471,6 +471,61 @@
         "event": null
       },
       "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-repeated-field-three-values",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov 14 09:30:00 fw01 srcip=192.0.2.10 dstip=198.51.100.7 srcip=203.0.113.5 action=deny srcip=192.0.2.99",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. Three occurrences, not adjacent.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null,
+        "repeated": {
+          "srcip": [
+            "192.0.2.10",
+            "203.0.113.5",
+            "192.0.2.99"
+          ]
+        }
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-repeated-field-same-value",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov 14 09:30:01 fw01 action=deny srcip=192.0.2.10 action=deny",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. Both occurrences carry the same value: still two occurrences, still not a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null,
+        "repeated": {
+          "action": [
+            "deny",
+            "deny"
+          ]
+        }
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-repeated-field-quoted-and-bare",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov 14 09:30:02 fw01 msg=\"first text\" srcip=192.0.2.10 msg=second",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. One occurrence is quoted, the other is bare; the preview keeps the meant text of each.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null,
+        "repeated": {
+          "msg": [
+            "first text",
+            "second"
+          ]
+        }
+      },
+      "rejectedAt": "body"
     }
   ],
   "envelopeCases": [
@@ -630,14 +685,18 @@
       }
     }
   ],
-  "policyDivergences": {
+  "ownerPolicies": {
     "D-1": {
-      "engines": [
-        "python"
-      ],
-      "variant": "duplicate-key",
-      "statement": "A repeated key: the strict browser and Ruby parsers reject the body; the Python source preview keeps every occurrence in order as a list (release gate H3, tests/test_h3_independent_six_family_bytes_20261108.py). The oracle requires exactly that list from Python and a rejection from the others. Unifying the two needs an owner decision."
-    },
+      "decidedOn": "2026-11-14",
+      "statement": "A field written more than once in one event is never resolved by keeping one of its values. The Python source preview keeps the original key and every value in wire order and does not report the event as completely parsed (issue DUPLICATE_SOURCE_FIELD). The browser extractor and the generated Ruby decline the event; the browser names the repeated field and the reason. While a repeated field is unresolved no engine reports FULL.",
+      "enforcedBy": [
+        "cases with expect.repeated (hand-written and model-rendered key=value bodies)",
+        "familyCases with expect.repeated (CEF, LEEF 1.0, LEEF 2.0)",
+        "fault injection: ts-kv-duplicate-key-overwrites, ts-kv-duplicate-key-not-named, ts-cef-duplicate-field-overwrites, ts-leef-duplicate-field-overwrites, rb-kv-duplicate-key-overwrites, rb-cef-duplicate-field-overwrites, rb-leef-duplicate-field-overwrites, py-kv-repeated-key-overwrites, py-kv-repeated-key-keeps-first-only, py-kv-repeated-key-reported-as-parsed, py-leef-repeated-field-reported-as-parsed"
+      ]
+    }
+  },
+  "policyDivergences": {
     "D-2": {
       "engines": [
         "ts",
@@ -942,6 +1001,67 @@
       "provenance": "Product policy in the grammar contract (semantics.cefSupportedVersions = [\"0\"]): the generated parser implements CEF version 0 only, so a CEF:1 line is declined by every engine instead of being shown as parsed by the preview and then rejected by the artifact",
       "expect": {
         "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "cef-repeated-extension-field",
+      "family": "cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 src=10.0.0.9 spt=1232",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "src": [
+            "10.0.0.1",
+            "10.0.0.9"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cef-repeated-extension-field-three-values",
+      "family": "cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|msg=first one src=10.0.0.1 msg=second msg=third one",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. Three occurrences; values with spaces.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "msg": [
+            "first one",
+            "second",
+            "third one"
+          ]
+        }
+      }
+    },
+    {
+      "id": "leef1-repeated-attribute",
+      "family": "leef",
+      "raw": "LEEF:1.0|Acme|FW|1.0|100|src=10.0.0.1\tdst=2.1.2.2\tsrc=10.0.0.9",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "src": [
+            "10.0.0.1",
+            "10.0.0.9"
+          ]
+        }
+      }
+    },
+    {
+      "id": "leef2-repeated-attribute",
+      "family": "leef",
+      "raw": "LEEF:2.0|Acme|FW|1.0|100|^|usrName=alice^src=10.0.0.1^usrName=bob",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "usrName": [
+            "alice",
+            "bob"
+          ]
+        }
       }
     }
   ],
