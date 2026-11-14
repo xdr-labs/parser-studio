@@ -179,9 +179,7 @@ occurrence in order as a list (release gate H3). The oracle pins both sides
 exactly (`policyDivergences` in `contracts/semantic-goldens.v1.json`), so
 neither can drift silently.
 
-Not migrated: the CEF/LEEF extension tokenizers (W6) and `parse_quoted_kv` in
-`runtime/multipass/engine.py` (legacy Fortinet role-learning path; it now uses
-the contract's ASCII white-space set but keeps its own pair expression).
+`parse_quoted_kv` in `runtime/multipass/engine.py` keeps its own pair expression; it has no caller (see below).
 
 ## CEF and LEEF (W6, first slice)
 
@@ -225,10 +223,39 @@ Python CEF passes. Defect F-13: the Python preview parsed `CEF:1|` while the
 browser and Ruby implement CEF version 0 only; all three now read
 `cefSupportedVersions`.
 
+The Python LEEF pass (`decode_cef_or_leef` in `structured_source.py`) reads
+`leefSupportedVersions`, `LEEF_KEY` and the forbidden keys as well; its own
+bounded key expression used to reject an attribute key longer than 128
+characters that the browser and Ruby accept.
+
 Still hand-written per language: the control flow of the CEF extension scanner
 (a value runs to the last white-space character before the next key) and of
-the LEEF attribute splitter, and the Python LEEF passes, which do not read the
-contract yet. Their behaviour is held together by the oracle and the faults.
+the LEEF attribute splitter. Their behaviour is held together by the oracle
+and the faults.
+
+## RFC 5424 model (W8)
+
+`src/grammar/rfc5424Model.ts` renders RFC 5424 lines with a key=value MSG from
+a model of the header fields (RFC 3339 timestamps with fractions and offsets,
+a leap day, NILVALUE fields, one SD-ELEMENT) and of the meant pairs, and states
+what the RFC does not allow: two SP between header fields, STRUCTURED-DATA
+missing, PRI above 191, a day that is not on the calendar, plus the VERSION
+policy. The browser, both Ruby templates on Ruby 2.4.9 and the Python preview
+meet every expectation without a change.
+
+## Parse status and Generic Structural (measured, not wired)
+
+Applying the pair accounting of `classifyStructuredParse` to Generic Structural
+results as they are would report correct parses as PARTIAL: the message
+profiles keep the message as one text field, SD-PARAMs are stored under their
+SD-ELEMENT, and `space_kv` gives the last pair the rest of the line and exposes
+its words as atoms (`dport=53 pattern: allow all` -> `kv.dport` plus
+`atoms.dport_001 = 53`). A verdict for Generic Structural therefore needs
+per-mode accounting; it is not wired.
+
+`parse_event` / `parse_quoted_kv` in `runtime/multipass/engine.py` have no
+caller in the repository (preview API, tests, scripts), so that legacy
+key=value path is not on any product path.
 
 ## CSV (W6)
 
