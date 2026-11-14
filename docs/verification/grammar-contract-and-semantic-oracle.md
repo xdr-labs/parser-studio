@@ -53,6 +53,21 @@ the extracted fields makes FULL impossible (PARTIAL). Extraction errors are
 UNKNOWN, a raising extractor is ERROR. FULL does not require a Stellar mapping
 for every vendor field.
 
+Wired into the product (W7, first slice): `processEvent` in `src/parser.ts`
+classifies every previewed event and puts the verdict on
+`EventResult.parseStatus`. For a key=value body (format `kv`, or RFC 3164 /
+RFC 5424 with body `kv`) a PARTIAL verdict adds the error diagnostic
+`FIELD_LOSS_NOT_FULL`, so the event status is `fail`, `counts.failures` rises
+and every existing gate that refuses failed samples refuses it. The RFC 5424
+header fields are positional and are not counted as pairs (a HOSTNAME written
+`a=b` is a host name); RFC 3164 gets no such exemption because its HOSTNAME is
+optional. `src/parseStatusGate.test.ts` injects an F-1 style loss into the
+extractor and requires `fail`. On the 3,897 audit lines no correctly parsed
+line is classified PARTIAL (281 key=value parses, all FULL).
+
+Not yet covered by the verdict: `auto` and `mixed` bodies, Generic Structural,
+and the generated Ruby at run time (a line that never appeared as a sample).
+
 ### D. Property-based and metamorphic cases
 Every variant has its own expectation: base, double spaces, reversed pairs,
 HOSTNAME omitted, PRI omitted (FULL for the tagless form, NEVER_WRONG for the
