@@ -1,0 +1,197 @@
+{
+  "schema": "parserstudio.semantic-goldens.v1",
+  "purpose": "Semantic Correctness Oracle. Expected fields are written by hand from the raw line and the cited specification text, never copied from a parser run. Both executors (browser TypeScript and the generated Ruby Fragment on Ruby 2.4.9) are compared with these values, so a result that is wrong in both executors in the same way still fails.",
+  "independence": {
+    "authoredFrom": "literal raw text plus RFC 3164 section 4.1 and RFC 5424 section 6",
+    "notDerivedFrom": ["src/**", "backend/**", "runtime/**", "any recorded parser output"],
+    "selfCheck": "scripts/verification/semantic-oracle.ts rejects an expected source value that does not occur literally in the raw line"
+  },
+  "profiles": {
+    "fw-kv": {
+      "topFields": {
+        "body.srcip": ["srcip", "ip"],
+        "body.dstip": ["dstip", "ip"],
+        "body.srcport": ["srcport", "port"],
+        "body.dstport": ["dstport", "port"],
+        "body.action": ["action", "string"]
+      },
+      "vendorFields": { "syslog_hostname": ["syslog_hostname", "string"] },
+      "vendorNamespace": "Synthetic",
+      "classification": {
+        "defaultIndex": "syslog",
+        "rules": [
+          { "field": "action", "operator": "equals", "value": "deny", "index": "threat" },
+          { "field": "srcip", "operator": "exists", "index": "session" }
+        ]
+      }
+    }
+  },
+  "knownDefects": {
+    "F-1": {
+      "engines": ["ts", "ruby"],
+      "summary": "RFC 3164 line without HOSTNAME: the first key=value token is taken as the host name and the field is lost. Both executors agree, so a differential test passes. Found by the 2026-11-13 re-audit.",
+      "resolution": "Header grammar moves to contracts/syslog-header-grammar.v1.json (BSD_HOSTNAME excludes '=' and structured-body openers; rfc3164_hostless rule). Needs a new reviewed Ruby template hash."
+    },
+    "F-2": {
+      "engines": ["ts"],
+      "summary": "RFC 5424 VERSION policy differs between consumers: the structured front door parses only VERSION 1, while src/syslogEnvelope.ts and the Generic Structural Ruby helper label any 1-3 digit VERSION as RFC 5424. Found by the 2026-11-13 re-audit.",
+      "resolution": "One policy in the contract: RFC5424_VERSION syntax plus semantics.rfc5424SupportedVersions; every consumer declines other versions."
+    },
+    "F-3": {
+      "engines": ["ts"],
+      "summary": "U+2028 inside a value: the browser rejects the line ('.' excludes U+2028 in ECMAScript) while the generated Ruby parses it. Found by the property generator on 2026-11-13.",
+      "resolution": "Contract token REST is [^\\r\\n]+ in every dialect; '.' is rejected by the generator."
+    }
+  },
+  "cases": [
+    {
+      "id": "rfc3164-tagless-host-kv",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "raw": "<134>Nov 13 10:00:00 fw01 srcip=10.1.1.1 dstip=10.2.2.2 srcport=1234 dstport=443 action=accept",
+      "provenance": "RFC 3164 4.1.1 PRI, 4.1.2 TIMESTAMP SP HOSTNAME; body is key=value CONTENT without TAG",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_pri": 134, "syslog_timestamp": "Nov 13 10:00:00", "syslog_hostname": "fw01", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.srcport": "1234", "body.dstport": "443", "body.action": "accept" },
+        "sourceAbsent": ["syslog_appname", "syslog_procid"],
+        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "srcport": 1234, "dstport": 443, "action": "accept", "Synthetic.syslog_hostname": "fw01", "stellar_log_index": "session" }
+      }
+    },
+    {
+      "id": "rfc3164-tagged-pid-deny",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "raw": "<134>Nov 13 10:00:00 fw01 kernel[77]: srcip=10.1.1.1 dstip=10.2.2.2 dstport=22 action=deny",
+      "provenance": "RFC 3164 4.1.3 MSG = TAG CONTENT; TAG 'kernel', bracketed process id, ':' terminator",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_pri": 134, "syslog_hostname": "fw01", "syslog_appname": "kernel", "syslog_procid": "77", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.dstport": "22", "body.action": "deny" },
+        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "dstport": 22, "action": "deny", "Synthetic.syslog_hostname": "fw01", "stellar_log_index": "threat" },
+        "eventAbsent": ["srcport"]
+      }
+    },
+    {
+      "id": "rfc3164-no-pri-single-digit-day",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "raw": "Nov  3 09:05:07 gw-2 srcip=192.168.0.254 action=accept",
+      "provenance": "RFC 3164 4.1.2: a day below 10 is written with a leading space; a relayed or file-read line may carry no PRI",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_timestamp": "Nov  3 09:05:07", "syslog_hostname": "gw-2", "body.srcip": "192.168.0.254", "body.action": "accept" },
+        "sourceAbsent": ["syslog_pri", "syslog_appname"],
+        "event": { "srcip": "192.168.0.254", "action": "accept", "Synthetic.syslog_hostname": "gw-2", "stellar_log_index": "session" },
+        "eventAbsent": ["dstip", "dstport"]
+      }
+    },
+    {
+      "id": "rfc3164-hostless-kv",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "knownDefect": "F-1",
+      "raw": "<134>Nov 13 10:00:00 srcip=10.1.1.1 dstip=10.2.2.2 srcport=1234 dstport=443 action=accept",
+      "provenance": "RFC 952/1123: 'srcip=10.1.1.1' cannot be a host name; RFC 3164 4.3.2 describes messages whose HOSTNAME is missing. Every key=value of the raw line must survive as a field",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_pri": 134, "syslog_timestamp": "Nov 13 10:00:00", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.srcport": "1234", "body.dstport": "443", "body.action": "accept" },
+        "sourceAbsent": ["syslog_hostname", "syslog_appname"],
+        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "srcport": 1234, "dstport": 443, "action": "accept", "stellar_log_index": "session" },
+        "eventAbsent": ["Synthetic.syslog_hostname"]
+      }
+    },
+    {
+      "id": "rfc3164-hostless-no-pri-kv",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "knownDefect": "F-1",
+      "raw": "Jan  1 00:00:00 action=deny srcip=10.9.9.9",
+      "provenance": "Same as rfc3164-hostless-kv, without PRI",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_timestamp": "Jan  1 00:00:00", "body.action": "deny", "body.srcip": "10.9.9.9" },
+        "sourceAbsent": ["syslog_pri", "syslog_hostname"],
+        "event": { "srcip": "10.9.9.9", "action": "deny", "stellar_log_index": "threat" },
+        "eventAbsent": ["Synthetic.syslog_hostname"]
+      }
+    },
+    {
+      "id": "rfc3164-quoted-value-with-equals",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "raw": "<134>Nov 13 10:00:00 fw01 srcip=10.1.1.1 msg=\"a=b c\" action=accept",
+      "provenance": "A '=' and a space inside a quoted value are data, not a pair boundary",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_hostname": "fw01", "body.srcip": "10.1.1.1", "body.msg": "a=b c", "body.action": "accept" },
+        "sourceAbsent": ["body.a", "body.c"],
+        "event": { "srcip": "10.1.1.1", "action": "accept", "stellar_log_index": "session" }
+      }
+    },
+    {
+      "id": "rfc3164-day-30-february",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "raw": "<134>Feb 30 10:00:00 fw01 srcip=10.1.1.1 action=accept",
+      "provenance": "February never has a 30th day; an impossible TIMESTAMP is not an RFC 3164 header",
+      "expect": { "status": "UNKNOWN", "event": null }
+    },
+    {
+      "id": "rfc3164-pri-192",
+      "grammar": "syslog_rfc3164", "body": "kv",
+      "raw": "<192>Nov 13 10:00:00 fw01 srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 3164 4.1.1: PRI = facility*8 + severity, facility 0..23, so the maximum is 191",
+      "expect": { "status": "UNKNOWN", "event": null }
+    },
+    {
+      "id": "rfc5424-v1-nil-sd-kv",
+      "grammar": "syslog_rfc5424", "body": "kv",
+      "raw": "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 dstip=10.2.2.2 dstport=443 action=accept",
+      "provenance": "RFC 5424 6.5 example 1 header (PRI 165, VERSION 1, HOSTNAME, APP-NAME evntslog, NILVALUE PROCID, MSGID ID47), NILVALUE STRUCTURED-DATA, key=value MSG",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_pri": 165, "syslog_version": 1, "syslog_timestamp": "2003-10-11T22:14:15.003Z", "syslog_hostname": "mymachine.example.com", "syslog_appname": "evntslog", "syslog_procid": "-", "syslog_msgid": "ID47", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.dstport": "443", "body.action": "accept" },
+        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "dstport": 443, "action": "accept", "Synthetic.syslog_hostname": "mymachine.example.com", "stellar_log_index": "session" }
+      }
+    },
+    {
+      "id": "rfc5424-v1-sd-element-kv",
+      "grammar": "syslog_rfc5424", "body": "kv",
+      "raw": "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut=\"3\" eventSource=\"Application\"] srcip=10.1.1.1 action=deny",
+      "provenance": "RFC 5424 6.5 example 3 STRUCTURED-DATA element; SD-PARAM values are quoted",
+      "expect": {
+        "status": "FULL",
+        "source": { "syslog_appname": "evntslog", "syslog_msgid": "ID47", "syslog_sd.element_1.sd_id": "exampleSDID@32473", "syslog_sd.element_1.params.iut": "3", "syslog_sd.element_1.params.eventSource": "Application", "body.srcip": "10.1.1.1", "body.action": "deny" },
+        "event": { "srcip": "10.1.1.1", "action": "deny", "stellar_log_index": "threat" }
+      }
+    },
+    {
+      "id": "rfc5424-version-2",
+      "grammar": "syslog_rfc5424", "body": "kv",
+      "raw": "<165>2 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2 defines only VERSION 1; the layout of any other version is unknown and must not be parsed as version 1",
+      "expect": { "status": "UNKNOWN", "event": null }
+    },
+    {
+      "id": "rfc5424-pri-192",
+      "grammar": "syslog_rfc5424", "body": "kv",
+      "raw": "<192>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.1: PRIVAL 0..191",
+      "expect": { "status": "UNKNOWN", "event": null }
+    }
+  ],
+  "envelopeCases": [
+    {
+      "id": "envelope-rfc5424-version-1",
+      "raw": "<134>1 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
+      "provenance": "RFC 5424 6.2.2 VERSION 1",
+      "expect": { "variant": "rfc5424" }
+    },
+    {
+      "id": "envelope-rfc5424-version-2",
+      "knownDefect": "F-2",
+      "raw": "<134>2 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
+      "provenance": "RFC 5424 6.2.2: VERSION 2 is not defined; no consumer may label or parse it as RFC 5424",
+      "expect": { "variantNot": "rfc5424" }
+    },
+    {
+      "id": "envelope-rfc5424-version-12",
+      "knownDefect": "F-2",
+      "raw": "<134>12 2026-11-13T10:00:00Z fw01 app 1 ID1 - srcip=10.1.1.1 dstip=10.2.2.2",
+      "provenance": "RFC 5424 6.2.2: VERSION 12 is not defined",
+      "expect": { "variantNot": "rfc5424" }
+    }
+  ]
+}
