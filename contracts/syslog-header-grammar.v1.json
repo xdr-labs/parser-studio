@@ -1,7 +1,7 @@
 {
   "schema": "parserstudio.grammar-contract.v1",
   "id": "syslog-header",
-  "revision": 4,
+  "revision": 5,
   "purpose": "Single declarative definition of the Syslog header grammar and of the strict key=value body grammar (fragments.kv_pair). The browser TypeScript and the generated Ruby Fragment take their structured-path header regular expressions, capture names and semantic limits from the code generated from this file (scripts/grammar/generate-grammar.mjs). Not migrated yet (Issue #249 W4, W5): the Generic Structural sites and the Python Multi-Pass engine, which still carry hand-written copies; those copies are counted and ratcheted down by scripts/verification/grammar-duplication-ratchet.mjs.",
   "authority": [
     "RFC 3164 section 4.1 (PRI, HEADER = TIMESTAMP HOSTNAME, MSG = TAG CONTENT)",
@@ -96,6 +96,14 @@
     "ASCII_DIGIT": {
       "pattern": "[0-9]",
       "semantic": "One ASCII digit"
+    },
+    "CEF_KEY": {
+      "pattern": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
+      "semantic": "CEF extension key; it is followed by \"=\" and, when preceded by white space, ends the previous value"
+    },
+    "LEEF_KEY": {
+      "pattern": "[A-Za-z_][A-Za-z0-9_.-]*",
+      "semantic": "LEEF attribute key (text before the first \"=\" of an attribute)"
     }
   },
   "rules": {
@@ -414,6 +422,20 @@
       "\r",
       "\f",
       "\u000b"
+    ],
+    "cefSupportedVersions": [
+      "0"
+    ],
+    "cefMaxExtensionFields": 1024,
+    "cefExtensionEscapes": {
+      "n": "\n",
+      "r": "\r",
+      "=": "=",
+      "\\": "\\"
+    },
+    "leefSupportedVersions": [
+      "1.0",
+      "2.0"
     ]
   },
   "fragments": {
@@ -522,6 +544,8 @@
     }
   },
   "standaloneTokens": [
-    "KV_TRAILING"
+    "KV_TRAILING",
+    "CEF_KEY",
+    "LEEF_KEY"
   ]
 }

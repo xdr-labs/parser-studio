@@ -660,15 +660,16 @@ def parserstudio_cef_extensions(text)
   record = {}
   position = 0
   count = 0
-  key_pattern = /\G([A-Za-z_][A-Za-z0-9_.-]{0,127})=/
+  # Key token, field limit, escape table, versions and forbidden keys: contracts/syslog-header-grammar.v1.json.
+  key_pattern = /\G(__PS_GRAMMAR_TOKEN_CEF_KEY__)=/
   while position < text.length
     position += 1 while position < text.length && [' ', "\t"].include?(text[position])
     break if position >= text.length
-    raise ArgumentError, 'CEF extension field limit exceeded' if count >= 1024
+    raise ArgumentError, 'CEF extension field limit exceeded' if count >= __PS_GRAMMAR_CEF_MAX_FIELDS__
     match = key_pattern.match(text, position)
     raise ArgumentError, 'Unsupported CEF extension key boundary' if match.nil? || match.begin(0) != position
     key = match[1]
-    raise ArgumentError, 'Unsafe CEF extension key' if ['__proto__','constructor','prototype'].include?(key)
+    raise ArgumentError, 'Unsafe CEF extension key' if __PS_GRAMMAR_FORBIDDEN_KEYS__.include?(key)
     raise ArgumentError, 'Duplicate CEF extension field' if record.key?(key)
     cursor = match.end(0)
     value = +''
@@ -678,13 +679,7 @@ def parserstudio_cef_extensions(text)
       if char == '\\'
         raise ArgumentError, 'Truncated CEF escape' if cursor + 1 >= text.length
         following = text[cursor + 1]
-        value << case following
-                 when 'n' then "\n"
-                 when 'r' then "\r"
-                 when '=' then '='
-                 when '\\' then '\\'
-                 else "\\" + following
-                 end
+        value << __PS_GRAMMAR_CEF_ESCAPES__.fetch(following) { "\\" + following }
         cursor += 2
         next
       end
@@ -717,7 +712,7 @@ def parserstudio_cef(text)
   match = /\ACEF:(\d+)\|(.*)\z/m.match(text)
   raise ArgumentError, 'Invalid CEF preamble' unless match
   # This compiler implements CEF version 0 only, not vendor-specific upgrades.
-  raise ArgumentError, 'Unsupported CEF version' unless match[1] == '0'
+  raise ArgumentError, 'Unsupported CEF version' unless __PS_GRAMMAR_CEF_VERSIONS__.include?(match[1])
   fields = parserstudio_split_escaped(match[2], '|', 6)
   record = {
     'cef_version' => match[1],
@@ -740,8 +735,8 @@ end
 
 # Basic LEEF 1.0 (TAB extension) and 2.0 (declared one-character delimiter).
 def parserstudio_leef(text)
-  match = /\ALEEF:(1\.0|2\.0)\|(.*)\z/m.match(text)
-  raise ArgumentError, 'Invalid LEEF preamble' unless match
+  match = /\ALEEF:([0-9.]+)\|(.*)\z/m.match(text)
+  raise ArgumentError, 'Invalid LEEF preamble' unless match && __PS_GRAMMAR_LEEF_VERSIONS__.include?(match[1])
   version = match[1]
   parts = parserstudio_split_escaped(match[2], '|', version == '2.0' ? 5 : 4)
   record = {
@@ -767,8 +762,8 @@ def parserstudio_leef(text)
     extension.split(delimiter, -1).each do |piece|
       raise ArgumentError, 'Empty LEEF extension token' if piece.empty?
       key, value = piece.split('=', 2)
-      raise ArgumentError, 'Malformed LEEF extension' unless key && value && key.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*\z/)
-      raise ArgumentError, 'Unsafe LEEF field' if ['__proto__', 'constructor', 'prototype'].include?(key)
+      raise ArgumentError, 'Malformed LEEF extension' unless key && value && key.match?(/\A(?:__PS_GRAMMAR_TOKEN_LEEF_KEY__)\z/)
+      raise ArgumentError, 'Unsafe LEEF field' if __PS_GRAMMAR_FORBIDDEN_KEYS__.include?(key)
       raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)
       record[key] = value
     end

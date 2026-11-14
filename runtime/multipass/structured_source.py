@@ -10,10 +10,12 @@ from __future__ import annotations
 from dataclasses import dataclass,field
 import re
 from typing import Any
-from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS
+from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS,SEMANTICS,TOKENS
 
 SAFE_KEY=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}\Z")
-KEY_START=re.compile(r"([A-Za-z_][A-Za-z0-9_.-]{0,127})=")
+# CEF extension key token and supported CEF versions: shared grammar contract.
+KEY_START=re.compile('('+TOKENS['CEF_KEY']+')=')
+CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
 ESCAPE_MAP={"n":"\n","r":"\r","t":"\t"}
 UNSAFE={"__proto__","prototype","constructor"}
 MONTHS={"Jan":31,"Feb":29,"Mar":31,"Apr":30,"May":31,
@@ -188,7 +190,7 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         except ValueError as exc:
             out.issues.append(str(exc))
             return out
-        if parts[0][0] not in ("0","1"):
+        if parts[0][0] not in CEF_VERSIONS:
             out.issues.append("CEF_VERSION_UNSUPPORTED")
             return out
         out.fields["cef_header"]={name:item[0] for name,item in zip(names,parts)}

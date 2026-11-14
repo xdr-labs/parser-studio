@@ -1,9 +1,9 @@
 // GENERATED FILE - DO NOT EDIT.
-// Source: contracts/syslog-header-grammar.v1.json (revision 4); regenerate with
+// Source: contracts/syslog-header-grammar.v1.json (revision 5); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "ef472038c2a5c4dfd795d45c394892a381dd06791cdd059c01e7614ded228838";
-export const GRAMMAR_CONTRACT_REVISION = 4;
+export const GRAMMAR_CONTRACT_SHA256 = "a4a20fc2a5355952d5d87e6e65b3020e8d6ab23b77b65a856c89431f6c16884e";
+export const GRAMMAR_CONTRACT_REVISION = 5;
 export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }
 export const SYSLOG_HEADER_RULES = {
   "rfc3164_tagged": {
@@ -109,7 +109,9 @@ export const SYSLOG_HEADER_TOKENS = {
   "KV_TRAILING": "[ \\t\\n\\r\\f\\v]*",
   "RFC3339_DATE_PREFIX": "[0-9]{4}-[0-9]{2}-[0-9]{2}T",
   "FAMILY_NAME": "(?:CEF|LEEF)",
-  "ASCII_DIGIT": "[0-9]"
+  "ASCII_DIGIT": "[0-9]",
+  "CEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
+  "LEEF_KEY": "[A-Za-z_][A-Za-z0-9_.-]*"
 } as const;
 export const SYSLOG_HEADER_ALTERNATIVES = {
   "rfc3164": [
@@ -156,6 +158,20 @@ export const SYSLOG_HEADER_SEMANTICS = {
     "\r",
     "\f",
     "\u000b"
+  ],
+  "cefSupportedVersions": [
+    "0"
+  ],
+  "cefMaxExtensionFields": 1024,
+  "cefExtensionEscapes": {
+    "n": "\n",
+    "r": "\r",
+    "=": "=",
+    "\\": "\\"
+  },
+  "leefSupportedVersions": [
+    "1.0",
+    "2.0"
   ]
 } as const;
 export type SyslogHeaderRuleName = keyof typeof SYSLOG_HEADER_RULES;

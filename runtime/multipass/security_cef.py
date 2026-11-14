@@ -15,21 +15,25 @@ from engine import MAX_RAW_BYTES
 from security_envelope import extract_security_envelope
 from source_parse import SourceEvent,ValueSpan,_close,_span
 from structured_source import _pipe_parts,extract_plain_bsd,extract_rfc3164,extract_rfc5424
+from syslog_header_grammar_generated import SEMANTICS,TOKENS
 
 HEADER_NAMES=('version','vendor','product','device_version','signature_id','name','severity')
-KEY=re.compile(r'([A-Za-z_][A-Za-z0-9_.-]{0,127})=')
-BAD_KEYS={'__proto__','constructor','prototype'}
-ESCAPES={'\\':'\\','=':'=','n':'\n','r':'\r'}
-MAX_FIELDS=1024
+# Key token, forbidden keys, escape table, field limit and supported versions come from the shared grammar
+# contract (contracts/syslog-header-grammar.v1.json); the browser and the generated Ruby read the same values.
+KEY=re.compile('('+TOKENS['CEF_KEY']+')=')
+BAD_KEYS=frozenset(SEMANTICS['kvForbiddenKeys'])
+ESCAPES=dict(SEMANTICS['cefExtensionEscapes'])
+MAX_FIELDS=SEMANTICS['cefMaxExtensionFields']
+CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
 
 
 def _direct(raw:str)->SourceEvent|None:
-    if not raw.startswith(('CEF:0|','CEF:1|')):return None
+    if not raw.startswith(tuple('CEF:'+version+'|' for version in CEF_VERSIONS)):return None
     result=SourceEvent(raw,syntax='CEF_STANDARD')
     try:parts,start=_pipe_parts(raw,4,len(HEADER_NAMES))
     except ValueError as exc:
         result.issues.append(str(exc));return _close(result)
-    if parts[0][0] not in ('0','1'):
+    if parts[0][0] not in CEF_VERSIONS:
         result.issues.append('CEF_VERSION_UNSUPPORTED');return _close(result)
     result.vendor_fields={'cef_header':{name:value for name,(value,_,_) in zip(HEADER_NAMES,parts)},
                           'cef_extension':{}}
