@@ -14,6 +14,12 @@ import re
 from typing import Any
 
 from engine import MAX_RAW_BYTES,PRI
+from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_VERSIONS,TOKENS
+
+# <PRI>VERSION SP then NILVALUE or an RFC 3339 date: the line claims to be RFC 5424 (shared grammar contract).
+RFC5424_VERSION_HEAD=re.compile(FRAGMENTS['rfc5424_version_head']['source'])
+# CEF: or LEEF: and a digit at the start: the line claims to be a CEF or LEEF event (shared grammar contract).
+STRUCTURED_FAMILY_CLAIM=re.compile(FRAGMENTS['structured_family_claim']['source'])
 from security_cef import parse_security_cef
 from security_leef import parse_security_leef
 from security_source import parse_security_source
@@ -37,12 +43,12 @@ EVENT_CODE=re.compile(
 )
 SHORT_RFC5424_JSON_HEAD=re.compile(
     r'^<(?P<pri>\d{1,3})>(?P<version>\d{1,3}) +'
-    r'(?P<timestamp>\S+) +(?P<hostname>[!-~]{1,255}) +(?P<body>[{[])'
+    r'(?P<timestamp>\S+) +(?P<hostname>'+TOKENS['RFC5424_HOSTNAME']+r') +(?P<body>[{[])'
 )
 ISO_HOST_JSON_HEAD=re.compile(
     r'^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'
     r'(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +'
-    r'(?P<hostname>[!-~]{1,255}) +(?:\ufeff)?(?P<body>[{[])'
+    r'(?P<hostname>'+TOKENS['RFC5424_HOSTNAME']+r') +(?:\ufeff)?(?P<body>[{[])'
 )
 SHORT_CSV_ID=re.compile(r'[A-Za-z0-9_.:-]{6,}\Z')
 SHORT_CSV_TIMESTAMP=re.compile(
@@ -59,12 +65,12 @@ ISO_PRI_HEAD=re.compile(
 )
 BSD_TIME_HEAD=re.compile(
     r'^(?:<(?P<pri>\d{1,3})>)?'
-    r'(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) +'
+    r'(?P<month>'+TOKENS['BSD_MONTH']+r') +(?P<day>\d{1,2}) +'
     r'(?P<time>\d{2}:\d{2}:\d{2}) +'
 )
 RFC3164_LOOSE_HOST_HEAD=re.compile(
     r'^(?:<(?P<pri>\d{1,3})>)?'
-    r'(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) +'
+    r'(?P<month>'+TOKENS['BSD_MONTH']+r') +(?P<day>\d{1,2}) +'
     r'(?P<time>\d{2}:\d{2}:\d{2}) +'
     r'(?P<hostname>[A-Za-z0-9_.-]{1,255}) +'
 )
@@ -813,7 +819,7 @@ def _short_rfc5424_json(raw:str)->SourceEvent|None:
     match=SHORT_RFC5424_JSON_HEAD.match(raw)
     if match is None:
         return None
-    if int(match.group('pri'))>191 or match.group('version')!='1':
+    if int(match.group('pri'))>PRI_MAX or match.group('version') not in RFC5424_SUPPORTED_VERSIONS:
         return None
     timestamp=match.group('timestamp')
     try:
@@ -1096,6 +1102,23 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         return parse_security_source(raw)
 
     standard=_standard_candidate(raw)
+    # VERSION 1 only: a line that claims to be RFC 5424 with another VERSION is never handed to a permissive
+    # positional/KV fallback (a three-digit VERSION used to slip past the two-digit header expression and
+    # come back as SOURCE_PARSED). The strict result keeps the raw text; the reason is stated explicitly.
+    version_head=RFC5424_VERSION_HEAD.match(raw)
+    if version_head is not None and version_head['version'] not in RFC5424_SUPPORTED_VERSIONS:
+        if standard.status=='SOURCE_PARSED':
+            standard=parse_security_source(raw)
+        if 'RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED' not in standard.issues:
+            standard.issues.append('RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED')
+        return standard
+    # A line that claims to be CEF or LEEF is parsed by that grammar only. The permissive token/KV fallback
+    # would lose its first extension pair into the header text, cut multi-word values at the first space and
+    # keep escapes undecoded, while reporting the line as parsed.
+    if STRUCTURED_FAMILY_CLAIM.match(raw) is not None and standard.status!='SOURCE_PARSED':
+        if 'STRUCTURED_FAMILY_HEADER_UNSUPPORTED' not in standard.issues:
+            standard.issues.append('STRUCTURED_FAMILY_HEADER_UNSUPPORTED')
+        return standard
     # Physical C0 record/control separators are not Generic Structural token
     # delimiters. A permissive Python isspace() split could otherwise turn
     # action=<RS>deny into an empty action and an unrelated token while

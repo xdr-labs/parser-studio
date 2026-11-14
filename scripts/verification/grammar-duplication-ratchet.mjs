@@ -19,7 +19,9 @@ import { join, relative, resolve } from 'node:path';
 const ROOT = resolve('.');
 const BASELINE = 'contracts/grammar-duplication-baseline.v1.json';
 const SCAN_ROOTS = ['src', 'backend/src', 'backend/templates', 'runtime/multipass'];
-const GENERATED = new Set(['src/grammar/syslogHeaderGrammar.generated.ts']);
+const GENERATED = new Set(['src/grammar/syslogHeaderGrammar.generated.ts', 'backend/src/syslog-header-grammar.generated.ts', 'runtime/multipass/syslog_header_grammar_generated.py',
+  // Derived from ruby-fragment.rb.tpl by scripts/grammar/generate-forwarder-template.mjs; never edited by hand.
+  'backend/templates/ruby-forwarder-family.rb.tpl']);
 /** Literal source text that identifies a hand-written copy of a contract token. */
 export const SIGNATURES = Object.freeze({
   'hostname-printable-ascii-255': '[!-~]{1,255}',
@@ -27,6 +29,13 @@ export const SIGNATURES = Object.freeze({
   'pri-capture': '(\\d{1,3})>',
   'rfc5424-version-any-digits': '[1-9]\\d{0,2}',
   'rfc5424-version-literal-one': '>(1) ',
+  // key=value body grammar (contract fragments.kv_pair)
+  'kv-key-token': '[A-Za-z_][A-Za-z0-9_.-]{0,95}',
+  'kv-double-quoted-value': '(?:\\\\.|[^"\\\\])*',
+  // CEF / LEEF grammar (contract tokens CEF_KEY, LEEF_HEX_DIGITS; fragments cef_pair, leef_delimiter)
+  'cef-key-token': '[A-Za-z_][A-Za-z0-9_.-]{0,127}',
+  'leef-hex-delimiter': '[0-9a-fA-F]{1,2}',
+  'leef-hex-delimiter-two-digits': '0x[0-9a-fA-F]{2}',
 });
 
 function sourceFiles(directory) {
@@ -59,7 +68,9 @@ export function measure(root = ROOT) {
 export function compare(baseline, current) {
   const increases = [], decreases = [];
   for (const name of Object.keys(SIGNATURES)) {
-    const before = baseline.signatures?.[name]?.files ?? {};
+    // A signature the baseline has never measured is a new measurement, not an increase.
+    if (!baseline.signatures?.[name]) { if (Object.keys(baseline.signatures ?? {}).length) decreases.push(`${name}: not measured in the baseline yet`); continue; }
+    const before = baseline.signatures[name].files ?? {};
     const now = current[name] ?? {};
     for (const file of new Set([...Object.keys(before), ...Object.keys(now)])) {
       const was = before[file] ?? 0, is = now[file] ?? 0;

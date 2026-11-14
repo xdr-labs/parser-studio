@@ -10,9 +10,22 @@ from __future__ import annotations
 from dataclasses import dataclass,field
 import re
 from typing import Any
+from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_VERSIONS,SEMANTICS,TOKENS
 
-SAFE_KEY=re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}\Z")
-KEY_START=re.compile(r"([A-Za-z_][A-Za-z0-9_.-]{0,127})=")
+# Supported CEF versions: shared grammar contract.
+CEF_VERSIONS=tuple(SEMANTICS['cefSupportedVersions'])
+# CEF and LEEF grammar: shared contract (contracts/syslog-header-grammar.v1.json). The browser extractor and
+# the generated Ruby compile the same fragments, so the three scanners have one control flow.
+CEF_PAIR=re.compile(FRAGMENTS['cef_pair']['source'])
+CEF_ESCAPE=re.compile(TOKENS['CEF_ESCAPE'])
+CEF_ESCAPES=dict(SEMANTICS['cefExtensionEscapes'])
+CEF_MAX_FIELDS=SEMANTICS['cefMaxExtensionFields']
+LEEF_VERSIONS=tuple(SEMANTICS['leefSupportedVersions'])
+LEEF_DELIMITER_VERSIONS=tuple(SEMANTICS['leefDelimiterFieldVersions'])
+LEEF_DELIMITER=re.compile(FRAGMENTS['leef_delimiter']['source'])
+LEEF_EXTRA_DELIMITERS=frozenset(SEMANTICS['leefDelimiterExtraCodePoints'])
+LEEF_ATTRIBUTE=re.compile(FRAGMENTS['leef_attribute']['source'])
+FORBIDDEN_KEYS=frozenset(SEMANTICS['kvForbiddenKeys'])
 ESCAPE_MAP={"n":"\n","r":"\r","t":"\t"}
 UNSAFE={"__proto__","prototype","constructor"}
 MONTHS={"Jan":31,"Feb":29,"Mar":31,"Apr":30,"May":31,
@@ -77,101 +90,100 @@ def _pair(store:dict[str,Any],key:str,value:str,issues:list[str]) -> None:
 
 
 def _cef_extension(raw:str,begin:int)->Fragment:
+    """Read a CEF extension with the contract pair expression (fragments.cef_pair).
+
+    A value keeps every character as written except the escape pairs listed in
+    the contract; quotes are literal. A repeated key keeps every value in order
+    (owner policy D-1). Spans point at the original text of each value.
+    """
     ext=Fragment(fields={})
     n=len(raw)
     pos=begin
-    while pos<n:
-        whitespace=pos
-        while pos<n and raw[pos] in " \t":
-            pos+=1
-        if pos==n:
-            ext.covered.append((whitespace,pos))
-            break
-        match=KEY_START.match(raw,pos)
-        if not match or match.group(1) in UNSAFE:
+    while True:
+        matched=CEF_PAIR.match(raw,pos)
+        if matched is None:break
+        if ext.primitive_fields>=CEF_MAX_FIELDS:
+            ext.issues.append("CEF_EXTENSION_LIMIT")
+            return ext
+        key=matched["key"]
+        if key in FORBIDDEN_KEYS:
             ext.issues.append("CEF_INVALID_EXTENSION_KEY_OR_BOUNDARY")
-            break
-        key=match.group(1)
-        start=match.end()
-        cursor=start
-        if cursor<n and raw[cursor] in ('"',"'"):
-            quote=raw[cursor]
-            cursor+=1
-            start=cursor
-            while cursor<n:
-                if raw[cursor]=="\\" and cursor+1<n:
-                    cursor+=2
-                    continue
-                if raw[cursor]==quote:
-                    break
-                cursor+=1
-            if cursor==n:
-                ext.issues.append("CEF_UNCLOSED_QUOTE")
-                break
-            end=cursor
-            cursor+=1
-            if cursor<n and not raw[cursor].isspace():
-                ext.issues.append("CEF_INVALID_QUOTE_SUFFIX")
-                break
-        else:
-            while cursor<n:
-                if raw[cursor]=="\\" and cursor+1<n:
-                    cursor+=2
-                    continue
-                if raw[cursor].isspace():
-                    probe=cursor
-                    while probe<n and raw[probe].isspace():
-                        probe+=1
-                    if probe==n or KEY_START.match(raw,probe):
-                        break
-                cursor+=1
-            end=cursor
-            while end>start and raw[end-1].isspace():
-                end-=1
-        value=_unescape(raw[start:end])
+            return ext
+        key_start=matched.start("key")
+        start,end=matched.span("value")
+        if pos<key_start:ext.covered.append((pos,key_start))
+        for found in CEF_ESCAPE.finditer(raw,start,end):
+            if found[0][1] not in CEF_ESCAPES and "CEF_NONSTANDARD_ESCAPE_RETAINED" not in ext.issues:
+                ext.issues.append("CEF_NONSTANDARD_ESCAPE_RETAINED")
+        value=CEF_ESCAPE.sub(lambda found:CEF_ESCAPES.get(found[0][1],found[0]),raw[start:end])
         _pair(ext.fields,key,value,ext.issues)
         ext.spans.append(("cef_extension."+key,start,end))
         ext.primitive_fields+=1
-        ext.covered.append((whitespace,cursor))
-        pos=cursor
-        if ext.primitive_fields>=1024:
-            # Exactly at the limit is complete when only syntax remains.
-            # An additional field stays in the raw residual, never truncated.
-            if raw[pos:].strip(" \t"):
-                ext.issues.append("CEF_EXTENSION_LIMIT")
-            elif pos<n:
-                ext.covered.append((pos,n))
-            break
+        ext.covered.append((key_start,end))
+        # The single white-space character before the next key, or the white space that ends the text, is
+        # syntax and not data.
+        if matched.end()>end:ext.covered.append((end,matched.end()))
+        pos=matched.end()
+    gap=pos
+    while pos<n and raw[pos] in " \t":pos+=1
+    if gap<pos:ext.covered.append((gap,pos))
+    if pos<n:
+        # Text the pair grammar does not account for: a backslash that escapes nothing, or a broken key boundary.
+        trailing=len(raw)-len(raw.rstrip("\\"))
+        ext.issues.append("CEF_ESCAPE_TRUNCATED" if trailing%2==1 and CEF_PAIR.match(raw[:n-1],pos) is not None
+                          else "CEF_INVALID_EXTENSION_KEY_OR_BOUNDARY")
     return ext
 
 
-def _leef_extension(raw:str,begin:int,delimiter:str)->Fragment:
+def _leef_delimiter(token:str|None)->str|None:
+    """The attribute delimiter: the contract default, or the delimiter field (literal or hexadecimal)."""
+    if token is None:return SEMANTICS['leefDefaultDelimiter']
+    matched=LEEF_DELIMITER.match(token)
+    if matched is not None and matched["literal"] is not None:return matched["literal"]
+    # Hexadecimal spelling, or one literal character from the contract list outside printable ASCII.
+    code=int(matched["hex"],16) if matched is not None else (ord(token) if len(token)==1 else -1)
+    if code in LEEF_EXTRA_DELIMITERS:return chr(code)
+    if matched is None or code>126:return None
+    named=LEEF_DELIMITER.match(chr(code))
+    return chr(code) if named is not None and named["literal"] is not None else None
+
+
+def _leef_extension(raw:str,begin:int,delimiter:str,*,skip_empty:bool=False)->Fragment:
+    """Split the attributes on the delimiter; each piece starts with KEY= (fragments.leef_attribute).
+
+    The value is the rest of the piece, exactly as written. A piece that does
+    not start that way, an empty piece included, is not an attribute; the
+    browser and the generated Ruby decline it the same way. skip_empty is for
+    the implicit-TAB compatibility candidate only, whose attributes begin with
+    the delimiter.
+    """
     ext=Fragment()
     i=begin
     n=len(raw)
-    while i<=n:
+    while i<n:
         end=raw.find(delimiter,i)
         if end<0:end=n
-        if end>i:
-            content=raw[i:end]
-            split=content.find("=")
-            if split<1 or not SAFE_KEY.fullmatch(content[:split]) or content[:split] in UNSAFE:
-                ext.issues.append("LEEF_INVALID_EXTENSION_TOKEN")
-                break
-            key=content[:split]
-            value=content[split+1:]
-            _pair(ext.fields,key,value,ext.issues)
-            ext.spans.append(("leef_extension."+key,i+split+1,end))
-            ext.primitive_fields+=1
+        if end==i and skip_empty:
+            ext.covered.append((i,min(end+1,n)))
+            i=end+1
+            continue
+        matched=LEEF_ATTRIBUTE.match(raw,i,end)
+        if matched is None or matched["key"] in FORBIDDEN_KEYS:
+            ext.issues.append("LEEF_INVALID_EXTENSION_TOKEN")
+            break
+        if ext.primitive_fields>=1024:
+            ext.issues.append("LEEF_EXTENSION_LIMIT")
+            break
+        key=matched["key"]
+        _pair(ext.fields,key,raw[matched.end():end],ext.issues)
+        ext.spans.append(("leef_extension."+key,matched.end(),end))
+        ext.primitive_fields+=1
         ext.covered.append((i,min(end+1,n)))
         if end==n:break
         i=end+1
-        if ext.primitive_fields>=1024:
-            if raw[i:].strip(delimiter):
-                ext.issues.append("LEEF_EXTENSION_LIMIT")
-            elif i<n:
-                ext.covered.append((i,n))
-            break
+        if i==n and not skip_empty:
+            # A delimiter at the very end leaves an empty last piece.
+            ext.issues.append("LEEF_INVALID_EXTENSION_TOKEN")
     return ext
 
 
@@ -187,7 +199,7 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         except ValueError as exc:
             out.issues.append(str(exc))
             return out
-        if parts[0][0] not in ("0","1"):
+        if parts[0][0] not in CEF_VERSIONS:
             out.issues.append("CEF_VERSION_UNSUPPORTED")
             return out
         out.fields["cef_header"]={name:item[0] for name,item in zip(names,parts)}
@@ -199,28 +211,23 @@ def decode_cef_or_leef(raw:str,offset:int=0)->Fragment:
         out.fields["cef_extension"]=extension.fields
     elif raw.startswith("LEEF:",offset):
         start=offset+5
-        is_v2=raw.startswith("LEEF:2.0|",offset)
-        is_v1=raw.startswith("LEEF:1.0|",offset)
-        if not (is_v1 or is_v2):
+        # Which versions are accepted, which of them carry the delimiter in an extra header field, how that
+        # field may be spelled and the default delimiter are contract data.
+        version=next((item for item in LEEF_VERSIONS if raw.startswith("LEEF:"+item+"|",offset)),None)
+        if version is None:
             out.issues.append("LEEF_VERSION_UNSUPPORTED")
             return out
+        carries_delimiter=version in LEEF_DELIMITER_VERSIONS
         names=("version","vendor","product","product_version","event_id")
-        if is_v2:names+=("delimiter",)
+        if len(names)!=1+SEMANTICS['leefHeaderFields']:raise AssertionError("LEEF header field names out of step with the contract")
+        if carries_delimiter:names+=("delimiter",)
         try:
             parts,ext_offset=_pipe_parts(raw,start,len(names))
         except ValueError as exc:
             out.issues.append(str(exc))
             return out
-        if parts[0][0] not in ("1.0","2.0"):
-            out.issues.append("LEEF_VERSION_INVALID")
-            return out
-        if is_v2:
-            token=parts[-1][0]
-            if re.fullmatch(r"0x[0-9a-fA-F]{2}",token):
-                delimiter=chr(int(token[2:],16))
-            else:delimiter=token
-        else:delimiter="\t"
-        if len(delimiter)!=1 or delimiter in ("=","\\") or ord(delimiter)<9:
+        delimiter=_leef_delimiter(parts[-1][0] if carries_delimiter else None)
+        if delimiter is None:
             out.issues.append("LEEF_DELIMITER_UNSUPPORTED")
             return out
         out.fields["leef_header"]={name:item[0] for name,item in zip(names,parts)}
@@ -289,7 +296,7 @@ def extract_rfc5424(raw:str,*,source_preserving:bool=False,
         return None
     result=Fragment()
     values=match.groupdict()
-    if int(values["pri"])>191 or values["version"]!="1":
+    if int(values["pri"])>PRI_MAX or values["version"] not in RFC5424_SUPPORTED_VERSIONS:
         result.issues.append("RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED")
         return result,None
     timestamp=values["timestamp"]

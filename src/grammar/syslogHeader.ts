@@ -8,9 +8,11 @@
  * anywhere else: change the contract and regenerate.
  */
 import {
+  GRAMMAR_FRAGMENTS,
   SYSLOG_HEADER_ALTERNATIVES,
   SYSLOG_HEADER_RULES,
   SYSLOG_HEADER_SEMANTICS,
+  SYSLOG_HEADER_TOKENS,
   type SyslogHeaderRuleName,
 } from './syslogHeaderGrammar.generated';
 
@@ -30,6 +32,18 @@ export function matchHeaderRule(rule: SyslogHeaderRuleName, text: string): Heade
   const captures: Record<string, string | undefined> = {};
   for (const name of SYSLOG_HEADER_RULES[rule].captures) captures[name] = match.groups?.[name];
   return captures;
+}
+
+const compiledTokens = new Map<string, RegExp>();
+
+/** True when the whole text is one contract token (for example a STRUCTURED_BODY). */
+export function matchesHeaderToken(token: keyof typeof SYSLOG_HEADER_TOKENS, text: string): boolean {
+  let expression = compiledTokens.get(token);
+  if (!expression) {
+    expression = new RegExp('^(?:' + SYSLOG_HEADER_TOKENS[token] + ')$');
+    compiledTokens.set(token, expression);
+  }
+  return expression.test(text);
 }
 
 export type Rfc3164Rule = (typeof SYSLOG_HEADER_ALTERNATIVES.rfc3164)[number];
@@ -99,6 +113,22 @@ export type Rfc5424Header =
 /** One policy for every consumer: only the VERSION values the contract lists are parsed. */
 export function isSupportedRfc5424Version(version: string): boolean {
   return (SYSLOG_HEADER_SEMANTICS.rfc5424SupportedVersions as readonly string[]).includes(version);
+}
+
+const VERSION_HEAD = new RegExp(GRAMMAR_FRAGMENTS.rfc5424_version_head.source, 'y');
+
+/**
+ * VERSION of a line that claims to be RFC 5424 (<PRI>VERSION SP, then NILVALUE
+ * or an RFC 3339 date) with a VERSION the contract does not support; null for
+ * every other line. Owner policy: such a line is never parsed by any grammar,
+ * its original text is kept and it is reported as unsupported.
+ */
+export function unsupportedRfc5424Version(text: string): string | null {
+  VERSION_HEAD.lastIndex = 0;
+  const match = VERSION_HEAD.exec(text);
+  if (!match || match.index !== 0) return null;
+  const version = match.groups!.version!;
+  return isSupportedRfc5424Version(version) ? null : version;
 }
 
 export function matchRfc5424Header(text: string): Rfc5424Header {

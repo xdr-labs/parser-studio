@@ -175,6 +175,9 @@
         "omitSourceRaw": {
           "const": true
         },
+        "genericStructuralFamilyGrammar": {
+          "const": "dedicated"
+        },
         "genericStructuralProfile": {
           "enum": [
             "syslog_prefix_kv",

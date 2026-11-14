@@ -1,0 +1,76 @@
+{
+  "schema": "parserstudio.template-overlay.v1",
+  "purpose": "What the forwarder-family Ruby template adds to the Fragment template: unwrapping of declared relay hops before extraction. Everything else is the Fragment template, unchanged. Applied by scripts/grammar/generate-forwarder-template.mjs.",
+  "base": "ruby-fragment.rb.tpl",
+  "output": "ruby-forwarder-family.rb.tpl",
+  "edits": [
+    {
+      "id": "unwrap-declared-relays-before-extraction",
+      "op": "insertAfter",
+      "anchor": [
+        "  settings = @parser_rule_set['extraction']"
+      ],
+      "lines": [
+        "  # No arbitrary prefix slicing: only declared relay hostname(s) and a full",
+        "  # strict Syslog envelope qualify for an extra wrapper layer.",
+        "  text, relay_hops = parserstudio_unwrap_declared_relays(text, settings)"
+      ]
+    },
+    {
+      "id": "attach-relay-hops-and-define-unwrapping",
+      "op": "insertAfter",
+      "anchor": [
+        "  parserstudio_assert_no_field_loss(text, result)"
+      ],
+      "lines": [
+        "  result['__parserstudio_forwarder_hops'] = relay_hops unless relay_hops.empty?",
+        "  result",
+        "end",
+        "",
+        "# Only explicitly registered relay host identities are eligible for removal.",
+        "# Text alone cannot authenticate that sender: the caller must pin a profile.",
+        "# All lengths are offsets in the *received* UTF-8 stream, never decoded chars.",
+        "def parserstudio_unwrap_declared_relays(text, settings)",
+        "  profile = settings['forwarder']",
+        "  return [text, []] if profile.nil?",
+        "  hosts = profile['relayHosts']",
+        "  raise ArgumentError, 'Invalid forwarder configuration' unless",
+        "    hosts.is_a?(Array) && hosts.length.between?(1, 8) &&",
+        "    profile['maxHops'].is_a?(Integer) && profile['maxHops'].between?(1, 3)",
+        "  remaining=text",
+        "  consumed=0",
+        "  hops=[]",
+        "  loop do",
+        "    break unless remaining.start_with?('<')",
+        "    # Full RFC headers (including PRI, timestamp and SD) are required.",
+        "    rfc5424=remaining.match?(/\\A<\\d{1,3}>1 /)",
+        "    parsed=if rfc5424",
+        "      parserstudio_syslog_rfc5424(remaining, {'syslogBodyFormat'=>'raw'})",
+        "    else",
+        "      # The probe only reads the header. A direct event without TAG (or without HOSTNAME) is not a relay",
+        "      # hop; it must reach the declared body parser instead of failing here on its raw body.",
+        "      parserstudio_syslog_rfc3164(remaining, {'syslogBodyFormat'=>'raw','taglessStructuredRouter'=>true})",
+        "    end",
+        "    host=parsed['syslog_hostname']",
+        "    break unless hosts.include?(host)",
+        "    raise ArgumentError, 'Forwarder maximum hops exceeded' if hops.length>=profile['maxHops']",
+        "    payload=parsed['message']",
+        "    raise ArgumentError, 'Forwarder payload missing' unless payload.is_a?(String) &&",
+        "      !payload.empty? && payload.bytesize<remaining.bytesize &&",
+        "      remaining.end_with?(payload)",
+        "    prefix_len=remaining.bytesize-payload.bytesize",
+        "    hops << {",
+        "      'relay_host'=>host,",
+        "      'relay_timestamp'=>parsed['syslog_timestamp'],",
+        "      'envelope'=>rfc5424 ? 'rfc5424' : 'rfc3164',",
+        "      'prefix_start_byte'=>consumed,",
+        "      'payload_start_byte'=>consumed+prefix_len",
+        "    }",
+        "    consumed+=prefix_len",
+        "    remaining=payload",
+        "  end",
+        "  [remaining,hops]"
+      ]
+    }
+  ]
+}

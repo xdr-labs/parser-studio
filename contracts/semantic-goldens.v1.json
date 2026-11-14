@@ -3,173 +3,529 @@
   "purpose": "Semantic Correctness Oracle. Expected fields are written by hand from the raw line and the cited specification text, never copied from a parser run. Both executors (browser TypeScript and the generated Ruby Fragment on Ruby 2.4.9) are compared with these values, so a result that is wrong in both executors in the same way still fails.",
   "independence": {
     "authoredFrom": "literal raw text plus RFC 3164 section 4.1 and RFC 5424 section 6",
-    "notDerivedFrom": ["src/**", "backend/**", "runtime/**", "any recorded parser output"],
+    "notDerivedFrom": [
+      "src/**",
+      "backend/**",
+      "runtime/**",
+      "any recorded parser output"
+    ],
     "selfCheck": "scripts/verification/semantic-oracle.ts rejects an expected source value that does not occur literally in the raw line"
   },
   "profiles": {
     "fw-kv": {
       "topFields": {
-        "body.srcip": ["srcip", "ip"],
-        "body.dstip": ["dstip", "ip"],
-        "body.srcport": ["srcport", "port"],
-        "body.dstport": ["dstport", "port"],
-        "body.action": ["action", "string"]
+        "body.srcip": [
+          "srcip",
+          "ip"
+        ],
+        "body.dstip": [
+          "dstip",
+          "ip"
+        ],
+        "body.srcport": [
+          "srcport",
+          "port"
+        ],
+        "body.dstport": [
+          "dstport",
+          "port"
+        ],
+        "body.action": [
+          "action",
+          "string"
+        ]
       },
-      "vendorFields": { "syslog_hostname": ["syslog_hostname", "string"] },
+      "vendorFields": {
+        "syslog_hostname": [
+          "syslog_hostname",
+          "string"
+        ],
+        "body.note": [
+          "note",
+          "string"
+        ],
+        "body.path": [
+          "path",
+          "string"
+        ],
+        "body.user": [
+          "user",
+          "string"
+        ]
+      },
       "vendorNamespace": "Synthetic",
       "classification": {
         "defaultIndex": "syslog",
         "rules": [
-          { "field": "action", "operator": "equals", "value": "deny", "index": "threat" },
-          { "field": "srcip", "operator": "exists", "index": "session" }
+          {
+            "field": "action",
+            "operator": "equals",
+            "value": "deny",
+            "index": "threat"
+          },
+          {
+            "field": "srcip",
+            "operator": "exists",
+            "index": "session"
+          }
         ]
       }
     }
   },
-  "knownDefects": {
-    "F-1": {
-      "engines": ["ts", "ruby"],
-      "summary": "RFC 3164 line without HOSTNAME: the first key=value token is taken as the host name and the field is lost. Both executors agree, so a differential test passes. Found by the 2026-11-13 re-audit.",
-      "resolution": "Header grammar moves to contracts/syslog-header-grammar.v1.json (BSD_HOSTNAME excludes '=' and structured-body openers; rfc3164_hostless rule). Needs a new reviewed Ruby template hash."
-    },
-    "F-2": {
-      "engines": ["ts"],
-      "summary": "RFC 5424 VERSION policy differs between consumers: the structured front door parses only VERSION 1, while src/syslogEnvelope.ts and the Generic Structural Ruby helper label any 1-3 digit VERSION as RFC 5424. Found by the 2026-11-13 re-audit.",
-      "resolution": "One policy in the contract: RFC5424_VERSION syntax plus semantics.rfc5424SupportedVersions; every consumer declines other versions."
-    },
-    "F-3": {
-      "engines": ["ts"],
-      "summary": "U+2028 inside a value: the browser rejects the line ('.' excludes U+2028 in ECMAScript) while the generated Ruby parses it. Found by the property generator on 2026-11-13.",
-      "resolution": "Contract token REST is [^\\r\\n]+ in every dialect; '.' is rejected by the generator."
-    }
-  },
+  "knownDefects": {},
   "cases": [
     {
       "id": "rfc3164-tagless-host-kv",
-      "grammar": "syslog_rfc3164", "body": "kv",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "<134>Nov 13 10:00:00 fw01 srcip=10.1.1.1 dstip=10.2.2.2 srcport=1234 dstport=443 action=accept",
       "provenance": "RFC 3164 4.1.1 PRI, 4.1.2 TIMESTAMP SP HOSTNAME; body is key=value CONTENT without TAG",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_pri": 134, "syslog_timestamp": "Nov 13 10:00:00", "syslog_hostname": "fw01", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.srcport": "1234", "body.dstport": "443", "body.action": "accept" },
-        "sourceAbsent": ["syslog_appname", "syslog_procid"],
-        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "srcport": 1234, "dstport": 443, "action": "accept", "Synthetic.syslog_hostname": "fw01", "stellar_log_index": "session" }
+        "source": {
+          "syslog_pri": 134,
+          "syslog_timestamp": "Nov 13 10:00:00",
+          "syslog_hostname": "fw01",
+          "body.srcip": "10.1.1.1",
+          "body.dstip": "10.2.2.2",
+          "body.srcport": "1234",
+          "body.dstport": "443",
+          "body.action": "accept"
+        },
+        "sourceAbsent": [
+          "syslog_appname",
+          "syslog_procid"
+        ],
+        "event": {
+          "srcip": "10.1.1.1",
+          "dstip": "10.2.2.2",
+          "srcport": 1234,
+          "dstport": 443,
+          "action": "accept",
+          "Synthetic.syslog_hostname": "fw01",
+          "stellar_log_index": "session"
+        }
       }
     },
     {
       "id": "rfc3164-tagged-pid-deny",
-      "grammar": "syslog_rfc3164", "body": "kv",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "<134>Nov 13 10:00:00 fw01 kernel[77]: srcip=10.1.1.1 dstip=10.2.2.2 dstport=22 action=deny",
       "provenance": "RFC 3164 4.1.3 MSG = TAG CONTENT; TAG 'kernel', bracketed process id, ':' terminator",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_pri": 134, "syslog_hostname": "fw01", "syslog_appname": "kernel", "syslog_procid": "77", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.dstport": "22", "body.action": "deny" },
-        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "dstport": 22, "action": "deny", "Synthetic.syslog_hostname": "fw01", "stellar_log_index": "threat" },
-        "eventAbsent": ["srcport"]
+        "source": {
+          "syslog_pri": 134,
+          "syslog_hostname": "fw01",
+          "syslog_appname": "kernel",
+          "syslog_procid": "77",
+          "body.srcip": "10.1.1.1",
+          "body.dstip": "10.2.2.2",
+          "body.dstport": "22",
+          "body.action": "deny"
+        },
+        "event": {
+          "srcip": "10.1.1.1",
+          "dstip": "10.2.2.2",
+          "dstport": 22,
+          "action": "deny",
+          "Synthetic.syslog_hostname": "fw01",
+          "stellar_log_index": "threat"
+        },
+        "eventAbsent": [
+          "srcport"
+        ]
       }
     },
     {
       "id": "rfc3164-no-pri-single-digit-day",
-      "grammar": "syslog_rfc3164", "body": "kv",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "Nov  3 09:05:07 gw-2 srcip=192.168.0.254 action=accept",
       "provenance": "RFC 3164 4.1.2: a day below 10 is written with a leading space; a relayed or file-read line may carry no PRI",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_timestamp": "Nov  3 09:05:07", "syslog_hostname": "gw-2", "body.srcip": "192.168.0.254", "body.action": "accept" },
-        "sourceAbsent": ["syslog_pri", "syslog_appname"],
-        "event": { "srcip": "192.168.0.254", "action": "accept", "Synthetic.syslog_hostname": "gw-2", "stellar_log_index": "session" },
-        "eventAbsent": ["dstip", "dstport"]
+        "source": {
+          "syslog_timestamp": "Nov  3 09:05:07",
+          "syslog_hostname": "gw-2",
+          "body.srcip": "192.168.0.254",
+          "body.action": "accept"
+        },
+        "sourceAbsent": [
+          "syslog_pri",
+          "syslog_appname"
+        ],
+        "event": {
+          "srcip": "192.168.0.254",
+          "action": "accept",
+          "Synthetic.syslog_hostname": "gw-2",
+          "stellar_log_index": "session"
+        },
+        "eventAbsent": [
+          "dstip",
+          "dstport"
+        ]
       }
     },
     {
       "id": "rfc3164-hostless-kv",
-      "grammar": "syslog_rfc3164", "body": "kv",
-      "knownDefect": "F-1",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "<134>Nov 13 10:00:00 srcip=10.1.1.1 dstip=10.2.2.2 srcport=1234 dstport=443 action=accept",
       "provenance": "RFC 952/1123: 'srcip=10.1.1.1' cannot be a host name; RFC 3164 4.3.2 describes messages whose HOSTNAME is missing. Every key=value of the raw line must survive as a field",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_pri": 134, "syslog_timestamp": "Nov 13 10:00:00", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.srcport": "1234", "body.dstport": "443", "body.action": "accept" },
-        "sourceAbsent": ["syslog_hostname", "syslog_appname"],
-        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "srcport": 1234, "dstport": 443, "action": "accept", "stellar_log_index": "session" },
-        "eventAbsent": ["Synthetic.syslog_hostname"]
+        "source": {
+          "syslog_pri": 134,
+          "syslog_timestamp": "Nov 13 10:00:00",
+          "body.srcip": "10.1.1.1",
+          "body.dstip": "10.2.2.2",
+          "body.srcport": "1234",
+          "body.dstport": "443",
+          "body.action": "accept"
+        },
+        "sourceAbsent": [
+          "syslog_hostname",
+          "syslog_appname"
+        ],
+        "event": {
+          "srcip": "10.1.1.1",
+          "dstip": "10.2.2.2",
+          "srcport": 1234,
+          "dstport": 443,
+          "action": "accept",
+          "stellar_log_index": "session"
+        },
+        "eventAbsent": [
+          "Synthetic.syslog_hostname"
+        ]
       }
     },
     {
       "id": "rfc3164-hostless-no-pri-kv",
-      "grammar": "syslog_rfc3164", "body": "kv",
-      "knownDefect": "F-1",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "Jan  1 00:00:00 action=deny srcip=10.9.9.9",
       "provenance": "Same as rfc3164-hostless-kv, without PRI",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_timestamp": "Jan  1 00:00:00", "body.action": "deny", "body.srcip": "10.9.9.9" },
-        "sourceAbsent": ["syslog_pri", "syslog_hostname"],
-        "event": { "srcip": "10.9.9.9", "action": "deny", "stellar_log_index": "threat" },
-        "eventAbsent": ["Synthetic.syslog_hostname"]
+        "source": {
+          "syslog_timestamp": "Jan  1 00:00:00",
+          "body.action": "deny",
+          "body.srcip": "10.9.9.9"
+        },
+        "sourceAbsent": [
+          "syslog_pri",
+          "syslog_hostname"
+        ],
+        "event": {
+          "srcip": "10.9.9.9",
+          "action": "deny",
+          "stellar_log_index": "threat"
+        },
+        "eventAbsent": [
+          "Synthetic.syslog_hostname"
+        ]
       }
     },
     {
       "id": "rfc3164-quoted-value-with-equals",
-      "grammar": "syslog_rfc3164", "body": "kv",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "<134>Nov 13 10:00:00 fw01 srcip=10.1.1.1 msg=\"a=b c\" action=accept",
       "provenance": "A '=' and a space inside a quoted value are data, not a pair boundary",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_hostname": "fw01", "body.srcip": "10.1.1.1", "body.msg": "a=b c", "body.action": "accept" },
-        "sourceAbsent": ["body.a", "body.c"],
-        "event": { "srcip": "10.1.1.1", "action": "accept", "stellar_log_index": "session" }
+        "source": {
+          "syslog_hostname": "fw01",
+          "body.srcip": "10.1.1.1",
+          "body.msg": "a=b c",
+          "body.action": "accept"
+        },
+        "sourceAbsent": [
+          "body.a",
+          "body.c"
+        ],
+        "event": {
+          "srcip": "10.1.1.1",
+          "action": "accept",
+          "stellar_log_index": "session"
+        }
       }
     },
     {
       "id": "rfc3164-day-30-february",
-      "grammar": "syslog_rfc3164", "body": "kv",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "<134>Feb 30 10:00:00 fw01 srcip=10.1.1.1 action=accept",
       "provenance": "February never has a 30th day; an impossible TIMESTAMP is not an RFC 3164 header",
-      "expect": { "status": "UNKNOWN", "event": null }
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
     },
     {
       "id": "rfc3164-pri-192",
-      "grammar": "syslog_rfc3164", "body": "kv",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
       "raw": "<192>Nov 13 10:00:00 fw01 srcip=10.1.1.1 action=accept",
       "provenance": "RFC 3164 4.1.1: PRI = facility*8 + severity, facility 0..23, so the maximum is 191",
-      "expect": { "status": "UNKNOWN", "event": null }
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
     },
     {
       "id": "rfc5424-v1-nil-sd-kv",
-      "grammar": "syslog_rfc5424", "body": "kv",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
       "raw": "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 dstip=10.2.2.2 dstport=443 action=accept",
       "provenance": "RFC 5424 6.5 example 1 header (PRI 165, VERSION 1, HOSTNAME, APP-NAME evntslog, NILVALUE PROCID, MSGID ID47), NILVALUE STRUCTURED-DATA, key=value MSG",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_pri": 165, "syslog_version": 1, "syslog_timestamp": "2003-10-11T22:14:15.003Z", "syslog_hostname": "mymachine.example.com", "syslog_appname": "evntslog", "syslog_procid": "-", "syslog_msgid": "ID47", "body.srcip": "10.1.1.1", "body.dstip": "10.2.2.2", "body.dstport": "443", "body.action": "accept" },
-        "event": { "srcip": "10.1.1.1", "dstip": "10.2.2.2", "dstport": 443, "action": "accept", "Synthetic.syslog_hostname": "mymachine.example.com", "stellar_log_index": "session" }
+        "source": {
+          "syslog_pri": 165,
+          "syslog_version": 1,
+          "syslog_timestamp": "2003-10-11T22:14:15.003Z",
+          "syslog_hostname": "mymachine.example.com",
+          "syslog_appname": "evntslog",
+          "syslog_procid": "-",
+          "syslog_msgid": "ID47",
+          "body.srcip": "10.1.1.1",
+          "body.dstip": "10.2.2.2",
+          "body.dstport": "443",
+          "body.action": "accept"
+        },
+        "event": {
+          "srcip": "10.1.1.1",
+          "dstip": "10.2.2.2",
+          "dstport": 443,
+          "action": "accept",
+          "Synthetic.syslog_hostname": "mymachine.example.com",
+          "stellar_log_index": "session"
+        }
       }
     },
     {
       "id": "rfc5424-v1-sd-element-kv",
-      "grammar": "syslog_rfc5424", "body": "kv",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
       "raw": "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut=\"3\" eventSource=\"Application\"] srcip=10.1.1.1 action=deny",
       "provenance": "RFC 5424 6.5 example 3 STRUCTURED-DATA element; SD-PARAM values are quoted",
       "expect": {
         "status": "FULL",
-        "source": { "syslog_appname": "evntslog", "syslog_msgid": "ID47", "syslog_sd.element_1.sd_id": "exampleSDID@32473", "syslog_sd.element_1.params.iut": "3", "syslog_sd.element_1.params.eventSource": "Application", "body.srcip": "10.1.1.1", "body.action": "deny" },
-        "event": { "srcip": "10.1.1.1", "action": "deny", "stellar_log_index": "threat" }
+        "source": {
+          "syslog_appname": "evntslog",
+          "syslog_msgid": "ID47",
+          "syslog_sd.element_1.sd_id": "exampleSDID@32473",
+          "syslog_sd.element_1.params.iut": "3",
+          "syslog_sd.element_1.params.eventSource": "Application",
+          "body.srcip": "10.1.1.1",
+          "body.action": "deny"
+        },
+        "event": {
+          "srcip": "10.1.1.1",
+          "action": "deny",
+          "stellar_log_index": "threat"
+        }
       }
     },
     {
       "id": "rfc5424-version-2",
-      "grammar": "syslog_rfc5424", "body": "kv",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
       "raw": "<165>2 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
       "provenance": "RFC 5424 6.2.2 defines only VERSION 1; the layout of any other version is unknown and must not be parsed as version 1",
-      "expect": { "status": "UNKNOWN", "event": null }
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
     },
     {
       "id": "rfc5424-pri-192",
-      "grammar": "syslog_rfc5424", "body": "kv",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
       "raw": "<192>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
       "provenance": "RFC 5424 6.2.1: PRIVAL 0..191",
-      "expect": { "status": "UNKNOWN", "event": null }
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc3164-tag-without-hostname",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<13>Oct 11 22:14:15 kernel: srcip=10.1.1.1 action=deny",
+      "provenance": "RFC 3164 4.1.3: 'kernel:' is a TAG with its terminating colon, not a HOSTNAME (RFC 952/1123 host names never end in ':'). Until a host-omitted tagged rule exists the line may be declined, but the TAG must never become the host name. Found by the independent audit of 2026-11-13.",
+      "expect": {
+        "status": "FULL",
+        "neverWrong": true,
+        "source": {
+          "syslog_pri": 13,
+          "syslog_timestamp": "Oct 11 22:14:15",
+          "syslog_appname": "kernel",
+          "body.srcip": "10.1.1.1",
+          "body.action": "deny"
+        },
+        "sourceAbsent": [
+          "syslog_hostname"
+        ],
+        "event": {
+          "srcip": "10.1.1.1",
+          "action": "deny",
+          "stellar_log_index": "threat"
+        },
+        "eventAbsent": [
+          "Synthetic.syslog_hostname"
+        ]
+      }
+    },
+    {
+      "id": "rfc5424-day-30-february",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<34>1 2026-02-30T22:14:15Z host app 123 ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.3 / RFC 3339 5.7: 2026-02-30 is not a date. Found by the independent audit of 2026-11-13 (the browser rejected it, Ruby Time.iso8601 rolled it over).",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-12",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>12 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2 defines only VERSION 1. Owner policy 2026-11-13: any other VERSION is never parsed or shown as RFC 5424; the original line is kept and reported as unsupported",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-999",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>999 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "Same policy: the largest syntactically valid VERSION is still unsupported",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-0",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>0 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2: VERSION = NONZERO-DIGIT 0*2DIGIT, so 0 is not a VERSION",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-01",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>01 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2: a leading zero is not a VERSION",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc5424-version-1000",
+      "grammar": "syslog_rfc5424",
+      "body": "kv",
+      "raw": "<165>1000 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "RFC 5424 6.2.2: at most three digits",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      }
+    },
+    {
+      "id": "rfc3164-information-separator-is-not-value-data",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov  5 13:00:01 fw01 srcip=192.0.2.1 dstip=198.51.100.2 action=\u001cdeny",
+      "provenance": "Issue #214: U+001C..U+001F are ASCII information separators. A line that carries one between '=' and the value must never be reported as completely parsed.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-information-separator-between-pairs",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov  5 13:00:01 fw01 srcip=192.0.2.1\u001edstip=198.51.100.2 action=deny",
+      "provenance": "Issue #214: U+001E between two pairs is neither a pair separator nor part of the first value.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-repeated-field-three-values",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov 14 09:30:00 fw01 srcip=192.0.2.10 dstip=198.51.100.7 srcip=203.0.113.5 action=deny srcip=192.0.2.99",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. Three occurrences, not adjacent.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null,
+        "repeated": {
+          "srcip": [
+            "192.0.2.10",
+            "203.0.113.5",
+            "192.0.2.99"
+          ]
+        }
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-repeated-field-same-value",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov 14 09:30:01 fw01 action=deny srcip=192.0.2.10 action=deny",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. Both occurrences carry the same value: still two occurrences, still not a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null,
+        "repeated": {
+          "action": [
+            "deny",
+            "deny"
+          ]
+        }
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-repeated-field-quoted-and-bare",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov 14 09:30:02 fw01 msg=\"first text\" srcip=192.0.2.10 msg=second",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. One occurrence is quoted, the other is bare; the preview keeps the meant text of each.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null,
+        "repeated": {
+          "msg": [
+            "first text",
+            "second"
+          ]
+        }
+      },
+      "rejectedAt": "body"
     }
   ],
   "envelopeCases": [
@@ -177,21 +533,910 @@
       "id": "envelope-rfc5424-version-1",
       "raw": "<134>1 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
       "provenance": "RFC 5424 6.2.2 VERSION 1",
-      "expect": { "variant": "rfc5424" }
+      "expect": {
+        "variant": "rfc5424"
+      }
     },
     {
       "id": "envelope-rfc5424-version-2",
-      "knownDefect": "F-2",
       "raw": "<134>2 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
       "provenance": "RFC 5424 6.2.2: VERSION 2 is not defined; no consumer may label or parse it as RFC 5424",
-      "expect": { "variantNot": "rfc5424" }
+      "expect": {
+        "variantNot": "rfc5424"
+      }
     },
     {
       "id": "envelope-rfc5424-version-12",
-      "knownDefect": "F-2",
       "raw": "<134>12 2026-11-13T10:00:00Z fw01 app 1 ID1 - srcip=10.1.1.1 dstip=10.2.2.2",
       "provenance": "RFC 5424 6.2.2: VERSION 12 is not defined",
-      "expect": { "variantNot": "rfc5424" }
+      "expect": {
+        "variantNot": "rfc5424"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-version-999",
+      "raw": "<134>999 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
+      "provenance": "RFC 5424 6.2.2 and the VERSION 1 only policy",
+      "expect": {
+        "variantNot": "rfc5424"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-version-01",
+      "raw": "<134>01 2026-11-13T10:00:00Z fw01 app 1 ID1 - free text message",
+      "provenance": "RFC 5424 6.2.2: leading zero",
+      "expect": {
+        "variantNot": "rfc5424"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-message-keeps-second-space",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 -  a=1",
+      "provenance": "RFC 5424 6: exactly one SP separates STRUCTURED-DATA from MSG; the second space is message data",
+      "expect": {
+        "variant": "rfc5424",
+        "message": " a=1"
+      }
+    },
+    {
+      "id": "envelope-rfc5424-message-keeps-bom",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 - ﻿a=1",
+      "provenance": "RFC 5424 6.4: MSG-UTF8 = BOM UTF-8-STRING; the BOM is part of MSG and is preserved",
+      "expect": {
+        "variant": "rfc5424",
+        "message": "﻿a=1"
+      }
+    }
+  ],
+  "resolvedDefects": {
+    "F-1": "RFC 3164 line without HOSTNAME lost its first key=value field into the header in both executors. Resolved by BSD_HOSTNAME and the rfc3164_hostless rule of contracts/syslog-header-grammar.v1.json.",
+    "F-2": "RFC 5424 VERSION policy differed between consumers. Resolved by semantics.rfc5424SupportedVersions, read by every consumer.",
+    "F-3": "U+2028 inside a value was rejected by the browser and parsed by the generated Ruby. Resolved by the portable token REST = [^\\r\\n]+.",
+    "F-4": "RFC 5424 TIMESTAMP with an impossible calendar day was rejected by the browser and parsed by the generated Ruby. Resolved by an explicit calendar check beside Time.iso8601 in both Ruby templates.",
+    "F-5": "A TAG directly after the timestamp ('kernel:', 'sshd[123]:') was read as HOSTNAME by both executors when HOSTNAME was omitted. Resolved by BSD_HOSTNAME not ending in ':'; the line is declined.",
+    "F-6": "The Python Multi-Pass fallback parsed an RFC 5424 line with VERSION 999. Resolved by semantics.rfc5424SupportedVersions and the rfc5424_version_head fragment, read by every Python entry point.",
+    "F-7": "The strict key=value path of the browser and the generated Ruby accepted U+001C..U+001F as value data while Generic Structural and the Python preview declined the line (issue #214). Resolved by KV_BARE excluding U+001C..U+001F.",
+    "F-8": "The Python Multi-Pass key=value scanner split pairs at Unicode white space (NBSP, U+2028) and decoded a different escape set than the browser and Ruby. Resolved by the scanner reading fragments.kv_pair and semantics.kvUnescapedAfterBackslash.",
+    "F-9": "A CEF or LEEF line with U+2028 inside a value was rejected by the browser ('.' excludes it in ECMAScript) and parsed by the generated Ruby and the Python preview. Resolved by dotAll on the two family head expressions.",
+    "F-10": "The Python preview reported a line that claims to be CEF or LEEF but is not valid (six header fields, LEEF 3.0) as parsed through its permissive Generic Structural fallback, with multi-word values cut at the first space. Resolved for the Python preview by fragments.structured_family_claim. The browser and Ruby side is owner policy D-2.",
+    "F-11": "CEF and LEEF: the header splitter also decoded backslash escapes in the extension, which the extension grammar then decoded a second time, identically in the browser and the generated Ruby. 'filePath=C:\\\\\\\\Users\\\\\\\\new' came out as 'C:\\\\Users' LF 'ew', and the standard's own example 'act=blocked a \\\\\\\\ dst=1.1.1.1' lost dst. Resolved by keeping the text after the last header delimiter exactly as written.",
+    "F-12": "The Python preview offered a comma row with a double quote inside a bare field (aaa,b\\\"bb,ccc) as a CSV candidate; RFC 4180 forbids it and the browser tokenizer and Ruby's CSV.parse_line reject the row. Resolved in parse_csv_spans.",
+    "F-13": "The Python preview parsed a CEF:1 line while the browser and the generated Ruby implement CEF version 0 only, so the Analyze step showed a line as parsed that the generated parser rejects. Resolved by semantics.cefSupportedVersions, read by every engine."
+  },
+  "genericCases": [
+    {
+      "id": "generic-bsd-tagged-message-u2028",
+      "raw": "<13>Oct 11 22:14:15 fw01 kernel: user=a b x=1",
+      "provenance": "RFC 3164 4.1: PRI 13, TIMESTAMP, HOSTNAME fw01, TAG kernel, CONTENT after ': '. U+2028 is not a line terminator in Syslog, so it is message text (the browser used to reject this line while the generated Ruby parsed it)",
+      "expect": {
+        "fields": {
+          "syslog.pri": "13",
+          "syslog.hostname": "fw01",
+          "syslog.app_tag": "kernel",
+          "generic.mode": "bsd_tagged_message",
+          "generic.message": "user=a b x=1"
+        }
+      }
+    },
+    {
+      "id": "generic-bsd-tagged-message-plain",
+      "raw": "<13>Oct 11 22:14:15 10.0.0.1 sshd: Accepted password for alice",
+      "provenance": "RFC 3164 4.1 with an IPv4 HOSTNAME",
+      "expect": {
+        "fields": {
+          "syslog.hostname": "10.0.0.1",
+          "syslog.app_tag": "sshd",
+          "generic.mode": "bsd_tagged_message",
+          "generic.message": "Accepted password for alice"
+        }
+      }
+    },
+    {
+      "id": "generic-bsd-tagged-message-day-30-february",
+      "raw": "<13>Feb 30 22:14:15 fw01 kernel: hello there",
+      "provenance": "February never has a 30th day; an impossible TIMESTAMP is not a BSD header",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-2",
+      "raw": "<165>2 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 - srcip=10.1.1.1 action=accept",
+      "provenance": "VERSION 1 only policy: the Generic Structural extractor must not parse another VERSION either",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-1-asa",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 - %ASA-6-302013: Built outbound TCP connection 1 for outside:10.1.1.1/80 (10.1.1.1/80) to inside:10.2.2.2/1234 (10.2.2.2/1234)",
+      "provenance": "RFC 5424 6 header with VERSION 1, HOSTNAME host, APP-NAME app; Cisco ASA 302013 message text as MSG",
+      "expect": {
+        "fields": {
+          "syslog.variant": "rfc5424",
+          "syslog.version": "1",
+          "syslog.hostname": "host",
+          "syslog.appname": "app"
+        }
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-2-asa",
+      "raw": "<34>2 2026-10-11T22:14:15Z host app 123 ID47 - %ASA-6-302013: Built outbound TCP connection 1 for outside:10.1.1.1/80 (10.1.1.1/80) to inside:10.2.2.2/1234 (10.2.2.2/1234)",
+      "provenance": "VERSION 1 only policy: the same line with VERSION 2 is not parsed",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-2-space-kv",
+      "raw": "<34>2 2026-10-11T22:14:15Z host app 123 ID47 - id=firewall sn=ABC fw=10.0.0.1 pri=6 src=10.1.1.1 dst=10.2.2.2",
+      "provenance": "VERSION 1 only policy: before 2026-11-14 this line was parsed as space-separated key=value with the RFC 5424 header kept as opaque prefix tokens. A line that claims to be RFC 5424 with an unsupported VERSION must not succeed through another grammar",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-rfc5424-version-12-nil-timestamp",
+      "raw": "<34>12 - host app 123 ID47 - id=firewall sn=ABC src=10.1.1.1 dst=10.2.2.2",
+      "provenance": "Same policy with a NILVALUE TIMESTAMP",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-legacy-cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route: a Generic Structural project created before D-2 carries no familyGrammar marker and keeps the V15 output exactly (the ArcSight CEF example read as space-separated key=value; the header and the first extension field stay in prefix text). The verdict is PARTIAL, never FULL, because the CEF header is not parsed.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.dst": "2.1.2.2",
+          "generic.kv.spt": "1232",
+          "generic.kv.dpt": "80",
+          "generic.kv.act": "blocked",
+          "generic.kv.proto": "tcp",
+          "generic.prefix_003": "stopped|10|src=10.0.0.1"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-legacy-cef-version-1",
+      "raw": "CEF:1|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route, unsupported CEF version: the V15 output is unchanged and the verdict is PARTIAL.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.dst": "2.1.2.2",
+          "generic.kv.spt": "1232",
+          "generic.kv.dpt": "80",
+          "generic.kv.act": "blocked",
+          "generic.kv.proto": "tcp"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-legacy-leef-leading-tab",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|\tfirst=one\tsecond=two\tthird=three\tfourth=four\tfifth=five",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route: a LEEF 2.0 line whose attributes start with the delimiter (an empty first attribute, not valid LEEF) is still read as space/TAB-separated key=value by a project without the marker; verdict PARTIAL.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.first": "one",
+          "generic.kv.second": "two",
+          "generic.kv.fifth": "five"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-legacy-leef-version-3",
+      "raw": "LEEF:3.0|Acme Corp|Gateway|1|event|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "provenance": "Owner policy D-2 (2026-11-14). Legacy compatibility route, LEEF version 3.0 does not exist: the V15 output is unchanged and the verdict is PARTIAL.",
+      "expect": {
+        "fields": {
+          "generic.mode": "space_kv",
+          "generic.kv.dst": "2.1.2.2",
+          "generic.kv.spt": "1232",
+          "generic.kv.dpt": "80",
+          "generic.kv.act": "blocked",
+          "generic.kv.proto": "tcp"
+        },
+        "status": "PARTIAL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: ArcSight CEF Implementation Standard example. Seven header fields then the extension; Name is the sixth header field with its spaces, src is the first extension field.",
+      "expect": {
+        "fields": {
+          "generic.mode": "structured_family_cef",
+          "body.cef_version": "0",
+          "body.cef_device_vendor": "Security",
+          "body.cef_name": "worm successfully stopped",
+          "body.cef_severity": "10",
+          "body.src": "10.0.0.1",
+          "body.dst": "2.1.2.2",
+          "body.proto": "tcp"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef2",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|first=one\tsecond=two words\tthird=three\tfourth=four\tfifth=five",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: IBM QRadar LEEF 2.0 with the delimiter field 0x09 (TAB); a value keeps its spaces up to the next delimiter.",
+      "expect": {
+        "fields": {
+          "generic.mode": "structured_family_leef",
+          "body.leef_version": "2.0",
+          "body.leef_vendor": "Acme Corp",
+          "body.leef_event_id": "event",
+          "body.first": "one",
+          "body.second": "two words",
+          "body.fifth": "five"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef1",
+      "raw": "LEEF:1.0|Acme|Gateway|1|event|src=10.0.0.1\tdst=10.0.0.2\tusrName=alice\tproto=tcp\tsev=5",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: IBM QRadar LEEF 1.0, attributes separated by TAB.",
+      "expect": {
+        "fields": {
+          "generic.mode": "structured_family_leef",
+          "body.leef_version": "1.0",
+          "body.leef_vendor": "Acme",
+          "body.src": "10.0.0.1",
+          "body.usrName": "alice",
+          "body.sev": "5"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-cef-version-1-declined",
+      "raw": "CEF:1|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a line that claims CEF with a version other than 0 is declined, never read as generic key=value.",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-cef-four-header-fields-declined",
+      "raw": "CEF:0|only|three|fields src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a CEF claim with four of the seven header fields is declined.",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef-leading-tab-declined",
+      "raw": "LEEF:2.0|Acme Corp|Gateway|1|event|0x09|\tfirst=one\tsecond=two\tthird=three\tfourth=four\tfifth=five",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a LEEF 2.0 line with an empty first attribute is not valid LEEF; it is declined, not read as key=value (the legacy route parses this very line).",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-leef-version-3-declined",
+      "raw": "LEEF:3.0|Acme Corp|Gateway|1|event|src=10.0.0.1 dst=2.1.2.2 spt=1232 dpt=80 act=blocked proto=tcp",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: LEEF 3.0 does not exist; the claim is declined (the legacy route parses this very line).",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-d2-dedicated-plain-generic-line",
+      "raw": "<13>Oct 11 22:14:15 10.0.0.1 sshd: Accepted password for alice",
+      "familyGrammar": "dedicated",
+      "provenance": "Owner policy D-2 (2026-11-14). New projects: a line that claims neither CEF nor LEEF is read exactly as before (RFC 3164 4.1 tagged message).",
+      "expect": {
+        "fields": {
+          "syslog.hostname": "10.0.0.1",
+          "syslog.app_tag": "sshd",
+          "generic.mode": "bsd_tagged_message",
+          "generic.message": "Accepted password for alice"
+        },
+        "status": "FULL"
+      }
+    },
+    {
+      "id": "generic-envelope-json-integer-beyond-2-53",
+      "raw": "<14>1 2026-11-03T11:11:11Z fw app - ID - {\"session_id\":9007199254740993}",
+      "provenance": "RFC 8259 6: an integer outside [-(2^53)+1, 2^53-1] is not interoperable; the browser would show 9007199254740992. Declined in a JSON body inside Generic Structural as in the JSON format itself (found by the browser/Ruby differential of 2026-11-14: the browser parsed it, the generated Ruby declined it).",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-panos-receive-time-30-february",
+      "raw": "<14>Oct 16 15:44:21 PA01 1,2026/02/30 15:44:21,012345678901,TRAFFIC,end,2561,2026/10/16 15:44:20,10.0.0.1,198.51.100.1,203.0.113.1,198.51.100.1,allow",
+      "provenance": "A row shaped like a PAN-OS record whose receive time is 30 February is not a PAN-OS record. Found by the browser/Ruby differential of 2026-11-14: the generated Ruby parsed it (Time.new rolls the day over to 2 March; the positional route had no PAN-OS check), the browser declined it.",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-pri-space-kv-u2028",
+      "raw": "<13>srcip=10.1.1.1 dstip=10.2.2.2 dstport=443 note=a b action=accept",
+      "provenance": "RFC 3164 PRI followed by key=value pairs; U+2028 is value data (KV_GAP: pairs are separated by SP or TAB only). Found by the differential of 2026-11-14: the browser read this line through another route than the generated Ruby and produced a different field tree.",
+      "expect": {
+        "fields": {
+          "syslog.pri": "13",
+          "generic.mode": "space_kv",
+          "generic.kv.note": "a b",
+          "generic.kv.action": "accept"
+        },
+        "absent": [
+          "generic.message_raw",
+          "syslog.variant"
+        ]
+      }
+    },
+    {
+      "id": "generic-panos-traffic-more-than-100-columns",
+      "raw": "<14>Dec 10 00:00:00 hostname 1,2025/12/10 00:00:00,000000000000,TRAFFIC,END,1,2025/12/10 00:00:00,10.0.0.0,10.0.0.0,0.0.0.0,0.0.0.0,Rule,,,x,x,x,x,x,x,x,2025/12/10 00:00:00,1,1,1,1,0,0,0x10001c,tcp,allow,1,1,1,1,2025/12/10 00:00:00,0,x,,0,0x8000000000000000,x,x,,1,1,tcp-fin,1,1,1,1,,hostname,from-policy,,,0,,0,,x,0,0,0,0,x,0,0,Policy ID,{link name, link tag, link type, physical interface, timestamp,100,100,,N/A},x,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-12-10T00:00:00.000+11:00,,,x,x,x,1,x,,web-browsing,no,no,0,x,",
+      "provenance": "PAN-OS traffic log with more than 100 columns (PAN-OS 10/11 layout). The positional route takes at most 100 columns in both engines; the row is read by the envelope route, which names the PAN-OS fields. Found by the differential of 2026-11-14: the generated Ruby accepted up to 150 columns on the positional route and produced a tree without syslog.variant and generic.profile.",
+      "expect": {
+        "fields": {
+          "syslog.variant": "rfc3164",
+          "syslog.hostname": "hostname",
+          "generic.mode": "panos_traffic_csv",
+          "generic.profile": "panos",
+          "generic.fields.src": "10.0.0.0",
+          "generic.fields.action": "allow"
+        }
+      }
+    }
+  ],
+  "ownerPolicies": {
+    "D-1": {
+      "decidedOn": "2026-11-14",
+      "statement": "A field written more than once in one event is never resolved by keeping one of its values. The Python source preview keeps the original key and every value in wire order and does not report the event as completely parsed (issue DUPLICATE_SOURCE_FIELD). The browser extractor and the generated Ruby decline the event; the browser names the repeated field and the reason. While a repeated field is unresolved no engine reports FULL.",
+      "enforcedBy": [
+        "cases with expect.repeated (hand-written and model-rendered key=value bodies)",
+        "familyCases with expect.repeated (CEF, LEEF 1.0, LEEF 2.0)",
+        "fault injection: ts-kv-duplicate-key-overwrites, ts-kv-duplicate-key-not-named, ts-cef-duplicate-field-overwrites, ts-leef-duplicate-field-overwrites, rb-kv-duplicate-key-overwrites, rb-cef-duplicate-field-overwrites, rb-leef-duplicate-field-overwrites, py-kv-repeated-key-overwrites, py-kv-repeated-key-keeps-first-only, py-kv-repeated-key-reported-as-parsed, py-leef-repeated-field-reported-as-parsed"
+      ]
+    },
+    "D-2": {
+      "decidedOn": "2026-11-14",
+      "statement": "Inside Generic Structural a line that claims to be CEF or LEEF (contract fragment structured_family_claim) is, for every newly created parser (extraction.genericStructuralFamilyGrammar \"dedicated\"), read by the CEF/LEEF grammar or declined; it is never read by a generic key=value route and reported FULL. A project created before this decision carries no marker and keeps its V15 output byte for byte (legacy compatibility route); its verdict for such a line is PARTIAL with the warning GENERIC_STRUCTURAL_NOT_FULL, never FULL. The Python preview already declines an invalid claim (F-10).",
+      "enforcedBy": [
+        "genericCases with familyGrammar \"dedicated\" (valid CEF, LEEF 1.0, LEEF 2.0; declined claims; an ordinary Generic Structural line)",
+        "genericCases generic-d2-legacy-* (V15 output unchanged, expect.status PARTIAL)",
+        "fault injection: ts-generic-dedicated-gate-removed, ts-generic-claim-verdict-full, rb-generic-dedicated-gate-removed, py-generic-family-claim-gate-removed",
+        "src/ownerPolicyD2GenericFamilies20261114.test.ts, backend/test/owner-policy-d2-generic-families.test.ts"
+      ]
+    }
+  },
+  "policyDivergences": {},
+  "familyCases": [
+    {
+      "id": "cef-standard-example",
+      "family": "cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: the header is seven pipe-delimited fields after CEF:Version; the extension is key=value pairs separated by spaces",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "Security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "worm successfully stopped",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "dst": "2.1.2.2",
+          "spt": "1232"
+        }
+      }
+    },
+    {
+      "id": "cef-pipe-escaped-in-header-literal-in-extension",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|detected a \\| in message|10|src=10.0.0.1 act=blocked a | dst=1.1.1.1",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a pipe in a header field is escaped with a backslash; pipes in the extension do not need escaping",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "detected a | in message",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "act": "blocked a |",
+          "dst": "1.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-backslash-escaped",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|detected a \\\\ in packet|10|src=10.0.0.1 act=blocked a \\\\ dst=1.1.1.1",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a backslash in the header or in an extension value is escaped with a second backslash",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "detected a \\ in packet",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "act": "blocked a \\",
+          "dst": "1.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-equals-literal-in-header-escaped-in-extension",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|detected a = in message|10|src=10.0.0.1 act=blocked a \\= dst=1.1.1.1",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: an equal sign in an extension value is escaped with a backslash; equal signs in the header need no escaping",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "detected a = in message",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "act": "blocked a =",
+          "dst": "1.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-multi-line-value",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|Detected a threat|10|src=10.0.0.1 msg=Detected a threat.\\n No action needed.",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a multi-line value is encoded with \\n inside the extension value",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "Detected a threat",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "msg": "Detected a threat.\n No action needed."
+        }
+      }
+    },
+    {
+      "id": "cef-line-separator-in-value",
+      "family": "cef",
+      "raw": "CEF:0|Acme|FW|1.0|100|Name|5|msg=a b dst=10.2.2.2",
+      "provenance": "Defect F-9: U+2028 is an ordinary UTF-8 character of the value; it is neither a record break nor a pair separator",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "Acme",
+          "cef_device_product": "FW",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "Name",
+          "cef_severity": "5"
+        },
+        "extension": {
+          "msg": "a b",
+          "dst": "10.2.2.2"
+        }
+      }
+    },
+    {
+      "id": "cef-seventh-header-field-not-terminated",
+      "family": "cef",
+      "raw": "CEF:0|Acme|FW|1.0|100|Name|src=10.1.1.1 msg=x y z dst=10.2.2.2",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: seven header fields are required, each terminated by a pipe; with six pipes this is not a CEF event and no grammar may report it as parsed",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "leef-1-0-tab-separated",
+      "family": "leef",
+      "raw": "LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=192.0.2.0\tdst=172.50.123.1\tsev=5\tcat=anomaly\tsrcPort=81\tdstPort=21\tusrName=joe.black",
+      "provenance": "IBM QRadar LEEF format guide: LEEF 1.0 header is LEEF:Version|Vendor|Product|Version|EventID| and attributes are separated by a tab",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "1.0",
+          "leef_vendor": "Microsoft",
+          "leef_product": "MSExchange",
+          "leef_product_version": "4.0 SP1",
+          "leef_event_id": "15345"
+        },
+        "extension": {
+          "src": "192.0.2.0",
+          "dst": "172.50.123.1",
+          "sev": "5",
+          "cat": "anomaly",
+          "srcPort": "81",
+          "dstPort": "21",
+          "usrName": "joe.black"
+        }
+      }
+    },
+    {
+      "id": "leef-2-0-caret-separated",
+      "family": "leef",
+      "raw": "LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=192.0.2.0^dst=172.50.123.1^sev=5^cat=anomaly^srcPort=81^dstPort=21^usrName=joe.black",
+      "provenance": "IBM QRadar LEEF format guide: LEEF 2.0 names the attribute separator in a sixth header field",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "2.0",
+          "leef_vendor": "Lancope",
+          "leef_product": "StealthWatch",
+          "leef_product_version": "1.0",
+          "leef_event_id": "41"
+        },
+        "extension": {
+          "src": "192.0.2.0",
+          "dst": "172.50.123.1",
+          "sev": "5",
+          "cat": "anomaly",
+          "srcPort": "81",
+          "dstPort": "21",
+          "usrName": "joe.black"
+        }
+      }
+    },
+    {
+      "id": "leef-value-contains-equals",
+      "family": "leef",
+      "raw": "LEEF:1.0|Acme|FW|1.0|100|url=http://x/?a=b&c=d\tsrc=10.1.1.1",
+      "provenance": "IBM QRadar LEEF format guide: an attribute is key=value up to the separator; only the first equal sign ends the key",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "1.0",
+          "leef_vendor": "Acme",
+          "leef_product": "FW",
+          "leef_product_version": "1.0",
+          "leef_event_id": "100"
+        },
+        "extension": {
+          "url": "http://x/?a=b&c=d",
+          "src": "10.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "leef-line-separator-in-value",
+      "family": "leef",
+      "raw": "LEEF:2.0|Acme|FW|1.0|100|^|src=10.1.1.1^msg=a b^dst=10.2.2.2",
+      "provenance": "Defect F-9: U+2028 is an ordinary UTF-8 character of the value",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "2.0",
+          "leef_vendor": "Acme",
+          "leef_product": "FW",
+          "leef_product_version": "1.0",
+          "leef_event_id": "100"
+        },
+        "extension": {
+          "src": "10.1.1.1",
+          "msg": "a b",
+          "dst": "10.2.2.2"
+        }
+      }
+    },
+    {
+      "id": "leef-version-3-is-not-leef",
+      "family": "leef",
+      "raw": "LEEF:3.0|Acme|FW|1.0|100|src=10.1.1.1\tmsg=hello world\tdst=10.2.2.2",
+      "provenance": "IBM QRadar LEEF format guide: the defined LEEF versions are 1.0 and 2.0; a line with another version is not parsed by any grammar",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "cef-windows-path-with-n-segment",
+      "family": "cef",
+      "raw": "CEF:0|Acme|EDR|1.0|100|File created|5|filePath=C:\\\\Users\\\\new\\\\report.txt act=allowed",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a backslash in an extension value is escaped with a second backslash; the escaped pair decodes to one backslash, never to a line feed",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "Acme",
+          "cef_device_product": "EDR",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "File created",
+          "cef_severity": "5"
+        },
+        "extension": {
+          "filePath": "C:\\Users\\new\\report.txt",
+          "act": "allowed"
+        }
+      }
+    },
+    {
+      "id": "leef-unc-path-is-literal",
+      "family": "leef",
+      "raw": "LEEF:1.0|Acme|FW|1.0|100|share=\\\\server\\reports\tsrc=10.1.1.1",
+      "provenance": "IBM QRadar LEEF format guide: LEEF defines no escape sequences; an attribute value is the literal text up to the separator",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "1.0",
+          "leef_vendor": "Acme",
+          "leef_product": "FW",
+          "leef_product_version": "1.0",
+          "leef_event_id": "100"
+        },
+        "extension": {
+          "share": "\\\\server\\reports",
+          "src": "10.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-version-1-is-not-supported",
+      "family": "cef",
+      "raw": "CEF:1|Acme|FW|1.0|100|Name|5|src=10.1.1.1 dst=10.2.2.2",
+      "provenance": "Product policy in the grammar contract (semantics.cefSupportedVersions = [\"0\"]): the generated parser implements CEF version 0 only, so a CEF:1 line is declined by every engine instead of being shown as parsed by the preview and then rejected by the artifact",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "cef-repeated-extension-field",
+      "family": "cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 src=10.0.0.9 spt=1232",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "src": [
+            "10.0.0.1",
+            "10.0.0.9"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cef-repeated-extension-field-three-values",
+      "family": "cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|msg=first one src=10.0.0.1 msg=second msg=third one",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse. Three occurrences; values with spaces.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "msg": [
+            "first one",
+            "second",
+            "third one"
+          ]
+        }
+      }
+    },
+    {
+      "id": "leef1-repeated-attribute",
+      "family": "leef",
+      "raw": "LEEF:1.0|Acme|FW|1.0|100|src=10.0.0.1\tdst=2.1.2.2\tsrc=10.0.0.9",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "src": [
+            "10.0.0.1",
+            "10.0.0.9"
+          ]
+        }
+      }
+    },
+    {
+      "id": "leef2-repeated-attribute",
+      "family": "leef",
+      "raw": "LEEF:2.0|Acme|FW|1.0|100|^|usrName=alice^src=10.0.0.1^usrName=bob",
+      "provenance": "Owner policy D-1 (2026-11-14): a repeated extension field is declined by the strict parsers and kept value by value, in order, by the source preview; never a complete parse.",
+      "expect": {
+        "status": "UNKNOWN",
+        "repeated": {
+          "usrName": [
+            "alice",
+            "bob"
+          ]
+        }
+      }
+    }
+  ],
+  "csvCases": [
+    {
+      "id": "csv-rfc4180-plain",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,bbb,ccc",
+      "provenance": "RFC 4180 section 2: rule 4, fields are separated by commas",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "bbb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-enclosed",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "\"aaa\",\"bbb\",\"ccc\"",
+      "provenance": "RFC 4180 section 2: rule 5, each field may be enclosed in double quotes",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "bbb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-comma-inside-enclosed-field",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "\"aaa\",\"b,bb\",\"ccc\"",
+      "provenance": "RFC 4180 section 2: rule 6, a field containing a comma is enclosed in double quotes",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "b,bb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-doubled-quote",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "\"aaa\",\"b\"\"bb\",\"ccc\"",
+      "provenance": "RFC 4180 section 2: rule 7, a double quote inside an enclosed field is escaped by a preceding double quote",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "b\"bb",
+          "ccc"
+        ]
+      }
+    },
+    {
+      "id": "csv-rfc4180-quote-in-bare-field",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,b\"bb,ccc",
+      "provenance": "RFC 4180 section 2: rule 5, double quotes may not appear inside a field that is not enclosed",
+      "expect": {
+        "status": "UNKNOWN",
+        "rejected": "syntax"
+      }
+    },
+    {
+      "id": "csv-enclosed-field-never-closed",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,\"bbb,ccc",
+      "provenance": "RFC 4180 section 2: rule 5, an enclosed field ends with a double quote",
+      "expect": {
+        "status": "UNKNOWN",
+        "rejected": "syntax"
+      }
+    },
+    {
+      "id": "csv-line-separator-in-field",
+      "delimiter": ",",
+      "columns": 3,
+      "raw": "aaa,b b,ccc",
+      "provenance": "RFC 4180 section 2: U+2028 is not CR or LF; it is an ordinary character of the field",
+      "expect": {
+        "status": "FULL",
+        "values": [
+          "aaa",
+          "b b",
+          "ccc"
+        ]
+      }
+    }
+  ],
+  "jsonCases": [
+    {
+      "id": "json-rfc8259-object",
+      "raw": "{\"Latitude\":37.7668,\"Longitude\":-122.3959,\"City\":\"SAN FRANCISCO\",\"Zip\":\"94107\",\"Precision\":\"zip\"}",
+      "provenance": "RFC 8259: section 13 example (one object of the array): numbers and strings as members of an object",
+      "expect": {
+        "status": "FULL",
+        "values": {
+          "Latitude": 37.7668,
+          "Longitude": -122.3959,
+          "City": "SAN FRANCISCO",
+          "Zip": "94107",
+          "Precision": "zip"
+        }
+      }
+    },
+    {
+      "id": "json-string-escapes",
+      "raw": "{\"s\":\"\\u0041\\u00e9 \\ud83d\\ude00 a\\/b \\\\ \\\"q\\\" \\n\",\"t\":true,\"n\":null}",
+      "provenance": "RFC 8259: section 7: \\uXXXX (with a surrogate pair for U+1F600), \\/, \\\\, \\\" and \\n name single characters",
+      "expect": {
+        "status": "FULL",
+        "values": {
+          "s": "Aé 😀 a/b \\ \"q\" \n",
+          "t": true,
+          "n": null
+        }
+      }
+    },
+    {
+      "id": "json-line-separator-unescaped-in-string",
+      "raw": "{\"a\":\"x y\",\"b\":1}",
+      "provenance": "RFC 8259: section 7: only quotation mark, reverse solidus and U+0000..U+001F must be escaped; U+2028 may appear as itself",
+      "expect": {
+        "status": "FULL",
+        "values": {
+          "a": "x y",
+          "b": 1
+        }
+      }
+    },
+    {
+      "id": "json-trailing-comma",
+      "raw": "{\"a\":1,}",
+      "provenance": "RFC 8259: section 4: members are separated by commas; a comma is not followed by the closing brace",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "json-repeated-name",
+      "raw": "{\"a\":1,\"a\":2}",
+      "provenance": "Product policy on RFC 8259 section 4 (names SHOULD be unique; behaviour for repeated names is unpredictable): an object with a repeated name is declined by every engine rather than keeping one of the values",
+      "expect": {
+        "status": "UNKNOWN"
+      }
     }
   ]
 }

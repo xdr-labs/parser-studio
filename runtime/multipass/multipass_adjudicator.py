@@ -174,7 +174,6 @@ GENERIC_EVIDENCE=_evidence(
      'ultra-json-195809-exact-zero-fp-fn'),
 )
 CEF_EVIDENCE=_evidence('cef.standard','QUALIFIED_STANDARD','cef-0-1-standard-boundaries',('commercial-cef-482-exact','authored-cef-900-exact','false-complete-zero'))
-LEEF_EVIDENCE=_evidence('leef.xhh','QUALIFIED_STANDARD','leef-2-xhh-delimiter',('authored-leef-3552-exact','external-xa6-19-exact'))
 
 
 def _qualified_generic_event(event:SourceEvent)->SourceEvent:
@@ -348,8 +347,6 @@ def parse_security_once(raw:str)->SourceEvent:
         # Public in-the-wild compatibility evidence, not an independently
         # qualified standard. Promote only a bounded full-source parse.
         return leef
-    if 'LEEF_XHH' in leef.syntax:
-        events['leef.xhh']=leef;contracts.append(candidate_from_event(leef,LEEF_EVIDENCE))
     decision=adjudicate_candidates(tuple(contracts))
     if decision.ambiguous:
         result=deepcopy(base)

@@ -68,6 +68,8 @@ add("generic", "default", p => { p.extraction = { format: "generic_structural" }
 for (const profile of ["syslog_prefix_kv", "leef2_implicit_tab", "syslog_prefix_kv_leef2_implicit_tab_v1"] as const)
   add("generic", profile, p => { p.extraction = { format: "generic_structural", genericStructuralProfile: profile }; });
 add("generic", "omit-source-raw", p => { p.extraction = { format: "generic_structural", omitSourceRaw: true }; });
+// Owner policy D-2: what every newly created Generic Structural parser carries.
+add("generic", "dedicated-families", p => { p.extraction = { format: "generic_structural", genericStructuralFamilyGrammar: "dedicated" }; });
 
 for (const format of ["json", "kv", "cef", "leef", "syslog_rfc3164", "syslog_rfc5424"] as const)
   add("forwarder", format, p => { p.extraction = { format, forwarder: relay }; });

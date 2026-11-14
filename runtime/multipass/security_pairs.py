@@ -9,6 +9,7 @@ from datetime import datetime
 import re
 from engine import MAX_RAW_BYTES
 from structured_source import Fragment,RFC5424_HEAD
+from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS
 from source_parse import SourceEvent,ValueSpan,_span,_close
 
 KEY=re.compile(r'[A-Za-z_][A-Za-z0-9_.:-]{0,127}:')
@@ -24,7 +25,7 @@ def extract_pair_envelope(raw:str)->tuple[Fragment,int]|None:
     """
     match=RFC5424_HEAD.match(raw)
     if match is None or not PREFIX.match(raw,match.end()):return None
-    if int(match['pri'])>191 or match['version']!='1':return None
+    if int(match['pri'])>PRI_MAX or match['version'] not in RFC5424_SUPPORTED_VERSIONS:return None
     limits={'timestamp':64,'hostname':255,'appname':48,'procid':128,'msgid':32}
     if any(len(match[k])>limit or not re.fullmatch(r'[!-~]+',match[k]) for k,limit in limits.items()):return None
     fields=match.groupdict()

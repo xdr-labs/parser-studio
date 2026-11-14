@@ -1,18 +1,56 @@
-"""Occurrence-preserving source KV scanner, independent of semantic adapters.
+"""Source key=value scanner driven by the shared grammar contract.
 
-Repeated native keys retain ordered values and one exact span per occurrence.
-Single/double quoted strings and escaped bare spaces are bounded lexically;
-malformed tails stay raw, without scavenging nested apparent keys. This is a
-source-only extension: historical role-learning controls remain unchanged.
+The pair expression, the pair separator (SP and TAB), the trailing white space,
+the escape set, the forbidden keys and the pair limit all come from the module
+generated out of contracts/syslog-header-grammar.v1.json. The browser parser
+(src/grammar/kvBody.ts) and the generated Ruby Fragment read the same contract,
+so a body is split at the same characters and decoded to the same values by
+every executor: NBSP and U+2028 are value data and only the listed escapes are
+decoded. A repeated key (owner policy D-1): the strict parsers decline the body;
+this source preview keeps every value in order and reports the event as not
+completely parsed (DUPLICATE_SOURCE_FIELD), so no engine reports it as FULL.
+
+The issue code attached to a rejected body is diagnostic only; whether a body
+is accepted is decided by the contract expressions alone. A rejected tail stays
+raw: no nested apparent keys are scavenged from it.
 """
 from __future__ import annotations
 import re
 from structured_source import Fragment
+from syslog_header_grammar_generated import FRAGMENTS,SEMANTICS,TOKENS,KV_ASCII_WHITESPACE
 
-KEY=re.compile(r'[A-Za-z_][A-Za-z0-9_.-]{0,127}=')
-UNSAFE={'__proto__','prototype','constructor'}
-MAX_FIELDS=1024
+PAIR=re.compile(FRAGMENTS['kv_pair']['source'])
+TRAILING=re.compile('(?:'+TOKENS['KV_TRAILING']+')')
+GAP=re.compile('(?:'+TOKENS['KV_GAP']+')')
+KEY=re.compile('(?:'+TOKENS['KV_KEY']+')=')
+UNESCAPED=frozenset(SEMANTICS['kvUnescapedAfterBackslash'])
+UNSAFE=frozenset(SEMANTICS['kvForbiddenKeys'])
+MAX_FIELDS=SEMANTICS['kvMaxPairs']
 MAX_BYTES=131072
+
+
+def unescape_kv_value(text:str)->str:
+    """Decode only the escapes the contract lists; any other backslash stays as written."""
+    out=[];index=0
+    while index<len(text):
+        if text[index]=='\\' and index+1<len(text):
+            following=text[index+1]
+            out.append(following if following in UNESCAPED else text[index:index+2])
+            index+=2
+        else:
+            out.append(text[index]);index+=1
+    return ''.join(out)
+
+
+def _diagnose(raw:str,pos:int)->str:
+    """Name why no contract pair starts at `pos`. Never decides acceptance."""
+    pos=GAP.match(raw,pos).end()
+    key=KEY.match(raw,pos)
+    if key is None:return 'KV_TOKEN_UNRECOGNIZED'
+    following=raw[key.end():key.end()+1]
+    if following in ('"',"'"):return 'KV_QUOTE_UNCLOSED'
+    if following=='' or following in KV_ASCII_WHITESPACE:return 'KV_EMPTY_UNQUOTED_VALUE'
+    return 'KV_VALUE_MALFORMED'
 
 
 def decode_source_kv(raw:str,begin:int=0,*,max_fields:int=MAX_FIELDS)->Fragment:
@@ -24,53 +62,30 @@ def decode_source_kv(raw:str,begin:int=0,*,max_fields:int=MAX_FIELDS)->Fragment:
         out.issues.append('KV_SOURCE_SIZE_OR_NUL_INVALID');return out
     pos=begin;n=len(raw)
     while pos<n:
-        whitespace=pos
-        while pos<n and raw[pos].isspace():pos+=1
-        if whitespace<pos:out.covered.append((whitespace,pos))
-        if pos==n:break
-        if out.primitive_fields>=max_fields:
-            out.issues.append('KV_SOURCE_FIELD_LIMIT');break
-        start=pos;match=KEY.match(raw,pos)
-        if match is None:
-            out.issues.append('KV_TOKEN_UNRECOGNIZED');break
-        key=match.group()[:-1]
+        if TRAILING.fullmatch(raw,pos) is not None:
+            out.covered.append((pos,n));break
+        match=PAIR.match(raw,pos)
+        if match is None or match.end()<=pos:
+            out.issues.append(_diagnose(raw,pos));break
+        key=match['key']
         if key in UNSAFE:
             out.issues.append('KV_UNSAFE_SOURCE_KEY');break
-        pos=match.end();value_start=pos;decoded=[]
-        quote=raw[pos:pos+1]
-        if quote in ('"',"'"):
-            pos+=1;value_start=pos
-            while pos<n:
-                char=raw[pos]
-                if char=='\\':
-                    if pos+1==n:
-                        out.issues.append('KV_ESCAPE_TRUNCATED');return out
-                    following=raw[pos+1]
-                    decoded.append(following if following in (quote,'\\') else raw[pos:pos+2])
-                    pos+=2
-                elif char==quote:break
-                else:decoded.append(char);pos+=1
-            if pos==n:
-                out.issues.append('KV_QUOTE_UNCLOSED');return out
-            value_end=pos;pos+=1
-            if pos<n and not raw[pos].isspace():
-                out.issues.append('KV_AFTER_QUOTE_INVALID');return out
-        else:
-            while pos<n and not raw[pos].isspace():
-                # Unknown bare escapes (including paths) are literal source.
-                # Only an explicitly escaped separator joins a bare value.
-                if raw[pos]=='\\' and pos+1<n and raw[pos+1] in ' \t':
-                    decoded.append(raw[pos+1]);pos+=2
-                else:decoded.append(raw[pos]);pos+=1
-            value_end=pos
-            if value_start==value_end:out.issues.append('KV_EMPTY_UNQUOTED_VALUE')
-        value=''.join(decoded)
+        if out.primitive_fields>=max_fields:
+            out.issues.append('KV_SOURCE_FIELD_LIMIT');break
+        group=next(name for name in ('dq','sq','bare') if match[name] is not None)
+        value=unescape_kv_value(match[group])
         if key in out.fields:
+            # Source preview keeps every occurrence of a repeated key, in order (release gate H3).
             previous=out.fields[key]
             if isinstance(previous,list):previous.append(value)
             else:out.fields[key]=[previous,value]
+            # Owner policy D-1: every value is kept in order, and the event is never reported as
+            # completely parsed while a field is repeated (same issue code as CEF and JSON use).
+            if 'DUPLICATE_SOURCE_FIELD' not in out.issues:out.issues.append('DUPLICATE_SOURCE_FIELD')
         else:out.fields[key]=value
-        out.spans.append((key,value_start,value_end))
+        out.spans.append((key,*match.span(group)))
         out.primitive_fields+=1
-        out.covered.append((start,pos))
+        if match.start('key')>pos:out.covered.append((pos,match.start('key')))
+        out.covered.append((match.start('key'),match.end()))
+        pos=match.end()
     return out

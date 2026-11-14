@@ -13,7 +13,7 @@ function capability():BackendCapabilities{
   return {
     contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
     authoring:{receiverProtocols:['udp','tcp'],extractionFormats:['generic_structural'],
-      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',
+      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',genericStructuralDedicatedFamilies:true,
       genericStructuralProfiles:[...profiles],formatCoverage:'reviewed-bounded-subset',
       httpReceiver:false,multipleDistinctReceiverPorts:false,multiline:false,arbitraryRuby:false},
     import:{exactInternalPairsEditable:true,unknownLegacyRubyEditable:false,structuralInspectionOnly:true},

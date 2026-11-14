@@ -1,39 +1,23 @@
 {
   "schema": "parserstudio.grammar-duplication-baseline.v1",
   "purpose": "Hand-written copies of Syslog header grammar tokens that still exist outside contracts/syslog-header-grammar.v1.json. The numbers may only decrease; scripts/verification/grammar-duplication-ratchet.mjs enforces it.",
-  "total": 148,
+  "total": 49,
   "signatures": {
     "hostname-printable-ascii-255": {
       "literal": "[!-~]{1,255}",
-      "files": {
-        "src/genericStructural.ts": 7,
-        "src/guided/autoParserEnvelope.ts": 1,
-        "src/structuredFamilies.ts": 3,
-        "backend/templates/generic-structural-helper.rb.tpl": 6,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 2,
-        "backend/templates/ruby-fragment.rb.tpl": 2,
-        "runtime/multipass/generic_structural_poc.py": 2,
-        "runtime/multipass/security_envelope.py": 3
-      }
+      "files": {}
     },
     "bsd-month-token": {
       "literal": "[A-Z][a-z]{2}",
       "files": {
-        "src/genericStructural.ts": 11,
         "src/guided/autoParserDraft.ts": 1,
-        "src/guided/autoParserEnvelope.ts": 1,
         "src/guided/localPatternMining.ts": 1,
         "src/guided/parserRecipeV2.ts": 1,
         "src/parser.ts": 3,
-        "src/structuredFamilies.ts": 4,
-        "src/syslogEnvelope.ts": 4,
-        "backend/templates/generic-structural-helper.rb.tpl": 14,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 3,
-        "backend/templates/ruby-fragment.rb.tpl": 3,
+        "src/structuredFamilies.ts": 1,
+        "backend/templates/ruby-fragment.rb.tpl": 1,
         "runtime/multipass/generic_partial_envelope.py": 3,
-        "runtime/multipass/generic_structural_poc.py": 2,
         "runtime/multipass/security_asa.py": 1,
-        "runtime/multipass/security_envelope.py": 2,
         "runtime/multipass/security_watchguard.py": 1,
         "runtime/multipass/structural_funnel.py": 1,
         "runtime/multipass/structured_source.py": 4
@@ -42,35 +26,69 @@
     "pri-capture": {
       "literal": "(\\d{1,3})>",
       "files": {
-        "src/genericStructural.ts": 17,
-        "src/guided/autoParserEnvelope.ts": 2,
-        "src/parser.ts": 1,
-        "src/rfc5424Subset.ts": 1,
-        "src/structuredFamilies.ts": 2,
-        "src/syslogEnvelope.ts": 1,
-        "backend/templates/generic-structural-helper.rb.tpl": 18,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 3,
-        "backend/templates/ruby-fragment.rb.tpl": 3
+        "src/guided/autoParserEnvelope.ts": 1,
+        "src/parser.ts": 1
       }
     },
     "rfc5424-version-any-digits": {
       "literal": "[1-9]\\d{0,2}",
       "files": {
         "src/javaStacktrace.ts": 1,
-        "src/syslogEnvelope.ts": 1,
         "backend/src/canonical-value-contract.ts": 1,
         "backend/src/testlab-synthetic.ts": 1,
-        "backend/templates/generic-structural-helper.rb.tpl": 1,
-        "backend/templates/ruby-forwarder-family.rb.tpl": 1,
         "backend/templates/ruby-fragment.rb.tpl": 1
       }
     },
     "rfc5424-version-literal-one": {
       "literal": ">(1) ",
+      "files": {}
+    },
+    "kv-key-token": {
+      "literal": "[A-Za-z_][A-Za-z0-9_.-]{0,95}",
       "files": {
-        "src/genericStructural.ts": 4,
-        "backend/templates/generic-structural-helper.rb.tpl": 3
+        "src/grammar/parseStatus.ts": 1,
+        "src/guided/approvedInterflowReadback.ts": 1,
+        "src/guided/autoParserEnvelope.ts": 2,
+        "src/guided/testLabEvidenceClient.ts": 1,
+        "backend/src/mapping-suggestions.ts": 1,
+        "backend/src/stellar-interflow.ts": 1,
+        "backend/src/testlab-evidence.ts": 1,
+        "backend/src/testlab-report-export.ts": 1,
+        "runtime/multipass/generic_partial_envelope.py": 1,
+        "runtime/multipass/security_asa.py": 1,
+        "runtime/multipass/security_envelope.py": 1,
+        "runtime/multipass/structural_funnel.py": 1,
+        "runtime/multipass/structured_source.py": 1
       }
+    },
+    "kv-double-quoted-value": {
+      "literal": "(?:\\\\.|[^\"\\\\])*",
+      "files": {}
+    },
+    "cef-key-token": {
+      "literal": "[A-Za-z_][A-Za-z0-9_.-]{0,127}",
+      "files": {
+        "src/genericStructural.ts": 1,
+        "src/guided/fieldMappingSuggestions.ts": 1,
+        "src/guided/vendorFieldNames.ts": 1,
+        "backend/src/testlab-synthetic.ts": 1,
+        "backend/templates/generic-structural-helper.rb.tpl": 1,
+        "runtime/multipass/generic_text_envelope.py": 1,
+        "runtime/multipass/security_envelope.py": 1,
+        "runtime/multipass/security_profile_tokens.py": 1,
+        "runtime/multipass/source_parse.py": 1,
+        "runtime/multipass/source_schema_stream.py": 1
+      }
+    },
+    "leef-hex-delimiter": {
+      "literal": "[0-9a-fA-F]{1,2}",
+      "files": {
+        "backend/src/testlab-synthetic.ts": 1
+      }
+    },
+    "leef-hex-delimiter-two-digits": {
+      "literal": "0x[0-9a-fA-F]{2}",
+      "files": {}
     }
   }
 }

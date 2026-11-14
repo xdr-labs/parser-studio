@@ -22,7 +22,7 @@ function capabilities(profiles?:BackendCapabilities['authoring']['genericStructu
   return {
     contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
     authoring:{receiverProtocols:['udp','tcp'],extractionFormats:['generic_structural'],
-      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',
+      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',genericStructuralDedicatedFamilies:true,
       ...(profiles?{genericStructuralProfiles:profiles}:{}),formatCoverage:'reviewed-bounded-subset',
       ...(combined===undefined?{}:{genericStructuralMixedProfileV1:combined}),
       httpReceiver:false,multipleDistinctReceiverPorts:false,multiline:false,arbitraryRuby:false},

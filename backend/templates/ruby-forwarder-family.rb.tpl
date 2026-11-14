@@ -52,6 +52,8 @@ def parserstudio_extract(text)
   else
     raise ArgumentError, 'Unsupported extraction format'
   end
+  # Parsing Success Contract at run time: never a parsed event with a missing key=value field.
+  parserstudio_assert_no_field_loss(text, result)
   result['__parserstudio_forwarder_hops'] = relay_hops unless relay_hops.empty?
   result
 end
@@ -76,7 +78,9 @@ def parserstudio_unwrap_declared_relays(text, settings)
     parsed=if rfc5424
       parserstudio_syslog_rfc5424(remaining, {'syslogBodyFormat'=>'raw'})
     else
-      parserstudio_syslog_rfc3164(remaining, {'syslogBodyFormat'=>'raw'})
+      # The probe only reads the header. A direct event without TAG (or without HOSTNAME) is not a relay
+      # hop; it must reach the declared body parser instead of failing here on its raw body.
+      parserstudio_syslog_rfc3164(remaining, {'syslogBodyFormat'=>'raw','taglessStructuredRouter'=>true})
     end
     host=parsed['syslog_hostname']
     break unless hosts.include?(host)
@@ -97,6 +101,67 @@ def parserstudio_unwrap_declared_relays(text, settings)
     remaining=payload
   end
   [remaining,hops]
+end
+
+# A key=value body is complete only when every key=value pair visible in the original text is present, with
+# its value, in the parsed fields. The original text is re-read here by a deliberately separate and much
+# simpler tokenizer than the grammar that produced the fields, so a grammar fault that moves a pair into
+# another field (the first pair into the host name, for example) becomes an error record with the original
+# text instead of a parsed event that silently lacks a field.
+def parserstudio_assert_no_field_loss(text, result)
+  return result unless result.is_a?(Hash)
+  # A TAG ("kernel:") or a pair ("srcip=10.1.1.1") read as the RFC 3164 host name is a misread header, whatever
+  # the grammar matched. RFC 5424 HOSTNAME is positional and may hold any printable text, so it is exempt.
+  host = result['syslog_hostname']
+  if host.is_a?(String) && !/\A<[0-9]{1,3}>[0-9]{1,3} /.match?(text)
+    raise ArgumentError, 'Header misread: a TAG or a key=value pair was taken as the host name' if host.include?('=') || host.end_with?(':')
+  end
+  body = result['body']
+  return result unless result.instance_variable_get(:@parserstudio_kv_body) ||
+    (body.is_a?(Hash) && body.instance_variable_get(:@parserstudio_kv_body))
+  leaves = {}
+  parserstudio_collect_leaves(result, '', leaves)
+  parserstudio_independent_pairs(text).each do |key, value, written|
+    # Which backslashes a grammar decodes is the grammar's business; presence of the value is what counts.
+    stripped = written.delete('\\')
+    candidates = leaves[key] || []
+    at = candidates.index do |candidate|
+      candidate == value || candidate == written || candidate.delete('\\') == stripped
+    end
+    raise ArgumentError, 'Field loss: a key=value pair of the event is missing from the parsed fields' if at.nil?
+    # Every pair needs a value of its own: a field written twice and present once is a lost occurrence.
+    candidates.delete_at(at)
+  end
+  result
+end
+
+def parserstudio_collect_leaves(value, key, leaves)
+  case value
+  when Hash then value.each { |child_key, child| parserstudio_collect_leaves(child, child_key.to_s, leaves) }
+  when Array then value.each { |child| parserstudio_collect_leaves(child, key, leaves) }
+  when nil then nil
+  else (leaves[key] ||= []) << value.to_s
+  end
+end
+
+# key=value pairs that start a white-space separated token of the original text, as [key, value, written].
+# The key and the quoted-value tokens are the contract's (no second literal of them); what is separate from
+# the grammar is the control flow: every token of the line is visited, with no header and no pair order.
+# The five positional header fields after "<PRI>VERSION" of an RFC 5424 line are never pairs.
+def parserstudio_independent_pairs(text)
+  rest = text
+  if /\A<[0-9]{1,3}>[0-9]{1,3} /.match?(text)
+    positional = /\A<[0-9]{1,3}>[0-9]{1,3} (?:[^ ]* ){5}/.match(text)
+    return [] if positional.nil?
+    rest = positional.post_match
+  end
+  pairs = []
+  rest.scan(/(__PS_GRAMMAR_TOKEN_KV_KEY__)=(?:"(__PS_GRAMMAR_TOKEN_KV_DQ__)"|'(__PS_GRAMMAR_TOKEN_KV_SQ__)'|((?:\\.|[^ \t\\])*\\?))|[^ \t]+|[ \t]+/m) do |key, double, single, bare|
+    next if key.nil?
+    quoted = double || single
+    pairs << (quoted ? [key, quoted.gsub(/\\(.)/m, '\1'), quoted] : [key, bare, bare])
+  end
+  pairs
 end
 
 # Strict Java exception/stack-frame grammar; not Java code execution.
@@ -268,30 +333,34 @@ def parserstudio_unescape(text)
   # including Windows path separators, stay byte-for-byte intact.
   text.gsub(/\\(.)/m) do |escaped|
     next_char = escaped[1]
-    ['\\', '"', "'", '='].include?(next_char) ? next_char : escaped
+    __PS_GRAMMAR_KV_UNESCAPED__.include?(next_char) ? next_char : escaped
   end
 end
 
 # A strict small-subset token parser. No unmatched suffix can be silently lost.
 def parserstudio_key_values(text)
+  # Pair grammar generated from contracts/syslog-header-grammar.v1.json (fragments.kv_pair): SP and TAB
+  # separate pairs, every other character is value data. Do not edit the expressions here.
   record = {}
-  pattern = /\G[ \t]*([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|((?:\\.|[^\s"'\\])+))/
+  pattern = /__PS_GRAMMAR_FRAGMENT_KV_PAIR__/
   position = 0
   while position < text.length
     tail = text[position..-1]
-    break if tail.nil? || tail.strip.empty?
+    break if tail.nil? || tail.match?(/\A(?:__PS_GRAMMAR_TOKEN_KV_TRAILING__)\z/)
     match = pattern.match(text, position)
     raise ArgumentError, 'Unsupported or malformed key value segment' if match.nil?
-    key = match[1]
+    key = match[:key]
     raise ArgumentError, 'Unsafe key value field' if ['__proto__', 'constructor', 'prototype'].include?(key)
-    raise ArgumentError, 'Too many key value fields' if record.length >= 100
+    raise ArgumentError, 'Too many key value fields' if record.length >= __PS_GRAMMAR_KV_MAX_PAIRS__
     raise ArgumentError, 'Duplicate key value field' if record.key?(key)
-    value = match[2] || match[3] || match[4]
+    value = match[:dq] || match[:sq] || match[:bare]
     record[key] = parserstudio_unescape(value)
     raise ArgumentError, 'No progress parsing key value pairs' if match.end(0) <= position
     position = match.end(0)
   end
   raise ArgumentError, 'No key value pairs found' if record.empty?
+  # Marks the result as a key=value body for the run-time field-loss check (parserstudio_assert_no_field_loss).
+  record.instance_variable_set(:@parserstudio_kv_body, true)
   record
 end
 
@@ -391,37 +460,37 @@ end
 
 # RFC5424 strict profile; multiline and arbitrary/oversized SD remain unsupported.
 def parserstudio_syslog_rfc5424(text, settings)
-  pattern = /\A<(\d{1,3})>([1-9]\d?) (\S+) (\S+) (\S+) (\S+) (\S+) (.+)\z/
-  match = pattern.match(text)
+  # Header grammar generated from contracts/syslog-header-grammar.v1.json.
+  # Do not edit this expression: change the contract and regenerate. The
+  # contract bounds every HEADER token to printable US-ASCII and its RFC length.
+  match = /__PS_GRAMMAR_RX_RFC5424__/.match(text)
   raise ArgumentError, 'Unsupported RFC5424 syslog header' unless match
-  # This export implements the RFC5424 VERSION=1 subset only. Reject all
-  # future/unknown versions before normalization can imply support.
-  raise ArgumentError, 'Unsupported RFC5424 version' unless match[2] == '1'
-  # RFC5424 printable US-ASCII HEADER fields with bounded octet lengths;
-  # "-" is a valid NILVALUE within those bounds.
-  {4 => 255, 5 => 48, 6 => 128, 7 => 32}.each do |field, maximum|
-    token = match[field]
-    raise ArgumentError, 'Invalid RFC5424 header token' unless
-      token.bytesize <= maximum && token.match?(/\A[!-~]+\z/)
-  end
-  priority = Integer(match[1], 10)
-  raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= 191
+  header = Hash[match.names.zip(match.captures)]
+  # Only the VERSION values the contract lists are parsed. The layout of any
+  # other version is unknown and must not be read as version 1.
+  raise ArgumentError, 'Unsupported RFC5424 version' unless __PS_GRAMMAR_RFC5424_VERSIONS__.include?(header['version'])
+  priority = Integer(header['pri'], 10)
+  raise ArgumentError, 'RFC5424 PRI out of range' unless priority >= 0 && priority <= __PS_GRAMMAR_PRI_MAX__
   # RFC5424 timestamp is NILVALUE or explicit offset-bearing RFC3339.
   # Reject malformed metadata before downstream optional field selection.
-  if match[3] != '-'
-    raise ArgumentError, 'Invalid RFC5424 timestamp' unless
-      match[3].match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/)
-    Time.iso8601(match[3])
+  if header['timestamp'] != '-'
+    stamp = /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-](\d{2}):(\d{2}))\z/.match(header['timestamp'])
+    # Time.iso8601 rolls an impossible day over (Feb 30 becomes Mar 2); the browser rejects it, so does this.
+    raise ArgumentError, 'Invalid RFC5424 timestamp' unless stamp &&
+      Date.valid_date?(stamp[1].to_i, stamp[2].to_i, stamp[3].to_i) &&
+      stamp[4].to_i <= 23 && stamp[5].to_i <= 59 && stamp[6].to_i <= 59 &&
+      (stamp[7].nil? || (stamp[7].to_i <= 23 && stamp[8].to_i <= 59))
+    Time.iso8601(header['timestamp'])
   end
-  structured_data, message, sd_elements = parserstudio_rfc5424_sd(match[8])
+  structured_data, message, sd_elements = parserstudio_rfc5424_sd(header['rest'])
   record = {
     'syslog_pri' => priority,
-    'syslog_version' => Integer(match[2], 10),
-    'syslog_timestamp' => match[3],
-    'syslog_hostname' => match[4],
-    'syslog_appname' => match[5],
-    'syslog_procid' => match[6],
-    'syslog_msgid' => match[7],
+    'syslog_version' => Integer(header['version'], 10),
+    'syslog_timestamp' => header['timestamp'],
+    'syslog_hostname' => header['hostname'],
+    'syslog_appname' => header['appname'],
+    'syslog_procid' => header['procid'],
+    'syslog_msgid' => header['msgid'],
     'syslog_structured_data' => structured_data
   }
   record['syslog_sd'] = sd_elements unless sd_elements.empty?
@@ -451,41 +520,49 @@ end
 # Unlike RFC5424, RFC3164's month/day/time has NO year or timezone.
 # Never synthesize either, even when the host clock happens to be available.
 def parserstudio_syslog_rfc3164(text, settings)
-  tagged = /\A<(\d{1,3})>([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\[(\d{1,8})\])?:[ ]+(.+)\z/.match(text)
-  # Some security appliances emit the BSD timestamp + host header without PRI
-  # and TAG, followed immediately by an explicit structured body. This remains
-  # a bounded grammar: raw/prose bodies are never accepted by the tagless path.
-  tagless = tagged.nil? ? /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(\d{2}):(\d{2}):(\d{2})[ ]+([!-~]{1,255})[ ]+(.+)\z/.match(text) : nil
-  match = tagged || tagless
+  # Header grammar generated from contracts/syslog-header-grammar.v1.json.
+  # The expressions and their order are contract data: change the contract and
+  # regenerate. The tagged rule is tried before the tagless rule. A line whose
+  # HOSTNAME is omitted matches only the hostless rule, so its first key=value
+  # field stays in the body and is never taken as the host name.
+  rule = nil
+  match = nil
+  __PS_GRAMMAR_RFC3164_ALTERNATIVES__.each do |name, expression|
+    match = expression.match(text)
+    if match
+      rule = name
+      break
+    end
+  end
   raise ArgumentError, 'Unsupported RFC3164 header' unless match
-  priority = match[1] ? Integer(match[1], 10) : nil
-  raise ArgumentError, 'RFC3164 PRI out of range' if priority && !priority.between?(0, 191)
-  months = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
-    'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
-  days = months[match[2]]
-  day = Integer(match[3], 10)
-  hour = Integer(match[4], 10)
-  minute = Integer(match[5], 10)
-  second = Integer(match[6], 10)
+  header = Hash[match.names.zip(match.captures)]
+  priority = header['pri'] ? Integer(header['pri'], 10) : nil
+  raise ArgumentError, 'RFC3164 PRI out of range' if priority && !priority.between?(0, __PS_GRAMMAR_PRI_MAX__)
+  months = __PS_GRAMMAR_BSD_MONTH_DAYS__
+  days = months[header['month']]
+  day = Integer(header['day'], 10)
+  hour = Integer(header['hour'], 10)
+  minute = Integer(header['minute'], 10)
+  second = Integer(header['second'], 10)
   raise ArgumentError, 'RFC3164 calendar value is invalid' unless days &&
     day.between?(1, days) && hour.between?(0, 23) &&
     minute.between?(0, 59) && second.between?(0, 59)
   # The year may be leap-year or non-leap-year: Feb 29 is not fabricated.
   # An operator must supply a separate explicit timestamp policy to resolve it.
-  timestamp = "#{match[2]} #{day.to_s.rjust(2, ' ')} #{match[4]}:#{match[5]}:#{match[6]}"
+  timestamp = "#{header['month']} #{day.to_s.rjust(2, ' ')} #{header['hour']}:#{header['minute']}:#{header['second']}"
   record = {
     'syslog_timestamp' => timestamp,
-    'syslog_time_policy' => 'YEAR_AND_ZONE_UNKNOWN',
-    'syslog_hostname' => match[7]
+    'syslog_time_policy' => 'YEAR_AND_ZONE_UNKNOWN'
   }
+  record['syslog_hostname'] = header['hostname'] if header['hostname']
   record['syslog_pri'] = priority if priority
+  tagged = rule == 'rfc3164_tagged'
+  tagless = !tagged
   if tagged
-    record['syslog_appname'] = match[8]
-    record['syslog_procid'] = match[9] if match[9]
-    message = match[10]
-  else
-    message = match[8]
+    record['syslog_appname'] = header['tag']
+    record['syslog_procid'] = header['procid'] if header['procid']
   end
+  message = header['message']
   format = settings['syslogBodyFormat'] || 'raw'
   # The mixed router classifies the body itself and rejects anything that is
   # not an explicitly allowlisted structured family, so it may request a raw
@@ -615,7 +692,11 @@ def parserstudio_split_escaped(text, delimiter, maximum_splits)
   buffer = +''
   escaped = false
   text.each_char do |character|
-    if escaped
+    # Everything after the last header delimiter belongs to the extension grammar and is kept exactly as
+    # written. Decoding header escapes there as well decoded a value twice.
+    if parts.length == maximum_splits
+      buffer << character
+    elsif escaped
       if character == delimiter || character == '\\'
         buffer << character
       else
@@ -644,52 +725,22 @@ def parserstudio_cef_extensions(text)
   record = {}
   position = 0
   count = 0
-  key_pattern = /\G([A-Za-z_][A-Za-z0-9_.-]{0,127})=/
-  while position < text.length
-    position += 1 while position < text.length && [' ', "\t"].include?(text[position])
-    break if position >= text.length
-    raise ArgumentError, 'CEF extension field limit exceeded' if count >= 1024
-    match = key_pattern.match(text, position)
-    raise ArgumentError, 'Unsupported CEF extension key boundary' if match.nil? || match.begin(0) != position
-    key = match[1]
-    raise ArgumentError, 'Unsafe CEF extension key' if ['__proto__','constructor','prototype'].include?(key)
+  # One pair expression (fragments.cef_pair), the escape token, the field limit, the escape table and the
+  # forbidden keys all come from contracts/syslog-header-grammar.v1.json. The browser and the Python
+  # preview compile the same fragment, so the three scanners share one control flow.
+  pair = /__PS_GRAMMAR_FRAGMENT_CEF_PAIR__/
+  while (match = pair.match(text, position))
+    raise ArgumentError, 'CEF extension field limit exceeded' if count >= __PS_GRAMMAR_CEF_MAX_FIELDS__
+    key = match[:key]
+    raise ArgumentError, 'Unsafe CEF extension key' if __PS_GRAMMAR_FORBIDDEN_KEYS__.include?(key)
     raise ArgumentError, 'Duplicate CEF extension field' if record.key?(key)
-    cursor = match.end(0)
-    value = +''
-    boundary = nil
-    while cursor < text.length
-      char = text[cursor]
-      if char == '\\'
-        raise ArgumentError, 'Truncated CEF escape' if cursor + 1 >= text.length
-        following = text[cursor + 1]
-        value << case following
-                 when 'n' then "\n"
-                 when 'r' then "\r"
-                 when '=' then '='
-                 when '\\' then '\\'
-                 else "\\" + following
-                 end
-        cursor += 2
-        next
-      end
-      if char == ' ' || char == "\t"
-        run_end = cursor
-        run_end += 1 while run_end < text.length && [' ', "\t"].include?(text[run_end])
-        next_key = key_pattern.match(text, run_end)
-        if next_key && next_key.begin(0) == run_end
-          value << text[cursor...(run_end - 1)] if run_end - cursor > 1
-          boundary = run_end - 1
-          break
-        end
-      end
-      value << char
-      cursor += 1
-    end
-    value = value.sub(/[ \t]+\z/, '') if boundary.nil?
-    record[key] = value
+    # A backslash pair listed in the contract is decoded; any other pair is kept as written.
+    record[key] = match[:value].gsub(/__PS_GRAMMAR_TOKEN_CEF_ESCAPE__/) { |found| (__PS_GRAMMAR_CEF_ESCAPES__).fetch(found[1]) { found } }
     count += 1
-    position = boundary.nil? ? text.length : boundary + 1
+    position = match.end(0)
   end
+  # Text the pair grammar does not account for: a broken key boundary or a backslash that escapes nothing.
+  raise ArgumentError, 'Unsupported CEF extension key boundary' unless position == text.length
   raise ArgumentError, 'No CEF extension fields parsed' if record.empty?
   record
 end
@@ -701,7 +752,7 @@ def parserstudio_cef(text)
   match = /\ACEF:(\d+)\|(.*)\z/m.match(text)
   raise ArgumentError, 'Invalid CEF preamble' unless match
   # This compiler implements CEF version 0 only, not vendor-specific upgrades.
-  raise ArgumentError, 'Unsupported CEF version' unless match[1] == '0'
+  raise ArgumentError, 'Unsupported CEF version' unless __PS_GRAMMAR_CEF_VERSIONS__.include?(match[1])
   fields = parserstudio_split_escaped(match[2], '|', 6)
   record = {
     'cef_version' => match[1],
@@ -724,10 +775,15 @@ end
 
 # Basic LEEF 1.0 (TAB extension) and 2.0 (declared one-character delimiter).
 def parserstudio_leef(text)
-  match = /\ALEEF:(1\.0|2\.0)\|(.*)\z/m.match(text)
-  raise ArgumentError, 'Invalid LEEF preamble' unless match
+  match = /\ALEEF:([0-9.]+)\|(.*)\z/m.match(text)
+  raise ArgumentError, 'Invalid LEEF preamble' unless match && __PS_GRAMMAR_LEEF_VERSIONS__.include?(match[1])
   version = match[1]
-  parts = parserstudio_split_escaped(match[2], '|', version == '2.0' ? 5 : 4)
+  # Header field count, the versions that carry a delimiter field, its spellings, the default delimiter and
+  # the start of an attribute come from contracts/syslog-header-grammar.v1.json (fragments.leef_delimiter,
+  # fragments.leef_attribute); the browser and the Python preview read the same values.
+  carries_delimiter = __PS_GRAMMAR_LEEF_DELIMITER_VERSIONS__.include?(version)
+  header_fields = __PS_GRAMMAR_LEEF_HEADER_FIELDS__
+  parts = parserstudio_split_escaped(match[2], '|', header_fields + (carries_delimiter ? 1 : 0))
   record = {
     'leef_version' => version,
     'leef_vendor' => parts[0],
@@ -735,26 +791,34 @@ def parserstudio_leef(text)
     'leef_product_version' => parts[2],
     'leef_event_id' => parts[3]
   }
-  delimiter = version == '2.0' ? parts[4] : "\t"
-  if version == '2.0' && (hex = /\A0x([0-9a-fA-F]{1,2})\z/.match(delimiter))
-    delimiter = Integer(hex[1], 16).chr
+  delimiter = __PS_GRAMMAR_LEEF_DEFAULT_DELIMITER__
+  if carries_delimiter
+    field = parts[header_fields]
+    spelled = /__PS_GRAMMAR_FRAGMENT_LEEF_DELIMITER__/.match(field)
+    delimiter = spelled && spelled[:literal]
+    if delimiter.nil?
+      # Hexadecimal spelling, or one literal character from the contract list outside printable ASCII.
+      code = spelled ? Integer(spelled[:hex], 16) : (field.length == 1 ? field.ord : -1)
+      if __PS_GRAMMAR_LEEF_EXTRA_DELIMITERS__.include?(code)
+        delimiter = code.chr(Encoding::UTF_8)
+      else
+        raise ArgumentError, 'Unsupported LEEF delimiter' unless spelled && code <= 126
+        delimiter = code.chr
+        raise ArgumentError, 'Unsupported LEEF delimiter' unless /\A(?:__PS_GRAMMAR_TOKEN_LEEF_DELIMITER_LITERAL__)\z/.match?(delimiter)
+      end
+    end
   end
-  # Keep key=value unambiguous. Bounded accepted separators: TAB or
-  # printable ASCII excluding space, equals and backslash.
-  valid_separator = delimiter.bytesize == 1 &&
-    (delimiter == "\t" ||
-     (delimiter.ord >= 33 && delimiter.ord <= 126 &&
-      delimiter != '=' && delimiter != '\\'))
-  raise ArgumentError, 'Unsupported LEEF delimiter' unless valid_separator
   extension = parts.last
   unless extension.nil? || extension.empty?
+    attribute = /__PS_GRAMMAR_FRAGMENT_LEEF_ATTRIBUTE__/
     extension.split(delimiter, -1).each do |piece|
-      raise ArgumentError, 'Empty LEEF extension token' if piece.empty?
-      key, value = piece.split('=', 2)
-      raise ArgumentError, 'Malformed LEEF extension' unless key && value && key.match?(/\A[A-Za-z_][A-Za-z0-9_.-]*\z/)
-      raise ArgumentError, 'Unsafe LEEF field' if ['__proto__', 'constructor', 'prototype'].include?(key)
+      # KEY= at the start of the piece; the value is the rest, exactly as written. An empty piece is declined.
+      found = attribute.match(piece)
+      raise ArgumentError, 'Malformed LEEF extension' unless found
+      key = found[:key]
+      raise ArgumentError, 'Unsafe LEEF field' if __PS_GRAMMAR_FORBIDDEN_KEYS__.include?(key)
       raise ArgumentError, 'Duplicate LEEF field' if record.key?(key)
-      record[key] = value
+      record[key] = found.post_match
     end
   end
   record

@@ -48,7 +48,7 @@ function capability(combined?:boolean):BackendCapabilities{
   return {
     contract:'host-customized-pair.v0.1',projectSchemaRevision:'0.1',
     authoring:{receiverProtocols:['udp','tcp'],extractionFormats:['generic_structural'],
-      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',
+      genericStructuralGrammar:'GENERIC_STRUCTURAL_ULTRA_COMPILER_V15',genericStructuralDedicatedFamilies:true,
       genericStructuralProfiles:['syslog_prefix_kv','leef2_implicit_tab'],
       ...(combined===undefined?{}:{genericStructuralMixedProfileV1:combined}),
       formatCoverage:'reviewed-bounded-subset',httpReceiver:false,
@@ -85,7 +85,7 @@ describe('explicit versioned Syslog prefix/KV and implicit-TAB LEEF combination'
         const converted=toBackendProject(result.draft);
         expect(converted.ok).toBe(true);
         if(!converted.ok)throw new Error('Combined project did not translate');
-        expect(converted.project.extraction).toEqual({format:'generic_structural',genericStructuralProfile:mixedProfile});
+        expect(converted.project.extraction).toEqual({format:'generic_structural',genericStructuralProfile:mixedProfile,genericStructuralFamilyGrammar:'dedicated'});
         const normalization=converted.project.normalization;
         const destinations=[...Object.values(normalization.topFields),...Object.values(normalization.nsFields)]
           .map(field=>field.normalized_name);

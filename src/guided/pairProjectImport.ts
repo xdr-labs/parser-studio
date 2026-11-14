@@ -122,6 +122,8 @@ export function reconstructExactBackendDraft(
       syslogBodyFormat:e.format==='syslog_rfc5424'?e.syslogBodyFormat??'raw':'raw',
       ...(e.genericStructuralProfile?{genericStructuralProfile:e.genericStructuralProfile}:{}),
       ...(e.format==='generic_structural'&&e.omitSourceRaw===true?{omitSourceRaw:true as const}:{}),
+      // An imported project keeps the CEF/LEEF route it was written with: absent means the V15 legacy route.
+      ...(e.format==='generic_structural'&&e.genericStructuralFamilyGrammar==='dedicated'?{genericStructuralFamilyGrammar:'dedicated' as const}:{}),
       mappings,
       guided:{
         ...options,

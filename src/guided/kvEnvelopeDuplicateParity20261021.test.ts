@@ -32,7 +32,8 @@ describe('single-line KV source census uses the same duplicate-key policy as rev
     const result=extractFields('action=allow action=deny','kv',draft);
     // A duplicate now rejects the entire source record rather than exposing
     // a seemingly complete first-value subset.
-    expect(result.errors).toContain('Unsafe or duplicate extension field');
+    // Owner policy D-1 (2026-11-14): the message names the repeated field.
+    expect(result.errors).toEqual(['Duplicate field "action": the same name appears more than once in the event. No value is overwritten, and the event is not parsed automatically.']);
     expect(result.fields).toEqual({});
   });
   it.each(positives)('keeps valid distinct keys and quotes unambiguous: %s',raw=>{

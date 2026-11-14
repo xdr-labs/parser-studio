@@ -7,6 +7,8 @@ import {hasDuplicateJsonObjectKeys} from '../jsonDuplicateKeys';
 import {hasUnsafeJsonNumbers} from '../jsonNumberSafety';
 import {jsonSourceValueValid} from '../jsonSourceSafety';
 import {parseRfc5424Subset} from '../rfc5424Subset';
+import {matchRfc3164Header,matchesHeaderToken} from '../grammar/syslogHeader';
+import {parseStrictKeyValues} from '../grammar/kvBody';
 import {extractStructuredFamily} from '../structuredFamilies';
 import {parseJavaStacktrace} from '../javaStacktrace';
 import type {BackendCapabilities} from './backendCapabilities';
@@ -49,25 +51,11 @@ const EMPTY=(status:EnvelopeLedger['status'],boundary:EventBoundary,sourceCount=
   boundary,events:[],families:[],nativeVerified:false,targetVerified:false,
 });
 const MONTH_DAYS:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
-const KV_TOKEN=/^([A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'\\]+)(?=\s|$)/;
+// Source event accounting must agree with the strict KV compiler, so the front
+// door asks the same contract-driven parser (src/grammar/kvBody.ts): the same
+// separators (SP and TAB only), duplicate-key rule and pair limit as extraction.
 function kvValid(input:string):boolean{
-  let index=0,count=0;
-  const fieldNames=new Set<string>();
-  while(index<input.length){
-    while(index<input.length&&/\s/.test(input[index]!))index++;
-    if(index===input.length)break;
-    const match=KV_TOKEN.exec(input.slice(index));
-    if(!match)return false;
-    // Source event accounting must agree with the existing strict KV
-    // compiler: a later duplicate key cannot overwrite its first value.
-    // Only field-name identity is retained, never customer field values.
-    const key=match[1]!;
-    if(['__proto__','prototype','constructor'].includes(key)||fieldNames.has(key))return false;
-    fieldNames.add(key);
-    count++;if(count>100)return false;
-    index+=match[0].length;
-  }
-  return count>0;
+  return parseStrictKeyValues(input).ok;
 }
 function jsonValid(input:string):boolean{
   try{
@@ -168,15 +156,14 @@ function analyzeRecord(text:string,sequence:number,line:number,boundary:EventBou
   // Bounded tagless BSD security envelope, including an optional PRI.
   // It is accepted only when the body begins with an explicit structured
   // signature; arbitrary prose remains unknown and cannot become DRAFT-ready.
-  const tagless=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+([!-~]{1,255})\s+((?:\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]{0,95}=).+)$/.exec(raw);
-  if(tagless){
-    const pri=tagless[1]===undefined?undefined:Number(tagless[1]);
-    const classified=classifyBody(tagless[8]!);
-    if((pri===undefined||pri<=191)&&MONTH_DAYS[tagless[2]!]&&
-      Number(tagless[3])>=1&&Number(tagless[3])<=MONTH_DAYS[tagless[2]!]&&
-      Number(tagless[4])<=23&&Number(tagless[5])<=59&&Number(tagless[6])<=59)
-      return {...base,envelope:'rfc3164',...classified,
-        timePolicy:'YEAR_AND_ZONE_UNKNOWN',rfc3164Profile:'tagless_structured_security'};
+  // The header grammar (including a HOSTNAME that can never be a key=value
+  // token, and the form whose HOSTNAME is omitted) comes from
+  // contracts/syslog-header-grammar.v1.json, like the extractor and the Ruby export.
+  const bsd=matchRfc3164Header(raw);
+  if(bsd.ok&&bsd.rule!=='rfc3164_tagged'&&matchesHeaderToken('STRUCTURED_BODY',bsd.message)){
+    const classified=classifyBody(bsd.message);
+    return {...base,envelope:'rfc3164',...classified,
+      timePolicy:'YEAR_AND_ZONE_UNKNOWN',rfc3164Profile:'tagless_structured_security'};
   }
   if(raw.startsWith('<')){
     if(/^<\d{1,3}>1\s/.test(raw)){

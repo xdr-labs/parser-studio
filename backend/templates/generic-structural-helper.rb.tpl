@@ -5,6 +5,11 @@ def parserstudio_generic_structural(text)
   # Do not reinterpret physical C0 record separators as KV/token whitespace.
   raise ArgumentError, 'Unsupported generic structural control separator' if
     text.match?(/[\x0b\x0c\x0d\x1c-\x1f]/)
+  # VERSION 1 only (contracts/syslog-header-grammar.v1.json): a line that claims to be RFC 5424 with another
+  # VERSION is not parsed by any generic grammar either.
+  version_head = /__PS_GRAMMAR_FRAGMENT_RFC5424_VERSION_HEAD__/.match(text)
+  raise ArgumentError, 'Unsupported RFC5424 version' if version_head &&
+    !__PS_GRAMMAR_RFC5424_VERSIONS__.include?(version_head[:version])
   profile = @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralProfile')
   mixed_profile = profile == 'syslog_prefix_kv_leef2_implicit_tab_v1'
   # The selected standalone LEEF 2.0 family must not fall through to an older
@@ -13,6 +18,18 @@ def parserstudio_generic_structural(text)
     result = parserstudio_generic_leef2_implicit_tab(text)
     return result if result
     raise ArgumentError, 'Unsupported generic structural event'
+  end
+  # Owner policy D-2. extraction.genericStructuralFamilyGrammar "dedicated" is set for every newly created
+  # Generic Structural parser: a line that claims to be CEF or LEEF (contract fragment structured_family_claim)
+  # is read by the CEF/LEEF grammar or declined, never by a generic key=value route. Absent keeps the V15
+  # routes below unchanged for existing projects.
+  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralFamilyGrammar') == 'dedicated'
+    claim = /__PS_GRAMMAR_FRAGMENT_STRUCTURED_FAMILY_CLAIM__/.match(text)
+    if claim
+      body = claim[:family] == 'CEF' ? parserstudio_cef(text) : parserstudio_leef(text)
+      return {'body'=>body,
+              'generic'=>{'mode'=>(claim[:family] == 'CEF' ? 'structured_family_cef' : 'structured_family_leef'),'source_raw'=>text}}
+    end
   end
   result = parserstudio_generic_short_rfc5424_structured(text)
   return result if result
@@ -69,7 +86,7 @@ end
 # The V15 routes above retain their existing behavior.
 def parserstudio_generic_syslog_prefix_kv(text)
   return nil if text.bytesize>8192 || text.match?(/[\x00-\x08\x0a-\x1f\x7f]/)
-  head=/\A<(\d{1,3})>([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([!-~]{1,255}) +([^\r\n]+)\z/.match(text)
+  head=/\A<(__PS_GRAMMAR_TOKEN_PRI__)>(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(__PS_GRAMMAR_TOKEN_RFC5424_HOSTNAME__) +([^\r\n]+)\z/.match(text)
   return nil unless head && Integer(head[1],10)<=191 &&
     parserstudio_generic_valid_bsd_clock(head[2],head[3],head[4])
   message=head[6]
@@ -107,7 +124,7 @@ def parserstudio_generic_syslog_prefix_kv(text)
 end
 
 def parserstudio_generic_short_rfc5424_structured(text)
-  match = /\A<(\d{1,3})>(1) (\S{1,64}) ([!-~]{1,255}) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))\z/m.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(__PS_GRAMMAR_RFC5424_VERSION_PATTERN__) (\S{1,64}) (__PS_GRAMMAR_TOKEN_RFC5424_HOSTNAME__) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))\z/m.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191)
@@ -128,7 +145,7 @@ def parserstudio_generic_short_rfc5424_structured(text)
 end
 
 def parserstudio_generic_short_rfc5424_json(text)
-  match = /\A<(\d{1,3})>(1) (\S{1,64}) ([!-~]{1,255}) (\{.*\})\z/.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(__PS_GRAMMAR_RFC5424_VERSION_PATTERN__) (\S{1,64}) (__PS_GRAMMAR_TOKEN_RFC5424_HOSTNAME__) (\{.*\})\z/.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191)
@@ -201,7 +218,7 @@ def parserstudio_generic_source_key_safe(key)
 end
 
 def parserstudio_generic_junos_rfc5424_sd(text)
-  match = /\A<(\d{1,3})>(1) (\S+) ([!-~]{1,255}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[junos@[A-Za-z0-9.:-]{1,64}(?: [^\]]*)?\])\z/.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(__PS_GRAMMAR_RFC5424_VERSION_PATTERN__) (\S+) (__PS_GRAMMAR_TOKEN_RFC5424_HOSTNAME__) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[junos@[A-Za-z0-9.:-]{1,64}(?: [^\]]*)?\])\z/.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191)
@@ -277,7 +294,7 @@ def parserstudio_generic_structural_timestamp_valid(value)
 end
 
 def parserstudio_generic_bracket_colon_kv(text)
-  match = /\A<(\d{1,3})>(\d{1,2}) (\S+) (\S+) (\S+) (\S+) (\S+) /.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(\d{1,2}) (\S+) (\S+) (\S+) (\S+) (\S+) /.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191) && match[2] == '1'
@@ -339,7 +356,7 @@ def parserstudio_generic_comma_kv(text)
   return nil unless parts && parts.length >= 3
   prefix = parts[0].to_s.strip
   syslog = {}
-  if (pri = /\A<(\d{1,3})>/.match(prefix))
+  if (pri = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>/.match(prefix))
     value = Integer(pri[1], 10)
     return nil unless value.between?(0, 191)
     syslog['pri'] = pri[1]
@@ -459,7 +476,7 @@ end
 
 def parserstudio_generic_pri_space_kv(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A<(\d{1,3})>(.+)\z/.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(.+)\z/.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191)
@@ -602,7 +619,7 @@ end
 
 def parserstudio_generic_iso_pri_mixed(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
   return nil unless match
   priority = Integer(match[1], 10)
   return nil unless priority.between?(0, 191)
@@ -626,7 +643,7 @@ end
 
 def parserstudio_generic_iso_pri_positional(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
+  match = /\A<(__PS_GRAMMAR_TOKEN_PRI__)>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.match(text)
   return nil unless match
   pri = Integer(match[1], 10)
   return nil unless pri.between?(0, 191)
@@ -653,7 +670,7 @@ rescue StandardError
 end
 
 def parserstudio_generic_watchguard(text)
-  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.match(text)
+  match = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.match(text)
   return nil unless match
   return nil unless parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
   return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
@@ -680,7 +697,7 @@ end
 
 def parserstudio_generic_watchguard_message(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)\z/.match(text)
+  match = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)\z/.match(text)
   return nil unless match
   return nil unless parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
   return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
@@ -703,7 +720,7 @@ end
 
 def parserstudio_generic_dual_timestamp_session(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)\z/.match(text)
+  match = /\A(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)\z/.match(text)
   return nil unless match
   return nil unless parserstudio_generic_valid_bsd_clock(match[1], match[2], match[3])
   begin
@@ -726,7 +743,7 @@ end
 
 def parserstudio_generic_bsd_bracket_pid_message(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +\[(\d{1,8})\]: +(.+)\z/.match(text)
+  match = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +\[(\d{1,8})\]: +(.+)\z/.match(text)
   return nil unless match && parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
   return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
   syslog={'month'=>match[2],'day'=>match[3],'time'=>match[4],
@@ -743,7 +760,7 @@ end
 # "Mon DD HH:MM:SS app[pid]: TAG: message" shape has no separate host token.
 def parserstudio_generic_bsd_classic_pid_message(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +(.+)\z/.match(text)
+  match = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +(.+)\z/.match(text)
   return nil unless match && parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
   return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
   syslog={'month'=>match[2],'day'=>match[3],'time'=>match[4],
@@ -760,7 +777,7 @@ end
 # host TAG: message"). Malformed known structures must not fall into it.
 def parserstudio_generic_bsd_tagged_message(text)
   return nil if text.bytesize > 8192 || text.include?("\x00")
-  match = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)\z/.match(text)
+  match = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)\z/.match(text)
   return nil unless match && parserstudio_generic_valid_bsd_clock(match[2], match[3], match[4])
   return nil if match[1] && !Integer(match[1], 10).between?(0, 191)
   return nil if match[7] =~ /\A\[\d+\]:/
@@ -776,7 +793,7 @@ rescue StandardError
 end
 
 def parserstudio_generic_juniper_legacy(text)
-  head = /\A([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.match(text)
+  head = /\A(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.match(text)
   return nil unless head && head[5] == 'RT_FLOW'
   return nil unless parserstudio_generic_valid_bsd_clock(head[1], head[2], head[3])
   event = /\A(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.match(text[head.end(0)..-1].to_s)
@@ -840,7 +857,7 @@ end
 
 def parserstudio_generic_rfc3164_delimited_comma_kv(text)
   return nil if text.bytesize > 8192
-  head = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +/.match(text)
+  head = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +/.match(text)
   return nil unless head && parserstudio_generic_valid_bsd_clock(head[2], head[3], head[4])
   return nil if head[1] && !Integer(head[1], 10).between?(0, 191)
   body = parserstudio_generic_delimited_comma_kv(text[head.end(0)..-1].to_s)
@@ -892,7 +909,7 @@ end
 
 def parserstudio_generic_rfc3164_positional_csv(text)
   return nil if text.bytesize > 8192
-  head = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +/.match(text)
+  head = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +/.match(text)
   return nil unless head && parserstudio_generic_valid_bsd_clock(head[2], head[3], head[4])
   return nil if head[1] && !Integer(head[1], 10).between?(0, 191)
   body = text[head.end(0)..-1].to_s
@@ -902,7 +919,16 @@ def parserstudio_generic_rfc3164_positional_csv(text)
   rescue CSV::MalformedCSVError
     return nil
   end
-  return nil unless values && values.length.between?(12, 150) && values[0].to_s.match?(/\A[0-9]{1,10}\z/)
+  # Same bounds as the browser extractor (rfc3164PositionalCsv): at most 100 columns on this route, and a row
+  # shaped like a PAN-OS record must be a valid PAN-OS record (calendar-checked receive time) or it is declined
+  # here. A longer PAN-OS row is read by the envelope route below, in both engines.
+  return nil unless values && values.length.between?(12, 100) && values[0].to_s.match?(/\A[0-9]{1,10}\z/)
+  panos_like = values.length >= 7 &&
+    values[0].to_s.match?(/\A\d{0,10}\z/) &&
+    values[1].to_s.match?(/\A\d{4}\/\d{2}\/\d{2} +\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?\z/) &&
+    values[2].to_s.match?(/\A[A-Za-z0-9_.:-]{4,64}\z/) &&
+    values[3].to_s.match?(/\A[A-Z][A-Z0-9_]{2,31}\z/)
+  return nil if panos_like && !parserstudio_generic_envelope_panos(values)
   ips = values.count { |value| parserstudio_generic_valid_ipv4?(value) }
   category = /\A(?:TRAFFIC|THREAT|SYSTEM|CONFIG|GLOBALPROTECT|USERID|CORRELATION|DECRYPTION|HIPMATCH|AUTHENTICATION)\z/
   return nil unless ips >= 2 && values.any? { |value| value.to_s.match?(category) }
@@ -931,8 +957,14 @@ end
 def parserstudio_generic_envelope_calendar(year,month,day,time,zone='+00:00')
   match=/\A(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?\z/.match(time)
   return false unless match
-  Time.new(Integer(year,10),Integer(month,10),Integer(day,10),
-           Integer(match[1],10),Integer(match[2],10),Integer(match[3],10),zone)
+  y=Integer(year,10); mo=Integer(month,10); d=Integer(day,10)
+  # Time.new rolls an impossible day over (30 February becomes 2 March) instead of raising, so the calendar
+  # is checked by arithmetic, as the browser does (validCalendarDate / validIsoPriClock).
+  return false unless y.between?(1,9999) && mo.between?(1,12) && d>=1
+  return false unless Integer(match[1],10)<=23 && Integer(match[2],10)<=59 && Integer(match[3],10)<=59
+  leap=(y%4).zero? && (!(y%100).zero? || (y%400).zero?)
+  return false unless d<=[31,leap ? 29 : 28,31,30,31,30,31,31,30,31,30,31][mo-1]
+  Time.new(y,mo,d,Integer(match[1],10),Integer(match[2],10),Integer(match[3],10),zone)
   true
 rescue StandardError
   false
@@ -954,7 +986,7 @@ def parserstudio_generic_syslog_envelope(text)
   pri=nil
   rest=text
   if text.start_with?('<')
-    head=/\A<(\d{1,3})>/.match(text)
+    head=/\A<(__PS_GRAMMAR_TOKEN_PRI__)>/.match(text)
     return nil unless head
     pri=head[1]
     return nil unless parserstudio_generic_envelope_pri(pri)
@@ -966,20 +998,32 @@ def parserstudio_generic_syslog_envelope(text)
   return nil unless pri_fields
 
   if pri
-    rfc=/\A([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
-    if rfc
+    rfc=/\A(__PS_GRAMMAR_TOKEN_RFC5424_VERSION__) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)\z/m.match(rest)
+    # One VERSION policy for every consumer (contracts/syslog-header-grammar.v1.json):
+    # an RFC 5424 shaped header with an unsupported VERSION is not an RFC 5424 envelope.
+    # Like the browser's parseRfc5424, a header that has the RFC 5424 shape but fails validation is not an
+    # RFC 5424 envelope; the remaining envelope variants are still tried (throw leaves only this block).
+    catch(:parserstudio_not_rfc5424) do
+    if rfc && __PS_GRAMMAR_RFC5424_VERSIONS__.include?(rfc[1])
       timestamp=rfc[2]
-      return nil unless timestamp=='-' ||
+      # Calendar-checked like the browser: Time.iso8601 alone rolls an impossible day over (Feb 30 -> Mar 2).
+      # The parsed time must still show the written month and day.
+      throw :parserstudio_not_rfc5424 unless timestamp=='-' ||
         (timestamp.match?(/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:?\d{2})\z/) &&
-         begin Time.iso8601(timestamp); true rescue false end)
+         begin
+           parsed_time=Time.iso8601(timestamp)
+           parsed_time.month==timestamp[5,2].to_i && parsed_time.day==timestamp[8,2].to_i
+         rescue StandardError
+           false
+         end)
       [[rfc[3],255],[rfc[4],48],[rfc[5],128],[rfc[6],32]].each do |pair|
         token,maximum=pair
-        return nil unless token.bytesize<=maximum && token.match?(/\A[!-~]+\z/)
+        throw :parserstudio_not_rfc5424 unless token.bytesize<=maximum && token.match?(/\A[!-~]+\z/)
       end
       begin
         structured,message=parserstudio_rfc5424_sd(rfc[7])
       rescue StandardError
-        return nil
+        throw :parserstudio_not_rfc5424
       end
       syslog={'variant'=>'rfc5424','confidence'=>'strict'}.merge(pri_fields).merge('version'=>rfc[1])
       syslog['timestamp']=timestamp unless timestamp=='-'
@@ -990,11 +1034,12 @@ def parserstudio_generic_syslog_envelope(text)
       syslog['structuredData']=structured
       return [syslog,message.to_s]
     end
+    end
   end
 
   month_days={'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
               'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
-  before=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  before=/\A(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if before && parserstudio_generic_valid_bsd_clock(before[1],before[2],before[4]) &&
      Integer(before[3],10).between?(1900,9999)
     syslog={'variant'=>'rfc3164_year_before_time','confidence'=>'strong'}.merge(pri_fields).merge(
@@ -1002,7 +1047,7 @@ def parserstudio_generic_syslog_envelope(text)
             'time'=>before[4],'hostname'=>before[5])
     return parserstudio_generic_envelope_decorate(syslog,before[6].to_s)
   end
-  after=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  after=/\A(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if after && parserstudio_generic_valid_bsd_clock(after[1],after[2],after[3]) &&
      Integer(after[4],10).between?(1900,9999)
     syslog={'variant'=>'rfc3164_year_after_time','confidence'=>'strong'}.merge(pri_fields).merge(
@@ -1010,7 +1055,7 @@ def parserstudio_generic_syslog_envelope(text)
             'year'=>after[4],'hostname'=>after[5])
     return parserstudio_generic_envelope_decorate(syslog,after[6].to_s)
   end
-  classic=/\A([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
+  classic=/\A(__PS_GRAMMAR_TOKEN_BSD_MONTH__) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\S{1,255})(?: +(.*))?\z/m.match(rest)
   if classic && parserstudio_generic_valid_bsd_clock(classic[1],classic[2],classic[3])
     syslog={'variant'=>'rfc3164','confidence'=>'strict'}.merge(pri_fields).merge(
             'month'=>classic[1],'day'=>classic[2],'time'=>classic[3],
@@ -1048,6 +1093,10 @@ def parserstudio_generic_syslog_envelope(text)
     return parserstudio_generic_envelope_decorate(syslog,slash[7].to_s)
   end
 
+  # Same guard as the browser (src/syslogEnvelope.ts looksLikeMalformedTimestamp): a header that looks like
+  # a timestamp or an RFC 5424 VERSION but did not validate is not downgraded to a PRI-only envelope.
+  return nil if rest.match?(/\A__PS_GRAMMAR_TOKEN_BSD_MONTH__ +\d{1,2} +/) ||
+    rest.match?(/\A\d{4}[-\/:]\d{2}[-\/:]\d{2}/) || rest.match?(/\A\d{1,3} +\d{4}-\d{2}-\d{2}T/)
   return [{'variant'=>'pri_only','confidence'=>'partial'}.merge(pri_fields),rest] if pri
   nil
 rescue StandardError
@@ -1299,7 +1348,7 @@ def parserstudio_generic_asa(text)
   syslog = {'app_tag' => "%#{id[1]}-#{id[2]}-#{id[3]}"}
   prefix = text[0...id.begin(0)]
   unless prefix.empty?
-    header = /\A(?:<(\d{1,3})>)?([A-Z][a-z]{2})[ ]+(\d{1,2})[ ]+(?:(\d{4})[ ]+)?(\d{2}):(\d{2}):(\d{2})[ ]+([^\s:]{1,255})(?:[ ]+([A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?))?[ ]*:?[ ]*\z/.match(prefix)
+    header = /\A(?:<(__PS_GRAMMAR_TOKEN_PRI__)>)?(__PS_GRAMMAR_TOKEN_BSD_MONTH__)[ ]+(\d{1,2})[ ]+(?:(\d{4})[ ]+)?(\d{2}):(\d{2}):(\d{2})[ ]+([^\s:]{1,255})(?:[ ]+(__PS_GRAMMAR_TOKEN_TAG__(?:\[\d{1,8}\])?))?[ ]*:?[ ]*\z/.match(prefix)
     if header
       month_days = {'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,
         'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}
@@ -1321,8 +1370,8 @@ def parserstudio_generic_asa(text)
       syslog['hostname'] = header[8]
       syslog['source_tag'] = header[9] if header[9]
     else
-      facility = /\A([A-Z0-9]{2,16})\.([A-Z]{2,16}): +([!-~]{1,255}) +\z/.match(prefix)
-      host_only = /\A([!-~]{1,255}) +: +\z/.match(prefix)
+      facility = /\A([A-Z0-9]{2,16})\.([A-Z]{2,16}): +(__PS_GRAMMAR_TOKEN_RFC5424_HOSTNAME__) +\z/.match(prefix)
+      host_only = /\A(__PS_GRAMMAR_TOKEN_RFC5424_HOSTNAME__) +: +\z/.match(prefix)
       if facility
         syslog['source_facility'] = facility[1]
         syslog['source_level'] = facility[2]
