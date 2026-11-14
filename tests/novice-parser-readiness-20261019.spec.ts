@@ -17,12 +17,14 @@ for(const item of cases){
     // names before any review or compilation. A malformed source must not
     // be granted a clickable Review Fields path just to show a later block.
     await expect(page.getByLabel('Automatic event accounting')).toContainText('1 event unrecognized in the initial format scan');
-    // Multi-Pass retains both source occurrences and explicitly explains
-    // the still-unqualified downloadable parser. It is source-only review,
-    // not a contradictory "fully parser-ready" success claim.
+    // Owner policy D-1 (2026-11-14): the Analyze screen names the repeated field, shows every value in its
+    // original order (none overwritten) and creates no parser files while a field is repeated. It is never
+    // a "fully parser-ready" success claim.
     const summary=page.getByLabel('Beginner analysis summary');
-    await expect(summary).toContainText('cannot build the parser files for this log shape on its own yet');
-    await expect(summary).toContainText('No log data was discarded');
+    await expect(summary).toContainText('The same field name appears more than once in this event (action)');
+    await expect(summary).toContainText('Every value is kept in its original order and none is overwritten');
+    await expect(summary).toContainText('parser files are not created automatically while a field is repeated');
+    await expect(summary).toContainText('body.actionallowbody.actiondeny');
     await expect(summary.getByRole('button',{name:'Fix with ChatGPT'})).toBeVisible();
     await expect(page.getByRole('button',{name:'Review Fields',exact:true})).toBeDisabled();
     await expect(page.getByLabel('Review Fields stage')).toHaveCount(0);
