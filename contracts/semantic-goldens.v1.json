@@ -851,6 +851,54 @@
         },
         "status": "FULL"
       }
+    },
+    {
+      "id": "generic-envelope-json-integer-beyond-2-53",
+      "raw": "<14>1 2026-11-03T11:11:11Z fw app - ID - {\"session_id\":9007199254740993}",
+      "provenance": "RFC 8259 6: an integer outside [-(2^53)+1, 2^53-1] is not interoperable; the browser would show 9007199254740992. Declined in a JSON body inside Generic Structural as in the JSON format itself (found by the browser/Ruby differential of 2026-11-14: the browser parsed it, the generated Ruby declined it).",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-panos-receive-time-30-february",
+      "raw": "<14>Oct 16 15:44:21 PA01 1,2026/02/30 15:44:21,012345678901,TRAFFIC,end,2561,2026/10/16 15:44:20,10.0.0.1,198.51.100.1,203.0.113.1,198.51.100.1,allow",
+      "provenance": "A row shaped like a PAN-OS record whose receive time is 30 February is not a PAN-OS record. Found by the browser/Ruby differential of 2026-11-14: the generated Ruby parsed it (Time.new rolls the day over to 2 March; the positional route had no PAN-OS check), the browser declined it.",
+      "expect": {
+        "reject": true
+      }
+    },
+    {
+      "id": "generic-pri-space-kv-u2028",
+      "raw": "<13>srcip=10.1.1.1 dstip=10.2.2.2 dstport=443 note=a b action=accept",
+      "provenance": "RFC 3164 PRI followed by key=value pairs; U+2028 is value data (KV_GAP: pairs are separated by SP or TAB only). Found by the differential of 2026-11-14: the browser read this line through another route than the generated Ruby and produced a different field tree.",
+      "expect": {
+        "fields": {
+          "syslog.pri": "13",
+          "generic.mode": "space_kv",
+          "generic.kv.note": "a b",
+          "generic.kv.action": "accept"
+        },
+        "absent": [
+          "generic.message_raw",
+          "syslog.variant"
+        ]
+      }
+    },
+    {
+      "id": "generic-panos-traffic-more-than-100-columns",
+      "raw": "<14>Dec 10 00:00:00 hostname 1,2025/12/10 00:00:00,000000000000,TRAFFIC,END,1,2025/12/10 00:00:00,10.0.0.0,10.0.0.0,0.0.0.0,0.0.0.0,Rule,,,x,x,x,x,x,x,x,2025/12/10 00:00:00,1,1,1,1,0,0,0x10001c,tcp,allow,1,1,1,1,2025/12/10 00:00:00,0,x,,0,0x8000000000000000,x,x,,1,1,tcp-fin,1,1,1,1,,hostname,from-policy,,,0,,0,,x,0,0,0,0,x,0,0,Policy ID,{link name, link tag, link type, physical interface, timestamp,100,100,,N/A},x,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-12-10T00:00:00.000+11:00,,,x,x,x,1,x,,web-browsing,no,no,0,x,",
+      "provenance": "PAN-OS traffic log with more than 100 columns (PAN-OS 10/11 layout). The positional route takes at most 100 columns in both engines; the row is read by the envelope route, which names the PAN-OS fields. Found by the differential of 2026-11-14: the generated Ruby accepted up to 150 columns on the positional route and produced a tree without syslog.variant and generic.profile.",
+      "expect": {
+        "fields": {
+          "syslog.variant": "rfc3164",
+          "syslog.hostname": "hostname",
+          "generic.mode": "panos_traffic_csv",
+          "generic.profile": "panos",
+          "generic.fields.src": "10.0.0.0",
+          "generic.fields.action": "allow"
+        }
+      }
     }
   ],
   "ownerPolicies": {

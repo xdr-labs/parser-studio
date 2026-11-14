@@ -1,4 +1,5 @@
 import { isSupportedRfc5424Version } from './grammar/syslogHeader';
+import { SYSLOG_HEADER_TOKENS as T } from './grammar/syslogHeaderGrammar.generated';
 
 export type SyslogEnvelopeVariant=
   'rfc5424'|
@@ -86,8 +87,9 @@ function decomposePri(priText:string|undefined):Pick<SyslogEnvelope,'pri'|'facil
   return {pri:priText,facility:Math.floor(pri/8),severity:pri%8};
 }
 
+const RX_SPLIT_PRI=new RegExp(String.raw`^<(${T.PRI})>`);
 function splitPri(raw:string):{pri?:string;rest:string}|null{
-  const match=/^<(\d{1,3})>/.exec(raw);
+  const match=RX_SPLIT_PRI.exec(raw);
   if(!match)return {rest:raw};
   const decoded=decomposePri(match[1]);
   if(!decoded)return null;
@@ -143,9 +145,10 @@ function decorateMessage(envelope:SyslogEnvelope):SyslogEnvelope{
   return {...envelope,appname:tag[1],...(tag[2]?{procid:tag[2]}:{}),message:tag[3]!};
 }
 
+const RX_PARSE_RFC5424=new RegExp(String.raw`^(${T.RFC5424_VERSION}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$`,'s');
 function parseRfc5424(pri:string|undefined,rest:string):SyslogEnvelope|null{
   if(pri===undefined)return null;
-  const match=/^([1-9]\d{0,2}) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +([^ ]+) +(.*)$/s.exec(rest);
+  const match=RX_PARSE_RFC5424.exec(rest);
   if(!match)return null;
   const version=match[1]!,timestamp=match[2]!,hostname=match[3]!,appname=match[4]!,
     procid=match[5]!,msgid=match[6]!;
@@ -175,8 +178,11 @@ function withPri(pri:string|undefined):Pick<SyslogEnvelope,'pri'|'facility'|'sev
   return decomposePri(pri)??{};
 }
 
+const RX_PARSE_BSD_YEAR_BEFORE=new RegExp(String.raw`^(${T.BSD_MONTH}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([^ \t\n\r\f\v]{1,255})(?: +(.*))?$`,'s');
+const RX_PARSE_BSD_YEAR_AFTER=new RegExp(String.raw`^(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +([^ \t\n\r\f\v]{1,255})(?: +(.*))?$`,'s');
+const RX_PARSE_BSD_CLASSIC=new RegExp(String.raw`^(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([^ \t\n\r\f\v]{1,255})(?: +(.*))?$`,'s');
 function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
-  const yearBefore=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{4}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([^ \t\n\r\f\v]{1,255})(?: +(.*))?$/s.exec(rest);
+  const yearBefore=RX_PARSE_BSD_YEAR_BEFORE.exec(rest);
   if(yearBefore&&validBsdTimestamp(yearBefore[1]!,yearBefore[2]!,yearBefore[4]!)&&
      Number(yearBefore[3])>=1900&&Number(yearBefore[3])<=9999){
     return decorateMessage({
@@ -186,7 +192,7 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
-  const yearAfter=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(\d{4}) +([^ \t\n\r\f\v]{1,255})(?: +(.*))?$/s.exec(rest);
+  const yearAfter=RX_PARSE_BSD_YEAR_AFTER.exec(rest);
   if(yearAfter&&validBsdTimestamp(yearAfter[1]!,yearAfter[2]!,yearAfter[3]!)&&
      Number(yearAfter[4])>=1900&&Number(yearAfter[4])<=9999){
     return decorateMessage({
@@ -196,7 +202,7 @@ function parseBsd(pri:string|undefined,rest:string):SyslogEnvelope|null{
     });
   }
 
-  const classic=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +([^ \t\n\r\f\v]{1,255})(?: +(.*))?$/s.exec(rest);
+  const classic=RX_PARSE_BSD_CLASSIC.exec(rest);
   if(classic&&validBsdTimestamp(classic[1]!,classic[2]!,classic[3]!)){
     return decorateMessage({
       variant:'rfc3164',confidence:'strict',...withPri(pri),
@@ -242,8 +248,9 @@ function parseColonDate(pri:string|undefined,rest:string):SyslogEnvelope|null{
   });
 }
 
+const RX_LOOKS_LIKE_MALFORMED_TIMESTAMP=new RegExp(String.raw`^${T.BSD_MONTH} +\d{1,2} +`);
 function looksLikeMalformedTimestamp(rest:string):boolean{
-  return /^[A-Z][a-z]{2} +\d{1,2} +/.test(rest)||
+  return RX_LOOKS_LIKE_MALFORMED_TIMESTAMP.test(rest)||
     /^\d{4}[-/:]\d{2}[-/:]\d{2}/.test(rest)||
     /^\d{1,3} +\d{4}-\d{2}-\d{2}T/.test(rest);
 }

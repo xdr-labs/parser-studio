@@ -119,8 +119,8 @@ engines and the gate fails when it starts to pass.
 |---|---|
 | `src/structuredFamilies.ts` (RFC 3164 extraction and detection), `src/rfc5424Subset.ts`, `src/guided/autoParserEnvelope.ts` (tagless front door) | contract (`src/grammar/syslogHeader.ts`) |
 | `backend/templates/ruby-fragment.rb.tpl`, `ruby-forwarder-family.rb.tpl` (`parserstudio_syslog_rfc3164`, `parserstudio_syslog_rfc5424`) | contract, injected by `injectHeaderGrammar` in `backend/src/compiler.ts`; a template with an unresolved `__PS_GRAMMAR_*__` placeholder does not compile |
-| `src/syslogEnvelope.ts`, Generic Structural Ruby helper | VERSION policy from the contract; the loose envelope expressions are still hand-written |
-| `src/genericStructural.ts`, the rest of the Generic Structural helper, `runtime/multipass/*.py` | hand-written, counted by the ratchet (122 copies, down from 148) |
+| `src/genericStructural.ts`, `src/syslogEnvelope.ts`, `backend/templates/generic-structural-helper.rb.tpl`, `runtime/multipass/generic_structural_poc.py` (W4) | header tokens from the contract: PRI, BSD month, printable-ASCII host token, TAG, RFC 5424 VERSION (`T.*` in TypeScript, compiled once per expression; `__PS_GRAMMAR_TOKEN_*__` and `__PS_GRAMMAR_RFC5424_VERSION_PATTERN__` in Ruby; `TOKENS` in Python). 93 literal copies removed |
+| the bodies of the Generic Structural sub-profiles, the other `runtime/multipass/*.py` files, a few UI helpers | hand-written; 49 token copies left in the ratchet (142 before W4) |
 
 Resolved: F-1 (field loss when HOSTNAME is omitted), F-2 (one RFC 5424 VERSION
 policy, including `detectStructuredFamily`), F-3 (U+2028 inside a value, on the
@@ -287,6 +287,42 @@ trailing delimiter is refused, trailing white space of a CEF line is grammar.
 an overlay (`scripts/grammar/generate-forwarder-template.mjs`; `--verify` in
 CI), which removed 723 duplicated lines. Scanning is linear (200,000 spaces:
 milliseconds in JavaScript, Ruby 2.4.9 and Python).
+
+## Generic Structural: browser versus generated Ruby (differential, 2026-11-14)
+
+W4 replaced token literals only, so its acceptance test is that nothing changes: 58,430 lines (every string
+of the repository's fixtures and tests plus PRI, VERSION, month, host and key mutations of the 655 lines that
+parse) were run through `extractGenericStructural` / `parseSyslogEnvelope` and through the compiled Ruby on
+Ruby 2.4.9, in five configurations (legacy, dedicated, three profiles), before and after. The SHA-256 of the
+complete output is identical on both sides (browser `56b91485...`, Ruby `e30c8ba3...`).
+
+The same run compares the two engines with each other, which no earlier check did on mutated lines. On the
+legacy configuration it found 33 lines parsed only by the browser, 24 parsed only by the generated Ruby and
+33 parsed by both with a different field tree. Causes and state:
+
+| Cause | Lines | State |
+|---|---|---|
+| Positional CSV route: 150 columns in Ruby, 100 in the browser; a PAN-OS row longer than 100 columns got a tree without `syslog.variant` / `generic.profile` from Ruby | 31 | fixed in Ruby (100, and the PAN-OS check of the browser) |
+| `Time.new` rolls 30 February over to 2 March, so the Ruby envelope calendar accepted an impossible date; the positional route had no PAN-OS check at all | 23 | fixed in Ruby (calendar by arithmetic, as in the browser) |
+| JSON body inside Generic Structural with an integer beyond 2^53: the browser parsed and rounded it, Ruby declined | 19 | fixed in the browser (`parseJsonBody`, one function for the three JSON routes) |
+| `.` after PRI stops at U+2028 in JavaScript: another route, another tree | 2 | fixed in the browser (`[^\n]`) |
+| An SD-NAME that is not valid (non-ASCII, longer than 32 characters, DEL in the SD-ID): the browser's envelope accepts it, Ruby declines | 14 | open |
+| IP token: lexical rule in the browser, `IPAddr.new` in Ruby (`[::1]` is an address only in Ruby; `12:34:56` only in the browser) | 1 | open |
+
+After the fixes: 6,123 lines parsed identically, 15 one-sided, 0 tree differences. Goldens
+`generic-envelope-json-integer-beyond-2-53`, `generic-panos-receive-time-30-february`,
+`generic-pri-space-kv-u2028`, `generic-panos-traffic-more-than-100-columns` and faults
+`ts-generic-json-unsafe-integer-accepted`, `ts-generic-pri-space-kv-stops-at-u2028`,
+`rb-generic-calendar-rollover`, `rb-generic-positional-150-columns` keep them.
+
+Open, larger class. A second run put Unicode white space and separators (U+2028, U+2029, NBSP, U+0085, U+3000,
+U+FEFF) and edge white space into 26,000 variants of parsing lines: 12,282 parse identically, 1,244 parse with
+a different tree, 258 only in the browser, 194 only in Ruby. The cause is one difference used throughout the
+hand-written sub-profiles: in JavaScript `\s`, `.` and `trim()` know Unicode white space and line separators,
+in Ruby they are ASCII. The generated Ruby is the reference (the contract's KV_GAP already says SP and TAB
+only). The remedy is on the browser side only (ASCII classes and an ASCII trim in `src/genericStructural.ts`)
+and does not change the Ruby templates; it is not done yet, and this differential is not yet a CI gate. The
+harness and both corpora are kept on dev-atlas in `~aella/.local/state/psgc-w4-differential/`.
 
 ## RFC 5424 model (W8)
 

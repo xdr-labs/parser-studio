@@ -44,9 +44,13 @@ test("Generic Structural positional CSV has one Ruby2.4-compatible shared IPv4 v
   const positional=helper.slice(helper.indexOf('def parserstudio_generic_rfc3164_positional_csv(text)'),
     helper.indexOf('def parserstudio_generic_envelope_pri(pri_text)'));
   assert.doesNotMatch(positional,/rescue ArgumentError/);
-  // 125-column PAN-OS original from public docs must not be refused by
-  // the Ruby source handler when its independent envelope accepts up to 150.
-  assert.match(positional,/values\.length\.between\?\(12, 150\)/);
+  // The positional route takes at most 100 columns, exactly as the browser extractor does (it used to take
+  // 150 here and returned a field tree the browser never shows). The 125-column PAN-OS original from public
+  // docs is not refused: the envelope route reads it, in both engines, with the same tree (Semantic Oracle
+  // golden generic-panos-traffic-more-than-100-columns, Ruby 2.4.9).
+  assert.match(positional,/values\.length\.between\?\(12, 100\)/);
+  assert.match(positional,/return nil if panos_like && !parserstudio_generic_envelope_panos\(values\)/);
+  assert.match(helper,/def parserstudio_generic_envelope_panos\(values\)\n  return nil unless values && values\.length\.between\?\(7,150\)/);
 });
 
 test("Generic Structural shared native IPv4 validator refuses invalid octets",{skip:!rubyAvailable},()=>{

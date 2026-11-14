@@ -3,9 +3,26 @@ import {unsupportedRfc5424Version} from './grammar/syslogHeader';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {extractLeef2ImplicitTab} from './leef2ImplicitTab';
 import {GENERIC_STRUCTURAL_MIXED_PROFILE_V1,type GenericStructuralProfile} from './genericStructuralProfiles';
-import {GRAMMAR_FRAGMENTS} from './grammar/syslogHeaderGrammar.generated';
+import {GRAMMAR_FRAGMENTS,SYSLOG_HEADER_SEMANTICS,SYSLOG_HEADER_TOKENS as T} from './grammar/syslogHeaderGrammar.generated';
 import {hasDuplicateJsonObjectKeys} from './jsonDuplicateKeys';
+import {hasUnsafeJsonNumbers} from './jsonNumberSafety';
 export type {GenericStructuralProfile} from './genericStructuralProfiles';
+
+// The header tokens of the sub-profile expressions below are the grammar contract's (contracts/
+// syslog-header-grammar.v1.json): PRI, the BSD month, a printable-ASCII host token of up to 255 characters,
+// the TAG and the supported RFC 5424 VERSION. Each expression is compiled once, at module load.
+const RFC5424_VERSION=SYSLOG_HEADER_SEMANTICS.rfc5424SupportedVersions.join('|');
+
+/**
+ * Every JSON body inside Generic Structural is read here: a repeated member name or an integer that the
+ * browser cannot represent exactly (beyond 2^53) declines the event, as in the JSON format itself and in
+ * the generated Ruby. undefined means declined.
+ */
+function parseJsonBody(text:string):unknown{
+  let value:unknown;
+  try{value=JSON.parse(text);}catch{return undefined;}
+  return hasDuplicateJsonObjectKeys(text)||hasUnsafeJsonNumbers(text)?undefined:value;
+}
 
 /**
  * Browser twin of the backend's bounded Generic Structural compiler subset.
@@ -21,14 +38,13 @@ function validRfc3339(value:string):boolean{
     Number.isFinite(Date.parse(value));
 }
 
+const RX_SHORT_RFC5424_JSON=new RegExp(String.raw`^<(${T.PRI})>(${RFC5424_VERSION}) (\S{1,64}) (${T.RFC5424_HOSTNAME}) (\{.*\})$`);
 function shortRfc5424Json(raw:string):Record<string,unknown>|null{
-  const match=raw.match(/^<(\d{1,3})>(1) (\S{1,64}) ([!-~]{1,255}) (\{.*\})$/);
+  const match=raw.match(RX_SHORT_RFC5424_JSON);
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||!validRfc3339(match[3]!))return null;
-  let body:unknown;
-  try{body=JSON.parse(match[5]!);}catch{return null;}
-  if(hasDuplicateJsonObjectKeys(match[5]!))return null;
+  const body=parseJsonBody(match[5]!);
   if(!body||Array.isArray(body)||typeof body!=='object')return null;
   return {
     syslog:{pri:match[1],version:match[2],timestamp:match[3],hostname:match[4]},
@@ -40,9 +56,7 @@ function prefixedJson(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const match=/^([A-Za-z0-9_.:/-]{1,64})[ \t]+(\{.*\})$/.exec(raw);
   if(!match)return null;
-  let body:unknown;
-  try{body=JSON.parse(match[2]!);}catch{return null;}
-  if(hasDuplicateJsonObjectKeys(match[2]!))return null;
+  const body=parseJsonBody(match[2]!);
   if(!body||Array.isArray(body)||typeof body!=='object')return null;
   return {
     generic:{mode:'prefixed_json',prefix:match[1],source_raw:raw},
@@ -50,8 +64,9 @@ function prefixedJson(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_SHORT_RFC5424_STRUCTURED=new RegExp(String.raw`^<(${T.PRI})>(${RFC5424_VERSION}) (\S{1,64}) (${T.RFC5424_HOSTNAME}) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))$`);
 function shortRfc5424Structured(raw:string):Record<string,unknown>|null{
-  const match=raw.match(/^<(\d{1,3})>(1) (\S{1,64}) ([!-~]{1,255}) ((?:CEF:0\|.*|LEEF:(?:1\.0|2\.0)\|.*))$/);
+  const match=raw.match(RX_SHORT_RFC5424_STRUCTURED);
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||!validRfc3339(match[3]!))return null;
@@ -94,8 +109,9 @@ function validUnzonedTimestamp(value:string):boolean{
     hour<=23&&minute<=59&&second<=59;
 }
 
+const RX_BRACKET_COLON_KV=new RegExp(String.raw`^<(${T.PRI})>(${RFC5424_VERSION}) (\S+) (${T.RFC5424_HOSTNAME}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[.*\])[ \t]*$`);
 function bracketColonKv(raw:string):Record<string,unknown>|null{
-  const match=raw.match(/^<(\d{1,3})>(1) (\S+) ([!-~]{1,255}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[.*\])[ \t]*$/);
+  const match=raw.match(RX_BRACKET_COLON_KV);
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||
@@ -122,8 +138,9 @@ function bracketColonKv(raw:string):Record<string,unknown>|null{
   return {syslog:{pri:match[1],version:match[2],timestamp:match[3],hostname:match[4],appname:match[5],procid:match[6],msgid:match[7]},body};
 }
 
+const RX_JUNOS_RFC5424_SD=new RegExp(String.raw`^<(${T.PRI})>(${RFC5424_VERSION}) (\S+) (${T.RFC5424_HOSTNAME}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[junos@[A-Za-z0-9.:-]{1,64}(?: [^\]]*)?\])$`);
 function junosRfc5424Sd(raw:string):Record<string,unknown>|null{
-  const match=raw.match(/^<(\d{1,3})>(1) (\S+) ([!-~]{1,255}) ([!-~]{1,48}) ([!-~]{1,128}) ([!-~]{1,32}) (\[junos@[A-Za-z0-9.:-]{1,64}(?: [^\]]*)?\])$/);
+  const match=raw.match(RX_JUNOS_RFC5424_SD);
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||!validRfc3339(match[3]!))return null;
@@ -168,12 +185,13 @@ function junosRfc5424Sd(raw:string):Record<string,unknown>|null{
     junos_sd:fields};
 }
 
+const RX_COMMA_KV_PRI=new RegExp(String.raw`^<(${T.PRI})>`);
 function commaKv(raw:string):Record<string,unknown>|null{
   const parts=splitEscaped(raw,',');
   if(!parts||parts.length<3)return null;
   let prefix=parts[0]!.trim();
   const syslog:Record<string,unknown>={};
-  const pri=prefix.match(/^<(\d{1,3})>/);
+  const pri=prefix.match(RX_COMMA_KV_PRI);
   if(pri){
     const value=Number(pri[1]);
     if(!Number.isInteger(value)||value<0||value>191)return null;
@@ -272,9 +290,11 @@ function spaceKv(raw:string):Record<string,unknown>|null{
   return {generic};
 }
 
+// [^\n], not '.': in JavaScript '.' also stops at CR, U+2028 and U+2029, which the generated Ruby reads as text.
+const RX_PRI_SPACE_KV=new RegExp(String.raw`^<(${T.PRI})>([^\n]+)$`);
 function priSpaceKv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const match=/^<(\d{1,3})>(.+)$/.exec(raw);
+  const match=RX_PRI_SPACE_KV.exec(raw);
   if(!match)return null;
   const pri=Number(match[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191)return null;
@@ -370,9 +390,10 @@ function validIsoPriClock(date:string,time:string,timezone:string):boolean{
   return !!zone&&Number(zone[2])<=23&&Number(zone[3])<=59;
 }
 
+const RX_ISO_PRI_MIXED=new RegExp(String.raw`^<(${T.PRI})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +`);
 function isoPriMixed(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const head=/^<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.exec(raw);
+  const head=RX_ISO_PRI_MIXED.exec(raw);
   if(!head)return null;
   const pri=Number(head[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||!validIsoPriClock(head[2]!,head[3]!,head[4]!))return null;
@@ -390,9 +411,10 @@ function isoPriMixed(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_ISO_PRI_POSITIONAL=new RegExp(String.raw`^<(${T.PRI})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +`);
 function isoPriPositional(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const head=/^<(\d{1,3})>(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?) +(Z|[+-]\d{4}|[+-]\d{2}:\d{2}) +/.exec(raw);
+  const head=RX_ISO_PRI_POSITIONAL.exec(raw);
   if(!head)return null;
   const pri=Number(head[1]);
   if(!Number.isInteger(pri)||pri<0||pri>191||!validIsoPriClock(head[2]!,head[3]!,head[4]!))return null;
@@ -413,8 +435,9 @@ function isoPriPositional(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_WATCHGUARD_PROFILE=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +`);
 function watchguardProfile(raw:string):Record<string,unknown>|null{
-  const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))?(?: +\(([0-9T:+-]{19,35})\))? +(firewall(?:\[\d{1,8}\])?): +/.exec(raw);
+  const head=RX_WATCHGUARD_PROFILE.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
   if(head[7]!==undefined&&Number.isNaN(Date.parse(head[7]!)))return null;
@@ -430,9 +453,10 @@ function watchguardProfile(raw:string):Record<string,unknown>|null{
   return {watchguard_header:header,watchguard:body};
 }
 
+const RX_WATCHGUARD_MESSAGE_PROFILE=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)$`);
 function watchguardMessageProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +([^\s]{1,255})(?: +([A-Za-z0-9.-]{2,64}))? +\(([0-9T:+-]{19,35})\) +(firewall(?:\[\d{1,8}\])?): +msg_id="([0-9A-Fa-f]{4}-[0-9A-Fa-f]{4})" +(.+)$/.exec(raw);
+  const head=RX_WATCHGUARD_MESSAGE_PROFILE.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
   if(Number.isNaN(Date.parse(head[7]!)))return null;
@@ -448,9 +472,10 @@ function watchguardMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_DUAL_TIMESTAMP_SESSION_PROFILE=new RegExp(String.raw`^(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)$`);
 function dualTimestampSessionProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const match=/^([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +1 +(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +(\S{1,255}) +([A-Za-z0-9_.-]{1,64}): +- +- +- +(\d{4}-\d{2}-\d{2}) +(\d{2}:\d{2}:\d{2}) +- +(\S{1,255}) +- +\[([^\]\r\n]{1,255})\] +(.+?) +- +(.+)$/.exec(raw);
+  const match=RX_DUAL_TIMESTAMP_SESSION_PROFILE.exec(raw);
   if(!match||!validBsdClock(match[1]!,match[2]!,match[3]!))return null;
   if(Number.isNaN(Date.parse(match[5]!))||!validIsoPriClock(match[8]!,match[9]!,'Z'))return null;
   return {
@@ -461,9 +486,10 @@ function dualTimestampSessionProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_BSD_BRACKET_PID_MESSAGE_PROFILE=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +\[(\d{1,8})\]: +(.+)$`);
 function bsdBracketPidMessageProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +\[(\d{1,8})\]: +(.+)$/.exec(raw);
+  const match=RX_BSD_BRACKET_PID_MESSAGE_PROFILE.exec(raw);
   if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
   if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
   return {
@@ -473,6 +499,7 @@ function bsdBracketPidMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_BSD_CLASSIC_PID_MESSAGE_PROFILE=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +([^\n]+)$`);
 // The two BSD message profiles below spell out what '.' and \S mean in the Ruby export ([^\n] and ASCII
 // white space): JavaScript's '.' also stops at U+2028/U+2029 and its \S at NBSP, which made the browser
 // reject lines the generated Ruby parses.
@@ -482,7 +509,7 @@ function bsdClassicPidMessageProfile(raw:string):Record<string,unknown>|null{
   // "Mon DD HH:MM:SS app[pid]: TAG: message". There is no separate host token,
   // so preserve the app token as the source hostname instead of letting the
   // looser tagged-message grammar absorb "app[pid]:" as a hostname.
-  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +([^\n]+)$/.exec(raw);
+  const match=RX_BSD_CLASSIC_PID_MESSAGE_PROFILE.exec(raw);
   if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
   if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
   return {
@@ -492,9 +519,10 @@ function bsdClassicPidMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_BSD_TAGGED_MESSAGE_PROFILE=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([^ \t\n\r\f\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\n]+)$`);
 function bsdTaggedMessageProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([^ \t\n\r\f\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\n]+)$/.exec(raw);
+  const match=RX_BSD_TAGGED_MESSAGE_PROFILE.exec(raw);
   if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
   if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
   // Do not let malformed known structures bypass stricter parsers by
@@ -508,8 +536,9 @@ function bsdTaggedMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+const RX_JUNIPER_LEGACY_PROFILE=new RegExp(String.raw`^(${T.BSD_MONTH}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +`);
 function juniperLegacyProfile(raw:string):Record<string,unknown>|null{
-  const head=/^([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2}) +(\S+) +([^:\s]{1,128}): +/.exec(raw);
+  const head=RX_JUNIPER_LEGACY_PROFILE.exec(raw);
   if(!head||head[5]!=='RT_FLOW'||!validBsdClock(head[1]!,head[2]!,head[3]!))return null;
   const after=raw.slice(head[0].length);
   const event=/^(RT_FLOW_SESSION_(?:CREATE|CLOSE|DENY)):[ \t]+/.exec(after);
@@ -557,9 +586,10 @@ function delimitedCommaKv(raw:string):Record<string,unknown>|null{
   return {generic:{mode:'delimited_kv',delimiter:',',prefix_tokens:prefixTokens,fields}};
 }
 
+const RX_RFC3164_DELIMITED_COMMA_KV=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +`);
 function rfc3164DelimitedCommaKv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192)return null;
-  const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +/.exec(raw);
+  const head=RX_RFC3164_DELIMITED_COMMA_KV.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
   const body=delimitedCommaKv(raw.slice(head[0].length));
@@ -629,9 +659,10 @@ function panosTrafficFields(values:string[]):Record<string,string>|null{
   return fields;
 }
 
+const RX_RFC3164_POSITIONAL_CSV=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +`);
 function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192)return null;
-  const head=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +/.exec(raw);
+  const head=RX_RFC3164_POSITIONAL_CSV.exec(raw);
   if(!head||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   if(head[1]!==undefined&&(Number(head[1])<0||Number(head[1])>191))return null;
   const body=raw.slice(head[0].length);
@@ -667,9 +698,7 @@ function rfc3164PositionalCsv(raw:string):Record<string,unknown>|null{
 
 function boundedEnvelopeJson(text:string):Record<string,unknown>|null{
   if(!text.startsWith('{')||new TextEncoder().encode(text).byteLength>8192||text.includes('\0'))return null;
-  let parsed:unknown;
-  try{parsed=JSON.parse(text);}catch{return null;}
-  if(hasDuplicateJsonObjectKeys(text))return null;
+  const parsed=parseJsonBody(text);
   if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')return null;
   let nodes=0;
   function safe(value:unknown,depth:number):boolean{
@@ -874,6 +903,9 @@ function syslogEnvelopeStructuredFallback(raw:string):Record<string,unknown>|nul
   return null;
 }
 
+const RX_ASA_BSD_HEADER=new RegExp(String.raw`^(?:<(${T.PRI})>)?(${T.BSD_MONTH}) +(\d{1,2}) +(?:(\d{4}) +)?(\d{2}):(\d{2}):(\d{2}) +([^\s:]{1,255})(?: +(${T.TAG}(?:\[\d{1,8}\])?))? *:? *$`);
+const RX_ASA_FACILITY_HOST=new RegExp(String.raw`^([A-Z0-9]{2,16})\.([A-Z]{2,16}): +(${T.RFC5424_HOSTNAME}) +$`);
+const RX_ASA_HOST_ONLY=new RegExp(String.raw`^(${T.RFC5424_HOSTNAME}) +: +$`);
 function asa(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   const id=/%(ASA|FTD)-(\d)-(\d{6}):[ \t]*/.exec(raw);
@@ -897,7 +929,7 @@ function asa(raw:string):Record<string,unknown>|null{
   const syslog:Record<string,unknown>={app_tag:`%${id[1]}-${id[2]}-${id[3]}`};
   const prefix=raw.slice(0,id.index);
   if(prefix){
-    const header=prefix.match(/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(?:(\d{4}) +)?(\d{2}):(\d{2}):(\d{2}) +([^\s:]{1,255})(?: +([A-Za-z_][A-Za-z0-9_.-]{0,95}(?:\[\d{1,8}\])?))? *:? *$/);
+    const header=prefix.match(RX_ASA_BSD_HEADER);
     if(header){
       const monthDays:Record<string,number>={Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
       const pri=header[1]===undefined?undefined:Number(header[1]);
@@ -913,8 +945,8 @@ function asa(raw:string):Record<string,unknown>|null{
         ...(header[9]?{source_tag:header[9]}:{}),
       });
     }else{
-      const facility=prefix.match(/^([A-Z0-9]{2,16})\.([A-Z]{2,16}): +([!-~]{1,255}) +$/);
-      const hostOnly=prefix.match(/^([!-~]{1,255}) +: +$/);
+      const facility=prefix.match(RX_ASA_FACILITY_HOST);
+      const hostOnly=prefix.match(RX_ASA_HOST_ONLY);
       if(facility)Object.assign(syslog,{source_facility:facility[1],source_level:facility[2],hostname:facility[3]});
       else if(hostOnly)Object.assign(syslog,{hostname:hostOnly[1]});
       else return null;
@@ -923,10 +955,11 @@ function asa(raw:string):Record<string,unknown>|null{
   return {syslog,asa:fields};
 }
 
+const RX_SYSLOG_PREFIXED_KEY_VALUES=new RegExp(String.raw`^<(${T.PRI})>(${T.BSD_MONTH}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(${T.RFC5424_HOSTNAME}) +([^\r\n]+)$`);
 /** Additional, explicitly selected grammar; it does not widen the V15 routes. */
 function syslogPrefixedKeyValues(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||/[\u0000-\u0008\u000a-\u001f\u007f]/.test(raw))return null;
-  const head=/^<(\d{1,3})>([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([!-~]{1,255}) +([^\r\n]+)$/.exec(raw);
+  const head=RX_SYSLOG_PREFIXED_KEY_VALUES.exec(raw);
   if(!head||Number(head[1])>191||!validBsdClock(head[2]!,head[3]!,head[4]!))return null;
   const message=head[6]!;
   const first=/[ \t]([A-Za-z_][A-Za-z0-9_-]{0,63})=/.exec(message);

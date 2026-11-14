@@ -62,5 +62,6 @@ export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_FORBIDDEN_KEYS__": "['__proto__','constructor','prototype']",
   "__PS_GRAMMAR_PRI_MAX__": "191",
   "__PS_GRAMMAR_BSD_MONTH_DAYS__": "{'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}",
-  "__PS_GRAMMAR_RFC5424_VERSIONS__": "['1']"
+  "__PS_GRAMMAR_RFC5424_VERSIONS__": "['1']",
+  "__PS_GRAMMAR_RFC5424_VERSION_PATTERN__": "1"
 };

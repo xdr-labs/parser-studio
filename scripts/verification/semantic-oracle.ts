@@ -46,7 +46,7 @@ interface FieldSpec { [source: string]: [string, string] }
 interface Profile { topFields: FieldSpec; vendorFields: FieldSpec; classification: unknown }
 interface EnvelopeCase { id: string; raw: string; knownDefect?: string; expect: { variant?: string; variantNot?: string; message?: string } }
 /** familyGrammar 'dedicated' is what every newly created Generic Structural parser carries (owner policy D-2); absent is the V15 legacy route. */
-interface GenericCase { id: string; raw: string; provenance: string; familyGrammar?: 'dedicated'; expect: { fields?: Record<string, unknown>; reject?: boolean; status?: 'FULL' | 'PARTIAL' } }
+interface GenericCase { id: string; raw: string; provenance: string; familyGrammar?: 'dedicated'; expect: { fields?: Record<string, unknown>; /** Source paths the result must not have. */ absent?: string[]; reject?: boolean; status?: 'FULL' | 'PARTIAL' } }
 interface Goldens {
   profiles: Record<string, Profile>;
   knownDefects: Record<string, { engines: Engine[] }>;
@@ -271,6 +271,8 @@ function genericTsFailures(extract: GenericExtract, classify: GenericClassify): 
     if (!accepted) { failures.push(`${item.id}: Generic Structural rejected it`); continue; }
     for (const [path, want] of Object.entries(item.expect.fields ?? {}))
       if (!same(deepGet(result.fields, path), want)) failures.push(`${item.id}: ${path}=${JSON.stringify(deepGet(result.fields, path))}, expected ${JSON.stringify(want)}`);
+    for (const path of item.expect.absent ?? [])
+      if (deepGet(result.fields, path) !== undefined) failures.push(`${item.id}: ${path}=${JSON.stringify(deepGet(result.fields, path))}, expected no such field`);
     // Owner policy D-2: the verdict the product shows for this result (never FULL on the legacy CEF/LEEF route).
     const status = classify(item.raw, result).status;
     if (item.expect.status !== undefined && status !== item.expect.status) failures.push(`${item.id}: verdict ${status}, expected ${item.expect.status}`);
@@ -278,13 +280,17 @@ function genericTsFailures(extract: GenericExtract, classify: GenericClassify): 
   return failures;
 }
 const TS_GENERIC_MUTANTS: Mutant[] = [
+  // A JSON body inside Generic Structural with an integer beyond 2^53 is parsed (and silently rounded) again.
+  { id: 'ts-generic-json-unsafe-integer-accepted', file: 'src/genericStructural.ts', find: 'return hasDuplicateJsonObjectKeys(text)||hasUnsafeJsonNumbers(text)?undefined:value;', replace: 'return hasDuplicateJsonObjectKeys(text)?undefined:value;' },
+  // '.' instead of [^\\n] after PRI: the browser stops at U+2028 and reads the line through another route.
+  { id: 'ts-generic-pri-space-kv-stops-at-u2028', file: 'src/genericStructural.ts', find: '>([^\\n]+)$`);', replace: '>(.+)$`);' },
   // Owner policy D-2: a new parser reads a CEF/LEEF claim through the generic key=value routes again.
   { id: 'ts-generic-dedicated-gate-removed', file: 'src/genericStructural.ts', find: "const claim=familyGrammar==='dedicated'?structuredFamilyClaim(raw):null;", replace: 'const claim=null as string|null;' },
   // Owner policy D-2: the legacy route's result for a CEF/LEEF claim is shown as a complete parse.
   { id: 'ts-generic-claim-verdict-full', file: 'src/grammar/genericParseStatus.ts', find: 'if (claim && !GENERIC_FAMILY_MODES.includes(mode))', replace: 'if (false)' },
   { id: 'ts-generic-host-and-tag-swapped', file: 'src/genericStructural.ts', find: "time:match[4],hostname:match[5],app_tag:match[6]},\n    generic:{mode:'bsd_tagged_message'", replace: "time:match[4],hostname:match[6],app_tag:match[5]},\n    generic:{mode:'bsd_tagged_message'" },
   // Re-introduces the browser-only rejection of U+2028 in a BSD tagged message.
-  { id: 'ts-generic-message-stops-at-u2028', file: 'src/genericStructural.ts', find: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\\n]+)$/.exec(raw);", replace: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);" },
+  { id: 'ts-generic-message-stops-at-u2028', file: 'src/genericStructural.ts', find: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\\n]+)$`);", replace: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$`);" },
   { id: 'ts-generic-any-rfc5424-version', file: 'src/syslogEnvelope.ts', find: 'if(!isSupportedRfc5424Version(version))return null;', replace: '' },
   { id: 'ts-generic-version-gate-removed', file: 'src/genericStructural.ts', find: 'if(unsupportedVersion!==null)', replace: 'if(false)' },
 ];
@@ -368,6 +374,10 @@ const RUBY_GENERIC_MUTANTS: Mutant[] = [
   // The envelope-level VERSION check is covered by backend/test/generic-structural-helper.test.ts; at the
   // extractor level the gate below decides, so that is what is removed here.
   { id: 'rb-generic-version-gate-removed', file: 'fragment', find: "  raise ArgumentError, 'Unsupported RFC5424 version' if version_head &&\n    !['1'].include?(version_head[:version])\n", replace: '' },
+  // Time.new rolls 30 February over to 2 March: without the arithmetic check the impossible date is accepted.
+  { id: 'rb-generic-calendar-rollover', file: 'fragment', find: "  return false unless d<=[31,leap ? 29 : 28,31,30,31,30,31,31,30,31,30,31][mo-1]\n", replace: '' },
+  // The positional route accepts more columns than the browser does and returns a tree the browser never shows.
+  { id: 'rb-generic-positional-150-columns', file: 'fragment', find: 'values.length.between?(12, 100)', replace: 'values.length.between?(12, 150)' },
   // Owner policy D-2: the generated Ruby of a new parser reads a CEF/LEEF claim through the generic routes again.
   { id: 'rb-generic-dedicated-gate-removed', file: 'fragment', find: "  if @parser_rule_set && @parser_rule_set.dig('extraction','genericStructuralFamilyGrammar') == 'dedicated'\n", replace: '  if false\n' },
 ];
@@ -440,7 +450,7 @@ function runNative(): number {
   };
   const payloadCases: Array<{ id: string; fragment: string; raw: string }> = cases.map(item => ({ id: item.id, fragment: item.grammar, raw: item.raw }));
   // Generic Structural goldens: every expected source path is mapped to a vendor field so the emitted event shows it.
-  const genericPaths = [...new Set(goldens.genericCases.flatMap(item => Object.keys(item.expect.fields ?? {})))];
+  const genericPaths = [...new Set(goldens.genericCases.flatMap(item => [...Object.keys(item.expect.fields ?? {}), ...(item.expect.absent ?? [])]))];
   const genericName = (path: string) => 'g_' + path.replace(/[^A-Za-z0-9]/g, '_');
   const genericProject = sampleProject() as unknown as Record<string, any>;
   genericProject.extraction = { format: 'generic_structural' };
@@ -532,6 +542,10 @@ function runNative(): number {
     for (const [path, want] of Object.entries(item.expect.fields ?? {})) {
       const got = deepGet(events[0]![1], 'Synthetic.' + genericName(path));
       if (!same(got, want)) genericFailures.push(`${item.id}: ${path}=${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+    }
+    for (const path of item.expect.absent ?? []) {
+      const got = deepGet(events[0]![1], 'Synthetic.' + genericName(path));
+      if (got !== undefined) genericFailures.push(`${item.id}: ${path}=${JSON.stringify(got)}, expected no such field`);
     }
   }
   return genericFailures;

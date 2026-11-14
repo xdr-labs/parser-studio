@@ -14,7 +14,7 @@ import re
 from typing import Any
 
 from engine import MAX_RAW_BYTES,PRI
-from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_VERSIONS
+from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_VERSIONS,TOKENS
 
 # <PRI>VERSION SP then NILVALUE or an RFC 3339 date: the line claims to be RFC 5424 (shared grammar contract).
 RFC5424_VERSION_HEAD=re.compile(FRAGMENTS['rfc5424_version_head']['source'])
@@ -43,12 +43,12 @@ EVENT_CODE=re.compile(
 )
 SHORT_RFC5424_JSON_HEAD=re.compile(
     r'^<(?P<pri>\d{1,3})>(?P<version>\d{1,3}) +'
-    r'(?P<timestamp>\S+) +(?P<hostname>[!-~]{1,255}) +(?P<body>[{[])'
+    r'(?P<timestamp>\S+) +(?P<hostname>'+TOKENS['RFC5424_HOSTNAME']+r') +(?P<body>[{[])'
 )
 ISO_HOST_JSON_HEAD=re.compile(
     r'^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'
     r'(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})) +'
-    r'(?P<hostname>[!-~]{1,255}) +(?:\ufeff)?(?P<body>[{[])'
+    r'(?P<hostname>'+TOKENS['RFC5424_HOSTNAME']+r') +(?:\ufeff)?(?P<body>[{[])'
 )
 SHORT_CSV_ID=re.compile(r'[A-Za-z0-9_.:-]{6,}\Z')
 SHORT_CSV_TIMESTAMP=re.compile(
@@ -65,12 +65,12 @@ ISO_PRI_HEAD=re.compile(
 )
 BSD_TIME_HEAD=re.compile(
     r'^(?:<(?P<pri>\d{1,3})>)?'
-    r'(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) +'
+    r'(?P<month>'+TOKENS['BSD_MONTH']+r') +(?P<day>\d{1,2}) +'
     r'(?P<time>\d{2}:\d{2}:\d{2}) +'
 )
 RFC3164_LOOSE_HOST_HEAD=re.compile(
     r'^(?:<(?P<pri>\d{1,3})>)?'
-    r'(?P<month>[A-Z][a-z]{2}) +(?P<day>\d{1,2}) +'
+    r'(?P<month>'+TOKENS['BSD_MONTH']+r') +(?P<day>\d{1,2}) +'
     r'(?P<time>\d{2}:\d{2}:\d{2}) +'
     r'(?P<hostname>[A-Za-z0-9_.-]{1,255}) +'
 )

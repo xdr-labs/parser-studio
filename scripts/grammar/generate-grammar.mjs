@@ -320,6 +320,8 @@ export function rubyGrammarPlaceholders(contractText) {
   placeholders.__PS_GRAMMAR_PRI_MAX__ = String(semantics.priMax);
   placeholders.__PS_GRAMMAR_BSD_MONTH_DAYS__ = '{' + Object.entries(semantics.bsdMonthDays).map(([month, days]) => `'${month}'=>${days}`).join(',') + '}';
   placeholders.__PS_GRAMMAR_RFC5424_VERSIONS__ = '[' + semantics.rfc5424SupportedVersions.map(version => `'${version}'`).join(',') + ']';
+  // The same versions as a regular-expression alternation, for a header expression that captures VERSION.
+  placeholders.__PS_GRAMMAR_RFC5424_VERSION_PATTERN__ = semantics.rfc5424SupportedVersions.join('|');
   return placeholders;
 }
 
