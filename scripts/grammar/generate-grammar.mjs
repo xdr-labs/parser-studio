@@ -142,7 +142,7 @@ export function compileFragment(contract, fragmentName, dialect) {
   return { source: (dialect === 'ruby' ? '\\G' : '') + body, captures };
 }
 
-const REQUIRED_FRAGMENT_CAPTURES = Object.freeze({ kv_pair: ['key', 'dq', 'sq', 'bare'], rfc5424_version_head: ['pri', 'version'] });
+const REQUIRED_FRAGMENT_CAPTURES = Object.freeze({ kv_pair: ['key', 'dq', 'sq', 'bare'], rfc5424_version_head: ['pri', 'version'], structured_family_claim: ['family'] });
 
 export function validateContract(contract) {
   if (contract.schema !== 'parserstudio.grammar-contract.v1' || !Number.isInteger(contract.revision))

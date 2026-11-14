@@ -4,11 +4,13 @@ Input (stdin, JSON):
   {"moduleDir": "<directory that holds the Multi-Pass modules>",
    "lines": ["<raw line>", ...],
    "kvLines": ["<raw line with a key=value body>", ...],
+   "familyLines": [{"family": "cef" | "leef", "raw": "<raw line>"}, ...],
    "versions": ["1", "2", ...]}
 Output (stdout, JSON):
   {"python": "<version>",
    "envelope": [null | {"syslog": {...}, "start": <payload offset>}, ...],
    "kv": [{"status": "<preview status>", "body": {<key>: <value> | [<values>]}}, ...],
+   "family": [{"status": "<preview status>", "header": {...}, "extension": {...}}, ...],
    "rfc5424": {"<version>": {"extract_rfc5424": bool, "extract_pair_envelope": bool,
                              "short_rfc5424_json": bool, "short_ietf_csv": bool,
                              "parse_generic_structural": bool}}}
@@ -56,4 +58,12 @@ for raw in request.get("kvLines", []):
     result = multipass_preview_api.preview(raw)
     kv.append({"status": result["status"], "body": (result.get("fields") or {}).get("body") or {}})
 
-json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv}, sys.stdout)
+# Standalone CEF/LEEF events, through the same preview entry point.
+family = []
+for item in request.get("familyLines", []):
+    result = multipass_preview_api.preview(item["raw"])
+    fields = result.get("fields") or {}
+    family.append({"status": result["status"], "header": fields.get(item["family"] + "_header") or {},
+                   "extension": fields.get(item["family"] + "_extension") or {}})
+
+json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv, "family": family}, sys.stdout)

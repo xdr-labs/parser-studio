@@ -541,7 +541,10 @@
     "F-5": "A TAG directly after the timestamp ('kernel:', 'sshd[123]:') was read as HOSTNAME by both executors when HOSTNAME was omitted. Resolved by BSD_HOSTNAME not ending in ':'; the line is declined.",
     "F-6": "The Python Multi-Pass fallback parsed an RFC 5424 line with VERSION 999. Resolved by semantics.rfc5424SupportedVersions and the rfc5424_version_head fragment, read by every Python entry point.",
     "F-7": "The strict key=value path of the browser and the generated Ruby accepted U+001C..U+001F as value data while Generic Structural and the Python preview declined the line (issue #214). Resolved by KV_BARE excluding U+001C..U+001F.",
-    "F-8": "The Python Multi-Pass key=value scanner split pairs at Unicode white space (NBSP, U+2028) and decoded a different escape set than the browser and Ruby. Resolved by the scanner reading fragments.kv_pair and semantics.kvUnescapedAfterBackslash."
+    "F-8": "The Python Multi-Pass key=value scanner split pairs at Unicode white space (NBSP, U+2028) and decoded a different escape set than the browser and Ruby. Resolved by the scanner reading fragments.kv_pair and semantics.kvUnescapedAfterBackslash.",
+    "F-9": "A CEF or LEEF line with U+2028 inside a value was rejected by the browser ('.' excludes it in ECMAScript) and parsed by the generated Ruby and the Python preview. Resolved by dotAll on the two family head expressions.",
+    "F-10": "The Python preview reported a line that claims to be CEF or LEEF but is not valid (six header fields, LEEF 3.0) as parsed through its permissive Generic Structural fallback, with multi-word values cut at the first space. Resolved for the Python preview by fragments.structured_family_claim. The browser and Ruby side is policy divergence D-2.",
+    "F-11": "CEF and LEEF: the header splitter also decoded backslash escapes in the extension, which the extension grammar then decoded a second time, identically in the browser and the generated Ruby. 'filePath=C:\\\\\\\\Users\\\\\\\\new' came out as 'C:\\\\Users' LF 'ew', and the standard's own example 'act=blocked a \\\\\\\\ dst=1.1.1.1' lost dst. Resolved by keeping the text after the last header delimiter exactly as written."
   },
   "genericCases": [
     {
@@ -632,6 +635,303 @@
       ],
       "variant": "duplicate-key",
       "statement": "A repeated key: the strict browser and Ruby parsers reject the body; the Python source preview keeps every occurrence in order as a list (release gate H3, tests/test_h3_independent_six_family_bytes_20261108.py). The oracle requires exactly that list from Python and a rejection from the others. Unifying the two needs an owner decision."
+    },
+    "D-2": {
+      "engines": [
+        "ts",
+        "ruby"
+      ],
+      "variant": "generic-family-claim",
+      "statement": "A line that starts with CEF: or LEEF: handed to Generic Structural WITHOUT a selected profile: the browser and the generated Ruby still parse it with the legacy space-separated key=value route, which leaves the header and the first attribute as unparsed text (kept deliberately for existing V15 projects: src/guided/leef2ProfilePrecedence20261020.test.ts, backend/test/leef2-profile-precedence.test.ts, backend/test/generic-structural-mixed-profile-v1.test.ts). The Python preview declines such a line when it is not valid CEF/LEEF. Declining it in the browser and Ruby as well changes the output of existing projects and needs an owner decision."
     }
-  }
+  },
+  "familyCases": [
+    {
+      "id": "cef-standard-example",
+      "family": "cef",
+      "raw": "CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: the header is seven pipe-delimited fields after CEF:Version; the extension is key=value pairs separated by spaces",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "Security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "worm successfully stopped",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "dst": "2.1.2.2",
+          "spt": "1232"
+        }
+      }
+    },
+    {
+      "id": "cef-pipe-escaped-in-header-literal-in-extension",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|detected a \\| in message|10|src=10.0.0.1 act=blocked a | dst=1.1.1.1",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a pipe in a header field is escaped with a backslash; pipes in the extension do not need escaping",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "detected a | in message",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "act": "blocked a |",
+          "dst": "1.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-backslash-escaped",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|detected a \\\\ in packet|10|src=10.0.0.1 act=blocked a \\\\ dst=1.1.1.1",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a backslash in the header or in an extension value is escaped with a second backslash",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "detected a \\ in packet",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "act": "blocked a \\",
+          "dst": "1.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-equals-literal-in-header-escaped-in-extension",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|detected a = in message|10|src=10.0.0.1 act=blocked a \\= dst=1.1.1.1",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: an equal sign in an extension value is escaped with a backslash; equal signs in the header need no escaping",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "detected a = in message",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "act": "blocked a =",
+          "dst": "1.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "cef-multi-line-value",
+      "family": "cef",
+      "raw": "CEF:0|security|threatmanager|1.0|100|Detected a threat|10|src=10.0.0.1 msg=Detected a threat.\\n No action needed.",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a multi-line value is encoded with \\n inside the extension value",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "security",
+          "cef_device_product": "threatmanager",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "Detected a threat",
+          "cef_severity": "10"
+        },
+        "extension": {
+          "src": "10.0.0.1",
+          "msg": "Detected a threat.\n No action needed."
+        }
+      }
+    },
+    {
+      "id": "cef-line-separator-in-value",
+      "family": "cef",
+      "raw": "CEF:0|Acme|FW|1.0|100|Name|5|msg=a b dst=10.2.2.2",
+      "provenance": "Defect F-9: U+2028 is an ordinary UTF-8 character of the value; it is neither a record break nor a pair separator",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "Acme",
+          "cef_device_product": "FW",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "Name",
+          "cef_severity": "5"
+        },
+        "extension": {
+          "msg": "a b",
+          "dst": "10.2.2.2"
+        }
+      }
+    },
+    {
+      "id": "cef-seventh-header-field-not-terminated",
+      "family": "cef",
+      "raw": "CEF:0|Acme|FW|1.0|100|Name|src=10.1.1.1 msg=x y z dst=10.2.2.2",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: seven header fields are required, each terminated by a pipe; with six pipes this is not a CEF event and no grammar may report it as parsed",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "leef-1-0-tab-separated",
+      "family": "leef",
+      "raw": "LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=192.0.2.0\tdst=172.50.123.1\tsev=5\tcat=anomaly\tsrcPort=81\tdstPort=21\tusrName=joe.black",
+      "provenance": "IBM QRadar LEEF format guide: LEEF 1.0 header is LEEF:Version|Vendor|Product|Version|EventID| and attributes are separated by a tab",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "1.0",
+          "leef_vendor": "Microsoft",
+          "leef_product": "MSExchange",
+          "leef_product_version": "4.0 SP1",
+          "leef_event_id": "15345"
+        },
+        "extension": {
+          "src": "192.0.2.0",
+          "dst": "172.50.123.1",
+          "sev": "5",
+          "cat": "anomaly",
+          "srcPort": "81",
+          "dstPort": "21",
+          "usrName": "joe.black"
+        }
+      }
+    },
+    {
+      "id": "leef-2-0-caret-separated",
+      "family": "leef",
+      "raw": "LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=192.0.2.0^dst=172.50.123.1^sev=5^cat=anomaly^srcPort=81^dstPort=21^usrName=joe.black",
+      "provenance": "IBM QRadar LEEF format guide: LEEF 2.0 names the attribute separator in a sixth header field",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "2.0",
+          "leef_vendor": "Lancope",
+          "leef_product": "StealthWatch",
+          "leef_product_version": "1.0",
+          "leef_event_id": "41"
+        },
+        "extension": {
+          "src": "192.0.2.0",
+          "dst": "172.50.123.1",
+          "sev": "5",
+          "cat": "anomaly",
+          "srcPort": "81",
+          "dstPort": "21",
+          "usrName": "joe.black"
+        }
+      }
+    },
+    {
+      "id": "leef-value-contains-equals",
+      "family": "leef",
+      "raw": "LEEF:1.0|Acme|FW|1.0|100|url=http://x/?a=b&c=d\tsrc=10.1.1.1",
+      "provenance": "IBM QRadar LEEF format guide: an attribute is key=value up to the separator; only the first equal sign ends the key",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "1.0",
+          "leef_vendor": "Acme",
+          "leef_product": "FW",
+          "leef_product_version": "1.0",
+          "leef_event_id": "100"
+        },
+        "extension": {
+          "url": "http://x/?a=b&c=d",
+          "src": "10.1.1.1"
+        }
+      }
+    },
+    {
+      "id": "leef-line-separator-in-value",
+      "family": "leef",
+      "raw": "LEEF:2.0|Acme|FW|1.0|100|^|src=10.1.1.1^msg=a b^dst=10.2.2.2",
+      "provenance": "Defect F-9: U+2028 is an ordinary UTF-8 character of the value",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "2.0",
+          "leef_vendor": "Acme",
+          "leef_product": "FW",
+          "leef_product_version": "1.0",
+          "leef_event_id": "100"
+        },
+        "extension": {
+          "src": "10.1.1.1",
+          "msg": "a b",
+          "dst": "10.2.2.2"
+        }
+      }
+    },
+    {
+      "id": "leef-version-3-is-not-leef",
+      "family": "leef",
+      "raw": "LEEF:3.0|Acme|FW|1.0|100|src=10.1.1.1\tmsg=hello world\tdst=10.2.2.2",
+      "provenance": "IBM QRadar LEEF format guide: the defined LEEF versions are 1.0 and 2.0; a line with another version is not parsed by any grammar",
+      "expect": {
+        "status": "UNKNOWN"
+      }
+    },
+    {
+      "id": "cef-windows-path-with-n-segment",
+      "family": "cef",
+      "raw": "CEF:0|Acme|EDR|1.0|100|File created|5|filePath=C:\\\\Users\\\\new\\\\report.txt act=allowed",
+      "provenance": "ArcSight Common Event Format, Implementing ArcSight CEF: a backslash in an extension value is escaped with a second backslash; the escaped pair decodes to one backslash, never to a line feed",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "cef_version": "0",
+          "cef_device_vendor": "Acme",
+          "cef_device_product": "EDR",
+          "cef_device_version": "1.0",
+          "cef_signature_id": "100",
+          "cef_name": "File created",
+          "cef_severity": "5"
+        },
+        "extension": {
+          "filePath": "C:\\Users\\new\\report.txt",
+          "act": "allowed"
+        }
+      }
+    },
+    {
+      "id": "leef-unc-path-is-literal",
+      "family": "leef",
+      "raw": "LEEF:1.0|Acme|FW|1.0|100|share=\\\\server\\reports\tsrc=10.1.1.1",
+      "provenance": "IBM QRadar LEEF format guide: LEEF defines no escape sequences; an attribute value is the literal text up to the separator",
+      "expect": {
+        "status": "FULL",
+        "header": {
+          "leef_version": "1.0",
+          "leef_vendor": "Acme",
+          "leef_product": "FW",
+          "leef_product_version": "1.0",
+          "leef_event_id": "100"
+        },
+        "extension": {
+          "share": "\\\\server\\reports",
+          "src": "10.1.1.1"
+        }
+      }
+    }
+  ]
 }

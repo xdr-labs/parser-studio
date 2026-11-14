@@ -18,6 +18,8 @@ from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_
 
 # <PRI>VERSION SP then NILVALUE or an RFC 3339 date: the line claims to be RFC 5424 (shared grammar contract).
 RFC5424_VERSION_HEAD=re.compile(FRAGMENTS['rfc5424_version_head']['source'])
+# CEF: or LEEF: and a digit at the start: the line claims to be a CEF or LEEF event (shared grammar contract).
+STRUCTURED_FAMILY_CLAIM=re.compile(FRAGMENTS['structured_family_claim']['source'])
 from security_cef import parse_security_cef
 from security_leef import parse_security_leef
 from security_source import parse_security_source
@@ -1109,6 +1111,13 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
             standard=parse_security_source(raw)
         if 'RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED' not in standard.issues:
             standard.issues.append('RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED')
+        return standard
+    # A line that claims to be CEF or LEEF is parsed by that grammar only. The permissive token/KV fallback
+    # would lose its first extension pair into the header text, cut multi-word values at the first space and
+    # keep escapes undecoded, while reporting the line as parsed.
+    if STRUCTURED_FAMILY_CLAIM.match(raw) is not None and standard.status!='SOURCE_PARSED':
+        if 'STRUCTURED_FAMILY_HEADER_UNSUPPORTED' not in standard.issues:
+            standard.issues.append('STRUCTURED_FAMILY_HEADER_UNSUPPORTED')
         return standard
     # Physical C0 record/control separators are not Generic Structural token
     # delimiters. A permissive Python isspace() split could otherwise turn

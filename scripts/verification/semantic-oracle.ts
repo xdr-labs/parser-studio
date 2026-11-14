@@ -26,6 +26,7 @@ import { extractGenericStructural } from '../../src/genericStructural';
 import { classifyStructuredParse } from '../../src/grammar/parseStatus';
 import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslogHeaderModel';
 import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
+import { generateCefLeefCases, type FamilyCase } from '../../src/grammar/cefLeefModel';
 import { matchHeaderRule } from '../../src/grammar/syslogHeader';
 import { SYSLOG_HEADER_RULES, type SyslogHeaderRuleName } from '../../src/grammar/syslogHeaderGrammar.generated';
 // @ts-expect-error plain ESM generator without type declarations
@@ -47,6 +48,7 @@ interface Goldens {
   cases: OracleCase[];
   envelopeCases: EnvelopeCase[];
   genericCases: GenericCase[];
+  familyCases: FamilyCase[];
 }
 interface RubyResult { calls?: Array<[unknown, Record<string, unknown> | null]>; raised?: string }
 interface Mutant { id: string; file: string; find: string; replace: string; set?: { path: string[]; value: unknown } }
@@ -70,6 +72,7 @@ function goldenSelfCheck(): string[] {
     ids.add(item.id);
     if (item.knownDefect && !goldens.knownDefects[item.knownDefect]) problems.push(`${item.id}: unknown defect ${item.knownDefect}`);
   }
+  for (const item of goldens.familyCases) if (!item.provenance) problems.push(`${item.id}: provenance missing`);
   for (const item of goldens.cases) {
     if (!item.provenance) problems.push(`${item.id}: provenance missing`);
     for (const [path, value] of Object.entries(item.expect.source ?? {}))
@@ -294,8 +297,9 @@ async function runTs(): Promise<number> {
     if (failing === 0) survivors.push(mutant.id);
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
-  const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length}\n`);
+  const family = await runFamilyTs();
+  const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0 && family.ok;
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length} ${family.summary}\n`);
   return ok ? 0 : 1;
 }
 
@@ -390,6 +394,7 @@ function runNative(): number {
     for (const item of mutantCases)
       if (item.grammar === mutant.grammar) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
   }
+  const evaluateFamily = prepareFamilyNative(fragments, payloadCases);
   // Grammar dialect equivalence: the contract's Ruby regular expressions must capture exactly what its
   // ECMAScript regular expressions capture, on the target Ruby, for every golden and property line.
   const contract = JSON.parse(readFileSync(join(REPO, 'contracts/syslog-header-grammar.v1.json'), 'utf8'));
@@ -459,17 +464,161 @@ function runNative(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   process.stdout.write(`GENERIC_STRUCTURAL_GOLDENS passed=${goldens.genericCases.length - new Set(genericFailures.map(line => line.split(':')[0])).size} failed=${genericFailures.length}\n`);
-  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
+  const family = evaluateFamily(output.results);
+  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0 && family.ok;
   process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length} ${family.summary}\n`);
   return ok ? 0 : 1;
+}
+
+// ------------------------------------------------------------ CEF and LEEF
+// Standalone CEF/LEEF events: hand-written goldens (familyCases) plus bodies rendered from meant values
+// (src/grammar/cefLeefModel.ts). Each engine reports whether it parsed the line and the value of a field;
+// the same expectation is applied to the browser extractor, the generated Ruby and the Python preview.
+// The Python preview also declines a line that claims to be CEF or LEEF and is not; for the browser and Ruby
+// Generic Structural routes that is policy divergence D-2 (legacy V15 compatibility, owner decision pending).
+interface FamilyObservation { parsed: boolean; value: (key: string) => unknown }
+const familyCases = (properties: number): FamilyCase[] => [...goldens.familyCases, ...generateCefLeefCases(properties, PROPERTY_SEED)];
+const familyKey = (path: string) => 'f_' + path.replace(/[^A-Za-z0-9]/g, '_');
+
+function familyProblems(item: FamilyCase, got: FamilyObservation | undefined): string[] {
+  if (!got) return ['no result'];
+  if (item.expect.status === 'UNKNOWN') return got.parsed ? ['parsed, expected a declined line'] : [];
+  if (!got.parsed) return item.expect.neverWrong ? [] : ['declined, expected a parse'];
+  const problems: string[] = [];
+  for (const [key, want] of Object.entries({ ...item.expect.header, ...item.expect.extension }))
+    if (got.value(key) !== want) problems.push(`${key}=${JSON.stringify(got.value(key))}, expected ${JSON.stringify(want)}`);
+  return problems;
+}
+
+function familyTsFailures(extract: Extract, cases: FamilyCase[]): string[] {
+  const failures: string[] = [];
+  for (const item of cases) {
+    let out: { fields: Record<string, unknown>; errors: string[] };
+    try { out = extract(item.raw, item.family, 'raw'); } catch (error) { failures.push(`${item.id}: extractor raised ${String(error)}`); continue; }
+    const fields = out.fields;
+    const problems = familyProblems(item, { parsed: out.errors.length === 0 && Object.keys(fields).length > 0, value: key => fields[key] });
+    if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+  }
+  return failures;
+}
+const TS_FAMILY_MUTANTS: Mutant[] = [
+  { id: 'ts-cef-value-stops-at-first-space', file: 'src/structuredFamilies.ts', find: 'if(next&&next.index===runEnd){', replace: 'if(true){' },
+  { id: 'ts-cef-header-fields-shifted', file: 'src/structuredFamilies.ts', find: 'cef_device_product: parts[1], cef_device_version: parts[2],', replace: 'cef_device_product: parts[2], cef_device_version: parts[1],' },
+  { id: 'ts-cef-dot-excludes-line-separator', file: 'src/structuredFamilies.ts', find: '/^CEF:(\\d+)\\|(.*)$/s.exec(input)', replace: '/^CEF:(\\d+)\\|(.*)$/.exec(input)' },
+  { id: 'ts-leef-value-cut-at-second-equals', file: 'src/structuredFamilies.ts', find: 'record[key] = part.slice(location + 1);', replace: "record[key] = part.slice(location + 1).split('=')[0]!;" },
+  // Re-introduces F-11: header escapes decoded in the extension as well, so a value is decoded twice.
+  { id: 'ts-family-extension-decoded-twice', file: 'src/structuredFamilies.ts', find: "if (output.length > splits) { output[output.length - 1] += char; continue; }", replace: '' },
+];
+
+async function runFamilyTs(): Promise<{ ok: boolean; summary: string }> {
+  const cases = familyCases(150);
+  const failures = familyTsFailures(extractStructuredFamily as Extract, cases);
+  report('SEMANTIC_ORACLE_TS_FAMILY', failures);
+  const survivors: string[] = [];
+  for (const mutant of TS_FAMILY_MUTANTS) {
+    const loaded = await extractorFromCopy(mutant);
+    const failing = familyTsFailures(loaded.extract, cases).length;
+    loaded.dispose();
+    process.stdout.write(`TS_MUTANT ${mutant.id} ${failing > failures.length ? 'KILLED' : 'SURVIVED'} failing_cases=${failing}\n`);
+    if (failing <= failures.length) survivors.push(mutant.id);
+  }
+  if (survivors.length) report('MUTANT_SURVIVED', survivors);
+  return { ok: failures.length === 0 && survivors.length === 0, summary: `family_cases=${cases.length} family_mutants_killed=${TS_FAMILY_MUTANTS.length - survivors.length}/${TS_FAMILY_MUTANTS.length}` };
+}
+
+const RUBY_FAMILY_MUTANTS: Array<Mutant & { family: FamilyCase['family']; target: string }> = [
+  { id: 'rb-cef-value-stops-at-first-space', family: 'cef', target: 'family:cef', file: 'fragment', find: 'if next_key && next_key.begin(0) == run_end', replace: 'if true' },
+  { id: 'rb-cef-header-fields-shifted', family: 'cef', target: 'family:cef', file: 'fragment', find: "'cef_device_product' => fields[1],", replace: "'cef_device_product' => fields[2]," },
+  { id: 'rb-leef-value-cut-at-second-equals', family: 'leef', target: 'family:leef', file: 'fragment', find: "key, value = piece.split('=', 2)", replace: "key, value = piece.split('=', 3)" },
+  { id: 'rb-cef-extension-decoded-twice', family: 'cef', target: 'family:cef', file: 'fragment', find: "    if parts.length == maximum_splits\n      buffer << character\n    elsif escaped\n", replace: "    if escaped\n" },
+];
+
+function familyFragment(family: FamilyCase['family'], cases: FamilyCase[], forwarder = false): string {
+  const paths = [...new Set(cases.filter(item => item.family === family).flatMap(item => Object.keys({ ...item.expect.header, ...item.expect.extension })))];
+  const project = sampleProject() as unknown as Record<string, any>;
+  // A declared forwarder selects the forwarder-family template; a direct event must parse exactly the same.
+  project.extraction = { format: family, ...(forwarder ? { forwarder: { maxHops: 2, relayHosts: ['oracle-relay'] } } : {}) };
+  project.normalization.topFields = {};
+  project.normalization.nsFields = {};
+  project.normalization.vendorFields = Object.fromEntries(paths.map(path => [path, { normalized_name: familyKey(path), data_type: 'string' }]));
+  project.classification = { defaultIndex: 'syslog', rules: [] };
+  return compilePair(project).files.find(file => !file.name.endsWith('.conf'))!.content;
+}
+
+/** Adds the family fragments and cases to the Ruby payload; returns the evaluation to run on the results. */
+function prepareFamilyNative(fragments: Record<string, string>, payloadCases: Array<{ id: string; fragment: string; raw: string }>):
+  (results: Record<string, RubyResult>) => { ok: boolean; summary: string } {
+  const cases = familyCases(40);
+  const mutantCases = familyCases(12);
+  for (const family of ['cef', 'leef'] as const) {
+    fragments[`family:${family}`] = familyFragment(family, cases);
+    fragments[`familyforwarder:${family}`] = familyFragment(family, cases, true);
+    if (fragments[`familyforwarder:${family}`] === fragments[`family:${family}`]) throw new Error('FORWARDER_TEMPLATE_NOT_SELECTED');
+  }
+  for (const item of cases) {
+    payloadCases.push({ id: `family::${item.id}`, fragment: `family:${item.family}`, raw: item.raw });
+    payloadCases.push({ id: `familyforwarder::${item.id}`, fragment: `familyforwarder:${item.family}`, raw: item.raw });
+  }
+  for (const mutant of RUBY_FAMILY_MUTANTS) {
+    fragments[mutant.id] = applyMutant(fragments[mutant.target]!, mutant);
+    for (const item of mutantCases) if (item.family === mutant.family) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
+  }
+  const parsedEvents = (result: RubyResult | undefined) => (result?.calls ?? []).filter(([time, record]) => time !== null && record !== null && record.parser_err_msg === undefined);
+  const observe = (result: RubyResult | undefined): FamilyObservation | undefined => {
+    if (!result || result.raised) return undefined;
+    const events = parsedEvents(result);
+    return { parsed: events.length === 1, value: key => deepGet(events[0]![1], 'Synthetic.' + familyKey(key)) };
+  };
+  return results => {
+    const failures: string[] = [];
+    for (const item of cases) {
+      const result = results[`family::${item.id}`];
+      if (result?.raised) { failures.push(`${item.id}: artifact raised ${result.raised}`); continue; }
+      const problems = familyProblems(item, observe(result));
+      if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+      const forwarded = results[`familyforwarder::${item.id}`];
+      const forwarderProblems = forwarded?.raised ? [`artifact raised ${forwarded.raised}`] : familyProblems(item, observe(forwarded));
+      if (forwarderProblems.length) failures.push(`forwarder-family template, ${item.id}: ${forwarderProblems.slice(0, 3).join(' | ')}`);
+    }
+    report('SEMANTIC_ORACLE_NATIVE_FAMILY', failures);
+    const survivors: string[] = [];
+    for (const mutant of RUBY_FAMILY_MUTANTS) {
+      const reported = mutantCases.filter(item => item.family === mutant.family &&
+        familyProblems(item, observe(results[`${mutant.id}::${item.id}`])).length > 0).length;
+      process.stdout.write(`RUBY_MUTANT ${mutant.id} ${reported > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${reported}\n`);
+      if (reported === 0) survivors.push(mutant.id);
+    }
+    if (survivors.length) report('MUTANT_SURVIVED', survivors);
+    return { ok: failures.length === 0 && survivors.length === 0, summary: `family_cases=${cases.length}x2_templates family_mutants_killed=${RUBY_FAMILY_MUTANTS.length - survivors.length}/${RUBY_FAMILY_MUTANTS.length}` };
+  };
+}
+
+// The Python preview names header fields without the family prefix.
+const PYTHON_FAMILY_HEADER: Record<string, string> = {
+  cef_version: 'version', cef_device_vendor: 'vendor', cef_device_product: 'product', cef_device_version: 'device_version',
+  cef_signature_id: 'signature_id', cef_name: 'name', cef_severity: 'severity',
+  leef_version: 'version', leef_vendor: 'vendor', leef_product: 'product', leef_product_version: 'product_version', leef_event_id: 'event_id',
+};
+interface PythonFamily { status: string; header: Record<string, unknown>; extension: Record<string, unknown> }
+function familyPythonFailures(cases: FamilyCase[], results: PythonFamily[]): string[] {
+  const failures: string[] = [];
+  cases.forEach((item, index) => {
+    const result = results[index];
+    const problems = familyProblems(item, result && {
+      parsed: result.status === 'SOURCE_PARSED',
+      value: key => (key in PYTHON_FAMILY_HEADER ? result.header[PYTHON_FAMILY_HEADER[key]!] : result.extension[key]),
+    });
+    if (problems.length) failures.push(`${item.id}: ${problems.slice(0, 3).join(' | ')}`);
+  });
+  return failures;
 }
 
 // -------------------------------------------------------------------- Python
 interface PythonEnvelope { syslog: Record<string, string>; start: number }
 interface PythonKv { status: string; body: Record<string, unknown> }
-interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[] }
+interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[]; family: PythonFamily[] }
 const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
 const PYTHON_MUTANTS: Mutant[] = [
   ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname') || mutant.id.startsWith('contract-kv')),
@@ -478,6 +627,9 @@ const PYTHON_MUTANTS: Mutant[] = [
   { id: 'py-kv-escapes-not-decoded', file: 'source_kv.py', find: 'value=unescape_kv_value(match[group])', replace: 'value=match[group]' },
   { id: 'py-kv-repeated-key-overwrites', file: 'source_kv.py', find: 'else:out.fields[key]=[previous,value]', replace: 'else:out.fields[key]=value' },
   { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
+  { id: 'py-cef-value-stops-at-first-space', file: 'security_cef.py', find: 'next_key=KEY.match(raw,run_end)', replace: 'next_key=True' },
+  { id: 'py-cef-escapes-not-decoded', file: 'security_cef.py', find: 'if nxt in ESCAPES:decoded.append(ESCAPES[nxt])', replace: 'if nxt in ESCAPES:decoded.append(raw[cursor:cursor+2])' },
+  { id: 'py-generic-family-claim-gate-removed', file: 'generic_structural_poc.py', find: "if STRUCTURED_FAMILY_CLAIM.match(raw) is not None and standard.status!='SOURCE_PARSED':", replace: 'if False:' },
 ];
 
 /** The Python preview must report the meant value of every pair, or decline; a repeated key follows policy divergence D-1. */
@@ -526,9 +678,10 @@ function evaluatePythonEnvelope(item: OracleCase, result: PythonEnvelope | null 
   return problems;
 }
 
+const PYTHON_FAMILY_CASES = familyCases(60);
 function pythonRun(moduleDir: string, cases: OracleCase[], kvCases: OracleCase[]): PythonOutput {
   const run = spawnSync('python3', [join(REPO, 'scripts/verification/semantic-oracle-python-runner.py')], {
-    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
+    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), familyLines: PYTHON_FAMILY_CASES.map(item => ({ family: item.family, raw: item.raw })), versions: RFC5424_VERSION_PROBES }),
     encoding: 'utf8', maxBuffer: 1 << 28, timeout: 120000,
   });
   if (run.status !== 0) throw new Error(`SEMANTIC_ORACLE_PYTHON_RUNNER_FAILED ${String(run.stderr).slice(-600)}`);
@@ -557,7 +710,7 @@ function runPython(): number {
   const failuresOf = (output: PythonOutput) => {
     const failures = score('ruby', cases, item => evaluatePythonEnvelope(item, output.envelope[index.get(item)!])).failures;
     const kvFailures = score('ruby', kvCases, item => evaluatePythonKv(item, output.kv[kvIndex.get(item)!])).failures;
-    return [...failures, ...kvFailures, ...pythonFailures({ ...output, envelope: [] }, [])];
+    return [...failures, ...kvFailures, ...familyPythonFailures(PYTHON_FAMILY_CASES, output.family), ...pythonFailures({ ...output, envelope: [] }, [])];
   };
   const moduleDir = join(REPO, 'runtime/multipass');
   const product = pythonRun(moduleDir, cases, kvCases);
@@ -583,7 +736,7 @@ function runPython(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const ok = productFailures.length === 0 && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} family_cases=${PYTHON_FAMILY_CASES.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 
