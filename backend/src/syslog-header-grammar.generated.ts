@@ -1,8 +1,8 @@
 // GENERATED FILE - DO NOT EDIT.
-// Source: contracts/syslog-header-grammar.v1.json (revision 3); regenerate with
+// Source: contracts/syslog-header-grammar.v1.json (revision 4); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "3d561d4bb7c17f4dc19528b667a35bbf0efff4be2e019ec4d1bc63a42a74b755";
+export const GRAMMAR_CONTRACT_SHA256 = "ef472038c2a5c4dfd795d45c394892a381dd06791cdd059c01e7614ded228838";
 /** Template placeholder -> Ruby source text (Ruby 2.4 compatible). */
 export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_RX_RFC3164_TAGGED__": "\\A<(?<pri>[0-9]{1,3})>(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)\\z",
@@ -11,6 +11,7 @@ export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_RX_RFC5424__": "\\A<(?<pri>[0-9]{1,3})>(?<version>[1-9][0-9]{0,2})[ ](?<timestamp>[!-~]{1,64})[ ](?<hostname>[!-~]{1,255})[ ](?<appname>[!-~]{1,48})[ ](?<procid>[!-~]{1,128})[ ](?<msgid>[!-~]{1,32})[ ](?<rest>[^\\r\\n]+)\\z",
   "__PS_GRAMMAR_FRAGMENT_KV_PAIR__": "\\G(?:[ \\t]*)(?<key>[A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:\"(?<dq>(?:\\\\[^\\r\\n]|[^\"\\\\])*)\"|'(?<sq>(?:\\\\[^\\r\\n]|[^'\\\\])*)'|(?<bare>(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+))",
   "__PS_GRAMMAR_FRAGMENT_RFC5424_VERSION_HEAD__": "\\G<(?<pri>[0-9]{1,3})>(?<version>[1-9][0-9]{0,2})[ ](?:-[ ]|(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T))",
+  "__PS_GRAMMAR_FRAGMENT_STRUCTURED_FAMILY_CLAIM__": "\\G(?<family>(?:CEF|LEEF)):(?:[0-9])",
   "__PS_GRAMMAR_KV_MAX_PAIRS__": "100",
   "__PS_GRAMMAR_KV_UNESCAPED__": "['\\\\', '\"', '\\'', '=']",
   "__PS_GRAMMAR_TOKEN_PRI__": "[0-9]{1,3}",
@@ -35,6 +36,8 @@ export const RUBY_GRAMMAR_PLACEHOLDERS: Readonly<Record<string, string>> = {
   "__PS_GRAMMAR_TOKEN_KV_BARE__": "(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+",
   "__PS_GRAMMAR_TOKEN_KV_TRAILING__": "[ \\t\\n\\r\\f\\v]*",
   "__PS_GRAMMAR_TOKEN_RFC3339_DATE_PREFIX__": "[0-9]{4}-[0-9]{2}-[0-9]{2}T",
+  "__PS_GRAMMAR_TOKEN_FAMILY_NAME__": "(?:CEF|LEEF)",
+  "__PS_GRAMMAR_TOKEN_ASCII_DIGIT__": "[0-9]",
   "__PS_GRAMMAR_RFC3164_ALTERNATIVES__": "[['rfc3164_tagged', /\\A<(?<pri>[0-9]{1,3})>(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<tag>[A-Za-z_][A-Za-z0-9_.-]{0,95})(?:\\[(?<procid>[0-9]{1,8})\\])?:[ ]+(?<message>[^\\r\\n]+)\\z/], ['rfc3164_tagless', /\\A(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<hostname>(?!\\{|CEF:|LEEF:)[!-<>-~]{0,254}[!-9;<>-~])[ ]+(?<message>[^\\r\\n]+)\\z/], ['rfc3164_hostless', /\\A(?:<(?<pri>[0-9]{1,3})>)?(?<month>[A-Z][a-z]{2})[ ]+(?<day>[0-9]{1,2})[ ]+(?<hour>[0-9]{2}):(?<minute>[0-9]{2}):(?<second>[0-9]{2})[ ]+(?<message>(?:\\{|CEF:|LEEF:|[A-Za-z_][A-Za-z0-9_.-]{0,95}=)[^\\r\\n]*)\\z/]]",
   "__PS_GRAMMAR_PRI_MAX__": "191",
   "__PS_GRAMMAR_BSD_MONTH_DAYS__": "{'Jan'=>31,'Feb'=>29,'Mar'=>31,'Apr'=>30,'May'=>31,'Jun'=>30,'Jul'=>31,'Aug'=>31,'Sep'=>30,'Oct'=>31,'Nov'=>30,'Dec'=>31}",

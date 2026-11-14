@@ -627,7 +627,11 @@ def parserstudio_split_escaped(text, delimiter, maximum_splits)
   buffer = +''
   escaped = false
   text.each_char do |character|
-    if escaped
+    # Everything after the last header delimiter belongs to the extension grammar and is kept exactly as
+    # written. Decoding header escapes there as well decoded a value twice.
+    if parts.length == maximum_splits
+      buffer << character
+    elsif escaped
       if character == delimiter || character == '\\'
         buffer << character
       else

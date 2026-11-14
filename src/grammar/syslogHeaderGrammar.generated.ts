@@ -1,9 +1,9 @@
 // GENERATED FILE - DO NOT EDIT.
-// Source: contracts/syslog-header-grammar.v1.json (revision 3); regenerate with
+// Source: contracts/syslog-header-grammar.v1.json (revision 4); regenerate with
 //   node scripts/grammar/generate-grammar.mjs --write
 // CI runs the generator with --verify, so a hand edit of this file fails the gate.
-export const GRAMMAR_CONTRACT_SHA256 = "3d561d4bb7c17f4dc19528b667a35bbf0efff4be2e019ec4d1bc63a42a74b755";
-export const GRAMMAR_CONTRACT_REVISION = 3;
+export const GRAMMAR_CONTRACT_SHA256 = "ef472038c2a5c4dfd795d45c394892a381dd06791cdd059c01e7614ded228838";
+export const GRAMMAR_CONTRACT_REVISION = 4;
 export interface CompiledHeaderRule { readonly source: string; readonly captures: readonly string[] }
 export const SYSLOG_HEADER_RULES = {
   "rfc3164_tagged": {
@@ -77,6 +77,12 @@ export const GRAMMAR_FRAGMENTS = {
       "pri",
       "version"
     ]
+  },
+  "structured_family_claim": {
+    "source": "(?<family>(?:CEF|LEEF)):(?:[0-9])",
+    "captures": [
+      "family"
+    ]
   }
 } as const satisfies Record<string, CompiledHeaderRule>;
 export const SYSLOG_HEADER_TOKENS = {
@@ -101,7 +107,9 @@ export const SYSLOG_HEADER_TOKENS = {
   "KV_SQ": "(?:\\\\[^\\r\\n]|[^'\\\\])*",
   "KV_BARE": "(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+",
   "KV_TRAILING": "[ \\t\\n\\r\\f\\v]*",
-  "RFC3339_DATE_PREFIX": "[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+  "RFC3339_DATE_PREFIX": "[0-9]{4}-[0-9]{2}-[0-9]{2}T",
+  "FAMILY_NAME": "(?:CEF|LEEF)",
+  "ASCII_DIGIT": "[0-9]"
 } as const;
 export const SYSLOG_HEADER_ALTERNATIVES = {
   "rfc3164": [

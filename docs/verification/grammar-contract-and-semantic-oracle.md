@@ -176,6 +176,44 @@ Not migrated: the CEF/LEEF extension tokenizers (W6) and `parse_quoted_kv` in
 `runtime/multipass/engine.py` (legacy Fortinet role-learning path; it now uses
 the contract's ASCII white-space set but keeps its own pair expression).
 
+## CEF and LEEF (W6, first slice)
+
+Covered by the oracle in all three engines: hand-written goldens taken from the
+ArcSight CEF and IBM LEEF format guides (`familyCases`) and bodies rendered from
+meant values (`src/grammar/cefLeefModel.ts`: header escapes, extension escapes,
+multi-word values, Windows and UNC paths, U+2028, UTF-8, LEEF 1.0 and 2.0
+separators, missing header fields, truncated escapes, an undefined LEEF
+version). Faults are injected into the browser extractor, the generated Ruby
+and the Python preview.
+
+Defects this found:
+
+- F-9: a CEF or LEEF line with U+2028 in a value was rejected by the browser
+  only (`.` in two head expressions). Fixed with dotAll.
+- F-11: the header splitter also decoded backslash escapes in the extension,
+  and the extension grammar decoded them again - identically in the browser and
+  the generated Ruby, so every differential test passed. A Windows path
+  `filePath=C:\\Users\\new` came out as `C:\Users` LF `ew`, and the CEF
+  guide's own example `act=blocked a \\ dst=1.1.1.1` lost `dst`. LEEF values,
+  which have no escapes at all, lost one backslash of a UNC path. Fixed in
+  `splitEscaped` and `parserstudio_split_escaped`: the text after the last
+  header delimiter is kept exactly as written. The Python preview was already
+  correct.
+- F-10: the Python preview reported a malformed CEF/LEEF line as parsed through
+  its permissive generic fallback. Fixed with `fragments.structured_family_claim`.
+
+Policy divergence D-2 (owner decision needed): Generic Structural without a
+selected profile still parses a line that starts with `CEF:` or `LEEF:` with
+its legacy space-separated key=value route in the browser and Ruby. Three
+existing tests keep that on purpose for existing V15 projects, so it was not
+changed.
+
+Not migrated: the CEF extension tokenizer, the LEEF attribute splitter and
+their limits are still hand-written in each language; what is shared so far is
+the oracle, the faults and the claim fragment. CSV is not covered yet. The
+Python preview accepts `CEF:1|` while the browser and Ruby accept only
+`CEF:0|`.
+
 ## RFC 5424 VERSION policy (owner decision, 2026-11-13)
 
 Only VERSION 1 is supported. A line with any other VERSION is never parsed,

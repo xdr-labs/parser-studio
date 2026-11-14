@@ -39,6 +39,9 @@ function splitEscaped(text: string, delimiter: string, splits: number): string[]
   const output = [''];
   let escaped = false;
   for (const char of text) {
+    // Everything after the last header delimiter belongs to the extension grammar and is kept exactly as
+    // written. Decoding header escapes there as well decoded a value twice: "C:\\new" became "C:" LF "ew".
+    if (output.length > splits) { output[output.length - 1] += char; continue; }
     if (escaped) {
       output[output.length - 1] += char === delimiter || char === '\\' ? char : '\\' + char;
       escaped = false;
@@ -209,7 +212,8 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     return { fields: { ...scanned.fields, ...body }, errors: [] };
   }
   if (format === 'cef') {
-    const match = /^CEF:(\d+)\|(.*)$/.exec(input);
+    // dotAll: a value may hold U+2028/U+2029, which '.' alone excludes in ECMAScript but not in Ruby or Python.
+    const match = /^CEF:(\d+)\|(.*)$/s.exec(input);
     if (!match || match[1] !== '0') return failure('Only standalone CEF version zero events are supported');
     const parts = splitEscaped(match[2], '|', 6);
     if (!parts) return failure('CEF requires six header fields and an extension slot');
@@ -228,7 +232,7 @@ export function extractStructuredFamily(input: string, format: StructuredFamily,
     }
     return { fields: record, errors: [] };
   }
-  const match = /^LEEF:(1\.0|2\.0)\|(.*)$/.exec(input);
+  const match = /^LEEF:(1\.0|2\.0)\|(.*)$/s.exec(input);
   if (!match) return failure('Only standalone LEEF 1.0 or 2.0 events are supported');
   const isV2 = match[1] === '2.0';
   const parts = splitEscaped(match[2], '|', isV2 ? 5 : 4);
