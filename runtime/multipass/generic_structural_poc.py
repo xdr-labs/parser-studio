@@ -14,7 +14,10 @@ import re
 from typing import Any
 
 from engine import MAX_RAW_BYTES,PRI
-from syslog_header_grammar_generated import PRI_MAX,RFC5424_SUPPORTED_VERSIONS
+from syslog_header_grammar_generated import FRAGMENTS,PRI_MAX,RFC5424_SUPPORTED_VERSIONS
+
+# <PRI>VERSION SP then NILVALUE or an RFC 3339 date: the line claims to be RFC 5424 (shared grammar contract).
+RFC5424_VERSION_HEAD=re.compile(FRAGMENTS['rfc5424_version_head']['source'])
 from security_cef import parse_security_cef
 from security_leef import parse_security_leef
 from security_source import parse_security_source
@@ -1097,6 +1100,16 @@ def parse_generic_structural(raw:str,recipe:StructuralRecipe|None=None)->SourceE
         return parse_security_source(raw)
 
     standard=_standard_candidate(raw)
+    # VERSION 1 only: a line that claims to be RFC 5424 with another VERSION is never handed to a permissive
+    # positional/KV fallback (a three-digit VERSION used to slip past the two-digit header expression and
+    # come back as SOURCE_PARSED). The strict result keeps the raw text; the reason is stated explicitly.
+    version_head=RFC5424_VERSION_HEAD.match(raw)
+    if version_head is not None and version_head['version'] not in RFC5424_SUPPORTED_VERSIONS:
+        if standard.status=='SOURCE_PARSED':
+            standard=parse_security_source(raw)
+        if 'RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED' not in standard.issues:
+            standard.issues.append('RFC5424_PRIORITY_OR_VERSION_UNSUPPORTED')
+        return standard
     # Physical C0 record/control separators are not Generic Structural token
     # delimiters. A permissive Python isspace() split could otherwise turn
     # action=<RS>deny into an empty action and an unrelated token while

@@ -3,7 +3,7 @@
 #   node scripts/grammar/generate-grammar.mjs --write
 # CI runs the generator with --verify, so a hand edit of this file fails the gate.
 # Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.
-GRAMMAR_CONTRACT_SHA256 = "be31ffb74393c162a84285d6b3c75aaa2a6e2b4443754b2e3964a80cd1bf20fb"
+GRAMMAR_CONTRACT_SHA256 = "f4df9437c5f210fc4245d4f0d7824964bf47d7066fa6b2f97f1810320483e904"
 TOKENS = {
   "PRI": "[0-9]{1,3}",
   "BSD_MONTH": "[A-Z][a-z]{2}",
@@ -25,7 +25,8 @@ TOKENS = {
   "KV_DQ": "(?:\\\\[^\\r\\n]|[^\"\\\\])*",
   "KV_SQ": "(?:\\\\[^\\r\\n]|[^'\\\\])*",
   "KV_BARE": "(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v\"'\\\\])+",
-  "KV_TRAILING": "[ \\t\\n\\r\\f\\v]*"
+  "KV_TRAILING": "[ \\t\\n\\r\\f\\v]*",
+  "RFC3339_DATE_PREFIX": "[0-9]{4}-[0-9]{2}-[0-9]{2}T"
 }
 RULES = {
   "rfc3164_tagged": {
@@ -90,6 +91,13 @@ FRAGMENTS = {
       "dq",
       "sq",
       "bare"
+    ]
+  },
+  "rfc5424_version_head": {
+    "source": "<(?P<pri>[0-9]{1,3})>(?P<version>[1-9][0-9]{0,2})[ ](?:-[ ]|(?:[0-9]{4}-[0-9]{2}-[0-9]{2}T))",
+    "captures": [
+      "pri",
+      "version"
     ]
   }
 }

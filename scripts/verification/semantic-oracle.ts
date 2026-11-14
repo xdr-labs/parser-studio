@@ -22,6 +22,7 @@ import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { extractStructuredFamily } from '../../src/structuredFamilies';
 import { parseSyslogEnvelope } from '../../src/syslogEnvelope';
+import { extractGenericStructural } from '../../src/genericStructural';
 import { classifyStructuredParse } from '../../src/grammar/parseStatus';
 import { generateRfc3164KvCases, type OracleCase } from '../../src/grammar/syslogHeaderModel';
 import { generateKvBodyCases } from '../../src/grammar/kvBodyModel';
@@ -36,12 +37,14 @@ type Engine = 'ts' | 'ruby';
 type Extract = (raw: string, grammar: string, body: string) => { fields: Record<string, unknown>; errors: string[] };
 interface FieldSpec { [source: string]: [string, string] }
 interface Profile { topFields: FieldSpec; vendorFields: FieldSpec; classification: unknown }
-interface EnvelopeCase { id: string; raw: string; knownDefect?: string; expect: { variant?: string; variantNot?: string } }
+interface EnvelopeCase { id: string; raw: string; knownDefect?: string; expect: { variant?: string; variantNot?: string; message?: string } }
+interface GenericCase { id: string; raw: string; provenance: string; expect: { fields?: Record<string, unknown>; reject?: boolean } }
 interface Goldens {
   profiles: Record<string, Profile>;
   knownDefects: Record<string, { engines: Engine[] }>;
   cases: OracleCase[];
   envelopeCases: EnvelopeCase[];
+  genericCases: GenericCase[];
 }
 interface RubyResult { calls?: Array<[unknown, Record<string, unknown> | null]>; raised?: string }
 interface Mutant { id: string; file: string; find: string; replace: string; set?: { path: string[]; value: unknown } }
@@ -187,7 +190,7 @@ function applyMutant(text: string, mutant: Mutant): string {
 }
 
 /** Loads the product extractor from a private copy of src/, optionally with one injected fault. */
-async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extract; dispose: () => void }> {
+async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extract; extractGeneric: GenericExtract; envelope: (raw: string) => { variant?: string } | null; dispose: () => void }> {
   const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
   const source = join(REPO, 'src');
   cpSync(source, join(root, 'src'), {
@@ -211,12 +214,35 @@ async function extractorFromCopy(mutant: Mutant | null): Promise<{ extract: Extr
       writeFileSync(target, applyMutant(readFileSync(target, 'utf8'), mutant));
     }
     const module = await import(pathToFileURL(join(root, 'src/structuredFamilies.ts')).href) as { extractStructuredFamily: Extract };
-    return { extract: module.extractStructuredFamily, dispose };
+    const generic = await import(pathToFileURL(join(root, 'src/genericStructural.ts')).href) as { extractGenericStructural: GenericExtract };
+    const envelope = await import(pathToFileURL(join(root, 'src/syslogEnvelope.ts')).href) as { parseSyslogEnvelope: (raw: string) => { variant?: string } | null };
+    return { extract: module.extractStructuredFamily, extractGeneric: generic.extractGenericStructural, envelope: envelope.parseSyslogEnvelope, dispose };
   } catch (error) {
     dispose();
     throw error;
   }
 }
+
+type GenericExtract = (raw: string) => { fields: Record<string, unknown>; errors: string[] };
+function genericTsFailures(extract: GenericExtract): string[] {
+  const failures: string[] = [];
+  for (const item of goldens.genericCases) {
+    const result = extract(item.raw);
+    const accepted = result.errors.length === 0 && Object.keys(result.fields).length > 0;
+    if (item.expect.reject) { if (accepted) failures.push(`${item.id}: Generic Structural parsed it as ${JSON.stringify(deepGet(result.fields, 'generic.mode'))}`); continue; }
+    if (!accepted) { failures.push(`${item.id}: Generic Structural rejected it`); continue; }
+    for (const [path, want] of Object.entries(item.expect.fields ?? {}))
+      if (!same(deepGet(result.fields, path), want)) failures.push(`${item.id}: ${path}=${JSON.stringify(deepGet(result.fields, path))}, expected ${JSON.stringify(want)}`);
+  }
+  return failures;
+}
+const TS_GENERIC_MUTANTS: Mutant[] = [
+  { id: 'ts-generic-host-and-tag-swapped', file: 'src/genericStructural.ts', find: "time:match[4],hostname:match[5],app_tag:match[6]},\n    generic:{mode:'bsd_tagged_message'", replace: "time:match[4],hostname:match[6],app_tag:match[5]},\n    generic:{mode:'bsd_tagged_message'" },
+  // Re-introduces the browser-only rejection of U+2028 in a BSD tagged message.
+  { id: 'ts-generic-message-stops-at-u2028', file: 'src/genericStructural.ts', find: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\\n]+)$/.exec(raw);", replace: "+([^ \\t\\n\\r\\f\\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);" },
+  { id: 'ts-generic-any-rfc5424-version', file: 'src/syslogEnvelope.ts', find: 'if(!isSupportedRfc5424Version(version))return null;', replace: '' },
+  { id: 'ts-generic-version-gate-removed', file: 'src/genericStructural.ts', find: 'if(unsupportedVersion!==null)', replace: 'if(false)' },
+];
 
 async function runTs(): Promise<number> {
   const selfCheck = goldenSelfCheck();
@@ -227,14 +253,18 @@ async function runTs(): Promise<number> {
   const envelopeFailures: string[] = [];
   let envelopeExpected = 0;
   for (const item of goldens.envelopeCases) {
-    const variant = parseSyslogEnvelope(item.raw)?.variant;
+    const envelope = parseSyslogEnvelope(item.raw);
+    const variant = envelope?.variant;
     const wrong = (item.expect.variant !== undefined && variant !== item.expect.variant) ||
-      (item.expect.variantNot !== undefined && variant === item.expect.variantNot);
+      (item.expect.variantNot !== undefined && variant === item.expect.variantNot) ||
+      (item.expect.message !== undefined && envelope?.message !== item.expect.message);
     const expectedToFail = !!item.knownDefect && goldens.knownDefects[item.knownDefect]!.engines.includes('ts');
     if (expectedToFail && !wrong) envelopeFailures.push(`XFAIL_NOW_PASSING ${item.id} (${item.knownDefect}): remove the knownDefect tag`);
     else if (expectedToFail) envelopeExpected += 1;
     else if (wrong) envelopeFailures.push(`${item.id}: envelope variant ${String(variant)}`);
   }
+  // Generic Structural extractor versus hand-authored goldens.
+  envelopeFailures.push(...genericTsFailures(extractGenericStructural as GenericExtract));
   report('SEMANTIC_ORACLE_TS', [...product.failures, ...envelopeFailures]);
 
   // Fault injection: an unmutated private copy must behave like the product, every mutant must be reported.
@@ -252,9 +282,17 @@ async function runTs(): Promise<number> {
     process.stdout.write(`TS_MUTANT ${mutant.id} ${killed ? 'KILLED' : 'SURVIVED'} failing_cases=${realFailures(mutated).length}\n`);
     if (!killed) survivors.push(mutant.id);
   }
+  for (const mutant of TS_GENERIC_MUTANTS) {
+    const loaded = await extractorFromCopy(mutant);
+    const failing = genericTsFailures(loaded.extractGeneric).length +
+      goldens.envelopeCases.filter(item => item.expect.variantNot !== undefined && loaded.envelope(item.raw)?.variant === item.expect.variantNot).length;
+    loaded.dispose();
+    process.stdout.write(`TS_MUTANT ${mutant.id} ${failing > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${failing}\n`);
+    if (failing === 0) survivors.push(mutant.id);
+  }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const ok = product.failures.length === 0 && envelopeFailures.length === 0 && !harnessBroken && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length - survivors.length}/${TS_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_TS_PASS' : 'SEMANTIC_ORACLE_TS_FAIL'} goldens=${goldens.cases.length} envelope=${goldens.envelopeCases.length} generic=${goldens.genericCases.length} properties=${properties.length} passed=${product.passed} expected_failures=${product.expectedFailures + envelopeExpected} mutants_killed=${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length - survivors.length}/${TS_MUTANTS.length + TS_GENERIC_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 
@@ -271,6 +309,13 @@ const RUBY_MUTANTS: Array<Mutant & { grammar: OracleCase['grammar']; target?: st
   { id: 'rb-kv-every-backslash-decoded', grammar: 'syslog_rfc3164', file: 'fragment', find: '.include?(next_char) ? next_char : escaped', replace: '.include?(next_char) ? next_char : next_char' },
   { id: 'rb-kv-duplicate-key-overwrites', grammar: 'syslog_rfc3164', file: 'fragment', find: "    raise ArgumentError, 'Duplicate key value field' if record.key?(key)\n", replace: '' },
   { id: 'rb-rfc5424-any-version', grammar: 'syslog_rfc5424', file: 'fragment', find: "raise ArgumentError, 'Unsupported RFC5424 version' unless ['1'].include?(header['version'])", replace: "raise ArgumentError, 'Unsupported RFC5424 version' unless header['version']" },
+];
+
+const RUBY_GENERIC_MUTANTS: Mutant[] = [
+  { id: 'rb-generic-host-and-tag-swapped', file: 'fragment', find: "          'hostname'=>match[5],'app_tag'=>match[6]}\n  syslog['pri']=match[1] if match[1]\n  {'syslog'=>syslog,\n   'generic'=>{'mode'=>'bsd_tagged_message'", replace: "          'hostname'=>match[6],'app_tag'=>match[5]}\n  syslog['pri']=match[1] if match[1]\n  {'syslog'=>syslog,\n   'generic'=>{'mode'=>'bsd_tagged_message'" },
+  // The envelope-level VERSION check is covered by backend/test/generic-structural-helper.test.ts; at the
+  // extractor level the gate below decides, so that is what is removed here.
+  { id: 'rb-generic-version-gate-removed', file: 'fragment', find: "  raise ArgumentError, 'Unsupported RFC5424 version' if version_head &&\n    !['1'].include?(version_head[:version])\n", replace: '' },
 ];
 
 /** Applies a mutant to a compiled Fragment; a contract mutant swaps the injected grammar for the mutated contract's grammar. */
@@ -316,7 +361,22 @@ function runNative(): number {
     syslog_rfc3164: compileFragment('syslog_rfc3164'),
     syslog_rfc5424: compileFragment('syslog_rfc5424'),
   };
-  const payloadCases = cases.map(item => ({ id: item.id, fragment: item.grammar, raw: item.raw }));
+  const payloadCases: Array<{ id: string; fragment: string; raw: string }> = cases.map(item => ({ id: item.id, fragment: item.grammar, raw: item.raw }));
+  // Generic Structural goldens: every expected source path is mapped to a vendor field so the emitted event shows it.
+  const genericPaths = [...new Set(goldens.genericCases.flatMap(item => Object.keys(item.expect.fields ?? {})))];
+  const genericName = (path: string) => 'g_' + path.replace(/[^A-Za-z0-9]/g, '_');
+  const genericProject = sampleProject() as unknown as Record<string, any>;
+  genericProject.extraction = { format: 'generic_structural' };
+  genericProject.normalization.topFields = {};
+  genericProject.normalization.nsFields = {};
+  genericProject.normalization.vendorFields = Object.fromEntries(genericPaths.map(path => [path, { normalized_name: genericName(path), data_type: 'string' }]));
+  genericProject.classification = { defaultIndex: 'syslog', rules: [] };
+  fragments.generic_structural = compilePair(genericProject).files.find(file => !file.name.endsWith('.conf'))!.content;
+  for (const item of goldens.genericCases) payloadCases.push({ id: `generic::${item.id}`, fragment: 'generic_structural', raw: item.raw });
+  for (const mutant of RUBY_GENERIC_MUTANTS) {
+    fragments[mutant.id] = applyMutant(fragments.generic_structural, mutant);
+    for (const item of goldens.genericCases) payloadCases.push({ id: `${mutant.id}::${item.id}`, fragment: mutant.id, raw: item.raw });
+  }
   for (const grammar of ['syslog_rfc3164', 'syslog_rfc5424'] as const) {
     fragments[`forwarder:${grammar}`] = compileFragment(grammar, true);
     if (fragments[`forwarder:${grammar}`] === fragments[grammar]) throw new Error('FORWARDER_TEMPLATE_NOT_SELECTED');
@@ -361,6 +421,23 @@ function runNative(): number {
   report('GRAMMAR_DIALECT_DRIFT', dialectDrift);
   const product = score('ruby', cases, item => evaluateRuby(item, output.results[item.id]));
   report('SEMANTIC_ORACLE_NATIVE', product.failures);
+  const genericRubyFailures = (prefix: string): string[] => {
+  const genericFailures: string[] = [];
+  for (const item of goldens.genericCases) {
+    const result = output.results[`${prefix}${item.id}`];
+    const events = (result?.calls ?? []).filter(([time, record]) => time !== null && record !== null && record.parser_err_msg === undefined);
+    if (!result || result.raised) { genericFailures.push(`${item.id}: ${result?.raised ? 'artifact raised ' + result.raised : 'no result'}`); continue; }
+    if (item.expect.reject) { if (events.length) genericFailures.push(`${item.id}: emitted a parsed event, expected none`); continue; }
+    if (events.length !== 1) { genericFailures.push(`${item.id}: ${events.length} parsed events, expected 1`); continue; }
+    for (const [path, want] of Object.entries(item.expect.fields ?? {})) {
+      const got = deepGet(events[0]![1], 'Synthetic.' + genericName(path));
+      if (!same(got, want)) genericFailures.push(`${item.id}: ${path}=${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+    }
+  }
+  return genericFailures;
+  };
+  const genericFailures = genericRubyFailures('generic::');
+  report('SEMANTIC_ORACLE_NATIVE_GENERIC_STRUCTURAL', genericFailures);
   const forwarder = score('ruby', cases, item => evaluateRuby(item, output.results[`forwarder::${item.id}`]));
   report('SEMANTIC_ORACLE_NATIVE_FORWARDER_TEMPLATE', forwarder.failures);
   const productFailing = new Set(cases.filter(item => evaluateRuby(item, output.results[item.id]).length > 0).map(item => item.id));
@@ -372,11 +449,17 @@ function runNative(): number {
     process.stdout.write(`RUBY_MUTANT ${mutant.id} ${reported > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${reported}\n`);
     if (reported === 0) survivors.push(mutant.id);
   }
+  for (const mutant of RUBY_GENERIC_MUTANTS) {
+    const reported = genericRubyFailures(`${mutant.id}::`).length;
+    process.stdout.write(`RUBY_MUTANT ${mutant.id} ${reported > 0 ? 'KILLED' : 'SURVIVED'} failing_cases=${reported}\n`);
+    if (reported === 0) survivors.push(mutant.id);
+  }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
-  const ok = product.failures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
+  process.stdout.write(`GENERIC_STRUCTURAL_GOLDENS passed=${goldens.genericCases.length - new Set(genericFailures.map(line => line.split(':')[0])).size} failed=${genericFailures.length}\n`);
+  const ok = product.failures.length === 0 && genericFailures.length === 0 && forwarder.failures.length === 0 && survivors.length === 0 && dialectDrift.length === 0 && dialectMatches > 0;
   process.stdout.write(`FORWARDER_TEMPLATE_DIRECT_EVENTS passed=${forwarder.passed} failed=${forwarder.failures.length}\n`);
   process.stdout.write(`GRAMMAR_DIALECT_EQUIVALENCE ruby=${output.ruby} rules=${ruleNames.length} lines=${grammarLines.length} matches=${dialectMatches} drift=${dialectDrift.length}\n`);
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_NATIVE_PASS' : 'SEMANTIC_ORACLE_NATIVE_FAIL'} ruby=${output.ruby} goldens=${goldens.cases.length} properties=${cases.length - goldens.cases.length} passed=${product.passed} expected_failures=${product.expectedFailures} mutants_killed=${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length - survivors.length}/${RUBY_MUTANTS.length + RUBY_GENERIC_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 
@@ -461,7 +544,7 @@ function runPython(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const ok = productFailures.length === 0 && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} version_probes=${RFC5424_VERSION_PROBES.length}x4 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 

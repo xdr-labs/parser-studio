@@ -1,4 +1,5 @@
 import {extractStructuredFamily} from './structuredFamilies';
+import {unsupportedRfc5424Version} from './grammar/syslogHeader';
 import {envelopeToSyslogFields,parseSyslogEnvelope} from './syslogEnvelope';
 import {extractLeef2ImplicitTab} from './leef2ImplicitTab';
 import {GENERIC_STRUCTURAL_MIXED_PROFILE_V1,type GenericStructuralProfile} from './genericStructuralProfiles';
@@ -471,13 +472,16 @@ function bsdBracketPidMessageProfile(raw:string):Record<string,unknown>|null{
   };
 }
 
+// The two BSD message profiles below spell out what '.' and \S mean in the Ruby export ([^\n] and ASCII
+// white space): JavaScript's '.' also stops at U+2028/U+2029 and its \S at NBSP, which made the browser
+// reject lines the generated Ruby parses.
 function bsdClassicPidMessageProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
   // Bounded legacy shape seen in device logs:
   // "Mon DD HH:MM:SS app[pid]: TAG: message". There is no separate host token,
   // so preserve the app token as the source hostname instead of letting the
   // looser tagged-message grammar absorb "app[pid]:" as a hostname.
-  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);
+  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([A-Za-z0-9_.-]{1,128})\[(\d{1,8})\]: +([A-Za-z0-9_.-]{1,128}): +([^\n]+)$/.exec(raw);
   if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
   if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
   return {
@@ -489,7 +493,7 @@ function bsdClassicPidMessageProfile(raw:string):Record<string,unknown>|null{
 
 function bsdTaggedMessageProfile(raw:string):Record<string,unknown>|null{
   if(new TextEncoder().encode(raw).byteLength>8192||raw.includes('\0'))return null;
-  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +(\S{1,255}) +([A-Za-z0-9_.-]{1,128}): +(.+)$/.exec(raw);
+  const match=/^(?:<(\d{1,3})>)?([A-Z][a-z]{2}) +(\d{1,2}) +(\d{2}:\d{2}:\d{2}) +([^ \t\n\r\f\v]{1,255}) +([A-Za-z0-9_.-]{1,128}): +([^\n]+)$/.exec(raw);
   if(!match||!validBsdClock(match[2]!,match[3]!,match[4]!))return null;
   if(match[1]!==undefined&&(Number(match[1])<0||Number(match[1])>191))return null;
   // Do not let malformed known structures bypass stricter parsers by
@@ -961,6 +965,11 @@ export function extractGenericStructural(raw:string,profile?:GenericStructuralPr
   // Physical C0 control separators must not be misread as unquoted KV spacing.
   if(/[\x0b\x0c\x0d\x1c-\x1f]/.test(raw))
     return {fields:{},errors:['Unsupported physical control separator in Generic Structural source']};
+  // VERSION 1 only: a line that claims to be RFC 5424 with another VERSION is not parsed by any generic
+  // grammar either (it used to succeed as space-separated key=value with the header kept as prefix tokens).
+  const unsupportedVersion=unsupportedRfc5424Version(raw);
+  if(unsupportedVersion!==null)
+    return {fields:{},errors:['Unsupported RFC5424 version '+unsupportedVersion+': only VERSION 1 is supported']};
   const includesLeef=profile==='leef2_implicit_tab'||profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1;
   const includesSyslog=profile==='syslog_prefix_kv'||profile===GENERIC_STRUCTURAL_MIXED_PROFILE_V1;
   // This selected profile owns the standalone LEEF 2.0 family. A legacy KV
