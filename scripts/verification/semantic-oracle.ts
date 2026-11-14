@@ -42,6 +42,8 @@ interface GenericCase { id: string; raw: string; provenance: string; expect: { f
 interface Goldens {
   profiles: Record<string, Profile>;
   knownDefects: Record<string, { engines: Engine[] }>;
+  /** A documented, owner-visible difference between engines; the oracle pins both sides exactly. */
+  policyDivergences: Record<string, { engines: Engine[]; variant: string; statement: string }>;
   cases: OracleCase[];
   envelopeCases: EnvelopeCase[];
   genericCases: GenericCase[];
@@ -155,6 +157,7 @@ const CONTRACT_MUTANTS: Mutant[] = [
   // key=value body grammar
   contractMutant('contract-kv-quoted-value-without-escapes', ['tokens', 'KV_DQ', 'pattern'], '[^"\\\\]*'),
   contractMutant('contract-kv-bare-value-ascii-only', ['tokens', 'KV_BARE', 'pattern'], '(?:\\\\[^\\r\\n]|[!-&(-\\[\\]-~])+'),
+  contractMutant('contract-kv-information-separator-is-value', ['tokens', 'KV_BARE', 'pattern'], '(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v"\'\\\\])+'),
   contractMutant('contract-kv-pair-limit-3', ['semantics', 'kvMaxPairs'], 3),
   contractMutant('contract-kv-nothing-unescaped', ['semantics', 'kvUnescapedAfterBackslash'], ['\\']),
 ];
@@ -465,18 +468,44 @@ function runNative(): number {
 
 // -------------------------------------------------------------------- Python
 interface PythonEnvelope { syslog: Record<string, string>; start: number }
-interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>> }
+interface PythonKv { status: string; body: Record<string, unknown> }
+interface PythonOutput { python: string; envelope: Array<PythonEnvelope | null>; rfc5424: Record<string, Record<string, boolean>>; kv: PythonKv[] }
 const RFC5424_VERSION_PROBES = ['1', '2', '12', '999', '0', '01'];
 const PYTHON_MUTANTS: Mutant[] = [
-  ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname')),
+  ...CONTRACT_MUTANTS.filter(mutant => mutant.id.startsWith('contract-hostname') || mutant.id.startsWith('contract-kv')),
   contractMutant('contract-version-2-supported', ['semantics', 'rfc5424SupportedVersions'], ['1', '2']),
+  { id: 'py-kv-unicode-white-space-separates', file: 'source_kv.py', find: "PAIR=re.compile(FRAGMENTS['kv_pair']['source'])", replace: "PAIR=re.compile(FRAGMENTS['kv_pair']['source'].replace('[^ ','[^\\u00a0\\u2028 '))" },
+  { id: 'py-kv-escapes-not-decoded', file: 'source_kv.py', find: 'value=unescape_kv_value(match[group])', replace: 'value=match[group]' },
+  { id: 'py-kv-repeated-key-overwrites', file: 'source_kv.py', find: 'else:out.fields[key]=[previous,value]', replace: 'else:out.fields[key]=value' },
+  { id: 'py-kv-forbidden-key-accepted', file: 'source_kv.py', find: 'if key in UNSAFE:', replace: 'if False:' },
 ];
+
+/** The Python preview must report the meant value of every pair, or decline; a repeated key follows policy divergence D-1. */
+function evaluatePythonKv(item: OracleCase, result: PythonKv | undefined): string[] {
+  if (result === undefined) return ['no result from the Python runner'];
+  const expect = item.expect;
+  const parsed = result.status === 'SOURCE_PARSED';
+  const divergence = Object.values(goldens.policyDivergences).find(entry => entry.engines.includes('python') && item.id.endsWith('-' + entry.variant));
+  if (divergence) {
+    const repeated = Object.values(result.body).filter(value => Array.isArray(value));
+    return parsed && repeated.length === 1 && (repeated[0] as unknown[]).length === 2 && (repeated[0] as unknown[])[1] === 'again'
+      ? [] : [`status ${result.status}, repeated=${JSON.stringify(repeated)}; D-1 requires both occurrences in order`];
+  }
+  if (expect.status === 'UNKNOWN') return parsed ? [`status SOURCE_PARSED with ${JSON.stringify(result.body).slice(0, 120)}, expected a declined line`] : [];
+  if (!parsed) return expect.neverWrong ? [] : [`status ${result.status}, expected SOURCE_PARSED`];
+  const problems: string[] = [];
+  for (const [path, want] of Object.entries(expect.source ?? {}))
+    if (path.startsWith('body.') && result.body[path.slice(5)] !== want)
+      problems.push(`${path}=${JSON.stringify(result.body[path.slice(5)])}, expected ${JSON.stringify(want)}`);
+  return problems;
+}
 
 /** The Multi-Pass envelope pass reads the header only: host name, PRI and where the structured payload starts. */
 function evaluatePythonEnvelope(item: OracleCase, result: PythonEnvelope | null | undefined): string[] {
   if (result === undefined) return ['no result from the Python runner'];
   const expect = item.expect;
-  if (expect.status === 'UNKNOWN') return result === null ? [] : [`envelope ${JSON.stringify(result.syslog)}, expected none`];
+  // A line declined because of its body still has a well-formed header; the header pass is not what must refuse it.
+  if (expect.status === 'UNKNOWN') return result === null || item.rejectedAt === 'body' ? [] : [`envelope ${JSON.stringify(result.syslog)}, expected none`];
   const tagged = expect.source?.syslog_appname !== undefined;
   // A colon-terminated TAG followed by SP is handled by another pass; declining is correct, a wrong host is not.
   if (result === null) return tagged || expect.neverWrong ? [] : ['no envelope'];
@@ -497,9 +526,9 @@ function evaluatePythonEnvelope(item: OracleCase, result: PythonEnvelope | null 
   return problems;
 }
 
-function pythonRun(moduleDir: string, cases: OracleCase[]): PythonOutput {
+function pythonRun(moduleDir: string, cases: OracleCase[], kvCases: OracleCase[]): PythonOutput {
   const run = spawnSync('python3', [join(REPO, 'scripts/verification/semantic-oracle-python-runner.py')], {
-    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
+    input: JSON.stringify({ moduleDir, lines: cases.map(item => item.raw), kvLines: kvCases.map(item => item.raw), versions: RFC5424_VERSION_PROBES }),
     encoding: 'utf8', maxBuffer: 1 << 28, timeout: 120000,
   });
   if (run.status !== 0) throw new Error(`SEMANTIC_ORACLE_PYTHON_RUNNER_FAILED ${String(run.stderr).slice(-600)}`);
@@ -521,12 +550,17 @@ function runPython(): number {
   if (selfCheck.length) { report('GOLDEN_SELF_CHECK', selfCheck); return 1; }
   const cases = [...goldens.cases, ...generateRfc3164KvCases(120, PROPERTY_SEED)].filter(item => item.grammar === 'syslog_rfc3164');
   const index = new Map(cases.map((item, position) => [item, position]));
+  // key=value bodies: goldens with a key=value body under an RFC 3164 header, plus the model-rendered bodies.
+  const kvCases = [...goldens.cases.filter(item => item.grammar === 'syslog_rfc3164' && item.expect.source?.syslog_appname === undefined && !item.expect.neverWrong),
+    ...generateKvBodyCases(40, PROPERTY_SEED)];
+  const kvIndex = new Map(kvCases.map((item, position) => [item, position]));
   const failuresOf = (output: PythonOutput) => {
     const failures = score('ruby', cases, item => evaluatePythonEnvelope(item, output.envelope[index.get(item)!])).failures;
-    return [...failures, ...pythonFailures({ ...output, envelope: [] }, [])];
+    const kvFailures = score('ruby', kvCases, item => evaluatePythonKv(item, output.kv[kvIndex.get(item)!])).failures;
+    return [...failures, ...kvFailures, ...pythonFailures({ ...output, envelope: [] }, [])];
   };
   const moduleDir = join(REPO, 'runtime/multipass');
-  const product = pythonRun(moduleDir, cases);
+  const product = pythonRun(moduleDir, cases, kvCases);
   const productFailures = failuresOf(product);
   report('SEMANTIC_ORACLE_PYTHON', productFailures);
   const survivors: string[] = [];
@@ -534,9 +568,14 @@ function runPython(): number {
     const root = mkdtempSync(join(REPO, '.oracle-mutant-'));
     try {
       cpSync(moduleDir, join(root, 'multipass'), { recursive: true, filter: path => !path.includes('__pycache__') });
-      const mutated = mutateContract(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
-      writeFileSync(join(root, 'multipass', (GENERATED_PYTHON_PATH as string).split('/').pop()!), generatePython(mutated) as string);
-      const failures = failuresOf(pythonRun(join(root, 'multipass'), cases));
+      if (mutant.file === 'contract') {
+        const mutated = mutateContract(readFileSync(join(REPO, CONTRACT_PATH), 'utf8'), mutant);
+        writeFileSync(join(root, 'multipass', (GENERATED_PYTHON_PATH as string).split('/').pop()!), generatePython(mutated) as string);
+      } else {
+        const target = join(root, 'multipass', mutant.file);
+        writeFileSync(target, applyMutant(readFileSync(target, 'utf8'), mutant));
+      }
+      const failures = failuresOf(pythonRun(join(root, 'multipass'), cases, kvCases));
       const killed = failures.length > productFailures.length;
       process.stdout.write(`PYTHON_MUTANT ${mutant.id} ${killed ? 'KILLED' : 'SURVIVED'} failing=${failures.length}\n`);
       if (!killed) survivors.push(mutant.id);
@@ -544,7 +583,7 @@ function runPython(): number {
   }
   if (survivors.length) report('MUTANT_SURVIVED', survivors);
   const ok = productFailures.length === 0 && survivors.length === 0;
-  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
+  process.stdout.write(`${ok ? 'SEMANTIC_ORACLE_PYTHON_PASS' : 'SEMANTIC_ORACLE_PYTHON_FAIL'} python=${product.python} envelope_cases=${cases.length} kv_cases=${kvCases.length} version_probes=${RFC5424_VERSION_PROBES.length}x5 mutants_killed=${PYTHON_MUTANTS.length - survivors.length}/${PYTHON_MUTANTS.length}\n`);
   return ok ? 0 : 1;
 }
 

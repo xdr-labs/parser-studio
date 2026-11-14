@@ -107,6 +107,10 @@ export function generateKvBodyCases(count: number, seed: number): OracleCase[] {
     add('forbidden-key', renderBody([...pairs, { key: '__proto__', value: '1', text: '1' }], () => ' '), UNKNOWN);
     add('token-without-equals', renderBody(pairs, at => (at === 1 ? ' stray ' : ' ')), UNKNOWN);
     add('unterminated-quote', renderBody(pairs, () => ' ') + ' tail="never closed', UNKNOWN);
+    // Issue #214: U+001C..U+001F are information separators, never part of a bare value and never a pair separator.
+    const control = String.fromCharCode(0x1c + (index % 4));
+    add('control-separator-in-bare-value', renderBody(pairs, () => ' ') + ' tail=' + control + 'deny', UNKNOWN);
+    add('control-separator-between-pairs', renderBody(pairs, at => (at === 1 ? control : ' ')), pairs.length > 1 ? UNKNOWN : full(pairs));
   }
   const many = (size: number): Pair[] => Array.from({ length: size }, (_unused, at) => ({ key: 'f' + at, value: String(at), text: String(at) }));
   const limit = (size: number, expect: OracleExpectation) => cases.push({

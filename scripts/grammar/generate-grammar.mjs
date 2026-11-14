@@ -33,6 +33,11 @@ export function validateTokenPattern(name, pattern) {
     if (code < 0x20 || code > 0x7e) fail('non-ASCII or control character');
     if (c === '#' || c === '/') fail(`'${c}' is not allowed (interpolation or delimiter in a consumer dialect)`);
     if (c === '\\') {
+      // \xHH names one ASCII code point the same way in all three dialects; larger values differ (bytes versus code points).
+      if (pattern[i + 1] === 'x') {
+        if (!/^[0-7][0-9a-f]$/.test(pattern.slice(i + 2, i + 4))) fail('\\x escape must be two lower-case hex digits naming an ASCII code point');
+        i += 4; continue;
+      }
       if (!ALLOWED_ESCAPES.has(pattern[i + 1])) fail(`escape \\${pattern[i + 1]} is not in the portable subset`);
       i += 2; continue;
     }
@@ -197,6 +202,7 @@ export function validateContract(contract) {
       Object.values(semantics.bsdMonthDays).some(days => !Number.isInteger(days) || days < 28 || days > 31) ||
       !Number.isInteger(semantics.kvMaxPairs) || semantics.kvMaxPairs < 1 || semantics.kvMaxPairs > 1000 ||
       !Array.isArray(semantics.kvForbiddenKeys) || !['__proto__', 'constructor', 'prototype'].every(key => semantics.kvForbiddenKeys.includes(key)) ||
+      !Array.isArray(semantics.kvAsciiWhitespace) || semantics.kvAsciiWhitespace.join('') !== ' \t\n\r\f\v' ||
       !Array.isArray(semantics.kvUnescapedAfterBackslash) || semantics.kvUnescapedAfterBackslash.some(ch => typeof ch !== 'string' || !/^[\x21-\x7e]$/.test(ch)))
     throw new Error('GRAMMAR_SEMANTICS_INVALID');
 }
@@ -304,6 +310,8 @@ export function generatePython(contractText) {
     "PRI_MAX = SEMANTICS['priMax']",
     "BSD_MONTH_DAYS = SEMANTICS['bsdMonthDays']",
     "RFC5424_SUPPORTED_VERSIONS = frozenset(SEMANTICS['rfc5424SupportedVersions'])",
+    '# White space for key=value scanning is ASCII only; str.isspace() would also split at NBSP and U+2028.',
+    "KV_ASCII_WHITESPACE = frozenset(SEMANTICS['kvAsciiWhitespace'])",
     '',
   ].join('\n');
 }

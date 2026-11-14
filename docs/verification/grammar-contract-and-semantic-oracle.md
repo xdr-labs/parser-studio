@@ -135,8 +135,31 @@ different white-space notion), and `parserstudio_key_values` /
 renders bodies from meant values (quotes of both kinds, escaped quotes,
 Windows paths, escaped `=`, U+2028, NBSP, UTF-8, adjacency after a quote,
 100/101 pairs, duplicate and forbidden keys, unterminated quotes) and the
-oracle runs them through both executors and both Ruby templates. Not migrated:
-the CEF/LEEF extension tokenizers (W6) and the Python key=value passes.
+oracle runs them through both executors and both Ruby templates.
+
+The Python Multi-Pass source scanner (`runtime/multipass/source_kv.py`) reads
+the same fragment, escape set, forbidden keys and pair limit from the generated
+Python module. Before, it was a hand-written scanner that split pairs with
+`str.isspace()` (so NBSP and U+2028 ended a value, defect F-8) and decoded a
+different escape set (`\=` kept, `\ ` decoded). The oracle's `python` engine
+sends the goldens and the model-rendered bodies through
+`multipass_preview_api.preview`, the entry point the Analyze step calls.
+
+Information separators (issue #214): U+001C..U+001F are never value data and
+never a pair separator. `KV_BARE` excludes them, so the strict path of the
+browser and of the generated Ruby now declines such a line the same way
+Generic Structural and the Python preview already did (defect F-7). The
+portable regex subset gained `\xHH` for ASCII code points for this purpose.
+
+Policy divergence D-1 (owner decision needed): a repeated key. The strict
+browser and Ruby parsers reject the body; the Python source preview keeps every
+occurrence in order as a list (release gate H3). The oracle pins both sides
+exactly (`policyDivergences` in `contracts/semantic-goldens.v1.json`), so
+neither can drift silently.
+
+Not migrated: the CEF/LEEF extension tokenizers (W6) and `parse_quoted_kv` in
+`runtime/multipass/engine.py` (legacy Fortinet role-learning path; it now uses
+the contract's ASCII white-space set but keeps its own pair expression).
 
 ## RFC 5424 VERSION policy (owner decision, 2026-11-13)
 

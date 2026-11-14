@@ -35,9 +35,9 @@ test('dialects differ only in anchors and the named-group prefix', () => {
 });
 
 test('runtime-dependent constructs are rejected', () => {
-  for (const pattern of ['.+', '\\d{1,3}', '\\S+', '\\w+', 'a\\b', '^a', 'a$', '(a)', '(?<n>a)', '(?=a)b', 'a+?', 'a{1,2}?', 'a++', '[[:alpha:]]', 'a/b', 'a#b', 'é', '[a', '(?:a', 'a{,2}', '[a-z&&aeiou]', '[^ =]{1,4}'])
+  for (const pattern of ['.+', '\\d{1,3}', '\\S+', '\\w+', 'a\\b', '^a', 'a$', '(a)', '(?<n>a)', '(?=a)b', 'a+?', 'a{1,2}?', 'a++', '[[:alpha:]]', 'a/b', 'a#b', 'é', '[a', '(?:a', 'a{,2}', '[a-z&&aeiou]', '[^ =]{1,4}', '\\x1', '\\x1C', '\\x80', '\\xff', '\\u001c'])
     assert.throws(() => validateTokenPattern('T', pattern), /GRAMMAR_TOKEN_NOT_PORTABLE/, pattern);
-  for (const pattern of ['[0-9]{1,3}', '(?!\\{|CEF:)[!-<>-~]{1,255}', '[^\\r\\n]+', '(?:a|b)*c?', '[A-Za-z_][A-Za-z0-9_.-]{0,95}'])
+  for (const pattern of ['[0-9]{1,3}', '(?!\\{|CEF:)[!-<>-~]{1,255}', '[^\\r\\n]+', '(?:a|b)*c?', '[A-Za-z_][A-Za-z0-9_.-]{0,95}', '[^ \\x1c-\\x1f]+', '\\x7f'])
     assert.doesNotThrow(() => validateTokenPattern('T', pattern), pattern);
 });
 

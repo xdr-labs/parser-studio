@@ -1,7 +1,7 @@
 {
   "schema": "parserstudio.grammar-contract.v1",
   "id": "syslog-header",
-  "revision": 2,
+  "revision": 3,
   "purpose": "Single declarative definition of the Syslog header grammar and of the strict key=value body grammar (fragments.kv_pair). The browser TypeScript and the generated Ruby Fragment take their structured-path header regular expressions, capture names and semantic limits from the code generated from this file (scripts/grammar/generate-grammar.mjs). Not migrated yet (Issue #249 W4, W5): the Generic Structural sites and the Python Multi-Pass engine, which still carry hand-written copies; those copies are counted and ratcheted down by scripts/verification/grammar-duplication-ratchet.mjs.",
   "authority": [
     "RFC 3164 section 4.1 (PRI, HEADER = TIMESTAMP HOSTNAME, MSG = TAG CONTENT)",
@@ -78,8 +78,8 @@
       "pattern": "(?:\\\\[^\\r\\n]|[^'\\\\])*"
     },
     "KV_BARE": {
-      "pattern": "(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v\"'\\\\])+",
-      "semantic": "Unquoted value: ends at ASCII white space or a quote"
+      "pattern": "(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+",
+      "semantic": "Unquoted value: ends at ASCII white space or a quote; the information separators U+001C..U+001F are never value data (issue #214)"
     },
     "KV_TRAILING": {
       "pattern": "[ \\t\\n\\r\\f\\v]*",
@@ -398,6 +398,14 @@
       "\"",
       "'",
       "="
+    ],
+    "kvAsciiWhitespace": [
+      " ",
+      "\t",
+      "\n",
+      "\r",
+      "\f",
+      "\u000b"
     ]
   },
   "fragments": {

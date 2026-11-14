@@ -26,6 +26,8 @@ export interface OracleCase {
   id: string;
   grammar: 'syslog_rfc3164' | 'syslog_rfc5424';
   body: 'kv';
+  /** UNKNOWN cases only: 'body' when the header is well formed and the body is what must be declined. */
+  rejectedAt?: 'body';
   raw: string;
   provenance: string;
   knownDefect?: string;
