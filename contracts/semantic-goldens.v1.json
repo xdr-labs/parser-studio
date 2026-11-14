@@ -447,6 +447,30 @@
         "status": "UNKNOWN",
         "event": null
       }
+    },
+    {
+      "id": "rfc3164-information-separator-is-not-value-data",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov  5 13:00:01 fw01 srcip=192.0.2.1 dstip=198.51.100.2 action=\u001cdeny",
+      "provenance": "Issue #214: U+001C..U+001F are ASCII information separators. A line that carries one between '=' and the value must never be reported as completely parsed.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      },
+      "rejectedAt": "body"
+    },
+    {
+      "id": "rfc3164-information-separator-between-pairs",
+      "grammar": "syslog_rfc3164",
+      "body": "kv",
+      "raw": "<134>Nov  5 13:00:01 fw01 srcip=192.0.2.1\u001edstip=198.51.100.2 action=deny",
+      "provenance": "Issue #214: U+001E between two pairs is neither a pair separator nor part of the first value.",
+      "expect": {
+        "status": "UNKNOWN",
+        "event": null
+      },
+      "rejectedAt": "body"
     }
   ],
   "envelopeCases": [
@@ -501,11 +525,11 @@
     },
     {
       "id": "envelope-rfc5424-message-keeps-bom",
-      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 - \ufeffa=1",
+      "raw": "<34>1 2026-10-11T22:14:15Z host app 123 ID47 - ﻿a=1",
       "provenance": "RFC 5424 6.4: MSG-UTF8 = BOM UTF-8-STRING; the BOM is part of MSG and is preserved",
       "expect": {
         "variant": "rfc5424",
-        "message": "\ufeffa=1"
+        "message": "﻿a=1"
       }
     }
   ],
@@ -514,12 +538,15 @@
     "F-2": "RFC 5424 VERSION policy differed between consumers. Resolved by semantics.rfc5424SupportedVersions, read by every consumer.",
     "F-3": "U+2028 inside a value was rejected by the browser and parsed by the generated Ruby. Resolved by the portable token REST = [^\\r\\n]+.",
     "F-4": "RFC 5424 TIMESTAMP with an impossible calendar day was rejected by the browser and parsed by the generated Ruby. Resolved by an explicit calendar check beside Time.iso8601 in both Ruby templates.",
-    "F-5": "A TAG directly after the timestamp ('kernel:', 'sshd[123]:') was read as HOSTNAME by both executors when HOSTNAME was omitted. Resolved by BSD_HOSTNAME not ending in ':'; the line is declined."
+    "F-5": "A TAG directly after the timestamp ('kernel:', 'sshd[123]:') was read as HOSTNAME by both executors when HOSTNAME was omitted. Resolved by BSD_HOSTNAME not ending in ':'; the line is declined.",
+    "F-6": "The Python Multi-Pass fallback parsed an RFC 5424 line with VERSION 999. Resolved by semantics.rfc5424SupportedVersions and the rfc5424_version_head fragment, read by every Python entry point.",
+    "F-7": "The strict key=value path of the browser and the generated Ruby accepted U+001C..U+001F as value data while Generic Structural and the Python preview declined the line (issue #214). Resolved by KV_BARE excluding U+001C..U+001F.",
+    "F-8": "The Python Multi-Pass key=value scanner split pairs at Unicode white space (NBSP, U+2028) and decoded a different escape set than the browser and Ruby. Resolved by the scanner reading fragments.kv_pair and semantics.kvUnescapedAfterBackslash."
   },
   "genericCases": [
     {
       "id": "generic-bsd-tagged-message-u2028",
-      "raw": "<13>Oct 11 22:14:15 fw01 kernel: user=a\u2028b x=1",
+      "raw": "<13>Oct 11 22:14:15 fw01 kernel: user=a b x=1",
       "provenance": "RFC 3164 4.1: PRI 13, TIMESTAMP, HOSTNAME fw01, TAG kernel, CONTENT after ': '. U+2028 is not a line terminator in Syslog, so it is message text (the browser used to reject this line while the generated Ruby parsed it)",
       "expect": {
         "fields": {
@@ -527,7 +554,7 @@
           "syslog.hostname": "fw01",
           "syslog.app_tag": "kernel",
           "generic.mode": "bsd_tagged_message",
-          "generic.message": "user=a\u2028b x=1"
+          "generic.message": "user=a b x=1"
         }
       }
     },
@@ -597,5 +624,14 @@
         "reject": true
       }
     }
-  ]
+  ],
+  "policyDivergences": {
+    "D-1": {
+      "engines": [
+        "python"
+      ],
+      "variant": "duplicate-key",
+      "statement": "A repeated key: the strict browser and Ruby parsers reject the body; the Python source preview keeps every occurrence in order as a list (release gate H3, tests/test_h3_independent_six_family_bytes_20261108.py). The oracle requires exactly that list from Python and a rejection from the others. Unifying the two needs an owner decision."
+    }
+  }
 }

@@ -217,6 +217,15 @@ jobs:
           node scripts/grammar/generate-grammar.mjs --verify
           node --test scripts/grammar/generate-grammar.test.mjs
           node scripts/verification/grammar-duplication-ratchet.mjs
+      # The semantic oracles run before the template-approval gate of the
+      # backend step below: a pending template approval must not hide a wrong
+      # parse result. They need only the backend tooling (tsx), not its build.
+      - name: Install backend tooling for the semantic oracles
+        run: npm ci --prefix backend --no-audit --no-fund
+      - name: Semantic Golden oracle, model-based properties and fault injection (browser TypeScript)
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts ts
+      - name: Semantic Golden oracle, key=value bodies, RFC 5424 VERSION policy and fault injection (Python Multi-Pass)
+        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts python
       - name: Deterministic unit tests
         run: npm test
       - name: MCV2 mandatory lossless mapping and semantic policy invariants
@@ -267,10 +276,6 @@ jobs:
         run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/mapping-hints-cross-consumer.ts
       - name: Independently authored source-to-Stellar semantic oracle
         run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/independent-semantic-identity-oracle.ts
-      - name: Semantic Golden oracle, model-based properties and fault injection (browser TypeScript)
-        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts ts
-      - name: Semantic Golden oracle, RFC 5424 VERSION policy and fault injection (Python Multi-Pass)
-        run: node backend/node_modules/tsx/dist/cli.mjs scripts/verification/semantic-oracle.ts python
       - name: Verify Web-job synthetic parser and ZIP lineage
         run: |
           node backend/node_modules/tsx/dist/cli.mjs scripts/verification/executable-artifact-lineage.ts > "$RUNNER_TEMP/parser-studio-lineage-web.json"

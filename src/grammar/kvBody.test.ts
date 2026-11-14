@@ -24,6 +24,15 @@ describe('contract-driven key=value body', () => {
     ['a="open', 'MALFORMED_PAIR'], ['', 'NO_PAIRS'], ['   ', 'NO_PAIRS'],
   ])('rejects %j as %s', (input, reason) => { expect(pairs(input)).toBe(reason); });
 
+  it.each([0x1c, 0x1d, 0x1e, 0x1f])('never reads the information separator U+%s as value data or as a pair separator (issue #214)', (code) => {
+    const control = String.fromCharCode(code);
+    expect(pairs('srcip=10.1.1.1 action=' + control + 'deny')).toBe('MALFORMED_PAIR');
+    expect(pairs('srcip=10.1.1.1' + control + 'action=deny')).toBe('MALFORMED_PAIR');
+    expect(pairs('srcip=10.1.1.1 action=de\\' + control + 'ny')).toBe('MALFORMED_PAIR');
+    // Inside quotes the sender delimited the value explicitly; the character is kept as written.
+    expect(pairs('note="a' + control + 'b"')).toEqual([['note', 'a' + control + 'b']]);
+  });
+
   it('enforces the pair limit from the contract', () => {
     const body = (size: number) => Array.from({ length: size }, (_unused, at) => `f${at}=${at}`).join(' ');
     expect(parseStrictKeyValues(body(100)).ok).toBe(true);

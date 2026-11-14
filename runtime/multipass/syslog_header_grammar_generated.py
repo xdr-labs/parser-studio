@@ -1,9 +1,9 @@
 # GENERATED FILE - DO NOT EDIT.
-# Source: contracts/syslog-header-grammar.v1.json (revision 2); regenerate with
+# Source: contracts/syslog-header-grammar.v1.json (revision 3); regenerate with
 #   node scripts/grammar/generate-grammar.mjs --write
 # CI runs the generator with --verify, so a hand edit of this file fails the gate.
 # Syslog header grammar for the Multi-Pass engine, generated from the shared grammar contract.
-GRAMMAR_CONTRACT_SHA256 = "f4df9437c5f210fc4245d4f0d7824964bf47d7066fa6b2f97f1810320483e904"
+GRAMMAR_CONTRACT_SHA256 = "3d561d4bb7c17f4dc19528b667a35bbf0efff4be2e019ec4d1bc63a42a74b755"
 TOKENS = {
   "PRI": "[0-9]{1,3}",
   "BSD_MONTH": "[A-Z][a-z]{2}",
@@ -24,7 +24,7 @@ TOKENS = {
   "KV_KEY": "[A-Za-z_][A-Za-z0-9_.-]{0,95}",
   "KV_DQ": "(?:\\\\[^\\r\\n]|[^\"\\\\])*",
   "KV_SQ": "(?:\\\\[^\\r\\n]|[^'\\\\])*",
-  "KV_BARE": "(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v\"'\\\\])+",
+  "KV_BARE": "(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+",
   "KV_TRAILING": "[ \\t\\n\\r\\f\\v]*",
   "RFC3339_DATE_PREFIX": "[0-9]{4}-[0-9]{2}-[0-9]{2}T"
 }
@@ -85,7 +85,7 @@ RULES = {
 }
 FRAGMENTS = {
   "kv_pair": {
-    "source": "(?:[ \\t]*)(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:\"(?P<dq>(?:\\\\[^\\r\\n]|[^\"\\\\])*)\"|'(?P<sq>(?:\\\\[^\\r\\n]|[^'\\\\])*)'|(?P<bare>(?:\\\\[^\\r\\n]|[^ \\t\\n\\r\\f\\v\"'\\\\])+))",
+    "source": "(?:[ \\t]*)(?P<key>[A-Za-z_][A-Za-z0-9_.-]{0,95})=(?:\"(?P<dq>(?:\\\\[^\\r\\n]|[^\"\\\\])*)\"|'(?P<sq>(?:\\\\[^\\r\\n]|[^'\\\\])*)'|(?P<bare>(?:\\\\[^\\n\\r\\f\\v\\x1c-\\x1f]|[^ \\t\\n\\r\\f\\v\\x1c-\\x1f\"'\\\\])+))",
     "captures": [
       "key",
       "dq",
@@ -138,8 +138,18 @@ SEMANTICS = {
     "\"",
     "'",
     "="
+  ],
+  "kvAsciiWhitespace": [
+    " ",
+    "\t",
+    "\n",
+    "\r",
+    "\f",
+    "\u000b"
   ]
 }
 PRI_MAX = SEMANTICS['priMax']
 BSD_MONTH_DAYS = SEMANTICS['bsdMonthDays']
 RFC5424_SUPPORTED_VERSIONS = frozenset(SEMANTICS['rfc5424SupportedVersions'])
+# White space for key=value scanning is ASCII only; str.isspace() would also split at NBSP and U+2028.
+KV_ASCII_WHITESPACE = frozenset(SEMANTICS['kvAsciiWhitespace'])

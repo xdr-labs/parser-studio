@@ -3,10 +3,12 @@
 Input (stdin, JSON):
   {"moduleDir": "<directory that holds the Multi-Pass modules>",
    "lines": ["<raw line>", ...],
+   "kvLines": ["<raw line with a key=value body>", ...],
    "versions": ["1", "2", ...]}
 Output (stdout, JSON):
   {"python": "<version>",
    "envelope": [null | {"syslog": {...}, "start": <payload offset>}, ...],
+   "kv": [{"status": "<preview status>", "body": {<key>: <value> | [<values>]}}, ...],
    "rfc5424": {"<version>": {"extract_rfc5424": bool, "extract_pair_envelope": bool,
                              "short_rfc5424_json": bool, "short_ietf_csv": bool,
                              "parse_generic_structural": bool}}}
@@ -24,6 +26,7 @@ request = json.load(sys.stdin)
 sys.path.insert(0, request["moduleDir"])
 
 import generic_structural_poc  # noqa: E402
+import multipass_preview_api  # noqa: E402
 import security_envelope  # noqa: E402
 import security_pairs  # noqa: E402
 import structured_source  # noqa: E402
@@ -47,4 +50,10 @@ for version in request["versions"]:
             head + " app 123 ID47 - id=firewall sn=ABC fw=10.0.0.1 pri=6 src=10.1.1.1 dst=10.2.2.2").status == "SOURCE_PARSED",
     }
 
-json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424}, sys.stdout)
+# key=value bodies go through the real preview entry point, the one the Analyze step calls.
+kv = []
+for raw in request.get("kvLines", []):
+    result = multipass_preview_api.preview(raw)
+    kv.append({"status": result["status"], "body": (result.get("fields") or {}).get("body") or {}})
+
+json.dump({"python": ".".join(map(str, sys.version_info[:3])), "envelope": envelope, "rfc5424": rfc5424, "kv": kv}, sys.stdout)
